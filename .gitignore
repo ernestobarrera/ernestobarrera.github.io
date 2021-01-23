@@ -14,7 +14,7 @@
 .ionide
 
 ### Archivos GIMP ###
-.xcf
+*.xcf
 
 ### Windows ###
 # Windows thumbnail cache files
