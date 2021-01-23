@@ -1,0 +1,271 @@
+
+/* Sticky footer styles
+-------------------------------------------------- */
+html {
+ 
+  position: relative;
+    min-height: 100%;
+    
+    
+    
+  }
+  /* Estos navbar están añadidos para modificar la hoja de estilos online pendiente de desarrollar*/
+  .navbar  {
+    /* box-shadow: 0 12px 12px -12px rgba(0,0,0,.2);*/
+    box-shadow: 2px 3px 5px 0px rgba(0,0,0,.2);
+    
+  }
+
+.navbar-dark .navbar-nav .nav-link {
+    color: rgb(198, 181, 181);
+}
+.navbar-dark .navbar-nav .nav-link:active{
+  /* box-shadow: 0 12px 12px -12px rgba(0,0,0,.2);*/
+  
+
+  color: rgb(235, 247, 6);
+  
+}
+.navbar-dark .navbar-nav .nav-link:hover{
+    /* box-shadow: 0 12px 12px -12px rgba(0,0,0,.2);*/
+    
+    color: rgba(255, 246, 118, 0.7);
+   
+    
+  }
+  .dropdown:hover .dropdown-menu,
+  .btn-group:hover .dropdown-menu {
+    display: block;
+    
+  }
+
+  .bg-custom {
+    /*background-image: linear-gradient(#0f2027, #203a43, #2c5364 );*/
+    background-image: linear-gradient(#2c3e50,#425663, #2c3e50);
+  /*<!--El gradiente custom tb incluído en la clase.Ideas→ https://uigradients.com/-->*/
+      
+    }
+
+   
+  .icono{
+    
+    vertical-align:-5% ;
+
+  }
+    /* modificación añadida a titulos de páginas */
+  .lead {font-weight: 600;
+    font-size: 1.15rem; 
+    letter-spacing: 0.02em;}
+  body {
+    /* Margin bottom by footer height */
+    margin-bottom: 60px;
+    
+    /*fuente añadida en head de páginas */
+    font-family: 'Open Sans', sans-serif;
+  
+        
+  }
+
+ 
+  .footer {
+    display: flex;
+    align-items: center;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    /* Set the fixed height of the footer here */
+    height: 30px;
+    line-height: 10x; /* Vertically center the text there */
+    border-top: 1px solid rgba(204, 204, 204, 1);
+    
+    background-color: #f8f9fb;
+    font-family: 'Open Sans', sans-serif;
+    font-size: smaller;
+  }
+  
+  
+  /* Custom page CSS
+  -------------------------------------------------- */
+  /* Not required for template or sticky footer method. */
+   /* Imagen junto a hipervínculos */
+  a[href^="http"] {
+    background: url(../images/urlIcon.png) no-repeat;
+   
+    background-position: right;
+    padding-right: 22px;
+    padding-bottom: 2px;
+    color: #4389e4;
+    
+}
+
+  
+  body > .container {
+    padding: 60px 15px 0;
+    
+  }
+  
+  .footer > .container {
+    padding-right: 15px;
+    padding-left: 15px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  
+  code {
+    font-size: 80%;
+  }
+  
+/*Elemento anulado para eliminar linea bajo breadcrumb. Parece no influye en cabecera
+ nav {
+    border-bottom: 0px solid rgba(204, 204, 204, 1);
+} */
+
+/* 
+Esto fijaría breadcrumb pero no sincroniza con cabecera. Por el momento dejo breadcrumb no fijada, añadiendo el código inferior para su estilo
+.breadcrumb {
+  position: fixed;
+  
+  top: 55px;
+  width: 100%;
+} */
+.breadcrumb{
+  /* las dos líneas siguientes fijan a la cabecera y evitan overflow de la página, parece que sin inconvenientes pero ir viendo cuando escale*/
+  position: fixed;
+  z-index: 2;
+  width: 100%;
+  padding:8px 15px;
+  text-align: center;
+  margin-bottom:5px;
+  list-style:none;
+  background-color:#ffffff;
+  border-radius:4px
+}
+.breadcrumb>li{
+  display:inline-block
+}
+.breadcrumb>li+li:before{
+  padding:0 5px;
+  color:#ccc;
+  content:"/\00a0"
+}
+.breadcrumb>.active{
+  color:#777
+}
+.breadcrumb li a {
+color: #0275d8;
+text-decoration: none;
+}
+.breadcrumb li a:hover {
+color: #01447e;
+text-decoration: underline;
+}
+
+/* /* desde aquí es nuevo para ver que pasa he quitado el script de hover de html y parece que funciona*/
+/* Change this breakpoint if you change the breakpoint of the navbar */
+
+@media (min-width: 992px) {
+  .animate {
+    animation-duration: 1s;
+    -webkit-animation-duration: 1s;
+    animation-fill-mode: both;
+    -webkit-animation-fill-mode: both;
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    transform: translateY(1rem);
+    opacity: 0;
+  }
+  100% {
+    transform:translateY(0rem);
+    opacity: 1;
+  }
+  0% {
+    transform: translateY(1rem);
+    opacity: 0;
+  }
+}
+
+@-webkit-keyframes slideIn {
+  0% {
+    -webkit-transform: transform;
+    -webkit-opacity: 0;
+  }
+  100% {
+    -webkit-transform: translateY(0);
+    -webkit-opacity: 1;
+  }
+  0% {
+    -webkit-transform: translateY(1rem);
+    -webkit-opacity: 0;
+  }
+}
+
+.slideIn {
+  -webkit-animation-name: slideIn;
+  animation-name: slideIn;
+}
+
+/* https://startbootstrap.com/snippets/animated-navbar-dropdown idea original modificada añadir a la clase del desplegable dropbown→animate slideIn */
+
+@media (min-width: 800px) {
+  .animate {
+    animation-duration: 400ms;
+    -webkit-animation-duration: 0.5s;
+    animation-fill-mode: both;
+    -webkit-animation-fill-mode: both;
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    transform: translateY(0rem);
+    opacity: 0;
+    background-color: #e9e4a5;
+  }
+  /* La posición final */
+  100% {
+    transform:translateY(-0.4rem);
+    opacity: 1;
+    background: #ffffff;
+        box-shadow: 1px 1px 5px 1px rgba(0, 0, 0, 0.2);
+    font-size: 1.03rem;
+    
+    
+    
+  }
+  /* El inicio superior */
+  0% {
+    transform: translateY(-1rem);
+    opacity: 0.5;
+  }
+}
+
+@-webkit-keyframes slideIn {
+  0% {
+    -webkit-transform: transform;
+    -webkit-opacity: 0;
+  }
+  100% {
+    -webkit-transform: translateY(-0.4rem);
+    -webkit-opacity: 1;
+  }
+  0% {
+    -webkit-transform: translateY(-1rem);
+    -webkit-opacity: 0;
+  }
+}
+
+.slideIn {
+  -webkit-animation-name: slideIn;
+  animation-name: slideIn;
+}
+
+figcaption.photo-credit {
+  color:#a8a4a4;
+  text-align: right;
+    height: 0;
+  font-size: 50%;
+  
+}
