@@ -12,7 +12,7 @@ Esta obra está bajo una
 
 [![CC BY-NC-SA 4.0][cc-by-sa-image]][cc-by-sa]
 
-[cc-by-sa]: https://creativecommons.org/licenses/by-nc-sa/4.0/deed.es
+[cc-by-nc-sa]: https://creativecommons.org/licenses/by-nc-sa/4.0/deed.es
 [cc-by-sa-image]: https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png
 
 
