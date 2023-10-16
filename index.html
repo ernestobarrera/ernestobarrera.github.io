@@ -38,19 +38,58 @@
 </head>
 <body style="margin-bottom:0px;overflow: hidden;">
 <!-- header -->
-<nav  class="navbar sticky-top navbar-expand-md navbar-dark bg-custom">
-    <button class="navbar-toggler" 
-        type="button" data-toggle="collapse" 
-        data-target="#navbarToggler"
-        aria-controls="navbarToggler" 
-        aria-expanded="false" 
-        aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
+<nav class="navbar sticky-top navbar-expand-md navbar-dark bg-custom">
+    <a class="navbar-brand" href="#"><img src="./assets/images/avatar_cabecera.png" width="20" height="24" class="d-inline-block align-top" alt="avatar"> Inicio ─ Web de Ernesto Barrera</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse"
+      data-target="#navbarToggler" aria-controls="navbarToggler"
+      aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
     </button>
-     
-    <a class="navbar-brand hvr-icon-grow " href="./"><img src="./assets/images/avatar_cabecera.png" width="20" height="24" class="d-inline-block align-top hvr-icon" alt="avatar"> Inicio ─ Web de Ernesto Barrera</a>
-   
-</nav>
+  
+    <div class="collapse navbar-collapse" id="navbarToggler">
+      <ul class="navbar-nav mr-auto"></ul>
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a class="nav-link active" href="#inicio" data-toggle="tab" role="tab">
+            Inicio</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#quiensomos" role="tab" data-toggle="tab">
+            Sobre mí</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#servicios" role="tab" data-toggle="tab">
+            Experiencia</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#contacto" role="tab" data-toggle="tab">
+            Contacto</a>
+        </li>
+      </ul>
+    </div>
+  
+    <!-- Contenido de las pestañas -->
+    <div class="tab-content">
+      <div role="tabpanel" class="tab-pane fade show active" id="inicio">
+        <h2>Inicio</h2>
+        <p>Este es el contenido de la pestaña Inicio.</p>
+      </div>
+      <div role="tabpanel" class="tab-pane fade" id="quiensomos">
+        <h2>Quienes Somos</h2>
+        <p>Este es el contenido de la pestaña Quienes Somos.</p>
+       
+      </div>
+      <div role="tabpanel" class="tab-pane fade" id="servicios">
+        <h2>Servicios</h2>
+        <p>Este es el contenido de la pestaña Servicios.</p>
+      </div>
+      <div role="tabpanel" class="tab-pane fade" id="contacto">
+        <h2>Contacto</h2>
+        <p>Este es el contenido de la pestaña Contacto.</p>
+      </div>
+    </div>
+  </nav>
+
 
 <div 
 class="container bg-image d-flex flex-column   ;"
@@ -59,6 +98,7 @@ style=" background-size: 100% 100%;
         height: 100vh;
         
         "
+        
 >
 <div class="my-auto mx-auto "><span  class=" font-weight-bolder  text-danger display-3 ">Web en construcción</span></div>
 <div ><p style="margin-bottom: 40px;  font-size: smaller;  text-align: end;
