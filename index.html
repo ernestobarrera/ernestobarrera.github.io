@@ -71,6 +71,15 @@
         margin: 0;
         padding: 0;
         overflow-x: hidden;
+        background-image: linear-gradient(
+            90deg,
+            rgba(26, 38, 52, 0.92) 0%,
+            var(--primary-bg) 35%
+          ),
+          url("../../assets/images/perfilFondoWeb.jpg");
+        background-position: left center;
+        background-repeat: no-repeat;
+        background-size: 35% 100%;
       }
 
       /* Navbar Styles */
@@ -266,13 +275,51 @@
         z-index: 10;
         margin-top: auto;
       }
+      .mobile-menu-button {
+        display: none;
+        flex-direction: column;
+        justify-content: space-around;
+        width: 30px;
+        height: 25px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        z-index: 10;
+      }
 
+      .mobile-menu-button span {
+        width: 30px;
+        height: 3px;
+        background: var(--text-primary);
+        border-radius: 10px;
+        transition: all 0.3s linear;
+        position: relative;
+        transform-origin: 1px;
+      }
       /* Responsive Design */
+
       @media (max-width: 768px) {
-        .nav-menu {
-          gap: 1rem;
+        .mobile-menu-button {
+          display: flex;
         }
 
+        .nav-menu {
+          position: fixed;
+          right: -100%;
+          top: 70px;
+          flex-direction: column;
+          background: var(--secondary-bg);
+          width: 100%;
+          text-align: center;
+          transition: 0.3s;
+          box-shadow: 0 10px 27px rgba(0, 0, 0, 0.05);
+          padding: 20px 0;
+        }
+
+        .nav-menu.active {
+          right: 0;
+        }
         .main-container {
           max-width: 1400px;
           width: 95%;
@@ -323,6 +370,11 @@
           <li><a href="/experiencia.html" class="nav-link">Experiencia</a></li>
           <li><a href="/contacto.html" class="nav-link">Contacto</a></li>
         </ul>
+        <div class="mobile-menu-button">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
       </div>
     </nav>
 
@@ -405,5 +457,24 @@
         <p>© 2024 Ernesto Barrera - Recursos para Ciencias de la Salud</p>
       </div>
     </footer>
+    <script>
+      const mobileMenuButton = document.querySelector(".mobile-menu-button");
+      const navMenu = document.querySelector(".nav-menu");
+
+      mobileMenuButton.addEventListener("click", () => {
+        navMenu.classList.toggle("active");
+        // Animar las barras del menú
+        const spans = mobileMenuButton.querySelectorAll("span");
+        spans[0].style.transform =
+          spans[0].style.transform === "rotate(45deg)"
+            ? "rotate(0)"
+            : "rotate(45deg)";
+        spans[1].style.opacity = spans[1].style.opacity === "0" ? "1" : "0";
+        spans[2].style.transform =
+          spans[2].style.transform === "rotate(-45deg)"
+            ? "rotate(0)"
+            : "rotate(-45deg)";
+      });
+    </script>
   </body>
 </html>
