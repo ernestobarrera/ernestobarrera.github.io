@@ -60,16 +60,17 @@
         padding: 0;
         box-sizing: border-box;
       }
-
       body {
         font-family: "Inter", sans-serif;
         background-color: var(--primary-bg);
         color: var(--text-primary);
         line-height: 1.6;
-        margin: 0;
         min-height: 100vh;
         display: flex;
         flex-direction: column;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
       }
 
       /* Navbar Styles */
@@ -144,33 +145,40 @@
 
       .section-title {
         color: var(--accent-color);
-        font-size: 1.8rem;
-        margin: 2rem 0;
-        padding-bottom: 0.5rem;
+        font-size: 1.3rem;
+        margin: 0.5rem 0 0.5rem;
+        padding-bottom: 0.25rem;
         border-bottom: 2px solid var(--accent-color);
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
       }
 
       /* Cards Grid */
       .cards-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 2rem;
-        margin-bottom: 4rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        padding: 0.25rem;
       }
 
       .card {
         background-color: var(--card-bg);
-        border-radius: 0.8rem;
-        padding: 1.5rem;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
         transition: all var(--transition-speed);
         position: relative;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: auto;
+        min-height: 105px;
       }
 
       .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       }
 
       .card::before {
@@ -197,53 +205,65 @@
       .card-header {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        margin-bottom: 1rem;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
       }
 
       .card-icon {
         color: var(--accent-color);
-        font-size: 1.5rem;
+        font-size: 1.1rem;
         transition: transform var(--transition-speed);
+        flex-shrink: 0;
       }
 
       .card:hover .card-icon {
-        transform: scale(1.2);
+        transform: scale(1.1);
       }
 
       .card-title {
-        font-size: 1.2rem;
+        font-size: 1rem;
         font-weight: 600;
         color: var(--text-primary);
         margin: 0;
+        line-height: 1.2;
       }
 
       .card-description {
         color: var(--text-secondary);
-        margin-bottom: 1rem;
-        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .card-link {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
         color: var(--accent-color);
         text-decoration: none;
         font-weight: 500;
+        font-size: 0.85rem;
         transition: all var(--transition-speed);
+        margin-top: auto;
       }
 
       .card-link:hover {
-        transform: translateX(5px);
+        transform: translateX(3px);
         text-decoration: underline;
       }
 
       /* Footer */
       .footer {
+        position: sticky;
+        bottom: 0;
+        width: 100%;
         background-image: linear-gradient(#2c3e50, #425663);
-        padding: 1rem;
-        text-align: center;
-        font-size: 0.9rem;
-        color: var(--text-secondary);
+        padding: 0.5rem;
+        z-index: 10;
         margin-top: auto;
       }
 
@@ -254,12 +274,17 @@
         }
 
         .main-container {
-          margin-top: 4rem;
-          padding: 0 1rem;
+          max-width: 1400px;
+          width: 95%;
+          margin: 3.5rem auto 1rem;
+          flex: 1;
         }
-
         .cards-grid {
-          grid-template-columns: 1fr;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 0.75rem;
+          width: 100%;
+          margin: 0 auto 0.75rem;
         }
       }
 
