@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Contacto y perfiles profesionales de Ernesto Barrera"
+    />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Contacto | ​👨‍⚕️ ​@ernestob" />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria  🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/pages/contacto.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <title>Contacto | @ernestob</title>
+    <link rel="icon" href="/assets/images/icon.webp" />
+
+    <!-- Fuentes y CSS -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <!-- Script para includes -->
+    <!--     <include src="../assets/components/footer.html"></include>
+    <script src="/ernestobarrera.github.io/assets/js/include.js"></script> -->
+
+    <style>
+      /* Variables base */
+      :root {
+        --primary-bg: #1a2634;
+        --secondary-bg: #2c3e50;
+        --accent-color: #ffd700;
+        --text-primary: #ffffff;
+        --text-secondary: #94a3b8;
+        --card-bg: #2a3b4d;
+        --hover-color: #34495e;
+        --transition-speed: 0.3s;
+      }
+
+      /* Reset y estilos base */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--primary-bg);
+        color: var(--text-primary);
+        line-height: 1.6;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        background-image: linear-gradient(
+            90deg,
+            rgba(26, 38, 52, 0.3) 0%,
+            var(--primary-bg) 35%
+          ),
+          url("../assets/images/perfilFondoWeb.jpg");
+        background-position: left center;
+        background-repeat: no-repeat;
+        background-size: contain;
+      }
+
+      .main-container,
+      .contact-container {
+        margin-top: 5rem; /* Esto es crucial para evitar el movimiento */
+        flex: 1;
+      }
+
+      .contact-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        background-color: var(--card-bg);
+        padding: 2rem;
+        border-radius: 0.5rem;
+      }
+
+      .contact-title {
+        color: var(--accent-color);
+        font-size: 1.8rem;
+        margin-bottom: 0.8rem;
+      }
+
+      .contact-subtitle {
+        color: var(--text-secondary);
+        font-size: 1rem;
+      }
+
+      /* Grid de perfiles más compacto */
+      .profiles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .profile-card {
+        background-color: var(--card-bg);
+        border-radius: 0.5rem;
+        padding: 0.8rem;
+        transition: transform var(--transition-speed);
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .profile-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .profile-icon {
+        font-size: 1.3rem;
+        color: var(--accent-color);
+        margin-bottom: 0.4rem;
+      }
+
+      .profile-title {
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+        font-weight: 600;
+      }
+
+      .profile-description {
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        margin-bottom: 0.8rem;
+        flex-grow: 1;
+      }
+
+      .profile-link {
+        display: inline-block;
+        color: var(--accent-color);
+        text-decoration: none;
+        padding: 0.3rem 0.6rem;
+        border: 1px solid var(--accent-color);
+        border-radius: 0.25rem;
+        transition: all var(--transition-speed);
+        font-size: 0.8rem;
+        margin-top: auto;
+      }
+
+      .profile-link:hover {
+        background-color: var(--accent-color);
+        color: var(--primary-bg);
+      }
+
+      @media (max-width: 768px) {
+        .contact-container {
+          margin-top: 4rem;
+          padding: 0 1rem;
+        }
+
+        .profiles-grid {
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        }
+
+        .profile-card {
+          padding: 0.6rem;
+        }
+
+        .contact-header {
+          padding: 1.5rem 1rem;
+        }
+
+        .contact-title {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </head>
+  <body>
+    <!-- Include Header -->
+    <include src="../assets/components/header.html"></include>
+
+    <main class="contact-container">
+      <header class="contact-header">
+        <h1 class="contact-title">Contacto y Perfiles Profesionales</h1>
+        <p class="contact-subtitle">
+          Conecta conmigo a través de mis perfiles académicos y profesionales
+        </p>
+      </header>
+
+      <section class="profiles-grid">
+        <!-- Google Scholar -->
+        <article class="profile-card">
+          <i class="fa-solid fa-graduation-cap profile-icon"></i>
+          <h2 class="profile-title">Google Scholar</h2>
+          <p class="profile-description">Publicaciones académicas</p>
+          <a
+            href="URL_GOOGLE_SCHOLAR"
+            class="profile-link"
+            target="_blank"
+            rel="noopener"
+            >Ver perfil</a
+          >
+        </article>
+
+        <!-- ORCID -->
+        <article class="profile-card">
+          <i class="fa-brands fa-orcid profile-icon"></i>
+          <h2 class="profile-title">ORCID</h2>
+          <p class="profile-description">Identificador investigador</p>
+          <a
+            href="URL_ORCID"
+            class="profile-link"
+            target="_blank"
+            rel="noopener"
+            >Ver ORCID</a
+          >
+        </article>
+
+        <!-- ResearchGate -->
+        <article class="profile-card">
+          <i class="fa-brands fa-researchgate profile-icon"></i>
+          <h2 class="profile-title">ResearchGate</h2>
+          <p class="profile-description">Red científica</p>
+          <a
+            href="URL_RESEARCHGATE"
+            class="profile-link"
+            target="_blank"
+            rel="noopener"
+            >Ver perfil</a
+          >
+        </article>
+
+        <!-- LinkedIn -->
+        <article class="profile-card">
+          <i class="fa-brands fa-linkedin profile-icon"></i>
+          <h2 class="profile-title">LinkedIn</h2>
+          <p class="profile-description">Perfil profesional</p>
+          <a
+            href="URL_LINKEDIN"
+            class="profile-link"
+            target="_blank"
+            rel="noopener"
+            >Conectar</a
+          >
+        </article>
+
+        <!-- Twitter/X -->
+        <article class="profile-card">
+          <i class="fa-brands fa-x-twitter profile-icon"></i>
+          <h2 class="profile-title">Twitter</h2>
+          <p class="profile-description">Actualidad sanitaria</p>
+          <a
+            href="https://twitter.com/ernestob"
+            class="profile-link"
+            target="_blank"
+            rel="noopener"
+            >Seguir</a
+          >
+        </article>
+
+        <!-- GitHub -->
+        <article class="profile-card">
+          <i class="fa-brands fa-github profile-icon"></i>
+          <h2 class="profile-title">GitHub</h2>
+          <p class="profile-description">Proyectos y recursos</p>
+          <a
+            href="URL_GITHUB"
+            class="profile-link"
+            target="_blank"
+            rel="noopener"
+            >Ver repos</a
+          >
+        </article>
+
+        <!-- Publons -->
+        <article class="profile-card">
+          <i class="fa-solid fa-check-double profile-icon"></i>
+          <h2 class="profile-title">Publons</h2>
+          <p class="profile-description">Revisiones por pares</p>
+          <a
+            href="URL_PUBLONS"
+            class="profile-link"
+            target="_blank"
+            rel="noopener"
+            >Ver perfil</a
+          >
+        </article>
+
+        <!-- Scopus -->
+        <article class="profile-card">
+          <i class="fa-solid fa-book profile-icon"></i>
+          <h2 class="profile-title">Scopus</h2>
+          <p class="profile-description">Perfil bibliométrico</p>
+          <a
+            href="URL_SCOPUS"
+            class="profile-link"
+            target="_blank"
+            rel="noopener"
+            >Ver perfil</a
+          >
+        </article>
+      </section>
+    </main>
+
+    <!-- Include Footer -->
+    <include src="../assets/components/footer.html"></include>
+    <script src="../assets/js/include.js"></script>
+  </body>
+</html>

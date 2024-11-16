@@ -73,13 +73,13 @@
         overflow-x: hidden;
         background-image: linear-gradient(
             90deg,
-            rgba(26, 38, 52, 0.92) 0%,
-            var(--primary-bg) 35%
+            rgba(26, 38, 52, 0.3) 0%,
+            /* Mucho más transparente para debug */ var(--primary-bg) 35%
           ),
-          url("../../assets/images/perfilFondoWeb.jpg");
+          url("https://ernestobarrera.github.io/assets/images/perfilFondoWeb.jpg");
         background-position: left center;
         background-repeat: no-repeat;
-        background-size: 35% 100%;
+        background-size: contain; /* Cambiado de 35% 100% a contain para debug */
       }
 
       /* Navbar Styles */
@@ -366,9 +366,9 @@
         </a>
         <ul class="nav-menu">
           <li><a href="/" class="nav-link">Inicio</a></li>
-          <li><a href="/sobre-mi.html" class="nav-link">Sobre mí</a></li>
+          <li><a href="pages/sobre-mi.html" class="nav-link">Sobre mí</a></li>
           <li><a href="/experiencia.html" class="nav-link">Experiencia</a></li>
-          <li><a href="/contacto.html" class="nav-link">Contacto</a></li>
+          <li><a href="pages/contacto.html" class="nav-link">Contacto</a></li>
         </ul>
         <div class="mobile-menu-button">
           <span></span>
@@ -386,28 +386,16 @@
         <div class="cards-grid">
           <article class="card">
             <div class="card-header">
-              <i class="fa-solid fa-robot card-icon"></i>
-              <h3 class="card-title">ChatGPT en Ciencias de la Salud</h3>
+              <i class="fa-solid fa-toolbox card-icon"></i>
+              <h3 class="card-title">Recursos para Profesionales Sanitarios</h3>
             </div>
             <p class="card-description">
-              Guía práctica sobre el uso de ChatGPT en el ámbito sanitario, con
-              ejemplos y casos de uso.
+              Colección completa de herramientas, guías y recursos para la
+              búsqueda y gestión de información sanitaria.
             </p>
-            <a href="/t/chatgpt_bibliosalud.html" class="card-link"
-              >Ver más →</a
+            <a href="/categorias/herramientas.html" class="card-link"
+              >Explorar recursos →</a
             >
-          </article>
-
-          <article class="card">
-            <div class="card-header">
-              <i class="fa-solid fa-bookmark card-icon"></i>
-              <h3 class="card-title">Recursos para IA en Atención Primaria</h3>
-            </div>
-            <p class="card-description">
-              Materiales y presentaciones sobre la implementación de IA en
-              atención primaria.
-            </p>
-            <a href="/ia/p/record-tutores.html" class="card-link">Explorar →</a>
           </article>
         </div>
       </section>
@@ -454,7 +442,10 @@
     <!-- Footer -->
     <footer class="footer">
       <div class="container">
-        <p>© 2024 Ernesto Barrera - Recursos para Ciencias de la Salud</p>
+        <p>
+          © 2024 - Recursos para la Gestión del Conocimiento en Ciencias de la
+          Salud
+        </p>
       </div>
     </footer>
     <script>
