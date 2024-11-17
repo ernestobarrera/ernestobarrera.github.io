@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Web con recursos para facilitar la búsqueda de información y gestión del conocimiento en Ciencias de la Salud"
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <title>Página de Inicio | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Herramientas para buscar información sanitaria | ​👨‍⚕️ ​@ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria  🔎🩺⚕"
+    />
+    <meta property="og:url" content="https://ernestobarrera.github.io/" />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+    <meta property="article:published_time" content="2021-04-04" />
+    <meta property="article:author" content="https://twitter.com/ernestob" />
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <style>
+      :root {
+        --primary-bg: #1a2634;
+        --secondary-bg: #2c3e50;
+        --accent-color: #ffd700;
+        --text-primary: #ffffff;
+        --text-secondary: #94a3b8;
+        --card-bg: #2a3b4d;
+        --hover-color: #34495e;
+        --transition-speed: 0.3s;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--primary-bg);
+        color: var(--text-primary);
+        line-height: 1.6;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        background-image: linear-gradient(
+            90deg,
+            rgba(26, 38, 52, 0.3) 0%,
+            /* Mucho más transparente para debug */ var(--primary-bg) 35%
+          ),
+          url("https://ernestobarrera.github.io/assets/images/perfilFondoWeb.jpg");
+        background-position: left center;
+        background-repeat: no-repeat;
+        background-size: contain; /* Cambiado de 35% 100% a contain para debug */
+      }
+
+      /* Navbar Styles */
+      .navbar {
+        background-image: linear-gradient(#2c3e50, #425663, #2c3e50);
+        padding: 0.8rem 2rem;
+        position: fixed;
+        width: 100%;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        height: auto;
+      }
+
+      .nav-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        text-decoration: none;
+        color: var(--text-primary);
+        text-shadow: 1px 1px 2px black;
+        transition: color var(--transition-speed);
+      }
+
+      .nav-brand:hover {
+        color: rgba(218, 137, 83, 0.966);
+      }
+
+      .nav-brand img {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+      }
+
+      .nav-menu {
+        display: flex;
+        gap: 2rem;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .nav-link {
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: all var(--transition-speed);
+        text-shadow: 1px 1px 2px black;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+      }
+
+      .nav-link:hover {
+        color: rgba(218, 137, 83, 0.966);
+        transform: translateY(-2px);
+      }
+
+      /* Main Content */
+      .main-container {
+        max-width: 1200px;
+        margin: 5rem auto 2rem;
+        padding: 0 2rem;
+        flex: 1;
+      }
+
+      .section-title {
+        color: var(--accent-color);
+        font-size: 1.3rem;
+        margin: 0.5rem 0 0.5rem;
+        padding-bottom: 0.25rem;
+        border-bottom: 2px solid var(--accent-color);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      /* Cards Grid */
+      .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        padding: 0.25rem;
+      }
+
+      .card {
+        background-color: var(--card-bg);
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        transition: all var(--transition-speed);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: auto;
+        min-height: 105px;
+      }
+
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          45deg,
+          transparent,
+          rgba(255, 255, 255, 0.1),
+          transparent
+        );
+        transform: translateX(-100%);
+        transition: 0.5s;
+      }
+
+      .card:hover::before {
+        transform: translateX(100%);
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .card-icon {
+        color: var(--accent-color);
+        font-size: 1.1rem;
+        transition: transform var(--transition-speed);
+        flex-shrink: 0;
+      }
+
+      .card:hover .card-icon {
+        transform: scale(1.1);
+      }
+
+      .card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        line-height: 1.2;
+      }
+
+      .card-description {
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .card-link {
+        display: inline-flex;
+        align-items: center;
+        color: var(--accent-color);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.85rem;
+        transition: all var(--transition-speed);
+        margin-top: auto;
+      }
+
+      .card-link:hover {
+        transform: translateX(3px);
+        text-decoration: underline;
+      }
+
+      /* Footer */
+      .footer {
+        position: sticky;
+        bottom: 0;
+        width: 100%;
+        background-image: linear-gradient(#2c3e50, #425663);
+        padding: 0.5rem;
+        z-index: 10;
+        margin-top: auto;
+      }
+      .mobile-menu-button {
+        display: none;
+        flex-direction: column;
+        justify-content: space-around;
+        width: 30px;
+        height: 25px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        z-index: 10;
+      }
+
+      .mobile-menu-button span {
+        width: 30px;
+        height: 3px;
+        background: var(--text-primary);
+        border-radius: 10px;
+        transition: all 0.3s linear;
+        position: relative;
+        transform-origin: 1px;
+      }
+      /* Responsive Design */
+
+      @media (max-width: 768px) {
+        .mobile-menu-button {
+          display: flex;
+        }
+
+        .nav-menu {
+          position: fixed;
+          right: -100%;
+          top: 70px;
+          flex-direction: column;
+          background: var(--secondary-bg);
+          width: 100%;
+          text-align: center;
+          transition: 0.3s;
+          box-shadow: 0 10px 27px rgba(0, 0, 0, 0.05);
+          padding: 20px 0;
+        }
+
+        .nav-menu.active {
+          right: 0;
+        }
+        .main-container {
+          max-width: 1400px;
+          width: 95%;
+          margin: 3.5rem auto 1rem;
+          flex: 1;
+        }
+        .cards-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 0.75rem;
+          width: 100%;
+          margin: 0 auto 0.75rem;
+        }
+      }
+
+      /* Custom Link Styles */
+      a[href^="http"]:not(.nav-brand):not(.nav-link):not(.card-link) {
+        background: url(/assets/images/urlIcon.png) no-repeat right center;
+        padding-right: 22px;
+      }
+    </style>
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </head>
+  <body>
+    <!-- Navbar -->
+    <!--  <nav class="navbar">
+      <div class="nav-container">
+        <a href="/" class="nav-brand">
+          <img src="./assets/images/avatar_cabecera.png" alt="Avatar" />
+          <span>Ernesto Barrera</span>
+        </a>
+        <ul class="nav-menu">
+          <li><a href="/" class="nav-link">Inicio</a></li>
+          <li><a href="pages/sobre-mi.html" class="nav-link">Sobre mí</a></li>
+          <li><a href="/experiencia.html" class="nav-link">Experiencia</a></li>
+          <li><a href="pages/contacto.html" class="nav-link">Contacto</a></li>
+        </ul>
+        <div class="mobile-menu-button">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </nav> -->
+    <include src="header.html"></include>
+
+    <!-- Main Content -->
+    <main class="main-container">
+      <!-- Herramientas y Recursos -->
+      <section>
+        <h2 class="section-title">🛠️ Herramientas y Recursos</h2>
+        <div class="cards-grid">
+          <article class="card">
+            <div class="card-header">
+              <i class="fa-solid fa-toolbox card-icon"></i>
+              <h3 class="card-title">Recursos para Profesionales Sanitarios</h3>
+            </div>
+            <p class="card-description">
+              Colección completa de herramientas, guías y recursos para la
+              búsqueda y gestión de información sanitaria.
+            </p>
+            <a href="/categorias/herramientas.html" class="card-link"
+              >Explorar recursos →</a
+            >
+          </article>
+        </div>
+      </section>
+
+      <!-- Presentaciones -->
+      <section>
+        <h2 class="section-title">📊 Presentaciones</h2>
+        <div class="cards-grid">
+          <article class="card">
+            <div class="card-header">
+              <i class="fa-solid fa-presentation card-icon"></i>
+              <h3 class="card-title">IA en Salud</h3>
+            </div>
+            <p class="card-description">
+              Colección de presentaciones sobre inteligencia artificial en el
+              ámbito sanitario.
+            </p>
+            <a href="/ia/p/record-tutores.html" class="card-link"
+              >Ver presentaciones →</a
+            >
+          </article>
+        </div>
+      </section>
+
+      <!-- Artículos y Documentación -->
+      <section>
+        <h2 class="section-title">📚 Artículos y Documentación</h2>
+        <div class="cards-grid">
+          <article class="card">
+            <div class="card-header">
+              <i class="fa-solid fa-file-alt card-icon"></i>
+              <h3 class="card-title">Gestión del Conocimiento</h3>
+            </div>
+            <p class="card-description">
+              Artículos y recursos sobre la gestión eficiente del conocimiento
+              en el ámbito sanitario.
+            </p>
+            <a href="#" class="card-link">Leer más →</a>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          © 2024 - Recursos para la Gestión del Conocimiento en Ciencias de la
+          Salud
+        </p>
+      </div>
+    </footer>
+    <script src="./assets/js/include.js"></script>
+
+    <script>
+      const mobileMenuButton = document.querySelector(".mobile-menu-button");
+      const navMenu = document.querySelector(".nav-menu");
+
+      mobileMenuButton.addEventListener("click", () => {
+        navMenu.classList.toggle("active");
+        // Animar las barras del menú
+        const spans = mobileMenuButton.querySelectorAll("span");
+        spans[0].style.transform =
+          spans[0].style.transform === "rotate(45deg)"
+            ? "rotate(0)"
+            : "rotate(45deg)";
+        spans[1].style.opacity = spans[1].style.opacity === "0" ? "1" : "0";
+        spans[2].style.transform =
+          spans[2].style.transform === "rotate(-45deg)"
+            ? "rotate(0)"
+            : "rotate(-45deg)";
+      });
+    </script>
+  </body>
+</html>

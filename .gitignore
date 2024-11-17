@@ -2,6 +2,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode
 
+# Ignorar carpeta de contenido en construcción y todo su contenido
+en-construccion/**
+
 ### VisualStudioCode ###
 .vscode/*
 !.vscode/tasks.json

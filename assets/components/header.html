@@ -1,3 +1,34 @@
+<!-- Header Template -->
+<nav class="navbar">
+  <div class="nav-container">
+    <a href="./" class="nav-brand">
+      <img src="assets/images/avatar_cabecera.png" alt="Avatar" />
+      <span>Ernesto Barrera</span>
+    </a>
+    <ul class="nav-menu">
+      <li><a href="./" class="nav-link" id="inicio">Inicio</a></li>
+      <li>
+        <a href="recursos.html" class="nav-link" id="recursos">Recursos</a>
+      </li>
+      <li>
+        <a href="presentaciones.html" class="nav-link" id="presentaciones"
+          >Presentaciones</a
+        >
+      </li>
+      <li>
+        <a href="otros-proyectos.html" class="nav-link" id="otros-proyectos"
+          >Otros Proyectos</a
+        >
+      </li>
+    </ul>
+    <button class="mobile-menu-button" aria-label="Menú">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+</nav>
+
 <style>
   :root {
     --primary-bg: #1a2634;
@@ -8,9 +39,9 @@
     --card-bg: #2a3b4d;
     --hover-color: #34495e;
     --transition-speed: 0.3s;
+    --hover-accent: rgba(218, 137, 83, 0.966);
   }
 
-  /* Navbar Styles */
   .navbar {
     background-image: linear-gradient(#2c3e50, #425663, #2c3e50);
     padding: 0.8rem 2rem;
@@ -41,7 +72,7 @@
   }
 
   .nav-brand:hover {
-    color: rgba(218, 137, 83, 0.966);
+    color: var(--hover-accent);
   }
 
   .nav-brand img {
@@ -65,20 +96,20 @@
     text-shadow: 1px 1px 2px black;
     font-weight: 500;
     padding: 0.5rem 1rem;
+    position: relative;
   }
 
   .nav-link.active {
     color: var(--accent-color);
     cursor: default;
-    pointer-events: none; /* Desactiva el enlace */
+    pointer-events: none;
   }
 
   .nav-link:hover {
-    color: rgba(218, 137, 83, 0.966);
+    color: var(--hover-accent);
     transform: translateY(-2px);
   }
 
-  /* Mobile menu button */
   .mobile-menu-button {
     display: none;
     flex-direction: column;
@@ -126,35 +157,6 @@
   }
 </style>
 
-<!-- Header Template -->
-<nav class="navbar">
-  <div class="nav-container">
-    <a href="./" class="nav-brand">
-      <img src="assets/images/avatar_cabecera.png" alt="Avatar" />
-      <span>Ernesto Barrera</span>
-    </a>
-    <ul class="nav-menu">
-      <li><a href="./" class="nav-link" id="inicio">Inicio</a></li>
-      <li>
-        <a href="sobre-mi.html" class="nav-link" id="sobre-mi">Sobre mí</a>
-      </li>
-      <li>
-        <a href="experiencia.html" class="nav-link" id="experiencia"
-          >Experiencia</a
-        >
-      </li>
-      <li>
-        <a href="contacto.html" class="nav-link" id="contacto">Contacto</a>
-      </li>
-    </ul>
-    <button class="mobile-menu-button">
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
-  </div>
-</nav>
-
 <script>
   // Detecta si la página está en la raíz o en un subdirectorio
   const isSubdirectory = window.location.pathname.includes("/pages/");
@@ -192,9 +194,17 @@
   // Mobile Menu Toggle
   const mobileMenuButton = document.querySelector(".mobile-menu-button");
   const navMenu = document.querySelector(".nav-menu");
+
   if (mobileMenuButton && navMenu) {
     mobileMenuButton.addEventListener("click", () => {
       navMenu.classList.toggle("active");
     });
   }
+
+  // Cerrar menú móvil cuando se hace clic en un enlace
+  navMenu.querySelectorAll(".nav-link").forEach((link) => {
+    link.addEventListener("click", () => {
+      navMenu.classList.remove("active");
+    });
+  });
 </script>

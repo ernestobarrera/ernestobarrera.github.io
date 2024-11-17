@@ -44,6 +44,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
     <style>
+      /* Variables base */
       :root {
         --primary-bg: #1a2634;
         --secondary-bg: #2c3e50;
@@ -55,11 +56,13 @@
         --transition-speed: 0.3s;
       }
 
+      /* Reset y estilos base */
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
+
       body {
         font-family: "Inter", sans-serif;
         background-color: var(--primary-bg);
@@ -74,12 +77,12 @@
         background-image: linear-gradient(
             90deg,
             rgba(26, 38, 52, 0.3) 0%,
-            /* Mucho más transparente para debug */ var(--primary-bg) 35%
+            var(--primary-bg) 35%
           ),
           url("https://ernestobarrera.github.io/assets/images/perfilFondoWeb.jpg");
         background-position: left center;
         background-repeat: no-repeat;
-        background-size: contain; /* Cambiado de 35% 100% a contain para debug */
+        background-size: contain;
       }
 
       /* Navbar Styles */
@@ -144,137 +147,199 @@
         transform: translateY(-2px);
       }
 
-      /* Main Content */
-      .main-container {
-        max-width: 1200px;
-        margin: 5rem auto 2rem;
-        padding: 0 2rem;
-        flex: 1;
+      /* Bio Container */
+      .biografy-container {
+        margin-top: 6rem;
+        padding: 2rem;
+        color: var(--text-primary);
+        background-color: var(--primary-bg);
       }
 
-      .section-title {
-        color: var(--accent-color);
-        font-size: 1.3rem;
-        margin: 0.5rem 0 0.5rem;
-        padding-bottom: 0.25rem;
-        border-bottom: 2px solid var(--accent-color);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      /* Cards Grid */
-      .cards-grid {
+      .bio-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-        padding: 0.25rem;
+        grid-template-columns: minmax(250px, 1fr) 3fr;
+        gap: 3rem;
+        max-width: 1200px;
+        margin: 0 auto;
       }
 
-      .card {
-        background-color: var(--card-bg);
-        border-radius: 0.5rem;
-        padding: 0.75rem;
+      /* Bio Left Column */
+      .bio-left {
+        text-align: center;
+      }
+
+      .bio-image {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        margin-bottom: 1.5rem;
+        border: 3px solid var(--accent-color);
+        object-fit: cover;
+      }
+
+      .bio-title {
+        color: var(--text-secondary);
+        margin: 0.5rem 0;
+        font-size: 1.1rem;
+      }
+
+      .bio-institution {
+        color: var(--accent-color);
+        font-size: 0.9rem;
+      }
+
+      /* Social Icons */
+      .social-icons {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .social-icon {
+        color: var(--text-secondary);
+        font-size: 1.5rem;
+        transition: color var(--transition-speed),
+          transform var(--transition-speed);
+        text-decoration: none;
+        line-height: 1;
+        flex: 0 0 auto;
+      }
+
+      .social-icon:hover {
+        color: var(--accent-color);
+        transform: scale(1.2);
+      }
+
+      /* Academic Profiles */
+      .academic-profiles {
+        margin-top: 1rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .profile-grid {
+        display: flex;
+        justify-content: center;
+        gap: 1.25rem;
+        margin: 0 auto;
+        flex-wrap: nowrap;
+      }
+
+      .profile-link {
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 1.1rem;
+        padding: 0.25rem;
+        border-radius: 0.25rem;
         transition: all var(--transition-speed);
         position: relative;
-        overflow: hidden;
         display: flex;
-        flex-direction: column;
-        height: auto;
-        min-height: 105px;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
       }
 
-      .card:hover {
+      .profile-link:hover {
+        color: var(--accent-color);
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       }
 
-      .card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(
-          45deg,
-          transparent,
-          rgba(255, 255, 255, 0.1),
-          transparent
-        );
-        transform: translateX(-100%);
-        transition: 0.5s;
-      }
-
-      .card:hover::before {
-        transform: translateX(100%);
-      }
-
-      .card-header {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.25rem;
-      }
-
-      .card-icon {
-        color: var(--accent-color);
+      .profile-link i {
         font-size: 1.1rem;
-        transition: transform var(--transition-speed);
-        flex-shrink: 0;
       }
 
-      .card:hover .card-icon {
-        transform: scale(1.1);
-      }
-
-      .card-title {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0;
-        line-height: 1.2;
-      }
-
-      .card-description {
+      /* Tooltip */
+      .profile-link:hover::before {
+        content: attr(title);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 0.4rem 0.8rem;
+        background: var(--card-bg);
         color: var(--text-secondary);
-        margin-bottom: 0.5rem;
-        font-size: 0.85rem;
-        line-height: 1.3;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-size: 0.75rem;
+        border-radius: 0.25rem;
+        white-space: nowrap;
+        z-index: 10;
+        opacity: 0.9;
       }
 
-      .card-link {
-        display: inline-flex;
-        align-items: center;
+      /* Bio Right Column */
+      .bio-section {
+        margin-bottom: 2rem;
+      }
+
+      .bio-section h2 {
         color: var(--accent-color);
-        text-decoration: none;
-        font-weight: 500;
-        font-size: 0.85rem;
-        transition: all var(--transition-speed);
-        margin-top: auto;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
       }
 
-      .card-link:hover {
-        transform: translateX(3px);
-        text-decoration: underline;
+      .bio-grid-2col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-top: 2rem;
+      }
+
+      .bio-list {
+        list-style: none;
+        padding: 0;
+      }
+
+      .bio-list li {
+        margin-bottom: 0.5rem;
+        color: var(--text-secondary);
+      }
+
+      .education-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .education-icon {
+        color: var(--accent-color);
+        font-size: 1.2rem;
+      }
+
+      .education-details h3 {
+        font-size: 1rem;
+        margin: 0;
       }
 
       /* Footer */
       .footer {
+        background: linear-gradient(
+          to bottom,
+          rgba(44, 62, 80, 0.8),
+          rgba(44, 62, 80, 0.9)
+        );
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
         position: sticky;
         bottom: 0;
         width: 100%;
-        background-image: linear-gradient(#2c3e50, #425663);
-        padding: 0.5rem;
-        z-index: 10;
+        backdrop-filter: blur(5px);
         margin-top: auto;
       }
+
+      .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      .copyright {
+        opacity: 0.8;
+      }
+
+      /* Mobile Menu Button */
       .mobile-menu-button {
         display: none;
         flex-direction: column;
@@ -297,9 +362,32 @@
         position: relative;
         transform-origin: 1px;
       }
-      /* Responsive Design */
 
+      /* Custom Link Styles */
+      a[href^="http"]:not(.nav-brand):not(.nav-link):not(.card-link):not(
+          .social-icon
+        ):not(.profile-link) {
+        background: url(/assets/images/urlIcon.png) no-repeat right center;
+        padding-right: 22px;
+      }
+
+      /* Responsive Design */
       @media (max-width: 768px) {
+        .biografy-container {
+          padding: 1rem;
+          margin-top: 4rem;
+        }
+
+        .bio-grid {
+          grid-template-columns: 1fr;
+          gap: 2rem;
+        }
+
+        .bio-grid-2col {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+
         .mobile-menu-button {
           display: flex;
         }
@@ -320,25 +408,23 @@
         .nav-menu.active {
           right: 0;
         }
-        .main-container {
-          max-width: 1400px;
-          width: 95%;
-          margin: 3.5rem auto 1rem;
-          flex: 1;
-        }
-        .cards-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 0.75rem;
-          width: 100%;
-          margin: 0 auto 0.75rem;
-        }
-      }
 
-      /* Custom Link Styles */
-      a[href^="http"]:not(.nav-brand):not(.nav-link):not(.card-link) {
-        background: url(/assets/images/urlIcon.png) no-repeat right center;
-        padding-right: 22px;
+        .footer {
+          padding: 0.4rem 0.5rem;
+          font-size: 0.75rem;
+        }
+
+        .profile-link {
+          padding: 0.4rem;
+        }
+
+        .profile-link:hover::before {
+          display: none;
+        }
+
+        .academic-profiles {
+          margin-top: 1rem;
+        }
       }
     </style>
 
@@ -380,72 +466,152 @@
     <include src="header.html"></include>
 
     <!-- Main Content -->
-    <main class="main-container">
-      <!-- Herramientas y Recursos -->
-      <section>
-        <h2 class="section-title">🛠️ Herramientas y Recursos</h2>
-        <div class="cards-grid">
-          <article class="card">
-            <div class="card-header">
-              <i class="fa-solid fa-toolbox card-icon"></i>
-              <h3 class="card-title">Recursos para Profesionales Sanitarios</h3>
-            </div>
-            <p class="card-description">
-              Colección completa de herramientas, guías y recursos para la
-              búsqueda y gestión de información sanitaria.
-            </p>
-            <a href="/categorias/herramientas.html" class="card-link"
-              >Explorar recursos →</a
-            >
-          </article>
-        </div>
-      </section>
+    <main class="main-container biografy-container">
+      <div class="bio-grid">
+        <!-- Columna Izquierda -->
+        <div class="bio-left">
+          <img
+            src="./assets/images/perfilFondoWeb.jpg"
+            alt="Ernesto Barrera"
+            class="bio-image"
+          />
+          <h1>Ernesto Barrera</h1>
+          <p class="bio-title">
+            Especialista en Gestión del Conocimiento en Salud
+          </p>
+          <p class="bio-institution">Comunidad de Madrid</p>
 
-      <!-- Presentaciones -->
-      <section>
-        <h2 class="section-title">📊 Presentaciones</h2>
-        <div class="cards-grid">
-          <article class="card">
-            <div class="card-header">
-              <i class="fa-solid fa-presentation card-icon"></i>
-              <h3 class="card-title">IA en Salud</h3>
-            </div>
-            <p class="card-description">
-              Colección de presentaciones sobre inteligencia artificial en el
-              ámbito sanitario.
-            </p>
-            <a href="/ia/p/record-tutores.html" class="card-link"
-              >Ver presentaciones →</a
+          <!-- Iconos sociales principales -->
+          <div class="social-icons primary-social">
+            <a
+              href="https://www.linkedin.com/in/ernestobarreralinares/"
+              class="social-icon"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-          </article>
-        </div>
-      </section>
+              <i class="fa-brands fa-linkedin"></i>
+            </a>
+            <a
+              href="https://github.com/ernestobarrera"
+              class="social-icon"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <i class="fa-brands fa-github"></i>
+            </a>
+            <a
+              href="https://twitter.com/ernestob"
+              class="social-icon"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <i class="fa-brands fa-x-twitter"></i>
+            </a>
+          </div>
 
-      <!-- Artículos y Documentación -->
-      <section>
-        <h2 class="section-title">📚 Artículos y Documentación</h2>
-        <div class="cards-grid">
-          <article class="card">
-            <div class="card-header">
-              <i class="fa-solid fa-file-alt card-icon"></i>
-              <h3 class="card-title">Gestión del Conocimiento</h3>
+          <!-- Perfiles académicos -->
+          <div class="academic-profiles">
+            <div class="profile-grid">
+              <a
+                href="https://scholar.google.es/citations?user=SBL8CNAAAAAJ&hl=es"
+                class="profile-link"
+                title="Publicaciones académicas"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <i class="fa-solid fa-graduation-cap"></i>
+              </a>
+              <a
+                href="https://orcid.org/0000-0002-9576-6361"
+                class="profile-link"
+                title="Identificador investigador"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <i class="fa-brands fa-orcid"></i>
+              </a>
+              <a
+                href="https://www.researchgate.net/profile/Ernesto-Linares"
+                class="profile-link"
+                title="Red científica"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <i class="fa-brands fa-researchgate"></i>
+              </a>
+              <a
+                href="https://www.instagram.com/my_creative_health/"
+                class="profile-link"
+                title="Actualizaciones y contenido visual"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <i class="fa-brands fa-instagram"></i>
+              </a>
+
+              <a
+                href="https://www.scopus.com/authid/detail.uri?authorId=6506957404"
+                class="profile-link"
+                title="Perfil bibliométrico"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <i class="fa-solid fa-book"></i>
+              </a>
             </div>
-            <p class="card-description">
-              Artículos y recursos sobre la gestión eficiente del conocimiento
-              en el ámbito sanitario.
-            </p>
-            <a href="#" class="card-link">Leer más →</a>
-          </article>
+          </div>
         </div>
-      </section>
+
+        <!-- Columna Derecha -->
+        <div class="bio-right">
+          <section class="bio-section">
+            <h2>Biografía</h2>
+            <p>
+              Formador en gestión del conocimiento y búsqueda de información en
+              el ámbito sanitario, con experiencia en el desarrollo de
+              herramientas y recursos para profesionales de la salud.
+            </p>
+          </section>
+
+          <div class="bio-grid-2col">
+            <section class="bio-section">
+              <h2>Intereses</h2>
+              <ul class="bio-list">
+                <li>Gestión del Conocimiento</li>
+                <li>Inteligencia Artificial en Salud</li>
+                <li>Formación Sanitaria</li>
+                <li>Competencias Informáticas e Informacionales</li>
+                <li>Tecnologías de la Información</li>
+                <li>Farmacoeconomía</li>
+                <li>Gestión Sanitaria</li>
+              </ul>
+            </section>
+
+            <section class="bio-section">
+              <h2>Formación</h2>
+              <div class="education-item">
+                <span class="education-icon">
+                  <i class="fa-solid fa-graduation-cap"></i>
+                </span>
+                <div class="education-details">
+                  <h3>Especialista en Medicina Familiar y Comunitaria</h3>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
     </main>
 
     <!-- Footer -->
     <footer class="footer">
       <div class="container">
         <p>
-          © 2024 - Recursos para la Gestión del Conocimiento en Ciencias de la
-          Salud
+          ©
+          <script>
+            document.write(new Date().getFullYear());
+          </script>
+          - Recursos para la Gestión del Conocimiento en Ciencias de la Salud
         </p>
       </div>
     </footer>
