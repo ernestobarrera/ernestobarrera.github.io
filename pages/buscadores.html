@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+<!-- meta_propio_inicio -->
+<meta name="description" content="Web con recursos para facilitar la búsqueda de información y gestión del conocimiento en Ciencias de la Salud">
+<meta name="author" content="Ernesto Barrera">
+<link rel="icon"  href="https://ernestobarrera.github.io/assets/images/avatar_cabecera.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Herramientas para buscar información sanitaria | ​👨‍⚕️ EB">
+<meta property="og:site_name" content="Recursos para la gestión de información  🔎🩺⚕">
+<meta property="og:url" content="https://ernestobarrera.github.io/">
+<!-- <meta property="og:image" content="https://ernestobarrera.github.io/assets/images/me.png" > -->
+<meta property="article:published_time" content="2023-03-01">
+<meta property="article:author" content="Ernesto Barrera">
+<script src="../assets/js/include.js"></script>
+<!-- fin -->
+    <title> Bookmarklet 🔎Buscadores! | @ernestob </title>
+
+    <link rel="stylesheet" href="../../reveal.js/dist/reveal.css">
+  
+    <!-- tema anterior black -->
+    <link rel="stylesheet" href="../../reveal.js/dist/theme/blood.css" id="theme">
+    <link rel="stylesheet" href="../../reveal.js-plugins/simplemenu/simplemenu.css" id="theme">
+    <link rel="stylesheet" href="../../reveal.js-plugins/highlight/zenburn.css">
+    <link rel="stylesheet" href="../../reveal.js-plugins/chalkboard/style.css">
+    
+    <!-- Animaciones para el plugin appearance https://github.com/Martinomagnifico/reveal.js-appearance-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="../../reveal.js-plugins/appearance/appearance.css">
+
+
+    <script src="../../reveal.js/dist/reveal.js"></script>
+    <script src="../../reveal.js/plugin/markdown/markdown.js"></script>
+    <script src="../../reveal.js/plugin/highlight/highlight.js"></script>
+    <script src="../../reveal.js-plugins/menu/menu.js"></script>
+    <script src="../../reveal.js-plugins/chalkboard/plugin.js"></script>
+    <script src="../../reveal.js-plugins/appearance/appearance.js"></script>
+    <script src="../../reveal.js-plugins/audio-slideshow/plugin.js"></script>
+    <script src="../../reveal.js-plugins/audio-slideshow/RecordRTC.js"></script>
+    <script src="../../reveal.js-plugins/audio-slideshow/recorder.js"></script>
+    <script src="../../reveal.js-plugins/embed-tweet/plugin.js"></script>
+    
+    <!-- Font awesome -->
+    <link rel="stylesheet" href="../../reveal.js-plugins/menu/font-awesome/css/fontawesome.css">
+  
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+     <!-- Estilo personalizado (heredados, valorar cambio a nuevo framework reveal) -->
+  <style>
+    .left {
+      text-align: left; 
+    }
+    .pie {
+      position:absolute !important;
+      bottom:5;}
+      .size-1 {
+      font-size: 32px;
+    }
+    .size {
+      font-size: 26px;
+    }
+      .size0 {
+      font-size: 20px;
+    }
+    .size1 {
+      font-size: 16px;
+    }
+    .size2 {
+      font-size: 14px;
+    }
+    .size3 {
+      font-size: 12px;
+    }
+    .color{
+      color:rgb(255, 191, 71);
+    }
+    .footer {
+  position: absolute; 
+  left: 35%;
+  bottom: 1em;
+}
+.highlighted {
+    background-color: rgba(252, 212, 212, 0.5);
+}
+
+/* ideas animación botón https://webdeasy.de/en/top-css-buttons-en/ */
+
+.glow-on-hover {
+    width: 280px;
+    height: 50px;
+    border: none;
+    outline: none;
+    color: #fff;
+    background: rgb(214, 197, 197);
+    cursor: pointer;
+    position: relative;
+    z-index: 0;
+    border-radius: 8px;
+}
+
+.glow-on-hover:before {
+    content: '';
+    background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+    position: absolute;
+    top: -2px;
+    left:-2px;
+    background-size: 400%;
+    z-index: -1;
+    filter: blur(5px);
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    animation: glowing 20s linear infinite;
+    opacity: 0;
+    transition: opacity .3s ease-in-out;
+    border-radius: 8px;
+}
+
+.glow-on-hover:active {
+    color: #000
+}
+
+.glow-on-hover:active:after {
+    background: transparent;
+}
+
+.glow-on-hover:hover:before {
+    opacity: 1;
+}
+
+.glow-on-hover:after {
+    z-index: -1;
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgb(255, 191, 71);
+    left: 0;
+    top: 0;
+    border-radius: 8px;
+}
+
+@keyframes glowing {
+    0% { background-position: 0 0; }
+    50% { background-position: 400% 0; }
+    100% { background-position: 0 0; }
+}
+.navbar {
+  background-image: linear-gradient(#2c3e50, #425663, #2c3e50);
+  padding: 0.8rem 2rem;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  height: auto;
+}
+
+/* Ajustar el espacio superior para la presentación */
+.reveal {
+  margin-top: 60px; /* Altura del header */
+}
+
+/* Asegurar que los controles de reveal.js estén por encima del header */
+.reveal .controls {
+  z-index: 1001;
+}
+
+/* Ajustes responsivos */
+@media screen and (max-width: 600px) {
+  .reveal {
+    margin-top: 50px;
+  }
+  
+  .navbar {
+    padding: 0.5rem 1rem;
+  }
+}
+  </style>
+  <!--- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-YFKR6RB1ZC');
+</script>
+  </head>
+  <body>
+    <include src="header.html"></include>
+    <div class="reveal">
+      <!--esto parece sería del menú 
+    <div class="menubar">
+      <ul class="menu"></ul>
+  </div> -->
+  <div class="menubar">
+    <ul class="menu">
+      <!-- Here's the menu -->
+      <li><a  href="#/que">Qué es</a></li>
+      <li><a href="#/instalacion">Instalación</a></li>
+     <!--  <li><a href="#/funcionamiento">Funcionamiento</a></li> -->
+     <li><a href="#/descripcion">Descripción</a></li>
+      <!-- <li><a href="#/creditos">Créditos</a></li> -->
+      <li><a href="#/tuopinion">Tu opinión</a></li>
+    </ul>
+  </div>
+  <div class="slides">
+           
+         
+          <!-- presentación con landing y contexto -->
+          <section  data-transition="fade-in fade-out" data-transition-speed="very-slow" id="que" >
+            <section data-audio-text=" Este bookmarklet facilita la búsqueda de información dentro de múltiples páginas web.  Es de especial interés en ciencias de la salud.
+            ¿Para qué lo puedes usar?
+           
+            Presta atención al menú lateral, que puedes mostrar u ocultar pulsando la tecla M;  te llevará a todas las páginas de este sitio web
+            "data-audio-advance="1000">
+            <aside class="notes">
+              Este bookmarklet facilita la búsqueda de información en múltiples páginas web y motores de búsqueda.
+                       Presta atención al menú lateral, que puedes mostrar u ocultar pulsando la tecla M;  te llevará a todas las páginas de este sitio web. 📝
+            </aside>
+            <br>
+            <h5 class="color" style="word-spacing: 20px;"> Bookmarklet 🔎Buscadores!  </h5>
+            <div style="position: absolute;top:300px; width: 30%; right: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.329); color: #fff; padding: 20px; font-size: 20px; text-align: left;">
+             
+              <h3>💡TIP </h3>
+              <p style="color:rgb(253, 215, 1)">Girar la rueda del ratón o pulsar las teclas de flecha del teclado para navegar por otras páginas de esta presentación</p>
+                               
+            </div> 
+              <p class="size color"> Una aplicación para buscar simultáneamente en más de 50 buscadores o páginas web
+           
+              <br >Se instala en 1 segundo</br> Funciona con 1 solo clic 
+              <br>
+           
+              <img style="border: 1px dashed rgb(255, 153, 0);" src="https://ernestobarrera.github.io/assets/images/demo_bookmarklet_buscadores.gif"  height="750" width="1200">
+            
+
+            
+         
+                      </section> 
+                      
+    
+                </section>
+                <section id="instalacion" data-transition-speed="very-slow" id="descripcion" >
+                  <section data-audio-text=" Este botón es el bookmarklet. Puedes instalarlo desde esta pantalla manteniendo el bookmarklet pulsado con el botón izquierdo del ratón y arrastrándolo a la barra de favoritos del navegador. Si estás consultando esta web puedes abrir el bookmarklet desde cualquier dispositivo pulsando sobre el botón"   >
+                   
+                    <br/><br><br> <button type="button" class="glow-on-hover"  
+              
+                    style="background-color:#F0A908;padding:10px 25px 10px 10px;  box-shadow: 2px 2px 3px 1px rgba(255, 251, 251, 0.452)"><a class="size2" href="javascript:/*busca en más de 50 motores de búsqueda de interés sanitario (versión 16 beta)*/
+                    ">🔎</span><span style="color:black;font-size: 25px;">&nbsp;Buscadores V.16*</span></a></button>
+                      <br/>
+                      <div style="position: absolute;top:100px; width: 30%; right: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.329); color: #fff; padding: 10px; font-size: 20px; text-align: left;">
+                        <h3>Instalación del bookmarklet</h3>
+                        <p style="color:rgb(253, 215, 1)">Para instalar pulsa y arrastra este botón a la barra de favoritos del navegador</p>
+                        
+                      </div> 
+          
+                    <p class="size0 color"><br><br><br><br><br><br>Si la barra de favoritos del navegador no está visible, se puede activar mediante la pulsación simultanea de las teclas CONTROL + Mayúsculas + B<br/><br>En dispositivos móviles también se puede usar si se sincronizan los favoritos del navegador (Chrome o Edge)<br/><br>Puedes usar el bookmarklet sin arrastrarlo, pulsando sobre el con el botón izquierdo del ratón</p>
+                    <aside class="notes">
+                      Este botón es el bookmarklet. Puedes instalarlo desde esta pantalla manteniendo el bookmarklet pulsado con el botón izquierdo del ratón y arrastrándolo a la barra de favoritos del navegador. Si estás consultando esta web puedes abrir el bookmarklet desde cualquier dispositivo pulsando sobre el botón
+                    </aside>
+                  </section>
+                  <div style="position: fixed;bottom: 0;  width: 100%; left:20%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0), 0 5px 25px rgba(0, 0, 0, 0); background-color: rgba(0, 0, 0, 0); color: #fff; padding:40px; font-size: 20px; text-align: left;">
+                    <p style="color:rgb(253, 215, 1)">* Versión beta (operativa hasta enero de 2024)</p>
+                </div> 
+                </section> 
+        
+               
+                
+                 <!-- transición no funciona con iframe? -->
+                      
+                      <section data-transition="fade-in fade-out" data-transition-speed="very-slow" id="descripcion" data-background-iframe="https://view.genial.ly/5ba902b9304be1592031172c" data-background-interactive>
+
+                      <h1 style="opacity:0">💡DESCRIPCIÓN </h1>
+                        
+          <div style="position: absolute;top:300px; width: 25%; right: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.329); color: #fff; padding: 20px; font-size: 20px; text-align: left;">
+           
+            <h3>💡TIP </h3>
+            <p style="color:rgb(253, 215, 1)">Pulsa sobre el botón información de cada grupo de buscadores para leer la descripción de los buscadores que agrupa</p>
+                             
+          </div>
+          <!-- <p class="size2 color">Los enlaces visitados cambian de color solo si coinciden los términos de la búsqueda introducida</p> -->
+          
+
+          <aside class="notes">
+            En esta infografía se pueden ver las agrupaciones y buscadores incluidas en la última versión del bookmarklet. Pulsa sobre cada botón de información para saber más acerca de cada grupo ℹ️
+          </aside>
+         
+</section>
+
+                    <section  id="tuopinion" data-transition="fade-in fade-out" data-transition-speed="very-slow ">     
+                      <section data-audio-text=" Esta presentación está desarrollada mediante un marco de  programación por el autor. Contiene elementos dirigidos a optimizar su uso en entornos formativos y facilitar la reutilización docente por parte de los usuarios
+            "data-audio-advance="1000">         
+                   <!--    <h5 class="color" style="word-spacing: 5px;"> Sobre esta web  </h5> -->
+                      <!-- <div style="width: 100%;"> -->
+                       <br>
+                       <br>
+                       <br>
+                       <br>
+                       <div class="size-1 color" style="text-align: center; " >
+                        <p>Si quieres ayudar a mejorar utiliza <a target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLSe0ZjPYr7Tu-5urf9O1mBU4cbuhD_f8BjX4NPo0v6TqKE4RYA/viewform">este formulario para sugerir cambios o comunicar errores</a></p>
+                      <br>
+                       <br>
+                       <br>
+                    </div>
+                      <div class="size-1 color" style="text-align: center; " >
+                        <p>Puedes <a target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLSf-NAai0wUokNb8cVp2sYmqxW1PoLnEnNCQCnCLLHNEgrodpg/viewform?embedded=true">opinar sobre el bookmarklet en esta encuesta</a></p>
+                     
+                    </div>
+                   
+                        <div style="text-align:right; margin-top: 10%;" class="size">
+                        <p> <img  style="position: relative; z-index:5;margin-top:4px; top: 0; left: 0; border: 0;" title="Estoy en Twitter" src="https://ernestobarrera.github.io/assets/images/avatar_cabecera.png"
+                          width="35" height="40">Autor: <a href="https://www.linkedin.com/in/ernestobarreralinares/" style="text-decoration:underline;">Ernesto Barrera  </a></p>
+                      
+                        
+                        <p> Disponible en <a href="https://ernestobarrera.github.io/pages/buscadores.html" style="text-decoration:underline;">https://ernestobarrera.github.io/pages/buscadores.html </a></p>
+                        <p class="size0"> Optimizada para navegación horizontal en dispositivos móviles</p>
+                        <p class="size0">CC BY-SA 3.0   </p>
+                      </div> 
+                      <aside class="notes">
+                        Esta presentación está desarrollada mediante un marco de  programación por el autor. Contiene elementos dirigidos a optimizar su uso en entornos formativos y facilitar la reutilización docente por parte de los usuarios 🧑‍💻🧑‍💻🧑‍💻
+                      </aside>
+                      </section>
+                    </section>
+                  
+                     
+
+                          <!-- retirado x no ajustar -->
+                   <!--  <section id="tuopinion" >    
+                     
+                    <br>
+                      <div style="height: 1000px; border: none; margin: 0; padding: 0;overflow:auto ">
+                        <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSf-NAai0wUokNb8cVp2sYmqxW1PoLnEnNCQCnCLLHNEgrodpg/viewform?embedded=true" style="height: 100%; width: 100%; 
+                        transform: scale(0.8);
+                        transform-origin: 0 0"></iframe>
+                      </div> 
+                     -->
+                      <!-- <div style="width: 100%;"> -->
+                       
+                      
+                       
+                        
+                        
+                      <aside class="notes">
+                        Esta presentación está desarrollada mediante un marco de  programación por el autor. Contiene elementos dirigidos a optimizar su uso en entornos formativos y facilitar la reutilización docente por parte de los usuarios 🧑‍💻🧑‍💻🧑‍💻
+                      </aside>
+                      </section>
+                    </section>
+    </div>
+  
+
+              <script src="../../reveal.js/plugin/notes/notes.js"></script>
+       <script src="../../reveal.js/plugin/"></script>
+ 
+       <script src="../../reveal.js/plugin/zoom/zoom.js"></script>
+ 
+       <script src="../../reveal.js-plugins/simplemenu/simplemenu.js"></script>
+       <script src="../../reveal.js-plugins/fullscreen/plugin.js"></script>
+       <script src="../../reveal.js-plugins/embed-tweet/plugin.js"></script>
+       
+    <script> 
+    	// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+        autoSlide: 0,
+        slideNumber: 'c/t',
+				mouseWheel: true,
+				menu: { // Menu works best with font-awesome installed: sudo apt-get install fonts-font-awesome
+          
+          themes: 
+          [
+         { name: 'Negro', theme: 'reveal.js/dist/theme/black.css' },
+         { name: 'Blanco', theme: 'reveal.js/dist/theme/white.css' },
+         { name: 'Leyenda', theme: 'reveal.js/dist/theme/league.css' },
+         { name: 'Oscuro',  theme: 'reveal.js/dist/theme/black.css'},
+         { name: 'Solar',  theme: 'reveal.js/dist/theme/solarized.css'},
+         { name: 'Sangre',  theme: 'reveal.js/dist/theme/blood.css'},
+         { name: 'Sangre',  theme: 'reveal.js/dist/theme/blood_2.css'},
+         { name: 'Luna',  theme: 'reveal.js/dist/theme/moon.css'},
+         { name: 'Serif',  theme: 'reveal.js/dist/theme/serif.css'},
+         { name: 'Cielo',  theme: 'reveal.js/dist/theme/sky.css'},
+         { name: 'Beige',  theme: 'reveal.js/dist/theme/beige.css'},
+         { name: 'Simple',  theme: 'reveal.js/dist/theme/simple.css'},
+     ],
+          openOnInit: true,
+					transitions: false,
+					markers: true,
+          keyboard: true,
+          useTextContentForMissingTitles: true,
+          titleSelector: 'h1, h2, h3, h4, h5, h6',
+          numbers: true,
+					hideMissingTitles: true,
+          
+					custom: [
+				            /* { title: 'Plugins', icon: '<i class="fa fa-external-link-alt"></i>', src: 'toc.html' }, */
+				            { title: 'Teclas', icon: '<i class="fa fa-info"></i>', src: 'about.html', content:'B: Escribir en pizarra<p>Botón Derecho Ratón: Borrar<p>C: Escribir en la diapositiva<p>SUPR: Borrar dibujo diapo<p>RETROCESO: Borrar todas diapos<p>M: Abrir/cerrar menú<p> F: Pantalla completa<p>V: Pausar presentación<p>A: Escuchar/pausar audio <p>S: Notas y vista de presentador<p>Alt+Botón Izquierdo del Ratón: Zoom' }
+                    
+				        ]       
+				},
+				audio: {
+					prefix: 'chalkboard/../../',
+					suffix: '.ogg',
+					defaultDuration: 5,
+          /* Camila, Sofia, Diego, Luna https://www.voicerss.org/api/ */
+					textToSpeechURL: "https://api.voicerss.org/?key=5d3a06e889ae45cb8f2e4295756bec7e&hl=es-es&v=Sofia&c=ogg&r=0&f=48khz_16bit_stereo&src=",
+					advance: -1,
+					autoplay: false,
+					defaultText: true,
+					playerOpacity: 0.2,
+				},
+        simplemenu: {
+        menuclass: 'menu',
+        activeclass: 'active',
+        activeelement: 'li',
+        selectby: 'id',
+        auto: false
+    },
+				chalkboard: { // font-awesome.min.css must be available
+					src: "../../reveal.js-plugins/chalkboard/chalkboard.json ",
+					storage: "chalkboard-demo",
+					toggleChalkboardButton: { left: "80px" },
+					toggleNotesButton: { left: "130px" },
+					colorButtons: 5
+				},
+        width: "99%",
+        height: "99%",
+        center:true,
+     /* esto daría tiempo en notas orador pero hay algún error  
+      defaultTiming: #{attr 'revealjs_defaulttiming', 600}, */
+        // Specify the total time in seconds that is available to
+        // present.  If this is set to a nonzero value, the pacing
+        // timer will work out the time available for each slide,
+        // instead of using the defaultTiming value
+     
+        backgroundTransition: 'convex',
+        // Transition style for full page slide backgrounds: none/fade/slide/convex/concave/zoom
+        
+        // Global override for preloading lazy-loaded iframes
+        // - null:   Iframes with data-src AND data-preload will be loaded when within
+        //           the viewDistance, iframes with only data-src will be loaded when visible
+        // - true:   All iframes with data-src will be loaded when within the viewDistance
+        // - false:  All iframes with data-src will be loaded only when visible
+        preloadIframes: true,
+        viewDistance: 4,
+        mobileViewDistance: 2,
+        hash: true,
+				plugins: [ RevealMarkdown,RevealAudioSlideshow,RevealMenu,Appearance, RevealZoom, RevealChalkboard,RevealNotes,Simplemenu],
+        /* , RevealHighlight, RevealAudioRecorder, RevealFullscreen,RevealEmbedTweet */
+			});
+
+		function changeTheme(input) {
+			var config = {};
+			config.theme = input.value;
+			Reveal.getPlugin("RevealChalkboard").configure(config);
+			input.blur();
+		}
+    </script>
+   
+
+    <a href="https://twitter.com/ernestob" target="_blank">
+      <img  style="position: relative; z-index:5;margin-top:4px; top: 0; left: 0; border: 0;" title="Estoy en Twitter" src="https://ernestobarrera.github.io/assets/images/avatar_cabecera.png"
+      width="35" height="40">
+        <!--  -->
+      
+    </body>
+  
+</html>

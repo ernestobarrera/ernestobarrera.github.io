@@ -14,8 +14,12 @@
         const path = window.location.pathname;
         console.log('Pathname actual:', path);
 
-        // Limpiamos la ruta de dobles slashes y espacios
-        return 'assets/components/'.replace(/\/+/g, '/').trim();
+        // Versión anterior (comentada por si hay que revertir)
+        // return 'assets/components/'.replace(/\/+/g, '/').trim();
+
+        // Nueva versión: si estamos en /pages/, subimos un nivel
+        // Si no, usamos la ruta desde la raíz
+        return path.includes('/pages/') ? '../assets/components/' : 'assets/components/';
       };
 
       for (const include of includes) {
