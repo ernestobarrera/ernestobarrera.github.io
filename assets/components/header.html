@@ -92,22 +92,33 @@
   .nav-link {
     color: var(--text-secondary);
     text-decoration: none;
-    transition: all var(--transition-speed);
-    text-shadow: 1px 1px 2px black;
     font-weight: 500;
     padding: 0.5rem 1rem;
     position: relative;
   }
 
-  .nav-link.active {
-    color: var(--accent-color);
-    cursor: default;
-    pointer-events: none;
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 50%;
+    background-color: var(--accent-color);
+    transform: translateX(-50%);
+    transition: width 0.3s ease;
   }
 
-  .nav-link:hover {
-    color: var(--hover-accent);
-    transform: translateY(-2px);
+  .nav-link:hover::after {
+    width: 100%;
+  }
+
+  .nav-link.active {
+    color: var(--accent-color);
+  }
+
+  .nav-link.active::after {
+    width: 100%;
   }
 
   .mobile-menu-button {
@@ -158,53 +169,63 @@
 </style>
 
 <script>
-  // Detecta si la página está en la raíz o en un subdirectorio
-  const isSubdirectory = window.location.pathname.includes("/pages/");
+  (() => {
+    // Función para marcar el enlace activo
+    function setActiveLink() {
+      // Obtener la ruta actual y limpiarla
+      const path = window.location.pathname;
+      console.log("Ruta actual:", path); // Para debugging
 
-  // Ajusta las rutas de base para imágenes y enlaces
-  const basePath = isSubdirectory ? "../" : "./";
+      // Buscar todos los enlaces del menú
+      const links = document.querySelectorAll(".nav-link");
 
-  // Ajusta dinámicamente la imagen del logo
-  const brandImage = document.querySelector(".nav-brand img");
-  if (brandImage) {
-    brandImage.src = `${basePath}assets/images/avatar_cabecera.png`;
-  }
+      links.forEach((link) => {
+        // Limpiar cualquier estado activo previo
+        link.classList.remove("active");
 
-  // Ajusta dinámicamente los enlaces del menú
-  const links = document.querySelectorAll(".nav-link");
-  links.forEach((link) => {
-    const href = link.getAttribute("href");
-    if (!href.startsWith("/")) {
-      link.setAttribute("href", `${basePath}pages/${href}`);
+        // Obtener la ruta del enlace
+        const href = link.getAttribute("href");
+
+        // Caso especial para la página de inicio
+        if (path === "/" || path === "/index.html" || path.endsWith("/")) {
+          if (link.id === "inicio") {
+            link.classList.add("active");
+            console.log("Activando inicio"); // Para debugging
+          }
+          return;
+        }
+
+        // Para las demás páginas
+        if (href) {
+          // Remover ./ o ../ del href para comparación
+          const cleanHref = href.replace(/^\.\/|^\.\.\//g, "");
+          const cleanPath = path.split("/").pop();
+
+          if (cleanPath === cleanHref) {
+            link.classList.add("active");
+            console.log("Activando:", cleanHref); // Para debugging
+          }
+        }
+      });
     }
-  });
 
-  // Marca como activa la página actual
-  const currentPage = window.location.pathname;
-  links.forEach((link) => {
-    const linkPath = link.getAttribute("href");
-    if (
-      currentPage.endsWith(linkPath) ||
-      currentPage.endsWith(`${linkPath}/`)
-    ) {
-      link.classList.add("active");
+    // Función para el menú móvil
+    function initMobileMenu() {
+      const button = document.querySelector(".mobile-menu-button");
+      const menu = document.querySelector(".nav-menu");
+
+      if (!button || !menu) return;
+
+      button.addEventListener("click", () => menu.classList.toggle("active"));
+
+      // Cerrar menú al hacer clic en un enlace
+      menu.querySelectorAll(".nav-link").forEach((link) => {
+        link.addEventListener("click", () => menu.classList.remove("active"));
+      });
     }
-  });
 
-  // Mobile Menu Toggle
-  const mobileMenuButton = document.querySelector(".mobile-menu-button");
-  const navMenu = document.querySelector(".nav-menu");
-
-  if (mobileMenuButton && navMenu) {
-    mobileMenuButton.addEventListener("click", () => {
-      navMenu.classList.toggle("active");
-    });
-  }
-
-  // Cerrar menú móvil cuando se hace clic en un enlace
-  navMenu.querySelectorAll(".nav-link").forEach((link) => {
-    link.addEventListener("click", () => {
-      navMenu.classList.remove("active");
-    });
-  });
+    // Inicialización
+    setActiveLink();
+    initMobileMenu();
+  })();
 </script>
