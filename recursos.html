@@ -44,22 +44,70 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
     <style>
+      <!--
+GUÍA DE DISEÑO Y ESTRUCTURA - RECURSOS WEB @ernestob
+
+PRINCIPIOS DE DISEÑO:
+- Una línea por recurso: maximiza eficiencia visual y densidad de información
+- Diseño horizontal de 3 columnas: título+tag | descripción | fecha
+- Contraste alto (WCAG AA): texto blanco sobre fondo azul oscuro (#243447)
+- Elementos interactivos sutiles: hover con sombra y desplazamiento
+- Cards clicables completas con feedback visual (flecha)
+
+ESTRUCTURA DE RECURSOS:
+1. Título sección: define categoría general
+2. Elementos individuales:
+   - Nombre recurso: conciso y descriptivo
+   - Tag: indica tipo (Tool, Framework, etc.)
+   - Descripción: máximo 2 líneas, información esencial
+   - Fecha: mes y año de última actualización
+
+CRITERIOS DE ORDENACIÓN:
+1. Por fecha: más reciente primero
+2. Por relevancia dentro de cada categoría
+3. Agrupación por tipo de recurso cuando sea apropiado
+
+PATRÓN HTML PARA NUEVOS RECURSOS:
+<div class="resource-item">
+    <div class="resource-name">
+        <h3>[Nombre]</h3>
+        <span class="tag">[Tipo]</span>
+    </div>
+    <p class="resource-description">[Descripción breve]</p>
+    <span class="update">[Fecha]</span>
+    <a href="[URL]" class="resource-link" aria-label="Ver [Nombre]"></a>
+</div>
+
+CONSIDERACIONES UX:
+- Mantener consistencia en longitud de descripciones
+- Usar tags consistentes entre recursos similares
+- Preservar jerarquía visual clara
+- Asegurar feedback visual en interacciones
+- Mantener accesibilidad (ARIA labels, contraste)
+
+Este patrón se aplica a todas las páginas de recursos del sitio,
+adaptando categorías y tipos según necesidad pero manteniendo
+la consistencia visual y estructural.
+-->
+      /* Variables base */
       :root {
         --primary-bg: #1a2634;
         --secondary-bg: #2c3e50;
         --accent-color: #ffd700;
         --text-primary: #ffffff;
-        --text-secondary: #94a3b8;
-        --card-bg: #2a3b4d;
-        --hover-color: #34495e;
+        --text-secondary: #e2e8f0;
+        --card-bg: #243447;
+        --hover-color: #2c3e50;
         --transition-speed: 0.3s;
       }
 
+      /* Reset y estilos base */
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
+
       body {
         font-family: "Inter", sans-serif;
         background-color: var(--primary-bg);
@@ -74,12 +122,12 @@
         background-image: linear-gradient(
             90deg,
             rgba(26, 38, 52, 0.3) 0%,
-            /* Mucho más transparente para debug */ var(--primary-bg) 35%
+            var(--primary-bg) 35%
           ),
           url("https://ernestobarrera.github.io/assets/images/perfilFondoWeb.jpg");
         background-position: left center;
         background-repeat: no-repeat;
-        background-size: contain; /* Cambiado de 35% 100% a contain para debug */
+        background-size: contain;
       }
 
       /* Navbar Styles */
@@ -95,7 +143,7 @@
       }
 
       .nav-container {
-        max-width: 1200px;
+        max-width: 1600px;
         margin: 0 auto;
         display: flex;
         justify-content: space-between;
@@ -131,7 +179,7 @@
       }
 
       .nav-link {
-        color: var(--text-secondary);
+        color: var(--text-primary);
         text-decoration: none;
         transition: all var(--transition-speed);
         text-shadow: 1px 1px 2px black;
@@ -144,125 +192,106 @@
         transform: translateY(-2px);
       }
 
-      /* Main Content */
+      /* Main Content y Recursos */
       .main-container {
-        max-width: 1200px;
-        margin: 5rem auto 2rem;
+        max-width: 1600px;
+        margin: 3rem auto;
         padding: 0 2rem;
-        flex: 1;
       }
 
       .section-title {
         color: var(--accent-color);
         font-size: 1.3rem;
-        margin: 0.5rem 0 0.5rem;
-        padding-bottom: 0.25rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
         border-bottom: 2px solid var(--accent-color);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
       }
 
-      /* Cards Grid */
-      .cards-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-        padding: 0.25rem;
-      }
-
-      .card {
-        background-color: var(--card-bg);
-        border-radius: 0.5rem;
-        padding: 0.75rem;
-        transition: all var(--transition-speed);
-        position: relative;
-        overflow: hidden;
+      .resources-list {
         display: flex;
         flex-direction: column;
-        height: auto;
-        min-height: 105px;
+        gap: 0.5rem;
       }
 
-      .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      /* Estilo mejorado para items clicables */
+      .resource-item {
+        display: grid;
+        grid-template-columns: 250px 1fr auto;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 0.75rem 3rem 0.75rem 1.25rem;
+        background: var(--card-bg);
+        border-radius: 0.25rem;
+        border-left: 3px solid var(--accent-color);
+        transition: all 0.2s ease;
+        position: relative;
+        cursor: pointer;
+        color: var(--text-primary);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1);
       }
 
-      .card::before {
-        content: "";
+      .resource-item::after {
+        content: "→";
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(
-          45deg,
-          transparent,
-          rgba(255, 255, 255, 0.1),
-          transparent
-        );
-        transform: translateX(-100%);
-        transition: 0.5s;
+        right: 1.25rem;
+        color: var(--accent-color);
+        opacity: 0;
+        top: 50%;
+        transform: translateY(-50%) translateX(-10px);
+        transition: all 0.2s ease;
       }
 
-      .card:hover::before {
-        transform: translateX(100%);
+      .resource-item:hover {
+        background: var(--hover-color);
+        transform: translateX(2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 6px 16px rgba(0, 0, 0, 0.2);
       }
 
-      .card-header {
+      .resource-item:hover::after {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+      }
+
+      .resource-name {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.25rem;
+        gap: 0.75rem;
       }
 
-      .card-icon {
-        color: var(--accent-color);
-        font-size: 1.1rem;
-        transition: transform var(--transition-speed);
-        flex-shrink: 0;
-      }
-
-      .card:hover .card-icon {
-        transform: scale(1.1);
-      }
-
-      .card-title {
+      .resource-name h3 {
         font-size: 1rem;
-        font-weight: 600;
-        color: var(--text-primary);
         margin: 0;
-        line-height: 1.2;
-      }
-
-      .card-description {
-        color: var(--text-secondary);
-        margin-bottom: 0.5rem;
-        font-size: 0.85rem;
-        line-height: 1.3;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .card-link {
-        display: inline-flex;
-        align-items: center;
-        color: var(--accent-color);
-        text-decoration: none;
+        color: var(--text-primary);
         font-weight: 500;
-        font-size: 0.85rem;
-        transition: all var(--transition-speed);
-        margin-top: auto;
       }
 
-      .card-link:hover {
-        transform: translateX(3px);
-        text-decoration: underline;
+      .tag {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+        background: rgba(255, 215, 0, 0.1);
+        color: var(--accent-color);
+        border-radius: 0.25rem;
+      }
+
+      .resource-description {
+        color: var(--text-primary);
+        opacity: 0.95;
+        font-size: 0.9rem;
+        margin: 0;
+        line-height: 1.4;
+      }
+
+      .update {
+        color: var(--text-primary);
+        opacity: 0.8;
+        font-size: 0.8rem;
+        margin-right: 1rem;
+      }
+
+      .resource-link {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
       }
 
       /* Footer */
@@ -275,6 +304,8 @@
         z-index: 10;
         margin-top: auto;
       }
+
+      /* Mobile Menu Button */
       .mobile-menu-button {
         display: none;
         flex-direction: column;
@@ -297,8 +328,8 @@
         position: relative;
         transform-origin: 1px;
       }
-      /* Responsive Design */
 
+      /* Responsive Design */
       @media (max-width: 768px) {
         .mobile-menu-button {
           display: flex;
@@ -320,23 +351,33 @@
         .nav-menu.active {
           right: 0;
         }
+
         .main-container {
-          max-width: 1400px;
-          width: 95%;
-          margin: 3.5rem auto 1rem;
-          flex: 1;
+          padding: 0 1rem;
         }
-        .cards-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 0.75rem;
-          width: 100%;
-          margin: 0 auto 0.75rem;
+
+        .resource-item {
+          grid-template-columns: 1fr;
+          gap: 0.5rem;
+          padding: 1rem;
+        }
+
+        .update {
+          margin-top: 0.5rem;
+        }
+
+        .resource-item::after {
+          top: 50%;
+          transform: translateY(-50%);
+        }
+
+        .resource-item:hover::after {
+          transform: translateY(-50%);
         }
       }
 
       /* Custom Link Styles */
-      a[href^="http"]:not(.nav-brand):not(.nav-link):not(.card-link) {
+      a[href^="http"]:not(.nav-brand):not(.nav-link):not(.resource-link) {
         background: url(/assets/images/urlIcon.png) no-repeat right center;
         padding-right: 22px;
       }
@@ -381,61 +422,66 @@
 
     <!-- Main Content -->
     <main class="main-container">
-      <!-- Herramientas y Recursos -->
-      <section>
-        <h2 class="section-title">🛠️ Herramientas y Recursos</h2>
-        <div class="cards-grid">
-          <article class="card">
-            <div class="card-header">
-              <i class="fa-solid fa-toolbox card-icon"></i>
-              <h3 class="card-title">Recursos para Profesionales Sanitarios</h3>
-            </div>
-            <p class="card-description">
-              Colección completa de herramientas, guías y recursos para la
-              búsqueda y gestión de información sanitaria.
-            </p>
-            <a href="/categorias/herramientas.html" class="card-link"
-              >Explorar recursos →</a
-            >
-          </article>
-        </div>
-      </section>
+      <section class="resources-section">
+        <h2 class="section-title">🛠️ Recursos y Herramientas</h2>
 
-      <!-- Presentaciones -->
-      <section>
-        <h2 class="section-title">📊 Presentaciones</h2>
-        <div class="cards-grid">
-          <article class="card">
-            <div class="card-header">
-              <i class="fa-solid fa-presentation card-icon"></i>
-              <h3 class="card-title">IA en Salud</h3>
+        <div class="resources-list">
+          <!-- PubMed+ -->
+          <div class="resource-item">
+            <div class="resource-name">
+              <h3>PubMed+</h3>
+              <span class="tag">Tool</span>
             </div>
-            <p class="card-description">
-              Colección de presentaciones sobre inteligencia artificial en el
-              ámbito sanitario.
+            <p class="resource-description">
+              Bookmarklets para optimizar PubMed: filtros rápidos, exportación
+              avanzada y herramientas de análisis bibliométrico.
             </p>
-            <a href="/ia/p/record-tutores.html" class="card-link"
-              >Ver presentaciones →</a
-            >
-          </article>
-        </div>
-      </section>
+            <span class="update">Mar 2024</span>
+            <a
+              href="#"
+              class="resource-link"
+              target="_blank"
+              aria-label="Ver PubMed+"
+            ></a>
+          </div>
 
-      <!-- Artículos y Documentación -->
-      <section>
-        <h2 class="section-title">📚 Artículos y Documentación</h2>
-        <div class="cards-grid">
-          <article class="card">
-            <div class="card-header">
-              <i class="fa-solid fa-file-alt card-icon"></i>
-              <h3 class="card-title">Gestión del Conocimiento</h3>
+          <!-- Health Prompts -->
+          <div class="resource-item">
+            <div class="resource-name">
+              <h3>Health Prompts</h3>
+              <span class="tag">Framework</span>
             </div>
-            <p class="card-description">
-              Artículos y recursos sobre la gestión eficiente del conocimiento
-              en el ámbito sanitario.
+            <p class="resource-description">
+              Framework validado de prompts para IA en entornos clínicos.
+              Optimizado para ChatGPT y Claude.
             </p>
-            <a href="#" class="card-link">Leer más →</a>
-          </article>
+            <span class="update">Feb 2024</span>
+            <a
+              href="#"
+              class="resource-link"
+              target="_blank"
+              aria-label="Ver Health Prompts"
+            ></a>
+          </div>
+
+          <!-- Evidence Check -->
+          <div class="resource-item">
+            <div class="resource-name">
+              <h3>Evidence Check</h3>
+              <span class="tag">Tool</span>
+            </div>
+            <p class="resource-description">
+              Herramienta para evaluación rápida de evidencia científica y
+              análisis de calidad metodológica.
+            </p>
+            <span class="update">Ene 2024</span>
+            <a
+              href="#"
+              class="resource-link"
+              target="_blank"
+              aria-label="Ver Evidence Check"
+            ></a>
+          </div>
         </div>
       </section>
     </main>
