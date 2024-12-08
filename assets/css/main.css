@@ -44,11 +44,18 @@ body {
   margin: 0 auto;
   padding: 0 1rem;
 }
-
 .main-container {
   max-width: 1600px;
   margin: 6rem auto 2rem;
   padding: 0 2rem;
+  width: min(88%, 1600px); /* Usar min() para mayor control */
+}
+
+@media (max-width: 768px) {
+  .main-container {
+    width: 99%; /* Más ancho en móviles */
+    padding: 0 1rem;
+  }
 }
 
 /* Tipografía y encabezados */

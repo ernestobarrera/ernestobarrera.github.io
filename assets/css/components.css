@@ -4,11 +4,6 @@
    =========================================== */
 
 /* Contenedor principal y títulos de sección */
-.main-container {
-  max-width: 1600px;
-  margin: 6rem auto 2rem;
-  padding: 0 2rem;
-}
 
 .section-title {
   color: var(--accent-color);

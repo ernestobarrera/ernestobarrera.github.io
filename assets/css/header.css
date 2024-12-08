@@ -3,16 +3,16 @@
    Estilos principales para la barra de navegación
    =========================================== */
 .navbar {
-  background-color: var(--primary-bg);
+  background-color: rgba(10, 15, 26, 0.98);
   padding: 0.8rem 2rem;
   position: fixed;
   width: 100%;
   top: 0;
   z-index: 1000;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   height: auto;
 }
-
 .nav-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -57,7 +57,7 @@
   font-weight: 500;
   padding: 0.5rem 1rem;
   position: relative;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease; /* Cambiado de solo color a all */
 }
 
 .nav-link::after {
@@ -76,16 +76,29 @@
   width: 100%;
 }
 
+/* Mejoramos el efecto hover */
 .nav-link:hover {
   color: var(--text-primary);
+  transform: translateY(-1px); /* Sutil elevación al hover */
 }
 
 .nav-link.active {
   color: var(--accent-color);
+  text-shadow: 0 0 20px rgba(251, 191, 36, 0.3); /* Sutil glow en el activo */
 }
 
-.nav-link.active::after {
-  width: 100%;
+/* Refinamos el efecto de la línea */
+.nav-link::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px; /* Ajustado para mejor alineación */
+  left: 50%;
+  background-color: var(--accent-color);
+  transform: translateX(-50%);
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.4); /* Glow en la línea */
 }
 
 /* Botón de menú móvil */
