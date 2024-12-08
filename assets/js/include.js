@@ -1,10 +1,75 @@
-// Primero, aseguramos que el script se carga correctamente
+
+/*--
+=====================
+  include.js
+  javascript para la web
+=====================
+*/
+
 (function () {
+  // Función para ejecutar los scripts del header
+  function executeHeaderScripts() {
+    function setActiveLink() {
+      const path = window.location.pathname;
+      const links = document.querySelectorAll(".nav-link");
+
+      links.forEach((link) => {
+        link.classList.remove("active");
+        const href = link.getAttribute("href");
+
+        if (path === "/" || path === "/index.html" || path.endsWith("/")) {
+          if (link.id === "inicio") {
+            link.classList.add("active");
+          }
+          return;
+        }
+
+        if (href) {
+          const cleanHref = href.replace(/^\.\/|^\.\.\//g, "");
+          const cleanPath = path.split("/").pop();
+          if (cleanPath === cleanHref) {
+            link.classList.add("active");
+          }
+        }
+      });
+    }
+
+    function initMobileMenu() {
+      const button = document.querySelector(".mobile-menu-button");
+      const menu = document.querySelector(".nav-menu");
+      const spans = button.querySelectorAll("span");
+
+      if (!button || !menu) return;
+
+      button.addEventListener("click", () => {
+        menu.classList.toggle("active");
+        spans[0].style.transform = menu.classList.contains("active")
+          ? "rotate(45deg)"
+          : "rotate(0)";
+        spans[1].style.opacity = menu.classList.contains("active") ? "0" : "1";
+        spans[2].style.transform = menu.classList.contains("active")
+          ? "rotate(-45deg)"
+          : "rotate(0)";
+      });
+
+      menu.querySelectorAll(".nav-link").forEach((link) => {
+        link.addEventListener("click", () => {
+          menu.classList.remove("active");
+          spans[0].style.transform = "rotate(0)";
+          spans[1].style.opacity = "1";
+          spans[2].style.transform = "rotate(0)";
+        });
+      });
+    }
+
+    setActiveLink();
+    initMobileMenu();
+  }
+
   async function includeHTML() {
     try {
       const includes = document.getElementsByTagName('include');
 
-      // Si no hay elementos include, salimos silenciosamente
       if (!includes || includes.length === 0) {
         console.log('No se encontraron elementos include');
         return;
@@ -13,12 +78,6 @@
       const getBasePath = () => {
         const path = window.location.pathname;
         console.log('Pathname actual:', path);
-
-        // Versión anterior (comentada por si hay que revertir)
-        // return 'assets/components/'.replace(/\/+/g, '/').trim();
-
-        // Nueva versión: si estamos en /pages/, subimos un nivel
-        // Si no, usamos la ruta desde la raíz
         return path.includes('/pages/') ? '../assets/components/' : 'assets/components/';
       };
 
@@ -42,6 +101,11 @@
             const text = await response.text();
             include.insertAdjacentHTML('afterend', text);
             console.log('✅ Cargado correctamente:', fullPath);
+
+            // Ejecutar los scripts después de insertar el contenido
+            if (file === 'header.html') {
+              executeHeaderScripts();
+            }
           } else {
             console.error(`❌ Error ${response.status}:`, fullPath);
             include.insertAdjacentHTML('afterend', `
@@ -73,7 +137,7 @@
     }
   }
 
-  // Función de inicialización con retry
+  // Función de inicialización
   function init() {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', includeHTML);

@@ -1,0 +1,123 @@
+/* ===========================================
+    components.css
+    Componentes de Tarjetas de Recursos
+   =========================================== */
+
+/* Contenedor principal y títulos de sección */
+.main-container {
+  max-width: 1600px;
+  margin: 6rem auto 2rem;
+  padding: 0 2rem;
+}
+
+.section-title {
+  color: var(--accent-color);
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--accent-color);
+}
+
+/* Lista de recursos */
+.resources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.resource-item {
+  display: grid;
+  grid-template-columns: 250px minmax(400px, 1fr) 100px; /* Ajustamos las proporciones */
+  align-items: center;
+  gap: 1rem; /* Reducimos el gap de 1.5rem a 1rem */
+  padding: 0.75rem 2rem 0.75rem 1rem; /* Reducimos el padding horizontal */
+  background: var(--card-bg);
+  border-radius: 0.25rem;
+  border-left: 3px solid var(--accent-color);
+  transition: all 0.2s ease;
+  position: relative;
+  cursor: pointer;
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.resource-item:hover {
+  background: var(--hover-color);
+  transform: translateX(2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.resource-item::after {
+  content: "→";
+  position: absolute;
+  right: 1.25rem;
+  color: var(--accent-color);
+  opacity: 0;
+  top: 50%;
+  transform: translateY(-50%) translateX(-10px);
+  transition: all 0.2s ease;
+}
+
+.resource-item:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Elementos internos de tarjetas */
+.resource-name {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.resource-name h3 {
+  font-size: 1rem;
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.tag {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--accent-color);
+  border-radius: 0.25rem;
+}
+
+.resource-description {
+  color: var(--text-primary);
+  opacity: 0.95;
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.update {
+  color: var(--text-primary);
+  opacity: 0.8;
+  font-size: 0.8rem;
+}
+
+.resource-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Media queries */
+@media (max-width: 768px) {
+  .main-container {
+    padding: 0 1rem;
+    margin-top: 4rem;
+  }
+
+  .resource-item {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 1rem;
+  }
+
+  .update {
+    margin-top: 0.5rem;
+  }
+}
