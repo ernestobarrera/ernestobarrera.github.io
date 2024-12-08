@@ -154,6 +154,7 @@
   align-items: flex-start;
   gap: 1rem;
   margin-bottom: 1rem;
+  margin-top: 2rem;
 }
 
 .education-icon {
@@ -174,6 +175,63 @@ a[href^="http"]:not(.nav-brand):not(.nav-link):not(.card-link):not(
   padding-right: 22px;
 }
 
+/* Nueva sección destacada */
+.featured {
+  background-color: var(--card-bg);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Grid de características */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: var(--secondary-bg);
+  border-radius: 0.5rem;
+  transition: transform var(--transition-speed);
+}
+
+.feature-item:hover {
+  transform: translateY(-2px);
+}
+
+.feature-item i {
+  color: var(--accent-color);
+  font-size: 1.25rem;
+}
+
+/* Tags cloud */
+.tags-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tags-cloud .tag {
+  background-color: var(--card-bg);
+  color: var(--text-secondary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  transition: all var(--transition-speed);
+}
+
+.tags-cloud .tag:hover {
+  background-color: var(--hover-color);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .biografy-container {
@@ -189,6 +247,10 @@ a[href^="http"]:not(.nav-brand):not(.nav-link):not(.card-link):not(
   .bio-grid-2col {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
   }
 
   .profile-link:hover::before {
