@@ -17,169 +17,169 @@
 <!-- <meta property="og:image" content="https://ernestobarrera.github.io/assets/images/me.png" > -->
 <meta property="article:published_time" content="2023-03-01">
 <meta property="article:author" content="Ernesto Barrera">
-<script src="../assets/js/include.js"></script>
+<script src="./assets/js/include.js"></script>
 <!-- fin -->
-    <title> Bookmarklet 🔎Buscadores! | @ernestob </title>
 
-    <link rel="stylesheet" href="../../reveal.js/dist/reveal.css">  
-    <!-- tema anterior black -->
-    <link rel="stylesheet" href="../../reveal.js/dist/theme/blood.css" id="theme">
-    <link rel="stylesheet" href="../../reveal.js-plugins/simplemenu/simplemenu.css" id="theme">
-    <link rel="stylesheet" href="../../reveal.js-plugins/highlight/zenburn.css">
-    <link rel="stylesheet" href="../../reveal.js-plugins/chalkboard/style.css">
-    
-    <!-- Animaciones para el plugin appearance https://github.com/Martinomagnifico/reveal.js-appearance-->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-    <link rel="stylesheet" href="../../reveal.js-plugins/appearance/appearance.css">
+<!-- 1. Primero cargar fuentes -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+<!-- 2. Luego cargar CSS base del proyecto (antes que reveal.js) -->
+<link rel="stylesheet" href="assets/css/main.css" />
+<link rel="stylesheet" href="assets/css/header.css" />
+<link rel="stylesheet" href="assets/css/components.css" />
+
+<!-- 3. Después cargar Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" />
+
+<!-- 4. Finalmente cargar reveal.js y sus plugins -->
+<link rel="stylesheet" href="../reveal.js/dist/reveal.css">  
+<!-- tema anterior black -->
+<link rel="stylesheet" href="../reveal.js/dist/theme/blood.css" id="theme">
+<link rel="stylesheet" href="../reveal.js-plugins/simplemenu/simplemenu.css" id="theme">
+<link rel="stylesheet" href="../reveal.js-plugins/highlight/zenburn.css">
+<link rel="stylesheet" href="../reveal.js-plugins/chalkboard/style.css">
+
+<!-- Animaciones para el plugin appearance https://github.com/Martinomagnifico/reveal.js-appearance-->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<link rel="stylesheet" href="../reveal.js-plugins/appearance/appearance.css">
 
 
-    <script src="../../reveal.js/dist/reveal.js"></script>
-    <script src="../../reveal.js/plugin/markdown/markdown.js"></script>
-    <script src="../../reveal.js/plugin/highlight/highlight.js"></script>
-    <script src="../../reveal.js-plugins/menu/menu.js"></script>
-    <script src="../../reveal.js-plugins/chalkboard/plugin.js"></script>
-    <script src="../../reveal.js-plugins/appearance/appearance.js"></script>
-    <script src="../../reveal.js-plugins/audio-slideshow/plugin.js"></script>
-    <script src="../../reveal.js-plugins/audio-slideshow/RecordRTC.js"></script>
-    <script src="../../reveal.js-plugins/audio-slideshow/recorder.js"></script>
-    <script src="../../reveal.js-plugins/embed-tweet/plugin.js"></script>
-    
-    <!-- Font awesome -->
-    <link rel="stylesheet" href="../../reveal.js-plugins/menu/font-awesome/css/fontawesome.css">
-  
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
+<script src="../reveal.js/dist/reveal.js"></script>
+<script src="../reveal.js/plugin/markdown/markdown.js"></script>
+<script src="../reveal.js/plugin/highlight/highlight.js"></script>
+<script src="../reveal.js-plugins/menu/menu.js"></script>
+<script src="../reveal.js-plugins/chalkboard/plugin.js"></script>
+<script src="../reveal.js-plugins/appearance/appearance.js"></script>
+<script src="../reveal.js-plugins/audio-slideshow/plugin.js"></script>
+<script src="../reveal.js-plugins/audio-slideshow/RecordRTC.js"></script>
+<script src="../reveal.js-plugins/audio-slideshow/recorder.js"></script>
+<script src="../reveal.js-plugins/embed-tweet/plugin.js"></script>
 
-     <!-- Estilo personalizado (heredados, valorar cambio a nuevo framework reveal) -->
-  <style>
-    .left {
-      text-align: left; 
-    }
-    .pie {
-      position:absolute !important;
-      bottom:5;}
-      .size-1 {
-      font-size: 32px;
-    }
-    .size {
-      font-size: 26px;
-    }
-      .size0 {
-      font-size: 20px;
-    }
-    .size1 {
-      font-size: 16px;
-    }
-    .size2 {
-      font-size: 14px;
-    }
-    .size3 {
-      font-size: 12px;
-    }
-    .color{
-      color:rgb(255, 191, 71);
-    }
-    .footer {
-  position: absolute; 
-  left: 35%;
-  bottom: 1em;
+<!-- Font awesome -->
+<link rel="stylesheet" href="../reveal.js-plugins/menu/font-awesome/css/fontawesome.css">
+
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+
+<!-- 5. Mover los estilos específicos de reveal al final -->
+<style>
+  .left {
+    text-align: left; 
+  }
+  .pie {
+    position:absolute !important;
+    bottom:5;}
+    .size-1 {
+    font-size: 32px;
+  }
+  .size {
+    font-size: 26px;
+  }
+    .size0 {
+    font-size: 20px;
+  }
+  .size1 {
+    font-size: 16px;
+  }
+  .size2 {
+    font-size: 14px;
+  }
+  .size3 {
+    font-size: 12px;
+  }
+  .color{
+    color:rgb(255, 191, 71);
+  }
+  .footer {
+position: absolute; 
+left: 35%;
+bottom: 1em;
 }
 .highlighted {
-    background-color: rgba(252, 212, 212, 0.5);
+  background-color: rgba(252, 212, 212, 0.5);
 }
 
 /* ideas animación botón https://webdeasy.de/en/top-css-buttons-en/ */
 
 .glow-on-hover {
-    width: 280px;
-    height: 50px;
-    border: none;
-    outline: none;
-    color: #fff;
-    background: rgb(214, 197, 197);
-    cursor: pointer;
-    position: relative;
-    z-index: 0;
-    border-radius: 8px;
+  width: 280px;
+  height: 50px;
+  border: none;
+  outline: none;
+  color: #fff;
+  background: rgb(214, 197, 197);
+  cursor: pointer;
+  position: relative;
+  z-index: 0;
+  border-radius: 8px;
 }
 
 .glow-on-hover:before {
-    content: '';
-    background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
-    position: absolute;
-    top: -2px;
-    left:-2px;
-    background-size: 400%;
-    z-index: -1;
-    filter: blur(5px);
-    width: calc(100% + 4px);
-    height: calc(100% + 4px);
-    animation: glowing 20s linear infinite;
-    opacity: 0;
-    transition: opacity .3s ease-in-out;
-    border-radius: 8px;
+  content: '';
+  background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+  position: absolute;
+  top: -2px;
+  left:-2px;
+  background-size: 400%;
+  z-index: -1;
+  filter: blur(5px);
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  animation: glowing 20s linear infinite;
+  opacity: 0;
+  transition: opacity .3s ease-in-out;
+  border-radius: 8px;
 }
 
 .glow-on-hover:active {
-    color: #000
+  color: #000
 }
 
 .glow-on-hover:active:after {
-    background: transparent;
+  background: transparent;
 }
 
 .glow-on-hover:hover:before {
-    opacity: 1;
+  opacity: 1;
 }
 
 .glow-on-hover:after {
-    z-index: -1;
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: rgb(255, 191, 71);
-    left: 0;
-    top: 0;
-    border-radius: 8px;
+  z-index: -1;
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgb(255, 191, 71);
+  left: 0;
+  top: 0;
+  border-radius: 8px;
 }
 
 @keyframes glowing {
-    0% { background-position: 0 0; }
-    50% { background-position: 400% 0; }
-    100% { background-position: 0 0; }
+  0% { background-position: 0 0; }
+  50% { background-position: 400% 0; }
+  100% { background-position: 0 0; }
 }
-.navbar {
-  background-image: linear-gradient(#2c3e50, #425663, #2c3e50);
-  padding: 0.8rem 2rem;
-  position: fixed;
-  width: 100%;
-  top: 0;
-  z-index: 1000;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  height: auto;
-}
-
 /* Ajustar el espacio superior para la presentación */
 .reveal {
-  margin-top: 60px; /* Altura del header */
+margin-top: 60px; /* Altura del header */
 }
 
 /* Asegurar que los controles de reveal.js estén por encima del header */
 .reveal .controls {
-  z-index: 1001;
+z-index: 1001;
 }
 
 /* Ajustes responsivos */
 @media screen and (max-width: 600px) {
-  .reveal {
-    margin-top: 50px;
-  }
-  
-  .navbar {
-    padding: 0.5rem 1rem;
-  }
+.reveal {
+  margin-top: 50px;
 }
-  </style>
+
+.navbar {
+  padding: 0.5rem 1rem;
+}
+}
+</style>
   <!--- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"></script>
 <script>
@@ -191,7 +191,7 @@
 </script>
   </head>
   <body>
-    <include src="../components/header.html"></include>
+    <include src="header.html"></include>
     <div class="reveal">
       <!--esto parece sería del menú 
     <div class="menubar">
@@ -264,7 +264,7 @@
                     </aside>
                   </section>
                   <div style="position: fixed;bottom: 0;  width: 100%; left:20%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0), 0 5px 25px rgba(0, 0, 0, 0); background-color: rgba(0, 0, 0, 0); color: #fff; padding:40px; font-size: 20px; text-align: left;">
-                    <p style="color:rgb(253, 215, 1)">* Versión beta (operativa hasta enero de 2024)</p>
+                    <p style="color:rgb(253, 215, 1)">* Versión beta (operativa hasta enero de 2025)</p>
                 </div> 
                 </section> 
         
@@ -316,7 +316,7 @@
                           width="35" height="40">Autor: <a href="https://www.linkedin.com/in/ernestobarreralinares/" style="text-decoration:underline;">Ernesto Barrera  </a></p>
                       
                         
-                        <p> Disponible en <a href="https://ernestobarrera.github.io/pages/buscadores.html" style="text-decoration:underline;">https://ernestobarrera.github.io/pages/buscadores.html </a></p>
+                        <p> Disponible en <a href="https://ernestobarrera.github.io/buscadores.html" style="text-decoration:underline;">https://ernestobarrera.github.io/buscadores.html </a></p>
                         <p class="size0"> Optimizada para navegación horizontal en dispositivos móviles</p>
                         <p class="size0">CC BY-SA 3.0   </p>
                       </div> 
@@ -468,7 +468,6 @@
       <img  style="position: relative; z-index:5;margin-top:4px; top: 0; left: 0; border: 0;" title="Estoy en Twitter" src="https://ernestobarrera.github.io/assets/images/avatar_cabecera.png"
       width="35" height="40">
         <!--  -->
-        <script src="../assets/js/include.js"></script>
 
     </body>
   

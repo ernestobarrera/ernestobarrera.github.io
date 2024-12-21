@@ -1,4 +1,3 @@
-
 /*--
 =====================
   include.js
@@ -25,7 +24,8 @@
         }
 
         if (href) {
-          const cleanHref = href.replace(/^\.\/|^\.\.\//g, "");
+          // Modificar para que ignore el # y cualquier cosa después
+          const cleanHref = href.replace(/^\.\/|^\.\.\//g, "").split("#")[0];
           const cleanPath = path.split("/").pop();
           if (cleanPath === cleanHref) {
             link.classList.add("active");
