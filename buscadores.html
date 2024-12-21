@@ -414,132 +414,95 @@ z-index: 1001;
     	// Full list of configuration options available here:
 			// https://github.com/hakimel/reveal.js#configuration
 			Reveal.initialize({
-    controls: true,
-    progress: true,
-    history: true,
-    center: true,
-    autoSlide: 0,
-    slideNumber: 'c/t',
-    mouseWheel: true,
-    menu: {
-        themes: [
-            { 
-                name: 'Negro', 
-                theme: isLocal ? 'reveal.js/dist/theme/black.css' : 
-                               'https://raw.githubusercontent.com/ernestobarrera/reveal.js/master/dist/theme/black.css' 
-            },
-            { 
-                name: 'Blanco', 
-                theme: isLocal ? 'reveal.js/dist/theme/white.css' : 
-                               'https://raw.githubusercontent.com/ernestobarrera/reveal.js/master/dist/theme/white.css' 
-            },
-            { 
-                name: 'Leyenda', 
-                theme: isLocal ? 'reveal.js/dist/theme/league.css' : 
-                               'https://raw.githubusercontent.com/ernestobarrera/reveal.js/master/dist/theme/league.css' 
-            },
-            { 
-                name: 'Oscuro', 
-                theme: isLocal ? 'reveal.js/dist/theme/black.css' : 
-                               'https://raw.githubusercontent.com/ernestobarrera/reveal.js/master/dist/theme/black.css'
-            },
-            { 
-                name: 'Solar', 
-                theme: isLocal ? 'reveal.js/dist/theme/solarized.css' : 
-                               'https://raw.githubusercontent.com/ernestobarrera/reveal.js/master/dist/theme/solarized.css'
-            },
-            { 
-                name: 'Sangre', 
-                theme: isLocal ? 'reveal.js/dist/theme/blood.css' : 
-                               'https://raw.githubusercontent.com/ernestobarrera/reveal.js/master/dist/theme/blood.css'
-            },
-            { 
-                name: 'Luna', 
-                theme: isLocal ? 'reveal.js/dist/theme/moon.css' : 
-                               'https://raw.githubusercontent.com/ernestobarrera/reveal.js/master/dist/theme/moon.css'
-            },
-            { 
-                name: 'Serif', 
-                theme: isLocal ? 'reveal.js/dist/theme/serif.css' : 
-                               'https://raw.githubusercontent.com/ernestobarrera/reveal.js/master/dist/theme/serif.css'
-            },
-            { 
-                name: 'Cielo', 
-                theme: isLocal ? 'reveal.js/dist/theme/sky.css' : 
-                               'https://raw.githubusercontent.com/ernestobarrera/reveal.js/master/dist/theme/sky.css'
-            },
-            { 
-                name: 'Beige', 
-                theme: isLocal ? 'reveal.js/dist/theme/beige.css' : 
-                               'https://raw.githubusercontent.com/ernestobarrera/reveal.js/master/dist/theme/beige.css'
-            },
-            { 
-                name: 'Simple', 
-                theme: isLocal ? 'reveal.js/dist/theme/simple.css' : 
-                               'https://raw.githubusercontent.com/ernestobarrera/reveal.js/master/dist/theme/simple.css'
-            }
-        ],
-        openOnInit: true,
-        transitions: false,
-        markers: true,
-        keyboard: true,
-        useTextContentForMissingTitles: true,
-        titleSelector: 'h1, h2, h3, h4, h5, h6',
-        numbers: true,
-        hideMissingTitles: true,
-        custom: [
-            {
-                title: 'Teclas',
-                icon: '<i class="fa fa-info"></i>',
-                src: 'about.html',
-                content: 'B: Escribir en pizarra<p>Botón Derecho Ratón: Borrar<p>C: Escribir en la diapositiva<p>SUPR: Borrar dibujo diapo<p>RETROCESO: Borrar todas diapos<p>M: Abrir/cerrar menú<p> F: Pantalla completa<p>V: Pausar presentación<p>A: Escuchar/pasar audio <p>S: Notas y vista de presentador<p>Alt+Botón Izquierdo del Ratón: Zoom'
-            }
-        ]
-    },
-    audio: {
-        prefix: isLocal ? 'chalkboard/../' : 'https://raw.githubusercontent.com/ernestobarrera/reveal.js/master/chalkboard/',
-        suffix: '.ogg',
-        defaultDuration: 5,
-        textToSpeechURL: "https://api.voicerss.org/?key=5d3a06e889ae45cb8f2e4295756bec7e&hl=es-es&v=Sofia&c=ogg&r=0&f=48khz_16bit_stereo&src=",
-        advance: -1,
-        autoplay: false,
-        defaultText: true,
-        playerOpacity: 0.2
-    },
-    simplemenu: {
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+        autoSlide: 0,
+        slideNumber: 'c/t',
+				mouseWheel: true,
+				menu: { // Menu works best with font-awesome installed: sudo apt-get install fonts-font-awesome
+          
+          themes: 
+          [
+         { name: 'Negro', theme: 'reveal.js/dist/theme/black.css' },
+         { name: 'Blanco', theme: 'reveal.js/dist/theme/white.css' },
+         { name: 'Leyenda', theme: 'reveal.js/dist/theme/league.css' },
+         { name: 'Oscuro',  theme: 'reveal.js/dist/theme/black.css'},
+         { name: 'Solar',  theme: 'reveal.js/dist/theme/solarized.css'},
+         { name: 'Sangre',  theme: 'reveal.js/dist/theme/blood.css'},
+         { name: 'Sangre',  theme: 'reveal.js/dist/theme/blood_2.css'},
+         { name: 'Luna',  theme: 'reveal.js/dist/theme/moon.css'},
+         { name: 'Serif',  theme: 'reveal.js/dist/theme/serif.css'},
+         { name: 'Cielo',  theme: 'reveal.js/dist/theme/sky.css'},
+         { name: 'Beige',  theme: 'reveal.js/dist/theme/beige.css'},
+         { name: 'Simple',  theme: 'reveal.js/dist/theme/simple.css'},
+     ],
+          openOnInit: true,
+					transitions: false,
+					markers: true,
+          keyboard: true,
+          useTextContentForMissingTitles: true,
+          titleSelector: 'h1, h2, h3, h4, h5, h6',
+          numbers: true,
+					hideMissingTitles: true,
+          
+					custom: [
+				            /* { title: 'Plugins', icon: '<i class="fa fa-external-link-alt"></i>', src: 'toc.html' }, */
+				            { title: 'Teclas', icon: '<i class="fa fa-info"></i>', src: 'about.html', content:'B: Escribir en pizarra<p>Botón Derecho Ratón: Borrar<p>C: Escribir en la diapositiva<p>SUPR: Borrar dibujo diapo<p>RETROCESO: Borrar todas diapos<p>M: Abrir/cerrar menú<p> F: Pantalla completa<p>V: Pausar presentación<p>A: Escuchar/pasar audio <p>S: Notas y vista de presentador<p>Alt+Botón Izquierdo del Ratón: Zoom' }
+                    
+				        ]       
+				},
+				audio: {
+					prefix: 'chalkboard/../',
+					suffix: '.ogg',
+					defaultDuration: 5,
+          /* Camila, Sofia, Diego, Luna https://www.voicerss.org/api/ */
+					textToSpeechURL: "https://api.voicerss.org/?key=5d3a06e889ae45cb8f2e4295756bec7e&hl=es-es&v=Sofia&c=ogg&r=0&f=48khz_16bit_stereo&src=",
+					advance: -1,
+					autoplay: false,
+					defaultText: true,
+					playerOpacity: 0.2,
+				},
+        simplemenu: {
         menuclass: 'menu',
         activeclass: 'active',
         activeelement: 'li',
         selectby: 'id',
         auto: false
     },
-    chalkboard: {
-        src: isLocal ? "../reveal.js-plugins/chalkboard/chalkboard.json" : 
-                      "https://raw.githubusercontent.com/ernestobarrera/reveal.js-plugins/master/chalkboard/chalkboard.json",
-        storage: "chalkboard-demo",
-        toggleChalkboardButton: { left: "80px" },
-        toggleNotesButton: { left: "130px" },
-        colorButtons: 5
-    },
-    width: "99%",
-    height: "99%",
-    center: true,
-    backgroundTransition: 'convex',
-    preloadIframes: true,
-    viewDistance: 4,
-    mobileViewDistance: 2,
-    hash: true,
-    plugins: [ 
-        RevealMarkdown,
-        RevealAudioSlideshow,
-        RevealMenu,
-        Appearance, 
-        RevealZoom, 
-        RevealChalkboard,
-        RevealNotes,
-        Simplemenu
-    ]
-});
+				chalkboard: { // font-awesome.min.css must be available
+					src: "../../reveal.js-plugins/chalkboard/chalkboard.json ",
+					storage: "chalkboard-demo",
+					toggleChalkboardButton: { left: "80px" },
+					toggleNotesButton: { left: "130px" },
+					colorButtons: 5
+				},
+        width: "99%",
+        height: "99%",
+        center:true,
+     /* esto daría tiempo en notas orador pero hay algún error  
+      defaultTiming: #{attr 'revealjs_defaulttiming', 600}, */
+        // Specify the total time in seconds that is available to
+        // present.  If this is set to a nonzero value, the pacing
+        // timer will work out the time available for each slide,
+        // instead of using the defaultTiming value
+     
+        backgroundTransition: 'convex',
+        // Transition style for full page slide backgrounds: none/fade/slide/convex/concave/zoom
+        
+        // Global override for preloading lazy-loaded iframes
+        // - null:   Iframes with data-src AND data-preload will be loaded when within
+        //           the viewDistance, iframes with only data-src will be loaded when visible
+        // - true:   All iframes with data-src will be loaded when within the viewDistance
+        // - false:  All iframes with data-src will be loaded only when visible
+        preloadIframes: true,
+        viewDistance: 4,
+        mobileViewDistance: 2,
+        hash: true,
+				plugins: [ RevealMarkdown,RevealAudioSlideshow,RevealMenu,Appearance, RevealZoom, RevealChalkboard,RevealNotes,Simplemenu],
+        /* , RevealHighlight, RevealAudioRecorder, RevealFullscreen,RevealEmbedTweet */
+			});
 
 		function changeTheme(input) {
 			var config = {};
