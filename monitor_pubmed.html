@@ -1,0 +1,206 @@
+<!--
+=====================
+  monitor_pubmed.html
+  Página de seguimiento de datos de PubMed en tiempo real
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Estadísticas en tiempo real de PubMed - Análisis de publicaciones científicas en Ciencias de la Salud"
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <title>Estadísticas PubMed | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Estadísticas PubMed en tiempo real | ​👨‍⚕️ ​@ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria  🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/pubmed-stats"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+
+    <!-- CSS específico para la página de estadísticas -->
+    <style>
+      .stats-container {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+
+      .stats-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .stats-title {
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--accent-color);
+      }
+
+      .stats-description {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+      }
+
+      .iframe-container {
+        position: relative;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Contenedor específico para el gráfico */
+      .stats-card:first-child .iframe-container {
+        height: 900px; /* Altura fija para el gráfico */
+      }
+
+      /* Contenedor específico para la tabla de datos */
+      .stats-card:nth-child(2) .iframe-container {
+        height: 390px; /* Altura ajustada para la tabla */
+        width: 600px;
+      }
+
+      .iframe-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      /*  .iframe-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+      } */
+
+      @media (max-width: 768px) {
+        .stats-card {
+          padding: 1rem;
+        }
+
+        .iframe-container {
+          padding-bottom: 75%; /* Ajuste para móviles */
+        }
+      }
+    </style>
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </head>
+  <body>
+    <include src="header.html"></include>
+
+    <!-- Main Content -->
+    <main class="main-container">
+      <div class="stats-container">
+        <section class="stats-card">
+          <h2 class="stats-title">📊 Evolución de Publicaciones en PubMed</h2>
+          <p class="stats-description">
+            Análisis en tiempo real de las tendencias de publicación en PubMed.
+            Este gráfico muestra la evolución temporal de las publicaciones
+            científicas indexadas, permitiendo observar patrones y tendencias en
+            la literatura médica.
+          </p>
+          <div class="iframe-container">
+            <iframe
+              src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQAiaXCj9Y7purHIZE8ggeRoq8nAtzU5wg21Vrn2tfA1EtaCInkP4lY-2eKAbYLt1pNTnxTx_AjmOPC/pubchart?oid=861503756&amp;format=interactive&amp;chrome=false&amp;gridlines=false&amp;headers=false&amp;widget=true"
+              width="100%"
+              height="500"
+              frameborder="0"
+              scrolling="no"
+              style="border: none; overflow: hidden"
+              allowfullscreen
+            >
+            </iframe>
+          </div>
+        </section>
+
+        <section class="stats-card">
+          <h2 class="stats-title">📋 Datos Detallados por Período</h2>
+          <p class="stats-description">
+            Tabla detallada con el desglose de publicaciones por período,
+            mostrando métricas clave y permitiendo un análisis más profundo de
+            los datos de indexación en PubMed.
+          </p>
+          <div class="iframe-container">
+            <iframe
+              src="https://docs.google.com/spreadsheets/d/e/2PACX-1vSPfYbS0A4biTGqAAQElbWlPVu_JwPFITpmeEncKOiVpaL8lrnJy7YkOFh6p0fAtCyJKCci1hqGFC9D/pubhtml?gid=1708114859&amp;single=true&amp;widget=true&amp;headers=false"
+              frameborder="0"
+              allowfullscreen
+            >
+            </iframe>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          © 2024 - Recursos para la Gestión del Conocimiento en Ciencias de la
+          Salud
+        </p>
+      </div>
+    </footer>
+
+    <script src="./assets/js/include.js"></script>
+  </body>
+</html>
