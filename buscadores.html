@@ -11,45 +11,43 @@
   <script>
     // Definir base path
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const basePath = isLocal ? '..' : 'https://raw.githubusercontent.com/ernestobarrera';
 
-    // Crear un MutationObserver para interceptar la adición de elementos
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-                if (node.tagName === 'LINK' || node.tagName === 'SCRIPT') {
-                    adjustPath(node);
-                }
-            });
-        });
-    });
-
-    // Función para ajustar una ruta individual
-    function adjustPath(el) {
-        const attr = el.href ? 'href' : 'src';
-        if (el[attr] && el[attr].includes('reveal.js')) {
-            const newPath = el[attr].replace(
-                'https://ernestobarrera.github.io/reveal.js/', 
-                `${basePath}/reveal.js/`
-            );
-            console.log('Ajustando ruta:', {
-                elemento: el.tagName,
-                antes: el[attr],
-                después: newPath
-            });
-            el[attr] = newPath;
-        }
+    // Función para transformar la URL
+    function transformRevealURL(url) {
+        if (!url || !url.includes('reveal.js')) return url;
+        
+        // Convertir de github.io a raw.githubusercontent.com
+        return url.replace(
+            'https://ernestobarrera.github.io/reveal.js/',
+            'https://raw.githubusercontent.com/ernestobarrera/reveal.js/master/'
+        );
     }
 
-    // Iniciar observación
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true
-    });
+    // Modificar los elementos antes de que se carguen
+    const originalCreateElement = document.createElement;
+    document.createElement = function(tag) {
+        const element = originalCreateElement.call(document, tag);
+        
+        if (tag.toLowerCase() === 'link' || tag.toLowerCase() === 'script') {
+            const originalSetAttribute = element.setAttribute;
+            element.setAttribute = function(name, value) {
+                if (name === 'href' || name === 'src') {
+                    value = transformRevealURL(value);
+                    console.log(`Transformando URL: ${value}`);
+                }
+                return originalSetAttribute.call(this, name, value);
+            };
+        }
+        
+        return element;
+    };
 
-    // También ajustar elementos existentes
+    // También transformar elementos existentes
     document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('link[href*="reveal"], script[src*="reveal"]').forEach(adjustPath);
+        document.querySelectorAll('link[href*="reveal"], script[src*="reveal"]').forEach(el => {
+            const attr = el.href ? 'href' : 'src';
+            el[attr] = transformRevealURL(el[attr]);
+        });
     });
 </script>
 
