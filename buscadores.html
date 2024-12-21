@@ -6,6 +6,36 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
+
+    <script>
+      // Detectar si estamos en local o en GitHub Pages
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const basePath = isLocal ? '..' : 'https://ernestobarrera.github.io';
+
+      // Función para ajustar las rutas
+      function adjustRevealPaths() {
+          document.querySelectorAll('link[href*="reveal"], script[src*="reveal"]').forEach(el => {
+              const attr = el.href ? 'href' : 'src';
+              if (el[attr].startsWith('../')) {
+                  el[attr] = el[attr].replace('../', `${basePath}/`);
+              }
+          });
+      }
+
+      // Ejecutar cuando el DOM esté listo
+      document.addEventListener('DOMContentLoaded', adjustRevealPaths);
+
+      // Verificación de carga
+      window.addEventListener('load', () => {
+          console.log('Entorno:', isLocal ? 'Local' : 'GitHub Pages');
+          console.log('Base Path:', basePath);
+          
+          document.querySelectorAll('link[href*="reveal"], script[src*="reveal"]').forEach(el => {
+              console.log(`✓ ${el.href || el.src}`);
+          });
+      });
+  </script>
+  
 <!-- meta_propio_inicio -->
 <meta name="description" content="Web con recursos para facilitar la búsqueda de información y gestión del conocimiento en Ciencias de la Salud">
 <meta name="author" content="Ernesto Barrera">
