@@ -9,13 +9,43 @@
 
 <!-- Justo después de la apertura del <head> -->
   <script>
-    // Añadir justo después de la apertura del <head>
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     console.log('Entorno:', window.location.hostname);
     
+    function getRevealPath() {
+        if (isLocal) {
+            return '../reveal.js';
+        }
+        return 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js@master';
+    }
+
+    function getPluginsPath() {
+        if (isLocal) {
+            return '../reveal.js-plugins';
+        }
+        return 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js-plugins@master';
+    }
+
+    // Ajustar las rutas cuando el DOM esté listo
     document.addEventListener('DOMContentLoaded', () => {
+        const revealBase = getRevealPath();
+        const pluginsBase = getPluginsPath();
+
         document.querySelectorAll('script[src*="reveal"], link[href*="reveal"]').forEach(el => {
-            console.log('Recurso:', el.src || el.href);
+            const attr = el.src ? 'src' : 'href';
+            const originalPath = el[attr];
+            
+            // Transformar rutas
+            if (originalPath.includes('reveal.js-plugins')) {
+                el[attr] = originalPath.replace('../reveal.js-plugins', pluginsBase);
+            } else if (originalPath.includes('reveal.js')) {
+                el[attr] = originalPath.replace('../reveal.js', revealBase);
+            }
+            
+            console.log('Transformando:', {
+                original: originalPath,
+                nuevo: el[attr]
+            });
         });
     });
 </script>
