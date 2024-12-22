@@ -9,47 +9,17 @@
 
 <!-- Justo después de la apertura del <head> -->
   <script>
+    // Solo necesitamos esta parte si queremos usar CDN en producción
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    console.log('Entorno:', window.location.hostname);
+    const BASE_PATH = isLocal ? '../' : '../';  // Ambos usan la misma ruta relativa ahora
     
-    function getRevealPath() {
-        if (isLocal) {
-            return '../reveal.js';
-        }
-        return 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js@master';
-    }
-
-    function getPluginsPath() {
-        if (isLocal) {
-            return '../reveal.js-plugins';
-        }
-        return 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js-plugins@master';
-    }
-
-    // Ajustar las rutas cuando el DOM esté listo
-    document.addEventListener('DOMContentLoaded', () => {
-        const revealBase = getRevealPath();
-        const pluginsBase = getPluginsPath();
-
-        document.querySelectorAll('script[src*="reveal"], link[href*="reveal"]').forEach(el => {
-            const attr = el.src ? 'src' : 'href';
-            const originalPath = el[attr];
-            
-            // Transformar rutas
-            if (originalPath.includes('reveal.js-plugins')) {
-                el[attr] = originalPath.replace('../reveal.js-plugins', pluginsBase);
-            } else if (originalPath.includes('reveal.js')) {
-                el[attr] = originalPath.replace('../reveal.js', revealBase);
-            }
-            
-            console.log('Transformando:', {
-                original: originalPath,
-                nuevo: el[attr]
-            });
-        });
+    // Log para debugging
+    console.log('Entorno:', {
+        hostname: window.location.hostname,
+        isLocal,
+        basePath: BASE_PATH
     });
 </script>
-
 <!-- meta_propio_inicio -->
 <meta name="description" content="Web con recursos para facilitar la búsqueda de información y gestión del conocimiento en Ciencias de la Salud">
 <meta name="author" content="Ernesto Barrera">
@@ -421,18 +391,18 @@ z-index: 1001;
           
           themes: 
           [
-         { name: 'Negro', theme: 'reveal.js/dist/theme/black.css' },
-         { name: 'Blanco', theme: 'reveal.js/dist/theme/white.css' },
-         { name: 'Leyenda', theme: 'reveal.js/dist/theme/league.css' },
-         { name: 'Oscuro',  theme: 'reveal.js/dist/theme/black.css'},
-         { name: 'Solar',  theme: 'reveal.js/dist/theme/solarized.css'},
-         { name: 'Sangre',  theme: 'reveal.js/dist/theme/blood.css'},
-         { name: 'Sangre',  theme: 'reveal.js/dist/theme/blood_2.css'},
-         { name: 'Luna',  theme: 'reveal.js/dist/theme/moon.css'},
-         { name: 'Serif',  theme: 'reveal.js/dist/theme/serif.css'},
-         { name: 'Cielo',  theme: 'reveal.js/dist/theme/sky.css'},
-         { name: 'Beige',  theme: 'reveal.js/dist/theme/beige.css'},
-         { name: 'Simple',  theme: 'reveal.js/dist/theme/simple.css'},
+         { name: 'Negro', theme: '../reveal.js/dist/theme/black.css' },
+         { name: 'Blanco', theme: '../reveal.js/dist/theme/white.css' },
+         { name: 'Leyenda', theme: '../reveal.js/dist/theme/league.css' },
+         { name: 'Oscuro',  theme: '../reveal.js/dist/theme/black.css'},
+         { name: 'Solar',  theme: '../reveal.js/dist/theme/solarized.css'},
+         { name: 'Sangre',  theme: '../reveal.js/dist/theme/blood.css'},
+         { name: 'Sangre',  theme: '../reveal.js/dist/theme/blood_2.css'},
+         { name: 'Luna',  theme: '../reveal.js/dist/theme/moon.css'},
+         { name: 'Serif',  theme: '../reveal.js/dist/theme/serif.css'},
+         { name: 'Cielo',  theme: '../reveal.js/dist/theme/sky.css'},
+         { name: 'Beige',  theme: '../reveal.js/dist/theme/beige.css'},
+         { name: 'Simple',  theme: '../reveal.js/dist/theme/simple.css'},
      ],
           openOnInit: true,
 					transitions: false,
@@ -468,7 +438,7 @@ z-index: 1001;
         auto: false
     },
 				chalkboard: { // font-awesome.min.css must be available
-					src: "../../reveal.js-plugins/chalkboard/chalkboard.json ",
+					src: "../reveal.js-plugins/chalkboard/chalkboard.json ",
 					storage: "chalkboard-demo",
 					toggleChalkboardButton: { left: "80px" },
 					toggleNotesButton: { left: "130px" },
