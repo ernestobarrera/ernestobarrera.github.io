@@ -57,19 +57,27 @@
             document.head.appendChild(link);
         });
 
-        // Cargar Scripts en orden
-        let promise = Promise.resolve();
-        config.scripts.forEach(script => {
-            promise = promise.then(() => {
-                return new Promise((resolve, reject) => {
-                    const scriptElement = document.createElement('script');
-                    scriptElement.src = (script.base === 'reveal' ? config.revealBase : config.pluginsBase) + script.path;
-                    scriptElement.onload = resolve;
-                    scriptElement.onerror = reject;
-                    document.body.appendChild(scriptElement);
-                });
-            });
+// Cargar Scripts en orden
+let promise = Promise.resolve();
+config.scripts.forEach(script => {
+    promise = promise.then(() => {
+        return new Promise((resolve, reject) => {
+            const scriptElement = document.createElement('script');
+            const url = (script.base === 'reveal' ? config.revealBase : config.pluginsBase) + script.path;
+            console.log('Cargando script:', url);  // Añadimos este log
+            scriptElement.src = url;
+            scriptElement.onload = () => {
+                console.log('Script cargado:', url);  // Añadimos este log
+                resolve();
+            };
+            scriptElement.onerror = (error) => {
+                console.error('Error cargando script:', url, error);  // Añadimos este log
+                reject(error);
+            };
+            document.body.appendChild(scriptElement);
         });
+    });
+});
 
         // Inicializar Reveal.js cuando todo esté cargado
         promise.then(() => {
@@ -420,107 +428,61 @@ z-index: 1001;
 
           
  
-       
-    <script> 
-    	// Full list of configuration options available here:
-			// https://github.com/hakimel/reveal.js#configuration
-			Reveal.initialize({
-		/* 		controls: true,
-				progress: true,
-				history: true,
-				center: true, */
-        autoSlide: 0,
-        slideNumber: 'c/t',
-				mouseWheel: true,
-				menu: { // Menu works best with font-awesome installed: sudo apt-get install fonts-font-awesome
-          
-        themes: [
-                { name: 'Negro', theme: config.revealBase + '/dist/theme/black.css' },
-                { name: 'Blanco', theme: config.revealBase + '/dist/theme/white.css' },
-                { name: 'Leyenda', theme: config.revealBase + '/dist/theme/league.css' },
-                { name: 'Oscuro', theme: config.revealBase + '/dist/theme/black.css'},
-                { name: 'Solar', theme: config.revealBase + '/dist/theme/solarized.css'},
-                { name: 'Sangre', theme: config.revealBase + '/dist/theme/blood.css'},
-                { name: 'Sangre', theme: config.revealBase + '/dist/theme/blood_2.css'},
-                { name: 'Luna', theme: config.revealBase + '/dist/theme/moon.css'},
-                { name: 'Serif', theme: config.revealBase + '/dist/theme/serif.css'},
-                { name: 'Cielo', theme: config.revealBase + '/dist/theme/sky.css'},
-                { name: 'Beige', theme: config.revealBase + '/dist/theme/beige.css'},
-                { name: 'Simple', theme: config.revealBase + '/dist/theme/simple.css'}
-            ],
-          openOnInit: true,
-					transitions: false,
-					markers: true,
-          keyboard: true,
-          useTextContentForMissingTitles: true,
-          titleSelector: 'h1, h2, h3, h4, h5, h6',
-          numbers: true,
-					hideMissingTitles: true,
-          
-					custom: [
-				            /* { title: 'Plugins', icon: '<i class="fa fa-external-link-alt"></i>', src: 'toc.html' }, */
-				            { title: 'Teclas', icon: '<i class="fa fa-info"></i>', src: 'about.html', content:'B: Escribir en pizarra<p>Botón Derecho Ratón: Borrar<p>C: Escribir en la diapositiva<p>SUPR: Borrar dibujo diapo<p>RETROCESO: Borrar todas diapos<p>M: Abrir/cerrar menú<p> F: Pantalla completa<p>V: Pausar presentación<p>A: Escuchar/pasar audio <p>S: Notas y vista de presentador<p>Alt+Botón Izquierdo del Ratón: Zoom' }
-                    
-				        ]       
-				},
-				audio: {
-					prefix: 'chalkboard/../',
-					suffix: '.ogg',
-					defaultDuration: 5,
-          /* Camila, Sofia, Diego, Luna https://www.voicerss.org/api/ */
-					textToSpeechURL: "https://api.voicerss.org/?key=5d3a06e889ae45cb8f2e4295756bec7e&hl=es-es&v=Sofia&c=ogg&r=0&f=48khz_16bit_stereo&src=",
-					advance: -1,
-					autoplay: false,
-					defaultText: true,
-					playerOpacity: 0.2,
-				},
-        simplemenu: {
-        menuclass: 'menu',
-        activeclass: 'active',
-        activeelement: 'li',
-        selectby: 'id',
-        auto: false
-    },
-				chalkboard: { // font-awesome.min.css must be available
-          src: config.pluginsBase + "/chalkboard/chalkboard.json",
-					storage: "chalkboard-demo",
-					toggleChalkboardButton: { left: "80px" },
-					toggleNotesButton: { left: "130px" },
-					colorButtons: 5
-				},
-        width: "99%",
-        height: "99%",
-        center:true,
-     /* esto daría tiempo en notas orador pero hay algún error  
-      defaultTiming: #{attr 'revealjs_defaulttiming', 600}, */
-        // Specify the total time in seconds that is available to
-        // present.  If this is set to a nonzero value, the pacing
-        // timer will work out the time available for each slide,
-        // instead of using the defaultTiming value
-     
-        backgroundTransition: 'convex',
-        // Transition style for full page slide backgrounds: none/fade/slide/convex/concave/zoom
-        
-        // Global override for preloading lazy-loaded iframes
-        // - null:   Iframes with data-src AND data-preload will be loaded when within
-        //           the viewDistance, iframes with only data-src will be loaded when visible
-        // - true:   All iframes with data-src will be loaded when within the viewDistance
-        // - false:  All iframes with data-src will be loaded only when visible
-        preloadIframes: true,
-        viewDistance: 4,
-        mobileViewDistance: 2,
-        hash: true,
-				plugins: [ RevealMarkdown,RevealAudioSlideshow,RevealMenu,Appearance, RevealZoom, RevealChalkboard,RevealNotes,Simplemenu],
-        /* , RevealHighlight, RevealAudioRecorder, RevealFullscreen,RevealEmbedTweet */
-			});
-
-		function changeTheme(input) {
-			var config = {};
-			config.theme = input.value;
-			Reveal.getPlugin("RevealChalkboard").configure(config);
-			input.blur();
-		}
-    </script>
+    <script>
+      // Esperamos a que todos los recursos estén cargados
+      document.addEventListener('DOMContentLoaded', () => {
+          // Esperamos un poco más para asegurar que los plugins estén disponibles
+          setTimeout(() => {
+              console.log('Estado de plugins después de carga:', {
+                  RevealMarkdown: typeof RevealMarkdown,
+                  RevealAudioSlideshow: typeof RevealAudioSlideshow,
+                  RevealMenu: typeof RevealMenu,
+                  Appearance: typeof Appearance,
+                  RevealZoom: typeof RevealZoom,
+                  RevealChalkboard: typeof RevealChalkboard,
+                  RevealNotes: typeof RevealNotes,
+                  Simplemenu: typeof Simplemenu
+              });
+  
+              Reveal.initialize({
+                  // Tu configuración actual...
+                  controls: true,
+                  progress: true,
+                  history: true,
+                  center: true,
+                  autoSlide: 0,
+                  slideNumber: 'c/t',
+                  mouseWheel: true,
+                  menu: {
+                      // ... tu configuración del menú ...
+                      themes: [
+                          { name: 'Negro', theme: config.revealBase + '/dist/theme/black.css' },
+                          // ... resto de tus temas ...
+                      ],
+                      // ... resto de configuración del menú ...
+                  },
+                  // ... resto de tu configuración ...
+                  plugins: [
+                      typeof RevealMarkdown !== 'undefined' ? RevealMarkdown : null,
+                      typeof RevealAudioSlideshow !== 'undefined' ? RevealAudioSlideshow : null,
+                      typeof RevealMenu !== 'undefined' ? RevealMenu : null,
+                      typeof Appearance !== 'undefined' ? Appearance : null,
+                      typeof RevealZoom !== 'undefined' ? RevealZoom : null,
+                      typeof RevealChalkboard !== 'undefined' ? RevealChalkboard : null,
+                      typeof RevealNotes !== 'undefined' ? RevealNotes : null,
+                      typeof Simplemenu !== 'undefined' ? Simplemenu : null
+                  ].filter(plugin => plugin !== null)
+              });
+          }, 1000); // Esperar 1 segundo
+      });
+  
+      function changeTheme(input) {
+          var config = {};
+          config.theme = input.value;
+          Reveal.getPlugin("RevealChalkboard").configure(config);
+          input.blur();
+      }
+  </script>
    
 
     <a href="https://twitter.com/ernestob" target="_blank">
