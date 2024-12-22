@@ -1,31 +1,44 @@
-<style>
-  /* Footer styles */
-  .footer {
-    position: sticky;
-    bottom: 0;
-    width: 100%;
-    background-image: linear-gradient(#2c3e50, #425663);
-    padding: 0.5rem;
-    z-index: 10;
-    margin-top: auto;
-  }
-
-  /* Esto es lo que faltaba! */
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem;
-  }
-</style>
-
+<!--
+=====================
+  footer.html
+  pie de página
+=====================
+-->
 <footer class="footer">
-  <div class="container">
-    <p>
-      ©
-      <script>
-        document.write(new Date().getFullYear());
-      </script>
-      - Recursos para la Gestión del Conocimiento en Ciencias de la Salud
-    </p>
+  <div class="footer-container">
+    <div class="footer-content">
+      <div class="footer-copyright">
+        <p>
+          © <span class="current-year"></span> - Recursos para la Gestión del
+          Conocimiento en Ciencias de la Salud
+        </p>
+      </div>
+      <div class="footer-social">
+        <a
+          href="https://www.linkedin.com/in/ernestobarreralinares/"
+          title="LinkedIn"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <i class="fa-brands fa-linkedin"></i>
+        </a>
+        <a
+          href="https://github.com/ernestobarrera"
+          title="GitHub"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <i class="fa-brands fa-github"></i>
+        </a>
+        <a
+          href="https://twitter.com/ernestob"
+          title="Twitter"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <i class="fa-brands fa-x-twitter"></i>
+        </a>
+      </div>
+    </div>
   </div>
 </footer>

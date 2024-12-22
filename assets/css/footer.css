@@ -1,0 +1,67 @@
+/* ===========================================
+   footer.css
+   Estilos para el pie de página
+   =========================================== */
+
+.footer {
+  position: relative;
+  width: 100%;
+  background-image: linear-gradient(
+    var(--primary-bg),
+    var(--secondary-bg)
+  ); /* Color más oscuro como la cabecera */
+  padding: 0.5rem 0;
+  margin-top: auto; /* esto mantiene el footer al final */
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-copyright p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.footer-social {
+  display: flex;
+  gap: 1rem;
+}
+
+.footer-social a {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.footer-social a:hover {
+  color: var(--accent-color);
+  transform: translateY(-2px);
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+  }
+
+  .footer-copyright p {
+    margin-bottom: 0.5rem;
+  }
+
+  .footer-social {
+    justify-content: center;
+  }
+}
