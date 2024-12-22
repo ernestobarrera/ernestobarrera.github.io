@@ -8,16 +8,47 @@
     />
 
 <!-- Justo después de la apertura del <head> -->
+<!-- Agregar al principio del <head> -->
   <script>
-    // Solo necesitamos esta parte si queremos usar CDN en producción
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const BASE_PATH = isLocal ? '../' : '../';  // Ambos usan la misma ruta relativa ahora
+    console.log('Entorno:', window.location.hostname);
     
-    // Log para debugging
-    console.log('Entorno:', {
-        hostname: window.location.hostname,
-        isLocal,
-        basePath: BASE_PATH
+    function getRevealPath() {
+        if (isLocal) {
+            return '../reveal.js';
+        }
+        return 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js@master';
+    }
+
+    function getPluginsPath() {
+        if (isLocal) {
+            return '../reveal.js-plugins';
+        }
+        return 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js-plugins@master';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const revealBase = getRevealPath();
+        const pluginsBase = getPluginsPath();
+
+        document.querySelectorAll('script[src*="reveal"], link[href*="reveal"]').forEach(el => {
+            const attr = el.src ? 'src' : 'href';
+            const originalPath = el[attr];
+            
+            // Transformar rutas
+            if (originalPath.includes('reveal.js-plugins')) {
+                el[attr] = originalPath.replace('../reveal.js-plugins', pluginsBase);
+            } else if (originalPath.includes('reveal.js')) {
+                el[attr] = originalPath.replace('../reveal.js', revealBase);
+            } else if (originalPath.includes('reveal.js/')) {
+                el[attr] = originalPath.replace('reveal.js/', `${revealBase}/`);
+            }
+            
+            console.log('Transformando:', {
+                original: originalPath,
+                nuevo: el[attr]
+            });
+        });
     });
 </script>
 <!-- meta_propio_inicio -->
