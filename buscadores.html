@@ -77,7 +77,9 @@
                 // Tu configuración actual de Reveal.js
                 controls: true,
                 progress: true,
-                // ... resto de tu configuración ...
+                history: true,
+                center: true
+
             });
         }).catch(error => {
             console.error('Error cargando recursos:', error);
@@ -423,30 +425,29 @@ z-index: 1001;
     	// Full list of configuration options available here:
 			// https://github.com/hakimel/reveal.js#configuration
 			Reveal.initialize({
-				controls: true,
+		/* 		controls: true,
 				progress: true,
 				history: true,
-				center: true,
+				center: true, */
         autoSlide: 0,
         slideNumber: 'c/t',
 				mouseWheel: true,
 				menu: { // Menu works best with font-awesome installed: sudo apt-get install fonts-font-awesome
           
-          themes: 
-          [
-         { name: 'Negro', theme: '../reveal.js/dist/theme/black.css' },
-         { name: 'Blanco', theme: '../reveal.js/dist/theme/white.css' },
-         { name: 'Leyenda', theme: '../reveal.js/dist/theme/league.css' },
-         { name: 'Oscuro',  theme: '../reveal.js/dist/theme/black.css'},
-         { name: 'Solar',  theme: '../reveal.js/dist/theme/solarized.css'},
-         { name: 'Sangre',  theme: '../reveal.js/dist/theme/blood.css'},
-         { name: 'Sangre',  theme: '../reveal.js/dist/theme/blood_2.css'},
-         { name: 'Luna',  theme: '../reveal.js/dist/theme/moon.css'},
-         { name: 'Serif',  theme: '../reveal.js/dist/theme/serif.css'},
-         { name: 'Cielo',  theme: '../reveal.js/dist/theme/sky.css'},
-         { name: 'Beige',  theme: '../reveal.js/dist/theme/beige.css'},
-         { name: 'Simple',  theme: '../reveal.js/dist/theme/simple.css'},
-     ],
+        themes: [
+                { name: 'Negro', theme: config.revealBase + '/dist/theme/black.css' },
+                { name: 'Blanco', theme: config.revealBase + '/dist/theme/white.css' },
+                { name: 'Leyenda', theme: config.revealBase + '/dist/theme/league.css' },
+                { name: 'Oscuro', theme: config.revealBase + '/dist/theme/black.css'},
+                { name: 'Solar', theme: config.revealBase + '/dist/theme/solarized.css'},
+                { name: 'Sangre', theme: config.revealBase + '/dist/theme/blood.css'},
+                { name: 'Sangre', theme: config.revealBase + '/dist/theme/blood_2.css'},
+                { name: 'Luna', theme: config.revealBase + '/dist/theme/moon.css'},
+                { name: 'Serif', theme: config.revealBase + '/dist/theme/serif.css'},
+                { name: 'Cielo', theme: config.revealBase + '/dist/theme/sky.css'},
+                { name: 'Beige', theme: config.revealBase + '/dist/theme/beige.css'},
+                { name: 'Simple', theme: config.revealBase + '/dist/theme/simple.css'}
+            ],
           openOnInit: true,
 					transitions: false,
 					markers: true,
@@ -481,7 +482,7 @@ z-index: 1001;
         auto: false
     },
 				chalkboard: { // font-awesome.min.css must be available
-					src: "../reveal.js-plugins/chalkboard/chalkboard.json ",
+          src: config.pluginsBase + "/chalkboard/chalkboard.json",
 					storage: "chalkboard-demo",
 					toggleChalkboardButton: { left: "80px" },
 					toggleNotesButton: { left: "130px" },
