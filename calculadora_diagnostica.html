@@ -53,9 +53,13 @@
     <!-- CSS específico para la calculadora -->
     <style>
       .calculator-container {
-        max-width: 100%;
-        margin: 1rem auto;
-        padding: 0 1rem;
+        width: 100%;
+        max-width: 1200px; /* Ancho máximo para la calculadora */
+        margin: 2rem auto; /* Centrado y espacio vertical */
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
 
       .calculator-card {
@@ -101,13 +105,23 @@
       }
 
       @media (max-width: 768px) {
-        .calculator-card {
-          padding: 1rem;
+        .calculator-container {
+          padding: 0.1rem;
+          margin: 1rem auto;
         }
 
-        .iframe-container {
-          height: calc(100vh - 200px);
-          min-height: 400px;
+        .calculator-card {
+          padding: 0.1rem;
+        }
+      }
+      @media (max-width: 480px) {
+        .calculator-container {
+          padding: 0.1rem;
+        }
+
+        .calculator-card {
+          border-radius: 8px;
+          padding: 0.1rem;
         }
       }
     </style>
@@ -133,15 +147,16 @@
     <main class="main-container">
       <div class="calculator-container">
         <section class="calculator-card">
-          <h2 class="calculator-title">🧮 Calculadora Sanitaria</h2>
+          <h2 class="calculator-title">🧮 Calculadora Diagnóstica</h2>
           <p class="calculator-description">
-            Herramienta interactiva para cálculos y análisis en el ámbito
-            sanitario. Utilice esta calculadora para realizar estimaciones y
-            cálculos específicos del sector salud.
+            Herramienta interactiva para interpretar los resultados de las
+            pruebas diagnósticas a partir de su prevalencia, sensibilidad y
+            especificidad (método 1). También se puede utilizar con los datos de
+            los resultados de las pruebas en cada grupo (método 2)
           </p>
           <div class="iframe-container">
             <iframe
-              src="https://onedrive.live.com/embed?resid=42C1E8FB5F981E15%211085&authkey=%21ADgiktbVCQiPRuY&em=2&AllowTyping=True&ActiveCell='1'!E9&Item='1'!B1%3AO100&wdHideGridlines=True&wdInConfigurator=True&wdInConfigurator=True"
+              src="https://onedrive.live.com/embed?resid=42C1E8FB5F981E15%211085&authkey=%21ADgiktbVCQiPRuY&em=2&AllowTyping=True&ActiveCell='1'!E9&Item='1'!B1%3AP100&wdHideGridlines=True&wdInConfigurator=True&wdInConfigurator=True"
               frameborder="0"
               scrolling="no"
               allowfullscreen
