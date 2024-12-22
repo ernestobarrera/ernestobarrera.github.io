@@ -15,12 +15,12 @@
         isLocal: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
         
         get revealBase() {
-            return this.isLocal ? '../reveal.js' : 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js@master';
-        },
-        
-        get pluginsBase() {
-            return this.isLocal ? '../reveal.js-plugins' : 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js-plugins@master';
-        },
+    return this.isLocal ? '../reveal.js' : 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js@main';
+},
+
+get pluginsBase() {
+    return this.isLocal ? '../reveal.js-plugins' : 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js-plugins@main';
+},
 
         // Recursos CSS a cargar
         stylesheets: [
