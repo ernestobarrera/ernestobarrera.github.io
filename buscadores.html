@@ -10,46 +10,82 @@
 <!-- Justo después de la apertura del <head> -->
 <!-- Agregar al principio del <head> -->
   <script>
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    console.log('Entorno:', window.location.hostname);
-    
-    function getRevealPath() {
-        if (isLocal) {
-            return '../reveal.js';
-        }
-        return 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js@master';
-    }
+    // Configuración de rutas
+    const config = {
+        isLocal: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
+        
+        get revealBase() {
+            return this.isLocal ? '../reveal.js' : 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js@master';
+        },
+        
+        get pluginsBase() {
+            return this.isLocal ? '../reveal.js-plugins' : 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js-plugins@master';
+        },
 
-    function getPluginsPath() {
-        if (isLocal) {
-            return '../reveal.js-plugins';
-        }
-        return 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js-plugins@master';
-    }
+        // Recursos CSS a cargar
+        stylesheets: [
+            { path: '/dist/reveal.css', base: 'reveal' },
+            { path: '/dist/theme/blood.css', base: 'reveal' },
+            { path: '/simplemenu/simplemenu.css', base: 'plugins' },
+            { path: '/highlight/zenburn.css', base: 'plugins' },
+            { path: '/chalkboard/style.css', base: 'plugins' },
+            { path: '/appearance/appearance.css', base: 'plugins' }
+        ],
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const revealBase = getRevealPath();
-        const pluginsBase = getPluginsPath();
+        // Scripts a cargar en orden
+        scripts: [
+            { path: '/dist/reveal.js', base: 'reveal' },
+            { path: '/plugin/markdown/markdown.js', base: 'reveal' },
+            { path: '/plugin/highlight/highlight.js', base: 'reveal' },
+            { path: '/menu/menu.js', base: 'plugins' },
+            { path: '/chalkboard/plugin.js', base: 'plugins' },
+            { path: '/appearance/appearance.js', base: 'plugins' },
+            { path: '/audio-slideshow/plugin.js', base: 'plugins' },
+            { path: '/audio-slideshow/RecordRTC.js', base: 'plugins' },
+            { path: '/audio-slideshow/recorder.js', base: 'plugins' },
+            { path: '/embed-tweet/plugin.js', base: 'plugins' }
+        ]
+    };
 
-        document.querySelectorAll('script[src*="reveal"], link[href*="reveal"]').forEach(el => {
-            const attr = el.src ? 'src' : 'href';
-            const originalPath = el[attr];
-            
-            // Transformar rutas
-            if (originalPath.includes('reveal.js-plugins')) {
-                el[attr] = originalPath.replace('../reveal.js-plugins', pluginsBase);
-            } else if (originalPath.includes('reveal.js')) {
-                el[attr] = originalPath.replace('../reveal.js', revealBase);
-            } else if (originalPath.includes('reveal.js/')) {
-                el[attr] = originalPath.replace('reveal.js/', `${revealBase}/`);
-            }
-            
-            console.log('Transformando:', {
-                original: originalPath,
-                nuevo: el[attr]
+    // Función para cargar recursos
+    function loadResources() {
+        // Cargar CSS
+        config.stylesheets.forEach(stylesheet => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = (stylesheet.base === 'reveal' ? config.revealBase : config.pluginsBase) + stylesheet.path;
+            document.head.appendChild(link);
+        });
+
+        // Cargar Scripts en orden
+        let promise = Promise.resolve();
+        config.scripts.forEach(script => {
+            promise = promise.then(() => {
+                return new Promise((resolve, reject) => {
+                    const scriptElement = document.createElement('script');
+                    scriptElement.src = (script.base === 'reveal' ? config.revealBase : config.pluginsBase) + script.path;
+                    scriptElement.onload = resolve;
+                    scriptElement.onerror = reject;
+                    document.body.appendChild(scriptElement);
+                });
             });
         });
-    });
+
+        // Inicializar Reveal.js cuando todo esté cargado
+        promise.then(() => {
+            Reveal.initialize({
+                // Tu configuración actual de Reveal.js
+                controls: true,
+                progress: true,
+                // ... resto de tu configuración ...
+            });
+        }).catch(error => {
+            console.error('Error cargando recursos:', error);
+        });
+    }
+
+    // Cargar recursos cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', loadResources);
 </script>
 <!-- meta_propio_inicio -->
 <meta name="description" content="Web con recursos para facilitar la búsqueda de información y gestión del conocimiento en Ciencias de la Salud">
@@ -76,32 +112,14 @@
 <!-- 3. Después cargar Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" />
 
-<!-- 4. Finalmente cargar reveal.js y sus plugins -->
-<link rel="stylesheet" href="../reveal.js/dist/reveal.css">  
-<!-- tema anterior black -->
-<link rel="stylesheet" href="../reveal.js/dist/theme/blood.css" id="theme">
-<link rel="stylesheet" href="../reveal.js-plugins/simplemenu/simplemenu.css" id="theme">
-<link rel="stylesheet" href="../reveal.js-plugins/highlight/zenburn.css">
-<link rel="stylesheet" href="../reveal.js-plugins/chalkboard/style.css">
+
 
 <!-- Animaciones para el plugin appearance https://github.com/Martinomagnifico/reveal.js-appearance-->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-<link rel="stylesheet" href="../reveal.js-plugins/appearance/appearance.css">
 
-
-<script src="../reveal.js/dist/reveal.js"></script>
-<script src="../reveal.js/plugin/markdown/markdown.js"></script>
-<script src="../reveal.js/plugin/highlight/highlight.js"></script>
-<script src="../reveal.js-plugins/menu/menu.js"></script>
-<script src="../reveal.js-plugins/chalkboard/plugin.js"></script>
-<script src="../reveal.js-plugins/appearance/appearance.js"></script>
-<script src="../reveal.js-plugins/audio-slideshow/plugin.js"></script>
-<script src="../reveal.js-plugins/audio-slideshow/RecordRTC.js"></script>
-<script src="../reveal.js-plugins/audio-slideshow/recorder.js"></script>
-<script src="../reveal.js-plugins/embed-tweet/plugin.js"></script>
 
 <!-- Font awesome -->
-<link rel="stylesheet" href="../reveal.js-plugins/menu/font-awesome/css/fontawesome.css">
+
 
 <script async defer src="https://buttons.github.io/buttons.js"></script>
 
@@ -398,14 +416,8 @@ z-index: 1001;
     </div>
   
 
-              <script src="../reveal.js/plugin/notes/notes.js"></script>
-       
+          
  
-       <script src="../reveal.js/plugin/zoom/zoom.js"></script>
- 
-       <script src="../reveal.js-plugins/simplemenu/simplemenu.js"></script>
-       <script src="../reveal.js-plugins/fullscreen/plugin.js"></script>
-       <script src="../reveal.js-plugins/embed-tweet/plugin.js"></script>
        
     <script> 
     	// Full list of configuration options available here:
