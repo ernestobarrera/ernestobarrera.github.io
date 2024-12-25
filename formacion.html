@@ -1,0 +1,146 @@
+<!--
+=====================
+  formacion.html
+  Formación
+=====================
+-->
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Recursos formativos sobre IA, búsqueda de información y herramientas para profesionales sanitarios"
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="assets/images/icon.webp" />
+    <title>Formación | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Formación y Recursos Educativos | @ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Material formativo para profesionales sanitarios"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/formacion.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+    <meta property="article:published_time" content="2024-03-01" />
+    <meta property="article:author" content="https://twitter.com/ernestob" />
+
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS externo -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <script src="./assets/js/include.js"></script>
+    <include src="header.html"></include>
+
+    <!-- Main Content -->
+    <main class="main-container">
+      <section class="hero-section">
+        <h1 class="main-title">
+          <span class="icon">🎓</span>
+          <span>Formación</span>
+        </h1>
+        <p class="intro-text">
+          Material formativo y recursos educativos sobre tecnologías, IA y
+          gestión de información en el ámbito sanitario. Presentaciones,
+          tutoriales y guías prácticas diseñadas específicamente para
+          profesionales de la salud.
+        </p>
+      </section>
+
+      <!-- Presentaciones -->
+      <section class="category-section">
+        <h2 class="section-title">📊 Presentaciones</h2>
+        <div class="resources-list">
+          <div class="resource-item">
+            <div class="resource-name">
+              <h3>🤖 ChatGPT para Sanitarios</h3>
+              <span class="tag">Presentación</span>
+            </div>
+            <p class="resource-description">
+              Presentación con audio sobre el uso de ChatGPT en el ámbito
+              sanitario: casos de estudio, buenas prácticas y recomendaciones.
+              Presentación interactiva con ejemplos prácticos.
+            </p>
+            <span class="update">Mar 2024</span>
+            <a
+              href="https://ernestobarrera.github.io/t/chatgpt_bibliosalud.html#/"
+              class="resource-link"
+              target="_blank"
+              aria-label="Ver presentación ChatGPT para Sanitarios"
+            ></a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tutoriales -->
+      <section class="category-section">
+        <h2 class="section-title">📝 Tutoriales</h2>
+        <div class="resources-list">
+          <!-- Aquí irán los tutoriales cuando los tengamos -->
+          <div class="placeholder-message">
+            <p>Próximamente nuevos tutoriales...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Guías Prácticas -->
+      <section class="category-section">
+        <h2 class="section-title">📖 Guías Prácticas</h2>
+        <div class="resources-list">
+          <!-- Aquí irán las guías cuando las tengamos -->
+          <div class="placeholder-message">
+            <p>Próximamente nuevas guías...</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <include src="footer.html"></include>
+  </body>
+</html>
+
+<!-- Estilos adicionales para mensajes de placeholder -->
+<style>
+  .placeholder-message {
+    padding: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-style: italic;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.25rem;
+    text-align: center;
+  }
+</style>

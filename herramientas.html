@@ -50,7 +50,6 @@
     <link rel="stylesheet" href="assets/css/header.css" />
     <link rel="stylesheet" href="assets/css/components.css" />
     <link rel="stylesheet" href="assets/css/footer.css" />
-    
 
     <!-- CSS externo -->
     <link
@@ -97,12 +96,26 @@
     <include src="header.html"></include>
 
     <!-- Main Content -->
+    <!-- Main Content -->
     <main class="main-container">
-      <section class="resources-section">
-        <h2 class="section-title">🛠️ Recursos y Herramientas</h2>
+      <section class="hero-section">
+        <h1 class="main-title">
+          <span class="icon">🔧</span>
+          <span>Herramientas</span>
+        </h1>
+        <p class="intro-text">
+          Conjunto de herramientas interactivas diseñadas para facilitar el
+          trabajo diario en la gestión de información sanitaria. Desde
+          buscadores especializados hasta calculadoras clínicas, cada
+          herramienta está pensada para resolver necesidades específicas de los
+          profesionales de la salud.
+        </p>
+      </section>
 
+      <!-- Búsqueda y Análisis -->
+      <section class="category-section">
+        <h2 class="section-title">🔍 Búsqueda y Análisis</h2>
         <div class="resources-list">
-          <!-- Buscadores Bookmarklet -->
           <div class="resource-item">
             <div class="resource-name">
               <h3>Bookmarklet 🔎Buscadores!</h3>
@@ -115,13 +128,36 @@
             </p>
             <span class="update">Mar 2024</span>
             <a
-              href="https://ernestobarrera.github.io/buscadores.html#/"
+              href="buscadores.html"
               class="resource-link"
               aria-label="Ver Bookmarklet Buscadores"
             ></a>
           </div>
 
-          <!-- Calculadora Diagnóstica -->
+          <div class="resource-item">
+            <div class="resource-name">
+              <h3>📊 Estadísticas PubMed</h3>
+              <span class="tag">Analytics</span>
+            </div>
+            <p class="resource-description">
+              Análisis en tiempo real de las tendencias de publicación en
+              PubMed. Visualización interactiva de la evolución temporal de
+              publicaciones científicas y métricas detalladas de indexación.
+            </p>
+            <span class="update">Mar 2024</span>
+            <a
+              href="monitor_pubmed.html"
+              class="resource-link"
+              aria-label="Ver Estadísticas PubMed"
+            ></a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Calculadoras -->
+      <section class="category-section">
+        <h2 class="section-title">🧮 Calculadoras</h2>
+        <div class="resources-list">
           <div class="resource-item">
             <div class="resource-name">
               <h3>🧮 Calculadora Diagnóstica</h3>
@@ -135,58 +171,17 @@
             </p>
             <span class="update">Mar 2024</span>
             <a
-              href="/calculadora_diagnostica.html"
+              href="calculadora_diagnostica.html"
               class="resource-link"
-             
               aria-label="Ver Calculadora Diagnóstica"
             ></a>
           </div>
-          <!-- Método RECORD -->
-          <div class="resource-item">
-            <div class="resource-name">
-              <h3>Método RECORD</h3>
-              <span class="tag">Framework</span>
-            </div>
-            <p class="resource-description">
-              Marco para escribir prompts efectivos en ChatGPT, especialmente
-              diseñado para profesionales sanitarios. Con estructura de 6
-              componentes: Rol, Esencia, Contexto, Objetivo, Requisitos y
-              Diseño.
-            </p>
-            <span class="update">Mar 2024</span>
-            <a
-              href="https://zenodo.org/records/11080813"
-              class="resource-link"
-              target="_blank"
-              aria-label="Ver Método RECORD"
-            ></a>
-          </div>
-          <!-- Nueva tarjeta para añadir antes del cierre de resources-list -->
-          <!-- Estadísticas PubMed -->
-          <div class="resource-item">
-            <div class="resource-name">
-              <h3>📊 Estadísticas PubMed</h3>
-              <span class="tag">Analytics</span>
-            </div>
-            <p class="resource-description">
-              Análisis en tiempo real de las tendencias de publicación en PubMed. 
-              Visualización interactiva de la evolución temporal de publicaciones científicas 
-              y métricas detalladas de indexación.
-            </p>
-            <span class="update">Mar 2024</span>
-            <a
-              href="/monitor_pubmed.html"
-              class="resource-link"
-              aria-label="Ver Estadísticas PubMed"
-            ></a>
-          </div>
-
-        
+        </div>
       </section>
     </main>
 
     <!-- Footer -->
-  <!--   <footer class="footer">
+    <!--   <footer class="footer">
       <div class="container">
         <p>
           © 2024 - Recursos para la Gestión del Conocimiento en Ciencias de la
@@ -215,6 +210,5 @@
       });
     </script> -->
     <include src="footer.html"></include>
-
   </body>
 </html>
