@@ -1,3 +1,10 @@
+<!--
+=====================
+  index.html
+  Página principal
+=====================
+-->
+
 <!DOCTYPE html>
 <html lang="es">
   <head>
@@ -68,6 +75,39 @@
         background-repeat: no-repeat;
         background-size: contain;
       }
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        transition: transform 0.2s, background-color 0.2s;
+        text-decoration: none;
+        color: var(--text-primary);
+      }
+
+      .feature-item:hover {
+        transform: translateY(-2px);
+        background-color: var(--hover-color);
+      }
+
+      .feature-item i {
+        font-size: 1.5rem;
+        color: var(--accent-color);
+      }
+
+      .feature-item span {
+        font-size: 1rem;
+        font-weight: 500;
+      }
     </style>
 
     <!-- Google Analytics -->
@@ -85,26 +125,6 @@
     </script>
   </head>
   <body>
-    <!-- Navbar -->
-    <!--  <nav class="navbar">
-      <div class="nav-container">
-        <a href="/" class="nav-brand">
-          <img src="./assets/images/avatar_cabecera.png" alt="Avatar" />
-          <span>Ernesto Barrera</span>
-        </a>
-        <ul class="nav-menu">
-          <li><a href="/" class="nav-link">Inicio</a></li>
-          <li><a href="pages/sobre-mi.html" class="nav-link">Sobre mí</a></li>
-          <li><a href="/experiencia.html" class="nav-link">Experiencia</a></li>
-          <li><a href="pages/contacto.html" class="nav-link">Contacto</a></li>
-        </ul>
-        <div class="mobile-menu-button">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </div>
-    </nav> -->
     <script src="./assets/js/include.js"></script>
     <include src="header.html"></include>
 
@@ -218,43 +238,51 @@
         <div class="bio-right">
           <!-- Sobre la Web - Nueva sección destacada -->
           <section class="bio-section featured">
-            <h2>📚 Recursos para Profesionales Sanitarios</h2>
+            <h2>🩺 Recursos para Profesionales Sanitarios</h2>
             <p>
-              Portal especializado en herramientas y recursos para la gestión
-              del conocimiento en ciencias de la salud. Encontrarás:
+              Esta web es un espacio personal donde comparto herramientas y
+              recursos que utilizo para la gestión del conocimiento en salud y
+              la formación en competencias informacionales.
             </p>
             <div class="features-grid">
-              <!-- Corregir la estructura de cada item para que sea consistente -->
+              <!-- Herramientas -->
               <a
-                href="./buscadores.html"
+                href="herramientas.html"
                 class="feature-item"
-                title="Bookmarklet para facilitar la búsqueda en más de 50 recursos de Internet"
+                title="Calculadoras, buscadores y monitores"
               >
                 <i class="fas fa-tools"></i>
-                <span>Herramientas de búsqueda</span>
+                <span>🔧 Herramientas</span>
               </a>
 
+              <!-- IA en Salud -->
               <a
-                href="./recursos.html"
+                href="ia-salud.html"
                 class="feature-item"
-                title="Herramientas, aplicaciones y otros recursos"
+                title="Prompts, casos de uso y recursos de IA"
               >
                 <i class="fas fa-robot"></i>
-                <span>Herramientas</span>
+                <span>🤖 IA en Salud</span>
               </a>
 
+              <!-- Biblioteca -->
               <a
-                href="./presentaciones.html"
-                title="Presentaciones utilizadas para charlas, conferencias y cursos"
+                href="biblioteca.html"
                 class="feature-item"
+                title="Comparativas, colecciones y recursos"
+              >
+                <i class="fas fa-book-medical"></i>
+                <span>📚 Biblioteca</span>
+              </a>
+
+              <!-- Formación -->
+              <a
+                href="formacion.html"
+                class="feature-item"
+                title="Presentaciones y tutoriales"
               >
                 <i class="fas fa-graduation-cap"></i>
-                <span>Materiales formativos</span>
-              </a>
-
-              <a href="./guias.html" class="feature-item">
-                <i class="fas fa-book-medical"></i>
-                <span>Guías y manuales</span>
+                <span>🎓 Formación</span>
               </a>
             </div>
           </section>
@@ -300,39 +328,5 @@
     </main>
 
     <include src="footer.html"></include>
-    <!-- Footer -->
-    <!--     <footer class="footer">
-      <div class="container">
-        <p>
-          ©
-          <script>
-            document.write(new Date().getFullYear());
-          </script>
-          - Recursos para la Gestión del Conocimiento en Ciencias de la Salud
-        </p>
-      </div>
-    </footer> -->
-
-    <!-- 
-    Comentado para valorar si funciona footer.html con includes. SI falla algo del resto descomentar
-    <script>
-      const mobileMenuButton = document.querySelector(".mobile-menu-button");
-      const navMenu = document.querySelector(".nav-menu");
-
-      mobileMenuButton.addEventListener("click", () => {
-        navMenu.classList.toggle("active");
-        // Animar las barras del menú
-        const spans = mobileMenuButton.querySelectorAll("span");
-        spans[0].style.transform =
-          spans[0].style.transform === "rotate(45deg)"
-            ? "rotate(0)"
-            : "rotate(45deg)";
-        spans[1].style.opacity = spans[1].style.opacity === "0" ? "1" : "0";
-        spans[2].style.transform =
-          spans[2].style.transform === "rotate(-45deg)"
-            ? "rotate(0)"
-            : "rotate(-45deg)";
-      });
-    </script> -->
   </body>
 </html>

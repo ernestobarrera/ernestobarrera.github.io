@@ -1,0 +1,190 @@
+<!--
+=====================
+  en-construcción.html
+  Página temporal
+=====================
+-->
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Otros proyectos e ideas en desarrollo por Ernesto Barrera"
+    />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Otros Proyectos | @ernestob" />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria  🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/en-construccion.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+    <title>Otros Proyectos | @ernestob</title>
+    <link rel="icon" href="/assets/images/icon.webp" />
+
+    <!-- Fuentes y CSS -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <!-- Script para includes -->
+    <script src="assets/js/include.js"></script>
+
+    <style>
+      /* Restaurar estilos del cuerpo y contenedor para que se vean como antes */
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--primary-bg);
+        color: var(--text-primary);
+        line-height: 1.6;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        background-image: linear-gradient(
+            90deg,
+            rgba(26, 38, 52, 0.3) 0%,
+            var(--primary-bg) 35%
+          ),
+          url("./assets/images/perfilFondoWeb.jpg");
+        background-position: left center;
+        background-repeat: no-repeat;
+        background-size: contain;
+      }
+
+      .contact-container {
+        margin-top: 5rem;
+        flex: 1;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0 2rem;
+      }
+
+      .construction-container {
+        background-color: var(--card-bg);
+        border-radius: 1rem;
+        padding: 3rem 2rem;
+        text-align: center;
+        margin-top: 2rem;
+        border: 1px solid rgba(255, 215, 0, 0.2);
+      }
+
+      .construction-icon {
+        color: var(--accent-color);
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .construction-title {
+        color: var(--accent-color);
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+      }
+
+      .construction-text {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+
+      .pulse {
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.1);
+          opacity: 0.8;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .contact-container {
+          margin-top: 4rem;
+          padding: 0 1rem;
+        }
+
+        .construction-container {
+          padding: 2rem 1rem;
+        }
+
+        .construction-icon {
+          font-size: 3rem;
+        }
+
+        .construction-title {
+          font-size: 1.5rem;
+        }
+
+        .construction-text {
+          font-size: 1rem;
+        }
+      }
+    </style>
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </head>
+  <body>
+    <!-- Include Header -->
+    <include src="header.html"></include>
+
+    <main class="contact-container">
+      <div class="construction-container">
+        <i class="fa-solid fa-dna construction-icon pulse"></i>
+        <h1 class="construction-title">Página en Construcción</h1>
+        <p class="construction-text">
+          Esta sección está en desarrollo. Pronto encontrarás aquí nuevas ideas
+          y proyectos en marcha que complementan la gestión del conocimiento en
+          el ámbito de la salud.
+        </p>
+      </div>
+    </main>
+
+    <!-- Include Footer -->
+    <include src="footer.html"></include>
+    <!-- <include src="./assets/components/footer.html"></include> -->
+  </body>
+</html>

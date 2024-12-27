@@ -239,16 +239,50 @@
         <h2 class="section-title">
           <i class="fas fa-star"></i> Componentes del Método
         </h2>
+        <style>
+          .method-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.7rem;
+          }
+          .method-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 0.4rem 0.65rem;
+          }
+          .component-title {
+            color: var(--accent-color);
+            font-size: 1rem;
+            margin: 0;
+            margin-bottom: 0.2rem;
+          }
+          .component-description {
+            color: var(--text-secondary);
+            font-size: 0.91rem;
+            margin: 0;
+            margin-bottom: 0.2rem;
+          }
+          .small-example {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-style: italic;
+            margin: 0;
+            opacity: 0.85;
+          }
+        </style>
         <div class="method-grid">
           <!-- ROL -->
           <div class="method-card">
             <div class="card-content">
               <h3 class="component-title">R - Rol</h3>
               <p class="component-description">
-                Define el papel o expertise que debe asumir el modelo de IA.
+                Define el papel que debe asumir el modelo de IA
+              </p>
+              <p class="small-example">
+                → "Actúa como un especialista en urgencias con 20 años de
+                experiencia"
               </p>
             </div>
-            <span class="tag">Componente</span>
           </div>
 
           <!-- ESENCIA -->
@@ -256,10 +290,13 @@
             <div class="card-content">
               <h3 class="component-title">E - Esencia</h3>
               <p class="component-description">
-                Establece la misión principal de tu consulta.
+                Establece la misión principal de tu consulta
+              </p>
+              <p class="small-example">
+                → "Tu misión es desarrollar un completo plan de evaluación para
+                dolor torácico agudo"
               </p>
             </div>
-            <span class="tag">Componente</span>
           </div>
 
           <!-- CONTEXTO -->
@@ -267,10 +304,13 @@
             <div class="card-content">
               <h3 class="component-title">C - Contexto</h3>
               <p class="component-description">
-                Proporciona el marco específico que rodea tu consulta.
+                Proporciona el marco específico que rodea tu consulta
+              </p>
+              <p class="small-example">
+                → "Servirá como protocolo para el servicio de Urgencias de un
+                hospital comarcal"
               </p>
             </div>
-            <span class="tag">Componente</span>
           </div>
 
           <!-- OBJETIVO -->
@@ -278,10 +318,13 @@
             <div class="card-content">
               <h3 class="component-title">O - Objetivo</h3>
               <p class="component-description">
-                Especifica claramente qué quieres lograr.
+                Especifica claramente qué quieres lograr
+              </p>
+              <p class="small-example">
+                → "Sus directrices permitirán identificar signos de alerta y
+                criterios de derivación"
               </p>
             </div>
-            <span class="tag">Componente</span>
           </div>
 
           <!-- REQUISITOS -->
@@ -289,10 +332,13 @@
             <div class="card-content">
               <h3 class="component-title">R - Requisitos</h3>
               <p class="component-description">
-                Incluye detalles específicos y restricciones necesarias.
+                Incluye detalles específicos y restricciones necesarias
+              </p>
+              <p class="small-example">
+                → "Seguirá guías clínicas actuales, evidencia del más alto
+                nivel"
               </p>
             </div>
-            <span class="tag">Componente</span>
           </div>
 
           <!-- DISEÑO -->
@@ -300,10 +346,13 @@
             <div class="card-content">
               <h3 class="component-title">D - Diseño</h3>
               <p class="component-description">
-                Define el formato deseado para la respuesta.
+                Define el formato deseado para la respuesta
+              </p>
+              <p class="small-example">
+                → "Elaborarás una lista numerada con criterios de gravedad
+                resaltados"
               </p>
             </div>
-            <span class="tag">Componente</span>
           </div>
         </div>
       </section>
