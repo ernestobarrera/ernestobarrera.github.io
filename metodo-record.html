@@ -1,0 +1,341 @@
+<!--
+=====================
+  record.html
+  Página del Método RECORD
+=====================
+-->
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Método RECORD: Framework sistemático para escribir prompts efectivos en ChatGPT"
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <title>Método RECORD para ChatGPT | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Método RECORD para escribir Prompts en ChatGPT | ​👨‍⚕️ ​@ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria 🔎🩺⚕"
+    />
+    <meta property="og:url" content="https://ernestobarrera.github.io/record" />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    />
+
+    <!-- Estilos específicos -->
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
+      }
+
+      .main-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 1rem max(2rem, calc((100vw - 1400px) / 2));
+        overflow-y: auto;
+        gap: 1rem;
+      }
+
+      .hero-section {
+        padding: 0;
+        margin-bottom: 0.5rem;
+      }
+
+      .main-title {
+        padding-bottom: 0.15rem;
+      }
+
+      .category-section {
+        padding-top: 0;
+        margin-bottom: 0.5rem;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--accent-color);
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.15rem;
+        border-bottom: 2px solid var(--accent-color);
+      }
+
+      .method-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+      }
+
+      .method-card {
+        background: var(--card-bg);
+        border-radius: 8px;
+        padding: 0.75rem;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .component-title {
+        color: var(--accent-color);
+        font-size: 1.1rem;
+        margin: 0;
+        padding: 0;
+      }
+
+      .tag {
+        background: #1a2634;
+        color: var(--text-secondary);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+      }
+
+      .component-description {
+        color: var(--text-secondary);
+        margin: 0;
+        font-size: 0.9rem;
+      }
+
+      /* Sección de cita */
+      .resources-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .action-section {
+        background: var(--card-bg);
+        border-radius: 8px;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .citation-box {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        max-width: 600px;
+      }
+
+      .download-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--accent-color);
+        color: var(--primary-bg);
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        white-space: nowrap;
+      }
+
+      .download-button:hover {
+        background-color: #e6c200;
+      }
+
+      @media (max-width: 768px) {
+        .method-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .action-section {
+          flex-direction: column;
+          gap: 1rem;
+          text-align: center;
+        }
+
+        .citation-box {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .method-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </head>
+
+  <body>
+    <include src="header.html"></include>
+
+    <!-- Main Content -->
+    <main class="main-container">
+      <section class="hero-section">
+        <h1 class="main-title">
+          <span class="icon">🎯</span>
+          <span>Método RECORD</span>
+        </h1>
+        <p class="intro-text">
+          Framework sistemático para crear prompts efectivos en ChatGPT,
+          diseñado para profesionales de la salud y educadores. Optimiza la
+          comunicación con IA para obtener respuestas más precisas y relevantes.
+        </p>
+      </section>
+
+      <!-- Componentes -->
+      <section class="category-section">
+        <h2 class="section-title">
+          <i class="fas fa-star"></i> Componentes del Método
+        </h2>
+        <div class="method-grid">
+          <!-- ROL -->
+          <div class="method-card">
+            <div class="card-content">
+              <h3 class="component-title">R - Rol</h3>
+              <p class="component-description">
+                Define el papel o expertise que debe asumir el modelo de IA.
+              </p>
+            </div>
+            <span class="tag">Componente</span>
+          </div>
+
+          <!-- ESENCIA -->
+          <div class="method-card">
+            <div class="card-content">
+              <h3 class="component-title">E - Esencia</h3>
+              <p class="component-description">
+                Establece la misión principal de tu consulta.
+              </p>
+            </div>
+            <span class="tag">Componente</span>
+          </div>
+
+          <!-- CONTEXTO -->
+          <div class="method-card">
+            <div class="card-content">
+              <h3 class="component-title">C - Contexto</h3>
+              <p class="component-description">
+                Proporciona el marco específico que rodea tu consulta.
+              </p>
+            </div>
+            <span class="tag">Componente</span>
+          </div>
+
+          <!-- OBJETIVO -->
+          <div class="method-card">
+            <div class="card-content">
+              <h3 class="component-title">O - Objetivo</h3>
+              <p class="component-description">
+                Especifica claramente qué quieres lograr.
+              </p>
+            </div>
+            <span class="tag">Componente</span>
+          </div>
+
+          <!-- REQUISITOS -->
+          <div class="method-card">
+            <div class="card-content">
+              <h3 class="component-title">R - Requisitos</h3>
+              <p class="component-description">
+                Incluye detalles específicos y restricciones necesarias.
+              </p>
+            </div>
+            <span class="tag">Componente</span>
+          </div>
+
+          <!-- DISEÑO -->
+          <div class="method-card">
+            <div class="card-content">
+              <h3 class="component-title">D - Diseño</h3>
+              <p class="component-description">
+                Define el formato deseado para la respuesta.
+              </p>
+            </div>
+            <span class="tag">Componente</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Citación -->
+      <section class="category-section">
+        <h2 class="section-title">📝 Cita y Descarga</h2>
+        <div class="resources-list">
+          <div class="action-section">
+            <div style="display: flex; gap: 1rem; align-items: center">
+              <div class="resource-name">
+                <h3>Cómo citar este recurso</h3>
+                <span class="tag">Zenodo</span>
+              </div>
+              <div class="citation-box">
+                Barrera-Linares, E. (2024). Método RECORD para Escribir Prompts
+                en ChatGPT [Infografía]. Zenodo.
+                https://doi.org/10.5281/zenodo.11080813
+              </div>
+            </div>
+            <a
+              href="https://zenodo.org/records/11080813/files/infografiaRecordchatgpt-RECORD-A4.pdf?download=1"
+              class="download-button"
+            >
+              <i class="fas fa-download"></i> Descargar Infografía
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <include src="footer.html"></include>
+    <script src="./assets/js/include.js"></script>
+  </body>
+</html>
