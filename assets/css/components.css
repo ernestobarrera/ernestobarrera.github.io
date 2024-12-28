@@ -1,6 +1,10 @@
 /* ===========================================
     components.css
     Componentes de Tarjetas de Recursos
+
+    ACTUALIZACIÓN 28/12/2024:
+    - Añadido soporte para secciones expandibles
+    - Ver utils.js -> expandableSections
    =========================================== */
 
 /* Contenedor principal y títulos de sección */
@@ -13,6 +17,21 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  /* NUEVO: Soporte para expandibles */
+  cursor: pointer;
+  justify-content: space-between;
+}
+
+/* NUEVO: Indicador de expandir/colapsar */
+.section-title::after {
+  content: "▼";
+  font-size: 0.8em;
+  transition: transform 0.3s ease;
+}
+
+/* NUEVO: Estado colapsado del indicador */
+.collapsed .section-title::after {
+  transform: rotate(-90deg);
 }
 
 /* Lista de recursos */
@@ -21,6 +40,23 @@
   flex-direction: column;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
+  /* NUEVO: Propiedades para animación */
+  max-height: 2000px;
+  opacity: 1;
+  transition: all 0.3s ease;
+}
+
+/* NUEVO: Control de sección expandible */
+.resources-section {
+  margin-bottom: 2rem;
+  transition: all 0.3s ease;
+}
+
+/* NUEVO: Estado colapsado */
+.resources-section.collapsed .resources-list {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
 }
 
 /* Tarjetas de recursos */

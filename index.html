@@ -48,7 +48,7 @@
     <!-- CSS Base -->
     <link rel="stylesheet" href="assets/css/main.css" />
     <link rel="stylesheet" href="assets/css/header.css" />
-    <link rel="stylesheet" href="assets/css/home.css" />
+    <link rel="stylesheet" href="assets/css/pages.css" />
     <link rel="stylesheet" href="assets/css/footer.css" />
 
     <!-- Librerías externas -->
@@ -56,59 +56,6 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
     />
-
-    <!-- CSS -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
-    />
-    <style>
-      /* Solo estilos específicos que no se pueden reutilizar */
-      body {
-        background-image: linear-gradient(
-            90deg,
-            rgba(15, 23, 42, 0.3) 0%,
-            var(--secondary-bg) 35%
-          ),
-          url("https://ernestobarrera.github.io/assets/images/perfilFondoWeb.jpg");
-        background-position: left center;
-        background-repeat: no-repeat;
-        background-size: contain;
-      }
-      .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-top: 1.5rem;
-      }
-
-      .feature-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 1rem;
-        background-color: var(--card-bg);
-        border-radius: 8px;
-        transition: transform 0.2s, background-color 0.2s;
-        text-decoration: none;
-        color: var(--text-primary);
-      }
-
-      .feature-item:hover {
-        transform: translateY(-2px);
-        background-color: var(--hover-color);
-      }
-
-      .feature-item i {
-        font-size: 1.5rem;
-        color: var(--accent-color);
-      }
-
-      .feature-item span {
-        font-size: 1rem;
-        font-weight: 500;
-      }
-    </style>
 
     <!-- Google Analytics -->
     <script
@@ -124,7 +71,7 @@
       gtag("config", "G-YFKR6RB1ZC");
     </script>
   </head>
-  <body>
+  <body class="home-page">
     <script src="./assets/js/include.js"></script>
     <include src="header.html"></include>
 
@@ -293,8 +240,8 @@
               <h2>Sobre mí</h2>
               <p>
                 Formador en gestión del conocimiento y búsqueda de información
-                en el ámbito sanitario, con experiencia en el desarrollo de
-                herramientas y recursos para profesionales de la salud.
+                en el ámbito sanitario. Desarrollo herramientas y recursos para
+                profesionales de la salud.
               </p>
 
               <!-- Formación (integrada en la misma columna) -->

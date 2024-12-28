@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="assets/css/header.css" />
     <link rel="stylesheet" href="assets/css/components.css" />
     <link rel="stylesheet" href="assets/css/footer.css" />
+    <link rel="stylesheet" href="assets/css/pages.css" />
 
     <!-- Fonts -->
     <link
@@ -29,339 +30,81 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
     />
-
-    <style>
-      /* Estilos originales */
-      .hero-section {
-        padding: 0.75rem 0 0.25rem;
-      }
-
-      .main-title {
-        font-size: 1.4rem;
-        margin-bottom: 0.25rem;
-      }
-
-      .intro-text {
-        font-size: 0.85rem;
-        margin-bottom: 0.75rem;
-        line-height: 1.3;
-      }
-
-      /* Nuevos estilos para categorías */
-      .category-section {
-        margin-bottom: 0.75rem;
-      }
-
-      .category-header {
-        background-color: var(--card-bg, #2a3b4d);
-        padding: 0.5rem 0.75rem;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
-      }
-
-      .category-header h2 {
-        margin: 0;
-        font-size: 1rem;
-        color: var(--text-primary, #ffffff);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .category-header .toggle-icon {
-        transition: transform 0.3s ease;
-        color: var(--text-secondary, #94a3b8);
-      }
-
-      .category-content {
-        display: none;
-      }
-
-      .category-content.active {
-        display: block;
-      }
-
-      /* Estilos existentes */
-      .resources-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 0.75rem;
-      }
-
-      .resource-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.5rem;
-        background-color: var(--card-bg, #2a3b4d);
-        border-radius: 6px;
-        height: fit-content;
-      }
-
-      .bookmarklet-button {
-        width: 180px;
-        height: 32px;
-        border: none;
-        outline: none;
-        color: black;
-        background: rgb(255, 191, 71);
-        cursor: pointer;
-        position: relative;
-        z-index: 0;
-        border-radius: 6px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        font-weight: 500;
-        font-size: 0.85rem;
-      }
-
-      .bookmarklet-button:before {
-        content: "";
-        background: linear-gradient(
-          45deg,
-          #ff0000,
-          #ff7300,
-          #fffb00,
-          #48ff00,
-          #00ffd5,
-          #002bff,
-          #7a00ff,
-          #ff00c8,
-          #ff0000
-        );
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        background-size: 400%;
-        z-index: -1;
-        filter: blur(5px);
-        width: calc(100% + 4px);
-        height: calc(100% + 4px);
-        animation: glowing 20s linear infinite;
-        opacity: 0;
-        transition: opacity 0.3s ease-in-out;
-        border-radius: 6px;
-      }
-
-      .bookmarklet-button:hover:before {
-        opacity: 1;
-      }
-
-      .bookmarklet-button:after {
-        z-index: -1;
-        content: "";
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        background: rgb(255, 191, 71);
-        left: 0;
-        top: 0;
-        border-radius: 6px;
-      }
-
-      .resource-content {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .resource-name {
-        margin: 0;
-        font-size: 0.9rem;
-        color: var(--text-primary, #ffffff);
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-      }
-
-      .resource-description {
-        color: var(--text-secondary, #94a3b8);
-        margin: 0.15rem 0;
-        line-height: 1.25;
-        font-size: 0.8rem;
-      }
-
-      .tag,
-      .beta-badge {
-        padding: 0.1rem 0.35rem;
-        border-radius: 4px;
-        font-size: 0.65rem;
-      }
-
-      .beta-badge {
-        background-color: #2c3e50;
-        color: #fff;
-      }
-
-      .tag {
-        background-color: rgba(240, 169, 8, 0.2);
-      }
-
-      .tag a {
-        color: #f0a908;
-        text-decoration: none;
-      }
-
-      .installation-note {
-        font-size: 0.65rem;
-        margin-top: 0.15rem;
-        text-align: center;
-        color: var(--text-secondary, #94a3b8);
-      }
-
-      .update-info {
-        font-size: 0.7rem;
-        color: var(--text-secondary, #94a3b8);
-      }
-
-      @keyframes glowing {
-        0% {
-          background-position: 0 0;
-        }
-        50% {
-          background-position: 400% 0;
-        }
-        100% {
-          background-position: 0 0;
-        }
-      }
-
-      @media (max-width: 768px) {
-        .resources-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .resource-item {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 0.5rem;
-        }
-
-        .bookmarklet-container {
-          width: 100%;
-        }
-
-        .bookmarklet-button {
-          width: 100%;
-        }
-      }
-    </style>
   </head>
 
-  <body>
+  <body class="prompts-page">
     <script src="./assets/js/include.js"></script>
     <include src="header.html"></include>
 
     <main class="main-container">
       <section class="hero-section">
-        <h1 class="main-title">
-          <span class="icon">🤖</span>
-          <span>Generadores de Prompts Sanitarios</span>
-        </h1>
-        <p class="intro-text">
-          Colección de generadores de prompts que utilizan el framework RECORD
-          (Rol, Esencia, Contexto, Objetivo, Requisitos, Diseño). Cada generador
-          está optimizado para diferentes roles y contextos en el ámbito
-          sanitario, facilitando interacciones más efectivas con ChatGPT.
-        </p>
+        <!-- Se mantiene igual -->
       </section>
 
       <!-- Docencia -->
-      <section class="category-section">
-        <div class="category-header">
-          <h2>👨‍🏫 Docencia y Formación</h2>
-          <i class="fas fa-chevron-down toggle-icon"></i>
-        </div>
-        <div class="category-content active">
+      <section id="docencia" class="resources-section">
+        <h2 class="section-title">👨‍🏫 Docencia y Formación</h2>
+        <div class="resources-list">
           <div class="resources-grid">
             <div class="resource-item">
               <div class="bookmarklet-container">
-                <a
-                  href="https://ernestobarrera.github.io/ia/p/record-tutores.html"
-                  class="bookmarklet-button"
-                  target="_blank"
-                >
-                  🎓 Tutor FSE
-                </a>
-                <!--  <p class="installation-note">Pulsa o Arrastra</p> -->
+                <div class="bookmarklet-button">🎓 Tutor FSE</div>
                 <p class="installation-note">Ir al generador</p>
               </div>
               <div class="resource-content">
                 <h3 class="resource-name">
                   Tutores FSE
                   <span class="beta-badge">BETA</span>
-                  <span class="tag">
-                    <a
-                      href="https://zenodo.org/records/11080813"
-                      target="_blank"
-                      >RECORD</a
-                    >
-                  </span>
+                  <span class="tag">RECORD</span>
                 </h3>
                 <p class="resource-description">
                   Para tutores FSE. Genera prompts orientados a contenido
                   docente y casos clínicos.
                 </p>
               </div>
+              <a
+                href="https://ernestobarrera.github.io/ia/p/record-tutores.html"
+                class="resource-link"
+                aria-label="Ir al generador de prompts para Tutores FSE"
+                target="_blank"
+              ></a>
             </div>
 
             <div class="resource-item">
               <div class="bookmarklet-container">
-                <a
-                  href="https://ernestobarrera.github.io/ia/p/record-formacion.html"
-                  class="bookmarklet-button"
-                  target="_blank"
-                >
-                  📚 Formación
-                </a>
-                <!--   <p class="installation-note">Pulsa o Arrastra</p> -->
+                <div class="bookmarklet-button">📚 Formación</div>
                 <p class="installation-note">Ir al generador</p>
               </div>
               <div class="resource-content">
                 <h3 class="resource-name">
                   Formación Continuada
                   <span class="beta-badge">BETA</span>
-                  <span class="tag">
-                    <a
-                      href="https://zenodo.org/records/11080813"
-                      target="_blank"
-                      >RECORD</a
-                    >
-                  </span>
+                  <span class="tag">RECORD</span>
                 </h3>
                 <p class="resource-description">
                   Para desarrollo profesional continuo y actualización de
                   conocimientos.
                 </p>
               </div>
+              <a
+                href="https://ernestobarrera.github.io/ia/p/record-formacion.html"
+                class="resource-link"
+                aria-label="Ir al generador de prompts para Formación Continuada"
+                target="_blank"
+              ></a>
             </div>
           </div>
         </div>
       </section>
 
       <!-- Clínica -->
-      <section class="category-section">
-        <div class="category-header">
-          <h2>👩‍⚕️ Práctica Clínica</h2>
-          <i class="fas fa-chevron-down toggle-icon"></i>
-        </div>
-        <div class="category-content">
+      <section id="clinica" class="resources-section">
+        <h2 class="section-title">👩‍⚕️ Práctica Clínica</h2>
+        <div class="resources-list">
           <div class="resources-grid">
             <div class="resource-item">
               <div class="bookmarklet-container">
-                <a
-                  href="https://ernestobarrera.github.io/ia/p/record-mfyc.html"
-                  class="bookmarklet-button"
-                  target="_blank"
-                >
-                  👨‍⚕️ MFyC
-                </a>
-                <!-- <p class="installation-note">Pulsa o Arrastra</p> -->
+                <div class="bookmarklet-button">👨‍⚕️ MFyC</div>
                 <p class="installation-note">Ir al generador</p>
               </div>
               <div class="resource-content">
@@ -374,26 +117,19 @@
                   Optimizado para consultas de atención primaria.
                 </p>
               </div>
+              <a
+                href="https://ernestobarrera.github.io/ia/p/record-mfyc.html"
+                class="resource-link"
+                aria-label="Ir al generador de prompts para Medicina Familiar"
+                target="_blank"
+              ></a>
             </div>
           </div>
         </div>
       </section>
     </main>
 
-    <script>
-      // Manejo de expansión/colapso de categorías
-      document.querySelectorAll(".category-header").forEach((header) => {
-        header.addEventListener("click", () => {
-          const content = header.nextElementSibling;
-          const icon = header.querySelector(".toggle-icon");
-          content.classList.toggle("active");
-          icon.style.transform = content.classList.contains("active")
-            ? "rotate(180deg)"
-            : "rotate(0deg)";
-        });
-      });
-    </script>
-
     <include src="footer.html"></include>
+    <script src="./assets/js/utils.js"></script>
   </body>
 </html>

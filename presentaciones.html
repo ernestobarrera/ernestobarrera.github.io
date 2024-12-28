@@ -49,12 +49,15 @@
     <link rel="stylesheet" href="assets/css/main.css" />
     <link rel="stylesheet" href="assets/css/header.css" />
     <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
 
     <!-- CSS externo -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
     />
+
+    <!-- Estilos para las secciones expandibles -->
 
     <!-- Google Analytics -->
     <script
@@ -75,10 +78,31 @@
 
     <!-- Main Content -->
     <main class="main-container">
-      <section class="resources-section">
-        <h2 class="section-title">📊 Presentaciones</h2>
-
+      <!-- Sección IA en Salud -->
+      <section id="ia" class="resources-section">
+        <h2 class="section-title">🤖 Inteligencia Artificial en Salud</h2>
         <div class="resources-list">
+          <!-- IA en Atención Primaria -->
+          <div class="resource-item">
+            <div class="resource-name">
+              <h3>🏥 IA en Atención Primaria</h3>
+              <span class="tag">Presentación</span>
+            </div>
+            <p class="resource-description">
+              Oportunidades y desafíos de la Inteligencia Artificial en Atención
+              Primaria. Análisis del impacto y potencial de la IA en la práctica
+              clínica diaria.
+            </p>
+            <span class="update">Jun 2024</span>
+            <a
+              href="../ia/p/icomem-ia-atencion-primaria.html"
+              class="resource-link"
+              target="_blank"
+              aria-label="Ver presentación sobre IA en Atención Primaria"
+            >
+            </a>
+          </div>
+
           <!-- ChatGPT Sanitario -->
           <div class="resource-item">
             <div class="resource-name">
@@ -87,7 +111,7 @@
             </div>
             <p class="resource-description">
               Presentación con audio sobre el uso de ChatGPT en el ámbito
-              sanitario: casos de estudio, buenas prácticas y recomendacione.
+              sanitario: casos de estudio, buenas prácticas y recomendaciones.
               Presentación interactiva con ejemplos prácticos.
             </p>
             <span class="update">Mar 2024</span>
@@ -96,19 +120,26 @@
               class="resource-link"
               target="_blank"
               aria-label="Ver ChatGPT Sanitario"
-            ></a>
+            >
+            </a>
           </div>
-          <!-- Presentación sobre búsqueda eficaz -->
+        </div>
+      </section>
+
+      <!-- Sección Gestión de la Información -->
+      <section id="info" class="resources-section">
+        <h2 class="section-title">🔍 Gestión de la Información Sanitaria</h2>
+        <div class="resources-list">
+          <!-- Presentación búsqueda eficaz -->
           <div class="resource-item">
             <div class="resource-name">
               <h3>🔍 Búsqueda Eficaz en Ciencias de la Salud</h3>
               <span class="tag">ppt</span>
             </div>
             <p class="resource-description">
-              Presentación: "🔍 8 Cosas Importantes para Buscar en Ciencias de
-              la Salud" que detalla los aspectos fundamentales para realizar
-              búsquedas efectivas de información sanitaria. Relacionada con el
-              vídeo del webinar disponible en YouTube.
+              Presentación: "8 Cosas Importantes para Buscar en Ciencias de la
+              Salud" que detalla los aspectos fundamentales para realizar
+              búsquedas efectivas de información sanitaria.
             </p>
             <span class="update">Marzo 2021</span>
             <a
@@ -120,16 +151,16 @@
             </a>
           </div>
 
-          <!-- Vídeo sobre búsqueda eficaz -->
+          <!-- Vídeo búsqueda eficaz -->
           <div class="resource-item">
             <div class="resource-name">
               <h3>🎥 Búsqueda Eficaz en Ciencias de la Salud</h3>
               <span class="tag">Vídeo</span>
             </div>
             <p class="resource-description">
-              Vídeo del webinar online: "🔍 8 Cosas Importantes para Buscar en
-              Ciencias de la Salud". Incluye ejemplos prácticos y demostraciones
-              de las técnicas explicadas.
+              Vídeo del webinar online sobre técnicas efectivas de búsqueda.
+              Incluye ejemplos prácticos y demostraciones de las técnicas
+              explicadas.
             </p>
             <span class="update">Marzo 2021</span>
             <a
@@ -144,16 +175,11 @@
       </section>
     </main>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <div class="container">
-        <p>
-          © 2024 - Recursos para la Gestión del Conocimiento en Ciencias de la
-          Salud
-        </p>
-      </div>
-    </footer>
-
     <script src="./assets/js/include.js"></script>
+
+    <!-- Script para manejar las secciones expandibles -->
+
+    <include src="footer.html"></include>
+    <script src="./assets/js/utils.js"></script>
   </body>
 </html>

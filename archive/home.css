@@ -1,0 +1,263 @@
+/* ===========================================
+    home.css
+    Estilos específicos de la página de inicio
+   =========================================== */
+
+/* Bio Container */
+.biografy-container {
+  margin-top: 3.5rem;
+  padding: 1.25rem;
+  color: var(--text-primary);
+}
+
+.bio-grid {
+  display: grid;
+  grid-template-columns: minmax(250px, 1fr) 3fr;
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Bio Left Column */
+.bio-left {
+  text-align: center;
+}
+
+.bio-image {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  margin-bottom: 1.5rem;
+  border: 3px solid var(--accent-color);
+  object-fit: cover;
+}
+
+.bio-title {
+  color: var(--text-secondary);
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.bio-institution {
+  color: var(--accent-color);
+  font-size: 0.9rem;
+}
+
+/* Social Icons */
+.social-icons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.social-icon {
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+  transition: color var(--transition-speed), transform var(--transition-speed);
+  text-decoration: none;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.social-icon:hover {
+  color: var(--accent-color);
+  transform: scale(1.2);
+}
+
+/* Academic Profiles */
+.academic-profiles {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-grid {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  margin: 0 auto;
+  flex-wrap: nowrap;
+}
+
+.profile-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 1.1rem;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all var(--transition-speed);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+}
+
+.profile-link:hover {
+  color: var(--accent-color);
+  transform: translateY(-2px);
+}
+
+.profile-link i {
+  font-size: 1.1rem;
+}
+
+/* Tooltip */
+.profile-link:hover::before {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.4rem 0.8rem;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  border-radius: 0.25rem;
+  white-space: nowrap;
+  z-index: 10;
+  opacity: 0.9;
+}
+
+/* Bio Right Column */
+.bio-section {
+  margin-bottom: 2rem;
+}
+
+.bio-section h2 {
+  color: var(--accent-color);
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.bio-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.bio-list {
+  list-style: none;
+  padding: 0;
+}
+
+.bio-list li {
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.education-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  margin-top: 2rem;
+}
+
+.education-icon {
+  color: var(--accent-color);
+  font-size: 1.2rem;
+}
+
+.education-details h3 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Custom Link Styles */
+a[href^="http"]:not(.nav-brand):not(.nav-link):not(.card-link):not(
+    .social-icon
+  ):not(.profile-link) {
+  background: url(/assets/images/urlIcon.png) no-repeat right center;
+  padding-right: 22px;
+}
+
+/* Nueva sección destacada */
+.featured {
+  background-color: var(--card-bg);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Grid de características */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: var(--secondary-bg);
+  border-radius: 0.5rem;
+  transition: transform var(--transition-speed);
+}
+
+.feature-item:hover {
+  transform: translateY(-2px);
+}
+
+.feature-item i {
+  color: var(--accent-color);
+  font-size: 1.25rem;
+}
+
+/* Tags cloud */
+.tags-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tags-cloud .tag {
+  background-color: var(--card-bg);
+  color: var(--text-secondary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  transition: all var(--transition-speed);
+}
+
+.tags-cloud .tag:hover {
+  background-color: var(--hover-color);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .biografy-container {
+    padding: 1rem;
+    margin-top: 4rem;
+  }
+
+  .bio-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .bio-grid-2col {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-link:hover::before {
+    display: none;
+  }
+
+  .academic-profiles {
+    margin-top: 1rem;
+  }
+}
