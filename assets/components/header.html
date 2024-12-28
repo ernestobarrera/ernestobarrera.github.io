@@ -4,7 +4,12 @@
   cabecera
 =====================
 -->
-
+<head>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+  />
+</head>
 <nav class="navbar">
   <div class="nav-container">
     <a href="./" class="nav-brand">
@@ -13,13 +18,17 @@
     </a>
 
     <ul class="nav-menu">
-      <li><a href="./" class="nav-link" id="inicio">Inicio</a></li>
+      <li>
+        <a href="./" class="nav-link" id="inicio">
+          <i class="fas fa-home"></i> Inicio</a
+        >
+      </li>
 
       <!-- 1. Herramientas -->
       <li class="dropdown">
         <div class="dropdown-header">
-          <a href="herramientas.html" class="nav-link" id="herramientas"
-            >🔧 Herramientas</a
+          <a href="herramientas.html" class="nav-link" id="herramientas">
+            <i class="fas fa-tools"></i>Herramientas</a
           >
           <button class="dropdown-toggle" aria-label="Abrir submenú">
             <i class="fas fa-chevron-down"></i>
@@ -27,7 +36,9 @@
         </div>
         <ul class="dropdown-menu">
           <li>
-            <a href="calculadora_diagnostica.html">Calculadora Diagnóstica</a>
+            <a href="calculadora_diagnostica.html">
+              <i class="fas fa-calculator"></i> Calculadora Diagnóstica</a
+            >
           </li>
           <li><a href="buscadores.html">🔎 Buscadores</a></li>
           <li>
@@ -39,8 +50,8 @@
       <!-- 2. IA en Medicina -->
       <li class="dropdown">
         <div class="dropdown-header">
-          <a href="ia-salud.html" class="nav-link" id="ia-salud"
-            >🤖 IA en Salud</a
+          <a href="ia-salud.html" class="nav-link" id="ia-salud">
+            <i class="fas fa-robot"></i> IA en Salud</a
           >
           <button class="dropdown-toggle" aria-label="Abrir submenú">
             <i class="fas fa-chevron-down"></i>
@@ -59,8 +70,8 @@
       <!-- 3. Biblioteca -->
       <li class="dropdown">
         <div class="dropdown-header">
-          <a href="biblioteca.html" class="nav-link" id="biblioteca"
-            >📚 Biblioteca</a
+          <a href="biblioteca.html" class="nav-link" id="biblioteca">
+            <i class="fas fa-book-medical"></i> Biblioteca</a
           >
           <button class="dropdown-toggle" aria-label="Abrir submenú">
             <i class="fas fa-chevron-down"></i>
@@ -76,8 +87,8 @@
       <!-- 4. Formación -->
       <li class="dropdown">
         <div class="dropdown-header">
-          <a href="formacion.html" class="nav-link" id="formacion"
-            >🎓 Formación</a
+          <a href="formacion.html" class="nav-link" id="formacion">
+            <i class="fas fa-graduation-cap"></i> Formación</a
           >
           <button class="dropdown-toggle" aria-label="Abrir submenú">
             <i class="fas fa-chevron-down"></i>
@@ -91,8 +102,8 @@
 
       <!-- 5. Proyectos -->
       <li>
-        <a href="otros-proyectos.html" class="nav-link" id="otros-proyectos"
-          >💡 Otros Proyectos</a
+        <a href="otros-proyectos.html" class="nav-link" id="otros-proyectos">
+          <i class="fas fa-lightbulb"></i> Otros Proyectos</a
         >
       </li>
     </ul>
