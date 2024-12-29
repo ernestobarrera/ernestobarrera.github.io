@@ -5,7 +5,11 @@ Estilos específicos de la todas las páginas que tienen estilos específicos
 /* ===========================================
     Estilos específicos de la página index.html
    =========================================== */
+
 .home-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background-image: linear-gradient(
       90deg,
       rgba(15, 23, 42, 0.3) 0%,
@@ -16,15 +20,22 @@ Estilos específicos de la todas las páginas que tienen estilos específicos
   background-repeat: no-repeat;
   background-size: contain;
 }
-
-/* Bio Container */
-.biografy-container {
-  margin-top: 3.5rem;
-  padding: 1.25rem;
-  color: var(--text-primary);
+.home-page main {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem; /* Añadir espacio antes del footer */
 }
 
-.bio-grid {
+/* Bio Container */
+.home-page .biografy-container {
+  margin-top: 5rem;
+  padding-bottom: 0rem;
+  color: var(--text-primary);
+  height: auto; /* Cambiar flex: 1 por height: auto */
+}
+
+.home-page .bio-grid {
   display: grid;
   grid-template-columns: minmax(250px, 1fr) 3fr;
   gap: 1.5rem;
@@ -33,11 +44,11 @@ Estilos específicos de la todas las páginas que tienen estilos específicos
 }
 
 /* Bio Left Column */
-.bio-left {
+.home-page .bio-left {
   text-align: center;
 }
 
-.bio-image {
+.home-page .bio-image {
   width: 200px;
   height: 200px;
   border-radius: 50%;
@@ -46,26 +57,26 @@ Estilos específicos de la todas las páginas que tienen estilos específicos
   object-fit: cover;
 }
 
-.bio-title {
+.home-page .bio-title {
   color: var(--text-secondary);
   margin: 0.5rem 0;
   font-size: 1.1rem;
 }
 
-.bio-institution {
+.home-page .bio-institution {
   color: var(--accent-color);
   font-size: 0.9rem;
 }
 
 /* Social Icons */
-.social-icons {
+.home-page .social-icons {
   display: flex;
   justify-content: center;
   gap: 1rem;
   margin-top: 1.5rem;
 }
 
-.social-icon {
+.home-page .social-icon {
   color: var(--text-secondary);
   font-size: 1.5rem;
   transition: color var(--transition-speed), transform var(--transition-speed);
@@ -74,19 +85,19 @@ Estilos específicos de la todas las páginas que tienen estilos específicos
   flex: 0 0 auto;
 }
 
-.social-icon:hover {
+.home-page .social-icon:hover {
   color: var(--accent-color);
   transform: scale(1.2);
 }
 
 /* Academic Profiles */
-.academic-profiles {
+.home-page .academic-profiles {
   margin-top: 1rem;
   padding-top: 0.75rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.profile-grid {
+.home-page .profile-grid {
   display: flex;
   justify-content: center;
   gap: 1.25rem;
@@ -94,7 +105,7 @@ Estilos específicos de la todas las páginas que tienen estilos específicos
   flex-wrap: nowrap;
 }
 
-.profile-link {
+.home-page .profile-link {
   color: var(--text-secondary);
   text-decoration: none;
   font-size: 1.1rem;
@@ -109,17 +120,17 @@ Estilos específicos de la todas las páginas que tienen estilos específicos
   height: 2rem;
 }
 
-.profile-link:hover {
+.home-page .profile-link:hover {
   color: var(--accent-color);
   transform: translateY(-2px);
 }
 
-.profile-link i {
+.home-page .profile-link i {
   font-size: 1.1rem;
 }
 
 /* Tooltip */
-.profile-link:hover::before {
+.home-page .profile-link:hover::before {
   content: attr(title);
   position: absolute;
   bottom: 100%;
@@ -136,34 +147,34 @@ Estilos específicos de la todas las páginas que tienen estilos específicos
 }
 
 /* Bio Right Column */
-.bio-section {
+.home-page .bio-section {
   margin-bottom: 2rem;
 }
 
-.bio-section h2 {
+.home-page .bio-section h2 {
   color: var(--accent-color);
   margin-bottom: 1rem;
   font-size: 1.5rem;
 }
 
-.bio-grid-2col {
+.home-page .bio-grid-2col {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   margin-top: 1rem;
 }
 
-.bio-list {
+.home-page .bio-list {
   list-style: none;
   padding: 0;
 }
 
-.bio-list li {
+.home-page .bio-list li {
   margin-bottom: 0.5rem;
   color: var(--text-secondary);
 }
 
-.education-item {
+.home-page .education-item {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
@@ -171,18 +182,19 @@ Estilos específicos de la todas las páginas que tienen estilos específicos
   margin-top: 2rem;
 }
 
-.education-icon {
+.home-page .education-icon {
   color: var(--accent-color);
   font-size: 1.2rem;
 }
 
-.education-details h3 {
+.home-page .education-details h3 {
   font-size: 1rem;
   margin: 0;
 }
 
 /* Custom Link Styles */
-a[href^="http"]:not(.nav-brand):not(.nav-link):not(.card-link):not(
+.home-page
+  a[href^="http"]:not(.nav-brand):not(.nav-link):not(.card-link):not(
     .social-icon
   ):not(.profile-link) {
   background: url(/assets/images/urlIcon.png) no-repeat right center;
@@ -190,48 +202,78 @@ a[href^="http"]:not(.nav-brand):not(.nav-link):not(.card-link):not(
 }
 
 /* Nueva sección destacada */
-.featured {
+.home-page .featured {
   background-color: var(--card-bg);
   border-radius: 1rem;
   padding: 1.25rem;
   margin-bottom: 1.5rem;
 }
 
-/* Grid de características */
-.features-grid {
+/* Sección de recursos */
+.home-page .resources-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
   margin-top: 1rem;
 }
 
-.feature-item {
+.home-page .resource-item {
+  display: flex;
+  gap: 0.875rem;
+  padding: 0.875rem;
+  background-color: var(--secondary-bg);
+  border-radius: 0.75rem;
+  transition: all var(--transition-speed);
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.home-page .resource-item:hover {
+  transform: translateY(-2px);
+  background-color: var(--hover-color);
+}
+
+.home-page .resource-icon {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background-color: var(--secondary-bg);
+  justify-content: center;
+  background-color: var(--card-bg);
   border-radius: 0.5rem;
-  transition: transform var(--transition-speed);
 }
 
-.feature-item:hover {
-  transform: translateY(-2px);
-}
-
-.feature-item i {
-  color: var(--accent-color);
+.home-page .resource-icon i {
   font-size: 1.25rem;
+  color: var(--accent-color);
+}
+
+.home-page .resource-content {
+  flex: 1;
+}
+
+.home-page .resource-content h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  color: var(--accent-color);
+}
+
+.home-page .resource-content p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.3;
 }
 
 /* Tags cloud */
-.tags-cloud {
+.home-page .tags-cloud {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.tags-cloud .tag {
+.home-page .tags-cloud .tag {
   background-color: var(--card-bg);
   color: var(--text-secondary);
   padding: 0.25rem 0.75rem;
@@ -240,42 +282,49 @@ a[href^="http"]:not(.nav-brand):not(.nav-link):not(.card-link):not(
   transition: all var(--transition-speed);
 }
 
-.tags-cloud .tag:hover {
+.home-page .tags-cloud .tag:hover {
   background-color: var(--hover-color);
   color: var(--text-primary);
   transform: translateY(-2px);
 }
+.home-page footer {
+  flex-shrink: 0; /* Evita que el footer se encoja */
+  margin-top: auto; /* Empuja el footer hacia abajo */
+}
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .biografy-container {
+  .home-page .biografy-container {
     padding: 1rem;
     margin-top: 4rem;
   }
 
-  .bio-grid {
+  .home-page .bio-grid {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
 
-  .bio-grid-2col {
+  .home-page .bio-grid-2col {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
 
-  .features-grid {
+  .home-page .resources-grid {
     grid-template-columns: 1fr;
   }
 
-  .profile-link:hover::before {
+  .home-page .resource-item {
+    padding: 0.75rem;
+  }
+
+  .home-page .profile-link:hover::before {
     display: none;
   }
 
-  .academic-profiles {
+  .home-page .academic-profiles {
     margin-top: 1rem;
   }
 }
-
 /* ===========================================
     Estilos específicos de la página record.html
    =========================================== */
@@ -467,8 +516,8 @@ record-page.small-example {
 }
 
 .prompts-page .intro-text {
-  font-size: 0.85rem;
-  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.7rem;
   line-height: 1.3;
 }
 
@@ -646,5 +695,141 @@ record-page.small-example {
 
   .prompts-page .bookmarklet-button {
     width: 100%;
+  }
+}
+
+/* ===========================================
+    Estilos específicos de la página gpt.html
+    Este archivo contiene todos los estilos específicos para la página de GPTs,
+    usando el prefijo .gpt-page para evitar conflictos con otros estilos
+   =========================================== */
+
+/* Estilos de la sección hero */
+.gpt-page .hero-section {
+  padding: 0rem 0 0.2rem; /* Espaciado mínimo arriba y abajo */
+}
+
+/* Texto introductorio en el hero */
+.gpt-page .hero-section .intro-text {
+  margin: 0.5rem 0; /* Margen vertical reducido */
+  line-height: 1.4; /* Altura de línea para mejor legibilidad */
+}
+
+/* Título principal */
+.gpt-page .main-title {
+  margin: 0; /* Elimina márgenes por defecto */
+}
+
+/* Secciones de recursos (GPTs) */
+.gpt-page .resources-section {
+  margin: 0.5rem 0; /* Espaciado vertical entre secciones */
+}
+
+/* Contenedor de lista de recursos */
+.gpt-page .resources-list {
+  display: flex;
+  flex-direction: column; /* Apila los elementos verticalmente */
+  gap: 0.5rem; /* Espacio entre tarjetas */
+}
+
+/* Tarjeta individual de GPT */
+.gpt-page .resource-item {
+  background: var(--card-bg);
+  border-radius: 0.5rem;
+  padding: 0.4rem;
+  display: grid;
+  grid-template-columns: 32px 1fr auto; /* Estructura: icono | contenido | meta */
+  gap: 1.3rem; /* Espacio entre elementos de la tarjeta */
+  align-items: center;
+  position: relative; /* Para posicionamiento del enlace absoluto */
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+/* Efecto hover en la tarjeta */
+.gpt-page .resource-item:hover {
+  transform: translateX(5px); /* Desplazamiento horizontal al hover */
+  background: var(--hover-color);
+}
+
+/* Icono del GPT */
+.gpt-page .gpt-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%; /* Hace la imagen circular */
+  object-fit: cover; /* Asegura que la imagen cubra el espacio sin deformarse */
+  background: var(--secondary-bg);
+}
+
+/* Contenedor del contenido principal */
+.gpt-page .resource-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Contenedor del nombre y tag */
+.gpt-page .resource-name {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Título del GPT */
+.gpt-page .resource-name h3 {
+  margin: 0;
+  font-size: 0.95rem; /* Reducido de 1.1rem para mejor ajuste */
+  font-weight: 600; /* Añadido para mejor énfasis */
+  color: var(--text-primary);
+}
+
+/* Etiqueta de categoría */
+.gpt-page .tag {
+  background: var(--secondary-bg);
+  color: var(--text-secondary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+}
+
+/* Descripción del GPT */
+.gpt-page .resource-description {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Contenedor de metadatos */
+.gpt-page .meta-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+/* Fecha de actualización */
+.gpt-page .update {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Enlace clickeable que cubre toda la tarjeta */
+.gpt-page .resource-link {
+  position: absolute;
+  inset: 0; /* Cubre toda la tarjeta */
+  opacity: 0; /* Invisible pero clickeable */
+}
+
+/* Ajustes responsivos para móviles */
+@media (max-width: 768px) {
+  .gpt-page .resource-item {
+    grid-template-columns: 32px 1fr; /* Reorganiza a dos columnas */
+  }
+
+  .gpt-page .meta-info {
+    grid-column: 1 / -1; /* Ocupa todo el ancho */
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 0.5rem;
   }
 }
