@@ -12,6 +12,8 @@
   --hover-color: #1e293b;
   --transition-speed: 0.3s;
   --hover-accent: #fbbf24;
+  --header-height: 60px;
+  --header-mobile-height: 40px; /* altura en móvil */
 }
 
 * {
@@ -36,6 +38,7 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  width: 100%;
 }
 
 /* Contenedores principales */
@@ -47,15 +50,29 @@ body {
 .main-container {
   flex: 1 0 auto;
   max-width: 1600px;
-  margin: 6rem auto 2rem;
+  width: min(88%, 1600px);
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: calc(var(--header-height) + 0.4rem);
+  margin-bottom: 2rem;
   padding: 0 2rem;
-  width: min(88%, 1600px); /* Usar min() para mayor control */
+  position: relative;
 }
 
 @media (max-width: 768px) {
+  :root {
+    --header-height: var(--header-mobile-height);
+  }
+
   .main-container {
     width: 99%; /* Más ancho en móviles */
     padding: 0 1rem;
+    margin-top: calc(
+      var(--header-height) + 1rem
+    ); /* Reducir el margen en móvil */
+  }
+  .nav-menu {
+    top: var(--header-height);
   }
 }
 

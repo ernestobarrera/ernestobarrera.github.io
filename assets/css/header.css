@@ -4,14 +4,16 @@
    =========================================== */
 .navbar {
   background-color: rgba(10, 15, 26, 0.98);
-  padding: 0.8rem 2rem;
+  padding: 0.5rem 2rem 0.4rem; /* arriba | horizontal | abajo */
   position: fixed;
-  width: 100%;
+  width: 100vw; /* Usar viewport width en lugar de porcentaje */
   top: 0;
   z-index: 1000;
   backdrop-filter: blur(8px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  height: auto;
+  height: var(--header-height);
+  /* ... esto trata de ocultar la transición del header entre páginas ... */
+  transition: all 1s ease-in-out; /* o incluso más largo como 0.8s */
 }
 
 .nav-container {

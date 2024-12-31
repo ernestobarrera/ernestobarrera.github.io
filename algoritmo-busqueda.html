@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Algoritmo de Búsqueda | @ernestob</title>
+    <meta
+      name="description"
+      content="Algoritmo interactivo para búsqueda de información en Ciencias de la Salud"
+    />
+
+    <!-- CDNs necesarios -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+
+    <!-- Estilos -->
+    <style>
+      /* Reset solo para el contenido del algoritmo */
+      .algorithm-content * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+
+      /* Estilo para el contenedor principal del algoritmo */
+      .algorithm-content {
+        background-color: rgb(17, 24, 39);
+        color: white;
+        padding: 2rem 0;
+        width: 100%;
+      }
+
+      .main-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+      }
+
+      .hero-section {
+        margin-top: 2.3rem;
+        margin-bottom: 2rem;
+      }
+
+      .main-title {
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .intro-text {
+        color: rgb(156, 163, 175);
+        font-size: 1.1rem;
+        line-height: 1.5;
+      }
+
+      .context-box {
+        background: rgb(31, 41, 55);
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+      }
+
+      .context-box p {
+        color: rgb(209, 213, 219);
+        margin-bottom: 1rem;
+      }
+
+      .context-box p:last-child {
+        margin-bottom: 0;
+      }
+
+      .algorithm-container {
+        background: rgb(31, 41, 55);
+        border-radius: 0.5rem;
+        padding: 2rem;
+      }
+
+      .decision-tree {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+      }
+
+      @media (max-width: 768px) {
+        .decision-tree {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .decision-node {
+        background: rgb(55, 65, 81);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        position: relative;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+      }
+
+      .decision-node.active {
+        background: rgb(79, 70, 229);
+      }
+
+      .decision-node.completed {
+        background: rgb(22, 163, 74);
+      }
+
+      .button {
+        background: rgb(79, 70, 229);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .button:hover {
+        background: rgb(67, 56, 202);
+      }
+
+      .info-tooltip {
+        position: absolute;
+        background: rgb(31, 41, 55);
+        border-radius: 0.375rem;
+        padding: 1rem;
+        z-index: 10;
+        min-width: 200px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
+
+      .step-indicator {
+        color: rgb(156, 163, 175);
+        margin-bottom: 1rem;
+      }
+    </style>
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS externo -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    />
+  </head>
+  <body>
+    <script src="./assets/js/include.js"></script>
+    <include src="header.html"></include>
+
+    <main class="algorithm-content">
+      <div class="main-container">
+        <section class="hero-section">
+          <h1 class="main-title">
+            <span>🔍</span>
+            Algoritmo de Búsqueda en Ciencias de la Salud
+          </h1>
+          <p class="intro-text">
+            Framework interactivo para optimizar las búsquedas de información
+            sanitaria. Uno de los principales motivos por los que los
+            profesionales sanitarios no buscamos información es la falta de
+            tiempo y dificultades en el acceso a la información.
+          </p>
+        </section>
+
+        <div id="algorithm-root"></div>
+      </div>
+    </main>
+
+    <!-- Componente React -->
+    <script type="text/babel">
+      const { useState, useEffect } = React;
+
+      // Definición del flujo del algoritmo
+      const algorithmFlow = {
+        1: {
+          id: 1,
+          question:
+            "¿He revisado recursos para optimizar productividad en búsquedas?",
+          hint: "PLE: Entorno Personal de Aprendizaje",
+          info: "Recursos, fuentes de información y conexiones que dan soporte a tus competencias de búsqueda",
+          details: [
+            "Complementos del navegador",
+            "Atajos del teclado",
+            "Programas útiles de productividad",
+            "Estrategias de descubrimiento 'Just in case'",
+          ],
+          options: [
+            { value: "si", label: "Sí", nextStep: 2 },
+            { value: "no", label: "No", action: "review_resources" },
+          ],
+        },
+        2: {
+          id: 2,
+          question: "¿Usaré Google?",
+          hint: "Considera las ventajas de buscadores especializados",
+          info: "Google Académico y operadores avanzados",
+          details: [
+            "Operadores booleanos",
+            "Google Académico: title:, autor:",
+            "Valorar uso de términos alternativos",
+            "Búsqueda en inglés cuando sea necesario",
+          ],
+          options: [
+            { value: "si", label: "Sí", nextStep: 3 },
+            { value: "no", label: "No", nextStep: 3 },
+          ],
+        },
+        3: {
+          id: 3,
+          question: "¿Es una duda específica (foreground)?",
+          hint: "Diferencia entre dudas generales y específicas",
+          info: "Incertidumbre intrínseca a la práctica para informar cursos de acción",
+          details: [
+            "Duda general: comprensión general de la enfermedad",
+            "Duda específica: aspectos concretos de diagnóstico o tratamiento",
+            "Orientada a resultados de valor sobre el paciente",
+          ],
+          options: [
+            { value: "si", label: "Sí", nextStep: 4 },
+            { value: "no", label: "No", nextStep: "pyramid" },
+          ],
+        },
+        4: {
+          id: 4,
+          question: "¿Tengo tiempo ahora?",
+          hint: "Considera el tiempo disponible para la búsqueda",
+          info: "El tiempo de respuesta se asocia a la confianza y percepción de dificultad",
+          details: [
+            "Valorar disponibilidad de tiempo",
+            "Considerar urgencia de la respuesta",
+            "Evaluar complejidad de la búsqueda",
+          ],
+          options: [
+            { value: "si", label: "Sí", nextStep: 5 },
+            { value: "no", label: "No", nextStep: "note_for_later" },
+          ],
+        },
+      };
+
+      const DecisionNode = ({
+        step,
+        answer,
+        isActive,
+        isCompleted,
+        onHover,
+      }) => (
+        <div
+          className={`decision-node ${isActive ? "active" : ""} ${
+            isCompleted ? "completed" : ""
+          }`}
+          onMouseEnter={() => onHover(step)}
+          onMouseLeave={() => onHover(null)}
+        >
+          <h3>{algorithmFlow[step]?.question}</h3>
+          {answer && <p>Respuesta: {answer}</p>}
+        </div>
+      );
+
+      const InfoTooltip = ({ step }) => {
+        if (!step || !algorithmFlow[step]) return null;
+        const node = algorithmFlow[step];
+
+        return (
+          <div className="info-tooltip">
+            <h4>{node.hint}</h4>
+            <p>{node.info}</p>
+            {node.details && (
+              <ul>
+                {node.details.map((detail, idx) => (
+                  <li key={idx}>{detail}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        );
+      };
+
+      const InteractiveAlgorithm = () => {
+        const [state, setState] = useState({
+          currentStep: 1,
+          history: [],
+          answers: {},
+          hoveredStep: null,
+        });
+
+        const handleAnswer = (option) => {
+          const currentFlow = algorithmFlow[state.currentStep];
+          const newHistory = [
+            ...state.history,
+            {
+              step: state.currentStep,
+              question: currentFlow.question,
+              answer: option.label,
+            },
+          ];
+
+          if (option.nextStep) {
+            setState({
+              ...state,
+              currentStep: option.nextStep,
+              history: newHistory,
+              answers: { ...state.answers, [currentFlow.id]: option.value },
+            });
+          }
+        };
+
+        const handleBack = () => {
+          if (state.history.length > 0) {
+            const newHistory = [...state.history];
+            newHistory.pop();
+            setState({
+              ...state,
+              currentStep:
+                newHistory.length > 0
+                  ? newHistory[newHistory.length - 1].step
+                  : 1,
+              history: newHistory,
+            });
+          }
+        };
+
+        const currentStep =
+          algorithmFlow[state.currentStep] || algorithmFlow[1];
+
+        return (
+          <div className="algorithm-container">
+            <div className="step-indicator">
+              Paso {state.currentStep} de {Object.keys(algorithmFlow).length}
+            </div>
+
+            <div className="decision-tree">
+              <div className="tree-visualization">
+                {Object.keys(algorithmFlow).map((stepId) => {
+                  const stepNum = parseInt(stepId);
+                  const historyItem = state.history.find(
+                    (h) => h.step === stepNum
+                  );
+                  const isCompleted = state.history.some(
+                    (h) => h.step === stepNum
+                  );
+                  const isActive = state.currentStep === stepNum;
+
+                  return (
+                    <div key={stepId} className="node-container">
+                      <DecisionNode
+                        step={stepNum}
+                        answer={historyItem?.answer}
+                        isActive={isActive}
+                        isCompleted={isCompleted}
+                        onHover={(step) =>
+                          setState({ ...state, hoveredStep: step })
+                        }
+                      />
+                      {state.hoveredStep === stepNum && (
+                        <InfoTooltip step={stepNum} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="current-step">
+                <div className="current-question">
+                  <h2>{currentStep.question}</h2>
+                  <p>{currentStep.info}</p>
+                </div>
+
+                <div className="options">
+                  {currentStep.options.map((option, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleAnswer(option)}
+                      className="button"
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+
+                {state.history.length > 0 && (
+                  <button onClick={handleBack} className="button">
+                    Volver atrás
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // Renderizar el componente
+      const root = ReactDOM.createRoot(
+        document.getElementById("algorithm-root")
+      );
+      root.render(<InteractiveAlgorithm />);
+    </script>
+
+    <script src="./assets/js/utils.js"></script>
+    <include src="footer.html"></include>
+  </body>
+</html>
