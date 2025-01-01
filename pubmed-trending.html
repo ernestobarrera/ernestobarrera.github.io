@@ -1,0 +1,201 @@
+<!--
+=====================
+  pubmed-trending.html
+  Artículos trending por tipo en tiempo real
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Artículos trending en PubMed por Tipo de publicación"
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <title>Estadísticas PubMed | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Tipos de artículos PubMed-Trending en tiempo real | ​👨‍⚕️ ​@ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria  🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/pubmed-stats"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    />
+
+    <!-- CSS específico para la página de estadísticas -->
+    <style>
+      /* Contenedor principal que establece el ancho máximo y el margen automático para centrar */
+      .stats-container {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+
+      /* Tarjeta que contiene las estadísticas
+         - Usa flexbox para centrar su contenido verticalmente
+         - Incluye sombra y bordes redondeados para diseño moderno */
+      .stats-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        /* Configuración flexbox para centrado vertical */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      /* Estilo para el título de la sección
+         - Usa variables CSS para colores consistentes
+         - Incluye línea decorativa inferior */
+      .stats-title {
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--accent-color);
+        /* Asegura que el título ocupe el ancho completo del contenedor */
+        width: 100%;
+      }
+
+      /* Estilo para el texto descriptivo
+         - Usa color secundario para jerarquía visual
+         - Mantiene espaciado consistente */
+      .stats-description {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+        /* Asegura que la descripción ocupe el ancho completo */
+        width: 100%;
+      }
+
+      /* Contenedor del iframe
+         - Mantiene dimensiones específicas
+         - Usa posicionamiento relativo para el iframe absoluto */
+      .iframe-container {
+        position: relative;
+        width: 800px; /* Ancho fijo para mantener consistencia */
+        margin: 0;
+        padding: 0;
+        height: 1900px;
+      }
+
+      /* Configuración del iframe
+         - Posicionamiento absoluto para llenar el contenedor
+         - Elimina bordes y espaciados innecesarios */
+      .iframe-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+
+      /* Ajustes responsivos para pantallas móviles
+         - Modifica padding y anchos para mejor visualización en móviles */
+      @media (max-width: 768px) {
+        /* Reduce el padding en móviles */
+        .stats-card {
+          padding: 1rem;
+        }
+
+        /* Ajusta el contenedor del iframe para ocupar todo el ancho disponible */
+        .iframe-container {
+          width: 100%;
+        }
+      }
+    </style>
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </head>
+  <body>
+    <script src="./assets/js/include.js"></script>
+    <include src="header.html"></include>
+
+    <!-- Main Content -->
+    <main class="main-container">
+      <div class="stats-container">
+        <section class="stats-card">
+          <h2 class="stats-title">
+            📈 Publicaciones Trending en PubMed por Tipo de Artículo
+          </h2>
+          <p class="stats-description">
+            Análisis en tiempo real de los artículos "trending" en PubMed,
+            clasificados por tipo de publicación. Un artículo se considera
+            "trending" cuando experimenta un incremento significativo de
+            visualizaciones respecto a su línea base, indicando un interés
+            creciente de la comunidad científica. Esta clasificación permite
+            identificar qué tipos de estudios están generando mayor atención:
+            ensayos clínicos, revisiones, estudios observacionales, etc.
+          </p>
+          <div class="iframe-container">
+            <iframe
+              src="https://docs.google.com/spreadsheets/d/e/2PACX-1vSCyR7pZ4cDygcVEDmgYUqdgzYtE_XDi33SpQXIIBjY5Bewat_06L8EwmbN6r6vCpPZYLTWlVuC7Aum/pubhtml?gid=605910309&amp;single=true&amp;widget=true&amp;headers=false"
+              width="100%"
+              height="800"
+              frameborder="0"
+              scrolling="no"
+              style="border: none; overflow: hidden"
+              allowfullscreen
+            >
+            </iframe>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <!--  -->
+
+    <include src="footer.html"></include>
+  </body>
+</html>

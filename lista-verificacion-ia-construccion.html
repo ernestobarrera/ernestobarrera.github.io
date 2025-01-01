@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lista de Verificación IA en Salud | @ernestob</title>
+    <meta
+      name="description"
+      content="Lista de verificación interactiva para el uso seguro de IA en contextos sanitarios"
+    />
+
+    <!-- Los CDNs se mantienen igual -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- CSS Base - se mantiene igual -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+    <!-- Estilos -->
+    <style>
+      /* Reset y estilos base */
+      .algorithm-content * {
+        margin: 0;
+        padding: 1;
+        box-sizing: border-box;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+
+      /* Contenedor principal */
+      .algorithm-content {
+        background-color: rgb(17, 24, 39);
+        color: white;
+        padding: 1rem 0;
+        width: 100%;
+      }
+
+      .main-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+      }
+
+      /* Hero Section */
+      .hero-section {
+        margin-top: 2.6rem;
+        margin-bottom: 1rem;
+      }
+
+      .main-title {
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .intro-text {
+        color: rgb(156, 163, 175);
+        font-size: 1.1rem;
+        line-height: 1.5;
+      }
+
+      /* Context Box */
+      .context-box {
+        background: rgb(31, 41, 55);
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+      }
+
+      .context-box p {
+        color: rgb(209, 213, 219);
+        margin-bottom: 1rem;
+      }
+
+      .context-box p:last-child {
+        margin-bottom: 0;
+      }
+
+      /* Algorithm Container */
+      .algorithm-container {
+        background: rgb(31, 41, 55);
+        border-radius: 0.5rem;
+        padding: 2rem;
+      }
+
+      .decision-tree {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      /* Decision Nodes */
+      .decision-node {
+        background: rgb(55, 65, 81);
+        border-radius: 0.5rem;
+        padding: 0rem;
+        position: relative;
+        margin-bottom: 0 rem;
+        transition: all 0.3s ease;
+      }
+
+      .decision-node.active {
+        background: rgb(79, 70, 229);
+      }
+
+      .decision-node.completed {
+        background: rgb(22, 163, 74);
+      }
+
+      /* Buttons */
+      .button {
+        background: rgb(79, 70, 229);
+        color: white;
+        border: none;
+        padding: 0.5rem 0.5rem;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .button:hover {
+        background: rgb(67, 56, 202);
+      }
+
+      /* Tooltips */
+      .info-tooltip {
+        position: absolute;
+        background: rgb(31, 41, 55);
+        border-radius: 0.375rem;
+        padding: 1rem;
+        z-index: 10;
+        min-width: 200px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
+
+      .step-indicator {
+        color: rgb(156, 163, 175);
+        margin-bottom: 1rem;
+      }
+
+      /* Checklist Styles */
+      .checklist-container {
+        background: rgb(31, 41, 55);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1rem;
+      }
+
+      .checklist-section {
+        background: rgb(55, 65, 81);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .checklist-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+        background: rgb(31, 41, 55);
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .checklist-info {
+        flex-grow: 1;
+      }
+
+      .info-panel {
+        background: rgb(31, 41, 55);
+        padding: 1rem;
+        border-radius: 0.375rem;
+        margin-top: 0.5rem;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 0.5rem;
+        background: rgb(55, 65, 81);
+        border-radius: 0.25rem;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: rgb(79, 70, 229);
+        transition: width 0.3s ease;
+      }
+
+      .nav-tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .nav-tab {
+        padding: 0.5rem 1rem;
+        background: rgb(55, 65, 81);
+        border-radius: 0.375rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .nav-tab.active {
+        background: rgb(79, 70, 229);
+      }
+
+      /* Checklist items */
+      .checklist-item input[type="checkbox"] {
+        width: 1.2rem;
+        height: 1.2rem;
+        margin-right: 0.5rem;
+        border-radius: 0.25rem;
+        border: 2px solid rgb(156, 163, 175);
+        cursor: pointer;
+      }
+
+      .checklist-item input[type="checkbox"]:checked {
+        background-color: rgb(79, 70, 229);
+        border-color: rgb(79, 70, 229);
+      }
+
+      .sub-items {
+        margin-left: 2rem;
+        margin-top: 0.5rem;
+      }
+
+      .sub-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .decision-tree {
+          grid-template-columns: 1fr;
+        }
+
+        .checklist-container {
+          padding: 1rem;
+        }
+
+        .main-container {
+          padding: 0 1rem;
+        }
+      }
+    </style>
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    />
+  </head>
+  <body>
+    <script src="./assets/js/include.js"></script>
+    <include src="header.html"></include>
+    <main class="algorithm-content">
+      <div class="main-container">
+        <section class="hero-section">
+          <h1 class="main-title">
+            <span>🤖</span>
+            Lista de Verificación: IA en Contextos Sanitarios
+          </h1>
+          <p class="intro-text">
+            Framework interactivo para garantizar un uso seguro y ético de la
+            Inteligencia Artificial en el ámbito sanitario. Esta herramienta
+            ayuda a verificar aspectos críticos como la protección de datos, la
+            actualización de modelos y la monitorización continua.
+          </p>
+        </section>
+
+        <div id="algorithm-root"></div>
+      </div>
+    </main>
+
+    <!-- Componente React -->
+    <script type="text/babel">
+      const { useState, useEffect } = React;
+
+      // Definición del contenido del checklist
+      const checklistData = {
+        sections: {
+          "ANTES DE COMENZAR": {
+            id: "phase_1",
+            items: [
+              {
+                id: "1_1",
+                text: "¿Se han implementado todas las medidas de protección de datos?",
+                explanation:
+                  "Verificar la implementación completa de medidas de seguridad",
+                subItems: [
+                  "Verificar anonimización de datos",
+                  "Confirmar cumplimiento de normativas (GDPR/HIPAA)",
+                  "Comprobar sistemas de cifrado activos",
+                  "Verificar que no se recopila más información de la necesaria",
+                  "Evaluar riesgos de privacidad documentados",
+                ],
+              },
+              {
+                id: "1_2",
+                text: "¿El modelo de IA está actualizado?",
+                explanation:
+                  "Asegurar que se trabaja con la versión más reciente",
+                subItems: [
+                  "Confirmar fecha de última actualización",
+                  "Verificar acceso a fuentes en tiempo real",
+                  "Comprobar disponibilidad de referencias verificables",
+                  "Validar alineación con guías clínicas actuales",
+                  "Verificar complementar con información externa confiable",
+                ],
+              },
+            ],
+          },
+          "DURANTE CADA USO": {
+            id: "phase_2",
+            items: [
+              {
+                id: "2_1",
+                text: "Revisión del Contexto Clínico",
+                explanation:
+                  "Asegurar que se cuenta con toda la información necesaria",
+                subItems: [
+                  "Datos completos del paciente disponibles",
+                  "Historia clínica relevante accesible",
+                  "Medicación actual documentada",
+                  "Disponibilidad de medicamentos verificada",
+                  "Preferencias del paciente consideradas",
+                  "Guías de tratamiento consultadas",
+                ],
+              },
+              {
+                id: "2_2",
+                text: "Verificación de Recomendaciones",
+                explanation:
+                  "Validar la calidad y pertinencia de las recomendaciones",
+                subItems: [
+                  "Todas las áreas críticas cubiertas",
+                  "Interacciones medicamentosas revisadas",
+                  "Contraindicaciones verificadas",
+                  "Dosis apropiadas confirmadas",
+                  "Protocolo de verificación cruzada aplicado",
+                  "Discrepancias documentadas",
+                ],
+              },
+            ],
+          },
+          "EVALUACIÓN CONTINUA": {
+            id: "phase_3",
+            items: [
+              {
+                id: "3_1",
+                text: "Monitorización del Sistema",
+                explanation:
+                  "Seguimiento continuo del rendimiento y resultados",
+                subItems: [
+                  "Retroalimentación recopilada",
+                  "Ajustes documentados",
+                  "Nuevos casos de uso identificados",
+                  "Resultados integrados en comités de gobernanza local",
+                ],
+              },
+              {
+                id: "3_2",
+                text: "Formación y Actualización",
+                explanation: "Mantener al día las competencias del equipo",
+                subItems: [
+                  "Capacitación del personal al día",
+                  "Habilidades de prompting actualizadas",
+                  "Alfabetización digital mantenida",
+                  "Simulaciones prácticas realizadas",
+                  "Implicaciones éticas actualizadas",
+                  "Pensamiento crítico desarrollado",
+                ],
+              },
+            ],
+          },
+        },
+      };
+
+      // Componente principal
+      const App = () => {
+        const [view, setView] = useState("checklist");
+
+        return (
+          <div>
+            <div className="nav-tabs">
+              <button
+                onClick={() => setView("checklist")}
+                className={`nav-tab ${view === "checklist" ? "active" : ""}`}
+              >
+                Lista de Verificación
+              </button>
+              <button
+                onClick={() => setView("resources")}
+                className={`nav-tab ${view === "resources" ? "active" : ""}`}
+              >
+                Recursos y Referencias
+              </button>
+            </div>
+
+            {view === "checklist" ? <Checklist /> : <ResourcesSection />}
+          </div>
+        );
+      };
+
+      // Componente del Checklist
+      const Checklist = () => {
+        const [checked, setChecked] = useState({});
+        const [expanded, setExpanded] = useState({});
+
+        const toggleCheck = (itemId, subIndex = null) => {
+          setChecked((prev) => {
+            const newChecked = { ...prev };
+            if (subIndex !== null) {
+              const key = `${itemId}_${subIndex}`;
+              newChecked[key] = !prev[key];
+            } else {
+              newChecked[itemId] = !prev[itemId];
+              const item = Object.values(checklistData.sections)
+                .flatMap((section) => section.items)
+                .find((item) => item.id === itemId);
+
+              if (item?.subItems) {
+                item.subItems.forEach((_, index) => {
+                  newChecked[`${itemId}_${index}`] = newChecked[itemId];
+                });
+              }
+            }
+            return newChecked;
+          });
+        };
+
+        const toggleExpand = (itemId) => {
+          setExpanded((prev) => ({
+            ...prev,
+            [itemId]: !prev[itemId],
+          }));
+        };
+
+        const calculateProgress = (sectionId) => {
+          const section = Object.values(checklistData.sections).find(
+            (s) => s.id === sectionId
+          );
+
+          if (!section) return 0;
+
+          let totalChecks = 0;
+          let completedChecks = 0;
+
+          section.items.forEach((item) => {
+            if (item.subItems) {
+              totalChecks += item.subItems.length;
+              item.subItems.forEach((_, index) => {
+                if (checked[`${item.id}_${index}`]) {
+                  completedChecks++;
+                }
+              });
+            } else {
+              totalChecks++;
+              if (checked[item.id]) {
+                completedChecks++;
+              }
+            }
+          });
+
+          return totalChecks === 0 ? 0 : (completedChecks / totalChecks) * 100;
+        };
+
+        return (
+          <div className="checklist-container">
+            {Object.entries(checklistData.sections).map(([title, section]) => (
+              <div key={section.id} className="checklist-section">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold">{title}</h2>
+                  <div className="text-sm text-slate-300">
+                    {Math.round(calculateProgress(section.id))}% completado
+                  </div>
+                </div>
+
+                <div className="progress-bar mb-4">
+                  <div
+                    className="progress-fill"
+                    style={{ width: `${calculateProgress(section.id)}%` }}
+                  />
+                </div>
+
+                {section.items.map((item) => (
+                  <div key={item.id} className="checklist-item">
+                    <div className="checklist-info w-full">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={checked[item.id] || false}
+                          onChange={() => toggleCheck(item.id)}
+                          className="w-4 h-4"
+                        />
+                        <span className="flex-grow">{item.text} </span>
+                        <button
+                          onClick={() => toggleExpand(item.id)}
+                          className="text-slate-400 hover:text-white transition-colors"
+                        >
+                          {expanded[item.id] ? "▼" : "▶"}
+                        </button>
+                      </div>
+
+                      {expanded[item.id] && (
+                        <div className="info-panel mt-3">
+                          <p className="text-slate-300 mb-3 text-sm">
+                            {item.explanation}
+                          </p>
+                          {item.subItems && (
+                            <div className="space-y-2">
+                              {item.subItems.map((subItem, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center gap-2 pl-4"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={
+                                      checked[`${item.id}_${index}`] || false
+                                    }
+                                    onChange={() => toggleCheck(item.id, index)}
+                                    className="w-4 h-4"
+                                  />
+                                  <span className="text-sm text-slate-300">
+                                    {subItem}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        );
+      };
+
+      // Componente de Recursos
+      const ResourcesSection = () => {
+        return (
+          <div className="algorithm-container">
+            <div className="context-box">
+              <h2 className="text-xl font-bold mb-4">Recursos y Referencias</h2>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">
+                  Guías y Documentación
+                </h3>
+                <ul className="space-y-2">
+                  <li>
+                    • WHO guidance on ethics and governance of artificial
+                    intelligence for health
+                  </li>
+                  <li>
+                    • Good Machine Learning Practice for Medical Device
+                    Development
+                  </li>
+                  <li>• Ethical guidelines for trustworthy AI in healthcare</li>
+                </ul>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">
+                  Referencias Clave
+                </h3>
+                <ul className="space-y-2">
+                  <li>
+                    • Large Language Models in Medicine (Nature Medicine, 2023)
+                  </li>
+                  <li>• AI governance frameworks in healthcare settings</li>
+                  <li>
+                    • Best practices for implementing AI in clinical workflows
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-2">
+                  Recursos Adicionales
+                </h3>
+                <ul className="space-y-2">
+                  <li>
+                    • Cursos y formación en IA para profesionales sanitarios
+                  </li>
+                  <li>• Herramientas de evaluación de sesgos en IA</li>
+                  <li>• Comunidades de práctica y foros de discusión</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // Renderizar la aplicación
+      const root = ReactDOM.createRoot(
+        document.getElementById("algorithm-root")
+      );
+      root.render(<App />);
+    </script>
+
+    <script src="./assets/js/utils.js"></script>
+    <include src="footer.html"></include>
+  </body>
+</html>
