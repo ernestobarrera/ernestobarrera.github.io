@@ -1,0 +1,321 @@
+<!--
+=====================
+  interfaces-pubmed.html
+  Página de Interfaces alternativos a PubMed
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Interfaces alternativos a PubMed para facilitar la búsqueda de información biomédica"
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <meta name="DC.Identifier" content="10.5281/zenodo.4485682" />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <title>Interfaces Alternativos a PubMed | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Interfaces Alternativos a PubMed | ​👨‍⚕️ ​@ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria 🔎🩺⚕"
+    />
+    <meta property="og:url" content="https://ernestobarrera.github.io/" />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+    <meta property="article:published_time" content="2024-01-04" />
+    <meta property="article:author" content="https://twitter.com/ernestob" />
+
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <!-- Estilos específicos para los iframes -->
+    <style>
+      .content-container {
+        width: 100%;
+        max-width: 1500px;
+              margin: 0 auto;
+        padding: 1rem;
+      }
+
+      .content-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .content-title {
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--accent-color);
+      }
+
+      .content-description {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+      }
+
+      .iframe-container {
+        position: relative;
+        width: 100%;
+        margin: 1rem 0;
+        min-height: 2900px;
+      }
+
+      .spreadsheet-container {
+        height: calc(100vh - 250px);
+        min-height: 1900px;
+      }
+
+      .form-container {
+        height: calc(100vh - 300px);
+        min-height: 1000px;
+      }
+
+      .iframe-container iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        border-radius: 8px;
+        background: white;
+        
+      }
+
+      .attribution {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin: 1rem 0;
+        padding: 1rem;
+        border-top: 1px solid var(--secondary-bg);
+      }
+
+      .attribution a {
+        color: var(--accent-color);
+        text-decoration: none;
+      }
+
+      .attribution a:hover {
+        text-decoration: underline;
+      }
+
+      .license-container {
+        margin: 1rem 0;
+        padding: 1rem;
+        border-top: 1px solid var(--secondary-bg);
+        text-align: center;
+      }
+
+      @media (max-width: 768px) {
+        .content-container {
+          padding: 0.5rem;
+        }
+
+        .content-card {
+          padding: 0.5rem;
+        }
+
+        .spreadsheet-container,
+        .form-container {
+          min-height: 400px;
+        }
+      }
+    </style>
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </head>
+  <body>
+    <include src="header.html"></include>
+
+    <style>
+      .content-container {
+        width: 100%;
+        max-width: 1200px; /* Reducido de 1500px a 1200px como en la calculadora */
+        margin: 2rem auto; /* Añadido margen vertical como en la calculadora */
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .content-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        width: 100%;
+      }
+
+      .content-title {
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--accent-color);
+      }
+
+      .content-description {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+      }
+
+      .iframe-container {
+        position: relative;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      .spreadsheet-container {
+        height: calc(100vh - 250px);
+        min-height: 1050px;
+      }
+
+      .form-container {
+        height: calc(100vh - 300px);
+        min-height: 800px;
+      }
+
+      .iframe-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+        border-radius: 8px;
+      }
+
+      .attribution {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--secondary-bg);
+      }
+
+      .license-container {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--secondary-bg);
+        text-align: center;
+      }
+
+      @media (max-width: 768px) {
+        .content-container {
+          padding: 0.1rem;
+          margin: 1rem auto;
+        }
+
+        .content-card {
+          padding: 0.1rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .content-container {
+          padding: 0.1rem;
+        }
+
+        .content-card {
+          border-radius: 8px;
+          padding: 0.1rem;
+        }
+      }
+    </style>
+</head>
+<body>
+    <include src="header.html"></include>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <div class="content-container">
+            <section class="content-card">
+                <h2 class="content-title">📚 Interfaces Alternativos a PubMed</h2>
+                <p class="content-description">
+                    Colección curada de interfaces y herramientas alternativas para buscar en PubMed/MEDLINE. 
+                    Cada interfaz ofrece funcionalidades únicas que pueden mejorar tu experiencia de búsqueda 
+                    de literatura biomédica.
+                </p>
+                <div class="iframe-container spreadsheet-container">
+                    <iframe 
+                        width="700"
+                        height="900"
+                        frameborder="0"
+                        scrolling="no"
+                        src="https://docs.google.com/spreadsheets/d/e/2PACX-1vT2Osk24aUzIWWHwRwBDQMHScWc3HNya26rUgk90p9H1QDvISIZqEEqte05T2c5ayhjAeomE2PZxrsK/pubhtml?gid=1308866000&single=true">
+                    </iframe>
+                </div>
+            </section>
+
+            <section class="content-card">
+                <h2 class="content-title">💡 Sugerir Nuevo Interfaz</h2>
+                <p class="content-description">
+                    ¿Conoces algún interfaz alternativo a PubMed que no esté en la lista? 
+                    Compártelo con la comunidad utilizando el siguiente formulario.
+                </p>
+                <div class="iframe-container form-container">
+                    <iframe 
+                        width="700"
+                        height="900"
+                        frameborder="0"
+                        scrolling="no"
+                        src="https://docs.google.com/forms/d/e/1FAIpQLSeKzihuNaXVfij7K72bCXzNaRbLvbH9zSsynl58QEGDFpWxVQ/viewform?embedded=true">
+                        Cargando formulario...
+                    </iframe>
+                </div>
+            </section>
+
+        <!-- <div class="div-container2">  -->
+  <div class="container" >
+   
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank"><img alt="Licencia Creative Commons" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a><br />Bajo una <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">Licencia Creative Commons Atribución-NoComercial-Compartir Igual 4.0 Internacional</a>
+    
+    <br />Autor de la tabla:<br /><a rel="author" href="https://twitter.com/ernestob" target="_blank">Ernesto Barrera. Médico de familia, Consejería de Sanidad, Servicio Madrileño de Salud </a><br />Con la colaboración de:<br /><a href="https://twitter.com/biblioGetafe/" target="_blank"> Concepción Campos Asensio. Bibliotecaria del Hospital de Getafe (Madrid)</a>
+    </div>
+        </div>
+    </main>
+
+    <include src="footer.html"></include>
+    <script src="./assets/js/include.js"></script>
+</body>
+</html>
