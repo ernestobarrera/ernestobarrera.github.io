@@ -1,0 +1,799 @@
+<!--
+    =====================
+      calculadora-productividad2.html
+      Calculadora de Productividad
+    =====================
+    -->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculadora de Productividad | @ernestob</title>
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/header.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+    <style>
+      /* Ajustes generales para homogeneizar fuentes y tamaños */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        background: #1c1e26;
+      }
+      .main-container {
+        max-width: 1200px;
+        margin-left: auto; /* En lugar de margin: 1.2rem auto */
+        margin-right: auto;
+        padding: 0.5rem 0.5rem;
+      }
+
+      .calculadora-contenedor {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0.5rem;
+        color: var(--text-primary, #fff);
+      }
+      .calculadora-titulo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 0.75rem;
+      }
+
+      /* Párrafo de introducción (explicación de atajos + contexto) */
+      .intro-atajos {
+        font-size: 1rem;
+        line-height: 1.4;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 6px;
+        padding: 0.75rem;
+        color: var(--text-secondary, #94a3b8);
+        margin-bottom: 1rem;
+      }
+
+      /* Párrafo introductorio general de la calculadora */
+      .parrafo-introductorio {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        line-height: 1.4;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 6px;
+        padding: 0.75rem;
+        color: var(--text-secondary, #94a3b8);
+      }
+
+      /* Ejemplos de uso sector salud */
+      .ejemplos-salud {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        background: rgba(255, 255, 255, 0.07);
+        border-radius: 6px;
+        padding: 0.75rem;
+        color: var(--text-secondary, #94a3b8);
+        line-height: 1.4;
+      }
+
+      /* Sección de parámetros */
+      .parametros-seccion {
+        background: var(--card-bg, #2a3b4d);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      .parametros-titulo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+      .parametros-contenido {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 1rem;
+      }
+      .grupo-entrada {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      .grupo-entrada input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--secondary-bg, #454b59);
+        border-radius: 4px;
+        background: var(--primary-bg, #1c1e26);
+        color: var(--text-primary, #fff);
+        font-size: 1rem;
+        box-sizing: border-box;
+      }
+      .label-texto {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.9rem;
+        color: var(--text-secondary, #94a3b8);
+      }
+      .icono-ayuda {
+        cursor: help;
+        color: var(--text-secondary, #94a3b8);
+        position: relative;
+      }
+      .icono-ayuda::after {
+        content: attr(data-tooltip);
+        font: 1em sans-serif;
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 0.5rem;
+        background: #3b3b3b;
+        border: 1px solid var(--secondary-bg, #454b59);
+        border-radius: 4px;
+        color: #fff;
+        font-size: 0.8rem;
+        width: max-content;
+        max-width: 200px;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s;
+        z-index: 10;
+        text-transform: none;
+        letter-spacing: normal;
+        line-height: 1rem;
+      }
+      .icono-ayuda:hover::after {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      /* Métricas y gráfico */
+      .contenedor-metricas-grafico {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: 1fr;
+      }
+      /* Ajustar ancho de columnas para que la interpretación sea más amplia */
+      @media (min-width: 1024px) {
+        .contenedor-metricas-grafico {
+          grid-template-columns: 3fr 2fr; /* Más ancho a la izquierda */
+        }
+      }
+      .metricas-seccion {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin: 0.5rem 0;
+      }
+      .metrica-card {
+        background: var(--card-bg, #2a2f3a);
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+      }
+      .metrica-titulo {
+        font-size: 0.9rem;
+        color: var(--text-secondary, #94a3b8);
+        margin-bottom: 0.5rem;
+      }
+      .metrica-valor {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: var(--accent-color, #3b82f6);
+      }
+      .metrica-descripcion {
+        font-size: 0.8rem;
+        color: var(--text-secondary, #94a3b8);
+      }
+      .grafico-contenedor {
+        background: var(--card-bg, #2a2f3a);
+        border-radius: 8px;
+        padding: 0.5rem;
+      }
+      .grafico-canvas {
+        width: 100%;
+        height: 190px;
+        margin: 0.1rem 0;
+      }
+
+      /* Interpretación */
+      .interpretacion-contenedor {
+        background: rgba(59, 130, 246, 0.1);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+
+      /* CTA final */
+      .cta-seccion {
+        margin-top: 1rem;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 1rem;
+        font-size: 0.9rem;
+        color: var(--text-secondary, #94a3b8);
+        line-height: 1.4;
+      }
+      .cta-seccion strong {
+        color: var(--accent-color, #3b82f6);
+      }
+
+      /* Base Científica */
+      .base-cientifica {
+        background: var(--card-bg, #2a2f3a);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+      }
+      .base-cientifica-titulo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary, #fff);
+        margin-bottom: 0.5rem;
+      }
+      .formulas-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--secondary-bg, #454b59);
+      }
+      .formula {
+        background: rgba(59, 130, 246, 0.1);
+        padding: 1rem;
+        border-radius: 4px;
+        position: relative;
+      }
+      .formula-titulo {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary, #fff);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .formula-texto {
+        font-family: monospace;
+        font-size: 1rem;
+        color: var(--accent-color, #3b82f6);
+        margin-bottom: 0.5rem;
+      }
+      .formula-descripcion {
+        font-size: 0.9rem;
+        color: var(--text-secondary, #94a3b8);
+      }
+      .icono-ley {
+        color: var(--accent-color, #3b82f6);
+      }
+
+      @media (max-width: 768px) {
+        .parametros-contenido {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .metricas-seccion {
+          grid-template-columns: 1fr;
+        }
+        .formulas-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <include src="header.html"></include>
+
+    <main class="main-container">
+      <section class="hero-section">
+        <h1 class="main-title">
+          <i class="fas fa-clock"></i>
+          <span>Calculadora de Ahorro de Tiempo</span>
+        </h1>
+        <p class="intro-text">
+          Esta herramienta muestra cuántas horas y cuántos errores pueden
+          ahorrarse en tareas repetitivas, especialmente al optimizar interfaces
+          o usar atajos de teclado. Simplemente ingresa datos como el número de
+          clics o la frecuencia con que se repite la tarea, y obtendrás una
+          estimación de horas anuales y calidad ganada.
+        </p>
+      </section>
+      <div class="calculadora-contenedor">
+        <!-- Introducción sobre atajos y la paradoja del usuario activo -->
+
+        <!-- SECCIÓN DE PARÁMETROS -->
+        <div class="parametros-seccion">
+          <h2 class="parametros-titulo">
+            <i class="fas fa-bullseye"></i>
+            Parámetros de la Tarea
+          </h2>
+          <div class="parametros-contenido">
+            <div class="grupo-entrada">
+              <label>
+                <div class="label-texto">
+                  <i class="fas fa-tasks"></i>
+                  <span>Tareas</span>
+                  <i
+                    class="fas fa-question-circle icono-ayuda"
+                    data-tooltip="Número de tareas diferentes que se optimizan"
+                  ></i>
+                </div>
+                <input type="number" id="tasks" value="1" min="1" />
+              </label>
+            </div>
+            <div class="grupo-entrada">
+              <label>
+                <div class="label-texto">
+                  <i class="fas fa-mouse-pointer"></i>
+                  <span>Clics</span>
+                  <i
+                    class="fas fa-question-circle icono-ayuda"
+                    data-tooltip="Número de clics o interacciones necesarias para completar una operación"
+                  ></i>
+                </div>
+                <input type="number" id="clicks" value="3" min="1" />
+              </label>
+            </div>
+            <div class="grupo-entrada">
+              <label>
+                <div class="label-texto">
+                  <i class="fas fa-clock"></i>
+                  <span>Tiempo/clic</span>
+                  <i
+                    class="fas fa-question-circle icono-ayuda"
+                    data-tooltip="Tiempo promedio por clic (Ley de Fitts: 0.3s estándar)"
+                  ></i>
+                </div>
+                <input
+                  type="number"
+                  id="timePerClick"
+                  value="0.3"
+                  min="0.1"
+                  step="0.1"
+                />
+              </label>
+            </div>
+            <div class="grupo-entrada">
+              <label>
+                <div class="label-texto">
+                  <i class="fas fa-repeat"></i>
+                  <span>Frecuencia</span>
+                  <i
+                    class="fas fa-question-circle icono-ayuda"
+                    data-tooltip="Veces que se realiza la operación por día"
+                  ></i>
+                </div>
+                <input type="number" id="frequency" value="100" min="1" />
+              </label>
+            </div>
+            <div class="grupo-entrada">
+              <label>
+                <div class="label-texto">
+                  <i class="fas fa-users"></i>
+                  <span>Usuarios</span>
+                  <i
+                    class="fas fa-question-circle icono-ayuda"
+                    data-tooltip="Número de personas que realizan la tarea"
+                  ></i>
+                </div>
+                <input type="number" id="users" value="4" min="1" />
+              </label>
+            </div>
+            <div class="grupo-entrada">
+              <label>
+                <div class="label-texto">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  <span>Error (%)</span>
+                  <i
+                    class="fas fa-question-circle icono-ayuda"
+                    data-tooltip="Porcentaje de errores en la operación manual"
+                  ></i>
+                </div>
+                <input
+                  type="number"
+                  id="errorRate"
+                  value="3.6"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- MÉTRICAS + INTERPRETACIÓN + GRÁFICO -->
+        <div class="contenedor-metricas-grafico">
+          <!-- Columna izquierda: métricas + interpretación -->
+          <div>
+            <div class="metricas-seccion">
+              <div class="metrica-card">
+                <h3 class="metrica-titulo">Ahorro de Tiempo</h3>
+                <p class="metrica-valor" id="valorTiempo">56h</p>
+                <p class="metrica-descripcion" id="descripcionTiempo">
+                  ≈ 7.0 días laborales
+                </p>
+              </div>
+              <div class="metrica-card">
+                <h3 class="metrica-titulo">Mejora en Calidad</h3>
+                <p class="metrica-valor" id="valorCalidad">86.1%</p>
+                <p class="metrica-descripcion">reducción de errores</p>
+              </div>
+              <div class="metrica-card">
+                <h3 class="metrica-titulo">Por Operación</h3>
+                <p class="metrica-valor" id="valorOperacion">0.90s</p>
+                <p class="metrica-descripcion">tiempo base ahorrado</p>
+              </div>
+            </div>
+
+            <!-- Interpretación dinámica con cifras introducidas -->
+            <div class="interpretacion-contenedor">
+              <h2 class="parametros-titulo">
+                <i class="fas fa-lightbulb"></i>
+                <span>Interpretación</span>
+              </h2>
+              <p id="interpretacionTexto" style="margin-bottom: 0">
+                <!-- Se actualizará dinámicamente vía JavaScript -->
+              </p>
+            </div>
+          </div>
+
+          <!-- Columna derecha: gráfico reducido de ancho -->
+          <div class="grafico-contenedor">
+            <h3 class="parametros-titulo">
+              <i class="fas fa-chart-bar"></i>
+              Distribución del Ahorro
+            </h3>
+            <canvas id="graficoAhorro" class="grafico-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- CTA FINAL -->
+        <div class="cta-seccion">
+          <strong>Más allá del tiempo:</strong> las horas ahorradas se pueden
+          destinar a atender mejor a los pacientes, a explorar nuevas
+          herramientas o simplemente a descansar más. Aprender y practicar
+          atajos de teclado no sólo agiliza las tareas, sino que hace el trabajo
+          más agradable. <br /><br />
+          <em>Te invitamos a reflexionar</em> sobre tu flujo de trabajo:
+          identifica <strong>al menos una optimización</strong> que podrías
+          implementar hoy mismo y comprueba aquí su impacto real. <br /><br />
+          ¿Quieres descubrir más formas de agilizar tu día a día? Visita nuestra
+          sección de
+          <a
+            href="/atajos-teclado.html"
+            style="color: var(--accent-color, #3b82f6)"
+          >
+            Atajos del Teclado </a
+          >.
+        </div>
+
+        <!-- BASE CIENTÍFICA (AL FINAL) -->
+        <div class="base-cientifica">
+          <div class="base-cientifica-titulo">
+            <i class="fas fa-brain"></i>
+            <span>Fundamentos Científicos</span>
+          </div>
+          <p style="margin-bottom: 0.5rem; font-size: 0.9rem">
+            Este enfoque se basa en principios de la
+            <strong>Interacción Humano-Computadora</strong>, que muestran cómo
+            la distancia al objetivo y la cantidad de opciones en un menú
+            influyen en la velocidad y exactitud de cada acción.
+          </p>
+          <div class="formulas-grid">
+            <div class="formula">
+              <h4 class="formula-titulo">
+                <i class="fas fa-bullseye icono-ley"></i>
+                Ley de Fitts
+              </h4>
+              <p class="formula-texto">MT = a + b log₂(2D/W)</p>
+              <p class="formula-descripcion">
+                Relaciona el tiempo de movimiento (MT) con la distancia (D) y el
+                tamaño del objetivo (W). Un botón más cercano y grande se
+                alcanza con mayor rapidez.
+              </p>
+            </div>
+            <div class="formula">
+              <h4 class="formula-titulo">
+                <i class="fas fa-clipboard-list icono-ley"></i>
+                Ley de Hick
+              </h4>
+              <p class="formula-texto">RT = a + b log₂(n)</p>
+              <p class="formula-descripcion">
+                A mayor número de opciones (n), mayor tiempo de reacción (RT).
+                Reducir la complejidad de menús y la cantidad de pasos acelera
+                la toma de decisiones.
+              </p>
+            </div>
+          </div>
+          <!-- Sustituimos Sobrecarga Cognitiva por Paradoja del Usuario Activo -->
+          <div class="formulas-grid" style="margin-top: 1rem">
+            <div class="formula" style="grid-column: 1/-1">
+              <h4 class="formula-titulo">
+                <i class="fas fa-user-clock icono-ley"></i>
+                Paradoja del Usuario Activo
+              </h4>
+              <p class="formula-texto">
+                "Experiencia" + "Rutinas" = Hábitos Difíciles de Cambiar
+              </p>
+              <p class="formula-descripcion">
+                Propone que incluso un usuario experto puede perpetuar procesos
+                manuales que podrían automatizarse, ya que se siente cómodo y
+                seguro con la forma habitual de trabajar. Encontrar el punto
+                óptimo entre práctica diaria y nuevas habilidades incrementa la
+                productividad.
+              </p>
+            </div>
+          </div>
+          <p
+            style="
+              margin-top: 1rem;
+              font-size: 0.85rem;
+              color: var(--text-secondary, #94a3b8);
+            "
+          >
+            Para profundizar:
+            <a href="https://es.wikipedia.org/wiki/Ley_de_Fitts" target="_blank"
+              >Ley de Fitts</a
+            >
+            |
+            <a href="https://es.wikipedia.org/wiki/Ley_de_Hick" target="_blank"
+              >Ley de Hick</a
+            >
+            |
+            <a
+              href="https://es.wikipedia.org/wiki/Paradoja_del_usuario_activo"
+              target="_blank"
+              >Paradoja del Usuario Activo</a
+            >
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <include src="footer.html"></include>
+
+    <script src="/assets/js/include.js"></script>
+    <script>
+      /* Configuración de la calculadora */
+      const CONFIG = {
+        DIAS_LABORABLES: 220,
+        HORAS_JORNADA: 8,
+        TASA_ERROR_AUTO: 0.5,
+        TIEMPO_POR_ERROR: 30,
+      };
+
+      let state = {
+        inputs: {
+          tasks: 1,
+          clicks: 3,
+          timePerClick: 0.3,
+          frequency: 100,
+          users: 4,
+          errorRate: 3.6,
+        },
+        results: {
+          timePerOp: 0,
+          timePerDay: 0,
+          annualHours: 0,
+          qualityGain: 0,
+        },
+      };
+
+      function calculateSavings() {
+        const i = state.inputs;
+        /* Tiempo por operación (s) */
+        const timePerOp = i.clicks * i.timePerClick;
+
+        /* Tiempo en errores manuales (s) */
+        const errorTime =
+          ((i.frequency * i.errorRate) / 100) * CONFIG.TIEMPO_POR_ERROR;
+
+        /* Tiempo con automatización (menos errores) */
+        const rpaErrorTime =
+          ((i.frequency * CONFIG.TASA_ERROR_AUTO) / 100) *
+          CONFIG.TIEMPO_POR_ERROR;
+
+        /* Tiempo total al día (s) */
+        const timePerDay =
+          (timePerOp * i.frequency + (errorTime - rpaErrorTime)) *
+          i.users *
+          i.tasks;
+
+        /* Horas anuales */
+        const annualHours = (timePerDay / 3600) * CONFIG.DIAS_LABORABLES;
+
+        /* Mejora en calidad (reducción de errores) */
+        const qualityGain =
+          ((i.errorRate - CONFIG.TASA_ERROR_AUTO) / i.errorRate) * 100;
+
+        state.results = { timePerOp, timePerDay, annualHours, qualityGain };
+        updateUI();
+        updateChart();
+      }
+
+      function updateUI() {
+        const r = state.results;
+
+        /* Rellenar las tarjetas */
+        document.getElementById("valorTiempo").textContent =
+          Math.round(r.annualHours) + "h";
+        document.getElementById("descripcionTiempo").textContent =
+          "≈ " +
+          (r.annualHours / CONFIG.HORAS_JORNADA).toFixed(1) +
+          " días laborales";
+        document.getElementById("valorCalidad").textContent =
+          r.qualityGain.toFixed(1) + "%";
+        document.getElementById("valorOperacion").textContent =
+          r.timePerOp.toFixed(2) + "s";
+
+        /* Interpretación dinámica: creamos un texto que use los valores */
+        const horasAnuales = Math.round(r.annualHours);
+        const horasAtencion = Math.round(horasAnuales * 0.4);
+        const consultasExtra = Math.round(horasAtencion * 6); // 6 consultas por hora
+        const horasFormacion = Math.round(horasAnuales * 0.25);
+        const horasInvestigacion = Math.round(horasAnuales * 0.15);
+        const horasGestion = Math.round(horasAnuales * 0.1);
+        const horasDescanso = Math.round(horasAnuales * 0.1);
+
+        const interpretacion = `
+              El ahorro anual de <span style="color: var(--accent-color)">${horasAnuales} horas</span> puede reinvertirse estratégicamente:
+              <br><br>
+              • Atención directa: <span style="color: var(--accent-color)">${horasAtencion}h</span> → ${consultasExtra} consultas adicionales (10 minutos cada una)
+              <br>
+              • Formación continua: <span style="color: var(--accent-color)">${horasFormacion}h</span> → ${Math.round(
+          horasFormacion / 8
+        )} días de cursos
+              <br>
+              • Investigación: <span style="color: var(--accent-color)">${horasInvestigacion}h</span> → 1 proyecto o publicación
+              <br>
+              • Gestión: <span style="color: var(--accent-color)">${horasGestion}h</span> → Mejora de procesos
+              <br>
+              • Bienestar: <span style="color: var(--accent-color)">${horasDescanso}h</span> → ${Math.round(
+          horasDescanso / 8
+        )} días extra de descanso
+              <br><br>
+              Esta optimización permite balancear mejoras en atención, desarrollo profesional y calidad de vida.
+            `;
+
+        /* Inyectar la interpretación en el contenedor */
+        document.getElementById("interpretacionTexto").innerHTML =
+          interpretacion;
+      }
+
+      function updateChart() {
+        const r = state.results;
+        const ctx = document.getElementById("graficoAhorro").getContext("2d");
+
+        /* Destruir el gráfico anterior para redibujar */
+        if (window.chart) {
+          window.chart.destroy();
+        }
+
+        /* Registrar plugin DataLabels para mostrar valor en cada barra */
+        Chart.register(ChartDataLabels);
+
+        window.chart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: ["Por Operación (s)", "Por Día (h)", "Por Año (días)"],
+            datasets: [
+              {
+                label: "Ahorro",
+                data: [
+                  r.timePerOp,
+                  r.timePerDay / 3600,
+                  r.annualHours / CONFIG.HORAS_JORNADA,
+                ],
+                backgroundColor: "rgba(59, 130, 246, 0.8)",
+                borderColor: "rgb(37, 99, 235)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "Valor (s, h, días)",
+                  color: "#94a3b8",
+                },
+                grid: { color: "rgba(148, 163, 184, 0.1)" },
+                ticks: { color: "#94a3b8" },
+              },
+              x: {
+                grid: { color: "rgba(148, 163, 184, 0.1)" },
+                ticks: { color: "#94a3b8" },
+              },
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.8)",
+                padding: 12,
+                titleColor: "#fff",
+                bodyColor: "#fff",
+                titleFont: { size: 14, weight: "bold" },
+                bodyFont: { size: 13 },
+                displayColors: false,
+              },
+              datalabels: {
+                anchor: "end",
+                align: "top",
+                color: "#fff",
+                font: {
+                  size: 12,
+                },
+                formatter: function (value) {
+                  return value.toFixed(2);
+                },
+              },
+            },
+          },
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        /* Actualizar valores y calcular al cambiar cualquier parámetro */
+        [
+          "tasks",
+          "clicks",
+          "timePerClick",
+          "frequency",
+          "users",
+          "errorRate",
+        ].forEach(function (id) {
+          const input = document.getElementById(id);
+          if (input) {
+            input.addEventListener("input", function (e) {
+              state.inputs[id] = Number(e.target.value) || 0;
+              calculateSavings();
+            });
+          }
+        });
+        /* Config defaults */
+        Chart.defaults.color = "#94a3b8";
+        Chart.defaults.borderColor = "rgba(148, 163, 184, 0.1)";
+
+        /* Cálculo inicial */
+        calculateSavings();
+      });
+    </script>
+
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </body>
+</html>
