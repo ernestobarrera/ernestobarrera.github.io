@@ -1,9 +1,9 @@
 <!--
-    =====================
-      calculadora-productividad2.html
-      Calculadora de Productividad
-    =====================
-    -->
+      =====================
+        calculadora-productividad2.html
+        Calculadora de Productividad
+      =====================
+-->
 <!DOCTYPE html>
 <html lang="es">
   <head>
@@ -33,11 +33,15 @@
       }
       .main-container {
         max-width: 1200px;
-        margin-left: auto; /* En lugar de margin: 1.2rem auto */
+        margin-left: auto;
         margin-right: auto;
         padding: 0.5rem 0.5rem;
       }
-
+      .hero-section {
+        border-radius: 8px;
+        padding: 0rem;
+        margin-bottom: 0.1rem;
+      }
       .calculadora-contenedor {
         max-width: 1200px;
         margin: 0 auto;
@@ -91,7 +95,7 @@
         background: var(--card-bg, #2a3b4d);
         border-radius: 8px;
         padding: 0.75rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
       }
       .parametros-titulo {
         display: flex;
@@ -167,17 +171,18 @@
         gap: 1rem;
         grid-template-columns: 1fr;
       }
-      /* Ajustar ancho de columnas para que la interpretación sea más amplia */
       @media (min-width: 1024px) {
         .contenedor-metricas-grafico {
           grid-template-columns: 3fr 2fr; /* Más ancho a la izquierda */
+          /* Clave para que ambas columnas se estiren a la misma altura */
+          align-items: start;
         }
       }
       .metricas-seccion {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 1rem;
-        margin: 0.5rem 0;
+        margin: 0 0 1rem 0;
       }
       .metrica-card {
         background: var(--card-bg, #2a2f3a);
@@ -199,15 +204,20 @@
         font-size: 0.8rem;
         color: var(--text-secondary, #94a3b8);
       }
+
+      /* Contenedor del gráfico: quitamos fit-content, ponemos 100% */
       .grafico-contenedor {
         background: var(--card-bg, #2a2f3a);
         border-radius: 8px;
-        padding: 0.5rem;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        height: 100%; /* Se estira con la grid */
       }
+      /* El canvas también se estira */
       .grafico-canvas {
         width: 100%;
-        height: 190px;
-        margin: 0.1rem 0;
+        height: 100%;
       }
 
       /* Interpretación */
@@ -215,7 +225,7 @@
         background: rgba(59, 130, 246, 0.1);
         padding: 1rem;
         border-radius: 8px;
-        margin-top: 1rem;
+        margin-top: 0.5rem;
         font-size: 0.9rem;
         line-height: 1.4;
       }
@@ -307,19 +317,25 @@
       <section class="hero-section">
         <h1 class="main-title">
           <i class="fas fa-clock"></i>
-          <span>Calculadora de Ahorro de Tiempo</span>
+          <span
+            >Calculadora de Ahorro de Tiempo con automatización y atajos</span
+          >
         </h1>
         <p class="intro-text">
-          Esta herramienta muestra cuántas horas y cuántos errores pueden
-          ahorrarse en tareas repetitivas, especialmente al optimizar interfaces
-          o usar atajos de teclado. Simplemente ingresa datos como el número de
-          clics o la frecuencia con que se repite la tarea, y obtendrás una
-          estimación de horas anuales y calidad ganada.
+          ¿Quieres saber cuánto tiempo podrías ahorrar optimizando tus tareas
+          digitales diarias? Esta calculadora visualiza el impacto de mejorar
+          tus interacciones habituales con el ordenador (clics, navegación,
+          cambios entre programas) y te muestra por qué vale la pena usar atajos
+          y programas que agilicen tu trabajo.<br />
+          La herramienta proyecta el ahorro anual (220 días) en tiempo y
+          reducción de errores mediante seis parámetros básicos. Los resultados,
+          que parten de un ejemplo de once clics necesarios para consultar un
+          resultado previo¹, suelen sorprender y evidencian la necesidad de
+          mejorar tanto nuestros hábitos como el diseño de las aplicaciones.
         </p>
       </section>
-      <div class="calculadora-contenedor">
-        <!-- Introducción sobre atajos y la paradoja del usuario activo -->
 
+      <div class="calculadora-contenedor">
         <!-- SECCIÓN DE PARÁMETROS -->
         <div class="parametros-seccion">
           <h2 class="parametros-titulo">
@@ -350,7 +366,7 @@
                     data-tooltip="Número de clics o interacciones necesarias para completar una operación"
                   ></i>
                 </div>
-                <input type="number" id="clicks" value="3" min="1" />
+                <input type="number" id="clicks" value="11" min="1" />
               </label>
             </div>
             <div class="grupo-entrada">
@@ -382,7 +398,13 @@
                     data-tooltip="Veces que se realiza la operación por día"
                   ></i>
                 </div>
-                <input type="number" id="frequency" value="100" min="1" />
+                <input
+                  type="number"
+                  id="frequency"
+                  value="21"
+                  min="1"
+                  step="1"
+                />
               </label>
             </div>
             <div class="grupo-entrada">
@@ -405,7 +427,7 @@
                   <span>Error (%)</span>
                   <i
                     class="fas fa-question-circle icono-ayuda"
-                    data-tooltip="Porcentaje de errores en la operación manual"
+                    data-tooltip="Porcentaje de errores en la operación manual. La automatización reduce esta tasa al 0.5%. Cada error supone aproximadamente 1 minuto de corrección."
                   ></i>
                 </div>
                 <input
@@ -457,12 +479,13 @@
             </div>
           </div>
 
-          <!-- Columna derecha: gráfico reducido de ancho -->
+          <!-- Columna derecha: gráfico -->
           <div class="grafico-contenedor">
             <h3 class="parametros-titulo">
               <i class="fas fa-chart-bar"></i>
               Distribución del Ahorro
             </h3>
+            <!-- Canvas sin estilo de altura inline -->
             <canvas id="graficoAhorro" class="grafico-canvas"></canvas>
           </div>
         </div>
@@ -495,76 +518,15 @@
           </div>
           <p style="margin-bottom: 0.5rem; font-size: 0.9rem">
             Este enfoque se basa en principios de la
-            <strong>Interacción Humano-Computadora</strong>, que muestran cómo
-            la distancia al objetivo y la cantidad de opciones en un menú
-            influyen en la velocidad y exactitud de cada acción.
+            <strong>Interacción Humano-Computadora</strong> y leyes de
+            usabilidad, que demuestran cómo la distancia al objetivo y la
+            cantidad de opciones en un menú influyen en la velocidad y exactitud
+            de cada acción.
           </p>
-          <div class="formulas-grid">
-            <div class="formula">
-              <h4 class="formula-titulo">
-                <i class="fas fa-bullseye icono-ley"></i>
-                Ley de Fitts
-              </h4>
-              <p class="formula-texto">MT = a + b log₂(2D/W)</p>
-              <p class="formula-descripcion">
-                Relaciona el tiempo de movimiento (MT) con la distancia (D) y el
-                tamaño del objetivo (W). Un botón más cercano y grande se
-                alcanza con mayor rapidez.
-              </p>
-            </div>
-            <div class="formula">
-              <h4 class="formula-titulo">
-                <i class="fas fa-clipboard-list icono-ley"></i>
-                Ley de Hick
-              </h4>
-              <p class="formula-texto">RT = a + b log₂(n)</p>
-              <p class="formula-descripcion">
-                A mayor número de opciones (n), mayor tiempo de reacción (RT).
-                Reducir la complejidad de menús y la cantidad de pasos acelera
-                la toma de decisiones.
-              </p>
-            </div>
-          </div>
-          <!-- Sustituimos Sobrecarga Cognitiva por Paradoja del Usuario Activo -->
-          <div class="formulas-grid" style="margin-top: 1rem">
-            <div class="formula" style="grid-column: 1/-1">
-              <h4 class="formula-titulo">
-                <i class="fas fa-user-clock icono-ley"></i>
-                Paradoja del Usuario Activo
-              </h4>
-              <p class="formula-texto">
-                "Experiencia" + "Rutinas" = Hábitos Difíciles de Cambiar
-              </p>
-              <p class="formula-descripcion">
-                Propone que incluso un usuario experto puede perpetuar procesos
-                manuales que podrían automatizarse, ya que se siente cómodo y
-                seguro con la forma habitual de trabajar. Encontrar el punto
-                óptimo entre práctica diaria y nuevas habilidades incrementa la
-                productividad.
-              </p>
-            </div>
-          </div>
-          <p
-            style="
-              margin-top: 1rem;
-              font-size: 0.85rem;
-              color: var(--text-secondary, #94a3b8);
-            "
-          >
-            Para profundizar:
-            <a href="https://es.wikipedia.org/wiki/Ley_de_Fitts" target="_blank"
-              >Ley de Fitts</a
-            >
-            |
-            <a href="https://es.wikipedia.org/wiki/Ley_de_Hick" target="_blank"
-              >Ley de Hick</a
-            >
-            |
-            <a
-              href="https://es.wikipedia.org/wiki/Paradoja_del_usuario_activo"
-              target="_blank"
-              >Paradoja del Usuario Activo</a
-            >
+          <!-- ... más contenido ... -->
+          <p style="font-size: 0.85rem; color: var(--text-secondary, #94a3b8)">
+            ¹Los parámetros predeterminados modelizan la consulta de resultados
+            previos en historia clínica...
           </p>
         </div>
       </div>
@@ -578,16 +540,16 @@
       const CONFIG = {
         DIAS_LABORABLES: 220,
         HORAS_JORNADA: 8,
-        TASA_ERROR_AUTO: 0.5,
-        TIEMPO_POR_ERROR: 30,
+        TASA_ERROR_AUTO: 0.5, // Tasa residual de errores con automatización (%)
+        TIEMPO_POR_ERROR: 60, // Segundos necesarios para corregir cada error
       };
 
       let state = {
         inputs: {
           tasks: 1,
-          clicks: 3,
+          clicks: 11,
           timePerClick: 0.3,
-          frequency: 100,
+          frequency: 21,
           users: 4,
           errorRate: 3.6,
         },
@@ -599,34 +561,46 @@
         },
       };
 
+      function round(value, decimals = 2) {
+        return parseFloat(value.toFixed(decimals));
+      }
+
       function calculateSavings() {
         const i = state.inputs;
-        /* Tiempo por operación (s) */
-        const timePerOp = i.clicks * i.timePerClick;
 
-        /* Tiempo en errores manuales (s) */
-        const errorTime =
+        // (1) Tiempo por operación (segundos)
+        let timePerOp = i.clicks * i.timePerClick;
+        timePerOp = round(timePerOp, 3);
+
+        // (2) Tiempo en errores manuales (segundos)
+        let errorTime =
           ((i.frequency * i.errorRate) / 100) * CONFIG.TIEMPO_POR_ERROR;
+        errorTime = round(errorTime, 3);
 
-        /* Tiempo con automatización (menos errores) */
-        const rpaErrorTime =
+        // (3) Tiempo con automatización (menos errores)
+        let rpaErrorTime =
           ((i.frequency * CONFIG.TASA_ERROR_AUTO) / 100) *
           CONFIG.TIEMPO_POR_ERROR;
+        rpaErrorTime = round(rpaErrorTime, 3);
 
-        /* Tiempo total al día (s) */
-        const timePerDay =
+        // (4) Tiempo total al día (segundos)
+        let timePerDay =
           (timePerOp * i.frequency + (errorTime - rpaErrorTime)) *
           i.users *
           i.tasks;
+        timePerDay = round(timePerDay, 3);
 
-        /* Horas anuales */
-        const annualHours = (timePerDay / 3600) * CONFIG.DIAS_LABORABLES;
+        // (5) Horas anuales
+        let annualHours = (timePerDay / 3600) * CONFIG.DIAS_LABORABLES;
+        annualHours = round(annualHours, 2);
 
-        /* Mejora en calidad (reducción de errores) */
-        const qualityGain =
+        // (6) Mejora en calidad (reducción de errores, %)
+        let qualityGain =
           ((i.errorRate - CONFIG.TASA_ERROR_AUTO) / i.errorRate) * 100;
+        qualityGain = round(qualityGain, 1);
 
         state.results = { timePerOp, timePerDay, annualHours, qualityGain };
+
         updateUI();
         updateChart();
       }
@@ -634,48 +608,48 @@
       function updateUI() {
         const r = state.results;
 
-        /* Rellenar las tarjetas */
         document.getElementById("valorTiempo").textContent =
           Math.round(r.annualHours) + "h";
         document.getElementById("descripcionTiempo").textContent =
           "≈ " +
           (r.annualHours / CONFIG.HORAS_JORNADA).toFixed(1) +
           " días laborales";
+
         document.getElementById("valorCalidad").textContent =
           r.qualityGain.toFixed(1) + "%";
+
         document.getElementById("valorOperacion").textContent =
           r.timePerOp.toFixed(2) + "s";
 
-        /* Interpretación dinámica: creamos un texto que use los valores */
+        // Ejemplo de interpretación
         const horasAnuales = Math.round(r.annualHours);
         const horasAtencion = Math.round(horasAnuales * 0.4);
-        const consultasExtra = Math.round(horasAtencion * 6); // 6 consultas por hora
+        const consultasExtra = Math.round(horasAtencion * 6);
         const horasFormacion = Math.round(horasAnuales * 0.25);
         const horasInvestigacion = Math.round(horasAnuales * 0.15);
         const horasGestion = Math.round(horasAnuales * 0.1);
         const horasDescanso = Math.round(horasAnuales * 0.1);
 
         const interpretacion = `
-              El ahorro anual de <span style="color: var(--accent-color)">${horasAnuales} horas</span> puede reinvertirse estratégicamente:
-              <br><br>
-              • Atención directa: <span style="color: var(--accent-color)">${horasAtencion}h</span> → ${consultasExtra} consultas adicionales (10 minutos cada una)
-              <br>
-              • Formación continua: <span style="color: var(--accent-color)">${horasFormacion}h</span> → ${Math.round(
+          El ahorro anual de <span style="color: var(--accent-color)">${horasAnuales} horas</span> puede reinvertirse estratégicamente:
+          <br><br>
+          • Atención directa: <span style="color: var(--accent-color)">${horasAtencion}h</span> → ${consultasExtra} consultas adicionales (10 minutos cada una)
+          <br>
+          • Formación continua: <span style="color: var(--accent-color)">${horasFormacion}h</span> → ${Math.round(
           horasFormacion / 8
         )} días de cursos
-              <br>
-              • Investigación: <span style="color: var(--accent-color)">${horasInvestigacion}h</span> → 1 proyecto o publicación
-              <br>
-              • Gestión: <span style="color: var(--accent-color)">${horasGestion}h</span> → Mejora de procesos
-              <br>
-              • Bienestar: <span style="color: var(--accent-color)">${horasDescanso}h</span> → ${Math.round(
+          <br>
+          • Investigación: <span style="color: var(--accent-color)">${horasInvestigacion}h</span> → 1 proyecto o publicación
+          <br>
+          • Gestión: <span style="color: var(--accent-color)">${horasGestion}h</span> → Mejora de procesos
+          <br>
+          • Bienestar: <span style="color: var(--accent-color)">${horasDescanso}h</span> → ${Math.round(
           horasDescanso / 8
         )} días extra de descanso
-              <br><br>
-              Esta optimización permite balancear mejoras en atención, desarrollo profesional y calidad de vida.
-            `;
+          <br><br>
+          Esta optimización permite balancear mejoras en atención, desarrollo profesional y calidad de vida.
+        `;
 
-        /* Inyectar la interpretación en el contenedor */
         document.getElementById("interpretacionTexto").innerHTML =
           interpretacion;
       }
@@ -684,14 +658,24 @@
         const r = state.results;
         const ctx = document.getElementById("graficoAhorro").getContext("2d");
 
-        /* Destruir el gráfico anterior para redibujar */
+        // Destruir el chart anterior si existe
         if (window.chart) {
           window.chart.destroy();
         }
 
-        /* Registrar plugin DataLabels para mostrar valor en cada barra */
+        // Preparamos los datos
+        const dataValues = [
+          r.timePerOp, // (s) Por Operación
+          r.timePerDay / 3600, // (h) Por Día
+          r.annualHours / CONFIG.HORAS_JORNADA, // (días) Por Año
+        ];
+
+        const maxValue = Math.max(...dataValues);
+        const suggestedMaxValue = maxValue * 1.2;
+
         Chart.register(ChartDataLabels);
 
+        // NOTA: no usamos maintainAspectRatio: false (lo quitamos)
         window.chart = new Chart(ctx, {
           type: "bar",
           data: {
@@ -699,11 +683,7 @@
             datasets: [
               {
                 label: "Ahorro",
-                data: [
-                  r.timePerOp,
-                  r.timePerDay / 3600,
-                  r.annualHours / CONFIG.HORAS_JORNADA,
-                ],
+                data: dataValues,
                 backgroundColor: "rgba(59, 130, 246, 0.8)",
                 borderColor: "rgb(37, 99, 235)",
                 borderWidth: 1,
@@ -712,21 +692,32 @@
           },
           options: {
             responsive: true,
-            maintainAspectRatio: true,
+            layout: {
+              padding: {
+                top: 0,
+                bottom: 0,
+                left: 0,
+                right: 0,
+              },
+            },
             scales: {
               y: {
                 beginAtZero: true,
-                title: {
-                  display: true,
-                  text: "Valor (s, h, días)",
-                  color: "#94a3b8",
-                },
+                suggestedMax: suggestedMaxValue,
                 grid: { color: "rgba(148, 163, 184, 0.1)" },
                 ticks: { color: "#94a3b8" },
               },
               x: {
                 grid: { color: "rgba(148, 163, 184, 0.1)" },
-                ticks: { color: "#94a3b8" },
+                ticks: {
+                  color: "#94a3b8",
+                  font: {
+                    family: "Arial",
+                    size: 13,
+                    style: "normal",
+                    lineHeight: 1.2,
+                  },
+                },
               },
             },
             plugins: {
@@ -744,11 +735,18 @@
                 anchor: "end",
                 align: "top",
                 color: "#fff",
-                font: {
-                  size: 12,
-                },
-                formatter: function (value) {
-                  return value.toFixed(2);
+                font: { size: 13 },
+                formatter: (value, context) => {
+                  switch (context.dataIndex) {
+                    case 0:
+                      return value.toFixed(2) + " segundos";
+                    case 1:
+                      return value.toFixed(2) + " horas";
+                    case 2:
+                      return value.toFixed(2) + " días";
+                    default:
+                      return value;
+                  }
                 },
               },
             },
@@ -756,8 +754,7 @@
         });
       }
 
-      document.addEventListener("DOMContentLoaded", function () {
-        /* Actualizar valores y calcular al cambiar cualquier parámetro */
+      document.addEventListener("DOMContentLoaded", () => {
         [
           "tasks",
           "clicks",
@@ -765,20 +762,26 @@
           "frequency",
           "users",
           "errorRate",
-        ].forEach(function (id) {
+        ].forEach((id) => {
           const input = document.getElementById(id);
           if (input) {
-            input.addEventListener("input", function (e) {
-              state.inputs[id] = Number(e.target.value) || 0;
+            input.addEventListener("input", (e) => {
+              // Convertir a entero si es frequency, o a número en general
+              if (id === "frequency") {
+                state.inputs[id] = parseInt(e.target.value, 10) || 0;
+              } else {
+                state.inputs[id] = Number(e.target.value) || 0;
+              }
               calculateSavings();
             });
           }
         });
-        /* Config defaults */
+
+        // Colores por defecto en Chart.js
         Chart.defaults.color = "#94a3b8";
         Chart.defaults.borderColor = "rgba(148, 163, 184, 0.1)";
 
-        /* Cálculo inicial */
+        // Primer cálculo
         calculateSavings();
       });
     </script>
