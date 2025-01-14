@@ -175,7 +175,7 @@
         .contenedor-metricas-grafico {
           grid-template-columns: 3fr 2fr; /* Más ancho a la izquierda */
           /* Clave para que ambas columnas se estiren a la misma altura */
-          align-items: start;
+          align-items: stretch;
         }
       }
       .metricas-seccion {
@@ -207,17 +207,21 @@
 
       /* Contenedor del gráfico: quitamos fit-content, ponemos 100% */
       .grafico-contenedor {
+        position: relative;
+
         background: var(--card-bg, #2a2f3a);
         border-radius: 8px;
         padding: 1rem;
         display: flex;
         flex-direction: column;
-        height: 100%; /* Se estira con la grid */
+        flex: 1;
       }
       /* El canvas también se estira */
       .grafico-canvas {
         width: 100%;
-        height: 100%;
+        height: auto;
+        flex: 1;
+        display: block;
       }
 
       /* Interpretación */
@@ -308,6 +312,89 @@
           grid-template-columns: 1fr;
         }
       }
+      .intro-breve-parametros {
+        margin-top: 0.1rem;
+        margin-bottom: 0.1rem;
+
+        padding: 0.4rem;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 6px;
+        font-size: 0.95rem;
+        line-height: 1.3;
+        color: var(--text-secondary, #94a3b8);
+      }
+      .intro-breve-parametros strong {
+        color: var(--accent-color, #3b82f6);
+      }
+      .seccion-resultados {
+        margin-top: 1.2rem;
+        margin-left: 1rem;
+        margin-bottom: 0.6rem;
+      }
+      .resultados-titulo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.1rem;
+        color: var(--text-primary, #fff);
+      }
+      .CTA-mas-alla-tiempo-seccion {
+        margin-top: 1.5rem;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 1rem;
+      }
+      .CTA-mas-alla-tiempo-titulo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary, #fff);
+      }
+      .CTA-mas-alla-tiempo-texto {
+        font-size: 0.95rem;
+        line-height: 1.5;
+        color: var(--text-secondary, #94a3b8);
+        margin: 0;
+      }
+      .CTA-mas-alla-tiempo-texto strong {
+        color: var(--accent-color, #3b82f6);
+      }
+      .CTA-mas-alla-tiempo-texto a {
+        color: var(--accent-color, #3b82f6);
+        text-decoration: underline;
+      }
+      .base-cientifica-seccion {
+        margin-top: 1.5rem;
+        background: var(--card-bg, #2a2f3a);
+        padding: 1rem;
+        border-radius: 6px;
+      }
+
+      .base-cientifica-titulo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary, #fff);
+      }
+
+      .base-cientifica-texto {
+        font-size: 0.95rem;
+        line-height: 1.4;
+        color: var(--text-secondary, #94a3b8);
+        margin: 0;
+      }
+
+      .base-cientifica-texto strong {
+        color: var(--accent-color, #3b82f6);
+      }
     </style>
   </head>
   <body>
@@ -327,11 +414,6 @@
           tus interacciones habituales con el ordenador (clics, navegación,
           cambios entre programas) y te muestra por qué vale la pena usar atajos
           y programas que agilicen tu trabajo.<br />
-          La herramienta proyecta el ahorro anual (220 días) en tiempo y
-          reducción de errores mediante seis parámetros básicos. Los resultados,
-          que parten de un ejemplo de once clics necesarios para consultar un
-          resultado previo¹, suelen sorprender y evidencian la necesidad de
-          mejorar tanto nuestros hábitos como el diseño de las aplicaciones.
         </p>
       </section>
 
@@ -342,6 +424,17 @@
             <i class="fas fa-bullseye"></i>
             Parámetros de la Tarea
           </h2>
+          <p class="intro-breve-parametros">
+            La herramienta proyecta el ahorro anual (<strong>220 días</strong>)
+            en tiempo y reducción de errores mediante seis parámetros básicos.
+            Los resultados, que parten de un ejemplo de
+            <strong>once clics</strong> necesarios para consultar un resultado
+            previo en una historia clínica<sup>¹</sup>, suelen sorprender y
+            evidencian la necesidad de mejorar tanto nuestros hábitos como el
+            diseño de las aplicaciones. <br />
+            Puedes estimar tu potencial de ahorro (tiempo y errores) en
+            <strong>tiempo real</strong> modificando los valores.
+          </p>
           <div class="parametros-contenido">
             <div class="grupo-entrada">
               <label>
@@ -444,6 +537,12 @@
         </div>
 
         <!-- MÉTRICAS + INTERPRETACIÓN + GRÁFICO -->
+        <div class="seccion-resultados">
+          <h2 class="resultados-titulo">
+            <i class="fas fa-chart-line"></i>
+            Resultados Clave
+          </h2>
+        </div>
         <div class="contenedor-metricas-grafico">
           <!-- Columna izquierda: métricas + interpretación -->
           <div>
@@ -470,8 +569,8 @@
             <!-- Interpretación dinámica con cifras introducidas -->
             <div class="interpretacion-contenedor">
               <h2 class="parametros-titulo">
-                <i class="fas fa-lightbulb"></i>
-                <span>Interpretación</span>
+                <i style="margin-bottom: 0.4rem" class="fas fa-lightbulb"></i>
+                <span style="margin-bottom: 0.4rem">Interpretación</span>
               </h2>
               <p id="interpretacionTexto" style="margin-bottom: 0">
                 <!-- Se actualizará dinámicamente vía JavaScript -->
@@ -491,42 +590,43 @@
         </div>
 
         <!-- CTA FINAL -->
-        <div class="cta-seccion">
-          <strong>Más allá del tiempo:</strong> las horas ahorradas se pueden
-          destinar a atender mejor a los pacientes, a explorar nuevas
-          herramientas o simplemente a descansar más. Aprender y practicar
-          atajos de teclado no sólo agiliza las tareas, sino que hace el trabajo
-          más agradable. <br /><br />
-          <em>Te invitamos a reflexionar</em> sobre tu flujo de trabajo:
-          identifica <strong>al menos una optimización</strong> que podrías
-          implementar hoy mismo y comprueba aquí su impacto real. <br /><br />
-          ¿Quieres descubrir más formas de agilizar tu día a día? Visita nuestra
-          sección de
-          <a
-            href="/atajos-teclado.html"
-            style="color: var(--accent-color, #3b82f6)"
-          >
-            Atajos del Teclado </a
-          >.
+        <!-- SECCIÓN: MÁS ALLÁ DEL TIEMPO -->
+        <div class="CTA-mas-alla-tiempo-seccion">
+          <h2 class="CTA-mas-alla-tiempo-titulo">
+            <i class="fas fa-hourglass-half"></i>
+            Más allá del Tiempo
+          </h2>
+          <p class="CTA-mas-alla-tiempo-texto">
+            Reducir clics y errores no es solo una cuestión de horas ahorradas:
+            implica <strong>transformar la manera en que trabajamos</strong>,
+            liberando energía mental para <em>tareas creativas</em> o
+            <em>tomas de decisiones</em> de mayor impacto. Cuando el software
+            deja de ser un obstáculo y se convierte en un
+            <strong>aliado</strong>, la satisfacción personal y el nivel de
+            desempeño se eleva de forma exponencial. <br />
+            <strong>Puedes reflexionar</strong> sobre tu día a día: identifica
+            al menos una optimización que podrías implementar hoy mismo y
+            comprueba aquí su efecto real. ¿Quieres descubrir más formas de
+            agilizar tu rutina? Visita
+            <a href="#atajos-teclado">el apartado de productividad</a>.
+          </p>
         </div>
 
-        <!-- BASE CIENTÍFICA (AL FINAL) -->
-        <div class="base-cientifica">
-          <div class="base-cientifica-titulo">
-            <i class="fas fa-brain"></i>
-            <span>Fundamentos Científicos</span>
-          </div>
-          <p style="margin-bottom: 0.5rem; font-size: 0.9rem">
+        <!-- SECCIÓN FUNDAMENTOS CIENTÍFICOS -->
+        <div class="base-cientifica-seccion">
+          <h2 class="base-cientifica-titulo">
+            <i class="fas fa-brain"></i> Fundamentos Científicos
+          </h2>
+          <p class="base-cientifica-texto">
             Este enfoque se basa en principios de la
             <strong>Interacción Humano-Computadora</strong> y leyes de
-            usabilidad, que demuestran cómo la distancia al objetivo y la
-            cantidad de opciones en un menú influyen en la velocidad y exactitud
-            de cada acción.
-          </p>
-          <!-- ... más contenido ... -->
-          <p style="font-size: 0.85rem; color: var(--text-secondary, #94a3b8)">
-            ¹Los parámetros predeterminados modelizan la consulta de resultados
-            previos en historia clínica...
+            usabilidad. <br />
+            ¹Apoyo para la modelización:
+            <em
+              >Hill RG Jr, et al. 4000 Clicks: a productivity analysis of
+              electronic medical records in a community hospital ED. Am J Emerg
+              Med. 2013;31(11):1591-4.</em
+            >
           </p>
         </div>
       </div>
@@ -631,7 +731,7 @@
         const horasDescanso = Math.round(horasAnuales * 0.1);
 
         const interpretacion = `
-          El ahorro anual de <span style="color: var(--accent-color)">${horasAnuales} horas</span> puede reinvertirse estratégicamente:
+          El ahorro anual de <span style="color: var(--accent-color)">${horasAnuales} horas</span> puede reinvertirse estratégicamente en atención, desarrollo profesional y calidad de vida:
           <br><br>
           • Atención directa: <span style="color: var(--accent-color)">${horasAtencion}h</span> → ${consultasExtra} consultas adicionales (10 minutos cada una)
           <br>
@@ -646,9 +746,8 @@
           • Bienestar: <span style="color: var(--accent-color)">${horasDescanso}h</span> → ${Math.round(
           horasDescanso / 8
         )} días extra de descanso
-          <br><br>
-          Esta optimización permite balancear mejoras en atención, desarrollo profesional y calidad de vida.
-        `;
+         <br><br>
+                  `;
 
         document.getElementById("interpretacionTexto").innerHTML =
           interpretacion;
@@ -692,6 +791,8 @@
           },
           options: {
             responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1.33,
             layout: {
               padding: {
                 top: 0,
