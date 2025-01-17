@@ -128,6 +128,292 @@
           padding: 0.1rem;
         }
       }
+      /* Estilos para la sección de ayuda */
+      .help-section {
+        width: 100%;
+        margin: 2rem 0;
+        font-size: 0.95rem;
+        color: var(--text-primary, #333); /* Color de texto principal */
+      }
+
+      .tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .tab-button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        background: var(--bg-secondary, #f5f5f5);
+        color: var(--text-primary, #333);
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .tab-button.active {
+        background: var(--accent-color, #007bff);
+        color: #ffffff;
+      }
+
+      .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .info-card {
+        background: var(--card-bg, #ffffff);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        color: var(--text-primary, #333);
+      }
+
+      .info-card h3,
+      .info-card h4 {
+        color: var(--text-primary, #333);
+        margin-bottom: 1rem;
+      }
+
+      .info-card ul,
+      .info-card ol,
+      .info-card p {
+        color: var(--text-secondary, #666);
+      }
+
+      .example-case {
+        border-left: 4px solid var(--accent-color, #007bff);
+        padding-left: 1rem;
+        margin: 1rem 0;
+      }
+
+      /* Estilos para los botones */
+      .tab-button {
+        padding: 0.6rem 1.2rem;
+        border: 1px solid var(--bg-secondary, #e0e0e0);
+        border-radius: 6px;
+        background: transparent;
+        color: #fff; /* Texto blanco para botones no activos */
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .tab-button:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .tab-button.active {
+        background: #ffc107; /* Color amarillo para mantener consistencia */
+        color: #000; /* Texto negro para contraste */
+        border-color: #ffc107;
+      }
+
+      /* Hacer el contenido más compacto */
+      .info-card {
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .info-card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .info-card ul,
+      .info-card ol {
+        margin: 0.5rem 0;
+        padding-left: 1.2rem;
+      }
+
+      .info-card li {
+        margin-bottom: 0.3rem;
+        line-height: 1.4;
+      }
+
+      .guide-grid {
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+
+      .estimate-grid {
+        gap: 0.5rem;
+      }
+
+      .example-case {
+        padding: 0.5rem 0.8rem;
+        margin: 0.5rem 0;
+      }
+      /* Estilos para la sección de LR */
+      .guide-content {
+        margin: 0.5rem 0;
+      }
+
+      .lr-section {
+        margin-bottom: 0.75rem;
+      }
+
+      .lr-section h4 {
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+        color: #ffc107; /* Color amarillo para los títulos */
+      }
+
+      .lr-values {
+        font-size: 0.9rem;
+        line-height: 1.3;
+        margin-bottom: 0.4rem;
+      }
+
+      .lr-estimates {
+        font-size: 0.9rem;
+        line-height: 1.3;
+        color: rgba(255, 255, 255, 0.8);
+      }
+      .tip-text {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin-top: 0.2rem;
+        padding-left: 0.5rem;
+        border-left: 2px solid #ffc107;
+      }
+      /* Estilos para la pestaña de Info */
+      .info-sections {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .info-section {
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .info-section:last-child {
+        border-bottom: none;
+      }
+
+      .info-section h4 {
+        color: #ffc107;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+      }
+
+      .info-section p,
+      .info-section ul,
+      .info-section ol {
+        font-size: 0.9rem;
+        line-height: 1.4;
+        margin-bottom: 0.5rem;
+      }
+
+      .lr-table {
+        font-size: 0.9rem;
+        line-height: 1.4;
+        margin: 0.5rem 0;
+      }
+
+      .references {
+        padding-left: 1.2rem;
+        font-size: 0.85rem;
+      }
+
+      .reference-note {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .reference-note a {
+        color: #ffc107;
+        text-decoration: none;
+      }
+
+      .reference-note a:hover {
+        text-decoration: underline;
+      }
+
+      .disclaimer {
+        background: rgba(255, 193, 7, 0.1);
+        padding: 0.75rem;
+        border-radius: 4px;
+        margin-top: 1rem;
+      }
+
+      .disclaimer p {
+        margin: 0;
+        font-size: 0.85rem;
+      }
+      .info-section a {
+        color: #ffc107;
+        text-decoration: none;
+        transition: color 0.2s ease;
+      }
+
+      .info-section a:hover {
+        text-decoration: underline;
+        color: #ffdb4d;
+      }
+      /* Estilos para la pestaña de búsqueda */
+      .search-section {
+        margin-bottom: 1.2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .search-section:last-child {
+        border-bottom: none;
+      }
+
+      .search-section h4 {
+        color: #ffc107;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+      }
+
+      .search-link {
+        color: #ffc107;
+        text-decoration: none;
+        padding: 0.3rem 0.6rem;
+        background: rgba(255, 193, 7, 0.1);
+        border-radius: 4px;
+        display: inline-block;
+        margin: 0.5rem 0;
+      }
+
+      .search-link:hover {
+        background: rgba(255, 193, 7, 0.2);
+        text-decoration: underline;
+      }
+
+      .search-tip {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 0.8rem;
+        border-radius: 4px;
+        margin-top: 1rem;
+      }
+
+      .search-section ul,
+      .search-section ol {
+        padding-left: 1.2rem;
+        margin: 0.5rem 0;
+      }
+
+      .search-section li {
+        margin-bottom: 0.3rem;
+        line-height: 1.4;
+      }
+
+      .search-section em {
+        color: rgba(255, 255, 255, 0.8);
+        font-style: italic;
+      }
     </style>
 
     <!-- Google Analytics -->
@@ -158,24 +444,310 @@
             especificidad (método 1). También se puede utilizar con los datos de
             los resultados de las pruebas en cada grupo (método 2)
           </p>
+          <div class="help-section">
+            <!-- Pestañas -->
+            <div class="help-section">
+              <div class="tabs">
+                <button class="tab-button active" onclick="openTab('inicio')">
+                  🎯 Inicio
+                </button>
+                <button class="tab-button" onclick="openTab('guia')">
+                  📖 Guía
+                </button>
+                <button class="tab-button" onclick="openTab('ejemplos')">
+                  💡 Ejemplos
+                </button>
+                <button class="tab-button" onclick="openTab('info')">
+                  ℹ️ Info
+                </button>
+                <button class="tab-button" onclick="openTab('buscar')">
+                  🔎 Buscar
+                </button>
+              </div>
+
+              <!-- Inicio Rápido -->
+              <div id="inicio" class="tab-content active">
+                <div class="info-card">
+                  <h3>Comenzar en 3 pasos</h3>
+                  <ol>
+                    <li>
+                      <strong>Probabilidad pre-prueba:</strong> Baja ≤20% |
+                      Moderada ~50% | Alta ≥80%
+                      <div class="tip-text">
+                        💡 Si el paciente consulta por una sospecha: considere
+                        20-40% como mínimo
+                      </div>
+                    </li>
+                    <li>
+                      <strong>Método:</strong> 1) Use sensibilidad/especificidad
+                      o 2) Resultados por grupo
+                    </li>
+                    <li>
+                      <strong>Interpretación:</strong> Use LR y valores
+                      predictivos para decisión final
+                    </li>
+                  </ol>
+                </div>
+              </div>
+
+              <!-- Guía -->
+              <div id="guia" class="tab-content">
+                <div class="info-card">
+                  <div class="guide-content">
+                    <div class="lr-section">
+                      <h4>Confirmar (LR+)</h4>
+                      <div class="lr-values">
+                        >10: Concluyente | 5-10: Moderado | 2-5: Pequeño
+                      </div>
+                      <div class="lr-estimates">
+                        LR+ 2→+15% | 4→+25% | 8→+40%
+                      </div>
+                    </div>
+
+                    <div class="lr-section">
+                      <h4>Descartar (LR-)</h4>
+                      <div class="lr-values">
+                        <0.1: Descarta | 0.1-0.2: Grande | 0.2-0.5: Moderado
+                      </div>
+                      <div class="lr-estimates">
+                        LR- 0.1→-45% | 0.2→-30% | 0.4→-20%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ejemplos -->
+              <div id="ejemplos" class="tab-content">
+                <div class="info-card">
+                  <div class="example-case">
+                    <strong>TEP:</strong> Pre-test 30% → D-dímero- (LR-=0.12) →
+                    Post-test ~8%
+                  </div>
+                  <div class="example-case">
+                    <strong>SCA:</strong> Pre-test 60% → Troponina+ (LR+=14) →
+                    Post-test ~95%
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contenido Ejemplos -->
+            <div id="ejemplos" class="tab-content">
+              <div class="info-card">
+                <h3>Ejemplos Prácticos</h3>
+                <div class="example-case">
+                  <h4>🫁 Sospecha de TEP</h4>
+                  <p><strong>Escenario:</strong> Paciente con disnea súbita</p>
+                  <ul>
+                    <li>Probabilidad pre-prueba: 30%</li>
+                    <li>D-dímero negativo (LR- = 0.12)</li>
+                    <li>Resultado: Probabilidad baja ~8%</li>
+                    <li>Interpretación: Permite descartar razonablemente</li>
+                  </ul>
+                </div>
+                <div class="example-case">
+                  <h4>💔 Dolor Torácico Agudo</h4>
+                  <p><strong>Escenario:</strong> Sospecha de SCA</p>
+                  <ul>
+                    <li>Probabilidad pre-prueba: 60%</li>
+                    <li>Troponina elevada (LR+ = 14)</li>
+                    <li>Resultado: Probabilidad alta ~95%</li>
+                    <li>Interpretación: Cambio diagnóstico significativo</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div id="info" class="tab-content">
+              <div class="info-card">
+                <div class="info-sections">
+                  <!-- Propósito -->
+                  <section class="info-section">
+                    <h4>Propósito</h4>
+                    <p>
+                      Esta calculadora está diseñada para facilitar la lectura
+                      crítica y la transferencia del conocimiento a
+                      profesionales sanitarios. Ayuda a evaluar pruebas
+                      diagnósticas mediante:
+                    </p>
+                    <ul>
+                      <li>Cálculo de índices diagnósticos</li>
+                      <li>Interpretación automática de Likelihood Ratios</li>
+                      <li>Visualización de probabilidades pre/post-test</li>
+                    </ul>
+                  </section>
+
+                  <!-- Características -->
+                  <section class="info-section">
+                    <h4>Características</h4>
+                    <ul>
+                      <li>Actualización automática de cálculos y gráficas</li>
+                      <li>Contenido exportable a texto o presentaciones</li>
+                      <li>
+                        Integración con Diagnostic Test Calculator para
+                        nomograma de Fagan
+                      </li>
+                      <li>Requiere conexión a Internet</li>
+                    </ul>
+                  </section>
+
+                  <!-- Interpretación LR -->
+                  <section class="info-section">
+                    <h4>Interpretación de Likelihood Ratios</h4>
+                    <div class="lr-table">
+                      <div>
+                        <strong>Para confirmar (LR+):</strong>
+                        >10 Concluyente | 5-10 Moderado | 2-5 Pequeño
+                      </div>
+                      <div>
+                        <strong>Para descartar (LR-):</strong>
+                        <0.1 Descarta | 0.1-0.2 Grande | 0.2-0.5 Moderado
+                      </div>
+                    </div>
+                  </section>
+
+                  <!-- Referencias -->
+                  <section class="info-section">
+                    <h4>Referencias Clave</h4>
+                    <ol class="references">
+                      <li>
+                        Abraira V. Índices de rendimiento de las pruebas
+                        diagnósticas. SEMERGEN-Medicina de Familia 2002;
+                        28:193–4.
+                      </li>
+                      <li>
+                        Xu D, et al. Diagnostic value of ankle-brachial index in
+                        peripheral arterial disease: a meta-analysis. Can J
+                        Cardiol 2013;29:492–8.
+                      </li>
+                    </ol>
+                    <p class="reference-note">
+                      Más ejemplos disponibles en:
+                      <a
+                        href="https://sites.google.com/site/informacionfarmacoterapeutica/likelihood-ratio"
+                        target="_blank"
+                        >Información Farmacoterapéutica</a
+                      >
+                    </p>
+                  </section>
+
+                  <!-- Créditos -->
+                  <section class="info-section">
+                    <h4>Créditos</h4>
+                    <p>
+                      <strong>Autor:</strong> Ernesto Barrera
+                      <a
+                        href="https://twitter.com/ernestob"
+                        target="_blank"
+                        rel="noopener"
+                        >@ernestob</a
+                      >
+                    </p>
+                    <p>
+                      <strong>Colaboradores:</strong><br />
+                      Rafa Rotaeche
+                      <a
+                        href="https://twitter.com/rafarotaeche"
+                        target="_blank"
+                        rel="noopener"
+                        >@rafarotaeche</a
+                      ><br />
+                      Juan Gérvas
+                      <a
+                        href="https://twitter.com/JuanGrvas"
+                        target="_blank"
+                        rel="noopener"
+                        >@JuanGrvas</a
+                      ><br />
+                      Carlos Coscollar
+                      <a
+                        href="https://twitter.com/Carcos2"
+                        target="_blank"
+                        rel="noopener"
+                        >@Carcos2</a
+                      >
+                    </p>
+                  </section>
+
+                  <!-- Nota -->
+                  <section class="info-section disclaimer">
+                    <p>
+                      ⚠️ Esta herramienta se encuentra en fase de pruebas. Se
+                      recomienda verificar los resultados y notificar cualquier
+                      error detectado al autor.
+                    </p>
+                  </section>
+                </div>
+              </div>
+            </div>
+            <div id="buscar" class="tab-content">
+              <div class="info-card">
+                <h3>Encuentra Más Casos para la Calculadora</h3>
+
+                <div class="search-section">
+                  <h4>📚 Búsqueda Base en PubMed</h4>
+                  <p>
+                    Hemos preparado una búsqueda que localiza estudios sobre
+                    precisión diagnóstica en PubMed.
+                    <a
+                      href="https://pubmed.ncbi.nlm.nih.gov/?term=((%22diagnostic%20accuracy%22[Title/Abstract]%20OR%20%22sensitivity%20and%20specificity%22[MeSH%20Terms]%20OR%20%22likelihood%20ratio%22[Title/Abstract]%20OR%20%22predictive%20value%22[Title/Abstract]%20OR%20%22diagnostic%20performance%22[Title/Abstract])%20AND%20(meta-analysis[Publication%20Type]%20OR%20%22systematic%20review%22[Title/Abstract]%20OR%20%22meta-analysis%22[Title/Abstract])%20%22last%206%20years%22[DP])"
+                      target="_blank"
+                      class="search-link"
+                      >Accede aquí a la búsqueda</a
+                    >
+                  </p>
+                </div>
+
+                <div class="search-section">
+                  <h4>🎯 ¿Cómo buscar tu tema?</h4>
+                  <p>Para encontrar estudios sobre una prueba específica:</p>
+                  <ol>
+                    <li>Abre el enlace de búsqueda base</li>
+                    <li>
+                      Añade al inicio tu término en inglés con [TIAB]: <br /><em
+                        >Ejemplo: "troponin[TIAB] AND..."</em
+                      >
+                    </li>
+                    <li>
+                      Para mejores resultados:
+                      <ul>
+                        <li>Usa comillas para frases exactas: "chest pain"</li>
+                        <li>Incluye sinónimos: fever[TIAB] OR pyrexia[TIAB]</li>
+                      </ul>
+                    </li>
+                  </ol>
+                </div>
+
+                <div class="search-section">
+                  <h4>📊 Datos a Extraer</h4>
+                  <p>De los estudios que encuentres, necesitarás:</p>
+                  <ul>
+                    <li>Sensibilidad y especificidad</li>
+                    <li>Likelihood ratios (o datos para calcularlos)</li>
+                    <li>Punto de corte utilizado</li>
+                    <li>Población estudiada</li>
+                  </ul>
+                </div>
+
+                <div class="search-tip">
+                  <p>
+                    💡 <strong>Consejo:</strong> Prioriza meta-análisis y
+                    revisiones sistemáticas recientes. Estos estudios ofrecen la
+                    mejor evidencia disponible sobre el rendimiento diagnóstico
+                    de las pruebas.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="iframe-container">
-            <!--  esta dejo de funcionar la interactividad. Quitar cuando compruebe allowfullscreen y resto de parametros
-               <iframe
-              src="https://onedrive.live.com/embed?resid=42C1E8FB5F981E15%211085&authkey=%21ADgiktbVCQiPRuY&em=2&AllowTyping=True&ActiveCell='1'!E9&Item='1'!B1%3AP100&wdHideGridlines=True&wdInConfigurator=True"
-              frameborder="0"
-              scrolling="no"
-              allowfullscreen
-            >
-
-            
-            </iframe> -->
-
             <iframe
               width="700"
               height="900"
               frameborder="0"
               scrolling="no"
-              src="https://1drv.ms/x/c/42c1e8fb5f981e15/UQQVHphf--jBIIBCPQQAAAAAADgiktbVCQiPRuY?em=2&AllowTyping=True&ActiveCell='1'!E13&Item='1'!A1%3AO100&wdHideGridlines=True&wdInConfigurator=True&wdInConfigurator=True"
+              src="https://1drv.ms/x/c/42c1e8fb5f981e15/UQQVHphf--jBIIBCPQQAAAAAADgiktbVCQiPRuY?em=2&AllowTyping=True&ActiveCell='1'!E13&Item='1'!A2%3AP100&wdHideGridlines=True&wdInConfigurator=True&wdInConfigurator=True"
             ></iframe>
           </div>
         </section>
@@ -193,5 +765,22 @@
     </footer> -->
 
     <script src="./assets/js/include.js"></script>
+    <script>
+      function openTab(tabName) {
+        // Ocultar todos los contenidos
+        const tabs = document.querySelectorAll(".tab-content");
+        tabs.forEach((tab) => tab.classList.remove("active"));
+
+        // Desactivar todos los botones
+        const buttons = document.querySelectorAll(".tab-button");
+        buttons.forEach((button) => button.classList.remove("active"));
+
+        // Mostrar el contenido seleccionado
+        document.getElementById(tabName).classList.add("active");
+
+        // Activar el botón seleccionado
+        event.currentTarget.classList.add("active");
+      }
+    </script>
   </body>
 </html>
