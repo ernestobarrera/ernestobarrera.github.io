@@ -495,42 +495,54 @@
                 <div class="info-card">
                   <div class="guide-content">
                     <div class="lr-section">
-                      <h4>Confirmar (LR+)</h4>
+                      <h4>Para CONFIRMAR diagnóstico (LR+)</h4>
                       <div class="lr-values">
-                        >10: Concluyente | 5-10: Moderado | 2-5: Pequeño
-                      </div>
-                      <div class="lr-estimates">
-                        LR+ 2→+15% | 4→+25% | 8→+40%
+                        <strong>LR+ >10</strong>: Cambios amplios - Muy útil para confirmar<br>
+                        <strong>LR+ 5-10</strong>: Cambios moderados - Información relevante<br>
+                        <strong>LR+ 2-5</strong>: Cambios pequeños - Valorar con otros datos<br>
+                        <strong>LR+ 1-2</strong>: No modifica la decisión
                       </div>
                     </div>
-
+                    
                     <div class="lr-section">
-                      <h4>Descartar (LR-)</h4>
+                      <h4>Para DESCARTAR diagnóstico (LR-)</h4>
                       <div class="lr-values">
-                        <0.1: Descarta | 0.1-0.2: Grande | 0.2-0.5: Moderado
+                        <strong>LR- <0.1</strong>: Cambios amplios - Muy útil para descartar<br>
+                        <strong>LR- 0.1-0.2</strong>: Cambios moderados - Ayuda a descartar<br>
+                        <strong>LR- 0.2-0.5</strong>: Cambios pequeños - Valor limitado<br>
+                        <strong>LR- 0.5-1</strong>: No modifica la decisión
                       </div>
+                    </div>
+               
+                    <div class="lr-section">
+                      <h4>Regla de McGee para estimación rápida</h4>
+                      <div class="lr-values">
+                        <p>Para facilitar las decisiones clínicas, puede usar esta regla nemotécnica de los "múltiplos de 15":</p>
+               
+                        <strong>Para AUMENTAR la probabilidad (LR+):</strong><br>
+                        <strong>LR+ 2</strong> → +15% (primer múltiplo de 15)<br>
+                        <strong>LR+ 5</strong> → +30% (segundo múltiplo de 15)<br>
+                        <strong>LR+ 10</strong> → +45% (tercer múltiplo de 15)
+                      </div>
+                      
+                      <div class="lr-values">
+                        <strong>Para DISMINUIR la probabilidad (LR-):</strong><br>
+                        <strong>LR- 0.5</strong> → -15% (primer múltiplo)<br>
+                        <strong>LR- 0.2</strong> → -30% (segundo múltiplo)<br>
+                        <strong>LR- 0.1</strong> → -45% (tercer múltiplo)
+                      </div>
+               
                       <div class="lr-estimates">
-                        LR- 0.1→-45% | 0.2→-30% | 0.4→-20%
+                        <em>💡 Consejo: Esta regla funciona como una "báscula diagnóstica" - cuanto más se aleja el LR de 1, mayor es el cambio en la probabilidad (en múltiplos de 15%)</em>
+                      </div>
+                      
+                      <div class="reference">
+                        Fuente: McGee SR. Evidence-based Physical Diagnosis. Elsevier Health Sciences, 2012.
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <!-- Ejemplos -->
-              <div id="ejemplos" class="tab-content">
-                <div class="info-card">
-                  <div class="example-case">
-                    <strong>TEP:</strong> Pre-test 30% → D-dímero- (LR-=0.12) →
-                    Post-test ~8%
-                  </div>
-                  <div class="example-case">
-                    <strong>SCA:</strong> Pre-test 60% → Troponina+ (LR+=14) →
-                    Post-test ~95%
-                  </div>
-                </div>
-              </div>
-            </div>
+               </div>
 
             <!-- Contenido Ejemplos -->
             <div id="ejemplos" class="tab-content">
