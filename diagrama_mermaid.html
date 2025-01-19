@@ -154,9 +154,9 @@
 
         <div class="workflow-description">
           <p class="main-description">
-            Proceso optimizado para el análisis de literatura científica que
-            reduce el tiempo de procesamiento a 2:05 minutos por artículo,
-            combinando cuatro herramientas clave:
+            Proceso optimizado para la lectura de artículos científicos, que
+            reduce el tiempo de a 2:05 minutos por artículo, combinando cuatro
+            herramientas de automatización:
           </p>
 
           <ul class="tools-list">
@@ -242,8 +242,8 @@
           end
       
           subgraph Procesamiento["🤖 Análisis GPT"]
-              E --> G["Generación de resumen<br/>estructurado IMRD"]:::gpt
-              F --> H["Análisis crítico PRISMA/<br/>CONSORT/STROBE"]:::gpt
+              E --> G["Generación de resumen<br/>estructurado "]:::gpt
+              F --> H["Lectura Crítica"]:::gpt
               N3["⏱️ 40s procesamiento<br/>paralelo"]:::nota
           end
       
