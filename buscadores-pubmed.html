@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Buscador PubMed Avanzado | @ernestob</title>
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/header.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        background: #1c1e26;
+      }
+      .main-container {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0.5rem 0.5rem;
+      }
+      .hero-section {
+        border-radius: 8px;
+        padding: 0rem;
+        margin-bottom: 0.1rem;
+      }
+      .search-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0.5rem;
+        color: var(--text-primary, #fff);
+      }
+
+      .search-box {
+        background: var(--card-bg, #2a3b4d);
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 12px;
+        background: var(--primary-bg, #1c1e26);
+        border: 1px solid var(--secondary-bg, #2c3e50);
+        border-radius: 4px;
+        color: var(--text-primary, #fff);
+        font-size: 16px;
+        margin-bottom: 1rem;
+      }
+
+      .filters-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .filter-category {
+        background: var(--primary-bg, #1c1e26);
+        padding: 1rem;
+        border-radius: 6px;
+        border-left: 4px solid transparent;
+        transition: all 0.3s ease;
+      }
+
+      .filter-category.methodological {
+        border-left-color: rgba(59, 130, 246, 0.5);
+      }
+
+      .filter-category.clinical {
+        border-left-color: rgba(16, 185, 129, 0.5);
+      }
+
+      .filter-category.scope {
+        border-left-color: rgba(139, 92, 246, 0.5);
+      }
+
+      .category-title {
+        font-size: 1rem;
+        color: var(--text-secondary, #94a3b8);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .filter-button {
+        width: 100%;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background: var(--secondary-bg, #2c3e50);
+        border: none;
+        border-left: 4px solid transparent;
+        border-radius: 4px;
+        color: var(--text-primary, #fff);
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .filter-button:hover {
+        background: var(--hover-color, #34495e);
+      }
+
+      .filter-button.active.methodological {
+        background: rgba(59, 130, 246, 0.2);
+        border-left-color: rgb(59, 130, 246);
+      }
+
+      .filter-button.active.clinical {
+        background: rgba(16, 185, 129, 0.2);
+        border-left-color: rgb(16, 185, 129);
+      }
+
+      .filter-button.active.scope {
+        background: rgba(139, 92, 246, 0.2);
+        border-left-color: rgb(139, 92, 246);
+      }
+
+      .info-section {
+        margin-top: 2rem;
+        background: rgba(59, 130, 246, 0.1);
+        padding: 1rem;
+        border-radius: 8px;
+      }
+
+      .info-title {
+        font-size: 1.2rem;
+        color: var(--text-primary, #fff);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .info-text {
+        color: var(--text-secondary, #94a3b8);
+        line-height: 1.5;
+      }
+
+      .search-button {
+        width: 100%;
+        padding: 1rem;
+        background: var(--accent-color, #ffd700);
+        border: none;
+        border-radius: 4px;
+        color: var(--primary-bg, #1c1e26);
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+
+      .search-button:hover {
+        opacity: 0.9;
+      }
+
+      .filter-count {
+        background: var(--primary-bg, #1c1e26);
+        padding: 0.2rem 0.5rem;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        margin-left: auto;
+      }
+
+      @media (max-width: 768px) {
+        .filters-section {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .intro-text {
+        font-size: 1rem;
+        line-height: 1.4;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 6px;
+        padding: 0.75rem;
+        color: var(--text-secondary, #94a3b8);
+        margin-bottom: 1rem;
+      }
+      .filter-count {
+        background: var(--primary-bg, #1c1e26);
+        padding: 0.2rem 0.5rem;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        margin-left: auto;
+        /* Añadir estos estilos */
+        color: var(--text-primary, #ffffff);
+        border: 1px solid var(--secondary-bg, #2c3e50);
+        background: rgba(44, 62, 80, 0.5);
+      }
+    </style>
+  </head>
+  <body>
+    <include src="header.html"></include>
+
+    <main class="main-container">
+      <section class="hero-section">
+        <h1 class="main-title">
+          <i class="fas fa-search"></i>
+          <span>Buscador PubMed con Filtros Estructurados</span>
+        </h1>
+        <p class="intro-text">
+          Optimiza tus búsquedas bibliográficas combinando filtros
+          metodológicos, clínicos y de ámbito predefinidos. Esta herramienta
+          construye automáticamente búsquedas avanzadas utilizando términos MeSH
+          y operadores booleanos para obtener resultados más precisos y
+          reproducibles. Selecciona los filtros que necesites y deja que la
+          herramienta construya la estrategia de búsqueda óptima.
+        </p>
+      </section>
+
+      <div class="search-container">
+        <div class="search-box">
+          <input
+            type="text"
+            id="searchTerm"
+            class="search-input"
+            placeholder="Introduce términos de búsqueda..."
+          />
+
+          <div class="filters-section">
+            <!-- Filtros Metodológicos -->
+            <div class="filter-category methodological">
+              <h3 class="category-title">
+                <i class="fas fa-flask"></i>
+                Metodología
+              </h3>
+              <button class="filter-button methodological" data-type="mbe">
+                🔍 MBE
+              </button>
+              <button class="filter-button methodological" data-type="gpc">
+                📋 GPC
+              </button>
+              <button
+                class="filter-button methodological"
+                data-type="metaanalysis"
+              >
+                ⭐ Rev Sist/Meta-análisis/HTA
+              </button>
+              <button
+                class="filter-button methodological"
+                data-type="qualitative"
+              >
+                📝 Estudios cualitativos
+              </button>
+              <button
+                class="filter-button methodological"
+                data-type="predictors"
+              >
+                🎯 Predictores Tratamiento
+              </button>
+              <button
+                class="filter-button methodological"
+                data-type="clinical_rules"
+              >
+                📊 Reglas Predicción Clínica
+              </button>
+              <button class="filter-button methodological" data-type="horizon">
+                🔭 Horizon Scanning
+              </button>
+            </div>
+
+            <!-- Filtros Clínicos -->
+            <div class="filter-category clinical">
+              <h3 class="category-title">
+                <i class="fas fa-stethoscope"></i>
+                Enfoque Clínico
+              </h3>
+              <button class="filter-button clinical" data-type="diagnosis">
+                🔍 Diagnóstico-CQ
+              </button>
+              <button class="filter-button clinical" data-type="etiology">
+                🔬 Etiología-CQ
+              </button>
+              <button class="filter-button clinical" data-type="prognosis">
+                📈 Pronóstico-CQ
+              </button>
+              <button class="filter-button clinical" data-type="treatment">
+                💊 Tratamiento-CQ
+              </button>
+              <button class="filter-button clinical" data-type="surgery_ae">
+                ⚕️ Efectos Adversos Cirugía
+              </button>
+              <button class="filter-button clinical" data-type="devices_ae">
+                🔧 Efectos Adversos Dispositivos
+              </button>
+              <button class="filter-button clinical" data-type="drugs_ae">
+                💊 Efectos adversos Medicamentos
+              </button>
+              <button class="filter-button clinical" data-type="car_t">
+                🧬 Terapias CAR-T
+              </button>
+              <button class="filter-button clinical" data-type="deprescription">
+                ⚕️ Deprescripción
+              </button>
+            </div>
+
+            <!-- Filtros por Ámbito -->
+            <div class="filter-category scope">
+              <h3 class="category-title">
+                <i class="fas fa-users"></i>
+                Ámbito y Población
+              </h3>
+              <button class="filter-button scope" data-type="ai">
+                🤖 IA Generativa
+              </button>
+              <button class="filter-button scope" data-type="palliative">
+                🏥 Cuidados Paliativos
+              </button>
+              <button class="filter-button scope" data-type="primary">
+                👨‍⚕️ Atención Primaria
+              </button>
+              <button class="filter-button scope" data-type="safety">
+                🛡️ Seguridad Paciente
+              </button>
+              <button class="filter-button scope" data-type="pearls">
+                💎 Perlas Clínicas
+              </button>
+              <button class="filter-button scope" data-type="perspective">
+                👥 Perspectiva Pacientes
+              </button>
+              <button class="filter-button scope" data-type="nursing">
+                👩‍⚕️ Revistas de Enfermería
+              </button>
+              <button class="filter-button scope" data-type="humans">
+                🧑 Humanos
+              </button>
+              <button class="filter-button scope" data-type="geriatrics">
+                👴 Geriatría
+              </button>
+              <button class="filter-button scope" data-type="pediatrics">
+                👶 Pediatría
+              </button>
+              <button class="filter-button scope" data-type="adults">
+                🧑 Personas adultas
+              </button>
+              <button class="filter-button scope" data-type="ocde">
+                🌍 Países OCDE
+              </button>
+              <button class="filter-button scope" data-type="spanish">
+                🇪🇸 Publicaciones Españolas
+              </button>
+              <button class="filter-button scope" data-type="economic">
+                💰 Evaluaciones económicas
+              </button>
+            </div>
+          </div>
+
+          <button id="searchButton" class="search-button">
+            <i class="fas fa-search"></i>
+            <span>Buscar en PubMed</span>
+            <span id="filterCount" class="filter-count">0 filtros</span>
+          </button>
+        </div>
+
+        <div class="info-section">
+          <h2 class="info-title">
+            <i class="fas fa-info-circle"></i>
+            Sobre las Búsquedas
+          </h2>
+          <p class="info-text">
+            Los filtros se combinan automáticamente usando operadores booleanos:
+            <strong>OR</strong> entre filtros de la misma categoría y
+            <strong>AND</strong> entre diferentes categorías. Esto permite
+            construir búsquedas precisas que encuentran exactamente lo que
+            necesitas.
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <include src="footer.html"></include>
+
+    <script src="/assets/js/include.js"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const searchInput = document.getElementById("searchTerm");
+        const searchButton = document.getElementById("searchButton");
+        const filterCount = document.getElementById("filterCount");
+        let activeFilters = new Set();
+
+        // Toggle de filtros
+        document.querySelectorAll(".filter-button").forEach((button) => {
+          button.addEventListener("click", () => {
+            button.classList.toggle("active");
+            const filterType = button.dataset.type;
+
+            if (button.classList.contains("active")) {
+              activeFilters.add(filterType);
+            } else {
+              activeFilters.delete(filterType);
+            }
+
+            // Actualizar contador
+            filterCount.textContent = `${activeFilters.size} filtros`;
+          });
+        });
+
+        // Construcción de la query
+        function constructQuery(searchTerm) {
+          const filterQueries = {
+            // Metodológicos
+            mbe: '"Evidence-Based Medicine"[Mesh]',
+            gpc: '"Practice Guidelines as Topic"[Mesh]',
+            metaanalysis: '"Meta-Analysis"[Publication Type] OR systematic[sb]',
+            qualitative: '"Qualitative Research"[Mesh]',
+            predictors: '"Forecasting"[Mesh] AND "Treatment Outcome"[Mesh]',
+            clinical_rules: '"Clinical Prediction Rule"[Mesh]',
+            horizon: '"Technology Assessment, Biomedical"[Mesh]',
+
+            // Clínicos
+            diagnosis: '"diagnosis"[Subheading]',
+            etiology: '"etiology"[Subheading]',
+            prognosis: '"prognosis"[Subheading]',
+            treatment: '"therapy"[Subheading]',
+            surgery_ae: '"postoperative complications"[Mesh]',
+            devices_ae: '"Equipment and Supplies/adverse effects"[Mesh]',
+            drugs_ae: '"Drug-Related Side Effects and Adverse Reactions"[Mesh]',
+            car_t:
+              '"Immunotherapy, Adoptive"[Mesh] AND "Receptors, Chimeric Antigen"[Mesh]',
+            deprescription: '"Deprescriptions"[Mesh]',
+
+            // Ámbito y población
+            ai: '"Artificial Intelligence"[Mesh]',
+            palliative: '"Palliative Care"[Mesh]',
+            primary: '"Primary Health Care"[Mesh]',
+            safety: '"Patient Safety"[Mesh]',
+            pearls:
+              '"Clinical Medicine"[Mesh] AND "Practice Guidelines as Topic"[Mesh]',
+            perspective:
+              '"Patient Preference"[Mesh] OR "Patient Reported Outcome Measures"[Mesh]',
+            nursing: '"Nursing Journals"[Journal]',
+            humans: '"Humans"[Mesh]',
+            geriatrics: '"Geriatrics"[Mesh]',
+            pediatrics: '"Pediatrics"[Mesh]',
+            adults: '"Adult"[Mesh]',
+            ocde: '("developed countries"[Mesh] OR "Europe"[Mesh] OR "North America"[Mesh])',
+            spanish: "spanish[Language]",
+            economic: '"Cost-Benefit Analysis"[Mesh] OR "Economics"[Mesh]',
+          };
+
+          let query = `(${searchTerm})`;
+
+          // Agrupar filtros por categoría
+          const filtersByCategory = {
+            methodology: [
+              "mbe",
+              "gpc",
+              "metaanalysis",
+              "qualitative",
+              "predictors",
+              "clinical_rules",
+              "horizon",
+            ],
+            clinical: [
+              "diagnosis",
+              "etiology",
+              "prognosis",
+              "treatment",
+              "surgery_ae",
+              "devices_ae",
+              "drugs_ae",
+              "car_t",
+              "deprescription",
+            ],
+            scope: [
+              "ai",
+              "palliative",
+              "primary",
+              "safety",
+              "pearls",
+              "perspective",
+              "nursing",
+              "humans",
+              "geriatrics",
+              "pediatrics",
+              "adults",
+              "ocde",
+              "spanish",
+              "economic",
+            ],
+          };
+
+          // Construir query por categorías
+          for (let category in filtersByCategory) {
+            const activeInCategory = filtersByCategory[category]
+              .filter((filter) => activeFilters.has(filter))
+              .map((filter) => filterQueries[filter]);
+
+            if (activeInCategory.length > 0) {
+              query += ` AND (${activeInCategory.join(" OR ")})`;
+            }
+          }
+
+          return query;
+        }
+
+        // Realizar búsqueda
+        searchButton.addEventListener("click", () => {
+          const searchTerm = searchInput.value.trim();
+
+          if (!searchTerm) {
+            alert("Por favor, introduce un término de búsqueda");
+            return;
+          }
+
+          const query = constructQuery(searchTerm);
+          const url = `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(
+            query
+          )}`;
+          window.open(url, "_blank");
+        });
+
+        // Enter en el input
+        searchInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            searchButton.click();
+          }
+        });
+      });
+    </script>
+
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </body>
+</html>
