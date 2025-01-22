@@ -5,6 +5,28 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Buscador PubMed Avanzado | @ernestob</title>
+    <meta
+      name="description"
+      content="Buscador avanzado de PubMed con filtros estructurados para profesionales sanitarios"
+    />
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Buscador PubMed con Filtros Estructurados | @ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria 🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/t/pubmed.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
     <link rel="icon" href="/assets/images/icon.webp" />
     <link rel="stylesheet" href="/assets/css/main.css" />
     <link rel="stylesheet" href="/assets/css/header.css" />
@@ -14,6 +36,14 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
+    <!--Para tutorial dinámico -->
+    <!-- CSS de Intro.js -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/intro.js/minified/introjs.min.css"
+    />
+    <!-- JS de Intro.js -->
+    <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
 
     <style>
       body {
@@ -23,187 +53,284 @@
         background: #1c1e26;
       }
       .main-container {
-        max-width: 1200px;
+        max-width: 1400px;
         margin-left: auto;
         margin-right: auto;
-        padding: 0.5rem 0.5rem;
+        padding: 0rem 0rem;
       }
       .hero-section {
         border-radius: 8px;
-        padding: 0rem;
-        margin-bottom: 0.1rem;
+        padding: 0;
+        margin-bottom: 0.5rem;
+      }
+      .main-title {
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-primary, #fff);
       }
       .search-container {
-        max-width: 1200px;
+        max-width: 100%;
         margin: 0 auto;
-        padding: 0.5rem;
+        padding: 0;
         color: var(--text-primary, #fff);
       }
-
+      .intro-text {
+        font-size: 0.95rem;
+        line-height: 1.4;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 8px;
+        padding: 0.5rem;
+        color: var(--text-secondary, #94a3b8);
+        margin-bottom: 0.5rem;
+      }
       .search-box {
         background: var(--card-bg, #2a3b4d);
-        padding: 1.5rem;
-        border-radius: 8px;
+        padding: 1rem;
+        border-radius: 12px;
         margin-bottom: 1rem;
       }
-
       .search-input {
         width: 100%;
-        padding: 12px;
+        padding: 0.75rem;
         background: var(--primary-bg, #1c1e26);
         border: 1px solid var(--secondary-bg, #2c3e50);
-        border-radius: 4px;
+        border-radius: 6px;
         color: var(--text-primary, #fff);
-        font-size: 16px;
+        font-size: 0.95rem;
         margin-bottom: 1rem;
+        transition: border-color 0.3s ease;
       }
-
+      .search-input:focus {
+        border-color: var(--accent-color, #ffd700);
+        outline: none;
+      }
       .filters-section {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1rem;
+        grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr) minmax(
+            450px,
+            1.75fr
+          );
+        gap: 0rem;
         margin-top: 1rem;
       }
-
       .filter-category {
         background: var(--primary-bg, #1c1e26);
         padding: 1rem;
-        border-radius: 6px;
+        border-radius: 8px;
         border-left: 4px solid transparent;
-        transition: all 0.3s ease;
+        transition: all 0.4s ease;
       }
-
       .filter-category.methodological {
         border-left-color: rgba(59, 130, 246, 0.5);
       }
-
       .filter-category.clinical {
         border-left-color: rgba(16, 185, 129, 0.5);
       }
-
       .filter-category.scope {
         border-left-color: rgba(139, 92, 246, 0.5);
       }
-
+      .filter-category.scope .filter-buttons-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+      }
       .category-title {
-        font-size: 1rem;
-        color: var(--text-secondary, #94a3b8);
+        font-size: 1.05rem;
+        color: var(--accent-color, #ffd700);
         margin-bottom: 0.75rem;
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        font-weight: 600;
       }
-
       .filter-button {
         width: 100%;
-        padding: 0.75rem;
-        margin-bottom: 0.5rem;
+        padding: 0.5rem 0.5rem;
+        margin-bottom: 0.35rem;
         background: var(--secondary-bg, #2c3e50);
         border: none;
         border-left: 4px solid transparent;
-        border-radius: 4px;
+        border-radius: 6px;
         color: var(--text-primary, #fff);
         text-align: left;
         cursor: pointer;
-        transition: all 0.3s;
+        transition: all 0.2s ease;
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        font-size: 0.9rem;
       }
-
       .filter-button:hover {
         background: var(--hover-color, #34495e);
+        transform: translateX(2px);
       }
-
       .filter-button.active.methodological {
         background: rgba(59, 130, 246, 0.2);
         border-left-color: rgb(59, 130, 246);
       }
-
       .filter-button.active.clinical {
         background: rgba(16, 185, 129, 0.2);
         border-left-color: rgb(16, 185, 129);
       }
-
       .filter-button.active.scope {
         background: rgba(139, 92, 246, 0.2);
         border-left-color: rgb(139, 92, 246);
       }
-
+      .versions-toggle {
+        margin-left: auto;
+        display: flex;
+        gap: 0.3rem;
+        align-items: center;
+      }
+      .versions-toggle input[type="radio"] {
+        margin-right: 0rem;
+        transform: scale(0.9);
+      }
       .info-section {
-        margin-top: 2rem;
+        margin-top: 1rem;
         background: rgba(59, 130, 246, 0.1);
-        padding: 1rem;
+        padding: 0.5rem;
         border-radius: 8px;
       }
-
       .info-title {
+        font-size: 1.1rem;
+        color: var(--accent-color, #ffd700);
+        margin-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+      .info-text {
+        color: var(--text-secondary, #94a3b8);
+        line-height: 1.4;
+        font-size: 0.9rem;
+        margin: 0;
+      }
+
+      /* Contenedor centrado con la disposición en una sola línea */
+      .centered-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 0.8rem; /* Ajusta si quieres menos o más espacio vertical */
+        flex-wrap: wrap; /* Permite que se adapte en pantallas pequeñas */
+      }
+
+      /* Botón con estilo "técnico" y hover distintivo */
+      .search-button {
+        background: linear-gradient(135deg, #ffd700, #ff9a00);
+        border: none;
+        border-radius: 8px;
+        color: #1c1e26;
+        font-weight: 600;
         font-size: 1.2rem;
-        color: var(--text-primary, #fff);
-        margin-bottom: 0.75rem;
+        padding: 0.75rem 1.25rem;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
         display: flex;
         align-items: center;
         gap: 0.5rem;
       }
-
-      .info-text {
-        color: var(--text-secondary, #94a3b8);
-        line-height: 1.5;
+      .search-button:hover {
+        transform: translateY(-2px) scale(1.03);
+        box-shadow: 0 8px 12px rgba(0, 0, 0, 0.25);
       }
 
-      .search-button {
-        width: 100%;
-        padding: 1rem;
-        background: var(--accent-color, #ffd700);
-        border: none;
-        border-radius: 4px;
-        color: var(--primary-bg, #1c1e26);
-        font-weight: bold;
-        cursor: pointer;
-        margin-top: 1rem;
+      /* Texto explicativo y burbuja para el número de filtros */
+      .filter-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #fff;
+      }
+      .filter-count {
+        min-width: 2.2rem;
+        min-height: 2.2rem;
+        background: linear-gradient(135deg, #2a3b4d, #3b4f66);
+        color: #ffffff;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        border: 2px solid #ffd700;
       }
 
-      .search-button:hover {
-        opacity: 0.9;
-      }
-
-      .filter-count {
-        background: var(--primary-bg, #1c1e26);
-        padding: 0.2rem 0.5rem;
-        border-radius: 1rem;
-        font-size: 0.8rem;
-        margin-left: auto;
-      }
-
-      @media (max-width: 768px) {
+      @media (max-width: 1200px) {
         .filters-section {
-          grid-template-columns: 1fr;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+        .filter-category.scope .filter-buttons-container {
+          grid-template-columns: repeat(2, 1fr);
         }
       }
-
-      .intro-text {
-        font-size: 1rem;
-        line-height: 1.4;
-        background: rgba(59, 130, 246, 0.15);
-        border-radius: 6px;
-        padding: 0.75rem;
-        color: var(--text-secondary, #94a3b8);
-        margin-bottom: 1rem;
+      @media (max-width: 768px) {
+        .main-container {
+          padding: 0.75rem;
+        }
+        .search-box {
+          padding: 0.75rem;
+        }
+        .filter-button {
+          margin-bottom: 0.25rem;
+        }
       }
-      .filter-count {
-        background: var(--primary-bg, #1c1e26);
-        padding: 0.2rem 0.5rem;
-        border-radius: 1rem;
-        font-size: 0.8rem;
-        margin-left: auto;
-        /* Añadir estos estilos */
-        color: var(--text-primary, #ffffff);
-        border: 1px solid var(--secondary-bg, #2c3e50);
-        background: rgba(44, 62, 80, 0.5);
+      /* Ajusta los colores del tooltip de Intro.js a tu tema oscuro */
+      .introjs-tooltip {
+        animation: fadeIn 0.8s ease;
+
+        background-color: #0a0b0b !important; /* tu color de card-bg */
+        color: #ffffff !important;
+        border: 1px solid #444 !important; /* o el que prefieras */
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      .introjs-arrow {
+        border-color: #2a3b4d transparent transparent transparent !important;
+      }
+      .introjs-helperNumberLayer {
+        background: #ffd700 !important; /* tu color “gold” */
+        color: #1c1e26 !important;
+      }
+      .introjs-bullets .introjs-bullet {
+        background: #34495e !important;
+      }
+      .introjs-bullets .introjs-bullet.active {
+        box-shadow: 0 0 0 2px #ffd700 !important; /* aro dorado */
+      }
+      .introjs-tooltipbuttons {
+        white-space: nowrap;
+      }
+      .introjs-skipbutton,
+      .introjs-prevbutton,
+      .introjs-nextbutton,
+      .introjs-donebutton {
+        padding: 0.4rem 0.2rem;
+        font-size: 0.85rem;
+      }
+      .myHighlight {
+        background: transparent !important;
+        background: #333;,
+        box-shadow: 0 0 8px 4px rgba(255, 215, 0, 0.8) !important;
+        border-radius: 8px !important;
+        transition: box-shadow 0.6s ease;
       }
     </style>
   </head>
@@ -233,9 +360,15 @@
             id="searchTerm"
             class="search-input"
             placeholder="Introduce términos de búsqueda..."
+            data-intro="Aquí escribes tus términos de búsqueda. También puedes pulsar Enter para iniciar la búsqueda."
+            data-step="2"
           />
 
-          <div class="filters-section">
+          <div
+            class="filters-section"
+            data-intro="Estos son los filtros que puedes seleccionar antes de buscar."
+            data-step="1"
+          >
             <!-- Filtros Metodológicos -->
             <div class="filter-category methodological">
               <h3 class="category-title">
@@ -261,19 +394,38 @@
                 📝 Estudios cualitativos
               </button>
               <button
-                class="filter-button methodological"
-                data-type="predictors"
+                class="filter-button methodological with-toggle"
+                data-base="clinical_rules"
               >
-                🎯 Predictores Tratamiento
-              </button>
-              <button
-                class="filter-button methodological"
-                data-type="clinical_rules"
-              >
-                📊 Reglas Predicción Clínica
+                📊 Reglas Predicción Clínica-CQ
+                <div class="versions-toggle">
+                  <label>
+                    <input
+                      type="radio"
+                      name="clinical_rules_mode"
+                      value="sensible"
+                      checked
+                    />
+                    S
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="clinical_rules_mode"
+                      value="especifico"
+                    />
+                    E
+                  </label>
+                </div>
               </button>
               <button class="filter-button methodological" data-type="horizon">
                 🔭 Horizon Scanning
+              </button>
+              <button
+                class="filter-button methodological"
+                data-type="clinical_rules_ap"
+              >
+                📊 Reglas Predicción Clínica-AP
               </button>
             </div>
 
@@ -283,20 +435,133 @@
                 <i class="fas fa-stethoscope"></i>
                 Enfoque Clínico
               </h3>
-              <button class="filter-button clinical" data-type="diagnosis">
+              <button
+                class="filter-button clinical with-toggle"
+                data-base="diagnosis"
+              >
                 🔍 Diagnóstico-CQ
+                <div class="versions-toggle">
+                  <label>
+                    <input
+                      type="radio"
+                      name="diagnosis_mode"
+                      value="sensible"
+                      checked
+                    />
+                    S
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="diagnosis_mode"
+                      value="especifico"
+                    />
+                    E
+                  </label>
+                </div>
               </button>
-              <button class="filter-button clinical" data-type="etiology">
+              <button
+                class="filter-button clinical with-toggle"
+                data-base="etiology"
+              >
                 🔬 Etiología-CQ
+                <div class="versions-toggle">
+                  <label>
+                    <input
+                      type="radio"
+                      name="etiology_mode"
+                      value="sensible"
+                      checked
+                    />
+                    S
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="etiology_mode"
+                      value="especifico"
+                    />
+                    E
+                  </label>
+                </div>
               </button>
-              <button class="filter-button clinical" data-type="prognosis">
+              <button
+                class="filter-button clinical with-toggle"
+                data-base="prognosis"
+              >
                 📈 Pronóstico-CQ
+                <div class="versions-toggle">
+                  <label>
+                    <input
+                      type="radio"
+                      name="prognosis_mode"
+                      value="sensible"
+                      checked
+                    />
+                    S
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="prognosis_mode"
+                      value="especifico"
+                    />
+                    E
+                  </label>
+                </div>
               </button>
-              <button class="filter-button clinical" data-type="treatment">
+              <button
+                class="filter-button clinical with-toggle"
+                data-base="treatment"
+              >
                 💊 Tratamiento-CQ
+                <div class="versions-toggle">
+                  <label>
+                    <input
+                      type="radio"
+                      name="treatment_mode"
+                      value="sensible"
+                      checked
+                    />
+                    S
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="treatment_mode"
+                      value="especifico"
+                    />
+                    E
+                  </label>
+                </div>
+              </button>
+              <button
+                class="filter-button clinical with-toggle"
+                data-base="predictors"
+              >
+                🚀 Predictores Tratamiento
+                <div class="versions-toggle">
+                  <label>
+                    <input
+                      type="radio"
+                      name="predictors_mode"
+                      value="sensible"
+                      checked
+                    />
+                    S
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="predictors_mode"
+                      value="especifico"
+                    />
+                    E
+                  </label>
+                </div>
               </button>
               <button class="filter-button clinical" data-type="surgery_ae">
-                ⚕️ Efectos Adversos Cirugía
+                🏷️ Efectos Adversos Cirugía
               </button>
               <button class="filter-button clinical" data-type="devices_ae">
                 🔧 Efectos Adversos Dispositivos
@@ -310,6 +575,12 @@
               <button class="filter-button clinical" data-type="deprescription">
                 ⚕️ Deprescripción
               </button>
+              <button
+                class="filter-button clinical"
+                data-type="simulation_clinical"
+              >
+                🎯 Simulación Clínica V.1
+              </button>
             </div>
 
             <!-- Filtros por Ámbito -->
@@ -318,56 +589,136 @@
                 <i class="fas fa-users"></i>
                 Ámbito y Población
               </h3>
-              <button class="filter-button scope" data-type="ai">
-                🤖 IA Generativa
-              </button>
-              <button class="filter-button scope" data-type="palliative">
-                🏥 Cuidados Paliativos
-              </button>
-              <button class="filter-button scope" data-type="primary">
-                👨‍⚕️ Atención Primaria
-              </button>
-              <button class="filter-button scope" data-type="safety">
-                🛡️ Seguridad Paciente
-              </button>
-              <button class="filter-button scope" data-type="pearls">
-                💎 Perlas Clínicas
-              </button>
-              <button class="filter-button scope" data-type="perspective">
-                👥 Perspectiva Pacientes
-              </button>
-              <button class="filter-button scope" data-type="nursing">
-                👩‍⚕️ Revistas de Enfermería
-              </button>
-              <button class="filter-button scope" data-type="humans">
-                🧑 Humanos
-              </button>
-              <button class="filter-button scope" data-type="geriatrics">
-                👴 Geriatría
-              </button>
-              <button class="filter-button scope" data-type="pediatrics">
-                👶 Pediatría
-              </button>
-              <button class="filter-button scope" data-type="adults">
-                🧑 Personas adultas
-              </button>
-              <button class="filter-button scope" data-type="ocde">
-                🌍 Países OCDE
-              </button>
-              <button class="filter-button scope" data-type="spanish">
-                🇪🇸 Publicaciones Españolas
-              </button>
-              <button class="filter-button scope" data-type="economic">
-                💰 Evaluaciones económicas
-              </button>
+              <div class="filter-buttons-container">
+                <button class="filter-button scope" data-type="ai">
+                  🤖 IA Generativa
+                </button>
+                <button
+                  class="filter-button scope with-toggle"
+                  data-base="palliative"
+                >
+                  🏥 Cuidados Paliativos
+                  <div class="versions-toggle">
+                    <label>
+                      <input
+                        type="radio"
+                        name="palliative_mode"
+                        value="sensible"
+                        checked
+                      />
+                      S
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="palliative_mode"
+                        value="especifico"
+                      />
+                      E
+                    </label>
+                  </div>
+                </button>
+                <button
+                  class="filter-button scope with-toggle"
+                  data-base="primary"
+                >
+                  👨‍⚕️ Atención Primaria
+                  <div class="versions-toggle">
+                    <label>
+                      <input
+                        type="radio"
+                        name="primary_mode"
+                        value="sensible"
+                        checked
+                      />
+                      S
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="primary_mode"
+                        value="especifico"
+                      />
+                      E
+                    </label>
+                  </div>
+                </button>
+                <button class="filter-button scope" data-type="safety">
+                  🛡️ Seguridad Paciente
+                </button>
+                <button class="filter-button scope" data-type="pearls">
+                  💎 Perlas Clínicas
+                </button>
+                <button class="filter-button scope" data-type="perspective">
+                  👥 Perspectiva Pacientes
+                </button>
+                <button class="filter-button scope" data-type="nursing">
+                  👩‍⚕️ Revistas de Enfermería
+                </button>
+                <button class="filter-button scope" data-type="humans">
+                  🧑 Humanos
+                </button>
+                <button
+                  class="filter-button scope with-toggle"
+                  data-base="geriatrics"
+                >
+                  👴 Geriatría
+                  <div class="versions-toggle">
+                    <label>
+                      <input
+                        type="radio"
+                        name="geriatrics_mode"
+                        value="sensible"
+                        checked
+                      />
+                      S
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="geriatrics_mode"
+                        value="especifico"
+                      />
+                      E
+                    </label>
+                  </div>
+                </button>
+                <button class="filter-button scope" data-type="pediatrics">
+                  👶 Pediatría
+                </button>
+                <button class="filter-button scope" data-type="adults">
+                  🧑 Personas adultas
+                </button>
+                <button class="filter-button scope" data-type="ocde">
+                  🌍 Países OCDE
+                </button>
+                <button class="filter-button scope" data-type="spanish">
+                  🇪🇸 Publicaciones Españolas
+                </button>
+                <button class="filter-button scope" data-type="economic">
+                  💰 Evaluaciones económicas
+                </button>
+              </div>
             </div>
           </div>
 
-          <button id="searchButton" class="search-button">
-            <i class="fas fa-search"></i>
-            <span>Buscar en PubMed</span>
-            <span id="filterCount" class="filter-count">0 filtros</span>
-          </button>
+          <!-- Controles centrados en una sola línea -->
+          <div class="centered-controls">
+            <button
+              id="searchButton"
+              class="search-button"
+              data-intro="Haz clic aquí para lanzar la búsqueda en PubMed."
+              data-step="3"
+            >
+              <i class="fas fa-search"></i>
+              <span>Buscar en PubMed</span>
+            </button>
+            <!-- Texto para entender que es el número, a la derecha del botón -->
+            <div class="filter-info">
+              <span>Filtros activos:</span>
+              <span id="filterCount" class="filter-count">0</span>
+            </div>
+          </div>
         </div>
 
         <div class="info-section">
@@ -381,156 +732,170 @@
             <strong>AND</strong> entre diferentes categorías. Esto permite
             construir búsquedas precisas que encuentran exactamente lo que
             necesitas.
+            <br />
+            <span style="font-size: 0.8rem; color: grey"
+              ><b>CQ:</b>Clinical Queries PubMed</span
+            >
           </p>
         </div>
       </div>
     </main>
 
     <include src="footer.html"></include>
-
     <script src="/assets/js/include.js"></script>
 
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", function () {
         const searchInput = document.getElementById("searchTerm");
         const searchButton = document.getElementById("searchButton");
         const filterCount = document.getElementById("filterCount");
-        let activeFilters = new Set();
 
-        // Toggle de filtros
+        let activeFilters = new Set();
+        let filterMap = {};
+
+        const categories = {
+          methodology: [
+            "mbe",
+            "gpc",
+            "metaanalysis",
+            "qualitative",
+            "clinical_rules_sensible",
+            "clinical_rules_especifico",
+            "horizon",
+            "clinical_rules_ap",
+          ],
+          clinical: [
+            "diagnosis_sensible",
+            "diagnosis_especifico",
+            "etiology_sensible",
+            "etiology_especifico",
+            "prognosis_sensible",
+            "prognosis_especifico",
+            "treatment_sensible",
+            "treatment_especifico",
+            "predictors_sensible",
+            "predictors_especifico",
+            "surgery_ae",
+            "devices_ae",
+            "drugs_ae",
+            "car_t",
+            "deprescription",
+            "simulation_clinical",
+          ],
+          scope: [
+            "ai",
+            "palliative_sensible",
+            "palliative_especifico",
+            "primary_sensible",
+            "primary_especifico",
+            "safety",
+            "pearls",
+            "perspective",
+            "nursing",
+            "humans",
+            "geriatrics_sensible",
+            "geriatrics_especifico",
+            "pediatrics",
+            "adults",
+            "ocde",
+            "spanish",
+            "economic",
+          ],
+        };
+
+        function cargarFiltros() {
+          const promises = [];
+          Object.keys(categories).forEach((cat) => {
+            categories[cat].forEach((id) => {
+              const url = "/assets/filtros/" + cat + "/" + id + ".txt";
+              const prom = fetch(url)
+                .then((r) => (r.ok ? r.text() : ""))
+                .then((txt) => {
+                  filterMap[id] = txt.trim();
+                })
+                .catch(() => {
+                  filterMap[id] = "";
+                });
+              promises.push(prom);
+            });
+          });
+          return Promise.all(promises);
+        }
+
+        cargarFiltros().then(() => {
+          console.log("Filtros cargados:", filterMap);
+        });
+
         document.querySelectorAll(".filter-button").forEach((button) => {
-          button.addEventListener("click", () => {
+          button.addEventListener("click", function (e) {
+            // No toggles if click is on a radio input
+            if (e.target.tagName === "INPUT") {
+              return;
+            }
             button.classList.toggle("active");
             const filterType = button.dataset.type;
-
-            if (button.classList.contains("active")) {
-              activeFilters.add(filterType);
-            } else {
-              activeFilters.delete(filterType);
+            if (filterType) {
+              if (button.classList.contains("active")) {
+                activeFilters.add(filterType);
+              } else {
+                activeFilters.delete(filterType);
+              }
             }
-
-            // Actualizar contador
-            filterCount.textContent = `${activeFilters.size} filtros`;
+            filterCount.textContent = activeFilters.size;
           });
         });
 
-        // Construcción de la query
+        document
+          .querySelectorAll(".filter-button.with-toggle")
+          .forEach((btn) => {
+            const baseId = btn.dataset.base;
+            const radios = btn.querySelectorAll('input[type="radio"]');
+            radios.forEach((radio) => {
+              radio.addEventListener("change", (ev) => {
+                const version = ev.target.value;
+                const newType = baseId + "_" + version;
+                const oldType = btn.dataset.type;
+                btn.setAttribute("data-type", newType);
+                if (btn.classList.contains("active")) {
+                  if (oldType) {
+                    activeFilters.delete(oldType);
+                  }
+                  activeFilters.add(newType);
+                  filterCount.textContent = activeFilters.size;
+                }
+              });
+            });
+          });
+
         function constructQuery(searchTerm) {
-          const filterQueries = {
-            // Metodológicos
-            mbe: '"Evidence-Based Medicine"[Mesh]',
-            gpc: '"Practice Guidelines as Topic"[Mesh]',
-            metaanalysis: '"Meta-Analysis"[Publication Type] OR systematic[sb]',
-            qualitative: '"Qualitative Research"[Mesh]',
-            predictors: '"Forecasting"[Mesh] AND "Treatment Outcome"[Mesh]',
-            clinical_rules: '"Clinical Prediction Rule"[Mesh]',
-            horizon: '"Technology Assessment, Biomedical"[Mesh]',
-
-            // Clínicos
-            diagnosis: '"diagnosis"[Subheading]',
-            etiology: '"etiology"[Subheading]',
-            prognosis: '"prognosis"[Subheading]',
-            treatment: '"therapy"[Subheading]',
-            surgery_ae: '"postoperative complications"[Mesh]',
-            devices_ae: '"Equipment and Supplies/adverse effects"[Mesh]',
-            drugs_ae: '"Drug-Related Side Effects and Adverse Reactions"[Mesh]',
-            car_t:
-              '"Immunotherapy, Adoptive"[Mesh] AND "Receptors, Chimeric Antigen"[Mesh]',
-            deprescription: '"Deprescriptions"[Mesh]',
-
-            // Ámbito y población
-            ai: '"Artificial Intelligence"[Mesh]',
-            palliative: '"Palliative Care"[Mesh]',
-            primary: '"Primary Health Care"[Mesh]',
-            safety: '"Patient Safety"[Mesh]',
-            pearls:
-              '"Clinical Medicine"[Mesh] AND "Practice Guidelines as Topic"[Mesh]',
-            perspective:
-              '"Patient Preference"[Mesh] OR "Patient Reported Outcome Measures"[Mesh]',
-            nursing: '"Nursing Journals"[Journal]',
-            humans: '"Humans"[Mesh]',
-            geriatrics: '"Geriatrics"[Mesh]',
-            pediatrics: '"Pediatrics"[Mesh]',
-            adults: '"Adult"[Mesh]',
-            ocde: '("developed countries"[Mesh] OR "Europe"[Mesh] OR "North America"[Mesh])',
-            spanish: "spanish[Language]",
-            economic: '"Cost-Benefit Analysis"[Mesh] OR "Economics"[Mesh]',
-          };
-
-          let query = `(${searchTerm})`;
-
-          // Agrupar filtros por categoría
-          const filtersByCategory = {
-            methodology: [
-              "mbe",
-              "gpc",
-              "metaanalysis",
-              "qualitative",
-              "predictors",
-              "clinical_rules",
-              "horizon",
-            ],
-            clinical: [
-              "diagnosis",
-              "etiology",
-              "prognosis",
-              "treatment",
-              "surgery_ae",
-              "devices_ae",
-              "drugs_ae",
-              "car_t",
-              "deprescription",
-            ],
-            scope: [
-              "ai",
-              "palliative",
-              "primary",
-              "safety",
-              "pearls",
-              "perspective",
-              "nursing",
-              "humans",
-              "geriatrics",
-              "pediatrics",
-              "adults",
-              "ocde",
-              "spanish",
-              "economic",
-            ],
-          };
-
-          // Construir query por categorías
-          for (let category in filtersByCategory) {
-            const activeInCategory = filtersByCategory[category]
-              .filter((filter) => activeFilters.has(filter))
-              .map((filter) => filterQueries[filter]);
-
-            if (activeInCategory.length > 0) {
-              query += ` AND (${activeInCategory.join(" OR ")})`;
+          let query = "(" + searchTerm + ")";
+          Object.keys(categories).forEach((cat) => {
+            const activeInCat = categories[cat]
+              .filter((f) => activeFilters.has(f))
+              .map((f) => filterMap[f] || "")
+              .filter((q) => q !== "");
+            if (activeInCat.length > 0) {
+              query += " AND (" + activeInCat.join(" OR ") + ")";
             }
-          }
-
+          });
           return query;
         }
 
-        // Realizar búsqueda
-        searchButton.addEventListener("click", () => {
-          const searchTerm = searchInput.value.trim();
-
-          if (!searchTerm) {
+        searchButton.addEventListener("click", function () {
+          const term = searchInput.value.trim();
+          if (!term) {
             alert("Por favor, introduce un término de búsqueda");
             return;
           }
-
-          const query = constructQuery(searchTerm);
-          const url = `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(
-            query
-          )}`;
+          const finalQuery = constructQuery(term);
+          const url =
+            "https://pubmed.ncbi.nlm.nih.gov/?term=" +
+            encodeURIComponent(finalQuery) +
+            "&sort=date&size=50";
           window.open(url, "_blank");
         });
 
-        // Enter en el input
-        searchInput.addEventListener("keypress", (e) => {
+        searchInput.addEventListener("keypress", function (e) {
           if (e.key === "Enter") {
             searchButton.click();
           }
@@ -550,5 +915,80 @@
       gtag("js", new Date());
       gtag("config", "G-YFKR6RB1ZC");
     </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Comprobamos si el tutorial ya se ha mostrado
+        const tutorialVisto = localStorage.getItem("tutorial_visto");
+        if (!tutorialVisto) {
+          // Si no existe la clave, iniciamos el tutorial automáticamente
+          iniciarTutorial();
+        }
+
+        // Botón para reiniciar el tutorial manualmente (opcional)
+        const startTutorialBtn = document.getElementById("startTutorialBtn");
+        if (startTutorialBtn) {
+          startTutorialBtn.addEventListener("click", iniciarTutorial);
+        }
+
+        // Función para lanzar Intro.js
+        function iniciarTutorial() {
+          const intro = introJs();
+          intro.setOptions({
+            steps: [
+              {
+                element: document.querySelector(".filters-section"),
+                intro:
+                  "Estos son los filtros que puedes seleccionar antes de buscar.",
+                position: "right",
+              },
+              {
+                element: document.querySelector("#searchTerm"),
+                intro:
+                  "Escribe aquí tus términos de búsqueda. También puedes pulsar Enter para iniciar la búsqueda.",
+                position: "bottom",
+              },
+              {
+                element: document.querySelector("#searchButton"),
+                intro: "Haz clic aquí para lanzar la búsqueda en PubMed.",
+                position: "left",
+              },
+            ],
+            /* Efectos de oscurecimiento y apariencia */
+            overlayOpacity: 0.8, // oscurecimiento del fondo (0 a 1)
+            highlightClass: "myHighlight", // clase CSS para resaltar el elemento
+            disableInteraction: true, // si quieres evitar clics en los elementos resaltados
+            /* Texto de los botones */
+            skipLabel: "Omitir",
+            nextLabel: "→",
+            prevLabel: "←",
+            doneLabel: "¡Hecho!",
+            /* Control de transiciones */
+            showStepNumbers: false, // quita el numerito del tooltip
+            scrollToElement: true, // hace scroll automático al elemento
+            scrollPadding: 60, // margen extra al auto-scrollear
+            // animate: true // (Intro.js <3.0) algunas versiones tenían animate, ya no es tan necesario
+            // Textos de los botones
+            skipLabel: "Saltar",
+            nextLabel: "Siguiente",
+            prevLabel: "Anterior",
+            doneLabel: "Hecho",
+          });
+
+          // Cuando finalice, marcamos como visto
+          intro.oncomplete(function () {
+            localStorage.setItem("tutorial_visto", "true");
+          });
+          // Si el usuario omite el tutorial a mitad
+          intro.onexit(function () {
+            localStorage.setItem("tutorial_visto", "true");
+          });
+
+          // Iniciamos Intro.js
+          intro.start();
+        }
+      });
+    </script>
+
+    <button id="startTutorialBtn">Ver tutorial</button>
   </body>
 </html>
