@@ -46,289 +46,340 @@
     <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
 
     <style>
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: sans-serif;
-        background: #1c1e26;
-      }
-      .main-container {
-        max-width: 1400px;
-        margin-left: auto;
-        margin-right: auto;
-        padding: 0rem 0rem;
-      }
-      .hero-section {
-        border-radius: 8px;
-        padding: 0;
-        margin-bottom: 0.5rem;
-      }
-      .main-title {
-        margin-bottom: 0.5rem;
-        font-size: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--text-primary, #fff);
-      }
-      .search-container {
-        max-width: 100%;
-        margin: 0 auto;
-        padding: 0;
-        color: var(--text-primary, #fff);
-      }
-      .intro-text {
-        font-size: 0.95rem;
-        line-height: 1.4;
-        background: rgba(59, 130, 246, 0.15);
-        border-radius: 8px;
-        padding: 0.5rem;
-        color: var(--text-secondary, #94a3b8);
-        margin-bottom: 0.5rem;
-      }
-      .search-box {
-        background: var(--card-bg, #2a3b4d);
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-      }
-      .search-input {
-        width: 100%;
-        padding: 0.75rem;
-        background: var(--primary-bg, #1c1e26);
-        border: 1px solid var(--secondary-bg, #2c3e50);
-        border-radius: 6px;
-        color: var(--text-primary, #fff);
-        font-size: 0.95rem;
-        margin-bottom: 1rem;
-        transition: border-color 0.3s ease;
-      }
-      .search-input:focus {
-        border-color: var(--accent-color, #ffd700);
-        outline: none;
-      }
-      .filters-section {
-        display: grid;
-        grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr) minmax(
-            450px,
-            1.75fr
-          );
-        gap: 0rem;
-        margin-top: 1rem;
-      }
-      .filter-category {
-        background: var(--primary-bg, #1c1e26);
-        padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid transparent;
-        transition: all 0.4s ease;
-      }
-      .filter-category.methodological {
-        border-left-color: rgba(59, 130, 246, 0.5);
-      }
-      .filter-category.clinical {
-        border-left-color: rgba(16, 185, 129, 0.5);
-      }
-      .filter-category.scope {
-        border-left-color: rgba(139, 92, 246, 0.5);
-      }
-      .filter-category.scope .filter-buttons-container {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
-      }
-      .category-title {
-        font-size: 1.05rem;
-        color: var(--accent-color, #ffd700);
-        margin-bottom: 0.75rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-weight: 600;
-      }
-      .filter-button {
-        width: 100%;
-        padding: 0.5rem 0.5rem;
-        margin-bottom: 0.35rem;
-        background: var(--secondary-bg, #2c3e50);
-        border: none;
-        border-left: 4px solid transparent;
-        border-radius: 6px;
-        color: var(--text-primary, #fff);
-        text-align: left;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.9rem;
-      }
-      .filter-button:hover {
-        background: var(--hover-color, #34495e);
-        transform: translateX(2px);
-      }
-      .filter-button.active.methodological {
-        background: rgba(59, 130, 246, 0.2);
-        border-left-color: rgb(59, 130, 246);
-      }
-      .filter-button.active.clinical {
-        background: rgba(16, 185, 129, 0.2);
-        border-left-color: rgb(16, 185, 129);
-      }
-      .filter-button.active.scope {
-        background: rgba(139, 92, 246, 0.2);
-        border-left-color: rgb(139, 92, 246);
-      }
-      .versions-toggle {
-        margin-left: auto;
-        display: flex;
-        gap: 0.3rem;
-        align-items: center;
-      }
-      .versions-toggle input[type="radio"] {
-        margin-right: 0rem;
-        transform: scale(0.9);
-      }
-      .info-section {
-        margin-top: 1rem;
-        background: rgba(59, 130, 246, 0.1);
-        padding: 0.5rem;
-        border-radius: 8px;
-      }
-      .info-title {
-        font-size: 1.1rem;
-        color: var(--accent-color, #ffd700);
-        margin-bottom: 0.3rem;
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-      }
-      .info-text {
-        color: var(--text-secondary, #94a3b8);
-        line-height: 1.4;
-        font-size: 0.9rem;
-        margin: 0;
-      }
+           body {
+             margin: 0;
+             padding: 0;
+             font-family: sans-serif;
+             background: #1c1e26;
+           }
+           .main-container {
+             max-width: 1400px;
+             margin-left: auto;
+             margin-right: auto;
+             padding: 0rem 0rem;
+           }
+           .hero-section {
+             border-radius: 8px;
+             padding: 0;
+             margin-bottom: 0.5rem;
+           }
+           .main-title {
+             margin-bottom: 0.5rem;
+             font-size: 1.5rem;
+             display: flex;
+             align-items: center;
+             gap: 0.5rem;
+             color: var(--text-primary, #fff);
+           }
+           .search-container {
+             max-width: 100%;
+             margin: 0 auto;
+             padding: 0;
+             color: var(--text-primary, #fff);
+           }
+           .intro-text {
+             font-size: 0.95rem;
+             line-height: 1.4;
+             background: rgba(59, 130, 246, 0.15);
+             border-radius: 8px;
+             padding: 0.5rem;
+             color: var(--text-secondary, #94a3b8);
+             margin-bottom: 0.5rem;
+           }
+           .search-box {
+             background: var(--card-bg, #2a3b4d);
+             padding: 1rem;
+             border-radius: 12px;
+             margin-bottom: 1rem;
+           }
+           .search-input {
+             width: 100%;
+             padding: 0.75rem;
+             background: var(--primary-bg, #1c1e26);
+             border: 1px solid var(--secondary-bg, #2c3e50);
+             border-radius: 6px;
+             color: var(--text-primary, #fff);
+             font-size: 0.95rem;
+             margin-bottom: 1rem;
+             transition: border-color 0.3s ease;
+           }
+           .search-input:focus {
+             border-color: var(--accent-color, #ffd700);
+             outline: none;
+           }
+           .filters-section {
+             display: grid;
+             grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr) minmax(
+                 450px,
+                 1.75fr
+               );
+             gap: 0rem;
+             margin-top: 1rem;
+           }
+           .filter-category {
+             background: var(--primary-bg, #1c1e26);
+             padding: 1rem;
+             border-radius: 8px;
+             border-left: 4px solid transparent;
+             transition: all 0.4s ease;
+           }
+           .filter-category.methodological {
+             border-left-color: rgba(59, 130, 246, 0.5);
+           }
+           .filter-category.clinical {
+             border-left-color: rgba(16, 185, 129, 0.5);
+           }
+           .filter-category.scope {
+             border-left-color: rgba(139, 92, 246, 0.5);
+           }
+           .filter-category.scope .filter-buttons-container {
+             display: grid;
+             grid-template-columns: repeat(3, 1fr);
+             gap: 0.5rem;
+           }
+           .category-title {
+             font-size: 1.05rem;
+             color: var(--accent-color, #ffd700);
+             margin-bottom: 0.75rem;
+             display: flex;
+             align-items: center;
+             gap: 0.5rem;
+             font-weight: 600;
+           }
+           .filter-button {
+             width: 100%;
+             padding: 0.5rem 0.5rem;
+             margin-bottom: 0.35rem;
+             background: var(--secondary-bg, #2c3e50);
+             border: none;
+             border-left: 4px solid transparent;
+             border-radius: 6px;
+             color: var(--text-primary, #fff);
+             text-align: left;
+             cursor: pointer;
+             transition: all 0.2s ease;
+             display: flex;
+             align-items: center;
+             gap: 0.5rem;
+             font-size: 0.9rem;
+           }
+           .filter-button:hover {
+             background: var(--hover-color, #34495e);
+             transform: translateX(2px);
+           }
+           .filter-button.active.methodological {
+             background: rgba(59, 130, 246, 0.2);
+             border-left-color: rgb(59, 130, 246);
+           }
+           .filter-button.active.clinical {
+             background: rgba(16, 185, 129, 0.2);
+             border-left-color: rgb(16, 185, 129);
+           }
+           .filter-button.active.scope {
+             background: rgba(139, 92, 246, 0.2);
+             border-left-color: rgb(139, 92, 246);
+           }
+           .versions-toggle {
+             margin-left: auto;
+             display: flex;
+             gap: 0.3rem;
+             align-items: center;
+           }
+           .versions-toggle input[type="radio"] {
+             margin-right: 0rem;
+             transform: scale(0.9);
+           }
+           .info-section {
+             margin-top: 1rem;
+             background: rgba(59, 130, 246, 0.1);
+             padding: 0.5rem;
+             border-radius: 8px;
+           }
+           .info-title {
+             font-size: 1.1rem;
+             color: var(--accent-color, #ffd700);
+             margin-bottom: 0.3rem;
+             display: flex;
+             align-items: center;
+             gap: 0.3rem;
+           }
+           .info-text {
+             color: var(--text-secondary, #94a3b8);
+             line-height: 1.4;
+             font-size: 0.9rem;
+             margin: 0;
+           }
 
-      /* Contenedor centrado con la disposición en una sola línea */
-      .centered-controls {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 1rem;
-        margin-top: 0.8rem; /* Ajusta si quieres menos o más espacio vertical */
-        flex-wrap: wrap; /* Permite que se adapte en pantallas pequeñas */
-      }
+           /* Contenedor centrado con la disposición en una sola línea */
+           .centered-controls {
+             display: flex;
+             justify-content: center;
+             align-items: center;
+             gap: 1rem;
+             margin-top: 0.8rem; /* Ajusta si quieres menos o más espacio vertical */
+             flex-wrap: wrap; /* Permite que se adapte en pantallas pequeñas */
+           }
 
-      /* Botón con estilo "técnico" y hover distintivo */
-      .search-button {
-        background: linear-gradient(135deg, #ffd700, #ff9a00);
-        border: none;
-        border-radius: 8px;
-        color: #1c1e26;
-        font-weight: 600;
-        font-size: 1.2rem;
-        padding: 0.75rem 1.25rem;
-        cursor: pointer;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-      .search-button:hover {
-        transform: translateY(-2px) scale(1.03);
-        box-shadow: 0 8px 12px rgba(0, 0, 0, 0.25);
-      }
+           /* Botón con estilo "técnico" y hover distintivo */
+           .search-button {
+             background: linear-gradient(135deg, #ffd700, #ff9a00);
+             border: none;
+             border-radius: 8px;
+             color: #1c1e26;
+             font-weight: 600;
+             font-size: 1.2rem;
+             padding: 0.75rem 1.25rem;
+             cursor: pointer;
+             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+             transition: transform 0.2s ease, box-shadow 0.2s ease;
+             display: flex;
+             align-items: center;
+             gap: 0.5rem;
+           }
+           .search-button:hover {
+             transform: translateY(-2px) scale(1.03);
+             box-shadow: 0 8px 12px rgba(0, 0, 0, 0.25);
+           }
 
-      /* Texto explicativo y burbuja para el número de filtros */
-      .filter-info {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 1.1rem;
-        font-weight: 500;
-        color: #fff;
-      }
-      .filter-count {
-        min-width: 2.2rem;
-        min-height: 2.2rem;
-        background: linear-gradient(135deg, #2a3b4d, #3b4f66);
-        color: #ffffff;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
-        font-weight: 600;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        border: 2px solid #ffd700;
-      }
+           /* Texto explicativo y burbuja para el número de filtros */
+           .filter-info {
+             display: flex;
+             align-items: center;
+             gap: 0.5rem;
+             font-size: 1.1rem;
+             font-weight: 500;
+             color: #fff;
+           }
+           .filter-count {
+             min-width: 2.2rem;
+             min-height: 2.2rem;
+             background: linear-gradient(135deg, #2a3b4d, #3b4f66);
+             color: #ffffff;
+             border-radius: 50%;
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             font-size: 0.9rem;
+             font-weight: 600;
+             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+             border: 2px solid #ffd700;
+           }
 
-      @media (max-width: 1200px) {
-        .filters-section {
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        }
-        .filter-category.scope .filter-buttons-container {
-          grid-template-columns: repeat(2, 1fr);
-        }
-      }
-      @media (max-width: 768px) {
-        .main-container {
-          padding: 0.75rem;
-        }
-        .search-box {
-          padding: 0.75rem;
-        }
-        .filter-button {
-          margin-bottom: 0.25rem;
-        }
-      }
-      /* Ajusta los colores del tooltip de Intro.js a tu tema oscuro */
-      .introjs-tooltip {
-        animation: fadeIn 0.8s ease;
+           @media (max-width: 1200px) {
+             .filters-section {
+               grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+             }
+             .filter-category.scope .filter-buttons-container {
+               grid-template-columns: repeat(2, 1fr);
+             }
+           }
+           @media (max-width: 768px) {
+             .main-container {
+               padding: 0.75rem;
+             }
+             .search-box {
+               padding: 0.75rem;
+             }
+             .filter-button {
+               margin-bottom: 0.25rem;
+             }
+           }
+           /* Ajusta los colores del tooltip de Intro.js a tu tema oscuro */
+           .introjs-tooltip {
+             animation: fadeIn 0.8s ease;
+             background-color: #fef9c3 !important;/* tu color de card-bg */
+             color: #1a2634 !important;
+             border: 1px solid #fbbf24 !important;
+             border-radius: 8px;
+             box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2) !important;
+             padding: 1rem !important;
+           }
 
-        background-color: #0a0b0b !important; /* tu color de card-bg */
-        color: #ffffff !important;
-        border: 1px solid #444 !important; /* o el que prefieras */
-      }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: scale(0.95);
-        }
-        to {
-          opacity: 1;
-          transform: scale(1);
-        }
-      }
-      .introjs-arrow {
-        border-color: #2a3b4d transparent transparent transparent !important;
-      }
-      .introjs-helperNumberLayer {
-        background: #ffd700 !important; /* tu color “gold” */
-        color: #1c1e26 !important;
-      }
-      .introjs-bullets .introjs-bullet {
-        background: #34495e !important;
-      }
-      .introjs-bullets .introjs-bullet.active {
-        box-shadow: 0 0 0 2px #ffd700 !important; /* aro dorado */
-      }
-      .introjs-tooltipbuttons {
-        white-space: nowrap;
-      }
-      .introjs-skipbutton,
-      .introjs-prevbutton,
-      .introjs-nextbutton,
-      .introjs-donebutton {
-        padding: 0.4rem 0.2rem;
-        font-size: 0.85rem;
-      }
+           @keyframes fadeIn {
+             from {
+               opacity: 0;
+               transform: scale(0.95);
+             }
+             to {
+               opacity: 1;
+               transform: scale(1);
+             }
+           }
+
+           .introjs-arrow {
+             border-color: #fef9c3 transparent transparent transparent !important;
+           }
+
+           .introjs-helperNumberLayer {
+             background: #ffd700 !important;
+             color: #1a2634 !important;
+           }
+
+           .introjs-bullets .introjs-bullet {
+             background: #34495e !important;
+           }
+
+           .introjs-bullets .introjs-bullet.active {
+             box-shadow: 0 0 0 2px #ffd700 !important;
+           }
+
+           .introjs-tooltipbuttons {
+             white-space: nowrap;
+             border-top: 1px solid #fbbf24 !important;
+             padding-top: 0.75rem;
+           }
+
+           .introjs-skipbutton {
+             position: absolute;
+             font-size: 1rem;
+             right: 0rem !important;
+             top: 0rem;
+             padding: 0.2rem 0rem !important;
+             border-radius: 4px;
+             color: #1e2328c0 !important;
+      */
+           }
+
+           /*     .introjs-skipbutton:hover {
+             background: rgba(0, 0, 0, 0.15) !important;
+             color: #000 !important;
+           } */
+
+           .introjs-prevbutton,
+           .introjs-nextbutton,
+           .introjs-donebutton {
+             background: #1a2634 !important;
+             color: #ffffff !important;
+             border: 1px solid #ffd700 !important;
+             padding: 0.4rem 0.4rem !important;
+             border-radius: 4px;
+             margin: 0 0.2rem;
+             font-size: 1rem !important;
+             transition: all 0.2s ease;
+             text-shadow: none !important;
+             font-weight: normal !important;
+           }
+
+           .introjs-prevbutton:hover,
+           .introjs-nextbutton:hover,
+           .introjs-donebutton:hover {
+             background: #ffd700 !important;
+             color: #1a2634 !important;
+           }
+
+           .introjs-tooltiptext {
+             color: #1a2634 !important;
+             font-size: 1.1rem !important;
+             line-height: 1.4 !important;
+             font-family: system-ui, -apple-system, sans-serif !important;
+           }
+            /* ======= Resaltado personalizado .myHighlight ======= */
       .myHighlight {
+        /* Fondo transparente y borde+resplandor para no tapar el texto */
         background: transparent !important;
-        background: #333;,
+        background: #333;
         box-shadow: 0 0 8px 4px rgba(255, 215, 0, 0.8) !important;
+        border: 2px solid #ffd700 !important;
         border-radius: 8px !important;
         transition: box-shadow 0.6s ease;
       }
@@ -342,6 +393,21 @@
         <h1 class="main-title">
           <i class="fas fa-search"></i>
           <span>Buscador PubMed con Filtros Estructurados</span>
+          <span
+            style="
+              margin-left: 30px;
+              cursor: pointer;
+              color: white;
+              font-size: 0.8rem;
+              background: rgba(255, 255, 255, 0.15);
+              padding: 4px 8px;
+              border-radius: 4px;
+            "
+            id="startTutorialBtn"
+          >
+            <i class="fas fa-graduation-cap"></i>
+            Ver Guía Interactiva
+          </span>
         </h1>
         <p class="intro-text">
           Optimiza tus búsquedas bibliográficas combinando filtros
@@ -726,6 +792,7 @@
             <i class="fas fa-info-circle"></i>
             Sobre las Búsquedas
           </h2>
+
           <p class="info-text">
             Los filtros se combinan automáticamente usando operadores booleanos:
             <strong>OR</strong> entre filtros de la misma categoría y
@@ -954,7 +1021,7 @@
               },
             ],
             /* Efectos de oscurecimiento y apariencia */
-            overlayOpacity: 0.8, // oscurecimiento del fondo (0 a 1)
+            overlayOpacity: 0.9, // oscurecimiento del fondo (0 a 1)
             highlightClass: "myHighlight", // clase CSS para resaltar el elemento
             disableInteraction: true, // si quieres evitar clics en los elementos resaltados
             /* Texto de los botones */
@@ -989,6 +1056,7 @@
       });
     </script>
 
-    <button id="startTutorialBtn">Ver tutorial</button>
+    <!--     <button id="startTutorialBtn">Ver tutorial</button>
+ -->
   </body>
 </html>

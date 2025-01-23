@@ -5,6 +5,7 @@
       =====================
 -->
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -20,11 +21,20 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
+
+    <!-- Intro.js para la guía interactiva -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/intro.js/minified/introjs.min.css"
+    />
+    <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
+
+    <!-- Chart.js y plugin de datalabels -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
     <style>
-      /* Ajustes generales para homogeneizar fuentes y tamaños */
+      /* ======= Estilos base ======= */
       body {
         margin: 0;
         padding: 0;
@@ -56,9 +66,7 @@
         font-weight: bold;
         margin-bottom: 0.75rem;
       }
-
-      /* Párrafo de introducción (explicación de atajos + contexto) */
-      .intro-atajos {
+      .intro-text {
         font-size: 1rem;
         line-height: 1.4;
         background: rgba(59, 130, 246, 0.15);
@@ -68,29 +76,7 @@
         margin-bottom: 1rem;
       }
 
-      /* Párrafo introductorio general de la calculadora */
-      .parrafo-introductorio {
-        font-size: 1rem;
-        margin-bottom: 1rem;
-        line-height: 1.4;
-        background: rgba(59, 130, 246, 0.15);
-        border-radius: 6px;
-        padding: 0.75rem;
-        color: var(--text-secondary, #94a3b8);
-      }
-
-      /* Ejemplos de uso sector salud */
-      .ejemplos-salud {
-        font-size: 1rem;
-        margin-bottom: 1rem;
-        background: rgba(255, 255, 255, 0.07);
-        border-radius: 6px;
-        padding: 0.75rem;
-        color: var(--text-secondary, #94a3b8);
-        line-height: 1.4;
-      }
-
-      /* Sección de parámetros */
+      /* ======= Sección de parámetros ======= */
       .parametros-seccion {
         background: var(--card-bg, #2a3b4d);
         border-radius: 8px;
@@ -104,6 +90,19 @@
         font-size: 1.2rem;
         font-weight: 600;
         margin-bottom: 0.5rem;
+      }
+      .intro-breve-parametros {
+        margin-top: 0.1rem;
+        margin-bottom: 0.1rem;
+        padding: 0.4rem;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 6px;
+        font-size: 0.95rem;
+        line-height: 1.3;
+        color: var(--text-secondary, #94a3b8);
+      }
+      .intro-breve-parametros strong {
+        color: var(--accent-color, #3b82f6);
       }
       .parametros-contenido {
         display: grid;
@@ -165,7 +164,21 @@
         visibility: visible;
       }
 
-      /* Métricas y gráfico */
+      /* ======= Sección de resultados ======= */
+      .seccion-resultados {
+        margin-top: 1.2rem;
+        margin-left: 1rem;
+        margin-bottom: 0.6rem;
+      }
+      .resultados-titulo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.1rem;
+        color: var(--text-primary, #fff);
+      }
       .contenedor-metricas-grafico {
         display: grid;
         gap: 1rem;
@@ -173,11 +186,12 @@
       }
       @media (min-width: 1024px) {
         .contenedor-metricas-grafico {
-          grid-template-columns: 3fr 2fr; /* Más ancho a la izquierda */
-          /* Clave para que ambas columnas se estiren a la misma altura */
+          grid-template-columns: 3fr 2fr;
           align-items: stretch;
         }
       }
+
+      /* ======= Métricas ======= */
       .metricas-seccion {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -205,10 +219,9 @@
         color: var(--text-secondary, #94a3b8);
       }
 
-      /* Contenedor del gráfico: quitamos fit-content, ponemos 100% */
+      /* ======= Gráfico ======= */
       .grafico-contenedor {
         position: relative;
-
         background: var(--card-bg, #2a2f3a);
         border-radius: 8px;
         padding: 1rem;
@@ -216,7 +229,6 @@
         flex-direction: column;
         flex: 1;
       }
-      /* El canvas también se estira */
       .grafico-canvas {
         width: 100%;
         height: auto;
@@ -224,7 +236,7 @@
         display: block;
       }
 
-      /* Interpretación */
+      /* ======= Interpretación ======= */
       .interpretacion-contenedor {
         background: rgba(59, 130, 246, 0.1);
         padding: 1rem;
@@ -234,112 +246,7 @@
         line-height: 1.4;
       }
 
-      /* CTA final */
-      .cta-seccion {
-        margin-top: 1rem;
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 6px;
-        padding: 1rem;
-        font-size: 0.9rem;
-        color: var(--text-secondary, #94a3b8);
-        line-height: 1.4;
-      }
-      .cta-seccion strong {
-        color: var(--accent-color, #3b82f6);
-      }
-
-      /* Base Científica */
-      .base-cientifica {
-        background: var(--card-bg, #2a2f3a);
-        padding: 1rem;
-        border-radius: 8px;
-        margin-top: 1rem;
-      }
-      .base-cientifica-titulo {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--text-primary, #fff);
-        margin-bottom: 0.5rem;
-      }
-      .formulas-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--secondary-bg, #454b59);
-      }
-      .formula {
-        background: rgba(59, 130, 246, 0.1);
-        padding: 1rem;
-        border-radius: 4px;
-        position: relative;
-      }
-      .formula-titulo {
-        font-size: 0.9rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        color: var(--text-primary, #fff);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-      .formula-texto {
-        font-family: monospace;
-        font-size: 1rem;
-        color: var(--accent-color, #3b82f6);
-        margin-bottom: 0.5rem;
-      }
-      .formula-descripcion {
-        font-size: 0.9rem;
-        color: var(--text-secondary, #94a3b8);
-      }
-      .icono-ley {
-        color: var(--accent-color, #3b82f6);
-      }
-
-      @media (max-width: 768px) {
-        .parametros-contenido {
-          grid-template-columns: repeat(2, 1fr);
-        }
-        .metricas-seccion {
-          grid-template-columns: 1fr;
-        }
-        .formulas-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-      .intro-breve-parametros {
-        margin-top: 0.1rem;
-        margin-bottom: 0.1rem;
-
-        padding: 0.4rem;
-        background: rgba(59, 130, 246, 0.15);
-        border-radius: 6px;
-        font-size: 0.95rem;
-        line-height: 1.3;
-        color: var(--text-secondary, #94a3b8);
-      }
-      .intro-breve-parametros strong {
-        color: var(--accent-color, #3b82f6);
-      }
-      .seccion-resultados {
-        margin-top: 1.2rem;
-        margin-left: 1rem;
-        margin-bottom: 0.6rem;
-      }
-      .resultados-titulo {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin-bottom: 0.1rem;
-        color: var(--text-primary, #fff);
-      }
+      /* ======= CTA y conclusiones ======= */
       .CTA-mas-alla-tiempo-seccion {
         margin-top: 1.5rem;
         background: rgba(255, 255, 255, 0.08);
@@ -368,13 +275,14 @@
         color: var(--accent-color, #3b82f6);
         text-decoration: underline;
       }
+
+      /* ======= Base científica ======= */
       .base-cientifica-seccion {
         margin-top: 1.5rem;
         background: var(--card-bg, #2a2f3a);
         padding: 1rem;
         border-radius: 6px;
       }
-
       .base-cientifica-titulo {
         display: flex;
         align-items: center;
@@ -384,16 +292,97 @@
         margin-bottom: 0.75rem;
         color: var(--text-primary, #fff);
       }
-
       .base-cientifica-texto {
         font-size: 0.95rem;
         line-height: 1.4;
         color: var(--text-secondary, #94a3b8);
         margin: 0;
       }
-
       .base-cientifica-texto strong {
         color: var(--accent-color, #3b82f6);
+      }
+
+      @media (max-width: 768px) {
+        .parametros-contenido {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .metricas-seccion {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ======= Estilos de Intro.js ======= */
+      .introjs-tooltip {
+        background-color: #fef9c3 !important;
+        color: #1a2634 !important;
+        border: 1px solid #fbbf24 !important;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2) !important;
+        padding: 0.5rem !important;
+      }
+      .introjs-arrow {
+        border-color: #fef9c3 transparent transparent transparent !important;
+      }
+      .introjs-helperNumberLayer {
+        background: #ffd700 !important;
+        color: #1a2634 !important;
+      }
+      .introjs-bullets .introjs-bullet {
+        background: #34495e !important;
+      }
+      .introjs-bullets .introjs-bullet.active {
+        box-shadow: 0 0 0 2px #ffd700 !important;
+      }
+      .introjs-tooltipbuttons {
+        white-space: nowrap;
+        border-top: 1px solid #fbbf24 !important;
+        padding-top: 0.75rem;
+      }
+      .introjs-skipbutton {
+        position: absolute;
+        font-size: 1rem;
+        right: 0rem !important;
+        top: 0rem;
+        padding: 0.2rem 0rem !important;
+        border-radius: 4px;
+        color: #1e2328c0 !important;
+      }
+      .introjs-prevbutton,
+      .introjs-nextbutton,
+      .introjs-donebutton {
+        background: #1a2634 !important;
+        color: #ffffff !important;
+        border: 1px solid #ffd700 !important;
+        padding: 0.4rem 0.4rem !important;
+        border-radius: 4px;
+        margin: 0 0.2rem;
+        font-size: 1rem !important;
+        transition: all 0.2s ease;
+        text-shadow: none !important;
+        font-weight: normal !important;
+      }
+      .introjs-prevbutton:hover,
+      .introjs-nextbutton:hover,
+      .introjs-donebutton:hover {
+        background: #ffd700 !important;
+        color: #1a2634 !important;
+      }
+      .introjs-tooltiptext {
+        color: #1a2634 !important;
+        font-size: 1.1rem !important;
+        line-height: 1.4 !important;
+        font-family: system-ui, -apple-system, sans-serif !important;
+      }
+
+      /* ======= Resaltado personalizado .myHighlight ======= */
+      .myHighlight {
+        /* Fondo transparente y borde+resplandor para no tapar el texto */
+        background: transparent !important;
+        background: #333;
+        box-shadow: 0 0 8px 4px rgba(255, 215, 0, 0.8) !important;
+        border: 2px solid #ffd700 !important;
+        border-radius: 8px !important;
+        transition: box-shadow 0.6s ease;
       }
     </style>
   </head>
@@ -402,24 +391,47 @@
 
     <main class="main-container">
       <section class="hero-section">
-        <h1 class="main-title">
+        <h1
+          class="main-title"
+          data-intro="Bienvenido: esta calculadora te ayudará a estimar el ahorro de tiempo y errores al optimizar tareas repetitivas en tu interacción diaria con programas y páginas web."
+          data-step="1"
+        >
           <i class="fas fa-clock"></i>
           <span
             >Calculadora de Ahorro de Tiempo con automatización y atajos</span
           >
+          <span
+            style="
+              margin-left: 30px;
+              cursor: pointer;
+              color: white;
+              font-size: 0.7rem;
+              background: rgba(255, 255, 255, 0.15);
+              padding: 4px 8px;
+              border-radius: 4px;
+            "
+            id="startTutorialBtn"
+          >
+            <i class="fas fa-graduation-cap"></i>
+            Ver Guía Interactiva
+          </span>
         </h1>
         <p class="intro-text">
           ¿Quieres saber cuánto tiempo podrías ahorrar optimizando tus tareas
           digitales diarias? Esta calculadora visualiza el impacto de mejorar
           tus interacciones habituales con el ordenador (clics, navegación,
           cambios entre programas) y te muestra por qué vale la pena usar atajos
-          y programas que agilicen tu trabajo.<br />
+          y programas que agilicen tu trabajo.
         </p>
       </section>
 
       <div class="calculadora-contenedor">
         <!-- SECCIÓN DE PARÁMETROS -->
-        <div class="parametros-seccion">
+        <div
+          class="parametros-seccion"
+          data-intro="Aquí puedes ajustar los parámetros principales: clics, frecuencia diaria, usuarios, etc."
+          data-step="2"
+        >
           <h2 class="parametros-titulo">
             <i class="fas fa-bullseye"></i>
             Parámetros de la Tarea
@@ -537,13 +549,21 @@
         </div>
 
         <!-- MÉTRICAS + INTERPRETACIÓN + GRÁFICO -->
-        <div class="seccion-resultados">
+        <div
+          class="seccion-resultados"
+          data-intro="Al modificar los valores, se recalcula automáticamente el ahorro en tiempo y errores."
+          data-step="3"
+        >
           <h2 class="resultados-titulo">
             <i class="fas fa-chart-line"></i>
             Resultados Clave
           </h2>
         </div>
-        <div class="contenedor-metricas-grafico">
+        <div
+          class="contenedor-metricas-grafico"
+          data-intro="Aquí se muestran las métricas principales y un gráfico de distribución."
+          data-step="4"
+        >
           <!-- Columna izquierda: métricas + interpretación -->
           <div>
             <div class="metricas-seccion">
@@ -572,9 +592,7 @@
                 <i style="margin-bottom: 0.4rem" class="fas fa-lightbulb"></i>
                 <span style="margin-bottom: 0.4rem">Interpretación</span>
               </h2>
-              <p id="interpretacionTexto" style="margin-bottom: 0">
-                <!-- Se actualizará dinámicamente vía JavaScript -->
-              </p>
+              <p id="interpretacionTexto" style="margin-bottom: 0"></p>
             </div>
           </div>
 
@@ -584,14 +602,16 @@
               <i class="fas fa-chart-bar"></i>
               Distribución del Ahorro
             </h3>
-            <!-- Canvas sin estilo de altura inline -->
             <canvas id="graficoAhorro" class="grafico-canvas"></canvas>
           </div>
         </div>
 
         <!-- CTA FINAL -->
-        <!-- SECCIÓN: MÁS ALLÁ DEL TIEMPO -->
-        <div class="CTA-mas-alla-tiempo-seccion">
+        <div
+          class="CTA-mas-alla-tiempo-seccion"
+          data-intro="Esta sección te recuerda que el ahorro no es sólo tiempo: también implica calidad y satisfacción en el trabajo."
+          data-step="5"
+        >
           <h2 class="CTA-mas-alla-tiempo-titulo">
             <i class="fas fa-hourglass-half"></i>
             Más allá del Tiempo
@@ -635,24 +655,25 @@
           <p class="base-cientifica-texto">
             ¹Apoyo para la modelización:
             <em
-            >Hill RG Jr, et al. 4000 Clicks: a productivity analysis of
-            electronic medical records in a community hospital ED. Am J Emerg
-            Med. 2013;31(11):1591-4.</em
+              >Hill RG Jr, et al. 4000 Clicks: a productivity analysis of
+              electronic medical records in a community hospital ED. Am J Emerg
+              Med. 2013;31(11):1591-4.</em
+            >
           </p>
         </div>
       </div>
     </main>
 
     <include src="footer.html"></include>
-
     <script src="/assets/js/include.js"></script>
+
     <script>
       /* Configuración de la calculadora */
       const CONFIG = {
         DIAS_LABORABLES: 220,
         HORAS_JORNADA: 8,
-        TASA_ERROR_AUTO: 0.5, // Tasa residual de errores con automatización (%)
-        TIEMPO_POR_ERROR: 60, // Segundos necesarios para corregir cada error
+        TASA_ERROR_AUTO: 0.5,
+        TIEMPO_POR_ERROR: 60,
       };
 
       let state = {
@@ -679,22 +700,22 @@
       function calculateSavings() {
         const i = state.inputs;
 
-        // (1) Tiempo por operación (segundos)
+        // (1) Tiempo por operación
         let timePerOp = i.clicks * i.timePerClick;
         timePerOp = round(timePerOp, 3);
 
-        // (2) Tiempo en errores manuales (segundos)
+        // (2) Tiempo en errores manuales
         let errorTime =
           ((i.frequency * i.errorRate) / 100) * CONFIG.TIEMPO_POR_ERROR;
         errorTime = round(errorTime, 3);
 
-        // (3) Tiempo con automatización (menos errores)
+        // (3) Tiempo con automatización
         let rpaErrorTime =
           ((i.frequency * CONFIG.TASA_ERROR_AUTO) / 100) *
           CONFIG.TIEMPO_POR_ERROR;
         rpaErrorTime = round(rpaErrorTime, 3);
 
-        // (4) Tiempo total al día (segundos)
+        // (4) Tiempo total al día
         let timePerDay =
           (timePerOp * i.frequency + (errorTime - rpaErrorTime)) *
           i.users *
@@ -705,13 +726,12 @@
         let annualHours = (timePerDay / 3600) * CONFIG.DIAS_LABORABLES;
         annualHours = round(annualHours, 2);
 
-        // (6) Mejora en calidad (reducción de errores, %)
+        // (6) Mejora en calidad
         let qualityGain =
           ((i.errorRate - CONFIG.TASA_ERROR_AUTO) / i.errorRate) * 100;
         qualityGain = round(qualityGain, 1);
 
         state.results = { timePerOp, timePerDay, annualHours, qualityGain };
-
         updateUI();
         updateChart();
       }
@@ -732,7 +752,7 @@
         document.getElementById("valorOperacion").textContent =
           r.timePerOp.toFixed(2) + "s";
 
-        // Ejemplo de interpretación
+        // Interpretación textual
         const horasAnuales = Math.round(r.annualHours);
         const horasAtencion = Math.round(horasAnuales * 0.4);
         const consultasExtra = Math.round(horasAtencion * 6);
@@ -758,8 +778,7 @@
           horasDescanso / 8
         )} días extra de descanso
          <br><br>
-                  `;
-
+        `;
         document.getElementById("interpretacionTexto").innerHTML =
           interpretacion;
       }
@@ -768,24 +787,20 @@
         const r = state.results;
         const ctx = document.getElementById("graficoAhorro").getContext("2d");
 
-        // Destruir el chart anterior si existe
+        // Destruir gráfico previo, si existe
         if (window.chart) {
           window.chart.destroy();
         }
 
-        // Preparamos los datos
         const dataValues = [
-          r.timePerOp, // (s) Por Operación
-          r.timePerDay / 3600, // (h) Por Día
-          r.annualHours / CONFIG.HORAS_JORNADA, // (días) Por Año
+          r.timePerOp, // (s)
+          r.timePerDay / 3600, // (h)
+          r.annualHours / CONFIG.HORAS_JORNADA, // (días)
         ];
-
         const maxValue = Math.max(...dataValues);
         const suggestedMaxValue = maxValue * 1.2;
-
         Chart.register(ChartDataLabels);
 
-        // NOTA: no usamos maintainAspectRatio: false (lo quitamos)
         window.chart = new Chart(ctx, {
           type: "bar",
           data: {
@@ -805,12 +820,7 @@
             maintainAspectRatio: true,
             aspectRatio: 1.33,
             layout: {
-              padding: {
-                top: 0,
-                bottom: 0,
-                left: 0,
-                right: 0,
-              },
+              padding: { top: 0, bottom: 0, left: 0, right: 0 },
             },
             scales: {
               y: {
@@ -823,12 +833,7 @@
                 grid: { color: "rgba(148, 163, 184, 0.1)" },
                 ticks: {
                   color: "#94a3b8",
-                  font: {
-                    family: "Arial",
-                    size: 13,
-                    style: "normal",
-                    lineHeight: 1.2,
-                  },
+                  font: { family: "Arial", size: 13, style: "normal" },
                 },
               },
             },
@@ -836,7 +841,7 @@
               legend: { display: false },
               tooltip: {
                 backgroundColor: "rgba(0, 0, 0, 0.8)",
-                padding: 12,
+                padding: 6,
                 titleColor: "#fff",
                 bodyColor: "#fff",
                 titleFont: { size: 14, weight: "bold" },
@@ -867,6 +872,7 @@
       }
 
       document.addEventListener("DOMContentLoaded", () => {
+        // Listeners a los inputs
         [
           "tasks",
           "clicks",
@@ -878,7 +884,6 @@
           const input = document.getElementById(id);
           if (input) {
             input.addEventListener("input", (e) => {
-              // Convertir a entero si es frequency, o a número en general
               if (id === "frequency") {
                 state.inputs[id] = parseInt(e.target.value, 10) || 0;
               } else {
@@ -889,12 +894,81 @@
           }
         });
 
-        // Colores por defecto en Chart.js
+        // Config base de Chart.js
         Chart.defaults.color = "#94a3b8";
         Chart.defaults.borderColor = "rgba(148, 163, 184, 0.1)";
 
         // Primer cálculo
         calculateSavings();
+
+        /* Guía Interactiva con Intro.js */
+        const tutorialVistoKey = "tutorial_visto_calculadora";
+        const tutorialVisto = localStorage.getItem(tutorialVistoKey);
+        if (!tutorialVisto) {
+          iniciarTutorial();
+        }
+
+        const startTutorialBtn = document.getElementById("startTutorialBtn");
+        if (startTutorialBtn) {
+          startTutorialBtn.addEventListener("click", iniciarTutorial);
+        }
+
+        function iniciarTutorial() {
+          const intro = introJs();
+          intro.setOptions({
+            steps: [
+              {
+                element: document.querySelector(".main-title"),
+                intro:
+                  "Bienvenido: esta calculadora te ayudará a estimar el ahorro de tiempo y errores al optimizar tareas repetitivas en tu interacción diaria con programas y páginas web..",
+                position: "bottom",
+              },
+              {
+                element: document.querySelector(".parametros-seccion"),
+                intro:
+                  "Ajusta los parámetros de tu tarea para ver cómo varían los resultados.",
+                position: "bottom",
+              },
+              {
+                element: document.querySelector(".seccion-resultados"),
+                intro:
+                  "Tras cambiar los parámetros, revisa aquí el ahorro anual y la reducción de errores.",
+                position: "bottom",
+              },
+              {
+                element: document.querySelector(".contenedor-metricas-grafico"),
+                intro:
+                  "Aquí puedes ver métricas clave y un gráfico para visualizar el impacto.",
+                position: "top",
+              },
+              {
+                element: document.querySelector(".CTA-mas-alla-tiempo-seccion"),
+                intro:
+                  "No sólo se ahorra tiempo: también se reducen errores y aumenta la satisfacción en el trabajo.",
+                position: "top",
+              },
+            ],
+            overlayOpacity: 0.8, // Oscurecer el fondo
+            highlightClass: "myHighlight", // Bordes y sombreado
+            disableInteraction: false,
+            skipLabel: "Saltar",
+            nextLabel: "Siguiente",
+            prevLabel: "Anterior",
+            doneLabel: "Hecho",
+            showStepNumbers: false,
+            scrollToElement: true,
+            scrollPadding: 60,
+          });
+
+          intro.oncomplete(() => {
+            localStorage.setItem(tutorialVistoKey, "true");
+          });
+          intro.onexit(() => {
+            localStorage.setItem(tutorialVistoKey, "true");
+          });
+
+          intro.start();
+        }
       });
     </script>
 
