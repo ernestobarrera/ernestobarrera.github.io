@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+```html
+<!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -26,7 +28,6 @@
       property="og:image"
       content="https://ernestobarrera.github.io/assets/images/me.png"
     />
-
     <link rel="icon" href="/assets/images/icon.webp" />
     <link rel="stylesheet" href="/assets/css/main.css" />
     <link rel="stylesheet" href="/assets/css/header.css" />
@@ -36,358 +37,349 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
-    <!--Para tutorial dinámico -->
-    <!-- CSS de Intro.js -->
     <link
       rel="stylesheet"
       href="https://unpkg.com/intro.js/minified/introjs.min.css"
     />
-    <!-- JS de Intro.js -->
-    <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
 
     <style>
-           body {
-             margin: 0;
-             padding: 0;
-             font-family: sans-serif;
-             background: #1c1e26;
-           }
-           .main-container {
-             max-width: 1400px;
-             margin-left: auto;
-             margin-right: auto;
-             padding: 0rem 0rem;
-           }
-           .hero-section {
-             border-radius: 8px;
-             padding: 0;
-             margin-bottom: 0.5rem;
-           }
-           .main-title {
-             margin-bottom: 0.5rem;
-             font-size: 1.5rem;
-             display: flex;
-             align-items: center;
-             gap: 0.5rem;
-             color: var(--text-primary, #fff);
-           }
-           .search-container {
-             max-width: 100%;
-             margin: 0 auto;
-             padding: 0;
-             color: var(--text-primary, #fff);
-           }
-           .intro-text {
-             font-size: 0.95rem;
-             line-height: 1.4;
-             background: rgba(59, 130, 246, 0.15);
-             border-radius: 8px;
-             padding: 0.5rem;
-             color: var(--text-secondary, #94a3b8);
-             margin-bottom: 0.5rem;
-           }
-           .search-box {
-             background: var(--card-bg, #2a3b4d);
-             padding: 1rem;
-             border-radius: 12px;
-             margin-bottom: 1rem;
-           }
-           .search-input {
-             width: 100%;
-             padding: 0.75rem;
-             background: var(--primary-bg, #1c1e26);
-             border: 1px solid var(--secondary-bg, #2c3e50);
-             border-radius: 6px;
-             color: var(--text-primary, #fff);
-             font-size: 0.95rem;
-             margin-bottom: 1rem;
-             transition: border-color 0.3s ease;
-           }
-           .search-input:focus {
-             border-color: var(--accent-color, #ffd700);
-             outline: none;
-           }
-           .filters-section {
-             display: grid;
-             grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr) minmax(
-                 450px,
-                 1.75fr
-               );
-             gap: 0rem;
-             margin-top: 1rem;
-           }
-           .filter-category {
-             background: var(--primary-bg, #1c1e26);
-             padding: 1rem;
-             border-radius: 8px;
-             border-left: 4px solid transparent;
-             transition: all 0.4s ease;
-           }
-           .filter-category.methodological {
-             border-left-color: rgba(59, 130, 246, 0.5);
-           }
-           .filter-category.clinical {
-             border-left-color: rgba(16, 185, 129, 0.5);
-           }
-           .filter-category.scope {
-             border-left-color: rgba(139, 92, 246, 0.5);
-           }
-           .filter-category.scope .filter-buttons-container {
-             display: grid;
-             grid-template-columns: repeat(3, 1fr);
-             gap: 0.5rem;
-           }
-           .category-title {
-             font-size: 1.05rem;
-             color: var(--accent-color, #ffd700);
-             margin-bottom: 0.75rem;
-             display: flex;
-             align-items: center;
-             gap: 0.5rem;
-             font-weight: 600;
-           }
-           .filter-button {
-             width: 100%;
-             padding: 0.5rem 0.5rem;
-             margin-bottom: 0.35rem;
-             background: var(--secondary-bg, #2c3e50);
-             border: none;
-             border-left: 4px solid transparent;
-             border-radius: 6px;
-             color: var(--text-primary, #fff);
-             text-align: left;
-             cursor: pointer;
-             transition: all 0.2s ease;
-             display: flex;
-             align-items: center;
-             gap: 0.5rem;
-             font-size: 0.9rem;
-           }
-           .filter-button:hover {
-             background: var(--hover-color, #34495e);
-             transform: translateX(2px);
-           }
-           .filter-button.active.methodological {
-             background: rgba(59, 130, 246, 0.2);
-             border-left-color: rgb(59, 130, 246);
-           }
-           .filter-button.active.clinical {
-             background: rgba(16, 185, 129, 0.2);
-             border-left-color: rgb(16, 185, 129);
-           }
-           .filter-button.active.scope {
-             background: rgba(139, 92, 246, 0.2);
-             border-left-color: rgb(139, 92, 246);
-           }
-           .versions-toggle {
-             margin-left: auto;
-             display: flex;
-             gap: 0.3rem;
-             align-items: center;
-           }
-           .versions-toggle input[type="radio"] {
-             margin-right: 0rem;
-             transform: scale(0.9);
-           }
-           .info-section {
-             margin-top: 1rem;
-             background: rgba(59, 130, 246, 0.1);
-             padding: 0.5rem;
-             border-radius: 8px;
-           }
-           .info-title {
-             font-size: 1.1rem;
-             color: var(--accent-color, #ffd700);
-             margin-bottom: 0.3rem;
-             display: flex;
-             align-items: center;
-             gap: 0.3rem;
-           }
-           .info-text {
-             color: var(--text-secondary, #94a3b8);
-             line-height: 1.4;
-             font-size: 0.9rem;
-             margin: 0;
-           }
-
-           /* Contenedor centrado con la disposición en una sola línea */
-           .centered-controls {
-             display: flex;
-             justify-content: center;
-             align-items: center;
-             gap: 1rem;
-             margin-top: 0.8rem; /* Ajusta si quieres menos o más espacio vertical */
-             flex-wrap: wrap; /* Permite que se adapte en pantallas pequeñas */
-           }
-
-           /* Botón con estilo "técnico" y hover distintivo */
-           .search-button {
-             background: linear-gradient(135deg, #ffd700, #ff9a00);
-             border: none;
-             border-radius: 8px;
-             color: #1c1e26;
-             font-weight: 600;
-             font-size: 1.2rem;
-             padding: 0.75rem 1.25rem;
-             cursor: pointer;
-             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-             transition: transform 0.2s ease, box-shadow 0.2s ease;
-             display: flex;
-             align-items: center;
-             gap: 0.5rem;
-           }
-           .search-button:hover {
-             transform: translateY(-2px) scale(1.03);
-             box-shadow: 0 8px 12px rgba(0, 0, 0, 0.25);
-           }
-
-           /* Texto explicativo y burbuja para el número de filtros */
-           .filter-info {
-             display: flex;
-             align-items: center;
-             gap: 0.5rem;
-             font-size: 1.1rem;
-             font-weight: 500;
-             color: #fff;
-           }
-           .filter-count {
-             min-width: 2.2rem;
-             min-height: 2.2rem;
-             background: linear-gradient(135deg, #2a3b4d, #3b4f66);
-             color: #ffffff;
-             border-radius: 50%;
-             display: flex;
-             align-items: center;
-             justify-content: center;
-             font-size: 0.9rem;
-             font-weight: 600;
-             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-             border: 2px solid #ffd700;
-           }
-
-           @media (max-width: 1200px) {
-             .filters-section {
-               grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-             }
-             .filter-category.scope .filter-buttons-container {
-               grid-template-columns: repeat(2, 1fr);
-             }
-           }
-           @media (max-width: 768px) {
-             .main-container {
-               padding: 0.75rem;
-             }
-             .search-box {
-               padding: 0.75rem;
-             }
-             .filter-button {
-               margin-bottom: 0.25rem;
-             }
-           }
-           /* Ajusta los colores del tooltip de Intro.js a tu tema oscuro */
-           .introjs-tooltip {
-             animation: fadeIn 0.8s ease;
-             background-color: #fef9c3 !important;/* tu color de card-bg */
-             color: #1a2634 !important;
-             border: 1px solid #fbbf24 !important;
-             border-radius: 8px;
-             box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2) !important;
-             padding: 1rem !important;
-           }
-
-           @keyframes fadeIn {
-             from {
-               opacity: 0;
-               transform: scale(0.95);
-             }
-             to {
-               opacity: 1;
-               transform: scale(1);
-             }
-           }
-
-           .introjs-arrow {
-             border-color: #fef9c3 transparent transparent transparent !important;
-           }
-
-           .introjs-helperNumberLayer {
-             background: #ffd700 !important;
-             color: #1a2634 !important;
-           }
-
-           .introjs-bullets .introjs-bullet {
-             background: #34495e !important;
-           }
-
-           .introjs-bullets .introjs-bullet.active {
-             box-shadow: 0 0 0 2px #ffd700 !important;
-           }
-
-           .introjs-tooltipbuttons {
-             white-space: nowrap;
-             border-top: 1px solid #fbbf24 !important;
-             padding-top: 0.75rem;
-           }
-
-           .introjs-skipbutton {
-             position: absolute;
-             font-size: 1rem;
-             right: 0rem !important;
-             top: 0rem;
-             padding: 0.2rem 0rem !important;
-             border-radius: 4px;
-             color: #1e2328c0 !important;
-      */
-           }
-
-           /*     .introjs-skipbutton:hover {
-             background: rgba(0, 0, 0, 0.15) !important;
-             color: #000 !important;
-           } */
-
-           .introjs-prevbutton,
-           .introjs-nextbutton,
-           .introjs-donebutton {
-             background: #1a2634 !important;
-             color: #ffffff !important;
-             border: 1px solid #ffd700 !important;
-             padding: 0.4rem 0.4rem !important;
-             border-radius: 4px;
-             margin: 0 0.2rem;
-             font-size: 1rem !important;
-             transition: all 0.2s ease;
-             text-shadow: none !important;
-             font-weight: normal !important;
-           }
-
-           .introjs-prevbutton:hover,
-           .introjs-nextbutton:hover,
-           .introjs-donebutton:hover {
-             background: #ffd700 !important;
-             color: #1a2634 !important;
-           }
-
-           .introjs-tooltiptext {
-             color: #1a2634 !important;
-             font-size: 1.1rem !important;
-             line-height: 1.4 !important;
-             font-family: system-ui, -apple-system, sans-serif !important;
-           }
-            /* ======= Resaltado personalizado .myHighlight ======= */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        background: #1c1e26;
+      }
+      .main-container {
+        max-width: 1400px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0rem 0rem;
+      }
+      .hero-section {
+        border-radius: 8px;
+        padding: 0;
+        margin-bottom: 0.5rem;
+      }
+      .main-title {
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-primary, #fff);
+      }
+      .search-container {
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 0;
+        color: var(--text-primary, #fff);
+      }
+      .intro-text {
+        font-size: 0.95rem;
+        line-height: 1.4;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 8px;
+        padding: 0.5rem;
+        color: var(--text-secondary, #94a3b8);
+        margin-bottom: 0.5rem;
+      }
+      .search-box {
+        background: var(--card-bg, #2a3b4d);
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+      }
+      /* Reemplazo de input por textarea */
+      .search-textarea {
+        width: 100%;
+        padding: 0.55rem;
+        background: var(--primary-bg, #1c1e26);
+        border: 1px solid var(--secondary-bg, #2c3e50);
+        border-radius: 6px;
+        color: var(--text-primary, #fff);
+        font-size: 0.95rem;
+        margin-bottom: 0rem;
+        transition: border-color 0.3s ease;
+        resize: vertical;
+      }
+      .search-textarea:focus {
+        border-color: var(--accent-color, #ffd700);
+        outline: none;
+      }
+      .filters-section {
+        display: grid;
+        grid-template-columns: minmax(300px, 1fr) minmax(300px, 1.75fr) minmax(
+            450px,
+            1.85fr
+          );
+        gap: 0rem;
+        margin-top: 1rem;
+        /* Se retira la altura fija */
+      }
+      .filter-category {
+        background: var(--primary-bg, #1c1e26);
+        padding: 0.7rem;
+        border-radius: 8px;
+        border-left: 4px solid transparent;
+        transition: all 0.4s ease;
+      }
+      .filter-category.methodological {
+        border-left-color: rgba(59, 130, 246, 0.5);
+      }
+      .filter-category.clinical {
+        border-left-color: rgba(16, 185, 129, 0.5);
+      }
+      .filter-category.clinical .filter-buttons-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+      }
+      .filter-category.scope {
+        border-left-color: rgba(139, 92, 246, 0.5);
+      }
+      .filter-category.scope .filter-buttons-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+      }
+      .category-title {
+        font-size: 1.05rem;
+        color: var(--accent-color, #ffd700);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+      }
+      .filter-button {
+        width: 100%;
+        padding: 0.45rem 0.45rem;
+        margin-bottom: 0.35rem;
+        background: var(--secondary-bg, #2c3e50);
+        border: none;
+        border-left: 4px solid transparent;
+        border-radius: 6px;
+        color: var(--text-primary, #fff);
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+      }
+      .filter-button:hover {
+        background: var(--hover-color, #34495e);
+        transform: translateX(2px);
+      }
+      .filter-button.active.methodological {
+        background: rgba(59, 130, 246, 0.2);
+        border-left-color: rgb(59, 130, 246);
+      }
+      .filter-button.active.clinical {
+        background: rgba(16, 185, 129, 0.2);
+        border-left-color: rgb(16, 185, 129);
+      }
+      .filter-button.active.scope {
+        background: rgba(139, 92, 246, 0.2);
+        border-left-color: rgb(139, 92, 246);
+      }
+      .versions-toggle {
+        margin-left: auto;
+        display: flex;
+        gap: 0.3rem;
+        align-items: center;
+      }
+      .versions-toggle input[type="radio"] {
+        margin-right: 0rem;
+        transform: scale(0.9);
+      }
+      .info-section {
+        margin-top: 1rem;
+        background: rgba(59, 130, 246, 0.1);
+        padding: 0.5rem;
+        border-radius: 8px;
+      }
+      .info-title {
+        font-size: 1.1rem;
+        color: var(--accent-color, #ffd700);
+        margin-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+      .info-text {
+        color: var(--text-secondary, #94a3b8);
+        line-height: 1.4;
+        font-size: 0.9rem;
+        margin: 0;
+      }
+      .centered-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 0.8rem;
+        flex-wrap: wrap;
+      }
+      .search-button {
+        background: linear-gradient(135deg, #ffd700, #ff9a00);
+        border: none;
+        border-radius: 8px;
+        color: #1c1e26;
+        font-weight: 600;
+        font-size: 1.2rem;
+        padding: 0.7rem 1.25rem;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .search-button:hover {
+        transform: translateY(-2px) scale(1.03);
+        box-shadow: 0 8px 12px rgba(0, 0, 0, 0.25);
+      }
+      .filter-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #fff;
+      }
+      .filter-count {
+        min-width: 2.2rem;
+        min-height: 2.2rem;
+        background: linear-gradient(135deg, #2a3b4d, #3b4f66);
+        color: #ffffff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        font-weight: 600;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        border: 2px solid #ffd700;
+      }
+      @media (max-width: 1200px) {
+        .filters-section {
+          grid-template-columns: 1fr;
+          max-height: none;
+          overflow-y: visible;
+        }
+        .filter-category {
+          margin-bottom: 1rem;
+        }
+      }
+      @media (max-width: 768px) {
+        .main-container {
+          padding: 0.75rem;
+        }
+        .search-box {
+          padding: 0.75rem;
+        }
+        .filter-button {
+          margin-bottom: 0.25rem;
+        }
+      }
+      .introjs-tooltip {
+        animation: fadeIn 0.8s ease;
+        background-color: #fef9c3 !important;
+        color: #1a2634 !important;
+        border: 1px solid #fbbf24 !important;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2) !important;
+        padding: 1rem !important;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      .introjs-arrow {
+        border-color: #fef9c3 transparent transparent transparent !important;
+      }
+      .introjs-helperNumberLayer {
+        background: #ffd700 !important;
+        color: #1a2634 !important;
+      }
+      .introjs-bullets .introjs-bullet {
+        background: #34495e !important;
+      }
+      .introjs-bullets .introjs-bullet.active {
+        box-shadow: 0 0 0 2px #ffd700 !important;
+      }
+      .introjs-tooltipbuttons {
+        white-space: nowrap;
+        border-top: 1px solid #fbbf24 !important;
+        padding-top: 0.75rem;
+      }
+      .introjs-skipbutton {
+        position: absolute;
+        font-size: 1rem;
+        right: 0rem !important;
+        top: 0rem;
+        padding: 0.2rem 0rem !important;
+        border-radius: 4px;
+        color: #1e2328c0 !important;
+      }
+      .introjs-prevbutton,
+      .introjs-nextbutton,
+      .introjs-donebutton {
+        background: #1a2634 !important;
+        color: #ffffff !important;
+        border: 1px solid #ffd700 !important;
+        padding: 0.4rem 0.4rem !important;
+        border-radius: 4px;
+        margin: 0 0.2rem;
+        font-size: 1rem !important;
+        transition: all 0.2s ease;
+        text-shadow: none !important;
+        font-weight: normal !important;
+      }
+      .introjs-prevbutton:hover,
+      .introjs-nextbutton:hover,
+      .introjs-donebutton:hover {
+        background: #ffd700 !important;
+        color: #1a2634 !important;
+      }
+      .introjs-tooltiptext {
+        color: #1a2634 !important;
+        font-size: 1.1rem !important;
+        line-height: 1.4 !important;
+        font-family: system-ui, -apple-system, sans-serif !important;
+      }
       .myHighlight {
-        /* Fondo transparente y borde+resplandor para no tapar el texto */
-        background: transparent !important;
         background: #333;
         box-shadow: 0 0 8px 4px rgba(255, 215, 0, 0.8) !important;
         border: 2px solid #ffd700 !important;
         border-radius: 8px !important;
         transition: box-shadow 0.6s ease;
       }
+      .introjs-tooltip {
+        max-width: 300px;
+        min-width: 250px;
+      }
+      /* Contenedor para mostrar la Query final */
+      .final-query-box {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+        color: #ffd700;
+        font-size: 0.85rem;
+      }
     </style>
   </head>
   <body>
     <include src="header.html"></include>
-
     <main class="main-container">
       <section class="hero-section">
         <h1 class="main-title">
@@ -421,21 +413,21 @@
 
       <div class="search-container">
         <div class="search-box">
-          <input
-            type="text"
+          <textarea
             id="searchTerm"
-            class="search-input"
+            class="search-textarea"
             placeholder="Introduce términos de búsqueda..."
             data-intro="Aquí escribes tus términos de búsqueda. También puedes pulsar Enter para iniciar la búsqueda."
             data-step="2"
-          />
+            rows="1"
+            oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';"
+          ></textarea>
 
           <div
             class="filters-section"
             data-intro="Estos son los filtros que puedes seleccionar antes de buscar."
             data-step="1"
           >
-            <!-- Filtros Metodológicos -->
             <div class="filter-category methodological">
               <h3 class="category-title">
                 <i class="fas fa-flask"></i>
@@ -495,169 +487,187 @@
               </button>
             </div>
 
-            <!-- Filtros Clínicos -->
             <div class="filter-category clinical">
               <h3 class="category-title">
                 <i class="fas fa-stethoscope"></i>
                 Enfoque Clínico
               </h3>
-              <button
-                class="filter-button clinical with-toggle"
-                data-base="diagnosis"
-              >
-                🔍 Diagnóstico-CQ
-                <div class="versions-toggle">
-                  <label>
-                    <input
-                      type="radio"
-                      name="diagnosis_mode"
-                      value="sensible"
-                      checked
-                    />
-                    S
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name="diagnosis_mode"
-                      value="especifico"
-                    />
-                    E
-                  </label>
-                </div>
-              </button>
-              <button
-                class="filter-button clinical with-toggle"
-                data-base="etiology"
-              >
-                🔬 Etiología-CQ
-                <div class="versions-toggle">
-                  <label>
-                    <input
-                      type="radio"
-                      name="etiology_mode"
-                      value="sensible"
-                      checked
-                    />
-                    S
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name="etiology_mode"
-                      value="especifico"
-                    />
-                    E
-                  </label>
-                </div>
-              </button>
-              <button
-                class="filter-button clinical with-toggle"
-                data-base="prognosis"
-              >
-                📈 Pronóstico-CQ
-                <div class="versions-toggle">
-                  <label>
-                    <input
-                      type="radio"
-                      name="prognosis_mode"
-                      value="sensible"
-                      checked
-                    />
-                    S
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name="prognosis_mode"
-                      value="especifico"
-                    />
-                    E
-                  </label>
-                </div>
-              </button>
-              <button
-                class="filter-button clinical with-toggle"
-                data-base="treatment"
-              >
-                💊 Tratamiento-CQ
-                <div class="versions-toggle">
-                  <label>
-                    <input
-                      type="radio"
-                      name="treatment_mode"
-                      value="sensible"
-                      checked
-                    />
-                    S
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name="treatment_mode"
-                      value="especifico"
-                    />
-                    E
-                  </label>
-                </div>
-              </button>
-              <button
-                class="filter-button clinical with-toggle"
-                data-base="predictors"
-              >
-                🚀 Predictores Tratamiento
-                <div class="versions-toggle">
-                  <label>
-                    <input
-                      type="radio"
-                      name="predictors_mode"
-                      value="sensible"
-                      checked
-                    />
-                    S
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name="predictors_mode"
-                      value="especifico"
-                    />
-                    E
-                  </label>
-                </div>
-              </button>
-              <button class="filter-button clinical" data-type="surgery_ae">
-                🏷️ Efectos Adversos Cirugía
-              </button>
-              <button class="filter-button clinical" data-type="devices_ae">
-                🔧 Efectos Adversos Dispositivos
-              </button>
-              <button class="filter-button clinical" data-type="drugs_ae">
-                💊 Efectos adversos Medicamentos
-              </button>
-              <button class="filter-button clinical" data-type="car_t">
-                🧬 Terapias CAR-T
-              </button>
-              <button class="filter-button clinical" data-type="deprescription">
-                ⚕️ Deprescripción
-              </button>
-              <button
-                class="filter-button clinical"
-                data-type="simulation_clinical"
-              >
-                🎯 Simulación Clínica V.1
-              </button>
+              <div class="filter-buttons-container">
+                <button
+                  class="filter-button clinical with-toggle"
+                  data-base="diagnosis"
+                >
+                  🔍 Diagnóstico-CQ
+                  <div class="versions-toggle">
+                    <label>
+                      <input
+                        type="radio"
+                        name="diagnosis_mode"
+                        value="sensible"
+                        checked
+                      />
+                      S
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="diagnosis_mode"
+                        value="especifico"
+                      />
+                      E
+                    </label>
+                  </div>
+                </button>
+                <button
+                  class="filter-button clinical with-toggle"
+                  data-base="etiology"
+                >
+                  🔬 Etiología-CQ
+                  <div class="versions-toggle">
+                    <label>
+                      <input
+                        type="radio"
+                        name="etiology_mode"
+                        value="sensible"
+                        checked
+                      />
+                      S
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="etiology_mode"
+                        value="especifico"
+                      />
+                      E
+                    </label>
+                  </div>
+                </button>
+                <button
+                  class="filter-button clinical with-toggle"
+                  data-base="prognosis"
+                >
+                  📈 Pronóstico-CQ
+                  <div class="versions-toggle">
+                    <label>
+                      <input
+                        type="radio"
+                        name="prognosis_mode"
+                        value="sensible"
+                        checked
+                      />
+                      S
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="prognosis_mode"
+                        value="especifico"
+                      />
+                      E
+                    </label>
+                  </div>
+                </button>
+                <button
+                  class="filter-button clinical with-toggle"
+                  data-base="treatment"
+                >
+                  💊 Tratamiento-CQ
+                  <div class="versions-toggle">
+                    <label>
+                      <input
+                        type="radio"
+                        name="treatment_mode"
+                        value="sensible"
+                        checked
+                      />
+                      S
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="treatment_mode"
+                        value="especifico"
+                      />
+                      E
+                    </label>
+                  </div>
+                </button>
+                <button
+                  class="filter-button clinical with-toggle"
+                  data-base="predictors"
+                >
+                  🚀 Predictores Tratamiento
+                  <div class="versions-toggle">
+                    <label>
+                      <input
+                        type="radio"
+                        name="predictors_mode"
+                        value="sensible"
+                        checked
+                      />
+                      S
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="predictors_mode"
+                        value="especifico"
+                      />
+                      E
+                    </label>
+                  </div>
+                </button>
+                <button class="filter-button clinical" data-type="surgery_ae">
+                  🏷️ Efectos Adversos Cirugía
+                </button>
+                <button class="filter-button clinical" data-type="devices_ae">
+                  🔧 Efectos Adversos Dispositivos
+                </button>
+                <button class="filter-button clinical" data-type="drugs_ae">
+                  💊 Efectos adversos Medicamentos
+                </button>
+                <button class="filter-button clinical" data-type="car_t">
+                  🧬 Terapias CAR-T
+                </button>
+                <button
+                  class="filter-button clinical"
+                  data-type="deprescription"
+                >
+                  ⚕️ Deprescripción
+                </button>
+                <button
+                  class="filter-button clinical"
+                  data-type="simulation_clinical"
+                >
+                  🎯 Simulación Clínica V.1
+                </button>
+              </div>
             </div>
 
-            <!-- Filtros por Ámbito -->
             <div class="filter-category scope">
               <h3 class="category-title">
                 <i class="fas fa-users"></i>
                 Ámbito y Población
               </h3>
               <div class="filter-buttons-container">
-                <button class="filter-button scope" data-type="ai">
+                <button class="filter-button scope with-toggle" data-base="ai">
                   🤖 IA Generativa
+                  <div class="versions-toggle">
+                    <label>
+                      <input
+                        type="radio"
+                        name="ai_mode"
+                        value="sensible"
+                        checked
+                      />
+                      S
+                    </label>
+                    <label>
+                      <input type="radio" name="ai_mode" value="especifico" />
+                      E
+                    </label>
+                  </div>
                 </button>
                 <button
                   class="filter-button scope with-toggle"
@@ -709,8 +719,30 @@
                     </label>
                   </div>
                 </button>
-                <button class="filter-button scope" data-type="safety">
+                <button
+                  class="filter-button scope with-toggle"
+                  data-base="safety"
+                >
                   🛡️ Seguridad Paciente
+                  <div class="versions-toggle">
+                    <label>
+                      <input
+                        type="radio"
+                        name="safety_mode"
+                        value="sensible"
+                        checked
+                      />
+                      S
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="safety_mode"
+                        value="especifico"
+                      />
+                      E
+                    </label>
+                  </div>
                 </button>
                 <button class="filter-button scope" data-type="pearls">
                   💎 Perlas Clínicas
@@ -761,15 +793,63 @@
                 <button class="filter-button scope" data-type="spanish">
                   🇪🇸 Publicaciones Españolas
                 </button>
-                <button class="filter-button scope" data-type="economic">
+                <button
+                  class="filter-button scope with-toggle"
+                  data-base="economic"
+                >
                   💰 Evaluaciones económicas
+                  <div class="versions-toggle">
+                    <label>
+                      <input
+                        type="radio"
+                        name="economic_mode"
+                        value="sensible"
+                        checked
+                      />
+                      S
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="economic_mode"
+                        value="especifico"
+                      />
+                      E
+                    </label>
+                  </div>
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- Controles centrados en una sola línea -->
           <div class="centered-controls">
+            <div>
+              <label style="color: #fff; font-size: 0.9rem"
+                >Fecha:
+                <select id="dateRange" style="border-radius: 4px">
+                  <option value="">Sin Filtro</option>
+                  <option value="7">Últimos 7 días</option>
+                  <option value="30">Últimos 30 días</option>
+                  <option value="365">Último año</option>
+                </select>
+              </label>
+              <label style="color: #fff; font-size: 0.9rem; margin-left: 1rem"
+                >Orden:
+                <select id="sortMode" style="border-radius: 4px">
+                  <option value="date">Por fecha</option>
+                  <option value="best">Best match</option>
+                </select>
+              </label>
+            </div>
+            <div>
+              <label style="color: #fff; font-size: 0.9rem">
+                Operador dentro de la misma categoría:
+                <select id="internalOperator" style="border-radius: 4px">
+                  <option value="OR" selected>OR</option>
+                  <option value="AND">AND</option>
+                </select>
+              </label>
+            </div>
             <button
               id="searchButton"
               class="search-button"
@@ -779,12 +859,28 @@
               <i class="fas fa-search"></i>
               <span>Buscar en PubMed</span>
             </button>
-            <!-- Texto para entender que es el número, a la derecha del botón -->
             <div class="filter-info">
               <span>Filtros activos:</span>
               <span id="filterCount" class="filter-count">0</span>
             </div>
+            <button
+              id="resetButton"
+              style="
+                background: linear-gradient(135deg, #777, #555);
+                color: #fff;
+                border: none;
+                border-radius: 8px;
+                padding: 0.7rem;
+                font-size: 0.9rem;
+                cursor: pointer;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+              "
+            >
+              Limpiar
+            </button>
           </div>
+
+          <div class="final-query-box" id="finalQuery"></div>
         </div>
 
         <div class="info-section">
@@ -792,16 +888,15 @@
             <i class="fas fa-info-circle"></i>
             Sobre las Búsquedas
           </h2>
-
           <p class="info-text">
             Los filtros se combinan automáticamente usando operadores booleanos:
             <strong>OR</strong> entre filtros de la misma categoría y
-            <strong>AND</strong> entre diferentes categorías. Esto permite
-            construir búsquedas precisas que encuentran exactamente lo que
-            necesitas.
+            <strong>AND</strong> entre diferentes categorías (por defecto). Esto
+            permite construir búsquedas precisas que encuentran exactamente lo
+            que necesitas.
             <br />
             <span style="font-size: 0.8rem; color: grey"
-              ><b>CQ:</b>Clinical Queries PubMed</span
+              ><b>CQ:</b> Clinical Queries PubMed</span
             >
           </p>
         </div>
@@ -810,17 +905,23 @@
 
     <include src="footer.html"></include>
     <script src="/assets/js/include.js"></script>
+    <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        const searchInput = document.getElementById("searchTerm");
-        const searchButton = document.getElementById("searchButton");
-        const filterCount = document.getElementById("filterCount");
+        var searchTerm = document.getElementById("searchTerm");
+        var searchButton = document.getElementById("searchButton");
+        var resetButton = document.getElementById("resetButton");
+        var filterCount = document.getElementById("filterCount");
+        var finalQueryBox = document.getElementById("finalQuery");
+        var dateRange = document.getElementById("dateRange");
+        var sortMode = document.getElementById("sortMode");
+        var internalOperator = document.getElementById("internalOperator");
 
-        let activeFilters = new Set();
-        let filterMap = {};
+        var activeFilters = new Set();
+        var filterMap = {};
 
-        const categories = {
+        var categories = {
           methodology: [
             "mbe",
             "gpc",
@@ -850,12 +951,14 @@
             "simulation_clinical",
           ],
           scope: [
-            "ai",
+            "ai_sensible",
+            "ai_especifico",
             "palliative_sensible",
             "palliative_especifico",
             "primary_sensible",
             "primary_especifico",
-            "safety",
+            "safety_sensible",
+            "safety_especifico",
             "pearls",
             "perspective",
             "nursing",
@@ -866,21 +969,24 @@
             "adults",
             "ocde",
             "spanish",
-            "economic",
+            "economic_sensible",
+            "economic_especifico",
           ],
         };
 
         function cargarFiltros() {
-          const promises = [];
-          Object.keys(categories).forEach((cat) => {
-            categories[cat].forEach((id) => {
-              const url = "/assets/filtros/" + cat + "/" + id + ".txt";
-              const prom = fetch(url)
-                .then((r) => (r.ok ? r.text() : ""))
-                .then((txt) => {
+          var promises = [];
+          Object.keys(categories).forEach(function (cat) {
+            categories[cat].forEach(function (id) {
+              var url = "/assets/filtros/" + cat + "/" + id + ".txt";
+              var prom = fetch(url)
+                .then(function (r) {
+                  return r.ok ? r.text() : "";
+                })
+                .then(function (txt) {
                   filterMap[id] = txt.trim();
                 })
-                .catch(() => {
+                .catch(function () {
                   filterMap[id] = "";
                 });
               promises.push(prom);
@@ -888,85 +994,234 @@
           });
           return Promise.all(promises);
         }
+        cargarFiltros().then(function () {});
 
-        cargarFiltros().then(() => {
-          console.log("Filtros cargados:", filterMap);
-        });
+        /* Manejo de filtros simples */
+        document
+          .querySelectorAll(".filter-button:not(.with-toggle)")
+          .forEach(function (button) {
+            button.addEventListener("click", function () {
+              button.classList.toggle("active");
+              var filterType = button.dataset.type;
+              if (filterType) {
+                if (button.classList.contains("active")) {
+                  activeFilters.add(filterType);
+                } else {
+                  activeFilters.delete(filterType);
+                }
+                filterCount.textContent = activeFilters.size;
+                mostrarQueryFinal();
+              }
+            });
+          });
 
-        document.querySelectorAll(".filter-button").forEach((button) => {
-          button.addEventListener("click", function (e) {
-            // No toggles if click is on a radio input
-            if (e.target.tagName === "INPUT") {
-              return;
-            }
-            button.classList.toggle("active");
-            const filterType = button.dataset.type;
-            if (filterType) {
-              if (button.classList.contains("active")) {
+        /* Manejo de filtros con toggle */
+        document
+          .querySelectorAll(".filter-button.with-toggle")
+          .forEach(function (btn) {
+            var baseId = btn.dataset.base;
+            btn.addEventListener("click", function (e) {
+              if (
+                e.target.tagName === "INPUT" ||
+                e.target.closest(".versions-toggle")
+              ) {
+                return;
+              }
+              btn.classList.toggle("active");
+              var selectedRadio = btn.querySelector(
+                'input[type="radio"]:checked'
+              );
+              var filterType = baseId + "_" + selectedRadio.value;
+              if (btn.classList.contains("active")) {
                 activeFilters.add(filterType);
               } else {
                 activeFilters.delete(filterType);
               }
-            }
-            filterCount.textContent = activeFilters.size;
-          });
-        });
-
-        document
-          .querySelectorAll(".filter-button.with-toggle")
-          .forEach((btn) => {
-            const baseId = btn.dataset.base;
-            const radios = btn.querySelectorAll('input[type="radio"]');
-            radios.forEach((radio) => {
-              radio.addEventListener("change", (ev) => {
-                const version = ev.target.value;
-                const newType = baseId + "_" + version;
-                const oldType = btn.dataset.type;
-                btn.setAttribute("data-type", newType);
-                if (btn.classList.contains("active")) {
-                  if (oldType) {
-                    activeFilters.delete(oldType);
-                  }
-                  activeFilters.add(newType);
-                  filterCount.textContent = activeFilters.size;
-                }
+              filterCount.textContent = activeFilters.size;
+              mostrarQueryFinal();
+            });
+            var radios = btn.querySelectorAll('input[type="radio"]');
+            radios.forEach(function (radio) {
+              radio.addEventListener("change", function () {
+                if (!btn.classList.contains("active")) return;
+                var oldType =
+                  baseId +
+                  "_" +
+                  (radio.value === "sensible" ? "especifico" : "sensible");
+                var newType = baseId + "_" + radio.value;
+                activeFilters.delete(oldType);
+                activeFilters.add(newType);
+                filterCount.textContent = activeFilters.size;
+                mostrarQueryFinal();
               });
             });
           });
 
-        function constructQuery(searchTerm) {
-          let query = "(" + searchTerm + ")";
-          Object.keys(categories).forEach((cat) => {
-            const activeInCat = categories[cat]
-              .filter((f) => activeFilters.has(f))
-              .map((f) => filterMap[f] || "")
-              .filter((q) => q !== "");
+        function constructQuery(term) {
+          if (!term && activeFilters.size === 0) {
+            return "";
+          }
+          var query = term;
+          /* Operador intragrupo */
+          var opIntra = internalOperator.value; /* OR o AND */
+
+          Object.keys(categories).forEach(function (cat) {
+            var activeInCat = categories[cat]
+              .filter(function (f) {
+                return activeFilters.has(f);
+              })
+              .map(function (f) {
+                return filterMap[f] || "";
+              })
+              .filter(function (q) {
+                return q !== "";
+              });
             if (activeInCat.length > 0) {
-              query += " AND (" + activeInCat.join(" OR ") + ")";
+              var notFilters = activeInCat.filter(function (f) {
+                return /^NOT/.test(f);
+              });
+              var regularFilters = activeInCat.filter(function (f) {
+                return !/^NOT/.test(f);
+              });
+              if (regularFilters.length > 0) {
+                if (query) {
+                  query =
+                    "(" +
+                    query +
+                    ") AND (" +
+                    regularFilters.join(" " + opIntra + " ") +
+                    ")";
+                } else {
+                  query = "(" + regularFilters.join(" " + opIntra + " ") + ")";
+                }
+              }
+              notFilters.forEach(function (filter) {
+                if (query) {
+                  query = "(" + query + ")" + filter;
+                } else {
+                  query = filter;
+                }
+              });
             }
           });
-          return query;
+
+          /* Filtro por fecha */
+          if (dateRange.value) {
+            var days = dateRange.value;
+            var dateFilter = '("last ' + days + ' days"[dp])';
+            if (query) {
+              query = "(" + query + ") AND " + dateFilter;
+            } else {
+              query = dateFilter;
+            }
+          }
+          return query.trim();
+        }
+
+        function mostrarQueryFinal() {
+          var built = constructQuery(searchTerm.value.trim());
+          finalQueryBox.textContent = built;
+        }
+
+        function hacerBusqueda() {
+          var term = searchTerm.value.trim();
+          var finalQ = constructQuery(term);
+          if (!finalQ) {
+            alert("Por favor, introduce un término o selecciona algún filtro.");
+            return;
+          }
+          var url =
+            "https://pubmed.ncbi.nlm.nih.gov/?term=" +
+            encodeURIComponent(finalQ);
+          /* Control del orden */
+          if (sortMode.value === "date") {
+            url += "&sort=date";
+          }
+          /* Tamaño de la página */
+          url += "&size=50";
+          window.open(url, "_blank");
         }
 
         searchButton.addEventListener("click", function () {
-          const term = searchInput.value.trim();
-          if (!term) {
-            alert("Por favor, introduce un término de búsqueda");
-            return;
+          hacerBusqueda();
+        });
+        searchTerm.addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            hacerBusqueda();
           }
-          const finalQuery = constructQuery(term);
-          const url =
-            "https://pubmed.ncbi.nlm.nih.gov/?term=" +
-            encodeURIComponent(finalQuery) +
-            "&sort=date&size=50";
-          window.open(url, "_blank");
         });
 
-        searchInput.addEventListener("keypress", function (e) {
-          if (e.key === "Enter") {
-            searchButton.click();
-          }
+        resetButton.addEventListener("click", function () {
+          activeFilters.clear();
+          filterCount.textContent = 0;
+          searchTerm.value = "";
+          dateRange.value = "";
+          sortMode.value = "date";
+          internalOperator.value = "OR";
+          document.querySelectorAll(".filter-button").forEach(function (b) {
+            b.classList.remove("active");
+          });
+          var radios = document.querySelectorAll(
+            '.versions-toggle input[type="radio"]'
+          );
+          radios.forEach(function (r) {
+            if (r.value === "sensible") {
+              r.checked = true;
+            }
+          });
+          finalQueryBox.textContent = "";
         });
+
+        function iniciarTutorial() {
+          var intro = introJs();
+          intro.setOptions({
+            steps: [
+              {
+                element: document.querySelector(".filters-section"),
+                intro:
+                  "Estos son los filtros que puedes seleccionar antes de buscar.",
+                position: "right",
+              },
+              {
+                element: document.querySelector("#searchTerm"),
+                intro:
+                  'Escribe aquí tus términos de búsqueda. Puedes consultar <a href="https://www.ncbi.nlm.nih.gov/mesh" target="_blank" style="color: #0e04c8; text-decoration: underline;">descriptores MeSH</a>',
+                position: "top",
+              },
+              {
+                element: document.querySelector("#searchButton"),
+                intro: "Haz clic aquí para lanzar la búsqueda en PubMed.",
+                position: "left",
+              },
+            ],
+            overlayOpacity: 0.9,
+            highlightClass: "myHighlight",
+            disableInteraction: true,
+            skipLabel: "Saltar",
+            nextLabel: "Siguiente",
+            prevLabel: "Anterior",
+            doneLabel: "Hecho",
+            showStepNumbers: false,
+            scrollToElement: true,
+            scrollPadding: 1,
+          });
+          intro.oncomplete(function () {
+            localStorage.setItem("tutorial_visto", "true");
+          });
+          intro.onexit(function () {
+            localStorage.setItem("tutorial_visto", "true");
+          });
+          intro.start();
+        }
+
+        var tutorialVisto = localStorage.getItem("tutorial_visto");
+        if (!tutorialVisto) {
+          iniciarTutorial();
+        }
+        var startTutorialBtn = document.getElementById("startTutorialBtn");
+        if (startTutorialBtn) {
+          startTutorialBtn.addEventListener("click", iniciarTutorial);
+        }
       });
     </script>
 
@@ -982,81 +1237,6 @@
       gtag("js", new Date());
       gtag("config", "G-YFKR6RB1ZC");
     </script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        // Comprobamos si el tutorial ya se ha mostrado
-        const tutorialVisto = localStorage.getItem("tutorial_visto");
-        if (!tutorialVisto) {
-          // Si no existe la clave, iniciamos el tutorial automáticamente
-          iniciarTutorial();
-        }
-
-        // Botón para reiniciar el tutorial manualmente (opcional)
-        const startTutorialBtn = document.getElementById("startTutorialBtn");
-        if (startTutorialBtn) {
-          startTutorialBtn.addEventListener("click", iniciarTutorial);
-        }
-
-        // Función para lanzar Intro.js
-        function iniciarTutorial() {
-          const intro = introJs();
-          intro.setOptions({
-            steps: [
-              {
-                element: document.querySelector(".filters-section"),
-                intro:
-                  "Estos son los filtros que puedes seleccionar antes de buscar.",
-                position: "right",
-              },
-              {
-                element: document.querySelector("#searchTerm"),
-                intro:
-                  "Escribe aquí tus términos de búsqueda. También puedes pulsar Enter para iniciar la búsqueda.",
-                position: "bottom",
-              },
-              {
-                element: document.querySelector("#searchButton"),
-                intro: "Haz clic aquí para lanzar la búsqueda en PubMed.",
-                position: "left",
-              },
-            ],
-            /* Efectos de oscurecimiento y apariencia */
-            overlayOpacity: 0.9, // oscurecimiento del fondo (0 a 1)
-            highlightClass: "myHighlight", // clase CSS para resaltar el elemento
-            disableInteraction: true, // si quieres evitar clics en los elementos resaltados
-            /* Texto de los botones */
-            skipLabel: "Omitir",
-            nextLabel: "→",
-            prevLabel: "←",
-            doneLabel: "¡Hecho!",
-            /* Control de transiciones */
-            showStepNumbers: false, // quita el numerito del tooltip
-            scrollToElement: true, // hace scroll automático al elemento
-            scrollPadding: 60, // margen extra al auto-scrollear
-            // animate: true // (Intro.js <3.0) algunas versiones tenían animate, ya no es tan necesario
-            // Textos de los botones
-            skipLabel: "Saltar",
-            nextLabel: "Siguiente",
-            prevLabel: "Anterior",
-            doneLabel: "Hecho",
-          });
-
-          // Cuando finalice, marcamos como visto
-          intro.oncomplete(function () {
-            localStorage.setItem("tutorial_visto", "true");
-          });
-          // Si el usuario omite el tutorial a mitad
-          intro.onexit(function () {
-            localStorage.setItem("tutorial_visto", "true");
-          });
-
-          // Iniciamos Intro.js
-          intro.start();
-        }
-      });
-    </script>
-
-    <!--     <button id="startTutorialBtn">Ver tutorial</button>
- -->
   </body>
 </html>
+```
