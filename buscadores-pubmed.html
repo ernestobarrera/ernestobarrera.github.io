@@ -822,12 +822,14 @@
           <div class="centered-controls">
             <div>
               <label style="color: #fff; font-size: 0.9rem"
-                >Fecha:
+                >Fecha: // Encuentra el elemento select
                 <select id="dateRange" style="border-radius: 4px">
                   <option value="">Sin Filtro</option>
                   <option value="7">Últimos 7 días</option>
                   <option value="30">Últimos 30 días</option>
+                  <option value="180">Últimos 6 meses</option>
                   <option value="365">Último año</option>
+                  <option value="1825">Últimos 5 años</option>
                 </select>
               </label>
               <label style="color: #fff; font-size: 0.9rem; margin-left: 1rem"
@@ -1195,7 +1197,7 @@
               {
                 element: document.querySelector("#dateRange"),
                 intro:
-                  "Filtra resultados por fecha: últimos 7 días (publicaciones muy recientes), 30 días (último mes) o 365 días (último año). Útil para encontrar la evidencia más actual.",
+                  "Filtra resultados por fecha: 7 días (muy reciente), 30 días (último mes), 6 meses, 1 año o 5 años. Ajuste según la actualización necesaria de la evidencia.",
                 position: "top",
               },
               {
