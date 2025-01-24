@@ -289,7 +289,9 @@
         border: 1px solid #fbbf24 !important;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2) !important;
-        padding: 1rem !important;
+        padding: 0.2rem !important;
+        max-width: 380px;
+        min-width: 280px;
       }
       @keyframes fadeIn {
         from {
@@ -361,10 +363,7 @@
         border-radius: 8px !important;
         transition: box-shadow 0.6s ease;
       }
-      .introjs-tooltip {
-        max-width: 300px;
-        min-width: 250px;
-      }
+
       /* Contenedor para mostrar la Query final */
       .final-query-box {
         margin-top: 0.5rem;
@@ -993,7 +992,12 @@
           return Promise.all(promises);
         }
         cargarFiltros().then(function () {});
-
+        ["input", "change"].forEach((event) => {
+          searchTerm.addEventListener(event, mostrarQueryFinal);
+          dateRange.addEventListener(event, mostrarQueryFinal);
+          sortMode.addEventListener(event, mostrarQueryFinal);
+          internalOperator.addEventListener(event, mostrarQueryFinal);
+        });
         /* Manejo de filtros simples */
         document
           .querySelectorAll(".filter-button:not(.with-toggle)")
@@ -1156,6 +1160,8 @@
           dateRange.value = "";
           sortMode.value = "date";
           internalOperator.value = "OR";
+          internalOperator.value = "OR";
+          mostrarQueryFinal();
           document.querySelectorAll(".filter-button").forEach(function (b) {
             b.classList.remove("active");
           });
@@ -1177,19 +1183,50 @@
               {
                 element: document.querySelector(".filters-section"),
                 intro:
-                  "Estos son los filtros que puedes seleccionar antes de buscar.",
+                  "Aquí encontrarás tres categorías de filtros: Metodología, Enfoque Clínico y Ámbito/Población. Cada filtro aplica términos MeSH y operadores booleanos específicos para refinar tu búsqueda.",
                 position: "right",
               },
               {
                 element: document.querySelector("#searchTerm"),
                 intro:
-                  'Escribe aquí tus términos de búsqueda. Puedes consultar <a href="https://www.ncbi.nlm.nih.gov/mesh" target="_blank" style="color: #0e04c8; text-decoration: underline;">descriptores MeSH</a>',
+                  'Escribe tus términos de búsqueda. Para mayor precisión, usa descriptores MeSH que puedes consultar en <a href="https://www.ncbi.nlm.nih.gov/mesh" target="_blank" style="color: #0e04c8; text-decoration: underline;">MeSH Database</a>. Los términos se combinarán automáticamente con los filtros seleccionados.',
                 position: "top",
               },
               {
-                element: document.querySelector("#searchButton"),
-                intro: "Haz clic aquí para lanzar la búsqueda en PubMed.",
+                element: document.querySelector("#dateRange"),
+                intro:
+                  "Filtra resultados por fecha: últimos 7 días (publicaciones muy recientes), 30 días (último mes) o 365 días (último año). Útil para encontrar la evidencia más actual.",
+                position: "top",
+              },
+              {
+                element: document.querySelector("#sortMode"),
+                intro:
+                  "Elige cómo ordenar los resultados: 'Por fecha' muestra los más recientes primero, 'Best match' ordena por relevancia según el algoritmo de PubMed.",
+                position: "bottom",
+              },
+              {
+                element: document.querySelector("#internalOperator"),
+                intro:
+                  "Selecciona el operador booleano para combinar filtros de la misma categoría: 'OR' amplía resultados (más sensible), 'AND' los restringe (más específico).",
+                position: "bottom",
+              },
+              {
+                element: document.querySelector(".versions-toggle"),
+                intro:
+                  "Algunos filtros tienen versiones Sensible (S) o Específica (E). Sensible encuentra más resultados pero menos precisos, Específica encuentra menos pero más relevantes.",
                 position: "left",
+              },
+              {
+                element: document.querySelector("#searchButton"),
+                intro:
+                  "Lanza la búsqueda en PubMed con todos los filtros seleccionados. Se abrirá en una nueva pestaña con los resultados ya filtrados.",
+                position: "left",
+              },
+              {
+                element: document.querySelector("#finalQuery"),
+                intro:
+                  "Aquí verás la estrategia de búsqueda completa que se enviará a PubMed, incluyendo todos los filtros y operadores seleccionados.",
+                position: "top",
               },
             ],
             overlayOpacity: 0.9,
