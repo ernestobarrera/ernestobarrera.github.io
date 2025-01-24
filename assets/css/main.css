@@ -175,3 +175,64 @@ a:hover {
     font-size: 1rem;
   }
 }
+
+/* Destacados index.html */
+.destacados-section {
+  margin-top: 1.5rem; /* Ajusta según tu gusto */
+  margin-bottom: 1.5rem; /* Espacio debajo, antes de “Sobre mí” */
+}
+
+.destacados-section h2 {
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+}
+
+.destacados-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Tarjetas en modo horizontal */
+.destacado-item-inline {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem; /* Menor relleno = menos altura */
+  text-decoration: none;
+  color: var(--text-primary);
+  display: flex;
+  align-items: flex-start; /* icono y texto en la misma fila arriba */
+  gap: 0.8rem; /* espacio horizontal entre icono y texto */
+  transition: background-color var(--transition-speed) ease;
+}
+
+.destacado-item-inline:hover {
+  background-color: #2a2a2a; /* o var(--hover-color) */
+}
+
+/* Icono más pequeño para reducir altura */
+.destacado-item-inline i {
+  font-size: 1.3rem;
+  color: var(--accent-color);
+  margin-top: 0.1rem; /* Para alinearlo con el texto */
+}
+
+.text-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem; /* espacio mínimo entre título y descripción */
+}
+
+.text-block strong {
+  font-size: 0.95rem;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.text-block p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  color: var(--text-secondary);
+}
