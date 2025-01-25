@@ -373,6 +373,44 @@
         color: #ffd700;
         font-size: 0.85rem;
       }
+      .category-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+      }
+
+      .operator-selector {
+        background: var(--card-bg);
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+      }
+
+      .operator-selector label {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .category-operator {
+        background: var(--primary-bg);
+        color: var(--text-primary);
+        border: 1px solid var(--accent-color);
+        border-radius: 4px;
+        padding: 0.3rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .category-operator:hover {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 1px var(--accent-color);
+      }
     </style>
   </head>
   <body>
@@ -426,10 +464,24 @@
             data-step="1"
           >
             <div class="filter-category methodological">
-              <h3 class="category-title">
-                <i class="fas fa-flask"></i>
-                Metodología
-              </h3>
+              <div class="category-header">
+                <h3 class="category-title">
+                  <i class="fas fa-flask"></i>
+                  Metodología
+                </h3>
+                <div class="operator-selector">
+                  <label
+                    >Operador:
+                    <select
+                      class="category-operator"
+                      data-category="methodology"
+                    >
+                      <option value="OR" selected>OR</option>
+                      <option value="AND">AND</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
               <button class="filter-button methodological" data-type="mbe">
                 🔍 MBE
               </button>
@@ -485,10 +537,21 @@
             </div>
 
             <div class="filter-category clinical">
-              <h3 class="category-title">
-                <i class="fas fa-stethoscope"></i>
-                Enfoque Clínico
-              </h3>
+              <div class="category-header">
+                <h3 class="category-title">
+                  <i class="fas fa-stethoscope"></i>
+                  Enfoque Clínico
+                </h3>
+                <div class="operator-selector">
+                  <label
+                    >Operador:
+                    <select class="category-operator" data-category="clinical">
+                      <option value="OR" selected>OR</option>
+                      <option value="AND">AND</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
               <div class="filter-buttons-container">
                 <button
                   class="filter-button clinical with-toggle"
@@ -643,10 +706,21 @@
             </div>
 
             <div class="filter-category scope">
-              <h3 class="category-title">
-                <i class="fas fa-users"></i>
-                Ámbito y Población
-              </h3>
+              <div class="category-header">
+                <h3 class="category-title">
+                  <i class="fas fa-users"></i>
+                  Ámbito y Población
+                </h3>
+                <div class="operator-selector">
+                  <label
+                    >Operador:
+                    <select class="category-operator" data-category="scope">
+                      <option value="OR" selected>OR</option>
+                      <option value="AND">AND</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
               <div class="filter-buttons-container">
                 <button class="filter-button scope with-toggle" data-base="ai">
                   🤖 IA Generativa
@@ -840,15 +914,7 @@
                 </select>
               </label>
             </div>
-            <div>
-              <label style="color: #fff; font-size: 0.9rem">
-                Operador dentro de la misma categoría:
-                <select id="internalOperator" style="border-radius: 4px">
-                  <option value="OR" selected>OR</option>
-                  <option value="AND">AND</option>
-                </select>
-              </label>
-            </div>
+
             <button
               id="searchButton"
               class="search-button"
@@ -998,7 +1064,6 @@
           searchTerm.addEventListener(event, mostrarQueryFinal);
           dateRange.addEventListener(event, mostrarQueryFinal);
           sortMode.addEventListener(event, mostrarQueryFinal);
-          internalOperator.addEventListener(event, mostrarQueryFinal);
         });
         /* Manejo de filtros simples */
         document
@@ -1061,66 +1126,58 @@
             });
           });
 
+        const categoryOperators = {
+          methodology: "OR",
+          clinical: "OR",
+          scope: "OR",
+        };
+
         function constructQuery(term) {
-          if (!term && activeFilters.size === 0) {
-            return "";
-          }
-          var query = term;
-          /* Operador intragrupo */
-          var opIntra = internalOperator.value; /* OR o AND */
+          if (!term && activeFilters.size === 0) return "";
+
+          let query = term;
 
           Object.keys(categories).forEach(function (cat) {
-            var activeInCat = categories[cat]
-              .filter(function (f) {
-                return activeFilters.has(f);
-              })
-              .map(function (f) {
-                return filterMap[f] || "";
-              })
-              .filter(function (q) {
-                return q !== "";
-              });
+            const operator = categoryOperators[cat];
+            const activeInCat = categories[cat]
+              .filter((f) => activeFilters.has(f))
+              .map((f) => filterMap[f] || "")
+              .filter((q) => q !== "");
+
             if (activeInCat.length > 0) {
-              var notFilters = activeInCat.filter(function (f) {
-                return /^NOT/.test(f);
-              });
-              var regularFilters = activeInCat.filter(function (f) {
-                return !/^NOT/.test(f);
-              });
+              const notFilters = activeInCat.filter((f) => /^NOT/.test(f));
+              const regularFilters = activeInCat.filter((f) => !/^NOT/.test(f));
+
               if (regularFilters.length > 0) {
-                if (query) {
-                  query =
-                    "(" +
-                    query +
-                    ") AND (" +
-                    regularFilters.join(" " + opIntra + " ") +
-                    ")";
-                } else {
-                  query = "(" + regularFilters.join(" " + opIntra + " ") + ")";
-                }
+                const categoryQuery = `(${regularFilters.join(
+                  ` ${operator} `
+                )})`;
+                query = query
+                  ? `(${query}) AND ${categoryQuery}`
+                  : categoryQuery;
               }
-              notFilters.forEach(function (filter) {
-                if (query) {
-                  query = "(" + query + ")" + filter;
-                } else {
-                  query = filter;
-                }
+
+              notFilters.forEach((filter) => {
+                query = query ? `(${query}) ${filter}` : filter;
               });
             }
           });
 
-          /* Filtro por fecha */
           if (dateRange.value) {
-            var days = dateRange.value;
-            var dateFilter = '("last ' + days + ' days"[dp])';
-            if (query) {
-              query = "(" + query + ") AND " + dateFilter;
-            } else {
-              query = dateFilter;
-            }
+            const dateFilter = `("last ${dateRange.value} days"[dp])`;
+            query = query ? `(${query}) AND ${dateFilter}` : dateFilter;
           }
+
           return query.trim();
         }
+
+        // Añadir eventos para los selectores
+        document.querySelectorAll(".category-operator").forEach((select) => {
+          select.addEventListener("change", function () {
+            categoryOperators[this.dataset.category] = this.value;
+            mostrarQueryFinal();
+          });
+        });
 
         function mostrarQueryFinal() {
           var built = constructQuery(searchTerm.value.trim());
@@ -1161,21 +1218,27 @@
           searchTerm.value = "";
           dateRange.value = "";
           sortMode.value = "date";
-          internalOperator.value = "OR";
-          internalOperator.value = "OR";
-          mostrarQueryFinal();
+
+          // Reset operadores por categoría
+          document.querySelectorAll(".category-operator").forEach((select) => {
+            select.value = "OR";
+            categoryOperators[select.dataset.category] = "OR";
+          });
+
           document.querySelectorAll(".filter-button").forEach(function (b) {
             b.classList.remove("active");
           });
-          var radios = document.querySelectorAll(
-            '.versions-toggle input[type="radio"]'
-          );
-          radios.forEach(function (r) {
-            if (r.value === "sensible") {
-              r.checked = true;
-            }
-          });
+
+          document
+            .querySelectorAll('.versions-toggle input[type="radio"]')
+            .forEach(function (r) {
+              if (r.value === "sensible") {
+                r.checked = true;
+              }
+            });
+
           finalQueryBox.textContent = "";
+          mostrarQueryFinal();
         });
 
         function iniciarTutorial() {
@@ -1183,35 +1246,25 @@
           intro.setOptions({
             steps: [
               {
+                element: document.querySelector("#searchTerm"),
+                intro:
+                  'Escribe tus términos de búsqueda. Para mayor precisión, usa descriptores MeSH que puedes consultar en <a href="https://www.ncbi.nlm.nih.gov/mesh" target="_blank" style="color: #0e04c8; text-decoration: underline;">MeSH Database</a>.',
+                position: "top",
+              },
+              {
                 element: document.querySelector(".filters-section"),
                 intro:
-                  "Aquí encontrarás tres categorías de filtros: Metodología, Enfoque Clínico y Ámbito/Población. Cada filtro aplica términos MeSH y operadores booleanos específicos para refinar tu búsqueda.",
+                  "Aquí encontrarás tres categorías de filtros: Metodología, Enfoque Clínico y Ámbito/Población. Cada categoría tiene su propio operador booleano para combinar los filtros dentro de ella.",
                 position: "right",
               },
               {
-                element: document.querySelector("#searchTerm"),
+                // Explicación del operador booleano por categoría
+                element: document.querySelector(".operator-selector"),
                 intro:
-                  'Escribe tus términos de búsqueda. Para mayor precisión, usa descriptores MeSH que puedes consultar en <a href="https://www.ncbi.nlm.nih.gov/mesh" target="_blank" style="color: #0e04c8; text-decoration: underline;">MeSH Database</a>. Los términos se combinarán automáticamente con los filtros seleccionados.',
-                position: "top",
+                  "Cada categoría tiene su propio operador booleano: OR amplía resultados (más sensible), AND los restringe (más específico). Puedes combinar diferentes operadores en diferentes categorías.",
+                position: "left",
               },
-              {
-                element: document.querySelector("#dateRange"),
-                intro:
-                  "Filtra resultados por fecha: 7 días (muy reciente), 30 días (último mes), 6 meses, 1 año o 5 años. Ajuste según la actualización necesaria de la evidencia.",
-                position: "top",
-              },
-              {
-                element: document.querySelector("#sortMode"),
-                intro:
-                  "Elige cómo ordenar los resultados: 'Por fecha' muestra los más recientes primero, 'Best match' ordena por relevancia según el algoritmo de PubMed.",
-                position: "bottom",
-              },
-              {
-                element: document.querySelector("#internalOperator"),
-                intro:
-                  "Selecciona el operador booleano para combinar filtros de la misma categoría: 'OR' amplía resultados (más sensible), 'AND' los restringe (más específico).",
-                position: "bottom",
-              },
+
               {
                 element: document.querySelector(".versions-toggle"),
                 intro:
@@ -1219,15 +1272,27 @@
                 position: "left",
               },
               {
+                element: document.querySelector("#dateRange"),
+                intro:
+                  "Filtra resultados por fecha: 7 días (muy reciente), 30 días (último mes), 6 meses, 1 año o 5 años.",
+                position: "top",
+              },
+              {
+                element: document.querySelector("#sortMode"),
+                intro:
+                  "'Por fecha' muestra los más recientes primero, 'Best match' ordena por relevancia según el algoritmo de PubMed.",
+                position: "bottom",
+              },
+              {
                 element: document.querySelector("#searchButton"),
                 intro:
-                  "Lanza la búsqueda en PubMed con todos los filtros seleccionados. Se abrirá en una nueva pestaña con los resultados ya filtrados.",
+                  "Lanza la búsqueda en PubMed con todos los filtros seleccionados. Se abrirá en una nueva pestaña.",
                 position: "left",
               },
               {
                 element: document.querySelector("#finalQuery"),
                 intro:
-                  "Aquí verás la estrategia de búsqueda completa que se enviará a PubMed, incluyendo todos los filtros y operadores seleccionados.",
+                  "Aquí verás la estrategia de búsqueda completa que combina tus términos con los filtros seleccionados usando los operadores booleanos específicos de cada categoría.",
                 position: "top",
               },
             ],
@@ -1242,12 +1307,15 @@
             scrollToElement: true,
             scrollPadding: 1,
           });
+
           intro.oncomplete(function () {
             localStorage.setItem("tutorial_visto", "true");
           });
+
           intro.onexit(function () {
             localStorage.setItem("tutorial_visto", "true");
           });
+
           intro.start();
         }
 
