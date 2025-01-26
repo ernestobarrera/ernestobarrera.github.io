@@ -1019,456 +1019,473 @@ filtros estructurados para profesionales sanitarios
     <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
 
     <script>
-          document.addEventListener("DOMContentLoaded", function () {
-            // 1. Variables globales
-            var searchTerm = document.getElementById("searchTerm");
-            var searchButton = document.getElementById("searchButton");
-            var resetButton = document.getElementById("resetButton");
-            var filterCount = document.getElementById("filterCount");
-            var finalQueryBox = document.getElementById("finalQuery");
-            var dateRange = document.getElementById("dateRange");
-            var sortMode = document.getElementById("sortMode");
-            var internalOperator = document.getElementById("internalOperator");
+      document.addEventListener("DOMContentLoaded", function () {
+        // 1. Variables globales
+        var searchTerm = document.getElementById("searchTerm");
+        var searchButton = document.getElementById("searchButton");
+        var resetButton = document.getElementById("resetButton");
+        var filterCount = document.getElementById("filterCount");
+        var finalQueryBox = document.getElementById("finalQuery");
+        var dateRange = document.getElementById("dateRange");
+        var sortMode = document.getElementById("sortMode");
+        var internalOperator = document.getElementById("internalOperator");
 
-            var activeFilters = new Set();
-            var filterMap = {};
-            var filterTooltips = {};
+        var activeFilters = new Set();
+        var filterMap = {};
+        var filterTooltips = {};
 
-            // 2. Configuración de categorías
-            var categories = {
-              methodology: [
-                "mbe",
-                "gpc",
-                "metaanalysis",
-                "qualitative",
-                "clinical_rules_sensible",
-                "clinical_rules_especifico",
-                "horizon",
-                "clinical_rules_ap",
-              ],
-              clinical: [
-                "diagnosis_sensible",
-                "diagnosis_especifico",
-                "etiology_sensible",
-                "etiology_especifico",
-                "prognosis_sensible",
-                "prognosis_especifico",
-                "treatment_sensible",
-                "treatment_especifico",
-                "predictors_sensible",
-                "predictors_especifico",
-                "surgery_ae",
-                "devices_ae",
-                "drugs_ae",
-                "car_t",
-                "deprescription",
-                "simulation_clinical",
-              ],
-              scope: [
-                "ai_sensible",
-                "ai_especifico",
-                "palliative_sensible",
-                "palliative_especifico",
-                "primary_sensible",
-                "primary_especifico",
-                "safety_sensible",
-                "safety_especifico",
-                "pearls",
-                "perspective",
-                "nursing",
-                "humans",
-                "geriatrics_sensible",
-                "geriatrics_especifico",
-                "pediatrics",
-                "adults",
-                "ocde",
-                "spanish",
-                "economic_sensible",
-                "economic_especifico",
-              ],
-            };
+        // 2. Configuración de categorías
+        var categories = {
+          methodology: [
+            "mbe",
+            "gpc",
+            "metaanalysis",
+            "qualitative",
+            "clinical_rules_sensible",
+            "clinical_rules_especifico",
+            "horizon",
+            "clinical_rules_ap",
+          ],
+          clinical: [
+            "diagnosis_sensible",
+            "diagnosis_especifico",
+            "etiology_sensible",
+            "etiology_especifico",
+            "prognosis_sensible",
+            "prognosis_especifico",
+            "treatment_sensible",
+            "treatment_especifico",
+            "predictors_sensible",
+            "predictors_especifico",
+            "surgery_ae",
+            "devices_ae",
+            "drugs_ae",
+            "car_t",
+            "deprescription",
+            "simulation_clinical",
+          ],
+          scope: [
+            "ai_sensible",
+            "ai_especifico",
+            "palliative_sensible",
+            "palliative_especifico",
+            "primary_sensible",
+            "primary_especifico",
+            "safety_sensible",
+            "safety_especifico",
+            "pearls",
+            "perspective",
+            "nursing",
+            "humans",
+            "geriatrics_sensible",
+            "geriatrics_especifico",
+            "pediatrics",
+            "adults",
+            "ocde",
+            "spanish",
+            "economic_sensible",
+            "economic_especifico",
+          ],
+        };
 
-            // 3. Funciones de manejo de metadata y tooltips
-            function formatTooltipContent(metadata) {
-              const parts = [];
+        // 3. Funciones de manejo de metadata y tooltips
+        function formatTooltipContent(metadata) {
+          const parts = [];
 
-              if (metadata.validation.metrics.sensitivity) {
-          parts.push(`S: ${metadata.validation.metrics.sensitivity}%`);
-          parts.push(`E: ${metadata.validation.metrics.specificity}%`);
-        }
-
-         // Añadimos la precisión si existe
-      if (metadata.validation.metrics.precision) {
-        parts.push(`P: ${metadata.validation.metrics.precision}%`);
-      }
-
-        // Para filtros con versiones sensible/específica
-        else if (metadata.validation.metrics.sensitive) {
-          parts.push('Versión Sensible:');
-          parts.push(`S: ${metadata.validation.metrics.sensitive.sensitivity}%`);
-          parts.push(`E: ${metadata.validation.metrics.sensitive.specificity}%`);
-          parts.push('\nVersión Específica:');
-          parts.push(`S: ${metadata.validation.metrics.specific.sensitivity}%`);
-          parts.push(`E: ${metadata.validation.metrics.specific.specificity}%`);
-        }
-      }
-
-              if (metadata.validation?.reference) {
-                parts.push(`\nFuente: ${metadata.validation.reference}`);
+          if (metadata.validation?.metrics) {
+            // Para filtros con versión única
+            if ("sensitivity" in metadata.validation.metrics) {
+              parts.push(`S: ${metadata.validation.metrics.sensitivity}%`);
+              parts.push(`E: ${metadata.validation.metrics.specificity}%`);
+              if ("precision" in metadata.validation.metrics) {
+                parts.push(`P: ${metadata.validation.metrics.precision}%`);
               }
-
-              return parts.join(" | ");
             }
-
-            function cargarFiltros() {
-              console.log("Iniciando carga de filtros..."); // Debugging
-              var promises = [];
-              Object.keys(categories).forEach(function (cat) {
-                categories[cat].forEach(function (id) {
-                  var url =
-                    "https://ernestobarrera.github.io/pubmed-filters/filters/" +
-                    cat +
-                    "/" +
-                    id +
-                    ".txt";
-                  console.log("Cargando filtro:", url); // Debugging
-                  var prom = fetch(url)
-                    .then(function (r) {
-                      return r.ok ? r.text() : "";
-                    })
-                    .then(function (txt) {
-                      // Separar contenido del filtro y metadatos
-                      const [filter, metadataStr] = txt.split(
-                        "@@@FILTER_METADATA@@@"
-                      );
-
-                      // Procesar solo el contenido del filtro, ignorando líneas que empiezan con "#"
-                      const cleanedFilter = filter
-                        .split("\n")
-                        .filter((line) => !line.trim().startsWith("#"))
-                        .join("\n");
-
-                      filterMap[id] = cleanedFilter.trim(); // Guardar el filtro limpio
-
-                      // Parsear los metadatos si existen
-                      if (metadataStr) {
-                        try {
-                          const metadata = JSON.parse(metadataStr.trim());
-                          const tooltipContent = formatTooltipContent(metadata);
-                          filterTooltips[id] = tooltipContent;
-                        } catch (e) {
-                          console.warn(`Error parseando metadata para ${id}:`, e);
-                        }
-                      }
-                    })
-                    .catch(function (error) {
-                      console.error("Error cargando filtro:", url, error); // Debugging
-                      filterMap[id] = ""; // Si falla, asegura que el filtro no existe
-                    });
-                  promises.push(prom);
-                });
-              });
-              return Promise.all(promises);
+            // Para filtros con versiones sensible/específica
+            else if ("sensitive" in metadata.validation.metrics) {
+              parts.push("Versión Sensible:");
+              parts.push(
+                `S: ${metadata.validation.metrics.sensitive.sensitivity}%`
+              );
+              parts.push(
+                `E: ${metadata.validation.metrics.sensitive.specificity}%`
+              );
+              if ("precision" in metadata.validation.metrics.sensitive) {
+                parts.push(
+                  `P: ${metadata.validation.metrics.sensitive.precision}%`
+                );
+              }
+              parts.push("\nVersión Específica:");
+              parts.push(
+                `S: ${metadata.validation.metrics.specific.sensitivity}%`
+              );
+              parts.push(
+                `E: ${metadata.validation.metrics.specific.specificity}%`
+              );
+              if ("precision" in metadata.validation.metrics.specific) {
+                parts.push(
+                  `P: ${metadata.validation.metrics.specific.precision}%`
+                );
+              }
             }
+          }
 
-            // 4. Inicialización de tooltips
-            cargarFiltros().then(() => {
-              console.log("Filtros cargados, inicializando tooltips..."); // Debugging
-              document
-                .querySelectorAll(".filter-button")
-                .forEach(function (button) {
-                  const id = button.dataset.type || button.dataset.base;
-                  if (filterTooltips[id]) {
-                    console.log(
-                      "Añadiendo tooltip a:",
-                      id,
-                      "con contenido:",
-                      filterTooltips[id]
-                    ); // Debugging
-                    button.setAttribute("data-tippy-content", filterTooltips[id]);
-                    // Inicializar tippy individualmente para cada botón
-                    tippy(button, {
-                      content: filterTooltips[id],
-                      placement: "top",
-                      arrow: true,
-                      theme: "custom",
-                      animation: "shift-away",
-                      delay: [200, 0],
-                      maxWidth: 300,
-                    });
-                  }
-                });
-            });
+          if (metadata.validation?.reference) {
+            parts.push(`\nFuente: ${metadata.validation.reference}`);
+          }
 
-            // 5. Event Listeners básicos
-            ["input", "change"].forEach((event) => {
-              searchTerm.addEventListener(event, mostrarQueryFinal);
-              dateRange.addEventListener(event, mostrarQueryFinal);
-              sortMode.addEventListener(event, mostrarQueryFinal);
-            });
+          return parts.join(" | ");
+        }
 
-            // 6. Manejo de filtros simples
-            document
-              .querySelectorAll(".filter-button:not(.with-toggle)")
-              .forEach(function (button) {
-                button.addEventListener("click", function () {
-                  button.classList.toggle("active");
-                  var filterType = button.dataset.type;
-                  if (filterType) {
-                    if (button.classList.contains("active")) {
-                      activeFilters.add(filterType);
-                    } else {
-                      activeFilters.delete(filterType);
-                    }
-                    filterCount.textContent = activeFilters.size;
-                    mostrarQueryFinal();
-                  }
-                });
-              });
-
-            // 7. Manejo de filtros con toggle
-            document
-              .querySelectorAll(".filter-button.with-toggle")
-              .forEach(function (btn) {
-                var baseId = btn.dataset.base;
-                btn.addEventListener("click", function (e) {
-                  if (
-                    e.target.tagName === "INPUT" ||
-                    e.target.closest(".versions-toggle")
-                  ) {
-                    return;
-                  }
-                  btn.classList.toggle("active");
-                  var selectedRadio = btn.querySelector(
-                    'input[type="radio"]:checked'
+        function cargarFiltros() {
+          console.log("Iniciando carga de filtros..."); // Debugging
+          var promises = [];
+          Object.keys(categories).forEach(function (cat) {
+            categories[cat].forEach(function (id) {
+              var url =
+                "https://ernestobarrera.github.io/pubmed-filters/filters/" +
+                cat +
+                "/" +
+                id +
+                ".txt";
+              console.log("Cargando filtro:", url); // Debugging
+              var prom = fetch(url)
+                .then(function (r) {
+                  return r.ok ? r.text() : "";
+                })
+                .then(function (txt) {
+                  // Separar contenido del filtro y metadatos
+                  const [filter, metadataStr] = txt.split(
+                    "@@@FILTER_METADATA@@@"
                   );
-                  var filterType = baseId + "_" + selectedRadio.value;
-                  if (btn.classList.contains("active")) {
-                    activeFilters.add(filterType);
-                  } else {
-                    activeFilters.delete(filterType);
+
+                  // Procesar solo el contenido del filtro, ignorando líneas que empiezan con "#"
+                  const cleanedFilter = filter
+                    .split("\n")
+                    .filter((line) => !line.trim().startsWith("#"))
+                    .join("\n");
+
+                  filterMap[id] = cleanedFilter.trim(); // Guardar el filtro limpio
+
+                  // Parsear los metadatos si existen
+                  if (metadataStr) {
+                    try {
+                      const metadata = JSON.parse(metadataStr.trim());
+                      const tooltipContent = formatTooltipContent(metadata);
+                      filterTooltips[id] = tooltipContent;
+                    } catch (e) {
+                      console.warn(`Error parseando metadata para ${id}:`, e);
+                    }
                   }
-                  filterCount.textContent = activeFilters.size;
-                  mostrarQueryFinal();
+                })
+                .catch(function (error) {
+                  console.error("Error cargando filtro:", url, error); // Debugging
+                  filterMap[id] = ""; // Si falla, asegura que el filtro no existe
                 });
-                var radios = btn.querySelectorAll('input[type="radio"]');
-                radios.forEach(function (radio) {
-                  radio.addEventListener("change", function () {
-                    if (!btn.classList.contains("active")) return;
-                    var oldType =
-                      baseId +
-                      "_" +
-                      (radio.value === "sensible" ? "especifico" : "sensible");
-                    var newType = baseId + "_" + radio.value;
-                    activeFilters.delete(oldType);
-                    activeFilters.add(newType);
-                    filterCount.textContent = activeFilters.size;
-                    mostrarQueryFinal();
-                  });
+              promises.push(prom);
+            });
+          });
+          return Promise.all(promises);
+        }
+
+        // 4. Inicialización de tooltips
+        cargarFiltros().then(() => {
+          console.log("Filtros cargados, inicializando tooltips..."); // Debugging
+          document
+            .querySelectorAll(".filter-button")
+            .forEach(function (button) {
+              const id = button.dataset.type || button.dataset.base;
+              if (filterTooltips[id]) {
+                console.log(
+                  "Añadiendo tooltip a:",
+                  id,
+                  "con contenido:",
+                  filterTooltips[id]
+                ); // Debugging
+                button.setAttribute("data-tippy-content", filterTooltips[id]);
+                // Inicializar tippy individualmente para cada botón
+                tippy(button, {
+                  content: filterTooltips[id],
+                  placement: "top",
+                  arrow: true,
+                  theme: "custom",
+                  animation: "shift-away",
+                  delay: [200, 0],
+                  maxWidth: 300,
                 });
-              });
-
-            // 8. Configuración de operadores por categoría
-            const categoryOperators = {
-              methodology: "OR",
-              clinical: "OR",
-              scope: "OR",
-            };
-
-            // 9. Funciones de construcción de consultas
-            function constructQuery(term) {
-              if (!term && activeFilters.size === 0) return "";
-
-              let query = term;
-
-              Object.keys(categories).forEach(function (cat) {
-                const operator = categoryOperators[cat];
-                const activeInCat = categories[cat]
-                  .filter((f) => activeFilters.has(f))
-                  .map((f) => filterMap[f] || "")
-                  .filter((q) => q !== "");
-
-                if (activeInCat.length > 0) {
-                  const notFilters = activeInCat.filter((f) => /^NOT/.test(f));
-                  const regularFilters = activeInCat.filter((f) => !/^NOT/.test(f));
-
-                  if (regularFilters.length > 0) {
-                    const categoryQuery = `(${regularFilters.join(
-                      ` ${operator} `
-                    )})`;
-                    query = query
-                      ? `(${query}) AND ${categoryQuery}`
-                      : categoryQuery;
-                  }
-
-                  notFilters.forEach((filter) => {
-                    query = query ? `(${query}) ${filter}` : filter;
-                  });
-                }
-              });
-
-              if (dateRange.value) {
-                const dateFilter = `("last ${dateRange.value} days"[dp])`;
-                query = query ? `(${query}) AND ${dateFilter}` : dateFilter;
               }
+            });
+        });
 
-              return query.trim();
-            }
+        // 5. Event Listeners básicos
+        ["input", "change"].forEach((event) => {
+          searchTerm.addEventListener(event, mostrarQueryFinal);
+          dateRange.addEventListener(event, mostrarQueryFinal);
+          sortMode.addEventListener(event, mostrarQueryFinal);
+        });
 
-            function mostrarQueryFinal() {
-              var built = constructQuery(searchTerm.value.trim());
-              finalQueryBox.textContent = built;
-            }
+        // 6. Manejo de filtros simples
+        document
+          .querySelectorAll(".filter-button:not(.with-toggle)")
+          .forEach(function (button) {
+            button.addEventListener("click", function () {
+              button.classList.toggle("active");
+              var filterType = button.dataset.type;
+              if (filterType) {
+                if (button.classList.contains("active")) {
+                  activeFilters.add(filterType);
+                } else {
+                  activeFilters.delete(filterType);
+                }
+                filterCount.textContent = activeFilters.size;
+                mostrarQueryFinal();
+              }
+            });
+          });
 
-            function hacerBusqueda() {
-              var term = searchTerm.value.trim();
-              var finalQ = constructQuery(term);
-              if (!finalQ) {
-                alert("Por favor, introduce un término o selecciona algún filtro.");
+        // 7. Manejo de filtros con toggle
+        document
+          .querySelectorAll(".filter-button.with-toggle")
+          .forEach(function (btn) {
+            var baseId = btn.dataset.base;
+            btn.addEventListener("click", function (e) {
+              if (
+                e.target.tagName === "INPUT" ||
+                e.target.closest(".versions-toggle")
+              ) {
                 return;
               }
-              var url =
-                "https://pubmed.ncbi.nlm.nih.gov/?term=" +
-                encodeURIComponent(finalQ);
-              if (sortMode.value === "date") {
-                url += "&sort=date";
+              btn.classList.toggle("active");
+              var selectedRadio = btn.querySelector(
+                'input[type="radio"]:checked'
+              );
+              var filterType = baseId + "_" + selectedRadio.value;
+              if (btn.classList.contains("active")) {
+                activeFilters.add(filterType);
+              } else {
+                activeFilters.delete(filterType);
               }
-              url += "&size=50";
-              window.open(url, "_blank");
-            }
-
-            // 10. Event listeners para búsqueda
-            searchButton.addEventListener("click", hacerBusqueda);
-            searchTerm.addEventListener("keypress", function (e) {
-              if (e.key === "Enter") {
-                hacerBusqueda();
-              }
-            });
-
-            // 11. Event listener para reset
-            resetButton.addEventListener("click", function () {
-              activeFilters.clear();
-              filterCount.textContent = 0;
-              searchTerm.value = "";
-              dateRange.value = "";
-              sortMode.value = "date";
-
-              document.querySelectorAll(".category-operator").forEach((select) => {
-                select.value = "OR";
-                categoryOperators[select.dataset.category] = "OR";
-              });
-
-              document.querySelectorAll(".filter-button").forEach(function (b) {
-                b.classList.remove("active");
-              });
-
-              document
-                .querySelectorAll('.versions-toggle input[type="radio"]')
-                .forEach(function (r) {
-                  if (r.value === "sensible") {
-                    r.checked = true;
-                  }
-                });
-
-              finalQueryBox.textContent = "";
+              filterCount.textContent = activeFilters.size;
               mostrarQueryFinal();
             });
-
-            // 12. Operadores de categoría
-            document.querySelectorAll(".category-operator").forEach((select) => {
-              select.addEventListener("change", function () {
-                categoryOperators[this.dataset.category] = this.value;
+            var radios = btn.querySelectorAll('input[type="radio"]');
+            radios.forEach(function (radio) {
+              radio.addEventListener("change", function () {
+                if (!btn.classList.contains("active")) return;
+                var oldType =
+                  baseId +
+                  "_" +
+                  (radio.value === "sensible" ? "especifico" : "sensible");
+                var newType = baseId + "_" + radio.value;
+                activeFilters.delete(oldType);
+                activeFilters.add(newType);
+                filterCount.textContent = activeFilters.size;
                 mostrarQueryFinal();
               });
             });
+          });
 
-            // 13. Tutorial
-            function iniciarTutorial() {
-              var intro = introJs();
-              intro.setOptions({
-                steps: [
-                  {
-                    element: document.querySelector("#searchTerm"),
-                    intro:
-                      'Escribe tus términos de búsqueda. Para mayor precisión, usa descriptores MeSH que puedes consultar en <a href="https://www.ncbi.nlm.nih.gov/mesh" target="_blank" style="color: #0e04c8; text-decoration: underline;">MeSH Database</a>.',
-                    position: "top",
-                  },
-                  {
-                    element: document.querySelector(".filters-section"),
-                    intro:
-                      "Aquí encontrarás tres categorías de filtros: Metodología, Enfoque Clínico y Ámbito/Población. Cada categoría tiene su propio operador booleano para combinar los filtros dentro de ella.",
-                    position: "right",
-                  },
-                  {
-                    element: document.querySelector(".operator-selector"),
-                    intro:
-                      "Cada categoría tiene su propio operador booleano: OR amplía resultados (más sensible), AND los restringe (más específico). Puedes combinar diferentes operadores en diferentes categorías.",
-                    position: "left",
-                  },
-                  {
-                    element: document.querySelector(".versions-toggle"),
-                    intro:
-                      "Algunos filtros tienen versiones Sensible (S) o Específica (E). Sensible encuentra más resultados pero menos precisos, Específica encuentra menos pero más relevantes.",
-                    position: "left",
-                  },
-                  {
-                    element: document.querySelector("#dateRange"),
-                    intro:
-                      "Filtra resultados por fecha: 7 días (muy reciente), 30 días (último mes), 6 meses, 1 año o 5 años.",
-                    position: "top",
-                  },
-                  {
-                    element: document.querySelector("#sortMode"),
-                    intro:
-                      "'Por fecha' muestra los más recientes primero, 'Best match' ordena por relevancia según el algoritmo de PubMed.",
-                    position: "bottom",
-                  },
-                  {
-                    element: document.querySelector("#searchButton"),
-                    intro:
-                      "Lanza la búsqueda en PubMed con todos los filtros seleccionados. Se abrirá en una nueva pestaña.",
-                    position: "left",
-                  },
-                  {
-                    element: document.querySelector("#finalQuery"),
-                    intro:
-                      "Aquí verás la estrategia de búsqueda completa que combina tus términos con los filtros seleccionados usando los operadores booleanos específicos de cada categoría.",
-                    position: "top",
-                  },
-                ],
-                overlayOpacity: 0.9,
-                highlightClass: "myHighlight",
-                disableInteraction: true,
-                skipLabel: "Saltar",
-                nextLabel: "Siguiente",
-                prevLabel: "Anterior",
-                doneLabel: "Hecho",
-                showStepNumbers: false,
-                scrollToElement: true,
-                scrollPadding: 1,
+        // 8. Configuración de operadores por categoría
+        const categoryOperators = {
+          methodology: "OR",
+          clinical: "OR",
+          scope: "OR",
+        };
+
+        // 9. Funciones de construcción de consultas
+        function constructQuery(term) {
+          if (!term && activeFilters.size === 0) return "";
+
+          let query = term;
+
+          Object.keys(categories).forEach(function (cat) {
+            const operator = categoryOperators[cat];
+            const activeInCat = categories[cat]
+              .filter((f) => activeFilters.has(f))
+              .map((f) => filterMap[f] || "")
+              .filter((q) => q !== "");
+
+            if (activeInCat.length > 0) {
+              const notFilters = activeInCat.filter((f) => /^NOT/.test(f));
+              const regularFilters = activeInCat.filter((f) => !/^NOT/.test(f));
+
+              if (regularFilters.length > 0) {
+                const categoryQuery = `(${regularFilters.join(
+                  ` ${operator} `
+                )})`;
+                query = query
+                  ? `(${query}) AND ${categoryQuery}`
+                  : categoryQuery;
+              }
+
+              notFilters.forEach((filter) => {
+                query = query ? `(${query}) ${filter}` : filter;
               });
-
-              intro.oncomplete(function () {
-                localStorage.setItem("tutorial_visto", "true");
-              });
-
-              intro.onexit(function () {
-                localStorage.setItem("tutorial_visto", "true");
-              });
-
-              intro.start();
-            }
-
-            var tutorialVisto = localStorage.getItem("tutorial_visto");
-            if (!tutorialVisto) {
-              iniciarTutorial();
-            }
-
-            var startTutorialBtn = document.getElementById("startTutorialBtn");
-            if (startTutorialBtn) {
-              startTutorialBtn.addEventListener("click", iniciarTutorial);
             }
           });
+
+          if (dateRange.value) {
+            const dateFilter = `("last ${dateRange.value} days"[dp])`;
+            query = query ? `(${query}) AND ${dateFilter}` : dateFilter;
+          }
+
+          return query.trim();
+        }
+
+        function mostrarQueryFinal() {
+          var built = constructQuery(searchTerm.value.trim());
+          finalQueryBox.textContent = built;
+        }
+
+        function hacerBusqueda() {
+          var term = searchTerm.value.trim();
+          var finalQ = constructQuery(term);
+          if (!finalQ) {
+            alert("Por favor, introduce un término o selecciona algún filtro.");
+            return;
+          }
+          var url =
+            "https://pubmed.ncbi.nlm.nih.gov/?term=" +
+            encodeURIComponent(finalQ);
+          if (sortMode.value === "date") {
+            url += "&sort=date";
+          }
+          url += "&size=50";
+          window.open(url, "_blank");
+        }
+
+        // 10. Event listeners para búsqueda
+        searchButton.addEventListener("click", hacerBusqueda);
+        searchTerm.addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            hacerBusqueda();
+          }
+        });
+
+        // 11. Event listener para reset
+        resetButton.addEventListener("click", function () {
+          activeFilters.clear();
+          filterCount.textContent = 0;
+          searchTerm.value = "";
+          dateRange.value = "";
+          sortMode.value = "date";
+
+          document.querySelectorAll(".category-operator").forEach((select) => {
+            select.value = "OR";
+            categoryOperators[select.dataset.category] = "OR";
+          });
+
+          document.querySelectorAll(".filter-button").forEach(function (b) {
+            b.classList.remove("active");
+          });
+
+          document
+            .querySelectorAll('.versions-toggle input[type="radio"]')
+            .forEach(function (r) {
+              if (r.value === "sensible") {
+                r.checked = true;
+              }
+            });
+
+          finalQueryBox.textContent = "";
+          mostrarQueryFinal();
+        });
+
+        // 12. Operadores de categoría
+        document.querySelectorAll(".category-operator").forEach((select) => {
+          select.addEventListener("change", function () {
+            categoryOperators[this.dataset.category] = this.value;
+            mostrarQueryFinal();
+          });
+        });
+
+        // 13. Tutorial
+        function iniciarTutorial() {
+          var intro = introJs();
+          intro.setOptions({
+            steps: [
+              {
+                element: document.querySelector("#searchTerm"),
+                intro:
+                  'Escribe tus términos de búsqueda. Para mayor precisión, usa descriptores MeSH que puedes consultar en <a href="https://www.ncbi.nlm.nih.gov/mesh" target="_blank" style="color: #0e04c8; text-decoration: underline;">MeSH Database</a>.',
+                position: "top",
+              },
+              {
+                element: document.querySelector(".filters-section"),
+                intro:
+                  "Aquí encontrarás tres categorías de filtros: Metodología, Enfoque Clínico y Ámbito/Población. Cada categoría tiene su propio operador booleano para combinar los filtros dentro de ella.",
+                position: "right",
+              },
+              {
+                element: document.querySelector(".operator-selector"),
+                intro:
+                  "Cada categoría tiene su propio operador booleano: OR amplía resultados (más sensible), AND los restringe (más específico). Puedes combinar diferentes operadores en diferentes categorías.",
+                position: "left",
+              },
+              {
+                element: document.querySelector(".versions-toggle"),
+                intro:
+                  "Algunos filtros tienen versiones Sensible (S) o Específica (E). Sensible encuentra más resultados pero menos precisos, Específica encuentra menos pero más relevantes.",
+                position: "left",
+              },
+              {
+                element: document.querySelector("#dateRange"),
+                intro:
+                  "Filtra resultados por fecha: 7 días (muy reciente), 30 días (último mes), 6 meses, 1 año o 5 años.",
+                position: "top",
+              },
+              {
+                element: document.querySelector("#sortMode"),
+                intro:
+                  "'Por fecha' muestra los más recientes primero, 'Best match' ordena por relevancia según el algoritmo de PubMed.",
+                position: "bottom",
+              },
+              {
+                element: document.querySelector("#searchButton"),
+                intro:
+                  "Lanza la búsqueda en PubMed con todos los filtros seleccionados. Se abrirá en una nueva pestaña.",
+                position: "left",
+              },
+              {
+                element: document.querySelector("#finalQuery"),
+                intro:
+                  "Aquí verás la estrategia de búsqueda completa que combina tus términos con los filtros seleccionados usando los operadores booleanos específicos de cada categoría.",
+                position: "top",
+              },
+            ],
+            overlayOpacity: 0.9,
+            highlightClass: "myHighlight",
+            disableInteraction: true,
+            skipLabel: "Saltar",
+            nextLabel: "Siguiente",
+            prevLabel: "Anterior",
+            doneLabel: "Hecho",
+            showStepNumbers: false,
+            scrollToElement: true,
+            scrollPadding: 1,
+          });
+
+          intro.oncomplete(function () {
+            localStorage.setItem("tutorial_visto", "true");
+          });
+
+          intro.onexit(function () {
+            localStorage.setItem("tutorial_visto", "true");
+          });
+
+          intro.start();
+        }
+
+        var tutorialVisto = localStorage.getItem("tutorial_visto");
+        if (!tutorialVisto) {
+          iniciarTutorial();
+        }
+
+        var startTutorialBtn = document.getElementById("startTutorialBtn");
+        if (startTutorialBtn) {
+          startTutorialBtn.addEventListener("click", iniciarTutorial);
+        }
+      });
     </script>
 
     <script
