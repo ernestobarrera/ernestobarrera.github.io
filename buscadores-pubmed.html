@@ -417,7 +417,47 @@ filtros estructurados para profesionales sanitarios
         border-color: var(--accent-color);
         box-shadow: 0 0 0 1px var(--accent-color);
       }
+      /* tooltips metadatos */
+      /* Estilos base para tippy */
+      .tippy-box {
+        background-color: #333 !important;
+        color: white !important;
+        padding: 5px 10px !important;
+        border-radius: 4px !important;
+        font-size: 14px !important;
+      }
+
+      .tippy-arrow {
+        color: #333 !important;
+      }
+
+      /* Asegurarnos que el z-index es suficientemente alto */
+      .tippy-box[data-animation="fade"][data-state="visible"] {
+        z-index: 9999 !important;
+      }
+      .tippy-box[data-theme~="custom"] {
+        background-color: var(--card-bg, #2a3b4d) !important;
+        border: 1px solid var(--accent-color, #ffd700) !important;
+        color: var(--text-primary, #fff) !important;
+        font-size: 0.85rem !important;
+        z-index: 9999 !important;
+      }
+
+      .tippy-box[data-theme~="custom"][data-placement^="top"]
+        > .tippy-arrow::before {
+        border-top-color: var(--accent-color, #ffd700) !important;
+      }
+
+      .tippy-box[data-theme~="custom"] .tippy-content {
+        white-space: pre-line !important;
+        line-height: 1.4 !important;
+        padding: 0.5rem 0.75rem !important;
+      }
     </style>
+    <!-- libreria tooltip con metadatos del filtro -->
+    <!-- Primero los archivos de tippy -->
+    <script src="https://unpkg.com/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://unpkg.com/tippy.js@6.3.7/dist/tippy.umd.min.js"></script>
   </head>
   <body>
     <include src="header.html"></include>
@@ -980,6 +1020,7 @@ filtros estructurados para profesionales sanitarios
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        // 1. Variables globales
         var searchTerm = document.getElementById("searchTerm");
         var searchButton = document.getElementById("searchButton");
         var resetButton = document.getElementById("resetButton");
@@ -991,7 +1032,9 @@ filtros estructurados para profesionales sanitarios
 
         var activeFilters = new Set();
         var filterMap = {};
+        var filterTooltips = {};
 
+        // 2. Configuración de categorías
         var categories = {
           methodology: [
             "mbe",
@@ -1045,33 +1088,110 @@ filtros estructurados para profesionales sanitarios
           ],
         };
 
+        // 3. Funciones de manejo de metadata y tooltips
+        function formatTooltipContent(metadata) {
+          const parts = [];
+
+          if (metadata.validation?.metrics) {
+            parts.push(`S: ${metadata.validation.metrics.sensitivity}%`);
+            parts.push(`E: ${metadata.validation.metrics.specificity}%`);
+          }
+
+          if (metadata.validation?.reference) {
+            parts.push(`\nFuente: ${metadata.validation.reference}`);
+          }
+
+          return parts.join(" | ");
+        }
+
         function cargarFiltros() {
+          console.log("Iniciando carga de filtros..."); // Debugging
           var promises = [];
           Object.keys(categories).forEach(function (cat) {
             categories[cat].forEach(function (id) {
-              var url = "/assets/filtros/" + cat + "/" + id + ".txt";
+              var url =
+                "https://ernestobarrera.github.io/pubmed-filters/filters/" +
+                cat +
+                "/" +
+                id +
+                ".txt";
+              console.log("Cargando filtro:", url); // Debugging
               var prom = fetch(url)
                 .then(function (r) {
                   return r.ok ? r.text() : "";
                 })
                 .then(function (txt) {
-                  filterMap[id] = txt.trim();
+                  // Separar contenido del filtro y metadatos
+                  const [filter, metadataStr] = txt.split(
+                    "@@@FILTER_METADATA@@@"
+                  );
+
+                  // Procesar solo el contenido del filtro, ignorando líneas que empiezan con "#"
+                  const cleanedFilter = filter
+                    .split("\n")
+                    .filter((line) => !line.trim().startsWith("#"))
+                    .join("\n");
+
+                  filterMap[id] = cleanedFilter.trim(); // Guardar el filtro limpio
+
+                  // Parsear los metadatos si existen
+                  if (metadataStr) {
+                    try {
+                      const metadata = JSON.parse(metadataStr.trim());
+                      const tooltipContent = formatTooltipContent(metadata);
+                      filterTooltips[id] = tooltipContent;
+                    } catch (e) {
+                      console.warn(`Error parseando metadata para ${id}:`, e);
+                    }
+                  }
                 })
-                .catch(function () {
-                  filterMap[id] = "";
+                .catch(function (error) {
+                  console.error("Error cargando filtro:", url, error); // Debugging
+                  filterMap[id] = ""; // Si falla, asegura que el filtro no existe
                 });
               promises.push(prom);
             });
           });
           return Promise.all(promises);
         }
-        cargarFiltros().then(function () {});
+
+        // 4. Inicialización de tooltips
+        cargarFiltros().then(() => {
+          console.log("Filtros cargados, inicializando tooltips..."); // Debugging
+          document
+            .querySelectorAll(".filter-button")
+            .forEach(function (button) {
+              const id = button.dataset.type || button.dataset.base;
+              if (filterTooltips[id]) {
+                console.log(
+                  "Añadiendo tooltip a:",
+                  id,
+                  "con contenido:",
+                  filterTooltips[id]
+                ); // Debugging
+                button.setAttribute("data-tippy-content", filterTooltips[id]);
+                // Inicializar tippy individualmente para cada botón
+                tippy(button, {
+                  content: filterTooltips[id],
+                  placement: "top",
+                  arrow: true,
+                  theme: "custom",
+                  animation: "shift-away",
+                  delay: [200, 0],
+                  maxWidth: 300,
+                });
+              }
+            });
+        });
+
+        // 5. Event Listeners básicos
         ["input", "change"].forEach((event) => {
           searchTerm.addEventListener(event, mostrarQueryFinal);
           dateRange.addEventListener(event, mostrarQueryFinal);
           sortMode.addEventListener(event, mostrarQueryFinal);
         });
-        /* Manejo de filtros simples */
+
+        // 6. Manejo de filtros simples
         document
           .querySelectorAll(".filter-button:not(.with-toggle)")
           .forEach(function (button) {
@@ -1090,7 +1210,7 @@ filtros estructurados para profesionales sanitarios
             });
           });
 
-        /* Manejo de filtros con toggle */
+        // 7. Manejo de filtros con toggle
         document
           .querySelectorAll(".filter-button.with-toggle")
           .forEach(function (btn) {
@@ -1132,12 +1252,14 @@ filtros estructurados para profesionales sanitarios
             });
           });
 
+        // 8. Configuración de operadores por categoría
         const categoryOperators = {
           methodology: "OR",
           clinical: "OR",
           scope: "OR",
         };
 
+        // 9. Funciones de construcción de consultas
         function constructQuery(term) {
           if (!term && activeFilters.size === 0) return "";
 
@@ -1177,14 +1299,6 @@ filtros estructurados para profesionales sanitarios
           return query.trim();
         }
 
-        // Añadir eventos para los selectores
-        document.querySelectorAll(".category-operator").forEach((select) => {
-          select.addEventListener("change", function () {
-            categoryOperators[this.dataset.category] = this.value;
-            mostrarQueryFinal();
-          });
-        });
-
         function mostrarQueryFinal() {
           var built = constructQuery(searchTerm.value.trim());
           finalQueryBox.textContent = built;
@@ -1200,24 +1314,22 @@ filtros estructurados para profesionales sanitarios
           var url =
             "https://pubmed.ncbi.nlm.nih.gov/?term=" +
             encodeURIComponent(finalQ);
-          /* Control del orden */
           if (sortMode.value === "date") {
             url += "&sort=date";
           }
-          /* Tamaño de la página */
           url += "&size=50";
           window.open(url, "_blank");
         }
 
-        searchButton.addEventListener("click", function () {
-          hacerBusqueda();
-        });
+        // 10. Event listeners para búsqueda
+        searchButton.addEventListener("click", hacerBusqueda);
         searchTerm.addEventListener("keypress", function (e) {
           if (e.key === "Enter") {
             hacerBusqueda();
           }
         });
 
+        // 11. Event listener para reset
         resetButton.addEventListener("click", function () {
           activeFilters.clear();
           filterCount.textContent = 0;
@@ -1225,7 +1337,6 @@ filtros estructurados para profesionales sanitarios
           dateRange.value = "";
           sortMode.value = "date";
 
-          // Reset operadores por categoría
           document.querySelectorAll(".category-operator").forEach((select) => {
             select.value = "OR";
             categoryOperators[select.dataset.category] = "OR";
@@ -1247,6 +1358,15 @@ filtros estructurados para profesionales sanitarios
           mostrarQueryFinal();
         });
 
+        // 12. Operadores de categoría
+        document.querySelectorAll(".category-operator").forEach((select) => {
+          select.addEventListener("change", function () {
+            categoryOperators[this.dataset.category] = this.value;
+            mostrarQueryFinal();
+          });
+        });
+
+        // 13. Tutorial
         function iniciarTutorial() {
           var intro = introJs();
           intro.setOptions({
@@ -1264,13 +1384,11 @@ filtros estructurados para profesionales sanitarios
                 position: "right",
               },
               {
-                // Explicación del operador booleano por categoría
                 element: document.querySelector(".operator-selector"),
                 intro:
                   "Cada categoría tiene su propio operador booleano: OR amplía resultados (más sensible), AND los restringe (más específico). Puedes combinar diferentes operadores en diferentes categorías.",
                 position: "left",
               },
-
               {
                 element: document.querySelector(".versions-toggle"),
                 intro:
@@ -1329,6 +1447,7 @@ filtros estructurados para profesionales sanitarios
         if (!tutorialVisto) {
           iniciarTutorial();
         }
+
         var startTutorialBtn = document.getElementById("startTutorialBtn");
         if (startTutorialBtn) {
           startTutorialBtn.addEventListener("click", iniciarTutorial);
@@ -1350,4 +1469,3 @@ filtros estructurados para profesionales sanitarios
     </script>
   </body>
 </html>
-```
