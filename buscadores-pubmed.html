@@ -975,6 +975,25 @@ filtros estructurados para profesionales sanitarios
               <span id="filterCount" class="filter-count">0</span>
             </div>
             <button
+              id="infoModeToggle"
+              style="
+                margin: 0 0.5rem;
+                padding: 0.4rem 0.8rem;
+                background: var(--card-bg);
+                border: 1px solid var(--accent-color);
+                border-radius: 8px;
+                color: var(--text-primary);
+                font-size: 0.9rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+              "
+            >
+              <i class="fas fa-info-circle"></i>
+              <span>Ver Detalles de Filtros</span>
+            </button>
+            <button
               id="resetButton"
               style="
                 background: linear-gradient(135deg, #777, #555);
@@ -1095,36 +1114,38 @@ filtros estructurados para profesionales sanitarios
           if (metadata.validation?.metrics) {
             // Para filtros con versión única
             if ("sensitivity" in metadata.validation.metrics) {
-              parts.push(`S: ${metadata.validation.metrics.sensitivity}%`);
-              parts.push(`E: ${metadata.validation.metrics.specificity}%`);
+              parts.push(`Sens: ${metadata.validation.metrics.sensitivity}%`);
+              parts.push(`Esp: ${metadata.validation.metrics.specificity}%`);
               if ("precision" in metadata.validation.metrics) {
-                parts.push(`P: ${metadata.validation.metrics.precision}%`);
+                parts.push(
+                  `Precisión: ${metadata.validation.metrics.precision}%`
+                );
               }
             }
             // Para filtros con versiones sensible/específica
             else if ("sensitive" in metadata.validation.metrics) {
               parts.push("Versión Sensible:");
               parts.push(
-                `S: ${metadata.validation.metrics.sensitive.sensitivity}%`
+                `Sens: ${metadata.validation.metrics.sensitive.sensitivity}%`
               );
               parts.push(
-                `E: ${metadata.validation.metrics.sensitive.specificity}%`
+                `Esp: ${metadata.validation.metrics.sensitive.specificity}%`
               );
               if ("precision" in metadata.validation.metrics.sensitive) {
                 parts.push(
-                  `P: ${metadata.validation.metrics.sensitive.precision}%`
+                  `Precisión: ${metadata.validation.metrics.sensitive.precision}%`
                 );
               }
               parts.push("\nVersión Específica:");
               parts.push(
-                `S: ${metadata.validation.metrics.specific.sensitivity}%`
+                `Sens: ${metadata.validation.metrics.specific.sensitivity}%`
               );
               parts.push(
-                `E: ${metadata.validation.metrics.specific.specificity}%`
+                `Esp: ${metadata.validation.metrics.specific.specificity}%`
               );
               if ("precision" in metadata.validation.metrics.specific) {
                 parts.push(
-                  `P: ${metadata.validation.metrics.specific.precision}%`
+                  `Precisión: ${metadata.validation.metrics.specific.precision}%`
                 );
               }
             }
@@ -1190,7 +1211,9 @@ filtros estructurados para profesionales sanitarios
 
         // 4. Inicialización de tooltips
         cargarFiltros().then(() => {
-          console.log("Filtros cargados, inicializando tooltips..."); // Debugging
+          console.log("Filtros cargados, inicializando tooltips...");
+
+          // Crear instancias de tippy pero con trigger manual
           document
             .querySelectorAll(".filter-button")
             .forEach(function (button) {
@@ -1201,9 +1224,8 @@ filtros estructurados para profesionales sanitarios
                   id,
                   "con contenido:",
                   filterTooltips[id]
-                ); // Debugging
+                );
                 button.setAttribute("data-tippy-content", filterTooltips[id]);
-                // Inicializar tippy individualmente para cada botón
                 tippy(button, {
                   content: filterTooltips[id],
                   placement: "top",
@@ -1212,9 +1234,56 @@ filtros estructurados para profesionales sanitarios
                   animation: "shift-away",
                   delay: [200, 0],
                   maxWidth: 300,
+                  trigger: "manual",
                 });
               }
             });
+
+          // Manejar el toggle de información
+          const infoModeToggle = document.getElementById("infoModeToggle");
+          let infoModeActive = false;
+
+          // Definir las funciones de mostrar/ocultar fuera para poder removerlas
+          function showTooltip(event) {
+            const tippyInstance = event.currentTarget._tippy;
+            if (tippyInstance) {
+              tippyInstance.show();
+            }
+          }
+
+          function hideTooltip(event) {
+            const tippyInstance = event.currentTarget._tippy;
+            if (tippyInstance) {
+              tippyInstance.hide();
+            }
+          }
+
+          infoModeToggle.addEventListener("click", () => {
+            infoModeActive = !infoModeActive;
+
+            // Cambiar estilo del botón
+            infoModeToggle.style.background = infoModeActive
+              ? "var(--accent-color)"
+              : "var(--card-bg)";
+            infoModeToggle.style.color = infoModeActive
+              ? "var(--primary-bg)"
+              : "var(--text-primary)";
+
+            // Activar/desactivar tooltips
+            document.querySelectorAll(".filter-button").forEach((button) => {
+              const tippyInstance = button._tippy;
+              if (tippyInstance) {
+                if (infoModeActive) {
+                  button.addEventListener("mouseenter", showTooltip);
+                  button.addEventListener("mouseleave", hideTooltip);
+                } else {
+                  button.removeEventListener("mouseenter", showTooltip);
+                  button.removeEventListener("mouseleave", hideTooltip);
+                  tippyInstance.hide(); // Ocultar tooltip si está visible
+                }
+              }
+            });
+          });
         });
 
         // 5. Event Listeners básicos
@@ -1415,6 +1484,12 @@ filtros estructurados para profesionales sanitarios
                 intro:
                   "Aquí encontrarás tres categorías de filtros: Metodología, Enfoque Clínico y Ámbito/Población. Cada categoría tiene su propio operador booleano para combinar los filtros dentro de ella.",
                 position: "right",
+              },
+              {
+                element: document.querySelector("#infoModeToggle"),
+                intro:
+                  "Activa este botón para ver información detallada sobre cada filtro al pasar el cursor sobre ellos. Incluye la fuente del filtro y sus características específicas.",
+                position: "bottom",
               },
               {
                 element: document.querySelector(".operator-selector"),
