@@ -1213,11 +1213,20 @@ filtros estructurados para profesionales sanitarios
         cargarFiltros().then(() => {
           console.log("Filtros cargados, inicializando tooltips...");
 
-          // Crear instancias de tippy pero con trigger manual
           document
             .querySelectorAll(".filter-button")
             .forEach(function (button) {
-              const id = button.dataset.type || button.dataset.base;
+              let id;
+              if (button.classList.contains("with-toggle")) {
+                // Para botones con toggle, usar el ID base + "_sensible"
+                id = button.dataset.base + "_sensible";
+                console.log("Botón con toggle, usando ID:", id);
+              } else {
+                // Para botones sin toggle, usar el ID tipo
+                id = button.dataset.type;
+                console.log("Botón sin toggle, usando ID:", id);
+              }
+
               if (filterTooltips[id]) {
                 console.log(
                   "Añadiendo tooltip a:",
@@ -1234,8 +1243,13 @@ filtros estructurados para profesionales sanitarios
                   animation: "shift-away",
                   delay: [200, 0],
                   maxWidth: 300,
-                  trigger: "manual",
+                  trigger: "mouseenter",
+                  onShow(instance) {
+                    return infoModeActive;
+                  },
                 });
+              } else {
+                console.log("No se encontró tooltip para:", id);
               }
             });
 
