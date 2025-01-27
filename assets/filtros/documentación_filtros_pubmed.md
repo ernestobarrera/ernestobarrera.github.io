@@ -1,168 +1,163 @@
-Actualizaré la documentación con todos los nuevos elementos que hemos discutido:
-
 # Documentación de Filtros PubMed
 
 ## Estructura del Archivo
 
-Cada archivo de filtro debe seguir una estructura específica con dos partes principales:
-
-### 1. Cabecera de Documentación
+### 1. Formato Base
 
 ```plaintext
-# Filtro: [NOMBRE DEL FILTRO]
-# Autor revisión: @ernestobarrera
-# Fecha: DD-MM-YYYY
-# Descripción: [DESCRIPCIÓN BREVE DEL FILTRO Y SU PROPÓSITO]
-# Referencia completa: [REFERENCIA BIBLIOGRÁFICA COMPLETA INCLUYENDO MODIFICACIONES SI LAS HAY]
-# URL: [URL DE LA REFERENCIA SI EXISTE]
-```
+Filtro: [NOMBRE]
+Autor revisión: @ernestobarrera
+Fecha: DD-MM-YYYY
+Descripción: [DESCRIPCIÓN]
+Referencia completa: [REFERENCIA]
+URL: [URL]
 
-#### Normas para la Cabecera:
-
-- Usar el formato de fecha español (DD-MM-YYYY)
-- Incluir una descripción clara del propósito del filtro
-- La referencia completa debe incluir cualquier modificación realizada
-- La URL es opcional
-
-### 2. Filtro y Metadata
-
-Existen tres plantillas principales según el tipo de filtro:
-
-#### 2.1 Filtro Simple con Métricas:
-
-```plaintext
 [CONTENIDO DEL FILTRO]
 
 @@@FILTER_METADATA@@@
+[JSON METADATA]
+```
+
+### 2. Tipos de Metadata
+
+#### 2.1 Filtro Simple
+
+```json
 {
   "validation": {
     "metrics": {
       "sensitivity": 00.0,
       "specificity": 00.0,
-      "precision": 00.0
+"precision":
     },
-    "reference": "[AUTOR ET AL, TÍTULO ABREVIADO. AÑO]"
+    "reference": "Autor et al. JOURNAL YEAR"
   }
 }
 ```
 
-#### 2.2 Filtro con Versiones Sensible/Específica:
+#### 2.2 Filtro Sensible/Específico
 
-```plaintext
-[CONTENIDO DEL FILTRO]
-
-@@@FILTER_METADATA@@@
+```json
 {
   "validation": {
     "metrics": {
       "sensitive": {
         "sensitivity": 00.0,
         "specificity": 00.0,
-        "precision": 00.0
+"precision":
       },
       "specific": {
         "sensitivity": 00.0,
         "specificity": 00.0,
-        "precision": 00.0
+"precision":
       }
     },
-    "reference": "[AUTOR ET AL, TÍTULO ABREVIADO. AÑO]"
+    "reference": "Autor et al. JOURNAL YEAR"
   }
 }
 ```
 
-#### 2.3 Filtro Sin Métricas:
+#### 2.3 Filtro Sin Métricas
 
-```plaintext
-[CONTENIDO DEL FILTRO]
-
-@@@FILTER_METADATA@@@
+```json
 {
   "validation": {
-    "reference": "[AUTOR ET AL, TÍTULO ABREVIADO. AÑO]"
+    "reference": "Autor et al. JOURNAL YEAR"
   }
 }
 ```
 
-## Gestión de Tooltips
+## Tooltips
 
-### Función de Formateo:
+### Configuración Principal
+
+```javascript
+tippy(button, {
+  content: filterTooltips[id],
+  placement: "top",
+  arrow: true,
+  theme: "custom",
+  animation: "shift-away",
+  delay: [200, 0],
+  maxWidth: 400,
+  allowHTML: true,
+  trigger: "mouseenter",
+  onShow(instance) {
+    return infoModeActive;
+  },
+});
+```
+
+### Función de Formateo
 
 ```javascript
 function formatTooltipContent(metadata) {
   const parts = [];
 
   if (metadata.validation?.metrics) {
-    // Para filtros con versión única
-    if ("sensitivity" in metadata.validation.metrics) {
-      parts.push(`S: ${metadata.validation.metrics.sensitivity}%`);
-      parts.push(`E: ${metadata.validation.metrics.specificity}%`);
-      if ("precision" in metadata.validation.metrics) {
-        parts.push(`P: ${metadata.validation.metrics.precision}%`);
-      }
-    }
-    // Para filtros con versiones sensible/específica
-    else if ("sensitive" in metadata.validation.metrics) {
-      parts.push("Versión Sensible:");
-      parts.push(`S: ${metadata.validation.metrics.sensitive.sensitivity}%`);
-      parts.push(`E: ${metadata.validation.metrics.sensitive.specificity}%`);
-      if ("precision" in metadata.validation.metrics.sensitive) {
-        parts.push(`P: ${metadata.validation.metrics.sensitive.precision}%`);
-      }
-      parts.push("\nVersión Específica:");
-      parts.push(`S: ${metadata.validation.metrics.specific.sensitivity}%`);
-      parts.push(`E: ${metadata.validation.metrics.specific.specificity}%`);
-      if ("precision" in metadata.validation.metrics.specific) {
-        parts.push(`P: ${metadata.validation.metrics.specific.precision}%`);
-      }
+    if ("sensitive" in metadata.validation.metrics) {
+      parts.push("<strong>Versión Sensible:</strong>");
+      parts.push(
+        `<strong>Sens:</strong> ${metadata.validation.metrics.sensitive.sensitivity}% • <strong>Esp:</strong> ${metadata.validation.metrics.sensitive.specificity}%`
+      );
+      parts.push("<strong>Versión Específica:</strong>");
+      parts.push(
+        `<strong>Sens:</strong> ${metadata.validation.metrics.specific.sensitivity}% • <strong>Esp:</strong> ${metadata.validation.metrics.specific.specificity}%`
+      );
+    } else {
+      parts.push(
+        `<strong>Sens:</strong> ${metadata.validation.metrics.sensitivity}% • <strong>Esp:</strong> ${metadata.validation.metrics.specificity}%`
+      );
     }
   }
 
   if (metadata.validation?.reference) {
-    parts.push(`\nFuente: ${metadata.validation.reference}`);
+    parts.push(`\n<strong>Fuente:</strong> ${metadata.validation.reference}`);
   }
 
-  return parts.join(" | ");
+  return parts.join("\n");
 }
 ```
 
-### Consideraciones para Tooltips:
+### Estilos CSS
 
-- Usar el operador `?.` para acceso seguro a propiedades
-- Verificar existencia de propiedades con `'propiedad' in objeto`
-- Manejar correctamente casos sin métricas
-- Mantener formato consistente en la salida
+```css
+.tippy-box[data-theme~="custom"] {
+  background-color: var(--card-bg, #2a3b4d) !important;
+  border: 1px solid var(--accent-color, #ffd700) !important;
+  color: var(--text-primary, #fff) !important;
+  font-size: 0.85rem !important;
+  max-width: 400px !important;
+  z-index: 9999 !important;
+}
 
-## Mantenimiento y Actualización
+.tippy-box[data-theme~="custom"] .tippy-content {
+  white-space: pre-line !important;
+  line-height: 1.5 !important;
+  padding: 0.75rem 1rem !important;
+}
+```
 
-### Al Crear Nuevos Filtros:
+## Lista de Verificación
 
-1. Identificar el tipo de filtro (simple, doble o sin métricas)
-2. Usar la plantilla correspondiente
-3. Verificar formato JSON del metadata
-4. Comprobar funcionamiento del tooltip
+### Nuevo Filtro
 
-### Al Actualizar Filtros:
+- [ ] Estructura base completa
+- [ ] JSON metadata válido
+- [ ] Métricas verificadas con fuente
+- [ ] Tooltip formateado correctamente
 
-1. Mantener consistencia en el formato de fecha
-2. Documentar modificaciones en la referencia
-3. Actualizar métricas si es necesario
-4. Verificar funcionamiento del tooltip
+### Actualización
 
-## Resolución de Problemas
+- [ ] Mantener estructura existente
+- [ ] Actualizar solo valores necesarios
+- [ ] Verificar tooltip tras cambios
+- [ ] Documentar cambios en historial
 
-### Errores Comunes:
+## Notas Importantes
 
-1. JSON mal formateado en metadata
-2. Acceso incorrecto a propiedades anidadas
-3. Falta de manejo de casos opcionales
-4. Referencias demasiado extensas en tooltips
-
-### Verificación:
-
-1. Validar JSON del metadata
-2. Comprobar existencia de línea en blanco antes de metadata
-3. Verificar formato de métricas según tipo de filtro
-4. Probar visualización del tooltip
-
-¿Quieres que prepare el prompt para futura referencia?
+1. No incluir precisión si no está documentada en la fuente
+2. Usar HTML para formateo en tooltips (no markdown)
+3. Mantener consistencia en referencias bibliográficas
+4. Verificar funcionamiento con el modo info activado
+5. Pueden omitirse secciones, como precisión o métricas si no existen
