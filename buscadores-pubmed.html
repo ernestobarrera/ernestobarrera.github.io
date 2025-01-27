@@ -451,7 +451,7 @@ filtros estructurados para profesionales sanitarios
       .tippy-box[data-theme~="custom"] .tippy-content {
         white-space: pre-line !important;
         line-height: 1.4 !important;
-        padding: 0.5rem 0.75rem !important;
+        padding: 0rem 0rem !important;
       }
     </style>
     <!-- libreria tooltip con metadatos del filtro -->
@@ -1114,48 +1114,54 @@ filtros estructurados para profesionales sanitarios
           if (metadata.validation?.metrics) {
             // Para filtros con versión única
             if ("sensitivity" in metadata.validation.metrics) {
-              parts.push(`Sens: ${metadata.validation.metrics.sensitivity}%`);
-              parts.push(`Esp: ${metadata.validation.metrics.specificity}%`);
+              parts.push(
+                `<strong>Sensibilidad:</strong> ${metadata.validation.metrics.sensitivity}%`
+              );
+              parts.push(
+                `<strong>Especificidad</strong>: ${metadata.validation.metrics.specificity}%`
+              );
               if ("precision" in metadata.validation.metrics) {
                 parts.push(
-                  `Precisión: ${metadata.validation.metrics.precision}%`
+                  `<strong>Precisión:</strong> ${metadata.validation.metrics.precision}%`
                 );
               }
             }
             // Para filtros con versiones sensible/específica
             else if ("sensitive" in metadata.validation.metrics) {
-              parts.push("Versión Sensible:");
+              parts.push("<u>Versión Sensible:</u>");
               parts.push(
-                `Sens: ${metadata.validation.metrics.sensitive.sensitivity}%`
+                `<strong>Sensibilidad</strong>: ${metadata.validation.metrics.sensitive.sensitivity}%`
               );
               parts.push(
-                `Esp: ${metadata.validation.metrics.sensitive.specificity}%`
+                `<strong>Especificidad</strong>: ${metadata.validation.metrics.sensitive.specificity}%`
               );
               if ("precision" in metadata.validation.metrics.sensitive) {
                 parts.push(
-                  `Precisión: ${metadata.validation.metrics.sensitive.precision}%`
+                  `<strong>Precisión:</strong> ${metadata.validation.metrics.sensitive.precision}%`
                 );
               }
-              parts.push("\nVersión Específica:");
+              parts.push("\n<u>Versión Específica:</u>");
               parts.push(
-                `Sens: ${metadata.validation.metrics.specific.sensitivity}%`
+                `<strong>Sensibilidad</strong>: ${metadata.validation.metrics.specific.sensitivity}%`
               );
               parts.push(
-                `Esp: ${metadata.validation.metrics.specific.specificity}%`
+                `<strong>Especificidad</strong>: ${metadata.validation.metrics.specific.specificity}%`
               );
               if ("precision" in metadata.validation.metrics.specific) {
                 parts.push(
-                  `Precisión: ${metadata.validation.metrics.specific.precision}%`
+                  `<strong>Precisión</strong>: ${metadata.validation.metrics.specific.precision}%`
                 );
               }
             }
           }
 
           if (metadata.validation?.reference) {
-            parts.push(`\nFuente: ${metadata.validation.reference}`);
+            parts.push(
+              `\n<strong>Fuente:</strong> ${metadata.validation.reference}`
+            );
           }
 
-          return parts.join(" | ");
+          return parts.join("\n");
         }
 
         function cargarFiltros() {
@@ -1242,7 +1248,8 @@ filtros estructurados para profesionales sanitarios
                   theme: "custom",
                   animation: "shift-away",
                   delay: [200, 0],
-                  maxWidth: 300,
+                  maxWidth: 400,
+                  allowHTML: true, // Añadimos esta línea para permitir HTML en el contenido
                   trigger: "mouseenter",
                   onShow(instance) {
                     return infoModeActive;
