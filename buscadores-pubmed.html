@@ -1141,6 +1141,11 @@ filtros estructurados para profesionales sanitarios
                 `${prefix}<strong>Precisión:</strong> ${metrics.precision}%`
               );
             }
+            if (isValidMetric(metrics.NNR)) {
+              formattedMetrics.push(
+                `${prefix}<strong>NNR:</strong> ${metrics.NNR}`
+              );
+            }
 
             return formattedMetrics;
           };
