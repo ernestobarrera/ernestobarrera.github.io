@@ -1111,53 +1111,72 @@ filtros estructurados para profesionales sanitarios
         function formatTooltipContent(metadata) {
           const parts = [];
 
+          // Función auxiliar para validar si una métrica debe mostrarse
+          const isValidMetric = (value) => {
+            return (
+              value !== undefined &&
+              value !== null &&
+              value !== 0 &&
+              !isNaN(value) &&
+              value.toString().trim() !== ""
+            );
+          };
+
+          // Función auxiliar para formatear una sección de métricas
+          const formatMetricSection = (metrics, prefix = "") => {
+            const formattedMetrics = [];
+
+            if (isValidMetric(metrics.sensitivity)) {
+              formattedMetrics.push(
+                `${prefix}<strong>Sensibilidad:</strong> ${metrics.sensitivity}%`
+              );
+            }
+            if (isValidMetric(metrics.specificity)) {
+              formattedMetrics.push(
+                `${prefix}<strong>Especificidad:</strong> ${metrics.specificity}%`
+              );
+            }
+            if (isValidMetric(metrics.precision)) {
+              formattedMetrics.push(
+                `${prefix}<strong>Precisión:</strong> ${metrics.precision}%`
+              );
+            }
+
+            return formattedMetrics;
+          };
+
           if (metadata.validation?.metrics) {
             // Para filtros con versión única
             if ("sensitivity" in metadata.validation.metrics) {
-              parts.push(
-                `<strong>Sensibilidad:</strong> ${metadata.validation.metrics.sensitivity}%`
-              );
-              parts.push(
-                `<strong>Especificidad</strong>: ${metadata.validation.metrics.specificity}%`
-              );
-              if ("precision" in metadata.validation.metrics) {
-                parts.push(
-                  `<strong>Precisión:</strong> ${metadata.validation.metrics.precision}%`
-                );
-              }
+              parts.push(...formatMetricSection(metadata.validation.metrics));
             }
             // Para filtros con versiones sensible/específica
             else if ("sensitive" in metadata.validation.metrics) {
-              parts.push("<u>Versión Sensible:</u>");
-              parts.push(
-                `<strong>Sensibilidad</strong>: ${metadata.validation.metrics.sensitive.sensitivity}%`
+              const sensitiveParts = formatMetricSection(
+                metadata.validation.metrics.sensitive
               );
-              parts.push(
-                `<strong>Especificidad</strong>: ${metadata.validation.metrics.sensitive.specificity}%`
+              const specificParts = formatMetricSection(
+                metadata.validation.metrics.specific
               );
-              if ("precision" in metadata.validation.metrics.sensitive) {
-                parts.push(
-                  `<strong>Precisión:</strong> ${metadata.validation.metrics.sensitive.precision}%`
-                );
+
+              if (sensitiveParts.length > 0) {
+                parts.push("<u>Versión Sensible:</u>");
+                parts.push(...sensitiveParts);
               }
-              parts.push("\n<u>Versión Específica:</u>");
-              parts.push(
-                `<strong>Sensibilidad</strong>: ${metadata.validation.metrics.specific.sensitivity}%`
-              );
-              parts.push(
-                `<strong>Especificidad</strong>: ${metadata.validation.metrics.specific.specificity}%`
-              );
-              if ("precision" in metadata.validation.metrics.specific) {
-                parts.push(
-                  `<strong>Precisión</strong>: ${metadata.validation.metrics.specific.precision}%`
-                );
+
+              if (specificParts.length > 0) {
+                if (parts.length > 0) parts.push(""); // Línea en blanco como separador
+                parts.push("<u>Versión Específica:</u>");
+                parts.push(...specificParts);
               }
             }
           }
 
-          if (metadata.validation?.reference) {
+          // Añadir referencia si existe y no está vacía
+          if (metadata.validation?.reference?.trim()) {
+            if (parts.length > 0) parts.push(""); // Línea en blanco como separador
             parts.push(
-              `\n<strong>Fuente:</strong> ${metadata.validation.reference}`
+              `<strong>Fuente:</strong> ${metadata.validation.reference.trim()}`
             );
           }
 
@@ -1243,6 +1262,8 @@ filtros estructurados para profesionales sanitarios
                 button.setAttribute("data-tippy-content", filterTooltips[id]);
                 tippy(button, {
                   content: filterTooltips[id],
+                  placement: "auto", // Cambiado de 'top' a 'auto' para mejor posicionamiento
+
                   placement: "top",
                   arrow: true,
                   theme: "custom",
