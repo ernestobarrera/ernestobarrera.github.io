@@ -453,11 +453,155 @@ filtros estructurados para profesionales sanitarios
         line-height: 1.4 !important;
         padding: 0rem 0rem !important;
       }
+      /* Estilos para el diagrama de Venn */
+      .venn-container {
+        margin-top: 1rem;
+        background: var(--primary-bg);
+        border-radius: 8px;
+        padding: 1rem;
+      }
+
+      #venn-diagram {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 300px;
+        position: relative;
+      }
+
+      #venn-tooltip {
+        position: absolute;
+        background: var(--card-bg);
+        border: 1px solid var(--accent-color);
+        padding: 0.75rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 1000;
+        max-width: 300px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Estilos para los círculos del diagrama */
+      .venn-circle path {
+        stroke: var(--accent-color);
+        stroke-width: 2px;
+        fill-opacity: 0.2;
+        transition: all 0.3s ease;
+      }
+
+      .venn-circle-methodology path {
+        fill: #3b82f6;
+      }
+      .venn-circle-clinical path {
+        fill: #10b981;
+      }
+      .venn-circle-scope path {
+        fill: #8b5cf6;
+      }
+
+      .venn-circle:hover path {
+        fill-opacity: 0.4;
+        cursor: pointer;
+      }
+
+      .venn-intersection path {
+        fill-opacity: 0.4;
+      }
+
+      .venn-circle text,
+      .venn-intersection text {
+        fill: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .venn-container {
+        display: grid;
+        grid-template-columns: 250px 500px 250px;
+        gap: 1rem;
+        align-items: start;
+      }
+
+      .venn-lists-column {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .venn-lists {
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        font-size: 0.9rem;
+      }
+
+      .venn-lists h4 {
+        color: var(--accent-color);
+        margin: 0 0 0.5rem 0;
+        font-size: 1rem;
+      }
+
+      .venn-lists ul {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 1rem 0;
+      }
+
+      .venn-lists li {
+        color: var(--text-primary);
+        padding: 0.2rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      #venn-diagram {
+        grid-column: 2;
+        min-height: 400px;
+      }
+
+      .methodology-list {
+        color: #3b82f6;
+      }
+
+      .clinical-list {
+        color: #10b981;
+      }
+
+      .scope-list {
+        color: #8b5cf6;
+      }
+      .venn-container {
+        display: none; /* Oculto por defecto */
+      }
+
+      .venn-container.visible {
+        display: grid;
+        grid-template-columns: 250px 500px 250px;
+        gap: 1rem;
+        align-items: start;
+      }
+      .search-term-container {
+        grid-column: 1 / -1;
+        text-align: center;
+        margin-top: 1rem;
+        padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        color: #ffd700;
+        font-size: 0.9rem;
+      }
     </style>
     <!-- libreria tooltip con metadatos del filtro -->
     <!-- Primero los archivos de tippy -->
     <script src="https://unpkg.com/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6.3.7/dist/tippy.umd.min.js"></script>
+    <!-- venn-->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/venn.js@0.2.20/build/venn.js"></script>
   </head>
   <body>
     <include src="header.html"></include>
@@ -1000,6 +1144,24 @@ filtros estructurados para profesionales sanitarios
               <span>Ver Detalles de Filtros</span>
             </button>
             <button
+              id="toggleVennButton"
+              style="
+                background: var(--card-bg);
+                color: var(--text-primary);
+                border: 1px solid var(--accent-color);
+                border-radius: 8px;
+                padding: 0.7rem;
+                font-size: 0.9rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+              "
+            >
+              <i class="fas fa-project-diagram"></i>
+              Ver Diagrama
+            </button>
+            <button
               id="resetButton"
               style="
                 background: linear-gradient(135deg, #777, #555);
@@ -1017,6 +1179,24 @@ filtros estructurados para profesionales sanitarios
           </div>
 
           <div class="final-query-box" id="finalQuery"></div>
+          <div class="venn-container">
+            <div class="venn-lists-column">
+              <div class="venn-lists methodology-list">
+                <h4>Metodología</h4>
+                <div id="methodology-filters"></div>
+              </div>
+              <div class="venn-lists clinical-list">
+                <h4>Clínico</h4>
+                <div id="clinical-filters"></div>
+              </div>
+            </div>
+            <div id="venn-diagram"></div>
+            <div class="venn-lists scope-list">
+              <h4>Ámbito</h4>
+              <div id="scope-filters"></div>
+            </div>
+            <div id="venn-tooltip"></div>
+          </div>
         </div>
 
         <div class="info-section">
@@ -1058,6 +1238,21 @@ filtros estructurados para profesionales sanitarios
         var activeFilters = new Set();
         var filterMap = {};
         var filterTooltips = {};
+        // Manejo del toggle del diagrama de Venn
+        const toggleVennButton = document.getElementById("toggleVennButton");
+        const vennContainer = document.querySelector(".venn-container");
+
+        toggleVennButton.addEventListener("click", () => {
+          vennContainer.classList.toggle("visible");
+          toggleVennButton.innerHTML = vennContainer.classList.contains(
+            "visible"
+          )
+            ? '<i class="fas fa-project-diagram"></i> Ocultar Diagrama'
+            : '<i class="fas fa-project-diagram"></i> Ver Diagrama';
+          if (vennContainer.classList.contains("visible")) {
+            updateVennDiagram(); // Actualizar el diagrama cuando se muestra
+          }
+        });
 
         // 2. Configuración de categorías
         var categories = {
@@ -1521,8 +1716,233 @@ filtros estructurados para profesionales sanitarios
             mostrarQueryFinal();
           });
         });
+        // 13. Diagrama de Venn
+        function updateVennDiagram() {
+          const methodologyFilters = Array.from(
+            document.querySelectorAll(".filter-button.methodological.active")
+          ).map((btn) => ({
+            text: btn.textContent.trim(),
+            type:
+              btn.dataset.type ||
+              `${btn.dataset.base}_${
+                btn.querySelector('input[type="radio"]:checked')?.value
+              }`,
+          }));
 
-        // 13. Tutorial
+          const clinicalFilters = Array.from(
+            document.querySelectorAll(".filter-button.clinical.active")
+          ).map((btn) => ({
+            text: btn.textContent.trim(),
+            type:
+              btn.dataset.type ||
+              `${btn.dataset.base}_${
+                btn.querySelector('input[type="radio"]:checked')?.value
+              }`,
+          }));
+
+          const scopeFilters = Array.from(
+            document.querySelectorAll(".filter-button.scope.active")
+          ).map((btn) => ({
+            text: btn.textContent.trim(),
+            type:
+              btn.dataset.type ||
+              `${btn.dataset.base}_${
+                btn.querySelector('input[type="radio"]:checked')?.value
+              }`,
+          }));
+
+          const searchTermValue = searchTerm.value.trim();
+
+          const sets = [];
+
+          if (methodologyFilters.length > 0) {
+            sets.push({
+              sets: ["Metodología"],
+              size: methodologyFilters.length,
+              items: [...methodologyFilters.map((f) => f.text)],
+            });
+          }
+
+          if (clinicalFilters.length > 0) {
+            sets.push({
+              sets: ["Clínico"],
+              size: clinicalFilters.length,
+              items: clinicalFilters.map((f) => f.text),
+            });
+          }
+
+          if (scopeFilters.length > 0) {
+            sets.push({
+              sets: ["Ámbito"],
+              size: scopeFilters.length,
+              items: scopeFilters.map((f) => f.text),
+            });
+          }
+
+          // Añadir intersecciones
+          if (sets.length > 1) {
+            const categories = sets.map((s) => s.sets[0]);
+            for (let i = 0; i < categories.length; i++) {
+              for (let j = i + 1; j < categories.length; j++) {
+                let size =
+                  Math.min(
+                    sets.find((s) => s.sets[0] === categories[i]).size,
+                    sets.find((s) => s.sets[0] === categories[j]).size
+                  ) / 3;
+                sets.push({
+                  sets: [categories[i], categories[j]],
+                  size: size,
+                });
+              }
+            }
+            if (categories.length === 3) {
+              let size = Math.min(sets[0].size, sets[1].size, sets[2].size) / 4;
+              sets.push({
+                sets: categories,
+                size: size,
+              });
+            }
+          }
+
+          // Limpiar y dibujar
+          const vennDiv = d3.select("#venn-diagram").html("");
+          // Actualizar listas laterales
+          const methodologyList = document.getElementById(
+            "methodology-filters"
+          );
+          const clinicalList = document.getElementById("clinical-filters");
+          const scopeList = document.getElementById("scope-filters");
+
+          methodologyList.innerHTML =
+            sets
+              .find((s) => s.sets[0] === "Metodología")
+              ?.items.map((item) => `<li>${item}</li>`)
+              .join("") || "";
+
+          clinicalList.innerHTML =
+            sets
+              .find((s) => s.sets[0] === "Clínico")
+              ?.items.map((item) => `<li>${item}</li>`)
+              .join("") || "";
+
+          scopeList.innerHTML =
+            sets
+              .find((s) => s.sets[0] === "Ámbito")
+              ?.items.map((item) => `<li>${item}</li>`)
+              .join("") || "";
+          if (sets.length > 0) {
+            const chart = venn.VennDiagram().width(500).height(400);
+
+            const div = vennDiv.datum(sets).call(chart);
+
+            // Colorear círculos
+            div
+              .selectAll(".venn-circle path")
+              .style("fill-opacity", 0.2)
+              .style("stroke-width", 2);
+
+            // Mejorar la visualización de texto
+            div
+              .selectAll("g")
+              .filter((d) => d.sets.length === 1)
+              .each(function (d) {
+                const set = sets.find((s) => s.sets[0] === d.sets[0]);
+                const g = d3.select(this);
+
+                // Título principal con número de filtros
+                // Título principal con número de filtros
+                g.select("text")
+                  .style("font-weight", "bold")
+                  .style("font-size", "16px")
+                  .style("fill", "#ffd700")
+                  .text(`${d.sets[0]} (${set.items.length})`);
+              })
+              .select("path")
+              .style("fill", (d) => {
+                const colors = {
+                  Metodología: "#3b82f6",
+                  Clínico: "#10b981",
+                  Ámbito: "#8b5cf6",
+                };
+                return colors[d.sets[0]];
+              });
+
+            // Mantener el tooltip para información detallada
+            const tooltip = d3.select("#venn-tooltip");
+
+            div
+              .selectAll("g")
+              .on("mouseover", function (event, d) {
+                venn.sortAreas(div, d);
+                tooltip.transition().duration(200).style("opacity", 0.9);
+
+                let content = "";
+                if (d.sets.length === 1) {
+                  const set = sets.find((s) => s.sets[0] === d.sets[0]);
+                  if (set) {
+                    content = `<strong>${d.sets[0]}</strong><br>`;
+                    content += set.items
+                      .map((item) => `• ${item}`)
+                      .join("<br>");
+                  }
+                } else {
+                  content = `<strong>Intersección</strong><br>${d.sets.join(
+                    " + "
+                  )}`;
+                }
+
+                tooltip
+                  .html(content)
+                  .style("left", event.pageX + 10 + "px")
+                  .style("top", event.pageY - 10 + "px");
+              })
+              .on("mousemove", function (event) {
+                tooltip
+                  .style("left", event.pageX + 10 + "px")
+                  .style("top", event.pageY - 10 + "px");
+              })
+              .on("mouseout", function () {
+                tooltip.transition().duration(200).style("opacity", 0);
+              });
+          }
+        }
+
+        // Actualizar la función mostrarQueryFinal para incluir el diagrama
+        function mostrarQueryFinal() {
+          var built = constructQuery(searchTerm.value.trim());
+          finalQueryBox.textContent = built;
+          updateVennDiagram();
+        }
+
+        // Actualizar el reset para incluir el diagrama
+        resetButton.addEventListener("click", function () {
+          activeFilters.clear();
+          filterCount.textContent = 0;
+          searchTerm.value = "";
+          dateRange.value = "";
+          sortMode.value = "date";
+
+          document.querySelectorAll(".category-operator").forEach((select) => {
+            select.value = "OR";
+            categoryOperators[select.dataset.category] = "OR";
+          });
+
+          document.querySelectorAll(".filter-button").forEach(function (b) {
+            b.classList.remove("active");
+          });
+
+          document
+            .querySelectorAll('.versions-toggle input[type="radio"]')
+            .forEach(function (r) {
+              if (r.value === "sensible") {
+                r.checked = true;
+              }
+            });
+
+          finalQueryBox.textContent = "";
+          updateVennDiagram();
+        });
+        // 14. Tutorial
         function iniciarTutorial() {
           var intro = introJs();
           intro.setOptions({
