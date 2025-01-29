@@ -96,19 +96,27 @@ filtros estructurados para profesionales sanitarios
       /* Reemplazo de input por textarea */
       .search-textarea {
         width: 100%;
-        padding: 0.55rem;
+        padding: 0.75rem;
         background: var(--primary-bg, #1c1e26);
         border: 1px solid var(--secondary-bg, #2c3e50);
         border-radius: 6px;
         color: var(--text-primary, #fff);
-        font-size: 0.95rem;
-        margin-bottom: 0rem;
-        transition: border-color 0.3s ease;
-        resize: vertical;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        font-size: 1rem;
+        line-height: 1.5;
+        margin-bottom: 0;
+        transition: border-color 0.3s ease, height 0.3s ease;
+        resize: none;
+        overflow: hidden;
+        min-height: 2.5rem;
+        max-height: 150px;
       }
+
       .search-textarea:focus {
         border-color: var(--accent-color, #ffd700);
         outline: none;
+        box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
       }
       .filters-section {
         display: grid;
@@ -584,6 +592,93 @@ filtros estructurados para profesionales sanitarios
         gap: 1rem;
         align-items: start;
       }
+      .info-button {
+        margin: 0 0.5rem;
+        background: var(--card-bg);
+        color: var(--text-primary);
+        border: 1px solid var(--accent-color);
+        border-radius: 8px;
+        padding: 0.7rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .info-button:hover,
+      .info-button.active {
+        background: var(--accent-color);
+        color: var(--primary-bg);
+      }
+      .search-tips {
+        margin-top: 1rem;
+        background: var(--primary-bg);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .search-tips-header {
+        padding: 1rem;
+        background: rgba(255, 215, 0, 0.1);
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .search-tips-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+      }
+
+      .search-tips.expanded .search-tips-content {
+        max-height: 1000px;
+        padding: 1rem;
+      }
+
+      .search-tips-title {
+        color: var(--accent-color);
+        font-size: 1.1rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .search-tips-icon {
+        transition: transform 0.3s ease;
+      }
+
+      .search-tips.expanded .search-tips-icon {
+        transform: rotate(180deg);
+      }
+
+      .search-tip {
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+      }
+
+      .search-tip:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+
+      .search-tip-title {
+        color: var(--accent-color);
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .search-tip-content {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
     </style>
     <!-- libreria tooltip con metadatos del filtro -->
     <!-- Primero los archivos de tippy -->
@@ -635,7 +730,6 @@ filtros estructurados para profesionales sanitarios
             data-intro="Aquí escribes tus términos de búsqueda. También puedes pulsar Enter para iniciar la búsqueda."
             data-step="2"
             rows="1"
-            oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';"
           ></textarea>
 
           <div
@@ -1114,40 +1208,11 @@ filtros estructurados para profesionales sanitarios
               <span>Filtros activos:</span>
               <span id="filterCount" class="filter-count">0</span>
             </div>
-            <button
-              id="infoModeToggle"
-              style="
-                margin: 0 0.5rem;
-                padding: 0.4rem 0.8rem;
-                background: var(--card-bg);
-                border: 1px solid var(--accent-color);
-                border-radius: 8px;
-                color: var(--text-primary);
-                font-size: 0.9rem;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-              "
-            >
+            <button id="infoModeToggle" class="info-button">
               <i class="fas fa-info-circle"></i>
               <span>Ver Detalles de Filtros</span>
             </button>
-            <button
-              id="toggleVennButton"
-              style="
-                background: var(--card-bg);
-                color: var(--text-primary);
-                border: 1px solid var(--accent-color);
-                border-radius: 8px;
-                padding: 0.7rem;
-                font-size: 0.9rem;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-              "
-            >
+            <button id="toggleVennButton" class="info-button">
               <i class="fas fa-project-diagram"></i>
               Ver Diagrama
             </button>
@@ -1188,7 +1253,113 @@ filtros estructurados para profesionales sanitarios
           </div>
           <div class="final-query-box" id="finalQuery"></div>
         </div>
+        <div class="search-tips">
+          <div class="search-tips-header">
+            <h3 class="search-tips-title">
+              <i class="fas fa-lightbulb"></i>
+              Estrategias avanzadas para búsquedas precisas
+            </h3>
+            <i class="fas fa-chevron-down search-tips-icon"></i>
+          </div>
+          <div class="search-tips-content">
+            <div class="search-tip">
+              <h4 class="search-tip-title">
+                <i class="fas fa-search"></i> Best Match como herramienta de
+                descubrimiento
+              </h4>
+              <p class="search-tip-content">
+                Ordena por "Best Match" para identificar en los primeros
+                resultados términos clave que podrías estar omitiendo. Revisa
+                especialmente títulos y abstracts para encontrar sinónimos y
+                variantes terminológicas actuales.
+              </p>
+            </div>
 
+            <div class="search-tip">
+              <h4 class="search-tip-title">
+                <i class="fas fa-balance-scale"></i> Estrategia
+                Sensible/Específica
+              </h4>
+              <p class="search-tip-content">
+                Inicia con versiones Sensibles (S) de los filtros para descubrir
+                toda la terminología relevante. Una vez identificados los
+                términos clave, cambia a versiones Específicas (E) si necesitas
+                mayor precisión.
+              </p>
+            </div>
+
+            <div class="search-tip">
+              <h4 class="search-tip-title">
+                <i class="fas fa-layer-group"></i> Clinical Queries estratégicos
+              </h4>
+              <p class="search-tip-content">
+                Los filtros CQ incluyen vocabulario validado para cada enfoque
+                clínico. Revisa los primeros resultados de cada filtro CQ para
+                identificar terminología especializada que puedas incorporar en
+                el campo de búsqueda.
+              </p>
+            </div>
+
+            <div class="search-tip">
+              <h4 class="search-tip-title">
+                <i class="fas fa-check-double"></i> Validación de resultados
+              </h4>
+              <p class="search-tip-content">
+                Los primeros 10 resultados deben ser altamente relevantes. Si no
+                lo son, ajusta los operadores booleanos de cada categoría o
+                considera usar filtros más específicos. El diagrama de Venn te
+                ayudará a visualizar qué combinación es más efectiva.
+              </p>
+            </div>
+
+            <div class="search-tip">
+              <h4 class="search-tip-title">
+                <i class="fas fa-calendar-alt"></i> Control temporal inteligente
+              </h4>
+              <p class="search-tip-content">
+                Para temas actuales, inicia con filtro de 6 meses y "Best Match"
+                para encontrar terminología reciente. Luego amplía a 5 años para
+                capturar estudios clásicos usando los términos descubiertos.
+              </p>
+            </div>
+
+            <div class="search-tip">
+              <h4 class="search-tip-title">
+                <i class="fas fa-code"></i> Campo de búsqueda avanzado
+              </h4>
+              <p class="search-tip-content">
+                Combina términos MeSH con palabras del título/resumen:
+                "Término"[MeSH] OR ("palabra1"[tiab] OR "palabra2"[tiab]). Los
+                filtros estructurados complementarán automáticamente tu
+                estrategia.
+              </p>
+            </div>
+
+            <div class="search-tip">
+              <h4 class="search-tip-title">
+                <i class="fas fa-info-circle"></i> Métricas de rendimiento
+              </h4>
+              <p class="search-tip-content">
+                Activa "Ver Detalles de Filtros" para conocer la
+                sensibilidad/especificidad de cada filtro. Estas métricas te
+                ayudarán a decidir qué combinación usar según necesites
+                exhaustividad o precisión.
+              </p>
+            </div>
+
+            <div class="search-tip">
+              <h4 class="search-tip-title">
+                <i class="fas fa-project-diagram"></i> Análisis visual de
+                filtros
+              </h4>
+              <p class="search-tip-content">
+                El diagrama de Venn no solo muestra intersecciones: úsalo para
+                identificar qué combinaciones de filtros están encontrando los
+                artículos más relevantes y ajusta tu estrategia en consecuencia.
+              </p>
+            </div>
+          </div>
+        </div>
         <div class="info-section">
           <h2 class="info-title">
             <i class="fas fa-info-circle"></i>
@@ -1234,6 +1405,8 @@ filtros estructurados para profesionales sanitarios
 
         toggleVennButton.addEventListener("click", () => {
           vennContainer.classList.toggle("visible");
+          toggleVennButton.classList.toggle("active"); // Añade esta línea
+
           toggleVennButton.innerHTML = vennContainer.classList.contains(
             "visible"
           )
@@ -1986,9 +2159,22 @@ filtros estructurados para profesionales sanitarios
                 position: "left",
               },
               {
+                element: document.querySelector("#toggleVennButton"),
+                intro:
+                  "Visualiza la relación entre los filtros activos mediante un diagrama de Venn interactivo. Al activar el diagrama podrás ver cómo se agrupan los filtros por categoría y sus intersecciones.",
+                position: "bottom",
+                scrollTo: "tooltip",
+              },
+              {
                 element: document.querySelector("#finalQuery"),
                 intro:
                   "Aquí verás la estrategia de búsqueda completa que combina tus términos con los filtros seleccionados usando los operadores booleanos específicos de cada categoría.",
+                position: "top",
+              },
+              {
+                element: document.querySelector(".search-tips"),
+                intro:
+                  "Encuentra consejos útiles para mejorar tus búsquedas, como el uso de operadores booleanos y términos MeSH. Haz clic en el encabezado para expandir y ver todos los tips.",
                 position: "top",
               },
             ],
@@ -2025,8 +2211,26 @@ filtros estructurados para profesionales sanitarios
           startTutorialBtn.addEventListener("click", iniciarTutorial);
         }
       });
-    </script>
+      // Manejo del toggle de tips
+      const searchTips = document.querySelector(".search-tips");
+      const searchTipsHeader = document.querySelector(".search-tips-header");
 
+      searchTipsHeader.addEventListener("click", () => {
+        searchTips.classList.toggle("expanded");
+      });
+    </script>
+    <script>
+      // Manejo del autoajuste del textarea
+      const searchTextarea = document.getElementById("searchTerm");
+
+      function autoResizeTextarea() {
+        this.style.height = "auto";
+        this.style.height = this.scrollHeight + "px";
+      }
+
+      searchTextarea.addEventListener("input", autoResizeTextarea);
+      searchTextarea.addEventListener("focus", autoResizeTextarea);
+    </script>
     <script
       async
       src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
