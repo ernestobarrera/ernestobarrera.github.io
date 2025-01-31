@@ -630,13 +630,13 @@ filtros estructurados para profesionales sanitarios
 
       .search-tips-content {
         max-height: 0;
-        overflow: hidden;
+        overflow: auto;
         transition: max-height 0.3s ease-out;
       }
 
       .search-tips.expanded .search-tips-content {
-        max-height: 1000px;
-        padding: 1rem;
+        max-height: 1600px;
+        padding: 0rem;
       }
 
       .search-tips-title {
@@ -657,8 +657,8 @@ filtros estructurados para profesionales sanitarios
       }
 
       .search-tip {
-        margin-bottom: 1rem;
-        padding-bottom: 1rem;
+        margin-bottom: 0rem;
+        padding-bottom: 0rem;
         border-bottom: 1px solid rgba(255, 215, 0, 0.1);
       }
 
@@ -677,7 +677,106 @@ filtros estructurados para profesionales sanitarios
       .search-tip-content {
         color: var(--text-secondary);
         font-size: 0.9rem;
-        line-height: 1.5;
+        line-height: 0.5;
+      }
+
+      .search-tips {
+        max-width: 1600px;
+        margin: 1rem auto;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+
+      .search-tips-header {
+        background: var(--header-bg, #2a3b4d);
+        padding: 1rem;
+        border-radius: 8px 8px 0 0;
+        margin-bottom: 1px;
+      }
+
+      .search-tips-title {
+        color: var(--accent-color, #ffd700);
+        font-size: 1.1rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .subtitle {
+        font-size: 1rem;
+        opacity: 0.8;
+        margin-left: 0.8rem;
+      }
+
+      .tip {
+        background: var(--tip-bg, #1c1e26);
+        margin: 1px 0;
+        padding: 1.1rem;
+        border-left: 4px solid transparent;
+        transition: all 0.3s ease;
+      }
+
+      .tip:hover {
+        border-left-color: var(--accent-color, #ffd700);
+        background: var(--tip-bg-hover, #2a2c35);
+      }
+
+      .tip-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        color: var(--text-primary, #fff);
+        margin: 0 0 1rem 0;
+      }
+
+      .tip-number {
+        background: var(--accent-color, #ffd700);
+        color: var(--tip-bg, #1c1e26);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        font-weight: bold;
+      }
+
+      .tip-content {
+        color: var(--text-secondary, #94a3b8);
+        line-height: 1.6;
+      }
+
+      .tip-content > div {
+        margin-bottom: 0rem;
+      }
+
+      .tip-content strong {
+        color: var(--text-primary, #fff);
+        display: block;
+        margin-bottom: 0.5rem;
+      }
+
+      .pro-tip {
+        background: rgba(255, 215, 0, 0.1);
+        padding: 0.5rem;
+        border-radius: 4px;
+        margin-top: 0.5rem;
+      }
+
+      .warning {
+        background: rgba(255, 99, 71, 0.1);
+        padding: 0.75rem;
+        border-radius: 4px;
+        margin-top: 0.5rem;
+      }
+
+      .examples code {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-family: monospace;
+      }
+
+      .checklist {
+        display: grid;
+        gap: 0.5rem;
       }
     </style>
     <!-- libreria tooltip con metadatos del filtro -->
@@ -1253,113 +1352,293 @@ filtros estructurados para profesionales sanitarios
           </div>
           <div class="final-query-box" id="finalQuery"></div>
         </div>
+        <!-- Container principal para los tips de búsqueda -->
         <div class="search-tips">
           <div class="search-tips-header">
             <h3 class="search-tips-title">
               <i class="fas fa-lightbulb"></i>
-              Estrategias avanzadas para búsquedas precisas
+              10 Tips Expertos para Búsquedas Bibliográficas más Precisas
+              <span class="subtitle"
+                >Guía práctica para optimizar tus búsquedas en PubMed</span
+              >
             </h3>
             <i class="fas fa-chevron-down search-tips-icon"></i>
           </div>
+
           <div class="search-tips-content">
-            <div class="search-tip">
-              <h4 class="search-tip-title">
-                <i class="fas fa-search"></i> Best Match como herramienta de
-                descubrimiento
-              </h4>
-              <p class="search-tip-content">
-                Ordena por "Best Match" para identificar en los primeros
-                resultados términos clave que podrías estar omitiendo. Revisa
-                especialmente títulos y abstracts para encontrar sinónimos y
-                variantes terminológicas actuales.
-              </p>
+            <!-- Tip 1: Best Match -->
+            <div class="tip">
+              <h3 class="tip-title">
+                <span class="tip-number">01</span>
+                Best Match como Estrategia de Descubrimiento
+              </h3>
+              <div class="tip-content">
+                <div class="definition">
+                  <strong>¿Qué es?</strong>
+                  Una herramienta de PubMed que ordena resultados por relevancia
+                  usando un algoritmo propio
+                </div>
+                <div class="how-to">
+                  <strong>Paso a paso:</strong>
+                  1. Realiza tu búsqueda inicial 2. Ordena por "Best Match" 3.
+                  Analiza los 10 primeros resultados 4. Identifica términos
+                  clave y variantes
+                </div>
+                <div class="pro-tip">
+                  💡 Revisa títulos y abstracts de los primeros resultados para
+                  identificar sinónimos actuales
+                </div>
+              </div>
             </div>
 
-            <div class="search-tip">
-              <h4 class="search-tip-title">
-                <i class="fas fa-balance-scale"></i> Estrategia
-                Sensible/Específica
-              </h4>
-              <p class="search-tip-content">
-                Inicia con versiones Sensibles (S) de los filtros para descubrir
-                toda la terminología relevante. Una vez identificados los
-                términos clave, cambia a versiones Específicas (E) si necesitas
-                mayor precisión.
-              </p>
+            <!-- Tip 2: Búsqueda por Proximidad -->
+            <div class="tip">
+              <h3 class="tip-title">
+                <span class="tip-number">02</span>
+                Búsqueda por Proximidad en PubMed
+              </h3>
+              <div class="tip-content">
+                <div class="definition">
+                  <strong>Sintaxis:</strong>
+                  "términos de búsqueda"[campo:~N]
+                </div>
+                <div class="examples">
+                  <strong>Ejemplo:</strong>
+                  "hip pain"[Title/Abstract:~2] Encuentra: hip pain, hip joint
+                  pain, pain in right hip...
+                </div>
+                <div class="key-points">
+                  <strong>Puntos clave:</strong>
+                  • Solo disponible en [Title] y [Title/Abstract] • N = número
+                  máximo de palabras entre términos • N=0 para términos
+                  adyacentes en cualquier orden • No compatible con truncamiento
+                  (*)
+                </div>
+                <div class="warning">
+                  ⚠️ La búsqueda no aplica Automatic Term Mapping
+                </div>
+              </div>
             </div>
 
-            <div class="search-tip">
-              <h4 class="search-tip-title">
-                <i class="fas fa-layer-group"></i> Clinical Queries estratégicos
-              </h4>
-              <p class="search-tip-content">
-                Los filtros CQ incluyen vocabulario validado para cada enfoque
-                clínico. Revisa los primeros resultados de cada filtro CQ para
-                identificar terminología especializada que puedas incorporar en
-                el campo de búsqueda.
-              </p>
+            <!-- Tip 3: Estrategia Sensible/Específica -->
+            <div class="tip">
+              <h3 class="tip-title">
+                <span class="tip-number">03</span>
+                Estrategia Sensible/Específica
+              </h3>
+              <div class="tip-content">
+                <div class="definition">
+                  <strong>Concepto:</strong>
+                  Método de dos fases que evoluciona de una búsqueda amplia a
+                  una más precisa
+                </div>
+                <div class="phase-one">
+                  <strong>Fase 1 - Sensible:</strong>
+                  • Usa términos amplios • Incluye múltiples sinónimos •
+                  Identifica terminología relevante
+                </div>
+                <div class="phase-two">
+                  <strong>Fase 2 - Específica:</strong>
+                  • Refina usando términos identificados • Aplica filtros
+                  metodológicos validados • Ajusta según relevancia observada
+                </div>
+                <div class="pro-tip">
+                  💡 Documenta los términos descubiertos en la fase sensible
+                  para futuros refinamientos
+                </div>
+              </div>
             </div>
 
-            <div class="search-tip">
-              <h4 class="search-tip-title">
-                <i class="fas fa-check-double"></i> Validación de resultados
-              </h4>
-              <p class="search-tip-content">
-                Los primeros 10 resultados deben ser altamente relevantes. Si no
-                lo son, ajusta los operadores booleanos de cada categoría o
-                considera usar filtros más específicos. El diagrama de Venn te
-                ayudará a visualizar qué combinación es más efectiva.
-              </p>
+            <!-- Tip 4: Clinical Queries -->
+            <div class="tip">
+              <h3 class="tip-title">
+                <span class="tip-number">04</span>
+                Clinical Queries Estratégicos
+              </h3>
+              <div class="tip-content">
+                <div class="definition">
+                  <strong>¿Qué son?</strong>
+                  Filtros prediseñados y validados para diferentes tipos de
+                  estudios clínicos
+                </div>
+                <div class="how-to">
+                  <strong>Proceso:</strong>
+                  1. Selecciona el filtro CQ apropiado 2. Combina con tu
+                  estrategia de búsqueda 3. Analiza usando Best Match 4. Extrae
+                  terminología especializada
+                </div>
+                <div class="pro-tip">
+                  💡 Los filtros CQ ya están metodológicamente validados -
+                  aprovecha esta ventaja
+                </div>
+              </div>
             </div>
 
-            <div class="search-tip">
-              <h4 class="search-tip-title">
-                <i class="fas fa-calendar-alt"></i> Control temporal inteligente
-              </h4>
-              <p class="search-tip-content">
-                Para temas actuales, inicia con filtro de 6 meses y "Best Match"
-                para encontrar terminología reciente. Luego amplía a 5 años para
-                capturar estudios clásicos usando los términos descubiertos.
-              </p>
+            <!-- Tip 5: Control Temporal -->
+            <div class="tip">
+              <h3 class="tip-title">
+                <span class="tip-number">05</span>
+                Control Temporal Inteligente
+              </h3>
+              <div class="tip-content">
+                <div class="strategy">
+                  <strong>Estrategia en dos tiempos:</strong>
+                  <div class="recent">
+                    <strong>Búsqueda reciente:</strong>
+                    • Limita a últimos 6 meses • Ordena por Best Match • Captura
+                    términos actuales
+                  </div>
+                  <div class="historical">
+                    <strong>Búsqueda histórica:</strong>
+                    • Amplía a 5 años • Incorpora términos actuales • Recupera
+                    estudios clásicos
+                  </div>
+                </div>
+                <div class="pro-tip">
+                  💡 Los términos actuales mejoran la recuperación de estudios
+                  antiguos
+                </div>
+              </div>
             </div>
 
-            <div class="search-tip">
-              <h4 class="search-tip-title">
-                <i class="fas fa-code"></i> Campo de búsqueda avanzado
-              </h4>
-              <p class="search-tip-content">
-                Combina términos MeSH con palabras del título/resumen:
-                "Término"[MeSH] OR ("palabra1"[tiab] OR "palabra2"[tiab]). Los
-                filtros estructurados complementarán automáticamente tu
-                estrategia.
-              </p>
+            <!-- Tip 6: Validación -->
+            <div class="tip">
+              <h3 class="tip-title">
+                <span class="tip-number">06</span>
+                Validación Sistemática
+              </h3>
+              <div class="tip-content">
+                <div class="process">
+                  <strong>Proceso de validación:</strong>
+                  1. Ordena por Best Match 2. Evalúa primeros 10 resultados 3.
+                  Verifica relevancia temática 4. Ajusta según hallazgos
+                </div>
+                <div class="indicators">
+                  <strong>Señales de alerta:</strong>
+                  • Resultados irrelevantes en top 10 • Ausencia de términos
+                  esperados • Ruido temático excesivo
+                </div>
+                <div class="solutions">
+                  <strong>Ajustes posibles:</strong>
+                  • Revisa operadores booleanos • Refina términos MeSH • Aplica
+                  filtros específicos
+                </div>
+                <div class="pro-tip">
+                  💡 Mantén un registro de los ajustes realizados y su impacto
+                </div>
+              </div>
             </div>
 
-            <div class="search-tip">
-              <h4 class="search-tip-title">
-                <i class="fas fa-info-circle"></i> Métricas de rendimiento
-              </h4>
-              <p class="search-tip-content">
-                Activa "Ver Detalles de Filtros" para conocer la
-                sensibilidad/especificidad de cada filtro. Estas métricas te
-                ayudarán a decidir qué combinación usar según necesites
-                exhaustividad o precisión.
-              </p>
+            <!-- Tip 7: Refinamiento -->
+            <div class="tip">
+              <h3 class="tip-title">
+                <span class="tip-number">07</span>
+                Refinamiento Iterativo
+              </h3>
+              <div class="tip-content">
+                <div class="process">
+                  <strong>Proceso de mejora:</strong>
+                  1. Ejecuta búsqueda inicial 2. Analiza mediante Best Match 3.
+                  Identifica nuevos términos 4. Incorpora y valida cambios
+                </div>
+                <div class="validation">
+                  <strong>Puntos de control:</strong>
+                  • Relevancia de nuevos resultados • Mantenimiento de artículos
+                  clave • Balance de precisión/exhaustividad
+                </div>
+                <div class="pro-tip">
+                  💡 Documenta cada iteración para mantener trazabilidad
+                </div>
+              </div>
             </div>
 
-            <div class="search-tip">
-              <h4 class="search-tip-title">
-                <i class="fas fa-project-diagram"></i> Análisis visual de
-                filtros
-              </h4>
-              <p class="search-tip-content">
-                El diagrama de Venn no solo muestra intersecciones: úsalo para
-                identificar qué combinaciones de filtros están encontrando los
-                artículos más relevantes y ajusta tu estrategia en consecuencia.
-              </p>
+            <!-- Tip 8: Combinación de Campos -->
+            <div class="tip">
+              <h3 class="tip-title">
+                <span class="tip-number">08</span>
+                Combinación de Campos de Búsqueda
+              </h3>
+              <div class="tip-content">
+                <div class="definition">
+                  <strong>Estrategia:</strong>
+                  Combinar búsqueda por proximidad con términos MeSH para máxima
+                  precisión
+                </div>
+                <div class="examples">
+                  <strong>Ejemplos prácticos:</strong>
+                  • "healthcare rationing"[tiab:~1] AND "Health Resources"[Mesh]
+                  • "standard care"[tiab:~2] AND "lung cancer"[Mesh]
+                </div>
+                <div class="key-points">
+                  <strong>Consideraciones:</strong>
+                  • La proximidad solo funciona en [Title] y [Title/Abstract] •
+                  Se pueden combinar múltiples búsquedas por proximidad • El
+                  orden de los términos no es relevante
+                </div>
+                <div class="pro-tip">
+                  💡 Compara resultados con diferentes valores de proximidad
+                  para optimizar
+                </div>
+              </div>
+            </div>
+
+            <!-- Tip 9: Análisis de Resultados -->
+            <div class="tip">
+              <h3 class="tip-title">
+                <span class="tip-number">09</span>
+                Análisis de Resultados
+              </h3>
+              <div class="tip-content">
+                <div class="metrics">
+                  <strong>Indicadores clave:</strong>
+                  • Relevancia en top 10 resultados • Precisión de términos MeSH
+                  • Recuperación de referencias conocidas
+                </div>
+                <div class="checklist">
+                  <strong>Lista de verificación:</strong>
+                  □ ¿Los resultados son coherentes? □ ¿Se recuperan artículos
+                  clave? □ ¿La terminología es apropiada? □ ¿El balance
+                  sensibilidad/especificidad es adecuado?
+                </div>
+                <div class="pro-tip">
+                  💡 La calidad de los primeros resultados predice la
+                  efectividad global
+                </div>
+              </div>
+            </div>
+
+            <!-- Tip 10: Verificación Final -->
+            <div class="tip">
+              <h3 class="tip-title">
+                <span class="tip-number">10</span>
+                Lista de Verificación Final
+              </h3>
+              <div class="tip-content">
+                <div class="checklist-main">
+                  <strong>Verificación técnica:</strong>
+                  □ Términos MeSH apropiados □ Proximidad correctamente aplicada
+                  □ Campos de búsqueda adecuados □ Filtros temporales ajustados
+                </div>
+                <div class="checklist-quality">
+                  <strong>Control de calidad:</strong>
+                  □ Best Match muestra resultados relevantes □ Referencias clave
+                  recuperadas □ Terminología actualizada incluida □ Balance
+                  sensibilidad/especificidad adecuado
+                </div>
+                <div class="checklist-documentation">
+                  <strong>Documentación:</strong>
+                  □ Estrategia documentada □ Cambios registrados □ Decisiones
+                  justificadas □ Resultados validados
+                </div>
+                <div class="pro-tip">
+                  💡 Una búsqueda bien documentada facilita actualizaciones
+                  futuras
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
         <div class="info-section">
           <h2 class="info-title">
             <i class="fas fa-info-circle"></i>
