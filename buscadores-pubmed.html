@@ -836,6 +836,12 @@ filtros estructurados para profesionales sanitarios
             <button id="btn_borrar" title="Borrar búsqueda">
               <i class="fas fa-trash-alt"></i>
             </button>
+            <button id="btn_exportar" title="Exportar búsquedas">
+              <i class="fas fa-download"></i>
+            </button>
+            <button id="btn_importar" title="Importar búsquedas">
+              <i class="fas fa-upload"></i>
+            </button>
           </div>
 
           <div
@@ -1790,9 +1796,10 @@ filtros estructurados para profesionales sanitarios
             updateVennDiagram(); // Actualizar el diagrama cuando se muestra
           }
         });
-        // ============================
-        // Componente de Guardar / Recuperar / Borrar búsquedas
-        // ============================
+
+        // ================================
+        // Componente de Guardar / Recuperar / Borrar / Exportar / Importar búsquedas
+        // ================================
 
         // Función para obtener el objeto de búsquedas guardadas desde localStorage
         function obtenerBúsquedasGuardadas() {
@@ -1820,7 +1827,7 @@ filtros estructurados para profesionales sanitarios
             }
             const búsquedaActual = {
               termino: searchTerm.value.trim(),
-              filtros: Array.from(activeFilters), // Array de identificadores de filtros activos
+              filtros: Array.from(activeFilters), // array de identificadores de filtros activos
               fecha: dateRange.value,
               orden: sortMode.value,
             };
@@ -1912,6 +1919,60 @@ filtros estructurados para profesionales sanitarios
               alert(`Búsqueda "${nombreBorrar.trim()}" borrada correctamente.`);
             }
           });
+
+        // Botón para exportar búsquedas: descarga un archivo JSON
+        document
+          .getElementById("btn_exportar")
+          .addEventListener("click", function () {
+            const búsquedas = obtenerBúsquedasGuardadas();
+            const jsonString = JSON.stringify(búsquedas, null, 2); // Formateado para leerlo
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "saved_searches.json"; // Nombre del archivo
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert(
+              "Las búsquedas se han exportado a un archivo llamado 'saved_searches.json'.\nGuárdalo en un lugar seguro para futuras importaciones."
+            );
+          });
+
+        // Botón para importar búsquedas: abre un selector de archivos y guarda el JSON importado
+        document
+          .getElementById("btn_importar")
+          .addEventListener("click", function () {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "application/json"; // Acepta solo archivos JSON
+            input.addEventListener("change", function (event) {
+              const file = event.target.files[0];
+              if (!file) {
+                alert("No se seleccionó ningún archivo.");
+                return;
+              }
+              const reader = new FileReader();
+              reader.onload = function (e) {
+                try {
+                  const búsquedasImportadas = JSON.parse(e.target.result);
+                  guardarBúsquedasGuardadas(búsquedasImportadas);
+                  alert("Búsquedas importadas correctamente.");
+                } catch (error) {
+                  alert(
+                    "Error al parsear el archivo JSON. Verifique el formato."
+                  );
+                }
+              };
+              reader.readAsText(file);
+            });
+            input.click();
+          });
+
+        // ================================
+        // Fin del componente de Guardar/Recuperar/Borrar/Exportar/Importar búsquedas
+        // ================================
 
         // 2. Configuración de categorías
         var categories = {
@@ -2669,6 +2730,13 @@ filtros estructurados para profesionales sanitarios
                   "Aquí verás la estrategia de búsqueda completa que combina tus términos con los filtros seleccionados usando los operadores booleanos específicos de cada categoría.",
                 position: "top",
               },
+              {
+                element: document.querySelector(".search-header-icons"),
+                intro:
+                  "Tus búsquedas se guardan localmente en este navegador; si borras la caché o usas otro dispositivo, se perderán. Usa los botones de exportar e importar para hacer una copia de seguridad y restaurarlas cuando lo necesites.",
+                position: "bottom",
+              },
+
               {
                 element: document.querySelector(".search-tips"),
                 intro:
