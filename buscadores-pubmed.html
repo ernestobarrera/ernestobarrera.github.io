@@ -1,7 +1,7 @@
 <!--
 =====================
  buscadores-pubmed.html
-filtros estructurados para profesionales sanitarios en staging
+filtros estructurados para profesionales sanitarios
 =====================
 -->
 <!DOCTYPE html>
@@ -77,6 +77,7 @@ filtros estructurados para profesionales sanitarios en staging
         margin: 0 auto;
         padding: 0;
         color: var(--text-primary, #fff);
+        position: relative;
       }
       .intro-text {
         font-size: 0.95rem;
@@ -754,6 +755,25 @@ filtros estructurados para profesionales sanitarios en staging
         opacity: 0.8;
         margin-left: 0.5rem;
       }
+      .search-header-icons {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .search-header-icons button {
+        background: transparent;
+        border: none;
+        color: #ffd700; /* O el color que prefieras para resaltar */
+        font-size: 1.5rem;
+        cursor: pointer;
+      }
+
+      .search-header-icons button:hover {
+        color: #fff;
+      }
     </style>
     <!-- libreria tooltip con metadatos del filtro -->
     <!-- Primero los archivos de tippy -->
@@ -806,6 +826,17 @@ filtros estructurados para profesionales sanitarios en staging
             data-step="2"
             rows="1"
           ></textarea>
+          <div class="search-header-icons">
+            <button id="btn_guardar" title="Guardar búsqueda">
+              <i class="fas fa-save"></i>
+            </button>
+            <button id="btn_recuperar" title="Recuperar búsqueda">
+              <i class="fas fa-folder-open"></i>
+            </button>
+            <button id="btn_borrar" title="Borrar búsqueda">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
 
           <div
             class="filters-section"
@@ -1759,6 +1790,128 @@ filtros estructurados para profesionales sanitarios en staging
             updateVennDiagram(); // Actualizar el diagrama cuando se muestra
           }
         });
+        // ============================
+        // Componente de Guardar / Recuperar / Borrar búsquedas
+        // ============================
+
+        // Función para obtener el objeto de búsquedas guardadas desde localStorage
+        function obtenerBúsquedasGuardadas() {
+          const almacenado = localStorage.getItem("saved_searches");
+          console.log("Búsquedas almacenadas:", almacenado);
+          return almacenado ? JSON.parse(almacenado) : {};
+        }
+
+        // Función para guardar el objeto de búsquedas en localStorage
+        function guardarBúsquedasGuardadas(búsquedas) {
+          localStorage.setItem("saved_searches", JSON.stringify(búsquedas));
+          console.log("Guardando búsquedas:", búsquedas);
+        }
+
+        // Botón para guardar búsqueda
+        document
+          .getElementById("btn_guardar")
+          .addEventListener("click", function () {
+            const nombre = window.prompt(
+              "Ingrese un nombre para guardar la búsqueda:"
+            );
+            if (!nombre || !nombre.trim()) {
+              alert("Debe ingresar un nombre válido.");
+              return;
+            }
+            const búsquedaActual = {
+              termino: searchTerm.value.trim(),
+              filtros: Array.from(activeFilters), // Array de identificadores de filtros activos
+              fecha: dateRange.value,
+              orden: sortMode.value,
+            };
+            const búsquedas = obtenerBúsquedasGuardadas();
+            búsquedas[nombre.trim()] = búsquedaActual;
+            guardarBúsquedasGuardadas(búsquedas);
+            alert(`Búsqueda "${nombre.trim()}" guardada correctamente.`);
+          });
+
+        // Botón para recuperar búsqueda
+        document
+          .getElementById("btn_recuperar")
+          .addEventListener("click", function () {
+            const búsquedas = obtenerBúsquedasGuardadas();
+            const nombres = Object.keys(búsquedas);
+            if (nombres.length === 0) {
+              alert("No hay búsquedas guardadas.");
+              return;
+            }
+            const mensaje =
+              "Búsquedas guardadas:\n" +
+              nombres.join("\n") +
+              "\n\nIngrese el nombre de la búsqueda a recuperar:";
+            const nombreRecuperar = window.prompt(mensaje);
+            if (!nombreRecuperar || !búsquedas[nombreRecuperar.trim()]) {
+              alert("No se encontró la búsqueda con ese nombre.");
+              return;
+            }
+            const estado = búsquedas[nombreRecuperar.trim()];
+            searchTerm.value = estado.termino || "";
+            dateRange.value = estado.fecha || "";
+            sortMode.value = estado.orden || "date";
+
+            // Reiniciar filtros visuales y el conjunto de filtros activos
+            document.querySelectorAll(".filter-button").forEach(function (btn) {
+              btn.classList.remove("active");
+            });
+            activeFilters.clear();
+            estado.filtros.forEach(function (filtro) {
+              activeFilters.add(filtro);
+              let btn = document.querySelector(
+                '.filter-button[data-type="' + filtro + '"]'
+              );
+              if (!btn) {
+                const base = filtro.split("_")[0];
+                btn = document.querySelector(
+                  '.filter-button[data-base="' + base + '"]'
+                );
+              }
+              if (btn) {
+                btn.classList.add("active");
+              }
+            });
+
+            mostrarQueryFinal(); // Actualiza la consulta y la interfaz
+            alert(
+              `Búsqueda "${nombreRecuperar.trim()}" recuperada correctamente.`
+            );
+          });
+
+        // Botón para borrar búsqueda
+        document
+          .getElementById("btn_borrar")
+          .addEventListener("click", function () {
+            const búsquedas = obtenerBúsquedasGuardadas();
+            const nombres = Object.keys(búsquedas);
+            if (nombres.length === 0) {
+              alert("No hay búsquedas guardadas.");
+              return;
+            }
+            const mensaje =
+              "Búsquedas guardadas:\n" +
+              nombres.join("\n") +
+              "\n\nIngrese el nombre de la búsqueda a borrar:";
+            const nombreBorrar = window.prompt(mensaje);
+            if (!nombreBorrar || !búsquedas[nombreBorrar.trim()]) {
+              alert("No se encontró la búsqueda con ese nombre.");
+              return;
+            }
+            if (
+              window.confirm(
+                "¿Estás seguro de borrar la búsqueda '" +
+                  nombreBorrar.trim() +
+                  "'?"
+              )
+            ) {
+              delete búsquedas[nombreBorrar.trim()];
+              guardarBúsquedasGuardadas(búsquedas);
+              alert(`Búsqueda "${nombreBorrar.trim()}" borrada correctamente.`);
+            }
+          });
 
         // 2. Configuración de categorías
         var categories = {
