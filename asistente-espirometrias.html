@@ -1,9 +1,3 @@
-<!--
-    =====================
-      asistente-espirometrias.html
-      Ayuda para su realizacion y evaluacion
-    =====================
-    -->
 <!DOCTYPE html>
 <html lang="es">
   <head>
@@ -80,11 +74,19 @@
     </style>
 
     <!-- Scripts necesarios -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script
+      src="https://unpkg.com/react@18/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+      crossorigin
+    ></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.15.0/Recharts.min.js"></script>
   </head>
+
   <body>
     <include src="header.html"></include>
 
@@ -123,6 +125,11 @@
       gtag("js", new Date());
       gtag("config", "G-YFKR6RB1ZC");
     </script>
+
+    <!-- Componente React -->
+    <!-- Scripts adicionales -->
+    <script src="/assets/js/include.js"></script>
+
     <script
       type="text/babel"
       src="/assets/js/asistente-espirometrias.js"
