@@ -774,6 +774,119 @@ filtros estructurados para profesionales sanitarios
       .search-header-icons button:hover {
         color: #fff;
       }
+      /* MODALES PARA GUARDAR/RECUPERAR/BORRAR/EXPORTAR/IMPORTAR */
+      .modal-backdrop {
+        position: fixed;
+        z-index: 9999;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.65);
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-backdrop.show {
+        display: flex;
+      }
+      .modal {
+        background: #2a3b4d;
+        border: 2px solid #ffd700;
+        border-radius: 8px;
+        width: 350px;
+        padding: 1rem;
+        color: #fff;
+        position: relative;
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #ffd700;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+      }
+      .modal-title {
+        font-size: 1rem;
+        font-weight: bold;
+        margin: 0;
+        color: #ffd700;
+      }
+      .close-modal {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: #ffd700;
+        font-size: 1.2rem;
+      }
+      .modal-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        font-size: 0.9rem;
+      }
+      .modal-body input,
+      .modal-body select {
+        background: #1c1e26;
+        border: 1px solid #2c3e50;
+        border-radius: 4px;
+        padding: 0.4rem;
+        color: #fff;
+        font-size: 0.85rem;
+        width: 100%;
+      }
+      .modal-body button {
+        background: #ffd700;
+        color: #1c1e26;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      .modal-body button:hover {
+        background: #ffca1c;
+      }
+      .modal-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 1rem;
+      }
+
+      .modal-cancel {
+        background: #555 !important;
+        color: #fff !important;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        font-size: 0.85rem;
+        opacity: 1 !important; /* Aseguramos que no esté atenuado */
+      }
+
+      .modal-cancel:hover {
+        background: #666 !important;
+      }
+
+      .modal-confirm {
+        background: #ffd700 !important;
+        color: #1c1e26 !important;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        opacity: 0.5; /* Empieza atenuado */
+        cursor: not-allowed; /* Cursor indica que está deshabilitado */
+        transition: opacity 0.3s ease, cursor 0.3s ease;
+      }
+
+      .modal-confirm.active {
+        /* Clase para cuando el input tiene contenido */
+        opacity: 1;
+        cursor: pointer;
+      }
     </style>
     <!-- libreria tooltip con metadatos del filtro -->
     <!-- Primero los archivos de tippy -->
@@ -1801,40 +1914,44 @@ filtros estructurados para profesionales sanitarios
         // Componente de Guardar / Recuperar / Borrar / Exportar / Importar búsquedas
         // ================================
 
-        // Función para obtener el objeto de búsquedas guardadas desde localStorage
-        function obtenerBúsquedasGuardadas() {
-          const almacenado = localStorage.getItem("saved_searches");
-          console.log("Búsquedas almacenadas:", almacenado);
-          return almacenado ? JSON.parse(almacenado) : {};
-        }
-
-        // Función para guardar el objeto de búsquedas en localStorage
-        function guardarBúsquedasGuardadas(búsquedas) {
-          localStorage.setItem("saved_searches", JSON.stringify(búsquedas));
-          console.log("Guardando búsquedas:", búsquedas);
-        }
-
         // Botón para guardar búsqueda
         document
           .getElementById("btn_guardar")
           .addEventListener("click", function () {
-            const nombre = window.prompt(
-              "Ingrese un nombre para guardar la búsqueda:"
-            );
-            if (!nombre || !nombre.trim()) {
-              alert("Debe ingresar un nombre válido.");
+            document.getElementById("nombreNuevaBusqueda").value = "";
+            abrirModal("modalGuardarFondo");
+          });
+        document
+          .getElementById("guardarBusquedaConfirm")
+          .addEventListener("click", function () {
+            const nombre = document
+              .getElementById("nombreNuevaBusqueda")
+              .value.trim();
+            if (!nombre) {
               return;
             }
+
+            // Recoger operadores actuales
+            const operadores = {};
+            document
+              .querySelectorAll(".category-operator")
+              .forEach((select) => {
+                operadores[select.dataset.category] = select.value;
+              });
+
             const búsquedaActual = {
               termino: searchTerm.value.trim(),
-              filtros: Array.from(activeFilters), // array de identificadores de filtros activos
+              filtros: Array.from(activeFilters),
               fecha: dateRange.value,
               orden: sortMode.value,
+              operadores: operadores, // Añadimos los operadores
             };
+
             const búsquedas = obtenerBúsquedasGuardadas();
-            búsquedas[nombre.trim()] = búsquedaActual;
+            búsquedas[nombre] = búsquedaActual;
             guardarBúsquedasGuardadas(búsquedas);
-            alert(`Búsqueda "${nombre.trim()}" guardada correctamente.`);
+            alert(`Búsqueda "${nombre}" guardada correctamente.`);
+            cerrarModal("modalGuardarFondo");
           });
 
         // Botón para recuperar búsqueda
@@ -1843,29 +1960,66 @@ filtros estructurados para profesionales sanitarios
           .addEventListener("click", function () {
             const búsquedas = obtenerBúsquedasGuardadas();
             const nombres = Object.keys(búsquedas);
+            const select = document.getElementById("recuperarSelect");
+            select.innerHTML = "";
+
             if (nombres.length === 0) {
+              const opt = document.createElement("option");
+              opt.value = "";
+              opt.textContent = "No hay búsquedas guardadas";
+              select.appendChild(opt);
               alert("No hay búsquedas guardadas.");
               return;
             }
-            const mensaje =
-              "Búsquedas guardadas:\n" +
-              nombres.join("\n") +
-              "\n\nIngrese el nombre de la búsqueda a recuperar:";
-            const nombreRecuperar = window.prompt(mensaje);
-            if (!nombreRecuperar || !búsquedas[nombreRecuperar.trim()]) {
+
+            nombres.forEach((nombre) => {
+              const opt = document.createElement("option");
+              opt.value = nombre;
+              opt.textContent = nombre;
+              select.appendChild(opt);
+            });
+
+            abrirModal("modalRecuperarFondo");
+          });
+
+        document
+          .getElementById("recuperarBusquedaConfirm")
+          .addEventListener("click", function () {
+            const select = document.getElementById("recuperarSelect");
+            const nombre = select.value;
+            const búsquedas = obtenerBúsquedasGuardadas();
+
+            if (!nombre || !búsquedas[nombre]) {
               alert("No se encontró la búsqueda con ese nombre.");
               return;
             }
-            const estado = búsquedas[nombreRecuperar.trim()];
+
+            const estado = búsquedas[nombre];
+
+            // Restaurar valores básicos
             searchTerm.value = estado.termino || "";
             dateRange.value = estado.fecha || "";
             sortMode.value = estado.orden || "date";
 
-            // Reiniciar filtros visuales y el conjunto de filtros activos
+            // Restaurar operadores si existen
+            if (estado.operadores) {
+              Object.entries(estado.operadores).forEach(([category, value]) => {
+                const select = document.querySelector(
+                  `.category-operator[data-category="${category}"]`
+                );
+                if (select) {
+                  select.value = value;
+                  categoryOperators[category] = value; // Actualizar también el objeto de operadores
+                }
+              });
+            }
+
+            // Restaurar filtros
             document.querySelectorAll(".filter-button").forEach(function (btn) {
               btn.classList.remove("active");
             });
             activeFilters.clear();
+
             estado.filtros.forEach(function (filtro) {
               activeFilters.add(filtro);
               let btn = document.querySelector(
@@ -1882,10 +2036,10 @@ filtros estructurados para profesionales sanitarios
               }
             });
 
-            mostrarQueryFinal(); // Actualiza la consulta y la interfaz
-            alert(
-              `Búsqueda "${nombreRecuperar.trim()}" recuperada correctamente.`
-            );
+            filterCount.textContent = activeFilters.size;
+            mostrarQueryFinal();
+            alert(`Búsqueda "${nombre}" recuperada correctamente.`);
+            cerrarModal("modalRecuperarFondo");
           });
 
         // Botón para borrar búsqueda
@@ -1894,43 +2048,80 @@ filtros estructurados para profesionales sanitarios
           .addEventListener("click", function () {
             const búsquedas = obtenerBúsquedasGuardadas();
             const nombres = Object.keys(búsquedas);
+            const select = document.getElementById("borrarSelect");
+            select.innerHTML = "";
+
             if (nombres.length === 0) {
+              const opt = document.createElement("option");
+              opt.value = "";
+              opt.textContent = "No hay búsquedas guardadas";
+              select.appendChild(opt);
               alert("No hay búsquedas guardadas.");
               return;
             }
-            const mensaje =
-              "Búsquedas guardadas:\n" +
-              nombres.join("\n") +
-              "\n\nIngrese el nombre de la búsqueda a borrar:";
-            const nombreBorrar = window.prompt(mensaje);
-            if (!nombreBorrar || !búsquedas[nombreBorrar.trim()]) {
+
+            nombres.forEach((nombre) => {
+              const opt = document.createElement("option");
+              opt.value = nombre;
+              opt.textContent = nombre;
+              select.appendChild(opt);
+            });
+
+            abrirModal("modalBorrarFondo");
+          });
+
+        document
+          .getElementById("borrarBusquedaConfirm")
+          .addEventListener("click", function () {
+            const select = document.getElementById("borrarSelect");
+            const nombre = select.value;
+            const búsquedas = obtenerBúsquedasGuardadas();
+
+            if (!nombre || !búsquedas[nombre]) {
               alert("No se encontró la búsqueda con ese nombre.");
               return;
             }
-            if (
-              window.confirm(
-                "¿Estás seguro de borrar la búsqueda '" +
-                  nombreBorrar.trim() +
-                  "'?"
-              )
-            ) {
-              delete búsquedas[nombreBorrar.trim()];
-              guardarBúsquedasGuardadas(búsquedas);
-              alert(`Búsqueda "${nombreBorrar.trim()}" borrada correctamente.`);
+
+            delete búsquedas[nombre];
+            guardarBúsquedasGuardadas(búsquedas);
+            alert(`Búsqueda "${nombre}" borrada correctamente.`);
+            cerrarModal("modalBorrarFondo");
+
+            // Actualizar el select después de borrar
+            const nombres = Object.keys(búsquedas);
+            select.innerHTML = "";
+            if (nombres.length === 0) {
+              const opt = document.createElement("option");
+              opt.value = "";
+              opt.textContent = "No hay búsquedas guardadas";
+              select.appendChild(opt);
+            } else {
+              nombres.forEach((nombre) => {
+                const opt = document.createElement("option");
+                opt.value = nombre;
+                opt.textContent = nombre;
+                select.appendChild(opt);
+              });
             }
           });
 
-        // Botón para exportar búsquedas: descarga un archivo JSON
+        // Botón para exportar búsquedas
         document
           .getElementById("btn_exportar")
           .addEventListener("click", function () {
+            abrirModal("modalExportarFondo");
+          });
+
+        document
+          .getElementById("exportarBusquedaConfirm")
+          .addEventListener("click", function () {
             const búsquedas = obtenerBúsquedasGuardadas();
-            const jsonString = JSON.stringify(búsquedas, null, 2); // Formateado para leerlo
+            const jsonString = JSON.stringify(búsquedas, null, 2);
             const blob = new Blob([jsonString], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = "saved_searches.json"; // Nombre del archivo
+            a.download = "saved_searches.json";
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -1938,38 +2129,70 @@ filtros estructurados para profesionales sanitarios
             alert(
               "Las búsquedas se han exportado a un archivo llamado 'saved_searches.json'.\nGuárdalo en un lugar seguro para futuras importaciones."
             );
+            cerrarModal("modalExportarFondo");
           });
 
-        // Botón para importar búsquedas: abre un selector de archivos y guarda el JSON importado
+        // Botón para importar búsquedas
         document
           .getElementById("btn_importar")
           .addEventListener("click", function () {
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = "application/json"; // Acepta solo archivos JSON
-            input.addEventListener("change", function (event) {
-              const file = event.target.files[0];
-              if (!file) {
-                alert("No se seleccionó ningún archivo.");
-                return;
-              }
-              const reader = new FileReader();
-              reader.onload = function (e) {
-                try {
-                  const búsquedasImportadas = JSON.parse(e.target.result);
-                  guardarBúsquedasGuardadas(búsquedasImportadas);
-                  alert("Búsquedas importadas correctamente.");
-                } catch (error) {
-                  alert(
-                    "Error al parsear el archivo JSON. Verifique el formato."
-                  );
-                }
-              };
-              reader.readAsText(file);
-            });
-            input.click();
+            abrirModal("modalImportarFondo");
           });
 
+        document
+          .getElementById("importarBusquedaConfirm")
+          .addEventListener("click", function () {
+            const input = document.getElementById("importarArchivo");
+            const file = input.files[0];
+            if (!file) {
+              alert("No se seleccionó ningún archivo.");
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              try {
+                const búsquedasImportadas = JSON.parse(e.target.result);
+                const búsquedasActuales = obtenerBúsquedasGuardadas();
+
+                // Merge inteligente
+                Object.entries(búsquedasImportadas).forEach(
+                  ([nombre, búsqueda]) => {
+                    let nombreFinal = nombre;
+                    let counter = 1;
+
+                    // Si existe y es diferente, añadir numeración
+                    while (
+                      búsquedasActuales[nombreFinal] &&
+                      JSON.stringify(búsquedasActuales[nombreFinal]) !==
+                        JSON.stringify(búsqueda)
+                    ) {
+                      nombreFinal = `${nombre} (${counter})`;
+                      counter++;
+                    }
+
+                    // Solo guardar si es nueva o diferente
+                    if (
+                      !búsquedasActuales[nombreFinal] ||
+                      JSON.stringify(búsquedasActuales[nombreFinal]) !==
+                        JSON.stringify(búsqueda)
+                    ) {
+                      búsquedasActuales[nombreFinal] = búsqueda;
+                    }
+                  }
+                );
+
+                guardarBúsquedasGuardadas(búsquedasActuales);
+                alert("Búsquedas importadas correctamente.");
+                cerrarModal("modalImportarFondo");
+                input.value = "";
+              } catch (error) {
+                alert(
+                  "Error al parsear el archivo JSON. Verifique el formato."
+                );
+              }
+            };
+            reader.readAsText(file);
+          });
         // ================================
         // Fin del componente de Guardar/Recuperar/Borrar/Exportar/Importar búsquedas
         // ================================
@@ -2777,6 +3000,20 @@ filtros estructurados para profesionales sanitarios
           startTutorialBtn.addEventListener("click", iniciarTutorial);
         }
       });
+      // Activar/desactivar botones según contenido
+      document
+        .getElementById("nombreNuevaBusqueda")
+        ?.addEventListener("input", function (e) {
+          const confirmBtn = document.getElementById("guardarBusquedaConfirm");
+          confirmBtn.classList.toggle("active", e.target.value.trim() !== "");
+        });
+
+      document
+        .getElementById("importarArchivo")
+        ?.addEventListener("change", function (e) {
+          const confirmBtn = document.getElementById("importarBusquedaConfirm");
+          confirmBtn.classList.toggle("active", e.target.files.length > 0);
+        });
       // Manejo del toggle de tips
       const searchTips = document.querySelector(".search-tips");
       const searchTipsHeader = document.querySelector(".search-tips-header");
@@ -2802,6 +3039,154 @@ filtros estructurados para profesionales sanitarios
       src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
     ></script>
     <script>
+      // Funciones de manejo de modales
+      function abrirModal(idBackdrop) {
+        document.getElementById(idBackdrop).classList.add("show");
+      }
+
+      function cerrarModal(idBackdrop) {
+        const modal = document.getElementById(idBackdrop);
+        if (modal) {
+          modal.classList.remove("show");
+          // Limpiar inputs
+          const inputs = modal.querySelectorAll('input[type="text"]');
+          inputs.forEach((input) => (input.value = ""));
+          // Resetear estado del botón confirmar
+          const confirmBtn = modal.querySelector(".modal-confirm");
+          if (confirmBtn) {
+            confirmBtn.classList.remove("active");
+          }
+        }
+      }
+
+      // Manejo de la tecla ESC y eventos del modal
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          const modalAbierto = document.querySelector(".modal-backdrop.show");
+          if (modalAbierto) {
+            cerrarModal(modalAbierto.id);
+          }
+        }
+      });
+
+      // Activar/desactivar botón guardar según contenido del input
+      document
+        .getElementById("nombreNuevaBusqueda")
+        .addEventListener("input", function (e) {
+          const confirmBtn = document.getElementById("guardarBusquedaConfirm");
+          if (e.target.value.trim()) {
+            confirmBtn.classList.add("active");
+          } else {
+            confirmBtn.classList.remove("active");
+          }
+        });
+
+      // Mejorar el manejo del guardado
+      document
+        .getElementById("guardarBusquedaConfirm")
+        .addEventListener("click", function (e) {
+          const input = document.getElementById("nombreNuevaBusqueda");
+          const nombre = input.value.trim();
+
+          if (!nombre) {
+            return; // No hacer nada si no hay nombre
+          }
+
+          const búsquedaActual = {
+            termino: searchTerm.value.trim(),
+            filtros: Array.from(activeFilters),
+            fecha: dateRange.value,
+            orden: sortMode.value,
+          };
+          const búsquedas = obtenerBúsquedasGuardadas();
+          búsquedas[nombre] = búsquedaActual;
+          guardarBúsquedasGuardadas(búsquedas);
+          alert(`Búsqueda "${nombre}" guardada correctamente.`);
+          cerrarModal("modalGuardarFondo");
+        });
+
+      // Delegación de eventos mejorada
+      document.addEventListener("click", function (e) {
+        // Cerrar al hacer click en el backdrop
+        if (e.target.classList.contains("modal-backdrop")) {
+          cerrarModal(e.target.id);
+        }
+
+        // Cerrar al hacer click en botón de cierre o cancelar
+        if (
+          e.target.classList.contains("close-modal") ||
+          e.target.classList.contains("modal-cancel")
+        ) {
+          const modalId = e.target.getAttribute("data-close");
+          if (modalId) {
+            cerrarModal(modalId);
+          }
+        }
+      });
+
+      // Prevenir que clicks dentro del modal cierren el modal
+      document.querySelectorAll(".modal").forEach((modal) => {
+        modal.addEventListener("click", function (e) {
+          e.stopPropagation();
+        });
+      });
+    </script>
+    <script>
+      // Funciones de localStorage
+      function obtenerBúsquedasGuardadas() {
+        const almacenado = localStorage.getItem("saved_searches");
+        return almacenado ? JSON.parse(almacenado) : {};
+      }
+
+      function guardarBúsquedasGuardadas(búsquedas) {
+        localStorage.setItem("saved_searches", JSON.stringify(búsquedas));
+      }
+
+      // Funciones de manejo de modales
+      function abrirModal(idBackdrop) {
+        document.getElementById(idBackdrop).classList.add("show");
+      }
+
+      function cerrarModal(idBackdrop) {
+        const modal = document.getElementById(idBackdrop);
+        if (modal) {
+          modal.classList.remove("show");
+          const inputs = modal.querySelectorAll('input[type="text"]');
+          inputs.forEach((input) => (input.value = ""));
+          const confirmBtn = modal.querySelector(".modal-confirm");
+          if (confirmBtn) {
+            confirmBtn.classList.remove("active");
+          }
+        }
+      }
+
+      // Event listeners globales para modales
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          const modalAbierto = document.querySelector(".modal-backdrop.show");
+          if (modalAbierto) {
+            cerrarModal(modalAbierto.id);
+          }
+        }
+      });
+
+      document.addEventListener("click", function (e) {
+        if (e.target.classList.contains("modal-backdrop")) {
+          cerrarModal(e.target.id);
+        }
+
+        if (
+          e.target.classList.contains("close-modal") ||
+          e.target.classList.contains("modal-cancel")
+        ) {
+          const modalId = e.target.getAttribute("data-close");
+          if (modalId) {
+            cerrarModal(modalId);
+          }
+        }
+      });
+
+      // Google Analytics
       window.dataLayer = window.dataLayer || [];
       function gtag() {
         dataLayer.push(arguments);
@@ -2809,5 +3194,124 @@ filtros estructurados para profesionales sanitarios
       gtag("js", new Date());
       gtag("config", "G-YFKR6RB1ZC");
     </script>
+    <!-- MODALES INDIVIDUALES PARA GUARDAR / RECUPERAR / BORRAR / EXPORTAR / IMPORTAR -->
+    <!-- Modal Guardar -->
+    <div class="modal-backdrop" id="modalGuardarFondo">
+      <div class="modal" id="modalGuardar">
+        <div class="modal-header">
+          <h2 class="modal-title">Guardar Búsqueda</h2>
+          <button class="close-modal" data-close="modalGuardarFondo">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <label for="nombreNuevaBusqueda">Nombre de la búsqueda:</label>
+          <input type="text" id="nombreNuevaBusqueda" />
+          <div class="modal-buttons">
+            <button class="modal-cancel" data-close="modalGuardarFondo">
+              Cancelar
+            </button>
+            <button id="guardarBusquedaConfirm" class="modal-confirm">
+              Guardar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Recuperar -->
+    <div class="modal-backdrop" id="modalRecuperarFondo">
+      <div class="modal" id="modalRecuperar">
+        <div class="modal-header">
+          <h2 class="modal-title">Recuperar Búsqueda</h2>
+          <button class="close-modal" data-close="modalRecuperarFondo">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <label for="recuperarSelect">Búsquedas guardadas:</label>
+          <select id="recuperarSelect"></select>
+          <div class="modal-buttons">
+            <button class="modal-cancel" data-close="modalRecuperarFondo">
+              Cancelar
+            </button>
+            <button id="recuperarBusquedaConfirm" class="modal-confirm active">
+              Recuperar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Borrar -->
+    <div class="modal-backdrop" id="modalBorrarFondo">
+      <div class="modal" id="modalBorrar">
+        <div class="modal-header">
+          <h2 class="modal-title">Borrar Búsqueda</h2>
+          <button class="close-modal" data-close="modalBorrarFondo">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <label for="borrarSelect">Búsquedas guardadas:</label>
+          <select id="borrarSelect"></select>
+          <div class="modal-buttons">
+            <button class="modal-cancel" data-close="modalBorrarFondo">
+              Cancelar
+            </button>
+            <button id="borrarBusquedaConfirm" class="modal-confirm active">
+              Borrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalExportarFondo">
+      <div class="modal" id="modalExportar">
+        <div class="modal-header">
+          <h2 class="modal-title">Exportar Búsquedas</h2>
+          <button class="close-modal" data-close="modalExportarFondo">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>
+            Se descargará un archivo JSON con todas las búsquedas guardadas.
+          </p>
+          <div class="modal-buttons">
+            <button class="modal-cancel" data-close="modalExportarFondo">
+              Cancelar
+            </button>
+            <button id="exportarBusquedaConfirm" class="modal-confirm active">
+              Exportar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalImportarFondo">
+      <div class="modal" id="modalImportar">
+        <div class="modal-header">
+          <h2 class="modal-title">Importar Búsquedas</h2>
+          <button class="close-modal" data-close="modalImportarFondo">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <label for="importarArchivo">Archivo JSON:</label>
+          <input type="file" accept="application/json" id="importarArchivo" />
+          <div class="modal-buttons">
+            <button class="modal-cancel" data-close="modalImportarFondo">
+              Cancelar
+            </button>
+            <button id="importarBusquedaConfirm" class="modal-confirm active">
+              Importar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
