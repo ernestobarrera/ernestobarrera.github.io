@@ -5,7 +5,7 @@
 - [ ] **Revisar GPTs:**
 - [ ] Proponer este GPT de IA para construir síntaxis
       [Asistente para crear búsquedas avanzadas en PubMed
-      ](https://chatgpt.com/g/g-679fc8b5a99481919ee408d9c064f2ed-asistente-para-crear-busquedas-avanzadas-en-pubmed)
+      ](https://chatgpt.com/g/g-679fc8b5a99481919ee408d9c064f2ed-pubmed-help-asistente-para-busquedas-avanzadas)
 
 - [ ] **Correcciones y mejoras en filtros y botones**
 
