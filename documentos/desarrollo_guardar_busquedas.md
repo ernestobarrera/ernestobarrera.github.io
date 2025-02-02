@@ -2,8 +2,10 @@
 
 ## Tareas Pendientes
 
-- [ ] **Revisar GPTs:**  
-      [PubMed Search Strategy Builder](https://chatgpt.com/g/g-LkfF8bqE9-pubmed-search-strategy-builder/c/679e8299-0350-800f-a09c-11eb36aeb1f9)
+- [ ] **Revisar GPTs:**
+- [ ] Proponer este GPT de IA para construir síntaxis
+      [Asistente para crear búsquedas avanzadas en PubMed
+      ](https://chatgpt.com/g/g-679fc8b5a99481919ee408d9c064f2ed-asistente-para-crear-busquedas-avanzadas-en-pubmed)
 
 - [ ] **Correcciones y mejoras en filtros y botones**
 
