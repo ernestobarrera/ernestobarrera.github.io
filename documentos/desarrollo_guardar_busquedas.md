@@ -16,6 +16,4 @@
 
   - Las cargas de ficheros JSON no son incrementales
 
-- [ ] **Interfaz y experiencia de usuario**
-  - Los menú alert son incómodos
-  - Cuando se carga una búsqueda extensa, el textarea no se expande hasta que me coloco encima
+- [ X] **Interfaz y experiencia de usuario** -[ X] Los menú alert son incómodos -[ X] Cuando se carga una búsqueda extensa, el textarea no se expande hasta que me coloco encima

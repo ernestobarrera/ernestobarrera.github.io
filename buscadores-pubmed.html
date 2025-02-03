@@ -111,7 +111,7 @@ filtros estructurados para profesionales sanitarios
         resize: vertical; /* Permitir redimensionamiento vertical */
         overflow-y: auto; /* Mostrar scroll solo cuando sea necesario */
         min-height: 3rem;
-        max-height: 150px;
+        max-height: 300px;
       }
 
       .search-textarea:focus {
@@ -1950,7 +1950,7 @@ filtros estructurados para profesionales sanitarios
             const búsquedas = obtenerBúsquedasGuardadas();
             búsquedas[nombre] = búsquedaActual;
             guardarBúsquedasGuardadas(búsquedas);
-            alert(`Búsqueda "${nombre}" guardada correctamente.`);
+            mostrarToast(`Búsqueda "${nombre}" guardada correctamente.`);
             cerrarModal("modalGuardarFondo");
           });
 
@@ -1968,7 +1968,7 @@ filtros estructurados para profesionales sanitarios
               opt.value = "";
               opt.textContent = "No hay búsquedas guardadas";
               select.appendChild(opt);
-              alert("No hay búsquedas guardadas.");
+              mostrarToast("No hay búsquedas guardadas.");
               return;
             }
 
@@ -1990,7 +1990,7 @@ filtros estructurados para profesionales sanitarios
             const búsquedas = obtenerBúsquedasGuardadas();
 
             if (!nombre || !búsquedas[nombre]) {
-              alert("No se encontró la búsqueda con ese nombre.");
+              mostrarToast("No se encontró la búsqueda con ese nombre.");
               return;
             }
 
@@ -1998,6 +1998,7 @@ filtros estructurados para profesionales sanitarios
 
             // Restaurar valores básicos
             searchTerm.value = estado.termino || "";
+            autoResizeTextarea.call(searchTerm);
             dateRange.value = estado.fecha || "";
             sortMode.value = estado.orden || "date";
 
@@ -2038,7 +2039,7 @@ filtros estructurados para profesionales sanitarios
 
             filterCount.textContent = activeFilters.size;
             mostrarQueryFinal();
-            alert(`Búsqueda "${nombre}" recuperada correctamente.`);
+            mostrarToast(`Búsqueda "${nombre}" recuperada correctamente.`);
             cerrarModal("modalRecuperarFondo");
           });
 
@@ -2056,7 +2057,7 @@ filtros estructurados para profesionales sanitarios
               opt.value = "";
               opt.textContent = "No hay búsquedas guardadas";
               select.appendChild(opt);
-              alert("No hay búsquedas guardadas.");
+              mostrarToast("No hay búsquedas guardadas.");
               return;
             }
 
@@ -2078,13 +2079,15 @@ filtros estructurados para profesionales sanitarios
             const búsquedas = obtenerBúsquedasGuardadas();
 
             if (!nombre || !búsquedas[nombre]) {
-              alert("No se encontró la búsqueda con ese nombre.");
+              mostrarToast("No se encontró la búsqueda con ese nombre.");
+
               return;
             }
 
             delete búsquedas[nombre];
             guardarBúsquedasGuardadas(búsquedas);
-            alert(`Búsqueda "${nombre}" borrada correctamente.`);
+            mostrarToast(`Búsqueda "${nombre}" borrada correctamente.`);
+
             cerrarModal("modalBorrarFondo");
 
             // Actualizar el select después de borrar
@@ -2126,7 +2129,7 @@ filtros estructurados para profesionales sanitarios
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            alert(
+            mostrarToast(
               "Las búsquedas se han exportado a un archivo llamado 'saved_searches.json'.\nGuárdalo en un lugar seguro para futuras importaciones."
             );
             cerrarModal("modalExportarFondo");
@@ -2145,7 +2148,7 @@ filtros estructurados para profesionales sanitarios
             const input = document.getElementById("importarArchivo");
             const file = input.files[0];
             if (!file) {
-              alert("No se seleccionó ningún archivo.");
+              mostrarToast("No se seleccionó ningún archivo.");
               return;
             }
             const reader = new FileReader();
@@ -2182,11 +2185,11 @@ filtros estructurados para profesionales sanitarios
                 );
 
                 guardarBúsquedasGuardadas(búsquedasActuales);
-                alert("Búsquedas importadas correctamente.");
+                mostrarToast("Búsquedas importadas correctamente.");
                 cerrarModal("modalImportarFondo");
                 input.value = "";
               } catch (error) {
-                alert(
+                mostrarToast(
                   "Error al parsear el archivo JSON. Verifique el formato."
                 );
               }
@@ -2604,7 +2607,9 @@ filtros estructurados para profesionales sanitarios
           var term = searchTerm.value.trim();
           var finalQ = constructQuery(term);
           if (!finalQ) {
-            alert("Por favor, introduce un término o selecciona algún filtro.");
+            mostrarToast(
+              "Por favor, introduce un término o selecciona algún filtro."
+            );
             return;
           }
           var url =
@@ -3101,7 +3106,7 @@ filtros estructurados para profesionales sanitarios
           const búsquedas = obtenerBúsquedasGuardadas();
           búsquedas[nombre] = búsquedaActual;
           guardarBúsquedasGuardadas(búsquedas);
-          alert(`Búsqueda "${nombre}" guardada correctamente.`);
+          mostrarToast(`Búsqueda "${nombre}" guardada correctamente.`);
           cerrarModal("modalGuardarFondo");
         });
 
@@ -3194,6 +3199,66 @@ filtros estructurados para profesionales sanitarios
       gtag("js", new Date());
       gtag("config", "G-YFKR6RB1ZC");
     </script>
+    <script>
+      /* manejo de alerts cuando se ejecutan modales */
+      function mostrarToast(mensaje) {
+        // Tomamos el div contenedor
+        var toastContainer = document.getElementById("toastContainer");
+
+        // Creamos el div que contendrá el texto de la notificación
+        var nuevoToast = document.createElement("div");
+        nuevoToast.style.background = "#ffd700";
+        nuevoToast.style.color = "#1c1e26";
+        nuevoToast.style.padding = "10px 15px";
+        nuevoToast.style.marginBottom = "10px";
+        nuevoToast.style.borderRadius = "8px";
+        nuevoToast.style.boxShadow = "0 2px 6px rgba(0,0,0,0.2)";
+        nuevoToast.style.position = "relative"; // Para posicionar el botón de cierre
+        nuevoToast.textContent = mensaje;
+
+        // Creamos un botón de cierre manual
+        var closeBtn = document.createElement("button");
+        closeBtn.textContent = "X";
+        closeBtn.style.position = "absolute";
+        closeBtn.style.top = "5px";
+        closeBtn.style.right = "10px";
+        closeBtn.style.border = "none";
+        closeBtn.style.background = "transparent";
+        closeBtn.style.color = "#1c1e26";
+        closeBtn.style.cursor = "pointer";
+        closeBtn.style.fontWeight = "bold";
+
+        // Evento para cerrar manualmente la notificación
+        closeBtn.addEventListener("click", function () {
+          toastContainer.removeChild(nuevoToast);
+          // Si el contenedor se queda sin toasts, lo ocultamos
+          if (!toastContainer.hasChildNodes()) {
+            toastContainer.style.display = "none";
+          }
+        });
+
+        // Agregamos el botón de cierre al toast
+        nuevoToast.appendChild(closeBtn);
+
+        // Mostramos el contenedor (por si estaba oculto)
+        toastContainer.style.display = "block";
+
+        // Añadimos el toast al contenedor
+        toastContainer.appendChild(nuevoToast);
+
+        // Temporizador para borrar el toast automáticamente tras 3 segundos
+        setTimeout(function () {
+          // Antes de borrarlo, comprobamos si sigue en pantalla
+          if (toastContainer.contains(nuevoToast)) {
+            toastContainer.removeChild(nuevoToast);
+            if (!toastContainer.hasChildNodes()) {
+              toastContainer.style.display = "none";
+            }
+          }
+        }, 3000); // 3000 ms = 3 segundos
+      }
+    </script>
+
     <!-- MODALES INDIVIDUALES PARA GUARDAR / RECUPERAR / BORRAR / EXPORTAR / IMPORTAR -->
     <!-- Modal Guardar -->
     <div class="modal-backdrop" id="modalGuardarFondo">
@@ -3313,5 +3378,16 @@ filtros estructurados para profesionales sanitarios
         </div>
       </div>
     </div>
+    <div
+      id="toastContainer"
+      style="
+        position: fixed;
+        top: 200px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        display: none;
+      "
+    ></div>
   </body>
 </html>
