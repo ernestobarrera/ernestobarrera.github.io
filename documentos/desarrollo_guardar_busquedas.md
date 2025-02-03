@@ -10,7 +10,7 @@
 - [ ] **Correcciones y mejoras en filtros y botones**
 
   - AND no se limpia al cargar un filtro con OR en los contenedores
-  - Los botones de aceptar no cambian
+  - Los botones de aceptar no cambian y el foco de los modales no se pone bien: Aquí hay una solución para valorar con tranquilidad https://claude.ai/chat/442b4187-6c18-4040-aeac-d62020262cad
 
 - [ ] **Gestión de archivos JSON**
 

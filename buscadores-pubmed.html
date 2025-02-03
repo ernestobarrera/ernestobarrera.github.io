@@ -3148,10 +3148,31 @@ filtros estructurados para profesionales sanitarios
       }
 
       // Funciones de manejo de modales
-      function abrirModal(idBackdrop) {
-        document.getElementById(idBackdrop).classList.add("show");
-      }
+      function abrirModal(id_backdrop) {
+        const backdrop = document.getElementById(id_backdrop);
+        backdrop.classList.add("show");
 
+        /* Enfocar el primer input o textarea que haya en el modal */
+        const primer_input = backdrop.querySelector(
+          ".modal input, .modal textarea"
+        );
+        if (primer_input) {
+          primer_input.focus();
+        }
+
+        /* Opcional: si quieres que Enter cierre el modal o confirme */
+        const confirm_btn = backdrop.querySelector(".modal-confirm");
+        if (confirm_btn) {
+          backdrop.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+              /* Si el botón está activo, haz clic automáticamente */
+              if (confirm_btn.classList.contains("active")) {
+                confirm_btn.click();
+              }
+            }
+          });
+        }
+      }
       function cerrarModal(idBackdrop) {
         const modal = document.getElementById(idBackdrop);
         if (modal) {
@@ -3276,7 +3297,7 @@ filtros estructurados para profesionales sanitarios
             <button class="modal-cancel" data-close="modalGuardarFondo">
               Cancelar
             </button>
-            <button id="guardarBusquedaConfirm" class="modal-confirm">
+            <button id="guardarBusquedaConfirm" class="modal-confirm active">
               Guardar
             </button>
           </div>
