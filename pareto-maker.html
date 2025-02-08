@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Análisis de Pareto interactivo para datos sanitarios"
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <title>Análisis de Pareto | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Análisis de Pareto | ​👨‍⚕️ ​@ernestob" />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria  🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/analisis-pareto.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <!-- Fuentes -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React, ReactDOM, Babel y Recharts (en modo development para que Babel funcione bien con JSX) -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.7.2/umd/Recharts.js"></script>
+    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+
+    <!-- CSS específico -->
+    <style>
+      .pareto-container {
+        width: 100%;
+        max-width: 1500px;
+        margin: 0rem auto;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .pareto-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        width: 100%;
+      }
+
+      .pareto-title {
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--accent-color);
+      }
+
+      .pareto-description {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 768px) {
+        .pareto-container {
+          padding: 0.5rem;
+          margin: 1rem auto;
+        }
+
+        .pareto-card {
+          padding: 1rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .pareto-container {
+          padding: 0.25rem;
+        }
+
+        .pareto-card {
+          border-radius: 8px;
+          padding: 0.75rem;
+        }
+      }
+    </style>
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </head>
+  <body>
+    <include src="header.html"></include>
+
+    <!-- Main Content -->
+    <main class="main-container">
+      <div class="pareto-container">
+        <section class="pareto-card">
+          <h2 class="pareto-title">📊 Análisis de Pareto</h2>
+          <p class="pareto-description">
+            Herramienta interactiva para realizar análisis de Pareto (regla
+            80/20) a partir de datos tabulados. Ideal para identificar los
+            elementos más significativos en conjuntos de datos sanitarios,
+            permitiendo visualizar y analizar la distribución de frecuencias y
+            sus acumulados tanto gráfica como numéricamente.
+          </p>
+          <div id="pareto-app"></div>
+        </section>
+      </div>
+    </main>
+    <include src="footer.html"></include>
+
+    <script src="./assets/js/include.js"></script>
+
+    <!-- Componente React y su inicialización con Babel -->
+    <script type="text/babel" data-presets="env,react">
+      const { useState, useCallback, useEffect } = React;
+      const {
+        ComposedChart,
+        Bar,
+        XAxis,
+        YAxis,
+        CartesianGrid,
+        Tooltip,
+        Legend,
+        Line,
+        ReferenceLine,
+        ResponsiveContainer,
+      } = Recharts;
+
+      // Componente de pestañas simplificado
+      const Tabs = ({ children, defaultValue, className }) => {
+        const [activeTab, setActiveTab] = useState(defaultValue);
+        const tabs = React.Children.toArray(children);
+        const activePanelContent = tabs.find(
+          (tab) => tab.props.value === activeTab
+        )?.props.children;
+
+        return React.createElement(
+          "div",
+          { className },
+          React.createElement(
+            "div",
+            { className: "border-b border-gray-200" },
+            React.createElement(
+              "nav",
+              { className: "-mb-px flex space-x-8", "aria-label": "Tabs" },
+              tabs.map((tab) =>
+                React.createElement(
+                  "button",
+                  {
+                    key: tab.props.value,
+                    onClick: () => setActiveTab(tab.props.value),
+                    className: `py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === tab.props.value
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`,
+                  },
+                  tab.props.label
+                )
+              )
+            )
+          ),
+          React.createElement("div", { className: "mt-4" }, activePanelContent)
+        );
+      };
+
+      const Tab = ({ children }) => children;
+
+      const ParetoAnalysis = ({
+        title = "Análisis de Pareto",
+        valueLabel = "Recetas",
+        categoryLabel = "Principios activos",
+        unitLabel = "Miles",
+      }) => {
+        const [error, setError] = useState("");
+        const [cutoffPoint, setCutoffPoint] = useState(80);
+        const [processedData, setProcessedData] = useState(null);
+        const [summary, setSummary] = useState(null);
+
+        const parseNumber = useCallback((value) => {
+          if (typeof value !== "string") return value;
+          value = value.trim();
+          if (value.includes(".") && value.includes(",")) {
+            value = value.replace(/\./g, "").replace(",", ".");
+          } else if (
+            value.includes(".") &&
+            value.length - value.lastIndexOf(".") === 4
+          ) {
+            value = value.replace(/\./g, "");
+          } else if (value.includes(",")) {
+            value = value.replace(",", ".");
+          }
+          return parseFloat(value);
+        }, []);
+
+        const processData = useCallback(
+          (rawData) => {
+            try {
+              const cleanData = rawData
+                .map((row) => ({
+                  category: row[0]?.trim(),
+                  value: parseNumber(row[1]?.toString()),
+                }))
+                .filter((row) => !isNaN(row.value) && row.category);
+
+              if (cleanData.length < 2) {
+                throw new Error(
+                  "Se requieren al menos 2 filas de datos válidos"
+                );
+              }
+
+              const total = cleanData.reduce((sum, row) => sum + row.value, 0);
+              let accumulative = 0;
+
+              const processed = cleanData
+                .sort((a, b) => b.value - a.value)
+                .map((row, index) => {
+                  const percentage = (row.value / total) * 100;
+                  accumulative += percentage;
+                  return {
+                    order: index + 1,
+                    category: row.category,
+                    value: row.value,
+                    percentage: percentage,
+                    accumulative: accumulative,
+                    significant: accumulative <= cutoffPoint,
+                  };
+                });
+
+              const significantItems = processed.filter(
+                (item) => item.significant
+              );
+              const summaryData = {
+                totalItems: processed.length,
+                significantCount: significantItems.length,
+                totalValue: total,
+                significantValue: significantItems.reduce(
+                  (sum, item) => sum + item.value,
+                  0
+                ),
+                percentageRepresentation:
+                  (significantItems.length / processed.length) * 100,
+                totalCount: total.toLocaleString(),
+              };
+
+              setProcessedData(processed);
+              setSummary(summaryData);
+              setError("");
+            } catch (err) {
+              setError(err.message);
+              setProcessedData(null);
+              setSummary(null);
+            }
+          },
+          [cutoffPoint, parseNumber]
+        );
+
+        useEffect(() => {
+          // Datos de ejemplo
+          const exampleData = [
+            ["ÁCIDO ACETILSALICÍLICO", "9.711"],
+            ["ATORVASTATINA", "9.317"],
+            ["BISOPROLOL", "8.558"],
+            ["ENALAPRIL", "6.412"],
+            ["ATENOLOL", "4.617"],
+            ["CARVEDILOL", "4.390"],
+            ["OMEPRAZOL", "4.364"],
+            ["CLOPIDOGREL", "4.142"],
+            ["ACENOCUMAROL", "3.794"],
+            ["TRINITRATO DE GLICERILO", "3.782"],
+          ];
+          processData(exampleData);
+        }, [processData]);
+
+        const handleFileUpload = useCallback(
+          (event) => {
+            const file = event.target.files[0];
+            if (file) {
+              Papa.parse(file, {
+                complete: (results) => processData(results.data),
+                error: (error) => setError(error.message),
+                delimiter: "\t",
+                skipEmptyLines: true,
+              });
+            }
+          },
+          [processData]
+        );
+
+        const handlePaste = useCallback(
+          (event) => {
+            const pastedText = event.clipboardData.getData("text");
+            const rows = pastedText.split("\n").map((row) => row.split("\t"));
+            processData(rows);
+          },
+          [processData]
+        );
+
+        const renderChartAnnotations = (data, summary) => {
+          if (!data || !summary) return null;
+
+          const significantItems = data.filter((item) => item.significant);
+          const significantPercentage = (
+            (significantItems.length / data.length) *
+            100
+          ).toFixed(0);
+          const otherPercentage = (100 - Number(significantPercentage)).toFixed(
+            0
+          );
+
+          return React.createElement("g", null, [
+            React.createElement(
+              "text",
+              {
+                key: "significant",
+                x: "25%",
+                y: "85",
+                fill: "#0066cc",
+                fontSize: "12",
+                textAnchor: "middle",
+              },
+              [
+                `${significantPercentage}% (${significantItems.length}) de los ${categoryLabel}`,
+                React.createElement(
+                  "tspan",
+                  { key: "significant-tspan", x: "25%", dy: "15" },
+                  `suponen el ${cutoffPoint}% de ${valueLabel.toLowerCase()}`
+                ),
+              ]
+            ),
+            React.createElement(
+              "text",
+              {
+                key: "others",
+                x: "75%",
+                y: "85",
+                fill: "#cc6666",
+                fontSize: "12",
+                textAnchor: "middle",
+              },
+              [
+                `${otherPercentage}% (${
+                  data.length - significantItems.length
+                }) de los ${categoryLabel}`,
+                React.createElement(
+                  "tspan",
+                  { key: "others-tspan", x: "75%", dy: "15" },
+                  `suponen el ${
+                    100 - cutoffPoint
+                  }% de ${valueLabel.toLowerCase()}`
+                ),
+              ]
+            ),
+          ]);
+        };
+
+        return (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Punto de corte (%)
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={cutoffPoint}
+                    onChange={(e) => setCutoffPoint(Number(e.target.value))}
+                    className="mt-1 block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </label>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Cargar archivo
+                  <input
+                    type="file"
+                    accept=".txt,.tsv,.csv"
+                    onChange={handleFileUpload}
+                    className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                </label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    O pegar datos
+                    <textarea
+                      onPaste={handlePaste}
+                      placeholder="Pega tus datos aquí..."
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      rows="4"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+            {error && (
+              <div className="p-4 rounded-md bg-red-50 text-red-700">
+                {error}
+              </div>
+            )}
+            {processedData && (
+              <Tabs defaultValue="grafica" className="w-full">
+                <Tab value="grafica" label="Gráfica">
+                  <div className="h-[500px] bg-gray-50 p-4 rounded-lg">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart
+                        data={processedData}
+                        margin={{ top: 100, right: 30, bottom: 60, left: 30 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="category"
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                          interval={Math.ceil(processedData.length / 20)}
+                          tick={{ fontSize: 10 }}
+                        />
+                        <YAxis
+                          yAxisId="left"
+                          orientation="left"
+                          tickFormatter={(v) => (v / 1000).toFixed(1)}
+                          label={{
+                            value: `${valueLabel} (${unitLabel})`,
+                            angle: -90,
+                            position: "insideLeft",
+                          }}
+                        />
+                        <YAxis
+                          yAxisId="right"
+                          orientation="right"
+                          domain={[0, 100]}
+                          label={{
+                            value: "% (Acumulado)",
+                            angle: 90,
+                            position: "insideRight",
+                          }}
+                        />
+                        <Tooltip
+                          formatter={(val, name) => {
+                            if (name === "% Acumulado")
+                              return [`${val.toFixed(1)}%`, name];
+                            if (name === valueLabel)
+                              return [val.toLocaleString(), name];
+                            return [val, name];
+                          }}
+                        />
+                        <Legend />
+                        <Bar
+                          dataKey="value"
+                          yAxisId="left"
+                          name={valueLabel}
+                          fill="url(#colorGradient)"
+                        >
+                          <defs>
+                            <linearGradient
+                              id="colorGradient"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="5%"
+                                stopColor="#4682B4"
+                                stopOpacity={0.8}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor="#4682B4"
+                                stopOpacity={0.2}
+                              />
+                            </linearGradient>
+                          </defs>
+                        </Bar>
+                        <Line
+                          type="monotone"
+                          dataKey="accumulative"
+                          stroke="#dc2626"
+                          yAxisId="right"
+                          name="% Acumulado"
+                          dot={false}
+                        />
+                        <ReferenceLine
+                          y={cutoffPoint}
+                          yAxisId="right"
+                          stroke="#059669"
+                          strokeDasharray="3 3"
+                          label={{
+                            value: `${cutoffPoint}%`,
+                            position: "right",
+                            fill: "#059669",
+                          }}
+                        />
+                        {renderChartAnnotations(processedData, summary)}
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Tab>
+                <Tab value="tabla" label="Tabla">
+                  <div className="grid grid-cols-3 gap-4">
+                    {[0, 1, 2].map((section) => {
+                      const start = section * 10;
+                      const end = start + 10;
+                      const sectionData = processedData.slice(start, end);
+
+                      return (
+                        <div key={section} className="border rounded">
+                          <table className="w-full">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-2 py-2 text-left text-xs font-medium text-gray-500">
+                                  Lugar
+                                </th>
+                                <th className="px-2 py-2 text-left text-xs font-medium text-gray-500">
+                                  {categoryLabel}
+                                </th>
+                                <th className="px-2 py-2 text-right text-xs font-medium text-gray-500">
+                                  % {valueLabel.toLowerCase()}
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              {sectionData.map((row) => (
+                                <tr
+                                  key={row.order}
+                                  className={
+                                    row.significant ? "bg-blue-50" : ""
+                                  }
+                                >
+                                  <td className="px-2 py-1 text-sm text-gray-500">
+                                    {row.order}
+                                  </td>
+                                  <td className="px-2 py-1 text-sm text-gray-900">
+                                    {row.category}
+                                  </td>
+                                  <td className="px-2 py-1 text-sm text-gray-500 text-right">
+                                    {row.percentage.toFixed(1)}%
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot className="bg-gray-50">
+                              <tr>
+                                <td
+                                  colSpan="3"
+                                  className="px-2 py-2 text-sm font-medium text-gray-700"
+                                >
+                                  {`Total acumulado ${end} primeros: ${processedData[
+                                    Math.min(end - 1, processedData.length - 1)
+                                  ]?.accumulative.toFixed(0)}%`}
+                                </td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Tab>
+              </Tabs>
+            )}
+          </div>
+        );
+      };
+
+      // Montar componente cuando el DOM esté listo
+      document.addEventListener("DOMContentLoaded", () => {
+        const container = document.getElementById("pareto-app");
+        if (!container) return;
+        // Usamos la nueva API de React 18
+        const root = ReactDOM.createRoot(container);
+        root.render(
+          <ParetoAnalysis
+            title="Análisis de Pareto"
+            valueLabel="Recetas"
+            categoryLabel="Principios activos"
+            unitLabel="Miles"
+          />
+        );
+      });
+    </script>
+  </body>
+</html>
