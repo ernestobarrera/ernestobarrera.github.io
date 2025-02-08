@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Asistente de Espirometrías | @ernestob</title>
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/header.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <!-- Meta tags -->
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Asistente de Espirometrías | ​👨‍⚕️ ​@ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria 🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/t/asistente-espirometrias/"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <!-- Estilos específicos -->
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        background: #1c1e26;
+      }
+      .main-container {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0.5rem 0.5rem;
+      }
+      .hero-section {
+        border-radius: 8px;
+        padding: 0rem;
+        margin-bottom: 0.1rem;
+      }
+      .intro-text {
+        font-size: 1rem;
+        line-height: 1.4;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 6px;
+        padding: 0.75rem;
+        color: var(--text-secondary, #94a3b8);
+        margin-bottom: 1rem;
+      }
+      .main-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary, #fff);
+      }
+    </style>
+
+    <!-- Scripts necesarios -->
+    <script
+      src="https://unpkg.com/react@18/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+      crossorigin
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.15.0/Recharts.min.js"></script>
+  </head>
+
+  <body>
+    <include src="header.html"></include>
+
+    <main class="main-container">
+      <section class="hero-section">
+        <h1 class="main-title">
+          <i class="fas fa-lungs"></i>
+          <span>Asistente de Espirometrías</span>
+        </h1>
+        <p class="intro-text">
+          Esta herramienta proporciona un análisis completo y guiado para la
+          realización e interpretación de espirometrías en Atención Primaria.
+          Incluye verificación de calidad técnica, análisis de curvas F/V y V/T,
+          cálculo de parámetros espirométricos y asistencia diagnóstica basada
+          en los criterios estandarizados. Diseñada para profesionales
+          sanitarios como apoyo en la toma de decisiones clínicas.
+        </p>
+      </section>
+
+      <div id="root"></div>
+    </main>
+
+    <include src="footer.html"></include>
+
+    <!-- Scripts adicionales -->
+    <script src="/assets/js/include.js"></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+
+    <!-- Componente React -->
+    <!-- Scripts adicionales -->
+    <script src="/assets/js/include.js"></script>
+
+    <script
+      type="text/babel"
+      src="/assets/js/asistente-espirometrias.js"
+    ></script>
+    <script type="text/babel">
+      const rootElement = document.getElementById("root");
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(<AsistenteEspirometrias />);
+    </script>
+  </body>
+</html>

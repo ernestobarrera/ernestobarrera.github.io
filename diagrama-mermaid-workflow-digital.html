@@ -1,0 +1,285 @@
+<!--
+      =====================
+        flujo-trabajo.html
+        Flujo de Trabajo Digital
+      =====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flujo de Trabajo Digital | @ernestob</title>
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/header.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "dark",
+        themeVariables: {
+          primaryColor: "#2a3b4d",
+          primaryTextColor: "#ffffff",
+          primaryBorderColor: "#3b82f6",
+          lineColor: "#94a3b8",
+          secondaryColor: "#1a2634",
+          tertiaryColor: "#ffd700",
+          nodeBorder: "#3b82f6",
+          clusterBkg: "#1a2634",
+          clusterBorder: "#3b82f6",
+          labelTextColor: "#ffffff",
+          textColor: "#ffffff",
+        },
+        flowchart: {
+          htmlLabels: true,
+          curve: "basis",
+          nodeSpacing: 40,
+          rankSpacing: 50,
+          padding: 10,
+        },
+      });
+    </script>
+
+    <style>
+      .main-container {
+        padding-top: 0.5rem;
+      }
+
+      /* Hero section más compacta */
+      .hero-section {
+        margin-bottom: 0.75rem;
+      }
+
+      .main-title {
+        margin-bottom: 0.5rem;
+      }
+
+      .workflow-description {
+        background: rgba(59, 130, 246, 0.1);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.75rem;
+      }
+
+      .main-description {
+        color: var(--text-primary);
+        font-size: 1rem;
+        line-height: 1.5;
+        margin-bottom: 0.75rem;
+      }
+
+      .tools-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .tools-list li {
+        color: var(--text-secondary);
+        line-height: 1.4;
+      }
+
+      .tools-list a {
+        color: var(--accent-color);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+
+      .tools-list a:hover {
+        color: #fff;
+      }
+
+      /* Diagrama más compacto */
+      .diagram-container {
+        background: var(--card-bg);
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 0.75rem 0;
+      }
+
+      .diagram-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary);
+      }
+
+      .mermaid {
+        background: var(--primary-bg);
+        padding: 1rem;
+        border-radius: 6px;
+      }
+
+      @media (max-width: 768px) {
+        .diagram-container {
+          padding: 0.75rem;
+        }
+
+        .mermaid {
+          padding: 0.5rem;
+        }
+
+        .workflow-description {
+          padding: 0.75rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <include src="header.html"></include>
+
+    <main class="main-container">
+      <section class="hero-section">
+        <h1 class="main-title">
+          <i class="fas fa-project-diagram"></i>
+          <span
+            >Flujo de Trabajo Digital Optimizado para Literatura
+            Científica</span
+          >
+        </h1>
+
+        <div class="workflow-description">
+          <p class="main-description">
+            Proceso optimizado para la lectura de artículos científicos, que
+            reduce el tiempo de a 2:05 minutos por artículo, combinando cuatro
+            herramientas de automatización:
+          </p>
+
+          <ul class="tools-list">
+            <li>
+              <strong
+                ><a href="https://www.zotero.org" target="_blank" rel="noopener"
+                  >Zotero</a
+                ></strong
+              >
+              — Gestión bibliográfica automatizada (5s)
+            </li>
+            <li>
+              <strong
+                ><a
+                  href="https://learn.microsoft.com/en-us/windows/powertoys/"
+                  target="_blank"
+                  rel="noopener"
+                  >PowerToys</a
+                ></strong
+              >
+              +
+              <strong
+                ><a
+                  href="https://www.autohotkey.com"
+                  target="_blank"
+                  rel="noopener"
+                  >AutoHotkey</a
+                ></strong
+              >
+              — Acceso rápido a documentos y automatización (10s)
+            </li>
+            <li>
+              <strong>GPTs</strong> — Procesamiento y análisis (100s):
+              <ul style="margin-left: 1.5rem; margin-top: 0.25rem">
+                <li>
+                  <a
+                    href="https://chatgpt.com/g/g-5PQpAxuvX-structured-abstract-of-scientific-articles"
+                    target="_blank"
+                    rel="noopener"
+                    >Resumen estructurado</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="https://chatgpt.com/g/g-X7vlWsNJx-evidence-based-practice"
+                    target="_blank"
+                    rel="noopener"
+                    >Lectura crítica</a
+                  >
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <div class="diagram-container">
+        <h2 class="diagram-title">
+          <i class="fas fa-sitemap"></i>
+          Diagrama de Flujo de Trabajo
+        </h2>
+        <pre class="mermaid">
+          graph TD
+              %% Definición de estilos más sobrios
+              classDef zotero fill:#2C5282,stroke:#2B6CB0,stroke-width:2px
+              classDef powertoys fill:#2D3748,stroke:#4A5568,stroke-width:2px
+              classDef autohotkey fill:#285E61,stroke:#319795,stroke-width:2px
+              classDef gpt fill:#44337A,stroke:#553C9A,stroke-width:2px
+              classDef nota fill:#1A202C,stroke:#2D3748,stroke-width:1px,color:#A0AEC0
+              classDef sumario fill:#1A365D,stroke:#2B6CB0,stroke-width:2px
+
+              subgraph Captura["📥 Captura Inicial"]
+              A[/"Artículo identificado"/] --> B["Zotero: Captura con<br/>Connector (1-click)"]:::zotero
+              B --> C["Organización automática<br/>por colecciones"]:::zotero
+              N1["⏱️ 5s vs. 30s manual"]:::nota
+          end
+      
+          subgraph Automatización["⚡ Automatización atajos teclado"]
+              C --> D["PowerToys<br/>Acceso directo"]:::powertoys
+              D --> E["AutoHotkey<br/>GPT Resumen"]:::autohotkey
+              D --> F["AutoHotkey<br/>GPT Crítica"]:::autohotkey
+              N2["⚡ Elimina búsqueda manual<br/>de prompts: -45s"]:::nota
+          end
+      
+          subgraph Procesamiento["🤖 Análisis GPT"]
+              E --> G["Generación de resumen<br/>estructurado "]:::gpt
+              F --> H["Lectura Crítica"]:::gpt
+              N3["⏱️ 40s procesamiento<br/>paralelo"]:::nota
+          end
+      
+          subgraph Integración["📝 Documentación"]
+              G --> I["Notas subordinadas<br/>en Zotero"]:::zotero
+              H --> I
+              I --> J["Artículo procesado<br/>y analizado"]:::zotero
+              N4["⏱️ 15s vs. 2min manual"]:::nota
+          end
+      
+          subgraph Beneficios["📊 Métricas de eficiencia"]
+              J --> K["Total: 3min vs.<br/>15min tradicional"]:::eficiencia
+              K --> L["Reducción 80% tiempo<br/>proceso"]:::eficiencia
+              K --> M["Eliminación Fitts:<br/>-12 clicks"]:::eficiencia
+              K --> N["Reducción carga<br/>cognitiva: -60%"]:::eficiencia
+          end
+      
+          subgraph Impacto["🎯 Impacto educativo"]
+              L --> O["Mayor foco en<br/>análisis crítico"]:::sumario
+              M --> P["Flujo cognitivo<br/>ininterrumpido"]:::sumario
+              N --> Q["Escalabilidad<br/>docente"]:::sumario
+          end
+        </pre>
+      </div>
+    </main>
+
+    <include src="footer.html"></include>
+
+    <script src="/assets/js/include.js"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </body>
+</html>
