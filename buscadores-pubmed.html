@@ -887,6 +887,26 @@ filtros estructurados para profesionales sanitarios
         opacity: 1;
         cursor: pointer;
       }
+      .chatgpt-button {
+        /* Para que sea uniforme con el resto: sin fondos extra */
+        background: none;
+        border: none;
+        cursor: pointer;
+        /* Tamaño parecido al resto de iconos */
+        font-size: 1.5rem;
+        /* Pequeña transición en hover */
+        transition: color 0.2s ease;
+      }
+
+      /* Color base del icono */
+      .chatgpt-button i {
+        color: #8b5cf6; /* Morado de la paleta */
+      }
+
+      /* Hover resaltado */
+      .chatgpt-button:hover i {
+        color: #a78bfa; /* Un tono un poco más claro al pasar el ratón */
+      }
     </style>
     <!-- libreria tooltip con metadatos del filtro -->
     <!-- Primero los archivos de tippy -->
@@ -939,21 +959,31 @@ filtros estructurados para profesionales sanitarios
             data-step="2"
             rows="1"
           ></textarea>
+
           <div class="search-header-icons">
-            <button id="btn_guardar" title="Guardar búsqueda">
-              <i class="fas fa-save"></i>
-            </button>
-            <button id="btn_recuperar" title="Recuperar búsqueda">
-              <i class="fas fa-folder-open"></i>
-            </button>
-            <button id="btn_borrar" title="Borrar búsqueda">
-              <i class="fas fa-trash-alt"></i>
-            </button>
-            <button id="btn_exportar" title="Exportar búsquedas">
-              <i class="fas fa-download"></i>
-            </button>
-            <button id="btn_importar" title="Importar búsquedas">
-              <i class="fas fa-upload"></i>
+            <div class="main-icons" id="mainIconsContainer">
+              <button id="btn_guardar" title="Guardar búsqueda">
+                <i class="fas fa-save"></i>
+              </button>
+              <button id="btn_recuperar" title="Recuperar búsqueda">
+                <i class="fas fa-folder-open"></i>
+              </button>
+              <button id="btn_borrar" title="Borrar búsqueda">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+              <button id="btn_exportar" title="Exportar búsquedas">
+                <i class="fas fa-download"></i>
+              </button>
+              <button id="btn_importar" title="Importar búsquedas">
+                <i class="fas fa-upload"></i>
+              </button>
+            </div>
+            <button
+              id="btn_chatgpt"
+              title="Asistente ChatGPT"
+              class="chatgpt-button"
+            >
+              <i class="fas fa-robot"></i>
             </button>
           </div>
 
@@ -2959,9 +2989,15 @@ filtros estructurados para profesionales sanitarios
                 position: "top",
               },
               {
-                element: document.querySelector(".search-header-icons"),
+                element: document.querySelector("#mainIconsContainer"),
                 intro:
                   "Tus búsquedas se guardan localmente en este navegador; si borras la caché o usas otro dispositivo, se perderán. Usa los botones de exportar e importar para hacer una copia de seguridad y restaurarlas cuando lo necesites.",
+                position: "bottom",
+              },
+              {
+                element: document.querySelector("#btn_chatgpt"),
+                intro:
+                  "Con este botón se abre el asistente de ChatGPT en una nueva pestaña para sugerir términos y ayudarte a crear o refinar búsquedas avanzadas en PubMed.",
                 position: "bottom",
               },
 
@@ -3278,6 +3314,17 @@ filtros estructurados para profesionales sanitarios
           }
         }, 3000); // 3000 ms = 3 segundos
       }
+    </script>
+    <!-- botón asistente GPT -->
+    <script>
+      document
+        .getElementById("btn_chatgpt")
+        .addEventListener("click", function () {
+          window.open(
+            "https://chatgpt.com/g/g-679fc8b5a99481919ee408d9c064f2ed-pubmed-help-asistente-para-busquedas-avanzadas",
+            "_blank"
+          );
+        });
     </script>
 
     <!-- MODALES INDIVIDUALES PARA GUARDAR / RECUPERAR / BORRAR / EXPORTAR / IMPORTAR -->
