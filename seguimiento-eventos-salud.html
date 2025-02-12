@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seguimiento de Eventos de Salud | @ernestob</title>
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/header.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <!-- Intro.js para la guía interactiva -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/intro.js/minified/introjs.min.css"
+    />
+    <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        background: #1c1e26;
+      }
+      .main-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0.5rem 0.5rem;
+      }
+      .hero-section {
+        border-radius: 8px;
+        padding: 0;
+        margin-bottom: 0.1rem;
+      }
+      .evento-salud-contenedor {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0.5rem;
+        color: #fff;
+      }
+      .evento-salud-titulo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 0.75rem;
+      }
+      .intro-text {
+        font-size: 1rem;
+        line-height: 1.4;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 6px;
+        padding: 0.75rem;
+        color: #94a3b8;
+        margin-bottom: 1rem;
+      }
+      .card-seccion {
+        background: #2a3b4d;
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+      }
+      .card-titulo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+      .intro-breve {
+        margin-top: 0.1rem;
+        margin-bottom: 0.5rem;
+        padding: 0.4rem;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 6px;
+        font-size: 0.95rem;
+        line-height: 1.3;
+        color: #94a3b8;
+      }
+      .intro-breve strong {
+        color: #3b82f6;
+      }
+      .etiqueta {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.9rem;
+        color: #94a3b8;
+        margin-bottom: 0.2rem;
+      }
+      .campo-formulario input,
+      .campo-formulario select,
+      .campo-formulario textarea {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #454b59;
+        border-radius: 4px;
+        background: #1c1e26;
+        color: #fff;
+        box-sizing: border-box;
+        font-size: 1rem;
+      }
+      .icono-ayuda {
+        cursor: help;
+        color: #94a3b8;
+        position: relative;
+      }
+      .icono-ayuda::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 0.5rem;
+        background: #3b3b3b;
+        border: 1px solid #454b59;
+        border-radius: 4px;
+        color: #fff;
+        font-size: 0.8rem;
+        width: max-content;
+        max-width: 200px;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s;
+        z-index: 10;
+        text-transform: none;
+        letter-spacing: normal;
+        line-height: 1rem;
+      }
+      .icono-ayuda:hover::after {
+        opacity: 1;
+        visibility: visible;
+      }
+      .botonera-acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1rem;
+      }
+      .boton {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.6rem 1rem;
+        border: 1px solid #3b82f6;
+        background: #1c1e26;
+        color: #3b82f6;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 0.95rem;
+        transition: background 0.3s;
+      }
+      .boton:hover {
+        background: #3b82f6;
+        color: #fff;
+      }
+      .resultados-seccion {
+        margin-top: 1.2rem;
+        margin-bottom: 0.6rem;
+      }
+      .resultados-titulo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: #fff;
+      }
+      .calendario-info,
+      .listado-eventos {
+        background: #2a3b4d;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+      .calendario-titulo {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      }
+      .dias-semana {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1px;
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .dia-titulo {
+        text-align: center;
+        padding: 0.4rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #94a3b8;
+      }
+      .dias-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1px;
+      }
+      .dia-celda {
+        min-height: 60px;
+        border: 1px solid #3b3b3b;
+        padding: 0.4rem;
+        position: relative;
+        background: #1c1e26;
+        font-size: 0.85rem;
+        color: #fff;
+      }
+      .dia-fecha {
+        text-align: right;
+        margin-bottom: 0.2rem;
+        font-weight: 600;
+      }
+      .evento-label {
+        display: block;
+        font-size: 0.75rem;
+        margin-bottom: 0.2rem;
+        border-radius: 4px;
+        padding: 0.3rem 0.4rem;
+        color: #1c1e26;
+      }
+      .listado-eventos .evento-item {
+        background: #1c1e26;
+        border: 1px solid #454b59;
+        border-radius: 6px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+      }
+      .listado-eventos .evento-cabecera {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      }
+      .listado-eventos .evento-cabecera p {
+        margin: 0;
+      }
+      .listado-eventos .evento-borrar {
+        cursor: pointer;
+        color: #f87171;
+        font-size: 1.2rem;
+        margin-left: 0.5rem;
+      }
+
+      /* Estilos Intro.js */
+      .introjs-tooltip {
+        background-color: #fef9c3 !important;
+        color: #1a2634 !important;
+        border: 1px solid #fbbf24 !important;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2) !important;
+        padding: 0.5rem !important;
+      }
+      .introjs-arrow {
+        border-color: #fef9c3 transparent transparent transparent !important;
+      }
+      .introjs-helperNumberLayer {
+        background: #ffd700 !important;
+        color: #1a2634 !important;
+      }
+      .introjs-bullets .introjs-bullet {
+        background: #34495e !important;
+      }
+      .introjs-bullets .introjs-bullet.active {
+        box-shadow: 0 0 0 2px #ffd700 !important;
+      }
+      .introjs-tooltipbuttons {
+        white-space: nowrap;
+        border-top: 1px solid #fbbf24 !important;
+        padding-top: 0.75rem;
+      }
+      .introjs-skipbutton {
+        position: absolute;
+        font-size: 1rem;
+        right: 0rem !important;
+        top: 0rem;
+        padding: 0.2rem 0rem !important;
+        border-radius: 4px;
+        color: #1e2328c0 !important;
+      }
+      .introjs-prevbutton,
+      .introjs-nextbutton,
+      .introjs-donebutton {
+        background: #1a2634 !important;
+        color: #ffffff !important;
+        border: 1px solid #ffd700 !important;
+        padding: 0.4rem 0.4rem !important;
+        border-radius: 4px;
+        margin: 0 0.2rem;
+        font-size: 1rem !important;
+        transition: all 0.2s ease;
+        text-shadow: none !important;
+        font-weight: normal !important;
+      }
+      .introjs-prevbutton:hover,
+      .introjs-nextbutton:hover,
+      .introjs-donebutton:hover {
+        background: #ffd700 !important;
+        color: #1a2634 !important;
+      }
+      .introjs-tooltiptext {
+        color: #1a2634 !important;
+        font-size: 1.1rem !important;
+        line-height: 1.4 !important;
+        font-family: system-ui, -apple-system, sans-serif !important;
+      }
+      .myHighlight {
+        background: #333 !important;
+        box-shadow: 0 0 8px 4px rgba(255, 215, 0, 0.8) !important;
+        border: 2px solid #ffd700 !important;
+        border-radius: 8px !important;
+        transition: box-shadow 0.6s ease;
+      }
+    </style>
+  </head>
+  <body>
+    <include src="header.html"></include>
+
+    <main class="main-container">
+      <section class="hero-section">
+        <h1
+          class="evento-salud-titulo"
+          data-intro="Bienvenido: este sitio sirve para registrar y visualizar eventos de salud, como migrañas, crisis asmáticas o dolores reumáticos."
+          data-step="1"
+        >
+          <i class="fas fa-notes-medical"></i>
+          Seguimiento de Eventos de Salud
+          <span
+            style="
+              margin-left: 30px;
+              cursor: pointer;
+              color: white;
+              font-size: 0.7rem;
+              background: rgba(255, 255, 255, 0.15);
+              padding: 4px 8px;
+              border-radius: 4px;
+            "
+            id="startTutorialBtn"
+          >
+            <i class="fas fa-graduation-cap"></i>
+            Ver Guía Interactiva
+          </span>
+        </h1>
+        <p class="intro-text">
+          Controla y analiza episodios de salud, su frecuencia, duración e
+          intensidad. Esto te ayudará a comprender mejor sus patrones y a
+          compartir la información con profesionales o familiares.
+        </p>
+      </section>
+
+      <div class="evento-salud-contenedor">
+        <!-- Registro de nuevo evento -->
+        <div
+          class="card-seccion"
+          data-intro="Registra la fecha del evento, el tipo (migraña, crisis, dolor...), la intensidad, la duración y cualquier síntoma que desees anotar."
+          data-step="2"
+        >
+          <h2 class="card-titulo">
+            <i class="fas fa-plus-circle"></i>
+            Registrar un nuevo evento
+          </h2>
+          <p class="intro-breve">
+            Puedes añadir tus propios tipos de evento, por ejemplo “dolor de
+            rodilla” o “reacción alérgica”. Podrás filtrar e imprimir más
+            adelante un informe con todos los eventos registrados.
+          </p>
+
+          <div class="campo-formulario">
+            <label class="etiqueta" for="campoFecha">
+              <i class="fas fa-calendar-day"></i>
+              Fecha
+              <i
+                class="fas fa-question-circle icono-ayuda"
+                data-tooltip="Selecciona el día en que se produjo el evento."
+              ></i>
+            </label>
+            <input
+              type="date"
+              id="campoFecha"
+              placeholder="Fecha del evento"
+              required
+            />
+          </div>
+
+          <div class="campo-formulario" style="margin-top: 0.7rem">
+            <label class="etiqueta" for="campoTipo">
+              <i class="fas fa-list"></i>
+              Tipo
+              <i
+                class="fas fa-question-circle icono-ayuda"
+                data-tooltip="Categoría del evento: por ejemplo, Migraña, Asma, Dolor Reumático..."
+              ></i>
+            </label>
+            <select id="campoTipo">
+              <optgroup label="Neurológico">
+                <option value="migraña">Migraña</option>
+                <option value="crisis-tensional">Crisis Tensional</option>
+              </optgroup>
+              <optgroup label="Respiratorio">
+                <option value="asma">Crisis Asmática</option>
+                <option value="disnea">Crisis de Disnea</option>
+                <option value="ampa">Medición AMPA</option>
+              </optgroup>
+              <optgroup label="Reumatológico">
+                <option value="articular">Dolor Articular</option>
+                <option value="reumatico">Dolor Reumático</option>
+              </optgroup>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+
+          <div class="campo-formulario" style="margin-top: 0.7rem">
+            <label class="etiqueta" for="campoDuracion">
+              <i class="fas fa-hourglass-half"></i>
+              Duración (horas)
+            </label>
+            <input type="number" id="campoDuracion" min="1" value="24" />
+          </div>
+
+          <div class="campo-formulario" style="margin-top: 0.7rem">
+            <label class="etiqueta" for="campoIntensidad">
+              <i class="fas fa-battery-three-quarters"></i>
+              Intensidad (1-10)
+            </label>
+            <input
+              type="number"
+              id="campoIntensidad"
+              min="1"
+              max="10"
+              value="5"
+            />
+          </div>
+
+          <div class="campo-formulario" style="margin-top: 0.7rem">
+            <label class="etiqueta" for="campoSintomas">
+              <i class="fas fa-stethoscope"></i>
+              Síntomas principales
+            </label>
+            <textarea
+              id="campoSintomas"
+              rows="2"
+              placeholder="Describe los síntomas principales..."
+            ></textarea>
+          </div>
+
+          <div class="campo-formulario" style="margin-top: 0.7rem">
+            <label class="etiqueta" for="campoDetalles">
+              <i class="fas fa-info-circle"></i>
+              Detalles adicionales
+            </label>
+            <textarea
+              id="campoDetalles"
+              rows="2"
+              placeholder="Factores desencadenantes, medicación, otras observaciones..."
+            ></textarea>
+          </div>
+
+          <div class="botonera-acciones">
+            <button class="boton" id="botonRegistrar">
+              <i class="fas fa-calendar-check"></i>
+              Registrar
+            </button>
+            <button class="boton" id="botonImprimir">
+              <i class="fas fa-print"></i>
+              Imprimir
+            </button>
+            <button class="boton" id="botonExportar">
+              <i class="fas fa-file-export"></i>
+              Exportar
+            </button>
+            <button class="boton" id="botonImportar">
+              <i class="fas fa-file-import"></i>
+              Importar
+            </button>
+            <input
+              type="file"
+              id="campoArchivoImport"
+              accept=".json"
+              style="display: none"
+            />
+          </div>
+        </div>
+
+        <!-- Sección Calendario -->
+        <div
+          class="calendario-info"
+          data-intro="Visualiza tus eventos distribuidos en el calendario, desplazándote entre meses para revisar otros periodos."
+          data-step="3"
+        >
+          <div class="calendario-titulo">
+            <h3
+              id="calendarioMesTexto"
+              style="font-size: 1.1rem; font-weight: 600"
+            >
+              <!-- Aquí irá el mes actual en texto -->
+            </h3>
+            <div style="display: flex; gap: 0.5rem">
+              <button class="boton" id="botonMesAnterior">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="boton" id="botonMesSiguiente">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+          <div class="dias-semana">
+            <div class="dia-titulo">Dom</div>
+            <div class="dia-titulo">Lun</div>
+            <div class="dia-titulo">Mar</div>
+            <div class="dia-titulo">Mié</div>
+            <div class="dia-titulo">Jue</div>
+            <div class="dia-titulo">Vie</div>
+            <div class="dia-titulo">Sáb</div>
+          </div>
+          <div class="dias-grid" id="gridDias">
+            <!-- Celdas del calendario generadas dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Listado de eventos filtrados -->
+        <div
+          class="listado-eventos"
+          data-intro="Lista de eventos en el periodo de fechas seleccionado, ordenados del más reciente al más antiguo."
+          data-step="4"
+        >
+          <h3 class="resultados-titulo">
+            <i class="fas fa-clipboard-list"></i>
+            Eventos Registrados
+          </h3>
+          <div id="contenedorEventos">
+            <!-- Los eventos aparecerán aquí -->
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <include src="footer.html"></include>
+    <script src="/assets/js/include.js"></script>
+
+    <script>
+      /* Variables de estado en memoria */
+      let eventos = [];
+      let tiposPersonalizados = JSON.parse(
+        localStorage.getItem("tipos-personalizados") || "[]"
+      );
+
+      function cargarEventos() {
+        const data = localStorage.getItem("eventos-salud");
+        if (data) {
+          eventos = JSON.parse(data);
+        }
+      }
+      function guardarEventos() {
+        localStorage.setItem("eventos-salud", JSON.stringify(eventos));
+      }
+
+      function mostrarEventosFiltrados() {
+        const contenedor = document.getElementById("contenedorEventos");
+        contenedor.innerHTML = "";
+
+        const eventosOrdenados = [...eventos].sort((a, b) => {
+          return new Date(b.fecha) - new Date(a.fecha);
+        });
+
+        eventosOrdenados.forEach((ev) => {
+          const div = document.createElement("div");
+          div.className = "evento-item";
+
+          const cabecera = document.createElement("div");
+          cabecera.className = "evento-cabecera";
+
+          const info = document.createElement("p");
+          info.innerHTML = `
+            <strong>${new Date(ev.fecha).toLocaleDateString()}</strong> - ${
+            ev.tipo
+          }
+            <br />
+            Duración: ${ev.duracion}h | Intensidad: ${ev.intensidad}/10
+          `;
+          cabecera.appendChild(info);
+
+          const botonBorrar = document.createElement("span");
+          botonBorrar.className = "evento-borrar";
+          botonBorrar.innerHTML = "&times;";
+          botonBorrar.title = "Borrar este evento";
+          botonBorrar.addEventListener("click", () => {
+            eventos = eventos.filter((e) => e.id !== ev.id);
+            guardarEventos();
+            generarCalendario();
+            mostrarEventosFiltrados();
+          });
+          cabecera.appendChild(botonBorrar);
+
+          div.appendChild(cabecera);
+
+          if (ev.sintomas && ev.sintomas.trim() !== "") {
+            const parrafoSintomas = document.createElement("p");
+            parrafoSintomas.textContent = ev.sintomas;
+            div.appendChild(parrafoSintomas);
+          }
+
+          if (ev.detallesAdicionales && ev.detallesAdicionales.trim() !== "") {
+            const parrafoDetalles = document.createElement("p");
+            parrafoDetalles.style.marginTop = "0.5rem";
+            parrafoDetalles.textContent = ev.detallesAdicionales;
+            div.appendChild(parrafoDetalles);
+          }
+
+          contenedor.appendChild(div);
+        });
+      }
+
+      let mesCalendario = new Date();
+      mesCalendario.setDate(1);
+
+      function generarCalendario() {
+        const grid = document.getElementById("gridDias");
+        grid.innerHTML = "";
+
+        const mes = mesCalendario.getMonth();
+        const año = mesCalendario.getFullYear();
+
+        document.getElementById("calendarioMesTexto").textContent =
+          mesCalendario.toLocaleString("es", {
+            month: "long",
+            year: "numeric",
+          });
+
+        const primerDiaMes = new Date(año, mes, 1);
+        const ultimoDiaMes = new Date(año, mes + 1, 0);
+        const totalDias = ultimoDiaMes.getDate();
+
+        const offsetInicio = primerDiaMes.getDay();
+
+        for (let i = 0; i < offsetInicio; i++) {
+          const celdaVacia = document.createElement("div");
+          celdaVacia.className = "dia-celda";
+          grid.appendChild(celdaVacia);
+        }
+
+        for (let dia = 1; dia <= totalDias; dia++) {
+          const fechaIterada = new Date(año, mes, dia);
+          const celda = document.createElement("div");
+          celda.className = "dia-celda";
+
+          const labelDia = document.createElement("div");
+          labelDia.className = "dia-fecha";
+          labelDia.textContent = dia;
+          celda.appendChild(labelDia);
+
+          const eventosDia = eventos.filter((ev) => {
+            const fechaEv = new Date(ev.fecha);
+            return (
+              fechaEv.getFullYear() === año &&
+              fechaEv.getMonth() === mes &&
+              fechaEv.getDate() === dia
+            );
+          });
+
+          eventosDia.forEach((ev) => {
+            const labelEvento = document.createElement("span");
+            labelEvento.className = "evento-label";
+            labelEvento.textContent = ev.tipo;
+            labelEvento.style.backgroundColor =
+              ev.tipo === "migraña" ? "#fee2e2" : "#e0f2fe";
+            labelEvento.title = `Intensidad: ${ev.intensidad}`;
+            celda.appendChild(labelEvento);
+          });
+
+          grid.appendChild(celda);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        cargarEventos();
+        generarCalendario();
+        mostrarEventosFiltrados();
+
+        document
+          .getElementById("botonMesAnterior")
+          .addEventListener("click", () => {
+            mesCalendario.setMonth(mesCalendario.getMonth() - 1);
+            generarCalendario();
+          });
+
+        document
+          .getElementById("botonMesSiguiente")
+          .addEventListener("click", () => {
+            mesCalendario.setMonth(mesCalendario.getMonth() + 1);
+            generarCalendario();
+          });
+
+        document
+          .getElementById("botonRegistrar")
+          .addEventListener("click", () => {
+            const nuevoEvento = {
+              fecha: document.getElementById("campoFecha").value,
+              tipo: document.getElementById("campoTipo").value,
+              duracion:
+                Number(document.getElementById("campoDuracion").value) || 1,
+              intensidad:
+                Number(document.getElementById("campoIntensidad").value) || 5,
+              sintomas: document.getElementById("campoSintomas").value,
+              detallesAdicionales:
+                document.getElementById("campoDetalles").value,
+              id: Date.now(),
+            };
+
+            if (nuevoEvento.tipo === "otro") {
+              // Aquí podrías implementar lógica para capturar un nuevo tipo.
+            }
+
+            eventos.push(nuevoEvento);
+            guardarEventos();
+            generarCalendario();
+            mostrarEventosFiltrados();
+
+            document.getElementById("campoFecha").value = "";
+            document.getElementById("campoTipo").value = "migraña";
+            document.getElementById("campoDuracion").value = 24;
+            document.getElementById("campoIntensidad").value = 5;
+            document.getElementById("campoSintomas").value = "";
+            document.getElementById("campoDetalles").value = "";
+          });
+
+        document
+          .getElementById("botonExportar")
+          .addEventListener("click", () => {
+            const dataStr = JSON.stringify(eventos, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "eventos-salud.json";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          });
+
+        document
+          .getElementById("botonImportar")
+          .addEventListener("click", () => {
+            document.getElementById("campoArchivoImport").click();
+          });
+
+        document
+          .getElementById("campoArchivoImport")
+          .addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              try {
+                const data = JSON.parse(ev.target.result);
+                eventos = data;
+                guardarEventos();
+                generarCalendario();
+                mostrarEventosFiltrados();
+              } catch (error) {
+                console.error("Error al importar: ", error);
+              }
+            };
+            reader.readAsText(file);
+          });
+
+        document
+          .getElementById("botonImprimir")
+          .addEventListener("click", () => {
+            const contenido = `
+            <html>
+              <head>
+                <title>Informe de Eventos de Salud</title>
+                <style>
+                  body { font-family: Arial; padding: 20px; }
+                  table { width: 100%; border-collapse: collapse; }
+                  th, td { border: 1px solid #ddd; padding: 8px; }
+                  th { background: #f5f5f5; }
+                </style>
+              </head>
+              <body>
+                <h1>Informe de Eventos de Salud</h1>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Tipo</th>
+                      <th>Duración</th>
+                      <th>Intensidad</th>
+                      <th>Síntomas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${eventos
+                      .map(
+                        (e) => `
+                          <tr>
+                            <td>${new Date(e.fecha).toLocaleDateString()}</td>
+                            <td>${e.tipo}</td>
+                            <td>${e.duracion}h</td>
+                            <td>${e.intensidad}/10</td>
+                            <td>${e.sintomas || ""}</td>
+                          </tr>
+                        `
+                      )
+                      .join("")}
+                  </tbody>
+                </table>
+              </body>
+            </html>
+          `;
+
+            const ventana = window.open("", "_blank");
+            ventana.document.write(contenido);
+            ventana.document.close();
+            ventana.print();
+          });
+
+        const tutorialKey = "tutorial_visto_eventos_salud";
+        const tutorialVisto = localStorage.getItem(tutorialKey);
+        if (!tutorialVisto) {
+          iniciarTutorial();
+        }
+        document
+          .getElementById("startTutorialBtn")
+          .addEventListener("click", iniciarTutorial);
+
+        function iniciarTutorial() {
+          const intro = introJs();
+          intro.setOptions({
+            steps: [
+              {
+                element: document.querySelector(".evento-salud-titulo"),
+                intro:
+                  "Bienvenido: este sitio sirve para registrar y visualizar eventos de salud, como migrañas, crisis asmáticas o dolores reumáticos.",
+                position: "bottom",
+              },
+              {
+                element: document.querySelector(".card-seccion"),
+                intro:
+                  "Registra la fecha, tipo de evento, duración, intensidad y otros detalles.",
+                position: "bottom",
+              },
+              {
+                element: document.querySelector(".calendario-info"),
+                intro:
+                  "Aquí se muestran los eventos en un calendario mensual; puedes navegar entre meses.",
+                position: "bottom",
+              },
+              {
+                element: document.querySelector(".listado-eventos"),
+                intro:
+                  "Visualiza la lista de todos los eventos registrados y elimina los que desees.",
+                position: "top",
+              },
+            ],
+            overlayOpacity: 0.8,
+            highlightClass: "myHighlight",
+            disableInteraction: false,
+            skipLabel: "Saltar",
+            nextLabel: "Siguiente",
+            prevLabel: "Anterior",
+            doneLabel: "Hecho",
+            showStepNumbers: false,
+            scrollToElement: true,
+            scrollPadding: 60,
+          });
+
+          intro.oncomplete(() => {
+            localStorage.setItem(tutorialKey, "true");
+          });
+          intro.onexit(() => {
+            localStorage.setItem(tutorialKey, "true");
+          });
+
+          intro.start();
+        }
+      });
+    </script>
+
+    <!-- Google Analytics (opcional) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </body>
+</html>
