@@ -832,8 +832,9 @@ body {
   border-radius: 4px;
   padding: 0.5rem 1rem;
   font-size: 0.85rem;
-  opacity: 0.5; /* Empieza atenuado */
-  cursor: not-allowed; /* Cursor indica que está deshabilitado */
+  /* Empieza atenuado */
+  /*  opacity: 0.5; 
+  cursor: not-allowed; */
   transition: opacity 0.3s ease, cursor 0.3s ease;
 }
 
