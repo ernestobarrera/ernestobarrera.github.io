@@ -1740,7 +1740,13 @@ filtros estructurados para profesionales sanitarios
         };
 
         // 9. Funciones de construcción de consultas
+
         function constructQuery(term) {
+          // Elimina las líneas que empiezan con "#"
+          term = term
+            .split("\n")
+            .filter((line) => !line.trim().startsWith("#"))
+            .join(" ");
           if (!term && activeFilters.size === 0) return "";
 
           let query = term;
@@ -1804,9 +1810,9 @@ filtros estructurados para profesionales sanitarios
         }
 
         // 10. Event listeners para búsqueda
-        searchButton.addEventListener("click", hacerBusqueda);
         searchTerm.addEventListener("keypress", function (e) {
-          if (e.key === "Enter") {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
             hacerBusqueda();
           }
         });
@@ -2081,7 +2087,7 @@ filtros estructurados para profesionales sanitarios
               {
                 element: document.querySelector("#searchTerm"),
                 intro:
-                  'Escribe tus términos de búsqueda. Para mayor precisión, usa descriptores MeSH que puedes consultar en <a href="https://www.ncbi.nlm.nih.gov/mesh" target="_blank" style="color: #0e04c8; text-decoration: underline;">MeSH Database</a>.',
+                  'Escribe tus términos de búsqueda. Al pulsar Enter se iniciará la búsqueda, mientras que Shift+Enter insertará un salto de línea para que puedas estructurar tu consulta de forma clara. Cualquier bloque de texto iniciado con ‘#’ se omite en la búsqueda, permitiéndote documentar tu estrategia sin alterar el resultado. Para mayor precisión, usa descriptores MeSH que puedes consultar en <a href="https://www.ncbi.nlm.nih.gov/mesh" target="_blank" style="color: #0e04c8; text-decoration: underline;">MeSH Database</a>.',
                 position: "top",
               },
               {
@@ -2142,13 +2148,13 @@ filtros estructurados para profesionales sanitarios
               {
                 element: document.querySelector("#mainIconsContainer"),
                 intro:
-                  "Tus búsquedas se guardan localmente en este navegador; si borras la caché o usas otro dispositivo, se perderán. Usa los botones de exportar e importar para hacer una copia de seguridad y restaurarlas cuando lo necesites.",
+                  "Las búsquedas se almacenan localmente en este navegador, por lo que se perderán si borras la caché o utilizas otro dispositivo. Para evitarlo, utiliza los botones de exportar e importar y crea una copia de seguridad que puedas restaurar cuando lo necesites. Se recomienda guardar esta copia en un servicio en la nube o en otro sistema de almacenamiento que permita la sincronización entre navegadores en distintos dispositivos, incluido el smartphone.",
                 position: "bottom",
               },
               {
                 element: document.querySelector("#btn_chatgpt"),
                 intro:
-                  "Con este botón se abre el asistente de ChatGPT en una nueva pestaña para sugerir términos y ayudarte a crear o refinar búsquedas avanzadas en PubMed.",
+                  "Con este botón se abre el asistente de ChatGPT en una nueva pestaña para sugerir términos y ayudarte a crear o refinar búsquedas avanzadas en PubMed. Ten presente que cualquier bloque de texto iniciado con ‘#’ (usado por ChatGPT para anotar descriptores o comentarios) se omite en la búsqueda, permitiéndote documentar tu estrategia sin alterar el resultado.",
                 position: "bottom",
               },
 
