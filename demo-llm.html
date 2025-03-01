@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="/assets/css/footer.css" />
     <link
       rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
     />
 
     <meta property="og:type" content="article" />
@@ -34,55 +34,19 @@
     />
 
     <style>
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: sans-serif;
-        background: #1c1e26;
-      }
-      .main-container {
-        max-width: 1200px;
-        margin-left: auto;
-        margin-right: auto;
-        padding: 0.5rem 0.5rem;
-      }
-      .hero-section {
-        border-radius: 8px;
-        padding: 0rem;
-        margin-bottom: 0.1rem;
-      }
-      .intro-text {
-        font-size: 1rem;
-        line-height: 1.4;
-        background: rgba(59, 130, 246, 0.15);
-        border-radius: 6px;
-        padding: 0.75rem;
-        color: var(--text-secondary, #94a3b8);
-        margin-bottom: 1rem;
-      }
-      .main-title {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin-bottom: 0.75rem;
-        color: var(--text-primary, #fff);
-      }
-
       /* Estilos adicionales para asegurar compatibilidad con Tailwind */
       #root .bg-white {
-        background-color: #2a3b4d !important;
-        color: #94a3b8 !important;
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
       }
 
       #root .bg-gray-50 {
-        background-color: #1a2634 !important;
+        background-color: var(--primary-bg) !important;
       }
 
       #root .text-gray-600,
       #root .text-gray-700 {
-        color: #94a3b8 !important;
+        color: var(--text-secondary) !important;
       }
 
       #root .border-gray-200,
@@ -95,8 +59,8 @@
       }
 
       #root .bg-gray-100 {
-        background-color: #2c3e50 !important;
-        color: #e2e8f0 !important;
+        background-color: var(--secondary-bg) !important;
+        color: var(--text-primary) !important;
       }
 
       #root .text-gray-400 {
@@ -104,12 +68,12 @@
       }
 
       #root .bg-yellow-50 {
-        background-color: #1c2434 !important;
-        border: 1px solid #ffd700;
+        background-color: rgba(255, 215, 0, 0.1) !important;
+        border: 1px solid var(--accent-color);
       }
 
       #root .border-yellow-200 {
-        border-color: #ffd700 !important;
+        border-color: var(--accent-color) !important;
       }
 
       /* Ajustes para el tema oscuro */
@@ -123,9 +87,55 @@
 
       #root select,
       #root input {
-        background-color: #2a3b4d;
-        color: #e2e8f0;
+        background-color: var(--card-bg);
+        color: var(--text-primary);
         border-color: #3a4b5c;
+      }
+
+      /* Mejorar contraste de texto */
+      #root .text-blue-600 {
+        color: var(--accent-color) !important;
+      }
+
+      /* Mejorar elementos de la interfaz */
+      #root .rounded-lg {
+        border-radius: 0.25rem;
+      }
+
+      #root .shadow {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Alineación consistente con el sitio */
+      #root h1,
+      #root h2,
+      #root h3,
+      #root h4 {
+        color: var(--text-primary);
+      }
+
+      #root p {
+        color: var(--text-secondary);
+      }
+
+      #root .p-4 {
+        padding: 0.75rem !important;
+      }
+
+      /* Asegurar márgenes consistentes */
+      #root .mb-4 {
+        margin-bottom: 0.75rem !important;
+      }
+
+      /* Mejorar aspecto de botones */
+      #root button.bg-blue-600 {
+        background-color: var(--accent-color) !important;
+        color: var(--primary-bg) !important;
+        font-weight: 500;
+      }
+
+      #root button.bg-blue-600:hover {
+        background-color: #e6c200 !important;
       }
     </style>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -133,7 +143,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      tailwind.config = {
+           tailwind.config = {
         darkMode: "class",
         theme: {
           extend: {
@@ -150,13 +160,13 @@
                 900: "#03071a",
               },
               gray: {
-                50: "#1a2634",
-                100: "#2c3e50",
+                50: "var(--primary-bg)",
+                100: "var(--secondary-bg)",
                 200: "#374151",
                 300: "#3a4b5c",
                 400: "#64748b",
-                700: "#e2e8f0",
-                600: "#94a3b8",
+                700: "var(--text-primary)",
+                600: "var(--text-secondary)",
               },
               green: {
                 400: "#2c855a",
@@ -167,16 +177,56 @@
                 600: "#962323",
               },
               yellow: {
-                50: "#1c2434",
-                200: "#ffd700",
+                50: "rgba(255, 215, 0, 0.1)",
+                200: "var(--accent-color)",
               },
             },
           },
         },
       };
+              darkMode: "class",
+              theme: {
+                extend: {
+                  colors: {
+                    blue: {
+                      100: "#3a506e",
+                      200: "#2f4563",
+                      300: "#25395a",
+                      400: "#1d2e4d",
+                      500: "#152442",
+                      600: "#0f1a36",
+                      700: "#0a152d",
+                      800: "#060e23",
+                      900: "#03071a",
+                    },
+                    gray: {
+                      50: "#1a2634",
+                      100: "#2c3e50",
+                      200: "#374151",
+                      300: "#3a4b5c",
+                      400: "#64748b",
+                      700: "#e2e8f0",
+                      600: "#94a3b8",
+                    },
+                    green: {
+                      400: "#2c855a",
+                      600: "#15603c",
+                    },
+                    red: {
+                      400: "#b84a4a",
+                      600: "#962323",
+                    },
+                    yellow: {
+                      50: "#1c2434",
+                      200: "#ffd700",
+                    },
+                  },
+                },
+              },
+            };
     </script>
   </head>
-  <body>
+  <body class="ia-salud">
     <include src="header.html"></include>
 
     <main class="main-container">
@@ -195,11 +245,11 @@
         </p>
       </section>
 
-      <div id="root"></div>
+      <div id="root" class="mt-4"></div>
     </main>
 
     <include src="footer.html"></include>
-
+    <script src="./assets/js/utils.js"></script>
     <script src="/assets/js/include.js"></script>
     <script
       async
