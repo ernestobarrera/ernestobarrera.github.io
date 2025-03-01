@@ -230,7 +230,21 @@ const DiagnosticoHF = () => {
 
         {/* Pie de página */}
         <div className="text-sm border-t border-gray-800 pt-2 opacity-75">
-          <p><strong>Fuente:</strong> Adaptado de "Criterios Diagnósticos de HF Heterocigota (Programa Internacional MED-PED)". MUFACE.</p>
+          <p>
+            <strong>Fuentes:</strong>
+            <br />
+            <a
+              href="https://portal.guiasalud.es/wp-content/uploads/2018/12/GPC_567_Lipidos_Osteba_compl.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#f5be00' }}
+            >
+              1.- Guía de Práctica Clínica sobre el manejo de los lípidos como factor de riesgo cardiovascular. Ministerio de Sanidad. OSTEBA; 2017. Guías de Práctica Clínica en el SNS.
+            </a>
+            <br />
+            2.- Ministerio de Transformación Digital y de la Función Pública. MUFACE. <i>Criterios diagnósticos de hipercolesterolemia familiar heterocigota (Programa internacional de la O.M.S, MED-PED)</i>.
+          </p>
+
           <p className="mt-1 opacity-90">Esta herramienta está diseñada únicamente como ayuda al diagnóstico y no sustituye el juicio clínico profesional.</p>
         </div>
       </div>
