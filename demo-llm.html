@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Visualización de LLM | @ernestob</title>
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/header.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Visualización de Modelos de Lenguaje (LLM) | ​👨‍⚕️ ​@ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria 🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/ia/llm-demo/"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        background: #1c1e26;
+      }
+      .main-container {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0.5rem 0.5rem;
+      }
+      .hero-section {
+        border-radius: 8px;
+        padding: 0rem;
+        margin-bottom: 0.1rem;
+      }
+      .intro-text {
+        font-size: 1rem;
+        line-height: 1.4;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 6px;
+        padding: 0.75rem;
+        color: var(--text-secondary, #94a3b8);
+        margin-bottom: 1rem;
+      }
+      .main-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary, #fff);
+      }
+
+      /* Estilos adicionales para asegurar compatibilidad con Tailwind */
+      #root .bg-white {
+        background-color: #2a3b4d !important;
+        color: #94a3b8 !important;
+      }
+
+      #root .bg-gray-50 {
+        background-color: #1a2634 !important;
+      }
+
+      #root .text-gray-600,
+      #root .text-gray-700 {
+        color: #94a3b8 !important;
+      }
+
+      #root .border-gray-200,
+      #root .border-gray-300 {
+        border-color: #3a4b5c !important;
+      }
+
+      #root .bg-gray-200 {
+        background-color: #374151 !important;
+      }
+
+      #root .bg-gray-100 {
+        background-color: #2c3e50 !important;
+        color: #e2e8f0 !important;
+      }
+
+      #root .text-gray-400 {
+        color: #64748b !important;
+      }
+
+      #root .bg-yellow-50 {
+        background-color: #1c2434 !important;
+        border: 1px solid #ffd700;
+      }
+
+      #root .border-yellow-200 {
+        border-color: #ffd700 !important;
+      }
+
+      /* Ajustes para el tema oscuro */
+      #root .border {
+        border-color: #3a4b5c;
+      }
+
+      #root button {
+        background-color: #3982f6;
+      }
+
+      #root select,
+      #root input {
+        background-color: #2a3b4d;
+        color: #e2e8f0;
+        border-color: #3a4b5c;
+      }
+    </style>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              blue: {
+                100: "#3a506e",
+                200: "#2f4563",
+                300: "#25395a",
+                400: "#1d2e4d",
+                500: "#152442",
+                600: "#0f1a36",
+                700: "#0a152d",
+                800: "#060e23",
+                900: "#03071a",
+              },
+              gray: {
+                50: "#1a2634",
+                100: "#2c3e50",
+                200: "#374151",
+                300: "#3a4b5c",
+                400: "#64748b",
+                700: "#e2e8f0",
+                600: "#94a3b8",
+              },
+              green: {
+                400: "#2c855a",
+                600: "#15603c",
+              },
+              red: {
+                400: "#b84a4a",
+                600: "#962323",
+              },
+              yellow: {
+                50: "#1c2434",
+                200: "#ffd700",
+              },
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body>
+    <include src="header.html"></include>
+
+    <main class="main-container">
+      <section class="hero-section">
+        <h1 class="main-title">
+          <i class="fas fa-brain"></i>
+          <span>Visualización de Modelos de Lenguaje (LLM)</span>
+        </h1>
+        <p class="intro-text">
+          Esta herramienta interactiva te permite visualizar cómo funciona un
+          Modelo de Lenguaje Grande (LLM) a través de sus principales etapas de
+          procesamiento: tokenización, embedding, mecanismo de atención y
+          generación de texto. Utiliza el ejemplo "El gato está sentado sobre la
+          alfombra" para mostrar cómo el modelo representa y procesa la
+          información contextual para generar respuestas coherentes.
+        </p>
+      </section>
+
+      <div id="root"></div>
+    </main>
+
+    <include src="footer.html"></include>
+
+    <script src="/assets/js/include.js"></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+
+    <!-- Nuevo componente de la aplicación mejorada -->
+    <script type="text/babel">
+      const EnhancedLLMDemo = () => {
+        // Estados base
+        const [step, setStep] = React.useState(0);
+        const [activeToken, setActiveToken] = React.useState(null);
+        const [showVectors, setShowVectors] = React.useState(true);
+        const [selectedLayer, setSelectedLayer] = React.useState(0);
+        const [outputText, setOutputText] = React.useState("");
+        const [isGenerating, setIsGenerating] = React.useState(false);
+        // Estados adicionales para funcionalidades ampliadas
+        const [showAdvancedInfo, setShowAdvancedInfo] = React.useState(false);
+        const [selectedExample, setSelectedExample] = React.useState(0);
+        const [showAnimations, setShowAnimations] = React.useState(true);
+        const [activeDimension, setActiveDimension] = React.useState(null);
+        const [showConnectionsView, setShowConnectionsView] =
+          React.useState(false);
+        const [selectedModel, setSelectedModel] = React.useState("base");
+        const [activeTab, setActiveTab] = React.useState("visualizacion");
+
+        // Ejemplos predefinidos
+        const examples = [
+          {
+            id: 0,
+            text: "El gato está sentado sobre la alfombra",
+            tokens: [
+              "El",
+              "gato",
+              "está",
+              "sentado",
+              "sobre",
+              "la",
+              "alfombra",
+            ],
+            response: "El gato está descansando tranquilamente en la alfombra",
+          },
+          {
+            id: 1,
+            text: "La niña lee un libro de aventuras",
+            tokens: ["La", "niña", "lee", "un", "libro", "de", "aventuras"],
+            response:
+              "La niña disfruta leyendo historias emocionantes en su libro de aventuras",
+          },
+          {
+            id: 2,
+            text: "El científico estudia las estrellas",
+            tokens: ["El", "científico", "estudia", "las", "estrellas"],
+            response:
+              "El científico observa y analiza detenidamente los cuerpos celestes en el firmamento",
+          },
+          {
+            id: 3,
+            text: "La metformina es recomendada para diabetes tipo 2",
+            tokens: [
+              "La",
+              "metformina",
+              "es",
+              "recomendada",
+              "para",
+              "diabetes",
+              "tipo",
+              "2",
+            ],
+            response:
+              "La metformina mejora la sensibilidad a la insulina y reduce la producción hepática de glucosa en pacientes con diabetes mellitus tipo 2",
+          },
+        ];
+
+        // Modelos de LLM (simplificados para la demo)
+        const models = {
+          base: {
+            name: "LLM Base",
+            layers: 3,
+            description: "Modelo estándar con entendimiento contextual básico",
+          },
+          advanced: {
+            name: "LLM Avanzado",
+            layers: 12,
+            description:
+              "Modelo con comprensión profunda de contexto y capacidades de razonamiento",
+          },
+          expert: {
+            name: "LLM Experto",
+            layers: 24,
+            description:
+              "Modelo especializado con conocimiento experto en múltiples dominios",
+          },
+        };
+
+        // Obtener el ejemplo actual
+        const currentExample = examples[selectedExample];
+        const sentence = currentExample.text;
+        const tokens = currentExample.tokens;
+
+        // Vectores simplificados 2D
+        const getVectors2D = () => {
+          const seed = selectedExample + 1;
+          return tokens.map((token, idx) => {
+            const x = Math.sin(idx * 0.5 * seed) * 0.8;
+            const y = Math.cos(idx * 0.7 * seed) * 0.7;
+            return [x, y];
+          });
+        };
+        const vectors2D = getVectors2D();
+
+        // Vectores completos (embeddings)
+        const getVectors = () => {
+          const seed = selectedExample + 1;
+          return tokens.map((token, idx) => {
+            const isNoun =
+              /^[A-Z][a-z]+$/.test(token) ||
+              [
+                "gato",
+                "niña",
+                "libro",
+                "aventuras",
+                "científico",
+                "estrellas",
+                "alfombra",
+                "metformina",
+                "diabetes",
+              ].includes(token);
+            const isVerb = [
+              "está",
+              "sentado",
+              "lee",
+              "estudia",
+              "descansando",
+              "es",
+              "recomendada",
+            ].includes(token);
+            const isDet = [
+              "El",
+              "La",
+              "el",
+              "la",
+              "un",
+              "una",
+              "los",
+              "las",
+            ].includes(token);
+            const isPrep = ["sobre", "en", "de", "por", "para", "con"].includes(
+              token
+            );
+            const isMedical = ["metformina", "diabetes", "tipo"].includes(
+              token
+            );
+            const isPosition = ["sobre", "sentado", "en"].includes(token);
+            const isObject = ["alfombra", "libro"].includes(token);
+
+            return [
+              isNoun
+                ? 0.7 + Math.sin(idx * seed * 0.3) * 0.2
+                : -0.3 + Math.sin(idx * seed * 0.3) * 0.3,
+              isVerb
+                ? 0.8 + Math.cos(idx * seed * 0.4) * 0.1
+                : -0.2 + Math.cos(idx * seed * 0.3) * 0.2,
+              isDet
+                ? 0.9 + Math.sin(idx * seed * 0.2) * 0.1
+                : -0.3 + Math.sin(idx * seed * 0.2) * 0.2,
+              isPrep
+                ? 0.8 + Math.cos(idx * seed * 0.5) * 0.2
+                : -0.2 + Math.cos(idx * seed * 0.6) * 0.2,
+              isMedical ? 0.9 : Math.sin(idx * seed * 0.7) * 0.4,
+              isPosition
+                ? 0.7 + Math.sin(idx * seed) * 0.3
+                : Math.cos(idx * seed * 0.8) * 0.4,
+              isObject
+                ? 0.8 + Math.cos(idx * seed * 0.9) * 0.2
+                : Math.sin(idx * seed * 0.5) * 0.4,
+            ];
+          });
+        };
+        const vectors = getVectors();
+
+        // Dimensiones semánticas
+        const dimensions = [
+          "Sustantivo",
+          "Verbo",
+          "Determinante",
+          "Preposición",
+          "Medicina/Salud",
+          "Posición",
+          "Objeto/Hogar",
+        ];
+
+        // Matrices de atención generadas dinámicamente
+        const getAttentionLayers = () => {
+          const tokenCount = tokens.length;
+          const normalizeAttention = (weights) => {
+            const sum = weights.reduce((a, b) => a + b, 0);
+            return weights.map((w) => w / sum);
+          };
+
+          // Capa 1: Atención local
+          const layer1 = Array(tokenCount)
+            .fill(0)
+            .map((_, i) => {
+              const weights = Array(tokenCount)
+                .fill(0)
+                .map((_, j) => {
+                  const distance = Math.abs(i - j);
+                  let weight = Math.max(0, 1 - distance * 0.3);
+                  if (i !== j) weight *= 0.7;
+                  return weight;
+                });
+              return normalizeAttention(weights);
+            });
+
+          // Capa 2: Atención semántica
+          const layer2 = Array(tokenCount)
+            .fill(0)
+            .map((_, i) => {
+              const weights = Array(tokenCount)
+                .fill(0)
+                .map((_, j) => {
+                  let weight = 0.1;
+                  const iDet = [
+                    "El",
+                    "La",
+                    "el",
+                    "la",
+                    "los",
+                    "las",
+                    "un",
+                    "una",
+                  ].includes(tokens[i]);
+                  const jNoun =
+                    /^[A-Z][a-z]+$/.test(tokens[j]) ||
+                    [
+                      "gato",
+                      "niña",
+                      "libro",
+                      "aventuras",
+                      "científico",
+                      "estrellas",
+                      "alfombra",
+                      "metformina",
+                      "diabetes",
+                    ].includes(tokens[j]);
+                  const iVerb = [
+                    "está",
+                    "sentado",
+                    "lee",
+                    "estudia",
+                    "es",
+                    "recomendada",
+                  ].includes(tokens[i]);
+                  const jSubj =
+                    j > 0 &&
+                    j < tokenCount - 1 &&
+                    ["gato", "niña", "científico", "metformina"].includes(
+                      tokens[j]
+                    );
+                  const iPrep = ["sobre", "en", "de", "para"].includes(
+                    tokens[i]
+                  );
+                  const jObj = [
+                    "alfombra",
+                    "libro",
+                    "aventuras",
+                    "estrellas",
+                    "diabetes",
+                    "tipo",
+                  ].includes(tokens[j]);
+
+                  if ((iDet && jNoun) || (iVerb && jSubj) || (iPrep && jObj)) {
+                    weight += 0.5;
+                  }
+                  weight += Math.sin(i * j * (selectedExample + 1)) * 0.1;
+                  return Math.max(0.01, weight);
+                });
+              return normalizeAttention(weights);
+            });
+
+          // Capa 3: Atención global
+          const layer3 = Array(tokenCount)
+            .fill(0)
+            .map((_, i) => {
+              const weights = Array(tokenCount)
+                .fill(0)
+                .map((_, j) => {
+                  let weight = 0.1 + Math.sin(i * j * 0.1) * 0.05;
+                  const isContentWord = [
+                    "gato",
+                    "está",
+                    "sentado",
+                    "alfombra",
+                    "niña",
+                    "lee",
+                    "libro",
+                    "aventuras",
+                    "científico",
+                    "estudia",
+                    "estrellas",
+                    "metformina",
+                    "es",
+                    "recomendada",
+                    "diabetes",
+                    "tipo",
+                  ].includes(tokens[j]);
+                  if (isContentWord) weight += 0.1;
+                  return Math.max(0.05, weight);
+                });
+              return normalizeAttention(weights);
+            });
+
+          return [layer1, layer2, layer3];
+        };
+        const attentionLayers = getAttentionLayers();
+
+        // Nombres de capas
+        const layerNames = [
+          "Capa 1: Atención local - Relaciones gramaticales",
+          "Capa 2: Atención semántica - Relaciones de significado",
+          "Capa 3: Atención global - Contexto completo",
+        ];
+
+        // Descripciones de procesos y analogías
+        const processDescriptions = {
+          tokenization: {
+            basic:
+              "El texto se divide en unidades básicas (tokens) que el modelo procesa.",
+            advanced:
+              "En modelos reales se usan subpalabras para mayor flexibilidad y manejo de vocabulario.",
+          },
+          embedding: {
+            basic:
+              "Cada token se convierte en un vector numérico multidimensional.",
+            advanced:
+              "Los embeddings son representaciones densas que capturan el significado y relaciones contextuales.",
+          },
+          attention: {
+            basic:
+              "El modelo determina qué tokens son relevantes en el contexto.",
+            advanced:
+              "La atención permite que cada token ‘mire’ a los demás para capturar dependencias a distancia.",
+          },
+          generation: {
+            basic: "El modelo predice token a token para generar la respuesta.",
+            advanced:
+              "La generación se basa en distribuciones de probabilidad y técnicas como beam search o sampling.",
+          },
+        };
+        const analogies = {
+          tokenization:
+            "Como dividir un libro en palabras o sílabas para procesarlo.",
+          embedding:
+            "Como ubicar cada palabra en un mapa multidimensional donde palabras similares se agrupan.",
+          attention:
+            "Como cuando ciertas palabras te hacen recordar otras para entender el sentido completo.",
+          generation:
+            "Como completar una frase basándose en todas las posibles continuaciones.",
+        };
+
+        // Iniciar la demo
+        const startDemo = () => {
+          if (!showAnimations) {
+            setStep(4);
+            setOutputText(currentExample.response);
+            setIsGenerating(false);
+            return;
+          }
+          setStep(0);
+          setOutputText("");
+          setActiveToken(null);
+          setIsGenerating(false);
+          setTimeout(() => setStep(1), 1000);
+          setTimeout(() => setStep(2), 2500);
+          setTimeout(() => setStep(3), 4000);
+          setTimeout(() => {
+            setStep(4);
+            generateText();
+          }, 5500);
+        };
+
+        // Generar texto gradualmente
+        const generateText = () => {
+          setIsGenerating(true);
+          const response = currentExample.response;
+          const words = response.split(" ");
+          let currentText = "";
+          let wordIndex = 0;
+          const interval = setInterval(() => {
+            if (wordIndex < words.length) {
+              currentText += (wordIndex > 0 ? " " : "") + words[wordIndex];
+              setOutputText(currentText);
+              wordIndex++;
+            } else {
+              clearInterval(interval);
+              setIsGenerating(false);
+            }
+          }, 500);
+        };
+
+        // Manejar cambio de ejemplo
+        const handleExampleChange = (exampleId) => {
+          setSelectedExample(exampleId);
+          setActiveToken(null);
+          startDemo();
+        };
+
+        // Interpretación de embeddings para un token
+        const getEmbeddingInterpretation = (tokenIdx) => {
+          if (tokenIdx === null) return "";
+          const token = tokens[tokenIdx];
+          const vec = vectors[tokenIdx];
+          const highDims = vec
+            .map((val, idx) => ({ val, dim: dimensions[idx] }))
+            .filter((item) => item.val > 0.5)
+            .sort((a, b) => b.val - a.val)
+            .map((item) => item.dim);
+          const lowDims = vec
+            .map((val, idx) => ({ val, dim: dimensions[idx] }))
+            .filter((item) => item.val < -0.5)
+            .sort((a, b) => a.val - b.val)
+            .map((item) => item.dim);
+          let interpretation = `"${token}" tiene valores altos en`;
+          interpretation +=
+            highDims.length > 0
+              ? ` ${highDims.map((d) => `"${d}"`).join(", ")}`
+              : " ninguna dimensión particular";
+          if (lowDims.length > 0) {
+            interpretation += ` y bajos en ${lowDims
+              .map((d) => `"${d}"`)
+              .join(", ")}`;
+          }
+          return interpretation + ".";
+        };
+
+        // Colores para barras y celdas
+        const getEmbeddingColor = (value) => {
+          if (value > 0.5) return "bg-green-600";
+          if (value > 0.2) return "bg-green-400";
+          if (value > -0.2) return "bg-gray-300";
+          if (value > -0.5) return "bg-red-400";
+          return "bg-red-600";
+        };
+
+        const getAttentionColor = (value) => {
+          if (value > 0.7) return "bg-blue-900 text-white";
+          if (value > 0.4) return "bg-blue-700 text-white";
+          if (value > 0.2) return "bg-blue-500 text-white";
+          if (value > 0.1) return "bg-blue-300";
+          return "bg-blue-100";
+        };
+
+        // Renderizar conexiones de atención (opcional)
+        const renderAttentionConnections = () => {
+          if (!showConnectionsView || activeToken === null) return null;
+          const connections = [];
+          const threshold = 0.15;
+          tokens.forEach((token, idx) => {
+            const weight = attentionLayers[selectedLayer][activeToken][idx];
+            if (weight > threshold && idx !== activeToken) {
+              connections.push({ from: activeToken, to: idx, weight });
+            }
+          });
+          return (
+            <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <h4 className="text-md font-medium mb-2">
+                Conexiones de atención:
+              </h4>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {tokens.map((token, idx) => (
+                  <div
+                    key={idx}
+                    className={`relative px-3 py-1 rounded-lg ${
+                      idx === activeToken
+                        ? "bg-blue-500 text-white"
+                        : "bg-blue-100"
+                    }`}
+                    style={{ minWidth: "60px", textAlign: "center" }}
+                  >
+                    {token}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 text-sm text-gray-600">
+                {connections.length > 0 ? (
+                  <span>
+                    El token "{tokens[activeToken]}" presta mayor atención a:{" "}
+                    {connections
+                      .sort((a, b) => b.weight - a.weight)
+                      .map(
+                        (c) =>
+                          `"${tokens[c.to]}" (${(c.weight * 100).toFixed(0)}%)`
+                      )
+                      .join(", ")}
+                  </span>
+                ) : (
+                  <span>
+                    No hay conexiones de atención fuertes con el umbral actual.
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        // Renderizado de la arquitectura del modelo
+        const renderModelArchitecture = () => {
+          const layers =
+            selectedModel === "base"
+              ? 3
+              : selectedModel === "advanced"
+              ? 6
+              : 12;
+          return (
+            <div className="bg-white p-4 rounded-lg shadow mt-4">
+              <h3 className="text-lg font-medium mb-3">
+                Arquitectura del Modelo
+              </h3>
+              <div className="flex justify-center mb-4">
+                <div className="px-4 py-2 rounded-lg bg-blue-100 text-center max-w-xs">
+                  <div className="font-medium">
+                    Modelo: {models[selectedModel].name}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {models[selectedModel].description}
+                  </div>
+                </div>
+              </div>
+              <div
+                className="flex flex-col items-center gap-1 mb-4 mx-auto"
+                style={{ maxWidth: "600px" }}
+              >
+                <div className="w-full bg-yellow-100 p-2 rounded-lg text-center border border-yellow-200">
+                  Entrada: "{sentence}"
+                </div>
+                <div className="w-5/6 bg-green-100 p-2 rounded-lg text-center border border-green-200">
+                  Capa de Embedding
+                </div>
+                <div className="h-4 w-1 bg-gray-300"></div>
+                {Array(layers)
+                  .fill(0)
+                  .map((_, i) => (
+                    <React.Fragment key={i}>
+                      <div
+                        className={`w-5/6 p-2 rounded-lg text-center border ${
+                          i === selectedLayer
+                            ? "bg-blue-200 border-blue-500 font-medium"
+                            : "bg-blue-50 border-blue-200"
+                        }`}
+                      >
+                        Capa de Transformer {i + 1}
+                        <div className="flex justify-center gap-2 mt-1 text-xs">
+                          <span className="px-2 py-1 bg-blue-100 rounded">
+                            Atención Multi-Cabeza
+                          </span>
+                          <span className="px-2 py-1 bg-blue-100 rounded">
+                            Feed-Forward
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-4 w-1 bg-gray-300"></div>
+                    </React.Fragment>
+                  ))}
+                <div className="w-5/6 bg-red-100 p-2 rounded-lg text-center border border-red-200">
+                  Capa de Salida / Predicción
+                </div>
+                <div className="h-4 w-1 bg-gray-300"></div>
+                <div className="w-full bg-purple-100 p-2 rounded-lg text-center border border-purple-200">
+                  Respuesta: "{outputText || "..."}"
+                </div>
+              </div>
+              <div className="text-sm text-gray-600">
+                <p className="mb-2">
+                  <strong>¿Cómo funciona la arquitectura?</strong>
+                </p>
+                <ol className="list-decimal pl-5 space-y-1">
+                  <li>El texto se tokeniza y convierte en embeddings.</li>
+                  <li>
+                    Cada capa Transformer procesa los embeddings mediante:
+                    <ul className="list-disc pl-5 mt-1">
+                      <li>
+                        <strong>Atención Multi-Cabeza:</strong> se enfoca en
+                        distintas partes del input.
+                      </li>
+                      <li>
+                        <strong>Red Feed-Forward:</strong> transforma los
+                        vectores.
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    Las conexiones residuales facilitan el flujo de información.
+                  </li>
+                  <li>La capa final predice el siguiente token.</li>
+                </ol>
+                <p className="mt-3">
+                  <strong>Nota:</strong> Los modelos más grandes cuentan con más
+                  capas y parámetros.
+                </p>
+              </div>
+            </div>
+          );
+        };
+
+        return (
+          <div className="bg-white p-4">
+            <header className="mb-6">
+              <h1 className="text-3xl font-bold text-center mb-2 text-blue-500">
+                Visualización Interactiva de un LLM
+              </h1>
+              <p className="text-center text-gray-600 max-w-2xl mx-auto">
+                Explora el funcionamiento interno de un Modelo de Lenguaje de
+                Gran Escala (LLM) a través de esta visualización interactiva
+                paso a paso.
+              </p>
+            </header>
+
+            {/* Tabs de navegación */}
+            <div className="flex border-b border-gray-200 mb-4">
+              <button
+                className={`py-2 px-4 font-medium ${
+                  activeTab === "visualizacion"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                onClick={() => setActiveTab("visualizacion")}
+              >
+                Visualización
+              </button>
+              <button
+                className={`py-2 px-4 font-medium ${
+                  activeTab === "arquitectura"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                onClick={() => setActiveTab("arquitectura")}
+              >
+                Arquitectura
+              </button>
+              <button
+                className={`py-2 px-4 font-medium ${
+                  activeTab === "conceptos"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                onClick={() => setActiveTab("conceptos")}
+              >
+                Conceptos Avanzados
+              </button>
+            </div>
+
+            {activeTab === "visualizacion" && (
+              <>
+                <div className="bg-white p-4 rounded-lg shadow mb-4">
+                  <div className="flex flex-wrap gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Selecciona un ejemplo:
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {examples.map((example) => (
+                          <button
+                            key={example.id}
+                            className={`px-3 py-1 rounded text-sm ${
+                              selectedExample === example.id
+                                ? "bg-blue-500 text-white"
+                                : "bg-blue-100 hover:bg-blue-200 text-blue-800"
+                            }`}
+                            onClick={() => handleExampleChange(example.id)}
+                          >
+                            {example.id === 3
+                              ? "Ejemplo Médico"
+                              : `Ejemplo ${example.id + 1}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    <div className="flex justify-between mb-2">
+                      <span
+                        className={
+                          step >= 1
+                            ? "text-blue-600 font-medium"
+                            : "text-gray-400"
+                        }
+                      >
+                        1. Tokenización
+                      </span>
+                      <span
+                        className={
+                          step >= 2
+                            ? "text-blue-600 font-medium"
+                            : "text-gray-400"
+                        }
+                      >
+                        2. Embedding
+                      </span>
+                      <span
+                        className={
+                          step >= 3
+                            ? "text-blue-600 font-medium"
+                            : "text-gray-400"
+                        }
+                      >
+                        3. Atención
+                      </span>
+                      <span
+                        className={
+                          step >= 4
+                            ? "text-blue-600 font-medium"
+                            : "text-gray-400"
+                        }
+                      >
+                        4. Generación
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, step * 25)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-4 justify-between">
+                    <div className="flex gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Capa de atención:
+                        </label>
+                        <select
+                          value={selectedLayer}
+                          onChange={(e) =>
+                            setSelectedLayer(Number(e.target.value))
+                          }
+                          className="px-3 py-2 border border-gray-300 rounded-md"
+                          disabled={step < 3}
+                        >
+                          <option value={0}>Capa 1 - Local</option>
+                          <option value={1}>Capa 2 - Semántica</option>
+                          <option value={2}>Capa 3 - Global</option>
+                        </select>
+                      </div>
+                      <div className="flex items-end gap-3">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={showVectors}
+                            onChange={() => setShowVectors(!showVectors)}
+                            className="h-4 w-4 text-blue-600 mr-2"
+                          />
+                          <span className="text-sm font-medium text-gray-700">
+                            Mostrar vectores
+                          </span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={showConnectionsView}
+                            onChange={() =>
+                              setShowConnectionsView(!showConnectionsView)
+                            }
+                            className="h-4 w-4 text-blue-600 mr-2"
+                          />
+                          <span className="text-sm font-medium text-gray-700">
+                            Visualizar conexiones
+                          </span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={showAnimations}
+                            onChange={() => setShowAnimations(!showAnimations)}
+                            className="h-4 w-4 text-blue-600 mr-2"
+                          />
+                          <span className="text-sm font-medium text-gray-700">
+                            Animaciones
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                    <button
+                      onClick={startDemo}
+                      disabled={isGenerating}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {isGenerating
+                        ? "Generando..."
+                        : "Reiniciar Visualización"}
+                    </button>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <details>
+                      <summary className="text-sm font-medium text-blue-600 cursor-pointer">
+                        ¿Qué estoy viendo? (Explicación rápida)
+                      </summary>
+                      <div className="mt-2 text-sm text-gray-600 bg-blue-50 p-3 rounded">
+                        <p className="mb-2">
+                          Esta visualización muestra los cuatro pasos
+                          principales:
+                        </p>
+                        <ol className="list-decimal pl-5 space-y-1">
+                          <li>
+                            <strong>Tokenización:</strong>{" "}
+                            {processDescriptions.tokenization.basic}
+                          </li>
+                          <li>
+                            <strong>Embedding:</strong>{" "}
+                            {processDescriptions.embedding.basic}
+                          </li>
+                          <li>
+                            <strong>Atención:</strong>{" "}
+                            {processDescriptions.attention.basic}
+                          </li>
+                          <li>
+                            <strong>Generación:</strong>{" "}
+                            {processDescriptions.generation.basic}
+                          </li>
+                        </ol>
+                        <p className="mt-2">
+                          Explora cada etapa haciendo clic en los tokens.
+                        </p>
+                      </div>
+                    </details>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="bg-white p-4 rounded-lg shadow">
+                    <h3 className="text-lg font-medium mb-4">
+                      1. Tokenización y 2. Embedding
+                    </h3>
+                    {step >= 1 && (
+                      <div className="mb-4">
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {tokens.map((token, idx) => (
+                            <div
+                              key={idx}
+                              className={`px-3 py-1 rounded cursor-pointer transition-all ${
+                                activeToken === idx
+                                  ? "bg-blue-500 text-white"
+                                  : "bg-blue-100 hover:bg-blue-200"
+                              }`}
+                              onClick={() =>
+                                setActiveToken(activeToken === idx ? null : idx)
+                              }
+                            >
+                              {token}
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-4">
+                          El texto se divide en tokens. Haz clic en uno para ver
+                          su representación.
+                        </p>
+                      </div>
+                    )}
+                    {step >= 2 && activeToken !== null && (
+                      <div className="mb-4">
+                        <div className="font-medium mb-2">
+                          Embedding para "{tokens[activeToken]}":
+                        </div>
+                        <div className="space-y-2 mb-4">
+                          {vectors[activeToken].map((value, dim) => (
+                            <div
+                              key={dim}
+                              className={`flex items-center mb-1 ${
+                                activeDimension === dim
+                                  ? "bg-blue-50 rounded-lg p-1"
+                                  : ""
+                              }`}
+                              onMouseEnter={() => setActiveDimension(dim)}
+                              onMouseLeave={() => setActiveDimension(null)}
+                            >
+                              <div className="w-28 text-sm truncate">
+                                {dimensions[dim]}:
+                              </div>
+                              <div className="flex-grow h-6 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full ${getEmbeddingColor(
+                                    value
+                                  )}`}
+                                  style={{ width: `${Math.abs(value * 100)}%` }}
+                                ></div>
+                              </div>
+                              <div className="ml-2 text-sm w-12 text-right">
+                                {value.toFixed(1)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {showVectors && (
+                          <div className="bg-gray-50 p-2 rounded border border-gray-200 mb-3 font-mono text-sm">
+                            <span className="text-blue-600">
+                              {tokens[activeToken]}
+                            </span>{" "}
+                            = [
+                            {vectors[activeToken].map((val, i) => (
+                              <span
+                                key={i}
+                                className={
+                                  val > 0.5
+                                    ? "text-green-600 font-bold"
+                                    : val < -0.5
+                                    ? "text-red-600 font-bold"
+                                    : ""
+                                }
+                              >
+                                {val.toFixed(1)}
+                                {i < vectors[activeToken].length - 1
+                                  ? ", "
+                                  : ""}
+                              </span>
+                            ))}
+                            ]
+                          </div>
+                        )}
+                        <p className="text-sm text-gray-600">
+                          <strong>Interpretación:</strong>{" "}
+                          {getEmbeddingInterpretation(activeToken)}
+                        </p>
+                      </div>
+                    )}
+                    {step >= 2 && showVectors && (
+                      <div className="mt-4">
+                        <h4 className="text-md font-medium mb-2">
+                          Espacio Vectorial 2D (simplificado):
+                        </h4>
+                        <div
+                          className="relative border border-gray-300 rounded bg-white overflow-hidden"
+                          style={{ height: "250px" }}
+                        >
+                          <div
+                            className="absolute bg-gray-400"
+                            style={{
+                              width: "1px",
+                              height: "100%",
+                              left: "50%",
+                              top: "0",
+                            }}
+                          ></div>
+                          <div
+                            className="absolute bg-gray-400"
+                            style={{
+                              width: "100%",
+                              height: "1px",
+                              left: "0",
+                              top: "50%",
+                            }}
+                          ></div>
+                          <div
+                            className="absolute text-xs text-gray-500"
+                            style={{
+                              right: "5px",
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                            }}
+                          >
+                            +X
+                          </div>
+                          <div
+                            className="absolute text-xs text-gray-500"
+                            style={{
+                              left: "50%",
+                              top: "5px",
+                              transform: "translateX(-50%)",
+                            }}
+                          >
+                            +Y
+                          </div>
+                          {vectors2D.map((coords, idx) => {
+                            const x = 50 + coords[0] * 40;
+                            const y = 50 - coords[1] * 40;
+                            const isActive = activeToken === idx;
+                            return (
+                              <div
+                                key={idx}
+                                className={`absolute rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center cursor-pointer transition-all ${
+                                  isActive
+                                    ? "bg-blue-100 border-blue-500 z-10 shadow-lg"
+                                    : "bg-gray-100 border-gray-400 hover:bg-blue-50"
+                                }`}
+                                style={{
+                                  left: `${x}%`,
+                                  top: `${y}%`,
+                                  width: isActive ? "36px" : "28px",
+                                  height: isActive ? "36px" : "28px",
+                                }}
+                                onClick={() =>
+                                  setActiveToken(isActive ? null : idx)
+                                }
+                              >
+                                <span
+                                  className={`text-xs font-medium ${
+                                    isActive ? "text-blue-700" : ""
+                                  }`}
+                                >
+                                  {tokens[idx].length > 4
+                                    ? tokens[idx].substring(0, 3) + "…"
+                                    : tokens[idx]}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="mt-2 flex justify-between items-start">
+                          <p className="text-xs text-gray-600 flex-grow">
+                            <strong>Nota:</strong> Esta representación es
+                            simplificada. Los embeddings reales tienen muchas
+                            más dimensiones.
+                          </p>
+                          <div className="text-xs text-gray-500 bg-gray-50 p-1 rounded ml-2 border border-gray-200">
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full bg-blue-500 mr-1"></div>
+                              <span>Token seleccionado</span>
+                            </div>
+                            <div className="flex items-center mt-1">
+                              <div className="w-3 h-3 rounded-full bg-gray-100 border border-gray-400 mr-1"></div>
+                              <span>Otros tokens</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow">
+                    <h3 className="text-lg font-medium mb-4">
+                      3. Atención y 4. Generación
+                    </h3>
+                    <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-3 rounded border-l-4 border-blue-400">
+                      <p>
+                        <strong>Contexto:</strong>{" "}
+                        {processDescriptions.attention.basic}
+                      </p>
+                      <p className="mt-1">
+                        <strong>Analogía:</strong> {analogies.attention}
+                      </p>
+                      {showAdvancedInfo && (
+                        <div className="mt-2 p-2 bg-white rounded shadow-inner">
+                          <p>{processDescriptions.attention.advanced}</p>
+                        </div>
+                      )}
+                    </div>
+                    {step >= 3 && (
+                      <div className="mb-6">
+                        <div className="text-sm font-medium mb-2">
+                          {layerNames[selectedLayer]}
+                        </div>
+                        {activeToken !== null ? (
+                          <div>
+                            <div className="mb-2">
+                              <strong>
+                                Atención desde "{tokens[activeToken]}" hacia
+                                otros tokens:
+                              </strong>
+                            </div>
+                            <div className="space-y-2 mb-3">
+                              {tokens.map((token, idx) => {
+                                const weight =
+                                  attentionLayers[selectedLayer][activeToken][
+                                    idx
+                                  ];
+                                return (
+                                  <div key={idx} className="flex items-center">
+                                    <div className="w-20 text-sm truncate">
+                                      {token}
+                                    </div>
+                                    <div className="flex-grow h-6 bg-gray-200 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full ${getAttentionColor(
+                                          weight
+                                        )}`}
+                                        style={{ width: `${weight * 100}%` }}
+                                      ></div>
+                                    </div>
+                                    <div className="ml-2 text-sm w-16 text-right">
+                                      {(weight * 100).toFixed(0)}%
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <p className="text-sm text-gray-600 mb-3">
+                              <strong>Interpretación:</strong> "
+                              {tokens[activeToken]}" presta más atención a "
+                              {
+                                tokens[
+                                  attentionLayers[selectedLayer][
+                                    activeToken
+                                  ].indexOf(
+                                    Math.max(
+                                      ...attentionLayers[selectedLayer][
+                                        activeToken
+                                      ]
+                                    )
+                                  )
+                                ]
+                              }
+                              " en esta capa.
+                              {selectedLayer === 0
+                                ? " Esto refleja relaciones gramaticales locales."
+                                : selectedLayer === 1
+                                ? " Esto refleja conexiones semánticas entre palabras."
+                                : " Esto refleja el contexto global de la oración."}
+                            </p>
+                            {renderAttentionConnections()}
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="mb-3 overflow-x-auto">
+                              <table className="w-full border-collapse">
+                                <thead>
+                                  <tr>
+                                    <th className="p-1 bg-gray-100 border text-center">
+                                      De \ A
+                                    </th>
+                                    {tokens.map((token, idx) => (
+                                      <th
+                                        key={idx}
+                                        className="p-1 bg-gray-100 border text-xs font-medium"
+                                      >
+                                        {token}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {tokens.map((fromToken, i) => (
+                                    <tr key={i}>
+                                      <td
+                                        className="p-1 border bg-gray-100 text-xs font-medium cursor-pointer hover:bg-blue-50"
+                                        onClick={() => setActiveToken(i)}
+                                      >
+                                        {fromToken}
+                                      </td>
+                                      {tokens.map((toToken, j) => {
+                                        const weight =
+                                          attentionLayers[selectedLayer][i][j];
+                                        return (
+                                          <td
+                                            key={j}
+                                            className={`border ${getAttentionColor(
+                                              weight
+                                            )}`}
+                                            style={{
+                                              width: "32px",
+                                              height: "24px",
+                                            }}
+                                            title={`${fromToken} → ${toToken}: ${(
+                                              weight * 100
+                                            ).toFixed(0)}%`}
+                                          >
+                                            <div className="w-full h-full flex items-center justify-center text-xs">
+                                              {weight > 0.3
+                                                ? (weight * 100).toFixed(0) +
+                                                  "%"
+                                                : ""}
+                                            </div>
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            <div className="flex justify-center space-x-4 mb-3">
+                              <div className="flex items-center">
+                                <div className="w-4 h-4 bg-blue-200 mr-1"></div>
+                                <span className="text-xs">Baja atención</span>
+                              </div>
+                              <div className="flex items-center">
+                                <div className="w-4 h-4 bg-blue-800 mr-1"></div>
+                                <span className="text-xs">Alta atención</span>
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-3">
+                              El mecanismo de atención determina qué tokens son
+                              relevantes.
+                              <strong>
+                                {" "}
+                                Haz clic en un token a la izquierda para ver sus
+                                pesos.
+                              </strong>
+                            </p>
+                            <div className="mt-3 bg-yellow-50 p-2 rounded border border-yellow-200 text-xs text-gray-700">
+                              <strong>Cambios entre capas:</strong>
+                              <ul className="pl-4 mt-1 space-y-1 list-disc">
+                                <li>
+                                  <strong>Capa 1 (Local):</strong> Relaciones
+                                  gramaticales cercanas.
+                                </li>
+                                <li>
+                                  <strong>Capa 2 (Semántica):</strong>{" "}
+                                  Conexiones basadas en significado.
+                                </li>
+                                <li>
+                                  <strong>Capa 3 (Global):</strong> Contexto
+                                  completo.
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {step >= 4 && (
+                      <div>
+                        <h4 className="text-md font-medium mb-2">
+                          Generación de respuesta:
+                        </h4>
+                        <div className="bg-yellow-50 p-3 rounded-lg mb-3 min-h-16 border border-yellow-200">
+                          <p className="text-lg">{outputText}</p>
+                          {isGenerating && (
+                            <span className="inline-block w-2 h-4 bg-black ml-1 animate-pulse"></span>
+                          )}
+                        </div>
+                        <div className="flex bg-gray-50 p-3 rounded-lg text-sm text-gray-600 gap-4">
+                          <div className="flex-grow">
+                            <p className="mb-2">
+                              <strong>
+                                ¿Cómo funciona la generación de texto?
+                              </strong>
+                            </p>
+                            <ol className="list-decimal pl-4 space-y-1">
+                              <li>
+                                El modelo procesa la entrada a través de sus
+                                capas.
+                              </li>
+                              <li>
+                                Calcula probabilidades para cada posible token.
+                              </li>
+                              <li>
+                                Selecciona el token más probable o realiza
+                                muestreo.
+                              </li>
+                              <li>Añade el token y repite el proceso.</li>
+                            </ol>
+                          </div>
+                          <div className="w-24 flex flex-col items-center justify-center text-center">
+                            <div className="w-full h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded mb-1"></div>
+                            <span className="text-xs">Probabilidad</span>
+                            <div className="flex w-full justify-between mt-2">
+                              <span className="text-xs">Baja</span>
+                              <span className="text-xs">Alta</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow">
+                  <h3 className="text-lg font-medium mb-3">
+                    ¿Cómo funciona un LLM?
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="mb-3">
+                        <strong>1. Tokenización:</strong> El texto se divide en
+                        tokens. En modelos reales se usan subpalabras.
+                      </p>
+                      <p className="mb-3">
+                        <strong>2. Embedding:</strong> Cada token se transforma
+                        en un vector numérico que captura su significado.
+                      </p>
+                    </div>
+                    <div>
+                      <p className="mb-3">
+                        <strong>3. Atención:</strong> Se determina qué tokens
+                        son relevantes en función del contexto.
+                      </p>
+                      <p className="mb-3">
+                        <strong>4. Generación:</strong> El modelo predice el
+                        siguiente token basándose en el contexto previo.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 className="font-medium mb-2">
+                      ¿Cómo es esto diferente en los LLM reales?
+                    </h4>
+                    <ul className="list-disc pl-5 space-y-1 text-sm">
+                      <li>
+                        <strong>Tamaño:</strong> Miles de millones de
+                        parámetros.
+                      </li>
+                      <li>
+                        <strong>Complejidad:</strong> Muchas capas y cabezas de
+                        atención.
+                      </li>
+                      <li>
+                        <strong>Datos:</strong> Entrenados con billones de
+                        tokens.
+                      </li>
+                      <li>
+                        <strong>Tokenización avanzada:</strong> Uso de
+                        subpalabras para mayor eficiencia.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === "arquitectura" && renderModelArchitecture()}
+
+            {activeTab === "conceptos" && (
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h3 className="text-xl font-medium mb-4">
+                  Conceptos Avanzados en LLM
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-lg font-medium mb-2">
+                      Arquitectura Transformer
+                    </h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Introducida en 2017, la arquitectura Transformer
+                      revolucionó el NLP al permitir procesar secuencias en
+                      paralelo mediante mecanismos de atención.
+                    </p>
+                    <h5 className="font-medium mb-1">
+                      Componentes principales:
+                    </h5>
+                    <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
+                      <li>
+                        <strong>Multi-Head Attention:</strong> Permite enfocarse
+                        en distintas partes del input simultáneamente.
+                      </li>
+                      <li>
+                        <strong>Feed-Forward Networks:</strong> Redes neuronales
+                        para transformar los vectores.
+                      </li>
+                      <li>
+                        <strong>Layer Normalization:</strong> Estabiliza el
+                        entrenamiento.
+                      </li>
+                      <li>
+                        <strong>Residual Connections:</strong> Facilitan el
+                        flujo de información en capas profundas.
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-medium mb-2">
+                      Auto-regresividad
+                    </h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Los LLM generan texto token a token, utilizando cada token
+                      generado como parte del contexto para predecir el
+                      siguiente.
+                    </p>
+                    <h5 className="font-medium mb-1">
+                      Implicaciones prácticas:
+                    </h5>
+                    <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
+                      <li>
+                        <strong>Causa-efecto:</strong> Cada token influye en los
+                        siguientes.
+                      </li>
+                      <li>
+                        <strong>Memoria limitada:</strong> Solo se considera el
+                        contexto previo.
+                      </li>
+                      <li>
+                        <strong>Estrategias de muestreo:</strong> Técnicas como
+                        temperature y top‑k controlan la creatividad.
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-medium mb-2">
+                      Entrenamiento de LLM
+                    </h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      El entrenamiento es un proceso intensivo en múltiples
+                      fases.
+                    </p>
+                    <h5 className="font-medium mb-1">Fases principales:</h5>
+                    <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
+                      <li>
+                        <strong>Pre-entrenamiento:</strong> Aprendizaje de
+                        patrones generales del lenguaje.
+                      </li>
+                      <li>
+                        <strong>Fine-tuning supervisado:</strong> Ajuste
+                        mediante ejemplos etiquetados.
+                      </li>
+                      <li>
+                        <strong>RLHF:</strong> Refinamiento basado en feedback
+                        humano.
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-medium mb-2">
+                      Tipos de Embeddings
+                    </h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Los embeddings representan no solo palabras, sino también
+                      su posición y rol en la secuencia.
+                    </p>
+                    <h5 className="font-medium mb-1">Tipos principales:</h5>
+                    <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
+                      <li>
+                        <strong>Token Embeddings:</strong> Significado
+                        intrínseco del token.
+                      </li>
+                      <li>
+                        <strong>Positional Embeddings:</strong> Información
+                        posicional.
+                      </li>
+                      <li>
+                        <strong>Segment Embeddings:</strong> Diferencian partes
+                        del input.
+                      </li>
+                      <li>
+                        <strong>Contextual Embeddings:</strong> Varían según el
+                        contexto.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="mt-6">
+                  <h4 className="text-lg font-medium mb-3">
+                    Limitaciones y Desafíos
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                      <h5 className="font-medium mb-2">Contexto Limitado</h5>
+                      <p className="text-sm text-gray-600">
+                        La ventana de contexto es limitada, afectando la
+                        coherencia en textos extensos.
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                      <h5 className="font-medium mb-2">Alucinaciones</h5>
+                      <p className="text-sm text-gray-600">
+                        El modelo puede generar información incorrecta aunque
+                        plausible.
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                      <h5 className="font-medium mb-2">Razonamiento</h5>
+                      <p className="text-sm text-gray-600">
+                        A pesar de sus capacidades, aún enfrenta desafíos en
+                        razonamientos complejos.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                    <h4 className="font-medium mb-2">El Futuro de los LLM</h4>
+                    <p className="text-sm">
+                      La evolución sigue con tendencias en modelos multimodales,
+                      mejor razonamiento, eficiencia y alineación con valores
+                      humanos.
+                    </p>
+                    <ul className="list-disc pl-5 mt-2 space-y-1 text-sm">
+                      <li>
+                        <strong>Modelos multimodales</strong> que integran
+                        texto, imágenes, audio y video
+                      </li>
+                      <li>
+                        <strong>Razonamiento mejorado</strong> con técnicas como
+                        chain‑of‑thought
+                      </li>
+                      <li>
+                        <strong>Eficiencia computacional</strong> para reducir
+                        costos y huella de carbono
+                      </li>
+                      <li>
+                        <strong>Alineamiento profundo</strong> con valores y
+                        requisitos éticos
+                      </li>
+                      <li>
+                        <strong>Integración con herramientas externas</strong>{" "}
+                        para expandir capacidades
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      const rootElement = document.getElementById("root");
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(<EnhancedLLMDemo />);
+    </script>
+  </body>
+</html>
