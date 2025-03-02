@@ -780,3 +780,28 @@
 #root .token-focus-view strong {
   color: var(--accent-color);
 }
+
+/* Mejorar contraste en tarjetas de colores */
+#root .bg-purple-50 p,
+#root .bg-amber-50 p,
+#root .bg-emerald-50 p,
+#root .bg-yellow-50 p {
+  color: rgba(0, 0, 0, 0.7) !important; /* Color oscuro para mejor contraste */
+}
+
+/* Alternativa: hacer más oscuro el texto en esas tarjetas */
+#root .bg-purple-50 .text-gray-700,
+#root .bg-amber-50 .text-gray-700,
+#root .bg-emerald-50 .text-gray-700 {
+  color: #333 !important;
+}
+
+/* Específicamente para los textos dentro de esas secciones */
+#root .bg-purple-50 .text-gray-600,
+#root .bg-purple-50 .text-gray-700,
+#root .bg-amber-50 .text-gray-600,
+#root .bg-amber-50 .text-gray-700,
+#root .bg-emerald-50 .text-gray-600,
+#root .bg-emerald-50 .text-gray-700 {
+  color: rgba(30, 30, 30, 0.85) !important;
+}
