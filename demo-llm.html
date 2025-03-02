@@ -691,14 +691,19 @@
         };
 
         // Manejar cambio de ejemplo
+        // Modificar el manejador para que solo cambie el estado
         const handleExampleChange = (exampleId) => {
           setSelectedExample(exampleId);
+        };
+
+        // Agregar este useEffect
+        React.useEffect(() => {
+          // Este código se ejecutará DESPUÉS de que React actualice selectedExample
           setActiveToken(null);
           setOutputText("");
           setGenerationCompleted(false);
           startDemo();
-        };
-
+        }, [selectedExample]); // Se ejecuta cuando cambia selectedExample
         // Interpretación de embeddings para un token
         const getEmbeddingInterpretation = (tokenIdx) => {
           if (tokenIdx === null) return "";
