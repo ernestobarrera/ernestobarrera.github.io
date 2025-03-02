@@ -265,7 +265,14 @@
         const vectors2D = getVectors2D();
 
         // Vectores completos (embeddings)
-        // Vectores completos (embeddings)
+
+        // Probabilidades diferentes para cada ejemplo
+        const tokenProbabilities = {
+          0: [75, 20, 5], // Neumonía, bronquitis, infección
+          1: [80, 15, 5], // Warfarina, dosis, anticoagulante
+          2: [65, 25, 10], // Insuficiencia, mortalidad, diabetes
+          3: [90, 8, 2], // I21.0, agudo, miocardio
+        };
         const getVectors = () => {
           const seed = selectedExample + 1;
           return tokens.map((token, idx) => {
@@ -574,27 +581,91 @@
           generation:
             "Como completar una frase basándose en todas las posibles continuaciones.",
         };
+        // Descripciones contextuales para cada ejemplo
+        const contextDescriptions = {
+          0: {
+            title: "¿Cómo funciona un LLM en diagnóstico clínico?",
+            tokenExample: ["fiebre", "38.5", "°C", "tos", "seca"],
+            embedding: "fiebre = [0.8, 0.2, 0.9, 0.1...]",
+            attention: ["fiebre", "38.5°C", "tos", "seca"],
+            generation: ["neumonía (70%)", "bronquitis (20%)"],
+          },
+          1: {
+            title: "¿Cómo funciona un LLM en interacciones farmacológicas?",
+            tokenExample: [
+              "warfarina",
+              "amiodarona",
+              "fibrilación",
+              "auricular",
+            ],
+            embedding: "warfarina = [0.9, 0.1, 0.2, 0.8...]",
+            attention: [
+              "warfarina",
+              "amiodarona",
+              "interacción",
+              "potenciación",
+            ],
+            generation: ["reducir dosis (80%)", "monitorizar INR (70%)"],
+          },
+          2: {
+            title: "¿Cómo funciona un LLM en análisis de evidencia médica?",
+            tokenExample: ["SGLT2", "insuficiencia", "cardíaca", "evidencia"],
+            embedding: "SGLT2 = [0.7, 0.3, 0.2, 0.9...]",
+            attention: ["SGLT2", "insuficiencia", "cardíaca", "mortalidad"],
+            generation: ["reducción hospitalización (85%)", "mortalidad (70%)"],
+          },
+          3: {
+            title: "¿Cómo funciona un LLM en codificación clínica?",
+            tokenExample: ["infarto", "agudo", "miocardio", "anterior"],
+            embedding: "infarto = [0.9, 0.1, 0.3, 0.7...]",
+            attention: ["infarto", "anterior", "elevación", "ST"],
+            generation: ["I21.0 (90%)", "I21.1 (10%)"],
+          },
+        };
 
         // Iniciar la demo
         const startDemo = () => {
-          if (!showAnimations) {
-            setStep(4);
-            setOutputText(currentExample.response);
-            setIsGenerating(false);
-            setGenerationCompleted(true); // Marca como completado inmediatamente si no hay animaciones
-            return;
-          }
-          setStep(0);
+          // Reset de todos los estados
           setOutputText("");
           setActiveToken(null);
           setIsGenerating(false);
-          setGenerationCompleted(false); // Reinicia el estado al comenzar
+          setGenerationCompleted(false);
+
+          if (!showAnimations) {
+            // Si no hay animaciones, establecer todo de inmediato
+            setStep(4);
+            setOutputText(currentExample.response);
+            setIsGenerating(false);
+            setGenerationCompleted(true);
+            return;
+          }
+
+          // Con animaciones, reiniciar y seguir la secuencia
+          setStep(0);
+
+          // Usar timeouts escalonados
           setTimeout(() => setStep(1), 1000);
           setTimeout(() => setStep(2), 2500);
           setTimeout(() => setStep(3), 4000);
           setTimeout(() => {
             setStep(4);
-            generateText();
+            // Iniciar la generación de texto
+            setIsGenerating(true);
+            const response = currentExample.response;
+            const words = response.split(" ");
+            let currentText = "";
+            let wordIndex = 0;
+            const interval = setInterval(() => {
+              if (wordIndex < words.length) {
+                currentText += (wordIndex > 0 ? " " : "") + words[wordIndex];
+                setOutputText(currentText);
+                wordIndex++;
+              } else {
+                clearInterval(interval);
+                setIsGenerating(false);
+                setGenerationCompleted(true);
+              }
+            }, 200); // Acelerado ligeramente para mejor experiencia
           }, 5500);
         };
 
@@ -623,6 +694,8 @@
         const handleExampleChange = (exampleId) => {
           setSelectedExample(exampleId);
           setActiveToken(null);
+          setOutputText("");
+          setGenerationCompleted(false);
           startDemo();
         };
 
@@ -901,6 +974,12 @@
                         ))}
                       </div>
                     </div>
+                  </div>
+                  <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-accent">
+                    <div className="text-sm text-gray-700 mb-1 font-medium">
+                      Consulta actual:
+                    </div>
+                    <div className="text-md">{currentExample.text}</div>
                   </div>
                   <div className="mb-4">
                     <div className="flex justify-between mb-2">
@@ -1448,9 +1527,7 @@
                               <div
                                 className="h-full"
                                 style={{
-                                  width: `${
-                                    idx === 0 ? 75 : idx === 1 ? 20 : 5
-                                  }%`,
+                                  width: `${`${tokenProbabilities[selectedExample][idx]}%`}`,
                                   backgroundColor:
                                     idx === 0
                                       ? "rgb(16, 185, 129)"
@@ -1461,7 +1538,7 @@
                               ></div>
                             </div>
                             <div className="ml-1 text-xs text-white w-8 text-right">
-                              {idx === 0 ? "75%" : idx === 1 ? "20%" : "5%"}
+                              {`${tokenProbabilities[selectedExample][idx]}%`}
                             </div>
                           </div>
                         ))}
@@ -1513,7 +1590,11 @@
                     {step >= 4 && !isGenerating && (
                       <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                         <h4 className="font-medium mb-2 text-blue-800">
-                          Razonamiento clínico:
+                          {selectedExample <= 1
+                            ? "Razonamiento clínico:"
+                            : selectedExample === 2
+                            ? "Análisis de evidencia:"
+                            : "Razonamiento para codificación:"}
                         </h4>
 
                         {selectedExample === 0 && (
@@ -1665,11 +1746,111 @@
                             </div>
                           </div>
                         )}
+                        {selectedExample === 2 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center">
+                              <div className="w-36 text-sm font-medium">
+                                Evidencia:
+                              </div>
+                              <div className="flex-grow flex flex-wrap gap-1">
+                                <span className="px-2 py-1 bg-white rounded-full text-xs border border-blue-200">
+                                  DAPA-HF
+                                </span>
+                                <span className="px-2 py-1 bg-white rounded-full text-xs border border-blue-200">
+                                  EMPEROR-Reduced
+                                </span>
+                                <span className="px-2 py-1 bg-white rounded-full text-xs border border-blue-200">
+                                  EMPEROR-Preserved
+                                </span>
+                              </div>
+                            </div>
 
+                            <div className="flex items-center">
+                              <div className="w-36 text-sm font-medium">
+                                Beneficios:
+                              </div>
+                              <div className="flex-grow">
+                                <div className="mb-2">
+                                  <div className="flex justify-between mb-1">
+                                    <span className="text-xs">
+                                      Reducción hospitalización
+                                    </span>
+                                    <span className="text-xs">85%</span>
+                                  </div>
+                                  <div className="h-2 bg-gray-200 rounded-full">
+                                    <div
+                                      className="h-2 bg-green-500 rounded-full"
+                                      style={{ width: "85%" }}
+                                    ></div>
+                                  </div>
+                                </div>
+                                <div className="mb-2">
+                                  <div className="flex justify-between mb-1">
+                                    <span className="text-xs">
+                                      Mortalidad cardiovascular
+                                    </span>
+                                    <span className="text-xs">70%</span>
+                                  </div>
+                                  <div className="h-2 bg-gray-200 rounded-full">
+                                    <div
+                                      className="h-2 bg-green-500 rounded-full"
+                                      style={{ width: "70%" }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedExample === 3 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center">
+                              <div className="w-36 text-sm font-medium">
+                                Características:
+                              </div>
+                              <div className="flex-grow flex flex-wrap gap-1">
+                                <span className="px-2 py-1 bg-white rounded-full text-xs border border-blue-200">
+                                  infarto agudo
+                                </span>
+                                <span className="px-2 py-1 bg-white rounded-full text-xs border border-blue-200">
+                                  pared anterior
+                                </span>
+                                <span className="px-2 py-1 bg-white rounded-full text-xs border border-blue-200">
+                                  elevación ST
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center">
+                              <div className="w-36 text-sm font-medium">
+                                Codificación:
+                              </div>
+                              <div className="flex-grow">
+                                <div className="mb-2">
+                                  <div className="flex justify-between mb-1">
+                                    <span className="text-xs">
+                                      I21.0 (Infarto transmural anterior)
+                                    </span>
+                                    <span className="text-xs">90%</span>
+                                  </div>
+                                  <div className="h-2 bg-gray-200 rounded-full">
+                                    <div
+                                      className="h-2 bg-green-500 rounded-full"
+                                      style={{ width: "90%" }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                         <p className="mt-3 text-xs text-gray-600">
-                          El modelo establece asociaciones probabilísticas entre
-                          hallazgos clínicos, diagnósticos y recomendaciones
-                          basándose en su entrenamiento con literatura médica.
+                          {selectedExample <= 1
+                            ? "El modelo establece asociaciones probabilísticas entre hallazgos clínicos, diagnósticos y recomendaciones basándose en su entrenamiento con literatura médica."
+                            : selectedExample === 2
+                            ? "El modelo analiza y sintetiza evidencia científica de múltiples ensayos clínicos para determinar la eficacia de intervenciones farmacológicas."
+                            : "El modelo aplica reglas de codificación CIE-10 y analiza características clínicas para asignar códigos diagnósticos apropiados."}
                         </p>
                       </div>
                     )}
@@ -1677,7 +1858,7 @@
                 )}
                 <div className="bg-white p-4 rounded-lg shadow">
                   <h3 className="text-lg font-medium mb-3">
-                    ¿Cómo funciona un LLM en contexto sanitario?
+                    {contextDescriptions[selectedExample].title}
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm mb-4">
@@ -1693,21 +1874,16 @@
                         procesamiento.
                       </p>
                       <div className="mt-2 bg-white p-2 rounded text-xs">
-                        <span className="px-1 mx-1 bg-green-100 rounded">
-                          fiebre
-                        </span>
-                        <span className="px-1 mx-1 bg-green-100 rounded">
-                          38.5
-                        </span>
-                        <span className="px-1 mx-1 bg-green-100 rounded">
-                          °C
-                        </span>
-                        <span className="px-1 mx-1 bg-green-100 rounded">
-                          tos
-                        </span>
-                        <span className="px-1 mx-1 bg-green-100 rounded">
-                          seca
-                        </span>
+                        {contextDescriptions[selectedExample].tokenExample.map(
+                          (token, idx) => (
+                            <span
+                              key={idx}
+                              className="px-1 mx-1 bg-green-100 rounded"
+                            >
+                              {token}
+                            </span>
+                          )
+                        )}
                       </div>
                     </div>
 
@@ -1723,8 +1899,10 @@
                         características.
                       </p>
                       <div className="mt-2 bg-white p-2 rounded text-xs font-mono">
-                        <span className="text-green-600">fiebre</span> = [0.8,
-                        0.2, 0.9, 0.1...]
+                        <span className="text-green-600">
+                          {contextDescriptions[selectedExample].tokenExample[0]}
+                        </span>{" "}
+                        = [0.8, 0.2, 0.9, 0.1...]
                       </div>
                     </div>
 
@@ -1740,14 +1918,20 @@
                         parámetros.
                       </p>
                       <div className="mt-2 bg-white p-2 rounded flex justify-between text-xs">
-                        <span className="px-1 opacity-50">fiebre</span>
-                        <span className="px-1 font-bold text-amber-600">
-                          38.5°C
-                        </span>
-                        <span className="px-1 opacity-50">tos</span>
-                        <span className="px-1 font-bold text-amber-600">
-                          seca
-                        </span>
+                        {contextDescriptions[selectedExample].attention.map(
+                          (token, idx) => (
+                            <span
+                              key={idx}
+                              className={`px-1 ${
+                                idx % 2 === 0
+                                  ? "opacity-50"
+                                  : "font-bold text-amber-600"
+                              }`}
+                            >
+                              {token}
+                            </span>
+                          )
+                        )}
                       </div>
                     </div>
 
@@ -1764,10 +1948,10 @@
                       </p>
                       <div className="mt-2 bg-white p-2 rounded text-xs">
                         <span className="font-bold text-emerald-600">
-                          neumonía (70%)
+                          {contextDescriptions[selectedExample].generation[0]}
                         </span>
                         <span className="ml-2 opacity-50">
-                          bronquitis (20%)
+                          {contextDescriptions[selectedExample].generation[1]}
                         </span>
                       </div>
                     </div>
