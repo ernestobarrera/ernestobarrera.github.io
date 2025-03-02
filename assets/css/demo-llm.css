@@ -1,0 +1,782 @@
+/* ===========================================
+    demo-llm.css
+    estilos de la aplicación de simulación de funcionamiento de llm
+   =========================================== */
+
+/* Estilos adicionales para asegurar compatibilidad con Tailwind */
+#root .bg-white {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+#root .bg-gray-50 {
+  background-color: var(--primary-bg) !important;
+}
+
+#root .text-gray-600,
+#root .text-gray-700 {
+  color: var(--text-secondary) !important;
+}
+
+#root .border-gray-200,
+#root .border-gray-300 {
+  border-color: #3a4b5c !important;
+}
+
+#root .bg-gray-200 {
+  background-color: #374151 !important;
+}
+
+#root .bg-gray-100 {
+  background-color: var(--secondary-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+#root .text-gray-400 {
+  color: #64748b !important;
+}
+
+#root .bg-yellow-50 {
+  background-color: rgba(255, 215, 0, 0.1) !important;
+  border: 1px solid var(--accent-color);
+}
+
+#root .border-yellow-200 {
+  border-color: var(--accent-color) !important;
+}
+
+/* Ajustes para el tema oscuro */
+#root .border {
+  border-color: #3a4b5c;
+}
+
+#root button {
+  background-color: #3982f6;
+}
+
+#root select,
+#root input {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  border-color: #3a4b5c;
+}
+
+/* Mejorar contraste de texto */
+#root .text-blue-600 {
+  color: var(--accent-color) !important;
+}
+
+/* Mejorar elementos de la interfaz */
+#root .rounded-lg {
+  border-radius: 0.25rem;
+}
+
+#root .shadow {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Alineación consistente con el sitio */
+#root h1,
+#root h2,
+#root h3,
+#root h4 {
+  color: var(--text-primary);
+}
+
+#root p {
+  color: var(--text-secondary);
+}
+
+#root .p-4 {
+  padding: 0.75rem !important;
+}
+
+/* Asegurar márgenes consistentes */
+#root .mb-4 {
+  margin-bottom: 0.75rem !important;
+}
+
+/* Mejorar aspecto de botones */
+#root button.bg-blue-600 {
+  background-color: var(--accent-color) !important;
+  color: var(--primary-bg) !important;
+  font-weight: 500;
+}
+
+#root button.bg-blue-600:hover {
+  background-color: #e6c200 !important;
+}
+/* Correcciones de contraste para fondos y texto */
+#root .bg-white p,
+#root .bg-gray-50 p,
+#root .bg-blue-50 p,
+#root .bg-yellow-50 p {
+  color: var(--text-secondary) !important;
+}
+
+/* Asegurar que todos los headings tengan color correcto */
+#root h1,
+#root h2,
+#root h3,
+#root h4,
+#root h5,
+#root h6 {
+  color: var(--text-primary) !important;
+}
+
+/* Corrección para pestañas */
+#root .border-blue-600 {
+  border-color: var(--accent-color) !important;
+}
+
+/* Corregir color de pestañas seleccionadas */
+#root .text-blue-600 {
+  color: var(--accent-color) !important;
+}
+
+/* Corregir color azul en todos los elementos */
+#root .bg-blue-500,
+#root .bg-blue-600,
+#root .bg-blue-700 {
+  background-color: var(--accent-color) !important;
+  color: var(--primary-bg) !important;
+}
+
+/* Corregir color de fondo para elementos */
+#root .bg-blue-50,
+#root .bg-blue-100,
+#root .bg-blue-200 {
+  background-color: rgba(255, 215, 0, 0.1) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--accent-color) !important;
+}
+
+/* Corregir colores para matrices de atención */
+#root .bg-blue-300,
+#root .bg-blue-400,
+#root .bg-blue-500,
+#root .bg-blue-600,
+#root .bg-blue-700,
+#root .bg-blue-800,
+#root .bg-blue-900 {
+  background-color: var(--card-bg) !important;
+  opacity: 0.7;
+}
+
+#root .bg-blue-300 {
+  opacity: 0.3;
+}
+#root .bg-blue-500 {
+  opacity: 0.5;
+}
+#root .bg-blue-700 {
+  opacity: 0.7;
+}
+#root .bg-blue-900 {
+  opacity: 0.9;
+}
+
+/* Corregir colores de barras de progreso */
+#root .bg-blue-600.h-2 {
+  background-color: var(--accent-color) !important;
+}
+
+/* Corregir fondo para contenedores interactivos */
+#root .bg-green-100,
+#root .bg-red-100,
+#root .bg-purple-100 {
+  background-color: var(--secondary-bg) !important;
+  border-color: var(--accent-color) !important;
+}
+
+/* Corregir color de texto para todos los textos pequeños */
+#root .text-xs,
+#root .text-sm {
+  color: var(--text-secondary) !important;
+}
+
+/* Corregir contraste en tablas */
+#root td,
+#root th {
+  color: var(--text-primary) !important;
+}
+
+/* Mejorar tooltips y tablas */
+#root .bg-gray-100 {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Corregir color de texto para selecciones activas */
+#root .text-white {
+  color: var(--text-primary) !important;
+}
+/* Clases adicionales para las pestañas */
+#root .text-accent {
+  color: var(--accent-color) !important;
+}
+#root .border-accent {
+  border-color: var(--accent-color) !important;
+}
+/* Clases para botones */
+#root .bg-accent {
+  background-color: var(--accent-color) !important;
+}
+#root .text-dark {
+  color: var(--primary-bg) !important;
+}
+#root .bg-dark {
+  background-color: var(--card-bg) !important;
+}
+#root .bg-secondary:hover {
+  background-color: var(--secondary-bg) !important;
+}
+/* Estilos para las pestañas minimalistas */
+#root .nav-tabs-container {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+#root .nav-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+#root .nav-tab {
+  color: var(--text-secondary);
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+#root .nav-tab:hover {
+  color: var(--text-primary);
+}
+
+#root .nav-tab.active {
+  color: var(--accent-color);
+  border-bottom: 2px solid var(--accent-color);
+}
+
+#root .nav-tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--accent-color);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+/* Estilos para la vista de arquitectura */
+#root .architecture-container {
+  background-color: var(--card-bg);
+  border-radius: 0.25rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+#root .architecture-title {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.5rem;
+}
+
+#root .model-selector {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+#root .model-info {
+  background-color: var(--secondary-bg);
+  padding: 0.75rem 1rem;
+  border-radius: 0.25rem;
+  border-left: 3px solid var(--accent-color);
+  max-width: 400px;
+}
+
+#root .model-name {
+  font-weight: 500;
+  color: var(--accent-color);
+  margin-bottom: 0.25rem;
+}
+
+#root .model-description {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+#root .model-select-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+#root .model-select-controls label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+#root .model-select {
+  background-color: var(--secondary-bg);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  min-width: 200px;
+}
+
+#root .architecture-diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 800px;
+  margin: 0 auto 2rem;
+}
+
+#root .arch-layer {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 0.25rem;
+  text-align: center;
+  background-color: var(--secondary-bg);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+
+#root .arch-layer.input-layer {
+  background-color: rgba(255, 215, 0, 0.1);
+  border-color: rgba(255, 215, 0, 0.2);
+}
+
+#root .arch-layer.embedding-layer {
+  width: 90%;
+  background-color: rgba(75, 192, 192, 0.1);
+  border-color: rgba(75, 192, 192, 0.2);
+}
+
+#root .arch-layer.transformer-layer {
+  width: 85%;
+}
+
+#root .arch-layer.transformer-layer.active {
+  background-color: rgba(255, 215, 0, 0.15);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+#root .arch-layer.output-layer {
+  width: 80%;
+  background-color: rgba(255, 99, 132, 0.1);
+  border-color: rgba(255, 99, 132, 0.2);
+}
+
+#root .arch-layer.response-layer {
+  background-color: rgba(153, 102, 255, 0.1);
+  border-color: rgba(153, 102, 255, 0.2);
+}
+
+#root .layer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+#root .layer-label {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+#root .layer-data {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+#root .layer-components {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+#root .component {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 0.25rem 0.5rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 0.25rem;
+}
+
+#root .arch-connector {
+  width: 1px;
+  height: 1.5rem;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+#root .architecture-explainer {
+  background-color: var(--secondary-bg);
+  padding: 1rem;
+  border-radius: 0.25rem;
+  border-left: 3px solid var(--accent-color);
+}
+
+#root .architecture-explainer h4 {
+  color: var(--accent-color);
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+
+#root .architecture-explainer ol,
+#root .architecture-explainer ul {
+  margin-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+#root .architecture-explainer li {
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+#root .architecture-explainer strong {
+  color: var(--text-primary);
+}
+
+#root .note {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  #root .model-selector {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #root .model-info {
+    max-width: 100%;
+  }
+
+  #root .arch-layer {
+    width: 100% !important;
+  }
+}
+/* Gradiente mejorado para la tabla de atención */
+#root .table-attention-cell {
+  border: 1px solid rgba(10, 15, 25, 0.8);
+  transition: all 0.2s ease;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* Niveles de atención con gradiente más visible */
+#root .attention-level-0 {
+  background-color: rgba(13, 24, 41, 1);
+  color: rgba(255, 255, 255, 0.4);
+}
+#root .attention-level-1 {
+  background-color: rgba(19, 36, 62, 1);
+  color: rgba(255, 255, 255, 0.5);
+}
+#root .attention-level-2 {
+  background-color: rgba(25, 48, 83, 1);
+  color: rgba(255, 255, 255, 0.6);
+}
+#root .attention-level-3 {
+  background-color: rgba(37, 65, 112, 1);
+  color: rgba(255, 255, 255, 0.7);
+}
+#root .attention-level-4 {
+  background-color: rgba(49, 82, 137, 1);
+  color: rgba(255, 255, 255, 0.8);
+}
+#root .attention-level-5 {
+  background-color: rgba(61, 103, 172, 1);
+  color: rgba(255, 255, 255, 0.9);
+}
+#root .attention-level-6 {
+  background-color: rgba(73, 120, 197, 1);
+  color: rgba(255, 255, 255, 1);
+}
+#root .attention-level-7 {
+  background-color: rgba(85, 141, 222, 1);
+  color: rgba(255, 255, 255, 1);
+}
+#root .attention-level-8 {
+  background-color: rgba(97, 162, 247, 1);
+  color: rgba(255, 255, 255, 1);
+}
+#root .attention-level-9 {
+  background-color: rgba(109, 179, 255, 1);
+  color: rgba(255, 255, 255, 1);
+}
+
+/* Estilos para la tabla y encabezados */
+#root .attention-table {
+  border-collapse: collapse;
+  width: 100%;
+  background-color: var(--primary-bg);
+}
+
+#root .attention-table th {
+  background-color: rgba(10, 15, 25, 0.95);
+  color: var(--text-primary);
+  font-weight: 500;
+  padding: 8px 4px;
+  font-size: 0.85rem;
+  border: 1px solid rgba(10, 15, 25, 0.8);
+  text-align: center;
+}
+
+#root .attention-table th.corner-header {
+  background-color: rgba(5, 10, 20, 0.95);
+  font-weight: 600;
+}
+
+#root .attention-table td.row-header {
+  background-color: rgba(10, 15, 25, 0.95);
+  color: var(--text-primary);
+  font-weight: 500;
+  text-align: left;
+  padding: 8px;
+  cursor: pointer;
+}
+
+#root .attention-table td.row-header:hover {
+  background-color: rgba(30, 45, 70, 0.95);
+}
+
+/* Leyenda de atención */
+#root .attention-legend {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+#root .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#root .legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+#root .low-attention {
+  background-color: rgba(25, 48, 83, 1);
+}
+
+#root .high-attention {
+  background-color: rgba(97, 162, 247, 1);
+}
+
+#root .legend-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+/* Estilos mejorados para tokens en el espacio vectorial */
+#root .vector-token {
+  background-color: var(--secondary-bg);
+  border-color: rgba(255, 255, 255, 0.2);
+  padding: 0.25rem 0.5rem;
+  min-width: 2rem;
+  transition: all 0.2s ease;
+}
+
+#root .vector-token.active-token {
+  background-color: rgba(255, 215, 0, 0.15);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+#root .vector-token.inactive-token {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+#root .vector-token .token-text {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+#root .vector-token.active-token .token-text {
+  color: var(--accent-color);
+}
+
+/* Mejorar el aspecto del diagrama vectorial */
+#root .vector-space-diagram {
+  background-color: var(--primary-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  height: 250px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+#root .vector-space-diagram .axis {
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+#root .vector-space-diagram .axis.x-axis {
+  width: 100%;
+  height: 1px;
+  top: 50%;
+  left: 0;
+}
+
+#root .vector-space-diagram .axis.y-axis {
+  width: 1px;
+  height: 100%;
+  left: 50%;
+  top: 0;
+}
+
+#root .vector-space-diagram .axis-label {
+  position: absolute;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+#root .vector-space-diagram .axis-label.x-label {
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+#root .vector-space-diagram .axis-label.y-label {
+  left: 50%;
+  top: 10px;
+  transform: translateX(-50%);
+}
+/* Estilos para los detalles de embedding */
+#root .embedding-details {
+  background-color: var(--card-bg);
+  border-radius: 0.25rem;
+  padding: 1rem;
+  border-left: 3px solid var(--accent-color);
+}
+
+#root .embedding-title {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+#root .embedding-dimension {
+  transition: all 0.2s ease;
+}
+
+#root .active-dimension {
+  background-color: rgba(255, 215, 0, 0.1);
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+}
+
+#root .dimension-name {
+  color: var(--text-primary);
+}
+
+#root .dimension-bar {
+  background-color: rgba(10, 15, 25, 0.8);
+}
+
+#root .dimension-value {
+  transition: all 0.2s ease;
+}
+
+#root .high-value {
+  background-color: rgba(16, 185, 129, 1);
+}
+
+#root .medium-high-value {
+  background-color: rgba(16, 185, 129, 0.7);
+}
+
+#root .neutral-value {
+  background-color: rgba(107, 114, 128, 0.7);
+}
+
+#root .medium-low-value {
+  background-color: rgba(239, 68, 68, 0.7);
+}
+
+#root .low-value {
+  background-color: rgba(239, 68, 68, 1);
+}
+
+#root .dimension-number {
+  color: var(--text-secondary);
+}
+
+#root .vector-representation {
+  background-color: var(--primary-bg);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+#root .token-name {
+  color: var(--accent-color);
+}
+
+#root .vector-high {
+  color: rgba(16, 185, 129, 1);
+  font-weight: 600;
+}
+
+#root .vector-low {
+  color: rgba(239, 68, 68, 1);
+  font-weight: 600;
+}
+
+#root .vector-neutral {
+  color: var(--text-secondary);
+}
+
+#root .vector-interpretation {
+  color: var(--text-secondary);
+}
+
+#root .vector-interpretation strong {
+  color: var(--accent-color);
+}
+/* Estilos para la vista de token enfocado */
+#root .token-focus-view {
+  background-color: var(--card-bg);
+  border-radius: 0.25rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-left: 3px solid var(--accent-color);
+}
+
+#root .token-focus-view .flex-grow {
+  background-color: rgba(10, 15, 25, 0.8);
+}
+
+#root .token-focus-view strong {
+  color: var(--accent-color);
+}
