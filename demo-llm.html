@@ -142,73 +142,93 @@
         const [activeTab, setActiveTab] = React.useState("visualizacion");
 
         // Ejemplos predefinidos
+        // Ejemplos predefinidos
         const examples = [
           {
             id: 0,
-            text: "El gato está sentado sobre la alfombra",
+            text: "El paciente presenta fiebre de 38.5°C, tos seca y dificultad respiratoria desde hace 3 días",
             tokens: [
               "El",
-              "gato",
-              "está",
-              "sentado",
-              "sobre",
-              "la",
-              "alfombra",
+              "paciente",
+              "presenta",
+              "fiebre",
+              "de",
+              "38.5°C",
+              "tos",
+              "seca",
+              "y",
+              "dificultad",
+              "respiratoria",
+              "desde",
+              "hace",
+              "3",
+              "días",
             ],
-            response: "El gato está descansando tranquilamente en la alfombra",
+            response:
+              "El cuadro clínico sugiere una infección respiratoria aguda, posiblemente neumonía o bronquitis. Se recomienda valoración física completa, oximetría, radiografía de tórax y análisis sanguíneos para confirmar diagnóstico y establecer gravedad.",
           },
           {
             id: 1,
-            text: "La niña lee un libro de aventuras",
-            tokens: ["La", "niña", "lee", "un", "libro", "de", "aventuras"],
+            text: "Paciente con tratamiento de warfarina que inicia amiodarona por fibrilación auricular",
+            tokens: [
+              "Paciente",
+              "con",
+              "tratamiento",
+              "de",
+              "warfarina",
+              "que",
+              "inicia",
+              "amiodarona",
+              "por",
+              "fibrilación",
+              "auricular",
+            ],
             response:
-              "La niña disfruta leyendo historias emocionantes en su libro de aventuras",
+              "La amiodarona inhibe el metabolismo de la warfarina, potenciando su efecto anticoagulante y aumentando el riesgo de sangrado. Se recomienda reducir la dosis de warfarina en aproximadamente un 30-50% y monitorizar el INR estrechamente durante las primeras semanas. Vigilar signos de sangrado.",
           },
           {
             id: 2,
-            text: "El científico estudia las estrellas",
-            tokens: ["El", "científico", "estudia", "las", "estrellas"],
+            text: "Evidencia actual sobre el uso de SGLT2 en pacientes con insuficiencia cardíaca",
+            tokens: [
+              "Evidencia",
+              "actual",
+              "sobre",
+              "el",
+              "uso",
+              "de",
+              "SGLT2",
+              "en",
+              "pacientes",
+              "con",
+              "insuficiencia",
+              "cardíaca",
+            ],
             response:
-              "El científico observa y analiza detenidamente los cuerpos celestes en el firmamento",
+              "Los inhibidores SGLT2 han demostrado reducir significativamente las hospitalizaciones por insuficiencia cardíaca y la mortalidad cardiovascular en pacientes con y sin diabetes. Ensayos como DAPA-HF y EMPEROR-Reduced muestran beneficios en IC con fracción de eyección reducida, mientras que EMPEROR-Preserved evidencia beneficios en IC con fracción preservada.",
           },
           {
             id: 3,
-            text: "La metformina es recomendada para diabetes tipo 2",
+            text: "Codificación CIE-10 para paciente con infarto agudo de miocardio anterior con elevación del ST",
             tokens: [
-              "La",
-              "metformina",
-              "es",
-              "recomendada",
+              "Codificación",
+              "CIE-10",
               "para",
-              "diabetes",
-              "tipo",
-              "2",
+              "paciente",
+              "con",
+              "infarto",
+              "agudo",
+              "de",
+              "miocardio",
+              "anterior",
+              "con",
+              "elevación",
+              "del",
+              "ST",
             ],
             response:
-              "La metformina mejora la sensibilidad a la insulina y reduce la producción hepática de glucosa en pacientes con diabetes mellitus tipo 2",
+              "El código CIE-10 principal sería I21.0 'Infarto transmural agudo de miocardio de la pared anterior'. Se deben considerar códigos adicionales para procedimientos realizados (como intervención coronaria percutánea), complicaciones específicas y factores de riesgo relevantes como hipertensión (I10) o diabetes (E11.-).",
           },
         ];
-
-        // Modelos de LLM (simplificados para la demo)
-        const models = {
-          base: {
-            name: "LLM Base",
-            layers: 3,
-            description: "Modelo estándar con entendimiento contextual básico",
-          },
-          advanced: {
-            name: "LLM Avanzado",
-            layers: 12,
-            description:
-              "Modelo con comprensión profunda de contexto y capacidades de razonamiento",
-          },
-          expert: {
-            name: "LLM Experto",
-            layers: 24,
-            description:
-              "Modelo especializado con conocimiento experto en múltiples dominios",
-          },
-        };
 
         // Obtener el ejemplo actual
         const currentExample = examples[selectedExample];
@@ -227,30 +247,41 @@
         const vectors2D = getVectors2D();
 
         // Vectores completos (embeddings)
+        // Vectores completos (embeddings)
         const getVectors = () => {
           const seed = selectedExample + 1;
           return tokens.map((token, idx) => {
             const isNoun =
               /^[A-Z][a-z]+$/.test(token) ||
               [
-                "gato",
-                "niña",
-                "libro",
-                "aventuras",
-                "científico",
-                "estrellas",
-                "alfombra",
-                "metformina",
-                "diabetes",
+                "paciente",
+                "fiebre",
+                "tos",
+                "dificultad",
+                "días",
+                "warfarina",
+                "amiodarona",
+                "fibrilación",
+                "SGLT2",
+                "insuficiencia",
+                "cardíaca",
+                "infarto",
+                "miocardio",
+                "elevación",
               ].includes(token);
             const isVerb = [
-              "está",
-              "sentado",
-              "lee",
-              "estudia",
-              "descansando",
+              "presenta",
+              "inicia",
+              "inhibibe",
+              "potenciando",
+              "aumentando",
+              "reducir",
+              "monitorizar",
               "es",
-              "recomendada",
+              "recomienda",
+              "han",
+              "demostrado",
+              "reducir",
             ].includes(token);
             const isDet = [
               "El",
@@ -261,15 +292,53 @@
               "una",
               "los",
               "las",
+              "del",
             ].includes(token);
-            const isPrep = ["sobre", "en", "de", "por", "para", "con"].includes(
-              token
-            );
-            const isMedical = ["metformina", "diabetes", "tipo"].includes(
-              token
-            );
-            const isPosition = ["sobre", "sentado", "en"].includes(token);
-            const isObject = ["alfombra", "libro"].includes(token);
+            const isPrep = [
+              "sobre",
+              "en",
+              "de",
+              "por",
+              "para",
+              "con",
+              "sin",
+              "durante",
+            ].includes(token);
+            const isMedical = [
+              "paciente",
+              "fiebre",
+              "tos",
+              "respiratoria",
+              "warfarina",
+              "amiodarona",
+              "fibrilación",
+              "auricular",
+              "SGLT2",
+              "insuficiencia",
+              "cardíaca",
+              "CIE-10",
+              "infarto",
+              "miocardio",
+              "ST",
+              "diabetes",
+              "neumonía",
+            ].includes(token);
+            const isSeverity = [
+              "agudo",
+              "crónico",
+              "grave",
+              "leve",
+              "38.5°C",
+              "seca",
+              "dificultad",
+            ].includes(token);
+            const isTreatment = [
+              "tratamiento",
+              "warfarina",
+              "amiodarona",
+              "SGLT2",
+              "inhibidores",
+            ].includes(token);
 
             return [
               isNoun
@@ -285,10 +354,10 @@
                 ? 0.8 + Math.cos(idx * seed * 0.5) * 0.2
                 : -0.2 + Math.cos(idx * seed * 0.6) * 0.2,
               isMedical ? 0.9 : Math.sin(idx * seed * 0.7) * 0.4,
-              isPosition
+              isSeverity
                 ? 0.7 + Math.sin(idx * seed) * 0.3
                 : Math.cos(idx * seed * 0.8) * 0.4,
-              isObject
+              isTreatment
                 ? 0.8 + Math.cos(idx * seed * 0.9) * 0.2
                 : Math.sin(idx * seed * 0.5) * 0.4,
             ];
@@ -303,10 +372,12 @@
           "Determinante",
           "Preposición",
           "Medicina/Salud",
-          "Posición",
-          "Objeto/Hogar",
+          "Gravedad/Intensidad",
+          "Tratamiento/Intervención",
         ];
 
+        // Matrices de atención generadas dinámicamente
+        // Matrices de atención generadas dinámicamente
         // Matrices de atención generadas dinámicamente
         const getAttentionLayers = () => {
           const tokenCount = tokens.length;
@@ -315,7 +386,7 @@
             return weights.map((w) => w / sum);
           };
 
-          // Capa 1: Atención local
+          // Capa 1: Atención local - Relaciones gramaticales
           const layer1 = Array(tokenCount)
             .fill(0)
             .map((_, i) => {
@@ -323,14 +394,32 @@
                 .fill(0)
                 .map((_, j) => {
                   const distance = Math.abs(i - j);
-                  let weight = Math.max(0, 1 - distance * 0.3);
-                  if (i !== j) weight *= 0.7;
-                  return weight;
+
+                  // Establecer relaciones gramaticales específicas
+                  if (
+                    (tokens[i] === "El" && tokens[j] === "paciente") ||
+                    (tokens[i] === "la" && tokens[j] === "dosis") ||
+                    (tokens[i] === "con" && tokens[j] === "tratamiento") ||
+                    (tokens[i] === "de" && tokens[j] === "warfarina") ||
+                    (tokens[i] === "auricular" &&
+                      tokens[j] === "fibrilación") ||
+                    (tokens[i] === "agudo" && tokens[j] === "infarto") ||
+                    (tokens[i] === "anterior" && tokens[j] === "miocardio") ||
+                    (tokens[i] === "por" && j > i && distance <= 2) // Preposiciones atienden a lo que les sigue
+                  ) {
+                    return 0.8;
+                  } else if (i === j) {
+                    return 0.1; // Poca auto-atención
+                  } else if (distance === 1) {
+                    return 0.4; // Atención moderada a palabras adyacentes
+                  } else {
+                    return Math.max(0.05, 0.3 - distance * 0.05);
+                  }
                 });
               return normalizeAttention(weights);
             });
 
-          // Capa 2: Atención semántica
+          // Capa 2: Atención semántica - Relaciones de significado
           const layer2 = Array(tokenCount)
             .fill(0)
             .map((_, i) => {
@@ -338,65 +427,54 @@
                 .fill(0)
                 .map((_, j) => {
                   let weight = 0.1;
-                  const iDet = [
-                    "El",
-                    "La",
-                    "el",
-                    "la",
-                    "los",
-                    "las",
-                    "un",
-                    "una",
-                  ].includes(tokens[i]);
-                  const jNoun =
-                    /^[A-Z][a-z]+$/.test(tokens[j]) ||
-                    [
-                      "gato",
-                      "niña",
-                      "libro",
-                      "aventuras",
-                      "científico",
-                      "estrellas",
-                      "alfombra",
-                      "metformina",
-                      "diabetes",
-                    ].includes(tokens[j]);
-                  const iVerb = [
-                    "está",
-                    "sentado",
-                    "lee",
-                    "estudia",
-                    "es",
-                    "recomendada",
-                  ].includes(tokens[i]);
-                  const jSubj =
-                    j > 0 &&
-                    j < tokenCount - 1 &&
-                    ["gato", "niña", "científico", "metformina"].includes(
-                      tokens[j]
-                    );
-                  const iPrep = ["sobre", "en", "de", "para"].includes(
-                    tokens[i]
-                  );
-                  const jObj = [
-                    "alfombra",
-                    "libro",
-                    "aventuras",
-                    "estrellas",
-                    "diabetes",
-                    "tipo",
-                  ].includes(tokens[j]);
 
-                  if ((iDet && jNoun) || (iVerb && jSubj) || (iPrep && jObj)) {
-                    weight += 0.5;
+                  // Relaciones semánticas médicas específicas
+                  if (
+                    (tokens[i] === "paciente" &&
+                      ["presenta", "con", "fiebre", "tos"].includes(
+                        tokens[j]
+                      )) ||
+                    (tokens[i] === "fiebre" &&
+                      ["38.5°C", "tos", "dificultad"].includes(tokens[j])) ||
+                    (tokens[i] === "tos" &&
+                      ["seca", "respiratoria", "dificultad"].includes(
+                        tokens[j]
+                      )) ||
+                    (tokens[i] === "warfarina" &&
+                      ["tratamiento", "con", "paciente", "amiodarona"].includes(
+                        tokens[j]
+                      )) ||
+                    (tokens[i] === "amiodarona" &&
+                      ["inicia", "fibrilación", "auricular"].includes(
+                        tokens[j]
+                      )) ||
+                    (tokens[i] === "fibrilación" &&
+                      ["auricular", "amiodarona"].includes(tokens[j])) ||
+                    (tokens[i] === "SGLT2" &&
+                      [
+                        "uso",
+                        "insuficiencia",
+                        "cardíaca",
+                        "evidencia",
+                      ].includes(tokens[j])) ||
+                    (tokens[i] === "infarto" &&
+                      ["miocardio", "agudo", "ST", "elevación"].includes(
+                        tokens[j]
+                      )) ||
+                    (tokens[i] === "CIE-10" &&
+                      ["codificación", "infarto"].includes(tokens[j]))
+                  ) {
+                    weight = 0.8;
+                  } else if (i === j) {
+                    weight = 0.2; // Algo de auto-atención, pero no demasiada
                   }
-                  weight += Math.sin(i * j * (selectedExample + 1)) * 0.1;
-                  return Math.max(0.01, weight);
+
+                  return weight;
                 });
               return normalizeAttention(weights);
             });
 
-          // Capa 3: Atención global
+          // Capa 3: Atención global - Contexto completo
           const layer3 = Array(tokenCount)
             .fill(0)
             .map((_, i) => {
@@ -404,25 +482,25 @@
                 .fill(0)
                 .map((_, j) => {
                   let weight = 0.1 + Math.sin(i * j * 0.1) * 0.05;
-                  const isContentWord = [
-                    "gato",
-                    "está",
-                    "sentado",
-                    "alfombra",
-                    "niña",
-                    "lee",
-                    "libro",
-                    "aventuras",
-                    "científico",
-                    "estudia",
-                    "estrellas",
-                    "metformina",
-                    "es",
-                    "recomendada",
-                    "diabetes",
-                    "tipo",
-                  ].includes(tokens[j]);
-                  if (isContentWord) weight += 0.1;
+
+                  // Enfatizar palabras clave según el tema médico del ejemplo
+                  const keyWordsMap = {
+                    0: [
+                      "fiebre",
+                      "tos",
+                      "dificultad",
+                      "respiratoria",
+                      "paciente",
+                    ], // Ejemplo de condición respiratoria
+                    1: ["warfarina", "amiodarona", "fibrilación", "auricular"], // Ejemplo de interacciones medicamentosas
+                    2: ["SGLT2", "insuficiencia", "cardíaca", "pacientes"], // Ejemplo de evidencia médica
+                    3: ["CIE-10", "infarto", "miocardio", "codificación"], // Ejemplo de codificación
+                  };
+
+                  if (keyWordsMap[selectedExample].includes(tokens[j])) {
+                    weight += 0.2;
+                  }
+
                   return Math.max(0.05, weight);
                 });
               return normalizeAttention(weights);
@@ -439,6 +517,7 @@
           "Capa 3: Atención global - Contexto completo",
         ];
 
+        // Descripciones de procesos y analogías
         // Descripciones de procesos y analogías
         const processDescriptions = {
           tokenization: {
@@ -457,7 +536,9 @@
             basic:
               "El modelo determina qué tokens son relevantes en el contexto.",
             advanced:
-              "La atención permite que cada token ‘mire’ a los demás para capturar dependencias a distancia.",
+              "La atención permite que cada token 'mire' a los demás para capturar dependencias a distancia.",
+            layers:
+              "Los modelos utilizan múltiples capas: la local captura relaciones gramaticales cercanas, la semántica identifica conexiones de significado entre palabras relacionadas, y la global integra información de toda la oración.",
           },
           generation: {
             basic: "El modelo predice token a token para generar la respuesta.",
@@ -793,9 +874,7 @@
                             }`}
                             onClick={() => handleExampleChange(example.id)}
                           >
-                            {example.id === 3
-                              ? "Ejemplo Médico"
-                              : `Ejemplo ${example.id + 1}`}
+                            {`Caso ${example.id + 1}`}
                           </button>
                         ))}
                       </div>
@@ -1099,11 +1178,11 @@
                           </p>
                           <div className="text-xs text-gray-500 bg-gray-50 p-1 rounded ml-2 border border-gray-200">
                             <div className="flex items-center">
-                              <div className="w-3 h-3 rounded-full bg-blue-500 mr-1"></div>
+                              <div className="w-3 h-3 rounded-full border-2 border-accent bg-yellow-50 mr-1"></div>
                               <span>Token seleccionado</span>
                             </div>
                             <div className="flex items-center mt-1">
-                              <div className="w-3 h-3 rounded-full bg-gray-100 border border-gray-400 mr-1"></div>
+                              <div className="w-3 h-3 rounded-full bg-secondary border border-gray-300 mr-1"></div>
                               <span>Otros tokens</span>
                             </div>
                           </div>
@@ -1112,9 +1191,7 @@
                     )}
                   </div>
                   <div className="bg-white p-4 rounded-lg shadow">
-                    <h3 className="text-lg font-medium mb-4">
-                      3. Atención y 4. Generación
-                    </h3>
+                    <h3 className="text-lg font-medium mb-4">3. Atención</h3>
                     <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-3 rounded border-l-4 border-blue-400">
                       <p>
                         <strong>Contexto:</strong>{" "}
@@ -1122,6 +1199,10 @@
                       </p>
                       <p className="mt-1">
                         <strong>Analogía:</strong> {analogies.attention}
+                      </p>
+                      <p className="mt-1">
+                        <strong>Capas de atención:</strong>{" "}
+                        {processDescriptions.attention.layers}
                       </p>
                       {showAdvancedInfo && (
                         <div className="mt-2 p-2 bg-white rounded shadow-inner">
@@ -1294,52 +1375,50 @@
                         )}
                       </div>
                     )}
-                    {step >= 4 && (
-                      <div>
-                        <h4 className="text-md font-medium mb-2">
-                          Generación de respuesta:
-                        </h4>
-                        <div className="bg-yellow-50 p-3 rounded-lg mb-3 min-h-16 border border-yellow-200">
-                          <p className="text-lg">{outputText}</p>
-                          {isGenerating && (
-                            <span className="inline-block w-2 h-4 bg-black ml-1 animate-pulse"></span>
-                          )}
-                        </div>
-                        <div className="flex bg-gray-50 p-3 rounded-lg text-sm text-gray-600 gap-4">
-                          <div className="flex-grow">
-                            <p className="mb-2">
-                              <strong>
-                                ¿Cómo funciona la generación de texto?
-                              </strong>
-                            </p>
-                            <ol className="list-decimal pl-4 space-y-1">
-                              <li>
-                                El modelo procesa la entrada a través de sus
-                                capas.
-                              </li>
-                              <li>
-                                Calcula probabilidades para cada posible token.
-                              </li>
-                              <li>
-                                Selecciona el token más probable o realiza
-                                muestreo.
-                              </li>
-                              <li>Añade el token y repite el proceso.</li>
-                            </ol>
-                          </div>
-                          <div className="w-24 flex flex-col items-center justify-center text-center">
-                            <div className="w-full h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded mb-1"></div>
-                            <span className="text-xs">Probabilidad</span>
-                            <div className="flex w-full justify-between mt-2">
-                              <span className="text-xs">Baja</span>
-                              <span className="text-xs">Alta</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
+                {step >= 4 && (
+                  <div>
+                    <h3 className="text-md font-medium mb-4">
+                      4. Generación de respuesta:
+                    </h3>
+                    <div className="bg-yellow-50 p-3 rounded-lg mb-3 min-h-16 border border-yellow-200">
+                      <p className="text-lg">{outputText}</p>
+                      {isGenerating && (
+                        <span className="inline-block w-2 h-4 bg-black ml-1 animate-pulse"></span>
+                      )}
+                    </div>
+                    <div className="flex bg-gray-50 p-3 rounded-lg text-sm text-gray-600 gap-4">
+                      <div className="flex-grow">
+                        <p className="mb-2">
+                          <strong>
+                            ¿Cómo funciona la generación de texto?
+                          </strong>
+                        </p>
+                        <ol className="list-decimal pl-4 space-y-1">
+                          <li>
+                            El modelo procesa la entrada a través de sus capas.
+                          </li>
+                          <li>
+                            Calcula probabilidades para cada posible token.
+                          </li>
+                          <li>
+                            Selecciona el token más probable o realiza muestreo.
+                          </li>
+                          <li>Añade el token y repite el proceso.</li>
+                        </ol>
+                      </div>
+                      <div className="w-24 flex flex-col items-center justify-center text-center">
+                        <div className="w-full h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded mb-1"></div>
+                        <span className="text-xs">Probabilidad</span>
+                        <div className="flex w-full justify-between mt-2">
+                          <span className="text-xs">Baja</span>
+                          <span className="text-xs">Alta</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="bg-white p-4 rounded-lg shadow">
                   <h3 className="text-lg font-medium mb-3">
                     ¿Cómo funciona un LLM?
@@ -1365,6 +1444,37 @@
                         siguiente token basándose en el contexto previo.
                       </p>
                     </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <h4 className="font-medium mb-2">
+                      ¿Qué son los parámetros en un LLM?
+                    </h4>
+                    <p className="text-sm mb-2">
+                      Los parámetros son los valores numéricos que definen el
+                      comportamiento del modelo. Son el resultado del
+                      entrenamiento y determinan:
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                      <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                        <strong>Pesos de la red neuronal:</strong> Determinan
+                        cómo se procesan y transforman los embeddings en cada
+                        capa.
+                      </div>
+                      <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                        <strong>Matrices de atención:</strong> Controlan qué
+                        partes del texto recibirán mayor foco según el contexto.
+                      </div>
+                      <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                        <strong>Capas de transformación:</strong> Cada capa del
+                        modelo contiene millones de parámetros que procesan la
+                        información.
+                      </div>
+                    </div>
+                    <p className="text-sm mt-2">
+                      Los LLM modernos contienen entre miles de millones y
+                      billones de parámetros, lo que les permite capturar
+                      patrones complejos del lenguaje.
+                    </p>
                   </div>
                   <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <h4 className="font-medium mb-2">
