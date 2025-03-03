@@ -81,6 +81,12 @@
         },
       };
     </script>
+    <!--para  tutorial de inicio-->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/intro.js/minified/introjs.min.css"
+    />
+    <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
   </head>
   <body class="ia-salud">
     <include src="header.html"></include>
@@ -90,6 +96,24 @@
         <h1 class="main-title">
           <i class="fas fa-brain"></i>
           <span>Visualización de Modelos de Lenguaje (LLM)</span>
+          <span
+            id="startTutorialBtn"
+            style="
+              margin-left: 30px;
+              cursor: pointer;
+              color: white;
+              font-size: 0.8rem;
+              background: rgba(255, 215, 0, 0.25);
+              padding: 4px 8px;
+              border-radius: 4px;
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+            "
+          >
+            <i class="fas fa-graduation-cap"></i>
+            Ver Guía Interactiva
+          </span>
         </h1>
         <p class="intro-text">
           Esta herramienta interactiva te permite visualizar cómo funciona un
@@ -158,8 +182,179 @@
               "Modelo avanzado con doce capas para tareas complejas.",
           },
         };
+        // Nuevo estado para el tutorial
+        const [tutorialCompleted, setTutorialCompleted] = React.useState(
+          localStorage.getItem("llm_demo_tutorial_visto") === "true"
+        );
+        // Función para inicializar el tutorial
+        const iniciarTutorial = () => {
+          const intro = introJs();
 
-        // Ejemplos predefinidos
+          intro.setOptions({
+            steps: [
+              {
+                // Paso 1: Introducción general
+                intro: `<h3>Bienvenido a la Visualización de LLM</h3>
+                <p>Esta herramienta interactiva te permite explorar cómo funciona un Modelo de Lenguaje Grande (LLM) a través de sus principales etapas de procesamiento.</p>
+                <p>Te guiaré a través de las principales características.</p>`,
+              },
+              {
+                // Paso 2: Selector de ejemplos
+                element: ".flex.flex-wrap.gap-2",
+                intro: `<p>Selecciona diferentes ejemplos médicos para ver cómo el modelo procesa distintos tipos de consultas.</p>
+                <p>Cada ejemplo ilustra un caso de uso diferente en el ámbito sanitario.</p>`,
+                position: "bottom",
+              },
+              {
+                // Paso 3: Barra de progreso
+                element: ".bg-gray-200.rounded-full.h-2",
+                intro: `<p>Esta barra muestra el progreso a través de las 4 etapas principales del procesamiento del LLM:</p>
+                <ol>
+                  <li>Tokenización: división del texto en unidades básicas</li>
+                  <li>Embedding: representación vectorial de cada token</li>
+                  <li>Atención: identificación de relaciones contextuales</li>
+                  <li>Generación: producción de la respuesta</li>
+                </ol>`,
+                position: "bottom",
+              },
+              {
+                // Paso 4: Selector de capa de atención
+                element: "select",
+                intro: `<p>Aquí puedes seleccionar diferentes capas de atención para observar cómo el modelo establece relaciones entre palabras:</p>
+                <ul>
+                  <li>Capa 1 (Local): Relaciones gramaticales cercanas</li>
+                  <li>Capa 2 (Semántica): Conexiones de significado</li>
+                  <li>Capa 3 (Global): Contexto completo</li>
+                </ul>`,
+                position: "right",
+              },
+              {
+                // Paso 5: Controles de visualización
+                element: ".flex.items-end.gap-3",
+                intro: `<p>Estos controles te permiten personalizar la visualización:</p>
+                <ul>
+                  <li><strong>Mostrar vectores</strong>: Visualiza las representaciones numéricas</li>
+                  <li><strong>Visualizar conexiones</strong>: Muestra relaciones entre tokens</li>
+                  <li><strong>Animaciones</strong>: Activa/desactiva las transiciones animadas</li>
+                </ul>`,
+                position: "left",
+              },
+              {
+                // Paso 6: Botón de reinicio
+                element: "#btnReiniciarVisualizacion",
+                intro: `<p>Usa este botón para iniciar o reiniciar el proceso de visualización completo.</p>
+  <p>Observa cómo el modelo pasa por cada una de las etapas hasta generar una respuesta.</p>`,
+                position: "left",
+              },
+
+              {
+                // Paso 7: Área de tokenización
+                element:
+                  ".grid.grid-cols-1.md\\:grid-cols-2.gap-4.mb-4 > div:first-child",
+                intro: `<p>En esta sección puedes ver cómo el texto se divide en tokens (unidades básicas).</p>
+                <p><strong>Prueba a hacer clic en un token</strong> para ver su representación vectorial.</p>`,
+                position: "right",
+              },
+              {
+                // Paso 8: Área de atención
+                element:
+                  ".grid.grid-cols-1.md\\:grid-cols-2.gap-4.mb-4 > div:last-child",
+                intro: `<p>Aquí observarás cómo el modelo determina la relevancia de cada token en relación con los demás.</p>
+                <p>Los colores más intensos indican mayor nivel de atención.</p>`,
+                position: "left",
+              },
+              {
+                // Paso 9: Área de generación
+                element: ".bg-yellow-50.p-3.rounded-lg",
+                intro: `<p>Esta es la respuesta generada por el modelo basada en el análisis de la consulta.</p>
+                <p>Observa cómo el modelo produce texto relevante desde una perspectiva clínica.</p>`,
+                position: "top",
+              },
+              {
+                // Paso 10: Pestañas de navegación
+                element: ".nav-tabs",
+                intro: `<p>Explora diferentes aspectos del modelo con estas pestañas:</p>
+                <ul>
+                  <li><strong>Visualización</strong>: El funcionamiento paso a paso</li>
+                  <li><strong>Arquitectura</strong>: La estructura técnica del modelo</li>
+                  <li><strong>Conceptos Avanzados</strong>: Información técnica detallada</li>
+                </ul>`,
+                position: "bottom",
+              },
+              {
+                // Paso 11: Conclusión
+                intro: `<h3>¡Listo para explorar!</h3>
+                <p>Ahora puedes experimentar con diferentes ejemplos y opciones para entender mejor cómo funcionan los LLM en el contexto médico.</p>
+                <p>Haz clic en "Hecho" para comenzar.</p>`,
+              },
+            ],
+            overlayOpacity: 0.8,
+            highlightClass: "myHighlight",
+            tooltipClass: "introjs-custom-tooltip",
+            prevLabel: "Anterior",
+            nextLabel: "Siguiente",
+            doneLabel: "Hecho",
+            skipLabel: "Saltar",
+            showStepNumbers: false,
+            scrollToElement: true,
+            disableInteraction: false,
+            scrollPadding: 80,
+          });
+
+          // Guardar estado en localStorage al completar
+          intro.oncomplete(function () {
+            localStorage.setItem("llm_demo_tutorial_visto", "true");
+            setTutorialCompleted(true);
+          });
+
+          intro.onexit(function () {
+            localStorage.setItem("llm_demo_tutorial_visto", "true");
+            setTutorialCompleted(true);
+          });
+
+          // Iniciar el tutorial
+          intro.start();
+        };
+
+        // Efecto para verificar si es la primera visita
+        React.useEffect(() => {
+          const tutorialVisto = localStorage.getItem("llm_demo_tutorial_visto");
+          let timer; // Declaramos timer para usarlo más adelante
+
+          // Si no se ha visto el tutorial, lo iniciamos tras 1500ms
+          if (!tutorialVisto && !tutorialCompleted) {
+            timer = setTimeout(() => {
+              iniciarTutorial();
+            }, 1500);
+          }
+
+          // Siempre añadimos el listener para el evento "startTutorial"
+          const handleStartTutorial = () => {
+            // Elimina el flag del tutorial para forzar que se ejecute
+            localStorage.removeItem("llm_demo_tutorial_visto");
+            setTutorialCompleted(false);
+            iniciarTutorial();
+          };
+
+          document.addEventListener("startTutorial", handleStartTutorial);
+
+          // Función de limpieza: limpia el timer (si se creó) y remueve el listener
+          return () => {
+            if (timer) clearTimeout(timer);
+            document.removeEventListener("startTutorial", handleStartTutorial);
+          };
+        }, [tutorialCompleted]);
+
+        // Componente para el botón del tutorial
+        const TutorialButton = () => (
+          <button
+            className="ml-6 text-sm bg-yellow-50 text-gray-800 px-3 py-1 rounded-md flex items-center gap-1 hover:bg-yellow-200 transition-colors"
+            onClick={iniciarTutorial}
+          >
+            <i className="fas fa-graduation-cap"></i>
+            <span>Guía Interactiva</span>
+          </button>
+        );
         // Ejemplos predefinidos
         const examples = [
           {
@@ -961,7 +1156,7 @@
                   <div className="flex flex-wrap gap-4 mb-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Selecciona un ejemplo:
+                        Selecciona un Prompt:
                       </label>
                       <div className="flex flex-wrap gap-2">
                         {examples.map((example) => (
@@ -981,9 +1176,6 @@
                     </div>
                   </div>
                   <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-accent">
-                    <div className="text-sm text-gray-700 mb-1 font-medium">
-                      Consulta actual:
-                    </div>
                     <div className="text-md">{currentExample.text}</div>
                   </div>
                   <div className="mb-4">
@@ -1090,6 +1282,7 @@
                       </div>
                     </div>
                     <button
+                      id="btnReiniciarVisualizacion"
                       onClick={startDemo}
                       disabled={isGenerating}
                       className="px-4 py-2 bg-accent text-dark rounded-md hover:brightness-110 disabled:opacity-50"
@@ -2205,6 +2398,20 @@
       const rootElement = document.getElementById("root");
       const root = ReactDOM.createRoot(rootElement);
       root.render(<EnhancedLLMDemo />);
+    </script>
+    <script type="text/javascript">
+      // Detectar clics en el botón del tutorial fuera de React
+      document.addEventListener("DOMContentLoaded", function () {
+        var startTutorialBtn = document.getElementById("startTutorialBtn");
+        if (startTutorialBtn) {
+          startTutorialBtn.addEventListener("click", function () {
+            // Este evento llamará a la función iniciarTutorial
+            // que está dentro del componente React
+            // a través de un evento personalizado
+            document.dispatchEvent(new CustomEvent("startTutorial"));
+          });
+        }
+      });
     </script>
   </body>
 </html>

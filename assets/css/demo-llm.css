@@ -864,3 +864,164 @@
 #root div:has(> h3:contains("parámetros")) strong {
   color: var(--accent-color) !important;
 }
+/* ==========================================
+   Estilos para el tutorial interactivo de LLM
+   ========================================== */
+
+/* Tooltip principal */
+.introjs-custom-tooltip {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid #ffd700 !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  padding: 1rem !important;
+  max-width: 400px;
+  animation: fadeIn 0.5s ease;
+}
+
+/* Animación de fade-in */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Flecha del tooltip */
+.introjs-arrow.top,
+.introjs-arrow.top-middle,
+.introjs-arrow.top-right {
+  border-bottom-color: #ffd700 !important;
+}
+
+.introjs-arrow.bottom,
+.introjs-arrow.bottom-middle,
+.introjs-arrow.bottom-right {
+  border-top-color: #ffd700 !important;
+}
+
+.introjs-arrow.left,
+.introjs-arrow.right {
+  border-right-color: #ffd700 !important;
+  border-left-color: #ffd700 !important;
+}
+
+/* Número de paso */
+.introjs-helperNumberLayer {
+  background: #ffd700 !important;
+  color: #1c1e26 !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Bullets para navegación */
+.introjs-bullets .introjs-bullet {
+  background: #334155 !important;
+  border: 2px solid transparent !important;
+}
+
+.introjs-bullets .introjs-bullet.active {
+  background: #ffd700 !important;
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.4) !important;
+}
+
+/* Botones de navegación */
+.introjs-prevbutton,
+.introjs-nextbutton,
+.introjs-donebutton,
+.introjs-skipbutton {
+  background: #0f172a !important;
+  color: #ffd700 !important;
+  border: 1px solid #ffd700 !important;
+  padding: 8px 14px !important;
+  border-radius: 4px;
+  margin: 0 4px;
+  font-size: 14px !important;
+  transition: all 0.2s ease;
+  text-shadow: none !important;
+  font-weight: normal !important;
+}
+
+.introjs-prevbutton:hover,
+.introjs-nextbutton:hover,
+.introjs-donebutton:hover,
+.introjs-skipbutton:hover {
+  background: #ffd700 !important;
+  color: #0f172a !important;
+  transform: translateY(-1px);
+}
+
+.introjs-disabled {
+  opacity: 0.5 !important;
+  color: #94a3b8 !important;
+}
+
+/* Area de botones */
+.introjs-tooltipbuttons {
+  border-top: 1px solid rgba(255, 215, 0, 0.3) !important;
+  padding-top: 0.75rem;
+}
+
+/* Botón de skip */
+.introjs-skipbutton {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  border: none !important;
+}
+
+.introjs-skipbutton:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+/* Formato del texto del tooltip */
+.introjs-tooltip-title {
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.5rem !important;
+  color: #ffd700 !important;
+}
+
+.introjs-tooltiptext {
+  color: #f8fafc !important;
+  font-size: 0.95rem !important;
+  line-height: 1.5 !important;
+}
+
+.introjs-tooltiptext h3 {
+  color: #ffd700 !important;
+  margin-bottom: 0.5rem !important;
+  font-size: 1.1rem !important;
+}
+
+.introjs-tooltiptext p {
+  margin-bottom: 0.5rem !important;
+}
+
+.introjs-tooltiptext ul,
+.introjs-tooltiptext ol {
+  margin-left: 1.25rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.introjs-tooltiptext li {
+  margin-bottom: 0.25rem !important;
+}
+
+/* Elemento resaltado */
+.myHighlight {
+  box-shadow: 0 0 10px 5px rgba(255, 215, 0, 0.5) !important;
+  border: 2px solid #ffd700 !important;
+  border-radius: 6px !important;
+  z-index: 100 !important;
+  transition: all 0.3s ease !important;
+}
