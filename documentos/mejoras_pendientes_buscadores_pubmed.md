@@ -1,3 +1,5 @@
+Publicar en Zenodo: https://claude.ai/chat/c0884ca4-eb10-4e4c-a230-55abe9606cc5
+
 A continuación te muestro, paso a paso, las modificaciones concretas que debes realizar en el código original, indicando exactamente qué líneas eliminar, añadir o mover, junto con el código completo de cada cambio:
 
 ---
