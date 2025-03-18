@@ -1,0 +1,723 @@
+<!--
+    =====================
+      evaluacion-dolor-neuropatico.html
+      Escala S-LANSS
+    =====================
+    -->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evaluación de Dolor Neuropático | Escala S-LANSS | @ernestob</title>
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/header.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Evaluación de Dolor Neuropático | Escala S-LANSS | ​👨‍⚕️ ​@ernestob"
+    />
+    <meta
+      property="og:description"
+      content="Versión española validada de la escala autoadministrada de Evaluación de Signos y Síntomas Neuropáticos de Leeds"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria 🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/t/evaluacion-dolor-neuropatico/"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+  </head>
+  <body>
+    <include src="header.html"></include>
+
+    <main class="main-container">
+      <section class="hero-section">
+        <h1 class="main-title">
+          <i class="fas fa-bolt"></i>
+          <span>Evaluación de Dolor Neuropático | Escala S-LANSS</span>
+        </h1>
+        <p class="intro-text">
+          Esta herramienta implementa la versión española validada de la escala
+          autoadministrada de Evaluación de Signos y Síntomas Neuropáticos de
+          Leeds. La escala es un instrumento validado para identificar si el
+          dolor presenta características neuropáticas (causado por alteraciones
+          en el sistema nervioso). Este tipo de dolor puede requerir
+          tratamientos específicos diferentes a los utilizados para el dolor
+          nociceptivo (relacionado con daño tisular). Con un punto de corte de
+          12, la escala tiene una sensibilidad del 88,7% y una especificidad del
+          76,6% según el estudio de validación español.
+        </p>
+      </section>
+
+      <div id="root"></div>
+    </main>
+
+    <include src="footer.html"></include>
+
+    <script src="/assets/js/include.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+      const SLanssApp = () => {
+        /* Estados para el paso actual, respuestas y puntuación */
+        const [currentStep, setCurrentStep] = React.useState(0);
+        const [answers, setAnswers] = React.useState({});
+        const [score, setScore] = React.useState(null);
+
+        /* Estados para las pestañas */
+        const [welcomeTab, setWelcomeTab] = React.useState("instructions");
+        const [resultTab, setResultTab] = React.useState("score");
+
+        const questions = [
+          {
+            id: 1,
+            text: "En el área donde usted tiene dolor, ¿también tiene sensación de «pinchazos» o sensación de picor u hormigueo?",
+            points: 5,
+          },
+          {
+            id: 2,
+            text: "¿Cambia de color la zona dolorida (quizá se ve enrojecida), cuando usted siente dolor?",
+            points: 5,
+          },
+          {
+            id: 3,
+            text: "En el área donde usted tiene dolor, ¿su piel presenta una sensibilidad anormal al tacto? Por ejemplo, al acariciar ligeramente la piel se producen sensaciones desagradables o dolorosas",
+            points: 3,
+          },
+          {
+            id: 4,
+            text: "¿El dolor aparece de repente y en ráfagas sin razón aparente, aunque esté completamente quieto? Estas sensaciones se podrían describir como «descargas eléctricas» o ráfagas",
+            points: 2,
+          },
+          {
+            id: 5,
+            text: "En el área donde usted tiene dolor, ¿siente calor o un dolor quemante (quemazón)?",
+            points: 1,
+          },
+          {
+            id: 6,
+            text: "Frótese suavemente con el dedo índice el área que le duele y después realice lo mismo en un área sin dolor (por ejemplo, en un área de piel alejada o en el lado opuesto al dolor). ¿Cómo siente ese frotamiento en la zona dolorida?",
+            instructions: [
+              "1. Identifique el área donde siente dolor",
+              "2. Con su dedo índice, frote suavemente la zona dolorida",
+              "3. Ahora, frote de la misma manera una zona sin dolor (como el lado opuesto del cuerpo)",
+              "4. Compare las sensaciones",
+            ],
+            points: 5,
+            responseOptions: [
+              {
+                value: "yes",
+                label:
+                  "Sí, el frotamiento produce sensaciones anormales o dolor solo en la zona dolorida",
+              },
+              {
+                value: "no",
+                label: "No, el frotamiento se siente igual en ambas zonas",
+              },
+            ],
+          },
+          {
+            id: 7,
+            text: "Presione suavemente con su dedo un área que le duela y luego presione de la misma forma en otra área que no le duela (la misma zona sin dolor que seleccionó en la pregunta anterior). ¿Cómo siente la presión en el área de dolor?",
+            instructions: [
+              "1. Con la punta de su dedo, presione suavemente la zona dolorida",
+              "2. Aplique la misma presión en una zona no dolorida",
+              "3. Compare las sensaciones",
+            ],
+            points: 3,
+            responseOptions: [
+              {
+                value: "yes",
+                label:
+                  "Sí, la presión causa más dolor o sensaciones anormales en el área dolorida",
+              },
+              {
+                value: "no",
+                label: "No, la presión se siente igual en ambas zonas",
+              },
+            ],
+          },
+        ];
+
+        /* Manejo de respuestas */
+        const handleAnswerChange = (questionId, value) => {
+          setAnswers({
+            ...answers,
+            [questionId]: value,
+          });
+        };
+
+        /* Cálculo de la puntuación final */
+        const calculateScore = () => {
+          let totalScore = 0;
+          Object.keys(answers).forEach((key) => {
+            const questionId = parseInt(key);
+            const question = questions.find((q) => q.id === questionId);
+            if (answers[key] === "yes") {
+              totalScore += question.points;
+            }
+          });
+          setScore(totalScore);
+          setCurrentStep(questions.length + 1);
+        };
+
+        /* Progreso de la encuesta */
+        const getProgressPercentage = () => {
+          if (currentStep === 0) return 0;
+          if (currentStep > questions.length) return 100;
+          return (currentStep / questions.length) * 100;
+        };
+
+        /* Descripción en función de la puntuación */
+        const getResultDescription = () => {
+          if (score >= 12) {
+            return {
+              title: "Probable dolor con características neuropáticas",
+              description:
+                "Una puntuación de 12 o más sugiere la presencia de mecanismos de dolor neuropático contribuyendo a la experiencia de dolor del paciente.",
+              statistics:
+                "Con este punto de corte, la escala S-LANSS tiene una sensibilidad del 88,7% y una especificidad del 76,6% según el estudio de validación español.",
+              recommendations: [
+                "Consulte estos resultados con su médico",
+                "Es importante una evaluación clínica completa para confirmar el diagnóstico",
+                "Lleve este resultado a su próxima cita médica",
+              ],
+              color: "bg-red-900 border-red-800 text-red-200",
+            };
+          } else {
+            return {
+              title: "Dolor predominantemente nociceptivo",
+              description:
+                "Una puntuación menor a 12 sugiere que los mecanismos neuropáticos probablemente no son los principales contribuyentes al dolor del paciente.",
+              statistics:
+                "Este resultado indica que su dolor presenta características predominantemente nociceptivas (relacionadas con daño tisular).",
+              recommendations: [
+                "Consulte con su médico para un diagnóstico preciso",
+                "Es importante abordar la causa subyacente del dolor",
+                "Lleve este resultado a su próxima cita médica",
+              ],
+              color: "bg-green-900 border-green-800 text-green-200",
+            };
+          }
+        };
+
+        /* Vista para cada pregunta */
+        const renderQuestionStep = () => {
+          const question = questions[currentStep - 1];
+          return (
+            <div className="space-y-6">
+              {/* Barra de progreso */}
+              <div className="mb-4">
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full"
+                    style={{ width: `${getProgressPercentage()}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-sm text-gray-400 mt-1">
+                  <span>
+                    Pregunta {currentStep} de {questions.length}
+                  </span>
+                  <span>{Math.round(getProgressPercentage())}% completado</span>
+                </div>
+              </div>
+
+              {/* Texto de la pregunta + instrucciones */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-medium text-white">
+                  {question.text}
+                </h3>
+                {question.instructions && (
+                  <div className="bg-gray-800 p-3 rounded-md border border-gray-700">
+                    <h4 className="font-medium mb-2 text-white">
+                      Instrucciones:
+                    </h4>
+                    <ul className="space-y-1 text-sm text-gray-300">
+                      {question.instructions.map((instruction, index) => (
+                        <li key={index}>{instruction}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Opciones de respuesta */}
+              <div className="space-y-3">
+                {question.responseOptions ? (
+                  question.responseOptions.map((option) => (
+                    <div
+                      key={option.value}
+                      className={
+                        "flex items-start space-x-2 rounded-md p-2 cursor-pointer " +
+                        (answers[question.id] === option.value
+                          ? "bg-blue-900"
+                          : "hover:bg-gray-800")
+                      }
+                      onClick={() =>
+                        handleAnswerChange(question.id, option.value)
+                      }
+                    >
+                      <div
+                        className={
+                          "mt-1 w-4 h-4 rounded-full border " +
+                          (answers[question.id] === option.value
+                            ? "border-blue-500 bg-blue-500"
+                            : "border-gray-500")
+                        }
+                      >
+                        {answers[question.id] === option.value && (
+                          <div className="w-2 h-2 mx-auto mt-0.5 rounded-full bg-white"></div>
+                        )}
+                      </div>
+                      <label className="font-normal text-gray-300 cursor-pointer">
+                        {option.label}
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <div
+                      className={
+                        "flex items-start space-x-2 rounded-md p-2 cursor-pointer " +
+                        (answers[question.id] === "yes"
+                          ? "bg-blue-900"
+                          : "hover:bg-gray-800")
+                      }
+                      onClick={() => handleAnswerChange(question.id, "yes")}
+                    >
+                      <div
+                        className={
+                          "mt-1 w-4 h-4 rounded-full border " +
+                          (answers[question.id] === "yes"
+                            ? "border-blue-500 bg-blue-500"
+                            : "border-gray-500")
+                        }
+                      >
+                        {answers[question.id] === "yes" && (
+                          <div className="w-2 h-2 mx-auto mt-0.5 rounded-full bg-white"></div>
+                        )}
+                      </div>
+                      <label className="font-normal text-gray-300 cursor-pointer">
+                        Sí
+                      </label>
+                    </div>
+                    <div
+                      className={
+                        "flex items-start space-x-2 rounded-md p-2 cursor-pointer " +
+                        (answers[question.id] === "no"
+                          ? "bg-blue-900"
+                          : "hover:bg-gray-800")
+                      }
+                      onClick={() => handleAnswerChange(question.id, "no")}
+                    >
+                      <div
+                        className={
+                          "mt-1 w-4 h-4 rounded-full border " +
+                          (answers[question.id] === "no"
+                            ? "border-blue-500 bg-blue-500"
+                            : "border-gray-500")
+                        }
+                      >
+                        {answers[question.id] === "no" && (
+                          <div className="w-2 h-2 mx-auto mt-0.5 rounded-full bg-white"></div>
+                        )}
+                      </div>
+                      <label className="font-normal text-gray-300 cursor-pointer">
+                        No
+                      </label>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Botones Anterior / Siguiente */}
+              <div className="flex justify-between pt-4">
+                <button
+                  onClick={() => setCurrentStep(currentStep - 1)}
+                  disabled={currentStep === 1}
+                  className={
+                    "flex items-center gap-1 px-4 py-2 text-white rounded " +
+                    (currentStep === 1
+                      ? "bg-gray-600 cursor-not-allowed"
+                      : "bg-gray-700 hover:bg-gray-600")
+                  }
+                >
+                  <i className="fas fa-arrow-left text-xs"></i> Anterior
+                </button>
+                <button
+                  onClick={() => {
+                    if (currentStep === questions.length) {
+                      calculateScore();
+                    } else {
+                      setCurrentStep(currentStep + 1);
+                    }
+                  }}
+                  disabled={!answers[question.id]}
+                  className={
+                    "flex items-center gap-1 px-4 py-2 rounded " +
+                    (answers[question.id]
+                      ? "bg-blue-600 text-white hover:bg-blue-500"
+                      : "bg-gray-600 text-gray-300 cursor-not-allowed")
+                  }
+                >
+                  {currentStep === questions.length ? (
+                    <>
+                      Finalizar <i className="fas fa-check-circle text-xs"></i>
+                    </>
+                  ) : (
+                    <>
+                      Siguiente <i className="fas fa-arrow-right text-xs"></i>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          );
+        };
+
+        /* Vista de resultado final */
+        const renderResultsStep = () => {
+          const result = getResultDescription();
+          return (
+            <div className="space-y-6">
+              <div className={`p-4 rounded-md border ${result.color}`}>
+                <h3 className="font-medium text-lg">{result.title}</h3>
+                <p className="mt-1">{result.description}</p>
+                <p className="mt-2 text-sm">{result.statistics}</p>
+              </div>
+
+              {/* Pestañas para "Puntuación" y "Detalles" */}
+              <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+                <div className="flex border-b border-gray-700">
+                  <button
+                    onClick={() => setResultTab("score")}
+                    className={
+                      "w-1/2 py-2 text-center font-medium " +
+                      (resultTab === "score"
+                        ? "text-white bg-blue-900"
+                        : "text-gray-400 hover:bg-gray-700")
+                    }
+                  >
+                    Puntuación
+                  </button>
+                  <button
+                    onClick={() => setResultTab("details")}
+                    className={
+                      "w-1/2 py-2 text-center font-medium " +
+                      (resultTab === "details"
+                        ? "text-white bg-blue-900"
+                        : "text-gray-400 hover:bg-gray-700")
+                    }
+                  >
+                    Detalles
+                  </button>
+                </div>
+
+                <div className="p-4 space-y-4">
+                  {resultTab === "score" && (
+                    <>
+                      <div className="text-center space-y-1 py-3">
+                        <p className="text-sm text-gray-400">
+                          Su puntuación total:
+                        </p>
+                        <p className="text-4xl font-bold text-white">
+                          {score} / 24
+                        </p>
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                          <div className="h-1 w-12 rounded-full bg-gray-600"></div>
+                          <p className="text-sm font-medium text-gray-300">
+                            Punto de corte ≥ 12 puntos
+                          </p>
+                          <div className="h-1 w-12 rounded-full bg-gray-600"></div>
+                        </div>
+                      </div>
+                      {/* Se elimina la altura fija para el progreso */}
+                      <div className="w-full bg-gray-900 rounded-lg p-4 flex items-center">
+                        <div className="w-full bg-gray-800 h-6 rounded-lg overflow-hidden flex">
+                          <div
+                            className={
+                              "h-full " +
+                              (score >= 12 ? "bg-red-700" : "bg-green-700")
+                            }
+                            style={{
+                              width: `${(score / 24) * 100}%`,
+                            }}
+                          ></div>
+                          <div
+                            className="h-full bg-gray-700"
+                            style={{
+                              width: `${((24 - score) / 24) * 100}%`,
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {resultTab === "details" && (
+                    <div className="text-sm text-gray-300 space-y-3">
+                      <p>
+                        El dolor puede tener diferentes mecanismos y
+                        características según su origen:
+                      </p>
+                      <div>
+                        <h4>Tipos de dolor según su origen</h4>
+                        <p>
+                          • <strong>Dolor nociceptivo:</strong> Causado por daño
+                          en tejidos como músculos, huesos o articulaciones.
+                        </p>
+                        <p>
+                          • <strong>Dolor neuropático:</strong> Causado por daño
+                          o disfunción del sistema nervioso, produciendo
+                          sensaciones como hormigueo, quemazón o descargas
+                          eléctricas.
+                        </p>
+                      </div>
+                      <p>
+                        La escala S-LANSS le ayuda a identificar si su dolor
+                        tiene características neuropáticas, lo que puede
+                        orientar hacia tratamientos más específicos. Recuerde:
+                      </p>
+                      <ul>
+                        <li>
+                          Esta escala es una herramienta de valoración, no un
+                          diagnóstico definitivo.
+                        </li>
+                        <li>
+                          Los resultados deben ser interpretados por un
+                          profesional sanitario.
+                        </li>
+                        <li>
+                          El tratamiento siempre debe ser individualizado para
+                          cada paciente.
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="bg-blue-900 p-3 rounded-md border border-blue-800 flex gap-2">
+                    <i className="fas fa-circle-info text-blue-300 mt-1"></i>
+                    <div>
+                      <h4 className="font-medium text-white">Importante</h4>
+                      <p className="text-blue-200 text-sm">
+                        Esta evaluación no sustituye al diagnóstico médico
+                        profesional. Comparta estos resultados con su médico.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-center">
+                <button
+                  onClick={() => {
+                    setCurrentStep(0);
+                    setAnswers({});
+                    setScore(null);
+                    setWelcomeTab("instructions");
+                    setResultTab("score");
+                  }}
+                  className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500"
+                >
+                  <i className="fas fa-rotate text-sm"></i>
+                  Nueva evaluación
+                </button>
+              </div>
+            </div>
+          );
+        };
+
+        /* Pantalla de bienvenida con pestañas "Instrucciones" y "Acerca de la escala" */
+        const renderWelcomeStep = () => {
+          return (
+            <div className="space-y-6 bg-gray-800 p-6 rounded-lg border border-gray-700">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-white">
+                  Escala S-LANSS
+                </h2>
+                <p className="text-gray-400">
+                  Versión española validada de la escala autoadministrada de
+                  Evaluación de Signos y Síntomas Neuropáticos de Leeds
+                </p>
+              </div>
+              <div className="bg-gray-900 rounded-lg overflow-hidden border border-gray-700">
+                <div className="flex border-b border-gray-700">
+                  <button
+                    onClick={() => setWelcomeTab("instructions")}
+                    className={
+                      "w-1/2 py-2 text-center font-medium " +
+                      (welcomeTab === "instructions"
+                        ? "text-white bg-blue-900"
+                        : "text-gray-400 hover:bg-gray-700")
+                    }
+                  >
+                    Instrucciones
+                  </button>
+                  <button
+                    onClick={() => setWelcomeTab("about")}
+                    className={
+                      "w-1/2 py-2 text-center font-medium " +
+                      (welcomeTab === "about"
+                        ? "text-white bg-blue-900"
+                        : "text-gray-400 hover:bg-gray-700")
+                    }
+                  >
+                    Acerca de la escala
+                  </button>
+                </div>
+                <div className="p-4 space-y-4">
+                  {welcomeTab === "instructions" && (
+                    <div className="space-y-3 text-gray-300">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-900 text-blue-200 rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-sm">
+                          1
+                        </div>
+                        <p>
+                          Complete las 7 preguntas sobre su dolor, respondiendo
+                          "Sí" o "No".
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-900 text-blue-200 rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-sm">
+                          2
+                        </div>
+                        <p>
+                          Algunas preguntas requieren acciones sencillas como
+                          frotar o presionar la zona dolorida.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-900 text-blue-200 rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-sm">
+                          3
+                        </div>
+                        <p>
+                          Al finalizar, obtendrá una puntuación y su
+                          interpretación.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-900 text-blue-200 rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-sm">
+                          4
+                        </div>
+                        <p>
+                          El resultado indicará si su dolor tiene
+                          características neuropáticas.
+                        </p>
+                      </div>
+                      <div className="bg-blue-900 p-3 rounded-md border border-blue-800 flex gap-2">
+                        <i className="fas fa-circle-info text-blue-300 mt-1"></i>
+                        <div>
+                          <h4 className="font-medium text-white">Importante</h4>
+                          <p className="text-blue-200 text-sm">
+                            Esta evaluación no sustituye al diagnóstico médico
+                            profesional. Consulte estos resultados con su
+                            médico.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {welcomeTab === "about" && (
+                    <div className="space-y-3 text-gray-300">
+                      <p>
+                        La escala S-LANSS (Self-report Leeds Assessment of
+                        Neuropathic Symptoms and Signs) fue creada para
+                        facilitar la identificación de dolores con
+                        características neuropáticas.
+                      </p>
+                      <p>
+                        Su validación en español demostró buena sensibilidad y
+                        especificidad, haciendo de ella una herramienta útil en
+                        entornos clínicos.
+                      </p>
+                      <p>
+                        Para más detalles, consulte la bibliografía o hable con
+                        su profesional de la salud.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setCurrentStep(1)}
+                className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-500 font-medium"
+              >
+                Comenzar evaluación
+              </button>
+            </div>
+          );
+        };
+
+        /* Lógica para renderizar la pantalla según el paso */
+        const renderContent = () => {
+          if (currentStep === 0) return renderWelcomeStep();
+          if (currentStep > 0 && currentStep <= questions.length)
+            return renderQuestionStep();
+          if (currentStep > questions.length) return renderResultsStep();
+        };
+
+        return (
+          <div className="w-full lg:max-w-4xl mx-auto py-6 px-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
+              <div className="border-b border-gray-700 bg-gray-800 px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-400 font-medium">S-LANSS</span>
+                  <span className="text-gray-500">|</span>
+                  <span className="text-white">
+                    Evaluación de Dolor Neuropático
+                  </span>
+                </div>
+                <p className="text-gray-400 text-sm mt-1">
+                  Versión española validada (López-de-Uralde-Villanueva et al,
+                  2018)
+                </p>
+              </div>
+              <div className="p-6">{renderContent()}</div>
+              <div className="text-center text-xs text-gray-500 border-t border-gray-700 py-3 px-4">
+                Basado en el estudio: López-de-Uralde-Villanueva I, et al.
+                Validación y fiabilidad de la versión española de la escala
+                S-LANSS. Neurología. 2018;33(8):505-514.
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      /* Renderizamos la App */
+      const rootElement = document.getElementById("root");
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(<SLanssApp />);
+    </script>
+
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </body>
+</html>
