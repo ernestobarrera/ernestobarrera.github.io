@@ -1,0 +1,3694 @@
+<!--
+    =====================
+      prompt-science.html
+      Constructor de Prompts RECORD
+    =====================
+    -->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Constructor de Prompts RECORD | Método científico para prompts | @ernestob
+    </title>
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/header.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Constructor de Prompts RECORD | Método científico para prompts | @ernestob"
+    />
+    <meta
+      property="og:description"
+      content="Herramienta educativa basada en el método RECORD para la construcción y análisis de prompts estructurados para LLM"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria 🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/t/prompt-science/"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+  </head>
+  <body>
+    <include src="header.html"></include>
+
+    <main class="main-container">
+      <section class="hero-section">
+        <h1 class="main-title">
+          <i class="fas fa-wand-magic-sparkles"></i>
+          <span>Constructor de Prompts RECORD</span>
+        </h1>
+        <p class="intro-text">
+          Esta herramienta educativa te ayuda a construir prompts estructurados
+          siguiendo el método RECORD. Aprenderás a identificar y aplicar los 6
+          componentes clave para crear prompts efectivos para modelos de
+          lenguaje grandes (LLM). Además, podrás analizar tus prompts, explorar
+          plantillas predefinidas y aprender técnicas avanzadas respaldadas por
+          investigaciones científicas.
+        </p>
+      </section>
+
+      <div id="root"></div>
+    </main>
+
+    <include src="footer.html"></include>
+
+    <script src="/assets/js/include.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+      const PromptScienceApp = () => {
+        // Estados principales
+        const [currentStep, setCurrentStep] = React.useState(0);
+        const [activeTab, setActiveTab] = React.useState("fundamentos");
+        const [prompt, setPrompt] = React.useState("");
+        const [promptAnalysis, setPromptAnalysis] = React.useState(null);
+        const [templateType, setTemplateType] = React.useState("");
+        const [promptTask, setPromptTask] = React.useState("");
+        const [welcomeTab, setWelcomeTab] = React.useState("instructions");
+        const [resultTab, setResultTab] = React.useState("analysis");
+
+        // Estados para el constructor de prompts (método RECORD)
+        const [constructorStep, setConstructorStep] = React.useState(1);
+        const [promptRole, setPromptRole] = React.useState(""); // R: Rol
+        const [promptEssence, setPromptEssence] = React.useState(""); // E: Esencia/Misión
+        const [promptContext, setPromptContext] = React.useState(""); // C: Contexto
+        const [promptObjective, setPromptObjective] = React.useState(""); // O: Objetivo
+        const [promptRequirements, setPromptRequirements] = React.useState(""); // R: Requisitos
+        const [promptDesign, setPromptDesign] = React.useState(""); // D: Diseño
+
+        const [selectedStrategy, setSelectedStrategy] =
+          React.useState("estructurado");
+        const [showExamples, setShowExamples] = React.useState(false);
+        const [activeTechnique, setActiveTechnique] = React.useState(null);
+        const [comparisonPrompt, setComparisonPrompt] = React.useState("");
+        const [showComparison, setShowComparison] = React.useState(false);
+
+        // NUEVOS ESTADOS PARA TÉCNICAS AVANZADAS
+        const [advancedTechnique, setAdvancedTechnique] = React.useState("cot");
+        const [advancedView, setAdvancedView] = React.useState("learn");
+
+        // Estados específicos para Chain-of-Thought
+        const [problemStatement, setProblemStatement] = React.useState("");
+        const [reasoningSteps, setReasoningSteps] = React.useState([
+          { id: 1, content: "" },
+        ]);
+        const [conclusion, setConclusion] = React.useState("");
+        const [cotToAnalyze, setCotToAnalyze] = React.useState("");
+        const [cotAnalysisResult, setCotAnalysisResult] = React.useState(null);
+        const [analyzing, setAnalyzing] = React.useState(false);
+
+        // Estados para Few-Shot Learning
+        const [fewShotTaskDescription, setFewShotTaskDescription] =
+          React.useState("");
+        const [fewShotExamples, setFewShotExamples] = React.useState([
+          { id: 1, input: "", output: "" },
+        ]);
+        const [fewShotQuery, setFewShotQuery] = React.useState("");
+
+        // NUEVAS ESTRUCTURAS DE DATOS PARA TÉCNICAS AVANZADAS
+        // Técnicas avanzadas de prompting
+        const advancedTechniques = [
+          {
+            id: "cot",
+            name: "Chain-of-Thought",
+            description: "Razonamiento paso a paso",
+            icon: "link-horizontal",
+            reference:
+              "Wei, J., et al. (2022). Chain-of-Thought Prompting Elicits Reasoning in Large Language Models.",
+            benchmarkImprovement: "GSM8K: 17.9% → 58.1%",
+            explanation:
+              "Técnica que induce al modelo a desglosar problemas complejos en pasos intermedios de razonamiento antes de llegar a una respuesta final.",
+          },
+          {
+            id: "fewshot",
+            name: "Few-Shot Learning",
+            description: "Aprendizaje con ejemplos",
+            icon: "list-ol",
+            reference:
+              "Brown, T. B., et al. (2020). Language models are few-shot learners.",
+            benchmarkImprovement: "SuperGLUE: +30% vs zero-shot",
+            explanation:
+              "Proporciona ejemplos concretos de entradas y salidas esperadas para guiar al modelo a seguir patrones similares.",
+          },
+          {
+            id: "zeroshot",
+            name: "Zero-Shot CoT",
+            description: "Inducción de razonamiento sin ejemplos",
+            icon: "bolt",
+            reference:
+              "Kojima, T., et al. (2022). Large Language Models are Zero-Shot Reasoners.",
+            benchmarkImprovement: "MultiArith: 17.7% → 78.7%",
+            explanation:
+              'Simplemente añadiendo frases como "Pensemos paso a paso" induce razonamiento estructurado sin ejemplos específicos.',
+          },
+          {
+            id: "selfconsistency",
+            name: "Self-Consistency",
+            description: "Múltiples razonamientos y consenso",
+            icon: "check-double",
+            reference:
+              "Wang, X., et al. (2023). Self-Consistency Improves Chain of Thought Reasoning in Language Models.",
+            benchmarkImprovement: "GSM8K: +17.9% sobre CoT estándar",
+            explanation:
+              "Genera múltiples cadenas de razonamiento para la misma pregunta y elige la respuesta final por consenso.",
+          },
+        ];
+
+        // Técnicas avanzadas - patrones de detección
+        const advancedPatterns = {
+          cot: /paso a paso|razonamiento|proceso de pensamiento|desglosar|explicar (tu|el) (razonamiento|pensamiento)|pensar (en voz alta|detenidamente)/i,
+          fewshot:
+            /ejemplo:.*(\n|$)|por ejemplo:.*(\n|$)|ejemplo 1:|aquí hay (algunos|unos|varios) ejemplos/i,
+          zeroshot: /piensa paso a paso|vamos a pensar|razonemos/i,
+          selfconsistency:
+            /resolver de diferentes maneras|verificar con distintos enfoques|diversos razonamientos/i,
+        };
+
+        // Datos de comparación para técnicas avanzadas
+        const techniqueComparisonData = [
+          {
+            task: "Problemas matemáticos (GSM8K)",
+            standard: "17.9%",
+            cot: "58.1%",
+            fewshot: "21.2%",
+            zeroshot: "40.7%",
+            selfconsistency: "74.4%",
+            best: "selfconsistency",
+          },
+          {
+            task: "Razonamiento aritmético (MultiArith)",
+            standard: "17.7%",
+            cot: "78.7%",
+            fewshot: "24.9%",
+            zeroshot: "78.7%",
+            selfconsistency: "90.1%",
+            best: "selfconsistency",
+          },
+          {
+            task: "Razonamiento de sentido común (StrategyQA)",
+            standard: "57.0%",
+            cot: "70.3%",
+            fewshot: "64.8%",
+            zeroshot: "63.9%",
+            selfconsistency: "76.7%",
+            best: "selfconsistency",
+          },
+          {
+            task: "Comprensión lingüística (AQuA)",
+            standard: "26.6%",
+            cot: "33.2%",
+            fewshot: "31.5%",
+            zeroshot: "29.8%",
+            selfconsistency: "45.4%",
+            best: "selfconsistency",
+          },
+          {
+            task: "Análisis de texto (SuperGLUE)",
+            standard: "60.2%",
+            cot: "67.5%",
+            fewshot: "79.3%",
+            zeroshot: "65.4%",
+            selfconsistency: "71.8%",
+            best: "fewshot",
+          },
+        ];
+
+        // Componentes RECORD para análisis
+        const recordComponents = [
+          {
+            id: "role",
+            letter: "R",
+            name: "Rol o Personalidad",
+            description:
+              "Determina la personalidad o tono que deseas que el modelo adopte",
+            example: "Eres un experto clínico de renombre internacional...",
+          },
+          {
+            id: "essence",
+            letter: "E",
+            name: "Esencia o Misión",
+            description: "Define la misión principal o el propósito del prompt",
+            example:
+              "Ofrece orientación sobre cómo abordar problemas de salud...",
+          },
+          {
+            id: "context",
+            letter: "C",
+            name: "Contexto",
+            description:
+              "Proporciona información de fondo o contexto relevante",
+            example:
+              "Un paciente que ha sufrido un trauma grave tras un accidente...",
+          },
+          {
+            id: "objective",
+            letter: "O",
+            name: "Objetivo",
+            description: "Especifica el resultado deseado de la respuesta",
+            example:
+              "Desarrolla un plan de acción paso a paso para estabilizar al paciente...",
+          },
+          {
+            id: "requirements",
+            letter: "R",
+            name: "Requisitos o Detalles",
+            description: "Detalles adicionales o especificaciones a considerar",
+            example: "Incluye posibles complicaciones y cómo manejarlas...",
+          },
+          {
+            id: "design",
+            letter: "D",
+            name: "Diseño o Formato",
+            description: "Define cómo quieres que se presente la respuesta",
+            example:
+              "Presenta la información en formato de lista con emojis relevantes...",
+          },
+        ];
+
+        // Patrones para detectar presencia de componentes RECORD (solo orientativo)
+        const recordPatterns = {
+          role: /eres un|actúa como|responde como|asume el rol|como (un|una) (experto|especialista|profesional)/i,
+          essence:
+            /propósito|misión|objetivo general|finalidad|ofrecer|proporcionar|ayudar a/i,
+          context:
+            /contexto|situación|escenario|antecedentes|en el caso de|dado que|considerando que/i,
+          objective:
+            /objetivo|meta|propósito específico|desarrolla|crea|genera|analiza|evalúa|compara/i,
+          requirements:
+            /requisitos|detalles|especificaciones|consideraciones|incluye|asegúrate de|ten en cuenta/i,
+          design:
+            /formato|estructura|presentación|diseño|organiza|presenta como|en forma de|lista|párrafos|secciones/i,
+        };
+
+        // Actualiza el análisis cuando cambia el prompt
+        React.useEffect(() => {
+          if (prompt.trim() === "") {
+            setPromptAnalysis(null);
+            return;
+          }
+
+          // Análisis del prompt basado en método RECORD
+          const analysis = {
+            recordComponents: analyzeRecordComponents(prompt),
+            missingComponents: [],
+            recommendations: generateRecordRecommendations(prompt),
+            techniquesDetected: detectPromptTechniques(prompt), // Nueva línea para técnicas avanzadas
+          };
+
+          // Identificar componentes faltantes del método RECORD
+          analysis.missingComponents = recordComponents.filter(
+            (comp) =>
+              !analysis.recordComponents.some(
+                (rc) => rc.id === comp.id && rc.present
+              )
+          );
+
+          setPromptAnalysis(analysis);
+        }, [prompt]);
+
+        // Análisis basado en el método RECORD
+        const analyzeRecordComponents = (text) => {
+          const results = [];
+
+          // Analizar cada componente RECORD
+          recordComponents.forEach((component) => {
+            const presence = detectComponentPresence(text, component.id);
+            const example = extractComponentExample(text, component.id);
+            results.push({
+              ...component,
+              present: presence.present,
+              confidence: presence.confidence,
+              example: example,
+              feedback: generateFeedback(
+                component.id,
+                presence.present,
+                presence.confidence
+              ),
+            });
+          });
+
+          return results;
+        };
+
+        // Detectar presencia de componentes RECORD
+        const detectComponentPresence = (text, componentId) => {
+          const pattern = recordPatterns[componentId];
+          const match = text.match(pattern);
+
+          // Esta es una versión simplificada que solo detecta presencia básica
+          // No pretende ser un análisis sofisticado, sino una guía educativa
+          if (match) {
+            return {
+              present: true,
+              confidence: match.length > 1 ? "alta" : "media",
+            };
+          }
+
+          // Heurísticas adicionales según el componente
+          switch (componentId) {
+            case "role":
+              // Palabras clave adicionales que podrían indicar un rol
+              if (
+                /profesional|médico|doctor|enfermero|especialista|experto|autoridad|consultor/i.test(
+                  text
+                )
+              ) {
+                return { present: true, confidence: "baja" };
+              }
+              break;
+            case "essence":
+              // La misión puede estar implícita en el texto
+              if (
+                text.length > 100 &&
+                /proporcionar|ofrecer|explicar|ayudar|guiar|orientar/i.test(
+                  text
+                )
+              ) {
+                return { present: true, confidence: "baja" };
+              }
+              break;
+            case "context":
+              // El contexto a veces se infiere del texto general
+              if (
+                text.length > 150 &&
+                /paciente|caso|situación|escenario|problema/i.test(text)
+              ) {
+                return { present: true, confidence: "baja" };
+              }
+              break;
+            case "objective":
+              // Objetivo puede estar implícito en verbos de acción
+              if (
+                /crear|generar|analizar|evaluar|explicar|desarrollar|diseñar|elaborar|planificar/i.test(
+                  text
+                )
+              ) {
+                return { present: true, confidence: "baja" };
+              }
+              break;
+            case "requirements":
+              // Requisitos pueden estar en forma de listas o enumeraciones
+              if (
+                /\d+\.|\*|-\s|•/.test(text) ||
+                /incluir|considerar|tener en cuenta|asegurar/i.test(text)
+              ) {
+                return { present: true, confidence: "baja" };
+              }
+              break;
+            case "design":
+              // Formato puede estar implícito en la estructura del texto
+              if (
+                /lista|tabla|gráfico|esquema|resumido|detallado|formato/i.test(
+                  text
+                )
+              ) {
+                return { present: true, confidence: "baja" };
+              }
+              break;
+          }
+
+          return { present: false, confidence: "ninguna" };
+        };
+
+        // Extraer un ejemplo del componente si está presente
+        const extractComponentExample = (text, componentId) => {
+          const pattern = recordPatterns[componentId];
+          const match = text.match(pattern);
+          if (!match) return "";
+
+          try {
+            // Buscar la ubicación de la coincidencia y extraer un contexto
+            const matchIndex = text.indexOf(match[0]);
+
+            // Obtener un fragmento cercano
+            const start = Math.max(0, matchIndex - 20);
+            const end = Math.min(
+              text.length,
+              matchIndex + match[0].length + 60
+            );
+            let example = text.substring(start, end).trim();
+
+            // Formatear para mejor legibilidad
+            if (start > 0) example = "..." + example;
+            if (end < text.length) example += "...";
+
+            return example;
+          } catch (error) {
+            return "";
+          }
+        };
+
+        // Generar feedback personalizado según el componente
+        const generateFeedback = (componentId, present, confidence) => {
+          if (!present) {
+            switch (componentId) {
+              case "role":
+                return "No se detectó una definición clara de rol. Considera añadir 'Actúa como un experto en...' o similar.";
+              case "essence":
+                return "Falta la misión o propósito general del prompt. Define qué tipo de orientación debe proporcionar.";
+              case "context":
+                return "No se identificó contexto suficiente. Añade información de fondo relevante sobre la situación.";
+              case "objective":
+                return "El objetivo específico no está claro. Especifica qué quieres lograr con este prompt.";
+              case "requirements":
+                return "Faltan detalles o requisitos específicos. Incluye consideraciones particulares.";
+              case "design":
+                return "No se especifica el formato deseado. Define cómo quieres que se presente la respuesta.";
+              default:
+                return "";
+            }
+          } else if (confidence === "baja") {
+            return "Se detectó este componente, pero podría reforzarse para mayor claridad.";
+          } else {
+            return "Este componente está bien definido en el prompt.";
+          }
+        };
+
+        // Generar recomendaciones basadas en el método RECORD
+        const generateRecordRecommendations = (text) => {
+          const recommendations = [];
+
+          // Analizar la estructura general del prompt según RECORD
+          const components = analyzeRecordComponents(text);
+          const missingComponents = recordComponents.filter(
+            (comp) => !components.some((rc) => rc.id === comp.id && rc.present)
+          );
+
+          // Recomendaciones basadas en componentes faltantes
+          if (missingComponents.length > 0) {
+            recommendations.push({
+              type: "structure",
+              title: "Estructura RECORD incompleta",
+              description: `Tu prompt carece de ${missingComponents.length} de los 6 componentes del método RECORD.`,
+              suggestions: missingComponents.map(
+                (comp) =>
+                  `Añade el componente "${comp.letter}: ${comp.name}" - ${comp.description}. Ejemplo: "${comp.example}"`
+              ),
+            });
+          }
+
+          // Recomendaciones sobre la claridad del prompt
+          if (text.length < 100) {
+            recommendations.push({
+              type: "brevity",
+              title: "Prompt demasiado breve",
+              description:
+                "Tu prompt es muy corto para incluir todos los elementos necesarios.",
+              suggestions: [
+                "Expande tu prompt para incluir todos los componentes del método RECORD.",
+                "Un prompt efectivo suele tener suficientes detalles para guiar adecuadamente al modelo.",
+              ],
+            });
+          }
+
+          // Recomendaciones sobre la estructura
+          if (!/(^|\n)\s*\d+\.|\*|-\s|•/.test(text) && text.length > 200) {
+            recommendations.push({
+              type: "formatting",
+              title: "Estructura visual mejorable",
+              description:
+                "Tu prompt podría beneficiarse de una mejor organización visual.",
+              suggestions: [
+                "Considera usar listas numeradas o con viñetas para separar los componentes.",
+                "Usa párrafos separados para cada componente del método RECORD.",
+              ],
+            });
+          }
+
+          // Recomendaciones sobre la especificidad
+          if (
+            !/\b(específicamente|concretamente|exactamente|precisamente|en particular)\b/i.test(
+              text
+            )
+          ) {
+            recommendations.push({
+              type: "specificity",
+              title: "Aumentar especificidad",
+              description:
+                "Tu prompt podría beneficiarse de instrucciones más específicas.",
+              suggestions: [
+                "Utiliza términos precisos en lugar de generales.",
+                "Especifica cantidades, formatos o criterios exactos cuando sea posible.",
+              ],
+            });
+          }
+
+          // Si no hay recomendaciones, añadir un mensaje positivo
+          if (recommendations.length === 0) {
+            recommendations.push({
+              type: "positive",
+              title: "Buen trabajo con la estructura RECORD",
+              description:
+                "Tu prompt sigue bien la estructura recomendada por el método RECORD.",
+              suggestions: [
+                "Para optimizar aún más, prueba variaciones y evalúa qué versión produce mejores resultados.",
+              ],
+            });
+          }
+
+          return recommendations;
+        };
+
+        // NUEVAS FUNCIONES PARA TÉCNICAS AVANZADAS
+        // Detectar técnicas avanzadas de prompting
+        const detectPromptTechniques = (text) => {
+          const detectedTechniques = [];
+
+          // Chain-of-Thought
+          if (advancedPatterns.cot.test(text)) {
+            detectedTechniques.push({
+              technique: advancedTechniques[0],
+              strength: detectTechniqueStrength(text, advancedPatterns.cot),
+              example: extractTechniqueExample(text, advancedPatterns.cot),
+            });
+          }
+
+          // Few-Shot Learning
+          if (advancedPatterns.fewshot.test(text)) {
+            detectedTechniques.push({
+              technique: advancedTechniques[1],
+              strength: detectTechniqueStrength(text, advancedPatterns.fewshot),
+              example: extractTechniqueExample(text, advancedPatterns.fewshot),
+            });
+          }
+
+          // Zero-Shot CoT
+          if (advancedPatterns.zeroshot.test(text)) {
+            detectedTechniques.push({
+              technique: advancedTechniques[2],
+              strength: detectTechniqueStrength(
+                text,
+                advancedPatterns.zeroshot
+              ),
+              example: extractTechniqueExample(text, advancedPatterns.zeroshot),
+            });
+          }
+
+          // Self-Consistency
+          if (advancedPatterns.selfconsistency.test(text)) {
+            detectedTechniques.push({
+              technique: advancedTechniques[3],
+              strength: detectTechniqueStrength(
+                text,
+                advancedPatterns.selfconsistency
+              ),
+              example: extractTechniqueExample(
+                text,
+                advancedPatterns.selfconsistency
+              ),
+            });
+          }
+
+          return detectedTechniques;
+        };
+
+        // Evaluar la fuerza de una técnica detectada
+        const detectTechniqueStrength = (text, pattern) => {
+          // Evaluación simple de la fuerza de una técnica basada en su elaboración
+          const matches = text.match(pattern);
+          if (!matches) return 30; // Detección mínima
+
+          // Si la técnica se menciona múltiples veces, es más probable que sea central
+          if (matches.length > 1) return 60;
+
+          // Verificar si hay instrucciones detalladas sobre cómo aplicar la técnica
+          const context = extractContext(text, pattern);
+          if (context.length > 100) return 80;
+          if (context.length > 50) return 60;
+
+          return 40; // Fuerza moderada por defecto
+        };
+
+        // Extraer ejemplo de técnica detectada
+        const extractTechniqueExample = (text, pattern) => {
+          try {
+            const match = text.match(pattern);
+            if (!match) return "";
+
+            // Obtener la posición del patrón en el texto
+            const patternIndex = text.indexOf(match[0]);
+
+            // Extraer un fragmento de contexto (hasta 100 caracteres después del patrón)
+            const contextStart = patternIndex;
+            const contextEnd = Math.min(text.length, patternIndex + 100);
+            let context = text.substring(contextStart, contextEnd);
+
+            // Limpiar y formatear
+            context = context.trim();
+            if (context.length >= 100) context += "...";
+
+            return context;
+          } catch (error) {
+            return "";
+          }
+        };
+
+        // Extraer contexto para una coincidencia
+        const extractContext = (text, pattern) => {
+          try {
+            const match = text.match(pattern);
+            if (!match) return "";
+
+            // Obtener la posición del patrón en el texto
+            const patternIndex = text.indexOf(match[0]);
+
+            // Extraer un fragmento de contexto (50 caracteres antes y después del patrón)
+            const contextStart = Math.max(0, patternIndex - 50);
+            const contextEnd = Math.min(
+              text.length,
+              patternIndex + match[0].length + 50
+            );
+            let context = text.substring(contextStart, contextEnd);
+
+            // Limpiar y formatear
+            context = context.trim();
+            if (contextStart > 0) context = "..." + context;
+            if (contextEnd < text.length) context += "...";
+
+            return context;
+          } catch (error) {
+            return "";
+          }
+        };
+
+        // Funciones para Chain-of-Thought
+        // Análisis de Chain-of-Thought
+        const analyzeCoT = () => {
+          setAnalyzing(true);
+
+          // Simular procesamiento (en una implementación real, este análisis sería más sofisticado)
+          setTimeout(() => {
+            // Extraer pasos de razonamiento
+            const steps =
+              cotToAnalyze.match(
+                /paso \d+:.*?(?=paso \d+:|por lo tanto|$)/gis
+              ) || [];
+
+            // Extraer problema/pregunta
+            const problemMatch = cotToAnalyze.match(
+              /problema:(.+?)(?=paso 1:|$)/is
+            );
+            const problem = problemMatch ? problemMatch[1].trim() : "";
+
+            // Extraer conclusión
+            const conclusionMatch = cotToAnalyze.match(
+              /por lo tanto,?.*?:(.+?)$/is
+            );
+            const conclusion = conclusionMatch ? conclusionMatch[1].trim() : "";
+
+            // Evaluar estructura
+            const hasStructure = steps.length > 0 && problem && conclusion;
+
+            // Evaluar coherencia lógica (simulada)
+            const coherenceScore = Math.min(80 + steps.length * 5, 100);
+
+            // Detectar posibles problemas
+            const issues = [];
+            if (steps.length === 0) {
+              issues.push(
+                "No se detectaron pasos de razonamiento claramente marcados"
+              );
+            } else if (steps.length < 2) {
+              issues.push(
+                "Se detectó solo un paso de razonamiento. Considera dividir el problema en más pasos"
+              );
+            }
+
+            // Calcular puntuación general
+            const overallScore = hasStructure
+              ? Math.round(coherenceScore * 0.6 + (steps.length > 2 ? 30 : 15))
+              : Math.round(
+                  (problem ? 20 : 0) +
+                    (steps.length > 0 ? 30 : 0) +
+                    (conclusion ? 20 : 0)
+                );
+
+            // Generar recomendaciones
+            const recommendations = [];
+            if (!problem) {
+              recommendations.push(
+                "Añade un enunciado claro del problema al inicio"
+              );
+            }
+            if (steps.length === 0) {
+              recommendations.push(
+                "Estructura el razonamiento en pasos numerados (Paso 1:, Paso 2:, etc.)"
+              );
+            } else if (steps.length < 3) {
+              recommendations.push(
+                "Considera descomponer el razonamiento en más pasos para mayor claridad"
+              );
+            }
+            if (!conclusion) {
+              recommendations.push(
+                "Incluye una conclusión clara precedida por 'Por lo tanto, la respuesta es:'"
+              );
+            }
+            if (hasStructure && coherenceScore < 90) {
+              recommendations.push(
+                "Mejora la conexión lógica entre pasos, asegurando que cada uno se base en los anteriores"
+              );
+            }
+
+            setCotAnalysisResult({
+              structure: {
+                problem,
+                stepsCount: steps.length,
+                steps: steps.map((s) => s.trim()),
+                conclusion,
+              },
+              scores: {
+                structure: hasStructure
+                  ? 100
+                  : Math.round(
+                      (problem ? 33 : 0) +
+                        (steps.length > 0 ? 33 : 0) +
+                        (conclusion ? 34 : 0)
+                    ),
+                coherence: coherenceScore,
+                overall: overallScore,
+              },
+              issues,
+              recommendations,
+            });
+
+            setAnalyzing(false);
+          }, 800);
+        };
+
+        // Cargar ejemplo para Chain-of-Thought
+        const loadCotExample = () => {
+          setProblemStatement(
+            "¿Cuánto tiempo tomará recorrer 150 kilómetros a una velocidad promedio de 60 km/h?"
+          );
+          setReasoningSteps([
+            {
+              id: 1,
+              content:
+                "Identificaré los datos relevantes del problema. La distancia a recorrer es 150 kilómetros. La velocidad promedio es 60 km/h.",
+            },
+            {
+              id: 2,
+              content:
+                "Para calcular el tiempo, usaré la fórmula: tiempo = distancia / velocidad",
+            },
+            {
+              id: 3,
+              content: "Sustituyendo los valores: tiempo = 150 km / 60 km/h",
+            },
+            { id: 4, content: "Realizando la división: tiempo = 2.5 horas" },
+            {
+              id: 5,
+              content:
+                "Para expresar 2.5 horas en horas y minutos: 2 horas + 0.5 horas = 2 horas + 30 minutos",
+            },
+          ]);
+          setConclusion(
+            "El tiempo necesario para recorrer 150 kilómetros a 60 km/h es de 2 horas y 30 minutos."
+          );
+        };
+
+        // Añadir paso en el constructor de Chain-of-Thought
+        const addReasoningStep = () => {
+          setReasoningSteps([
+            ...reasoningSteps,
+            { id: reasoningSteps.length + 1, content: "" },
+          ]);
+        };
+
+        // Actualizar paso en el constructor de Chain-of-Thought
+        const updateReasoningStep = (id, content) => {
+          setReasoningSteps(
+            reasoningSteps.map((step) =>
+              step.id === id ? { ...step, content } : step
+            )
+          );
+        };
+
+        // Eliminar paso en el constructor de Chain-of-Thought
+        const removeReasoningStep = (id) => {
+          if (reasoningSteps.length > 1) {
+            const newSteps = reasoningSteps
+              .filter((step) => step.id !== id)
+              .map((step, index) => ({ ...step, id: index + 1 }));
+            setReasoningSteps(newSteps);
+          }
+        };
+
+        // Generar prompt de Chain-of-Thought completo
+        const generateCoTPrompt = () => {
+          const stepsText = reasoningSteps
+            .map((step) => `Paso ${step.id}: ${step.content}`)
+            .join("\n\n");
+
+          return `Problema: ${problemStatement}\n\n${stepsText}\n\nPor lo tanto, la respuesta es: ${conclusion}`;
+        };
+
+        // Funciones para Few-Shot Learning
+        // Cargar ejemplo para Few-Shot Learning
+        const loadFewShotExample = () => {
+          setFewShotTaskDescription(
+            "Clasifica el sentimiento del siguiente texto como positivo, negativo o neutral."
+          );
+          setFewShotExamples([
+            {
+              id: 1,
+              input:
+                "El servicio al cliente fue excelente y la comida deliciosa. Definitivamente volveré.",
+              output: "Sentimiento: Positivo",
+            },
+            {
+              id: 2,
+              input:
+                "La película fue aburrida y predecible. No recomendaría verla.",
+              output: "Sentimiento: Negativo",
+            },
+            {
+              id: 3,
+              input: "El vuelo despegó y aterrizó a la hora programada.",
+              output: "Sentimiento: Neutral",
+            },
+          ]);
+          setFewShotQuery(
+            "El producto llegó dañado y el empaque estaba roto. Una experiencia terrible."
+          );
+        };
+
+        // Añadir ejemplo en el constructor de Few-Shot Learning
+        const addFewShotExample = () => {
+          setFewShotExamples([
+            ...fewShotExamples,
+            { id: fewShotExamples.length + 1, input: "", output: "" },
+          ]);
+        };
+
+        // Actualizar ejemplo en el constructor de Few-Shot Learning
+        const updateFewShotExample = (id, field, value) => {
+          setFewShotExamples(
+            fewShotExamples.map((example) =>
+              example.id === id ? { ...example, [field]: value } : example
+            )
+          );
+        };
+
+        // Eliminar ejemplo en el constructor de Few-Shot Learning
+        const removeFewShotExample = (id) => {
+          if (fewShotExamples.length > 1) {
+            const newExamples = fewShotExamples
+              .filter((example) => example.id !== id)
+              .map((example, index) => ({ ...example, id: index + 1 }));
+            setFewShotExamples(newExamples);
+          }
+        };
+
+        // Generar prompt de Few-Shot Learning completo
+        const generateFewShotPrompt = () => {
+          const examplesText = fewShotExamples
+            .map(
+              (example) =>
+                `Entrada: ${example.input}\nSalida: ${example.output}`
+            )
+            .join("\n\n");
+
+          return `${fewShotTaskDescription}\n\nAquí hay algunos ejemplos:\n\n${examplesText}\n\nAhora, clasifica el siguiente texto:\n\nEntrada: ${fewShotQuery}\nSalida:`;
+        };
+
+        const handleTemplateChange = (e) => {
+          setTemplateType(e.target.value);
+          let templateText = "";
+
+          // Plantillas basadas en el método RECORD
+          switch (e.target.value) {
+            case "diagnostico":
+              templateText =
+                "Rol: Eres un médico especialista con amplia experiencia en diagnóstico diferencial y razonamiento clínico.\n\nEsencia: Proporciona un análisis diagnóstico detallado y educativo que ayude a comprender el proceso de pensamiento médico.\n\nContexto: Un paciente de 45 años acude a consulta con los siguientes síntomas: [DESCRIBIR SÍNTOMAS PRINCIPALES]. Como antecedentes relevantes presenta [ANTECEDENTES MÉDICOS IMPORTANTES]. Los resultados de las pruebas iniciales muestran [MENCIONAR VALORES O HALLAZGOS RELEVANTES].\n\nObjetivo: Desarrolla un análisis diagnóstico diferencial completo, identificando las posibles causas de estos síntomas en orden de probabilidad.\n\nRequisitos: Para cada diagnóstico potencial, incluye:\n1. Justificación basada en los síntomas y resultados de pruebas\n2. Qué hallazgos apoyan o contradicen cada diagnóstico\n3. Pruebas adicionales que recomendarías para confirmar o descartar\n4. Factores de riesgo relevantes a considerar\n\nDiseño: Estructura la respuesta de la siguiente manera:\n- Resumen inicial del caso (1 párrafo)\n- Lista priorizada de diagnósticos diferenciales (3-5 posibilidades)\n- Análisis detallado de cada diagnóstico (siguiendo los requisitos)\n- Conclusión con recomendaciones sobre próximos pasos diagnósticos";
+              break;
+            case "tratamiento":
+              templateText =
+                "Rol: Eres un farmacéutico clínico especializado en farmacoterapia y optimización de tratamientos, con amplia experiencia en medicina basada en la evidencia.\n\nEsencia: Proporciona recomendaciones terapéuticas personalizadas, basadas en la mejor evidencia científica disponible y considerando el contexto específico del paciente.\n\nContexto: Un paciente con [DIAGNÓSTICO PRINCIPAL] y las siguientes características: edad [EDAD], sexo [SEXO], peso [PESO], con [COMORBILIDADES SI EXISTEN]. Actualmente toma [MEDICACIÓN ACTUAL] y presenta [RESULTADOS DE ANÁLISIS RELEVANTES]. Tiene antecedentes de [ALERGIAS O REACCIONES ADVERSAS PREVIAS].\n\nObjetivo: Desarrolla un plan de tratamiento farmacológico detallado y personalizado para este paciente, optimizando eficacia y seguridad.\n\nRequisitos:\n1. Evalúa la medicación actual e identifica posibles interacciones o problemas\n2. Propone opciones de tratamiento farmacológico de primera línea\n3. Considera alternativas en caso de contraindicaciones\n4. Especifica dosificación, duración y vía de administración\n5. Identifica posibles efectos secundarios y cómo monitorizarlos\n6. Incluye recomendaciones no farmacológicas complementarias\n\nDiseño: Presenta la información en formato de informe clínico estructurado con:\n- Resumen del caso clínico\n- Evaluación de la terapia actual\n- Plan farmacoterapéutico recomendado (en forma de tabla)\n- Justificación de las recomendaciones\n- Monitorización sugerida\n- Medidas no farmacológicas\n- Referencias a guías clínicas actualizadas";
+              break;
+            case "educacion":
+              templateText =
+                "Rol: Eres un educador en salud especializado en comunicación efectiva con pacientes, con habilidad para explicar conceptos médicos complejos en términos comprensibles.\n\nEsencia: Proporciona información educativa clara, precisa y accesible sobre temas de salud, adaptada al nivel de comprensión del paciente.\n\nContexto: Necesito educar a un paciente sobre [CONDICIÓN/ENFERMEDAD] recientemente diagnosticada. El paciente tiene [EDAD] años, [NIVEL EDUCATIVO] y [CUALQUIER DETALLE RELEVANTE SOBRE SU COMPRENSIÓN DE LA SALUD]. No tiene experiencia previa con esta condición y ha expresado [PREOCUPACIONES ESPECÍFICAS O PREGUNTAS].\n\nObjetivo: Crea un material educativo completo pero accesible que explique la condición, su manejo y lo que el paciente puede esperar, respondiendo a sus preocupaciones específicas.\n\nRequisitos:\n1. Explicar la condición en términos simples, evitando jerga médica innecesaria\n2. Abordar causas, síntomas y curso esperado de la enfermedad\n3. Explicar las opciones de tratamiento y su propósito\n4. Incluir instrucciones claras sobre autocuidado y manejo diario\n5. Describir señales de alarma que requieren atención médica inmediata\n6. Abordar mitos comunes o conceptos erróneos sobre la condición\n7. Proporcionar recursos adicionales confiables para más información\n\nDiseño: Organiza la información en secciones claras con títulos descriptivos. Utiliza viñetas para puntos clave, analogías para conceptos complejos, y un lenguaje sencillo (nivel de lectura de 6º grado). Incluye una sección de preguntas frecuentes al final y un glosario de términos si es necesario.";
+              break;
+            case "investigacion":
+              templateText =
+                "Rol: Eres un investigador biomédico especializado en [ÁREA ESPECÍFICA], con amplia experiencia en revisión y síntesis de literatura científica.\n\nEsencia: Proporciona un análisis riguroso y actualizado del estado actual de la investigación sobre un tema biomédico específico.\n\nContexto: Estoy investigando [TEMA ESPECÍFICO] para un proyecto/publicación académica. Necesito comprender los avances más recientes, brechas de conocimiento y direcciones futuras en este campo. Mi audiencia son [PROFESIONALES DE LA SALUD/INVESTIGADORES/ESTUDIANTES] con conocimiento [BÁSICO/INTERMEDIO/AVANZADO] del tema.\n\nObjetivo: Desarrolla una revisión completa y crítica del estado actual de la investigación sobre [TEMA ESPECÍFICO], sintetizando los hallazgos clave, métodos utilizados, limitaciones y aplicaciones potenciales.\n\nRequisitos:\n1. Incluye una visión general de la evolución histórica del tema\n2. Identifica los principales hallazgos y avances de los últimos 5-10 años\n3. Describe las metodologías de investigación predominantes y emergentes\n4. Analiza críticamente la calidad y limitaciones de la evidencia disponible\n5. Identifica controversias o debates actuales en el campo\n6. Señala brechas de conocimiento y áreas que requieren más investigación\n7. Discute las implicaciones prácticas y aplicaciones potenciales\n8. Sugiere direcciones futuras de investigación\n\nDiseño: Estructura el análisis como una revisión académica formal con las siguientes secciones: Introducción, Metodologías de investigación, Hallazgos clave (organizados temáticamente), Limitaciones de la evidencia actual, Controversias y debates, Brechas y direcciones futuras, Implicaciones prácticas y Conclusión. Utiliza un tono académico pero accesible, y organiza la información de forma lógica y coherente.";
+              break;
+            default:
+              templateText = "";
+          }
+
+          setPrompt(templateText);
+          setPromptTask(""); // Reinicia la otra selección
+        };
+
+        const handleTaskChange = (e) => {
+          setPromptTask(e.target.value);
+
+          // Sugerencias basadas en la tarea (otras plantillas no-RECORD)
+          let taskSuggestion = "";
+          switch (e.target.value) {
+            case "resumen":
+              taskSuggestion =
+                'Por favor, lee el siguiente texto y crea un resumen detallado que capture los puntos principales, conceptos clave y conclusiones. El resumen debe ser completo pero conciso, manteniendo la estructura lógica del original. Identifica y preserva las ideas centrales, eliminando información redundante o secundaria.\n\nTexto para resumir:\n"""[INSERTA EL TEXTO AQUÍ]"""\n\nEstructura tu resumen con los siguientes elementos:\n1. Idea principal o tesis\n2. Argumentos o puntos clave (en orden de importancia)\n3. Evidencia significativa presentada\n4. Conclusiones o implicaciones';
+              break;
+            case "analisis":
+              taskSuggestion =
+                "Necesito un análisis crítico del siguiente [TEXTO/CONCEPTO/PROBLEMA]. Por favor, examina:\n\n1. Premisas y suposiciones subyacentes\n2. Metodología y evidencia presentada\n3. Fortalezas y debilidades del argumento\n4. Implicaciones y consecuencias\n5. Perspectivas alternativas o contrastantes\n\nProporciona un análisis equilibrado, respaldado por razonamiento lógico. Cuando corresponda, señala cualquier brecha en la información o áreas que requieran mayor investigación.";
+              break;
+            case "comparacion":
+              taskSuggestion =
+                "Realiza una comparación sistemática entre [CONCEPTO A] y [CONCEPTO B], considerando los siguientes criterios:\n\n1. Orígenes e historia\n2. Principios fundamentales\n3. Metodologías o enfoques prácticos\n4. Fortalezas y limitaciones\n5. Aplicaciones o contextos de uso\n6. Evidencia de efectividad/validez\n\nPara cada criterio, describe ambos conceptos y luego analiza sus similitudes y diferencias. Concluye con una síntesis que destaque los puntos más significativos de contraste y las posibles complementariedades.";
+              break;
+            case "creativo":
+              taskSuggestion =
+                "Actúa como un escritor creativo especializado en [GÉNERO/ESTILO]. Crea un [TIPO DE CONTENIDO] original sobre [TEMA O PREMISA].\n\nConsideraciones específicas:\n- Voz y tono: [ESPECIFICAR]\n- Longitud aproximada: [ESPECIFICAR]\n- Elementos a incluir: [ESPECIFICAR]\n- Público objetivo: [ESPECIFICAR]\n\nEl contenido debe ser original, evitando clichés y desarrollando [ASPECTOS PARTICULARES] de forma innovadora.";
+              break;
+            case "codigo":
+              taskSuggestion =
+                "Actúa como un desarrollador experto en [LENGUAJE/TECNOLOGÍA]. Necesito que desarrolles código para [FUNCIONALIDAD/PROBLEMA].\n\nRequisitos específicos:\n1. El código debe [FUNCIONALIDAD PRINCIPAL]\n2. Considera estos casos de uso: [CASOS DE USO]\n3. Manejo de errores para: [POSIBLES ERRORES]\n4. Optimización para: [ASPECTOS DE RENDIMIENTO]\n\nPor favor, proporciona el código completo con comentarios explicativos para las secciones importantes. Después del código, explica brevemente la lógica general y cómo se podrían realizar pruebas para verificar su funcionamiento.";
+              break;
+            default:
+              taskSuggestion = "";
+          }
+
+          setPrompt(taskSuggestion);
+          setTemplateType(""); // Reinicia la otra selección
+        };
+
+        const handleStrategyChange = (strategy) => {
+          setSelectedStrategy(strategy);
+        };
+
+        const handleComparePromptsToggle = () => {
+          if (!showComparison) {
+            // Si estamos activando la comparación, copiar el prompt actual al de comparación
+            setComparisonPrompt(prompt);
+          }
+          setShowComparison(!showComparison);
+        };
+
+        // Obtener porcentaje de progreso para la barra de progreso
+        const getProgressPercentage = () => {
+          if (activeTab === "constructor") {
+            return (constructorStep / 6) * 100;
+          }
+          return 0;
+        };
+
+        // Calcular la puntuación general del prompt
+        const calculateOverallScore = (analysis) => {
+          if (!analysis) return 0;
+
+          // Calcular la puntuación media de los componentes
+          const componentScores = analysis.recordComponents.map((component) =>
+            component.present
+              ? component.confidence === "alta"
+                ? 100
+                : component.confidence === "media"
+                ? 70
+                : 40
+              : 0
+          );
+
+          const componentScoresAvg =
+            componentScores.reduce((acc, score) => acc + score, 0) /
+            componentScores.length;
+
+          // Penalización por patrones problemáticos (si hubiera)
+          const problemPenalty = 0; // Esta sección no está implementada en el código original
+
+          // Bonificación por técnicas avanzadas
+          const techniqueBonus = analysis.techniquesDetected.reduce(
+            (acc, technique) => {
+              return acc + technique.strength / 10;
+            },
+            0
+          );
+
+          // Calcular puntuación final
+          let finalScore = componentScoresAvg + techniqueBonus - problemPenalty;
+
+          // Limitar entre 0 y 100
+          return Math.max(0, Math.min(100, Math.round(finalScore)));
+        };
+
+        // Templates y ejemplos
+        const strategyExamples = {
+          estructurado: [
+            {
+              title: "Chain-of-Thought para problema matemático",
+              prompt:
+                "Resuelve el siguiente problema matemático paso a paso, mostrando tu razonamiento completo en cada etapa:\n\nUn tren sale de la estación A a las 9:00 am viajando a 60 km/h hacia la estación B. Otro tren sale de la estación B a las 10:00 am viajando a 90 km/h hacia la estación A. Si la distancia entre las estaciones es de 300 km, ¿a qué hora se cruzarán los trenes?",
+            },
+            {
+              title: "Prompt estructurado para análisis literario",
+              prompt:
+                'Actúa como un crítico literario especializado en literatura latinoamericana. Analiza la siguiente obra siguiendo este formato estructurado:\n\n1. CONTEXTO HISTÓRICO: Describe brevemente el período y circunstancias en que fue escrita.\n\n2. ANÁLISIS DE PERSONAJES: Identifica a los personajes principales y sus motivaciones.\n\n3. TEMAS CENTRALES: Enumera y explica los 3-4 temas más importantes.\n\n4. RECURSOS LITERARIOS: Identifica 2-3 recursos literarios destacados con ejemplos.\n\n5. RELEVANCIA CONTEMPORÁNEA: Explica cómo la obra mantiene relevancia en la actualidad.\n\nObra: "Cien años de soledad" de Gabriel García Márquez\n\nPresenta tu análisis de forma académica pero accesible, con una extensión aproximada de 800-1000 palabras.',
+            },
+          ],
+          heuristico: [
+            {
+              title: "Prompt con heurística 'Piensa paso a paso'",
+              prompt:
+                "Considerando los posibles efectos del cambio climático en la agricultura mediterránea durante las próximas dos décadas, ¿qué cultivos alternativos podrían ser viables?\n\nPiensa paso a paso antes de dar tu respuesta final. Considera factores como cambios en temperatura, patrones de precipitación, disponibilidad de agua, y adaptabilidad de diferentes especies vegetales. Para cada cultivo que sugieras, evalúa su viabilidad económica y ecológica.",
+            },
+            {
+              title: "Prompt con verificación de respuesta",
+              prompt:
+                "Actúa como un experto en inteligencia artificial con conocimientos avanzados en diferentes paradigmas de IA.\n\n¿Cuáles son las principales diferencias entre inteligencia artificial estrecha y general?\n\nAnaliza esta pregunta cuidadosamente. Una vez que hayas formulado tu respuesta, revísala para asegurarte de que es precisa y completa. Si detectas algún error o imprecisión en tu respuesta inicial, corrígela explícitamente. Si la respuesta parece incompleta, amplíala con información adicional relevante.",
+            },
+          ],
+          combinado: [
+            {
+              title: "Prompt estructurado con heurística",
+              prompt:
+                "Actúa como un experto en pedagogía y sostenibilidad ambiental. Necesito diseñar un plan de estudios para un curso introductorio sobre sostenibilidad ambiental para estudiantes universitarios de primer año.\n\nPor favor, desarrolla un esquema que incluya:\n\n1. Objetivos de aprendizaje (4-5)\n2. Unidades temáticas principales (5-7)\n3. Metodologías de enseñanza recomendadas\n4. Sistemas de evaluación propuestos\n\nPara cada componente, piensa paso a paso y explica tu razonamiento pedagógico. Considera aspectos como la participación activa de los estudiantes, la aplicación práctica de los conceptos, y la construcción progresiva de conocimiento.\n\nAl final, evalúa críticamente tu propuesta e identifica posibles mejoras o limitaciones. El plan debe ser adecuado para un semestre académico de 15 semanas, con sesiones semanales de 3 horas.",
+            },
+            {
+              title: "Prompt con few-shot y heurística",
+              prompt:
+                'Actúa como un analista de sentimiento experto en procesamiento de lenguaje natural. Me gustaría que clasifiques los siguientes textos según su sentimiento: positivo, negativo o neutral.\n\nEjemplos:\nTexto: "La película fue un completo desastre, actores terribles y guión pésimo."\nClasificación: Negativo\nRazonamiento: Contiene palabras con carga negativa como "desastre", "terribles" y "pésimo", sin elementos positivos que las compensen.\n\nTexto: "El restaurante tiene una decoración agradable y precios razonables."\nClasificación: Positivo\nRazonamiento: Incluye términos positivos como "agradable" y valora positivamente los precios como "razonables".\n\nTexto: "El evento comenzará a las 10 am en el auditorio principal."\nClasificación: Neutral\nRazonamiento: Solo proporciona información factual sin elementos evaluativos positivos o negativos.\n\nAhora, clasifica los siguientes textos. Piensa detenidamente en cada caso y justifica brevemente tu clasificación con un análisis similar al de los ejemplos:\n\n1. "La atención al cliente fue rápida pero los productos tienen precios excesivos."\n2. "Según el informe, las ventas aumentaron un 5% durante el último trimestre."\n3. "Esta ha sido la peor experiencia de mi vida, nunca volveré a este lugar."',
+            },
+          ],
+        };
+
+        // Renderizar pantalla de bienvenida
+        const renderWelcomeStep = () => {
+          return (
+            <div className="space-y-6 bg-gray-800 p-6 rounded-lg border border-gray-700">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-white">
+                  Constructor de Prompts RECORD
+                </h2>
+                <p className="text-gray-400">
+                  Una herramienta educativa para aprender a estructurar prompts
+                  siguiendo el método RECORD
+                </p>
+              </div>
+              <div className="bg-gray-900 rounded-lg overflow-hidden border border-gray-700">
+                <div className="flex border-b border-gray-700">
+                  <button
+                    onClick={() => setWelcomeTab("instructions")}
+                    className={
+                      "w-1/2 py-2 text-center font-medium " +
+                      (welcomeTab === "instructions"
+                        ? "text-white bg-blue-900"
+                        : "text-gray-400 hover:bg-gray-700")
+                    }
+                  >
+                    Instrucciones
+                  </button>
+                  <button
+                    onClick={() => setWelcomeTab("about")}
+                    className={
+                      "w-1/2 py-2 text-center font-medium " +
+                      (welcomeTab === "about"
+                        ? "text-white bg-blue-900"
+                        : "text-gray-400 hover:bg-gray-700")
+                    }
+                  >
+                    Acerca del método RECORD
+                  </button>
+                </div>
+                <div className="p-4 space-y-4">
+                  {welcomeTab === "instructions" && (
+                    <div className="space-y-3 text-gray-300">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-900 text-blue-200 rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-sm">
+                          1
+                        </div>
+                        <p>
+                          Usa el <strong>Constructor</strong> para crear prompts
+                          paso a paso siguiendo los 6 componentes del método
+                          RECORD (Rol, Esencia, Contexto, Objetivo, Requisitos,
+                          Diseño).
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-900 text-blue-200 rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-sm">
+                          2
+                        </div>
+                        <p>
+                          Utiliza el <strong>Analizador</strong> para verificar
+                          la estructura RECORD de tus prompts y recibir
+                          sugerencias educativas sobre cómo mejorarlos.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-900 text-blue-200 rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-sm">
+                          3
+                        </div>
+                        <p>
+                          Explora las <strong>Plantillas</strong> para ver
+                          ejemplos del método RECORD y otras estructuras
+                          populares para diferentes tipos de tareas.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-900 text-blue-200 rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-sm">
+                          4
+                        </div>
+                        <p>
+                          Compara <strong>Ejemplos</strong> de prompts efectivos
+                          para entender cómo se implementan diferentes técnicas
+                          en la práctica.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-900 text-blue-200 rounded-full h-6 w-6 flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-sm">
+                          5
+                        </div>
+                        <p>
+                          Aprende <strong>Técnicas Avanzadas</strong> como
+                          Chain-of-Thought y Few-Shot Learning respaldadas por
+                          investigación reciente.
+                        </p>
+                      </div>
+                      <div className="bg-blue-900 p-3 rounded-md border border-blue-800 flex gap-2">
+                        <i className="fas fa-info-circle text-blue-300 mt-1"></i>
+                        <div>
+                          <h4 className="font-medium text-white">
+                            Acerca de esta herramienta
+                          </h4>
+                          <p className="text-blue-200 text-sm">
+                            Esta aplicación tiene fines educativos. El
+                            analizador utiliza reglas básicas para detectar
+                            componentes del método RECORD y puede no captar
+                            todos los matices de un prompt bien estructurado.
+                            Utilízalo como guía de aprendizaje, no como
+                            evaluador definitivo.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {welcomeTab === "about" && (
+                    <div className="space-y-3 text-gray-300">
+                      <p>
+                        El método <strong>RECORD</strong> es una estructura
+                        mnemotécnica diseñada por E. Barrera-Linares para
+                        optimizar la formulación de prompts para modelos de
+                        lenguaje como ChatGPT.
+                      </p>
+                      <p>
+                        <strong>
+                          RECORD = 6 componentes esenciales de un prompt
+                          efectivo:
+                        </strong>
+                      </p>
+                      <ul className="space-y-2">
+                        <li>
+                          <strong className="text-blue-400">R</strong>ol o
+                          Personalidad: Define la personalidad o tono que debe
+                          adoptar el modelo.
+                        </li>
+                        <li>
+                          <strong className="text-blue-400">E</strong>sencia o
+                          Misión: Establece el propósito principal del prompt.
+                        </li>
+                        <li>
+                          <strong className="text-blue-400">C</strong>ontexto:
+                          Proporciona información de fondo relevante.
+                        </li>
+                        <li>
+                          <strong className="text-blue-400">O</strong>bjetivo:
+                          Especifica el resultado deseado de la respuesta.
+                        </li>
+                        <li>
+                          <strong className="text-blue-400">R</strong>equisitos
+                          o Detalles: Proporciona especificaciones adicionales
+                          importantes.
+                        </li>
+                        <li>
+                          <strong className="text-blue-400">D</strong>iseño o
+                          Formato: Define cómo quieres que se presente la
+                          respuesta.
+                        </li>
+                      </ul>
+                      <p className="mt-2 text-sm">
+                        Para más información, consulta el trabajo original:
+                        Barrera-Linares, E (2024). Método RECORD para escribir
+                        Prompts en ChatGPT. Zenodo.{" "}
+                        <a
+                          href="http://doi.org/10.5281/zenodo.11080812"
+                          target="_blank"
+                          className="text-blue-400 hover:underline"
+                        >
+                          http://doi.org/10.5281/zenodo.11080812
+                        </a>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setCurrentStep(1)}
+                className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-500 font-medium"
+              >
+                Comenzar
+              </button>
+            </div>
+          );
+        };
+
+        // Renderizar la sección principal de pestañas
+        const renderMainContent = () => {
+          return (
+            <div className="space-y-6">
+              {/* Selector de pestañas */}
+              <div className="flex border-b border-gray-700 overflow-x-auto">
+                <button
+                  onClick={() => setActiveTab("constructor")}
+                  className={
+                    "px-4 py-2 text-center font-medium " +
+                    (activeTab === "constructor"
+                      ? "text-white bg-blue-900 border-b-2 border-blue-500"
+                      : "text-gray-400 hover:bg-gray-700 hover:text-gray-200")
+                  }
+                >
+                  Constructor
+                </button>
+                <button
+                  onClick={() => setActiveTab("analizador")}
+                  className={
+                    "px-4 py-2 text-center font-medium " +
+                    (activeTab === "analizador"
+                      ? "text-white bg-blue-900 border-b-2 border-blue-500"
+                      : "text-gray-400 hover:bg-gray-700 hover:text-gray-200")
+                  }
+                >
+                  Analizador
+                </button>
+                <button
+                  onClick={() => setActiveTab("plantillas")}
+                  className={
+                    "px-4 py-2 text-center font-medium " +
+                    (activeTab === "plantillas"
+                      ? "text-white bg-blue-900 border-b-2 border-blue-500"
+                      : "text-gray-400 hover:bg-gray-700 hover:text-gray-200")
+                  }
+                >
+                  Plantillas
+                </button>
+                <button
+                  onClick={() => setActiveTab("ejemplos")}
+                  className={
+                    "px-4 py-2 text-center font-medium " +
+                    (activeTab === "ejemplos"
+                      ? "text-white bg-blue-900 border-b-2 border-blue-500"
+                      : "text-gray-400 hover:bg-gray-700 hover:text-gray-200")
+                  }
+                >
+                  Ejemplos
+                </button>
+                <button
+                  onClick={() => setActiveTab("tecnicas-avanzadas")}
+                  className={
+                    "px-4 py-2 text-center font-medium whitespace-nowrap " +
+                    (activeTab === "tecnicas-avanzadas"
+                      ? "text-white bg-blue-900 border-b-2 border-blue-500"
+                      : "text-gray-400 hover:bg-gray-700 hover:text-gray-200")
+                  }
+                >
+                  Técnicas Avanzadas
+                </button>
+              </div>
+
+              {/* Contenido de las pestañas */}
+              <div className="p-4">
+                {activeTab === "constructor" && renderConstructorTab()}
+                {activeTab === "analizador" && renderAnalyzerTab()}
+                {activeTab === "plantillas" && renderTemplatesTab()}
+                {activeTab === "ejemplos" && renderExamplesTab()}
+                {activeTab === "tecnicas-avanzadas" &&
+                  renderAdvancedTechniquesTab()}
+              </div>
+            </div>
+          );
+        };
+
+        // Renderizar pestaña del analizador (basado en método RECORD)
+        const renderAnalyzerTab = () => {
+          return (
+            <div className="space-y-6">
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-medium text-white">
+                    <span className="text-blue-400 mr-2">RECORD</span>{" "}
+                    Analizador de Prompts
+                  </h3>
+                  <button
+                    onClick={handleComparePromptsToggle}
+                    className={
+                      "px-3 py-1 text-sm rounded flex items-center gap-1 " +
+                      (showComparison
+                        ? "bg-blue-700 text-white"
+                        : "bg-gray-700 text-gray-300 hover:bg-gray-600")
+                    }
+                  >
+                    <i
+                      className={`fas fa-${
+                        showComparison ? "toggle-on" : "toggle-off"
+                      }`}
+                    ></i>{" "}
+                    Comparar prompts
+                  </button>
+                </div>
+
+                <div className="bg-yellow-800 bg-opacity-20 border border-yellow-700 p-3 rounded-md mb-4">
+                  <div className="flex items-start gap-2">
+                    <i className="fas fa-exclamation-triangle text-yellow-500 mt-1"></i>
+                    <div>
+                      <h4 className="font-medium text-yellow-300 mb-1">
+                        Limitaciones importantes de esta herramienta
+                      </h4>
+                      <p className="text-sm text-yellow-200">
+                        Este analizador utiliza reglas básicas (expresiones
+                        regulares y heurísticas simples) para detectar posibles
+                        componentes del método RECORD.{" "}
+                        <strong>
+                          No realiza un análisis semántico profundo
+                        </strong>{" "}
+                        y tiene las siguientes limitaciones:
+                      </p>
+                      <ul className="list-disc pl-5 mt-1 text-xs text-yellow-200 space-y-1">
+                        <li>
+                          Puede generar falsos positivos (detectar componentes
+                          que no están realmente bien implementados)
+                        </li>
+                        <li>
+                          Puede no detectar componentes si están expresados de
+                          forma no convencional
+                        </li>
+                        <li>
+                          No evalúa la calidad o profundidad real de cada
+                          componente, solo su presencia aparente
+                        </li>
+                      </ul>
+                      <p className="text-sm text-yellow-200 mt-1">
+                        Esta herramienta tiene fines puramente educativos para
+                        ayudarte a aprender el método RECORD.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-gray-300 text-sm mb-4">
+                  Introduce un prompt para detectar la presencia de cada
+                  componente del método RECORD y recibir sugerencias educativas
+                  de mejora.
+                </p>
+                <div
+                  className={
+                    showComparison ? "grid grid-cols-2 gap-4" : "block"
+                  }
+                >
+                  <div>
+                    {showComparison && (
+                      <p className="text-sm text-gray-400 mb-2">
+                        Prompt original
+                      </p>
+                    )}
+                    <textarea
+                      className="w-full h-64 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                      placeholder="Introduce aquí tu prompt para analizarlo con el método RECORD..."
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                    ></textarea>
+                  </div>
+                  {showComparison && (
+                    <div>
+                      <p className="text-sm text-gray-400 mb-2">
+                        Prompt modificado
+                      </p>
+                      <textarea
+                        className="w-full h-64 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        placeholder="Introduce una variación del prompt para comparar..."
+                        value={comparisonPrompt}
+                        onChange={(e) => setComparisonPrompt(e.target.value)}
+                      ></textarea>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Análisis del prompt */}
+              {promptAnalysis && (
+                <div className="bg-gray-800 p-4 rounded-lg mt-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-white">
+                      Análisis RECORD
+                    </h3>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setResultTab("analysis")}
+                        className={
+                          "px-3 py-1 text-sm rounded " +
+                          (resultTab === "analysis"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-700 text-gray-300 hover:bg-gray-600")
+                        }
+                      >
+                        Componentes
+                      </button>
+                      <button
+                        onClick={() => setResultTab("suggestions")}
+                        className={
+                          "px-3 py-1 text-sm rounded " +
+                          (resultTab === "suggestions"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-700 text-gray-300 hover:bg-gray-600")
+                        }
+                      >
+                        Recomendaciones
+                      </button>
+                      <button
+                        onClick={() => setResultTab("techniques")}
+                        className={
+                          "px-3 py-1 text-sm rounded " +
+                          (resultTab === "techniques"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-700 text-gray-300 hover:bg-gray-600")
+                        }
+                      >
+                        Técnicas
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Resumen RECORD */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mb-4">
+                    {promptAnalysis.recordComponents.map((component, index) => (
+                      <div
+                        key={index}
+                        className={`p-3 rounded-lg text-center ${
+                          component.present
+                            ? "bg-green-900 bg-opacity-30 border border-green-800"
+                            : "bg-red-900 bg-opacity-20 border border-red-800"
+                        }`}
+                      >
+                        <div className="text-xl font-bold mb-1">
+                          <span
+                            className={
+                              component.present
+                                ? "text-green-400"
+                                : "text-red-400"
+                            }
+                          >
+                            {component.letter}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-300 truncate">
+                          {component.name}
+                        </div>
+                        <div className="mt-2">
+                          <i
+                            className={`fas fa-${
+                              component.present
+                                ? "check text-green-500"
+                                : "times text-red-500"
+                            }`}
+                          ></i>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {resultTab === "analysis" && (
+                    <div>
+                      <h4 className="font-medium text-gray-300 mb-3">
+                        Componentes RECORD en tu prompt
+                      </h4>
+                      <div className="space-y-4">
+                        {promptAnalysis.recordComponents.map(
+                          (component, index) => (
+                            <div
+                              key={index}
+                              className={`bg-gray-900 p-3 rounded-lg ${
+                                component.present
+                                  ? "border-l-4 border-green-600"
+                                  : "border-l-4 border-red-600"
+                              }`}
+                            >
+                              <div className="flex justify-between items-center mb-2">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className={`text-xl font-bold ${
+                                      component.present
+                                        ? "text-green-500"
+                                        : "text-red-500"
+                                    }`}
+                                  >
+                                    {component.letter}:
+                                  </div>
+                                  <h5 className="font-medium text-gray-300">
+                                    {component.name}
+                                  </h5>
+                                </div>
+                                <span
+                                  className={`text-xs px-2 py-1 rounded ${
+                                    component.present
+                                      ? component.confidence === "alta"
+                                        ? "bg-green-900 text-green-300"
+                                        : "bg-yellow-900 text-yellow-300"
+                                      : "bg-red-900 text-red-300"
+                                  }`}
+                                >
+                                  {component.present
+                                    ? `Detectado (confianza ${component.confidence})`
+                                    : "No detectado"}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-400 mb-3">
+                                {component.description}
+                              </p>
+                              {component.present && component.example && (
+                                <div className="mt-2 bg-gray-800 p-2 rounded">
+                                  <p className="text-xs text-gray-400 mb-1">
+                                    Fragmento detectado:
+                                  </p>
+                                  <p className="text-xs text-gray-300 font-mono">
+                                    {component.example}
+                                  </p>
+                                </div>
+                              )}
+                              <div className="mt-3 text-sm">
+                                <span
+                                  className={`${
+                                    component.present
+                                      ? "text-green-400"
+                                      : "text-red-400"
+                                  }`}
+                                >
+                                  {component.feedback}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {resultTab === "suggestions" && (
+                    <div>
+                      <h4 className="font-medium text-gray-300 mb-3">
+                        Recomendaciones para mejorar tu prompt
+                      </h4>
+                      {promptAnalysis.missingComponents.length > 0 && (
+                        <div className="bg-red-900 bg-opacity-20 p-3 rounded-lg border border-red-800 mb-4">
+                          <h5 className="font-medium text-red-300 mb-2">
+                            <i className="fas fa-exclamation-circle mr-2"></i>{" "}
+                            Componentes RECORD faltantes
+                          </h5>
+                          <p className="text-gray-300 text-sm mb-3">
+                            Tu prompt carece de{" "}
+                            {promptAnalysis.missingComponents.length} de los 6
+                            componentes del método RECORD:
+                          </p>
+                          <div className="space-y-2">
+                            {promptAnalysis.missingComponents.map(
+                              (component, index) => (
+                                <div
+                                  key={index}
+                                  className="bg-gray-900 bg-opacity-50 p-2 rounded"
+                                >
+                                  <div className="font-medium text-red-400">
+                                    {component.letter}: {component.name}
+                                  </div>
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    {component.description}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Ejemplo: "{component.example}"
+                                  </p>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <div className="space-y-4">
+                        {promptAnalysis.recommendations.map(
+                          (recommendation, index) => (
+                            <div
+                              key={index}
+                              className={`p-3 rounded-lg ${
+                                recommendation.type === "structure"
+                                  ? "bg-red-900 bg-opacity-20 border border-red-800"
+                                  : recommendation.type === "positive"
+                                  ? "bg-green-900 bg-opacity-20 border border-green-800"
+                                  : "bg-blue-900 bg-opacity-20 border border-blue-800"
+                              }`}
+                            >
+                              <h5 className="font-medium text-white mb-2">
+                                {recommendation.title}
+                              </h5>
+                              <p className="text-sm text-gray-300 mb-3">
+                                {recommendation.description}
+                              </p>
+                              {recommendation.suggestions && (
+                                <div className="bg-gray-900 bg-opacity-50 p-2 rounded">
+                                  <p className="text-xs text-gray-300 mb-1">
+                                    Sugerencias:
+                                  </p>
+                                  <ul className="space-y-1 list-disc pl-5">
+                                    {recommendation.suggestions.map(
+                                      (suggestion, i) => (
+                                        <li
+                                          key={i}
+                                          className="text-xs text-gray-400"
+                                        >
+                                          {suggestion}
+                                        </li>
+                                      )
+                                    )}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {resultTab === "techniques" && (
+                    <div>
+                      <h4 className="font-medium text-gray-300 mb-3">
+                        Técnicas Avanzadas Detectadas
+                      </h4>
+                      {promptAnalysis.techniquesDetected.length === 0 ? (
+                        <div className="bg-gray-900 p-3 rounded-lg">
+                          <p className="text-gray-400">
+                            No se detectaron técnicas avanzadas de prompting en
+                            este texto. Considera incorporar estrategias como
+                            Chain-of-Thought, Few-Shot Learning o Zero-Shot CoT
+                            para mejorar la calidad de las respuestas.
+                          </p>
+                          <div className="mt-3 p-2 bg-blue-900 bg-opacity-20 rounded-md border border-blue-800">
+                            <p className="text-sm text-blue-300">
+                              <i className="fas fa-lightbulb mr-1"></i>{" "}
+                              Sugerencia: Añade frases como "Pensemos paso a
+                              paso" o incluye ejemplos para guiar al modelo.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {promptAnalysis.techniquesDetected.map(
+                            (detection, index) => (
+                              <div
+                                key={index}
+                                className="bg-gray-900 p-3 rounded-lg border-l-4 border-blue-600"
+                              >
+                                <div className="flex justify-between items-center mb-2">
+                                  <h5 className="font-medium text-white">
+                                    {detection.technique.name}
+                                  </h5>
+                                  <span className="text-xs px-2 py-1 bg-blue-900 text-blue-300 rounded">
+                                    Intensidad: {detection.strength}%
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-400 mb-3">
+                                  {detection.technique.explanation}
+                                </p>
+                                {detection.example && (
+                                  <div className="bg-gray-800 p-2 rounded">
+                                    <p className="text-xs text-gray-400 mb-1">
+                                      Fragmento detectado:
+                                    </p>
+                                    <p className="text-xs text-gray-300 font-mono">
+                                      {detection.example}
+                                    </p>
+                                  </div>
+                                )}
+                                <div className="mt-3 text-xs text-gray-500">
+                                  <p>
+                                    Estudio: {detection.technique.reference}
+                                  </p>
+                                  <p>
+                                    Mejora demostrada:{" "}
+                                    {detection.technique.benchmarkImprovement}
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          )}
+                          <div className="p-3 bg-gray-800 rounded-md mt-4">
+                            <p className="text-sm text-gray-300">
+                              <i className="fas fa-info-circle text-blue-400 mr-2"></i>{" "}
+                              Las técnicas avanzadas de prompting pueden
+                              combinarse con el método RECORD para obtener
+                              respuestas más precisas y detalladas. Consulta la
+                              pestaña "Técnicas Avanzadas" para aprender más.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        // Renderizar pestaña del constructor usando método RECORD
+        const renderConstructorTab = () => {
+          return (
+            <div className="space-y-6">
+              {/* Barra de progreso */}
+              <div className="mb-4">
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full"
+                    style={{ width: `${getProgressPercentage()}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-sm text-gray-400 mt-1">
+                  <span>Paso {constructorStep} de 6</span>
+                  <span>
+                    {Math.round((constructorStep / 6) * 100)}% completado
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-gray-900 p-1 rounded-lg mb-4">
+                <div className="flex flex-wrap">
+                  {recordComponents.map((component, index) => (
+                    <div
+                      key={index}
+                      className={`m-1 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
+                        constructorStep === index + 1
+                          ? "bg-blue-700 text-white"
+                          : constructorStep > index + 1
+                          ? "bg-green-700 text-white"
+                          : "bg-gray-700 text-gray-300"
+                      }`}
+                    >
+                      <span className="font-bold">{component.letter}</span>
+                      <span className="hidden sm:inline">
+                        : {component.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <h3 className="text-xl font-medium text-white mb-1">
+                  <span className="text-blue-500 mr-2">
+                    {recordComponents[constructorStep - 1].letter}:
+                  </span>{" "}
+                  {recordComponents[constructorStep - 1].name}
+                </h3>
+                <p className="text-gray-400 text-sm mb-4">
+                  {recordComponents[constructorStep - 1].description}
+                </p>
+
+                {/* R: Rol o Personalidad */}
+                {constructorStep === 1 && (
+                  <div className="space-y-4">
+                    <div>
+                      <textarea
+                        className="w-full h-32 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        placeholder="Ej: Eres un experto clínico de renombre internacional, ampliamente reconocido por tu enfoque holístico y tu dominio excepcional de competencias y habilidades clínicas..."
+                        value={promptRole}
+                        onChange={(e) => setPromptRole(e.target.value)}
+                      ></textarea>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-900 p-3 rounded-md">
+                        <h4 className="text-sm font-medium text-gray-300 mb-2">
+                          Cómo escribir un buen rol:
+                        </h4>
+                        <ul className="space-y-1 text-xs text-gray-400 list-disc pl-5">
+                          <li>Especifica la profesión o área de expertise</li>
+                          <li>Añade años de experiencia o reconocimientos</li>
+                          <li>Define áreas de especialización específicas</li>
+                          <li>Menciona habilidades o enfoques particulares</li>
+                          <li>
+                            Usa "Eres un..." o "Actúa como..." para claridad
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="bg-blue-900 bg-opacity-30 p-3 rounded-md border border-blue-800">
+                        <h4 className="text-sm font-medium text-blue-300 mb-2">
+                          Ejemplos efectivos:
+                        </h4>
+                        <ul className="space-y-2 text-xs text-blue-200">
+                          <li>
+                            <strong>✓</strong> "Eres un neurocirujano con 15
+                            años de experiencia en trauma cerebral..."
+                          </li>
+                          <li>
+                            <strong>✓</strong> "Actúa como un estratega de
+                            marketing digital especializado en el sector
+                            salud..."
+                          </li>
+                          <li>
+                            <strong>✓</strong> "Eres un farmacéutico experto en
+                            interacciones medicamentosas con amplia
+                            experiencia..."
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* E: Esencia o Misión */}
+                {constructorStep === 2 && (
+                  <div className="space-y-4">
+                    <div>
+                      <textarea
+                        className="w-full h-32 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        placeholder="Ej: Ofrece orientación sobre cómo abordar problemas de salud urgentes..."
+                        value={promptEssence}
+                        onChange={(e) => setPromptEssence(e.target.value)}
+                      ></textarea>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-900 p-3 rounded-md">
+                        <h4 className="text-sm font-medium text-gray-300 mb-2">
+                          Cómo definir una buena misión:
+                        </h4>
+                        <ul className="space-y-1 text-xs text-gray-400 list-disc pl-5">
+                          <li>Define el propósito general del prompt</li>
+                          <li>
+                            Usa verbos como "ofrecer", "proporcionar",
+                            "explicar"
+                          </li>
+                          <li>
+                            Explica qué tipo de información o guía necesitas
+                          </li>
+                          <li>Mantén este componente conciso pero claro</li>
+                          <li>
+                            Debe responder: ¿cuál es el propósito general?
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="bg-blue-900 bg-opacity-30 p-3 rounded-md border border-blue-800">
+                        <h4 className="text-sm font-medium text-blue-300 mb-2">
+                          Ejemplos efectivos:
+                        </h4>
+                        <ul className="space-y-2 text-xs text-blue-200">
+                          <li>
+                            <strong>✓</strong> "Proporciona una guía sobre
+                            métodos efectivos de gestión del dolor crónico..."
+                          </li>
+                          <li>
+                            <strong>✓</strong> "Ofrece una explicación detallada
+                            sobre el funcionamiento del sistema inmunológico..."
+                          </li>
+                          <li>
+                            <strong>✓</strong> "Ayuda a identificar estrategias
+                            para mejorar la adherencia al tratamiento..."
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* C: Contexto */}
+                {constructorStep === 3 && (
+                  <div className="space-y-4">
+                    <div>
+                      <textarea
+                        className="w-full h-32 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        placeholder="Ej: Un paciente que ha sufrido un trauma grave tras un accidente..."
+                        value={promptContext}
+                        onChange={(e) => setPromptContext(e.target.value)}
+                      ></textarea>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-900 p-3 rounded-md">
+                        <h4 className="text-sm font-medium text-gray-300 mb-2">
+                          Elementos de un buen contexto:
+                        </h4>
+                        <ul className="space-y-1 text-xs text-gray-400 list-disc pl-5">
+                          <li>
+                            Información de fondo relevante sobre la situación
+                          </li>
+                          <li>Datos importantes que el modelo debe conocer</li>
+                          <li>Escenario o circunstancias específicas</li>
+                          <li>Limitaciones o restricciones existentes</li>
+                          <li>
+                            Información sobre la audiencia o receptor final
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="bg-blue-900 bg-opacity-30 p-3 rounded-md border border-blue-800">
+                        <h4 className="text-sm font-medium text-blue-300 mb-2">
+                          Ejemplos efectivos:
+                        </h4>
+                        <ul className="space-y-2 text-xs text-blue-200">
+                          <li>
+                            <strong>✓</strong> "Un paciente diabético de 67 años
+                            con historial de hipertensión y problemas renales
+                            leves..."
+                          </li>
+                          <li>
+                            <strong>✓</strong> "En un centro de atención
+                            primaria con recursos limitados y sin acceso
+                            inmediato a especialistas..."
+                          </li>
+                          <li>
+                            <strong>✓</strong> "Para un grupo de estudiantes de
+                            enfermería de primer año con conocimientos básicos
+                            de anatomía..."
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* O: Objetivo */}
+                {constructorStep === 4 && (
+                  <div className="space-y-4">
+                    <div>
+                      <textarea
+                        className="w-full h-32 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        placeholder="Ej: Desarrolla un plan de acción paso a paso para estabilizar al paciente..."
+                        value={promptObjective}
+                        onChange={(e) => setPromptObjective(e.target.value)}
+                      ></textarea>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-900 p-3 rounded-md">
+                        <h4 className="text-sm font-medium text-gray-300 mb-2">
+                          Cómo definir un buen objetivo:
+                        </h4>
+                        <ul className="space-y-1 text-xs text-gray-400 list-disc pl-5">
+                          <li>
+                            Usa verbos de acción claros (desarrolla, crea,
+                            analiza)
+                          </li>
+                          <li>Especifica exactamente qué deseas obtener</li>
+                          <li>Define el alcance del resultado esperado</li>
+                          <li>Marca límites o parámetros específicos</li>
+                          <li>
+                            Diferencia del componente E: aquí buscas resultados
+                            concretos
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="bg-blue-900 bg-opacity-30 p-3 rounded-md border border-blue-800">
+                        <h4 className="text-sm font-medium text-blue-300 mb-2">
+                          Ejemplos efectivos:
+                        </h4>
+                        <ul className="space-y-2 text-xs text-blue-200">
+                          <li>
+                            <strong>✓</strong> "Desarrolla un plan nutricional
+                            semanal completo que cumpla con las necesidades
+                            dietéticas..."
+                          </li>
+                          <li>
+                            <strong>✓</strong> "Identifica las 5 intervenciones
+                            prioritarias para manejar esta condición..."
+                          </li>
+                          <li>
+                            <strong>✓</strong> "Analiza los pros y contras de
+                            los tres principales tratamientos disponibles..."
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* R: Requisitos o Detalles */}
+                {constructorStep === 5 && (
+                  <div className="space-y-4">
+                    <div>
+                      <textarea
+                        className="w-full h-32 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        placeholder="Ej: Incluye posibles complicaciones y cómo manejarlas..."
+                        value={promptRequirements}
+                        onChange={(e) => setPromptRequirements(e.target.value)}
+                      ></textarea>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-900 p-3 rounded-md">
+                        <h4 className="text-sm font-medium text-gray-300 mb-2">
+                          Requisitos efectivos incluyen:
+                        </h4>
+                        <ul className="space-y-1 text-xs text-gray-400 list-disc pl-5">
+                          <li>
+                            Detalles específicos sobre lo que debe incluirse
+                          </li>
+                          <li>Restricciones o limitaciones importantes</li>
+                          <li>Consideraciones especiales a tener en cuenta</li>
+                          <li>Aspectos que deben evitarse o incluirse</li>
+                          <li>Nivel de detalle o profundidad deseado</li>
+                        </ul>
+                      </div>
+                      <div className="bg-blue-900 bg-opacity-30 p-3 rounded-md border border-blue-800">
+                        <h4 className="text-sm font-medium text-blue-300 mb-2">
+                          Ejemplos efectivos:
+                        </h4>
+                        <ul className="space-y-2 text-xs text-blue-200">
+                          <li>
+                            <strong>✓</strong> "Incluye posibles efectos
+                            secundarios y cómo monitorizarlos adecuadamente..."
+                          </li>
+                          <li>
+                            <strong>✓</strong> "Considera factores como la edad
+                            del paciente, comorbilidades y posibles
+                            interacciones..."
+                          </li>
+                          <li>
+                            <strong>✓</strong> "Asegúrate de cubrir tanto
+                            medidas farmacológicas como no farmacológicas..."
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* D: Diseño o Formato */}
+                {constructorStep === 6 && (
+                  <div className="space-y-4">
+                    <div>
+                      <textarea
+                        className="w-full h-32 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        placeholder="Ej: Presenta la información en un formato de lista con acciones prioritarias al principio y añade emojis relevantes para cada paso..."
+                        value={promptDesign}
+                        onChange={(e) => setPromptDesign(e.target.value)}
+                      ></textarea>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-900 p-3 rounded-md">
+                        <h4 className="text-sm font-medium text-gray-300 mb-2">
+                          Elementos de un buen formato:
+                        </h4>
+                        <ul className="space-y-1 text-xs text-gray-400 list-disc pl-5">
+                          <li>Estructura deseada (lista, tabla, párrafos)</li>
+                          <li>Longitud aproximada o nivel de detalle</li>
+                          <li>
+                            Elementos visuales o de formato (emojis, viñetas)
+                          </li>
+                          <li>Orden de presentación de la información</li>
+                          <li>
+                            Estilo de escritura preferido (formal,
+                            conversacional)
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="bg-blue-900 bg-opacity-30 p-3 rounded-md border border-blue-800">
+                        <h4 className="text-sm font-medium text-blue-300 mb-2">
+                          Ejemplos efectivos:
+                        </h4>
+                        <ul className="space-y-2 text-xs text-blue-200">
+                          <li>
+                            <strong>✓</strong> "Presenta la información en forma
+                            de lista numerada, ordenada por prioridad, con
+                            máximo 2-3 oraciones por punto..."
+                          </li>
+                          <li>
+                            <strong>✓</strong> "Utiliza un formato de tabla
+                            comparativa con ventajas y desventajas de cada
+                            opción..."
+                          </li>
+                          <li>
+                            <strong>✓</strong> "Estructura la respuesta con
+                            encabezados claros y incluye un breve resumen al
+                            principio..."
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Botones para navegar entre pasos */}
+              <div className="flex justify-between pt-4">
+                <button
+                  onClick={() =>
+                    setConstructorStep(Math.max(1, constructorStep - 1))
+                  }
+                  disabled={constructorStep === 1}
+                  className={
+                    "flex items-center gap-1 px-4 py-2 text-white rounded " +
+                    (constructorStep === 1
+                      ? "bg-gray-600 cursor-not-allowed"
+                      : "bg-gray-700 hover:bg-gray-600")
+                  }
+                >
+                  <i className="fas fa-arrow-left text-xs"></i> Anterior
+                </button>
+                {constructorStep < 6 ? (
+                  <button
+                    onClick={() => setConstructorStep(constructorStep + 1)}
+                    className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500"
+                  >
+                    Siguiente <i className="fas fa-arrow-right text-xs"></i>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      const generatedPrompt =
+                        `${promptRole ? promptRole + "\n\n" : ""}` +
+                        `${promptEssence ? promptEssence + "\n\n" : ""}` +
+                        `CONTEXTO:\n${promptContext}\n\n` +
+                        `OBJETIVO:\n${promptObjective}\n\n` +
+                        `REQUISITOS:\n${promptRequirements}\n\n` +
+                        `FORMATO:\n${promptDesign}`;
+                      setPrompt(generatedPrompt);
+                      setActiveTab("analizador");
+                    }}
+                    className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-500"
+                  >
+                    Generar prompt <i className="fas fa-check text-xs"></i>
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        // Renderizar pestaña de plantillas
+        const renderTemplatesTab = () => {
+          return (
+            <div className="space-y-6">
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-white mb-3">
+                  Plantillas de Prompts
+                </h3>
+                <p className="text-gray-300 text-sm mb-4">
+                  Explora plantillas predefinidas para diferentes tipos de
+                  tareas, basadas en el método RECORD u otros enfoques
+                  populares.
+                </p>
+
+                {/* Selector de tipo de plantilla */}
+                <div className="border border-gray-700 rounded-lg overflow-hidden mb-6">
+                  <div className="bg-gray-900 p-3 border-b border-gray-700">
+                    <h4 className="font-medium text-gray-300">
+                      Selecciona el tipo de plantilla:
+                    </h4>
+                  </div>
+                  <div className="p-4">
+                    <div className="mb-4">
+                      <h5 className="text-blue-400 font-medium text-sm mb-2">
+                        Plantillas basadas en método RECORD
+                      </h5>
+                      <select
+                        className="w-full p-2 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        value={templateType}
+                        onChange={handleTemplateChange}
+                      >
+                        <option value="">
+                          -- Selecciona una plantilla RECORD --
+                        </option>
+                        <option value="diagnostico">Diagnóstico clínico</option>
+                        <option value="tratamiento">
+                          Recomendación de tratamiento
+                        </option>
+                        <option value="educacion">Educación al paciente</option>
+                        <option value="investigacion">
+                          Investigación biomédica
+                        </option>
+                      </select>
+                    </div>
+                    <div>
+                      <h5 className="text-gray-400 font-medium text-sm mb-2">
+                        Otras estructuras populares por tipo de tarea
+                      </h5>
+                      <select
+                        className="w-full p-2 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        value={promptTask}
+                        onChange={handleTaskChange}
+                      >
+                        <option value="">
+                          -- Selecciona por tipo de tarea --
+                        </option>
+                        <option value="resumen">Resumen de Texto</option>
+                        <option value="analisis">Análisis Crítico</option>
+                        <option value="comparacion">
+                          Comparación de Conceptos
+                        </option>
+                        <option value="creativo">Creación de Contenido</option>
+                        <option value="codigo">Generación de Código</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-blue-900 bg-opacity-30 p-3 rounded-md border border-blue-800 mb-4">
+                  <div className="flex items-start gap-2">
+                    <i className="fas fa-info-circle text-blue-400 mt-1"></i>
+                    <div>
+                      <h4 className="font-medium text-blue-300 mb-1">
+                        Acerca de las plantillas
+                      </h4>
+                      <p className="text-sm text-blue-200">
+                        Las plantillas RECORD siguen estrictamente los 6
+                        componentes del método. Las otras plantillas por tipo de
+                        tarea son enfoques alternativos que pueden ser
+                        igualmente efectivos para casos específicos. Puedes usar
+                        ambos tipos o combinarlos según tus necesidades.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {prompt && (
+                <div className="bg-gray-800 p-4 rounded-lg">
+                  <h3 className="text-lg font-medium text-white mb-3">
+                    Plantilla generada
+                  </h3>
+                  <p className="text-gray-300 text-sm mb-4">
+                    Personaliza esta plantilla según tus necesidades
+                    específicas.
+                  </p>
+
+                  {/* Etiquetado RECORD si corresponde */}
+                  {templateType && (
+                    <div className="bg-blue-900 bg-opacity-20 p-3 rounded-md border border-blue-800 mb-4">
+                      <h4 className="text-sm font-medium text-blue-300 mb-2">
+                        Componentes RECORD en esta plantilla:
+                      </h4>
+                      <ul className="space-y-1 text-xs text-blue-200">
+                        <li>
+                          <strong>R (Rol):</strong> Primera sección que define
+                          la identidad/expertise
+                        </li>
+                        <li>
+                          <strong>E (Esencia):</strong> Propósito general que
+                          establece la misión
+                        </li>
+                        <li>
+                          <strong>C (Contexto):</strong> Sección que proporciona
+                          información de fondo
+                        </li>
+                        <li>
+                          <strong>O (Objetivo):</strong> Lo que específicamente
+                          se solicita
+                        </li>
+                        <li>
+                          <strong>R (Requisitos):</strong> Detalles y
+                          especificaciones adicionales
+                        </li>
+                        <li>
+                          <strong>D (Diseño):</strong> Formato y estructura de
+                          salida deseada
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Etiquetado para plantillas no-RECORD */}
+                  {promptTask && !templateType && (
+                    <div className="bg-gray-700 bg-opacity-40 p-3 rounded-md border border-gray-600 mb-4">
+                      <h4 className="text-sm font-medium text-gray-300 mb-2">
+                        Estructura de esta plantilla:
+                      </h4>
+                      <p className="text-xs text-gray-400">
+                        Esta es una plantilla especializada para{" "}
+                        {promptTask === "resumen"
+                          ? "resumir textos"
+                          : promptTask === "analisis"
+                          ? "análisis crítico"
+                          : promptTask === "comparacion"
+                          ? "comparaciones estructuradas"
+                          : promptTask === "creativo"
+                          ? "creación de contenido"
+                          : "generación de código"}
+                        . Si bien no sigue estrictamente el método RECORD,
+                        incluye elementos como definición de tarea, contexto y
+                        formato de salida que son fundamentales para un prompt
+                        efectivo.
+                      </p>
+                    </div>
+                  )}
+
+                  <textarea
+                    className="w-full h-64 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                  ></textarea>
+                  <div className="flex justify-end mt-4">
+                    <button
+                      onClick={() => setActiveTab("analizador")}
+                      className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500"
+                    >
+                      Analizar plantilla{" "}
+                      <i className="fas fa-search-plus text-xs"></i>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        // Renderizar pestaña de ejemplos
+        const renderExamplesTab = () => {
+          return (
+            <div className="space-y-6">
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-white mb-3">
+                  Ejemplos de Prompts
+                </h3>
+                <p className="text-gray-300 text-sm mb-4">
+                  Explora ejemplos de prompts efectivos para diferentes
+                  necesidades. Algunos siguen el método RECORD, mientras que
+                  otros utilizan enfoques alternativos.
+                </p>
+                <div className="flex space-x-2 border-b border-gray-700 mb-4">
+                  <button
+                    onClick={() => handleStrategyChange("estructurado")}
+                    className={`px-3 py-2 font-medium text-sm rounded-t ${
+                      selectedStrategy === "estructurado"
+                        ? "bg-blue-900 text-white"
+                        : "text-gray-400 hover:text-gray-200"
+                    }`}
+                  >
+                    RECORD Completo
+                  </button>
+                  <button
+                    onClick={() => handleStrategyChange("heuristico")}
+                    className={`px-3 py-2 font-medium text-sm rounded-t ${
+                      selectedStrategy === "heuristico"
+                        ? "bg-blue-900 text-white"
+                        : "text-gray-400 hover:text-gray-200"
+                    }`}
+                  >
+                    Enfoques Heurísticos
+                  </button>
+                  <button
+                    onClick={() => handleStrategyChange("combinado")}
+                    className={`px-3 py-2 font-medium text-sm rounded-t ${
+                      selectedStrategy === "combinado"
+                        ? "bg-blue-900 text-white"
+                        : "text-gray-400 hover:text-gray-200"
+                    }`}
+                  >
+                    Ejemplos Mixtos
+                  </button>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md mb-4">
+                  <h4 className="text-sm font-medium text-white mb-2">
+                    ¿Qué tipo de ejemplos estás viendo?
+                  </h4>
+                  {selectedStrategy === "estructurado" && (
+                    <p className="text-xs text-gray-300">
+                      Estos ejemplos implementan completamente el método RECORD
+                      con sus 6 componentes claramente definidos: Rol, Esencia,
+                      Contexto, Objetivo, Requisitos y Diseño. Son ideales para
+                      aprender a aplicar el método de forma integral.
+                    </p>
+                  )}
+                  {selectedStrategy === "heuristico" && (
+                    <p className="text-xs text-gray-300">
+                      Estos ejemplos utilizan enfoques heurísticos que no siguen
+                      estrictamente el método RECORD, pero son efectivos para
+                      tareas específicas. Incluyen técnicas como
+                      "Chain-of-Thought" (paso a paso) y verificación de
+                      respuestas.
+                    </p>
+                  )}
+                  {selectedStrategy === "combinado" && (
+                    <p className="text-xs text-gray-300">
+                      Estos ejemplos combinan elementos del método RECORD con
+                      otras técnicas avanzadas. Representan un enfoque híbrido
+                      que puede ser más apropiado para ciertos casos de uso
+                      complejos.
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-4">
+                  {strategyExamples[selectedStrategy].map((example, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-gray-900 p-3 rounded-md border border-gray-700"
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="font-medium text-white text-sm">
+                          {example.title}
+                        </h4>
+                        {/* Etiqueta de método */}
+                        <span
+                          className={`text-xs px-2 py-1 rounded ${
+                            selectedStrategy === "estructurado"
+                              ? "bg-blue-900 text-blue-300"
+                              : selectedStrategy === "combinado"
+                              ? "bg-purple-900 text-purple-300"
+                              : "bg-gray-700 text-gray-300"
+                          }`}
+                        >
+                          {selectedStrategy === "estructurado"
+                            ? "Método RECORD"
+                            : selectedStrategy === "combinado"
+                            ? "RECORD + otras técnicas"
+                            : "Enfoque alternativo"}
+                        </span>
+                      </div>
+                      <div className="bg-gray-800 p-3 rounded text-gray-300 text-sm whitespace-pre-wrap max-h-40 overflow-y-auto">
+                        {example.prompt}
+                      </div>
+                      {/* Componentes RECORD (para ejemplos estructurados) */}
+                      {selectedStrategy === "estructurado" && (
+                        <div className="mt-3 bg-gray-800 bg-opacity-50 p-2 rounded">
+                          <p className="text-xs text-gray-400 mb-1">
+                            Componentes RECORD:
+                          </p>
+                          <div className="grid grid-cols-3 gap-1 text-xs">
+                            <span className="text-blue-400">
+                              <strong>R:</strong> Rol definido
+                            </span>
+                            <span className="text-blue-400">
+                              <strong>E:</strong> Propósito general
+                            </span>
+                            <span className="text-blue-400">
+                              <strong>C:</strong> Información contextual
+                            </span>
+                            <span className="text-blue-400">
+                              <strong>O:</strong> Objetivo específico
+                            </span>
+                            <span className="text-blue-400">
+                              <strong>R:</strong> Requisitos detallados
+                            </span>
+                            <span className="text-blue-400">
+                              <strong>D:</strong> Formato de salida
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {/* Técnicas destacadas (para ejemplos heurísticos) */}
+                      {selectedStrategy === "heuristico" && (
+                        <div className="mt-3 bg-gray-800 bg-opacity-50 p-2 rounded">
+                          <p className="text-xs text-gray-400 mb-1">
+                            Técnicas destacadas:
+                          </p>
+                          <div className="text-xs text-gray-300">
+                            {idx === 0 ? (
+                              <span>
+                                Chain-of-Thought (razonamiento paso a paso),
+                                preguntas guiadas, factores específicos a
+                                considerar
+                              </span>
+                            ) : (
+                              <span>
+                                Instrucción para verificación de respuesta,
+                                definición de rol, análisis crítico
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {/* Análisis de componentes (para ejemplos combinados) */}
+                      {selectedStrategy === "combinado" && (
+                        <div className="mt-3 bg-gray-800 bg-opacity-50 p-2 rounded">
+                          <p className="text-xs text-gray-400 mb-1">
+                            Elementos RECORD + técnicas adicionales:
+                          </p>
+                          <div className="text-xs text-gray-300">
+                            {idx === 0 ? (
+                              <span>
+                                RECORD (R,E,C,O,R,D) + Chain-of-Thought +
+                                evaluación crítica
+                              </span>
+                            ) : (
+                              <span>
+                                RECORD (R,E) + Few-Shot Learning + razonamiento
+                                explícito
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex justify-end mt-2">
+                        <button
+                          onClick={() => {
+                            setPrompt(example.prompt);
+                            setActiveTab("analizador");
+                          }}
+                          className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-500"
+                        >
+                          Usar este ejemplo{" "}
+                          <i className="fas fa-arrow-right text-xs"></i>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // NUEVA SECCIÓN: Técnicas Avanzadas
+        // Renderizar pestaña de Técnicas Avanzadas
+        const renderAdvancedTechniquesTab = () => {
+          return (
+            <div className="space-y-6">
+              {/* Selector de técnica */}
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <h3 className="text-lg font-medium text-white mb-3">
+                  Técnicas Avanzadas de Prompting
+                </h3>
+                <p className="text-gray-300 text-sm mb-4">
+                  Explora técnicas avanzadas que han demostrado mejorar
+                  significativamente el rendimiento de modelos de lenguaje en
+                  tareas complejas.
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  {advancedTechniques.map((technique) => (
+                    <button
+                      key={technique.id}
+                      onClick={() => setAdvancedTechnique(technique.id)}
+                      className={`p-3 rounded-lg text-center transition ${
+                        advancedTechnique === technique.id
+                          ? "bg-blue-800 text-white"
+                          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      }`}
+                    >
+                      <div className="text-xl mb-2">
+                        <i className={`fas fa-${technique.icon}`}></i>
+                      </div>
+                      <h4 className="font-medium">{technique.name}</h4>
+                      <p className="text-xs mt-1">{technique.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Selector de vista */}
+              <div className="flex border-b border-gray-700 mb-4 overflow-x-auto">
+                <button
+                  onClick={() => setAdvancedView("learn")}
+                  className={`px-3 py-2 font-medium text-sm rounded-t ${
+                    advancedView === "learn"
+                      ? "bg-blue-900 text-white"
+                      : "text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  Aprende
+                </button>
+                <button
+                  onClick={() => setAdvancedView("build")}
+                  className={`px-3 py-2 font-medium text-sm rounded-t ${
+                    advancedView === "build"
+                      ? "bg-blue-900 text-white"
+                      : "text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  Construye
+                </button>
+                <button
+                  onClick={() => setAdvancedView("analyze")}
+                  className={`px-3 py-2 font-medium text-sm rounded-t ${
+                    advancedView === "analyze"
+                      ? "bg-blue-900 text-white"
+                      : "text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  Analiza
+                </button>
+                <button
+                  onClick={() => setAdvancedView("compare")}
+                  className={`px-3 py-2 font-medium text-sm rounded-t ${
+                    advancedView === "compare"
+                      ? "bg-blue-900 text-white"
+                      : "text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  Compara
+                </button>
+              </div>
+
+              {/* Contenido basado en técnica y vista seleccionadas */}
+              {advancedTechnique === "cot" &&
+                advancedView === "learn" &&
+                renderChainOfThoughtLearn()}
+              {advancedTechnique === "cot" &&
+                advancedView === "build" &&
+                renderChainOfThoughtBuilder()}
+              {advancedTechnique === "cot" &&
+                advancedView === "analyze" &&
+                renderChainOfThoughtAnalyzer()}
+              {advancedTechnique === "fewshot" &&
+                advancedView === "learn" &&
+                renderFewShotLearn()}
+              {advancedTechnique === "fewshot" &&
+                advancedView === "build" &&
+                renderFewShotBuilder()}
+              {advancedView === "compare" && renderTechniquesComparison()}
+            </div>
+          );
+        };
+
+        // Renderizar sección de aprendizaje de Chain-of-Thought
+        const renderChainOfThoughtLearn = () => {
+          return (
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="bg-blue-900 rounded-full h-10 w-10 flex items-center justify-center">
+                  <i className="fas fa-link-horizontal text-blue-300"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-medium text-white">
+                    Chain-of-Thought (CoT)
+                  </h3>
+                  <p className="text-gray-400 text-sm">
+                    Técnica de razonamiento paso a paso
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-4 text-gray-300">
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    ¿Qué es Chain-of-Thought?
+                  </h4>
+                  <p className="text-sm">
+                    Chain-of-Thought (CoT) es una técnica de prompting que
+                    induce al modelo a desglosar problemas complejos en pasos
+                    intermedios de razonamiento antes de llegar a una respuesta
+                    final. Esto permite al modelo "pensar en voz alta", haciendo
+                    explícito su proceso de razonamiento.
+                  </p>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Fundamento científico
+                  </h4>
+                  <p className="text-sm">
+                    Introducida por Wei et al. (2022), la técnica CoT demostró
+                    mejoras dramáticas en tareas que requieren razonamiento
+                    multi-paso. En el benchmark GSM8K (problemas matemáticos de
+                    primaria), aumentó la precisión de un modelo PaLM de 540B
+                    parámetros del 17.9% al 58.1%, estableciendo un nuevo estado
+                    del arte.
+                  </p>
+                  <div className="mt-2 bg-blue-900 bg-opacity-20 p-2 rounded-md border border-blue-800">
+                    <p className="text-xs text-blue-300">
+                      <strong>Referencia:</strong> Wei, J., et al. (2022).
+                      Chain-of-Thought Prompting Elicits Reasoning in Large
+                      Language Models.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Ventajas de Chain-of-Thought
+                  </h4>
+                  <ul className="space-y-2 text-sm">
+                    <li>
+                      <strong className="text-blue-400">
+                        Mayor precisión:
+                      </strong>{" "}
+                      Permite resolver problemas complejos que requieren
+                      múltiples pasos de razonamiento.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">Transparencia:</strong>{" "}
+                      Hace visible el proceso de razonamiento, facilitando la
+                      detección de errores.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">
+                        Verificabilidad:
+                      </strong>{" "}
+                      Cada paso puede ser evaluado individualmente para
+                      identificar fallos lógicos.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">
+                        Información educativa:
+                      </strong>{" "}
+                      El proceso de razonamiento desglosado tiene valor
+                      pedagógico para el usuario.
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Implementación de Chain-of-Thought
+                  </h4>
+                  <p className="text-sm mb-2">
+                    Existen dos formas principales de implementar CoT:
+                  </p>
+                  <ol className="space-y-3 text-sm pl-5 list-decimal">
+                    <li>
+                      <strong className="text-blue-400">Few-shot CoT:</strong>{" "}
+                      Proporcionar ejemplos de razonamiento paso a paso antes de
+                      la pregunta.
+                      <div className="bg-gray-800 p-2 rounded mt-1 text-xs">
+                        <p className="text-gray-400 mb-1">Ejemplo:</p>
+                        <p>
+                          Pregunta: Un tren recorre 240 km en 3 horas. ¿Cuál es
+                          su velocidad?
+                        </p>
+                        <p>
+                          Razonamiento: Para calcular la velocidad, divido la
+                          distancia entre el tiempo. Velocidad = 240 km / 3
+                          horas = 80 km/h.
+                        </p>
+                        <p className="mt-2">
+                          Pregunta: Un coche recorre 360 km en 4 horas. ¿Cuál es
+                          su velocidad?
+                        </p>
+                      </div>
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">Zero-shot CoT:</strong>{" "}
+                      Simplemente añadir "Pensemos paso a paso" o una frase
+                      similar después de la pregunta.
+                      <div className="bg-gray-800 p-2 rounded mt-1 text-xs">
+                        <p className="text-gray-400 mb-1">Ejemplo:</p>
+                        <p>
+                          ¿Cuántos meses tienen exactamente 30 días? Pensemos
+                          paso a paso.
+                        </p>
+                      </div>
+                    </li>
+                  </ol>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Cuándo usar Chain-of-Thought
+                  </h4>
+                  <p className="text-sm mb-2">
+                    Esta técnica es particularmente útil para:
+                  </p>
+                  <ul className="space-y-1 text-sm pl-5 list-disc">
+                    <li>Problemas matemáticos y lógicos</li>
+                    <li>Razonamiento de sentido común</li>
+                    <li>
+                      Análisis que requieren múltiples pasos (financiero,
+                      científico)
+                    </li>
+                    <li>Planificación y desarrollo de estrategias</li>
+                    <li>Diagnóstico (médico, técnico, etc.)</li>
+                    <li>Toma de decisiones basada en múltiples criterios</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Renderizar sección de construcción de Chain-of-Thought
+        const renderChainOfThoughtBuilder = () => {
+          return (
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <h3 className="text-lg font-medium text-white mb-3">
+                Constructor de Chain-of-Thought
+              </h3>
+              <p className="text-gray-300 text-sm mb-4">
+                Construye un prompt con razonamiento paso a paso desglosando el
+                problema en etapas lógicas.
+              </p>
+              <div className="flex justify-end mb-4">
+                <button
+                  onClick={loadCotExample}
+                  className="px-3 py-1 bg-gray-700 text-white text-sm rounded hover:bg-gray-600 flex items-center gap-1"
+                >
+                  <i className="fas fa-lightbulb text-yellow-400"></i> Cargar
+                  ejemplo
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Problema o pregunta
+                  </label>
+                  <textarea
+                    className="w-full h-20 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                    placeholder="Describe el problema que quieres resolver..."
+                    value={problemStatement}
+                    onChange={(e) => setProblemStatement(e.target.value)}
+                  ></textarea>
+                </div>
+                <div className="border-t border-gray-700 pt-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-sm font-medium text-gray-300">
+                      Pasos de razonamiento
+                    </label>
+                    <button
+                      onClick={addReasoningStep}
+                      className="px-2 py-1 bg-blue-700 text-white text-xs rounded hover:bg-blue-600 flex items-center gap-1"
+                    >
+                      <i className="fas fa-plus text-xs"></i> Añadir paso
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {reasoningSteps.map((step) => (
+                      <div
+                        key={step.id}
+                        className="bg-gray-900 p-3 rounded-md border border-gray-700"
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="bg-blue-800 text-white rounded-full h-6 w-6 flex items-center justify-center text-xs font-medium">
+                              {step.id}
+                            </div>
+                            <label className="text-sm font-medium text-gray-300">
+                              Paso {step.id}
+                            </label>
+                          </div>
+                          <button
+                            onClick={() => removeReasoningStep(step.id)}
+                            className="text-gray-500 hover:text-red-400"
+                            title="Eliminar paso"
+                            disabled={reasoningSteps.length === 1}
+                          >
+                            <i className="fas fa-times"></i>
+                          </button>
+                        </div>
+                        <textarea
+                          className="w-full h-20 p-3 bg-gray-800 text-white rounded-md border border-gray-600 focus:outline-none focus:border-blue-500"
+                          placeholder={`Describe el paso ${step.id} del razonamiento...`}
+                          value={step.content}
+                          onChange={(e) =>
+                            updateReasoningStep(step.id, e.target.value)
+                          }
+                        ></textarea>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Conclusión
+                  </label>
+                  <textarea
+                    className="w-full h-20 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                    placeholder="Escribe la conclusión o respuesta final..."
+                    value={conclusion}
+                    onChange={(e) => setConclusion(e.target.value)}
+                  ></textarea>
+                </div>
+                <div className="border-t border-gray-700 pt-4">
+                  <h4 className="text-sm font-medium text-gray-300 mb-2">
+                    Prompt generado
+                  </h4>
+                  <div className="bg-gray-900 p-3 rounded-md border border-gray-700 whitespace-pre-wrap text-sm text-gray-300">
+                    {problemStatement && (
+                      <div>Problema: {problemStatement}</div>
+                    )}
+                    {reasoningSteps.map((step) => (
+                      <div key={step.id} className="mt-2">
+                        Paso {step.id}: {step.content}
+                      </div>
+                    ))}
+                    {conclusion && (
+                      <div className="mt-2">
+                        Por lo tanto, la respuesta es: {conclusion}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end mt-3 gap-2">
+                    <button
+                      onClick={() => {
+                        setCotToAnalyze(generateCoTPrompt());
+                        setAdvancedView("analyze");
+                      }}
+                      className="px-3 py-1 bg-blue-700 text-white text-sm rounded hover:bg-blue-600"
+                      disabled={
+                        !problemStatement ||
+                        !conclusion ||
+                        reasoningSteps.some((step) => !step.content)
+                      }
+                    >
+                      <i className="fas fa-search mr-1"></i> Analizar este
+                      prompt
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPrompt(generateCoTPrompt());
+                        setActiveTab("analizador");
+                      }}
+                      className="px-3 py-1 bg-green-700 text-white text-sm rounded hover:bg-green-600"
+                      disabled={
+                        !problemStatement ||
+                        !conclusion ||
+                        reasoningSteps.some((step) => !step.content)
+                      }
+                    >
+                      <i className="fas fa-magic mr-1"></i> Usar en Analizador
+                      RECORD
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Renderizar sección de análisis de Chain-of-Thought
+        const renderChainOfThoughtAnalyzer = () => {
+          return (
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <h3 className="text-lg font-medium text-white mb-3">
+                Analizador de Chain-of-Thought
+              </h3>
+              <p className="text-gray-300 text-sm mb-4">
+                Evalúa la calidad y estructura de un prompt con razonamiento
+                paso a paso.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <textarea
+                    className="w-full h-60 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                    placeholder="Introduce un prompt con razonamiento paso a paso para analizarlo..."
+                    value={cotToAnalyze}
+                    onChange={(e) => setCotToAnalyze(e.target.value)}
+                  ></textarea>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={analyzeCoT}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500"
+                    disabled={!cotToAnalyze.trim() || analyzing}
+                  >
+                    {analyzing ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin mr-2"></i>{" "}
+                        Analizando...
+                      </>
+                    ) : (
+                      "Analizar cadena de razonamiento"
+                    )}
+                  </button>
+                </div>
+                {cotAnalysisResult && !analyzing && (
+                  <div className="mt-4 space-y-4">
+                    <div className="bg-gray-900 p-3 rounded-lg">
+                      <h4 className="font-medium text-white mb-3">
+                        Resultado del análisis
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="bg-gray-800 p-3 rounded-md border border-gray-700">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-blue-400 mb-1">
+                              {cotAnalysisResult.scores.overall}%
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Puntuación general
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-gray-800 p-3 rounded-md border border-gray-700">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-blue-400 mb-1">
+                              {cotAnalysisResult.scores.structure}%
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Estructura
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-gray-800 p-3 rounded-md border border-gray-700">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-blue-400 mb-1">
+                              {cotAnalysisResult.scores.coherence}%
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Coherencia lógica
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-300 mb-1">
+                            Estructura detectada
+                          </h5>
+                          <div className="bg-gray-800 p-2 rounded-md text-sm">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div
+                                className={`h-3 w-3 rounded-full ${
+                                  cotAnalysisResult.structure.problem
+                                    ? "bg-green-500"
+                                    : "bg-red-500"
+                                }`}
+                              ></div>
+                              <p className="text-gray-300">
+                                <strong>Problema:</strong>{" "}
+                                {cotAnalysisResult.structure.problem ||
+                                  "No detectado"}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div
+                                className={`h-3 w-3 rounded-full ${
+                                  cotAnalysisResult.structure.stepsCount > 0
+                                    ? "bg-green-500"
+                                    : "bg-red-500"
+                                }`}
+                              ></div>
+                              <p className="text-gray-300">
+                                <strong>Pasos de razonamiento:</strong>{" "}
+                                {cotAnalysisResult.structure.stepsCount} pasos
+                                detectados
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`h-3 w-3 rounded-full ${
+                                  cotAnalysisResult.structure.conclusion
+                                    ? "bg-green-500"
+                                    : "bg-red-500"
+                                }`}
+                              ></div>
+                              <p className="text-gray-300">
+                                <strong>Conclusión:</strong>{" "}
+                                {cotAnalysisResult.structure.conclusion ||
+                                  "No detectada"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        {cotAnalysisResult.issues.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-medium text-gray-300 mb-1">
+                              Problemas detectados
+                            </h5>
+                            <div className="bg-red-900 bg-opacity-20 p-2 rounded-md border border-red-800">
+                              <ul className="text-sm text-red-300 list-disc pl-5 space-y-1">
+                                {cotAnalysisResult.issues.map(
+                                  (issue, index) => (
+                                    <li key={index}>{issue}</li>
+                                  )
+                                )}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+                        {cotAnalysisResult.recommendations.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-medium text-gray-300 mb-1">
+                              Recomendaciones
+                            </h5>
+                            <div className="bg-blue-900 bg-opacity-20 p-2 rounded-md border border-blue-800">
+                              <ul className="text-sm text-blue-300 list-disc pl-5 space-y-1">
+                                {cotAnalysisResult.recommendations.map(
+                                  (recommendation, index) => (
+                                    <li key={index}>{recommendation}</li>
+                                  )
+                                )}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => {
+                          setPrompt(cotToAnalyze);
+                          setActiveTab("analizador");
+                        }}
+                        className="px-3 py-1 bg-blue-700 text-white text-sm rounded hover:bg-blue-600"
+                      >
+                        Comparar con análisis RECORD
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        // Renderizar sección de aprendizaje de Few-Shot Learning
+        const renderFewShotLearn = () => {
+          return (
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="bg-blue-900 rounded-full h-10 w-10 flex items-center justify-center">
+                  <i className="fas fa-list-ol text-blue-300"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-medium text-white">
+                    Few-Shot Learning
+                  </h3>
+                  <p className="text-gray-400 text-sm">
+                    Aprendizaje con ejemplos
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-4 text-gray-300">
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    ¿Qué es Few-Shot Learning?
+                  </h4>
+                  <p className="text-sm">
+                    Few-Shot Learning es una técnica donde se proporcionan
+                    ejemplos de la tarea deseada dentro del prompt para que el
+                    modelo aprenda a partir de estos ejemplos y pueda aplicar el
+                    mismo patrón a nuevos casos. Esta técnica permite "enseñar"
+                    al modelo exactamente lo que queremos sin necesidad de
+                    fine-tuning.
+                  </p>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Fundamento científico
+                  </h4>
+                  <p className="text-sm">
+                    Introducida formalmente en el paper de GPT-3 por Brown et
+                    al. (2020), esta técnica mostró que los modelos grandes
+                    pueden "aprender en contexto" a partir de pocos ejemplos. En
+                    benchmarks como SuperGLUE, añadir ejemplos mejoró el
+                    rendimiento en más de un 30% comparado con zero-shot (sin
+                    ejemplos).
+                  </p>
+                  <div className="mt-2 bg-blue-900 bg-opacity-20 p-2 rounded-md border border-blue-800">
+                    <p className="text-xs text-blue-300">
+                      <strong>Referencia:</strong> Brown, T. B., et al. (2020).
+                      Language models are few-shot learners.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Ventajas de Few-Shot Learning
+                  </h4>
+                  <ul className="space-y-2 text-sm">
+                    <li>
+                      <strong className="text-blue-400">Precisión:</strong>{" "}
+                      Mejora la exactitud del modelo al mostrarle exactamente lo
+                      que se espera.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">Adaptabilidad:</strong>{" "}
+                      Permite adaptar el modelo a tareas específicas sin
+                      necesidad de reentrenamiento.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">Consistencia:</strong>{" "}
+                      Produce respuestas con formato y estilo consistentes.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">
+                        Tareas personalizadas:
+                      </strong>{" "}
+                      Ideal para tareas inusuales o muy específicas.
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Implementación de Few-Shot Learning
+                  </h4>
+                  <p className="text-sm mb-2">Para implementar esta técnica:</p>
+                  <ol className="space-y-3 text-sm pl-5 list-decimal">
+                    <li>
+                      <strong className="text-blue-400">
+                        Define la tarea claramente
+                      </strong>{" "}
+                      al inicio del prompt.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">
+                        Proporciona 2-8 ejemplos
+                      </strong>{" "}
+                      con el formato deseado (entrada y salida).
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">
+                        Mantén consistencia
+                      </strong>{" "}
+                      en el formato de todos los ejemplos.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">
+                        Incluye ejemplos diversos
+                      </strong>{" "}
+                      que abarquen el rango de casos posibles.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">
+                        Presenta tu consulta final
+                      </strong>{" "}
+                      después de los ejemplos, siguiendo el mismo formato.
+                    </li>
+                  </ol>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Ejemplo práctico
+                  </h4>
+                  <div className="bg-gray-800 p-2 rounded text-xs">
+                    <p className="text-blue-300 mb-2">Prompt completo:</p>
+                    <p>
+                      Clasifica el sentimiento del siguiente texto como
+                      positivo, negativo o neutral.
+                    </p>
+                    <p className="mt-2">Ejemplo 1:</p>
+                    <p>
+                      Texto: "La película fue un completo desastre, actores
+                      terribles y guión pésimo."
+                    </p>
+                    <p>Sentimiento: Negativo</p>
+                    <p className="mt-2">Ejemplo 2:</p>
+                    <p>
+                      Texto: "El restaurante tiene una decoración agradable y
+                      precios razonables."
+                    </p>
+                    <p>Sentimiento: Positivo</p>
+                    <p className="mt-2">Ejemplo 3:</p>
+                    <p>
+                      Texto: "El vuelo despegó y aterrizó a la hora programada."
+                    </p>
+                    <p>Sentimiento: Neutral</p>
+                    <p className="mt-2">Ahora clasifica este texto:</p>
+                    <p>
+                      Texto: "El producto llegó dañado y el empaque estaba roto.
+                      Una experiencia terrible."
+                    </p>
+                    <p>Sentimiento:</p>
+                  </div>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Cuándo usar Few-Shot Learning
+                  </h4>
+                  <p className="text-sm mb-2">
+                    Esta técnica es particularmente útil para:
+                  </p>
+                  <ul className="space-y-1 text-sm pl-5 list-disc">
+                    <li>
+                      Clasificación de textos (sentimiento, temas, intención)
+                    </li>
+                    <li>Generación de textos en formatos específicos</li>
+                    <li>Extracción de información estructurada</li>
+                    <li>Transformación de datos entre formatos</li>
+                    <li>Etiquetado o anotación de textos</li>
+                    <li>
+                      Tareas específicas de dominio con jerga especializada
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Renderizar constructor de Few-Shot Learning
+        const renderFewShotBuilder = () => {
+          return (
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <h3 className="text-lg font-medium text-white mb-3">
+                Constructor de Few-Shot Learning
+              </h3>
+              <p className="text-gray-300 text-sm mb-4">
+                Construye un prompt con ejemplos para enseñar al modelo cómo
+                responder a tu consulta.
+              </p>
+              <div className="flex justify-end mb-4">
+                <button
+                  onClick={loadFewShotExample}
+                  className="px-3 py-1 bg-gray-700 text-white text-sm rounded hover:bg-gray-600 flex items-center gap-1"
+                >
+                  <i className="fas fa-lightbulb text-yellow-400"></i> Cargar
+                  ejemplo
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Descripción de la tarea
+                  </label>
+                  <textarea
+                    className="w-full h-20 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                    placeholder="Describe claramente la tarea que debe realizar el modelo..."
+                    value={fewShotTaskDescription}
+                    onChange={(e) => setFewShotTaskDescription(e.target.value)}
+                  ></textarea>
+                </div>
+                <div className="border-t border-gray-700 pt-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-sm font-medium text-gray-300">
+                      Ejemplos (pares entrada-salida)
+                    </label>
+                    <button
+                      onClick={addFewShotExample}
+                      className="px-2 py-1 bg-blue-700 text-white text-xs rounded hover:bg-blue-600 flex items-center gap-1"
+                    >
+                      <i className="fas fa-plus text-xs"></i> Añadir ejemplo
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    {fewShotExamples.map((example) => (
+                      <div
+                        key={example.id}
+                        className="bg-gray-900 p-3 rounded-md border border-gray-700"
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="bg-blue-800 text-white rounded-full h-6 w-6 flex items-center justify-center text-xs font-medium">
+                              {example.id}
+                            </div>
+                            <label className="text-sm font-medium text-gray-300">
+                              Ejemplo {example.id}
+                            </label>
+                          </div>
+                          <button
+                            onClick={() => removeFewShotExample(example.id)}
+                            className="text-gray-500 hover:text-red-400"
+                            title="Eliminar ejemplo"
+                            disabled={fewShotExamples.length === 1}
+                          >
+                            <i className="fas fa-times"></i>
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1">
+                              Entrada:
+                            </label>
+                            <textarea
+                              className="w-full h-16 p-2 bg-gray-800 text-white rounded-md border border-gray-600 focus:outline-none focus:border-blue-500 text-sm"
+                              placeholder="Texto o datos de entrada para este ejemplo..."
+                              value={example.input}
+                              onChange={(e) =>
+                                updateFewShotExample(
+                                  example.id,
+                                  "input",
+                                  e.target.value
+                                )
+                              }
+                            ></textarea>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1">
+                              Salida:
+                            </label>
+                            <textarea
+                              className="w-full h-16 p-2 bg-gray-800 text-white rounded-md border border-gray-600 focus:outline-none focus:border-blue-500 text-sm"
+                              placeholder="Respuesta esperada para la entrada..."
+                              value={example.output}
+                              onChange={(e) =>
+                                updateFewShotExample(
+                                  example.id,
+                                  "output",
+                                  e.target.value
+                                )
+                              }
+                            ></textarea>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Tu consulta final
+                  </label>
+                  <textarea
+                    className="w-full h-20 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                    placeholder="Introduce la consulta para la que quieres una respuesta..."
+                    value={fewShotQuery}
+                    onChange={(e) => setFewShotQuery(e.target.value)}
+                  ></textarea>
+                </div>
+                <div className="border-t border-gray-700 pt-4">
+                  <h4 className="text-sm font-medium text-gray-300 mb-2">
+                    Prompt generado
+                  </h4>
+                  <div className="bg-gray-900 p-3 rounded-md border border-gray-700 whitespace-pre-wrap text-sm text-gray-300">
+                    {fewShotTaskDescription && (
+                      <div>{fewShotTaskDescription}</div>
+                    )}
+                    {fewShotExamples.length > 0 && (
+                      <div className="mt-2">
+                        Aquí hay algunos ejemplos:
+                        {fewShotExamples.map((example, index) => (
+                          <div key={index} className="mt-2">
+                            <div>Entrada: {example.input}</div>
+                            <div>Salida: {example.output}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {fewShotQuery && (
+                      <div className="mt-2">
+                        Ahora, clasifica el siguiente texto:
+                        <div>Entrada: {fewShotQuery}</div>
+                        <div>Salida:</div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end mt-3">
+                    <button
+                      onClick={() => {
+                        setPrompt(generateFewShotPrompt());
+                        setActiveTab("analizador");
+                      }}
+                      className="px-3 py-1 bg-green-700 text-white text-sm rounded hover:bg-green-600"
+                      disabled={
+                        !fewShotTaskDescription ||
+                        !fewShotQuery ||
+                        fewShotExamples.some((ex) => !ex.input || !ex.output)
+                      }
+                    >
+                      <i className="fas fa-magic mr-1"></i> Usar en Analizador
+                      RECORD
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Renderizar sección de comparación de técnicas
+        const renderTechniquesComparison = () => {
+          return (
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <h3 className="text-lg font-medium text-white mb-3">
+                Comparativa de técnicas de prompting
+              </h3>
+              <p className="text-gray-300 text-sm mb-4">
+                Rendimiento de diferentes técnicas en diversos tipos de tareas,
+                basado en investigación reciente.
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-900">
+                      <th className="p-2 border border-gray-700 text-left text-gray-300">
+                        Tipo de tarea
+                      </th>
+                      <th className="p-2 border border-gray-700 text-center text-gray-300">
+                        Estándar
+                      </th>
+                      <th className="p-2 border border-gray-700 text-center text-gray-300">
+                        Chain-of-Thought
+                      </th>
+                      <th className="p-2 border border-gray-700 text-center text-gray-300">
+                        Few-Shot
+                      </th>
+                      <th className="p-2 border border-gray-700 text-center text-gray-300">
+                        Zero-Shot CoT
+                      </th>
+                      <th className="p-2 border border-gray-700 text-center text-gray-300">
+                        Self-Consistency
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {techniqueComparisonData.map((row, index) => (
+                      <tr
+                        key={index}
+                        className={
+                          index % 2 === 0 ? "bg-gray-800" : "bg-gray-900"
+                        }
+                      >
+                        <td className="p-2 border border-gray-700 text-gray-300">
+                          {row.task}
+                        </td>
+                        <td className="p-2 border border-gray-700 text-center text-gray-300">
+                          {row.standard}
+                        </td>
+                        <td
+                          className={`p-2 border border-gray-700 text-center ${
+                            row.best === "cot"
+                              ? "text-green-400 font-bold"
+                              : "text-gray-300"
+                          }`}
+                        >
+                          {row.cot}
+                        </td>
+                        <td
+                          className={`p-2 border border-gray-700 text-center ${
+                            row.best === "fewshot"
+                              ? "text-green-400 font-bold"
+                              : "text-gray-300"
+                          }`}
+                        >
+                          {row.fewshot}
+                        </td>
+                        <td
+                          className={`p-2 border border-gray-700 text-center ${
+                            row.best === "zeroshot"
+                              ? "text-green-400 font-bold"
+                              : "text-gray-300"
+                          }`}
+                        >
+                          {row.zeroshot}
+                        </td>
+                        <td
+                          className={`p-2 border border-gray-700 text-center ${
+                            row.best === "selfconsistency"
+                              ? "text-green-400 font-bold"
+                              : "text-gray-300"
+                          }`}
+                        >
+                          {row.selfconsistency}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4 space-y-4">
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Cuándo usar cada técnica
+                  </h4>
+                  <ul className="space-y-2 text-sm text-gray-300 list-disc pl-5">
+                    <li>
+                      <strong className="text-blue-400">
+                        Chain-of-Thought:
+                      </strong>{" "}
+                      Ideal para problemas que requieren múltiples pasos de
+                      razonamiento, como matemáticas, lógica o análisis
+                      detallado.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">
+                        Few-Shot Learning:
+                      </strong>{" "}
+                      Excelente para tareas de clasificación, extracción de
+                      información o cuando necesitas un formato específico en la
+                      respuesta.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">Zero-Shot CoT:</strong>{" "}
+                      Una alternativa simple cuando no tienes tiempo para crear
+                      ejemplos detallados pero necesitas razonamiento
+                      estructurado.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">
+                        Self-Consistency:
+                      </strong>{" "}
+                      Ofrece los mejores resultados para problemas complejos
+                      donde es posible generar múltiples soluciones y
+                      verificarlas.
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Combinación de técnicas
+                  </h4>
+                  <p className="text-sm text-gray-300">
+                    Las técnicas pueden combinarse para obtener mejores
+                    resultados. Por ejemplo:
+                  </p>
+                  <ul className="space-y-1 mt-2 text-sm text-gray-300 list-disc pl-5">
+                    <li>
+                      Few-Shot CoT: Proporcionar ejemplos que incluyan
+                      razonamiento paso a paso
+                    </li>
+                    <li>
+                      RECORD + CoT: Estructurar un prompt RECORD y solicitar
+                      razonamiento paso a paso en los requisitos
+                    </li>
+                    <li>
+                      Self-Consistency con Zero-Shot CoT: Pedir múltiples
+                      razonamientos usando "piensa paso a paso" y luego elegir
+                      la respuesta más común
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Renderizar contenido principal
+        const renderContent = () => {
+          if (currentStep === 0) return renderWelcomeStep();
+          return renderMainContent();
+        };
+
+        return (
+          <div className="w-full lg:max-w-4xl mx-auto py-6 px-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
+              <div className="border-b border-gray-700 bg-gray-800 px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-400 font-medium">
+                    Constructor de Prompts RECORD
+                  </span>
+                  <span className="text-gray-500">|</span>
+                  <span className="text-white">Herramienta educativa</span>
+                </div>
+                <p className="text-gray-400 text-sm mt-1">
+                  Aprende a estructurar prompts efectivos siguiendo el método
+                  RECORD
+                </p>
+              </div>
+              <div className="p-6">{renderContent()}</div>
+              <div className="text-center text-xs text-gray-500 border-t border-gray-700 py-3 px-4">
+                Basado en el método RECORD de E. Barrera-Linares | Marzo 2025
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // Renderizamos la App
+      const rootElement = document.getElementById("root");
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(<PromptScienceApp />);
+    </script>
+
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </body>
+</html>
