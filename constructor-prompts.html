@@ -1097,7 +1097,7 @@
         // Renderizar pantalla de bienvenida
         const renderWelcomeStep = () => {
           return (
-            <div className="space-y-6 bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <div className="space-y-6 bg-gray-800 p-0 rounded-lg border border-gray-700">
               <div className="bg-gray-900 rounded-lg overflow-hidden border border-gray-700">
                 <div className="flex border-b border-gray-700">
                   <button
@@ -1307,7 +1307,7 @@
         // Renderizar la sección principal de pestañas
         const renderMainContent = () => {
           return (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Selector de pestañas */}
               <div className="flex border-b border-gray-700 overflow-x-auto">
                 <button
@@ -1406,7 +1406,7 @@
                     </>
                   )}
               </div>
-              <div className="p-4">
+              <div className="p-0">
                 {activeTab === "constructor" && renderConstructorTab()}
                 {activeTab === "analizador" && renderAnalyzerTab()}
                 {activeTab === "plantillas" && renderTemplatesTab()}
@@ -1421,8 +1421,8 @@
         // Renderizar pestaña del analizador (basado en método RECORD)
         const renderAnalyzerTab = () => {
           return (
-            <div className="space-y-6">
-              <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="space-y-4">
+              <div className="bg-gray-800 p-3 rounded-lg">
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="text-lg font-medium text-white">
                     <span className="text-blue-400 mr-2">RECORD</span>{" "}
@@ -1845,7 +1845,7 @@
         // Renderizar pestaña del constructor usando método RECORD
         const renderConstructorTab = () => {
           return (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="bg-blue-900 bg-opacity-20 p-3 rounded-md border border-blue-800 mb-4">
                 <div className="flex items-start gap-2">
                   <i className="fas fa-info-circle text-blue-400 mt-1"></i>
@@ -1899,7 +1899,7 @@
                   ))}
                 </div>
               </div>
-              <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="bg-gray-800 p-3 rounded-lg">
                 <h3 className="text-xl font-medium text-white mb-1">
                   <span className="text-blue-500 mr-2">
                     {recordComponents[constructorStep - 1].letter}:
@@ -1915,7 +1915,7 @@
                   <div className="space-y-4">
                     <div>
                       <textarea
-                        className="w-full h-32 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        className="w-full h-24 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
                         placeholder="Ej: Eres un experto clínico de renombre internacional, ampliamente reconocido por tu enfoque holístico y tu dominio excepcional de competencias y habilidades clínicas..."
                         value={promptRole}
                         onChange={(e) => setPromptRole(e.target.value)}
@@ -1966,7 +1966,7 @@
                   <div className="space-y-4">
                     <div>
                       <textarea
-                        className="w-full h-32 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        className="w-full h-24 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
                         placeholder="Ej: Ofrece orientación sobre cómo abordar problemas de salud urgentes..."
                         value={promptEssence}
                         onChange={(e) => setPromptEssence(e.target.value)}
@@ -2020,7 +2020,7 @@
                   <div className="space-y-4">
                     <div>
                       <textarea
-                        className="w-full h-32 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        className="w-full h-24 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
                         placeholder="Ej: Un paciente que ha sufrido un trauma grave tras un accidente..."
                         value={promptContext}
                         onChange={(e) => setPromptContext(e.target.value)}
@@ -2074,7 +2074,7 @@
                   <div className="space-y-4">
                     <div>
                       <textarea
-                        className="w-full h-32 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        className="w-full h-24 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
                         placeholder="Ej: Desarrolla un plan de acción paso a paso para estabilizar al paciente..."
                         value={promptObjective}
                         onChange={(e) => setPromptObjective(e.target.value)}
@@ -2128,7 +2128,7 @@
                   <div className="space-y-4">
                     <div>
                       <textarea
-                        className="w-full h-32 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        className="w-full h-24 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
                         placeholder="Ej: Incluye posibles complicaciones y cómo manejarlas..."
                         value={promptRequirements}
                         onChange={(e) => setPromptRequirements(e.target.value)}
@@ -2178,7 +2178,7 @@
                   <div className="space-y-4">
                     <div>
                       <textarea
-                        className="w-full h-32 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        className="w-full h-24 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
                         placeholder="Ej: Presenta la información en un formato de lista con acciones prioritarias al principio y añade emojis relevantes para cada paso..."
                         value={promptDesign}
                         onChange={(e) => setPromptDesign(e.target.value)}
@@ -2277,8 +2277,8 @@
         // Renderizar pestaña de plantillas
         const renderTemplatesTab = () => {
           return (
-            <div className="space-y-6">
-              <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="space-y-4">
+              <div className="bg-gray-800 p-3 rounded-lg">
                 <h3 className="text-lg font-medium text-white mb-3">
                   Plantillas de Prompts
                 </h3>
@@ -2295,7 +2295,7 @@
                       Selecciona el tipo de plantilla:
                     </h4>
                   </div>
-                  <div className="p-4">
+                  <div className="p-0">
                     <div className="mb-4">
                       <h5 className="text-blue-400 font-medium text-sm mb-2">
                         Plantillas basadas en método RECORD
@@ -2361,7 +2361,7 @@
               </div>
 
               {prompt && (
-                <div className="bg-gray-800 p-4 rounded-lg">
+                <div className="bg-gray-800 p-3 rounded-lg">
                   <h3 className="text-lg font-medium text-white mb-3">
                     Plantilla generada
                   </h3>
@@ -2453,8 +2453,8 @@
         // Renderizar pestaña de ejemplos
         const renderExamplesTab = () => {
           return (
-            <div className="space-y-6">
-              <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="space-y-4">
+              <div className="bg-gray-800 p-3 rounded-lg">
                 <h3 className="text-lg font-medium text-white mb-3">
                   Ejemplos de Prompts
                 </h3>
@@ -2650,9 +2650,9 @@
         // Renderizar pestaña de Técnicas Avanzadas
         const renderAdvancedTechniquesTab = () => {
           return (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Selector de técnica */}
-              <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="bg-gray-800 p-3 rounded-lg">
                 <h3 className="text-lg font-medium text-white mb-3">
                   Técnicas Avanzadas de Prompting
                 </h3>
@@ -2750,7 +2750,7 @@
         // Renderizar sección de aprendizaje de Chain-of-Thought
         const renderChainOfThoughtLearn = () => {
           return (
-            <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="bg-gray-800 p-3 rounded-lg">
               <div className="flex items-center gap-3 mb-4">
                 <div className="bg-blue-900 rounded-full h-10 w-10 flex items-center justify-center">
                   <i className="fas fa-link-horizontal text-blue-300"></i>
@@ -2900,7 +2900,7 @@
         // Renderizar sección de construcción de Chain-of-Thought
         const renderChainOfThoughtBuilder = () => {
           return (
-            <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="bg-gray-800 p-3 rounded-lg">
               <h3 className="text-lg font-medium text-white mb-3">
                 Constructor de Chain-of-Thought
               </h3>
@@ -3048,7 +3048,7 @@
         // Renderizar sección de análisis de Chain-of-Thought
         const renderChainOfThoughtAnalyzer = () => {
           return (
-            <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="bg-gray-800 p-3 rounded-lg">
               <h3 className="text-lg font-medium text-white mb-3">
                 Analizador de Chain-of-Thought
               </h3>
@@ -3224,7 +3224,7 @@
         // Renderizar sección de aprendizaje de Few-Shot Learning
         const renderFewShotLearn = () => {
           return (
-            <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="bg-gray-800 p-3 rounded-lg">
               <div className="flex items-center gap-3 mb-4">
                 <div className="bg-blue-900 rounded-full h-10 w-10 flex items-center justify-center">
                   <i className="fas fa-list-ol text-blue-300"></i>
@@ -3399,7 +3399,7 @@
         // Renderizar constructor de Few-Shot Learning
         const renderFewShotBuilder = () => {
           return (
-            <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="bg-gray-800 p-3 rounded-lg">
               <h3 className="text-lg font-medium text-white mb-3">
                 Constructor de Few-Shot Learning
               </h3>
@@ -3568,7 +3568,7 @@
         // Renderizar sección de comparación de técnicas
         const renderTechniquesComparison = () => {
           return (
-            <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="bg-gray-800 p-3 rounded-lg">
               <h3 className="text-lg font-medium text-white mb-3">
                 Comparativa de técnicas de prompting
               </h3>
@@ -3730,7 +3730,7 @@
 
         return (
           <>
-            <div className="p-6">{renderContent()}</div>
+            <div className="p-4">{renderContent()}</div>
             <div className="text-center text-xs text-gray-500 py-3 px-4 mt-4">
               Basado en el método RECORD de E. Barrera-Linares | Marzo 2025
             </div>
