@@ -1277,6 +1277,17 @@
                           http://doi.org/10.5281/zenodo.11080812
                         </a>
                       </p>
+                      <p className="mt-2 text-sm">
+                        <i className="fas fa-link text-blue-400 mr-1"></i>{" "}
+                        <a
+                          href="metodo-record.html"
+                          className="text-blue-400 hover:underline"
+                        >
+                          Visita la página del Método RECORD
+                        </a>{" "}
+                        para ver la infografía completa y descargar recursos
+                        adicionales.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -3707,7 +3718,19 @@
               {currentStep === 0 ? renderWelcomeStep() : renderMainContent()}
             </div>
             <div className="text-center text-xs text-gray-500 py-3 px-4 mt-4">
-              Basado en el método RECORD de E. Barrera-Linares | Marzo 2025
+              Basado en el{" "}
+              <a
+                href="http://doi.org/10.5281/zenodo.11080812"
+                target="_blank"
+                style={{
+                  color: "#fbbf24",
+                  fontWeight: "bold",
+                  textDecoration: "underline",
+                }}
+              >
+                método RECORD
+              </a>{" "}
+              de E. Barrera-Linares | Marzo 2025
             </div>
           </>
         );
