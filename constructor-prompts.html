@@ -1098,15 +1098,6 @@
         const renderWelcomeStep = () => {
           return (
             <div className="space-y-6 bg-gray-800 p-6 rounded-lg border border-gray-700">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-white">
-                  Constructor de Prompts RECORD
-                </h2>
-                <p className="text-gray-400">
-                  Una herramienta educativa para aprender a estructurar prompts
-                  siguiendo el método RECORD
-                </p>
-              </div>
               <div className="bg-gray-900 rounded-lg overflow-hidden border border-gray-700">
                 <div className="flex border-b border-gray-700">
                   <button
@@ -1263,6 +1254,46 @@
                   )}
                 </div>
               </div>
+              <div className="mt-4 p-3 bg-gray-900 rounded-lg mb-4">
+                <h4 className="text-sm font-medium text-blue-300 mb-2">
+                  Flujo de trabajo recomendado:
+                </h4>
+                <div className="flex flex-wrap justify-center items-center gap-4 text-sm text-gray-300">
+                  <div className="flex flex-col items-center">
+                    <div className="bg-blue-900 rounded-full h-10 w-10 flex items-center justify-center text-white font-bold">
+                      1
+                    </div>
+                    <div className="mt-1 text-center">
+                      Constructor
+                      <br />
+                      RECORD
+                    </div>
+                  </div>
+                  <i className="fas fa-long-arrow-alt-right text-blue-400 text-xl"></i>
+                  <div className="flex flex-col items-center">
+                    <div className="bg-blue-900 rounded-full h-10 w-10 flex items-center justify-center text-white font-bold">
+                      2
+                    </div>
+                    <div className="mt-1 text-center">
+                      Analizador
+                      <br />
+                      de Prompts
+                    </div>
+                  </div>
+                  <i className="fas fa-long-arrow-alt-right text-blue-400 text-xl"></i>
+                  <div className="flex flex-col items-center">
+                    <div className="bg-blue-900 rounded-full h-10 w-10 flex items-center justify-center text-white font-bold">
+                      3
+                    </div>
+                    <div className="mt-1 text-center">
+                      Técnicas
+                      <br />
+                      Avanzadas
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <button
                 onClick={() => setCurrentStep(1)}
                 className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-500 font-medium"
@@ -1288,6 +1319,7 @@
                       : "text-gray-400 hover:bg-gray-700 hover:text-gray-200")
                   }
                 >
+                  <i className="fas fa-tools mr-2"></i>
                   Constructor
                 </button>
                 <button
@@ -1299,6 +1331,7 @@
                       : "text-gray-400 hover:bg-gray-700 hover:text-gray-200")
                   }
                 >
+                  <i className="fas fa-search-plus mr-2"></i>
                   Analizador
                 </button>
                 <button
@@ -1310,6 +1343,7 @@
                       : "text-gray-400 hover:bg-gray-700 hover:text-gray-200")
                   }
                 >
+                  <i className="fas fa-file-alt mr-2"></i>
                   Plantillas
                 </button>
                 <button
@@ -1321,6 +1355,7 @@
                       : "text-gray-400 hover:bg-gray-700 hover:text-gray-200")
                   }
                 >
+                  <i className="fas fa-list mr-2"></i>
                   Ejemplos
                 </button>
                 <button
@@ -1332,11 +1367,45 @@
                       : "text-gray-400 hover:bg-gray-700 hover:text-gray-200")
                   }
                 >
+                  <i className="fas fa-graduation-cap mr-2"></i>
                   Técnicas Avanzadas
                 </button>
               </div>
 
               {/* Contenido de las pestañas */}
+              <div className="text-xs text-gray-400 mb-2 mt-2 flex items-center px-4">
+                <span
+                  className="cursor-pointer hover:text-blue-400"
+                  onClick={() => setCurrentStep(0)}
+                >
+                  Inicio
+                </span>
+                <i className="fas fa-chevron-right mx-2"></i>
+                <span className="text-blue-400">
+                  {activeTab === "constructor"
+                    ? "Constructor"
+                    : activeTab === "analizador"
+                    ? "Analizador"
+                    : activeTab === "plantillas"
+                    ? "Plantillas"
+                    : activeTab === "ejemplos"
+                    ? "Ejemplos"
+                    : "Técnicas Avanzadas"}
+                </span>
+                {activeTab === "tecnicas-avanzadas" &&
+                  advancedView !== "learn" && (
+                    <>
+                      <i className="fas fa-chevron-right mx-2"></i>
+                      <span className="text-blue-400">
+                        {advancedView === "build"
+                          ? "Construir"
+                          : advancedView === "analyze"
+                          ? "Analizar"
+                          : "Comparar"}
+                      </span>
+                    </>
+                  )}
+              </div>
               <div className="p-4">
                 {activeTab === "constructor" && renderConstructorTab()}
                 {activeTab === "analizador" && renderAnalyzerTab()}
@@ -1377,43 +1446,6 @@
                   </button>
                 </div>
 
-                <div className="bg-yellow-800 bg-opacity-20 border border-yellow-700 p-3 rounded-md mb-4">
-                  <div className="flex items-start gap-2">
-                    <i className="fas fa-exclamation-triangle text-yellow-500 mt-1"></i>
-                    <div>
-                      <h4 className="font-medium text-yellow-300 mb-1">
-                        Limitaciones importantes de esta herramienta
-                      </h4>
-                      <p className="text-sm text-yellow-200">
-                        Este analizador utiliza reglas básicas (expresiones
-                        regulares y heurísticas simples) para detectar posibles
-                        componentes del método RECORD.{" "}
-                        <strong>
-                          No realiza un análisis semántico profundo
-                        </strong>{" "}
-                        y tiene las siguientes limitaciones:
-                      </p>
-                      <ul className="list-disc pl-5 mt-1 text-xs text-yellow-200 space-y-1">
-                        <li>
-                          Puede generar falsos positivos (detectar componentes
-                          que no están realmente bien implementados)
-                        </li>
-                        <li>
-                          Puede no detectar componentes si están expresados de
-                          forma no convencional
-                        </li>
-                        <li>
-                          No evalúa la calidad o profundidad real de cada
-                          componente, solo su presencia aparente
-                        </li>
-                      </ul>
-                      <p className="text-sm text-yellow-200 mt-1">
-                        Esta herramienta tiene fines puramente educativos para
-                        ayudarte a aprender el método RECORD.
-                      </p>
-                    </div>
-                  </div>
-                </div>
                 <p className="text-gray-300 text-sm mb-4">
                   Introduce un prompt para detectar la presencia de cada
                   componente del método RECORD y recibir sugerencias educativas
@@ -1431,7 +1463,7 @@
                       </p>
                     )}
                     <textarea
-                      className="w-full h-64 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                      className="w-full h-auto min-h-32 max-h-64 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
                       placeholder="Introduce aquí tu prompt para analizarlo con el método RECORD..."
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
@@ -1443,13 +1475,48 @@
                         Prompt modificado
                       </p>
                       <textarea
-                        className="w-full h-64 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                        className="w-full h-auto min-h-32 max-h-64 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
                         placeholder="Introduce una variación del prompt para comparar..."
                         value={comparisonPrompt}
                         onChange={(e) => setComparisonPrompt(e.target.value)}
                       ></textarea>
                     </div>
                   )}
+                </div>
+              </div>
+              <div className="bg-yellow-800 bg-opacity-20 border border-yellow-700 p-3 rounded-md mb-4">
+                <div className="flex items-start gap-2">
+                  <i className="fas fa-exclamation-triangle text-yellow-500 mt-1"></i>
+                  <div>
+                    <h4 className="font-medium text-yellow-300 mb-1">
+                      Limitaciones importantes de esta herramienta
+                    </h4>
+                    <p className="text-sm text-yellow-200">
+                      Este analizador utiliza reglas básicas (expresiones
+                      regulares y heurísticas simples) para detectar posibles
+                      componentes del método RECORD.{" "}
+                      <strong>No realiza un análisis semántico profundo</strong>{" "}
+                      y tiene las siguientes limitaciones:
+                    </p>
+                    <ul className="list-disc pl-5 mt-1 text-xs text-yellow-200 space-y-1">
+                      <li>
+                        Puede generar falsos positivos (detectar componentes que
+                        no están realmente bien implementados)
+                      </li>
+                      <li>
+                        Puede no detectar componentes si están expresados de
+                        forma no convencional
+                      </li>
+                      <li>
+                        No evalúa la calidad o profundidad real de cada
+                        componente, solo su presencia aparente
+                      </li>
+                    </ul>
+                    <p className="text-sm text-yellow-200 mt-1">
+                      Esta herramienta tiene fines puramente educativos para
+                      ayudarte a aprender el método RECORD.
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -1779,6 +1846,23 @@
         const renderConstructorTab = () => {
           return (
             <div className="space-y-6">
+              <div className="bg-blue-900 bg-opacity-20 p-3 rounded-md border border-blue-800 mb-4">
+                <div className="flex items-start gap-2">
+                  <i className="fas fa-info-circle text-blue-400 mt-1"></i>
+                  <div>
+                    <h4 className="font-medium text-blue-300 mb-1">
+                      ¿Cómo usar el Constructor RECORD?
+                    </h4>
+                    <p className="text-sm text-blue-200">
+                      Este constructor te guía paso a paso para crear un prompt
+                      estructurado siguiendo los 6 componentes del método
+                      RECORD. Completa cada componente en orden y al finalizar
+                      generarás automáticamente un prompt completo que podrás
+                      analizar o utilizar directamente.
+                    </p>
+                  </div>
+                </div>
+              </div>{" "}
               {/* Barra de progreso */}
               <div className="mb-4">
                 <div className="w-full bg-gray-700 rounded-full h-2">
@@ -1794,7 +1878,6 @@
                   </span>
                 </div>
               </div>
-
               <div className="bg-gray-900 p-1 rounded-lg mb-4">
                 <div className="flex flex-wrap">
                   {recordComponents.map((component, index) => (
@@ -1816,7 +1899,6 @@
                   ))}
                 </div>
               </div>
-
               <div className="bg-gray-800 p-4 rounded-lg">
                 <h3 className="text-xl font-medium text-white mb-1">
                   <span className="text-blue-500 mr-2">
@@ -2146,7 +2228,6 @@
                   </div>
                 )}
               </div>
-
               {/* Botones para navegar entre pasos */}
               <div className="flex justify-between pt-4">
                 <button
@@ -2350,7 +2431,7 @@
                   )}
 
                   <textarea
-                    className="w-full h-64 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                    className="w-full h-auto min-h-32 max-h-64 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                   ></textarea>
@@ -3648,27 +3729,12 @@
         };
 
         return (
-          <div className="w-full lg:max-w-4xl mx-auto py-6 px-4">
-            <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-lg overflow-hidden">
-              <div className="border-b border-gray-700 bg-gray-800 px-6 py-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-400 font-medium">
-                    Constructor de Prompts RECORD
-                  </span>
-                  <span className="text-gray-500">|</span>
-                  <span className="text-white">Herramienta educativa</span>
-                </div>
-                <p className="text-gray-400 text-sm mt-1">
-                  Aprende a estructurar prompts efectivos siguiendo el método
-                  RECORD
-                </p>
-              </div>
-              <div className="p-6">{renderContent()}</div>
-              <div className="text-center text-xs text-gray-500 border-t border-gray-700 py-3 px-4">
-                Basado en el método RECORD de E. Barrera-Linares | Marzo 2025
-              </div>
+          <>
+            <div className="p-6">{renderContent()}</div>
+            <div className="text-center text-xs text-gray-500 py-3 px-4 mt-4">
+              Basado en el método RECORD de E. Barrera-Linares | Marzo 2025
             </div>
-          </div>
+          </>
         );
       };
 
