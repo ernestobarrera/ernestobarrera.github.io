@@ -2640,6 +2640,18 @@
               {advancedTechnique === "fewshot" &&
                 advancedView === "build" &&
                 renderFewShotBuilder()}
+              {advancedTechnique === "zeroshot" &&
+                advancedView === "learn" &&
+                renderZeroShotLearn()}
+              {advancedTechnique === "zeroshot" &&
+                advancedView === "build" &&
+                renderZeroShotBuilder()}
+              {advancedTechnique === "selfconsistency" &&
+                advancedView === "learn" &&
+                renderSelfConsistencyLearn()}
+              {advancedTechnique === "selfconsistency" &&
+                advancedView === "build" &&
+                renderSelfConsistencyBuilder()}
               {advancedView === "compare" && renderTechniquesComparison()}
             </div>
           );
@@ -3462,7 +3474,547 @@
             </div>
           );
         };
+        // Renderizar sección de aprendizaje de Zero-Shot CoT
+        const renderZeroShotLearn = () => {
+          return (
+            <div className="bg-gray-800 p-3 rounded-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="bg-blue-900 rounded-full h-10 w-10 flex items-center justify-center">
+                  <i className="fas fa-bolt text-blue-300"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-medium text-white">
+                    Zero-Shot CoT
+                  </h3>
+                  <p className="text-gray-400 text-sm">
+                    Inducción de razonamiento sin ejemplos
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-3 text-gray-300">
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    ¿Qué es Zero-Shot CoT?
+                  </h4>
+                  <p className="text-sm">
+                    Zero-Shot Chain-of-Thought (Zero-Shot CoT) es una técnica
+                    que induce el razonamiento paso a paso en modelos de
+                    lenguaje sin necesidad de proporcionar ejemplos específicos.
+                    Simplemente añadiendo frases como "Pensemos paso a paso"
+                    después de una pregunta, se estimula al modelo a desglosar
+                    el problema y presentar su razonamiento de forma
+                    estructurada.
+                  </p>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Fundamento científico
+                  </h4>
+                  <p className="text-sm">
+                    Introducida por Kojima et al. (2022), esta técnica demostró
+                    que incluso sin ejemplos, los modelos de lenguaje pueden
+                    generar cadenas de razonamiento cuando se les induce con
+                    simples frases. En el benchmark MultiArith (problemas
+                    aritméticos), mejoró la precisión del 17.7% al 78.7%,
+                    igualando el rendimiento de técnicas más complejas.
+                  </p>
+                  <div className="mt-2 bg-blue-900 bg-opacity-20 p-2 rounded-md border border-blue-800">
+                    <p className="text-xs text-blue-300">
+                      <strong>Referencia:</strong> Kojima, T., et al. (2022).
+                      Large Language Models are Zero-Shot Reasoners.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Ventajas de Zero-Shot CoT
+                  </h4>
+                  <ul className="space-y-2 text-sm">
+                    <li>
+                      <strong className="text-blue-400">Simplicidad:</strong>{" "}
+                      Extremadamente fácil de implementar, sin necesidad de
+                      crear ejemplos.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">Efectividad:</strong> A
+                      pesar de su simplicidad, logra mejoras significativas en
+                      tareas de razonamiento.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">Versatilidad:</strong>{" "}
+                      Funciona en una amplia gama de tareas sin personalización
+                      específica.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">Eficiencia:</strong>{" "}
+                      Requiere menos tokens que las técnicas few-shot, ahorrando
+                      costos y tiempo.
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Implementación de Zero-Shot CoT
+                  </h4>
+                  <p className="text-sm mb-2">
+                    La implementación es extremadamente sencilla:
+                  </p>
+                  <ol className="space-y-3 text-sm pl-5 list-decimal">
+                    <li>Formular la pregunta o problema con claridad.</li>
+                    <li>
+                      Añadir una frase inductora al final como:
+                      <ul className="space-y-1 text-sm pl-5 list-disc mt-1">
+                        <li>"Pensemos paso a paso."</li>
+                        <li>"Vamos a resolver esto paso a paso."</li>
+                        <li>
+                          "Razonemos paso a paso para encontrar la solución."
+                        </li>
+                      </ul>
+                    </li>
+                  </ol>
+                  <div className="bg-gray-800 p-2 rounded mt-3 text-xs">
+                    <p className="text-gray-400 mb-1">Ejemplo:</p>
+                    <p>
+                      En un parque hay 12 árboles. Cada árbol tiene 6 ramas y
+                      cada rama tiene 4 manzanas. ¿Cuántas manzanas hay en total
+                      en el parque? Pensemos paso a paso.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Cuándo usar Zero-Shot CoT
+                  </h4>
+                  <p className="text-sm mb-2">
+                    Esta técnica es particularmente útil para:
+                  </p>
+                  <ul className="space-y-1 text-sm pl-5 list-disc">
+                    <li>Problemas matemáticos y aritméticos</li>
+                    <li>Razonamiento lógico básico</li>
+                    <li>
+                      Cuando se busca una solución rápida sin elaborar ejemplos
+                    </li>
+                    <li>
+                      Preguntas de sentido común que requieren varios pasos
+                    </li>
+                    <li>
+                      Como primera aproximación antes de intentar técnicas más
+                      complejas
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          );
+        };
 
+        // Renderizar sección de construcción de Zero-Shot CoT
+        const renderZeroShotBuilder = () => {
+          const [zeroShotPrompt, setZeroShotPrompt] = React.useState("");
+          const [zeroShotInductor, setZeroShotInductor] = React.useState(
+            "Pensemos paso a paso."
+          );
+
+          // Función para generar el prompt completo
+          const generateZeroShotPrompt = () => {
+            return `${zeroShotPrompt}\n\n${zeroShotInductor}`;
+          };
+
+          // Cargar ejemplo
+          const loadZeroShotExample = () => {
+            setZeroShotPrompt(
+              "En un parque hay 12 árboles. Cada árbol tiene 6 ramas y cada rama tiene 4 manzanas. ¿Cuántas manzanas hay en total en el parque?"
+            );
+            setZeroShotInductor("Pensemos paso a paso.");
+          };
+
+          return (
+            <div className="bg-gray-800 p-3 rounded-lg">
+              <h3 className="text-lg font-medium text-white mb-3">
+                Constructor de Zero-Shot CoT
+              </h3>
+              <p className="text-gray-300 text-sm mb-4">
+                Crea un prompt que induzca razonamiento paso a paso sin
+                necesidad de ejemplos.
+              </p>
+              <div className="flex justify-end mb-4">
+                <button
+                  onClick={loadZeroShotExample}
+                  className="px-3 py-1 bg-gray-700 text-white text-sm rounded hover:bg-gray-600 flex items-center gap-1"
+                >
+                  <i className="fas fa-lightbulb text-yellow-400"></i> Cargar
+                  ejemplo
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Problema o pregunta
+                  </label>
+                  <textarea
+                    className="w-full h-36 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                    placeholder="Describe el problema que quieres resolver..."
+                    value={zeroShotPrompt}
+                    onChange={(e) => setZeroShotPrompt(e.target.value)}
+                  ></textarea>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Frase inductora
+                  </label>
+                  <select
+                    className="w-full p-2 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                    value={zeroShotInductor}
+                    onChange={(e) => setZeroShotInductor(e.target.value)}
+                  >
+                    <option value="Pensemos paso a paso.">
+                      Pensemos paso a paso.
+                    </option>
+                    <option value="Vamos a resolver esto paso a paso.">
+                      Vamos a resolver esto paso a paso.
+                    </option>
+                    <option value="Razonemos paso a paso para encontrar la solución.">
+                      Razonemos paso a paso para encontrar la solución.
+                    </option>
+                    <option value="Analicemos este problema paso por paso.">
+                      Analicemos este problema paso por paso.
+                    </option>
+                    <option value="Desglosemos este problema en pasos más simples.">
+                      Desglosemos este problema en pasos más simples.
+                    </option>
+                  </select>
+                </div>
+                <div className="border-t border-gray-700 pt-4">
+                  <h4 className="text-sm font-medium text-gray-300 mb-2">
+                    Prompt generado
+                  </h4>
+                  <div className="bg-gray-900 p-3 rounded-md border border-gray-700 whitespace-pre-wrap text-sm text-gray-300">
+                    {generateZeroShotPrompt()}
+                  </div>
+                  <div className="flex justify-end mt-3">
+                    <button
+                      onClick={() => {
+                        setPrompt(generateZeroShotPrompt());
+                        setActiveTab("analizador");
+                      }}
+                      className="px-3 py-1 bg-green-700 text-white text-sm rounded hover:bg-green-600"
+                      disabled={!zeroShotPrompt.trim()}
+                    >
+                      <i className="fas fa-magic mr-1"></i> Usar en Analizador
+                      RECORD
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-blue-900 bg-opacity-20 p-3 rounded-md border border-blue-800">
+                  <div className="flex items-start gap-2">
+                    <i className="fas fa-info-circle text-blue-400 mt-1"></i>
+                    <div>
+                      <h4 className="font-medium text-blue-300 mb-1">
+                        Consejo para Zero-Shot CoT
+                      </h4>
+                      <p className="text-sm text-blue-200">
+                        Esta técnica destaca por su simplicidad. Aunque solo
+                        requiere añadir una frase como "Pensemos paso a paso",
+                        su efectividad es comparable a métodos más complejos.
+                        Funciona mejor con problemas claramente formulados que
+                        tienen una secuencia lógica de resolución.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+        // Renderizar sección de aprendizaje de Self-Consistency
+        const renderSelfConsistencyLearn = () => {
+          return (
+            <div className="bg-gray-800 p-3 rounded-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="bg-blue-900 rounded-full h-10 w-10 flex items-center justify-center">
+                  <i className="fas fa-check-double text-blue-300"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-medium text-white">
+                    Self-Consistency
+                  </h3>
+                  <p className="text-gray-400 text-sm">
+                    Múltiples razonamientos y consenso
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-3 text-gray-300">
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    ¿Qué es Self-Consistency?
+                  </h4>
+                  <p className="text-sm">
+                    Self-Consistency es una técnica avanzada que mejora la
+                    precisión de las respuestas generando múltiples cadenas de
+                    razonamiento independientes para la misma pregunta, y luego
+                    seleccionando la respuesta final por consenso o mayoría.
+                    Actúa como un "comité interno" de razonamientos.
+                  </p>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Fundamento científico
+                  </h4>
+                  <p className="text-sm">
+                    Introducida por Wang et al. (2023), esta técnica se basa en
+                    la observación de que los modelos de lenguaje a veces
+                    cometen errores en pasos intermedios del razonamiento,
+                    aunque el enfoque general sea correcto. Al generar múltiples
+                    razonamientos y tomar la respuesta mayoritaria, se obtiene
+                    una mejora significativa en la precisión. En el benchmark
+                    GSM8K, mejoró la precisión de Chain-of-Thought estándar en
+                    un 17.9% adicional.
+                  </p>
+                  <div className="mt-2 bg-blue-900 bg-opacity-20 p-2 rounded-md border border-blue-800">
+                    <p className="text-xs text-blue-300">
+                      <strong>Referencia:</strong> Wang, X., et al. (2023).
+                      Self-Consistency Improves Chain of Thought Reasoning in
+                      Language Models.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Ventajas de Self-Consistency
+                  </h4>
+                  <ul className="space-y-2 text-sm">
+                    <li>
+                      <strong className="text-blue-400">
+                        Mayor precisión:
+                      </strong>{" "}
+                      Supera significativamente a otras técnicas en problemas
+                      complejos.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">Robustez:</strong> Menos
+                      vulnerable a errores de razonamiento individuales.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">Confiabilidad:</strong>{" "}
+                      Proporciona mayor confianza cuando múltiples razonamientos
+                      llegan a la misma conclusión.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">Transparencia:</strong>{" "}
+                      Permite ver diferentes enfoques para resolver un mismo
+                      problema.
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Implementación de Self-Consistency
+                  </h4>
+                  <p className="text-sm mb-2">Para implementar esta técnica:</p>
+                  <ol className="space-y-3 text-sm pl-5 list-decimal">
+                    <li>
+                      <strong className="text-blue-400">
+                        Formular el problema
+                      </strong>{" "}
+                      claramente.
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">
+                        Solicitar múltiples soluciones
+                      </strong>{" "}
+                      con diferentes enfoques:
+                      <div className="bg-gray-800 p-2 rounded mt-1 text-xs">
+                        <p>
+                          "Resuelve este problema de tres maneras diferentes,
+                          mostrando tu razonamiento paso a paso en cada una."
+                        </p>
+                      </div>
+                    </li>
+                    <li>
+                      <strong className="text-blue-400">
+                        Pedir una verificación
+                      </strong>{" "}
+                      y selección de la respuesta más confiable:
+                      <div className="bg-gray-800 p-2 rounded mt-1 text-xs">
+                        <p>
+                          "Ahora, revisa cada solución, identifica posibles
+                          errores, y determina cuál de las respuestas es más
+                          probable que sea correcta."
+                        </p>
+                      </div>
+                    </li>
+                  </ol>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Ejemplo práctico
+                  </h4>
+                  <div className="bg-gray-800 p-2 rounded text-xs">
+                    <p className="text-blue-300 mb-2">Prompt completo:</p>
+                    <p>
+                      Problema: Una caja contiene 3 bolas rojas, 4 bolas azules
+                      y 5 bolas verdes. Si sacamos 2 bolas al azar sin
+                      reemplazo, ¿cuál es la probabilidad de que ambas sean del
+                      mismo color?
+                    </p>
+                    <p className="mt-2">
+                      Resuelve este problema de tres maneras diferentes,
+                      mostrando tu razonamiento paso a paso en cada una.
+                    </p>
+                    <p className="mt-2">
+                      Después de generar las tres soluciones, revisa cada una,
+                      verifica los cálculos, identifica posibles errores y
+                      determina cuál es la respuesta correcta.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-gray-900 p-3 rounded-md border border-gray-700">
+                  <h4 className="font-medium text-white mb-2">
+                    Cuándo usar Self-Consistency
+                  </h4>
+                  <p className="text-sm mb-2">
+                    Esta técnica es particularmente útil para:
+                  </p>
+                  <ul className="space-y-1 text-sm pl-5 list-disc">
+                    <li>Problemas matemáticos y estadísticos complejos</li>
+                    <li>Razonamiento lógico con múltiples pasos</li>
+                    <li>Cuando la precisión es crítica</li>
+                    <li>Problemas con posibles ambigüedades</li>
+                    <li>
+                      Decisiones importantes donde se necesita alta
+                      confiabilidad
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Renderizar sección de construcción de Self-Consistency
+        const renderSelfConsistencyBuilder = () => {
+          const [selfConsistencyProblem, setSelfConsistencyProblem] =
+            React.useState("");
+          const [approachCount, setApproachCount] = React.useState(3);
+          const [verificationPrompt, setVerificationPrompt] = React.useState(
+            "Después de generar las soluciones anteriores, revisa cada una, verifica los cálculos, identifica posibles errores y determina cuál es la respuesta correcta."
+          );
+
+          // Función para generar el prompt completo
+          const generateSelfConsistencyPrompt = () => {
+            return `Problema: ${selfConsistencyProblem}\n\nResuelve este problema de ${approachCount} maneras diferentes, mostrando tu razonamiento paso a paso en cada una.\n\n${verificationPrompt}`;
+          };
+
+          // Cargar ejemplo
+          const loadSelfConsistencyExample = () => {
+            setSelfConsistencyProblem(
+              "Una caja contiene 3 bolas rojas, 4 bolas azules y 5 bolas verdes. Si sacamos 2 bolas al azar sin reemplazo, ¿cuál es la probabilidad de que ambas sean del mismo color?"
+            );
+            setApproachCount(3);
+            setVerificationPrompt(
+              "Después de generar las tres soluciones, revisa cada una, verifica los cálculos, identifica posibles errores y determina cuál es la respuesta correcta."
+            );
+          };
+
+          return (
+            <div className="bg-gray-800 p-3 rounded-lg">
+              <h3 className="text-lg font-medium text-white mb-3">
+                Constructor de Self-Consistency
+              </h3>
+              <p className="text-gray-300 text-sm mb-4">
+                Crea un prompt que solicite múltiples razonamientos
+                independientes y seleccione la mejor respuesta.
+              </p>
+              <div className="flex justify-end mb-4">
+                <button
+                  onClick={loadSelfConsistencyExample}
+                  className="px-3 py-1 bg-gray-700 text-white text-sm rounded hover:bg-gray-600 flex items-center gap-1"
+                >
+                  <i className="fas fa-lightbulb text-yellow-400"></i> Cargar
+                  ejemplo
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Problema o pregunta
+                  </label>
+                  <textarea
+                    className="w-full h-36 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                    placeholder="Describe el problema que quieres resolver..."
+                    value={selfConsistencyProblem}
+                    onChange={(e) => setSelfConsistencyProblem(e.target.value)}
+                  ></textarea>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Número de enfoques diferentes
+                  </label>
+                  <select
+                    className="w-full p-2 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                    value={approachCount}
+                    onChange={(e) => setApproachCount(Number(e.target.value))}
+                  >
+                    <option value={2}>2 enfoques</option>
+                    <option value={3}>3 enfoques</option>
+                    <option value={4}>4 enfoques</option>
+                    <option value={5}>5 enfoques</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Instrucción de verificación
+                  </label>
+                  <textarea
+                    className="w-full h-20 p-3 bg-gray-900 text-white rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
+                    placeholder="Instrucción para verificar y seleccionar la mejor respuesta..."
+                    value={verificationPrompt}
+                    onChange={(e) => setVerificationPrompt(e.target.value)}
+                  ></textarea>
+                </div>
+                <div className="border-t border-gray-700 pt-4">
+                  <h4 className="text-sm font-medium text-gray-300 mb-2">
+                    Prompt generado
+                  </h4>
+                  <div className="bg-gray-900 p-3 rounded-md border border-gray-700 whitespace-pre-wrap text-sm text-gray-300">
+                    {generateSelfConsistencyPrompt()}
+                  </div>
+                  <div className="flex justify-end mt-3">
+                    <button
+                      onClick={() => {
+                        setPrompt(generateSelfConsistencyPrompt());
+                        setActiveTab("analizador");
+                      }}
+                      className="px-3 py-1 bg-green-700 text-white text-sm rounded hover:bg-green-600"
+                      disabled={!selfConsistencyProblem.trim()}
+                    >
+                      <i className="fas fa-magic mr-1"></i> Usar en Analizador
+                      RECORD
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-blue-900 bg-opacity-20 p-3 rounded-md border border-blue-800">
+                  <div className="flex items-start gap-2">
+                    <i className="fas fa-info-circle text-blue-400 mt-1"></i>
+                    <div>
+                      <h4 className="font-medium text-blue-300 mb-1">
+                        Consejo para Self-Consistency
+                      </h4>
+                      <p className="text-sm text-blue-200">
+                        Esta técnica es la más efectiva para problemas
+                        complejos, pero también la más extensa en tokens
+                        consumidos. Para obtener los mejores resultados, formula
+                        un problema claro y específico, y asegúrate de solicitar
+                        tanto múltiples razonamientos como una conclusión final
+                        que seleccione la mejor respuesta.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
         // Renderizar sección de comparación de técnicas
         const renderTechniquesComparison = () => {
           return (
