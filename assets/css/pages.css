@@ -54,7 +54,7 @@ Estilos específicos de la todas las páginas que tienen estilos específicos
   border-radius: 50%;
   margin-bottom: 1.5rem;
   border: 3px solid var(--accent-color);
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .home-page .bio-title {
