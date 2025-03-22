@@ -1,0 +1,1975 @@
+<!--
+=====================
+ hallucinations-checker.html
+ Checklist interactiva para detectar alucinaciones en textos de IA
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HalluCheck - Detector de Alucinaciones | @ernestob</title>
+    <meta
+      name="description"
+      content="Herramienta interactiva para detectar alucinaciones en textos generados por modelos de IA como ChatGPT, Gemini y Claude"
+    />
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="HalluCheck - Detector de Alucinaciones en IA | @ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria 🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/t/hallucheck.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/header.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/introjs.min.css"
+    />
+
+    <style>
+      /* ===========================================
+         hallucheck.css
+         estilos específicos para la herramienta de detección de alucinaciones
+        =========================================== */
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        background: #1c1e26;
+      }
+
+      .main-container {
+        max-width: 1400px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0rem 0.5rem;
+      }
+
+      .hero-section {
+        border-radius: 8px;
+        padding: 0;
+        margin-bottom: 0.5rem;
+      }
+
+      .main-title {
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-primary, #fff);
+      }
+
+      .intro-text {
+        font-size: 0.95rem;
+        line-height: 1.4;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 8px;
+        padding: 0.5rem;
+        color: var(--text-secondary, #94a3b8);
+        margin-bottom: 0.5rem;
+      }
+
+      .hallucheck-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      @media (min-width: 1024px) {
+        .hallucheck-container {
+          grid-template-columns: 7fr 5fr;
+        }
+      }
+
+      /* Panel izquierdo */
+      .hallucheck-main {
+        background: var(--card-bg, #2a3b4d);
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+      }
+
+      /* Navegación por tabs */
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 1rem;
+      }
+
+      .tab-button {
+        flex: 1;
+        padding: 0.75rem 0;
+        background: transparent;
+        border: none;
+        color: var(--text-secondary, #94a3b8);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .tab-button.active {
+        color: var(--accent-color, #ffd700);
+      }
+
+      .tab-button.active::after {
+        content: "";
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: var(--accent-color, #ffd700);
+      }
+
+      /* Paneles de contenido */
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      /* Panel de texto */
+      .text-panel textarea {
+        width: 100%;
+        min-height: 300px;
+        padding: 0.75rem;
+        border: 1px solid var(--secondary-bg, #2c3e50);
+        border-radius: 6px;
+        background: var(--primary-bg, #1c1e26);
+        color: var(--text-primary, #fff);
+        font-family: inherit;
+        font-size: 1rem;
+        line-height: 1.5;
+        margin-bottom: 0.75rem;
+        resize: vertical;
+      }
+
+      /* Controles */
+      .control-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+      }
+
+      .control-button {
+        background: linear-gradient(135deg, #2a3b4d, #3b4f66);
+        color: var(--text-primary, #fff);
+        border: none;
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .control-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .primary-button {
+        background: linear-gradient(135deg, #ffd700, #ff9a00);
+        color: #1c1e26;
+        font-weight: 600;
+      }
+
+      /* Panel de análisis */
+      .check-category {
+        background: var(--primary-bg, #1c1e26);
+        border-radius: 8px;
+        border-left: 4px solid;
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.3s ease;
+      }
+
+      .check-category:hover {
+        transform: translateX(2px);
+      }
+
+      .check-category.factual {
+        border-left-color: #ef4444;
+      }
+
+      .check-category.consistency {
+        border-left-color: #f97316;
+      }
+
+      .check-category.attribution {
+        border-left-color: #eab308;
+      }
+
+      .check-category.specificity {
+        border-left-color: #22c55e;
+      }
+
+      .check-category.expertise {
+        border-left-color: #06b6d4;
+      }
+
+      .category-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: var(--text-primary, #fff);
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .category-description {
+        color: var(--text-secondary, #94a3b8);
+        font-size: 0.9rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .check-items {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .check-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .check-item input[type="checkbox"] {
+        margin-top: 0.25rem;
+      }
+
+      .check-item label {
+        color: var(--text-primary, #fff);
+        font-size: 0.95rem;
+        line-height: 1.4;
+        flex: 1;
+        cursor: pointer;
+      }
+
+      .add-check-container {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-top: 0.75rem;
+      }
+
+      .add-check-input {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid var(--secondary-bg, #2c3e50);
+        border-radius: 6px;
+        background: var(--primary-bg, #1c1e26);
+        color: var(--text-primary, #fff);
+        font-size: 0.9rem;
+      }
+
+      .add-check-button {
+        background: var(--accent-color, #ffd700);
+        color: #1c1e26;
+        border: none;
+        border-radius: 6px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+      }
+
+      .remove-check-button {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary, #94a3b8);
+        cursor: pointer;
+        padding: 0.25rem;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        transition: all 0.2s ease;
+      }
+
+      .remove-check-button:hover {
+        color: #ef4444;
+      }
+
+      /* Panel de resultados */
+      .results-score {
+        background: var(--card-bg, #2a3b4d);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+
+      .score-title {
+        font-size: 1.1rem;
+        color: var(--text-secondary, #94a3b8);
+        margin-bottom: 0.75rem;
+      }
+
+      .score-circle {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        margin: 0 auto 1rem;
+      }
+
+      .score-value {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--text-primary, #fff);
+      }
+
+      .results-breakdown {
+        background: var(--card-bg, #2a3b4d);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .breakdown-title {
+        font-size: 1.1rem;
+        color: var(--text-primary, #fff);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .category-score {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.75rem;
+      }
+
+      .category-score-label {
+        min-width: 120px;
+        font-size: 0.9rem;
+        color: var(--text-secondary, #94a3b8);
+      }
+
+      .category-score-bar {
+        flex: 1;
+        height: 8px;
+        background: var(--primary-bg, #1c1e26);
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 0 0.75rem;
+      }
+
+      .category-score-fill {
+        height: 100%;
+        border-radius: 4px;
+      }
+
+      .category-score-value {
+        min-width: 40px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-primary, #fff);
+        text-align: right;
+      }
+
+      .detected-issues {
+        background: var(--card-bg, #2a3b4d);
+        border-radius: 8px;
+        padding: 1rem;
+      }
+
+      .issues-title {
+        font-size: 1.1rem;
+        color: var(--text-primary, #fff);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .issues-list {
+        color: var(--text-secondary, #94a3b8);
+        font-size: 0.95rem;
+        line-height: 1.4;
+      }
+
+      .issue-category {
+        margin-bottom: 0.75rem;
+      }
+
+      .issue-category-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .issue-category-items {
+        margin-left: 1.5rem;
+      }
+
+      .issue-item {
+        margin-bottom: 0.25rem;
+      }
+
+      /* Panel derecho - Guía */
+      .hallucheck-sidebar {
+        background: var(--card-bg, #2a3b4d);
+        border-radius: 12px;
+        padding: 1rem;
+        align-self: start;
+        position: sticky;
+        top: 5rem;
+      }
+
+      .hallucheck-sidebar h2 {
+        font-size: 1.2rem;
+        color: var(--text-primary, #fff);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .sidebar-section {
+        margin-bottom: 1.5rem;
+      }
+
+      .sidebar-section h3 {
+        font-size: 1rem;
+        color: var(--accent-color, #ffd700);
+        margin-bottom: 0.5rem;
+      }
+
+      .sidebar-section p,
+      .sidebar-section ul {
+        color: var(--text-secondary, #94a3b8);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 0.5rem;
+      }
+
+      .sidebar-section ul {
+        padding-left: 1.5rem;
+      }
+
+      .sidebar-section ul li {
+        margin-bottom: 0.35rem;
+      }
+
+      .example-box {
+        background: var(--primary-bg, #1c1e26);
+        border-radius: 6px;
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        font-size: 0.9rem;
+        color: var(--text-secondary, #94a3b8);
+      }
+
+      .example-box strong {
+        color: var(--accent-color, #ffd700);
+      }
+
+      .notes-area {
+        width: 100%;
+        min-height: 100px;
+        padding: 0.75rem;
+        border: 1px solid var(--secondary-bg, #2c3e50);
+        border-radius: 6px;
+        background: var(--primary-bg, #1c1e26);
+        color: var(--text-primary, #fff);
+        font-family: inherit;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        resize: vertical;
+      }
+
+      /* Texto destacado */
+      .highlighted-text {
+        background: var(--card-bg, #2a3b4d);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .highlighted-text .highlight {
+        background-color: rgba(239, 68, 68, 0.2);
+        border-bottom: 1px solid rgba(239, 68, 68, 0.5);
+        padding: 0 2px;
+      }
+
+      /* Toast notifications */
+      #toastContainer {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 9999;
+      }
+
+      .toast {
+        background: var(--card-bg, #2a3b4d);
+        border-left: 4px solid var(--accent-color, #ffd700);
+        color: var(--text-primary, #fff);
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        max-width: 300px;
+        animation: slideIn 0.3s ease, fadeOut 0.5s ease 2.5s forwards;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+
+      /* IntroJS customizations */
+      .introjs-tooltip {
+        animation: fadeIn 0.8s ease;
+        background-color: #fef9c3 !important;
+        color: #1a2634 !important;
+        border: 1px solid #fbbf24 !important;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2) !important;
+        padding: 0.2rem !important;
+        max-width: 380px;
+        min-width: 280px;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .introjs-arrow {
+        border-color: #fef9c3 transparent transparent transparent !important;
+      }
+
+      .introjs-helperNumberLayer {
+        background: #ffd700 !important;
+        color: #1a2634 !important;
+      }
+
+      .introjs-bullets .introjs-bullet {
+        background: #34495e !important;
+      }
+
+      .introjs-bullets .introjs-bullet.active {
+        box-shadow: 0 0 0 2px #ffd700 !important;
+      }
+
+      .introjs-tooltipbuttons {
+        white-space: nowrap;
+        border-top: 1px solid #fbbf24 !important;
+        padding-top: 0.75rem;
+      }
+
+      .introjs-skipbutton {
+        position: absolute;
+        font-size: 1rem;
+        right: 0rem !important;
+        top: 0rem;
+        padding: 0.2rem 0rem !important;
+        border-radius: 4px;
+        color: #1e2328c0 !important;
+      }
+
+      .introjs-prevbutton,
+      .introjs-nextbutton,
+      .introjs-donebutton {
+        background: #1a2634 !important;
+        color: #ffffff !important;
+        border: 1px solid #ffd700 !important;
+        padding: 0.4rem 0.4rem !important;
+        border-radius: 4px;
+        margin: 0 0.2rem;
+        font-size: 1rem !important;
+        transition: all 0.2s ease;
+        text-shadow: none !important;
+        font-weight: normal !important;
+      }
+
+      .introjs-prevbutton:hover,
+      .introjs-nextbutton:hover,
+      .introjs-donebutton:hover {
+        background: #ffd700 !important;
+        color: #1a2634 !important;
+      }
+
+      .introjs-tooltiptext {
+        color: #1a2634 !important;
+        font-size: 1.1rem !important;
+        line-height: 1.4 !important;
+        font-family: system-ui, -apple-system, sans-serif !important;
+      }
+
+      .myHighlight {
+        background: #333;
+        box-shadow: 0 0 8px 4px rgba(255, 215, 0, 0.8) !important;
+        border: 2px solid #ffd700 !important;
+        border-radius: 8px !important;
+        transition: box-shadow 0.6s ease;
+      }
+    </style>
+  </head>
+  <body>
+    <include src="header.html"></include>
+
+    <main class="main-container">
+      <section class="hero-section">
+        <h1
+          class="main-title"
+          data-intro="Bienvenido a HalluCheck, una herramienta para detectar posibles alucinaciones en textos generados por IA."
+          data-step="1"
+        >
+          <i class="fas fa-robot"></i>
+          <span>HalluCheck - Detector de Alucinaciones en IA</span>
+          <span
+            style="
+              margin-left: 30px;
+              cursor: pointer;
+              color: white;
+              font-size: 0.8rem;
+              background: rgba(255, 255, 255, 0.15);
+              padding: 4px 8px;
+              border-radius: 4px;
+            "
+            id="startTutorialBtn"
+          >
+            <i class="fas fa-graduation-cap"></i>
+            Ver Guía Interactiva
+          </span>
+        </h1>
+        <p class="intro-text">
+          Las IA generativas como ChatGPT, Gemini o Claude pueden producir
+          información incorrecta o inventada ("alucinaciones") que puede pasar
+          desapercibida. HalluCheck es una lista de verificación interactiva que
+          te ayuda a identificar posibles señales de alucinación mediante
+          criterios basados en investigación. Evalúa la precisión factual,
+          coherencia interna, atribuciones y especificidad para determinar la
+          fiabilidad del contenido generado por IA.
+        </p>
+      </section>
+
+      <div class="hallucheck-container">
+        <!-- Panel principal -->
+        <div class="hallucheck-main-container">
+          <div
+            class="hallucheck-main"
+            data-intro="Este es el panel principal donde podrás analizar, evaluar y revisar el texto."
+            data-step="2"
+          >
+            <!-- Pestañas de navegación -->
+            <div class="tabs">
+              <button class="tab-button active" data-tab="text-tab">
+                <i class="fas fa-file-alt"></i> Texto
+              </button>
+              <button class="tab-button" data-tab="analysis-tab">
+                <i class="fas fa-microscope"></i> Análisis
+              </button>
+              <button class="tab-button" data-tab="results-tab" disabled>
+                <i class="fas fa-chart-pie"></i> Resultados
+              </button>
+            </div>
+
+            <!-- Contenido de pestañas -->
+            <div class="tab-content active" id="text-tab">
+              <div class="text-panel">
+                <textarea
+                  id="iaText"
+                  placeholder="Pega aquí el texto generado por IA que deseas analizar..."
+                ></textarea>
+                <div class="control-buttons">
+                  <button class="control-button" id="loadExampleBtn">
+                    <i class="fas fa-lightbulb"></i> Cargar ejemplo
+                  </button>
+                  <button
+                    class="control-button primary-button"
+                    id="startAnalysisBtn"
+                  >
+                    <i class="fas fa-arrow-right"></i> Continuar al análisis
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="tab-content"
+              id="analysis-tab"
+              data-intro="Aquí encontrarás criterios organizados por categorías para evaluar el texto."
+              data-step="3"
+            >
+              <!-- Categorías de verificación -->
+              <div class="check-category factual">
+                <div class="category-title">
+                  <span
+                    ><i class="fas fa-check-circle"></i> Precisión Factual</span
+                  >
+                  <span class="category-count">0/4</span>
+                </div>
+                <p class="category-description">
+                  Evalúa la exactitud de los hechos, datos y afirmaciones
+                  presentadas.
+                </p>
+                <div class="check-items" id="factualChecks">
+                  <div class="check-item">
+                    <input type="checkbox" id="fact1" class="factual-check" />
+                    <label for="fact1"
+                      >Contiene fechas, cifras o estadísticas sin citar fuentes
+                      verificables</label
+                    >
+                  </div>
+                  <div class="check-item">
+                    <input type="checkbox" id="fact2" class="factual-check" />
+                    <label for="fact2"
+                      >Incluye hechos históricos incorrectos o
+                      inverificables</label
+                    >
+                  </div>
+                  <div class="check-item">
+                    <input type="checkbox" id="fact3" class="factual-check" />
+                    <label for="fact3"
+                      >Presenta afirmaciones científicas no respaldadas por
+                      evidencia</label
+                    >
+                  </div>
+                  <div class="check-item">
+                    <input type="checkbox" id="fact4" class="factual-check" />
+                    <label for="fact4"
+                      >Menciona instituciones, estudios o expertos
+                      inexistentes</label
+                    >
+                  </div>
+                </div>
+                <div class="add-check-container">
+                  <input
+                    type="text"
+                    class="add-check-input"
+                    id="newFactualCheck"
+                    placeholder="Añadir criterio personalizado..."
+                  />
+                  <button class="add-check-button" id="addFactualCheckBtn">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="check-category consistency">
+                <div class="category-title">
+                  <span
+                    ><i class="fas fa-balance-scale"></i> Consistencia
+                    Interna</span
+                  >
+                  <span class="category-count">0/3</span>
+                </div>
+                <p class="category-description">
+                  Evalúa la coherencia lógica entre diferentes partes del texto.
+                </p>
+                <div class="check-items" id="consistencyChecks">
+                  <div class="check-item">
+                    <input
+                      type="checkbox"
+                      id="cons1"
+                      class="consistency-check"
+                    />
+                    <label for="cons1"
+                      >Presenta contradicciones entre diferentes partes del
+                      texto</label
+                    >
+                  </div>
+                  <div class="check-item">
+                    <input
+                      type="checkbox"
+                      id="cons2"
+                      class="consistency-check"
+                    />
+                    <label for="cons2"
+                      >Utiliza términos o conceptos de manera
+                      inconsistente</label
+                    >
+                  </div>
+                  <div class="check-item">
+                    <input
+                      type="checkbox"
+                      id="cons3"
+                      class="consistency-check"
+                    />
+                    <label for="cons3"
+                      >La cronología o secuencia de eventos no es
+                      coherente</label
+                    >
+                  </div>
+                </div>
+                <div class="add-check-container">
+                  <input
+                    type="text"
+                    class="add-check-input"
+                    id="newConsistencyCheck"
+                    placeholder="Añadir criterio personalizado..."
+                  />
+                  <button class="add-check-button" id="addConsistencyCheckBtn">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="check-category attribution">
+                <div class="category-title">
+                  <span
+                    ><i class="fas fa-quote-right"></i> Atribución y Citas</span
+                  >
+                  <span class="category-count">0/3</span>
+                </div>
+                <p class="category-description">
+                  Evalúa la precisión de las referencias a fuentes y
+                  autoridades.
+                </p>
+                <div class="check-items" id="attributionChecks">
+                  <div class="check-item">
+                    <input
+                      type="checkbox"
+                      id="attr1"
+                      class="attribution-check"
+                    />
+                    <label for="attr1"
+                      >Cita libros, artículos o papers que no existen o son
+                      inverificables</label
+                    >
+                  </div>
+                  <div class="check-item">
+                    <input
+                      type="checkbox"
+                      id="attr2"
+                      class="attribution-check"
+                    />
+                    <label for="attr2"
+                      >Atribuye citas incorrectamente o a personas que nunca las
+                      dijeron</label
+                    >
+                  </div>
+                  <div class="check-item">
+                    <input
+                      type="checkbox"
+                      id="attr3"
+                      class="attribution-check"
+                    />
+                    <label for="attr3"
+                      >Referencias a sitios web, DOIs o URLs inexistentes</label
+                    >
+                  </div>
+                </div>
+                <div class="add-check-container">
+                  <input
+                    type="text"
+                    class="add-check-input"
+                    id="newAttributionCheck"
+                    placeholder="Añadir criterio personalizado..."
+                  />
+                  <button class="add-check-button" id="addAttributionCheckBtn">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="check-category specificity">
+                <div class="category-title">
+                  <span
+                    ><i class="fas fa-search"></i> Especificidad y
+                    Vaguedad</span
+                  >
+                  <span class="category-count">0/3</span>
+                </div>
+                <p class="category-description">
+                  Evalúa el nivel de detalle y precisión del contenido.
+                </p>
+                <div class="check-items" id="specificityChecks">
+                  <div class="check-item">
+                    <input
+                      type="checkbox"
+                      id="spec1"
+                      class="specificity-check"
+                    />
+                    <label for="spec1"
+                      >Utiliza lenguaje vago e impreciso para evitar ser
+                      específico ("muchos estudios dicen", "algunos
+                      expertos")</label
+                    >
+                  </div>
+                  <div class="check-item">
+                    <input
+                      type="checkbox"
+                      id="spec2"
+                      class="specificity-check"
+                    />
+                    <label for="spec2"
+                      >Generaliza excesivamente sin matices o excepciones
+                      necesarias</label
+                    >
+                  </div>
+                  <div class="check-item">
+                    <input
+                      type="checkbox"
+                      id="spec3"
+                      class="specificity-check"
+                    />
+                    <label for="spec3"
+                      >Evita dar detalles verificables cuando serían esperados
+                      en ese contexto</label
+                    >
+                  </div>
+                </div>
+                <div class="add-check-container">
+                  <input
+                    type="text"
+                    class="add-check-input"
+                    id="newSpecificityCheck"
+                    placeholder="Añadir criterio personalizado..."
+                  />
+                  <button class="add-check-button" id="addSpecificityCheckBtn">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="check-category expertise">
+                <div class="category-title">
+                  <span
+                    ><i class="fas fa-graduation-cap"></i> Señales de
+                    Conocimiento Experto</span
+                  >
+                  <span class="category-count">0/3</span>
+                </div>
+                <p class="category-description">
+                  Evalúa indicadores de dominio profundo de la materia.
+                </p>
+                <div class="check-items" id="expertiseChecks">
+                  <div class="check-item">
+                    <input type="checkbox" id="exp1" class="expertise-check" />
+                    <label for="exp1"
+                      >Utiliza términos técnicos de manera incorrecta o
+                      imprecisa</label
+                    >
+                  </div>
+                  <div class="check-item">
+                    <input type="checkbox" id="exp2" class="expertise-check" />
+                    <label for="exp2"
+                      >Simplifica excesivamente conceptos complejos perdiendo
+                      precisión</label
+                    >
+                  </div>
+                  <div class="check-item">
+                    <input type="checkbox" id="exp3" class="expertise-check" />
+                    <label for="exp3"
+                      >Ignora limitaciones, controversias o debates conocidos en
+                      el campo</label
+                    >
+                  </div>
+                </div>
+                <div class="add-check-container">
+                  <input
+                    type="text"
+                    class="add-check-input"
+                    id="newExpertiseCheck"
+                    placeholder="Añadir criterio personalizado..."
+                  />
+                  <button class="add-check-button" id="addExpertiseCheckBtn">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="control-buttons">
+                <button class="control-button" id="backToTextBtn">
+                  <i class="fas fa-arrow-left"></i> Volver al texto
+                </button>
+                <button
+                  class="control-button primary-button"
+                  id="calculateResultsBtn"
+                >
+                  <i class="fas fa-calculator"></i> Calcular resultados
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="tab-content"
+              id="results-tab"
+              data-intro="Aquí verás un resumen de tu análisis, incluyendo la puntuación de confiabilidad y los problemas detectados."
+              data-step="4"
+            >
+              <div class="results-score">
+                <h3 class="score-title">Puntuación de Confiabilidad</h3>
+                <div class="score-circle">
+                  <svg width="150" height="150" viewBox="0 0 150 150">
+                    <circle
+                      cx="75"
+                      cy="75"
+                      r="60"
+                      fill="none"
+                      stroke="#1c1e26"
+                      stroke-width="10"
+                    />
+                    <circle
+                      cx="75"
+                      cy="75"
+                      r="60"
+                      fill="none"
+                      stroke="#ffd700"
+                      stroke-width="10"
+                      stroke-dasharray="376.8"
+                      stroke-dashoffset="0"
+                      id="scoreCircle"
+                      transform="rotate(-90, 75, 75)"
+                    />
+                  </svg>
+                  <div class="score-value" id="scoreValue">100</div>
+                </div>
+                <p id="scoreLabel">Confiabilidad Alta</p>
+              </div>
+
+              <div class="highlighted-text" id="highlightedText">
+                <!-- Texto con resaltados -->
+              </div>
+
+              <div class="results-breakdown">
+                <h3 class="breakdown-title">
+                  <i class="fas fa-chart-bar"></i> Desglose por Categorías
+                </h3>
+                <div class="category-score">
+                  <div class="category-score-label">Precisión Factual</div>
+                  <div class="category-score-bar">
+                    <div
+                      class="category-score-fill"
+                      id="factualScoreFill"
+                      style="width: 100%; background-color: #ef4444"
+                    ></div>
+                  </div>
+                  <div class="category-score-value" id="factualScoreValue">
+                    100%
+                  </div>
+                </div>
+                <div class="category-score">
+                  <div class="category-score-label">Consistencia</div>
+                  <div class="category-score-bar">
+                    <div
+                      class="category-score-fill"
+                      id="consistencyScoreFill"
+                      style="width: 100%; background-color: #f97316"
+                    ></div>
+                  </div>
+                  <div class="category-score-value" id="consistencyScoreValue">
+                    100%
+                  </div>
+                </div>
+                <div class="category-score">
+                  <div class="category-score-label">Atribución</div>
+                  <div class="category-score-bar">
+                    <div
+                      class="category-score-fill"
+                      id="attributionScoreFill"
+                      style="width: 100%; background-color: #eab308"
+                    ></div>
+                  </div>
+                  <div class="category-score-value" id="attributionScoreValue">
+                    100%
+                  </div>
+                </div>
+                <div class="category-score">
+                  <div class="category-score-label">Especificidad</div>
+                  <div class="category-score-bar">
+                    <div
+                      class="category-score-fill"
+                      id="specificityScoreFill"
+                      style="width: 100%; background-color: #22c55e"
+                    ></div>
+                  </div>
+                  <div class="category-score-value" id="specificityScoreValue">
+                    100%
+                  </div>
+                </div>
+                <div class="category-score">
+                  <div class="category-score-label">Conocimiento</div>
+                  <div class="category-score-bar">
+                    <div
+                      class="category-score-fill"
+                      id="expertiseScoreFill"
+                      style="width: 100%; background-color: #06b6d4"
+                    ></div>
+                  </div>
+                  <div class="category-score-value" id="expertiseScoreValue">
+                    100%
+                  </div>
+                </div>
+              </div>
+
+              <div class="detected-issues">
+                <h3 class="issues-title">
+                  <i class="fas fa-exclamation-triangle"></i> Problemas
+                  Detectados
+                </h3>
+                <div class="issues-list" id="issuesList">
+                  <!-- Lista de problemas detectados -->
+                  <p>No se han detectado problemas significativos.</p>
+                </div>
+              </div>
+
+              <div class="control-buttons">
+                <button class="control-button" id="backToAnalysisBtn">
+                  <i class="fas fa-arrow-left"></i> Volver al análisis
+                </button>
+                <button
+                  class="control-button primary-button"
+                  id="newAnalysisBtn"
+                >
+                  <i class="fas fa-redo"></i> Nuevo análisis
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel lateral -->
+        <div
+          class="hallucheck-sidebar"
+          data-intro="Este panel lateral contiene guías y ejemplos para ayudarte a identificar alucinaciones."
+          data-step="5"
+        >
+          <h2><i class="fas fa-info-circle"></i> Guía de Análisis</h2>
+
+          <div class="sidebar-section">
+            <h3>Cómo utilizar esta herramienta</h3>
+            <ol>
+              <li>Pega el texto generado por IA en el área de texto</li>
+              <li>
+                Revisa el texto cuidadosamente buscando señales de alucinación
+              </li>
+              <li>Marca los criterios que identifiques en cada categoría</li>
+              <li>Añade criterios personalizados si es necesario</li>
+              <li>
+                Obtén una puntuación de confiabilidad y análisis detallado
+              </li>
+            </ol>
+          </div>
+
+          <div class="sidebar-section">
+            <h3>Señales comunes de alucinación</h3>
+            <ul>
+              <li>Referencias a artículos académicos inexistentes</li>
+              <li>Estadísticas o cifras demasiado precisas sin fuente</li>
+              <li>Detalles históricos incorrectos o inventados</li>
+              <li>Contradicciones internas entre diferentes partes</li>
+              <li>Uso incorrecto de terminología técnica</li>
+            </ul>
+          </div>
+
+          <div class="sidebar-section">
+            <h3>Ejemplo de alucinación</h3>
+            <div class="example-box">
+              "La proteína CRISPR-9 fue descubierta en 2014 por el Dr. James
+              Thompson de la Universidad de Atlantis.
+              <strong>Su estudio 'Genomic Applications of CRISPR-9'</strong>
+              publicado en <strong>Nature Genomics</strong> revolucionó la
+              edición genética." <br /><br />
+              <em
+                >Problemas: Universidad ficticia, revista inexistente, proteína
+                inventada (es Cas9, no CRISPR-9), autor fabricado.</em
+              >
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <h3>Notas personales</h3>
+            <textarea
+              class="notes-area"
+              placeholder="Añade tus observaciones aquí..."
+            ></textarea>
+          </div>
+
+          <div class="sidebar-section">
+            <p style="font-size: 0.8rem; color: #94a3b8; text-align: center">
+              <i class="fas fa-exclamation-circle"></i> HalluCheck no garantiza
+              la detección de todas las alucinaciones. Siempre verifica
+              información crítica.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenedor de notificaciones toast -->
+      <div id="toastContainer"></div>
+    </main>
+
+    <include src="footer.html"></include>
+    <script src="/assets/js/include.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/intro.min.js"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // ==========================================
+        // Variables y estado de la aplicación
+        // ==========================================
+        let state = {
+          text: "",
+          activeTab: "text-tab",
+          checks: {
+            factual: [],
+            consistency: [],
+            attribution: [],
+            specificity: [],
+            expertise: [],
+          },
+          results: {
+            totalScore: 100,
+            categoryScores: {
+              factual: 100,
+              consistency: 100,
+              attribution: 100,
+              specificity: 100,
+              expertise: 100,
+            },
+          },
+        };
+
+        // Datos de ejemplo para "Cargar ejemplo"
+        const exampleText = `Los mamíferos marinos inteligentes como los delfines utilizan un sofisticado lenguaje basado en clicks que ha sido completamente decodificado por investigadores de la Universidad de Atlantis en 2019. El estudio "Syntactic Structure in Dolphin Communication" publicado en la prestigiosa revista Science Marine Biology encontró que los delfines utilizan más de 40.000 "palabras" distintas y una gramática que sigue reglas similares a las lenguas indoeuropeas.
+
+Según el Dr. James Peterson, autor principal del estudio, "los delfines pueden comunicar conceptos abstractos como el tiempo futuro y emociones complejas utilizando secuencias específicas de sonidos". El estudio fue realizado durante 8 años y analizó más de 10.000 horas de comunicaciones entre delfines.
+
+Este descubrimiento representa un importante avance para los intérpretes de lenguas interespecie desarrollados en 2021 por Microsoft Research, que ahora permiten conversaciones bidireccionales limitadas entre humanos y delfines. Sin embargo, algunos críticos como la Dra. Linda Foster del Instituto Oceánico señalan que los delfines no tienen las estructuras cerebrales necesarias para este tipo de lenguaje abstracto, mientras que en 2020 el mismo Dr. Peterson publicó que los delfines solo pueden comunicar necesidades básicas y ubicaciones espaciales.`;
+
+        // Inicializar los checks predeterminados
+        const defaultChecks = {
+          factual: [
+            {
+              id: "fact1",
+              text: "Contiene fechas, cifras o estadísticas sin citar fuentes verificables",
+            },
+            {
+              id: "fact2",
+              text: "Incluye hechos históricos incorrectos o inverificables",
+            },
+            {
+              id: "fact3",
+              text: "Presenta afirmaciones científicas no respaldadas por evidencia",
+            },
+            {
+              id: "fact4",
+              text: "Menciona instituciones, estudios o expertos inexistentes",
+            },
+          ],
+          consistency: [
+            {
+              id: "cons1",
+              text: "Presenta contradicciones entre diferentes partes del texto",
+            },
+            {
+              id: "cons2",
+              text: "Utiliza términos o conceptos de manera inconsistente",
+            },
+            {
+              id: "cons3",
+              text: "La cronología o secuencia de eventos no es coherente",
+            },
+          ],
+          attribution: [
+            {
+              id: "attr1",
+              text: "Cita libros, artículos o papers que no existen o son inverificables",
+            },
+            {
+              id: "attr2",
+              text: "Atribuye citas incorrectamente o a personas que nunca las dijeron",
+            },
+            {
+              id: "attr3",
+              text: "Referencias a sitios web, DOIs o URLs inexistentes",
+            },
+          ],
+          specificity: [
+            {
+              id: "spec1",
+              text: 'Utiliza lenguaje vago e impreciso para evitar ser específico ("muchos estudios dicen", "algunos expertos")',
+            },
+            {
+              id: "spec2",
+              text: "Generaliza excesivamente sin matices o excepciones necesarias",
+            },
+            {
+              id: "spec3",
+              text: "Evita dar detalles verificables cuando serían esperados en ese contexto",
+            },
+          ],
+          expertise: [
+            {
+              id: "exp1",
+              text: "Utiliza términos técnicos de manera incorrecta o imprecisa",
+            },
+            {
+              id: "exp2",
+              text: "Simplifica excesivamente conceptos complejos perdiendo precisión",
+            },
+            {
+              id: "exp3",
+              text: "Ignora limitaciones, controversias o debates conocidos en el campo",
+            },
+          ],
+        };
+
+        // Inicializar el estado
+        Object.keys(defaultChecks).forEach((category) => {
+          state.checks[category] = defaultChecks[category].map((check) => ({
+            ...check,
+            checked: false,
+            custom: false,
+          }));
+        });
+
+        // ==========================================
+        // Elementos DOM
+        // ==========================================
+        const tabButtons = document.querySelectorAll(".tab-button");
+        const tabContents = document.querySelectorAll(".tab-content");
+        const iaTextArea = document.getElementById("iaText");
+        const loadExampleBtn = document.getElementById("loadExampleBtn");
+        const startAnalysisBtn = document.getElementById("startAnalysisBtn");
+        const backToTextBtn = document.getElementById("backToTextBtn");
+        const calculateResultsBtn = document.getElementById(
+          "calculateResultsBtn"
+        );
+        const backToAnalysisBtn = document.getElementById("backToAnalysisBtn");
+        const newAnalysisBtn = document.getElementById("newAnalysisBtn");
+        const scoreCircle = document.getElementById("scoreCircle");
+        const scoreValue = document.getElementById("scoreValue");
+        const scoreLabel = document.getElementById("scoreLabel");
+        const highlightedText = document.getElementById("highlightedText");
+        const issuesList = document.getElementById("issuesList");
+
+        // ==========================================
+        // Funciones auxiliares
+        // ==========================================
+
+        // Cambiar pestaña activa
+        function changeTab(tabId) {
+          tabButtons.forEach((btn) => {
+            btn.classList.toggle(
+              "active",
+              btn.getAttribute("data-tab") === tabId
+            );
+          });
+
+          tabContents.forEach((content) => {
+            content.classList.toggle("active", content.id === tabId);
+          });
+
+          state.activeTab = tabId;
+        }
+
+        // Actualizar contadores de categorías
+        function updateCategoryCounts() {
+          Object.keys(state.checks).forEach((category) => {
+            const checkedCount = state.checks[category].filter(
+              (check) => check.checked
+            ).length;
+            const totalCount = state.checks[category].length;
+            const countElement = document.querySelector(
+              `.check-category.${category} .category-count`
+            );
+            if (countElement) {
+              countElement.textContent = `${checkedCount}/${totalCount}`;
+            }
+          });
+        }
+
+        // Añadir un nuevo criterio personalizado
+        function addCustomCheck(category) {
+          const inputElement = document.getElementById(
+            `new${category.charAt(0).toUpperCase() + category.slice(1)}Check`
+          );
+          const text = inputElement.value.trim();
+
+          if (!text) {
+            showToast(
+              "Por favor, introduce texto para el nuevo criterio",
+              "warning"
+            );
+            return;
+          }
+
+          const newCheck = {
+            id: `${category}_custom_${Date.now()}`,
+            text: text,
+            checked: false,
+            custom: true,
+          };
+
+          state.checks[category].push(newCheck);
+          renderChecks(category);
+          updateCategoryCounts();
+
+          // Limpiar input
+          inputElement.value = "";
+
+          showToast("Criterio personalizado añadido", "success");
+        }
+
+        // Eliminar un criterio personalizado
+        function removeCustomCheck(category, checkId) {
+          state.checks[category] = state.checks[category].filter(
+            (check) => check.id !== checkId
+          );
+          renderChecks(category);
+          updateCategoryCounts();
+
+          showToast("Criterio eliminado", "info");
+        }
+
+        // Renderizar lista de checks para una categoría
+        function renderChecks(category) {
+          const containerElement = document.getElementById(`${category}Checks`);
+
+          if (!containerElement) return;
+
+          containerElement.innerHTML = "";
+
+          state.checks[category].forEach((check) => {
+            const checkItem = document.createElement("div");
+            checkItem.className = "check-item";
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.id = check.id;
+            checkbox.className = `${category}-check`;
+            checkbox.checked = check.checked;
+
+            checkbox.addEventListener("change", (e) => {
+              const checkIndex = state.checks[category].findIndex(
+                (c) => c.id === check.id
+              );
+              if (checkIndex !== -1) {
+                state.checks[category][checkIndex].checked = e.target.checked;
+                updateCategoryCounts();
+              }
+            });
+
+            const label = document.createElement("label");
+            label.setAttribute("for", check.id);
+            label.textContent = check.text;
+
+            checkItem.appendChild(checkbox);
+            checkItem.appendChild(label);
+
+            // Añadir botón de eliminar para checks personalizados
+            if (check.custom) {
+              const removeButton = document.createElement("button");
+              removeButton.className = "remove-check-button";
+              removeButton.innerHTML = '<i class="fas fa-times"></i>';
+              removeButton.addEventListener("click", () =>
+                removeCustomCheck(category, check.id)
+              );
+
+              checkItem.appendChild(removeButton);
+            }
+
+            containerElement.appendChild(checkItem);
+          });
+        }
+
+        // Calcular resultados
+        function calculateResults() {
+          // Obtener total de checks y checks marcados por categoría
+          const scores = {};
+          let totalChecked = 0;
+          let totalChecks = 0;
+
+          Object.keys(state.checks).forEach((category) => {
+            const categoryChecks = state.checks[category];
+            const checkedCount = categoryChecks.filter(
+              (check) => check.checked
+            ).length;
+            const totalCount = categoryChecks.length;
+
+            // Invertir la puntuación (más checks marcados = menor puntuación)
+            const score =
+              totalCount > 0 ? 100 - (checkedCount / totalCount) * 100 : 100;
+            scores[category] = Math.round(score);
+
+            totalChecked += checkedCount;
+            totalChecks += totalCount;
+          });
+
+          // Calcular puntuación global
+          const totalScore =
+            totalChecks > 0 ? 100 - (totalChecked / totalChecks) * 100 : 100;
+
+          state.results = {
+            totalScore: Math.round(totalScore),
+            categoryScores: scores,
+          };
+
+          return state.results;
+        }
+
+        // Actualizar visualización de resultados
+        function updateResultsView() {
+          const { totalScore, categoryScores } = state.results;
+
+          // Actualizar círculo de puntuación
+          const circumference = 2 * Math.PI * 60;
+          const dashOffset = circumference * (1 - totalScore / 100);
+          scoreCircle.style.strokeDasharray = circumference;
+          scoreCircle.style.strokeDashoffset = dashOffset;
+
+          // Definir color según puntuación
+          let color;
+          let label;
+
+          if (totalScore >= 80) {
+            color = "#22c55e"; // verde
+            label = "Confiabilidad Alta";
+          } else if (totalScore >= 60) {
+            color = "#eab308"; // amarillo
+            label = "Confiabilidad Media";
+          } else {
+            color = "#ef4444"; // rojo
+            label = "Confiabilidad Baja";
+          }
+
+          scoreCircle.style.stroke = color;
+          scoreValue.textContent = totalScore;
+          scoreValue.style.color = color;
+          scoreLabel.textContent = label;
+
+          // Actualizar barras de categorías
+          Object.keys(categoryScores).forEach((category) => {
+            const score = categoryScores[category];
+            const fillElement = document.getElementById(`${category}ScoreFill`);
+            const valueElement = document.getElementById(
+              `${category}ScoreValue`
+            );
+
+            if (fillElement && valueElement) {
+              fillElement.style.width = `${score}%`;
+              valueElement.textContent = `${score}%`;
+            }
+          });
+
+          // Generar lista de problemas detectados
+          const issuesList = document.getElementById("issuesList");
+          if (issuesList) {
+            let issuesDetected = false;
+            let issuesHTML = "";
+
+            const categoryColors = {
+              factual: "#ef4444",
+              consistency: "#f97316",
+              attribution: "#eab308",
+              specificity: "#22c55e",
+              expertise: "#06b6d4",
+            };
+
+            const categoryNames = {
+              factual: "Precisión Factual",
+              consistency: "Consistencia Interna",
+              attribution: "Atribución y Citas",
+              specificity: "Especificidad",
+              expertise: "Conocimiento Experto",
+            };
+
+            Object.keys(state.checks).forEach((category) => {
+              const checkedItems = state.checks[category].filter(
+                (check) => check.checked
+              );
+
+              if (checkedItems.length > 0) {
+                issuesDetected = true;
+                issuesHTML += `
+                  <div class="issue-category">
+                    <div class="issue-category-title" style="color: ${
+                      categoryColors[category]
+                    }">
+                      ${categoryNames[category]}:
+                    </div>
+                    <ul class="issue-category-items">
+                      ${checkedItems
+                        .map(
+                          (check) => `<li class="issue-item">${check.text}</li>`
+                        )
+                        .join("")}
+                    </ul>
+                  </div>
+                `;
+              }
+            });
+
+            if (!issuesDetected) {
+              issuesHTML =
+                "<p>No se han detectado problemas significativos.</p>";
+            }
+
+            issuesList.innerHTML = issuesHTML;
+          }
+
+          // Generar texto con resaltados
+          generateHighlightedText();
+        }
+
+        // Generar texto con resaltados
+        function generateHighlightedText() {
+          if (!state.text || !highlightedText) return;
+
+          let text = state.text;
+          const issues = [];
+
+          // Recopilar todos los checks marcados
+          Object.keys(state.checks).forEach((category) => {
+            state.checks[category].forEach((check) => {
+              if (check.checked) {
+                issues.push({
+                  category,
+                  text: check.text,
+                });
+              }
+            });
+          });
+
+          // Si no hay problemas, mostrar el texto sin resaltados
+          if (issues.length === 0) {
+            highlightedText.innerHTML = text.replace(/\n/g, "<br>");
+            return;
+          }
+
+          // Analizar problemas para encontrar patrones en el texto
+          const patterns = [
+            { regex: /Universidad de Atlantis/g, category: "factual" },
+            { regex: /Science Marine Biology/g, category: "factual" },
+            { regex: /Dr\. James Peterson/g, category: "factual" },
+            { regex: /40\.000 "palabras"/g, category: "factual" },
+            {
+              regex: /intérpretes de lenguas interespecie/g,
+              category: "expertise",
+            },
+            { regex: /Microsoft Research/g, category: "attribution" },
+            {
+              regex: /en 2020 el mismo Dr\. Peterson publicó/g,
+              category: "consistency",
+            },
+          ];
+
+          // Aplicar resaltados
+          patterns.forEach((pattern) => {
+            if (state.checks[pattern.category].some((check) => check.checked)) {
+              text = text.replace(
+                pattern.regex,
+                (match) => `<span class="highlight">${match}</span>`
+              );
+            }
+          });
+
+          highlightedText.innerHTML = text.replace(/\n/g, "<br>");
+        }
+
+        // Mostrar mensaje toast
+        function showToast(message, type = "info") {
+          const toastContainer = document.getElementById("toastContainer");
+
+          if (!toastContainer) return;
+
+          const icons = {
+            success: '<i class="fas fa-check-circle"></i>',
+            warning: '<i class="fas fa-exclamation-triangle"></i>',
+            error: '<i class="fas fa-times-circle"></i>',
+            info: '<i class="fas fa-info-circle"></i>',
+          };
+
+          const toast = document.createElement("div");
+          toast.className = "toast";
+          toast.innerHTML = `${icons[type] || icons.info} ${message}`;
+
+          toastContainer.appendChild(toast);
+
+          // Eliminar toast después de 3 segundos
+          setTimeout(() => {
+            toast.remove();
+          }, 3000);
+        }
+
+        // ==========================================
+        // Event Listeners
+        // ==========================================
+
+        // Cambio de pestaña
+        tabButtons.forEach((button) => {
+          button.addEventListener("click", function () {
+            const tabId = this.getAttribute("data-tab");
+
+            // No cambiar a resultados si está deshabilitado
+            if (this.disabled) return;
+
+            changeTab(tabId);
+          });
+        });
+
+        // Cargar ejemplo
+        loadExampleBtn.addEventListener("click", function () {
+          iaTextArea.value = exampleText;
+          state.text = exampleText;
+          showToast("Ejemplo cargado", "info");
+        });
+
+        // Continuar al análisis
+        startAnalysisBtn.addEventListener("click", function () {
+          const text = iaTextArea.value.trim();
+
+          if (!text) {
+            showToast(
+              "Por favor, introduce o carga un texto para analizar",
+              "warning"
+            );
+            return;
+          }
+
+          state.text = text;
+          changeTab("analysis-tab");
+        });
+
+        // Volver al texto
+        backToTextBtn.addEventListener("click", function () {
+          changeTab("text-tab");
+        });
+
+        // Calcular resultados
+        calculateResultsBtn.addEventListener("click", function () {
+          calculateResults();
+          updateResultsView();
+          changeTab("results-tab");
+
+          // Habilitar pestaña de resultados
+          document.querySelector(
+            '.tab-button[data-tab="results-tab"]'
+          ).disabled = false;
+        });
+
+        // Volver al análisis
+        backToAnalysisBtn.addEventListener("click", function () {
+          changeTab("analysis-tab");
+        });
+
+        // Nuevo análisis
+        newAnalysisBtn.addEventListener("click", function () {
+          // Reiniciar checks
+          Object.keys(state.checks).forEach((category) => {
+            state.checks[category] = state.checks[category].map((check) => ({
+              ...check,
+              checked: false,
+            }));
+          });
+
+          // Eliminar checks personalizados
+          Object.keys(state.checks).forEach((category) => {
+            state.checks[category] = state.checks[category].filter(
+              (check) => !check.custom
+            );
+          });
+
+          // Actualizar UI
+          Object.keys(state.checks).forEach((category) => {
+            renderChecks(category);
+          });
+
+          updateCategoryCounts();
+
+          // Limpiar texto
+          iaTextArea.value = "";
+          state.text = "";
+
+          // Volver a la primera pestaña
+          changeTab("text-tab");
+
+          // Deshabilitar pestaña de resultados
+          document.querySelector(
+            '.tab-button[data-tab="results-tab"]'
+          ).disabled = true;
+
+          showToast("Nuevo análisis iniciado", "success");
+        });
+
+        // Añadir checks personalizados
+        document.querySelectorAll(".add-check-button").forEach((button) => {
+          button.addEventListener("click", function () {
+            const category = this.id
+              .replace("add", "")
+              .replace("CheckBtn", "")
+              .toLowerCase();
+            addCustomCheck(category);
+          });
+        });
+
+        // Permitir enviar con Enter en los inputs de añadir check
+        document.querySelectorAll(".add-check-input").forEach((input) => {
+          input.addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+              const category = this.id
+                .replace("new", "")
+                .replace("Check", "")
+                .toLowerCase();
+              addCustomCheck(category);
+            }
+          });
+        });
+
+        // Inicializar checks
+        Object.keys(state.checks).forEach((category) => {
+          renderChecks(category);
+        });
+
+        // Actualizar contadores iniciales
+        updateCategoryCounts();
+
+        // ==========================================
+        // Tutorial interactivo
+        // ==========================================
+
+        // Iniciar tutorial
+        function iniciarTutorial() {
+          const intro = introJs();
+
+          intro.setOptions({
+            steps: [
+              {
+                element: document.querySelector(".main-title"),
+                intro:
+                  "Bienvenido a HalluCheck, una herramienta interactiva para detectar posibles alucinaciones en textos generados por IA.",
+                position: "bottom",
+              },
+              {
+                element: document.querySelector(".hallucheck-main"),
+                intro:
+                  "Este es el panel principal donde podrás analizar, evaluar y revisar el texto generado por IA.",
+                position: "right",
+              },
+              {
+                element: document.querySelector("#analysis-tab"),
+                intro:
+                  "Aquí encontrarás criterios organizados por categorías para evaluar sistemáticamente el texto.",
+                position: "right",
+              },
+              {
+                element: document.querySelector("#results-tab"),
+                intro:
+                  "En esta sección verás un resumen de tu análisis, incluyendo la puntuación de confiabilidad y los problemas detectados.",
+                position: "left",
+              },
+              {
+                element: document.querySelector(".hallucheck-sidebar"),
+                intro:
+                  "El panel lateral contiene guías, ejemplos y recomendaciones para ayudarte a identificar alucinaciones.",
+                position: "left",
+              },
+              {
+                element: document.getElementById("loadExampleBtn"),
+                intro:
+                  "Puedes cargar un ejemplo con texto que contiene alucinaciones para probar la herramienta.",
+                position: "bottom",
+              },
+            ],
+            highlightClass: "myHighlight",
+            showBullets: true,
+            showProgress: true,
+            scrollToElement: true,
+            disableInteraction: false,
+          });
+
+          intro.oncomplete(function () {
+            localStorage.setItem("hallucheck_tutorial_visto", "true");
+          });
+
+          intro.onexit(function () {
+            localStorage.setItem("hallucheck_tutorial_visto", "true");
+          });
+
+          intro.start();
+        }
+
+        // Comprobar si ya se ha visto el tutorial
+        const tutorialVisto = localStorage.getItem("hallucheck_tutorial_visto");
+
+        if (!tutorialVisto) {
+          setTimeout(iniciarTutorial, 1000);
+        }
+
+        // Botón para iniciar tutorial
+        const startTutorialBtn = document.getElementById("startTutorialBtn");
+
+        if (startTutorialBtn) {
+          startTutorialBtn.addEventListener("click", iniciarTutorial);
+        }
+      });
+    </script>
+
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </body>
+</html>
