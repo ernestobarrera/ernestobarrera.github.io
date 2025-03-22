@@ -92,15 +92,44 @@
       }
 
       .hallucheck-container {
-        display: grid;
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
         gap: 1rem;
       }
 
-      @media (min-width: 1024px) {
-        .hallucheck-container {
-          grid-template-columns: 7fr 5fr;
-        }
+      .hallucheck-main-container {
+        width: 100%;
+      }
+
+      .hallucheck-sidebar {
+        position: relative;
+        top: 0;
+        margin-bottom: 2rem;
+      }
+
+      .sidebar-toggle {
+        background-color: var(--card-bg);
+        color: var(--text-primary);
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+      }
+
+      .sidebar-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+
+      .sidebar-content.expanded {
+        max-height: 2000px;
       }
 
       /* Panel izquierdo */
@@ -173,7 +202,9 @@
       /* Controles */
       .control-buttons {
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
         margin-bottom: 0.5rem;
       }
 
@@ -235,6 +266,9 @@
 
       .check-category.expertise {
         border-left-color: #06b6d4;
+      }
+      .check-category.metamorphic {
+        border-left-color: #8b5cf6;
       }
 
       .category-title {
@@ -526,9 +560,63 @@
       }
 
       .highlighted-text .highlight {
+        padding: 0 2px;
+        border-radius: 2px;
+        position: relative;
+        cursor: help;
+      }
+
+      .highlighted-text .highlight.factual {
         background-color: rgba(239, 68, 68, 0.2);
         border-bottom: 1px solid rgba(239, 68, 68, 0.5);
-        padding: 0 2px;
+      }
+
+      .highlighted-text .highlight.consistency {
+        background-color: rgba(249, 115, 22, 0.2);
+        border-bottom: 1px solid rgba(249, 115, 22, 0.5);
+      }
+
+      .highlighted-text .highlight.attribution {
+        background-color: rgba(234, 179, 8, 0.2);
+        border-bottom: 1px solid rgba(234, 179, 8, 0.5);
+      }
+
+      .highlighted-text .highlight.specificity {
+        background-color: rgba(34, 197, 94, 0.2);
+        border-bottom: 1px solid rgba(34, 197, 94, 0.5);
+      }
+
+      .highlighted-text .highlight.expertise {
+        background-color: rgba(6, 182, 212, 0.2);
+        border-bottom: 1px solid rgba(6, 182, 212, 0.5);
+      }
+
+      .highlighted-text .highlight.metamorphic {
+        background-color: rgba(139, 92, 246, 0.2);
+        border-bottom: 1px solid rgba(139, 92, 246, 0.5);
+      }
+
+      .highlight-tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--card-bg);
+        color: var(--text-primary);
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        z-index: 10;
+        width: max-content;
+        max-width: 300px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .highlight:hover .highlight-tooltip {
+        opacity: 1;
       }
 
       /* Toast notifications */
@@ -667,6 +755,35 @@
         border-radius: 8px !important;
         transition: box-shadow 0.6s ease;
       }
+      .analysis-empty-state {
+        background: rgba(59, 130, 246, 0.1);
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+
+      .empty-state .check-category {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      .results-empty-state {
+        background: rgba(251, 191, 36, 0.1);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+      }
+
+      .results-empty-state ol {
+        margin-top: 0.5rem;
+        padding-left: 1.5rem;
+      }
+
+      .results-empty-state li {
+        margin-bottom: 0.25rem;
+      }
     </style>
   </head>
   <body>
@@ -724,7 +841,7 @@
               <button class="tab-button" data-tab="analysis-tab">
                 <i class="fas fa-microscope"></i> Análisis
               </button>
-              <button class="tab-button" data-tab="results-tab" disabled>
+              <button class="tab-button" data-tab="results-tab">
                 <i class="fas fa-chart-pie"></i> Resultados
               </button>
             </div>
@@ -736,9 +853,21 @@
                   id="iaText"
                   placeholder="Pega aquí el texto generado por IA que deseas analizar..."
                 ></textarea>
+
                 <div class="control-buttons">
-                  <button class="control-button" id="loadExampleBtn">
-                    <i class="fas fa-lightbulb"></i> Cargar ejemplo
+                  <button
+                    class="control-button primary-button"
+                    id="loadExampleBtn"
+                  >
+                    <i class="fas fa-lightbulb"></i>
+                    Cargar ejemplo
+                  </button>
+                  <button
+                    class="control-button primary-button"
+                    id="clearTextBtn"
+                  >
+                    <i class="fas fa-eraser"></i>
+                    Limpiar texto
                   </button>
                   <button
                     class="control-button primary-button"
@@ -1034,7 +1163,64 @@
                   </button>
                 </div>
               </div>
-
+              <div class="check-category metamorphic">
+                <div class="category-title">
+                  <span
+                    ><i class="fas fa-random"></i> Relaciones Metamórficas</span
+                  >
+                  <span class="category-count">0/3</span>
+                </div>
+                <p class="category-description">
+                  Evalúa la consistencia lógica cuando se aplican
+                  transformaciones a la información.
+                </p>
+                <div class="check-items" id="metamorphicChecks">
+                  <div class="check-item">
+                    <input
+                      type="checkbox"
+                      id="meta1"
+                      class="metamorphic-check"
+                    />
+                    <label for="meta1"
+                      >La información contradice lo que se esperaría si se
+                      negara una premisa clave</label
+                    >
+                  </div>
+                  <div class="check-item">
+                    <input
+                      type="checkbox"
+                      id="meta2"
+                      class="metamorphic-check"
+                    />
+                    <label for="meta2"
+                      >Detalles específicos cambian significativamente cuando se
+                      reformula la misma información</label
+                    >
+                  </div>
+                  <div class="check-item">
+                    <input
+                      type="checkbox"
+                      id="meta3"
+                      class="metamorphic-check"
+                    />
+                    <label for="meta3"
+                      >Faltan relaciones lógicas esperadas entre diferentes
+                      partes del texto</label
+                    >
+                  </div>
+                </div>
+                <div class="add-check-container">
+                  <input
+                    type="text"
+                    class="add-check-input"
+                    id="newMetamorphicCheck"
+                    placeholder="Añadir criterio personalizado..."
+                  />
+                  <button class="add-check-button" id="addMetamorphicCheckBtn">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
               <div class="control-buttons">
                 <button class="control-button" id="backToTextBtn">
                   <i class="fas fa-arrow-left"></i> Volver al texto
@@ -1157,6 +1343,19 @@
                     100%
                   </div>
                 </div>
+                <div class="category-score">
+                  <div class="category-score-label">Rel. Metamórficas</div>
+                  <div class="category-score-bar">
+                    <div
+                      class="category-score-fill"
+                      id="metamorphicScoreFill"
+                      style="width: 100%; background-color: #8b5cf6"
+                    ></div>
+                  </div>
+                  <div class="category-score-value" id="metamorphicScoreValue">
+                    100%
+                  </div>
+                </div>
               </div>
 
               <div class="detected-issues">
@@ -1173,6 +1372,9 @@
               <div class="control-buttons">
                 <button class="control-button" id="backToAnalysisBtn">
                   <i class="fas fa-arrow-left"></i> Volver al análisis
+                </button>
+                <button class="control-button" id="exportResultsBtn">
+                  <i class="fas fa-file-export"></i> Exportar resultados
                 </button>
                 <button
                   class="control-button primary-button"
@@ -1191,63 +1393,68 @@
           data-intro="Este panel lateral contiene guías y ejemplos para ayudarte a identificar alucinaciones."
           data-step="5"
         >
-          <h2><i class="fas fa-info-circle"></i> Guía de Análisis</h2>
-
-          <div class="sidebar-section">
-            <h3>Cómo utilizar esta herramienta</h3>
-            <ol>
-              <li>Pega el texto generado por IA en el área de texto</li>
-              <li>
-                Revisa el texto cuidadosamente buscando señales de alucinación
-              </li>
-              <li>Marca los criterios que identifiques en cada categoría</li>
-              <li>Añade criterios personalizados si es necesario</li>
-              <li>
-                Obtén una puntuación de confiabilidad y análisis detallado
-              </li>
-            </ol>
-          </div>
-
-          <div class="sidebar-section">
-            <h3>Señales comunes de alucinación</h3>
-            <ul>
-              <li>Referencias a artículos académicos inexistentes</li>
-              <li>Estadísticas o cifras demasiado precisas sin fuente</li>
-              <li>Detalles históricos incorrectos o inventados</li>
-              <li>Contradicciones internas entre diferentes partes</li>
-              <li>Uso incorrecto de terminología técnica</li>
-            </ul>
-          </div>
-
-          <div class="sidebar-section">
-            <h3>Ejemplo de alucinación</h3>
-            <div class="example-box">
-              "La proteína CRISPR-9 fue descubierta en 2014 por el Dr. James
-              Thompson de la Universidad de Atlantis.
-              <strong>Su estudio 'Genomic Applications of CRISPR-9'</strong>
-              publicado en <strong>Nature Genomics</strong> revolucionó la
-              edición genética." <br /><br />
-              <em
-                >Problemas: Universidad ficticia, revista inexistente, proteína
-                inventada (es Cas9, no CRISPR-9), autor fabricado.</em
-              >
+          <button class="sidebar-toggle" id="sidebarToggle">
+            <h2><i class="fas fa-info-circle"></i> Guía de Análisis</h2>
+            <i class="fas fa-chevron-down" id="toggleIcon"></i>
+          </button>
+          <div class="sidebar-content" id="sidebarContent">
+            <div class="sidebar-section">
+              <h3>Cómo utilizar esta herramienta</h3>
+              <ol>
+                <li>Pega el texto generado por IA en el área de texto</li>
+                <li>
+                  Revisa el texto cuidadosamente buscando señales de alucinación
+                </li>
+                <li>Marca los criterios que identifiques en cada categoría</li>
+                <li>Añade criterios personalizados si es necesario</li>
+                <li>
+                  Obtén una puntuación de confiabilidad y análisis detallado
+                </li>
+              </ol>
             </div>
-          </div>
 
-          <div class="sidebar-section">
-            <h3>Notas personales</h3>
-            <textarea
-              class="notes-area"
-              placeholder="Añade tus observaciones aquí..."
-            ></textarea>
-          </div>
+            <div class="sidebar-section">
+              <h3>Señales comunes de alucinación</h3>
+              <ul>
+                <li>Referencias a artículos académicos inexistentes</li>
+                <li>Estadísticas o cifras demasiado precisas sin fuente</li>
+                <li>Detalles históricos incorrectos o inventados</li>
+                <li>Contradicciones internas entre diferentes partes</li>
+                <li>Uso incorrecto de terminología técnica</li>
+              </ul>
+            </div>
 
-          <div class="sidebar-section">
-            <p style="font-size: 0.8rem; color: #94a3b8; text-align: center">
-              <i class="fas fa-exclamation-circle"></i> HalluCheck no garantiza
-              la detección de todas las alucinaciones. Siempre verifica
-              información crítica.
-            </p>
+            <div class="sidebar-section">
+              <h3>Ejemplo de alucinación</h3>
+              <div class="example-box">
+                "La proteína CRISPR-9 fue descubierta en 2014 por el Dr. James
+                Thompson de la Universidad de Atlantis.
+                <strong>Su estudio 'Genomic Applications of CRISPR-9'</strong>
+                publicado en <strong>Nature Genomics</strong> revolucionó la
+                edición genética." <br /><br />
+                <em
+                  >Problemas: Universidad ficticia, revista inexistente,
+                  proteína inventada (es Cas9, no CRISPR-9), autor
+                  fabricado.</em
+                >
+              </div>
+            </div>
+
+            <div class="sidebar-section">
+              <h3>Notas personales</h3>
+              <textarea
+                class="notes-area"
+                placeholder="Añade tus observaciones aquí..."
+              ></textarea>
+            </div>
+
+            <div class="sidebar-section">
+              <p style="font-size: 0.8rem; color: #94a3b8; text-align: center">
+                <i class="fas fa-exclamation-circle"></i> HalluCheck no
+                garantiza la detección de todas las alucinaciones. Siempre
+                verifica información crítica.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -1370,6 +1577,20 @@ Este descubrimiento representa un importante avance para los intérpretes de len
               text: "Ignora limitaciones, controversias o debates conocidos en el campo",
             },
           ],
+          metamorphic: [
+            {
+              id: "meta1",
+              text: "La información contradice lo que se esperaría si se negara una premisa clave",
+            },
+            {
+              id: "meta2",
+              text: "Detalles específicos cambian significativamente cuando se reformula la misma información",
+            },
+            {
+              id: "meta3",
+              text: "Faltan relaciones lógicas esperadas entre diferentes partes del texto",
+            },
+          ],
         };
 
         // Inicializar el estado
@@ -1407,6 +1628,52 @@ Este descubrimiento representa un importante avance para los intérpretes de len
 
         // Cambiar pestaña activa
         function changeTab(tabId) {
+          // Antes de cambiar a una pestaña, realizar comprobaciones
+          if (tabId === "analysis-tab" && !state.text.trim()) {
+            // Si estamos cambiando a análisis pero no hay texto, mostrar mensaje
+            showToast(
+              "No hay texto para analizar. Por favor, introduce o carga texto primero.",
+              "warning"
+            );
+            // Pero permitir el cambio de todos modos
+          }
+
+          if (tabId === "results-tab") {
+            // Si no hay resultados calculados o no hay texto, mostrar un estado vacío en la pestaña de resultados
+            if (
+              !state.text.trim() ||
+              Object.keys(state.results.categoryScores).length === 0
+            ) {
+              showToast(
+                "No hay resultados calculados. Considera introducir texto y calcular resultados.",
+                "info"
+              );
+              // Asegurarnos de que hay un elemento para mostrar el estado vacío
+              const resultsTab = document.getElementById("results-tab");
+              const emptyStateMsg = resultsTab.querySelector(
+                ".results-empty-state"
+              );
+              if (!emptyStateMsg) {
+                const msg = document.createElement("div");
+                msg.className = "results-empty-state";
+                msg.innerHTML = `<p><i class="fas fa-info-circle"></i> No hay resultados calculados. Primero necesitas:
+          <ol>
+            <li>Introducir o cargar texto en la pestaña "Texto"</li>
+            <li>Marcar criterios en la pestaña "Análisis"</li>
+            <li>Hacer clic en "Calcular resultados"</li>
+          </ol>
+        </p>`;
+                resultsTab.prepend(msg);
+              }
+            } else {
+              // Si hay resultados, eliminar el mensaje de estado vacío
+              const emptyStateMsg = document.querySelector(
+                ".results-empty-state"
+              );
+              if (emptyStateMsg) emptyStateMsg.remove();
+            }
+          }
+
           tabButtons.forEach((btn) => {
             btn.classList.toggle(
               "active",
@@ -1419,6 +1686,41 @@ Este descubrimiento representa un importante avance para los intérpretes de len
           });
 
           state.activeTab = tabId;
+
+          // Estado visual según la pestaña actual
+          updateVisualState(tabId);
+        }
+
+        // Añade esta nueva función para actualizar los estados visuales
+        function updateVisualState(tabId) {
+          // Actualizar el estado visual dependiendo de la pestaña activa
+          if (tabId === "analysis-tab") {
+            // Si estamos en análisis sin texto, mostrar un indicador visual
+            if (!state.text.trim()) {
+              document
+                .getElementById("analysis-tab")
+                .classList.add("empty-state");
+              // Opcional: Mostrar un mensaje dentro de la pestaña de análisis
+              const emptyStateMsg = document.querySelector(
+                ".analysis-empty-state"
+              );
+              if (!emptyStateMsg) {
+                const msg = document.createElement("div");
+                msg.className = "analysis-empty-state";
+                msg.innerHTML =
+                  '<p><i class="fas fa-info-circle"></i> No hay texto para analizar. Regresa a la pestaña de Texto para ingresar contenido.</p>';
+                document.getElementById("analysis-tab").prepend(msg);
+              }
+            } else {
+              document
+                .getElementById("analysis-tab")
+                .classList.remove("empty-state");
+              const emptyStateMsg = document.querySelector(
+                ".analysis-empty-state"
+              );
+              if (emptyStateMsg) emptyStateMsg.remove();
+            }
+          }
         }
 
         // Actualizar contadores de categorías
@@ -1630,6 +1932,7 @@ Este descubrimiento representa un importante avance para los intérpretes de len
               attribution: "Atribución y Citas",
               specificity: "Especificidad",
               expertise: "Conocimiento Experto",
+              metamorphic: "Relaciones Metamórficas",
             };
 
             Object.keys(state.checks).forEach((category) => {
@@ -1715,9 +2018,19 @@ Este descubrimiento representa un importante avance para los intérpretes de len
           // Aplicar resaltados
           patterns.forEach((pattern) => {
             if (state.checks[pattern.category].some((check) => check.checked)) {
+              const categoryCheck = state.checks[pattern.category].find(
+                (check) => check.checked
+              );
+              const tooltipText = categoryCheck
+                ? categoryCheck.text
+                : "Posible alucinación detectada";
+
               text = text.replace(
                 pattern.regex,
-                (match) => `<span class="highlight">${match}</span>`
+                (match) => `<span class="highlight ${pattern.category}">
+        ${match}
+        <span class="highlight-tooltip">${tooltipText}</span>
+      </span>`
               );
             }
           });
@@ -1772,7 +2085,29 @@ Este descubrimiento representa un importante avance para los intérpretes de len
           state.text = exampleText;
           showToast("Ejemplo cargado", "info");
         });
+        // Limpiar texto
+        const clearTextBtn = document.getElementById("clearTextBtn");
+        if (clearTextBtn) {
+          clearTextBtn.addEventListener("click", function () {
+            iaTextArea.value = "";
+            state.text = "";
+            // Desmarcar checks
+            Object.keys(state.checks).forEach(function (category) {
+              state.checks[category].forEach(function (check) {
+                check.checked = false;
+              });
+            });
 
+            // Renderizar de nuevo los checks para que se vea reflejado
+            Object.keys(state.checks).forEach(function (category) {
+              renderChecks(category);
+            });
+
+            // Actualizar los contadores
+            updateCategoryCounts();
+            showToast("Texto limpiado", "info");
+          });
+        }
         // Continuar al análisis
         startAnalysisBtn.addEventListener("click", function () {
           const text = iaTextArea.value.trim();
@@ -1796,10 +2131,32 @@ Este descubrimiento representa un importante avance para los intérpretes de len
 
         // Calcular resultados
         calculateResultsBtn.addEventListener("click", function () {
+          // Verificar si hay texto para analizar
+          if (!state.text.trim()) {
+            showToast(
+              "No hay texto para analizar. Por favor, introduce o carga texto primero.",
+              "warning"
+            );
+            changeTab("text-tab"); // Redirigir a la pestaña de texto
+            return;
+          }
+
+          // Verificar si se han marcado algunos criterios
+          const hasCheckedItems = Object.values(state.checks).some(
+            (categoryChecks) => categoryChecks.some((check) => check.checked)
+          );
+
+          if (!hasCheckedItems) {
+            showToast(
+              "No has marcado ningún criterio. Los resultados mostrarán 100% de confiabilidad.",
+              "info"
+            );
+          }
+
+          // Continuar con el cálculo y visualización
           calculateResults();
           updateResultsView();
           changeTab("results-tab");
-
           // Habilitar pestaña de resultados
           document.querySelector(
             '.tab-button[data-tab="results-tab"]'
@@ -1842,11 +2199,6 @@ Este descubrimiento representa un importante avance para los intérpretes de len
           // Volver a la primera pestaña
           changeTab("text-tab");
 
-          // Deshabilitar pestaña de resultados
-          document.querySelector(
-            '.tab-button[data-tab="results-tab"]'
-          ).disabled = true;
-
           showToast("Nuevo análisis iniciado", "success");
         });
 
@@ -1882,6 +2234,90 @@ Este descubrimiento representa un importante avance para los intérpretes de len
         // Actualizar contadores iniciales
         updateCategoryCounts();
 
+        // Exportar resultados
+        document
+          .getElementById("exportResultsBtn")
+          .addEventListener("click", function () {
+            // Crear contenido para exportar
+            const score = state.results.totalScore;
+            const label = scoreLabel.textContent;
+            const text = state.text;
+            const issuesHTML = issuesList.innerHTML;
+
+            // Crear un objeto con los resultados
+            const results = {
+              date: new Date().toLocaleString(),
+              score: score,
+              label: label,
+              text: text,
+              issues: issuesHTML.replace(/<\/?[^>]+(>|$)/g, ""), // Quitar HTML tags
+              categoryScores: state.results.categoryScores,
+            };
+
+            // Convertir a texto para exportar
+            let exportText = `HALLUCHECK - ANÁLISIS DE ALUCINACIONES\n`;
+            exportText += `Fecha: ${results.date}\n`;
+            exportText += `Puntuación de confiabilidad: ${results.score}% (${results.label})\n\n`;
+            exportText += `TEXTO ANALIZADO:\n${results.text}\n\n`;
+            exportText += `PUNTUACIONES POR CATEGORÍA:\n`;
+
+            for (const [category, score] of Object.entries(
+              results.categoryScores
+            )) {
+              let categoryName = "";
+              switch (category) {
+                case "factual":
+                  categoryName = "Precisión Factual";
+                  break;
+                case "consistency":
+                  categoryName = "Consistencia Interna";
+                  break;
+                case "attribution":
+                  categoryName = "Atribución y Citas";
+                  break;
+                case "specificity":
+                  categoryName = "Especificidad";
+                  break;
+                case "expertise":
+                  categoryName = "Conocimiento Experto";
+                  break;
+                case "metamorphic":
+                  categoryName = "Relaciones Metamórficas";
+                  break;
+              }
+              exportText += `- ${categoryName}: ${score}%\n`;
+            }
+
+            exportText += `\nPROBLEMAS DETECTADOS:\n${results.issues}\n`;
+
+            // Crear blob y descargar
+            const blob = new Blob([exportText], { type: "text/plain" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = `hallucheck-analisis-${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            showToast("Resultados exportados correctamente", "success");
+          });
+        // Toggle para el panel de guía
+        const sidebarToggle = document.getElementById("sidebarToggle");
+        const sidebarContent = document.getElementById("sidebarContent");
+        const toggleIcon = document.getElementById("toggleIcon");
+
+        if (sidebarToggle && sidebarContent) {
+          sidebarToggle.addEventListener("click", function () {
+            sidebarContent.classList.toggle("expanded");
+            toggleIcon.classList.toggle("fa-chevron-down");
+            toggleIcon.classList.toggle("fa-chevron-up");
+          });
+
+          // Expandir por defecto en pantallas grandes
+          if (window.innerWidth > 1024) {
+            sidebarContent.classList.add("expanded");
+          }
+        }
         // ==========================================
         // Tutorial interactivo
         // ==========================================
@@ -1905,25 +2341,19 @@ Este descubrimiento representa un importante avance para los intérpretes de len
                 position: "right",
               },
               {
-                element: document.querySelector("#analysis-tab"),
+                element: document.querySelector(".tabs"),
                 intro:
-                  "Aquí encontrarás criterios organizados por categorías para evaluar sistemáticamente el texto.",
-                position: "right",
+                  "Navega entre estas pestañas para ingresar texto, realizar tu análisis y ver los resultados.",
+                position: "bottom",
               },
               {
-                element: document.querySelector("#results-tab"),
+                element: document.querySelector("#iaText"),
                 intro:
-                  "En esta sección verás un resumen de tu análisis, incluyendo la puntuación de confiabilidad y los problemas detectados.",
-                position: "left",
+                  "Pega aquí el texto generado por IA que deseas analizar. Mientras más extenso y detallado sea, más efectiva será la detección.",
+                position: "top",
               },
               {
-                element: document.querySelector(".hallucheck-sidebar"),
-                intro:
-                  "El panel lateral contiene guías, ejemplos y recomendaciones para ayudarte a identificar alucinaciones.",
-                position: "left",
-              },
-              {
-                element: document.getElementById("loadExampleBtn"),
+                element: document.querySelector("#loadExampleBtn"),
                 intro:
                   "Puedes cargar un ejemplo con texto que contiene alucinaciones para probar la herramienta.",
                 position: "bottom",
@@ -1936,8 +2366,127 @@ Este descubrimiento representa un importante avance para los intérpretes de len
             disableInteraction: false,
           });
 
+          // Agregar un evento antes de que se muestre cada paso
+          intro.onbeforechange(function (targetElement) {
+            // Obtener el paso actual (0-indexado)
+            const currentStep = intro._currentStep;
+
+            // Si vamos a mostrar las categorías (pasos 5-11), asegurar que estamos en la pestaña de análisis
+            if (currentStep >= 5 && currentStep <= 11) {
+              // Cargar el ejemplo si no hay texto
+              if (!state.text || state.text.trim() === "") {
+                iaTextArea.value = exampleText;
+                state.text = exampleText;
+              }
+
+              // Cambiar a la pestaña de análisis
+              changeTab("analysis-tab");
+            }
+            // Si vamos a mostrar los resultados (paso 12), cambiar a esa pestaña
+            else if (currentStep >= 12 && currentStep < 14) {
+              // Asegurarnos de que hay texto para analizar
+              if (!state.text || state.text.trim() === "") {
+                iaTextArea.value = exampleText;
+                state.text = exampleText;
+              }
+
+              // Calcular resultados si no se han calculado
+              if (
+                document.querySelector('.tab-button[data-tab="results-tab"]')
+                  .disabled
+              ) {
+                // Marcar algunos checks para tener resultados interesantes
+                if (state.checks.factual[0])
+                  state.checks.factual[0].checked = true;
+                if (state.checks.factual[3])
+                  state.checks.factual[3].checked = true;
+                if (state.checks.consistency[0])
+                  state.checks.consistency[0].checked = true;
+
+                calculateResults();
+                updateResultsView();
+              }
+
+              // Habilitar y cambiar a pestaña de resultados
+              document.querySelector(
+                '.tab-button[data-tab="results-tab"]'
+              ).disabled = false;
+              changeTab("results-tab");
+            }
+            // Los otros pasos (0-4, 14+) vuelven a la pestaña de texto
+            else if (currentStep < 5 || currentStep >= 14) {
+              changeTab("text-tab");
+            }
+          });
+
+          // Agregar los pasos adicionales que necesitan la pestaña de análisis activada
+          intro.addSteps([
+            {
+              element: document.querySelector(".check-category.factual"),
+              intro:
+                "La categoría de Precisión Factual te ayuda a identificar si el texto contiene información fabricada, como fechas incorrectas, estadísticas sin fuentes o instituciones inexistentes.",
+              position: "left",
+            },
+            {
+              element: document.querySelector(".check-category.consistency"),
+              intro:
+                "La Consistencia Interna evalúa si el texto se contradice a sí mismo, un indicador común de alucinaciones en LLMs.",
+              position: "left",
+            },
+            {
+              element: document.querySelector(".check-category.attribution"),
+              intro:
+                "La categoría de Atribución y Citas detecta referencias falsas a fuentes, artículos o expertos que no existen o son incorrectas.",
+              position: "left",
+            },
+            {
+              element: document.querySelector(".check-category.specificity"),
+              intro:
+                "La Especificidad y Vaguedad identifica cuando el texto usa lenguaje ambiguo para evitar comprometerse con detalles específicos.",
+              position: "left",
+            },
+            {
+              element: document.querySelector(".check-category.expertise"),
+              intro:
+                "Las Señales de Conocimiento Experto evalúan si el texto muestra comprensión profunda del tema o simplifica excesivamente conceptos complejos.",
+              position: "left",
+            },
+            {
+              element: document.querySelector(".check-category.metamorphic"),
+              intro:
+                "Las Relaciones Metamórficas evalúan la consistencia lógica del texto cuando se aplican transformaciones a la información, una técnica avanzada de detección sin recursos externos.",
+              position: "left",
+            },
+            {
+              element: document.querySelector(".add-check-container"),
+              intro:
+                "Puedes añadir criterios personalizados en cada categoría para adaptarlos a tu caso específico.",
+              position: "top",
+            },
+            {
+              element: document.querySelector("#calculateResultsBtn"),
+              intro:
+                "Una vez que hayas marcado todos los criterios relevantes, calcula los resultados para obtener un análisis completo.",
+              position: "bottom",
+            },
+            {
+              element: document.querySelector("#results-tab"),
+              intro:
+                "En la pestaña de resultados encontrarás una puntuación de confiabilidad, un desglose por categorías y los problemas detectados resaltados en el texto.",
+              position: "left",
+            },
+            {
+              element: document.querySelector(".sidebar-toggle"),
+              intro:
+                "Expande este panel para acceder a la guía completa con ejemplos y consejos para la detección de alucinaciones.",
+              position: "top",
+            },
+          ]);
+
           intro.oncomplete(function () {
             localStorage.setItem("hallucheck_tutorial_visto", "true");
+            // Expandir la guía después del tutorial
+            if (sidebarContent) sidebarContent.classList.add("expanded");
           });
 
           intro.onexit(function () {
