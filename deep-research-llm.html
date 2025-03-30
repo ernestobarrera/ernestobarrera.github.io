@@ -368,7 +368,7 @@
 
       .document-frame {
         width: 100%;
-        height: 500px;
+        height: 700px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 0.25rem;
         background-color: #ffffff;
@@ -642,6 +642,112 @@
           overflow-x: auto;
         }
       }
+      /* Estilos para la plantilla de prompts */
+      .prompt-template {
+        background-color: rgba(30, 41, 59, 0.3);
+        border-left: 3px solid var(--accent-color);
+        padding: 1.25rem;
+        margin: 1.5rem 0;
+        border-radius: 0.25rem;
+      }
+
+      .template-content {
+        font-size: 0.9rem;
+        line-height: 1.5;
+        color: var(--text-secondary);
+      }
+
+      .template-intro {
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+
+      .template-section {
+        margin-bottom: 1rem;
+      }
+
+      .template-section h4 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+      }
+
+      .template-section ul,
+      .template-section ol {
+        margin-left: 1.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .template-section li {
+        margin-bottom: 0.3rem;
+      }
+
+      .template-footer {
+        font-weight: 500;
+        margin-top: 1rem;
+      }
+
+      .copy-button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background-color: rgba(255, 215, 0, 0.1);
+        color: var(--accent-color);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        margin-top: 1rem;
+      }
+
+      .copy-button:hover {
+        background-color: rgba(255, 215, 0, 0.2);
+      }
+      /* Mejoras para tablas comparativas */
+      .models-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+        background-color: rgba(30, 41, 59, 0.2);
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .models-table th {
+        text-align: left;
+        padding: 1rem 0.75rem;
+        background-color: rgba(30, 41, 59, 0.5);
+        color: var(--text-primary);
+        font-weight: 600;
+        border-bottom: 2px solid rgba(255, 215, 0, 0.2);
+      }
+
+      .models-table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: var(--text-secondary);
+        vertical-align: top;
+      }
+
+      .models-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .models-table tr:hover td {
+        background-color: rgba(30, 41, 59, 0.3);
+      }
+
+      .table-note {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        font-style: italic;
+        margin-top: 0.75rem;
+        text-align: right;
+      }
     </style>
   </head>
 
@@ -658,12 +764,18 @@
           <span>Deep Research con LLM</span>
         </h1>
         <p class="intro-text">
-          Los modelos de lenguaje avanzados con capacidades de búsqueda activa
-          permiten generar investigaciones académicas completas, combinando
-          razonamiento avanzado y acceso a información actualizada. Esta
-          tecnología permite a profesionales sanitarios obtener revisiones
-          exhaustivas con referencias científicas en minutos, con mínima
-          interacción humana y resultados de alta calidad.
+          El <strong>Deep Research</strong> con LLM representa un nuevo
+          paradigma en la investigación sanitaria donde los modelos de lenguaje
+          avanzados no solo recuperan información, sino que la analizan,
+          sintetizan y estructuran de forma autónoma. Esta tecnología va más
+          allá de los motores de búsqueda tradicionales: comprende consultas
+          complejas, las descompone en múltiples tareas de investigación, busca
+          información actualizada en internet y consolida los resultados en
+          documentos académicos estructurados con mínima interacción humana.
+          Para los profesionales sanitarios, esto significa obtener revisiones
+          exhaustivas con referencias científicas verificables en minutos,
+          acelerando significativamente la toma de decisiones basada en
+          evidencia.
         </p>
       </section>
 
@@ -782,6 +894,75 @@
               </p>
             </div>
           </div>
+          <div class="accordion-item active">
+            <div class="accordion-header">
+              <span>Aplicaciones específicas en el ámbito sanitario</span>
+              <i class="fas fa-chevron-down accordion-icon"></i>
+            </div>
+            <div class="accordion-content active">
+              <p>
+                El Deep Research con LLM está demostrando un impacto
+                transformador en diversas áreas de la investigación y práctica
+                sanitaria:
+              </p>
+
+              <ul class="technical-list">
+                <li>
+                  <strong>Revisión y síntesis de literatura:</strong> Análisis
+                  rápido de grandes volúmenes de artículos científicos,
+                  identificación de estudios clave y síntesis de hallazgos,
+                  permitiendo a los profesionales mantenerse actualizados con la
+                  evidencia más reciente.
+                </li>
+                <li>
+                  <strong>Análisis de datos no estructurados:</strong>
+                  Procesamiento de notas clínicas, informes y otros textos
+                  médicos para extraer información valiosa que podría pasarse
+                  por alto con métodos tradicionales.
+                </li>
+                <li>
+                  <strong>Generación de hipótesis:</strong> Identificación de
+                  patrones y relaciones en datos existentes para ayudar a
+                  formular nuevas hipótesis de investigación y diseñar
+                  experimentos más específicos.
+                </li>
+                <li>
+                  <strong>Descubrimiento de fármacos:</strong> Predicción de
+                  propiedades farmacológicas, identificación de posibles dianas
+                  terapéuticas y análisis de datos de ensayos clínicos,
+                  acelerando el desarrollo de nuevos tratamientos.
+                </li>
+                <li>
+                  <strong
+                    >Construcción de grafos de conocimiento médico:</strong
+                  >
+                  Organización automática del conocimiento médico en redes
+                  interconectadas para facilitar la comprensión de sistemas
+                  biológicos complejos y mecanismos de enfermedad.
+                </li>
+                <li>
+                  <strong>Investigación epidemiológica:</strong> Análisis de
+                  datos de redes sociales y otros textos online para rastrear y
+                  predecir propagación de enfermedades, proporcionando
+                  información valiosa para decisiones de salud pública.
+                </li>
+                <li>
+                  <strong>Educación médica personalizada:</strong> Creación de
+                  materiales educativos adaptados a las necesidades específicas
+                  de los profesionales y estudiantes, incluyendo simulaciones
+                  clínicas y pacientes virtuales.
+                </li>
+              </ul>
+
+              <p>
+                Casos de uso documentados incluyen la detección temprana de
+                sepsis, la interpretación avanzada de imágenes radiológicas, el
+                desarrollo de sistemas de apoyo a la decisión clínica y la
+                creación de recursos educativos médicos interactivos y
+                adaptativos.
+              </p>
+            </div>
+          </div>
         </div>
 
         <!-- Tab 2: Workflow -->
@@ -885,7 +1066,84 @@
               </ul>
             </div>
           </div>
+          <div class="accordion-item active">
+            <div class="accordion-header">
+              <span>Comparativa de plataformas de Deep Research</span>
+              <i class="fas fa-chevron-down accordion-icon"></i>
+            </div>
+            <div class="accordion-content active">
+              <p>
+                Esta tabla compara las características principales de las
+                plataformas de Deep Research más populares, para ayudarte a
+                elegir la más adecuada según tus necesidades:
+              </p>
 
+              <div class="models-table-container">
+                <table class="models-table">
+                  <thead>
+                    <tr>
+                      <th>Característica</th>
+                      <th>OpenAI Deep Research</th>
+                      <th>Google Gemini</th>
+                      <th>Perplexity Deep Research</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>Costo</strong></td>
+                      <td>$200/mes</td>
+                      <td>$20/mes</td>
+                      <td>Gratis (5 consultas/día) o $20/mes</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Nivel de Detalle</strong></td>
+                      <td>Informes muy detallados</td>
+                      <td>Informes más concisos</td>
+                      <td>Resúmenes concisos pero estructurados</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Fuentes de Búsqueda</strong></td>
+                      <td>Sitios web y artículos de investigación</td>
+                      <td>Principalmente sitios web</td>
+                      <td>
+                        Principalmente artículos académicos, también datos en
+                        tiempo real
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><strong>Precisión</strong></td>
+                      <td>Razonablemente precisa</td>
+                      <td>Más propensa a sesgos impulsados por SEO</td>
+                      <td>Alta precisión, ligeramente por debajo de OpenAI</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Fiabilidad de Citas</strong></td>
+                      <td>Mixta, algunas fuentes falsas</td>
+                      <td>No especificado</td>
+                      <td>Alta fiabilidad, con citas en línea</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Transparencia</strong></td>
+                      <td>Muestra el proceso de razonamiento paso a paso</td>
+                      <td>Utiliza una ruta de investigación preplanificada</td>
+                      <td>Muestra el razonamiento y los pasos de búsqueda</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Tiempo de Procesamiento</strong></td>
+                      <td>5–30 minutos por consulta</td>
+                      <td>Típicamente menos de 15 minutos</td>
+                      <td>Rápido</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <p class="table-note">
+                Nota: Esta comparativa está basada en datos de marzo de 2025.
+                Las características y precios pueden cambiar con el tiempo.
+              </p>
+            </div>
+          </div>
           <div class="info-box">
             <h3>Herramientas disponibles</h3>
             <p>
@@ -1098,6 +1356,64 @@
               </ul>
             </div>
           </div>
+          <div class="accordion-item active">
+            <div class="accordion-header">
+              <span>Consideraciones éticas y profesionales</span>
+              <i class="fas fa-chevron-down accordion-icon"></i>
+            </div>
+            <div class="accordion-content active">
+              <p>
+                La integración de Deep Research en entornos sanitarios plantea
+                importantes cuestiones éticas y profesionales que deben
+                considerarse:
+              </p>
+
+              <ul class="technical-list">
+                <li>
+                  <strong>Veracidad y alucinaciones:</strong> Los LLM pueden
+                  generar información plausible pero incorrecta (alucinaciones),
+                  lo que en contextos sanitarios puede tener graves
+                  consecuencias para la toma de decisiones clínicas.
+                </li>
+                <li>
+                  <strong>Sesgo y diversidad:</strong> Si los datos de
+                  entrenamiento no representan adecuadamente a todas las
+                  poblaciones de pacientes, las investigaciones resultantes
+                  pueden perpetuar o amplificar disparidades en salud.
+                </li>
+                <li>
+                  <strong>Transparencia y explicabilidad:</strong> La naturaleza
+                  de "caja negra" de algunos modelos dificulta comprender cómo
+                  llegan a sus conclusiones, obstaculizando la confianza de los
+                  profesionales sanitarios.
+                </li>
+                <li>
+                  <strong>Privacidad de datos:</strong> El manejo de información
+                  médica sensible requiere protocolos estrictos de protección de
+                  datos y cumplimiento regulatorio.
+                </li>
+                <li>
+                  <strong>Debilitamiento de habilidades cognitivas:</strong>
+                  Existe preocupación de que la dependencia excesiva de los LLM
+                  pueda llevar a una atrofia de las habilidades de razonamiento
+                  clínico y análisis crítico de los profesionales.
+                </li>
+                <li>
+                  <strong>Confianza epistémica:</strong> Debe distinguirse entre
+                  la fiabilidad funcional de estas herramientas y la confianza
+                  en sentido social o afectivo, priorizando una evaluación
+                  crítica de los resultados.
+                </li>
+                <li>
+                  <strong>Cambio en los estilos de razonamiento:</strong> La
+                  implementación de IA en medicina está llevando a un cambio del
+                  razonamiento inductivo (basado en evidencia) al abductivo,
+                  introduciendo nuevas incertidumbres en la validación del
+                  conocimiento.
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         <!-- Tab 4: Guía práctica -->
@@ -1160,33 +1476,64 @@
             </div>
           </div>
 
-          <div class="info-box">
+          <div class="info-box prompt-template">
             <h3>Plantilla optimizada para Deep Research</h3>
-            <p
-              style="
-                font-size: 0.9rem;
-                white-space: pre-line;
-                line-height: 1.5;
-                color: var(--text-secondary);
-              "
-            >
-              "Realiza una investigación exhaustiva sobre [DEFINIR TEMA
-              ESPECÍFICO]. INSTRUCCIONES: 1. Utiliza búsqueda activa para
-              encontrar la información científica más reciente. 2. Prioriza:
-              meta-análisis, revisiones sistemáticas y ensayos clínicos de los
-              últimos 5 años. 3. Consulta fuentes como PubMed, Cochrane Library
-              y revistas de alto impacto. ESTRUCTURA: - Resumen estructurado
-              (300 palabras) - Introducción con contexto y justificación -
-              Metodología (criterios de búsqueda y selección) - Resultados
-              principales con datos cuantitativos - Discusión crítica
-              identificando controversias - Aplicabilidad clínica y limitaciones
-              - Conclusiones basadas en la evidencia - Referencias en formato
-              Vancouver ASPECTOS CRÍTICOS: - Evalúa la calidad metodológica de
-              los estudios clave - Identifica posibles sesgos en la literatura -
-              Señala áreas de incertidumbre y debates actuales - Proporciona DOI
-              de los artículos principales cuando sea posible Extensión:
-              5000-7000 palabras"
-            </p>
+            <div class="template-content">
+              <p class="template-intro">
+                Realiza una investigación exhaustiva sobre [DEFINIR TEMA
+                ESPECÍFICO].
+              </p>
+
+              <div class="template-section">
+                <h4>INSTRUCCIONES:</h4>
+                <ol>
+                  <li>
+                    Utiliza búsqueda activa para encontrar la información
+                    científica más reciente.
+                  </li>
+                  <li>
+                    Prioriza: meta-análisis, revisiones sistemáticas y ensayos
+                    clínicos de los últimos 5 años.
+                  </li>
+                  <li>
+                    Consulta fuentes como PubMed, Cochrane Library y revistas de
+                    alto impacto.
+                  </li>
+                </ol>
+              </div>
+
+              <div class="template-section">
+                <h4>ESTRUCTURA:</h4>
+                <ul>
+                  <li>Resumen estructurado (300 palabras)</li>
+                  <li>Introducción con contexto y justificación</li>
+                  <li>Metodología (criterios de búsqueda y selección)</li>
+                  <li>Resultados principales con datos cuantitativos</li>
+                  <li>Discusión crítica identificando controversias</li>
+                  <li>Aplicabilidad clínica y limitaciones</li>
+                  <li>Conclusiones basadas en la evidencia</li>
+                  <li>Referencias en formato Vancouver</li>
+                </ul>
+              </div>
+
+              <div class="template-section">
+                <h4>ASPECTOS CRÍTICOS:</h4>
+                <ul>
+                  <li>Evalúa la calidad metodológica de los estudios clave</li>
+                  <li>Identifica posibles sesgos en la literatura</li>
+                  <li>Señala áreas de incertidumbre y debates actuales</li>
+                  <li>
+                    Proporciona DOI de los artículos principales cuando sea
+                    posible
+                  </li>
+                </ul>
+              </div>
+
+              <p class="template-footer">Extensión: 5000-7000 palabras</p>
+            </div>
+            <button class="copy-button" onclick="copyTemplateToClipboard()">
+              <i class="fas fa-copy"></i> Copiar plantilla
+            </button>
           </div>
 
           <div class="visual-grid" style="margin-top: 2rem">
@@ -1270,6 +1617,37 @@
                 <li class="tool-feature">
                   <i class="fas fa-check-circle"></i>
                   <span>Fase preliminar de investigación</span>
+                </li>
+              </ul>
+            </div>
+            <!-- Tarjeta 4 - Epistemic Prompting -->
+            <div class="tool-card">
+              <div class="tool-header">
+                <div class="tool-icon">
+                  <i class="fas fa-brain"></i>
+                </div>
+                <h3 class="tool-name">Epistemic Prompting</h3>
+              </div>
+              <p class="tool-desc">
+                Técnicas avanzadas para diseñar prompts que optimicen la
+                precisión, relevancia y profundidad del conocimiento generado.
+              </p>
+              <ul class="tool-features">
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Chain-of-thought (razonamiento paso a paso)</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Few-shot learning (ejemplos contextuales)</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Explicitación de incertidumbres</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Validación sistemática por pasos</span>
                 </li>
               </ul>
             </div>
@@ -1376,7 +1754,79 @@
               <span>Plantillas de prompts para investigación sanitaria</span>
             </a>
           </div>
+          <div class="accordion-item active">
+            <div class="accordion-header">
+              <span>Recomendaciones para implementación institucional</span>
+              <i class="fas fa-chevron-down accordion-icon"></i>
+            </div>
+            <div class="accordion-content active">
+              <p>
+                Para las organizaciones sanitarias que buscan implementar Deep
+                Research con LLM de forma estratégica y responsable, se
+                recomiendan las siguientes acciones:
+              </p>
 
+              <ul class="technical-list">
+                <li>
+                  <strong>Desarrollar directrices y protocolos claros</strong>
+                  para el uso de LLM en la investigación y práctica clínica,
+                  abordando validación de información, técnicas de prompting y
+                  supervisión humana.
+                </li>
+                <li>
+                  <strong>Invertir en formación específica</strong> para que los
+                  profesionales sanitarios comprendan las capacidades y
+                  limitaciones de los LLM, así como las mejores prácticas para
+                  interactuar con estas herramientas.
+                </li>
+                <li>
+                  <strong>Establecer mecanismos de validación</strong> de la
+                  información generada mediante revisión por pares, contraste
+                  con fuentes fiables y uso de métricas de evaluación
+                  especializadas.
+                </li>
+                <li>
+                  <strong
+                    >Implementar protocolos estrictos de protección de
+                    datos</strong
+                  >
+                  que garanticen la privacidad de la información de los
+                  pacientes y el cumplimiento de las regulaciones pertinentes.
+                </li>
+                <li>
+                  <strong>Fomentar colaboración interdisciplinaria</strong>
+                  entre desarrolladores de IA, profesionales sanitarios y
+                  expertos en ética para alinear el desarrollo tecnológico con
+                  las necesidades reales del sector.
+                </li>
+                <li>
+                  <strong
+                    >Desarrollar estrategias para potenciar habilidades
+                    cognitivas</strong
+                  >
+                  diseñando herramientas que aumenten las capacidades humanas en
+                  lugar de reemplazarlas, promoviendo el uso crítico y
+                  reflexivo.
+                </li>
+                <li>
+                  <strong
+                    >Impulsar investigación sobre implicaciones
+                    epistemológicas</strong
+                  >
+                  para comprender mejor cómo los LLM están transformando la
+                  construcción, validación y aplicación del conocimiento
+                  clínico.
+                </li>
+              </ul>
+
+              <p>
+                Estas medidas ayudarán a aprovechar el potencial de esta
+                tecnología mitigando los riesgos asociados y garantizando que su
+                implementación beneficie tanto a los profesionales como a los
+                pacientes.
+              </p>
+            </div>
+          </div>
           <div class="info-box">
             <h3>Recomendación para comenzar</h3>
             <p>
@@ -1467,6 +1917,48 @@
           }
         });
       });
+      function copyTemplateToClipboard() {
+        const templateText = `Realiza una investigación exhaustiva sobre [DEFINIR TEMA ESPECÍFICO].
+
+INSTRUCCIONES:
+1. Utiliza búsqueda activa para encontrar la información científica más reciente.
+2. Prioriza: meta-análisis, revisiones sistemáticas y ensayos clínicos de los últimos 5 años.
+3. Consulta fuentes como PubMed, Cochrane Library y revistas de alto impacto.
+
+ESTRUCTURA:
+- Resumen estructurado (300 palabras)
+- Introducción con contexto y justificación
+- Metodología (criterios de búsqueda y selección)
+- Resultados principales con datos cuantitativos
+- Discusión crítica identificando controversias
+- Aplicabilidad clínica y limitaciones
+- Conclusiones basadas en la evidencia
+- Referencias en formato Vancouver
+
+ASPECTOS CRÍTICOS:
+- Evalúa la calidad metodológica de los estudios clave
+- Identifica posibles sesgos en la literatura
+- Señala áreas de incertidumbre y debates actuales
+- Proporciona DOI de los artículos principales cuando sea posible
+
+Extensión: 5000-7000 palabras`;
+
+        navigator.clipboard.writeText(templateText).then(
+          function () {
+            // Cambia el texto del botón temporalmente
+            const button = document.querySelector(".copy-button");
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check"></i> ¡Copiado!';
+
+            setTimeout(function () {
+              button.innerHTML = originalText;
+            }, 2000);
+          },
+          function (err) {
+            console.error("Error al copiar: ", err);
+          }
+        );
+      }
     </script>
 
     <!-- Google Analytics -->
