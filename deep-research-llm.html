@@ -1,0 +1,1486 @@
+<!--
+    =====================
+      deep-research-llm.html
+      Investigación profunda mediante IA
+    =====================
+    -->
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Deep Research con LLM: generación automática de investigaciones profundas en el ámbito sanitario con mínima interacción del profesional"
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="assets/images/icon.webp" />
+    <title>Deep Research con LLM | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Deep Research con LLM | @ernestob" />
+    <meta
+      property="og:site_name"
+      content="Investigación automática con Inteligencia Artificial"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/deep-research-llm.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+    <meta property="article:published_time" content="2025-03-30" />
+    <meta property="article:author" content="https://twitter.com/ernestob" />
+
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+    <link rel="stylesheet" href="assets/css/pages.css" />
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS externo -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    />
+
+    <!-- Estilos específicos para la página de Deep Research -->
+    <style>
+      /* Estilos base y secciones */
+      .content-section {
+        margin: 2rem 0;
+        line-height: 1.6;
+      }
+
+      .section-title {
+        margin-bottom: 1rem;
+      }
+
+      .section-subtitle {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary);
+      }
+
+      /* Tabs para contenido principal */
+      .tabs-container {
+        margin: 1.5rem 0;
+      }
+
+      .tabs-nav {
+        display: flex;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 1.5rem;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+
+      .tabs-nav::-webkit-scrollbar {
+        display: none;
+      }
+
+      .tab-button {
+        padding: 0.75rem 1.25rem;
+        color: var(--text-secondary);
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        font-family: "Inter", sans-serif;
+        font-size: 0.95rem;
+        position: relative;
+        white-space: nowrap;
+        transition: color 0.2s ease;
+      }
+
+      .tab-button:hover {
+        color: var(--text-primary);
+      }
+
+      .tab-button.active {
+        color: var(--accent-color);
+      }
+
+      .tab-button.active::after {
+        content: "";
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: var(--accent-color);
+      }
+
+      .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      /* Acordeones para información adicional */
+      .accordion-item {
+        background-color: rgba(30, 41, 59, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 0.25rem;
+        margin-bottom: 0.75rem;
+        overflow: hidden;
+      }
+
+      .accordion-header {
+        padding: 0.9rem;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--text-primary);
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+      }
+
+      .accordion-header:hover {
+        background-color: rgba(255, 255, 255, 0.03);
+      }
+
+      .accordion-icon {
+        transition: transform 0.3s ease;
+        color: var(--accent-color);
+      }
+
+      .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        padding: 0 1rem;
+      }
+
+      .accordion-content.active {
+        max-height: 1000px;
+        padding: 0 1rem 1rem;
+      }
+
+      .accordion-item.active .accordion-icon {
+        transform: rotate(180deg);
+      }
+
+      /* Layout optimizado para workflow */
+      .workflow-steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      .workflow-step {
+        flex: 1 1 215px;
+        display: flex;
+        gap: 0.75rem;
+        background-color: rgba(30, 41, 59, 0.3);
+        padding: 0.75rem;
+        border-radius: 0.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .step-number {
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+        background-color: rgba(255, 215, 0, 0.15);
+        color: var(--accent-color);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 600;
+        flex-shrink: 0;
+        font-size: 0.85rem;
+      }
+
+      .step-content {
+        flex-grow: 1;
+      }
+
+      .step-title {
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+      }
+
+      .step-description {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        line-height: 1.4;
+      }
+
+      /* Info boxes más compactos */
+      .info-box {
+        background-color: rgba(30, 41, 59, 0.3);
+        border-left: 3px solid var(--accent-color);
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: 0.25rem;
+        font-size: 0.9rem;
+      }
+
+      .info-box h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+      }
+
+      .info-box p {
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+      }
+
+      .info-box p:last-child {
+        margin-bottom: 0;
+      }
+
+      /* Características */
+      .features-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin: 1rem 0;
+      }
+
+      .feature-item {
+        flex: 1 1 215px;
+        background-color: rgba(30, 41, 59, 0.2);
+        padding: 0.75rem;
+        border-radius: 0.25rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .feature-icon {
+        color: var(--accent-color);
+        font-size: 0.9rem;
+        padding: 0.4rem;
+        background-color: rgba(255, 215, 0, 0.1);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        flex-shrink: 0;
+      }
+
+      .feature-content {
+        flex-grow: 1;
+      }
+
+      .feature-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+      }
+
+      .feature-desc {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        line-height: 1.4;
+      }
+
+      /* Ejemplo de investigación */
+      .research-example {
+        background-color: rgba(30, 41, 59, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 0.25rem;
+        padding: 1.25rem;
+        margin: 1.5rem 0;
+      }
+
+      .example-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+      }
+
+      .example-description {
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+      }
+
+      .example-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background-color: rgba(0, 0, 0, 0.2);
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.25rem;
+        min-width: 120px;
+      }
+
+      .stat-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--accent-color);
+      }
+
+      .stat-label {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+      }
+
+      .document-frame {
+        width: 100%;
+        height: 500px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 0.25rem;
+        background-color: #ffffff;
+      }
+
+      /* Listas técnicas */
+      .technical-list {
+        margin: 0.75rem 0 1rem 1.25rem;
+      }
+
+      .technical-list li {
+        margin-bottom: 0.5rem;
+        position: relative;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+      }
+
+      .technical-list li::before {
+        content: "•";
+        position: absolute;
+        left: -1.25rem;
+        color: var(--accent-color);
+      }
+
+      /* Estilos para secciones más visuales */
+      .visual-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.25rem;
+        margin: 1.5rem 0;
+      }
+
+      .tool-card {
+        background: linear-gradient(
+          145deg,
+          rgba(42, 59, 76, 0.8),
+          rgba(30, 41, 59, 0.9)
+        );
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 1.25rem;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .tool-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 215, 0, 0.3);
+      }
+
+      .tool-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, var(--accent-color), transparent);
+      }
+
+      .tool-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+
+      .tool-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        background-color: rgba(255, 215, 0, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: var(--accent-color);
+      }
+
+      .tool-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .tool-desc {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+      }
+
+      .tool-features {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .tool-feature {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+      }
+
+      .tool-feature i {
+        color: var(--accent-color);
+        font-size: 0.8rem;
+      }
+
+      .tool-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        color: var(--accent-color);
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+      }
+
+      .tool-link:hover {
+        color: #fff;
+      }
+
+      /* Proceso visual */
+      .process-container {
+        position: relative;
+        margin: 2rem 0;
+      }
+
+      .process-line {
+        position: absolute;
+        top: 3rem;
+        bottom: 0;
+        left: 1.5rem;
+        width: 2px;
+        background: linear-gradient(
+          to bottom,
+          var(--accent-color),
+          transparent
+        );
+        z-index: 1;
+      }
+
+      .process-step {
+        display: flex;
+        position: relative;
+        z-index: 2;
+        margin-bottom: 1.5rem;
+      }
+
+      .process-number {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        background: linear-gradient(
+          145deg,
+          rgba(255, 215, 0, 0.2),
+          rgba(255, 215, 0, 0.1)
+        );
+        color: var(--accent-color);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 700;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .process-content {
+        margin-left: 1.5rem;
+        background-color: rgba(30, 41, 59, 0.3);
+        padding: 1.25rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        flex-grow: 1;
+      }
+
+      .process-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+        font-size: 1.1rem;
+      }
+
+      .process-desc {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+
+      /* Tabla de modelos optimizada (mantenemos como fallback) */
+      .models-table-container {
+        overflow-x: auto;
+        margin: 1rem 0;
+      }
+
+      .models-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+      }
+
+      .models-table th {
+        text-align: left;
+        padding: 0.75rem;
+        background-color: rgba(30, 41, 59, 0.5);
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+
+      .models-table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: var(--text-secondary);
+      }
+
+      .models-table tr:hover td {
+        background-color: rgba(30, 41, 59, 0.2);
+      }
+
+      /* Recursos adicionales compactos */
+      .resources-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin: 1rem 0;
+      }
+
+      .resource-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1rem;
+        background-color: rgba(30, 41, 59, 0.3);
+        border-radius: 0.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: var(--text-primary);
+      }
+
+      .resource-item:hover {
+        background-color: rgba(30, 41, 59, 0.5);
+        transform: translateY(-2px);
+      }
+
+      .resource-icon {
+        color: var(--accent-color);
+        font-size: 1rem;
+      }
+
+      /* Media queries */
+      @media (max-width: 768px) {
+        .workflow-steps {
+          flex-direction: column;
+        }
+
+        .workflow-step,
+        .feature-item {
+          flex-basis: 100%;
+        }
+
+        .tabs-nav {
+          overflow-x: auto;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="ia-salud">
+    <script src="./assets/js/include.js"></script>
+    <include src="header.html"></include>
+
+    <!-- Contenido Principal -->
+    <main class="main-container">
+      <!-- Hero optimizado -->
+      <section class="hero-section">
+        <h1 class="main-title">
+          <span class="icon">🔍</span>
+          <span>Deep Research con LLM</span>
+        </h1>
+        <p class="intro-text">
+          Los modelos de lenguaje avanzados con capacidades de búsqueda activa
+          permiten generar investigaciones académicas completas, combinando
+          razonamiento avanzado y acceso a información actualizada. Esta
+          tecnología permite a profesionales sanitarios obtener revisiones
+          exhaustivas con referencias científicas en minutos, con mínima
+          interacción humana y resultados de alta calidad.
+        </p>
+      </section>
+
+      <!-- Sistema de tabs para contenido principal -->
+      <div class="tabs-container">
+        <div class="tabs-nav">
+          <button class="tab-button active" data-tab="caracteristicas">
+            Características
+          </button>
+          <button class="tab-button" data-tab="workflow">Proceso</button>
+          <button class="tab-button" data-tab="tecnologia">Tecnología</button>
+          <button class="tab-button" data-tab="prompts">Guía práctica</button>
+          <button class="tab-button" data-tab="ejemplo">Caso práctico</button>
+          <button class="tab-button" data-tab="recursos">Recursos</button>
+        </div>
+
+        <!-- Tab 1: Características -->
+        <div id="caracteristicas" class="tab-content active">
+          <div class="features-container">
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="fas fa-file-alt"></i>
+              </div>
+              <div class="feature-content">
+                <h3 class="feature-title">Profundidad académica</h3>
+                <p class="feature-desc">
+                  Estructura académica completa con introducción, metodología,
+                  resultados, discusión y conclusiones.
+                </p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="fas fa-search"></i>
+              </div>
+              <div class="feature-content">
+                <h3 class="feature-title">Búsqueda activa</h3>
+                <p class="feature-desc">
+                  Capacidad para acceder a información actualizada, superando
+                  las limitaciones del conocimiento pre-entrenado.
+                </p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="fas fa-book"></i>
+              </div>
+              <div class="feature-content">
+                <h3 class="feature-title">Referencias científicas</h3>
+                <p class="feature-desc">
+                  Incorporación automática de referencias actualizadas,
+                  correctamente citadas según formatos académicos.
+                </p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="fas fa-balance-scale"></i>
+              </div>
+              <div class="feature-content">
+                <h3 class="feature-title">Análisis crítico</h3>
+                <p class="feature-desc">
+                  Evaluación de evidencia, identificación de limitaciones
+                  metodológicas y síntesis de implicaciones.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item active">
+            <div class="accordion-header">
+              <span
+                >¿Qué es la búsqueda aumentada (RAG) y cómo mejora el Deep
+                Research?</span
+              >
+              <i class="fas fa-chevron-down accordion-icon"></i>
+            </div>
+            <div class="accordion-content active">
+              <p>
+                La búsqueda aumentada o RAG (Retrieval-Augmented Generation) es
+                una técnica que permite a los modelos de lenguaje complementar
+                su conocimiento pre-entrenado con información recuperada de
+                fuentes externas. En el contexto del Deep Research:
+              </p>
+
+              <ul class="technical-list">
+                <li>
+                  <strong>Acceso a información actualizada:</strong> Permite
+                  obtener datos recientes que serían inaccesibles para modelos
+                  limitados a su entrenamiento original.
+                </li>
+                <li>
+                  <strong>Precisión mejorada:</strong> Puede acceder y citar
+                  fuentes específicas en lugar de basarse únicamente en memoria
+                  parametrizada.
+                </li>
+                <li>
+                  <strong>Verificabilidad:</strong> Facilita la comprobación de
+                  fuentes al referenciar documentos concretos.
+                </li>
+                <li>
+                  <strong>Investigación más profunda:</strong> Capacidad de
+                  explorar múltiples fuentes para obtener una visión más
+                  completa de un tema.
+                </li>
+              </ul>
+
+              <p>
+                Esta combinación de procesamiento de lenguaje avanzado con
+                búsqueda de información permite generar documentos de mayor
+                calidad y actualidad, especialmente valiosos en el ámbito
+                sanitario donde la evidencia evoluciona constantemente.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Workflow -->
+        <div id="workflow" class="tab-content">
+          <p>
+            El Deep Research sigue un proceso estructurado que facilita la
+            generación de investigaciones completas basadas en evidencia
+            actualizada:
+          </p>
+
+          <div class="workflow-steps">
+            <div class="workflow-step">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h3 class="step-title">Definición del tema</h3>
+                <p class="step-description">
+                  Formular una pregunta específica o tema de interés clínico con
+                  precisión.
+                </p>
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h3 class="step-title">Formulación del prompt</h3>
+                <p class="step-description">
+                  Elaborar instrucciones estructuradas que especifiquen
+                  objetivo, alcance y estructura deseada.
+                </p>
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h3 class="step-title">Búsqueda y procesamiento</h3>
+                <p class="step-description">
+                  El sistema busca información relevante y estructura la
+                  investigación identificando subtemas clave.
+                </p>
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="step-number">4</div>
+              <div class="step-content">
+                <h3 class="step-title">Generación con referencias</h3>
+                <p class="step-description">
+                  Creación del documento con referencias científicas relevantes,
+                  priorizando evidencia de alta calidad.
+                </p>
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="step-number">5</div>
+              <div class="step-content">
+                <h3 class="step-title">Revisión y aplicación</h3>
+                <p class="step-description">
+                  El profesional revisa y verifica selectivamente las
+                  referencias clave para su aplicación práctica.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Tecnología -->
+        <div id="tecnologia" class="tab-content">
+          <p>
+            El Deep Research combina modelos de lenguaje avanzados con
+            tecnologías de búsqueda para ofrecer capacidades de investigación
+            automatizadas pero precisas.
+          </p>
+
+          <div class="accordion-item active">
+            <div class="accordion-header">
+              <span>Componentes técnicos de un sistema Deep Research</span>
+              <i class="fas fa-chevron-down accordion-icon"></i>
+            </div>
+            <div class="accordion-content active">
+              <ul class="technical-list">
+                <li>
+                  <strong>Motor LLM base:</strong> Modelo de lenguaje con
+                  capacidad de comprensión y generación de texto coherente.
+                </li>
+                <li>
+                  <strong>Sistema de búsqueda:</strong> Componente que permite
+                  acceder a información actualizada de fuentes externas.
+                </li>
+                <li>
+                  <strong>Sistema de citación:</strong> Mecanismo para registrar
+                  y formatear correctamente las fuentes consultadas.
+                </li>
+                <li>
+                  <strong>Motor de razonamiento:</strong> Capacidad para evaluar
+                  críticamente la información y estructurarla siguiendo patrones
+                  académicos.
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="info-box">
+            <h3>Herramientas disponibles</h3>
+            <p>
+              Distintas plataformas ofrecen capacidades que facilitan el Deep
+              Research, cada una con diferentes enfoques y limitaciones:
+            </p>
+          </div>
+
+          <div class="visual-grid">
+            <!-- Perplexity -->
+            <div class="tool-card">
+              <div class="tool-header">
+                <div class="tool-icon">
+                  <i class="fas fa-brain"></i>
+                </div>
+                <h3 class="tool-name">Perplexity AI</h3>
+              </div>
+              <p class="tool-desc">
+                Plataforma avanzada para investigación con búsqueda en tiempo
+                real y generación de conocimiento estructurado.
+              </p>
+              <ul class="tool-features">
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Búsqueda web en tiempo real</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Citación automática de fuentes</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Colecciones para organizar investigaciones</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Capacidades multimodales texto-imagen</span>
+                </li>
+              </ul>
+              <a
+                href="https://www.perplexity.ai/"
+                target="_blank"
+                rel="noopener"
+                class="tool-link"
+              >
+                <i class="fas fa-external-link-alt"></i>
+                <span>Explorar Perplexity</span>
+              </a>
+            </div>
+
+            <!-- Gemini -->
+            <div class="tool-card">
+              <div class="tool-header">
+                <div class="tool-icon">
+                  <i class="fas fa-gem"></i>
+                </div>
+                <h3 class="tool-name">Gemini de Google</h3>
+              </div>
+              <p class="tool-desc">
+                Sistema avanzado multimodal con integración directa con el
+                ecosistema Google y capacidades de análisis profundo.
+              </p>
+              <ul class="tool-features">
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Integración con Google Search</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Capacidades multimodales avanzadas</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Generación de documentos estructurados</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Versiones gratuita y Advanced con más capacidades</span>
+                </li>
+              </ul>
+              <a
+                href="https://gemini.google.com/"
+                target="_blank"
+                rel="noopener"
+                class="tool-link"
+              >
+                <i class="fas fa-external-link-alt"></i>
+                <span>Explorar Gemini</span>
+              </a>
+            </div>
+
+            <!-- Consensus -->
+            <div class="tool-card">
+              <div class="tool-header">
+                <div class="tool-icon">
+                  <i class="fas fa-search"></i>
+                </div>
+                <h3 class="tool-name">Consensus</h3>
+              </div>
+              <p class="tool-desc">
+                Especializado en literatura científica con enfoque en la
+                búsqueda de papers académicos y análisis metódico.
+              </p>
+              <ul class="tool-features">
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Búsqueda en publicaciones revisadas por pares</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Evaluación de nivel de evidencia</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Referencias con DOI y formato académico</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Filtros metodológicos avanzados</span>
+                </li>
+              </ul>
+              <a
+                href="https://consensus.app/"
+                target="_blank"
+                rel="noopener"
+                class="tool-link"
+              >
+                <i class="fas fa-external-link-alt"></i>
+                <span>Explorar Consensus</span>
+              </a>
+            </div>
+
+            <!-- Copilot -->
+            <div class="tool-card">
+              <div class="tool-header">
+                <div class="tool-icon">
+                  <i class="fas fa-robot"></i>
+                </div>
+                <h3 class="tool-name">Bing AI / Copilot</h3>
+              </div>
+              <p class="tool-desc">
+                Asistente con integración nativa a motores de búsqueda y
+                capacidades de síntesis de información.
+              </p>
+              <ul class="tool-features">
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Integración con Bing Search</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Resumen y síntesis de información</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Integración con ecosistema Microsoft</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Diferentes modos de conversación</span>
+                </li>
+              </ul>
+              <a
+                href="https://copilot.microsoft.com/"
+                target="_blank"
+                rel="noopener"
+                class="tool-link"
+              >
+                <i class="fas fa-external-link-alt"></i>
+                <span>Explorar Copilot</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="accordion-item active">
+            <div class="accordion-header">
+              <span>Limitaciones y consideraciones técnicas</span>
+              <i class="fas fa-chevron-down accordion-icon"></i>
+            </div>
+            <div class="accordion-content active">
+              <p>
+                Aunque potentes, estas herramientas presentan algunas
+                limitaciones importantes:
+              </p>
+
+              <ul class="technical-list">
+                <li>
+                  <strong>Calidad variable de fuentes:</strong> No todas las
+                  herramientas distinguen adecuadamente entre fuentes de alta y
+                  baja calidad.
+                </li>
+                <li>
+                  <strong>Interpretación de información:</strong> Pueden
+                  malinterpretar estadísticas complejas o metodologías
+                  especializadas.
+                </li>
+                <li>
+                  <strong>Acceso restringido:</strong> Algunas bases de datos
+                  científicas están detrás de paywalls inaccesibles para estas
+                  herramientas.
+                </li>
+                <li>
+                  <strong>Sesgos de búsqueda:</strong> Los algoritmos de
+                  búsqueda pueden introducir sesgos en la selección de fuentes.
+                </li>
+                <li>
+                  <strong>Verificabilidad:</strong> Algunas referencias pueden
+                  ser difíciles de verificar o contener inexactitudes.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Guía práctica -->
+        <div id="prompts" class="tab-content">
+          <h3 class="section-subtitle">Diseño de prompts efectivos</h3>
+
+          <div class="process-container">
+            <div class="process-line"></div>
+
+            <div class="process-step">
+              <div class="process-number">1</div>
+              <div class="process-content">
+                <h3 class="process-title">Definir el objetivo</h3>
+                <p class="process-desc">
+                  Establece una pregunta específica y clara que delimite el
+                  alcance de la investigación. Por ejemplo: "¿Cuál es la
+                  eficacia comparativa de los inhibidores SGLT2 frente a los
+                  análogos GLP-1 en el tratamiento de la diabetes tipo 2 con
+                  comorbilidad cardiovascular?"
+                </p>
+              </div>
+            </div>
+
+            <div class="process-step">
+              <div class="process-number">2</div>
+              <div class="process-content">
+                <h3 class="process-title">Definir parámetros de búsqueda</h3>
+                <p class="process-desc">
+                  Especifica los límites temporales (ej. "últimos 5 años"),
+                  tipos de estudios preferidos (ej. "meta-análisis, ensayos
+                  clínicos controlados aleatorios") y fuentes prioritarias (ej.
+                  "PubMed, Cochrane, revistas con factor de impacto > 3").
+                </p>
+              </div>
+            </div>
+
+            <div class="process-step">
+              <div class="process-number">3</div>
+              <div class="process-content">
+                <h3 class="process-title">Estructurar el formato</h3>
+                <p class="process-desc">
+                  Solicita una estructura académica específica: resumen
+                  estructurado, introducción, metodología, resultados,
+                  discusión, conclusiones y referencias. Define el estilo de
+                  citación deseado (Vancouver, APA, etc.).
+                </p>
+              </div>
+            </div>
+
+            <div class="process-step">
+              <div class="process-number">4</div>
+              <div class="process-content">
+                <h3 class="process-title">Solicitar análisis crítico</h3>
+                <p class="process-desc">
+                  Pide explícitamente una evaluación de la calidad metodológica
+                  de los estudios, identificación de sesgos potenciales y
+                  análisis de las limitaciones de la evidencia actual.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-box">
+            <h3>Plantilla optimizada para Deep Research</h3>
+            <p
+              style="
+                font-size: 0.9rem;
+                white-space: pre-line;
+                line-height: 1.5;
+                color: var(--text-secondary);
+              "
+            >
+              "Realiza una investigación exhaustiva sobre [DEFINIR TEMA
+              ESPECÍFICO]. INSTRUCCIONES: 1. Utiliza búsqueda activa para
+              encontrar la información científica más reciente. 2. Prioriza:
+              meta-análisis, revisiones sistemáticas y ensayos clínicos de los
+              últimos 5 años. 3. Consulta fuentes como PubMed, Cochrane Library
+              y revistas de alto impacto. ESTRUCTURA: - Resumen estructurado
+              (300 palabras) - Introducción con contexto y justificación -
+              Metodología (criterios de búsqueda y selección) - Resultados
+              principales con datos cuantitativos - Discusión crítica
+              identificando controversias - Aplicabilidad clínica y limitaciones
+              - Conclusiones basadas en la evidencia - Referencias en formato
+              Vancouver ASPECTOS CRÍTICOS: - Evalúa la calidad metodológica de
+              los estudios clave - Identifica posibles sesgos en la literatura -
+              Señala áreas de incertidumbre y debates actuales - Proporciona DOI
+              de los artículos principales cuando sea posible Extensión:
+              5000-7000 palabras"
+            </p>
+          </div>
+
+          <div class="visual-grid" style="margin-top: 2rem">
+            <!-- Tarjeta 1 -->
+            <div class="tool-card">
+              <div class="tool-header">
+                <div class="tool-icon">
+                  <i class="fas fa-filter"></i>
+                </div>
+                <h3 class="tool-name">Criterios de selección</h3>
+              </div>
+              <p class="tool-desc">
+                Define claramente qué tipos de estudios incluir y excluir para
+                obtener la mejor evidencia.
+              </p>
+              <ul class="tool-features">
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Especifica rangos temporales</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Define jerarquía de evidencia</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Establece criterios poblacionales</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Tarjeta 2 -->
+            <div class="tool-card">
+              <div class="tool-header">
+                <div class="tool-icon">
+                  <i class="fas fa-balance-scale"></i>
+                </div>
+                <h3 class="tool-name">Verificación de calidad</h3>
+              </div>
+              <p class="tool-desc">
+                Estrategias para asegurar la fiabilidad de la investigación
+                generada.
+              </p>
+              <ul class="tool-features">
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Comprueba referencias principales</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Verifica DOIs y enlaces</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Contrasta con guías clínicas</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Tarjeta 3 -->
+            <div class="tool-card">
+              <div class="tool-header">
+                <div class="tool-icon">
+                  <i class="fas fa-lightbulb"></i>
+                </div>
+                <h3 class="tool-name">Escenarios de aplicación</h3>
+              </div>
+              <p class="tool-desc">
+                Contextos ideales para aplicar el Deep Research en entornos
+                sanitarios.
+              </p>
+              <ul class="tool-features">
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Actualización clínica rápida</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Preparación de materiales docentes</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Fase preliminar de investigación</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 5: Caso práctico -->
+        <div id="ejemplo" class="tab-content">
+          <h2 class="example-title">
+            <i class="fas fa-flask"></i>
+            Caso Práctico: Cronofarmacología en Terapias Actuales
+          </h2>
+
+          <p class="example-description">
+            Ejemplo real de investigación completa generada mediante Deep
+            Research con Google Gemini. El documento fue creado con mínima
+            interacción (~20 segundos) y produjo un documento académico
+            estructurado con análisis detallado de la evidencia científica y
+            referencias verificables. Esta investigación demuestra el potencial
+            de Gemini para realizar búsquedas exhaustivas en fuentes académicas
+            mientras mantiene un análisis crítico de la calidad metodológica.
+          </p>
+
+          <div class="example-stats">
+            <div class="stat-item">
+              <span class="stat-value">20</span>
+              <span class="stat-label">Páginas</span>
+            </div>
+
+            <div class="stat-item">
+              <span class="stat-value">79</span>
+              <span class="stat-label">Referencias</span>
+            </div>
+
+            <div class="stat-item">
+              <span class="stat-value">~20s</span>
+              <span class="stat-label">Interacción</span>
+            </div>
+
+            <div class="stat-item">
+              <span class="stat-value">100%</span>
+              <span class="stat-label">Automatizado</span>
+            </div>
+          </div>
+
+          <!-- Iframe con el documento -->
+          <iframe
+            src="https://docs.google.com/document/d/e/2PACX-1vTvxHWd3_AdYhpbAQpl7A7dFBk1a19dxdCYZdPCgmAwuJVWsNxkdtfHxX3C5SgETod_T8p9Fex6wNmE/pub?embedded=true"
+            class="document-frame"
+            loading="lazy"
+          ></iframe>
+        </div>
+
+        <!-- Tab 6: Recursos adicionales -->
+        <div id="recursos" class="tab-content">
+          <h2 class="section-title">Recursos adicionales</h2>
+
+          <p>
+            Herramientas y recursos complementarios para profundizar en la
+            investigación automatizada:
+          </p>
+
+          <div class="resources-container">
+            <a href="gpt.html" class="resource-item">
+              <div class="resource-icon">
+                <i class="fas fa-robot"></i>
+              </div>
+              <span
+                >GPTs Sanitarios: Modelos especializados para el ámbito de la
+                salud</span
+              >
+            </a>
+
+            <a href="metodo-record.html" class="resource-item">
+              <div class="resource-icon">
+                <i class="fas fa-clipboard-list"></i>
+              </div>
+              <span
+                >Método RECORD: Framework para prompts efectivos en
+                sanidad</span
+              >
+            </a>
+
+            <a href="/buscar-pubmed.html" class="resource-item">
+              <div class="resource-icon">
+                <i class="fas fa-microscope"></i>
+              </div>
+              <span> Buscador PubMed con Filtros Estructurados</span>
+            </a>
+
+            <a href="ia-salud.html" class="resource-item">
+              <div class="resource-icon">
+                <i class="fas fa-heartbeat"></i>
+              </div>
+              <span
+                >IA en Salud: Guía completa para profesionales sanitarios</span
+              >
+            </a>
+
+            <a href="prompt-templates.html" class="resource-item">
+              <div class="resource-icon">
+                <i class="fas fa-file-alt"></i>
+              </div>
+              <span>Plantillas de prompts para investigación sanitaria</span>
+            </a>
+          </div>
+
+          <div class="info-box">
+            <h3>Recomendación para comenzar</h3>
+            <p>
+              Si es tu primera incursión en el Deep Research, te recomendamos:
+            </p>
+            <ol class="technical-list">
+              <li>Explorar los modelos GPT especializados en sanidad</li>
+              <li>
+                Familiarizarte con el método RECORD para estructurar tus prompts
+              </li>
+              <li>
+                Experimentar con herramientas como Perplexity o Gemini en sus
+                versiones gratuitas
+              </li>
+              <li>
+                Comparar los resultados de diferentes plataformas para el mismo
+                tema
+              </li>
+              <li>
+                Verificar siempre las referencias críticas con PubMed u otras
+                fuentes oficiales
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="./assets/js/utils.js"></script>
+    <include src="footer.html"></include>
+
+    <!-- Scripts para tabs y acordeones -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Funcionalidad de tabs
+        const tabButtons = document.querySelectorAll(".tab-button");
+        const tabContents = document.querySelectorAll(".tab-content");
+
+        tabButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            const tabId = button.getAttribute("data-tab");
+
+            // Desactivar todos los tabs
+            tabButtons.forEach((btn) => btn.classList.remove("active"));
+            tabContents.forEach((content) =>
+              content.classList.remove("active")
+            );
+
+            // Activar el tab seleccionado
+            button.classList.add("active");
+            document.getElementById(tabId).classList.add("active");
+          });
+        });
+
+        // Abrir acordeones importantes por defecto
+        const importantAccordions = [
+          "¿Qué es la búsqueda aumentada (RAG) y cómo mejora el Deep Research?",
+          "Componentes técnicos de un sistema Deep Research",
+          "Limitaciones y consideraciones técnicas",
+          "Optimización del proceso de búsqueda",
+          "Consideraciones prácticas y éticas",
+          "Análisis detallado de herramientas clave",
+        ];
+
+        const accordionHeaders = document.querySelectorAll(".accordion-header");
+        accordionHeaders.forEach((header) => {
+          // Configurar eventos de clic para todos los acordeones
+          header.addEventListener("click", () => {
+            const accordionItem = header.parentElement;
+            const accordionContent = header.nextElementSibling;
+            accordionItem.classList.toggle("active");
+
+            if (accordionItem.classList.contains("active")) {
+              accordionContent.classList.add("active");
+            } else {
+              accordionContent.classList.remove("active");
+            }
+          });
+
+          // Si el texto del acordeón está en la lista de importantes, abrirlo por defecto
+          if (
+            importantAccordions.some((text) => header.innerText.includes(text))
+          ) {
+            const accordionItem = header.parentElement;
+            const accordionContent = header.nextElementSibling;
+            accordionItem.classList.add("active");
+            accordionContent.classList.add("active");
+          }
+        });
+      });
+    </script>
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+  </body>
+</html>
