@@ -45,11 +45,18 @@
     <link rel="stylesheet" href="assets/css/components.css" />
     <link rel="stylesheet" href="assets/css/footer.css" />
     <link rel="stylesheet" href="assets/css/pages.css" />
+    <link rel="stylesheet" href="assets/css/deep-research-llm.css" />
 
     <!-- Fonts -->
+    <!-- Preload critical fonts -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="preload"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      as="style"
+    />
+    <link
       rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&display=swap"
     />
 
     <!-- CSS externo -->
@@ -57,698 +64,6 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
     />
-
-    <!-- Estilos específicos para la página de Deep Research -->
-    <style>
-      /* Estilos base y secciones */
-      .content-section {
-        margin: 2rem 0;
-        line-height: 1.6;
-      }
-
-      .section-title {
-        margin-bottom: 1rem;
-      }
-
-      .section-subtitle {
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin-bottom: 0.75rem;
-        color: var(--text-primary);
-      }
-
-      /* Tabs para contenido principal */
-      .tabs-container {
-        margin: 1.5rem 0;
-      }
-
-      .tabs-nav {
-        display: flex;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        margin-bottom: 1.5rem;
-        overflow-x: auto;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-      }
-
-      .tabs-nav::-webkit-scrollbar {
-        display: none;
-      }
-
-      .tab-button {
-        padding: 0.75rem 1.25rem;
-        color: var(--text-secondary);
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-weight: 500;
-        font-family: "Inter", sans-serif;
-        font-size: 0.95rem;
-        position: relative;
-        white-space: nowrap;
-        transition: color 0.2s ease;
-      }
-
-      .tab-button:hover {
-        color: var(--text-primary);
-      }
-
-      .tab-button.active {
-        color: var(--accent-color);
-      }
-
-      .tab-button.active::after {
-        content: "";
-        position: absolute;
-        bottom: -1px;
-        left: 0;
-        width: 100%;
-        height: 2px;
-        background-color: var(--accent-color);
-      }
-
-      .tab-content {
-        display: none;
-        animation: fadeIn 0.3s ease;
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-
-      .tab-content.active {
-        display: block;
-      }
-
-      /* Acordeones para información adicional */
-      .accordion-item {
-        background-color: rgba(30, 41, 59, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 0.25rem;
-        margin-bottom: 0.75rem;
-        overflow: hidden;
-      }
-
-      .accordion-header {
-        padding: 0.9rem;
-        cursor: pointer;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        color: var(--text-primary);
-        font-weight: 500;
-        transition: background-color 0.2s ease;
-      }
-
-      .accordion-header:hover {
-        background-color: rgba(255, 255, 255, 0.03);
-      }
-
-      .accordion-icon {
-        transition: transform 0.3s ease;
-        color: var(--accent-color);
-      }
-
-      .accordion-content {
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.3s ease;
-        padding: 0 1rem;
-      }
-
-      .accordion-content.active {
-        max-height: 1000px;
-        padding: 0 1rem 1rem;
-      }
-
-      .accordion-item.active .accordion-icon {
-        transform: rotate(180deg);
-      }
-
-      /* Layout optimizado para workflow */
-      .workflow-steps {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-      }
-
-      .workflow-step {
-        flex: 1 1 215px;
-        display: flex;
-        gap: 0.75rem;
-        background-color: rgba(30, 41, 59, 0.3);
-        padding: 0.75rem;
-        border-radius: 0.25rem;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-      }
-
-      .step-number {
-        width: 1.5rem;
-        height: 1.5rem;
-        border-radius: 50%;
-        background-color: rgba(255, 215, 0, 0.15);
-        color: var(--accent-color);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-weight: 600;
-        flex-shrink: 0;
-        font-size: 0.85rem;
-      }
-
-      .step-content {
-        flex-grow: 1;
-      }
-
-      .step-title {
-        font-weight: 600;
-        margin-bottom: 0.35rem;
-        color: var(--text-primary);
-        font-size: 0.95rem;
-      }
-
-      .step-description {
-        color: var(--text-secondary);
-        font-size: 0.85rem;
-        line-height: 1.4;
-      }
-
-      /* Info boxes más compactos */
-      .info-box {
-        background-color: rgba(30, 41, 59, 0.3);
-        border-left: 3px solid var(--accent-color);
-        padding: 1rem;
-        margin: 1rem 0;
-        border-radius: 0.25rem;
-        font-size: 0.9rem;
-      }
-
-      .info-box h3 {
-        font-size: 1rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        color: var(--text-primary);
-      }
-
-      .info-box p {
-        color: var(--text-secondary);
-        margin-bottom: 0.5rem;
-      }
-
-      .info-box p:last-child {
-        margin-bottom: 0;
-      }
-
-      /* Características */
-      .features-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        margin: 1rem 0;
-      }
-
-      .feature-item {
-        flex: 1 1 215px;
-        background-color: rgba(30, 41, 59, 0.2);
-        padding: 0.75rem;
-        border-radius: 0.25rem;
-        display: flex;
-        align-items: flex-start;
-        gap: 0.5rem;
-      }
-
-      .feature-icon {
-        color: var(--accent-color);
-        font-size: 0.9rem;
-        padding: 0.4rem;
-        background-color: rgba(255, 215, 0, 0.1);
-        border-radius: 50%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 1.5rem;
-        height: 1.5rem;
-        flex-shrink: 0;
-      }
-
-      .feature-content {
-        flex-grow: 1;
-      }
-
-      .feature-title {
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-        color: var(--text-primary);
-        font-size: 0.95rem;
-      }
-
-      .feature-desc {
-        color: var(--text-secondary);
-        font-size: 0.85rem;
-        line-height: 1.4;
-      }
-
-      /* Ejemplo de investigación */
-      .research-example {
-        background-color: rgba(30, 41, 59, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 0.25rem;
-        padding: 1.25rem;
-        margin: 1.5rem 0;
-      }
-
-      .example-title {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        color: var(--text-primary);
-      }
-
-      .example-description {
-        color: var(--text-secondary);
-        margin-bottom: 1rem;
-        font-size: 0.9rem;
-      }
-
-      .example-stats {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin-bottom: 1rem;
-      }
-
-      .stat-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        background-color: rgba(0, 0, 0, 0.2);
-        padding: 0.5rem 0.75rem;
-        border-radius: 0.25rem;
-        min-width: 120px;
-      }
-
-      .stat-value {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--accent-color);
-      }
-
-      .stat-label {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-      }
-
-      .document-frame {
-        width: 100%;
-        height: 700px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 0.25rem;
-        background-color: #ffffff;
-      }
-
-      /* Listas técnicas */
-      .technical-list {
-        margin: 0.75rem 0 1rem 1.25rem;
-      }
-
-      .technical-list li {
-        margin-bottom: 0.5rem;
-        position: relative;
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-      }
-
-      .technical-list li::before {
-        content: "•";
-        position: absolute;
-        left: -1.25rem;
-        color: var(--accent-color);
-      }
-
-      /* Estilos para secciones más visuales */
-      .visual-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.25rem;
-        margin: 1.5rem 0;
-      }
-
-      .tool-card {
-        background: linear-gradient(
-          145deg,
-          rgba(42, 59, 76, 0.8),
-          rgba(30, 41, 59, 0.9)
-        );
-        border-radius: 0.75rem;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        padding: 1.25rem;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .tool-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        border-color: rgba(255, 215, 0, 0.3);
-      }
-
-      .tool-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-        background: linear-gradient(90deg, var(--accent-color), transparent);
-      }
-
-      .tool-header {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-      }
-
-      .tool-icon {
-        width: 2.5rem;
-        height: 2.5rem;
-        border-radius: 50%;
-        background-color: rgba(255, 215, 0, 0.15);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-        color: var(--accent-color);
-      }
-
-      .tool-name {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--text-primary);
-      }
-
-      .tool-desc {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-        line-height: 1.5;
-        margin-bottom: 1rem;
-      }
-
-      .tool-features {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-      }
-
-      .tool-feature {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-        margin-bottom: 0.5rem;
-      }
-
-      .tool-feature i {
-        color: var(--accent-color);
-        font-size: 0.8rem;
-      }
-
-      .tool-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-top: 1rem;
-        color: var(--accent-color);
-        font-size: 0.85rem;
-        text-decoration: none;
-        transition: all 0.2s ease;
-      }
-
-      .tool-link:hover {
-        color: #fff;
-      }
-
-      /* Proceso visual */
-      .process-container {
-        position: relative;
-        margin: 2rem 0;
-      }
-
-      .process-line {
-        position: absolute;
-        top: 3rem;
-        bottom: 0;
-        left: 1.5rem;
-        width: 2px;
-        background: linear-gradient(
-          to bottom,
-          var(--accent-color),
-          transparent
-        );
-        z-index: 1;
-      }
-
-      .process-step {
-        display: flex;
-        position: relative;
-        z-index: 2;
-        margin-bottom: 1.5rem;
-      }
-
-      .process-number {
-        width: 3rem;
-        height: 3rem;
-        border-radius: 50%;
-        background: linear-gradient(
-          145deg,
-          rgba(255, 215, 0, 0.2),
-          rgba(255, 215, 0, 0.1)
-        );
-        color: var(--accent-color);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-weight: 700;
-        font-size: 1.25rem;
-        flex-shrink: 0;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      }
-
-      .process-content {
-        margin-left: 1.5rem;
-        background-color: rgba(30, 41, 59, 0.3);
-        padding: 1.25rem;
-        border-radius: 0.75rem;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        flex-grow: 1;
-      }
-
-      .process-title {
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        color: var(--text-primary);
-        font-size: 1.1rem;
-      }
-
-      .process-desc {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-        line-height: 1.5;
-      }
-
-      /* Tabla de modelos optimizada (mantenemos como fallback) */
-      .models-table-container {
-        overflow-x: auto;
-        margin: 1rem 0;
-      }
-
-      .models-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.9rem;
-      }
-
-      .models-table th {
-        text-align: left;
-        padding: 0.75rem;
-        background-color: rgba(30, 41, 59, 0.5);
-        color: var(--text-primary);
-        font-weight: 600;
-      }
-
-      .models-table td {
-        padding: 0.75rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        color: var(--text-secondary);
-      }
-
-      .models-table tr:hover td {
-        background-color: rgba(30, 41, 59, 0.2);
-      }
-
-      /* Recursos adicionales compactos */
-      .resources-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        margin: 1rem 0;
-      }
-
-      .resource-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.6rem 1rem;
-        background-color: rgba(30, 41, 59, 0.3);
-        border-radius: 0.25rem;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        transition: all 0.2s ease;
-        text-decoration: none;
-        color: var(--text-primary);
-      }
-
-      .resource-item:hover {
-        background-color: rgba(30, 41, 59, 0.5);
-        transform: translateY(-2px);
-      }
-
-      .resource-icon {
-        color: var(--accent-color);
-        font-size: 1rem;
-      }
-
-      /* Media queries */
-      @media (max-width: 768px) {
-        .workflow-steps {
-          flex-direction: column;
-        }
-
-        .workflow-step,
-        .feature-item {
-          flex-basis: 100%;
-        }
-
-        .tabs-nav {
-          overflow-x: auto;
-        }
-      }
-      /* Estilos para la plantilla de prompts */
-      .prompt-template {
-        background-color: rgba(30, 41, 59, 0.3);
-        border-left: 3px solid var(--accent-color);
-        padding: 1.25rem;
-        margin: 1.5rem 0;
-        border-radius: 0.25rem;
-      }
-
-      .template-content {
-        font-size: 0.9rem;
-        line-height: 1.5;
-        color: var(--text-secondary);
-      }
-
-      .template-intro {
-        font-weight: 600;
-        margin-bottom: 1rem;
-      }
-
-      .template-section {
-        margin-bottom: 1rem;
-      }
-
-      .template-section h4 {
-        font-size: 0.95rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        color: var(--text-primary);
-      }
-
-      .template-section ul,
-      .template-section ol {
-        margin-left: 1.5rem;
-        margin-bottom: 0.5rem;
-      }
-
-      .template-section li {
-        margin-bottom: 0.3rem;
-      }
-
-      .template-footer {
-        font-weight: 500;
-        margin-top: 1rem;
-      }
-
-      .copy-button {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        background-color: rgba(255, 215, 0, 0.1);
-        color: var(--accent-color);
-        border: 1px solid rgba(255, 215, 0, 0.3);
-        padding: 0.5rem 1rem;
-        border-radius: 0.25rem;
-        cursor: pointer;
-        font-size: 0.9rem;
-        transition: all 0.2s ease;
-        margin-top: 1rem;
-      }
-
-      .copy-button:hover {
-        background-color: rgba(255, 215, 0, 0.2);
-      }
-      /* Mejoras para tablas comparativas */
-      .models-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.9rem;
-        background-color: rgba(30, 41, 59, 0.2);
-        border-radius: 0.5rem;
-        overflow: hidden;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-
-      .models-table th {
-        text-align: left;
-        padding: 1rem 0.75rem;
-        background-color: rgba(30, 41, 59, 0.5);
-        color: var(--text-primary);
-        font-weight: 600;
-        border-bottom: 2px solid rgba(255, 215, 0, 0.2);
-      }
-
-      .models-table td {
-        padding: 0.75rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        color: var(--text-secondary);
-        vertical-align: top;
-      }
-
-      .models-table tr:last-child td {
-        border-bottom: none;
-      }
-
-      .models-table tr:hover td {
-        background-color: rgba(30, 41, 59, 0.3);
-      }
-
-      .table-note {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        font-style: italic;
-        margin-top: 0.75rem;
-        text-align: right;
-      }
-    </style>
   </head>
 
   <body class="ia-salud">
@@ -782,14 +97,26 @@
       <!-- Sistema de tabs para contenido principal -->
       <div class="tabs-container">
         <div class="tabs-nav">
-          <button class="tab-button active" data-tab="caracteristicas">
+          <a
+            href="#caracteristicas"
+            class="tab-button active"
+            data-tab="caracteristicas"
+          >
             Características
-          </button>
-          <button class="tab-button" data-tab="workflow">Proceso</button>
-          <button class="tab-button" data-tab="tecnologia">Tecnología</button>
-          <button class="tab-button" data-tab="prompts">Guía práctica</button>
-          <button class="tab-button" data-tab="ejemplo">Caso práctico</button>
-          <button class="tab-button" data-tab="recursos">Recursos</button>
+          </a>
+          <a href="#workflow" class="tab-button" data-tab="workflow">Proceso</a>
+          <a href="#tecnologia" class="tab-button" data-tab="tecnologia"
+            >Tecnología</a
+          >
+          <a href="#prompts" class="tab-button" data-tab="prompts"
+            >Guía práctica</a
+          >
+          <a href="#ejemplo" class="tab-button" data-tab="ejemplo"
+            >Caso práctico</a
+          >
+          <a href="#recursos" class="tab-button" data-tab="recursos"
+            >Recursos</a
+          >
         </div>
 
         <!-- Tab 1: Características -->
@@ -1086,20 +413,16 @@
                       <th>OpenAI Deep Research</th>
                       <th>Google Gemini</th>
                       <th>Perplexity Deep Research</th>
+                      <th>Grok</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td><strong>Costo</strong></td>
-                      <td>$200/mes</td>
-                      <td>$20/mes</td>
-                      <td>Gratis (5 consultas/día) o $20/mes</td>
-                    </tr>
                     <tr>
                       <td><strong>Nivel de Detalle</strong></td>
                       <td>Informes muy detallados</td>
                       <td>Informes más concisos</td>
                       <td>Resúmenes concisos pero estructurados</td>
+                      <td>Informes detallados con enfoque técnico</td>
                     </tr>
                     <tr>
                       <td><strong>Fuentes de Búsqueda</strong></td>
@@ -1109,30 +432,41 @@
                         Principalmente artículos académicos, también datos en
                         tiempo real
                       </td>
+                      <td>
+                        Web y fuentes científicas con análisis tiempo real
+                      </td>
                     </tr>
                     <tr>
                       <td><strong>Precisión</strong></td>
                       <td>Razonablemente precisa</td>
                       <td>Más propensa a sesgos impulsados por SEO</td>
                       <td>Alta precisión, ligeramente por debajo de OpenAI</td>
+                      <td>
+                        Precisión variable, más actualizado con datos recientes
+                      </td>
                     </tr>
                     <tr>
                       <td><strong>Fiabilidad de Citas</strong></td>
                       <td>Mixta, algunas fuentes falsas</td>
                       <td>No especificado</td>
                       <td>Alta fiabilidad, con citas en línea</td>
+                      <td>Incluye enlaces directos a las fuentes</td>
                     </tr>
                     <tr>
                       <td><strong>Transparencia</strong></td>
                       <td>Muestra el proceso de razonamiento paso a paso</td>
                       <td>Utiliza una ruta de investigación preplanificada</td>
                       <td>Muestra el razonamiento y los pasos de búsqueda</td>
+                      <td>
+                        Alto nivel de transparencia sobre fuentes y limitaciones
+                      </td>
                     </tr>
                     <tr>
                       <td><strong>Tiempo de Procesamiento</strong></td>
                       <td>5–30 minutos por consulta</td>
                       <td>Típicamente menos de 15 minutos</td>
                       <td>Rápido</td>
+                      <td>Moderado a rápido, con análisis incremental</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1235,85 +569,85 @@
               </a>
             </div>
 
-            <!-- Consensus -->
+            <!-- OpenAI -->
             <div class="tool-card">
               <div class="tool-header">
                 <div class="tool-icon">
-                  <i class="fas fa-search"></i>
+                  <i class="fas fa-bolt"></i>
                 </div>
-                <h3 class="tool-name">Consensus</h3>
+                <h3 class="tool-name">ChatGPT Deep Research</h3>
               </div>
               <p class="tool-desc">
-                Especializado en literatura científica con enfoque en la
-                búsqueda de papers académicos y análisis metódico.
+                El sistema de investigación de OpenAI ofrece informes detallados
+                con búsqueda y análisis profundo de información.
               </p>
               <ul class="tool-features">
                 <li class="tool-feature">
                   <i class="fas fa-check-circle"></i>
-                  <span>Búsqueda en publicaciones revisadas por pares</span>
+                  <span>Informes altamente detallados</span>
                 </li>
                 <li class="tool-feature">
                   <i class="fas fa-check-circle"></i>
-                  <span>Evaluación de nivel de evidencia</span>
+                  <span>Razonamiento paso a paso visible</span>
                 </li>
                 <li class="tool-feature">
                   <i class="fas fa-check-circle"></i>
-                  <span>Referencias con DOI y formato académico</span>
+                  <span>Integración con su base de conocimiento</span>
                 </li>
                 <li class="tool-feature">
                   <i class="fas fa-check-circle"></i>
-                  <span>Filtros metodológicos avanzados</span>
+                  <span>Búsqueda amplia en web y bases académicas</span>
                 </li>
               </ul>
               <a
-                href="https://consensus.app/"
+                href="https://chatgpt.com/?hints=deep%20research"
                 target="_blank"
                 rel="noopener"
                 class="tool-link"
               >
                 <i class="fas fa-external-link-alt"></i>
-                <span>Explorar Consensus</span>
+                <span>Explorar OpenAI</span>
               </a>
             </div>
 
-            <!-- Copilot -->
+            <!-- Grok -->
             <div class="tool-card">
               <div class="tool-header">
                 <div class="tool-icon">
-                  <i class="fas fa-robot"></i>
+                  <i class="fas fa-rocket"></i>
                 </div>
-                <h3 class="tool-name">Bing AI / Copilot</h3>
+                <h3 class="tool-name">Grok</h3>
               </div>
               <p class="tool-desc">
-                Asistente con integración nativa a motores de búsqueda y
-                capacidades de síntesis de información.
+                Plataforma de IA con acceso a datos en tiempo real y capacidad
+                de investigación con un enfoque técnico y actualizado.
               </p>
               <ul class="tool-features">
                 <li class="tool-feature">
                   <i class="fas fa-check-circle"></i>
-                  <span>Integración con Bing Search</span>
+                  <span>Datos actualizados en tiempo real</span>
                 </li>
                 <li class="tool-feature">
                   <i class="fas fa-check-circle"></i>
-                  <span>Resumen y síntesis de información</span>
+                  <span>Referencias directas a fuentes con enlaces</span>
                 </li>
                 <li class="tool-feature">
                   <i class="fas fa-check-circle"></i>
-                  <span>Integración con ecosistema Microsoft</span>
+                  <span>Transparencia sobre limitaciones</span>
                 </li>
                 <li class="tool-feature">
                   <i class="fas fa-check-circle"></i>
-                  <span>Diferentes modos de conversación</span>
+                  <span>Estilo conversacional accesible</span>
                 </li>
               </ul>
               <a
-                href="https://copilot.microsoft.com/"
+                href="https://x.com/i/grok"
                 target="_blank"
                 rel="noopener"
                 class="tool-link"
               >
                 <i class="fas fa-external-link-alt"></i>
-                <span>Explorar Copilot</span>
+                <span>Explorar Grok</span>
               </a>
             </div>
           </div>
@@ -1860,105 +1194,79 @@
 
     <!-- Scripts para tabs y acordeones -->
     <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        // Funcionalidad de tabs
-        const tabButtons = document.querySelectorAll(".tab-button");
-        const tabContents = document.querySelectorAll(".tab-content");
+      // Funcionalidad de tabs con soporte para enlaces directos
+      const tabButtons = document.querySelectorAll(".tab-button");
+      const tabContents = document.querySelectorAll(".tab-content");
+      const tabsContainer = document.querySelector(".tabs-nav");
 
-        tabButtons.forEach((button) => {
-          button.addEventListener("click", () => {
-            const tabId = button.getAttribute("data-tab");
+      // Función para activar una pestaña específica
+      function activateTab(tabId) {
+        // Desactivar todos los tabs
+        tabButtons.forEach((btn) => btn.classList.remove("active"));
+        tabContents.forEach((content) => content.classList.remove("active"));
 
-            // Desactivar todos los tabs
-            tabButtons.forEach((btn) => btn.classList.remove("active"));
-            tabContents.forEach((content) =>
-              content.classList.remove("active")
-            );
-
-            // Activar el tab seleccionado
-            button.classList.add("active");
-            document.getElementById(tabId).classList.add("active");
-          });
-        });
-
-        // Abrir acordeones importantes por defecto
-        const importantAccordions = [
-          "¿Qué es la búsqueda aumentada (RAG) y cómo mejora el Deep Research?",
-          "Componentes técnicos de un sistema Deep Research",
-          "Limitaciones y consideraciones técnicas",
-          "Optimización del proceso de búsqueda",
-          "Consideraciones prácticas y éticas",
-          "Análisis detallado de herramientas clave",
-        ];
-
-        const accordionHeaders = document.querySelectorAll(".accordion-header");
-        accordionHeaders.forEach((header) => {
-          // Configurar eventos de clic para todos los acordeones
-          header.addEventListener("click", () => {
-            const accordionItem = header.parentElement;
-            const accordionContent = header.nextElementSibling;
-            accordionItem.classList.toggle("active");
-
-            if (accordionItem.classList.contains("active")) {
-              accordionContent.classList.add("active");
-            } else {
-              accordionContent.classList.remove("active");
-            }
-          });
-
-          // Si el texto del acordeón está en la lista de importantes, abrirlo por defecto
-          if (
-            importantAccordions.some((text) => header.innerText.includes(text))
-          ) {
-            const accordionItem = header.parentElement;
-            const accordionContent = header.nextElementSibling;
-            accordionItem.classList.add("active");
-            accordionContent.classList.add("active");
+        // Activar el tab seleccionado
+        const selectedButton = document.querySelector(
+          `.tab-button[data-tab="${tabId}"]`
+        );
+        if (selectedButton) {
+          selectedButton.classList.add("active");
+          const tabContent = document.getElementById(tabId);
+          if (tabContent) {
+            tabContent.classList.add("active");
           }
+        }
+      }
+
+      // Función para desplazar la página a una posición que muestre la barra de pestañas
+      // Función para desplazar la página hacia la parte superior donde está el hero
+      function scrollToTabsView() {
+        // Desplazar a la parte superior de la página
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      }
+
+      // Manejar clics en las pestañas
+      tabButtons.forEach((button) => {
+        button.addEventListener("click", (e) => {
+          e.preventDefault(); // Evitar comportamiento predeterminado del enlace
+          const tabId = button.getAttribute("data-tab");
+
+          // Actualizar la URL con el hash sin recargar la página
+          history.pushState(null, null, `#${tabId}`);
+
+          // Activar la pestaña
+          activateTab(tabId);
+
+          // Desplazar a la vista de las pestañas
+          scrollToTabsView();
         });
       });
-      function copyTemplateToClipboard() {
-        const templateText = `Realiza una investigación exhaustiva sobre [DEFINIR TEMA ESPECÍFICO].
 
-INSTRUCCIONES:
-1. Utiliza búsqueda activa para encontrar la información científica más reciente.
-2. Prioriza: meta-análisis, revisiones sistemáticas y ensayos clínicos de los últimos 5 años.
-3. Consulta fuentes como PubMed, Cochrane Library y revistas de alto impacto.
+      // Al cargar la página
+      document.addEventListener("DOMContentLoaded", () => {
+        // Comprobar si hay un hash en la URL
+        if (location.hash) {
+          const tabId = location.hash.substring(1); // Eliminar el # del inicio
+          activateTab(tabId);
 
-ESTRUCTURA:
-- Resumen estructurado (300 palabras)
-- Introducción con contexto y justificación
-- Metodología (criterios de búsqueda y selección)
-- Resultados principales con datos cuantitativos
-- Discusión crítica identificando controversias
-- Aplicabilidad clínica y limitaciones
-- Conclusiones basadas en la evidencia
-- Referencias en formato Vancouver
+          // Pequeño retraso para asegurar que los elementos estén renderizados
+          setTimeout(() => {
+            scrollToTabsView();
+          }, 100);
+        }
+      });
 
-ASPECTOS CRÍTICOS:
-- Evalúa la calidad metodológica de los estudios clave
-- Identifica posibles sesgos en la literatura
-- Señala áreas de incertidumbre y debates actuales
-- Proporciona DOI de los artículos principales cuando sea posible
-
-Extensión: 5000-7000 palabras`;
-
-        navigator.clipboard.writeText(templateText).then(
-          function () {
-            // Cambia el texto del botón temporalmente
-            const button = document.querySelector(".copy-button");
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-check"></i> ¡Copiado!';
-
-            setTimeout(function () {
-              button.innerHTML = originalText;
-            }, 2000);
-          },
-          function (err) {
-            console.error("Error al copiar: ", err);
-          }
-        );
-      }
+      // Manejar cambios en el hash (para navegación con botones atrás/adelante)
+      window.addEventListener("hashchange", () => {
+        if (location.hash) {
+          const tabId = location.hash.substring(1);
+          activateTab(tabId);
+          scrollToTabsView();
+        }
+      });
     </script>
 
     <!-- Google Analytics -->
