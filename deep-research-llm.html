@@ -286,7 +286,11 @@
                 sepsis, la interpretación avanzada de imágenes radiológicas, el
                 desarrollo de sistemas de apoyo a la decisión clínica y la
                 creación de recursos educativos médicos interactivos y
-                adaptativos.
+                adaptativos. DeepSeek resulta particularmente valioso para
+                análisis estadístico de estudios clínicos, investigación técnica
+                que requiera razonamiento matemático avanzado, equipos con
+                recursos computacionales limitados y instituciones que prefieran
+                soluciones personalizables y transparentes.
               </p>
             </div>
           </div>
@@ -326,14 +330,14 @@
             <div class="workflow-step">
               <div class="step-number">3</div>
               <div class="step-content">
-                <h3 class="step-title">Búsqueda y procesamiento</h3>
+                <h3 class="step-title">Selección del modelo y búsqueda</h3>
                 <p class="step-description">
+                  Elige el modelo más adecuado según el tipo de investigación.
                   El sistema busca información relevante y estructura la
                   investigación identificando subtemas clave.
                 </p>
               </div>
             </div>
-
             <div class="workflow-step">
               <div class="step-number">4</div>
               <div class="step-content">
@@ -390,6 +394,12 @@
                   críticamente la información y estructurarla siguiendo patrones
                   académicos.
                 </li>
+                <li>
+                  <strong>Arquitecturas de modelo avanzadas:</strong> Como la
+                  Mixture-of-Experts (MoE) y Multi-Head Latent Attention (MLA)
+                  utilizadas por DeepSeek para optimizar el rendimiento y
+                  reducir costos computacionales.
+                </li>
               </ul>
             </div>
           </div>
@@ -414,6 +424,7 @@
                       <th>Google Gemini</th>
                       <th>Perplexity Deep Research</th>
                       <th>Grok</th>
+                      <th>DeepSeek AI</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -422,7 +433,7 @@
                       <td>Informes muy detallados</td>
                       <td>Informes más concisos</td>
                       <td>Resúmenes concisos pero estructurados</td>
-                      <td>Informes detallados con enfoque técnico</td>
+                      <td>Informes técnicos con razonamiento avanzado</td>
                     </tr>
                     <tr>
                       <td><strong>Fuentes de Búsqueda</strong></td>
@@ -435,6 +446,7 @@
                       <td>
                         Web y fuentes científicas con análisis tiempo real
                       </td>
+                      <td>Bases académicas y fuentes técnicas</td>
                     </tr>
                     <tr>
                       <td><strong>Precisión</strong></td>
@@ -444,6 +456,10 @@
                       <td>
                         Precisión variable, más actualizado con datos recientes
                       </td>
+                      <td>
+                        Alta precisión en tareas técnicas (88.5 en MMLU, 97% en
+                        lógica)
+                      </td>
                     </tr>
                     <tr>
                       <td><strong>Fiabilidad de Citas</strong></td>
@@ -451,6 +467,7 @@
                       <td>No especificado</td>
                       <td>Alta fiabilidad, con citas en línea</td>
                       <td>Incluye enlaces directos a las fuentes</td>
+                      <td>Código abierto con fuentes transparentes</td>
                     </tr>
                     <tr>
                       <td><strong>Transparencia</strong></td>
@@ -460,6 +477,10 @@
                       <td>
                         Alto nivel de transparencia sobre fuentes y limitaciones
                       </td>
+                      <td>
+                        Alta transparencia por ser código abierto, incluye
+                        "Reasoning Traces"
+                      </td>
                     </tr>
                     <tr>
                       <td><strong>Tiempo de Procesamiento</strong></td>
@@ -467,6 +488,7 @@
                       <td>Típicamente menos de 15 minutos</td>
                       <td>Rápido</td>
                       <td>Moderado a rápido, con análisis incremental</td>
+                      <td>Rápida y eficiente en recursos</td>
                     </tr>
                   </tbody>
                 </table>
@@ -650,6 +672,47 @@
                 <span>Explorar Grok</span>
               </a>
             </div>
+            <!-- DeepSeek -->
+            <div class="tool-card">
+              <div class="tool-header">
+                <div class="tool-icon">
+                  <i class="fas fa-code"></i>
+                </div>
+                <h3 class="tool-name">DeepSeek AI</h3>
+              </div>
+              <p class="tool-desc">
+                Plataforma open source con alto rendimiento en tareas técnicas y
+                capacidad avanzada de razonamiento a un costo computacional
+                menor.
+              </p>
+              <ul class="tool-features">
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Arquitectura MoE eficiente</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Excelente en codificación y matemáticas</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Fuerte soporte para PNL en chino</span>
+                </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Código abierto y personalizable</span>
+                </li>
+              </ul>
+              <a
+                href="https://chat.deepseek.com/"
+                target="_blank"
+                rel="noopener"
+                class="tool-link"
+              >
+                <i class="fas fa-external-link-alt"></i>
+                <span>Explorar DeepSeek</span>
+              </a>
+            </div>
           </div>
 
           <div class="accordion-item active">
@@ -686,6 +749,12 @@
                 <li>
                   <strong>Verificabilidad:</strong> Algunas referencias pueden
                   ser difíciles de verificar o contener inexactitudes.
+                </li>
+                <li>
+                  <strong>Barreras lingüísticas:</strong> Algunos modelos como
+                  DeepSeek tienen fortalezas específicas en ciertos idiomas
+                  (como el chino), lo que puede afectar la precisión cuando se
+                  trabaja con literatura científica en diferentes idiomas.
                 </li>
               </ul>
             </div>
@@ -744,6 +813,15 @@
                   razonamiento inductivo (basado en evidencia) al abductivo,
                   introduciendo nuevas incertidumbres en la validación del
                   conocimiento.
+                </li>
+                <li>
+                  <strong
+                    >Implicaciones de los modelos de código abierto:</strong
+                  >
+                  LLMs de código abierto ofrecen mayor transparencia y
+                  personalización, pero también plantean preguntas sobre la
+                  responsabilidad en caso de uso indebido o propagación de
+                  información errónea.
                 </li>
               </ul>
             </div>
@@ -952,6 +1030,13 @@
                   <i class="fas fa-check-circle"></i>
                   <span>Fase preliminar de investigación</span>
                 </li>
+                <li class="tool-feature">
+                  <i class="fas fa-check-circle"></i>
+                  <span
+                    >Análisis matemático y estadístico profundo con
+                    DeepSeek</span
+                  >
+                </li>
               </ul>
             </div>
             <!-- Tarjeta 4 - Epistemic Prompting -->
@@ -1086,6 +1171,15 @@
                 <i class="fas fa-file-alt"></i>
               </div>
               <span>Plantillas de prompts para investigación sanitaria</span>
+            </a>
+            <a href="#" class="resource-item">
+              <div class="resource-icon">
+                <i class="fas fa-code-branch"></i>
+              </div>
+              <span
+                >Modelos LLM de código abierto: Guía para entornos
+                sanitarios</span
+              >
             </a>
           </div>
           <div class="accordion-item active">
