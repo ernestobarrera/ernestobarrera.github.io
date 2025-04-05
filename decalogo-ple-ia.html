@@ -1,0 +1,653 @@
+<!--
+    =====================
+      decalogo-ple.html
+      Decálogo PLE del profesional sanitario aumentado con IA
+    =====================
+    -->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Decálogo PLE Aumentado con IA | @ernestob</title>
+    <meta
+      name="description"
+      content="Decálogo interactivo para la revisión del PLE del profesional sanitario, con elementos potenciados por Inteligencia Artificial"
+    />
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Decálogo PLE Aumentado con IA | ​👨‍⚕️ ​@ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria 🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/decalogo-ple.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <!-- CDNs necesarios -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <!-- Estilos específicos para esta página -->
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        background: #1c1e26;
+      }
+      .main-container {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0.5rem 0.5rem;
+      }
+      .hero-section {
+        border-radius: 8px;
+        padding: 0rem;
+        margin-bottom: 0.1rem;
+      }
+      .intro-text {
+        font-size: 1rem;
+        line-height: 1.4;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 6px;
+        padding: 0.75rem;
+        color: var(--text-secondary, #94a3b8);
+        margin-bottom: 1rem;
+      }
+      .main-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary, #fff);
+      }
+    </style>
+    <style>
+      .animation-fadeIn {
+        animation: fadeIn 0.4s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <script src="./assets/js/include.js"></script>
+    <include src="header.html"></include>
+
+    <main class="main-container">
+      <section class="hero-section">
+        <h1 class="main-title">
+          <i class="fas fa-brain"></i>
+          <span>Decálogo PLE Aumentado con IA</span>
+        </h1>
+        <p class="intro-text">
+          El Decálogo para la revisión del PLE (Entorno Personal de Aprendizaje)
+          del profesional sanitario es un marco conceptual que estructura las
+          competencias digitales e informacionales necesarias para la práctica
+          clínica. Esta versión aumentada integra elementos de Inteligencia
+          Artificial, mostrando cómo los LLMs y otras tecnologías IA potencian
+          cada competencia del decálogo original, creando un ecosistema digital
+          más completo y adaptado a la era de la IA generativa.
+        </p>
+      </section>
+
+      <div id="root"></div>
+    </main>
+
+    <include src="footer.html"></include>
+
+    <script src="./assets/js/include.js"></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+
+    <!-- Componente React del Decálogo -->
+    <script type="text/babel">
+      // IMPORTANTE: Importar React y los hooks necesarios
+      const { useState, useEffect } = React;
+
+      const DecalogoPLE = () => {
+        const [activeStep, setActiveStep] = useState(null);
+        const [showIAEnhancements, setShowIAEnhancements] = useState(false);
+
+        // Datos del decálogo
+        const pasos = [
+          {
+            id: 1,
+            titulo: "Competencias digitales e informacionales",
+            icono: "🧠",
+            descripcion:
+              "Promueven la transformación digital en entornos V.U.C.A.",
+            elementos: [
+              "Promueven la transformación digital en entornos V.U.C.A.",
+              'Impulsan rol "prosumidor" e interacción con la información',
+              "Contribuyen a minimizar impacto de infoxicación",
+              "Aprender en el futuro: el cambio es la norma (A. Toffler)",
+              "Facilitan RSS-Basada en la Evidencia",
+              "Integran el ecosistema digital en el Entorno Personal de Aprendizaje",
+              "Guía para la configuración de un perfil digital profesional óptimo",
+              "Enfoque de aprendizaje para toda la vida",
+            ],
+            elementosIA: [
+              "Alfabetización en IA: entender capacidades y limitaciones de LLMs",
+              "Prompting efectivo: estructurar consultas para obtener respuestas óptimas",
+              "Verificación crítica de outputs: distinguir información fiable de alucinaciones",
+              "Contextualización y refinamiento de respuestas de IA",
+            ],
+          },
+          {
+            id: 2,
+            titulo: "Buscar",
+            icono: "🔍",
+            descripcion: "Estrategia PAIL: Just in time",
+            elementos: [
+              "Estrategia PAIL: Just in time",
+              "Hacer preguntas y promover respuestas",
+              "Macro PIPS para selección y uso de buscadores",
+              "Alfabetización en selección y uso de buscadores",
+            ],
+            elementosIA: [
+              "Búsqueda semántica con IA para detectar conceptos relacionados",
+              "Formulación de consultas complejas asistida por LLMs",
+              "Refinamiento iterativo de búsquedas basado en feedback contextual",
+              "Exploración de literatura médica mediante embeddings y clustering",
+            ],
+          },
+          {
+            id: 3,
+            titulo: "Recibir",
+            icono: "📩",
+            descripcion: "Estrategia Push: Just in case",
+            elementos: [
+              "Estrategia Push: Just in case",
+              "3C: perfiles de interés, continente, contenido, conversación",
+              "Popkups de agregación de contenidos y fuentes RSS",
+            ],
+            elementosIA: [
+              "Sistemas personalizados de recomendación basados en IA",
+              "Filtrado inteligente de alertas según relevancia clínica individual",
+              "Detección de tendencias emergentes en literatura científica",
+              "Resúmenes automáticos de nuevas publicaciones relevantes",
+            ],
+          },
+          {
+            id: 4,
+            titulo: "Filtrar",
+            icono: "🧹",
+            descripcion: "Sobrecarga vs. fallo de los filtros",
+            elementos: [
+              "Sobrecarga vs. fallo de los filtros",
+              "Filtros metodológicos basados en tipos de estudio (POEMs)",
+              "Tipos de recursos (Pirámide 5S), jerarquía de evidencia (GPC vs ECAL)...",
+              "Filtros basados en métricas de atención",
+              "Filtros sencillos vs. complejos OPA (Organizar-Priorizar-Acelerar)",
+            ],
+            elementosIA: [
+              "Asistentes para lectura crítica de literatura científica",
+              "Evaluación automática de calidad metodológica de estudios",
+              "Identificación de sesgos en publicaciones médicas",
+              "Cuantificación automatizada de nivel de evidencia y recomendación",
+            ],
+          },
+          {
+            id: 5,
+            titulo: "Almacenar, sincronizar, procesar",
+            icono: "⚙️",
+            descripcion:
+              "En contextos de digitalización creciente del conocimiento",
+            elementos: [
+              "En contextos de digitalización creciente del conocimiento",
+              'Facilitar interacción inmediata, sencilla y el uso de la "nube"',
+              "Para acercar la información al lugar donde se necesita y minimizar el impacto de la paradoja de More-Garg",
+              "Navegación y acceso unificado",
+            ],
+            elementosIA: [
+              "Sistemas de conocimiento aumentado (RAG - Retrieval Augmented Generation)",
+              "Clasificación automática de documentos y recursos clínicos",
+              "Generación de resúmenes personalizados de artículos complejos",
+              "Transformación multimodal: texto a audio, diagramas, infografías",
+            ],
+          },
+          {
+            id: 6,
+            titulo: "Participar en la red social",
+            icono: "👥",
+            descripcion: "Enfoque constructivista y conectivista",
+            elementos: [
+              "Enfoque constructivista y conectivista",
+              "Promover el profesionalismo en uso ético",
+              "Mindfulness digital para difundir, obtener, interpretar y cambiar prácticas",
+              "Identificar el valor de la conversación en redes",
+              "Construir identidad digital académica",
+            ],
+            elementosIA: [
+              "Asistentes de redacción para comunicación científica precisa",
+              "Adaptación automática de contenido a diferentes audiencias",
+              "Verificación de precisión factual antes de compartir información",
+              "Generación de material visual para aumentar engagement",
+            ],
+          },
+          {
+            id: 7,
+            titulo: "Trabajo colaborativo",
+            icono: "🤝",
+            descripcion: "Entornos de mayor productividad",
+            elementos: [
+              "Seleccionar recursos, herramientas y aplicaciones eficaces a usos específicos en llamados beneficiarios",
+              "Entornos de mayor productividad",
+              "Construir la identidad digital para optimizar visibilidad y una comunicación eficaz",
+            ],
+            elementosIA: [
+              "Co-creación de contenido con asistencia de IA",
+              "Mediación y síntesis de discusiones clínicas complejas",
+              "Análisis automático de fortalezas y debilidades en propuestas",
+              "Detección de áreas de consenso y disenso en grupos multidisciplinares",
+            ],
+          },
+          {
+            id: 8,
+            titulo: "Tecnología móvil",
+            icono: "📱",
+            descripcion: "Everyware, everyone, everytime",
+            elementos: [
+              "Everyware, everyone, everytime",
+              "La democratización creativa de la medicina",
+              "Overlay vs Exolayer de tecnologías sanitarias",
+              'El impacto de las alertas, el modo "Zen"',
+            ],
+            elementosIA: [
+              "Apps de IA para consulta de información al lado del paciente",
+              "Asistentes activados por voz para documentación clínica",
+              "Resúmenes médicos generados en tiempo real durante consultas",
+              "Microaprendizaje adaptativo en momentos de disponibilidad",
+            ],
+          },
+          {
+            id: 9,
+            titulo: "Trabajo con Internet y los datos",
+            icono: "📊",
+            descripcion: "Datos e información vs conocimiento y sabiduría",
+            elementos: [
+              '"I have a new tool, the Dr. GitHub in the Sheet Clinic, a prototype in an ocean of delibeware"',
+              "Datos e información vs conocimiento y sabiduría",
+              "La perspectiva disruptiva de la IA",
+              "Preparación para la práctica del Sensoricismo",
+              "Trabajo centrado, de EviSite a WebSite",
+              "Web semántica, de EdoSite a WebOSite",
+            ],
+            elementosIA: [
+              "Análisis predictivo para apoyo a decisiones clínicas",
+              "Extracción automática de insights de grandes conjuntos de datos",
+              "Visualización interactiva de tendencias complejas en tiempo real",
+              "Interpretación ética de resultados de análisis de datos sanitarios",
+            ],
+          },
+          {
+            id: 10,
+            titulo: "Uso (racional) de la información",
+            icono: "🧠",
+            descripcion:
+              "Para potenciar la transferencia eficaz de la información",
+            elementos: [
+              "Para potenciar la transferencia eficaz de la información",
+              "Desarrollar interpretación crítica: Problema, Pregunta, Respuesta, Oportunidad",
+              "Dirimens vs opiniones para orientar la post-ciencia",
+              "Problemas significativos y conjuntos de datos paralelos",
+              "Evitando multitarea y orientando actividad al mayor rendimiento cognitivo",
+            ],
+            elementosIA: [
+              "Sistemas de apoyo a la decisión clínica basados en IA",
+              "Explicabilidad de recomendaciones generadas por algoritmos",
+              "Personalización de información según contexto específico del paciente",
+              "Detección de sesgos en la aplicación de evidencia científica",
+            ],
+          },
+        ];
+
+        // Color por categoría (estos colores se mantienen similares al original)
+        const getColorForStep = (step) => {
+          switch (step) {
+            case 1:
+              return { bg: "#6d28d9", border: "#8b5cf6" }; // Competencias digitales
+            case 2:
+              return { bg: "#2563eb", border: "#3b82f6" }; // Buscar
+            case 3:
+              return { bg: "#d97706", border: "#f59e0b" }; // Recibir
+            case 4:
+              return { bg: "#dc2626", border: "#ef4444" }; // Filtrar
+            case 5:
+              return { bg: "#059669", border: "#10b981" }; // Almacenar
+            case 6:
+              return { bg: "#db2777", border: "#ec4899" }; // Participar
+            case 7:
+              return { bg: "#4f46e5", border: "#6366f1" }; // Trabajo colaborativo
+            case 8:
+              return { bg: "#0d9488", border: "#14b8a6" }; // Tecnología móvil
+            case 9:
+              return { bg: "#0284c7", border: "#0ea5e9" }; // Internet y datos
+            case 10:
+              return { bg: "#ea580c", border: "#f97316" }; // Uso racional
+            default:
+              return { bg: "#6b7280", border: "#9ca3af" };
+          }
+        };
+
+        // Función para manejar el clic en un paso
+        const handleStepClick = (id) => {
+          if (activeStep === id) {
+            setActiveStep(null);
+          } else {
+            setActiveStep(id);
+          }
+        };
+
+        return (
+          <div className="bg-gray-900 text-white p-4 rounded-lg shadow-xl">
+            {/* Cabecera */}
+            <div className="mb-6 border-b border-gray-700 pb-4">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <h2 className="text-2xl font-bold text-yellow-400 flex items-center">
+                  <span className="mr-2">📚</span> Decálogo para la revisión del
+                  PLE del profesional sanitario
+                </h2>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setActiveStep(null)}
+                    className={`px-3 py-1 rounded-md text-sm ${
+                      activeStep === null
+                        ? "bg-yellow-600 text-white"
+                        : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                    }`}
+                  >
+                    <i className="fas fa-th-large mr-1"></i> Ver todos
+                  </button>
+
+                  <button
+                    onClick={() => setShowIAEnhancements(!showIAEnhancements)}
+                    className={`px-3 py-1 rounded-md text-sm ${
+                      showIAEnhancements
+                        ? "bg-purple-700 text-white"
+                        : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                    }`}
+                  >
+                    <i className={`fas fa-robot mr-1`}></i>
+                    {showIAEnhancements ? "Ocultar IA" : "Mostrar elementos IA"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-3 text-sm text-gray-400 flex items-center">
+                <span className="mr-1">👨‍⚕️</span> Desarrollado por
+                <a
+                  href="https://twitter.com/ernestob"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-1 text-blue-400 hover:underline"
+                >
+                  @ernestob
+                </a>
+                <span className="mx-2">|</span>
+                <span>Actualizado con elementos de IA en 2025</span>
+              </div>
+            </div>
+
+            {/* Visualización del decálogo */}
+            {activeStep === null ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {pasos.map((paso) => {
+                  const colors = getColorForStep(paso.id);
+
+                  return (
+                    <div
+                      key={paso.id}
+                      className={`p-4 rounded-lg cursor-pointer transition-all duration-300 
+                            hover:shadow-lg relative overflow-hidden group`}
+                      style={{
+                        backgroundColor: colors.bg,
+                        borderLeft: `4px solid ${colors.border}`,
+                      }}
+                      onClick={() => handleStepClick(paso.id)}
+                    >
+                      {/* Número del paso */}
+                      <div className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/40 flex items-center justify-center">
+                        <span className="text-sm font-bold">{paso.id}</span>
+                      </div>
+
+                      {/* Contenido del paso */}
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl">{paso.icono}</div>
+
+                        <div>
+                          <h3 className="font-bold text-white text-lg mb-1">
+                            {paso.titulo}
+                          </h3>
+                          <p className="text-white/80 text-sm">
+                            {paso.descripcion}
+                          </p>
+
+                          {/* Indicador de IA */}
+                          {showIAEnhancements && (
+                            <div className="mt-2 inline-block px-2 py-1 bg-purple-800/70 rounded-md border border-purple-400/30">
+                              <span className="text-xs flex items-center text-purple-100">
+                                <i className="fas fa-robot mr-1"></i> Potenciado
+                                con IA
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Indicador de clic */}
+                          <div className="mt-2 text-xs text-white/60 group-hover:text-white/100 flex items-center">
+                            <i className="fas fa-hand-pointer mr-1"></i> Haz
+                            clic para detalles
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Gradiente al hover */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              // Vista detallada de un paso
+              <div className="bg-gray-800 rounded-lg p-5 shadow-inner animation-fadeIn">
+                {pasos
+                  .filter((paso) => paso.id === activeStep)
+                  .map((paso) => {
+                    const colors = getColorForStep(paso.id);
+
+                    return (
+                      <div key={paso.id}>
+                        {/* Encabezado */}
+                        <div className="flex items-center gap-3 mb-5 pb-3 border-b border-gray-700">
+                          <div
+                            className="w-14 h-14 rounded-full flex items-center justify-center text-3xl shrink-0"
+                            style={{ backgroundColor: colors.bg }}
+                          >
+                            {paso.icono}
+                          </div>
+                          <div>
+                            <h2 className="text-2xl font-bold text-white flex items-center">
+                              <span className="text-yellow-400 mr-2">
+                                {paso.id}.
+                              </span>{" "}
+                              {paso.titulo}
+                            </h2>
+                            <p className="text-gray-300">{paso.descripcion}</p>
+                          </div>
+                        </div>
+
+                        {/* Contenido en dos columnas */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {/* Elementos originales */}
+                          <div>
+                            <h3 className="text-yellow-400 font-semibold mb-3 flex items-center text-lg">
+                              <i className="fas fa-list mr-2"></i> Elementos
+                              Originales
+                            </h3>
+                            <ul className="space-y-2">
+                              {paso.elementos.map((elemento, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-2 text-gray-200"
+                                >
+                                  <i className="fas fa-check text-yellow-500 mt-1"></i>
+                                  <span>{elemento}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          {/* Elementos IA */}
+                          <div
+                            className={`bg-purple-900/20 rounded-lg p-4 border border-purple-700/30 
+                                ${
+                                  showIAEnhancements
+                                    ? "opacity-100"
+                                    : "opacity-50"
+                                }`}
+                          >
+                            <h3 className="text-purple-300 font-semibold mb-3 flex items-center text-lg">
+                              <i className="fas fa-robot mr-2"></i> Elementos
+                              Potenciados con IA
+                            </h3>
+                            <ul className="space-y-2">
+                              {paso.elementosIA.map((elemento, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-2 text-purple-100"
+                                >
+                                  <i className="fas fa-bolt text-purple-400 mt-1"></i>
+                                  <span>{elemento}</span>
+                                </li>
+                              ))}
+                            </ul>
+
+                            {/* Nota sobre IA */}
+                            <div className="mt-4 pt-3 border-t border-purple-700/30 text-sm text-purple-200/70 flex items-center">
+                              <i className="fas fa-info-circle mr-2"></i>
+                              <span>
+                                Estos elementos representan cómo la IA potencia
+                                esta competencia en el PLE moderno.
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Botones de navegación */}
+                        <div className="mt-8 flex justify-between">
+                          <button
+                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md text-white flex items-center"
+                            onClick={() =>
+                              handleStepClick(paso.id > 1 ? paso.id - 1 : 10)
+                            }
+                          >
+                            <i className="fas fa-arrow-left mr-2"></i>
+                            Anterior
+                          </button>
+
+                          <button
+                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md text-white flex items-center"
+                            onClick={() => setActiveStep(null)}
+                          >
+                            <i className="fas fa-th-large mr-2"></i>
+                            Ver todos
+                          </button>
+
+                          <button
+                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md text-white flex items-center"
+                            onClick={() =>
+                              handleStepClick(paso.id < 10 ? paso.id + 1 : 1)
+                            }
+                          >
+                            Siguiente
+                            <i className="fas fa-arrow-right ml-2"></i>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+
+            {/* Nota inferior */}
+            <div className="mt-6 text-center text-sm text-gray-500">
+              <p>
+                Basado en el "Decálogo para la revisión del PLE del profesional
+                sanitario" por Ernesto Barrera
+              </p>
+            </div>
+          </div>
+        );
+      };
+
+      // Esperar a que todo el contenido y las inclusiones estén completamente cargados
+      window.onload = function () {
+        // Pequeño retraso para dar tiempo a cualquier manipulación del DOM
+        setTimeout(function () {
+          const rootElement = document.getElementById("root");
+          if (!rootElement) {
+            console.error("No se encontró el elemento con id 'root'");
+            return;
+          }
+
+          // Comprobar versión de React y usar la API correspondiente
+          if (typeof ReactDOM.createRoot === "function") {
+            // React 18
+            const root = ReactDOM.createRoot(rootElement);
+            root.render(<DecalogoPLE />);
+          } else {
+            // React anterior a 18
+            ReactDOM.render(<DecalogoPLE />, rootElement);
+          }
+        }, 300); // Retraso para asegurar que todo se ha cargado
+      };
+    </script>
+  </body>
+</html>
