@@ -935,3 +935,545 @@ Con estos cambios estarás:
 - Asegurándote de que las inclusiones (header, footer) y la semántica HTML sean consistentes y adecuados.
 
 Realiza estos cambios de forma progresiva y prueba en cada paso para confirmar que la funcionalidad (filtros, tooltips, diagrama, tutorial, autoajuste del textarea) continúa operando correctamente.
+
+API PUBMED
+
+# Documento Técnico: Desarrollo de Contadores de Resultados para Buscador PubMed
+
+## Estado del Proyecto - [24/04/2025]
+
+### Descripción General
+
+Estamos desarrollando una funcionalidad de contadores de resultados para un buscador avanzado de PubMed. Esta funcionalidad permite mostrar numéricamente la cantidad de resultados que tendría cada filtro al aplicarse, sin necesidad de realizar la búsqueda completa.
+
+### Componentes Principales
+
+- **Buscador PubMed con Filtros Estructurados**: Aplicación base ya funcional
+- **Sistema de Contadores**: Módulo en desarrollo para mostrar recuentos de resultados en tiempo real
+- **API Integration**: Conexión con NCBI E-utilities API para consultar conteos
+
+### Estado Actual
+
+El sistema de contadores está parcialmente implementado. Al activar la funcionalidad, se muestran indicadores visuales (círculos amarillos) para cada filtro, pero no se visualizan correctamente los valores numéricos de los recuentos.
+
+## Problema Pendiente
+
+**Descripción del error**: Los contadores aparecen como círculos amarillos sin mostrar los números de resultados, aunque la lógica de consulta a la API y obtención de datos funciona correctamente.
+
+**Comportamiento esperado**: Los contadores deberían mostrar números (ej: "123", "1.5K", "2.1M") en vez de solo puntos amarillos.
+
+## Código Funcional Actual
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  
+  // Clase para gestionar solicitudes a la API
+  class RequestQueue {
+    constructor(apiKey, requestsPerSecond = 5) {
+      this.apiKey = apiKey;
+      this.queue = [];
+      this.running = false;
+      this.interval = Math.ceil(1000 / requestsPerSecond);
+    }
+    
+    add(filterID, query) {
+      return new Promise((resolve, reject) => {
+        this.queue.push({ filterID, query, resolve, reject });
+        if (!this.running) this.process();
+      });
+    }
+    
+    async process() {
+      this.running = true;
+      while (this.queue.length > 0) {
+        const { filterID, query, resolve, reject } = this.queue.shift();
+        try {
+          const count = await this.fetchCount(query);
+          resolve({ filterID, count });
+        } catch (error) {
+          console.error(`Error procesando filtro ${filterID}:`, error);
+          reject({ filterID, error });
+        }
+        await new Promise(r => setTimeout(r, this.interval));
+      }
+      this.running = false;
+    }
+    
+    async fetchCount(query) {
+      try {
+        console.log(`Consultando API para: ${query}`);
+        const url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retmode=json&retmax=0&api_key=${this.apiKey}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log(`Respuesta recibida:`, data);
+        return parseInt(data.esearchresult?.count || 0, 10);
+      } catch (error) {
+        console.error('Error en fetchCount:', error);
+        throw error;
+      }
+    }
+  }
+  
+  // Sistema de caché
+  const resultsCache = {
+    store: {},
+    
+    set(term, filterID, count) {
+      const key = `${term}|${filterID}`;
+      this.store[key] = {
+        count, 
+        timestamp: Date.now()
+      };
+    },
+    
+    get(term, filterID) {
+      const key = `${term}|${filterID}`;
+      const entry = this.store[key];
+      
+      if (entry && (Date.now() - entry.timestamp < 300000)) {
+        return entry.count;
+      }
+      
+      return null;
+    }
+  };
+  
+  // Formatear números
+  function formatNumber(num) {
+    if (num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num/1000).toFixed(1) + 'K';
+    return num.toString();
+  }
+  
+  // SOLUCIÓN: Reemplazo completo de estilos para garantizar visibilidad
+  function addStyles() {
+    // Primero eliminamos estilos anteriores si existen
+    const oldStyle = document.getElementById('counter-styles');
+    if (oldStyle) oldStyle.remove();
+    
+    const style = document.createElement('style');
+    style.id = 'counter-styles';
+    style.textContent = `
+      /* Estilos completamente nuevos para los contadores */
+      .result-counter {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        min-width: 28px !important;
+        height: 20px !important;
+        padding: 0 4px !important;
+        border-radius: 10px !important;
+        background-color: #ffd700 !important;
+        color: black !important;
+        font-size: 12px !important;
+        font-weight: bold !important;
+        line-height: 1 !important;
+        text-align: center !important;
+        position: absolute !important;
+        right: 8px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        z-index: 100 !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+        border: 1px solid #e5c100 !important;
+        overflow: visible !important;
+      }
+      
+      /* Estilos específicos para diferentes estados de contador */
+      .result-counter.high {
+        background-color: #28a745 !important;
+        color: white !important;
+      }
+      
+      .result-counter.medium {
+        background-color: #ffd700 !important;
+        color: black !important;
+      }
+      
+      .result-counter.low {
+        background-color: #fd7e14 !important;
+        color: white !important;
+      }
+      
+      .result-counter.very-low {
+        background-color: #dc3545 !important;
+        color: white !important;
+      }
+      
+      /* Ajuste específico para botones con radio buttons */
+      .filter-button:has(input[type="radio"]) .result-counter {
+        right: 60px !important;
+      }
+      
+      /* Garantizar que los botones de filtro tengan posición relativa */
+      .filter-button {
+        position: relative !important;
+      }
+      
+      /* Especificidad CSS aumentada para superar cualquier otro estilo */
+      body .filter-button .result-counter {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    console.log("Estilos para contadores añadidos/actualizados");
+  }
+  
+  // SOLUCIÓN: Reescritura de la función de mostrar contadores
+  function showCounters() {
+    // Primero añadimos los estilos actualizados
+    addStyles();
+    
+    console.log("Inicializando contadores...");
+    
+    // Seleccionar todos los botones de filtro
+    const filterButtons = document.querySelectorAll('.filter-button');
+    console.log(`Encontrados ${filterButtons.length} botones de filtro`);
+    
+    filterButtons.forEach((button, index) => {
+      // Eliminar contador existente si hay alguno
+      const existingCounter = button.querySelector('.result-counter');
+      if (existingCounter) {
+        existingCounter.remove();
+      }
+      
+      // Crear nuevo contador con estilos mejorados
+      const counter = document.createElement('div');  // Cambiado a div para mejor soporte
+      counter.className = 'result-counter medium';
+      counter.textContent = '...';
+      counter.id = `counter-${index}`;  // Añadir ID único para debugging
+      
+      // Aplicar estilos inline críticos para garantizar visibilidad
+      counter.style.display = 'flex';
+      counter.style.justifyContent = 'center';
+      counter.style.alignItems = 'center';
+      counter.style.visibility = 'visible';
+      counter.style.color = 'black';
+      counter.style.backgroundColor = '#ffd700';
+      
+      // Añadir al botón
+      button.appendChild(counter);
+      
+      console.log(`Contador ${index} añadido a "${button.textContent.trim()}"`);
+    });
+  }
+  
+  // Ocultar contadores
+  function hideCounters() {
+    document.querySelectorAll('.result-counter').forEach(counter => {
+      counter.remove();
+    });
+    console.log("Contadores eliminados");
+  }
+  
+  // SOLUCIÓN: Mejorar la actualización visual de los contadores
+  function updateCounterColor(element, count) {
+    // Primero eliminar todas las clases de estado
+    element.classList.remove('high', 'medium', 'low', 'very-low');
+    
+    if (count >= 10000) {
+      element.classList.add('high');
+      element.style.backgroundColor = '#28a745';
+      element.style.color = 'white';
+    } else if (count >= 1000) {
+      element.classList.add('high');
+      element.style.backgroundColor = '#20c997';
+      element.style.color = 'white';
+    } else if (count >= 100) {
+      element.classList.add('medium');
+      element.style.backgroundColor = '#ffd700';
+      element.style.color = 'black';
+    } else if (count > 10) {
+      element.classList.add('low');
+      element.style.backgroundColor = '#fd7e14';
+      element.style.color = 'white';
+    } else {
+      element.classList.add('very-low');
+      element.style.backgroundColor = '#dc3545';
+      element.style.color = 'white';
+    }
+  }
+  
+  // SOLUCIÓN: Mejorar la función de actualización de contadores
+  function updateFilterCounts(searchTerm) {
+    if (!searchTerm) return;
+    
+    console.log(`Actualizando contadores para: "${searchTerm}"`);
+    
+    // Mostrar indicador de proceso
+    if (typeof mostrarToast === 'function') {
+      mostrarToast('Calculando contadores de resultados...');
+    }
+    
+    // ⚠️ IMPORTANTE: Reemplaza con tu API key real
+    const apiKey = 'TU_API_KEY';
+    const queue = new RequestQueue(apiKey, 5);
+    let completedRequests = 0;
+    
+    // Para el prototipo inicial, limitamos a 10 filtros
+    const buttons = Array.from(document.querySelectorAll('.filter-button')).slice(0, 10);
+    
+    buttons.forEach((button, index) => {
+      // Obtener el elemento contador
+      const counter = button.querySelector('.result-counter');
+      if (!counter) {
+        console.warn(`No se encontró contador para el botón ${index}`);
+        return;
+      }
+      
+      // Indicador de carga
+      counter.textContent = '...';
+      
+      // Identificar el filtro
+      let filterId;
+      
+      // Primero intentamos obtener el filtro desde data-type
+      if (button.dataset.type) {
+        filterId = button.dataset.type;
+      } 
+      // Si no, intentamos con data-base y el radio button seleccionado
+      else if (button.dataset.base) {
+        const selectedRadio = button.querySelector('input[type="radio"]:checked');
+        if (selectedRadio) {
+          filterId = `${button.dataset.base}_${selectedRadio.value}`;
+        } else {
+          filterId = `${button.dataset.base}_sensible`; // valor por defecto
+        }
+      }
+      
+      if (!filterId || !filterMap || !filterMap[filterId]) {
+        counter.textContent = '?';
+        counter.style.backgroundColor = '#dc3545';
+        counter.style.color = 'white';
+        completedRequests++;
+        console.warn(`No se pudo identificar el filtro para el botón: ${button.textContent}`);
+        return;
+      }
+      
+      console.log(`Procesando filtro ${filterId} para el botón "${button.textContent.trim()}"`);
+      
+      // Verificar caché
+      const cachedCount = resultsCache.get(searchTerm, filterId);
+      if (cachedCount !== null) {
+        console.log(`Usando valor en caché para ${filterId}: ${cachedCount}`);
+        counter.textContent = formatNumber(cachedCount);
+        counter.title = `${cachedCount.toLocaleString()} resultados`;
+        updateCounterColor(counter, cachedCount);
+        completedRequests++;
+        
+        if (completedRequests >= buttons.length && typeof mostrarToast === 'function') {
+          mostrarToast('Contadores actualizados (desde caché)');
+        }
+        return;
+      }
+      
+      // Construir consulta
+      const filterQuery = filterMap[filterId];
+      const combinedQuery = searchTerm ? `(${searchTerm}) AND (${filterQuery})` : filterQuery;
+      
+      // Enviar solicitud
+      queue.add(filterId, combinedQuery)
+        .then(({ filterID, count }) => {
+          console.log(`Resultado para ${filterID}: ${count} resultados`);
+          
+          // Actualizar contador con resultado - ASEGURANDO que el texto sea visible
+          counter.textContent = formatNumber(count);
+          counter.title = `${count.toLocaleString()} resultados`;
+          
+          // Forzar mayor visibilidad
+          counter.style.fontSize = '12px';
+          counter.style.display = 'flex';
+          counter.style.justifyContent = 'center';
+          counter.style.alignItems = 'center';
+          
+          updateCounterColor(counter, count);
+          
+          // Guardar en caché
+          resultsCache.set(searchTerm, filterID, count);
+        })
+        .catch(({ filterID, error }) => {
+          console.error(`Error para ${filterID}:`, error);
+          counter.textContent = '?';
+          counter.style.backgroundColor = '#dc3545';
+          counter.style.color = 'white';
+        })
+        .finally(() => {
+          completedRequests++;
+          if (completedRequests >= buttons.length && typeof mostrarToast === 'function') {
+            mostrarToast('Contadores actualizados');
+          }
+        });
+    });
+  }
+  
+  // Debounce para evitar muchas llamadas
+  function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  }
+  
+  // Implementar botón de toggle (adaptado a la nueva interfaz)
+  const toggleBtn = document.createElement('button');
+  toggleBtn.innerHTML = '🔢 Contadores';
+  toggleBtn.className = 'info-button';
+  toggleBtn.id = 'toggleCountersBtn';
+  toggleBtn.style.backgroundColor = '#333';
+  toggleBtn.style.color = '#ffd700';
+  toggleBtn.style.border = '1px solid #ffd700';
+  toggleBtn.style.borderRadius = '8px';
+  toggleBtn.style.padding = '0.5rem 1rem';
+  toggleBtn.style.margin = '0 0.5rem';
+  toggleBtn.style.cursor = 'pointer';
+  
+  // Buscar la ubicación adecuada para el botón en la nueva interfaz
+  const controlesDiv = document.querySelector('.centered-controls');
+  if (controlesDiv) {
+    controlesDiv.appendChild(toggleBtn);
+  }
+  
+  // Estado inicial
+  let countersActive = false;
+  
+  // Función actualización con debounce
+  const debouncedUpdate = debounce((term) => {
+    if (countersActive && term) {
+      updateFilterCounts(term);
+    }
+  }, 700);
+  
+  // Evento para toggle
+  toggleBtn.addEventListener('click', function() {
+    countersActive = !countersActive;
+    
+    if (countersActive) {
+      this.innerHTML = '🔢 Ocultar';
+      this.style.background = '#ffd700';
+      this.style.color = '#333';
+      
+      // Mostrar contadores
+      showCounters();
+      
+      // Actualizar con datos
+      const term = document.getElementById('searchTerm').value.trim();
+      if (term) {
+        try {
+          const queryTerm = constructQuery(term);
+          if (queryTerm) {
+            updateFilterCounts(queryTerm);
+          } else if (typeof mostrarToast === 'function') {
+            mostrarToast('La consulta está vacía');
+          }
+        } catch (e) {
+          console.error('Error al construir consulta:', e);
+        }
+      } else if (typeof mostrarToast === 'function') {
+        mostrarToast('Ingresa un término de búsqueda para ver contadores');
+      }
+    } else {
+      this.innerHTML = '🔢 Contadores';
+      this.style.background = '#333';
+      this.style.color = '#ffd700';
+      
+      // Ocultar contadores
+      hideCounters();
+    }
+  });
+  
+  // Actualizar cuando cambie texto
+  const searchTerm = document.getElementById('searchTerm');
+  if (searchTerm) {
+    searchTerm.addEventListener('input', function() {
+      try {
+        const term = this.value.trim();
+        if (typeof constructQuery === 'function') {
+          const queryTerm = constructQuery(term);
+          debouncedUpdate(queryTerm);
+        } else {
+          console.error('La función constructQuery no está disponible');
+        }
+      } catch (e) {
+        console.error('Error en evento input:', e);
+      }
+    });
+  }
+  
+  // SOLUCIÓN: Añadir verificación inicial
+  console.log('Script de contadores cargado correctamente');
+});
+</script>
+
+## Análisis del Error
+
+1. **Causa probable**: El problema parece estar en la visualización de los contadores. Aunque los datos se obtienen correctamente de la API, el estilo CSS no permite que los números sean visibles dentro de los círculos amarillos.
+
+2. **Hipótesis**:
+
+   - Conflicto de estilos CSS que oculta o no muestra correctamente el texto
+   - Posible problema con el elemento `span` que no visualiza correctamente los números
+   - Posible sobreescritura de los estilos por CSS del framework principal
+
+3. **Logs para diagnóstico**: Se han añadido varios `console.log` que confirman que:
+   - La API responde correctamente con los conteos
+   - Los contadores se crean y se agregan al DOM
+   - Los valores numéricos se asignan correctamente a `counter.textContent`
+
+## Pasos para Continuar el Desarrollo
+
+1. **Configurar el entorno**:
+
+   - Clonar el repositorio del buscador PubMed
+   - Instalar las dependencias necesarias
+   - Configurar una API key válida de NCBI E-utilities
+
+2. **Verificar la integración**:
+
+   - Asegurarse de que el script se incluya correctamente antes del cierre del `</body>`
+   - Verificar que las funciones `constructQuery` y `filterMap` estén disponibles globalmente
+
+3. **Solucionar el problema de visualización**:
+
+   - Enfocar la solución en mejorar los estilos CSS para garantizar que los números sean visibles
+   - Probar con diferentes enfoques:
+     a. Cambiar de `span` a `div` para el contenedor del contador
+     b. Reforzar los estilos con `!important` para evitar sobreescrituras
+     c. Implementar un enfoque basado en observador de mutaciones para aplicar estilos dinámicamente
+
+4. **Estrategias alternativas**:
+   - Si persiste el problema, considerar un rediseño completo del componente de contador
+   - Evaluar usar un framework de componentes más robusto para esta funcionalidad
+
+## Recursos y Referencias
+
+1. **API de NCBI E-utilities**:
+
+   - Documentación: https://www.ncbi.nlm.nih.gov/books/NBK25500/
+   - Límites: 3 peticiones/segundo sin API key, 10 peticiones/segundo con API key
+
+2. **Contactos**:
+
+   - Contactar a @ernestob para aclaraciones sobre la estructura del proyecto
+
+3. **Herramientas de debugging recomendadas**:
+   - Chrome DevTools > Elements para inspeccionar estilos aplicados
+   - React DevTools si se migra a un enfoque basado en componentes
+
+---
+
+**Notas adicionales**:
+
+- La API key actual es de prueba y debe reemplazarse con una válida
+- La mayoría de los errores ocurren en navegadores basados en WebKit (Safari)
+- El código está listo para testing una vez implementada la corrección de visualización
+
+---
+
+Documento preparado por Claude | Fecha: 24/04/2025
