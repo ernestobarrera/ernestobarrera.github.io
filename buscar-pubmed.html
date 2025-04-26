@@ -1223,6 +1223,13 @@ filtros estructurados para profesionales sanitarios
               }
             });
 
+            // ---> ¡AÑADIR ESTA LÍNEA! <---
+            // Disparar la actualización de los contadores con el estado recuperado
+            if (typeof window.triggerPubMedCounterUpdate === "function") {
+              window.triggerPubMedCounterUpdate();
+            }
+            // ---> FIN DE LÍNEA A AÑADIR <---
+
             filterCount.textContent = activeFilters.size;
             mostrarQueryFinal();
             mostrarToast(`Búsqueda "${nombre}" recuperada correctamente.`);
