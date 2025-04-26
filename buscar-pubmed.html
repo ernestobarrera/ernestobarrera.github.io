@@ -1065,6 +1065,7 @@ filtros estructurados para profesionales sanitarios
       document.addEventListener("DOMContentLoaded", function () {
         // 1. Variables globales
         var searchTerm = document.getElementById("searchTerm");
+        window.searchTerm = searchTerm;
         var searchButton = document.getElementById("searchButton");
         var resetButton = document.getElementById("resetButton");
         var filterCount = document.getElementById("filterCount");
@@ -1075,6 +1076,7 @@ filtros estructurados para profesionales sanitarios
          */
         var activeFilters = new Set();
         var filterMap = {};
+        window.filterMap = filterMap;
         var filterTooltips = {};
         // Manejo del toggle del diagrama de Venn
         const toggleVennButton = document.getElementById("toggleVennButton");
@@ -1441,7 +1443,7 @@ filtros estructurados para profesionales sanitarios
             "economic_especifico",
           ],
         };
-
+        window.categories = categories;
         // 3. Funciones de manejo de metadata y tooltips
         function formatTooltipContent(metadata) {
           const parts = [];
@@ -1667,13 +1669,32 @@ filtros estructurados para profesionales sanitarios
             });
           });
         });
+        // 5. Event Listeners básicos (REEMPLAZO CONSERVADOR)
 
-        // 5. Event Listeners básicos
-        ["input", "change"].forEach((event) => {
-          searchTerm.addEventListener(event, mostrarQueryFinal);
-          dateRange.addEventListener(event, mostrarQueryFinal);
-          sortMode.addEventListener(event, mostrarQueryFinal);
-        });
+        // Listener para searchTerm (Input) - Solo para mostrar query.
+        // (La actualización de contadores la dispara counters.js con debounce)
+        if (searchTerm) {
+          // Añadir comprobación por si acaso
+          searchTerm.addEventListener("input", mostrarQueryFinal);
+        }
+
+        // Listener para dateRange (Change) - Muestra query Y actualiza contadores
+        if (dateRange) {
+          // Añadir comprobación
+          dateRange.addEventListener("change", function () {
+            mostrarQueryFinal();
+            // Disparar actualización de contadores
+            if (typeof window.triggerPubMedCounterUpdate === "function") {
+              window.triggerPubMedCounterUpdate();
+            }
+          });
+        }
+
+        // Listener para sortMode (Change) - Solo muestra query (no afecta contadores)
+        if (sortMode) {
+          // Añadir comprobación
+          sortMode.addEventListener("change", mostrarQueryFinal);
+        }
 
         // 6. Manejo de filtros simples
         document
@@ -1690,6 +1711,11 @@ filtros estructurados para profesionales sanitarios
                 }
                 filterCount.textContent = activeFilters.size;
                 mostrarQueryFinal();
+                // ---> ¡AÑADIR ESTA LÍNEA! <---
+                if (typeof window.triggerPubMedCounterUpdate === "function") {
+                  window.triggerPubMedCounterUpdate();
+                }
+                // ---> FIN DE LÍNEA A AÑADIR <---
               }
             });
           });
@@ -1718,6 +1744,11 @@ filtros estructurados para profesionales sanitarios
               }
               filterCount.textContent = activeFilters.size;
               mostrarQueryFinal();
+              // ---> ¡AÑADIR ESTA LÍNEA! <---
+              if (typeof window.triggerPubMedCounterUpdate === "function") {
+                window.triggerPubMedCounterUpdate();
+              }
+              // ---> FIN DE LÍNEA A AÑADIR <---
             });
             var radios = btn.querySelectorAll('input[type="radio"]');
             radios.forEach(function (radio) {
@@ -1788,7 +1819,7 @@ filtros estructurados para profesionales sanitarios
 
           return query.trim();
         }
-
+        window.constructQuery = constructQuery;
         function mostrarQueryFinal() {
           var built = constructQuery(searchTerm.value.trim());
           finalQueryBox.textContent = built;
@@ -1849,6 +1880,11 @@ filtros estructurados para profesionales sanitarios
 
           finalQueryBox.textContent = "";
           mostrarQueryFinal();
+          // ---> AÑADIR ESTA LÍNEA (Opcional) <---
+          if (typeof window.triggerPubMedCounterUpdate === "function") {
+            window.triggerPubMedCounterUpdate(); // Actualizar contadores a estado inicial
+          }
+          // ---> FIN <---
         });
 
         // 12. Operadores de categoría
@@ -1856,6 +1892,12 @@ filtros estructurados para profesionales sanitarios
           select.addEventListener("change", function () {
             categoryOperators[this.dataset.category] = this.value;
             mostrarQueryFinal();
+            // ---> ¡AÑADIR ESTA LÍNEA! <---
+            // Llama a la función global del script de contadores para actualizar
+            if (typeof window.triggerPubMedCounterUpdate === "function") {
+              window.triggerPubMedCounterUpdate();
+            }
+            // ---> FIN DE LÍNEA A AÑADIR <---
           });
         });
         // 13. Diagrama de Venn
@@ -2612,5 +2654,6 @@ filtros estructurados para profesionales sanitarios
     
 <script src="/assets/js/buscar-pubmed.js"></script>
  -->
+    <script defer src="/assets/js/counters-buscar-pubmed.js"></script>
   </body>
 </html>

@@ -32,13 +32,28 @@
     <meta
       property="og:image"
       content="https://ernestobarrera.github.io/assets/images/me.png"
+      loading="lazy"
     />
 
     <!-- CDNs necesarios -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      defer
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+    ></script>
+    <script
+      defer
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+    <script
+      defer
+      src="https://unpkg.com/@babel/standalone/babel.min.js"
+    ></script>
+    <script
+      rel="preload"
+      as="script"
+      href="https://cdn.tailwindcss.com"
+    ></script>
+    <script defer src="https://cdn.tailwindcss.com"></script>
 
     <!-- CSS Base -->
     <link rel="stylesheet" href="assets/css/main.css" />
@@ -104,9 +119,12 @@
         }
       }
     </style>
+    <link
+      rel="canonical"
+      href="https://ernestobarrera.github.io/decalogo-ple.html"
+    />
   </head>
   <body>
-    <script src="./assets/js/include.js"></script>
     <include src="header.html"></include>
 
     <main class="main-container">
