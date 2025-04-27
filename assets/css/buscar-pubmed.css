@@ -863,3 +863,24 @@ body {
 .chatgpt-button:hover i {
   color: #a78bfa; /* Un tono un poco más claro al pasar el ratón */
 }
+
+.filter-count.highlighted {
+  background-color: rgba(
+    174,
+    23,
+    23,
+    0.1
+  ); /* Fondo semitransparente blanco o gris claro */
+  color: var(--accent-color, #ffd700); /* Texto en color acento (amarillo) */
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  margin-left: 5px;
+  transition: background-color 0.3s ease, color 0.3s ease, text-shadow 0.3s ease; /* Añadida transición para sombra */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Borde sutil opcional */
+
+  /* --- NUEVAS LÍNEAS PARA DESTACAR MÁS EL NÚMERO --- */
+  font-size: 1.3em; /* Hacemos el número un 5% más grande que el texto normal */
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); /* Sombra oscura sutil (ajusta opacidad 0.5 si es mucho/poco) */
+  /* --- FIN NUEVAS LÍNEAS --- */
+}
