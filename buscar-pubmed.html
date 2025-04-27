@@ -1223,15 +1223,17 @@ filtros estructurados para profesionales sanitarios
               }
             });
 
+            updateFilterCounterDisplay(); // Actualizar el contador de filtros
+            mostrarQueryFinal();
+
+            // Llamar al trigger externo si existe nuevo cambio estaba antes de updateFilterCounterDisplay
+
             // ---> ¡AÑADIR ESTA LÍNEA! <---
             // Disparar la actualización de los contadores con el estado recuperado
             if (typeof window.triggerPubMedCounterUpdate === "function") {
               window.triggerPubMedCounterUpdate();
             }
             // ---> FIN DE LÍNEA A AÑADIR <---
-
-            filterCount.textContent = activeFilters.size;
-            mostrarQueryFinal();
             mostrarToast(`Búsqueda "${nombre}" recuperada correctamente.`);
             cerrarModal("modalRecuperarFondo");
           });
@@ -1676,6 +1678,30 @@ filtros estructurados para profesionales sanitarios
             });
           });
         });
+
+        // ---> NUEVA FUNCIÓN CENTRALIZADA PARA ACTUALIZAR EL CONTADOR <---
+        function updateFilterCounterDisplay() {
+          const buttonFilterCount = activeFilters.size; // Número de filtros de botón activos
+          const isDateFilterActive = dateRange.value !== ""; // ¿Hay un filtro de fecha seleccionado? (' !== "" ' significa que cualquier opción excepto "Sin Filtro" está seleccionada)
+
+          // Calcula el total de filtros activos (botones + fecha)
+          const totalActiveFilters =
+            buttonFilterCount + (isDateFilterActive ? 1 : 0);
+
+          // Actualiza el texto del contador
+          filterCount.textContent = totalActiveFilters;
+
+          // Resalta el contador si hay 1 o más filtros activos
+          if (totalActiveFilters > 0) {
+            filterCount.classList.add("highlighted");
+          } else {
+            filterCount.classList.remove("highlighted");
+          }
+        }
+        // ---> FIN NUEVA FUNCIÓN <---
+
+        // 5. Event Listeners básicos (MODIFICADOS)
+        // ... resto del script ...
         // 5. Event Listeners básicos (REEMPLAZO CONSERVADOR)
 
         // Listener para searchTerm (Input) - Solo para mostrar query.
@@ -1685,12 +1711,12 @@ filtros estructurados para profesionales sanitarios
           searchTerm.addEventListener("input", mostrarQueryFinal);
         }
 
-        // Listener para dateRange (Change) - Muestra query Y actualiza contadores
+        // Listener para dateRange (Change) - Muestra query Y actualiza contador VISUAL
         if (dateRange) {
-          // Añadir comprobación
           dateRange.addEventListener("change", function () {
             mostrarQueryFinal();
-            // Disparar actualización de contadores
+            updateFilterCounterDisplay(); // <-- USA LA NUEVA FUNCIÓN para actualizar número y resaltado
+            // Llama a la función global del script de contadores externo si existe
             if (typeof window.triggerPubMedCounterUpdate === "function") {
               window.triggerPubMedCounterUpdate();
             }
@@ -1716,7 +1742,7 @@ filtros estructurados para profesionales sanitarios
                 } else {
                   activeFilters.delete(filterType);
                 }
-                filterCount.textContent = activeFilters.size;
+                updateFilterCounterDisplay(); // <-- USA LA NUEVA FUNCIÓN para actualizar número y resaltado
                 mostrarQueryFinal();
                 // ---> ¡AÑADIR ESTA LÍNEA! <---
                 if (typeof window.triggerPubMedCounterUpdate === "function") {
@@ -1749,7 +1775,7 @@ filtros estructurados para profesionales sanitarios
               } else {
                 activeFilters.delete(filterType);
               }
-              filterCount.textContent = activeFilters.size;
+              updateFilterCounterDisplay(); // <-- USA LA NUEVA FUNCIÓN para actualizar número y resaltado
               mostrarQueryFinal();
               // ---> ¡AÑADIR ESTA LÍNEA! <---
               if (typeof window.triggerPubMedCounterUpdate === "function") {
@@ -1768,7 +1794,7 @@ filtros estructurados para profesionales sanitarios
                 var newType = baseId + "_" + radio.value;
                 activeFilters.delete(oldType);
                 activeFilters.add(newType);
-                filterCount.textContent = activeFilters.size;
+                updateFilterCounterDisplay(); // <-- USA LA NUEVA FUNCIÓN para actualizar número y resaltado
                 mostrarQueryFinal();
               });
             });
@@ -1863,7 +1889,6 @@ filtros estructurados para profesionales sanitarios
         // 11. Event listener para reset
         resetButton.addEventListener("click", function () {
           activeFilters.clear();
-          filterCount.textContent = 0;
           searchTerm.value = "";
           dateRange.value = "";
           sortMode.value = "date";
@@ -1886,6 +1911,8 @@ filtros estructurados para profesionales sanitarios
             });
 
           finalQueryBox.textContent = "";
+          updateFilterCounterDisplay();
+
           mostrarQueryFinal();
           // ---> AÑADIR ESTA LÍNEA (Opcional) <---
           if (typeof window.triggerPubMedCounterUpdate === "function") {
@@ -2251,6 +2278,10 @@ filtros estructurados para profesionales sanitarios
         if (startTutorialBtn) {
           startTutorialBtn.addEventListener("click", iniciarTutorial);
         }
+        // Llamada inicial para establecer el estado correcto del contador al cargar la página
+        updateFilterCounterDisplay();
+        // Llamada inicial para mostrar la query (por si hubiera valores prellenados o restaurados)
+        mostrarQueryFinal(); // (Esta llamada probablemente ya estaba o es buena idea tenerla)
       });
       // Activar/desactivar botones según contenido
       document
