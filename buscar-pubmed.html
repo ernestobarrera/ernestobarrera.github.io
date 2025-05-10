@@ -137,6 +137,14 @@ filtros estructurados para profesionales sanitarios
               </button>
             </div>
             <button
+              id="toggleCountersBtn"
+              title="Cargando contadores..."
+              disabled
+              style="cursor: default; color: #888"
+            >
+              <i class="fas fa-spinner fa-spin"></i>
+            </button>
+            <button
               id="btn_chatgpt"
               title="Asistente ChatGPT"
               class="chatgpt-button"
@@ -2175,9 +2183,10 @@ filtros estructurados para profesionales sanitarios
               {
                 element: document.querySelector("#searchTerm"),
                 intro:
-                  'Escribe tus términos de búsqueda. Al pulsar Enter se iniciará la búsqueda, mientras que Shift+Enter insertará un salto de línea para que puedas estructurar tu consulta de forma clara. Cualquier bloque de texto iniciado con ‘#’ se omite en la búsqueda, permitiéndote documentar tu estrategia sin alterar el resultado. Para mayor precisión, usa descriptores MeSH que puedes consultar en <a href="https://www.ncbi.nlm.nih.gov/mesh" target="_blank" style="color: #0e04c8; text-decoration: underline;">MeSH Database</a>.',
+                  'Escribe tus términos de búsqueda. Al pulsar Enter se iniciará la búsqueda, mientras que Shift+Enter insertará un salto de línea para que puedas estructurar tu consulta de forma clara. Cualquier bloque de texto iniciado con ‘#’ se omite en la búsqueda, permitiéndote documentar tu estrategia sin alterar el resultado. Para mayor precisión, usa descriptores MeSH que puedes consultar en <a href="https://www.ncbi.nlm.nih.gov/mesh" target="_blank" style="color: #0e04c8; text-decoration: underline;">MeSH Database</a>. <br><br><strong>Importante:</strong> Al escribir, justo debajo de este cuadro, aparecerá automáticamente un <strong>contador con el número total de resultados</strong> para tu consulta (incluyendo filtros y fecha)',
                 position: "top",
               },
+
               {
                 element: document.querySelector(".filters-section"),
                 intro:
@@ -2202,6 +2211,7 @@ filtros estructurados para profesionales sanitarios
                   "Algunos filtros tienen versiones Sensible (S) o Específica (E). Sensible encuentra más resultados pero menos precisos, Específica encuentra menos pero más relevantes.",
                 position: "left",
               },
+
               {
                 element: document.querySelector("#dateRange"),
                 intro:
@@ -2240,6 +2250,12 @@ filtros estructurados para profesionales sanitarios
                 position: "bottom",
               },
               {
+                element: document.querySelector("#toggleCountersBtn"),
+                intro:
+                  "Este botón <i class='fas fa-eye-slash'></i> (ojo tachado) o <i class='fas fa-eye'></i> (ojo visible) te permite <strong>mostrar u ocultar los contadores de resultados individuales</strong> que aparecen en cada botón de filtro. Cuando están visibles, estos pequeños números te indican cuántos artículos recupera cada filtro específico (combinado con tu término de búsqueda principal y el filtro de fecha). ¡Muy útil para refinar tu estrategia!",
+                position: "bottom", // O 'left'/'right' dependiendo de su posición final en #mainIconsContainer
+              },
+              {
                 element: document.querySelector("#btn_chatgpt"),
                 intro:
                   "Con este botón se abre el asistente de ChatGPT en una nueva pestaña para sugerir términos y ayudarte a crear o refinar búsquedas avanzadas en PubMed. Ten presente que cualquier bloque de texto iniciado con ‘#’ (usado por ChatGPT para anotar descriptores o comentarios) se omite en la búsqueda, permitiéndote documentar tu estrategia sin alterar el resultado.",
@@ -2266,24 +2282,28 @@ filtros estructurados para profesionales sanitarios
           });
 
           intro.oncomplete(function () {
-            localStorage.setItem("tutorial_visto", "true");
+            localStorage.setItem("tutorial_visto_v3", "true");
           });
 
           intro.onexit(function () {
-            localStorage.setItem("tutorial_visto", "true");
+            localStorage.setItem("tutorial_visto_v3", "true");
           });
 
           intro.start();
         }
 
-        var tutorialVisto = localStorage.getItem("tutorial_visto");
+        var tutorialVisto = localStorage.getItem("tutorial_visto_v3");
         if (!tutorialVisto) {
-          iniciarTutorial();
+          // Pequeño retraso para dar tiempo a que counters-buscar-pubmed.js inicialice el botón #toggleCountersBtn
+          setTimeout(iniciarTutorial, 500); // 500ms suele ser suficiente
         }
 
         var startTutorialBtn = document.getElementById("startTutorialBtn");
         if (startTutorialBtn) {
-          startTutorialBtn.addEventListener("click", iniciarTutorial);
+          startTutorialBtn.addEventListener("click", function () {
+            // Pequeño retraso también aquí por si acaso
+            setTimeout(iniciarTutorial, 100);
+          });
         }
         // Llamada inicial para establecer el estado correcto del contador al cargar la página
         updateFilterCounterDisplay();

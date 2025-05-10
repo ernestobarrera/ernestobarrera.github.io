@@ -406,27 +406,47 @@
   }
 
   // --- Habilitar botón Icono Toggle --- (AJUSTADO)
+  // DENTRO DE counters-buscar-pubmed.js
   function enableToggleButton() {
     if (!toggleCountersBtn) {
-      // console.warn("enableToggleButton: Botón toggle (icono) no encontrado.");
-      return;
+      // Si toggleCountersBtn es null/undefined, significa que no se encontró en init().
+      console.warn("enableToggleButton: Botón #toggleCountersBtn no encontrado. No se puede habilitar.");
+      return; // No hay nada que habilitar si el botón no existe.
     }
-    if (filtersLoaded) {
-      toggleCountersBtn.disabled = false;
-      // Estado inicial al habilitar (debe coincidir con countersVisible = false)
-      toggleCountersBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
-      toggleCountersBtn.title = "Mostrar contadores de resultados";
-      toggleCountersBtn.classList.remove("active"); // Asegurar que no empiece activo
 
-      console.log("Botón Toggle de contadores (icono) HABILITADO.");
-      setupMainToggleButtonListener(); // Configurar listener AHORA
+    if (filtersLoaded) {
+      toggleCountersBtn.disabled = false; // Habilitar el botón
+
+      // Configurar el ícono y el título según el estado ACTUAL de 'countersVisible'
+      toggleCountersBtn.innerHTML = countersVisible ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+      toggleCountersBtn.title = countersVisible ? 'Ocultar contadores de resultados en filtros' : 'Mostrar contadores de resultados en filtros';
+
+      toggleCountersBtn.style.cursor = 'pointer'; // Restaurar el cursor
+      toggleCountersBtn.style.color = ''; // Restablecer el color por si se cambió para el estado deshabilitado/spinner
+
+      // Si usas una clase 'active' para estilizar el botón cuando los contadores están visibles, ajústala.
+      toggleCountersBtn.classList.toggle("active", countersVisible);
+
+      // Añadir el listener para el clic, pero solo si no se ha añadido antes.
+      // Usamos un atributo data-* para rastrear esto.
+      if (!toggleCountersBtn.dataset.listenerAttached) {
+        setupMainToggleButtonListener(); // Esta función es la que realmente añade el 'addEventListener("click", ...)'
+        toggleCountersBtn.dataset.listenerAttached = "true"; // Marcar que el listener ha sido añadido
+      }
+      console.log("Botón Toggle de contadores (icono) HABILITADO y listener configurado/verificado.");
     } else {
+      // Este bloque es por si enableToggleButton se llamara cuando filtersLoaded aún es false.
+      // El estado de "cargando" ya debería haber sido establecido por init().
       toggleCountersBtn.disabled = true;
-      // Podríamos poner un icono de carga si quisiéramos, pero al estar entre iconos
-      // quizás es mejor dejar el icono por defecto (ojo tachado) y solo deshabilitado.
-      // toggleCountersBtn.innerHTML = '<i class="fas fa-hourglass-half"></i>';
-      toggleCountersBtn.title = "Cargando filtros...";
-      // console.log("Botón Toggle de contadores (icono) deshabilitado (esperando filtros).");
+      if (toggleCountersBtn.innerHTML !== '<i class="fas fa-spinner fa-spin"></i>') { // Evitar re-escribir si ya está
+        toggleCountersBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      }
+      if (toggleCountersBtn.title !== "Cargando filtros...") {
+        toggleCountersBtn.title = "Cargando filtros...";
+      }
+      toggleCountersBtn.style.cursor = 'default';
+      // toggleCountersBtn.style.color = '#888;'; // Opcional: si quieres un color específico para el spinner
+      console.log("Botón Toggle de contadores (icono) aún deshabilitado (esperando carga completa de filtros).");
     }
   }
 
@@ -746,40 +766,29 @@
     }
 
     // Contenedor de iconos donde irá el botón
-    const iconsContainer = document.getElementById('mainIconsContainer');
+    // DENTRO DE init()
 
-    if (!iconsContainer) {
-      console.error("Contenedor '#mainIconsContainer' no encontrado. No se puede añadir botón toggle de contadores.");
-      if (mostrarToast) mostrarToast("Error: UI incompleta para contadores.", "error");
-      // No podemos continuar sin un lugar para el botón si no existe ya
-      toggleCountersBtn = document.getElementById('toggleCountersBtn');
-      if (!toggleCountersBtn) return; // Salir si no existe ni se puede crear
+    // Obtener el botón toggle de contadores que ya debe existir en el HTML
+    toggleCountersBtn = document.getElementById('toggleCountersBtn');
+
+    if (!toggleCountersBtn) {
+      console.error("Error crítico: Botón #toggleCountersBtn NO encontrado en el HTML. La funcionalidad de mostrar/ocultar contadores de filtros no estará disponible.");
+      // Si el botón no está, no podemos continuar configurándolo para los contadores de filtros.
     } else {
-      // Intentar encontrar o crear el botón en el contenedor correcto
-      toggleCountersBtn = document.getElementById('toggleCountersBtn');
-      if (!toggleCountersBtn) {
-        console.log('Botón #toggleCountersBtn no encontrado. Creándolo en #mainIconsContainer...');
-        toggleCountersBtn = document.createElement("button");
-        toggleCountersBtn.id = "toggleCountersBtn";
-        // Copia clases de otros botones si es necesario para estilo uniforme
-        // Ejemplo: toggleCountersBtn.className = "algun-estilo-comun";
-        toggleCountersBtn.type = "button"; // Buena práctica
-
-        // Estado inicial: Oculto
-        toggleCountersBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
-        toggleCountersBtn.title = "Mostrar contadores de resultados";
-        toggleCountersBtn.disabled = true; // Deshabilitado hasta cargar filtros
-
-        iconsContainer.appendChild(toggleCountersBtn); // Añadir al contenedor
-      }
+      // El botón existe, configurar su estado inicial (deshabilitado hasta que los filtros carguen)
+      toggleCountersBtn.disabled = true; // Deshabilitarlo
+      toggleCountersBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; // Poner ícono de carga
+      toggleCountersBtn.title = "Cargando filtros..."; // Actualizar título
+      toggleCountersBtn.style.cursor = 'default'; // Cambiar cursor para indicar que no es clickeable
     }
 
-    // Instanciar la cola
+    // Instanciar la cola (esta línea y las siguientes ya deberían existir y permanecer igual)
     requestQueue = new RequestQueue(NCBI_API_KEY, PETICIONES_POR_SEGUNDO);
     setupSearchInputListener(); // Configurar listener input
-    loadAndAttachFilters(); // Cargar filtros (esto habilitará el botón al final)
+    loadAndAttachFilters();     // Cargar filtros (esto llamará a enableToggleButton al final)
 
     console.log("Módulo de contadores inicializado (esperando carga de filtros).");
+    // Fin de la función init()
   }
 
   document.addEventListener("DOMContentLoaded", init);
