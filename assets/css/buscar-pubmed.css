@@ -898,8 +898,8 @@ body {
 }
 
 #persistentSearchCountText {
-  font-size: 0.85em; /* Tamaño de fuente ligeramente más pequeño */
-  color: #faf9f9; /* Color de texto oscuro para buena legibilidad */
+  font-size: 0.95em; /* Tamaño de fuente ligeramente más pequeño */
+  color: #ebab34; /* Color de texto oscuro para buena legibilidad */
   font-style: italic; /* Estilo itálico para diferenciarlo */
 }
 /* FIN: Estilos para el contador persistente de búsqueda */
