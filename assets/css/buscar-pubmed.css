@@ -903,3 +903,7 @@ body {
   font-style: italic; /* Estilo itálico para diferenciarlo */
 }
 /* FIN: Estilos para el contador persistente de búsqueda */
+/* En tu archivo CSS principal o en un bloque <style> */
+.introjs-wide-tooltip {
+    max-width: 350px; /* O el ancho que necesites */
+}
