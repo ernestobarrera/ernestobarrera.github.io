@@ -26,8 +26,11 @@
 
   let searchInput = null;
   let dateRange = null;
+  // ... (otras variables)
   let toggleCountersBtn = null; // Referencia al botón (ahora icono)
-  // let controlsContainer = null; // Ya no se necesita para el botón toggle
+  let persistentSearchCountDisplay = null; // Para el span del texto del contador
+  let persistentSearchCountContainer = null; // Para el div contenedor del contador persistente
+
   let filterMap = null;
   let categories = null;
   let constructQuery = null;
@@ -181,7 +184,71 @@
 
   let requestQueue = null;
 
+  // ... (después de la clase RequestQueue o similar)
 
+  /**
+   * -----------------------------------------------------------------------
+   * NUEVA FUNCIÓN: Actualiza el contador principal persistente
+   * -----------------------------------------------------------------------
+   */
+  async function updatePersistentMainCounter(currentCycleId, signal) {
+    if (!persistentSearchCountContainer || !persistentSearchCountDisplay || !searchInput || typeof constructQuery !== 'function') {
+      if (persistentSearchCountContainer) persistentSearchCountContainer.style.display = 'none';
+      return;
+    }
+
+    const searchTermValue = searchInput.value.trim();
+
+    if (!searchTermValue) {
+      persistentSearchCountContainer.style.display = 'none';
+      persistentSearchCountDisplay.textContent = '';
+      return;
+    }
+
+    persistentSearchCountContainer.style.display = 'block'; // Mostrar contenedor
+    persistentSearchCountDisplay.textContent = 'Calculando resultados...'; // Estado de carga
+
+    // constructQuery ya incluye el término de búsqueda, filtros de categoría y el filtro de fecha.
+    const mainQuery = constructQuery(searchTermValue);
+
+    if (!mainQuery) {
+      persistentSearchCountDisplay.textContent = 'N/A (sin consulta)';
+      return;
+    }
+
+    try {
+      const result = await requestQueue.add(`mainSearch_${currentCycleId}`, mainQuery, currentCycleId, signal);
+
+      if (signal.aborted || result.cycleId !== currentUpdateCycleId) {
+        // Si fue abortado o el ciclo es obsoleto, no actualizar, pero no limpiar si ya hay un cálculo.
+        if (persistentSearchCountDisplay.textContent === 'Calculando resultados...') {
+          persistentSearchCountDisplay.textContent = 'Recalculando...';
+        }
+        return;
+      }
+
+      // INICIO DE LA SECCIÓN MODIFICADA
+      if (typeof result.count === 'number' && !isNaN(result.count)) { // Añadido !isNaN(result.count)
+        persistentSearchCountDisplay.textContent = `${result.count.toLocaleString('es-ES')} resultados encontrados`;
+      } else if (result.count === "Error") {
+        persistentSearchCountDisplay.textContent = 'Error al calcular resultados';
+      } else {
+        // Esto ahora cubrirá el caso de NaN o si result.count no es un número por otras razones.
+        persistentSearchCountDisplay.textContent = 'N/A (conteo inválido)';
+      }
+      // FIN DE LA SECCIÓN MODIFICADA
+
+    } catch (errorData) {
+      if (signal.aborted || errorData.aborted || (errorData.cycleId && errorData.cycleId !== currentUpdateCycleId)) {
+        if (persistentSearchCountDisplay.textContent === 'Calculando resultados...') {
+          persistentSearchCountDisplay.textContent = 'Recalculando...';
+        }
+        return;
+      }
+      console.error("Error al obtener contador principal:", errorData.error || errorData);
+      persistentSearchCountDisplay.textContent = 'Error al calcular';
+    }
+  }
   /**
    * -----------------------------------------------------------------------
    * 2. Carga e Inicialización de Filtros (Sin cambios)
@@ -301,27 +368,38 @@
         return;
       }
 
-      countersVisible = !countersVisible;
-      // Actualizar aspecto del botón (icono, tooltip, clase active)
+      countersVisible = !countersVisible; // Cambia el estado
       toggleCountersBtn.classList.toggle("active", countersVisible);
       toggleCountersBtn.innerHTML = countersVisible
-        ? '<i class="fas fa-eye"></i>'          // Ojo normal cuando visible
-        : '<i class="fas fa-eye-slash"></i>'; // Ojo tachado cuando oculto
+        ? '<i class="fas fa-eye"></i>'
+        : '<i class="fas fa-eye-slash"></i>';
       toggleCountersBtn.title = countersVisible
         ? 'Ocultar contadores de resultados'
         : 'Mostrar contadores de resultados';
 
-      // Lógica principal
       if (countersVisible) {
-        renderCounters(true);
-        triggerImmediateUpdate();
+        // Si se hacen visibles los contadores de los botones:
+        renderCounters(true); // Añade/prepara los displays en los botones.
+        triggerImmediateUpdate(); // Lanza una actualización completa para todo.
       } else {
-        renderCounters(false);
+        // Si se ocultan los contadores de los botones:
+        renderCounters(false); // Elimina los displays de los contadores de los botones.
+
+        // Aborta el ciclo actual, que podría tener peticiones para los contadores de botones.
         if (currentAbortController) {
-          // console.log("Ocultando contadores, abortando ciclo actual.");
+          // console.log("Ocultando contadores de botones, abortando ciclo actual para ellos.");
           currentAbortController.abort();
-          currentAbortController = null;
+          // No se pone a null; triggerImmediateUpdate creará uno nuevo.
         }
+
+        // Es crucial llamar a triggerImmediateUpdate aquí también.
+        // Esto asegura que, aunque los contadores de botones estén ahora ocultos,
+        // el contador persistente pueda (re)iniciar su propia actualización si es necesario
+        // (por ejemplo, si su petición fue abortada por el currentAbortController.abort() anterior,
+        // o si simplemente queremos que refleje el estado actual sin los contadores de botones).
+        // La lógica interna de triggerImmediateUpdate manejará el no actualizar los contadores de botones
+        // porque countersVisible es ahora false.
+        triggerImmediateUpdate();
       }
     });
     console.log("Listener del botón Toggle de contadores (icono) configurado.");
@@ -565,27 +643,56 @@
     };
   }
 
-  function triggerImmediateUpdate() { /* ... sin cambios ... */
+  function triggerImmediateUpdate() {
     console.log("%cTriggering PubMed Counter Update...", "color: blue; font-weight: bold;");
-    if (!filtersLoaded || !countersVisible) return; // Salir si no cargado o no visible
-    if (typeof constructQuery !== "function") { console.error("Falta 'constructQuery'."); return; }
 
-    if (currentAbortController) { currentAbortController.abort(); }
+    // 1. Verificar dependencia crítica
+    if (typeof constructQuery !== "function") {
+      console.error("Falta 'constructQuery'. No se pueden actualizar contadores.");
+      if (persistentSearchCountContainer) persistentSearchCountContainer.style.display = 'none';
+      return;
+    }
+
+    // 2. Abortar ciclo anterior y preparar nuevo ciclo
+    if (currentAbortController) {
+      // console.log("Abortando ciclo anterior:", currentUpdateCycleId);
+      currentAbortController.abort();
+    }
     currentAbortController = new AbortController();
     const signal = currentAbortController.signal;
     currentUpdateCycleId++;
     const cycleToRun = currentUpdateCycleId;
-    console.log(`Nuevo ID de ciclo: ${cycleToRun}`);
+    // console.log(`Nuevo ID de ciclo para contadores: ${cycleToRun}`);
 
-    document.querySelectorAll(".result-counter.visible").forEach(counter => {
-      const button = counter.closest('.filter-button');
-      if (button) updateCounterDisplay(button, '…');
-    });
-
+    // 3. Actualizar el contador persistente principal (siempre se intenta)
+    // setTimeout para encolar esta tarea, permitiendo que el aborto anterior se procese.
     setTimeout(() => {
-      if (!signal.aborted) { updateAllCounters(cycleToRun, signal); }
-      // else { console.log(`Ciclo ${cycleToRun} abortado antes de iniciar.`); }
+      if (!signal.aborted) { // Verificar si este nuevo ciclo no fue abortado inmediatamente por otra acción
+        updatePersistentMainCounter(cycleToRun, signal);
+      }
     }, 0);
+
+    // 4. Actualizar contadores individuales de los botones (solo si son visibles y filtros cargados)
+    if (filtersLoaded && countersVisible) {
+      // Poner los contadores de los botones en estado de carga
+      document.querySelectorAll(".filter-button").forEach((button) => {
+        let counter = button.querySelector(".result-counter");
+        if (counter) { // Solo si el contador ya existe (fue añadido por renderCounters(true))
+          updateCounterDisplay(button, '…');
+        }
+      });
+
+      // Encolar la actualización de los contadores de los botones
+      setTimeout(() => {
+        if (!signal.aborted) {
+          updateAllCounters(cycleToRun, signal); // Actualiza los contadores de los botones
+        }
+      }, 0);
+    } else {
+      // Si los contadores individuales no están visibles o los filtros no están cargados,
+      // no se hace nada para ellos aquí. El contador persistente ya se está manejando.
+      // console.log("Contadores individuales de botones no se actualizarán (no visibles o filtros no cargados).");
+    }
   }
 
   window.triggerPubMedCounterUpdate = triggerImmediateUpdate;
@@ -605,6 +712,16 @@
     categories = window.categories;
     filterMap = window.filterMap || {};
     dateRange = document.getElementById('dateRange');
+
+    // INICIO: Obtener elementos del contador persistente
+    persistentSearchCountContainer = document.getElementById('persistentSearchCountContainer');
+    persistentSearchCountDisplay = document.getElementById('persistentSearchCountText');
+
+    if (!persistentSearchCountContainer || !persistentSearchCountDisplay) {
+      console.warn("Elementos DOM para el contador persistente (#persistentSearchCountContainer o #persistentSearchCountText) no encontrados. La funcionalidad del contador principal no operará.");
+      // No marcamos allOk = false aquí, ya que los contadores de filtros individuales aún podrían funcionar.
+    }
+    // FIN: Obtener elementos del contador persistente
 
 
     if (!searchInput) { console.error("Falta: #searchTerm o window.searchTerm."); allOk = false; }
