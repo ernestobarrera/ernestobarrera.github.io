@@ -1,0 +1,1322 @@
+<!--
+=====================
+  retirada-antidepresivos.html
+  Página con herramienta de  ayuda para la retirada de antidepresivos
+=====================
+-->
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Guía visual interactiva para la retirada segura de antidepresivos basada en evidencia científica. Herramienta para profesionales sanitarios."
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="assets/images/icon.webp" />
+    <title>Guía Visual: Retirada Segura de Antidepresivos | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Guía Visual para la Retirada Segura de Antidepresivos | @ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Herramientas clínicas para profesionales sanitarios"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/guia-retirada-antidepresivos.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <!-- CSS Base para header/footer -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS externo -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    />
+
+    <!-- Scripts para la herramienta -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Estilos específicos de la herramienta - manteniendo el diseño original -->
+    <style>
+      /* Override del tema oscuro para esta página específica */
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f0f4f8 !important;
+        color: #102a43 !important;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Contenedor principal adaptado */
+      .clinical-main-container {
+        max-width: 1400px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0.5rem 0.5rem;
+        margin-top: calc(var(--header-height) + 0.5rem);
+        margin-bottom: 1.5rem;
+      }
+
+      /* Estilos específicos de la herramienta */
+      .chart-container {
+        position: relative;
+        width: 100%;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        height: 280px;
+        max-height: 350px;
+      }
+
+      @media (min-width: 768px) {
+        .chart-container {
+          height: 320px;
+        }
+      }
+
+      .flowchart-step {
+        border: 2px solid #667eea;
+        background-color: white;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        text-align: center;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
+        flex-grow: 1;
+      }
+
+      .flowchart-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: #667eea;
+        margin: 0.25rem 0;
+        transform: rotate(90deg);
+      }
+
+      @media (min-width: 1024px) {
+        .flowchart-arrow {
+          transform: rotate(0deg);
+          margin: 0 0.75rem;
+        }
+      }
+
+      .export-btn:disabled {
+        background-color: #94a3b8;
+        cursor: not-allowed;
+      }
+
+      .reference-link {
+        color: #3b82f6;
+        text-decoration: underline;
+      }
+
+      .reference-link:hover {
+        color: #1d4ed8;
+      }
+
+      /* Hero section con el estilo original */
+      .hero-section {
+        border-radius: 8px;
+        padding: 0rem;
+        margin-bottom: 0.1rem;
+      }
+
+      .intro-text {
+        font-size: 1rem;
+        line-height: 1.4;
+        background: rgba(59, 130, 246, 0.15);
+        border-radius: 6px;
+        padding: 0.75rem;
+        color: #64748b;
+        margin-bottom: 1rem;
+      }
+
+      .main-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 0.75rem;
+        color: #1e293b;
+      }
+
+      /* Estilos para secciones de atención y emergencia */
+      .attention-section {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 4px solid #f59e0b;
+      }
+
+      .emergency-section {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border-left: 4px solid #ef4444;
+      }
+
+      /* Optimización de tabla */
+      .differential-table {
+        min-width: 100%;
+      }
+
+      .differential-table th:first-child,
+      .differential-table td:first-child {
+        width: 20%;
+        min-width: 120px;
+      }
+
+      .differential-table th:nth-child(2),
+      .differential-table td:nth-child(2),
+      .differential-table th:nth-child(3),
+      .differential-table td:nth-child(3) {
+        width: 40%;
+      }
+
+      @media (max-width: 768px) {
+        .clinical-main-container {
+          width: 99%;
+          padding: 0 0.75rem;
+          margin-top: calc(var(--header-height) + 0.5rem);
+        }
+      }
+    </style>
+  </head>
+
+  <body class="antialiased">
+    <script src="./assets/js/include.js"></script>
+    <include src="header.html"></include>
+
+    <div class="clinical-main-container">
+      <header class="text-center mb-8">
+        <h1
+          class="text-3xl md:text-4xl font-bold text-sky-800 mb-3 leading-tight"
+        >
+          Guía Visual para la Retirada Segura de Antidepresivos
+        </h1>
+        <p class="text-base text-slate-600 max-w-4xl mx-auto mb-3">
+          Un enfoque práctico basado en evidencia para minimizar el síndrome de
+          abstinencia en el contexto clínico.
+        </p>
+        <div
+          class="attention-section text-amber-800 py-2 px-4 rounded-md max-w-4xl mx-auto text-sm"
+          role="alert"
+        >
+          <p>
+            <strong>Atención:</strong> Herramienta exclusivamente diseñada para
+            profesionales sanitarios.
+          </p>
+        </div>
+      </header>
+
+      <main class="space-y-12">
+        <section id="section1" class="bg-white rounded-lg shadow-lg p-6 md:p-7">
+          <h2 class="text-2xl font-bold text-center mb-5 text-sky-700">
+            El Problema Oculto: La Abstinencia es Común y Severa
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <div class="chart-container mx-auto">
+              <canvas id="prevalenceChart"></canvas>
+            </div>
+            <div>
+              <p class="text-base mb-3 text-slate-700">
+                Al contrario de lo que se pensaba, el síndrome de abstinencia de
+                antidepresivos no es raro. La evidencia actual muestra que
+                aproximadamente la mitad de los pacientes que intentan dejar la
+                medicación experimentarán síntomas, que pueden ser graves y
+                prolongados durante meses o incluso años.
+              </p>
+              <div
+                class="flex items-center bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-3 rounded-md"
+              >
+                <span class="text-4xl font-bold mr-3">~50%</span>
+                <p class="text-sm">
+                  de los pacientes sufren síntomas de abstinencia, a menudo mal
+                  diagnosticados como una recaída de su condición original.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="section2" class="bg-white rounded-lg shadow-lg p-6 md:p-7">
+          <h2 class="text-2xl font-bold text-center mb-2 text-sky-700">
+            Por Qué Falla la Pauta Lineal: La Curva Hiperbólica
+          </h2>
+          <p class="text-center text-slate-600 mb-5 max-w-4xl mx-auto text-sm">
+            El error más común es reducir la dosis de forma lineal. Esto ignora
+            la relación hiperbólica entre la dosis de un ISRS y su efecto en los
+            receptores de serotonina (SERT). A dosis bajas, pequeños recortes
+            provocan caídas masivas en el efecto, desencadenando la abstinencia.
+          </p>
+          <div class="chart-container mx-auto">
+            <canvas id="hyperbolicChart"></canvas>
+          </div>
+          <p class="text-center text-xs text-slate-500 mt-3">
+            La gráfica muestra cómo reducciones lineales (ej. de 20mg a 10mg y
+            de 10mg a 0mg) causan una caída en la ocupación de receptores cada
+            vez mayor. Una pauta hiperbólica (reducciones porcentuales) suaviza
+            este descenso, haciéndolo tolerable.
+          </p>
+        </section>
+
+        <section
+          id="section3"
+          class="bg-slate-50 rounded-lg shadow-inner p-6 md:p-7"
+        >
+          <h2 class="text-2xl font-bold text-center mb-5 text-sky-700">
+            La Solución: Proceso de Reducción Hiperbólica
+          </h2>
+          <p class="text-center text-slate-600 mb-6 max-w-4xl mx-auto text-sm">
+            El proceso debe ser gradual, flexible y colaborativo, adaptándose
+            siempre a la respuesta individual del paciente. Puede durar meses o
+            más de un año.
+          </p>
+          <div
+            class="flex flex-col lg:flex-row justify-center items-stretch gap-3"
+          >
+            <div class="flowchart-step">
+              <h3 class="font-bold text-base text-indigo-700 mb-2">
+                1. Diálogo y Planificación
+              </h3>
+              <p class="text-xs text-slate-600">
+                Explicar el proceso hiperbólico y acordar un plan inicial.
+                Informar sobre síntomas para no confundir con recaída.
+              </p>
+            </div>
+            <div class="flowchart-arrow">➜</div>
+            <div class="flowchart-step">
+              <h3 class="font-bold text-base text-indigo-700 mb-2">
+                2. Reducir y Esperar
+              </h3>
+              <p class="text-xs text-slate-600">
+                Realizar una pequeña reducción porcentual (ej. 10% de la dosis
+                actual). Esperar 2-4 semanas para estabilizar y evaluar.
+              </p>
+            </div>
+            <div class="flowchart-arrow">➜</div>
+            <div class="flowchart-step">
+              <h3 class="font-bold text-base text-indigo-700 mb-2">
+                3. Evaluar Tolerancia
+              </h3>
+              <p class="text-xs text-slate-600">
+                Si los síntomas son tolerables, proceder a la siguiente
+                reducción. Si no, pausar o volver a la dosis anterior.
+              </p>
+            </div>
+            <div class="flowchart-arrow">➜</div>
+            <div class="flowchart-step">
+              <h3 class="font-bold text-base text-indigo-700 mb-2">
+                4. Repetir hasta Dosis Mínima
+              </h3>
+              <p class="text-xs text-slate-600">
+                Continuar el ciclo de "reducir-esperar-evaluar". Las reducciones
+                serán cada vez más pequeñas en mg.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="section4" class="bg-white rounded-lg shadow-lg p-6 md:p-7">
+          <h2 class="text-2xl font-bold text-center mb-5 text-sky-700">
+            Calculadora de Pauta de Reducción Hiperbólica
+          </h2>
+          <div id="calculator" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-slate-50 p-5 rounded-lg border border-slate-200">
+              <h3 class="font-bold text-lg mb-3 text-sky-800">
+                1. Introducir Datos del Paciente
+              </h3>
+              <div class="space-y-3">
+                <div>
+                  <label
+                    for="drug"
+                    class="block text-sm font-medium text-slate-700"
+                    >Fármaco</label
+                  >
+                  <select
+                    id="drug"
+                    name="drug"
+                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                  >
+                    <option value="Sertralina">Sertralina</option>
+                    <option value="Citalopram">Citalopram</option>
+                    <option value="Escitalopram">Escitalopram</option>
+                    <option value="Paroxetina">Paroxetina</option>
+                    <option value="Fluoxetina">Fluoxetina</option>
+                    <option value="Venlafaxina">Venlafaxina</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    for="currentDose"
+                    class="block text-sm font-medium text-slate-700"
+                    >Dosis Actual (mg)</label
+                  >
+                  <input
+                    type="number"
+                    id="currentDose"
+                    value="100"
+                    class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                  />
+                </div>
+                <div>
+                  <label
+                    for="reductionPercentage"
+                    class="block text-sm font-medium text-slate-700"
+                    >Reducción por Paso (%)</label
+                  >
+                  <input
+                    type="number"
+                    id="reductionPercentage"
+                    value="10"
+                    min="1"
+                    max="50"
+                    class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                  />
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    id="calculateBtn"
+                    class="w-full bg-sky-600 text-white font-bold py-2 px-4 rounded-md hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
+                  >
+                    Calcular Pauta
+                  </button>
+                  <button
+                    id="calculateSlowBtn"
+                    class="w-full bg-sky-200 text-sky-800 font-bold py-2 px-4 rounded-md hover:bg-sky-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
+                  >
+                    Pauta Lenta (5%)
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div
+              class="bg-slate-50 p-5 rounded-lg border border-slate-200 flex flex-col"
+            >
+              <h3 class="font-bold text-lg mb-3 text-sky-800">
+                2. Pauta de Reducción Sugerida
+              </h3>
+              <div
+                id="taperingSchedule"
+                class="overflow-auto max-h-80 flex-grow"
+              >
+                <p class="text-slate-500 text-sm">
+                  Introduzca los datos y haga clic en "Calcular Pauta" para ver
+                  el resultado.
+                </p>
+              </div>
+              <div id="exportButtons" class="mt-3 flex gap-3">
+                <button
+                  id="copyBtn"
+                  disabled
+                  class="export-btn flex-1 bg-indigo-600 text-white font-bold py-2 px-3 text-sm rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Copiar para Paciente
+                </button>
+                <button
+                  id="pdfBtn"
+                  disabled
+                  class="export-btn flex-1 bg-teal-600 text-white font-bold py-2 px-3 text-sm rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                >
+                  Generar PDF
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            class="mt-6 bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-3 rounded-md"
+            role="alert"
+          >
+            <p class="font-bold text-base">
+              Nota sobre el Uso Fuera de Ficha Técnica (Off-Label)
+            </p>
+            <p class="mt-2 text-xs">
+              La preparación de suspensiones a partir de comprimidos es una
+              práctica "off-label". Se propone como una estrategia, apoyada por
+              guías clínicas como las del Royal College of Psychiatrists, para
+              permitir reducciones de dosis muy pequeñas y minimizar los
+              síntomas de abstinencia cuando no hay alternativas comerciales
+              líquidas. Su implementación debe ser una decisión consensuada
+              entre el profesional sanitario y el paciente, tras valorar los
+              beneficios y riesgos.
+            </p>
+          </div>
+          <div
+            class="mt-4 emergency-section text-red-700 p-3 rounded-md"
+            role="alert"
+          >
+            <h3 class="font-bold text-base">
+              Advertencias Clínicas Esenciales
+            </h3>
+            <ul class="list-disc list-inside mt-2 space-y-1 text-xs">
+              <li>
+                <span class="font-semibold">NUNCA</span> utilice la dosificación
+                en días alternos. Provoca fluctuaciones drásticas en los niveles
+                del fármaco.
+              </li>
+              <li>
+                Las dosis finales antes de suspender deben ser
+                <span class="font-semibold">muy pequeñas</span> (ej. 0.5 - 2 mg)
+                para evitar una caída brusca.
+              </li>
+              <li>
+                El proceso de retirada puede ser largo, durando
+                <span class="font-semibold">meses o incluso más de un año</span
+                >.
+              </li>
+              <li>
+                Las suspensiones preparadas artesanalmente deben
+                <span class="font-semibold">elaborarse cada día</span> para
+                garantizar su estabilidad y seguridad.
+              </li>
+            </ul>
+            <h4 class="font-bold text-sm mt-3">Consideraciones Adicionales:</h4>
+            <ul class="list-disc list-inside mt-2 space-y-1 text-xs">
+              <li>
+                La velocidad de reducción puede requerir ajustes individuales
+                según tolerancia.
+              </li>
+              <li>
+                Las formulaciones líquidas comerciales o de farmacia comunitaria
+                son preferibles a las suspensiones caseras siempre que estén
+                disponibles.
+              </li>
+              <li>
+                Algunos pacientes pueden necesitar reducciones más lentas (5% o
+                menos por paso).
+              </li>
+              <li>
+                El proceso puede extenderse más allá de los pasos mostrados si
+                es necesario.
+              </li>
+              <li>
+                Para dosis finales muy pequeñas (&lt;5mg), se requiere
+                supervisión especial.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="section5" class="bg-white rounded-lg shadow-lg p-6 md:p-7">
+          <h2 class="text-2xl font-bold text-center mb-5 text-sky-700">
+            ¿Abstinencia o Recaída? Guía de Diagnóstico Diferencial
+          </h2>
+          <p class="text-center text-slate-600 mb-6 max-w-4xl mx-auto text-sm">
+            Distinguir entre el síndrome de abstinencia y una recaída es crucial
+            para evitar la medicalización innecesaria a largo plazo. La clave
+            está en el momento de aparición y en la naturaleza de los síntomas.
+          </p>
+          <div class="w-full">
+            <table class="differential-table w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-sky-100">
+                  <th
+                    class="p-3 border-b-2 border-sky-200 font-bold text-sky-800 text-sm"
+                  >
+                    Característica
+                  </th>
+                  <th
+                    class="p-3 border-b-2 border-sky-200 font-bold text-sky-800 text-sm"
+                  >
+                    Síndrome de Abstinencia
+                  </th>
+                  <th
+                    class="p-3 border-b-2 border-sky-200 font-bold text-sky-800 text-sm"
+                  >
+                    Recaída de la Depresión
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="text-slate-700">
+                <tr class="hover:bg-slate-50">
+                  <td
+                    class="p-3 border-b border-slate-200 font-semibold text-xs"
+                  >
+                    Inicio
+                  </td>
+                  <td class="p-3 border-b border-slate-200 text-xs">
+                    Rápido (días-semanas tras reducir dosis) o
+                    <span class="font-bold">retardado</span> (hasta 4 meses
+                    después, esp. con fluoxetina).
+                  </td>
+                  <td class="p-3 border-b border-slate-200 text-xs">
+                    Generalmente más gradual y tardío, semanas o meses después
+                    de la suspensión.
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-50">
+                  <td
+                    class="p-3 border-b border-slate-200 font-semibold text-xs"
+                  >
+                    Síntomas
+                  </td>
+                  <td class="p-3 border-b border-slate-200 text-xs">
+                    Aparecen
+                    <span class="font-bold">nuevos síntomas físicos</span>:
+                    mareos, "brain zaps", náuseas, parestesias.
+                  </td>
+                  <td class="p-3 border-b border-slate-200 text-xs">
+                    Predominan los síntomas anímicos originales: tristeza,
+                    anhedonia.
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-50">
+                  <td
+                    class="p-3 border-b border-slate-200 font-semibold text-xs"
+                  >
+                    Respuesta al Fármaco
+                  </td>
+                  <td class="p-3 border-b border-slate-200 text-xs">
+                    Mejora <span class="font-bold">rápidamente</span> al
+                    reinstaurar la dosis previa.
+                  </td>
+                  <td class="p-3 border-b border-slate-200 text-xs">
+                    Mejora lentamente (semanas) al reinstaurar la medicación.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="section6" class="bg-white rounded-lg shadow-lg p-6 md:p-7">
+          <h2 class="text-2xl font-bold text-center mb-5 text-sky-700">
+            Efectos Adversos Comunes que Motivan la Retirada
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <div>
+              <p class="text-base mb-3 text-slate-700">
+                Muchos pacientes desean dejar los antidepresivos debido a
+                efectos adversos que afectan su calidad de vida. La disfunción
+                sexual y el embotamiento emocional son dos de las quejas más
+                frecuentes, y su prevalencia es significativamente alta.
+              </p>
+              <ul
+                class="list-disc list-inside space-y-1 text-slate-600 text-sm"
+              >
+                <li>
+                  El <span class="font-bold">embotamiento emocional</span> se
+                  describe como una incapacidad para sentir emociones, tanto
+                  positivas como negativas.
+                </li>
+                <li>
+                  La <span class="font-bold">disfunción sexual</span> puede
+                  incluir pérdida de la libido, anorgasmia o disfunción eréctil.
+                </li>
+              </ul>
+            </div>
+            <div class="chart-container mx-auto">
+              <canvas id="sideEffectsChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section id="section7" class="emergency-section rounded-lg p-5 md:p-6">
+          <h2 class="text-2xl font-bold text-center mb-5 text-red-700">
+            🚨 Cuándo Contactar con el Médico
+          </h2>
+          <p class="text-center text-red-600 mb-6 max-w-4xl mx-auto text-sm">
+            El proceso de retirada debe ser supervisado. Contacte con su
+            profesional sanitario sin demora si experimenta cualquiera de los
+            siguientes síntomas:
+          </p>
+          <ul
+            class="grid grid-cols-1 md:grid-cols-2 gap-3 text-red-800 list-disc list-inside text-sm"
+          >
+            <li>
+              Síntomas graves de abstinencia (mareos intensos, "descargas
+              cerebrales" severas).
+            </li>
+            <li>Pensamientos de autolesión o suicidio.</li>
+            <li>
+              Síntomas que no mejoran tras 1-2 semanas manteniendo la misma
+              dosis.
+            </li>
+            <li>Incapacidad para realizar actividades diarias normales.</li>
+            <li>
+              Síntomas físicos preocupantes (palpitaciones, temblores severos).
+            </li>
+          </ul>
+        </section>
+      </main>
+
+      <footer
+        class="text-center mt-12 pt-6 border-t border-slate-300 text-xs text-slate-600"
+      >
+        <div class="max-w-5xl mx-auto">
+          <p class="mb-3">
+            Esta infografía se fundamenta en las evidencias científicas sobre
+            reducción hiperbólica de antidepresivos, especialmente el trabajo
+            pionero de Horowitz & Taylor (2019)¹, validado posteriormente por
+            estudios prospectivos en más de 3,900 pacientes (van Os & Groot,
+            2023)² y oficialmente adoptado por las guías NICE (NG222, 2022)³. La
+            herramienta tiene fines educativos para facilitar la comunicación
+            clínico-paciente y no sustituye el juicio clínico individualizado ni
+            la supervisión médica obligatoria durante todo el proceso de
+            reducción.
+          </p>
+
+          <div class="my-4">
+            <h4 class="font-bold text-sm text-slate-700 mb-2">
+              Limitaciones y Responsabilidades
+            </h4>
+            <p class="text-xs">
+              Esta pauta es orientativa. Su uso es responsabilidad del
+              profesional sanitario con formación y juicio clínico, quien debe
+              adaptar cada caso individualmente. No todos los pacientes toleran
+              la misma velocidad de reducción. Las suspensiones caseras tienen
+              limitaciones de precisión y estabilidad. La supervisión médica es
+              obligatoria durante todo el proceso.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="font-bold text-sm text-slate-700 mb-2">
+              Referencias Bibliográficas Fundamentales
+            </h4>
+            <ol class="list-decimal list-inside text-left text-xs space-y-1">
+              <li>
+                Horowitz MA, Taylor D. Tapering of SSRI treatment to mitigate
+                withdrawal symptoms. <i>Lancet Psychiatry</i>.
+                2019;6(6):538-546. doi:10.1016/S2215-0366(19)30032-X.
+                <a
+                  href="https://www.thelancet.com/journals/lanpsy/article/PIIS2215-0366(19)30032-X/fulltext"
+                  target="_blank"
+                  class="reference-link"
+                  >Ver artículo</a
+                >
+              </li>
+              <li>
+                van Os J, Groot PC. Outcomes of hyperbolic tapering of
+                antidepressants.
+                <i>Therapeutic Advances in Psychopharmacology</i>.
+                2023;13:20451253231171518. doi:10.1177/20451253231171518.
+                <a
+                  href="https://journals.sagepub.com/doi/10.1177/20451253231171518"
+                  target="_blank"
+                  class="reference-link"
+                  >Ver artículo</a
+                >
+              </li>
+              <li>
+                National Institute for Health and Care Excellence. Depression in
+                adults: treatment and management. NICE guideline NG222. London:
+                NICE; 2022.
+                <a
+                  href="https://www.nice.org.uk/guidance/ng222"
+                  target="_blank"
+                  class="reference-link"
+                  >Ver guía</a
+                >
+              </li>
+              <li>
+                Horowitz M, Taylor D. Case-based learning: safe withdrawal and
+                tapering of antidepressants. <i>Pharm J</i>. 2023;311(7977).
+                doi:10.1211/PJ.2023.1.196471.
+                <a
+                  href="https://pharmaceutical-journal.com/article/ld/case-based-learning-safe-withdrawal-and-tapering-of-antidepressants"
+                  target="_blank"
+                  class="reference-link"
+                  >Ver artículo</a
+                >
+              </li>
+            </ol>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <include src="footer.html"></include>
+    <script src="./assets/js/utils.js"></script>
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+
+    <!-- JavaScript funcional de la herramienta -->
+    <script>
+      const { jsPDF } = window.jspdf;
+
+      let lastCalculatedSchedule = [];
+      let lastCalculatedDrug = "";
+      let lastCalculatedInitialDose = 0;
+
+      const wrapLabel = (str, maxWidth) => {
+        if (str.length <= maxWidth) {
+          return str;
+        }
+        const words = str.split(" ");
+        let lines = [];
+        let currentLine = words[0];
+        for (let i = 1; i < words.length; i++) {
+          if ((currentLine + " " + words[i]).length > maxWidth) {
+            lines.push(currentLine);
+            currentLine = words[i];
+          } else {
+            currentLine += " " + words[i];
+          }
+        }
+        lines.push(currentLine);
+        return lines;
+      };
+
+      const tooltipTitleCallback = (tooltipItems) => {
+        const item = tooltipItems[0];
+        let label = item.chart.data.labels[item.dataIndex];
+        return Array.isArray(label) ? label.join(" ") : label;
+      };
+
+      const defaultChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "top",
+          },
+          tooltip: {
+            callbacks: {
+              title: tooltipTitleCallback,
+            },
+          },
+        },
+      };
+
+      // Inicializar cuando la página se carga
+      document.addEventListener("DOMContentLoaded", function () {
+        initializeCharts();
+        initializeCalculator();
+      });
+
+      function initializeCharts() {
+        const prevalenceCtx = document.getElementById("prevalenceChart");
+        if (prevalenceCtx) {
+          new Chart(prevalenceCtx, {
+            type: "doughnut",
+            data: {
+              labels: [
+                "Pacientes con Síntomas de Abstinencia",
+                "Pacientes sin Síntomas de Abstinencia",
+              ],
+              datasets: [
+                {
+                  label: "Prevalencia de Síntomas de Abstinencia",
+                  data: [50, 50],
+                  backgroundColor: ["#3366CC", "#D6EAF8"],
+                  borderColor: ["#FFFFFF"],
+                  borderWidth: 2,
+                },
+              ],
+            },
+            options: {
+              ...defaultChartOptions,
+              cutout: "60%",
+            },
+          });
+        }
+
+        const hyperbolicCtx = document.getElementById("hyperbolicChart");
+        if (hyperbolicCtx) {
+          const hyperbolicData = Array.from(
+            { length: 41 },
+            (_, i) => 85 * (i / (15 + i))
+          );
+          new Chart(hyperbolicCtx, {
+            type: "line",
+            data: {
+              labels: Array.from({ length: 41 }, (_, i) => i.toString()),
+              datasets: [
+                {
+                  label: "Ocupación de SERT (%)",
+                  data: hyperbolicData,
+                  borderColor: "#3366CC",
+                  backgroundColor: "rgba(51, 102, 204, 0.1)",
+                  fill: true,
+                  tension: 0.4,
+                  pointRadius: 0,
+                },
+                {
+                  label: "Reducción Lineal",
+                  data: [
+                    { x: 20, y: hyperbolicData[20] },
+                    { x: 10, y: hyperbolicData[10] },
+                    { x: 0, y: hyperbolicData[0] },
+                  ],
+                  borderColor: "#E53E3E",
+                  backgroundColor: "#E53E3E",
+                  pointRadius: 6,
+                  pointHoverRadius: 8,
+                  showLine: false,
+                  type: "scatter",
+                },
+                {
+                  label: "Reducción Hiperbólica (Ejemplo)",
+                  data: [
+                    { x: 20, y: hyperbolicData[20] },
+                    { x: 18, y: hyperbolicData[18] },
+                    { x: 16, y: hyperbolicData[16] },
+                    { x: 14, y: hyperbolicData[14] },
+                    { x: 12, y: hyperbolicData[12] },
+                    { x: 10, y: hyperbolicData[10] },
+                    { x: 8, y: hyperbolicData[8] },
+                    { x: 6, y: hyperbolicData[6] },
+                    { x: 4, y: hyperbolicData[4] },
+                    { x: 2, y: hyperbolicData[2] },
+                    { x: 1, y: hyperbolicData[1] },
+                    { x: 0.5, y: hyperbolicData[0.5] || 0 },
+                  ],
+                  borderColor: "#38A169",
+                  backgroundColor: "#38A169",
+                  pointRadius: 4,
+                  showLine: false,
+                  type: "scatter",
+                },
+              ],
+            },
+            options: {
+              ...defaultChartOptions,
+              scales: {
+                x: {
+                  title: { display: true, text: "Dosis de ISRS (mg)" },
+                },
+                y: {
+                  title: {
+                    display: true,
+                    text: "Ocupación de Receptores SERT (%)",
+                  },
+                  beginAtZero: true,
+                  max: 100,
+                },
+              },
+            },
+          });
+        }
+
+        const sideEffectsCtx = document.getElementById("sideEffectsChart");
+        if (sideEffectsCtx) {
+          new Chart(sideEffectsCtx, {
+            type: "bar",
+            data: {
+              labels: [
+                wrapLabel("Disfunción Sexual", 16),
+                wrapLabel("Embotamiento Emocional", 16),
+              ],
+              datasets: [
+                {
+                  label: "Prevalencia de Efectos Adversos (%)",
+                  data: [52.5, 50],
+                  backgroundColor: ["#4BC0C0", "#667EEA"],
+                  borderColor: ["#4BC0C0", "#667EEA"],
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              ...defaultChartOptions,
+              indexAxis: "y",
+              scales: {
+                x: {
+                  beginAtZero: true,
+                  max: 100,
+                  ticks: {
+                    callback: function (value) {
+                      return value + "%";
+                    },
+                  },
+                },
+              },
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      if (context.label.includes("Sexual")) {
+                        return "Prevalencia: 25-80% (media 52.5%)";
+                      }
+                      return "Prevalencia: ~" + context.raw + "%";
+                    },
+                    title: tooltipTitleCallback,
+                  },
+                },
+              },
+            },
+          });
+        }
+      }
+
+      function initializeCalculator() {
+        const drugData = {
+          Sertralina: { tablets: [50, 100], liquid: null },
+          Citalopram: {
+            tablets: [10, 20, 40],
+            liquid: { concentration: 40, unit: "mg/ml" },
+          },
+          Escitalopram: {
+            tablets: [5, 10, 15, 20],
+            liquid: { concentration: 20, unit: "mg/ml" },
+          },
+          Paroxetina: {
+            tablets: [20],
+            liquid: { concentration: 2, unit: "mg/ml" },
+          },
+          Fluoxetina: {
+            tablets: [20],
+            liquid: { concentration: 4, unit: "mg/ml" },
+          },
+          Venlafaxina: {
+            beadsPerCapsule: { 37.5: 100, 75: 200, 150: 400 },
+            liquid: null,
+          },
+        };
+
+        const calculateBtn = document.getElementById("calculateBtn");
+        const calculateSlowBtn = document.getElementById("calculateSlowBtn");
+        const copyBtn = document.getElementById("copyBtn");
+        const pdfBtn = document.getElementById("pdfBtn");
+
+        function performCalculation(isSlow) {
+          const drug = document.getElementById("drug").value;
+          const currentDose = parseFloat(
+            document.getElementById("currentDose").value
+          );
+          const reductionInput = document.getElementById("reductionPercentage");
+          const reductionPercentage = isSlow
+            ? 5
+            : parseFloat(reductionInput.value);
+          if (isSlow) reductionInput.value = 5;
+
+          const scheduleDiv = document.getElementById("taperingSchedule");
+
+          if (
+            isNaN(currentDose) ||
+            isNaN(reductionPercentage) ||
+            currentDose <= 0 ||
+            reductionPercentage <= 0
+          ) {
+            scheduleDiv.innerHTML =
+              '<p class="text-red-500">Por favor, introduzca valores válidos.</p>';
+            copyBtn.disabled = true;
+            pdfBtn.disabled = true;
+            return;
+          }
+
+          let schedule = [];
+          let dose = currentDose;
+          let step = 1;
+
+          while (dose > 0.5) {
+            let nextDose = dose * (1 - reductionPercentage / 100);
+            if (nextDose < 0.5) {
+              schedule.push({
+                step: step,
+                dose: nextDose.toFixed(2),
+                instruction: getPracticalInstruction(drug, nextDose, dose),
+              });
+              dose = nextDose;
+              step++;
+              break;
+            }
+            schedule.push({
+              step: step,
+              dose: nextDose.toFixed(2),
+              instruction: getPracticalInstruction(drug, nextDose, dose),
+            });
+            dose = nextDose;
+            step++;
+          }
+          if (dose > 0) {
+            schedule.push({
+              step: step,
+              dose: "0.00",
+              instruction: "Suspender medicación.",
+            });
+          }
+
+          lastCalculatedSchedule = schedule;
+          lastCalculatedDrug = drug;
+          lastCalculatedInitialDose = currentDose;
+
+          let html = `<table class="w-full text-xs text-left text-slate-500">
+                    <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+                        <tr>
+                            <th scope="col" class="px-3 py-2">Paso</th>
+                            <th scope="col" class="px-3 py-2">Dosis (mg)</th>
+                            <th scope="col" class="px-3 py-2">Instrucción Práctica</th>
+                        </tr>
+                    </thead><tbody>`;
+
+          schedule.forEach((item) => {
+            html += `<tr class="bg-white border-b hover:bg-slate-50">
+                        <td class="px-3 py-2 font-medium text-slate-900">${item.step}</td>
+                        <td class="px-3 py-2">${item.dose}</td>
+                        <td class="px-3 py-2">${item.instruction}</td>
+                    </tr>`;
+          });
+
+          html += `</tbody></table>`;
+          scheduleDiv.innerHTML = html;
+          copyBtn.disabled = false;
+          pdfBtn.disabled = false;
+        }
+
+        calculateBtn.addEventListener("click", () => performCalculation(false));
+        calculateSlowBtn.addEventListener("click", () =>
+          performCalculation(true)
+        );
+
+        function getPracticalInstruction(drug, dose, lastDose) {
+          const data = drugData[drug];
+          dose = parseFloat(dose);
+          if (dose <= 0) return "Suspender medicación.";
+
+          if (data.liquid) {
+            let liquidDose = dose;
+            let note = "";
+            if (drug === "Citalopram") {
+              liquidDose = dose / 1.25;
+              note = " (ajustado: líquido 25% más biodisponible)";
+            }
+            const volume = (liquidDose / data.liquid.concentration).toFixed(2);
+            return `Usar solución oral: tomar ${volume} ml${note}.`;
+          }
+
+          const smallestTablet = Math.min(...data.tablets);
+
+          if (dose > smallestTablet) {
+            const wholeTablets = Math.floor(dose / smallestTablet);
+            const remainingDose = dose - wholeTablets * smallestTablet;
+
+            if (remainingDose.toFixed(2) === "0.00") {
+              return `Tomar ${wholeTablets} comprimido(s) de ${smallestTablet} mg.`;
+            }
+
+            const suspensionInstruction = `triturar 1 comp. de ${smallestTablet} mg en ${smallestTablet} ml de agua y tomar ${remainingDose.toFixed(
+              2
+            )} ml.`;
+            return `Tomar ${wholeTablets} comp. de ${smallestTablet} mg y, adicionalmente, preparar suspensión para los ${remainingDose.toFixed(
+              2
+            )} mg restantes (${suspensionInstruction})`;
+          }
+
+          if (drug === "Venlafaxina") {
+            const closestCapsule = Object.keys(data.beadsPerCapsule).reduce(
+              (prev, curr) => {
+                return Math.abs(curr - lastDose) < Math.abs(prev - lastDose)
+                  ? curr
+                  : prev;
+              }
+            );
+            const beadsInCapsule = data.beadsPerCapsule[closestCapsule];
+            const beadsToTake = Math.round(
+              (dose / closestCapsule) * beadsInCapsule
+            );
+            return `Contar aprox. ${beadsToTake} gránulos de una cápsula de ${closestCapsule} mg. Para mayor precisión, usar balanza de joyería.`;
+          }
+
+          if (dose > smallestTablet / 4) {
+            if (data.tablets.includes(dose))
+              return `Usar 1 comprimido de ${dose} mg.`;
+            const halfDose = dose * 2;
+            if (data.tablets.some((t) => Math.abs(t - halfDose) < 0.01))
+              return `Usar 1/2 comprimido de ${halfDose.toFixed(2)} mg.`;
+            const quarterDose = dose * 4;
+            if (data.tablets.some((t) => Math.abs(t - quarterDose) < 0.01))
+              return `Usar 1/4 comprimido de ${quarterDose.toFixed(2)} mg.`;
+          }
+
+          return `Hacer suspensión: triturar 1 comp. de ${smallestTablet} mg en ${smallestTablet} ml de agua y tomar ${dose.toFixed(
+            2
+          )} ml.`;
+        }
+
+        function generatePatientText(schedule, drug, initialDose) {
+          let text = `PLAN DE REDUCCIÓN DE DOSIS: ${drug}\n`;
+          text += `=======================================\n\n`;
+          text += `Dosis inicial: ${initialDose} mg.\n\n`;
+          text += `Instrucciones: Siga cada paso de la pauta, esperando de 2 a 4 semanas entre cada cambio para evaluar su respuesta. Anote la fecha de cada cambio.\n\n`;
+
+          schedule.forEach((item) => {
+            text += `Paso ${item.step}: Nueva dosis de ${item.dose} mg.\n   ↳ Instrucción: ${item.instruction}\n\n`;
+          });
+
+          text += `NOTAS IMPORTANTES:\n`;
+          text += `- La adherencia al plan es clave para minimizar síntomas de abstinencia.\n`;
+          text += `- No realice la toma en días alternos.\n`;
+          text += `- Las suspensiones deben prepararse cada día.\n`;
+          text += `- Contacte con su profesional sanitario si experimenta síntomas intolerables antes de realizar nuevos cambios.\n`;
+          text += `- Nota sobre uso 'off-label': La preparación de suspensiones es una estrategia acordada para facilitar dosis pequeñas y seguras. Debe ser una decisión conjunta con su médico.`;
+          return text;
+        }
+
+        copyBtn.addEventListener("click", () => {
+          const patientText = generatePatientText(
+            lastCalculatedSchedule,
+            lastCalculatedDrug,
+            lastCalculatedInitialDose
+          );
+          const textArea = document.createElement("textarea");
+          textArea.value = patientText;
+          document.body.appendChild(textArea);
+          textArea.select();
+          try {
+            document.execCommand("copy");
+            copyBtn.textContent = "¡Copiado!";
+            setTimeout(() => {
+              copyBtn.textContent = "Copiar para Paciente";
+            }, 2000);
+          } catch (err) {
+            console.error("Error al copiar texto: ", err);
+          }
+          document.body.removeChild(textArea);
+        });
+
+        pdfBtn.addEventListener("click", () => {
+          const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+          const drug = lastCalculatedDrug;
+          const initialDose = lastCalculatedInitialDose;
+          const schedule = lastCalculatedSchedule;
+
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(16);
+          doc.text(`Plan de Reducción de Dosis: ${drug}`, 14, 20);
+
+          doc.setFont("Helvetica", "normal");
+          doc.setFontSize(11);
+          doc.setTextColor(50);
+          doc.text(`Dosis inicial: ${initialDose} mg`, 14, 28);
+
+          const introText = `Este documento detalla su pauta de reducción personalizada. Es fundamental seguir cada paso según lo prescrito, manteniendo un intervalo de 2 a 4 semanas entre cada cambio para monitorizar la tolerancia. Si se requiere preparar una suspensión, esta debe elaborarse diariamente. Utilice la columna 'Fecha' para registrar el inicio de cada nuevo paso.`;
+          const splitIntro = doc.splitTextToSize(introText, 180);
+          doc.text(splitIntro, 14, 38);
+
+          const tableColumn = [
+            "Paso",
+            "Nueva Dosis (mg)",
+            "Instrucción de Toma",
+            "Fecha (a rellenar)",
+          ];
+          const tableRows = [];
+
+          schedule.forEach((item) => {
+            const row = [item.step, item.dose, item.instruction, ""];
+            tableRows.push(row);
+          });
+
+          doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 55,
+            theme: "grid",
+            styles: {
+              font: "Helvetica",
+              fontSize: 9,
+              cellPadding: 2,
+            },
+            headStyles: {
+              fillColor: [41, 128, 185],
+              textColor: 255,
+              fontStyle: "bold",
+            },
+            columnStyles: {
+              0: { halign: "center", cellWidth: 15 },
+              1: { halign: "center", cellWidth: 30 },
+              2: { halign: "left" },
+              3: { cellWidth: 35 },
+            },
+          });
+
+          let finalY = doc.lastAutoTable.finalY + 15;
+
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(10);
+          doc.text(
+            "Acuerdo sobre Uso Fuera de Ficha Técnica (Off-Label):",
+            14,
+            finalY
+          );
+          doc.setFont("Helvetica", "normal");
+          doc.setFontSize(9);
+          const offLabelText = `La preparación de suspensiones es una práctica 'off-label' propuesta como estrategia para permitir reducciones de dosis muy pequeñas y seguras. Su uso representa una decisión clínica consensuada para minimizar el riesgo de síntomas de abstinencia, siguiendo las recomendaciones de guías clínicas internacionales.`;
+          const splitOffLabel = doc.splitTextToSize(offLabelText, 180);
+          doc.text(splitOffLabel, 14, finalY + 5);
+
+          finalY =
+            doc.lastAutoTable.finalY + 30 > finalY + 25
+              ? doc.lastAutoTable.finalY + 25
+              : finalY + 25;
+
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(12);
+          doc.text(
+            "Cuándo Contactar Inmediatamente con su Médico:",
+            14,
+            finalY
+          );
+          doc.setFont("Helvetica", "normal");
+          doc.setFontSize(10);
+          doc.setTextColor(50);
+          const contactReasons = [
+            "- Síntomas graves de abstinencia (mareos intensos, 'descargas cerebrales' severas).",
+            "- Pensamientos de autolesión o suicidio.",
+            "- Síntomas que no mejoran tras 1-2 semanas manteniendo la misma dosis.",
+            "- Incapacidad para realizar actividades diarias normales.",
+          ];
+          doc.text(contactReasons, 14, finalY + 7);
+
+          finalY += 30;
+
+          doc.setFont("Helvetica", "bold");
+          doc.setFontSize(12);
+          doc.text("Aviso Médico Importante:", 14, finalY);
+          doc.setFont("Helvetica", "normal");
+          doc.setFontSize(10);
+          const warningText = [
+            `Este plan debe ejecutarse ÚNICAMENTE bajo supervisión médica continua.`,
+            `No inicie, modifique o suspenda el tratamiento sin consultar a su profesional sanitario.`,
+            `Este documento es una guía. El seguimiento clínico es fundamental durante todo el proceso.`,
+          ];
+          doc.text(warningText, 14, finalY + 7);
+
+          doc.save(`pauta_reduccion_${drug.toLowerCase()}.pdf`);
+        });
+      }
+    </script>
+  </body>
+</html>
