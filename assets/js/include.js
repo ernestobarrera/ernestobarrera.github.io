@@ -251,3 +251,38 @@
   // Ejecutamos la inicialización
   init();
 })();
+
+
+// Cargar banner de cookies automáticamente
+(function cargarBannerCookies() {
+  // Usar la misma lógica de rutas que el sistema de includes
+  const getBasePath = () => {
+    const path = window.location.pathname;
+    console.log('Pathname para cookies:', path);
+    return path.includes('/pages/') ? '../assets/components/' : 'assets/components/';
+  };
+
+  const basePath = getBasePath();
+  const banner_url = `${basePath}cookie-banner.html`;
+
+  console.log('Intentando cargar banner desde:', banner_url);
+
+  fetch(banner_url)
+    .then(r => {
+      console.log('Respuesta banner cookies:', r.status);
+      return r.text();
+    })
+    .then(html => {
+      console.log('Banner HTML cargado:', html.substring(0, 50) + '...');
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+      document.body.appendChild(temp.firstElementChild);
+
+      // Cargar script de consentimiento
+      const s = document.createElement('script');
+      s.src = './assets/js/cookie-consent.js';
+      s.onload = () => console.log('Script cookie-consent cargado');
+      document.body.appendChild(s);
+    })
+    .catch(err => console.error('Error cargando banner cookies:', err));
+})();
