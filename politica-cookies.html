@@ -1,0 +1,267 @@
+<!--
+=====================
+  politica-cookies.html
+  Política de Cookies
+  Versión simplificada y educativa
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Política de cookies transparente para un sitio web educativo. Información clara sobre el uso de Google Analytics y gestión de preferencias."
+    />
+    <title>Política de Cookies | @ernestob</title>
+    <link rel="icon" href="assets/images/icon.webp" />
+
+    <!-- CSS Base para header/footer -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS externo -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    />
+
+    <style>
+      .policy-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+      }
+
+      .policy-section {
+        background: var(--card-bg);
+        margin-bottom: 1.5rem;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border-left: 4px solid var(--accent-color);
+      }
+
+      .policy-section.green {
+        background: rgba(34, 197, 94, 0.1);
+        border-left-color: #22c55e;
+        color: var(--text-primary);
+      }
+
+      .policy-section.blue {
+        background: rgba(59, 130, 246, 0.1);
+        border-left-color: #3b82f6;
+        color: var(--text-primary);
+      }
+
+      .policy-section.yellow {
+        background: rgba(245, 158, 11, 0.1);
+        border-left-color: #f59e0b;
+        color: var(--text-primary);
+      }
+
+      .policy-section.gray {
+        background: rgba(71, 85, 105, 0.1);
+        border-left-color: #475569;
+        color: var(--text-primary);
+      }
+
+      .policy-section h3 {
+        margin-bottom: 0.75rem;
+        color: var(--accent-color);
+        font-size: 1.1rem;
+      }
+
+      .policy-section ul,
+      .policy-section ol {
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .policy-section li {
+        margin-bottom: 0.5rem;
+        line-height: 1.5;
+      }
+
+      .highlight-box {
+        background: rgba(251, 191, 36, 0.2);
+        padding: 1rem;
+        border-radius: 6px;
+        border-left: 3px solid var(--accent-color);
+        margin: 1rem 0;
+      }
+
+      .contact-info {
+        text-align: center;
+        padding: 1.5rem;
+        background: var(--card-bg);
+        border-radius: 8px;
+        margin-top: 2rem;
+      }
+
+      .update-date {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 2rem;
+        text-align: center;
+      }
+
+      .page-title {
+        text-align: center;
+        margin-bottom: 2rem;
+        color: var(--accent-color);
+      }
+
+      @media (max-width: 768px) {
+        .policy-container {
+          padding: 1rem 0.5rem;
+        }
+
+        .policy-section {
+          padding: 1rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <script src="./assets/js/include.js"></script>
+    <include src="header.html"></include>
+
+    <div class="main-container">
+      <div class="policy-container">
+        <h1 class="page-title">Política de Cookies</h1>
+
+        <p class="update-date">Última actualización: Junio 2025</p>
+
+        <div class="policy-section green">
+          <h3>
+            <i class="fas fa-shield-alt"></i> Datos completamente anónimos
+          </h3>
+          <p>
+            Los datos que recojo no permiten identificarte. No guardo emails,
+            nombres ni información personal. Solo estadísticas anónimas de
+            navegación como páginas visitadas y tiempo de lectura.
+          </p>
+        </div>
+
+        <div class="policy-section">
+          <h3>¿Qué son las cookies?</h3>
+          <p>
+            Las cookies son pequeños archivos que se almacenan en tu dispositivo
+            cuando visitas esta web. Me ayudan a entender cómo se usa el
+            contenido y qué resulta más útil.
+          </p>
+        </div>
+
+        <div class="policy-section">
+          <h3>¿Para qué uso las cookies?</h3>
+
+          <div class="policy-section blue">
+            <h3><i class="fas fa-chart-bar"></i> Análisis del contenido</h3>
+            <p>Uso Google Analytics para conocer:</p>
+            <ul>
+              <li>Qué páginas consultas más</li>
+              <li>Cuánto tiempo pasas leyendo</li>
+              <li>Desde dónde accedes al sitio</li>
+              <li>Qué contenido resulta más útil</li>
+            </ul>
+            <div class="highlight-box">
+              <strong>✅ Solo se activa si aceptas las cookies</strong>
+            </div>
+          </div>
+
+          <div class="policy-section gray">
+            <h3><i class="fas fa-cog"></i> Cookie de preferencias</h3>
+            <p>
+              Una cookie técnica (cookie_consent) recuerda tu decisión sobre las
+              cookies analíticas para no preguntarte cada vez que vuelves.
+            </p>
+          </div>
+        </div>
+
+        <div class="policy-section">
+          <h3>Gestionar tus preferencias</h3>
+          <p><strong>Cambiar tu decisión:</strong></p>
+          <p>Puedes cambiar o retirar tu consentimiento cuando quieras:</p>
+
+          <div class="policy-section yellow">
+            <h3>Opción 1: Borrar datos del navegador</h3>
+            <ul>
+              <li>Borra el historial/cookies de tu navegador</li>
+              <li>Al volver al sitio, el banner aparecerá de nuevo</li>
+            </ul>
+          </div>
+
+          <div class="policy-section green">
+            <h3>
+              Opción 2: Herramientas de desarrollo (para usuarios técnicos)
+            </h3>
+            <ol>
+              <li>Presiona F12 en tu navegador</li>
+              <li>Ve a "Application" > "Local Storage"</li>
+              <li>Elimina la entrada "cookie_consent"</li>
+              <li>Recarga la página</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="policy-section">
+          <h3>Información técnica</h3>
+
+          <div class="policy-section gray">
+            <h3>Cookies de Google Analytics</h3>
+            <ul>
+              <li><strong>Nombres:</strong> _ga, _ga_*, _gid</li>
+              <li><strong>Duración:</strong> Entre 1 día y 2 años</li>
+              <li><strong>Proveedor:</strong> Google LLC</li>
+              <li>
+                <strong>Transferencias:</strong> Datos pueden procesarse en
+                Estados Unidos
+              </li>
+            </ul>
+            <p>
+              <em
+                >Los datos son anónimos y no permiten identificarte
+                personalmente.</em
+              >
+            </p>
+          </div>
+        </div>
+
+        <div class="contact-info">
+          <h3>Contacto</h3>
+          <p>
+            Si tienes preguntas sobre el uso de cookies en este sitio web
+            educativo, puedes contactar a través de GitHub o las redes sociales
+            enlazadas en esta página.
+          </p>
+        </div>
+
+        <hr style="margin: 2rem 0; border-color: var(--text-secondary)" />
+
+        <p
+          style="
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+          "
+        >
+          Este sitio web tiene fines educativos e informativos. Esta política
+          puede actualizarse ocasionalmente.
+        </p>
+      </div>
+    </div>
+
+    <include src="footer.html"></include>
+  </body>
+</html>
