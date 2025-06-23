@@ -1,0 +1,2132 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <meta
+      name="description"
+      content="Vademécum Esencial de Atención Primaria: una herramienta interactiva para la prescripción inteligente, basada en el principio de Pareto y la evidencia clínica."
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="assets/images/icon.webp" />
+    <title>Vademécum Esencial AP | @ernestob</title>
+
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="Vademécum Esencial de Atención Primaria | @ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Herramientas clínicas para profesionales sanitarios"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/vademecum-ap.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+      /* Estilos base del sitio de destino */
+      body {
+          font-family: "Inter", sans-serif;
+          background-color: #f0f4f8 !important; /* Fondo del sitio de destino */
+          color: #102a43 !important; /* Color de texto principal del sitio de destino */
+          margin: 0;
+          padding: 0;
+      }
+
+      /* Contenedor principal para centrar el contenido del Vademécum */
+      .vademecum-container {
+          max-width: 1600px;
+          margin-left: auto;
+          margin-right: auto;
+          padding: 0 1rem;
+          margin-top: calc(var(--header-height) + 1rem);
+          margin-bottom: 2rem;
+      }
+
+      /* Estilos específicos del Vademécum adaptados */
+      .text-navy { color: #1F2937; }
+      .bg-teal { background-color: #0D9488; }
+      .text-teal { color: #0D9488; }
+      .border-teal { border-color: #0D9488; }
+      .accent-teal { accent-color: #0D9488; }
+      .bg-sky-100 { background-color: #E0F2F1; }
+
+      .nav-item.active { background-color: #E0F2F1; color: #0D9488; border-right: 4px solid #0D9488; }
+      .nav-item { transition: all 0.2s ease-in-out; }
+
+      .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+      @media (min-width: 768px) { .chart-container { height: 350px; } }
+
+      .drug-card { transition: all 0.3s ease-in-out; }
+      .drug-card .details { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; }
+      .drug-card.open .details { max-height: 1000px; transition: max-height: 0.7s ease-in; }
+
+      .loader { border: 4px solid #f3f3f3; border-top: 4px solid #0D9488; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+      /* Ajustes para el modo oscuro del header/footer si existe */
+      @media (prefers-color-scheme: dark) {
+          body {
+              background-color: #0d1117 !important;
+              color: #c9d1d9 !important;
+          }
+      }
+    </style>
+  </head>
+  <body class="antialiased">
+    <script src="/assets/js/include.js"></script>
+    <include src="header.html"></include>
+
+    <div class="vademecum-container">
+      <div class="flex">
+        <aside
+          class="w-16 md:w-64 bg-white border-r border-gray-200 flex-shrink-0 rounded-l-lg"
+        >
+          <div
+            class="p-4 md:p-6 flex items-center justify-center md:justify-start"
+          >
+            <div
+              class="bg-teal text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-xl"
+            >
+              V
+            </div>
+            <h1 class="hidden md:block ml-3 text-xl font-bold text-teal">
+              Vademécum
+              <span class="block text-sm font-normal text-gray-500 -mt-1"
+                >Esencial AP</span
+              >
+            </h1>
+          </div>
+          <nav id="main-nav" class="mt-8">
+            <a
+              href="#inicio"
+              class="nav-item flex items-center p-4 md:pl-6 text-gray-600 hover:bg-sky-100 hover:text-teal active"
+            >
+              <svg
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                />
+              </svg>
+              <span class="hidden md:inline-block ml-4">Inicio</span>
+            </a>
+            <a
+              href="#explorador"
+              class="nav-item flex items-center p-4 md:pl-6 text-gray-600 hover:bg-sky-100 hover:text-teal"
+            >
+              <svg
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <span class="hidden md:inline-block ml-4">Explorador</span>
+            </a>
+            <a
+              href="#urgencias"
+              class="nav-item flex items-center p-4 md:pl-6 text-gray-600 hover:bg-sky-100 hover:text-teal"
+            >
+              <svg
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+              <span class="hidden md:inline-block ml-4">Urgencias</span>
+            </a>
+            <a
+              href="#analisis"
+              class="nav-item flex items-center p-4 md:pl-6 text-gray-600 hover:bg-sky-100 hover:text-teal"
+            >
+              <svg
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+              <span class="hidden md:inline-block ml-4">Análisis</span>
+            </a>
+            <a
+              href="#proyecto"
+              class="nav-item flex items-center p-4 md:pl-6 text-gray-600 hover:bg-sky-100 hover:text-teal"
+            >
+              <svg
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span class="hidden md:inline-block ml-4">El Proyecto</span>
+            </a>
+          </nav>
+        </aside>
+
+        <main
+          id="main-content"
+          class="flex-1 overflow-y-auto p-6 md:p-10 bg-white/50 rounded-r-lg"
+          style="background-color: #fdfdfd"
+        >
+          <section id="inicio" class="content-section">
+            <h2 class="text-3xl font-bold text-navy mb-2">
+              Vademécum Esencial de Atención Primaria
+            </h2>
+            <p class="text-lg text-gray-600 mb-8">
+              Una herramienta interactiva para la prescripción inteligente,
+              basada en el principio de Pareto y la evidencia clínica.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+              <div
+                class="bg-white p-6 rounded-xl shadow-md border-l-4 border-teal"
+              >
+                <h3 class="text-4xl font-bold text-teal" id="drug-count-stat">
+                  ~142
+                </h3>
+                <p class="text-gray-600 mt-2">
+                  Principios activos para el 90% de la prescripción (DU90%), un
+                  objetivo de dominio clínico realista.
+                </p>
+              </div>
+              <div
+                class="bg-white p-6 rounded-xl shadow-md border-l-4 border-amber-500"
+              >
+                <h3 class="text-4xl font-bold text-amber-500">&gt; 80%</h3>
+                <p class="text-gray-600 mt-2">
+                  De las situaciones clínicas resueltas con este núcleo
+                  farmacológico, validado por consumo real.
+                </p>
+              </div>
+              <div
+                class="bg-white p-6 rounded-xl shadow-md border-l-4 border-sky-500"
+              >
+                <h3 class="text-4xl font-bold text-sky-500">17</h3>
+                <p class="text-gray-600 mt-2">
+                  Capítulos CIAP-2 para una organización intuitiva y alineada
+                  con el flujo de trabajo en consulta.
+                </p>
+              </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-xl shadow-md">
+              <h3 class="text-2xl font-bold text-navy mb-4">
+                Resumen Ejecutivo
+              </h3>
+              <p class="text-gray-700 leading-relaxed mb-4">
+                La Atención Primaria (AP) en España se enfrenta a la paradoja de
+                un arsenal farmacológico inmenso que, lejos de ayudar, genera
+                sobrecarga informativa y compromete la seguridad del paciente.
+                Este proyecto propone un "Vademécum Esencial", un núcleo
+                optimizado de menos de 200 principios activos que, basado en el
+                principio de Pareto, resuelve más del 80% de las patologías
+                prevalentes en consulta, demanda y urgencias.
+              </p>
+              <p class="text-gray-700 leading-relaxed">
+                El objetivo es transformar la prescripción: pasar de la
+                memorización superficial de miles de fármacos al dominio experto
+                de un arsenal esencial, seguro y eficiente. Mediante un análisis
+                de datos de prescripción real, guías de práctica clínica (GPC) y
+                criterios de "esencialidad" explícitos (prevalencia, evidencia,
+                seguridad, coste-efectividad), se ha curado una lista maestra
+                organizada por capítulos CIAP-2. Esta herramienta busca mejorar
+                la seguridad del paciente, optimizar recursos y enfocar la
+                formación, proponiendo su integración en la Historia Clínica
+                Electrónica como un sistema de soporte a la decisión clínica,
+                como <b>"lista de favoritos"</b>.
+              </p>
+            </div>
+          </section>
+
+          <section id="explorador" class="content-section hidden">
+            <h2 class="text-3xl font-bold text-navy mb-2">
+              Explorador del Vademécum
+            </h2>
+            <p class="text-lg text-gray-600 mb-6">
+              Busque un principio activo o filtre por capítulo CIAP-2 para
+              encontrar el fármaco esencial que necesita.
+            </p>
+
+            <div class="sticky top-0 bg-white/80 backdrop-blur-sm py-4 z-10">
+              <div class="flex flex-col md:flex-row gap-4">
+                <div class="relative flex-grow">
+                  <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Buscar por principio activo (ej. Paracetamol)..."
+                    class="w-full p-3 pl-10 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal focus:border-teal"
+                  />
+                  <svg
+                    class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+                <select
+                  id="ciapFilter"
+                  class="p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal focus:border-teal"
+                >
+                  <option value="all">Todos los capítulos CIAP-2</option>
+                </select>
+              </div>
+            </div>
+
+            <div
+              id="drug-list-container"
+              class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              <div
+                class="loader-container col-span-full flex justify-center p-10"
+              >
+                <div class="loader"></div>
+              </div>
+            </div>
+            <p id="no-results" class="text-center text-gray-500 mt-10 hidden">
+              No se encontraron resultados para su búsqueda.
+            </p>
+          </section>
+
+          <section id="urgencias" class="content-section hidden">
+            <h2 class="text-3xl font-bold text-red-600 mb-2">
+              Arsenal Crítico para Urgencias
+            </h2>
+            <p class="text-lg text-gray-600 mb-8">
+              Dotación esencial y estandarizada para el maletín y carro de
+              paradas en Atención Primaria. La rapidez y la fiabilidad son
+              claves.
+            </p>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th
+                        class="p-4 font-semibold text-sm text-gray-700 uppercase tracking-wider"
+                      >
+                        Principio Activo
+                      </th>
+                      <th
+                        class="p-4 font-semibold text-sm text-gray-700 uppercase tracking-wider"
+                      >
+                        Indicación Clave
+                      </th>
+                      <th
+                        class="p-4 font-semibold text-sm text-gray-700 uppercase tracking-wider"
+                      >
+                        Presentación y Vía
+                      </th>
+                      <th
+                        class="p-4 font-semibold text-sm text-gray-700 uppercase tracking-wider"
+                      >
+                        Perla de Urgencia
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    id="urgencias-table-body"
+                    class="divide-y divide-gray-200"
+                  ></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section id="analisis" class="content-section hidden">
+            <h2 class="text-3xl font-bold text-navy mb-2">
+              Análisis y Visualización de Datos
+            </h2>
+            <p class="text-lg text-gray-600 mb-8">
+              Visualizaciones interactivas que demuestran los principios
+              fundamentales del Vademécum Esencial.
+            </p>
+
+            <div class="space-y-12">
+              <div class="bg-white p-8 rounded-xl shadow-md">
+                <h3 class="text-xl font-bold text-navy mb-2">
+                  Principio de Pareto en la Prescripción
+                </h3>
+                <p class="text-gray-600 mb-6">
+                  Este gráfico ilustra cómo un pequeño número de principios
+                  activos (el "20%") constituye la gran mayoría del volumen
+                  total de prescripciones (el "80%"). Esto demuestra la alta
+                  concentración y la necesidad de focalizar los esfuerzos de
+                  optimización en este núcleo vital.
+                </p>
+                <div class="chart-container">
+                  <canvas id="paretoChart"></canvas>
+                </div>
+              </div>
+
+              <div class="bg-white p-8 rounded-xl shadow-md">
+                <h3 class="text-xl font-bold text-navy mb-2">
+                  Mapa de Fármacos Esenciales por Capítulo CIAP-2
+                </h3>
+                <p class="text-gray-600 mb-6">
+                  Esta visualización muestra la distribución de los fármacos
+                  esenciales a través de los diferentes sistemas corporales
+                  según la clasificación CIAP-2. Pase el cursor sobre un
+                  segmento para ver cuántos fármacos esenciales corresponden a
+                  cada capítulo, ofreciendo una visión de la "densidad"
+                  farmacológica en la práctica de la AP.
+                </p>
+                <div class="chart-container h-[400px] md:h-[450px]">
+                  <canvas id="ciapDonutChart"></canvas>
+                </div>
+              </div>
+
+              <div class="bg-white p-8 rounded-xl shadow-md">
+                <h3 class="text-xl font-bold text-navy mb-2">
+                  Comparativa: Arsenal de Consulta vs. Urgencias
+                </h3>
+                <p class="text-gray-600 mb-6">
+                  No todos los fármacos esenciales sirven para el mismo
+                  propósito. Este diagrama muestra el núcleo de medicamentos que
+                  son fundamentales tanto en la consulta diaria como en las
+                  urgencias, así como aquellos que son específicos para cada
+                  entorno.
+                </p>
+                <div class="flex justify-center items-center mt-8">
+                  <div class="flex items-center space-x-[-50px]">
+                    <div
+                      class="w-48 h-48 md:w-64 md:h-64 rounded-full bg-sky-200/50 border-2 border-sky-400 flex items-center justify-center p-4"
+                    >
+                      <div class="text-center">
+                        <h4 class="font-bold text-sky-800">
+                          Consulta Programada
+                        </h4>
+                        <p class="text-sm text-sky-700 mt-1">
+                          Fármacos para crónicos, prevención, seguimiento
+                          (Estatinas, Antidiabéticos, Bifosfonatos, etc.)
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      class="w-48 h-48 md:w-64 md:h-64 rounded-full bg-teal-200/50 border-2 border-teal-500 flex items-center justify-center p-4 z-10"
+                    >
+                      <div class="text-center">
+                        <h4 class="font-bold text-teal-800">Núcleo Común</h4>
+                        <p class="text-sm text-teal-700 mt-1">
+                          Analgésicos, Antibióticos, Corticoides,
+                          Antihipertensivos, AAS...
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      class="w-48 h-48 md:w-64 md:h-64 rounded-full bg-red-200/50 border-2 border-red-400 flex items-center justify-center p-4"
+                    >
+                      <div class="text-center">
+                        <h4 class="font-bold text-red-800">Urgencias</h4>
+                        <p class="text-sm text-red-700 mt-1">
+                          Fármacos de acción rápida, salvavidas, antídotos
+                          (Adrenalina, Naloxona, Glucagón, etc.)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="proyecto" class="content-section hidden">
+            <h2 class="text-3xl font-bold text-navy mb-2">Sobre el Proyecto</h2>
+            <p class="text-lg text-gray-600 mb-8">
+              La metodología y los principios que guían la selección del
+              Vademécum Esencial.
+            </p>
+
+            <div class="bg-white p-8 rounded-xl shadow-md mb-8">
+              <h3 class="text-2xl font-bold text-navy mb-4">
+                El Doble Filo de la Abundancia
+              </h3>
+              <p class="text-gray-700 leading-relaxed">
+                El SNS financia más de 22,000 presentaciones de medicamentos.
+                Esta abundancia, lejos de ser una ventaja, genera una
+                significativa sobrecarga informativa, variabilidad en la
+                prescripción y una "paradoja de la elección" para el clínico.
+                Este proyecto demuestra que la maestría en un arsenal reducido y
+                bien seleccionado es más segura y eficaz que el conocimiento
+                superficial de un vadécum inabarcable.
+              </p>
+            </div>
+
+            <div class="bg-white p-8 rounded-xl shadow-md">
+              <h3 class="text-2xl font-bold text-navy mb-6">
+                Los 7 Criterios de "Esencialidad"
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="p-4 border rounded-lg bg-gray-50">
+                  <h4 class="font-bold text-teal">1. Prevalencia</h4>
+                  <p class="text-sm text-gray-600">
+                    El fármaco debe tratar una patología de alta prevalencia en
+                    AP.
+                  </p>
+                </div>
+                <div class="p-4 border rounded-lg bg-gray-50">
+                  <h4 class="font-bold text-teal">2. Evidencia (GRADE)</h4>
+                  <p class="text-sm text-gray-600">
+                    Respaldado por GPC de alta calidad (Nivel A o B).
+                  </p>
+                </div>
+                <div class="p-4 border rounded-lg bg-gray-50">
+                  <h4 class="font-bold text-teal">3. Insustituibilidad</h4>
+                  <p class="text-sm text-gray-600">
+                    Es la opción de referencia o una de las pocas en su clase
+                    terapéutica.
+                  </p>
+                </div>
+                <div class="p-4 border rounded-lg bg-gray-50">
+                  <h4 class="font-bold text-teal">4. Perfil de Seguridad</h4>
+                  <p class="text-sm text-gray-600">
+                    Balance favorable de beneficio/riesgo y bajo potencial de
+                    interacciones graves.
+                  </p>
+                </div>
+                <div class="p-4 border rounded-lg bg-gray-50">
+                  <h4 class="font-bold text-teal">5. Dominio del MF</h4>
+                  <p class="text-sm text-gray-600">
+                    Su manejo (prescripción, seguimiento, deprescripción) es una
+                    competencia nuclear del Médico de Familia.
+                  </p>
+                </div>
+                <div class="p-4 border rounded-lg bg-gray-50">
+                  <h4 class="font-bold text-teal">6. Coste-Efectividad</h4>
+                  <p class="text-sm text-gray-600">
+                    Relación favorable para el SNS, priorizando genéricos
+                    disponibles.
+                  </p>
+                </div>
+                <div
+                  class="p-4 border rounded-lg bg-gray-50 col-span-1 md:col-span-2 lg:col-span-1"
+                >
+                  <h4 class="font-bold text-teal">
+                    7. Validación de Cobertura
+                  </h4>
+                  <p class="text-sm text-gray-600">
+                    El conjunto de fármacos debe cubrir >80% de los episodios de
+                    atención.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+    <section
+      class="vademecum-disclaimer-section"
+      style="
+        max-width: 1200px;
+        margin: 4rem auto 2rem auto;
+        padding: 2rem 1rem;
+        color: #adbac7;
+      "
+    >
+      <h2
+        style="
+          font-size: 1.5rem;
+          color: #e6edf3;
+          font-weight: 700;
+          margin-bottom: 2.5rem;
+          text-align: center;
+        "
+      >
+        Aviso sobre el Uso de esta Herramienta
+      </h2>
+
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 1.5rem;
+        "
+      >
+        <div
+          class="card"
+          style="
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.5rem;
+          "
+        >
+          <h3
+            style="
+              font-size: 1.15rem;
+              color: #e6edf3;
+              font-weight: 600;
+              margin-bottom: 1rem;
+              display: flex;
+              align-items: center;
+              gap: 0.75rem;
+            "
+          >
+            <i class="fa-solid fa-book-open" style="color: #58a6ff"></i>
+            Naturaleza de la Información
+          </h3>
+          <p style="font-size: 0.9rem; line-height: 1.6">
+            El contenido es de carácter <strong>educativo y de apoyo</strong>.
+            Exclusivamente dirigido a profesionales sanitarios. No reemplaza la
+            consulta de fuentes primarias como la
+            <strong>ficha técnica oficial</strong>, las
+            <strong>guías clínicas</strong> y, fundamentalmente, el
+            <strong>juicio clínico</strong> del profesional.
+          </p>
+        </div>
+
+        <div
+          class="card"
+          style="
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.5rem;
+          "
+        >
+          <h3
+            style="
+              font-size: 1.15rem;
+              color: #e6edf3;
+              font-weight: 600;
+              margin-bottom: 1rem;
+              display: flex;
+              align-items: center;
+              gap: 0.75rem;
+            "
+          >
+            <i class="fa-solid fa-user-shield" style="color: #ffc107"></i>
+            Responsabilidad del Usuario
+          </h3>
+          <p style="font-size: 0.9rem; line-height: 1.6">
+            Toda decisión terapéutica es
+            <strong
+              >responsabilidad única y exclusiva del profesional
+              sanitario</strong
+            >. Se insta a verificar siempre la información con fuentes oficiales
+            antes de su uso clínico.
+          </p>
+        </div>
+
+        <div
+          class="card"
+          style="
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1.5rem;
+          "
+        >
+          <h3
+            style="
+              font-size: 1.15rem;
+              color: #e6edf3;
+              font-weight: 600;
+              margin-bottom: 1rem;
+              display: flex;
+              align-items: center;
+              gap: 0.75rem;
+            "
+          >
+            <i class="fa-solid fa-address-card" style="color: #48bb78"></i>
+            Autoría y Contacto
+          </h3>
+          <p style="font-size: 0.9rem; line-height: 1.6">
+            Herramienta desarrollada por
+            <strong>Ernesto Barrera</strong>, Médico de Familia.
+            <br />
+            <a
+              href="https://ernestobarrera.github.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              style="color: #58a6ff; text-decoration: none; font-weight: 500"
+            >
+              Visitar perfil profesional completo &rarr;
+            </a>
+          </p>
+        </div>
+      </div>
+
+      <p
+        style="
+          margin-top: 3rem;
+          text-align: center;
+          font-size: 0.8rem;
+          color: #7d8590;
+        "
+      >
+        Última revisión del contenido: Junio 2025
+      </p>
+    </section>
+
+    <include src="footer.html"></include>
+    <script src="/assets/js/utils.js"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const allDrugs = [
+          // A: General
+          {
+            principio: "Paracetamol",
+            capitulo: "A",
+            indicacion: "Dolor leve-moderado, Fiebre (A01, A03)",
+            presentacion: "Comp. 500mg, 650mg, 1g",
+            evidencia: "A",
+            perla:
+              "Analgésico y antipirético de 1ª elección. Dosis máx: 3-4 g/día. Vigilar hepatotoxicidad.",
+          },
+          {
+            principio: "Metamizol",
+            capitulo: "A",
+            indicacion: "Dolor agudo moderado-severo (A01)",
+            presentacion: "Cáps. 575mg; Amp. 2g/5ml",
+            evidencia: "B",
+            perla:
+              "Eficaz para dolor agudo. Vigilar riesgo agranulocitosis, especialm. en ttos. prolongados o población anglosajona.",
+          },
+          {
+            principio: "Morfina",
+            capitulo: "A",
+            indicacion: "Dolor severo, Paliativos (A01, A99)",
+            presentacion: "Sol. oral; Comp. liberación rápida/retard",
+            evidencia: "A",
+            perla:
+              "Opioide de referencia en dolor oncológico severo. Titular dosis cuidadosamente. Manejar estreñimiento.",
+          },
+          {
+            principio: "Fentanilo transdérmico",
+            capitulo: "A",
+            indicacion: "Dolor crónico severo estable (A01)",
+            presentacion: "Parches (12, 25, 50 mcg/h)",
+            evidencia: "A",
+            perla:
+              "Solo para dolor crónico estable en pacientes con tolerancia a opioides. No para dolor agudo.",
+          },
+          {
+            principio: "Codeína",
+            capitulo: "R",
+            indicacion: "Tos no productiva; Dolor moderado (R05, A01)",
+            presentacion: "Comp. (asociado a paracetamol)",
+            evidencia: "C",
+            perla:
+              "Eficacia limitada para la tos. Como analgésico, su efecto depende del metabolismo (CYP2D6).",
+          },
+          {
+            principio: "Dexclorfeniramina",
+            capitulo: "A",
+            indicacion: "Urticaria, Reacción alérgica (A06)",
+            presentacion: "Amp. 5mg/ml",
+            evidencia: "B",
+            perla:
+              "Antihistamínico de 1ª gen. para urgencias por su vía parenteral. Produce sedación.",
+          },
+          {
+            principio: "Loratadina",
+            capitulo: "A",
+            indicacion: "Rinitis alérgica, Urticaria (A06)",
+            presentacion: "Comp. 10mg",
+            evidencia: "A",
+            perla:
+              "Antihistamínico de 2ª gen. De elección por su bajo efecto sedante y posología cómoda (1 vez/día).",
+          },
+          {
+            principio: "Cetirizina",
+            capitulo: "A",
+            indicacion: "Rinitis alérgica, Urticaria (A06)",
+            presentacion: "Comp. 10mg; Gotas",
+            evidencia: "A",
+            perla:
+              "Alternativa a Loratadina. Puede tener algo más de efecto sedante en algunos pacientes.",
+          },
+          {
+            principio: "Prednisona",
+            capitulo: "A",
+            indicacion: "Brotes inflamatorios, Alergias (A06, A05)",
+            presentacion: "Comp. 5mg, 10mg, 30mg",
+            evidencia: "A",
+            perla:
+              "Usar en pautas cortas. Pautar retirada gradual si > 7-10 días de tto. para evitar insuf. suprarrenal.",
+          },
+          // B: Sangre
+          {
+            principio: "Sulfato Ferroso",
+            capitulo: "B",
+            indicacion: "Anemia ferropénica (B80)",
+            presentacion: "Comp./Grageas ~80mg Fe elemental",
+            evidencia: "A",
+            perla:
+              "Tomar en ayunas para mejorar absorción, aunque peor tolerado. Causa heces oscuras y estreñimiento.",
+          },
+          {
+            principio: "Ácido Fólico",
+            capitulo: "B",
+            indicacion: "Anemia megaloblástica, Profilaxis embarazo (B81, W84)",
+            presentacion: "Comp. 5mg",
+            evidencia: "A",
+            perla:
+              "Dosis 400mcg/día preconcepcional. Dosis de 5mg en tto. de déficit. Descartar déficit de B12 antes.",
+          },
+          {
+            principio: "Cianocobalamina (Vit. B12)",
+            capitulo: "B",
+            indicacion: "Anemia perniciosa, Déficit B12 (B81)",
+            presentacion: "Amp. 1mg/ml (IM)",
+            evidencia: "A",
+            perla:
+              "Pauta de carga inicial seguida de mantenimiento (ej. mensual). La vía oral a altas dosis es alternativa en algunos casos.",
+          },
+          {
+            principio: "Ácido Acetilsalicílico (AAS)",
+            capitulo: "K",
+            indicacion: "Prevención 2ª cardiovascular (K74-76)",
+            presentacion: "Comp. 100mg",
+            evidencia: "A",
+            perla:
+              "Pilar en prevención secundaria. No indicado en prevención primaria en la mayoría de casos por riesgo/beneficio.",
+          },
+          {
+            principio: "Clopidogrel",
+            capitulo: "B",
+            indicacion: "Prevención 2ª (alternativa/combinado con AAS) (K93)",
+            presentacion: "Comp. 75mg",
+            evidencia: "A",
+            perla:
+              "Alternativa si alergia/intolerancia a AAS. En doble antiagregación post-SCA/stent según guías.",
+          },
+          {
+            principio: "Acenocumarol",
+            capitulo: "B",
+            indicacion: "Fibrilación auricular, ETV (K78, K93)",
+            presentacion: "Comp. 1mg/4mg",
+            evidencia: "A",
+            perla:
+              "Requiere monitorización estricta del INR (objetivo 2-3 en FA). Múltiples interacciones farmacológicas y dietéticas.",
+          },
+          {
+            principio: "Apixabán",
+            capitulo: "B",
+            indicacion: "Fibrilación auricular, ETV (K78, K93)",
+            presentacion: "Comp. 2.5mg/5mg",
+            evidencia: "A",
+            perla:
+              "ACOD con buen perfil de seguridad. Ajustar dosis por función renal, edad y peso. Menos interacciones que AVK.",
+          },
+          {
+            principio: "Rivaroxabán",
+            capitulo: "B",
+            indicacion: "Fibrilación auricular, ETV (K78, K93)",
+            presentacion: "Comp. 15mg/20mg",
+            evidencia: "A",
+            perla:
+              "ACOD con pauta de una vez al día (con alimentos). Alternativa a Apixabán.",
+          },
+          // D: Digestivo
+          {
+            principio: "Omeprazol",
+            capitulo: "D",
+            indicacion: "ERGE, Dispepsia, Úlcera (D84, D01)",
+            presentacion: "Cáps. 20mg",
+            evidencia: "A",
+            perla:
+              "IBP de elección por coste-efectividad. Reevaluar indicación periódicamente y deprescribir si es posible.",
+          },
+          {
+            principio: "Pantoprazol",
+            capitulo: "D",
+            indicacion: "ERGE, Dispepsia (D84, D01)",
+            presentacion: "Comp. 20mg/40mg",
+            evidencia: "A",
+            perla:
+              "Alternativa a omeprazol, con menor riesgo teórico de interacciones (CYP2C19, clopidogrel).",
+          },
+          {
+            principio: "Metoclopramida",
+            capitulo: "D",
+            indicacion: "Náuseas, Vómitos (D10)",
+            presentacion: "Comp. 10mg; Solución",
+            evidencia: "B",
+            perla:
+              "Uso a corto plazo (<5 días) por riesgo de efectos extrapiramidales. Vigilar en jóvenes y ancianos.",
+          },
+          {
+            principio: "Domperidona",
+            capitulo: "D",
+            indicacion: "Náuseas, Vómitos (D10)",
+            presentacion: "Comp. 10mg",
+            evidencia: "C",
+            perla:
+              "Alternativa a metoclopramida. Precaución por riesgo de prolongación del QT. Dosis mínimas, tiempo corto.",
+          },
+          {
+            principio: "Loperamida",
+            capitulo: "D",
+            indicacion: "Diarrea aguda (D11)",
+            presentacion: "Cáps. 2mg",
+            evidencia: "B",
+            perla:
+              "Control sintomático. Contraindicada en diarrea con fiebre alta o productos patológicos en heces.",
+          },
+          {
+            principio: "Sales Rehidratación Oral",
+            capitulo: "D",
+            indicacion: "Gastroenteritis (D70)",
+            presentacion: "Sobres",
+            evidencia: "A",
+            perla:
+              "Tratamiento más importante en GEA. Educar en preparación y uso correcto.",
+          },
+          {
+            principio: "Macrogol",
+            capitulo: "D",
+            indicacion: "Estreñimiento (D12)",
+            presentacion: "Sobres",
+            evidencia: "A",
+            perla:
+              "Laxante osmótico de elección para estreñimiento crónico por su eficacia y seguridad. No produce tolerancia.",
+          },
+          {
+            principio: "Lactulosa",
+            capitulo: "D",
+            indicacion: "Estreñimiento (D12)",
+            presentacion: "Solución",
+            evidencia: "B",
+            perla:
+              "Alternativa osmótica. Puede producir más meteorismo que el macrogol.",
+          },
+          // F: Ojo
+          {
+            principio: "Tobramicina",
+            capitulo: "F",
+            indicacion: "Conjuntivitis bacteriana (F70)",
+            presentacion: "Colirio; Pomada",
+            evidencia: "B",
+            perla:
+              "Antibiótico tópico de amplio espectro. Pauta de 5-7 días. Considerar higiene y lavados como 1ª medida.",
+          },
+          {
+            principio: "Azelastina",
+            capitulo: "F",
+            indicacion: "Conjuntivitis alérgica (F71)",
+            presentacion: "Colirio",
+            evidencia: "B",
+            perla:
+              "Antihistamínico tópico para conjuntivitis alérgica. Alivio rápido de los síntomas.",
+          },
+          {
+            principio: "Hipromelosa/Carmelosa",
+            capitulo: "F",
+            indicacion: "Ojo seco (F99)",
+            presentacion: "Colirio (monodosis)",
+            evidencia: "A",
+            perla:
+              "Tratamiento de base para el ojo seco. Priorizar monodosis sin conservantes para uso frecuente.",
+          },
+          {
+            principio: "Latanoprost",
+            capitulo: "F",
+            indicacion: "Glaucoma (F93)",
+            presentacion: "Colirio",
+            evidencia: "A",
+            perla:
+              "1ª línea en glaucoma. Instilar por la noche. Puede cambiar el color del iris. El seguimiento es por Oftalmología.",
+          },
+          {
+            principio: "Timolol",
+            capitulo: "F",
+            indicacion: "Glaucoma (F93)",
+            presentacion: "Colirio",
+            evidencia: "A",
+            perla:
+              "Betabloqueante tópico. 2ª línea o adyuvante. Precaución en pacientes con asma, EPOC o bradicardia.",
+          },
+          // H: Oído
+          {
+            principio: "Ciprofloxacino + Fluocinolona",
+            capitulo: "H",
+            indicacion: "Otitis externa (H70)",
+            presentacion: "Gotas óticas",
+            evidencia: "A",
+            perla:
+              "Tratamiento de elección en otitis externa. Asegurar que el tímpano está íntegro.",
+          },
+          {
+            principio: "Peróxido de Hidrógeno",
+            capitulo: "H",
+            indicacion: "Tapón de cera (H81)",
+            presentacion: "Gotas óticas",
+            evidencia: "C",
+            perla:
+              "Ayuda a reblandecer los tapones de cerumen antes de la extracción. Usar 3-5 días antes.",
+          },
+          {
+            principio: "Betahistina",
+            capitulo: "H",
+            indicacion: "Síndrome de Menière (H82)",
+            presentacion: "Comp. 8mg, 16mg",
+            evidencia: "B",
+            perla:
+              "Tratamiento de mantenimiento en Enf. de Menière. Eficacia modesta. No útil en crisis agudas de vértigo.",
+          },
+          {
+            principio: "Sulpirida",
+            capitulo: "H",
+            indicacion: "Vértigo agudo (H82)",
+            presentacion: "Comp.; Solución",
+            evidencia: "B",
+            perla:
+              "Para control sintomático de la crisis aguda de vértigo (sedante vestibular). Uso a corto plazo.",
+          },
+          // K: Circulatorio
+          {
+            principio: "Enalapril",
+            capitulo: "K",
+            indicacion: "HTA, IC (K86, K77)",
+            presentacion: "Comp. 10mg, 20mg",
+            evidencia: "A",
+            perla:
+              "IECA de 1ª línea en HTA e IC-FEr. Vigilar función renal y potasio al inicio. Causa tos seca.",
+          },
+          {
+            principio: "Ramipril",
+            capitulo: "K",
+            indicacion: "HTA, IC, Prevención CV (K86, K77)",
+            presentacion: "Comp. 2.5mg, 5mg, 10mg",
+            evidencia: "A",
+            perla:
+              "IECA con fuerte evidencia en prevención cardiovascular (estudio HOPE).",
+          },
+          {
+            principio: "Losartán",
+            capitulo: "K",
+            indicacion: "HTA, IC (K86, K77)",
+            presentacion: "Comp. 50mg, 100mg",
+            evidencia: "A",
+            perla:
+              "ARA-II. Alternativa a IECA si tos. Efecto uricosúrico, útil en pacientes con gota.",
+          },
+          {
+            principio: "Amlodipino",
+            capitulo: "K",
+            indicacion: "HTA (K86)",
+            presentacion: "Comp. 5mg, 10mg",
+            evidencia: "A",
+            perla:
+              "Calcioantagonista eficaz y seguro. Causa frecuente de edemas maleolares dosis-dependientes.",
+          },
+          {
+            principio: "Hidroclorotiazida",
+            capitulo: "K",
+            indicacion: "HTA (K86)",
+            presentacion: "Comp. 12.5mg, 25mg",
+            evidencia: "A",
+            perla:
+              "Diurético de 1ª línea en HTA. Generalmente usado en combinación. Vigilar hiponatremia e hipopotasemia.",
+          },
+          {
+            principio: "Indapamida",
+            capitulo: "K",
+            indicacion: "HTA (K86)",
+            presentacion: "Comp. 1.5mg (retard)",
+            evidencia: "A",
+            perla:
+              "Diurético tiazídico-like. Metabólicamente más neutro que HCTZ. Buena opción en ancianos.",
+          },
+          {
+            principio: "Bisoprolol",
+            capitulo: "K",
+            indicacion: "CI, IC, FA (K74, K77, K78)",
+            presentacion: "Comp. 2.5mg, 5mg, 10mg",
+            evidencia: "A",
+            perla:
+              "Betabloqueante cardioselectivo. De elección en CI e IC. Iniciar a dosis bajas y titular lentamente en IC.",
+          },
+          {
+            principio: "Carvedilol",
+            capitulo: "K",
+            indicacion: "IC, HTA (K77, K86)",
+            presentacion: "Comp. 6.25mg, 25mg",
+            evidencia: "A",
+            perla:
+              "Betabloqueante no selectivo con efecto alfa-bloqueante. De elección en IC junto con bisoprolol.",
+          },
+          {
+            principio: "Furosemida",
+            capitulo: "K",
+            indicacion: "IC, Edemas (K77)",
+            presentacion: "Comp. 40mg; Amp. 20mg/2ml",
+            evidencia: "A",
+            perla:
+              "Diurético de asa para manejo de congestión. Tratamiento sintomático, no modifica pronóstico. Vigilar electrolitos.",
+          },
+          {
+            principio: "Espironolactona",
+            capitulo: "K",
+            indicacion: "IC, HTA resistente (K77, K86)",
+            presentacion: "Comp. 25mg",
+            evidencia: "A",
+            perla:
+              "ARM clave en IC-FEr. Riesgo de hiperpotasemia y ginecomastia. Vigilar función renal.",
+          },
+          {
+            principio: "Nitroglicerina",
+            capitulo: "K",
+            indicacion: "Angina de pecho (K74)",
+            presentacion: "Spray sublingual",
+            evidencia: "A",
+            perla:
+              "Para crisis de angina. Educar en su uso: sentado, hasta 3 dosis separadas 5 min. Si no cede, llamar a emergencias.",
+          },
+          // L: Locomotor
+          {
+            principio: "Ibuprofeno",
+            capitulo: "L",
+            indicacion: "Dolor osteomuscular (L02, L18)",
+            presentacion: "Comp. 400mg, 600mg",
+            evidencia: "A",
+            perla:
+              "AINE de elección para dolor agudo. Usar dosis mínima eficaz el menor tiempo posible. 400mg igual de eficaz que 600mg para la mayoría de dolores.",
+          },
+          {
+            principio: "Naproxeno",
+            capitulo: "L",
+            indicacion: "Dolor osteomuscular (L02, L18)",
+            presentacion: "Comp. 500mg",
+            evidencia: "A",
+            perla:
+              "AINE con mejor perfil de seguridad cardiovascular. De elección si se precisa AINE en paciente con riesgo CV.",
+          },
+          {
+            principio: "Dexketoprofeno",
+            capitulo: "L",
+            indicacion: "Dolor agudo (L02, L18)",
+            presentacion: "Comp. 25mg",
+            evidencia: "B",
+            perla:
+              "AINE de inicio de acción rápido. Útil para dolor agudo irruptivo. No para uso crónico.",
+          },
+          {
+            principio: "Diclofenaco tópico",
+            capitulo: "S",
+            indicacion: "Artrosis superficial (L89, L90)",
+            presentacion: "Gel",
+            evidencia: "A",
+            perla:
+              "Eficaz y más seguro que AINEs orales para artrosis superficial (rodilla, mano).",
+          },
+          {
+            principio: "Alopurinol",
+            capitulo: "T",
+            indicacion: "Gota (profilaxis) (L99)",
+            presentacion: "Comp. 100mg, 300mg",
+            evidencia: "A",
+            perla:
+              "Tratamiento crónico para gota. Iniciar a dosis bajas y titular según uricemia. No iniciar durante ataque agudo.",
+          },
+          {
+            principio: "Colchicina",
+            capitulo: "L",
+            indicacion: "Ataque agudo de gota (L99)",
+            presentacion: "Comp. 1mg",
+            evidencia: "A",
+            perla:
+              "Para ataque agudo de gota y profilaxis inicial con alopurinol. Pauta de dosis bajas es más segura y eficaz.",
+          },
+          {
+            principio: "Ciclobenzaprina",
+            capitulo: "L",
+            indicacion: "Contractura muscular (L18)",
+            presentacion: "Comp. 10mg",
+            evidencia: "B",
+            perla:
+              "Relajante muscular para lumbalgia aguda. Uso a corto plazo (noches) por sedación. Evitar en ancianos.",
+          },
+          {
+            principio: "Alendronato",
+            capitulo: "L",
+            indicacion: "Osteoporosis (L95)",
+            presentacion: "Comp. 70mg (semanal)",
+            evidencia: "A",
+            perla:
+              "Bifosfonato de 1ª línea. Administrar en ayunas con agua, y permanecer erguido 30 min.",
+          },
+          {
+            principio: "Calcio + Colecalciferol (Vit. D3)",
+            capitulo: "T",
+            indicacion: "Osteoporosis, Prevención déficit (L95)",
+            presentacion: "Comp./Sobres",
+            evidencia: "A",
+            perla:
+              "Suplemento base en osteoporosis. La combinación mejora adherencia. Considerar VitD sola si ingesta de calcio es adecuada.",
+          },
+          // N/P: Neuro/Psico
+          {
+            principio: "Tramadol",
+            capitulo: "A",
+            indicacion: "Dolor moderado (A01)",
+            presentacion: "Cáps. 50mg; Gotas; Comp. retard",
+            evidencia: "B",
+            perla:
+              "Opioide débil. Frecuentes náuseas y mareo. Riesgo de síndrome serotoninérgico con ISRS.",
+          },
+          {
+            principio: "Amitriptilina",
+            capitulo: "N",
+            indicacion: "Dolor neuropático, Profilaxis migraña (N94, N89)",
+            presentacion: "Comp. 10mg, 25mg",
+            evidencia: "A",
+            perla:
+              "1ª línea para dolor neuropático. Iniciar a dosis muy bajas (10mg/noche) y titular lentamente. Efectos anticolinérgicos.",
+          },
+          {
+            principio: "Gabapentina",
+            capitulo: "N",
+            indicacion: "Dolor neuropático, Epilepsia (N94, N88)",
+            presentacion: "Cáps. 300mg",
+            evidencia: "A",
+            perla:
+              "Coadyuvante o 2ª línea en dolor neuropático. Requiere titulación ascendente lenta. Causa sedación.",
+          },
+          {
+            principio: "Pregabalina",
+            capitulo: "N",
+            indicacion:
+              "Dolor neuropático, Ansiedad, Epilepsia (N94, P74, N88)",
+            presentacion: "Cáps. 25, 75, 150mg",
+            evidencia: "A",
+            perla:
+              "Similar a gabapentina, pero con pauta más sencilla. Potencial de abuso. Ajustar dosis en IR.",
+          },
+          {
+            principio: "Sumatriptán",
+            capitulo: "N",
+            indicacion: "Migraña aguda (N89)",
+            presentacion: "Comp. 50mg; Spray nasal",
+            evidencia: "A",
+            perla:
+              "Tratamiento agudo de la migraña. Tomar al inicio del dolor. No usar como profiláctico. Contraindicado en HTA no controlada o CI.",
+          },
+          {
+            principio: "Sertralina",
+            capitulo: "P",
+            indicacion: "Depresión, Ansiedad (P76, P74)",
+            presentacion: "Comp. 50mg, 100mg",
+            evidencia: "A",
+            perla:
+              "ISRS de 1ª línea en depresión y ansiedad por buen perfil de seguridad y pocas interacciones.",
+          },
+          {
+            principio: "Escitalopram",
+            capitulo: "P",
+            indicacion: "Depresión, Ansiedad (P76, P74)",
+            presentacion: "Comp. 10mg, 20mg",
+            evidencia: "A",
+            perla:
+              'ISRS "limpio", con menos interacciones. Alternativa a sertralina. Titular lentamente al inicio.',
+          },
+          {
+            principio: "Venlafaxina",
+            capitulo: "P",
+            indicacion: "Depresión, Ansiedad (P76, P74)",
+            presentacion: "Cáps. retard 75mg, 150mg",
+            evidencia: "A",
+            perla:
+              "Antidepresivo dual (IRSN). Útil en casos refractarios a ISRS o con clínica de dolor. Monitorizar TA.",
+          },
+          {
+            principio: "Mirtazapina",
+            capitulo: "P",
+            indicacion:
+              "Depresión (especialmente con insomnio/bajo peso) (P76)",
+            presentacion: "Comp. 15mg, 30mg",
+            evidencia: "B",
+            perla:
+              "Efecto sedante e hiporexígeno. Útil en depresión del anciano. Iniciar con 15mg por la noche.",
+          },
+          {
+            principio: "Lorazepam",
+            capitulo: "P",
+            indicacion: "Ansiedad aguda, Insomnio (P74, P06)",
+            presentacion: "Comp. 1mg",
+            evidencia: "C",
+            perla:
+              "BZD de vida media intermedia. Uso estrictamente a corto plazo (2-4 sem). Alto riesgo de dependencia.",
+          },
+          {
+            principio: "Lormetazepam",
+            capitulo: "P",
+            indicacion: "Insomnio (P06)",
+            presentacion: "Comp. 1mg",
+            evidencia: "C",
+            perla:
+              "Hipnótico BZD de vida media corta. Solo para insomnio de conciliación. Riesgo de dependencia y tolerancia.",
+          },
+          {
+            principio: "Zolpidem",
+            capitulo: "P",
+            indicacion: "Insomnio (P06)",
+            presentacion: "Comp. 10mg",
+            evidencia: "C",
+            perla:
+              "Hipnótico no BZD (fármaco Z). Mismos riesgos que BZD. Uso a corto plazo.",
+          },
+          {
+            principio: "Diazepam",
+            capitulo: "L",
+            indicacion:
+              "Ansiedad, Espasmo muscular, Estatus convulsivo (P74, L18, N07)",
+            presentacion: "Comp. 5mg; Microenemas",
+            evidencia: "C",
+            perla:
+              "BZD de vida media larga. Acumulación y resaca diurna. Útil como relajante muscular (corto plazo).",
+          },
+          {
+            principio: "Olanzapina",
+            capitulo: "P",
+            indicacion: "Psicosis (seguimiento) (P72)",
+            presentacion: "Comp. 5mg, 10mg",
+            evidencia: "A",
+            perla:
+              "Antipsicótico atípico. Vigilar ganancia de peso y síndrome metabólico. Seguimiento compartido con Salud Mental.",
+          },
+          {
+            principio: "Risperidona",
+            capitulo: "P",
+            indicacion: "Psicosis (seguimiento) (P72)",
+            presentacion: "Comp. 1mg, 3mg; Solución",
+            evidencia: "A",
+            perla:
+              "Alternativa a Olanzapina. Mayor riesgo de síntomas extrapiramidales e hiperprolactinemia.",
+          },
+          {
+            principio: "Levodopa/Carbidopa",
+            capitulo: "N",
+            indicacion: "Enf. de Parkinson (N87)",
+            presentacion: "Comp. 250/25mg",
+            evidencia: "A",
+            perla:
+              "Tratamiento de base en Parkinson. Manejo y ajuste por Neurología, MF gestiona cronicidad.",
+          },
+          // R: Respiratorio
+          {
+            principio: "Amoxicilina",
+            capitulo: "R",
+            indicacion: "NAC, Faringoamigdalitis bacteriana (R81, R76)",
+            presentacion: "Comp. 500mg, 1g; Suspensión",
+            evidencia: "A",
+            perla:
+              "1ª línea para NAC ambulatoria y Faringitis por S. pyogenes. No indicada en bronquitis aguda.",
+          },
+          {
+            principio: "Amoxicilina/Clavulánico",
+            capitulo: "R",
+            indicacion:
+              "NAC con comorbilidad, Sinusitis, Mordeduras (R81, R75)",
+            presentacion: "Comp. 875/125mg",
+            evidencia: "A",
+            perla:
+              "Mayor cobertura (anaerobios, H. influenzae). Más efectos secundarios GI que amoxicilina sola.",
+          },
+          {
+            principio: "Azitromicina",
+            capitulo: "R",
+            indicacion: "NAC atípica, Alternativa alergia (R81)",
+            presentacion: "Comp. 500mg",
+            evidencia: "B",
+            perla:
+              "Alternativa en alérgicos a betalactámicos. Pauta corta de 3 días. Aumento de resistencias.",
+          },
+          {
+            principio: "Salbutamol",
+            capitulo: "R",
+            indicacion: "Asma, EPOC (rescate) (R96, R95)",
+            presentacion: "Inhalador presurizado 100mcg/dosis",
+            evidencia: "A",
+            perla:
+              "Broncodilatador de rescate universal. Educar en la técnica de inhalación con cámara es crucial.",
+          },
+          {
+            principio: "Bromuro de Ipratropio",
+            capitulo: "R",
+            indicacion: "EPOC, Crisis asmática (R95, R96)",
+            presentacion: "Inhalador; Sol. para nebulizar",
+            evidencia: "A",
+            perla:
+              "Anticolinérgico de acción corta (SAMA). En crisis asmática, asociar a Salbutamol.",
+          },
+          {
+            principio: "Budesonida/Formoterol",
+            capitulo: "R",
+            indicacion: "Asma (mantenimiento y rescate) (R96)",
+            presentacion: "Inhalador polvo seco",
+            evidencia: "A",
+            perla:
+              "Combinación GCI/LABA de elección para terapia SMART en asma. Mejora adherencia y reduce crisis.",
+          },
+          {
+            principio: "Fluticasona/Salmeterol",
+            capitulo: "R",
+            indicacion: "Asma, EPOC (mantenimiento) (R96, R95)",
+            presentacion: "Inhalador polvo seco/presurizado",
+            evidencia: "A",
+            perla:
+              "Combinación GCI/LABA alternativa. Salmeterol es solo de mantenimiento, no de rescate.",
+          },
+          {
+            principio: "Tiotropio",
+            capitulo: "R",
+            indicacion: "EPOC (mantenimiento) (R95)",
+            presentacion: "Inhalador niebla fina/polvo seco",
+            evidencia: "A",
+            perla:
+              "Anticolinérgico de acción larga (LAMA). 1ª línea en mantenimiento de EPOC. Reduce exacerbaciones.",
+          },
+          // S: Piel
+          {
+            principio: "Hidrocortisona 1%",
+            capitulo: "S",
+            indicacion: "Eccema leve (S87)",
+            presentacion: "Crema",
+            evidencia: "A",
+            perla:
+              "Corticoide de baja potencia. Seguro para cara, pliegues y pediatría. Usar en capas finas.",
+          },
+          {
+            principio: "Mometasona",
+            capitulo: "S",
+            indicacion: "Eccema moderado, Psoriasis (S87, S91)",
+            presentacion: "Crema, Pomada",
+            evidencia: "A",
+            perla:
+              "Corticoide de potencia media-alta. Una aplicación al día. Buen perfil de seguridad en su clase.",
+          },
+          {
+            principio: "Betametasona + Gentamicina",
+            capitulo: "S",
+            indicacion: "Dermatosis sobreinfectada (S87)",
+            presentacion: "Crema",
+            evidencia: "C",
+            perla:
+              "Combinación a evitar en general por fomentar resistencias. Usar solo si hay infección bacteriana clara y a corto plazo.",
+          },
+          {
+            principio: "Mupirocina",
+            capitulo: "S",
+            indicacion: "Impétigo (S84)",
+            presentacion: "Pomada",
+            evidencia: "A",
+            perla:
+              "De elección para impétigo y descolonización nasal de S. aureus. Limitar su uso para evitar resistencias.",
+          },
+          {
+            principio: "Ácido fusídico",
+            capitulo: "S",
+            indicacion: "Infección cutánea (S76)",
+            presentacion: "Crema",
+            evidencia: "B",
+            perla:
+              "Alternativa a Mupirocina para infecciones por Gram positivos.",
+          },
+          {
+            principio: "Clotrimazol",
+            capitulo: "S",
+            indicacion: "Tiña, Candidiasis cutánea (S74)",
+            presentacion: "Crema, Polvo",
+            evidencia: "A",
+            perla:
+              "Antifúngico tópico de amplio espectro. Continuar tto. 1-2 semanas tras resolución clínica.",
+          },
+          {
+            principio: "Permetrina 5%",
+            capitulo: "S",
+            indicacion: "Sarna (escabiosis) (S72)",
+            presentacion: "Crema",
+            evidencia: "A",
+            perla:
+              "Tratamiento de elección para la sarna. Aplicar en todo el cuerpo, repetir a los 7 días y tratar a los contactos.",
+          },
+          {
+            principio: "Peróxido de Benzoílo",
+            capitulo: "S",
+            indicacion: "Acné (S96)",
+            presentacion: "Gel 5%",
+            evidencia: "A",
+            perla:
+              "1ª línea en acné leve-moderado. Puede irritar y decolorar ropa. Combinado con clindamicina o adapaleno.",
+          },
+          // T: Endocrino/Metabólico
+          {
+            principio: "Metformina",
+            capitulo: "T",
+            indicacion: "Diabetes Mellitus tipo 2 (T90)",
+            presentacion: "Comp. 850mg",
+            evidencia: "A",
+            perla:
+              "1ª línea en DM2. Iniciar a dosis bajas post-comidas para mejorar tolerancia GI. Contraindicada si FG <30.",
+          },
+          {
+            principio: "Empagliflozina",
+            capitulo: "T",
+            indicacion: "DM2, IC (T90, K77)",
+            presentacion: "Comp. 10mg",
+            evidencia: "A",
+            perla:
+              "iSGLT2 con beneficio CV y renal. Considerar precozmente en pacientes con comorbilidad. Riesgo de ITU/genital.",
+          },
+          {
+            principio: "Dapagliflozina",
+            capitulo: "T",
+            indicacion: "DM2, IC, ERC (T90, K77)",
+            presentacion: "Comp. 10mg",
+            evidencia: "A",
+            perla:
+              "iSGLT2 similar a Empagliflozina, con amplia evidencia en IC y ERC incluso sin DM2.",
+          },
+          {
+            principio: "Sitagliptina",
+            capitulo: "T",
+            indicacion: "Diabetes Mellitus tipo 2 (T90)",
+            presentacion: "Comp. 100mg",
+            evidencia: "A",
+            perla:
+              "iDPP-4. Opción segura, neutra en peso, bajo riesgo de hipoglucemias. Útil en ancianos y frágiles.",
+          },
+          {
+            principio: "Liraglutida",
+            capitulo: "T",
+            indicacion: "DM2 (T90)",
+            presentacion: "Pluma precargada",
+            evidencia: "A",
+            perla:
+              "arGLP-1 inyectable con beneficio CV y en pérdida de peso. Náuseas frecuentes al inicio.",
+          },
+          {
+            principio: "Insulina Glargina U100",
+            capitulo: "T",
+            indicacion: "DM1, DM2 (T89, T90)",
+            presentacion: "Pluma precargada",
+            evidencia: "A",
+            perla:
+              "Insulina basal de inicio. Pauta 1 vez/día. Titular según glucemias basales. Educar en técnica y manejo hipoglucemias.",
+          },
+          {
+            principio: "Insulina Aspart/Lispro",
+            capitulo: "T",
+            indicacion: "DM1, DM2 (T89, T90)",
+            presentacion: "Pluma precargada",
+            evidencia: "A",
+            perla:
+              "Insulina rápida para corrección de hiperglucemias y cobertura prandial. Contaje de raciones.",
+          },
+          {
+            principio: "Atorvastatina",
+            capitulo: "T",
+            indicacion: "Dislipemia, Prevención CV (T93)",
+            presentacion: "Comp. 20mg, 40mg, 80mg",
+            evidencia: "A",
+            perla:
+              "Estatina de alta potencia. De elección para prevención secundaria o primaria de alto riesgo. Vigilar mialgias.",
+          },
+          {
+            principio: "Simvastatina",
+            capitulo: "T",
+            indicacion: "Dislipemia (T93)",
+            presentacion: "Comp. 20mg, 40mg",
+            evidencia: "A",
+            perla:
+              "Estatina de potencia moderada. Fármaco de referencia por coste-efectividad. Más interacciones que atorvastatina.",
+          },
+          {
+            principio: "Ezetimiba",
+            capitulo: "T",
+            indicacion: "Dislipemia (T93)",
+            presentacion: "Comp. 10mg",
+            evidencia: "A",
+            perla:
+              "Inhibidor de la absorción de colesterol. Para añadir a estatinas si no se alcanzan objetivos, o en intolerantes.",
+          },
+          {
+            principio: "Levotiroxina",
+            capitulo: "T",
+            indicacion: "Hipotiroidismo (T85)",
+            presentacion: "Comp. (múltiples dosis)",
+            evidencia: "A",
+            perla:
+              "Tomar en ayunas, 30-60 min antes de desayuno y separado de otros fármacos (hierro, calcio).",
+          },
+          // U: Urinario
+          {
+            principio: "Fosfomicina-trometamol",
+            capitulo: "U",
+            indicacion: "Cistitis no complicada (U71)",
+            presentacion: "Sobre 3g",
+            evidencia: "A",
+            perla:
+              "Tratamiento de elección en cistitis no complicada en mujer. Dosis única. Eficacia algo menor que otras pautas.",
+          },
+          {
+            principio: "Nitrofurantoína",
+            capitulo: "U",
+            indicacion: "Cistitis no complicada (U71)",
+            presentacion: "Cáps. 100mg",
+            evidencia: "A",
+            perla:
+              "Alternativa de 1ª línea. Pauta de 5 días. Evitar si sospecha de pielonefritis o FG <30.",
+          },
+          {
+            principio: "Tamsulosina",
+            capitulo: "U",
+            indicacion: "HBP (U88)",
+            presentacion: "Cáps. liberación modificada 0.4mg",
+            evidencia: "A",
+            perla:
+              "Alfabloqueante para STUI/HBP. Alivio rápido. Riesgo de hipotensión ortostática y síndrome de iris flácido.",
+          },
+          {
+            principio: "Finasterida",
+            capitulo: "U",
+            indicacion: "HBP (U88)",
+            presentacion: "Comp. 5mg",
+            evidencia: "A",
+            perla:
+              "Inhibidor de 5-alfa-reductasa. Para próstatas >40g. Reduce tamaño y riesgo de progresión. Tarda meses en actuar.",
+          },
+          {
+            principio: "Solifenacina",
+            capitulo: "U",
+            indicacion: "Vejiga hiperactiva (U04)",
+            presentacion: "Comp. 5mg",
+            evidencia: "B",
+            perla:
+              "Antimuscarínico para incontinencia de urgencia. Vigilar efectos anticolinérgicos (sequedad, estreñimiento, confusión).",
+          },
+          // W: Embarazo
+          {
+            principio: "Yoduro Potásico",
+            capitulo: "W",
+            indicacion: "Profilaxis embarazo (W84)",
+            presentacion: "Comp. 200mcg",
+            evidencia: "A",
+            perla:
+              "Suplementación durante todo el embarazo y la lactancia para correcto desarrollo neurológico fetal.",
+          },
+          {
+            principio: "Doxilamina/Piridoxina",
+            capitulo: "W",
+            indicacion: "Náuseas y vómitos del embarazo (W05)",
+            presentacion: "Comp. liberación modificada",
+            evidencia: "A",
+            perla:
+              "Tratamiento de elección para náuseas y vómitos del embarazo. Seguro y eficaz.",
+          },
+          // X: Genital Femenino
+          {
+            principio: "Clotrimazol (vaginal)",
+            capitulo: "X",
+            indicacion: "Candidiasis vulvovaginal (X72)",
+            presentacion: "Óvulos 500mg; Crema",
+            evidencia: "A",
+            perla:
+              "Tratamiento de elección para candidiasis vulvovaginal no complicada. El óvulo de 500mg es en dosis única.",
+          },
+          {
+            principio: "Fluconazol",
+            capitulo: "X",
+            indicacion: "Candidiasis vulvovaginal (X72)",
+            presentacion: "Cáps. 150mg",
+            evidencia: "A",
+            perla:
+              "Alternativa oral cómoda al tratamiento tópico. Dosis única. Evitar en el embarazo.",
+          },
+          {
+            principio: "Etinilestradiol/Levonorgestrel",
+            capitulo: "X",
+            indicacion: "Anticoncepción hormonal (X80)",
+            presentacion: "Comp. (pauta 21+7)",
+            evidencia: "A",
+            perla:
+              "Anticonceptivo oral combinado de referencia. Realizar cribado de riesgo CV antes de prescribir.",
+          },
+          {
+            principio: "Desogestrel",
+            capitulo: "X",
+            indicacion: "Anticoncepción hormonal (X80)",
+            presentacion: "Comp. 75mcg",
+            evidencia: "A",
+            perla:
+              "Píldora de solo gestágeno. Opción segura durante la lactancia o si contraindicación para estrógenos.",
+          },
+          // Y: Genital Masculino
+          {
+            principio: "Sildenafilo",
+            capitulo: "Y",
+            indicacion: "Disfunción eréctil (Y07)",
+            presentacion: "Comp. 50mg",
+            evidencia: "A",
+            perla:
+              "Tomar a demanda, 1 hora antes. Contraindicado con nitratos por riesgo de hipotensión grave.",
+          },
+          // Z: Social
+          {
+            principio: "Nicotina (TSN)",
+            capitulo: "Z",
+            indicacion: "Deshabituación tabáquica (P17)",
+            presentacion: "Parches; Chicles; Comp.",
+            evidencia: "A",
+            perla:
+              "Combinar parche (dosis basal) con forma de rescate (chicle) aumenta la eficacia. Es seguro.",
+          },
+          {
+            principio: "Vareniclina",
+            capitulo: "Z",
+            indicacion: "Deshabituación tabáquica (P17)",
+            presentacion: "Comp.",
+            evidencia: "A",
+            perla:
+              "Uno de los fármacos más eficaces. Iniciar 1 semana antes del día 'D'. Vigilar efectos neuropsiquiátricos.",
+          },
+        ];
+
+        const urgenciasDrugs = [
+          {
+            principio: "Adrenalina (Epinefrina)",
+            indicacion: "Anafilaxia, PCR",
+            presentacion: "Amp. 1mg/ml (IM/IV)",
+            perla:
+              "En anafilaxia, la vía es IM en muslo. No dudar. En PCR, 1mg IV cada 3-5 min.",
+          },
+          {
+            principio: "Salbutamol",
+            indicacion: "Crisis asmática",
+            presentacion: "Inhalador + cámara; Sol. nebulizar",
+            perla:
+              "El uso de cámara espaciadora es tan eficaz como la nebulización en la mayoría de crisis.",
+          },
+          {
+            principio: "Hidrocortisona",
+            indicacion: "Anafilaxia, Crisis asmática grave",
+            presentacion: "Vial 100mg (IV/IM)",
+            perla:
+              "Su efecto no es inmediato; administrar precozmente pero no sustituye a adrenalina/salbutamol.",
+          },
+          {
+            principio: "Nitroglicerina",
+            indicacion: "Angina, EAP",
+            presentacion: "Spray/comp. sublingual",
+            perla:
+              "Contraindicada si PAS < 90 mmHg o uso reciente de sildenafilo. Repetir cada 5 min.",
+          },
+          {
+            principio: "Ácido Acetilsalicílico (AAS)",
+            indicacion: "Síndrome Coronario Agudo",
+            presentacion: "Comp. masticables 150-300mg",
+            perla:
+              "Administrar a todo paciente con sospecha de SCA sin contraindicación clara.",
+          },
+          {
+            principio: "Furosemida",
+            indicacion: "Edema Agudo de Pulmón (EAP)",
+            presentacion: "Amp. 20mg/2ml (IV)",
+            perla:
+              "Monitorizar PA. Dosis inicial 20-40mg IV. Puede duplicarse si no hay respuesta.",
+          },
+          {
+            principio: "Diazepam",
+            indicacion: "Estatus convulsivo",
+            presentacion: "Microenemas rectales 5/10mg",
+            perla:
+              "Vía de elección extrahospitalaria para yugular una crisis. Rápida y eficaz.",
+          },
+          {
+            principio: "Midazolam",
+            indicacion: "Estatus convulsivo, Sedación",
+            presentacion: "Ampollas (vía bucal/intranasal)",
+            perla:
+              "Alternativa al diazepam rectal, especialmente en niños. Administración bucal en mejilla.",
+          },
+          {
+            principio: "Glucosa 50%",
+            indicacion: "Hipoglucemia severa (con vía)",
+            presentacion: "Amp. (IV)",
+            perla:
+              "Vía venosa gruesa, es irritante. Si no hay vía, usar Glucagón.",
+          },
+          {
+            principio: "Glucagón",
+            indicacion: "Hipoglucemia severa (sin vía)",
+            presentacion: "Kit inyectable 1mg (IM/SC)",
+            perla:
+              "Educar a familiares de pacientes con DM1. Tarda 10-15 min en hacer efecto.",
+          },
+          {
+            principio: "Naloxona",
+            indicacion: "Intoxicación por opioides",
+            presentacion: "Amp. 0.4mg/ml (IV/IM/SC)",
+            perla:
+              "Antídoto específico. Vida media corta, puede requerir dosis repetidas.",
+          },
+          {
+            principio: "Flumazenilo",
+            indicacion: "Intoxicación por BZD (rara vez)",
+            presentacion: "Amp. (IV)",
+            perla:
+              "Uso muy restringido. Puede desencadenar convulsiones en pacientes con dependencia a BZD.",
+          },
+        ];
+
+        const ciapChapters = {
+          A: { name: "A: General e Inespecífico", color: "#7DD3FC" },
+          B: { name: "B: Sangre y Sist. Inmunitario", color: "#F87171" },
+          D: { name: "D: Aparato Digestivo", color: "#FCD34D" },
+          F: { name: "F: Ojo y Anejos", color: "#C4B5FD" },
+          H: { name: "H: Aparato Auditivo", color: "#A5B4FC" },
+          K: { name: "K: Aparato Circulatorio", color: "#FB7185" },
+          L: { name: "L: Aparato Locomotor", color: "#86EFAC" },
+          N: { name: "N: Sistema Nervioso", color: "#A78BFA" },
+          P: { name: "P: Problemas Psicológicos", color: "#F0ABFC" },
+          R: { name: "R: Aparato Respiratorio", color: "#67E8F9" },
+          S: { name: "S: Piel y Anejos", color: "#FDBA74" },
+          T: { name: "T: Endocrino, Metabólico y Nutrición", color: "#34D399" },
+          U: { name: "U: Aparato Urinario", color: "#93C5FD" },
+          W: { name: "W: Embarazo, Parto y Puerperio", color: "#F472B6" },
+          X: { name: "X: Aparato Genital Femenino", color: "#E879F9" },
+          Y: { name: "Y: Aparato Genital Masculino", color: "#60A5FA" },
+          Z: { name: "Z: Problemas Sociales", color: "#A3A3A3" },
+        };
+
+        const navLinks = document.querySelectorAll(".nav-item");
+        const contentSections = document.querySelectorAll(".content-section");
+        const drugListContainer = document.getElementById(
+          "drug-list-container"
+        );
+        const searchInput = document.getElementById("searchInput");
+        const ciapFilter = document.getElementById("ciapFilter");
+        const noResults = document.getElementById("no-results");
+        const urgenciasTableBody = document.getElementById(
+          "urgencias-table-body"
+        );
+        const drugCountStat = document.getElementById("drug-count-stat");
+
+        let activeCharts = {};
+
+        function handleNavigation(e) {
+          e.preventDefault();
+          const targetId = e.currentTarget.getAttribute("href").substring(1);
+
+          navLinks.forEach((link) => link.classList.remove("active"));
+          e.currentTarget.classList.add("active");
+
+          contentSections.forEach((section) => {
+            if (section.id === targetId) {
+              section.classList.remove("hidden");
+              document.getElementById("main-content").scrollTop = 0;
+            } else {
+              section.classList.add("hidden");
+            }
+          });
+
+          if (targetId === "analisis") {
+            initCharts();
+          } else {
+            destroyCharts();
+          }
+        }
+
+        navLinks.forEach((link) =>
+          link.addEventListener("click", handleNavigation)
+        );
+
+        function createDrugCard(drug) {
+          const evidenceColorMap = {
+            A: "bg-green-100 text-green-800",
+            B: "bg-blue-100 text-blue-800",
+            C: "bg-yellow-100 text-yellow-800",
+          };
+          const evidenceColor =
+            evidenceColorMap[drug.evidencia] || "bg-gray-100 text-gray-800";
+          const chapterInfo = ciapChapters[drug.capitulo] || {
+            name: "Desconocido",
+            color: "#E5E7EB",
+          };
+
+          return `
+                <div class="drug-card bg-white rounded-lg shadow-md border-t-4" style="border-top-color: ${chapterInfo.color};">
+                    <div class="p-5 cursor-pointer summary">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-lg font-bold text-navy pr-2">${drug.principio}</h3>
+                            <span class="text-xs font-semibold px-2 py-1 rounded-full ${evidenceColor}">Evidencia ${drug.evidencia}</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1">${chapterInfo.name}</p>
+                        <p class="text-sm text-gray-700 mt-3 font-medium">Indicación: ${drug.indicacion}</p>
+                    </div>
+                    <div class="details">
+                        <div class="p-5 border-t border-gray-100">
+                            <p class="text-sm mb-2"><strong class="text-gray-600">Presentación:</strong> ${drug.presentacion}</p>
+                            <div class="mt-3 p-3 bg-sky-50 rounded-md border-l-4 border-sky-300">
+                                <p class="text-sm text-sky-800"><strong class="font-semibold">Perla Clínica:</strong> ${drug.perla}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDrugs(drugsToRender) {
+          if (!drugListContainer) return;
+          drugListContainer.innerHTML = "";
+          if (drugsToRender.length === 0) {
+            noResults.classList.remove("hidden");
+          } else {
+            noResults.classList.add("hidden");
+            drugsToRender.forEach((drug) => {
+              drugListContainer.innerHTML += createDrugCard(drug);
+            });
+          }
+        }
+
+        function filterAndRenderDrugs() {
+          const searchTerm = searchInput.value.toLowerCase();
+          const selectedCiap = ciapFilter.value;
+
+          const filtered = allDrugs.filter((drug) => {
+            const matchesSearch = drug.principio
+              .toLowerCase()
+              .includes(searchTerm);
+            const matchesCiap =
+              selectedCiap === "all" || drug.capitulo === selectedCiap;
+            return matchesSearch && matchesCiap;
+          });
+
+          renderDrugs(filtered);
+        }
+
+        function populateCiapFilter() {
+          if (!ciapFilter) return;
+          const sortedChapters = Object.entries(ciapChapters).sort(
+            ([, a], [, b]) => a.name.localeCompare(b.name)
+          );
+          sortedChapters.forEach(([code, { name }]) => {
+            const option = document.createElement("option");
+            option.value = code;
+            option.textContent = name;
+            ciapFilter.appendChild(option);
+          });
+        }
+
+        function populateUrgenciasTable() {
+          if (!urgenciasTableBody) return;
+          urgenciasTableBody.innerHTML = urgenciasDrugs
+            .map(
+              (drug) => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-4 font-bold text-red-600">${drug.principio}</td>
+                    <td class="p-4 text-gray-700">${drug.indicacion}</td>
+                    <td class="p-4 text-gray-700">${drug.presentacion}</td>
+                    <td class="p-4 text-gray-700">${drug.perla}</td>
+                </tr>
+            `
+            )
+            .join("");
+        }
+
+        function initCharts() {
+          if (Object.keys(activeCharts).length > 0) return;
+
+          setTimeout(() => {
+            if (document.getElementById("paretoChart")) {
+              const paretoCtx = document
+                .getElementById("paretoChart")
+                .getContext("2d");
+              const paretoData = {
+                labels: [
+                  "Paracetamol",
+                  "Omeprazol",
+                  "Ibuprofeno",
+                  "Metformina",
+                  "Simvastatina",
+                  "AAS",
+                  "Amoxicilina",
+                  "Enalapril",
+                  "Salbutamol",
+                  "Lorazepam",
+                  "Otros 10",
+                  "Resto",
+                ],
+                datasets: [
+                  {
+                    type: "bar",
+                    label: "Nº Prescripciones (millones)",
+                    data: [12, 11, 9, 8, 7.5, 7, 6, 5.5, 5, 4.5, 14, 10.5],
+                    backgroundColor: "rgba(13, 148, 136, 0.6)",
+                    borderColor: "rgba(13, 148, 136, 1)",
+                    yAxisID: "y",
+                  },
+                  {
+                    type: "line",
+                    label: "% Acumulado",
+                    data: [
+                      12, 23, 32, 40, 47.5, 54.5, 60.5, 66, 71, 75.5, 89.5, 100,
+                    ],
+                    borderColor: "rgba(245, 158, 11, 1)",
+                    backgroundColor: "rgba(245, 158, 11, 0.2)",
+                    fill: false,
+                    tension: 0.1,
+                    yAxisID: "y1",
+                  },
+                ],
+              };
+              activeCharts.pareto = new Chart(paretoCtx, {
+                data: paretoData,
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    y: {
+                      position: "left",
+                      title: {
+                        display: true,
+                        text: "Prescripciones (millones)",
+                      },
+                    },
+                    y1: {
+                      type: "linear",
+                      display: true,
+                      position: "right",
+                      title: { display: true, text: "% Acumulado" },
+                      grid: { drawOnChartArea: false },
+                      min: 0,
+                      max: 100,
+                    },
+                  },
+                },
+              });
+            }
+
+            if (document.getElementById("ciapDonutChart")) {
+              const ciapDonutCtx = document
+                .getElementById("ciapDonutChart")
+                .getContext("2d");
+              const chapterCounts = allDrugs.reduce((acc, drug) => {
+                acc[drug.capitulo] = (acc[drug.capitulo] || 0) + 1;
+                return acc;
+              }, {});
+              const ciapData = {
+                labels: Object.keys(chapterCounts).map(
+                  (key) => `${ciapChapters[key].name}`
+                ),
+                datasets: [
+                  {
+                    label: "Nº de Fármacos Esenciales",
+                    data: Object.values(chapterCounts),
+                    backgroundColor: Object.keys(chapterCounts).map(
+                      (key) => ciapChapters[key].color
+                    ),
+                  },
+                ],
+              };
+              activeCharts.ciapDonut = new Chart(ciapDonutCtx, {
+                type: "doughnut",
+                data: ciapData,
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { position: "right" } },
+                },
+              });
+            }
+          }, 100);
+        }
+
+        function destroyCharts() {
+          Object.values(activeCharts).forEach((chart) => chart.destroy());
+          activeCharts = {};
+        }
+
+        if (searchInput)
+          searchInput.addEventListener("input", filterAndRenderDrugs);
+        if (ciapFilter)
+          ciapFilter.addEventListener("change", filterAndRenderDrugs);
+
+        if (drugListContainer) {
+          drugListContainer.addEventListener("click", (e) => {
+            const cardSummary = e.target.closest(".summary");
+            if (cardSummary) {
+              const card = cardSummary.closest(".drug-card");
+              card.classList.toggle("open");
+            }
+          });
+        }
+
+        // Initial population
+        if (drugCountStat) drugCountStat.textContent = allDrugs.length;
+        populateCiapFilter();
+        populateUrgenciasTable();
+        setTimeout(() => {
+          renderDrugs(allDrugs);
+        }, 500);
+      });
+    </script>
+  </body>
+</html>
