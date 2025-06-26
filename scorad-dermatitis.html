@@ -1,0 +1,781 @@
+<!--
+=====================
+  scorad-dermatitis.html
+  Página con escala evaluación SCORAD
+=====================
+-->
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Calculadora SCORAD interactiva para la evaluación de la severidad de la Dermatitis Atópica. Herramienta visual para profesionales sanitarios."
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="assets/images/icon.webp" />
+    <title>Calculadora SCORAD (SCORing Atopic Dermatitis) | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Calculadora SCORAD (SCORing Atopic Dermatitis) | @ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Herramientas clínicas para profesionales sanitarios"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/calculadora-scorad.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <!-- CSS Base para header/footer -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS externo -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    />
+
+    <!-- Scripts para la herramienta -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Estilos específicos de la calculadora SCORAD -->
+    <style>
+      /* Override del tema oscuro para esta página específica */
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f0f4f8 !important;
+        color: #102a43 !important;
+        margin: 0;
+        padding: 0;
+      }
+      .clinical-main-container {
+        max-width: 1400px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0.5rem 0.5rem;
+        margin-top: calc(var(--header-height) + 0.5rem);
+        margin-bottom: 1.5rem;
+      }
+      @media (max-width: 768px) {
+        .clinical-main-container {
+          width: 99%;
+          padding: 0 0.75rem;
+          margin-top: calc(var(--header-height) + 0.5rem);
+        }
+      }
+
+      /* Estilos de la calculadora SCORAD */
+      .body-map .body-region {
+        fill: #cbd5e0; /* Color gris por defecto */
+        stroke: #4a5568;
+        stroke-width: 1.5;
+        transition: fill 0.3s ease;
+        cursor: pointer;
+      }
+      .body-map .body-region:hover {
+        fill: #a0aec0;
+      }
+      .body-map .body-region.selected {
+        fill: #4299e1; /* Color azul para indicar la selección activa */
+        stroke: #2b6cb0;
+      }
+      .body-map .body-region.affected {
+        fill: #f56565; /* Color rojo cuando está afectado (valor > 0) */
+      }
+      .slider-thumb::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        background: #3182ce;
+        cursor: pointer;
+        border-radius: 50%;
+      }
+      .slider-thumb::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: #3182ce;
+        cursor: pointer;
+        border-radius: 50%;
+      }
+      .info-icon {
+        cursor: pointer;
+        position: relative;
+        display: inline-block;
+      }
+      .tooltip {
+        visibility: hidden;
+        width: 220px;
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 10px;
+        position: absolute;
+        z-index: 10;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -110px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .info-icon:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
+      }
+      .region-control-row.selected {
+        background-color: #ebf8ff;
+        border-left: 4px solid #3182ce;
+      }
+      /* Estilos para los radio buttons de intensidad */
+      .intensity-selector input[type="radio"] {
+        display: none;
+      }
+      .intensity-selector label {
+        display: inline-block;
+        width: 100%;
+        text-align: center;
+        padding: 0.5rem 0;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+        background-color: #e2e8f0;
+        color: #4a5568;
+      }
+      .intensity-selector input[type="radio"]:checked + label {
+        background-color: #3182ce;
+        color: white;
+      }
+    </style>
+  </head>
+
+  <body class="antialiased">
+    <script src="/assets/js/include.js"></script>
+    <include src="header.html"></include>
+
+    <div class="clinical-main-container">
+      <header class="text-center mb-8">
+        <h1
+          class="text-3xl md:text-4xl font-bold text-sky-800 mb-3 leading-tight"
+        >
+          Calculadora SCORAD (SCORing Atopic Dermatitis)
+        </h1>
+        <p class="text-base text-slate-600 max-w-4xl mx-auto mb-3">
+          Herramienta visual e interactiva para la evaluación de la severidad de
+          la Dermatitis Atópica en la práctica clínica.
+        </p>
+        <div
+          class="bg-blue-100 border-l-4 border-blue-500 text-blue-800 py-2 px-4 rounded-md max-w-4xl mx-auto text-sm"
+          role="alert"
+        >
+          <p>
+            <strong>Información:</strong> Esta herramienta está diseñada para
+            ser utilizada por profesionales sanitarios como ayuda en la
+            evaluación clínica, y no sustituye el juicio profesional.
+          </p>
+        </div>
+      </header>
+
+      <!-- El contenido principal es reemplazado por la calculadora SCORAD -->
+      <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-8">
+          <section class="bg-white p-6 rounded-2xl shadow-lg">
+            <h2 class="text-2xl font-bold mb-1 text-sky-700">
+              A. Extensión (% de Superficie Corporal)
+            </h2>
+            <p class="text-gray-600 mb-4 text-sm">
+              Haz clic en una zona del diagrama para seleccionarla y ajusta su
+              porcentaje de afectación.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+              <!-- Columna del mapa SVG -->
+              <div
+                class="w-full h-auto body-map flex justify-center items-center"
+              >
+                <svg
+                  viewBox="0 0 350 500"
+                  id="bodyMap"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <!-- Vista Frontal -->
+                  <g id="front-view">
+                    <g
+                      id="region_head_neck_front"
+                      class="body-region"
+                      data-region-id="region_head_neck"
+                    >
+                      <title>Cabeza y Cuello</title>
+                      <path
+                        d="M92,60.5 C92,43.1 105.1,29 121.5,29 S151,43.1 151,60.5V79H92Z"
+                      />
+                    </g>
+                    <g
+                      id="region_trunk_anterior_front"
+                      class="body-region"
+                      data-region-id="region_trunk_anterior"
+                    >
+                      <title>Tronco Anterior</title>
+                      <path d="M92,82.5 h59 v80 H92Z" />
+                    </g>
+                    <g
+                      id="region_upper_limb_left_front"
+                      class="body-region"
+                      data-region-id="region_upper_limb_left"
+                    >
+                      <title>Ext. Superior Izquierda</title>
+                      <path d="M71,82.5 h18 v70 h-18Z" />
+                    </g>
+                    <g
+                      id="region_upper_limb_right_front"
+                      class="body-region"
+                      data-region-id="region_upper_limb_right"
+                    >
+                      <title>Ext. Superior Derecha</title>
+                      <path d="M154,82.5 h18 v70 h-18Z" />
+                    </g>
+                    <g
+                      id="region_lower_limb_left_front"
+                      class="body-region"
+                      data-region-id="region_lower_limb_left"
+                    >
+                      <title>Ext. Inferior Izquierda</title>
+                      <path d="M92,166 h28 v130 H92Z" />
+                    </g>
+                    <g
+                      id="region_lower_limb_right_front"
+                      class="body-region"
+                      data-region-id="region_lower_limb_right"
+                    >
+                      <title>Ext. Inferior Derecha</title>
+                      <path d="M123,166 h28 v130 h-28Z" />
+                    </g>
+                    <g
+                      id="region_genitals_front"
+                      class="body-region"
+                      data-region-id="region_genitals"
+                    >
+                      <title>Genitales</title>
+                      <path d="M115,162.5 h13 v10 h-13Z" />
+                    </g>
+                  </g>
+                  <!-- Vista Trasera -->
+                  <g id="back-view" transform="translate(190, 0)">
+                    <g
+                      id="region_head_neck_back"
+                      class="body-region"
+                      data-region-id="region_head_neck"
+                    >
+                      <title>Cabeza y Cuello</title>
+                      <path
+                        d="M42,60.5 C42,43.1 55.1,29 71.5,29 S101,43.1 101,60.5V79H42Z"
+                      />
+                    </g>
+                    <g
+                      id="region_trunk_posterior_back"
+                      class="body-region"
+                      data-region-id="region_trunk_posterior"
+                    >
+                      <title>Espalda</title>
+                      <path d="M42,82.5 h59 v80 H42Z" />
+                    </g>
+                    <g
+                      id="region_upper_limb_left_back"
+                      class="body-region"
+                      data-region-id="region_upper_limb_left"
+                    >
+                      <title>Ext. Superior Izquierda</title>
+                      <path d="M21,82.5 h18 v70 h-18Z" />
+                    </g>
+                    <g
+                      id="region_upper_limb_right_back"
+                      class="body-region"
+                      data-region-id="region_upper_limb_right"
+                    >
+                      <title>Ext. Superior Derecha</title>
+                      <path d="M104,82.5 h18 v70 h-18Z" />
+                    </g>
+                    <g
+                      id="region_lower_limb_left_back"
+                      class="body-region"
+                      data-region-id="region_lower_limb_left"
+                    >
+                      <title>Ext. Inferior Izquierda</title>
+                      <path d="M42,166 h28 v130 H42Z" />
+                    </g>
+                    <g
+                      id="region_lower_limb_right_back"
+                      class="body-region"
+                      data-region-id="region_lower_limb_right"
+                    >
+                      <title>Ext. Inferior Derecha</title>
+                      <path d="M73,166 h28 v130 h-28Z" />
+                    </g>
+                  </g>
+                </svg>
+              </div>
+              <!-- Columna de controles -->
+              <div class="space-y-3">
+                <div class="bg-gray-100 p-4 rounded-lg">
+                  <h3 class="font-bold text-lg mb-2 text-sky-800">
+                    Área afectada total (A)
+                  </h3>
+                  <p class="text-4xl font-bold text-blue-600">
+                    <span id="extentValue">0.0</span>%
+                  </p>
+                </div>
+                <div id="extentControls" class="space-y-1">
+                  <!-- Controles generados por JS -->
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="bg-white p-6 rounded-2xl shadow-lg">
+            <h2 class="text-2xl font-bold mb-4 border-b pb-3 text-sky-700">
+              C. Síntomas Subjetivos (últimos 3 días)
+            </h2>
+            <div class="space-y-6">
+              <div>
+                <label for="pruritus" class="block font-semibold mb-2"
+                  >Picor (Prurito)</label
+                >
+                <div class="flex items-center space-x-4">
+                  <input
+                    type="range"
+                    id="pruritus"
+                    min="0"
+                    max="10"
+                    value="0"
+                    step="1"
+                    class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb"
+                  />
+                  <span
+                    id="pruritusValue"
+                    class="font-bold text-blue-600 text-lg w-12 text-center"
+                    >0</span
+                  >
+                </div>
+              </div>
+              <div>
+                <label for="insomnia" class="block font-semibold mb-2"
+                  >Pérdida de Sueño</label
+                >
+                <div class="flex items-center space-x-4">
+                  <input
+                    type="range"
+                    id="insomnia"
+                    min="0"
+                    max="10"
+                    value="0"
+                    step="1"
+                    class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb"
+                  />
+                  <span
+                    id="insomniaValue"
+                    class="font-bold text-blue-600 text-lg w-12 text-center"
+                    >0</span
+                  >
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="lg:col-span-1 space-y-8">
+          <section class="bg-white p-6 rounded-2xl shadow-lg">
+            <h2 class="text-2xl font-bold mb-4 border-b pb-3 text-sky-700">
+              B. Intensidad
+            </h2>
+            <p class="text-gray-600 mb-4 text-sm">
+              Valora cada signo de 0 (ausente) a 3 (grave).
+            </p>
+            <div id="intensitySigns" class="space-y-4"></div>
+          </section>
+
+          <section
+            class="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-6 rounded-2xl shadow-lg sticky top-8"
+          >
+            <h2 class="text-2xl font-bold mb-4 border-b border-blue-400 pb-3">
+              Resultado SCORAD
+            </h2>
+            <div class="text-center my-4">
+              <p class="text-lg opacity-80">Puntuación Total</p>
+              <p id="finalScore" class="text-7xl font-bold tracking-tight">
+                0.0
+              </p>
+            </div>
+            <div
+              id="severityResult"
+              class="text-center font-semibold text-xl p-3 rounded-lg bg-white/20 transition-all duration-300"
+            >
+              <span id="severityLevel">Leve</span>
+            </div>
+            <div class="mt-6 text-sm space-y-2">
+              <h3 class="font-bold text-lg mb-2">Desglose de la Puntuación:</h3>
+              <div class="flex justify-between">
+                <span class="opacity-80">A/5 (Extensión):</span>
+                <strong id="scoreA">0.0</strong>
+              </div>
+              <div class="flex justify-between">
+                <span class="opacity-80">7B/2 (Intensidad):</span>
+                <strong id="scoreB">0.0</strong>
+              </div>
+              <div class="flex justify-between">
+                <span class="opacity-80">C (Síntomas):</span>
+                <strong id="scoreC">0.0</strong>
+              </div>
+            </div>
+            <button
+              id="resetButton"
+              class="w-full mt-6 bg-white text-blue-600 font-bold py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Reiniciar Calculadora
+            </button>
+          </section>
+        </div>
+      </main>
+
+      <footer
+        class="text-center mt-12 pt-6 border-t border-slate-300 text-xs text-slate-600"
+      >
+        <div class="max-w-5xl mx-auto space-y-6">
+          <div>
+            <h4 class="font-bold text-sm text-slate-700 mb-2">
+              Limitaciones y Responsabilidades
+            </h4>
+            <p class="text-xs">
+              Esta herramienta tiene fines educativos y está diseñada como un
+              apoyo para profesionales sanitarios. No sustituye el juicio
+              clínico individualizado ni la evaluación directa del paciente. El
+              autor no se responsabiliza del uso clínico de los resultados
+              proporcionados por esta calculadora.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="font-bold text-sm text-slate-700 mb-2">
+              Referencia Bibliográfica Fundamental
+            </h4>
+            <div class="text-left text-xs space-y-1">
+              <p>
+                European Task Force on Atopic Dermatitis. Severity scoring of
+                atopic dermatitis: the SCORAD index.
+                <i>Dermatology</i>. 1993;186(1):23-31.
+              </p>
+              <a
+                href="https://doi.org/10.1159/000247298"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-blue-600 hover:text-blue-800 underline"
+                >DOI: 10.1159/000247298</a
+              >
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <include src="footer.html"></include>
+    <script src="/assets/js/utils.js"></script>
+
+    <!-- JavaScript funcional de la calculadora SCORAD -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const bodyRegions = [
+          { id: "region_head_neck", name: "Cabeza y Cuello", bsa: 9 },
+          { id: "region_trunk_anterior", name: "Tronco Anterior", bsa: 18 },
+          { id: "region_trunk_posterior", name: "Espalda", bsa: 18 },
+          { id: "region_upper_limb_right", name: "Ext. Sup. Derecha", bsa: 9 },
+          { id: "region_upper_limb_left", name: "Ext. Sup. Izquierda", bsa: 9 },
+          { id: "region_lower_limb_right", name: "Ext. Inf. Derecha", bsa: 18 },
+          {
+            id: "region_lower_limb_left",
+            name: "Ext. Inf. Izquierda",
+            bsa: 18,
+          },
+          { id: "region_genitals", name: "Genitales", bsa: 1 },
+        ];
+
+        const intensitySignData = [
+          { id: "erythema", name: "Enrojecimiento" },
+          { id: "edema", name: "Hinchazón / Pápulas" },
+          { id: "oozing", name: "Exudación / Costras" },
+          { id: "excoriation", name: "Marcas de rascado" },
+          { id: "lichenification", name: "Engrosamiento (Liquenificación)" },
+          {
+            id: "dryness",
+            name: "Sequedad",
+            tooltip: "Evaluar en una zona de piel no afectada",
+          },
+        ];
+
+        const state = {
+          extent: {},
+          intensity: {},
+          subjective: { pruritus: 0, insomnia: 0 },
+        };
+
+        function initializeState() {
+          bodyRegions.forEach((r) => (state.extent[r.id] = 0));
+          intensitySignData.forEach((s) => (state.intensity[s.id] = 0));
+          state.subjective.pruritus = 0;
+          state.subjective.insomnia = 0;
+        }
+
+        const dom = {
+          bodyMap: document.getElementById("bodyMap"),
+          extentControls: document.getElementById("extentControls"),
+          extentValue: document.getElementById("extentValue"),
+          intensitySigns: document.getElementById("intensitySigns"),
+          finalScore: document.getElementById("finalScore"),
+          scoreA: document.getElementById("scoreA"),
+          scoreB: document.getElementById("scoreB"),
+          scoreC: document.getElementById("scoreC"),
+          severityResult: document.getElementById("severityResult"),
+          severityLevel: document.getElementById("severityLevel"),
+          pruritusSlider: document.getElementById("pruritus"),
+          pruritusValue: document.getElementById("pruritusValue"),
+          insomniaSlider: document.getElementById("insomnia"),
+          insomniaValue: document.getElementById("insomniaValue"),
+          resetButton: document.getElementById("resetButton"),
+        };
+
+        function calculateScores() {
+          const totalExtent = bodyRegions.reduce(
+            (sum, region) => sum + region.bsa * (state.extent[region.id] / 100),
+            0
+          );
+          const totalIntensity = Object.values(state.intensity).reduce(
+            (sum, score) => sum + score,
+            0
+          );
+          const totalSubjective =
+            state.subjective.pruritus + state.subjective.insomnia;
+
+          const scoreA = totalExtent / 5;
+          const scoreB = (7 * totalIntensity) / 2;
+          const scoreC = totalSubjective;
+          const finalScore = scoreA + scoreB + scoreC;
+
+          updateUI(totalExtent, scoreA, scoreB, scoreC, finalScore);
+        }
+
+        function updateUI(totalExtent, scoreA, scoreB, scoreC, finalScore) {
+          dom.extentValue.textContent = totalExtent.toFixed(1);
+          dom.scoreA.textContent = scoreA.toFixed(1);
+          dom.scoreB.textContent = scoreB.toFixed(1);
+          dom.scoreC.textContent = scoreC.toFixed(1);
+          dom.finalScore.textContent = finalScore.toFixed(1);
+
+          if (finalScore > 50) {
+            dom.severityLevel.textContent = "Grave";
+            dom.severityResult.style.backgroundColor = "rgba(229, 62, 62, 0.5)";
+          } else if (finalScore >= 25) {
+            dom.severityLevel.textContent = "Moderado";
+            dom.severityResult.style.backgroundColor =
+              "rgba(237, 137, 54, 0.5)";
+          } else {
+            dom.severityLevel.textContent = "Leve";
+            dom.severityResult.style.backgroundColor =
+              "rgba(74, 222, 128, 0.5)";
+          }
+        }
+
+        function syncVisuals() {
+          document
+            .querySelectorAll(".body-region")
+            .forEach((el) => el.classList.remove("selected"));
+          document
+            .querySelectorAll(".region-control-row")
+            .forEach((el) => el.classList.remove("selected"));
+
+          bodyRegions.forEach((region) => {
+            const involvement = state.extent[region.id];
+            const mapRegions = document.querySelectorAll(
+              `.body-region[data-region-id="${region.id}"]`
+            );
+            const controlRow = document.getElementById(`control_${region.id}`);
+
+            mapRegions.forEach((mapRegion) => {
+              mapRegion.classList.toggle("affected", involvement > 0);
+            });
+
+            if (controlRow) {
+              const slider = controlRow.querySelector('input[type="range"]');
+              const valueSpan = controlRow.querySelector(".involvement-value");
+              slider.value = involvement;
+              valueSpan.textContent = `${involvement}%`;
+            }
+          });
+          if (state.lastSelectedRegion) {
+            document
+              .querySelectorAll(
+                `.body-region[data-region-id="${state.lastSelectedRegion}"]`
+              )
+              .forEach((el) => el.classList.add("selected"));
+            const controlRow = document.getElementById(
+              `control_${state.lastSelectedRegion}`
+            );
+            if (controlRow) controlRow.classList.add("selected");
+          }
+        }
+
+        function createExtentControls() {
+          bodyRegions.forEach((region) => {
+            const row = document.createElement("div");
+            row.id = `control_${region.id}`;
+            row.className =
+              "region-control-row p-2 rounded-lg grid grid-cols-3 gap-2 items-center transition-all duration-200 border border-transparent";
+
+            const label = document.createElement("span");
+            label.className = "text-sm font-medium col-span-1";
+            label.textContent = region.name;
+
+            const sliderContainer = document.createElement("div");
+            sliderContainer.className =
+              "col-span-2 flex items-center space-x-2";
+
+            const slider = document.createElement("input");
+            slider.type = "range";
+            slider.min = "0";
+            slider.max = "100";
+            slider.step = "25";
+            slider.value = "0";
+            slider.className =
+              "w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer slider-thumb";
+            slider.addEventListener("input", (e) => {
+              state.extent[region.id] = parseInt(e.target.value);
+              calculateScores();
+              syncVisuals();
+            });
+
+            const value = document.createElement("span");
+            value.className =
+              "involvement-value font-bold text-blue-600 text-sm w-12 text-center";
+            value.textContent = "0%";
+
+            sliderContainer.append(slider, value);
+            row.append(label, sliderContainer);
+            row.addEventListener("click", () => handleSelection(region.id));
+            dom.extentControls.appendChild(row);
+          });
+        }
+
+        function createIntensitySelectors() {
+          intensitySignData.forEach((sign) => {
+            const container = document.createElement("div");
+            let labelHTML = `<div class="font-semibold mb-2">${sign.name}</div>`;
+            if (sign.tooltip) {
+              labelHTML = `<div class="flex items-center mb-2"><span class="font-semibold mr-2">${sign.name}</span><div class="info-icon text-gray-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg><span class="tooltip">${sign.tooltip}</span></div></div>`;
+            }
+
+            const selectorGroup = document.createElement("div");
+            selectorGroup.className =
+              "intensity-selector grid grid-cols-4 gap-2";
+
+            for (let i = 0; i <= 3; i++) {
+              const wrapper = document.createElement("div");
+              const radio = document.createElement("input");
+              radio.type = "radio";
+              radio.name = sign.id;
+              radio.id = `${sign.id}_${i}`;
+              radio.value = i;
+              if (i === 0) radio.checked = true;
+
+              radio.addEventListener("change", () => {
+                state.intensity[sign.id] = parseInt(radio.value);
+                calculateScores();
+              });
+
+              const label = document.createElement("label");
+              label.htmlFor = `${sign.id}_${i}`;
+              label.textContent = i;
+
+              wrapper.append(radio, label);
+              selectorGroup.appendChild(wrapper);
+            }
+            container.innerHTML = labelHTML;
+            container.appendChild(selectorGroup);
+            dom.intensitySigns.appendChild(container);
+          });
+        }
+
+        function handleSelection(regionId) {
+          state.lastSelectedRegion = regionId;
+          syncVisuals();
+        }
+
+        dom.bodyMap.addEventListener("click", (e) => {
+          const regionEl = e.target.closest(".body-region");
+          if (regionEl && regionEl.dataset.regionId) {
+            handleSelection(regionEl.dataset.regionId);
+          }
+        });
+
+        dom.pruritusSlider.addEventListener("input", (e) => {
+          state.subjective.pruritus = parseInt(e.target.value);
+          dom.pruritusValue.textContent = e.target.value;
+          calculateScores();
+        });
+
+        dom.insomniaSlider.addEventListener("input", (e) => {
+          state.subjective.insomnia = parseInt(e.target.value);
+          dom.insomniaValue.textContent = e.target.value;
+          calculateScores();
+        });
+
+        dom.resetButton.addEventListener("click", () => {
+          initializeState();
+          state.lastSelectedRegion = null;
+
+          dom.pruritusSlider.value = 0;
+          dom.insomniaSlider.value = 0;
+          dom.pruritusValue.textContent = "0";
+          dom.insomniaValue.textContent = "0";
+
+          document
+            .querySelectorAll('.intensity-selector input[type="radio"]')
+            .forEach((radio) => {
+              radio.checked = radio.value === "0";
+            });
+
+          syncVisuals();
+          calculateScores();
+        });
+
+        // --- ARRANQUE ---
+        initializeState();
+        createExtentControls();
+        createIntensitySelectors();
+        calculateScores();
+        syncVisuals();
+      });
+    </script>
+  </body>
+</html>
