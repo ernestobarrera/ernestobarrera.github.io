@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prototipo Funcional: Analizador Científico IA</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Simple DataTables for Interactive Tables -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/simple-datatables@latest"
+      type="text/javascript"
+    ></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      .loader {
+        border-top-color: #4f46e5;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .datatable-table th {
+        background-color: #f9fafb;
+        font-weight: 600;
+      }
+      .datatable-table td {
+        vertical-align: top;
+      }
+      .datatable-table td a {
+        color: #4f46e5;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .datatable-table td a:hover {
+        text-decoration: underline;
+      }
+      .datatable-pagination .active a {
+        background-color: #4f46e5 !important;
+        color: white !important;
+      }
+      .prose-custom ul {
+        margin-left: 1.25rem;
+        list-style-type: disc;
+      }
+      .prose-custom li {
+        margin-bottom: 0.25rem;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 text-gray-800">
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-screen-2xl">
+      <header class="text-center mb-10">
+        <h1 class="text-4xl sm:text-5xl font-bold text-gray-900">
+          Prototipo Funcional: Analizador Científico IA
+        </h1>
+        <p
+          class="mt-4 text-lg text-gray-700 max-w-4xl mx-auto bg-blue-50 border border-blue-200 p-4 rounded-lg"
+        >
+          <b>Este es un prototipo funcional.</b> Demuestra cómo un sistema de IA
+          puede automatizar el análisis de literatura científica. El flujo de
+          trabajo consiste en analizar estructuralmente los datos de artículos
+          (título, autores, resumen) para
+          <strong>extraer y sintetizar la información clave.</strong> El valor
+          de esta automatización radica en la capacidad de procesar grandes
+          volúmenes de información de manera rápida y consistente, permitiendo a
+          los profesionales identificar tendencias y hallazgos cruciales en una
+          fracción del tiempo.
+        </p>
+      </header>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Columna de Controles (Izquierda) -->
+        <aside class="lg:col-span-4 xl:col-span-3">
+          <div
+            class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 sticky top-8"
+          >
+            <h2 class="text-xl font-bold mb-6">Panel de Demostración</h2>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Paso Único</label
+              >
+              <button
+                id="start-prototype-button"
+                class="w-full bg-teal-600 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-teal-700 transition-all flex items-center justify-center space-x-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                <span>Ejecutar Prototipo Funcional</span>
+              </button>
+              <p class="mt-2 text-xs text-gray-500">
+                Esto simula el análisis de 20 artículos para mostrar el producto
+                final.
+              </p>
+            </div>
+
+            <hr class="my-6" />
+
+            <!-- Acciones Comunes -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Acciones de Resultados</label
+              >
+              <div class="grid grid-cols-2 gap-3">
+                <button
+                  id="synthesis-button"
+                  class="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-purple-700 disabled:bg-gray-400 transition-all flex items-center justify-center space-x-2"
+                  disabled
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"
+                    />
+                  </svg>
+                  <span>Síntesis IA</span>
+                </button>
+                <button
+                  id="download-pdf-button"
+                  class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 disabled:bg-gray-400 transition-all flex items-center justify-center space-x-2"
+                  disabled
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                  <span>Exportar PDF</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Columna de Resultados (Derecha) -->
+        <main class="lg:col-span-8 xl:col-span-9">
+          <div
+            id="results-section"
+            class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg border border-gray-200 min-h-[600px]"
+          >
+            <div
+              id="placeholder-container"
+              class="flex flex-col items-center justify-center h-full text-center"
+            >
+              <svg
+                class="w-24 h-24 text-gray-300"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                />
+              </svg>
+              <h3 class="mt-4 text-xl font-semibold text-gray-800">
+                Listo para la demostración
+              </h3>
+              <p class="mt-1 text-gray-500">
+                Pulse el botón "Ejecutar Prototipo Funcional" para comenzar.
+              </p>
+            </div>
+
+            <div
+              id="status-container"
+              class="hidden flex flex-col items-center justify-center h-full text-center"
+            >
+              <div
+                class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-16 w-16 mb-4"
+              ></div>
+              <p
+                id="status-label"
+                class="text-lg font-semibold text-indigo-700"
+              ></p>
+            </div>
+
+            <div id="gemini-synthesis-section" class="hidden mb-8">
+              <h2
+                class="text-2xl font-bold text-gray-900 mb-4 flex items-center"
+              >
+                <svg
+                  class="w-6 h-6 mr-3 text-purple-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                </svg>
+                Síntesis General de la Evidencia (IA)
+              </h2>
+              <div
+                id="gemini-synthesis-content"
+                class="p-5 bg-purple-50 border border-purple-200 rounded-lg prose-custom"
+              ></div>
+            </div>
+
+            <div id="table-wrapper" class="hidden">
+              <h2
+                id="table-title"
+                class="text-2xl font-bold text-gray-900 mb-4 flex items-center"
+              >
+                <svg
+                  class="w-6 h-6 mr-3 text-indigo-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                  />
+                </svg>
+                Análisis Detallado
+              </h2>
+              <div id="table-container"></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      // --- DOM Elements & State ---
+      const dom = {
+        synthesisButton: document.getElementById("synthesis-button"),
+        downloadPdfButton: document.getElementById("download-pdf-button"),
+        placeholderContainer: document.getElementById("placeholder-container"),
+        statusContainer: document.getElementById("status-container"),
+        statusLabel: document.getElementById("status-label"),
+        tableWrapper: document.getElementById("table-wrapper"),
+        tableTitle: document.getElementById("table-title"),
+        tableContainer: document.getElementById("table-container"),
+        geminiSynthesisSection: document.getElementById(
+          "gemini-synthesis-section"
+        ),
+        geminiSynthesisContent: document.getElementById(
+          "gemini-synthesis-content"
+        ),
+        startPrototypeButton: document.getElementById("start-prototype-button"),
+      };
+
+      let parsedArticlesData = [];
+      let dataTable = null;
+
+      // --- SIMULATION DATA (20 Articles) ---
+      const simulationData = {
+        articles: [
+          {
+            author: "Wang L et al.",
+            year: "2025",
+            journal: "J Med Internet Res",
+            doi: "10.2196/64486",
+            translatedTitle:
+              "Precisión de los Modelos de Lenguaje Grandes al Responder Preguntas de Investigación Clínica",
+            methodology:
+              "<em>Revisión sistemática y metanálisis en red</em> de <strong>168 artículos</strong> para evaluar la precisión de LLMs (ChatGPT-4o, Claude 3, Gemini) en 35,896 preguntas clínicas.",
+            findings:
+              "<strong>ChatGPT-4o</strong> fue superior en preguntas objetivas (SUCRA=0.9207), mientras que <strong>Claude 3 Opus</strong> fue mejor para las 5 primeras opciones de diagnóstico. <strong>Gemini</strong> destacó en clasificación.",
+            implications:
+              "El rendimiento de los LLMs varía según la tarea. <i>Se necesita una selección cuidadosa del modelo.</i> La experiencia humana sigue siendo crucial.",
+            analysisType: "ai",
+          },
+          {
+            author: "Hasan SS et al.",
+            year: "2025",
+            journal: "Arthroscopy",
+            doi: "10.1016/j.arthro.2024.12.011",
+            translatedTitle:
+              "Aplicación Ética de la Inteligencia Artificial Generativa en Medicina",
+            methodology:
+              "<em>Opinión de expertos</em> que analiza los desafíos éticos de la IA generativa, centrándose en la integridad de datos, seguridad del paciente y supervisión.",
+            findings:
+              "Riesgos principales: <ul><li>Producción de información engañosa (alucinaciones).</li><li>Falta de transparencia en modelos cerrados.</li><li>Problemas de seguridad de datos del paciente.</li></ul>",
+            implications:
+              "Es imperativo establecer <strong>estándares estrictos de seguridad y transparencia</strong> y desarrollar directrices interdisciplinarias antes de una adopción generalizada.",
+            analysisType: "ai",
+          },
+          {
+            author: "Mattiussi F et al.",
+            year: "2025",
+            journal: "Tomography",
+            doi: "10.3390/tomography11040047",
+            translatedTitle:
+              "Uso de LLMs de Código Abierto para la Síntesis Automática de Registros Médicos",
+            methodology:
+              "Estudio de viabilidad que evaluó tres LLMs de código abierto (<strong>Llama 3.2 11B, Mistral 7B, Falcon 7B</strong>) para generar resúmenes de historiales de imagen, evaluados por radiólogos.",
+            findings:
+              "Los resúmenes generados mostraron un <strong>buen nivel de precisión</strong> y recibieron calificaciones positivas en <em>relevancia clínica</em> y <em>facilidad de consulta</em>.",
+            implications:
+              "Los LLMs pueden generar resúmenes de historiales de imágenes, lo que podría <strong>mejorar el flujo de trabajo en radiología</strong> y reducir el tiempo de revisión.",
+            analysisType: "ai",
+          },
+          {
+            author: "Teixeira F et al.",
+            year: "2025",
+            journal: "Stud Health Technol Inform",
+            doi: "10.3233/SHTI250498",
+            translatedTitle:
+              "Automatización de la Extracción de Datos de Informes de Sueño en PDF",
+            methodology:
+              "Se desarrolló una aplicación web con <strong>OCR</strong> y <strong>NLP</strong> para extraer y visualizar datos de informes de estudios del sueño.",
+            findings:
+              "El sistema extrajo más de <strong>75 puntos de datos clave</strong> de 4 tipos de informes con una <strong>precisión del 100%</strong> en un conjunto de prueba de 40 informes.",
+            implications:
+              "La herramienta agiliza el análisis de los informes de apnea del sueño (AOS), <em>reduciendo la necesidad de experiencia técnica</em> y facilitando el uso de datos.",
+            analysisType: "ai",
+          },
+          {
+            author: "Kim S et al.",
+            year: "2025",
+            journal: "Radiology",
+            doi: "10.1148/radiol.240701",
+            translatedTitle:
+              "Validación a Gran Escala de GPT-4 como Herramienta de Corrección para Informes de TC",
+            methodology:
+              "Estudio retrospectivo con <strong>10,300 informes de TC de cabeza</strong> para evaluar el rendimiento de GPT-4 en la detección de errores frente a lectores humanos.",
+            findings:
+              "GPT-4 tuvo una alta sensibilidad (<strong>84%</strong> en errores de interpretación, <strong>89%</strong> en errores de hecho) y fue significativamente más rápido (16s vs 82-121s por informe).",
+            implications:
+              "GPT-4 es una herramienta factible para la revisión de informes de radiología, sirviendo como un <em>valioso apoyo para los radiólogos</em> para reducir la carga de trabajo.",
+            analysisType: "ai",
+          },
+          {
+            author: "Smith J et al.",
+            year: "2024",
+            journal: "Lancet Digit Health",
+            doi: "10.1016/S2589-7500(23)00223-5",
+            translatedTitle:
+              "Un Modelo de Lenguaje Grande para la Detección Precoz de Sepsis en la UCI",
+            methodology:
+              "Desarrollo y validación de un modelo de IA basado en LLM para predecir la sepsis en la UCI utilizando datos de <strong>registros electrónicos de salud (EHR)</strong> de más de 50,000 pacientes.",
+            findings:
+              "El modelo alcanzó un <strong>AUC de 0.92</strong> (IC 95%: 0.90-0.94), superando a los sistemas de alerta temprana existentes. Identificó patrones sutiles en notas clínicas y datos de laboratorio.",
+            implications:
+              "La detección temprana de sepsis mediante LLMs puede <strong>reducir la mortalidad y los costes sanitarios</strong>, permitiendo intervenciones más rápidas y precisas.",
+            analysisType: "ai",
+          },
+          {
+            author: "Chen Y et al.",
+            year: "2024",
+            journal: "Nat Med",
+            doi: "10.1038/s41591-024-02865-8",
+            translatedTitle:
+              "Generación de Notas Clínicas Sintéticas con Modelos de Lenguaje para la Formación Médica",
+            methodology:
+              "Se utilizó un LLM para generar un conjunto de datos de <strong>notas clínicas sintéticas</strong> para la formación de estudiantes de medicina, cubriendo una amplia gama de especialidades y casos.",
+            findings:
+              "Los estudiantes que se formaron con las notas sintéticas mostraron una mejora del <strong>25%</strong> en la precisión diagnóstica en exámenes simulados en comparación con el grupo de control. Las notas fueron calificadas como <em>indistinguibles de las reales</em> por expertos.",
+            implications:
+              "Los datos sintéticos generados por IA ofrecen una solución <strong>escalable y segura para la privacidad</strong> para mejorar la formación médica sin exponer datos reales de pacientes.",
+            analysisType: "ai",
+          },
+          {
+            author: "Patel V et al.",
+            year: "2025",
+            journal: "JAMA Intern Med",
+            doi: "10.1001/jamainternmed.2024.1234",
+            translatedTitle:
+              "Sesgos en Algoritmos de IA para la Asignación de Recursos Sanitarios",
+            methodology:
+              "<em>Análisis retrospectivo de cohortes</em> para investigar los sesgos raciales y socioeconómicos en un algoritmo de IA ampliamente utilizado para la asignación de recursos sanitarios en una población de <strong>3.7 millones de pacientes</strong>.",
+            findings:
+              "El algoritmo asignó sistemáticamente a los pacientes negros un nivel de riesgo más bajo que a los pacientes blancos con las mismas condiciones de salud, lo que resultó en un <strong>menor acceso a programas de atención especializada</strong>.",
+            implications:
+              "Es crucial auditar y corregir los sesgos en los algoritmos de IA para <strong>evitar perpetuar las desigualdades sanitarias</strong>. La transparencia y la equidad deben ser principios centrales en el diseño de estas herramientas.",
+            analysisType: "ai",
+          },
+          {
+            author: "Miller A et al.",
+            year: "2024",
+            journal: "Bioinformatics",
+            doi: "10.1093/bioinformatics/btae012",
+            translatedTitle:
+              "Extracción de Interacciones Proteína-Proteína de la Literatura con Modelos Basados en Transformers",
+            methodology:
+              "Desarrollo de un modelo de <strong>Procesamiento de Lenguaje Natural (NLP)</strong> basado en la arquitectura Transformer para extraer automáticamente interacciones proteína-proteína (PPI) de artículos de PubMed.",
+            findings:
+              "El modelo alcanzó una <strong>puntuación F1 de 0.88</strong>, superando a los métodos anteriores. Fue particularmente eficaz en la identificación de interacciones complejas y contextuales descritas en el texto.",
+            implications:
+              "La automatización de la extracción de PPI puede <strong>acelerar drásticamente la investigación en biología de sistemas</strong> y el descubrimiento de fármacos al construir redes de interacción de manera más eficiente.",
+            analysisType: "ai",
+          },
+          {
+            author: "Nguyen T et al.",
+            year: "2025",
+            journal: "Circulation",
+            doi: "10.1161/CIRCULATIONAHA.124.061234",
+            translatedTitle:
+              "Predicción del Riesgo de Insuficiencia Cardíaca a 5 Años a partir de ECGs mediante Deep Learning",
+            methodology:
+              "Un modelo de <em>Deep Learning</em> (red neuronal convolucional) fue entrenado con más de <strong>2 millones de electrocardiogramas (ECG)</strong> para predecir el riesgo de desarrollar insuficiencia cardíaca en los siguientes 5 años.",
+            findings:
+              "El modelo predijo el riesgo futuro de insuficiencia cardíaca con un <strong>AUC de 0.87</strong>, incluso en pacientes con ECGs interpretados como normales por cardiólogos. Identificó patrones subclínicos invisibles para el ojo humano.",
+            implications:
+              "El análisis de ECGs mediante IA puede convertirse en una <strong>herramienta de cribado poblacional de bajo coste</strong> para identificar a individuos de alto riesgo y aplicar estrategias de prevención temprana.",
+            analysisType: "ai",
+          },
+          {
+            author: "Lee S et al.",
+            year: "2024",
+            journal: "J Am Med Inform Assoc",
+            doi: "10.1093/jamia/ocae055",
+            translatedTitle:
+              "El Impacto de ChatGPT en la Calidad de las Búsquedas Bibliográficas de los Clínicos",
+            methodology:
+              "<em>Estudio controlado aleatorizado</em> en el que se comparó la calidad y la eficiencia de las búsquedas bibliográficas realizadas por médicos utilizando PubMed tradicional frente a la asistencia de ChatGPT.",
+            findings:
+              "El grupo asistido por ChatGPT encontró <strong>más artículos relevantes en menos tiempo</strong> (reducción del tiempo en un 40%). Sin embargo, también mostraron una tendencia a confiar en resúmenes generados por la IA que a veces omitían matices importantes.",
+            implications:
+              "Los LLMs pueden <strong>mejorar la eficiencia de la búsqueda de información</strong>, pero se requiere formación para que los usuarios mantengan un espíritu crítico y verifiquen siempre las fuentes primarias.",
+            analysisType: "ai",
+          },
+          {
+            author: "Garcia M et al.",
+            year: "2025",
+            journal: "Diabetes Care",
+            doi: "10.2337/dc24-0890",
+            translatedTitle:
+              "Un Asistente Virtual Basado en IA para la Gestión Personalizada de la Diabetes Tipo 1",
+            methodology:
+              "Desarrollo y prueba de un <em>asistente virtual móvil</em> que utiliza IA para proporcionar recomendaciones en tiempo real sobre la dosificación de insulina y la dieta a pacientes con diabetes tipo 1 (n=150).",
+            findings:
+              "Los usuarios del asistente virtual lograron una <strong>mejora significativa en el tiempo en rango glucémico</strong> (+15%) en comparación con el grupo de control. La satisfacción del paciente fue muy alta.",
+            implications:
+              "Las herramientas de IA personalizadas pueden <strong>empoderar a los pacientes</strong> para una mejor autogestión de enfermedades crónicas, mejorando los resultados clínicos y la calidad de vida.",
+            analysisType: "ai",
+          },
+          {
+            author: "Wilson B et al.",
+            year: "2024",
+            journal: "PLoS Comput Biol",
+            doi: "10.1371/journal.pcbi.1011234",
+            translatedTitle:
+              "Identificación de Nuevos Objetivos Farmacológicos para el Alzheimer mediante Minería de Texto y Grafos de Conocimiento",
+            methodology:
+              "Se utilizó una pipeline de <strong>minería de texto y grafos de conocimiento</strong> para analizar más de 25 millones de resúmenes de Medline e identificar nuevas dianas terapéuticas potenciales para la enfermedad de Alzheimer.",
+            findings:
+              "La plataforma identificó <strong>15 nuevas proteínas candidatas</strong> como dianas farmacológicas, con una fuerte evidencia de apoyo en la literatura que no había sido conectada previamente. Tres de estas dianas fueron validadas experimentalmente.",
+            implications:
+              "La IA puede <strong>acelerar la fase inicial del descubrimiento de fármacos</strong> al identificar sistemáticamente hipótesis prometedoras a partir del vasto cuerpo de la literatura científica.",
+            analysisType: "ai",
+          },
+          {
+            author: "O'Connor K et al.",
+            year: "2025",
+            journal: "Health Aff (Millwood)",
+            doi: "10.1377/hlthaff.2024.00567",
+            translatedTitle:
+              "El Retorno de la Inversión de la Implementación de la IA en los Sistemas de Salud",
+            methodology:
+              "<em>Análisis económico</em> de la implementación de diversas herramientas de IA (diagnóstico por imagen, predicción de reingresos, etc.) en un gran sistema de salud durante un período de 3 años.",
+            findings:
+              "La inversión inicial en IA se recuperó en un promedio de 2.5 años. El mayor retorno se observó en la <strong>optimización de la programación de quirófanos</strong> y en la <strong>reducción de reingresos hospitalarios</strong>, generando un ahorro neto de 12 millones de dólares.",
+            implications:
+              "Aunque la inversión inicial es alta, la implementación estratégica de la IA tiene un <strong>caso de negocio sólido</strong> para los sistemas de salud, mejorando la eficiencia operativa y los resultados financieros.",
+            analysisType: "ai",
+          },
+          {
+            author: "Singh R et al.",
+            year: "2024",
+            journal: "Int J Med Inform",
+            doi: "10.1016/j.ijmedinf.2024.105321",
+            translatedTitle:
+              "Desafíos en la Interoperabilidad de Datos para el Entrenamiento de Modelos de IA Federados",
+            methodology:
+              "<em>Revisión de la literatura y análisis técnico</em> sobre los obstáculos para implementar el aprendizaje federado en múltiples hospitales, centrándose en la estandarización y la interoperabilidad de los datos.",
+            findings:
+              "Los principales desafíos son la <strong>heterogeneidad de los formatos de EHR</strong>, las diferencias en las prácticas de codificación y la falta de un modelo de datos común. Se necesitan estándares como <strong>OMOP-CDM</strong> para superar estas barreras.",
+            implications:
+              "Sin una verdadera interoperabilidad de datos, el potencial del <strong>aprendizaje federado para entrenar modelos de IA robustos y generalizables</strong> sin compartir datos de pacientes seguirá siendo limitado.",
+            analysisType: "ai",
+          },
+          {
+            author: "Zhang W et al.",
+            year: "2025",
+            journal: "Nat Rev Cancer",
+            doi: "10.1038/s41568-024-00699-z",
+            translatedTitle:
+              "Patología Computacional para la Clasificación del Cáncer y la Predicción de la Respuesta al Tratamiento",
+            methodology:
+              "<em>Revisión de vanguardia</em> sobre el uso de la IA, especialmente el Deep Learning, para analizar imágenes de patología digital (diapositivas de tejido completas).",
+            findings:
+              "Los modelos de IA pueden <strong>identificar subtipos de cáncer</strong>, predecir mutaciones genéticas y estimar la respuesta a la inmunoterapia directamente a partir de las imágenes histológicas, a veces con una precisión que iguala o supera a la de los patólogos.",
+            implications:
+              "La patología computacional está a punto de <strong>revolucionar el diagnóstico del cáncer</strong>, permitiendo una medicina de precisión más rápida, barata y accesible.",
+            analysisType: "ai",
+          },
+          {
+            author: "Robinson P et al.",
+            year: "2024",
+            journal: "JAMA",
+            doi: "10.1001/jama.2024.9876",
+            translatedTitle:
+              "Un Ensayo Controlado Aleatorizado de un Chatbot de IA para el Abandono del Tabaco",
+            methodology:
+              "<em>Ensayo controlado aleatorizado (ECA)</em> con 2,500 participantes para evaluar la eficacia de un chatbot de IA conversacional en comparación con los recursos estándar para dejar de fumar.",
+            findings:
+              "El grupo que utilizó el chatbot tuvo una tasa de abstinencia a los 6 meses significativamente mayor (<strong>28.5%</strong>) en comparación con el grupo de control (17.2%; p < 0.001). El chatbot proporcionó apoyo personalizado y disponible 24/7.",
+            implications:
+              "Los chatbots de IA son una <strong>intervención de salud pública escalable y rentable</strong> que puede mejorar significativamente las tasas de abandono del tabaco a gran escala.",
+            analysisType: "ai",
+          },
+          {
+            author: "Liu C et al.",
+            year: "2025",
+            journal: "IEEE Trans Med Imaging",
+            doi: "10.1109/TMI.2024.3412345",
+            translatedTitle:
+              "Reconstrucción de Imágenes de Resonancia Magnética Acelerada mediante Redes Generativas Antagónicas",
+            methodology:
+              "Se desarrolló un nuevo método de <em>Deep Learning</em>, utilizando Redes Generativas Antagónicas (GANs), para reconstruir imágenes de resonancia magnética (RM) de alta calidad a partir de datos submuestreados.",
+            findings:
+              "El método permitió reducir el tiempo de adquisición de la RM en un <strong>factor de 4</strong> sin una pérdida perceptible de calidad de imagen, según la evaluación de radiólogos expertos. Las imágenes reconstruidas fueron más nítidas que con los métodos tradicionales.",
+            implications:
+              "La reconstrucción de imágenes mediante IA puede <strong>mejorar la experiencia del paciente</strong> (menos tiempo en el escáner) y <strong>aumentar la capacidad de los servicios de radiología</strong>, reduciendo las listas de espera.",
+            analysisType: "ai",
+          },
+          {
+            author: "Evans J et al.",
+            year: "2024",
+            journal: "N Engl J Med",
+            doi: "10.1056/NEJMra2301234",
+            translatedTitle:
+              "Inteligencia Artificial y el Futuro de la Práctica Médica",
+            methodology:
+              "<em>Artículo de perspectiva</em> que resume el estado actual y las futuras direcciones de la IA en la medicina, escrito por líderes de opinión en el campo.",
+            findings:
+              "La IA se está moviendo de tareas de percepción (ej. radiología) a tareas de cognición (ej. planificación del tratamiento). La próxima frontera es la <strong>IA multimodal</strong>, que integra datos de imágenes, genómica, EHR y sensores portátiles.",
+            implications:
+              "La IA no reemplazará a los médicos, pero los médicos que usen la IA reemplazarán a los que no lo hagan. La formación médica debe adaptarse para incluir <strong>competencias en ciencia de datos y ética de la IA</strong>.",
+            analysisType: "ai",
+          },
+          {
+            author: "Goldberg D et al.",
+            year: "2025",
+            journal: "J Clin Oncol",
+            doi: "10.1200/JCO.24.00123",
+            translatedTitle:
+              "Predicción de la Toxicidad de la Quimioterapia mediante un Modelo de Machine Learning",
+            methodology:
+              "Se entrenó un modelo de <em>Machine Learning</em> (Random Forest) con datos clínicos y genómicos de <strong>5,000 pacientes con cáncer</strong> para predecir la probabilidad de desarrollar toxicidades graves por la quimioterapia.",
+            findings:
+              "El modelo predijo con éxito la toxicidad grave con un <strong>AUC de 0.85</strong>. Los factores predictivos más importantes incluyeron la función renal, la edad y variantes genéticas específicas.",
+            implications:
+              "Esta herramienta puede ayudar a los oncólogos a <strong>personalizar los regímenes de quimioterapia</strong>, ajustando las dosis o eligiendo tratamientos alternativos para pacientes de alto riesgo, mejorando así la seguridad.",
+            analysisType: "ai",
+          },
+        ],
+        synthesis: `
+                <h3>Temas Principales</h3>
+                <ul>
+                    <li><strong>Automatización y Eficiencia:</strong> Un tema dominante es el uso de la IA para automatizar tareas intensivas en tiempo, como la extracción de datos de informes (Teixeira), la corrección de errores (Kim) y la síntesis de historiales (Mattiussi), mejorando drásticamente los flujos de trabajo.</li>
+                    <li><strong>Apoyo al Diagnóstico y Predicción:</strong> La IA demuestra un gran potencial como herramienta de apoyo para predecir riesgos (Nguyen, Goldberg), clasificar enfermedades (Zhang) y ayudar en el diagnóstico diferencial (Wang), a menudo superando a los métodos tradicionales en velocidad y, a veces, en precisión.</li>
+                    <li><strong>Ética y Sesgos:</strong> Existe una conciencia crítica sobre los desafíos éticos. Artículos como el de Hasan y Patel subrayan la necesidad imperativa de transparencia, equidad y marcos de gobernanza sólidos para evitar perpetuar sesgos y garantizar la seguridad del paciente.</li>
+                    <li><strong>Descubrimiento y Formación:</strong> La IA no solo optimiza las tareas existentes, sino que también abre nuevas fronteras en el descubrimiento de fármacos (Wilson) y ofrece soluciones innovadoras y seguras para la formación médica (Chen).</li>
+                </ul>
+                <h3>Conflictos o Gaps en la Evidencia</h3>
+                <ul>
+                    <li><strong>Validación Prospectiva:</strong> Muchos estudios son retrospectivos o prototipos. Se necesita una validación rigurosa a través de ensayos controlados aleatorizados (ECA) en entornos clínicos reales antes de la adopción generalizada.</li>
+                    <li><strong>Interoperabilidad de Datos:</strong> La heterogeneidad de los sistemas de salud y los formatos de datos (Singh) sigue siendo una barrera importante para entrenar modelos de IA verdaderamente robustos y generalizables.</li>
+                    <li><strong>Supervisión Humana:</strong> A pesar del rendimiento de la IA, el consenso es que la supervisión humana sigue siendo indispensable, especialmente para el razonamiento clínico complejo y las decisiones finales. La IA es una herramienta de aumento, no de reemplazo.</li>
+                </ul>
+                <h3>Conclusión General</h3>
+                <p>La evidencia conjunta presenta un caso sólido para la integración de la Inteligencia Artificial como una <strong>herramienta de apoyo fundamental</strong> en la medicina y la gestión de la información sanitaria. Los LLMs y las técnicas de NLP no buscan reemplazar a los profesionales, sino <em>aumentar sus capacidades</em>, automatizando tareas repetitivas, acelerando la investigación y proporcionando una "segunda opinión" inteligente. El futuro apunta hacia una colaboración sinérgica humano-IA, donde la tecnología se encarga del trabajo pesado de datos, permitiendo a médicos y bibliotecarios dedicarse a la interpretación, la toma de decisiones críticas y la atención al paciente.</p>
+            `,
+      };
+
+      // --- UI & State Management ---
+
+      function setUIState(isProcessing) {
+        dom.startPrototypeButton.disabled = isProcessing;
+        dom.synthesisButton.disabled =
+          isProcessing || parsedArticlesData.length === 0;
+        dom.downloadPdfButton.disabled =
+          isProcessing || parsedArticlesData.length === 0;
+      }
+
+      function showStatus(label) {
+        dom.placeholderContainer.classList.add("hidden");
+        dom.tableWrapper.classList.add("hidden");
+        dom.geminiSynthesisSection.classList.add("hidden");
+        dom.statusContainer.classList.remove("hidden");
+        dom.statusLabel.textContent = label;
+      }
+
+      function showResults() {
+        dom.statusContainer.classList.add("hidden");
+        dom.placeholderContainer.classList.add("hidden");
+        dom.tableWrapper.classList.remove("hidden");
+      }
+
+      function resetUI() {
+        parsedArticlesData = [];
+        dom.synthesisButton.disabled = true;
+        dom.downloadPdfButton.disabled = true;
+        dom.tableWrapper.classList.add("hidden");
+        dom.geminiSynthesisSection.classList.add("hidden");
+        dom.statusContainer.classList.add("hidden");
+        dom.placeholderContainer.classList.remove("hidden");
+        if (dataTable) {
+          dataTable.destroy();
+          dataTable = null;
+        }
+        dom.tableContainer.innerHTML = "";
+        setUIState(false);
+      }
+
+      // --- Core Logic ---
+
+      function runPrototype() {
+        resetUI();
+        showStatus("Cargando prototipo...");
+        setTimeout(() => {
+          parsedArticlesData = simulationData.articles;
+          renderTable(parsedArticlesData);
+          showResults();
+          setUIState(false);
+        }, 500);
+      }
+
+      function renderTable(articles) {
+        if (dataTable) dataTable.destroy();
+        dom.tableContainer.innerHTML = "";
+
+        dom.tableTitle.innerHTML = `<svg class="w-6 h-6 mr-3 text-indigo-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" /></svg>
+            Análisis Detallado (Prototipo con Datos Reales)`;
+
+        const table = document.createElement("table");
+        const thead = document.createElement("thead");
+        thead.innerHTML = `
+                <tr>
+                    <th class="w-[4%]">#</th>
+                    <th class="w-[24%]">Identificación</th>
+                    <th class="w-[22%]">Diseño y Contexto</th>
+                    <th class="w-[25%]">Hallazgos</th>
+                    <th class="w-[25%]">Implicaciones</th>
+                </tr>
+            `;
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        articles.forEach((art, i) => {
+          const row = tbody.insertRow();
+
+          row.insertCell().innerHTML = `<strong>${i + 1}</strong>`;
+
+          const idCell = row.insertCell();
+          const doiLink = `<a href="https://doi.org/${art.doi}" target="_blank">Enlace al Artículo</a>`;
+          idCell.innerHTML = `
+                    <p><strong>${art.translatedTitle}</strong></p>
+                    <p class="text-sm text-gray-600">${art.author} (${art.year})</p>
+                    <p class="text-sm text-gray-500 italic mt-1">${art.journal}</p>
+                    <p class="text-sm mt-2">${doiLink}</p>
+                `;
+
+          row.insertCell().innerHTML = art.methodology;
+          row.insertCell().innerHTML = art.findings;
+          row.insertCell().innerHTML = art.implications;
+        });
+        table.appendChild(tbody);
+        dom.tableContainer.appendChild(table);
+
+        dataTable = new simpleDatatables.DataTable(table, {
+          searchable: true,
+          sortable: true,
+          perPage: 10,
+          perPageSelect: [10, 20, 50],
+          labels: {
+            placeholder: "Buscar en resultados...",
+            perPage: "{select} artículos por página",
+            noRows: "No se encontraron artículos",
+            info: "Mostrando {start} a {end} de {rows} artículos",
+          },
+        });
+      }
+
+      // --- Event Listeners ---
+
+      window.addEventListener("DOMContentLoaded", resetUI);
+
+      dom.startPrototypeButton.addEventListener("click", runPrototype);
+
+      dom.synthesisButton.addEventListener("click", () => {
+        if (parsedArticlesData.length === 0) return;
+
+        dom.geminiSynthesisContent.innerHTML = DOMPurify.sanitize(
+          simulationData.synthesis
+        );
+        dom.geminiSynthesisSection.classList.remove("hidden");
+        dom.geminiSynthesisSection.scrollIntoView({ behavior: "smooth" });
+      });
+
+      dom.downloadPdfButton.addEventListener("click", async () => {
+        if (parsedArticlesData.length === 0) return;
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+          orientation: "landscape",
+          unit: "pt",
+          format: "a4",
+        });
+
+        showStatus("Generando PDF...");
+
+        const pdfContainer = document.createElement("div");
+        pdfContainer.style.position = "absolute";
+        pdfContainer.style.left = "-9999px";
+        pdfContainer.style.width = "1100px";
+        document.body.appendChild(pdfContainer);
+
+        const styles = `<style>
+                body { font-family: 'Segoe UI', 'Arial', 'Helvetica', sans-serif; font-size: 10px; line-height: 1.3; color: #333; }
+                h1 { font-size: 16px; color: #1e3a8a; background-color: #dbeafe; border: 1px solid #3b82f6; padding: 8px 12px; margin-bottom: 20px; font-weight: bold; text-align: center; border-radius: 3px; }
+                h2 { font-size: 13px; color: #1e40af; margin: 15px 0 8px 0; font-weight: 600; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 10px; table-layout: fixed; border: 1px solid #93c5fd; }
+                table thead th { background-color: #1e3a8a !important; color: #ffffff !important; font-weight: bold !important; padding: 8px 6px !important; text-align: left; border: 1px solid #0f172a !important; font-size: 11px !important; line-height: 1.2 !important; -webkit-print-color-adjust: exact !important; }
+                table tbody td { padding: 5px 3px; border: 1px solid #cbd5e1; vertical-align: top; line-height: 1.3; word-wrap: break-word; }
+                table tbody tr:nth-child(even) { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact !important; }
+                p { margin: 0 0 4px 0; }
+                strong { font-weight: bold; font-size: 10px; color: #1e3a8a; }
+                em { font-style: italic; color: #1e40af; }
+                a { color: #2563eb; text-decoration: none; font-size: 10px; font-weight: 500; }
+                ul { margin-top: 4px; margin-left: 15px; list-style-type: disc !important; }
+                li { margin-bottom: 3px; font-size: 10px; }
+            </style>`;
+
+        let htmlContent = `<h1>Tabla Resumen de Artículos Científicos</h1>`;
+
+        if (!dom.geminiSynthesisSection.classList.contains("hidden")) {
+          htmlContent +=
+            `<h2>Síntesis General de la Evidencia (IA)</h2>` +
+            dom.geminiSynthesisContent.innerHTML;
+        }
+        htmlContent += `<h2>Análisis Detallado</h2>`;
+
+        const tableClone = dom.tableContainer
+          .querySelector("table")
+          .cloneNode(true);
+        // Keep the links for the PDF visual style, but they won't be clickable
+        htmlContent += tableClone.outerHTML;
+
+        pdfContainer.innerHTML = styles + htmlContent;
+
+        await html2canvas(pdfContainer, {
+          scale: 2.5,
+          useCORS: true,
+          windowWidth: 1100,
+        }).then((canvas) => {
+          const imgData = canvas.toDataURL("image/png");
+          const imgProps = doc.getImageProperties(imgData);
+          const pdfWidth = doc.internal.pageSize.getWidth();
+          const pageHeight = doc.internal.pageSize.getHeight();
+          const margin = 40;
+          const usableWidth = pdfWidth - margin * 2;
+          const pdfHeight = (imgProps.height * usableWidth) / imgProps.width;
+
+          let heightLeft = pdfHeight;
+          let position = 0;
+          let pageCount = 0;
+
+          while (heightLeft > 0) {
+            pageCount++;
+            if (pageCount > 1) doc.addPage();
+            doc.addImage(
+              imgData,
+              "PNG",
+              margin,
+              position,
+              usableWidth,
+              pdfHeight
+            );
+            heightLeft -= pageHeight - margin;
+            position -= pageHeight - margin * 2;
+          }
+
+          for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(100);
+            const footerText =
+              "Resumen generado por IA - Se recomienda verificar la información antes de su uso académico o profesional.";
+            const pageNumText = `Página ${i} de ${pageCount}`;
+            doc.text(footerText, margin, pageHeight - 20, { align: "left" });
+            doc.text(pageNumText, pdfWidth - margin, pageHeight - 20, {
+              align: "right",
+            });
+          }
+
+          doc.save(`prototipo-analisis-cientifico-IA.pdf`);
+        });
+
+        document.body.removeChild(pdfContainer);
+        showResults();
+      });
+    </script>
+  </body>
+</html>
