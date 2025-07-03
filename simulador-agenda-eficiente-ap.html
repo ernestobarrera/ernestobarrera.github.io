@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simulador Avanzado de Eficiencia Sanitaria (Edición 2025)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f1f5f9; /* slate-100 */
+      }
+      .task-card {
+        transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+        cursor: grab;
+      }
+      .task-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      }
+      .task-card.dragging {
+        opacity: 0.6;
+        transform: scale(1.05) rotate(3deg);
+        background-color: #e0e7ff;
+      }
+      .agenda-column {
+        min-height: 500px;
+        transition: background-color 0.3s;
+      }
+      .agenda-column.drag-over {
+        background-color: #dbeafe; /* blue-100 */
+      }
+      .tooltip-container {
+        position: relative;
+        display: inline-block;
+      }
+      .tooltip-text {
+        visibility: hidden;
+        width: 300px;
+        background-color: #1f2937;
+        color: #fff;
+        text-align: left;
+        border-radius: 8px;
+        padding: 12px;
+        position: absolute;
+        z-index: 50;
+        bottom: 130%;
+        left: 50%;
+        margin-left: -150px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 0.8rem;
+        line-height: 1.5;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      }
+      .tooltip-text strong {
+        color: #93c5fd;
+      }
+      .tooltip-text code {
+        background-color: #374151;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-family: monospace;
+      }
+      .tooltip-container:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+      }
+      .tooltip-text::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #1f2937 transparent transparent transparent;
+      }
+      .notification {
+        animation: slide-in-out 4s ease-in-out forwards;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      }
+      @keyframes slide-in-out {
+        0%,
+        100% {
+          transform: translateX(120%);
+          opacity: 0;
+        }
+        10%,
+        90% {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      .progress-bar-bg {
+        background-color: #e5e7eb;
+      }
+      .progress-bar {
+        transition: width 0.5s ease-in-out;
+      }
+
+      .agenda-timeline {
+        position: relative;
+        overflow-y: auto;
+        background-color: #f8fafc;
+      }
+      .timeline-slot {
+        height: 20px;
+        border-bottom: 1px dotted #e5e7eb;
+      }
+      .timeline-hour-marker {
+        position: absolute;
+        left: -45px;
+        top: -8px;
+        font-size: 0.7rem;
+        color: #6b7280;
+      }
+      .appointment {
+        position: absolute;
+        width: 90%;
+        left: 5%;
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        border-left: 4px solid;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+    </style>
+  </head>
+  <body class="p-4 md:p-6">
+    <div class="max-w-screen-2xl mx-auto">
+      <!-- Encabezado y Controles -->
+      <header class="bg-white p-4 rounded-2xl shadow-md mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-4">
+          <div>
+            <h1 class="text-3xl font-extrabold text-slate-800">
+              Simulador de Eficiencia Sanitaria 2025
+            </h1>
+            <p class="text-slate-600 mt-1">
+              Un modelo evolutivo de gestión para Atención Primaria.
+            </p>
+          </div>
+          <!-- NUEVO: Botones de Escenarios -->
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-semibold text-slate-600 mr-2"
+              >Cargar Escenario:</span
+            >
+            <button
+              onclick="loadScenario('low')"
+              class="bg-red-100 text-red-800 hover:bg-red-200 font-semibold py-2 px-3 rounded-lg text-sm transition-colors"
+            >
+              Tradicional (Ineficiente)
+            </button>
+            <button
+              onclick="loadScenario('medium')"
+              class="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 font-semibold py-2 px-3 rounded-lg text-sm transition-colors"
+            >
+              Mixto (Realidad)
+            </button>
+            <button
+              onclick="loadScenario('high')"
+              class="bg-green-100 text-green-800 hover:bg-green-200 font-semibold py-2 px-3 rounded-lg text-sm transition-colors"
+            >
+              Óptimo (Potencial)
+            </button>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button
+              id="info-button"
+              class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+              <i class="fas fa-info-circle mr-2"></i>Info
+            </button>
+            <button
+              id="reset-sim"
+              class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+              <i class="fas fa-redo mr-2"></i>Reiniciar
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- KPIs y Flujo de Trabajo -->
+      <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
+        <!-- Columna 1: Peticiones Entrantes -->
+        <div class="bg-white p-5 rounded-2xl shadow-lg flex flex-col">
+          <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+            <i class="fas fa-inbox fa-lg text-red-500 mr-3"></i>Peticiones
+            Entrantes
+          </h2>
+          <div
+            id="incoming-column"
+            class="agenda-column bg-slate-100 p-4 rounded-xl space-y-3 flex-grow"
+          ></div>
+          <div class="grid grid-cols-2 gap-2 mt-4">
+            <button
+              id="add-task-btn"
+              class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+              <i class="fas fa-plus mr-1"></i>Generar 1
+            </button>
+            <button
+              id="add-batch-btn"
+              class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+              <i class="fas fa-plus-circle mr-1"></i>Generar 5
+            </button>
+          </div>
+        </div>
+        <!-- Columna 2: Gestor de Salud -->
+        <div class="bg-white p-5 rounded-2xl shadow-lg flex flex-col">
+          <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+            <i class="fas fa-user-tie fa-lg text-indigo-500 mr-3"></i>Gestor de
+            Salud (GS)
+          </h2>
+          <div
+            id="gs-column"
+            class="agenda-column bg-slate-100 p-4 rounded-xl flex-grow flex items-center justify-center"
+          >
+            <p class="text-center text-slate-500 p-4">
+              Arrastra una petición aquí para iniciar el triaje.
+            </p>
+          </div>
+        </div>
+        <!-- Columna 3: Agenda Médico -->
+        <div class="bg-white p-5 rounded-2xl shadow-lg flex flex-col">
+          <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+            <i class="fas fa-user-md fa-lg text-orange-500 mr-3"></i>Agenda:
+            Médico/a Familia
+          </h2>
+          <div
+            id="mf-column"
+            class="agenda-column agenda-timeline rounded-lg p-2 pl-12"
+          ></div>
+        </div>
+        <!-- Columna 4: Agenda Enfermería -->
+        <div class="bg-white p-5 rounded-2xl shadow-lg flex flex-col">
+          <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+            <i class="fas fa-user-nurse fa-lg text-cyan-500 mr-3"></i>Agenda:
+            Enfermería
+          </h2>
+          <div
+            id="nurse-column"
+            class="agenda-column agenda-timeline rounded-lg p-2 pl-12"
+          ></div>
+        </div>
+
+        <!-- Columna 5: KPIs y Analíticas -->
+        <div class="bg-white p-5 rounded-2xl shadow-lg">
+          <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
+            <i class="fas fa-chart-line fa-lg text-teal-500 mr-3"></i>Métricas
+            de Eficiencia
+          </h2>
+          <div class="space-y-4">
+            <!-- KPI: Resolución GS -->
+            <div class="bg-slate-50 p-3 rounded-lg">
+              <p class="text-sm font-medium text-slate-500 tooltip-container">
+                Resolución del GS
+                <i class="fas fa-question-circle text-slate-400 ml-1"></i
+                ><span class="tooltip-text"
+                  >Mide el porcentaje de peticiones que el Gestor de Salud (GS)
+                  resuelve directamente, sin necesidad de derivar a personal
+                  sanitario. Un valor alto es el principal indicador de
+                  eficiencia del modelo.<br /><br /><strong>Objetivo:</strong> >
+                  40%<br /><strong>Cálculo:</strong>
+                  <code>(Resueltas por GS / Total Procesadas) * 100</code></span
+                >
+              </p>
+              <p id="kpi-resolucion" class="text-2xl font-bold text-slate-800">
+                0%
+              </p>
+              <div class="progress-bar-bg w-full h-1.5 rounded-full mt-1">
+                <div
+                  id="progress-resolucion"
+                  class="progress-bar h-1.5 rounded-full bg-green-500"
+                ></div>
+              </div>
+            </div>
+            <!-- KPI: Tiempo Ahorrado -->
+            <div class="bg-slate-50 p-3 rounded-lg">
+              <p class="text-sm font-medium text-slate-500 tooltip-container">
+                Tiempo Clínico Ahorrado
+                <i class="fas fa-question-circle text-slate-400 ml-1"></i
+                ><span class="tooltip-text"
+                  >Estima el tiempo neto que el personal sanitario ha ganado
+                  gracias a la correcta clasificación del GS. Se calcula
+                  restando el tiempo perdido por errores del tiempo ganado por
+                  aciertos.<br /><br /><strong
+                    >Acierto (Admin/IT Optimizada):</strong
+                  >
+                  +10/15 min.<br /><strong>Error:</strong> -10 min.<br /><strong
+                    >Cálculo:</strong
+                  >
+                  <code>(Tiempo de Aciertos) - (Tiempo de Errores)</code></span
+                >
+              </p>
+              <p id="kpi-tiempo" class="text-2xl font-bold text-slate-800">
+                0 min
+              </p>
+              <div class="progress-bar-bg w-full h-1.5 rounded-full mt-1">
+                <div
+                  id="progress-tiempo"
+                  class="progress-bar h-1.5 rounded-full bg-blue-500"
+                ></div>
+              </div>
+            </div>
+            <!-- KPI: Accesibilidad (Demora) -->
+            <div class="bg-slate-50 p-3 rounded-lg">
+              <p class="text-sm font-medium text-slate-500 tooltip-container">
+                Accesibilidad (Demora MF)
+                <i class="fas fa-question-circle text-slate-400 ml-1"></i
+                ><span class="tooltip-text"
+                  >Mide el tiempo de espera para conseguir una cita con el
+                  Médico/a de Familia. Se calcula dinámicamente según la carga
+                  de trabajo actual de su agenda.<br /><br /><strong
+                    >Objetivo:</strong
+                  >
+                  &lt; 48 horas<br /><strong>Óptimo:</strong> &lt; 24
+                  horas</span
+                >
+              </p>
+              <p id="kpi-demora" class="text-2xl font-bold text-slate-800">
+                &lt;24h
+              </p>
+              <div class="progress-bar-bg w-full h-1.5 rounded-full mt-1">
+                <div
+                  id="progress-demora"
+                  class="progress-bar h-1.5 rounded-full bg-purple-500"
+                ></div>
+              </div>
+            </div>
+            <!-- Gráfico -->
+            <div class="bg-slate-50 p-4 rounded-lg mt-4">
+              <h3 class="text-md font-semibold text-slate-700 mb-2 text-center">
+                Distribución de Tareas
+              </h3>
+              <canvas id="distribution-chart" class="max-h-48"></canvas>
+            </div>
+            <!-- Stats -->
+            <div class="bg-slate-100 p-3 rounded-lg">
+              <p class="text-sm font-medium text-slate-600 tooltip-container">
+                Decisiones Ineficientes
+                <i class="fas fa-question-circle text-slate-400 ml-1"></i
+                ><span class="tooltip-text"
+                  >Número de errores de clasificación (derivar admin, resolver
+                  clínico, o derivar al profesional equivocado). Cada error
+                  consume tiempo y recursos.</span
+                >
+              </p>
+              <p id="stat-incorrect" class="text-2xl font-bold text-red-600">
+                0
+              </p>
+            </div>
+            <!-- FIX: Added missing stat-time-wasted element -->
+            <div class="bg-slate-100 p-3 rounded-lg">
+              <p class="text-sm font-medium text-slate-600 tooltip-container">
+                Tiempo Clínico Perdido
+                <i class="fas fa-question-circle text-slate-400 ml-1"></i
+                ><span class="tooltip-text"
+                  >Suma total de minutos de tiempo clínico valioso que se ha
+                  perdido debido a decisiones de clasificación
+                  ineficientes.</span
+                >
+              </p>
+              <p id="stat-time-wasted" class="text-2xl font-bold text-pink-600">
+                0 min
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Decisión -->
+    <div
+      id="decision-modal"
+      class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
+        <h2 class="text-xl font-bold text-slate-800 mb-2">
+          Decisión del Gestor de Salud
+        </h2>
+        <p class="text-slate-600 mb-6">
+          Se ha recibido: "<strong id="task-description"></strong>".<br />¿Cuál
+          es la acción más eficiente y segura?
+        </p>
+        <div class="space-y-3">
+          <button
+            data-action="resolve"
+            class="decision-btn w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+          >
+            <i class="fas fa-check-circle mr-3"></i>Resolver (Gestión/Admin)
+          </button>
+          <button
+            data-action="assign-mf"
+            class="decision-btn w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+          >
+            <i class="fas fa-user-md mr-3"></i>Derivar a Médico/a Familia
+          </button>
+          <button
+            data-action="assign-nurse"
+            class="decision-btn w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+          >
+            <i class="fas fa-user-nurse mr-3"></i>Derivar a Enfermería
+          </button>
+        </div>
+        <button
+          data-action="cancel"
+          class="decision-btn mt-6 w-full text-center text-sm text-slate-500 hover:text-slate-700"
+        >
+          Devolver a la cola
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal de Información -->
+    <div
+      id="info-modal"
+      class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50"
+    >
+      <div
+        class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-8 relative max-h-[80vh] overflow-y-auto"
+      >
+        <button
+          id="close-info-modal"
+          class="absolute top-4 right-4 text-slate-500 hover:text-slate-800"
+        >
+          <i class="fas fa-times fa-2x"></i>
+        </button>
+        <h2 class="text-2xl font-bold text-slate-800 mb-4">
+          Un Modelo de Eficiencia para 2025
+        </h2>
+        <div class="text-slate-600 space-y-4 pr-4">
+          <p class="bg-indigo-50 p-3 rounded-lg border-l-4 border-indigo-500">
+            Este simulador se basa en el modelo
+            <strong class="text-indigo-700">COMFIA-UBA3</strong> y lo expande
+            con conceptos de optimización que se debaten actualmente para el
+            futuro de la Atención Primaria.
+          </p>
+
+          <h3 class="font-bold text-lg mt-4 text-slate-700">
+            Más Allá de la UBA3: Conceptos de 2025
+          </h3>
+          <div class="space-y-3">
+            <div class="bg-teal-50 p-4 rounded-lg">
+              <h4 class="font-bold text-teal-800">
+                Optimización de IT por Procesos Leves
+              </h4>
+              <p class="text-sm mt-1">
+                Contempla un sistema donde procesos muy breves y sin signos de
+                alarma (ej. gastroenteritis de 24h) pueden gestionarse de forma
+                protocolizada por el GS, sin necesidad de consumir una consulta
+                médica solo para el trámite.
+              </p>
+              <p class="text-sm mt-2">
+                <strong>Impacto:</strong> Liberación masiva de tiempo médico,
+                que ya no se dedica a la burocracia de bajas muy cortas y
+                evidentes.
+              </p>
+            </div>
+            <div class="bg-cyan-50 p-4 rounded-lg">
+              <h4 class="font-bold text-cyan-800">
+                Gestión Enfermera de la Demanda
+              </h4>
+              <p class="text-sm mt-1">
+                Basado en la bibliografía sobre Práctica Avanzada, reconoce la
+                capacidad de Enfermería para gestionar de forma autónoma
+                procesos clínicos protocolizados, resolver consultas de crónicos
+                o realizar educación sanitaria, aportando un enorme valor
+                resolutivo.
+              </p>
+              <p class="text-sm mt-2">
+                <strong>Impacto:</strong> Utiliza los recursos de forma más
+                inteligente, reduce la carga del médico y mejora la resolución
+                global del equipo.
+              </p>
+            </div>
+          </div>
+
+          <h3 class="font-bold text-lg mt-6 text-slate-700">
+            Cómo Funciona este Simulador
+          </h3>
+          <p>Cada decisión que tomes tiene un impacto medible:</p>
+          <ul class="list-disc list-inside space-y-2">
+            <li>
+              <strong>Decisión Óptima:</strong> Aumenta la "Resolución GS",
+              ahorra tiempo clínico (hasta 15 min por una IT optimizada) y
+              mantiene las agendas despejadas.
+            </li>
+            <li>
+              <strong
+                >Decisión Subóptima (Ej: Derivar tarea de Gestión Enfermera a
+                Médico):</strong
+              >
+              No es un error grave, pero es ineficiente. Se pierde la
+              oportunidad de ahorrar tiempo y se carga al médico
+              innecesariamente.
+            </li>
+            <li>
+              <strong
+                >Decisión Ineficiente (Ej: Derivar tarea admin a un
+                médico):</strong
+              >
+              Reduce la eficiencia, consume un hueco en la agenda del médico y
+              suma minutos valiosos al "Tiempo Perdido".
+            </li>
+          </ul>
+          <p>
+            Observa cómo los KPIs y las analíticas cambian en tiempo real. ¡Tu
+            objetivo es maximizar la eficiencia y el tiempo ahorrado!
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenedor de Notificaciones -->
+    <div
+      id="notification-container"
+      class="fixed top-5 right-5 z-50 w-80 space-y-3"
+    ></div>
+
+    <!-- Pie de página con referencia -->
+    <footer class="text-center mt-8 text-xs text-slate-500">
+      <p>
+        Este simulador está inspirado en los conceptos del modelo COMFIA-UBA3,
+        descrito por J.M. Palacín Peruga en AMF 2024;20(6):364-370.
+      </p>
+    </footer>
+
+    <script>
+      // --- CONFIGURACIÓN Y PLANTILLAS DE TAREAS (VERSIÓN 2025) ---
+      const TASK_TEMPLATES = {
+        // Tareas Administrativas Puras (Ineficiencia si se derivan)
+        admin: [
+          {
+            text: "Solicitar justificante de visita al centro",
+            type: "admin",
+            icon: "fa-file-alt",
+            timeCost: 10,
+          },
+          {
+            text: "Renovar plan de medicación crónico (ya pautado)",
+            type: "admin",
+            icon: "fa-prescription-bottle-alt",
+            timeCost: 10,
+          },
+          {
+            text: "Pedir cita para la vacuna de la gripe",
+            type: "admin",
+            icon: "fa-syringe",
+            timeCost: 10,
+          },
+          {
+            text: "He perdido la receta, necesito otra",
+            type: "admin",
+            icon: "fa-redo",
+            timeCost: 10,
+          },
+          {
+            text: "Necesito un informe para el gimnasio",
+            type: "admin",
+            icon: "fa-dumbbell",
+            timeCost: 10,
+          },
+        ],
+        // Tareas que un GS puede resolver con protocolo, ahorrando consulta
+        optimizable: [
+          {
+            text: "Solicitud IT por proceso viral leve (2 días)",
+            type: "it-optimizable",
+            icon: "fa-file-signature",
+            timeCost: 15,
+          },
+          {
+            text: "Vengo a por resultados de analítica (sin alteraciones)",
+            type: "it-optimizable",
+            icon: "fa-folder",
+            timeCost: 15,
+          },
+        ],
+        // Tareas para Gestión Enfermera de la Demanda (Ineficiencia si van a MF)
+        nurse_ged: [
+          {
+            text: "Ajuste de pauta de insulina en crónico estable",
+            type: "nurse-ged",
+            icon: "fa-universal-access",
+            duration: 20,
+          },
+          {
+            text: "Consulta sobre pauta de paracetamol para fiebre",
+            type: "nurse-ged",
+            icon: "fa-pills",
+            duration: 15,
+          },
+          {
+            text: "Manejo de cistitis no complicada en mujer joven (protocolo)",
+            type: "nurse-ged",
+            icon: "fa-toilet-paper",
+            duration: 20,
+          },
+          {
+            text: "Educación sanitaria sobre nueva dieta para diabético",
+            type: "nurse-ged",
+            icon: "fa-seedling",
+            duration: 25,
+          },
+          {
+            text: "Revisión y seguimiento de HTA en paciente estable",
+            type: "nurse-ged",
+            icon: "fa-heartbeat",
+            duration: 20,
+          },
+        ],
+        // Tareas de Enfermería de cuidados
+        nurse_care: [
+          {
+            text: "Cura de herida quirúrgica compleja",
+            type: "nurse",
+            icon: "fa-band-aid",
+            duration: 20,
+          },
+          {
+            text: "Administrar una inyección intramuscular",
+            type: "nurse",
+            icon: "fa-syringe",
+            duration: 15,
+          },
+        ],
+        // Tareas que inequívocamente son para el Médico/a
+        medical: [
+          {
+            text: "Dolor torácico opresivo de inicio reciente",
+            type: "mf",
+            icon: "fa-heart-pulse",
+            duration: 30,
+          },
+          {
+            text: "Consulta por resultados de analítica con alteraciones graves",
+            type: "mf",
+            icon: "fa-vials",
+            duration: 20,
+          },
+          {
+            text: "Revisión de lunar que ha cambiado de forma y color",
+            type: "mf",
+            icon: "fa-search",
+            duration: 20,
+          },
+          {
+            text: "Cuadro de ansiedad con insomnio persistente",
+            type: "mf",
+            icon: "fa-moon",
+            duration: 30,
+          },
+          {
+            text: "Gestionar baja por IT compleja (requiere valoración)",
+            type: "mf",
+            icon: "fa-file-medical",
+            duration: 20,
+          },
+          {
+            text: "Paciente con fiebre de 39ºC que no cede",
+            type: "mf",
+            icon: "fa-thermometer-full",
+            duration: 20,
+          },
+        ],
+      };
+
+      const NOTIFICATION_MESSAGES = {
+        correct_resolve: {
+          title: "¡Eficiencia Pura!",
+          text: "Tarea administrativa resuelta por el GS. Tiempo clínico ahorrado.",
+          type: "success",
+        },
+        correct_optimized: {
+          title: "¡Optimización!",
+          text: "IT leve procesada sin consumir consulta médica. ¡15 min ahorrados!",
+          type: "success",
+        },
+        correct_assign_mf: {
+          title: "¡Decisión Correcta!",
+          text: "La petición se ha derivado a Médico/a de Familia.",
+          type: "success",
+        },
+        correct_assign_nurse: {
+          title: "¡Decisión Correcta!",
+          text: "Enfermería gestiona la demanda. ¡Rol potenciado!",
+          type: "success",
+        },
+        suboptimal_assign: {
+          title: "Decisión Subóptima",
+          text: "El Médico puede hacerlo, pero Gestión Enfermera era más eficiente.",
+          type: "warning",
+        },
+        error_resolve: {
+          title: "¡Error de Clasificación!",
+          text: "Una tarea clínica no debe ser resuelta por el GS. Esto es un riesgo.",
+          type: "error",
+        },
+        error_assign: {
+          title: "¡Ineficiencia Grave!",
+          text: "Se derivó una tarea administrativa a un sanitario, perdiendo tiempo y recursos.",
+          type: "error",
+        },
+      };
+
+      // --- ESTADO GLOBAL Y VARIABLES ---
+      let state = {};
+      let currentDraggedTaskId = null;
+      let currentDecisionTaskId = null;
+      let distributionChart = null;
+      const SIM_WORKDAY_MINUTES = 420;
+
+      // --- DOM ELEMENTS ---
+      const DOMElements = {
+        columns: {
+          incoming: document.getElementById("incoming-column"),
+          gs: document.getElementById("gs-column"),
+          mf: document.getElementById("mf-column"),
+          nurse: document.getElementById("nurse-column"),
+        },
+        kpis: {
+          resolucion: document.getElementById("kpi-resolucion"),
+          tiempo: document.getElementById("kpi-tiempo"),
+          demora: document.getElementById("kpi-demora"),
+        },
+        progress: {
+          resolucion: document.getElementById("progress-resolucion"),
+          tiempo: document.getElementById("progress-tiempo"),
+          demora: document.getElementById("progress-demora"),
+        },
+        stats: {
+          incorrect: document.getElementById("stat-incorrect"),
+          timeWasted: document.getElementById("stat-time-wasted"),
+        },
+        chartCanvas: document.getElementById("distribution-chart"),
+        decisionModal: {
+          modal: document.getElementById("decision-modal"),
+          description: document.getElementById("task-description"),
+          buttons: document.querySelectorAll(".decision-btn"),
+        },
+        infoModal: document.getElementById("info-modal"),
+        buttons: {
+          reset: document.getElementById("reset-sim"),
+          addTask: document.getElementById("add-task-btn"),
+          addBatch: document.getElementById("add-batch-btn"),
+          info: document.getElementById("info-button"),
+          closeInfo: document.getElementById("close-info-modal"),
+        },
+        notificationContainer: document.getElementById(
+          "notification-container"
+        ),
+      };
+
+      // --- LÓGICA DE LA SIMULACIÓN ---
+      function generateRandomTask() {
+        const allTasks = Object.values(TASK_TEMPLATES).flat();
+        return { ...allTasks[Math.floor(Math.random() * allTasks.length)] };
+      }
+
+      function createTask(specificTask = null) {
+        const template = specificTask || generateRandomTask();
+        const newTask = {
+          ...template,
+          id: `task-${Date.now()}-${Math.random()}`,
+          status: "incoming",
+        };
+        state.tasks[newTask.id] = newTask;
+        state.columns.incoming.push(newTask.id);
+      }
+
+      function handleDecision(action) {
+        const task = state.tasks[currentDecisionTaskId];
+        if (!task) return;
+
+        state.sessionStats.totalProcessed++;
+
+        if (action === "cancel") {
+          task.status = "incoming";
+          state.columns.gs.pop();
+          state.columns.incoming.push(task.id);
+        } else {
+          const isResolvable =
+            task.type === "admin" || task.type === "it-optimizable";
+          const isClinicalMf = task.type === "mf";
+          const isClinicalNurse =
+            task.type === "nurse" || task.type === "nurse-ged";
+
+          if (action === "resolve") {
+            if (isResolvable) {
+              state.sessionStats.correctDecisions++;
+              state.sessionStats.resolvedByGS++;
+              state.sessionStats.timeSaved += task.timeCost;
+              createNotification(
+                task.type === "it-optimizable"
+                  ? NOTIFICATION_MESSAGES.correct_optimized
+                  : NOTIFICATION_MESSAGES.correct_resolve
+              );
+            } else {
+              state.sessionStats.incorrectDecisions++;
+              state.sessionStats.timeWasted += task.duration;
+              createNotification(NOTIFICATION_MESSAGES.error_resolve);
+            }
+            delete state.tasks[task.id];
+            state.columns.gs.pop();
+          } else if (action === "assign-mf") {
+            if (isClinicalMf) {
+              state.sessionStats.correctDecisions++;
+              scheduleTask(task, "mf");
+              createNotification(NOTIFICATION_MESSAGES.correct_assign_mf);
+            } else if (task.type === "nurse-ged") {
+              state.sessionStats.incorrectDecisions++;
+              state.sessionStats.timeWasted += 5;
+              scheduleTask(task, "mf");
+              createNotification(NOTIFICATION_MESSAGES.suboptimal_assign);
+            } else {
+              state.sessionStats.incorrectDecisions++;
+              const timeLost = isClinicalNurse ? task.duration : task.timeCost;
+              state.sessionStats.timeWasted += timeLost;
+              scheduleTask({ ...task, duration: timeLost }, "mf");
+              createNotification(NOTIFICATION_MESSAGES.error_assign);
+            }
+            state.columns.gs.pop();
+          } else if (action === "assign-nurse") {
+            if (isClinicalNurse) {
+              state.sessionStats.correctDecisions++;
+              scheduleTask(task, "nurse");
+              createNotification(NOTIFICATION_MESSAGES.correct_assign_nurse);
+            } else {
+              state.sessionStats.incorrectDecisions++;
+              const timeLost = isClinicalMf ? task.duration : task.timeCost;
+              state.sessionStats.timeWasted += timeLost;
+              scheduleTask({ ...task, duration: timeLost }, "nurse");
+              createNotification(
+                isClinicalMf
+                  ? {
+                      title: "Error de Derivación",
+                      text: "Esta tarea era para un médico/a, no para enfermería.",
+                      type: "error",
+                    }
+                  : NOTIFICATION_MESSAGES.error_assign
+              );
+            }
+            state.columns.gs.pop();
+          }
+        }
+
+        closeDecisionModal();
+        render();
+      }
+
+      function scheduleTask(task, professional) {
+        const agenda = state.agendas[professional];
+        const { duration } = task;
+        const { startTime } = findNextAvailableSlot(agenda, duration);
+        agenda.push({
+          id: task.id,
+          text: task.text,
+          startMinutes: startTime,
+          duration,
+          professional,
+        });
+        agenda.sort((a, b) => a.startMinutes - b.startMinutes);
+        if (professional === "mf") state.sessionStats.mf++;
+        else state.sessionStats.nurse++;
+      }
+
+      function findNextAvailableSlot(agenda, duration) {
+        let lastEndTime = 0;
+        for (const appt of agenda) {
+          if (appt.startMinutes >= lastEndTime + duration)
+            return { startTime: lastEndTime };
+          lastEndTime = appt.startMinutes + appt.duration;
+        }
+        return { startTime: lastEndTime };
+      }
+
+      // --- RENDERIZADO Y DOM ---
+      function render() {
+        DOMElements.columns.incoming.innerHTML = "";
+        state.columns.incoming.forEach((taskId) => {
+          if (state.tasks[taskId])
+            DOMElements.columns.incoming.appendChild(
+              renderTask(state.tasks[taskId])
+            );
+        });
+
+        DOMElements.columns.gs.innerHTML = "";
+        if (state.columns.gs.length > 0) {
+          const taskId = state.columns.gs[0];
+          if (state.tasks[taskId])
+            DOMElements.columns.gs.appendChild(renderTask(state.tasks[taskId]));
+        } else {
+          DOMElements.columns.gs.innerHTML =
+            '<p class="text-center text-slate-500 p-4">Arrastra una petición aquí para iniciar el triaje.</p>';
+        }
+
+        renderAgenda("mf");
+        renderAgenda("nurse");
+        calculateAndRenderMetrics();
+      }
+
+      function renderTask(task) {
+        const card = document.createElement("div");
+        card.id = task.id;
+        card.className =
+          "task-card bg-white p-3 rounded-lg shadow border-l-4 flex items-center";
+        card.draggable = task.status === "incoming";
+
+        const colors = {
+          admin: "border-purple-500",
+          "it-optimizable": "border-teal-500",
+          mf: "border-orange-500",
+          nurse: "border-cyan-500",
+          "nurse-ged": "border-sky-600",
+        };
+        const iconColors = {
+          admin: "text-purple-500",
+          "it-optimizable": "text-teal-500",
+          mf: "text-orange-500",
+          nurse: "text-cyan-500",
+          "nurse-ged": "text-sky-600",
+        };
+
+        card.classList.add(colors[task.type]);
+        card.innerHTML = `<i class="fas ${task.icon} ${
+          iconColors[task.type]
+        } fa-lg mr-3 w-5 text-center"></i><span class="flex-grow text-slate-700 text-sm">${
+          task.text
+        }</span>`;
+
+        if (task.status === "incoming") {
+          card.addEventListener("dragstart", (e) => {
+            currentDraggedTaskId = task.id;
+            e.target.classList.add("dragging");
+          });
+          card.addEventListener("dragend", (e) =>
+            e.target.classList.remove("dragging")
+          );
+        } else {
+          card.classList.add("opacity-80", "cursor-not-allowed");
+        }
+        return card;
+      }
+
+      function renderAgenda(professional) {
+        const agendaEl = DOMElements.columns[professional];
+        agendaEl.innerHTML = "";
+
+        for (let i = 0; i < SIM_WORKDAY_MINUTES / 60; i++) {
+          const hourMarker = document.createElement("div");
+          hourMarker.className = "timeline-slot relative";
+          hourMarker.style.height = `${(60 / SIM_WORKDAY_MINUTES) * 100}%`;
+          const timeLabel = document.createElement("span");
+          timeLabel.className = "timeline-hour-marker";
+          timeLabel.textContent = `${8 + i}:00`;
+          hourMarker.appendChild(timeLabel);
+          agendaEl.appendChild(hourMarker);
+        }
+
+        state.agendas[professional].forEach((appt) => {
+          const apptEl = document.createElement("div");
+          apptEl.className = "appointment";
+          apptEl.title = appt.text; // Tooltip para el texto completo
+          const colors = {
+            mf: "border-orange-500 bg-orange-400",
+            nurse: "border-cyan-500 bg-cyan-400",
+          };
+          apptEl.classList.add(
+            ...(
+              colors[appt.professional] || "border-slate-500 bg-slate-400"
+            ).split(" ")
+          );
+          apptEl.style.top = `${
+            (appt.startMinutes / SIM_WORKDAY_MINUTES) * 100
+          }%`;
+          apptEl.style.height = `${
+            (appt.duration / SIM_WORKDAY_MINUTES) * 100
+          }%`;
+          apptEl.textContent = appt.text;
+          agendaEl.appendChild(apptEl);
+        });
+      }
+
+      function calculateAndRenderMetrics() {
+        const { sessionStats, agendas } = state;
+        const { kpis, progress, stats } = DOMElements;
+
+        const resolucionPct =
+          sessionStats.totalProcessed > 0
+            ? (sessionStats.resolvedByGS / sessionStats.totalProcessed) * 100
+            : 0;
+        kpis.resolucion.textContent = `${Math.round(resolucionPct)}%`;
+        progress.resolucion.style.width = `${Math.min(
+          100,
+          (resolucionPct / 40) * 100
+        )}%`;
+
+        const tiempoNeto = sessionStats.timeSaved - sessionStats.timeWasted;
+        kpis.tiempo.textContent = `${tiempoNeto} min`;
+        kpis.tiempo.className = `text-2xl font-bold ${
+          tiempoNeto >= 0 ? "text-green-600" : "text-red-600"
+        }`;
+        progress.tiempo.style.width = `${Math.min(
+          100,
+          Math.max(0, (tiempoNeto / 120) * 100)
+        )}%`;
+        progress.tiempo.className = `progress-bar h-1.5 rounded-full ${
+          tiempoNeto >= 0 ? "bg-blue-500" : "bg-red-500"
+        }`;
+
+        const nextAvailableTime = findNextAvailableSlot(
+          agendas.mf,
+          20
+        ).startTime;
+        const demoraHoras = nextAvailableTime / 60;
+        let demoraText = "<24h";
+        let demoraProgressPct = 100;
+        if (demoraHoras > 8) {
+          demoraText = "~48h";
+          demoraProgressPct = 50;
+        }
+        if (demoraHoras > 16) {
+          demoraText = ">48h";
+          demoraProgressPct = 10;
+        }
+        kpis.demora.textContent = demoraText;
+        progress.demora.style.width = `${demoraProgressPct}%`;
+
+        stats.incorrect.textContent = sessionStats.incorrectDecisions;
+        if (stats.timeWasted) {
+          stats.timeWasted.textContent = `${sessionStats.timeWasted} min`;
+        }
+
+        renderOrUpdateChart();
+      }
+
+      function renderOrUpdateChart() {
+        const { sessionStats } = state;
+        const data = [
+          sessionStats.resolvedByGS,
+          sessionStats.mf,
+          sessionStats.nurse,
+        ];
+
+        if (distributionChart) {
+          distributionChart.data.datasets[0].data = data;
+          distributionChart.update();
+        } else {
+          const ctx = DOMElements.chartCanvas.getContext("2d");
+          distributionChart = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+              labels: [
+                "Resueltas por GS",
+                "Derivadas a Médico/a",
+                "Derivadas a Enfermería",
+              ],
+              datasets: [
+                {
+                  data,
+                  backgroundColor: ["#22c55e", "#f97316", "#06b6d4"],
+                  borderColor: "#f1f5f9",
+                  borderWidth: 4,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: "bottom",
+                  labels: { padding: 15, font: { size: 12 } },
+                },
+              },
+            },
+          });
+        }
+      }
+
+      // --- MODALES Y NOTIFICACIONES ---
+      function showDecisionModal() {
+        const task = state.tasks[currentDecisionTaskId];
+        if (!task) return;
+        DOMElements.decisionModal.description.textContent = task.text;
+        DOMElements.decisionModal.modal.classList.remove("hidden");
+      }
+
+      function closeDecisionModal() {
+        currentDecisionTaskId = null;
+        DOMElements.decisionModal.modal.classList.add("hidden");
+      }
+
+      function createNotification({ title, text, type }) {
+        const colors = {
+          success: "bg-green-500",
+          warning: "bg-yellow-500",
+          error: "bg-red-500",
+        };
+        const icons = {
+          success: "fa-check-circle",
+          warning: "fa-exclamation-triangle",
+          error: "fa-times-circle",
+        };
+        const notif = document.createElement("div");
+        notif.className = `notification w-full p-4 rounded-lg text-white ${colors[type]}`;
+        notif.innerHTML = `<div class="flex items-start"><i class="fas ${icons[type]} fa-lg mr-3 mt-1"></i><div><h4 class="font-bold">${title}</h4><p class="text-sm">${text}</p></div></div>`;
+        DOMElements.notificationContainer.appendChild(notif);
+        setTimeout(() => notif.remove(), 4000);
+      }
+
+      // --- INICIALIZACIÓN Y ESCENARIOS ---
+      function init() {
+        if (distributionChart) {
+          distributionChart.destroy();
+          distributionChart = null;
+        }
+        state = {
+          tasks: {},
+          columns: { incoming: [], gs: [] },
+          agendas: { mf: [], nurse: [] },
+          sessionStats: {
+            totalProcessed: 0,
+            resolvedByGS: 0,
+            correctDecisions: 0,
+            incorrectDecisions: 0,
+            mf: 0,
+            nurse: 0,
+            timeSaved: 0,
+            timeWasted: 0,
+          },
+        };
+        render();
+      }
+
+      function loadScenario(level) {
+        init();
+
+        // Define a helper to process a task list for the scenario
+        const processScenarioTasks = (tasks, target) => {
+          tasks.forEach((task) => {
+            const newTask = { ...task, id: `task-preload-${Math.random()}` };
+            switch (target) {
+              case "gs-resolve":
+                state.sessionStats.resolvedByGS++;
+                state.sessionStats.timeSaved += newTask.timeCost;
+                break;
+              case "mf":
+                scheduleTask(newTask, "mf");
+                state.sessionStats.timeWasted += 10; // Assume inefficiency
+                break;
+              case "nurse":
+                scheduleTask(newTask, "nurse");
+                state.sessionStats.timeWasted += 10;
+                break;
+              case "mf-correct":
+                scheduleTask(newTask, "mf");
+                break;
+              case "nurse-correct":
+                scheduleTask(newTask, "nurse");
+                break;
+              case "incoming":
+                createTask(newTask);
+                break;
+            }
+          });
+        };
+
+        switch (level) {
+          case "low": // Tradicional: Agendas saturadas de burocracia
+            processScenarioTasks(TASK_TEMPLATES.admin, "mf");
+            processScenarioTasks(TASK_TEMPLATES.optimizable, "mf");
+            processScenarioTasks(TASK_TEMPLATES.nurse_ged, "mf");
+            processScenarioTasks(
+              TASK_TEMPLATES.medical.slice(0, 2),
+              "mf-correct"
+            );
+            processScenarioTasks(TASK_TEMPLATES.nurse_care, "nurse-correct");
+            state.sessionStats.totalProcessed =
+              state.agendas.mf.length + state.agendas.nurse.length;
+            state.sessionStats.incorrectDecisions = state.agendas.mf.length - 2;
+            break;
+          case "medium": // Mixto: Algo se filtra, pero aún hay ineficiencia
+            processScenarioTasks(
+              TASK_TEMPLATES.admin.slice(0, 2),
+              "gs-resolve"
+            );
+            processScenarioTasks(TASK_TEMPLATES.admin.slice(2), "mf");
+            processScenarioTasks(
+              TASK_TEMPLATES.optimizable.slice(0, 1),
+              "gs-resolve"
+            );
+            processScenarioTasks(TASK_TEMPLATES.optimizable.slice(1), "mf");
+            processScenarioTasks(
+              TASK_TEMPLATES.nurse_ged.slice(0, 2),
+              "nurse-correct"
+            );
+            processScenarioTasks(TASK_TEMPLATES.nurse_ged.slice(2), "mf");
+            processScenarioTasks(TASK_TEMPLATES.medical, "mf-correct");
+            state.sessionStats.totalProcessed =
+              state.agendas.mf.length +
+              state.agendas.nurse.length +
+              state.sessionStats.resolvedByGS;
+            state.sessionStats.incorrectDecisions =
+              state.agendas.mf.length - TASK_TEMPLATES.medical.length;
+            break;
+          case "high": // Óptimo: El filtro es excelente
+            processScenarioTasks(TASK_TEMPLATES.admin, "gs-resolve");
+            processScenarioTasks(TASK_TEMPLATES.optimizable, "gs-resolve");
+            processScenarioTasks(TASK_TEMPLATES.nurse_ged, "nurse-correct");
+            processScenarioTasks(TASK_TEMPLATES.nurse_care, "nurse-correct");
+            processScenarioTasks(TASK_TEMPLATES.medical, "mf-correct");
+            state.sessionStats.totalProcessed =
+              state.agendas.mf.length +
+              state.agendas.nurse.length +
+              state.sessionStats.resolvedByGS;
+            state.sessionStats.incorrectDecisions = 0;
+            break;
+        }
+
+        // Add some pending tasks for interaction
+        for (let i = 0; i < 3; i++) createTask();
+        render();
+      }
+
+      DOMElements.columns.gs.addEventListener("dragover", (e) => {
+        if (state.columns.gs.length === 0) {
+          e.preventDefault();
+          DOMElements.columns.gs.classList.add("drag-over");
+        }
+      });
+      DOMElements.columns.gs.addEventListener("dragleave", () =>
+        DOMElements.columns.gs.classList.remove("drag-over")
+      );
+      DOMElements.columns.gs.addEventListener("drop", (e) => {
+        if (state.columns.gs.length === 0) {
+          e.preventDefault();
+          DOMElements.columns.gs.classList.remove("drag-over");
+          const task = state.tasks[currentDraggedTaskId];
+          if (task && task.status === "incoming") {
+            state.columns.incoming = state.columns.incoming.filter(
+              (id) => id !== task.id
+            );
+            task.status = "in-gs";
+            state.columns.gs.push(task.id);
+            currentDecisionTaskId = task.id;
+            showDecisionModal();
+            render();
+          }
+        }
+      });
+
+      DOMElements.buttons.reset.addEventListener("click", () => {
+        init();
+        for (let i = 0; i < 8; i++) createTask();
+        render();
+      });
+      DOMElements.buttons.addTask.addEventListener("click", () => {
+        createTask();
+        render();
+      });
+      DOMElements.buttons.addBatch.addEventListener("click", () => {
+        for (let i = 0; i < 5; i++) createTask();
+        render();
+      });
+      DOMElements.buttons.info.addEventListener("click", () =>
+        DOMElements.infoModal.classList.remove("hidden")
+      );
+      DOMElements.buttons.closeInfo.addEventListener("click", () =>
+        DOMElements.infoModal.classList.add("hidden")
+      );
+      DOMElements.decisionModal.buttons.forEach((btn) =>
+        btn.addEventListener("click", (e) =>
+          handleDecision(e.currentTarget.dataset.action)
+        )
+      );
+
+      document.addEventListener("DOMContentLoaded", () => {
+        init();
+        for (let i = 0; i < 8; i++) createTask(); // Carga inicial
+        render();
+      });
+    </script>
+  </body>
+</html>
