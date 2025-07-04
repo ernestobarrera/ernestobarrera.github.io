@@ -6,6 +6,7 @@
     <title>Simulador Avanzado de Eficiencia Sanitaria (Edición 2025)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
@@ -28,7 +29,8 @@
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
           0 4px 6px -2px rgba(0, 0, 0, 0.05);
       }
-      .task-card.dragging {
+      /* MODIFICADO: La clase .dragging ahora la gestiona SortableJS, pero la mantenemos para estilo */
+      .task-card.sortable-ghost {
         opacity: 0.6;
         transform: scale(1.05) rotate(3deg);
         background-color: #e0e7ff;
@@ -37,7 +39,8 @@
         min-height: 500px;
         transition: background-color 0.3s;
       }
-      .agenda-column.drag-over {
+      /* MODIFICADO: La clase .drag-over ahora la gestiona SortableJS */
+      .agenda-column.sortable-drag-over {
         background-color: #dbeafe; /* blue-100 */
       }
       .tooltip-container {
@@ -145,7 +148,6 @@
   </head>
   <body class="p-4 md:p-6">
     <div class="max-w-screen-2xl mx-auto">
-      <!-- Encabezado y Controles -->
       <header class="bg-white p-4 rounded-2xl shadow-md mb-6">
         <div class="flex flex-wrap justify-between items-center gap-4">
           <div>
@@ -156,7 +158,6 @@
               Un modelo evolutivo de gestión para Atención Primaria.
             </p>
           </div>
-          <!-- NUEVO: Botones de Escenarios -->
           <div class="flex flex-wrap items-center gap-2">
             <span class="font-semibold text-slate-600 mr-2"
               >Cargar Escenario:</span
@@ -197,9 +198,7 @@
         </div>
       </header>
 
-      <!-- KPIs y Flujo de Trabajo -->
       <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
-        <!-- Columna 1: Peticiones Entrantes -->
         <div class="bg-white p-5 rounded-2xl shadow-lg flex flex-col">
           <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
             <i class="fas fa-inbox fa-lg text-red-500 mr-3"></i>Peticiones
@@ -224,7 +223,6 @@
             </button>
           </div>
         </div>
-        <!-- Columna 2: Gestor de Salud -->
         <div class="bg-white p-5 rounded-2xl shadow-lg flex flex-col">
           <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
             <i class="fas fa-user-tie fa-lg text-indigo-500 mr-3"></i>Gestor de
@@ -239,7 +237,6 @@
             </p>
           </div>
         </div>
-        <!-- Columna 3: Agenda Médico -->
         <div class="bg-white p-5 rounded-2xl shadow-lg flex flex-col">
           <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
             <i class="fas fa-user-md fa-lg text-orange-500 mr-3"></i>Agenda:
@@ -250,7 +247,6 @@
             class="agenda-column agenda-timeline rounded-lg p-2 pl-12"
           ></div>
         </div>
-        <!-- Columna 4: Agenda Enfermería -->
         <div class="bg-white p-5 rounded-2xl shadow-lg flex flex-col">
           <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
             <i class="fas fa-user-nurse fa-lg text-cyan-500 mr-3"></i>Agenda:
@@ -262,14 +258,12 @@
           ></div>
         </div>
 
-        <!-- Columna 5: KPIs y Analíticas -->
         <div class="bg-white p-5 rounded-2xl shadow-lg">
           <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center">
             <i class="fas fa-chart-line fa-lg text-teal-500 mr-3"></i>Métricas
             de Eficiencia
           </h2>
           <div class="space-y-4">
-            <!-- KPI: Resolución GS -->
             <div class="bg-slate-50 p-3 rounded-lg">
               <p class="text-sm font-medium text-slate-500 tooltip-container">
                 Resolución del GS
@@ -293,7 +287,6 @@
                 ></div>
               </div>
             </div>
-            <!-- KPI: Tiempo Ahorrado -->
             <div class="bg-slate-50 p-3 rounded-lg">
               <p class="text-sm font-medium text-slate-500 tooltip-container">
                 Tiempo Clínico Ahorrado
@@ -321,7 +314,6 @@
                 ></div>
               </div>
             </div>
-            <!-- KPI: Accesibilidad (Demora) -->
             <div class="bg-slate-50 p-3 rounded-lg">
               <p class="text-sm font-medium text-slate-500 tooltip-container">
                 Accesibilidad (Demora MF)
@@ -346,14 +338,12 @@
                 ></div>
               </div>
             </div>
-            <!-- Gráfico -->
             <div class="bg-slate-50 p-4 rounded-lg mt-4">
               <h3 class="text-md font-semibold text-slate-700 mb-2 text-center">
                 Distribución de Tareas
               </h3>
               <canvas id="distribution-chart" class="max-h-48"></canvas>
             </div>
-            <!-- Stats -->
             <div class="bg-slate-100 p-3 rounded-lg">
               <p class="text-sm font-medium text-slate-600 tooltip-container">
                 Decisiones Ineficientes
@@ -368,7 +358,6 @@
                 0
               </p>
             </div>
-            <!-- FIX: Added missing stat-time-wasted element -->
             <div class="bg-slate-100 p-3 rounded-lg">
               <p class="text-sm font-medium text-slate-600 tooltip-container">
                 Tiempo Clínico Perdido
@@ -388,7 +377,6 @@
       </div>
     </div>
 
-    <!-- Modal de Decisión -->
     <div
       id="decision-modal"
       class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50"
@@ -430,7 +418,6 @@
       </div>
     </div>
 
-    <!-- Modal de Información -->
     <div
       id="info-modal"
       class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50"
@@ -530,13 +517,11 @@
       </div>
     </div>
 
-    <!-- Contenedor de Notificaciones -->
     <div
       id="notification-container"
       class="fixed top-5 right-5 z-50 w-80 space-y-3"
     ></div>
 
-    <!-- Pie de página con referencia -->
     <footer class="text-center mt-8 text-xs text-slate-500">
       <p>
         Este simulador está inspirado en los conceptos del modelo COMFIA-UBA3,
@@ -724,7 +709,7 @@
 
       // --- ESTADO GLOBAL Y VARIABLES ---
       let state = {};
-      let currentDraggedTaskId = null;
+      // ELIMINADO: currentDraggedTaskId ya no es necesario
       let currentDecisionTaskId = null;
       let distributionChart = null;
       const SIM_WORKDAY_MINUTES = 420;
@@ -923,7 +908,9 @@
         card.id = task.id;
         card.className =
           "task-card bg-white p-3 rounded-lg shadow border-l-4 flex items-center";
-        card.draggable = task.status === "incoming";
+
+        // MODIFICADO: Ya no se necesita card.draggable
+        // card.draggable = task.status === "incoming";
 
         const colors = {
           admin: "border-purple-500",
@@ -947,15 +934,8 @@
           task.text
         }</span>`;
 
-        if (task.status === "incoming") {
-          card.addEventListener("dragstart", (e) => {
-            currentDraggedTaskId = task.id;
-            e.target.classList.add("dragging");
-          });
-          card.addEventListener("dragend", (e) =>
-            e.target.classList.remove("dragging")
-          );
-        } else {
+        // ELIMINADO: Los event listeners de drag and drop nativos
+        if (task.status !== "incoming") {
           card.classList.add("opacity-80", "cursor-not-allowed");
         }
         return card;
@@ -1129,6 +1109,51 @@
       }
 
       // --- INICIALIZACIÓN Y ESCENARIOS ---
+      // AÑADIDO: Nueva función para gestionar el Drag and Drop
+      function initializeDragAndDrop() {
+        new Sortable(DOMElements.columns.incoming, {
+          group: "shared", // Permite mover elementos entre listas con el mismo nombre de grupo
+          animation: 150,
+          ghostClass: "sortable-ghost", // Clase CSS para el fantasma del elemento
+        });
+
+        new Sortable(DOMElements.columns.gs, {
+          group: "shared",
+          animation: 150,
+          ghostClass: "sortable-ghost",
+          dragoverBubble: false,
+          onAdd: function (evt) {
+            // evt.to es el contenedor de destino (gs-column)
+            // evt.from es el contenedor de origen (incoming-column)
+            // evt.item es el elemento HTML que se movió
+
+            // Solo permitir un item a la vez en la columna GS
+            if (state.columns.gs.length > 0) {
+              // Si ya hay un elemento, no hacemos nada con el nuevo.
+              // SortableJS lo devolverá automáticamente si no lo manejamos.
+              return;
+            }
+
+            const taskId = evt.item.id;
+            const task = state.tasks[taskId];
+
+            if (task && task.status === "incoming") {
+              // Actualizar el estado
+              state.columns.incoming = state.columns.incoming.filter(
+                (id) => id !== taskId
+              );
+              task.status = "in-gs";
+              state.columns.gs.push(taskId);
+
+              // Disparar la lógica de decisión
+              currentDecisionTaskId = taskId;
+              showDecisionModal();
+              render();
+            }
+          },
+        });
+      }
+
       function init() {
         if (distributionChart) {
           distributionChart.destroy();
@@ -1149,6 +1174,10 @@
             timeWasted: 0,
           },
         };
+
+        // AÑADIDO: Inicializamos SortableJS
+        initializeDragAndDrop();
+
         render();
       }
 
@@ -1242,32 +1271,7 @@
         render();
       }
 
-      DOMElements.columns.gs.addEventListener("dragover", (e) => {
-        if (state.columns.gs.length === 0) {
-          e.preventDefault();
-          DOMElements.columns.gs.classList.add("drag-over");
-        }
-      });
-      DOMElements.columns.gs.addEventListener("dragleave", () =>
-        DOMElements.columns.gs.classList.remove("drag-over")
-      );
-      DOMElements.columns.gs.addEventListener("drop", (e) => {
-        if (state.columns.gs.length === 0) {
-          e.preventDefault();
-          DOMElements.columns.gs.classList.remove("drag-over");
-          const task = state.tasks[currentDraggedTaskId];
-          if (task && task.status === "incoming") {
-            state.columns.incoming = state.columns.incoming.filter(
-              (id) => id !== task.id
-            );
-            task.status = "in-gs";
-            state.columns.gs.push(task.id);
-            currentDecisionTaskId = task.id;
-            showDecisionModal();
-            render();
-          }
-        }
-      });
+      // ELIMINADO: Los antiguos listeners de drop
 
       DOMElements.buttons.reset.addEventListener("click", () => {
         init();
