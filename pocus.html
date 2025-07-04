@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>POCUS-Clínic: Guía Anatómica Segmentada (Corregida)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f0f4f8;
+      }
+      #human-svg .segment {
+        fill: rgba(219, 234, 254, 0.5); /* blue-100 with opacity */
+        stroke: #60a5fa; /* blue-400 */
+        stroke-width: 1.5;
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+      #human-svg .segment:hover,
+      #human-svg .segment.active {
+        fill: rgba(59, 130, 246, 0.7); /* blue-500 with opacity */
+        stroke: #1d4ed8; /* blue-800 */
+        stroke-width: 2.5;
+      }
+      #tooltip {
+        position: absolute;
+        display: none;
+        background-color: #111827;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        pointer-events: none;
+        z-index: 10;
+      }
+      .content-card {
+        display: none;
+        animation: fadeIn 0.5s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .tab-button {
+        transition: all 0.3s ease;
+      }
+      .tab-button.active {
+        background-color: #1e3a8a; /* blue-900 */
+        color: white;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+        animation: fadeIn 0.4s;
+      }
+      .prose strong {
+        color: #1e40af; /* blue-800 */
+      }
+      .prose .evidence {
+        background-color: #eef2ff; /* indigo-50 */
+        border-left: 4px solid #4f46e5; /* indigo-600 */
+        padding: 1rem;
+        margin-top: 1rem;
+        border-radius: 0.375rem;
+      }
+      .prose ul {
+        list-style-position: inside;
+      }
+      .prose li::marker {
+        color: #3b82f6;
+      }
+      .findings-description {
+        background-color: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+      }
+      .reference-link {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #4f46e5;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      .pearls-section h5 {
+        font-size: 1.05em;
+        font-weight: 700;
+        color: #1d4ed8;
+        margin-top: 0.75rem;
+        margin-bottom: 0.25rem;
+      }
+    </style>
+  </head>
+  <body class="text-gray-800">
+    <header class="bg-white shadow-md sticky top-0 z-20">
+      <div
+        class="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center"
+      >
+        <div class="flex items-center space-x-3">
+          <svg
+            class="h-8 w-8 text-blue-700"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"
+            />
+          </svg>
+          <h1 class="text-xl sm:text-2xl font-bold text-blue-800">
+            POCUS-Clínic Interactivo
+          </h1>
+        </div>
+      </div>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column: Interactive Human -->
+        <div
+          class="lg:col-span-1 flex flex-col items-center p-4 bg-white rounded-xl shadow-lg self-start lg:sticky top-24"
+        >
+          <h2 class="text-xl font-bold text-gray-700 mb-4">
+            Seleccione una Zona
+          </h2>
+          <div id="tooltip"></div>
+          <svg
+            id="human-svg"
+            viewBox="0 0 200 400"
+            class="w-full max-w-xs h-auto"
+          >
+            <!-- Base body shape -->
+            <path
+              d="M100,10 C125,10 140,20 140,40 C140,60 130,70 130,85 L140,150 Q100,160 60,150 L70,85 C70,70 75,60 100,40 C100,20 75,10 100,10 M140,150 L135,240 Q100,250 65,240 L60,150 M65,90 Q50,115 50,165 L40,165 Q35,115 55,90 M135,90 Q150,115 150,165 L160,165 Q165,115 145,90 M65,245 L85,245 L80,380 Q70,390 60,380 M115,245 L135,245 L140,380 Q130,390 120,380"
+              fill="#e0e7ff"
+              stroke="#c7d2fe"
+              stroke-width="1"
+            />
+
+            <!-- Segments -->
+            <circle
+              cx="100"
+              cy="40"
+              r="25"
+              class="segment"
+              data-segment="ocular"
+              data-tooltip="Ocular"
+            />
+            <path
+              d="M85,65 L115,65 L110,80 L90,80 Z"
+              class="segment"
+              data-segment="neck"
+              data-tooltip="Cuello (Tiroides/Linfático)"
+            />
+
+            <path
+              d="M75,88 h50 v25 h-50 z"
+              class="segment"
+              data-segment="cardiac"
+              data-tooltip="Cardíaco"
+            />
+            <path
+              d="M72,115 h25 v30 h-25 z"
+              class="segment"
+              data-segment="lung_left"
+              data-tooltip="Pulmonar Izquierdo"
+            />
+            <path
+              d="M103,115 h25 v30 h-25 z"
+              class="segment"
+              data-segment="lung_right"
+              data-tooltip="Pulmonar Derecho"
+            />
+
+            <!-- CORRECTED ABDOMINAL SEGMENTS -->
+            <path
+              d="M63,158 h35 v35 h-35 z"
+              class="segment"
+              data-segment="ruq"
+              data-tooltip="Hígado y Vía Biliar (CSD)"
+            />
+            <path
+              d="M102,158 h35 v35 h-35 z"
+              class="segment"
+              data-segment="luq"
+              data-tooltip="Bazo (CSI)"
+            />
+            <path
+              d="M70,195 h60 v20 h-60 z"
+              class="segment"
+              data-segment="epigastric"
+              data-tooltip="Aorta / Epigastrio"
+            />
+            <path
+              d="M68,217 h30 v20 h-30 z"
+              class="segment"
+              data-segment="rlq"
+              data-tooltip="Fosa Ilíaca Derecha (Apendicitis)"
+            />
+            <path
+              d="M102,217 h30 v20 h-30 z"
+              class="segment"
+              data-segment="llq"
+              data-tooltip="Fosa Ilíaca Izquierda"
+            />
+            <path
+              d="M75,238 h50 v20 h-50 z"
+              class="segment"
+              data-segment="suprapubic"
+              data-tooltip="Vejiga / Ginecológico"
+            />
+            <path
+              d="M85,260 h30 v15 h-30 z"
+              class="segment"
+              data-segment="scrotal"
+              data-tooltip="Testicular"
+            />
+
+            <path
+              d="M50,95 L63,92 L60,120 L48,122 Z"
+              class="segment"
+              data-segment="shoulder"
+              data-tooltip="Hombro"
+            />
+            <path
+              d="M137,92 L150,95 L152,122 L140,120 Z"
+              class="segment"
+              data-segment="shoulder"
+              data-tooltip="Hombro"
+            />
+
+            <path
+              d="M118,245 L138,245 L138,300 L118,300 Z"
+              class="segment"
+              data-segment="dvt"
+              data-tooltip="TVP (Poplítea)"
+            />
+            <path
+              d="M62,245 L82,245 L82,300 L62,300 Z"
+              class="segment"
+              data-segment="dvt"
+              data-tooltip="TVP (Poplítea)"
+            />
+          </svg>
+        </div>
+
+        <!-- Right Column: Content -->
+        <div id="content-area" class="lg:col-span-2">
+          <div
+            id="welcome-message"
+            class="flex flex-col items-center justify-center h-full bg-white p-8 rounded-xl shadow-lg text-center"
+          >
+            <svg
+              class="h-16 w-16 text-blue-500 mb-4"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 9.75L14.25 12m0 0l2.25 2.25M14.25 12l2.25-2.25M14.25 12L12 14.25m-2.58 4.92l-6.375-6.375a1.125 1.125 0 010-1.59L9.42 4.83c.211-.211.498-.33.796-.33H19.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-9.284c-.298 0-.585-.119-.796-.33z"
+              />
+            </svg>
+            <h3 class="text-2xl font-bold text-gray-800">
+              Bienvenido a la Guía POCUS Interactiva
+            </h3>
+            <p class="mt-2 text-gray-600">
+              Pase el cursor y haga clic en una zona anatómica a la izquierda
+              para ver las aplicaciones de ultrasonido relevantes.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- References Section -->
+      <div id="references-section" class="mt-12"></div>
+    </main>
+
+    <script>
+      const references = {
+        pneumonia_long_2017: {
+          id: "pneumonia_long_2017",
+          citation:
+            "Long L, et al. Lung ultrasound for the diagnosis of pneumonia in adults: A meta-analysis. Medicine (Baltimore). 2017;96(3):e5713.",
+          url: "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5279090/",
+        },
+        pleural_adhikari_2015: {
+          id: "pleural_adhikari_2015",
+          citation:
+            "Adhikari S, et al. Accuracy of point-of-care ultrasound for diagnosis of pleural effusion in undifferentiated dyspnea. Am J Emerg Med. 2015;33(11):1667-70.",
+          url: "https://pubmed.ncbi.nlm.nih.gov/26343366/",
+        },
+        pneumothorax_lichtenstein_2008: {
+          id: "pneumothorax_lichtenstein_2008",
+          citation:
+            "Lichtenstein DA, Mezière GA. Relevance of lung ultrasound in the diagnosis of acute respiratory failure: the BLUE protocol. Chest. 2008;134(1):117-25.",
+          url: "https://pubmed.ncbi.nlm.nih.gov/18403664/",
+        },
+        aaa_rubano_2013: {
+          id: "aaa_rubano_2013",
+          citation:
+            "Rubano E, et al. Systematic review: emergency department bedside ultrasonography for diagnosing suspected abdominal aortic aneurysm. Acad Emerg Med. 2013;20(2):128-38.",
+          url: "https://pubmed.ncbi.nlm.nih.gov/23406071/",
+        },
+        biliary_summers_2010: {
+          id: "biliary_summers_2010",
+          citation:
+            "Summers SM, et al. A prospective evaluation of emergency department bedside ultrasonography for the detection of cholelithiasis. Ann Emerg Med. 2010;56(2):129-35.",
+          url: "https://pubmed.ncbi.nlm.nih.gov/20138423/",
+        },
+        appendicitis_bernardi_2022: {
+          id: "appendicitis_bernardi_2022",
+          citation:
+            "Bernardi K, et al. Point-of-care ultrasound for the diagnosis of acute appendicitis in the emergency department: a systematic review and meta-analysis. CJEM. 2022;24(7):736-745.",
+          url: "https://pubmed.ncbi.nlm.nih.gov/35943679/",
+        },
+        dvt_pomero_2022: {
+          id: "dvt_pomero_2022",
+          citation:
+            "Pomero F, et al. Point-of-care ultrasound for diagnosis of deep vein thrombosis in the emergency department: a systematic review and meta-analysis. Ann Emerg Med. 2022;S0196-0644(22)00216-9.",
+          url: "https://pubmed.ncbi.nlm.nih.gov/35659850/",
+        },
+        abscess_subramaniam_2016: {
+          id: "abscess_subramaniam_2016",
+          citation:
+            "Subramaniam S, Bober J, Chao J, Zehtabchi S. Point-of-care ultrasound for diagnosis of abscess in skin and soft tissue infections. Acad Emerg Med. 2016;23(11):1298-1306.",
+          url: "https://pubmed.ncbi.nlm.nih.gov/27535722/",
+        },
+        testicular_torsion_bandarkar_2019: {
+          id: "testicular_torsion_bandarkar_2019",
+          citation:
+            "Bandarkar AN, Blask AR. Testicular torsion with preserved flow: key sonographic features and value-added approach. Pediatr Radiol. 2019;49(9):1147-1154.",
+          url: "https://pubmed.ncbi.nlm.nih.gov/31087031/",
+        },
+      };
+
+      const pocusData = [
+        {
+          segment: "ocular",
+          system: "Ocular",
+          color: "cyan",
+          title: "POCUS Ocular",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal (alta frecuencia, >7.5 MHz).</li><li><strong>Técnica:</strong> Aplicar una capa gruesa de gel sobre el párpado cerrado del paciente para crear un "colchón" acústico. Apoyar la sonda suavemente, sin ejercer presión sobre el globo ocular. Evaluar en planos sagital y transversal, pidiendo al paciente que mueva el ojo para evaluar la dinámica de las estructuras.</li></ul>`,
+            findings: `Se busca: 1) <strong>Desprendimiento de Retina:</strong> Membrana hiperecogénica gruesa, ondulante, que parece una "cuerda" flotando en el vítreo, anclada posteriormente al disco óptico. Muestra un movimiento característico de "flotación" con los movimientos oculares. 2) <strong>Aumento de PIC:</strong> Medir el diámetro de la vaina del nervio óptico (DVNO) 3 mm por detrás del globo. Un DVNO > 5 mm en adultos sugiere fuertemente hipertensión intracraneal. 3) <strong>Hemorragia Vítrea:</strong> Ecos de baja amplitud, móviles y difusos en la cavidad vítrea, que se arremolinan con el movimiento ocular como una "lavadora".`,
+            evidence: `<p>El POCUS ocular es altamente sensible y específico para el desprendimiento de retina (>97% y >92% respectivamente). La medición del DVNO es una herramienta prometedora y no invasiva para estimar la PIC.</p>`,
+            pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Presionar demasiado fuerte sobre el ojo, lo que puede ser peligroso si hay una rotura ocular. Use siempre una gran cantidad de gel.</p><h5>Impacto Clínico</h5><p>En un paciente con pérdida de visión aguda, diferenciar un desprendimiento de retina (emergencia oftalmológica) de una hemorragia vítrea cambia radicalmente el manejo urgente.</p></div>`,
+          },
+        },
+        {
+          segment: "neck",
+          system: "Endocrino",
+          color: "teal",
+          title: "Nódulo Tiroideo",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Examen sistemático de ambos lóbulos tiroideos y el istmo en planos transversal y longitudinal. Paciente en supino con una almohada bajo los hombros para hiperextender el cuello.</li></ul>`,
+            findings: `Se evalúan las características del nódulo para estratificar el riesgo (ej. sistema TI-RADS). <strong>Hallazgos sospechosos:</strong> Hipoecogenicidad marcada (más oscuro que el músculo adyacente), forma "más alta que ancha" (taller-than-wide), márgenes irregulares, microlobulados o espiculados, y presencia de microcalcificaciones (puntos hiperecogénicos puntiformes sin sombra). <strong>Hallazgos de bajo riesgo:</strong> Nódulos puramente quísticos, espongiformes, o iso/hiperecogénicos con márgenes regulares y halo fino.`,
+            evidence: `<p>El POCUS es la principal modalidad de imagen para evaluar nódulos tiroideos y guiar la necesidad de una biopsia por aspiración con aguja fina (BAAF).</p>`,
+            pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Confundir vasos sanguíneos con nódulos. Use Doppler color para confirmar la ausencia de flujo en un nódulo verdadero.</p><h5>Impacto Clínico</h5><p>El objetivo en AP es identificar nódulos de alto riesgo (>1 cm con características sospechosas) que requieran derivación para una evaluación especializada y posible BAAF, evitando estudios innecesarios en nódulos de bajo riesgo.</p></div>`,
+          },
+        },
+        {
+          segment: "neck",
+          system: "Linfático",
+          color: "lime",
+          title: "Adenopatías Cervicales",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Mapeo sistemático de las cadenas ganglionares cervicales (niveles I-VI).</li></ul>`,
+            findings: `<strong>Ganglios reactivos/benignos:</strong> Suelen ser ovalados (eje corto/largo < 0.5), con un centro hiperecogénico bien definido (hilio graso) y vascularización hiliar normal al Doppler. <strong>Ganglios sospechosos/malignos:</strong> Tienden a ser redondeados (eje corto/largo > 0.5), marcadamente hipoecoicos, con pérdida del hilio graso, y pueden mostrar calcificaciones o necrosis central quística. La vascularización periférica, mixta o caótica al Doppler es un signo de sospecha.`,
+            evidence: `<p>El POCUS puede diferenciar con buena precisión entre adenopatías reactivas y sospechosas, guiando la necesidad de seguimiento o biopsia.</p>`,
+            pearls: `<div class="pearls-section"><h5>Clave Diferencial</h5><p>La morfología es más importante que el tamaño. Un ganglio pequeño y redondo es más sospechoso que uno grande y ovalado.</p><h5>Impacto Clínico</h5><p>Permite tomar decisiones informadas sobre si una adenopatía requiere una actitud expectante (probable origen reactivo) o una investigación más profunda (sospecha de malignidad o infección específica como tuberculosis).</p></div>`,
+          },
+        },
+        {
+          segment: "cardiac",
+          system: "Cardiovascular",
+          color: "red",
+          title: "Ecografía Cardíaca Focalizada (FoCUS)",
+          content: {
+            technique: `<p>Adquisición de vistas PSLA, PSSA, Apical 4C y Subcostal 4C para evaluar la "bomba".</p>`,
+            findings: `Se busca: 1) <strong>Función VI:</strong> Evaluación cualitativa (hiperdinámico, normal, hipocontráctil). 2) <strong>Derrame Pericárdico:</strong> Espacio anecoico alrededor del corazón. Buscar colapso de cavidades derechas (taponamiento). 3) <strong>Tamaño VD:</strong> Comparar con VI en la vista A4C. Un VD > VI sugiere sobrecarga de presión aguda (ej. TEP masivo).`,
+            evidence: `<p>Identifica rápidamente causas de shock y parada cardíaca. Guía la fluidoterapia y el uso de inotrópicos.</p>`,
+            pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Confundir un derrame pleural izquierdo con un derrame pericárdico. El pericardio se ve anterior a la aorta descendente en la vista PSLA, mientras que el derrame pleural es posterior.</p><h5>Impacto Clínico</h5><p>La vista subcostal suele ser la más fácil de obtener en pacientes críticos o con EPOC. Es la vista de elección para detectar derrame pericárdico.</p></div>`,
+          },
+        },
+        {
+          segment: "lung_left",
+          system: "Pulmonar",
+          color: "blue",
+          title: "Exploración Pulmonar Izquierda",
+          refId: "pneumothorax_lichtenstein_2008",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Convexa o lineal, dependiendo de la indicación.</li><li><strong>Técnica:</strong> Examen sistemático de las zonas anterior, lateral y posterior (punto PLAPS).</li></ul>`,
+            findings: `Buscar: <strong>Neumonía</strong> (consolidación, broncograma aéreo), <strong>Derrame Pleural</strong> (espacio anecoico), <strong>Edema Pulmonar</strong> (líneas B difusas), <strong>Neumotórax</strong> (ausencia de deslizamiento, punto pulmonar).`,
+            evidence: `<p>La ecografía pulmonar es una herramienta versátil para el diagnóstico diferencial de la disnea y el dolor torácico.</p>`,
+            pearls: `<div class="pearls-section"><h5>Clave de la Exploración</h5><p>Cada zona del pulmón puede revelar una patología diferente. Un examen completo es crucial. El punto PLAPS (PosteroLateral Alveolar and/or Pleural Syndrome) es el más sensible para derrames y consolidaciones basales.</p></div>`,
+          },
+        },
+        {
+          segment: "lung_right",
+          system: "Pulmonar",
+          color: "blue",
+          title: "Exploración Pulmonar Derecha",
+          refId: "pneumothorax_lichtenstein_2008",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Convexa o lineal, dependiendo de la indicación.</li><li><strong>Técnica:</strong> Examen sistemático de las zonas anterior, lateral y posterior (punto PLAPS).</li></ul>`,
+            findings: `Buscar: <strong>Neumonía</strong> (consolidación, broncograma aéreo), <strong>Derrame Pleural</strong> (espacio anecoico), <strong>Edema Pulmonar</strong> (líneas B difusas), <strong>Neumotórax</strong> (ausencia de deslizamiento, punto pulmonar).`,
+            evidence: `<p>La ecografía pulmonar es una herramienta versátil para el diagnóstico diferencial de la disnea y el dolor torácico.</p>`,
+            pearls: `<div class="pearls-section"><h5>Clave de la Exploración</h5><p>Cada zona del pulmón puede revelar una patología diferente. Un examen completo es crucial. El punto PLAPS (PosteroLateral Alveolar and/or Pleural Syndrome) es el más sensible para derrames y consolidaciones basales.</p></div>`,
+          },
+        },
+        {
+          segment: "ruq",
+          system: "Abdominal",
+          color: "green",
+          title: "Colelitiasis y Colecistitis",
+          refId: "biliary_summers_2010",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Convexa.</li><li><strong>Técnica:</strong> Exploración del cuadrante superior derecho, usando el hígado como ventana acústica.</li></ul>`,
+            findings: `<strong>Colelitiasis:</strong> Se ven focos hiperecogénicos (blancos, brillantes), móviles, que proyectan una <strong>sombra acústica posterior</strong> bien definida. <strong>Colecistitis:</strong> Se buscan signos secundarios: 1) Engrosamiento de la pared vesicular (>3mm). 2) Líquido pericolecístico (fina lámina anecoica). 3) <strong>Signo de Murphy ecográfico positivo</strong> (dolor máximo al presionar con la sonda sobre la vesícula). 4) Cálculo impactado en el cuello.`,
+            evidence: `<p>Precisión global del ~89% para colecistitis. La combinación de hallazgos tiene una especificidad muy alta.</p>`,
+            pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Confundir el duodeno con la vesícula. El duodeno tiene gas y peristaltismo. La sombra acústica de un cálculo puede ser sutil; mover al paciente ayuda a confirmar la movilidad del cálculo.</p><h5>Impacto Clínico</h5><p>El signo de Murphy ecográfico es más específico que el clínico. Un POCUS positivo puede acelerar la consulta quirúrgica y el tratamiento.</p></div>`,
+          },
+        },
+        {
+          segment: "ruq",
+          system: "Abdominal",
+          color: "green",
+          title: "Hepatomegalia y Esteatosis",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Convexa.</li><li><strong>Técnica:</strong> Medir la longitud craneocaudal del hígado en la línea medioclavicular. Comparar la ecogenicidad del hígado con la del riñón derecho.</li></ul>`,
+            findings: `<strong>Hepatomegalia:</strong> Una longitud > 15-16 cm en la línea medioclavicular. <strong>Esteatosis (hígado graso):</strong> Se manifiesta como un <strong>aumento de la ecogenicidad del parénquima hepático</strong>. El hígado aparece más "brillante" que la corteza renal adyacente (comparación hepatorrenal). En casos severos, hay una pobre visualización de las estructuras portales y del diafragma debido a la atenuación del sonido.`,
+            evidence: `<p>El POCUS es una excelente herramienta de cribado para la esteatosis hepática, con buena sensibilidad y especificidad, especialmente para la esteatosis moderada a severa.</p>`,
+            pearls: `<p>La comparación hepatorrenal es clave. Un hígado normal es isoecoico o ligeramente hiperecogénico respecto al riñón. Un hígado marcadamente más brillante es patológico.</p>`,
+          },
+        },
+        {
+          segment: "luq",
+          system: "Abdominal",
+          color: "green",
+          title: "Esplenomegalia",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Convexa.</li><li><strong>Técnica:</strong> Colocar la sonda en el espacio intercostal posterior izquierdo (línea axilar posterior), usando una vista coronal.</li></ul>`,
+            findings: `El bazo se visualiza craneal y posterior al riñón izquierdo. La esplenomegalia se define generalmente como una <strong>longitud máxima > 12-13 cm</strong>. También se puede comparar su ecogenicidad con la del riñón izquierdo; normalmente es isoecoico.`,
+            evidence: `<p>El POCUS es más preciso que la palpación para detectar esplenomegalia, especialmente en pacientes obesos.</p>`,
+            pearls: `<p>Pida al paciente que inspire profundamente para desplazar el bazo hacia abajo y mejorar la visualización. El bazo puede ser una ventana acústica difícil de obtener.</p>`,
+          },
+        },
+        {
+          segment: "epigastric",
+          system: "Abdominal",
+          color: "green",
+          title: "Aneurisma de Aorta Abdominal (AAA)",
+          refId: "aaa_rubano_2013",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Convexa.</li><li><strong>Técnica:</strong> Medir diámetro anteroposterior máximo de pared externa a externa, desde epigastrio a bifurcación.</li></ul>`,
+            findings: `Se busca una dilatación focal de la aorta. Un diámetro <strong>> 3.0 cm</strong> se considera aneurismático. Es importante medir el diámetro máximo y evaluar la presencia de trombo mural, que aparece como material ecogénico adherido a la pared que reduce la luz permeable.`,
+            evidence: `<p>Excelente para cribado. Sensibilidad: <strong>99%</strong>, Especificidad: <strong>98%</strong>. Sigue las guías de cribado de la USPSTF.</p>`,
+            pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Confundir la VCI con la aorta. La aorta tiene paredes más gruesas e hiperecogénicas, es pulsátil y no se comprime. La VCI tiene paredes finas, varía con la respiración y se comprime.</p><h5>Impacto Clínico</h5><p>El gas intestinal es el enemigo. Use compresión graduada para desplazarlo. Si la aorta no se ve bien, coloque al paciente en decúbito lateral izquierdo.</p></div>`,
+          },
+        },
+        {
+          segment: "rlq",
+          system: "Abdominal",
+          color: "green",
+          title: "Apendicitis Aguda",
+          refId: "appendicitis_bernardi_2022",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Compresión graduada sobre el punto de máximo dolor en fosa ilíaca derecha.</li></ul>`,
+            findings: `Se busca una estructura tubular, aperistáltica, <strong>no compresible</strong>, de extremo ciego. Un diámetro transverso <strong>> 6 mm</strong> es el criterio principal. En corte transversal, muestra el <strong>signo de la diana (Target sign)</strong>. Se pueden ver hallazgos secundarios como un apendicolito (foco hiperecogénico con sombra), líquido libre localizado, o aumento de la ecogenicidad de la grasa periapendicular.`,
+            evidence: `<p>Excelente para <strong>confirmar (rule-in)</strong> si se visualiza el apéndice (LR+ de 9.24). Malo para <strong>descartar (rule-out)</strong>, ya que un apéndice normal o retrocecal puede no visualizarse.</p>`,
+            pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Confundir un asa intestinal o un vaso con el apéndice. El apéndice es de extremo ciego y no tiene peristaltismo. La clave es la no compresibilidad.</p><h5>Impacto Clínico</h5><p>Un POCUS positivo es diagnóstico; uno negativo o no concluyente requiere más estudios o valoración clínica.</p></div>`,
+          },
+        },
+        {
+          segment: "suprapubic",
+          system: "Urogenital",
+          color: "yellow",
+          title: "Retención Urinaria (Globo Vesical)",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Convexa.</li><li><strong>Técnica:</strong> Colocar la sonda en la línea media suprapúbica. Obtener vistas transversales y sagitales de la vejiga.</li></ul>`,
+            findings: `Se visualiza la vejiga como una estructura anecoica (negra) de forma aproximadamente rectangular o elíptica. Se miden las 3 dimensiones: altura (H), anchura (W) y profundidad (L). El volumen se estima con la fórmula: <strong>Volumen (ml) ≈ 0.52 x H (cm) x W (cm) x L (cm)</strong>. Un volumen postmiccional > 100-150 ml se considera patológico.`,
+            evidence: `<p>El POCUS es mucho más preciso que la palpación o la percusión para diagnosticar la retención urinaria y evita cateterismos innecesarios.</p>`,
+            pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Subestimar el volumen por no obtener el diámetro máximo en cada uno de los 3 planos. Diferenciar la vejiga de otras estructuras quísticas (ej. quiste ovárico grande) por su localización y forma.</p><h5>Impacto Clínico</h5><p>Permite una confirmación inmediata de la retención y la necesidad de sondaje, mejorando el confort del paciente.</p></div>`,
+          },
+        },
+        {
+          segment: "suprapubic",
+          system: "Gineco-Obstétrico",
+          color: "pink",
+          title: "Embarazo Intrauterino",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Convexa (transabdominal) o endocavitaria.</li><li><strong>Técnica:</strong> Con la vejiga llena como ventana acústica, buscar el útero en la pelvis. Identificar el endometrio y buscar un saco gestacional.</li></ul>`,
+            findings: `El primer signo es un <strong>saco gestacional intrauterino</strong>, una colección de líquido anecoica rodeada por un anillo ecogénico. Posteriormente, se identifica el <strong>saco vitelino</strong> (un pequeño anillo brillante dentro del saco gestacional). Finalmente, se visualiza el <strong>polo fetal</strong> con actividad cardíaca. La identificación de un saco gestacional intrauterino con saco vitelino o polo fetal confirma un embarazo intrauterino y prácticamente descarta un embarazo ectópico (excepto en raros casos de embarazo heterotópico).`,
+            evidence: `<p>El POCUS es fundamental en la evaluación del sangrado del primer trimestre y el dolor abdominal en mujeres en edad fértil para confirmar la localización del embarazo.</p>`,
+            pearls: `<div class="pearls-section"><h5>Clave Diferencial</h5><p>Un "pseudo-saco gestacional" (líquido en la cavidad endometrial) puede simular un saco temprano en un embarazo ectópico. Un verdadero saco gestacional es excéntrico, no central, y tiene un anillo ecogénico grueso.</p><h5>Impacto Clínico</h5><p>El objetivo principal es responder a la pregunta: ¿hay un embarazo intrauterino? Si no se encuentra, la sospecha de ectópico aumenta significativamente.</p></div>`,
+          },
+        },
+        {
+          segment: "suprapubic",
+          system: "Gineco-Obstétrico",
+          color: "pink",
+          title: "Localización de DIU",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Convexa o endocavitaria.</li><li><strong>Técnica:</strong> Visualizar el útero en su eje largo. Buscar una estructura lineal hiperecogénica dentro de la cavidad endometrial.</li></ul>`,
+            findings: `Un DIU correctamente colocado se ve como una <strong>línea o una "T" hiperecogénica brillante</strong>, con sombra acústica posterior, localizada en el fondo de la cavidad endometrial. Si los hilos no son visibles en la exploración ginecológica, el POCUS puede confirmar rápidamente si el DIU está en su sitio, si ha sido expulsado o si ha perforado el miometrio.`,
+            evidence: `<p>El POCUS es el método de primera línea, rápido y no invasivo para confirmar la posición de un DIU cuando los hilos no son visibles.</p>`,
+            pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>El aire en la cavidad endometrial puede simular un DIU. Mueva la sonda para confirmar que la estructura es lineal y consistente con la forma del DIU.</p><h5>Impacto Clínico</h5><p>Evita la necesidad de radiografías y proporciona una respuesta inmediata a la paciente, permitiendo tomar decisiones sobre anticoncepción en la misma consulta.</p></div>`,
+          },
+        },
+        {
+          segment: "scrotal",
+          system: "Urogenital",
+          color: "yellow",
+          title: "Torsión Testicular",
+          refId: "testicular_torsion_bandarkar_2019",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Colocar al paciente en supino. Comparar siempre ambos testículos. Evaluar la ecogenicidad, tamaño y, crucialmente, el flujo sanguíneo con Doppler color.</li></ul>`,
+            findings: `El hallazgo más importante y diagnóstico es la <strong>ausencia de flujo sanguíneo intratesticular en el testículo afectado</strong> al compararlo con el contralateral, que mostrará flujo normal. El testículo puede aparecer agrandado e hipoecoico en fases tardías. El "signo del remolino" (whirlpool sign) del cordón espermático es un hallazgo directo pero difícil de obtener.`,
+            evidence: `<p>El Doppler color tiene una sensibilidad y especificidad muy altas (cercanas al 100%) para la torsión testicular completa. Sin embargo, en torsiones intermitentes o parciales, puede haber flujo preservado.</p>`,
+            pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Una ganancia de Doppler demasiado baja puede simular ausencia de flujo. Optimice los ajustes en el testículo sano primero. El flujo periférico en la pared escrotal puede estar aumentado y no debe confundirse con flujo intratesticular.</p><h5>Impacto Clínico</h5><p>Es una emergencia quirúrgica. Un diagnóstico rápido con POCUS es crucial para salvar el testículo.</p></div>`,
+          },
+        },
+        {
+          segment: "scrotal",
+          system: "Urogenital",
+          color: "yellow",
+          title: "Epididimitis y Orquitis",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Evaluación comparativa de ambos testículos y epidídimos. Usar Doppler color para evaluar la vascularización.</li></ul>`,
+            findings: `La <strong>epididimitis</strong> se manifiesta como un epidídimo engrosado (>1.5 cm) e hipoecoico, con un <strong>marcado aumento del flujo sanguíneo (hiperemia)</strong> al Doppler color. A menudo se asocia con un hidrocele reactivo. La <strong>orquitis</strong> (inflamación del testículo) muestra un testículo hipoecoico y difusamente hiperémico.`,
+            evidence: `<p>El Doppler color es clave para diferenciar la epididimitis (hiperemia) de la torsión (ausencia de flujo).</p>`,
+            pearls: `<div class="pearls-section"><h5>Clave Diferencial</h5><p>La principal entidad a descartar es la torsión testicular. El dolor puede ser similar, pero el flujo Doppler es la clave: aumentado en la inflamación, ausente en la torsión.</p><h5>Impacto Clínico</h5><p>Confirma un diagnóstico inflamatorio, guiando el tratamiento antibiótico y evitando una exploración quirúrgica innecesaria.</p></div>`,
+          },
+        },
+        {
+          segment: "dvt",
+          system: "Vascular",
+          color: "pink",
+          title: "Trombosis Venosa Profunda (TVP)",
+          refId: "dvt_pomero_2022",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Ecografía de compresión (CUS) en 3 puntos: 1) Vena femoral común (VFC) en la ingle, 2) Bifurcación en femoral y femoral profunda, 3) Vena poplítea en la fosa poplítea.</li></ul>`,
+            findings: `El signo diagnóstico es la <strong>no compresibilidad</strong> total o parcial de una vena. Al aplicar presión con la sonda, la vena normal se colapsa por completo, mientras que una vena trombosada permanece abierta. La arteria adyacente, que no colapsa, sirve de control. A veces, el trombo puede visualizarse como material ecogénico dentro de la luz venosa.`,
+            evidence: `<p>Sensibilidad global: <strong>~90%</strong>, Especificidad: <strong>~95%</strong>. El protocolo de 3 puntos es más sensible que el de 2 puntos.</p>`,
+            pearls: `<p>Una técnica simple y rápida que puede evitar la necesidad de dímero-D o ecografía formal en muchos pacientes de baja probabilidad.</p>`,
+          },
+        },
+        {
+          segment: "shoulder",
+          system: "Musculoesquelético",
+          color: "indigo",
+          title: "Manguito Rotador (Hombro)",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Examen dinámico. Para el supraespinoso, colocar al paciente con la mano en el bolsillo trasero (posición de Crass). Explorar el tendón en ejes largo y corto.</li></ul>`,
+            findings: `<strong>Tendinopatía:</strong> Engrosamiento hipoecoico del tendón, a veces con calcificaciones. <strong>Rotura de espesor parcial:</strong> Defecto hipoecoico o anecoico en la superficie bursal o articular del tendón. <strong>Rotura de espesor completo:</strong> Ausencia de tejido tendinoso, con el líquido de la bursa contactando directamente con la cabeza humeral.`,
+            evidence: `<p>En manos experimentadas, el POCUS tiene una sensibilidad y especificidad comparables a la resonancia magnética para las roturas de espesor completo del manguito rotador.</p>`,
+            pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>La anisotropía es el principal artefacto a evitar: el tendón puede parecer hipoecoico si el haz de ultrasonido no incide perpendicularmente. Mover la sonda ("heel-toe") ayuda a corregirlo.</p></div>`,
+          },
+        },
+        {
+          segment: "dvt",
+          system: "Tejidos Blandos",
+          color: "orange",
+          title: "Celulitis vs. Absceso",
+          refId: "abscess_subramaniam_2016",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Explorar la zona de máximo eritema o fluctuación.</li></ul>`,
+            findings: `<strong>Celulitis:</strong> Se observa un engrosamiento y aumento de la ecogenicidad del tejido subcutáneo, con hebras de líquido anecoico que separan los lóbulos de grasa, dando un aspecto característico de <strong>"adoquín" (cobblestone)</strong>. <strong>Absceso:</strong> Se identifica una <strong>colección de líquido organizada</strong>, típicamente hipoecoica o anecoica, con bordes mal definidos, detritos ecogénicos en su interior y refuerzo acústico posterior. No hay flujo en su interior con el Doppler color.`,
+            evidence: `<p>El POCUS tiene una alta precisión para esta distinción (Sensibilidad ~96%, Especificidad ~87%), cambiando el manejo clínico (antibióticos vs. incisión y drenaje) en un número significativo de casos.</p>`,
+            pearls: `<div class="pearls-section"><h5>Impacto Clínico</h5><p>Aplicar una ligera presión con la sonda sobre un absceso puede provocar el movimiento arremolinado de los detritos ("signo del remolino"), confirmando su naturaleza líquida.</p></div>`,
+          },
+        },
+        {
+          segment: "dvt",
+          system: "Musculoesquelético",
+          color: "indigo",
+          title: "Quiste de Baker",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Colocar la sonda en la fosa poplítea, en el espacio entre el tendón del semimembranoso y la cabeza medial del gastrocnemio.</li></ul>`,
+            findings: `Se visualiza una <strong>colección de líquido anecoica o hipoecoica bien definida</strong>, a menudo con un "cuello" o "tallo" que se comunica con la articulación de la rodilla. Puede tener septos o detritos en su interior.`,
+            evidence: `<p>El POCUS es la modalidad de elección para confirmar un quiste de Baker y diferenciarlo de otras masas de la fosa poplítea, como un aneurisma de la arteria poplítea (que mostrará flujo con Doppler) o una TVP.</p>`,
+            pearls: `<div class="pearls-section"><h5>Clave Diferencial</h5><p>Siempre use Doppler color para asegurarse de que la estructura quística no es un vaso sanguíneo antes de considerar cualquier aspiración.</p></div>`,
+          },
+        },
+      ];
+
+      const contentArea = document.getElementById("content-area");
+      const welcomeMessage = document.getElementById("welcome-message");
+      const tooltip = document.getElementById("tooltip");
+      const segments = document.querySelectorAll(".segment");
+
+      segments.forEach((segment) => {
+        segment.addEventListener("click", (e) => {
+          const segmentId = e.currentTarget.dataset.segment;
+          segments.forEach((s) => s.classList.remove("active"));
+
+          // Activate all segments with the same data-segment
+          document
+            .querySelectorAll(`.segment[data-segment="${segmentId}"]`)
+            .forEach((s) => s.classList.add("active"));
+
+          welcomeMessage.style.display = "none";
+          renderSegmentContent(segmentId);
+        });
+
+        segment.addEventListener("mousemove", function (e) {
+          tooltip.style.left = e.pageX + 10 + "px";
+          tooltip.style.top = e.pageY + 10 + "px";
+        });
+
+        segment.addEventListener("mouseover", (e) => {
+          const tooltipText = e.currentTarget.dataset.tooltip;
+          tooltip.style.display = "block";
+          tooltip.textContent = tooltipText;
+        });
+
+        segment.addEventListener("mouseout", () => {
+          tooltip.style.display = "none";
+        });
+      });
+
+      function renderSegmentContent(segmentId) {
+        contentArea.innerHTML = ""; // Clear previous content
+        const data = pocusData.filter((app) => app.segment === segmentId);
+        if (!data || data.length === 0) {
+          contentArea.innerHTML = `<div class="text-center p-8 bg-white rounded-xl shadow-lg"><p class="text-gray-600">No hay aplicaciones definidas para esta zona todavía.</p></div>`;
+          return;
+        }
+
+        const usedRefs = new Set();
+        data.forEach((app, index) => {
+          if (app.refId) usedRefs.add(app.refId);
+          const card = createContentCard(app, index, segmentId);
+          contentArea.appendChild(card);
+        });
+
+        renderReferences(usedRefs);
+
+        // Make all cards visible
+        contentArea.querySelectorAll(".content-card").forEach((card) => {
+          card.style.display = "block";
+        });
+      }
+
+      function createContentCard(app, index, segmentId) {
+        const cardId = `card-${segmentId}-${index}`;
+        const card = document.createElement("div");
+        card.className = "content-card bg-white rounded-xl shadow-lg mb-6";
+        card.id = cardId;
+
+        let evidenceHtml = app.content.evidence;
+        if (app.refId && references[app.refId]) {
+          evidenceHtml += `<a href="#ref-${app.refId}" class="reference-link block mt-2">Ver referencia</a>`;
+        }
+
+        card.innerHTML = `
+                <div class="p-5 border-b-2 border-gray-100">
+                    <h3 class="text-2xl font-extrabold text-gray-800">${app.title}</h3>
+                    <p class="text-md font-semibold text-${app.color}-600">${app.system}</p>
+                </div>
+                <div class="p-5">
+                    <div class="flex border-b border-gray-200 mb-4 flex-wrap">
+                        <button class="tab-button active py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'findings', this)">Hallazgos Clave</button>
+                        <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'technique', this)">Técnica</button>
+                        <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'evidence', this)">Evidencia</button>
+                        <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'pearls', this)">Perlas Clínicas</button>
+                    </div>
+                    <div>
+                        <div id="technique-${cardId}" class="tab-content prose prose-sm max-w-none">${app.content.technique}</div>
+                        <div id="findings-${cardId}" class="tab-content active prose prose-sm max-w-none">
+                            <div class="findings-description">${app.content.findings}</div>
+                        </div>
+                        <div id="evidence-${cardId}" class="tab-content prose prose-sm max-w-none"><div class="evidence">${evidenceHtml}</div></div>
+                        <div id="pearls-${cardId}" class="tab-content prose prose-sm max-w-none"><div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 rounded-r-lg">${app.content.pearls}</div></div>
+                    </div>
+                </div>
+            `;
+        return card;
+      }
+
+      function switchTab(cardId, tabName, buttonElement) {
+        const card = document.getElementById(cardId);
+        card
+          .querySelectorAll(".tab-button")
+          .forEach((btn) => btn.classList.remove("active"));
+        buttonElement.classList.add("active");
+        card
+          .querySelectorAll(".tab-content")
+          .forEach((content) => content.classList.remove("active"));
+        card.querySelector(`#${tabName}-${cardId}`).classList.add("active");
+      }
+
+      function renderReferences(refIds) {
+        const refContainer = document.getElementById("references-section");
+        if (refIds.size === 0) {
+          refContainer.innerHTML = "";
+          return;
+        }
+
+        let refsHtml = `<div class="bg-white p-6 rounded-xl shadow-lg">
+                                <h3 class="text-2xl font-bold text-gray-800 mb-4">Fuentes de Evidencia</h3>
+                                <ul class="space-y-4 text-sm">`;
+
+        refIds.forEach((id) => {
+          const ref = references[id];
+          if (ref) {
+            refsHtml += `<li id="ref-${id}" class="leading-relaxed scroll-mt-24">
+                                    <p class="font-semibold text-gray-700">${ref.citation}</p>
+                                    <a href="${ref.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Acceder al artículo</a>
+                                 </li>`;
+          }
+        });
+
+        refsHtml += `</ul></div>`;
+        refContainer.innerHTML = refsHtml;
+      }
+
+      // Smooth scroll for reference links
+      document.addEventListener("click", function (e) {
+        if (e.target.matches("a.reference-link")) {
+          e.preventDefault();
+          const targetId = e.target.getAttribute("href");
+          const targetElement = document.querySelector(targetId);
+          if (targetElement) {
+            targetElement.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
