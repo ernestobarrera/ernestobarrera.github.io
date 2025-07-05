@@ -62,6 +62,8 @@
     <!-- Scripts para la herramienta -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
 
@@ -173,14 +175,15 @@
       }
 
       /* Estilos para secciones de atención y emergencia */
+
       .attention-section {
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        border-left: 4px solid #f59e0b;
+        background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+        border-left: 4px solid #fbbf24; /* amber-500 */
       }
 
       .emergency-section {
         background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-        border-left: 4px solid #ef4444;
+        border-left: 4px solid #dc2626; /* red-600 */
       }
 
       /* Optimización de tabla */
@@ -212,7 +215,7 @@
   </head>
 
   <body class="antialiased">
-    <script src="./assets/js/include.js"></script>
+    <script src="/assets/js/include.js"></script>
     <include src="header.html"></include>
 
     <div class="clinical-main-container">
@@ -281,10 +284,13 @@
             <canvas id="hyperbolicChart"></canvas>
           </div>
           <p class="text-center text-xs text-slate-500 mt-3">
-            La gráfica muestra cómo reducciones lineales (ej. de 20mg a 10mg y
-            de 10mg a 0mg) causan una caída en la ocupación de receptores cada
-            vez mayor. Una pauta hiperbólica (reducciones porcentuales) suaviza
-            este descenso, haciéndolo tolerable.
+            <strong>Cómo leer la figura:</strong>
+            Cada punto de la curva azul indica la ocupación de SERT a esa
+            dosis.<br />
+            Los recortes lineales <em>(20 → 10 mg, 10 → 0 mg)</em> bajan la
+            ocupación −13 y −58 p.p. respectivamente.<br />
+            Con recortes <em>hiperbólicos</em> (verde) la caída se mantiene casi
+            constante (~5–10 p.p.), lo que reduce el riesgo de abstinencia.
           </p>
         </section>
 
@@ -352,7 +358,7 @@
           <div id="calculator" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-slate-50 p-5 rounded-lg border border-slate-200">
               <h3 class="font-bold text-lg mb-3 text-sky-800">
-                1. Introducir Datos del Paciente
+                1. Introducir Datos del Fármaco
               </h3>
               <div class="space-y-3">
                 <div>
@@ -373,6 +379,17 @@
                     <option value="Fluoxetina">Fluoxetina</option>
                     <option value="Venlafaxina">Venlafaxina</option>
                   </select>
+                  <label
+                    for="presentation"
+                    class="block text-sm font-medium text-slate-700 mt-3"
+                  >
+                    Presentación inicial
+                  </label>
+                  <select
+                    id="presentation"
+                    name="presentation"
+                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                  ></select>
                 </div>
                 <div>
                   <label
@@ -439,7 +456,7 @@
                   disabled
                   class="export-btn flex-1 bg-indigo-600 text-white font-bold py-2 px-3 text-sm rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
-                  Copiar para Paciente
+                  Copiar para resumen clínico
                 </button>
                 <button
                   id="pdfBtn"
@@ -456,24 +473,25 @@
             role="alert"
           >
             <p class="font-bold text-base">
-              Nota sobre el Uso Fuera de Ficha Técnica (Off-Label)
+              Nota sobre el Uso de Formulaciones
             </p>
             <p class="mt-2 text-xs">
-              La preparación de suspensiones a partir de comprimidos es una
-              práctica "off-label". Se propone como una estrategia, apoyada por
-              guías clínicas como las del Royal College of Psychiatrists, para
-              permitir reducciones de dosis muy pequeñas y minimizar los
-              síntomas de abstinencia cuando no hay alternativas comerciales
-              líquidas. Su implementación debe ser una decisión consensuada
-              entre el profesional sanitario y el paciente, tras valorar los
-              beneficios y riesgos.
+              Para realizar una reducción de dosis precisa y segura, las
+              <span class="font-semibold">soluciones orales comerciales</span>
+              son siempre la primera opción. La preparación de suspensiones a
+              partir de comprimidos o cápsulas es una práctica "off-label" que
+              debe considerarse únicamente como una
+              <span class="font-semibold">alternativa secundaria</span> cuando
+              no existen preparados comerciales adecuados. Su implementación
+              debe ser una decisión consensuada entre el profesional sanitario y
+              el paciente.
             </p>
           </div>
           <div
             class="mt-4 emergency-section text-red-700 p-3 rounded-md"
             role="alert"
           >
-            <h3 class="font-bold text-base">
+            <h3 class="font-bold text-base" style="color: #1e40af">
               Advertencias Clínicas Esenciales
             </h3>
             <ul class="list-disc list-inside mt-2 space-y-1 text-xs">
@@ -498,7 +516,9 @@
                 garantizar su estabilidad y seguridad.
               </li>
             </ul>
-            <h4 class="font-bold text-sm mt-3">Consideraciones Adicionales:</h4>
+            <h4 class="font-bold text-sm mt-3" style="color: #1e40af">
+              Consideraciones Adicionales:
+            </h4>
             <ul class="list-disc list-inside mt-2 space-y-1 text-xs">
               <li>
                 La velocidad de reducción puede requerir ajustes individuales
@@ -640,7 +660,7 @@
         </section>
 
         <section id="section7" class="emergency-section rounded-lg p-5 md:p-6">
-          <h2 class="text-2xl font-bold text-center mb-5 text-red-700">
+          <h2 class="text-2xl font-bold text-center mb-5 text-rose-700">
             🚨 Cuándo Contactar con el Médico
           </h2>
           <p class="text-center text-red-600 mb-6 max-w-4xl mx-auto text-sm">
@@ -671,7 +691,7 @@
       <footer
         class="text-center mt-12 pt-6 border-t border-slate-300 text-xs text-slate-600"
       >
-        <div class="max-w-5xl mx-auto">
+        <div class="max-w-1xl mx-auto" style="text-align: left">
           <p class="mb-3">
             Esta infografía se fundamenta en las evidencias científicas sobre
             reducción hiperbólica de antidepresivos, especialmente el trabajo
@@ -689,12 +709,13 @@
               Limitaciones y Responsabilidades
             </h4>
             <p class="text-xs">
-              Esta pauta es orientativa. Su uso es responsabilidad del
-              profesional sanitario con formación y juicio clínico, quien debe
-              adaptar cada caso individualmente. No todos los pacientes toleran
-              la misma velocidad de reducción. Las suspensiones caseras tienen
-              limitaciones de precisión y estabilidad. La supervisión médica es
-              obligatoria durante todo el proceso.
+              Esta pauta es orientativa, y se presenta solo con finalidad
+              educativa. Su uso es responsabilidad del profesional sanitario con
+              formación y juicio clínico, quien debe adaptar cada caso
+              individualmente. No todos los pacientes toleran la misma velocidad
+              de reducción. Las suspensiones caseras tienen limitaciones de
+              precisión y estabilidad. La supervisión médica es obligatoria
+              durante todo el proceso.
             </p>
           </div>
 
@@ -755,10 +776,10 @@
     </div>
 
     <include src="footer.html"></include>
-    <script src="./assets/js/utils.js"></script>
+    <script src="/assets/js/utils.js"></script>
 
     <!-- Google Analytics -->
-    <script
+    <!--   <script
       async
       src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
     ></script>
@@ -769,7 +790,7 @@
       }
       gtag("js", new Date());
       gtag("config", "G-YFKR6RB1ZC");
-    </script>
+    </script> -->
 
     <!-- JavaScript funcional de la herramienta -->
     <script>
@@ -826,6 +847,13 @@
       });
 
       function initializeCharts() {
+        // registra el plugin chartjs-plugin-annotation (necesario una vez)
+        if (window["chartjs-plugin-annotation"]) {
+          if (typeof ChartAnnotation !== "undefined") {
+            Chart.register(ChartAnnotation);
+          }
+        }
+
         const prevalenceCtx = document.getElementById("prevalenceChart");
         if (prevalenceCtx) {
           new Chart(prevalenceCtx, {
@@ -867,8 +895,9 @@
                   label: "Ocupación de SERT (%)",
                   data: hyperbolicData,
                   borderColor: "#3366CC",
-                  backgroundColor: "rgba(51, 102, 204, 0.1)",
+                  backgroundColor: "rgba(51,102,204,0.05)",
                   fill: true,
+
                   tension: 0.4,
                   pointRadius: 0,
                 },
@@ -880,11 +909,12 @@
                     { x: 0, y: hyperbolicData[0] },
                   ],
                   borderColor: "#E53E3E",
+                  borderDash: [6, 4],
+
                   backgroundColor: "#E53E3E",
-                  pointRadius: 6,
+                  pointRadius: 4,
                   pointHoverRadius: 8,
-                  showLine: false,
-                  type: "scatter",
+                  type: "line",
                 },
                 {
                   label: "Reducción Hiperbólica (Ejemplo)",
@@ -905,13 +935,50 @@
                   borderColor: "#38A169",
                   backgroundColor: "#38A169",
                   pointRadius: 4,
-                  showLine: false,
-                  type: "scatter",
+                  type: "line",
                 },
               ],
             },
             options: {
+              // hereda responsive, legend y tooltip de tus opciones base
               ...defaultChartOptions,
+
+              plugins: {
+                ...defaultChartOptions.plugins,
+
+                // === sombreado 70-100 % ===
+                annotations: {
+                  riesgo_alto: {
+                    type: "box",
+                    yMin: 0,
+                    yMax: 25,
+                    backgroundColor: "rgba(229,62,62,0.15)",
+                    borderWidth: 0,
+                    label: {
+                      display: true,
+                      content: "Riesgo\nALTO",
+                      color: "#7f1d1d",
+                      font: { weight: "bold" },
+                      position: "center",
+                    },
+                  },
+                  riesgo_moderado: {
+                    type: "box",
+                    yMin: 25,
+                    yMax: 50,
+                    backgroundColor: "rgba(250,204,21,0.10)",
+                    borderWidth: 0,
+                    label: {
+                      display: true,
+                      content: "Riesgo\nModerado",
+                      color: "#92400e",
+                      font: { weight: "bold" },
+                      position: "center",
+                    },
+                  },
+                },
+              },
+
               scales: {
                 x: {
                   title: { display: true, text: "Dosis de ISRS (mg)" },
@@ -922,7 +989,7 @@
                     text: "Ocupación de Receptores SERT (%)",
                   },
                   beginAtZero: true,
-                  max: 100,
+                  max: 100, // ← imprescindible para que se vea la franja
                 },
               },
             },
@@ -983,28 +1050,61 @@
 
       function initializeCalculator() {
         const drugData = {
-          Sertralina: { tablets: [50, 100], liquid: null },
+          Sertralina: {
+            presentations: ["50 mg comp.", "100 mg comp.", "20 mg/ml sol."],
+            liquid: { concentration: 20, unit: "mg/ml" },
+          },
           Citalopram: {
-            tablets: [10, 20, 40],
-            liquid: { concentration: 40, unit: "mg/ml" },
+            presentations: ["20 mg comp.", "40 mg comp."],
+            tablets: [20, 40], // ← AÑADE ESTA LÍNEA
+            liquid: null,
           },
           Escitalopram: {
-            tablets: [5, 10, 15, 20],
+            presentations: ["10 mg comp.", "20 mg comp.", "20 mg/ml gotas"],
             liquid: { concentration: 20, unit: "mg/ml" },
           },
           Paroxetina: {
-            tablets: [20],
-            liquid: { concentration: 2, unit: "mg/ml" },
+            presentations: ["20 mg comp.", "33 mg/ml gotas"],
+            liquid: { concentration: 33, unit: "mg/ml" },
           },
           Fluoxetina: {
-            tablets: [20],
+            presentations: ["20 mg comp.", "20 mg/5 ml sol."],
             liquid: { concentration: 4, unit: "mg/ml" },
           },
           Venlafaxina: {
-            beadsPerCapsule: { 37.5: 100, 75: 200, 150: 400 },
+            presentations: [
+              "37.5 mg XR cáps.",
+              "75 mg XR cáps.",
+              "150 mg XR cáps.",
+            ],
+            beadTotalWeight: { 37.5: 125, 75: 250, 150: 500 }, // peso total gránulos (mg)
             liquid: null,
           },
         };
+
+        const drugSelect = document.getElementById("drug");
+        const presSelect = document.getElementById("presentation");
+        function setDoseFromPresentation() {
+          const txt = presSelect.value || ""; // ej. "37.5 mg XR cáps."
+          const m = txt.match(/([\d.,]+)\s*mg/i); // extrae "37.5"
+          if (m) {
+            document.getElementById("currentDose").value = parseFloat(
+              m[1].replace(",", ".")
+            );
+          }
+        }
+        function updatePresentations() {
+          const pres = drugData[drugSelect.value].presentations || [];
+          presSelect.innerHTML = pres
+            .map((p) => `<option value="${p}">${p}</option>`)
+            .join("");
+
+          // autocompleta dosis con la primera presentación
+          setDoseFromPresentation();
+        }
+        drugSelect.addEventListener("change", updatePresentations);
+        presSelect.addEventListener("change", setDoseFromPresentation);
+        updatePresentations();
 
         const calculateBtn = document.getElementById("calculateBtn");
         const calculateSlowBtn = document.getElementById("calculateSlowBtn");
@@ -1101,53 +1201,62 @@
           performCalculation(true)
         );
 
+        // Y REEMPLAZARLA POR ESTA NUEVA VERSIÓN
         function getPracticalInstruction(drug, dose, lastDose) {
           const data = drugData[drug];
           dose = parseFloat(dose);
           if (dose <= 0) return "Suspender medicación.";
 
+          // PRIORIDAD 1: Usar solución oral comercial si existe.
           if (data.liquid) {
-            let liquidDose = dose;
-            let note = "";
-            if (drug === "Citalopram") {
-              liquidDose = dose / 1.25;
-              note = " (ajustado: líquido 25% más biodisponible)";
-            }
-            const volume = (liquidDose / data.liquid.concentration).toFixed(2);
-            return `Usar solución oral: tomar ${volume} ml${note}.`;
+            const volume = (dose / data.liquid.concentration).toFixed(2);
+            return `Usar solución oral comercial (${data.liquid.concentration} mg/ml): tomar ${volume} ml.`;
           }
 
+          // PRIORIDAD 2 (SOLO SI NO HAY LÍQUIDO): Casos especiales como Venlafaxina
+          if (drug === "Venlafaxina") {
+            /* ---------------------------------------------------------------
+     Instrucción basada en PESO (mg), no en recuento de gránulos
+  --------------------------------------------------------------- */
+            const strengths = Object.keys(data.beadTotalWeight) // [37.5, 75, 150]
+              .map(Number)
+              .sort((a, b) => a - b);
+
+            // cápsula de referencia = la más pequeña ≥ dosis más alta usada (lastDose)
+            let refCaps =
+              strengths.find((s) => s >= lastDose) ||
+              strengths[strengths.length - 1];
+
+            // si la dosis actual es menor, intenta una cápsula más pequeña
+            if (dose < refCaps) {
+              const smaller = strengths.find((s) => s >= dose);
+              if (smaller) refCaps = smaller;
+            }
+
+            const totalWt = data.beadTotalWeight[refCaps]; // peso total de gránulos (mg)
+            const targetWt = ((dose / refCaps) * totalWt).toFixed(1); // peso a pesar (mg)
+
+            return (
+              `De 1 cápsula de ${refCaps} mg (≈${totalWt} mg de gránulos) ` +
+              `pesar ${targetWt} mg en una balanza de precisión (0.001 g).`
+            );
+          }
+
+          // PRIORIDAD 3 (ÚLTIMO RECURSO): Fármacos sin líquido ni método especial
           const smallestTablet = Math.min(...data.tablets);
 
           if (dose > smallestTablet) {
             const wholeTablets = Math.floor(dose / smallestTablet);
             const remainingDose = dose - wholeTablets * smallestTablet;
-
             if (remainingDose.toFixed(2) === "0.00") {
               return `Tomar ${wholeTablets} comprimido(s) de ${smallestTablet} mg.`;
             }
-
             const suspensionInstruction = `triturar 1 comp. de ${smallestTablet} mg en ${smallestTablet} ml de agua y tomar ${remainingDose.toFixed(
               2
             )} ml.`;
             return `Tomar ${wholeTablets} comp. de ${smallestTablet} mg y, adicionalmente, preparar suspensión para los ${remainingDose.toFixed(
               2
             )} mg restantes (${suspensionInstruction})`;
-          }
-
-          if (drug === "Venlafaxina") {
-            const closestCapsule = Object.keys(data.beadsPerCapsule).reduce(
-              (prev, curr) => {
-                return Math.abs(curr - lastDose) < Math.abs(prev - lastDose)
-                  ? curr
-                  : prev;
-              }
-            );
-            const beadsInCapsule = data.beadsPerCapsule[closestCapsule];
-            const beadsToTake = Math.round(
-              (dose / closestCapsule) * beadsInCapsule
-            );
-            return `Contar aprox. ${beadsToTake} gránulos de una cápsula de ${closestCapsule} mg. Para mayor precisión, usar balanza de joyería.`;
           }
 
           if (dose > smallestTablet / 4) {
@@ -1165,7 +1274,6 @@
             2
           )} ml.`;
         }
-
         function generatePatientText(schedule, drug, initialDose) {
           let text = `PLAN DE REDUCCIÓN DE DOSIS: ${drug}\n`;
           text += `=======================================\n\n`;
@@ -1208,6 +1316,11 @@
         });
 
         pdfBtn.addEventListener("click", () => {
+          /* Elimina acentos para que jsPDF no muestre � */
+          function stripAccents(str) {
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          }
+
           const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
           const drug = lastCalculatedDrug;
           const initialDose = lastCalculatedInitialDose;
@@ -1234,10 +1347,28 @@
           ];
           const tableRows = [];
 
+          //========== NUEVO schedule.forEach para PDF ==========
+          // 1. Función de saneo: quita acentos y reemplaza símbolos incompatibles
+          const sanitizePDFText = (str) => {
+            const cleaned = stripAccents(str); // sin tildes/ñ/ç
+            return cleaned
+              .replace(/→|➔|➜|⟶|⇒/g, "->")
+              .replace(/←|⟵|⇐/g, "<-")
+              .replace(/≈/g, "~") // aproximado
+              .replace(/[≥]/g, ">=")
+              .replace(/[≤]/g, "<=")
+              .replace(/[•·]/g, "-") // viñetas
+              .replace(/[|]/g, "/") // evita barras verticales
+              .replace(/[“”«»]/g, '"') // comillas tipográficas
+              .replace(/[—–]/g, "-"); // guiones largos
+          };
+
           schedule.forEach((item) => {
-            const row = [item.step, item.dose, item.instruction, ""];
-            tableRows.push(row);
+            const instr = sanitizePDFText(item.instruction);
+            const wrapped = doc.splitTextToSize(instr, 92); // 92 mm = ancho celda
+            tableRows.push([item.step, item.dose, wrapped, ""]);
           });
+          // ========== FIN NUEVO schedule.forEach ===============
 
           doc.autoTable({
             head: [tableColumn],
@@ -1248,6 +1379,7 @@
               font: "Helvetica",
               fontSize: 9,
               cellPadding: 2,
+              overflow: "linebreak",
             },
             headStyles: {
               fillColor: [41, 128, 185],
@@ -1255,11 +1387,12 @@
               fontStyle: "bold",
             },
             columnStyles: {
-              0: { halign: "center", cellWidth: 15 },
-              1: { halign: "center", cellWidth: 30 },
-              2: { halign: "left" },
-              3: { cellWidth: 35 },
+              0: { halign: "center", cellWidth: 12 }, // Paso
+              1: { halign: "center", cellWidth: 25 }, // Dosis
+              2: { cellWidth: 92, overflow: "linebreak" }, // Instrucción
+              3: { cellWidth: 35 }, // Fecha
             },
+            margin: { left: 14, right: 14 },
           });
 
           let finalY = doc.lastAutoTable.finalY + 15;
