@@ -69,10 +69,39 @@
 
     <!-- Estilos específicos de la herramienta - manteniendo el diseño original -->
     <style>
+      :root {
+        --c-primary: #0ea5e9; /* sky-500 */
+        --c-primary-dark: #0369a1; /* sky-700 */
+        --c-warn: #fbbf24; /* amber-500 */
+        --c-error: #dc2626; /* red-600 */
+        --c-bg: #f8fafc; /* slate-50 */
+      }
+      :root {
+        --toc-width: 220px; /* cambia aquí y se ajusta todo */
+      }
+
+      body {
+        font-size: 1rem;
+      } /* 16 px base */
+      h1 {
+        font-size: 2.25rem;
+        line-height: 1.2;
+      } /* 36 px */
+      h2 {
+        font-size: 1.5rem;
+        line-height: 1.3;
+      } /* 24 px */
+      h3 {
+        font-size: 1.125rem;
+      } /* 18 px */
+      .text-sm {
+        font-size: 0.875rem;
+      } /* 14 px - era 12 */
+
       /* Override del tema oscuro para esta página específica */
       body {
         font-family: "Inter", sans-serif;
-        background-color: #f0f4f8 !important;
+        background-color: var(--c-bg) !important;
         color: #102a43 !important;
         margin: 0;
         padding: 0;
@@ -92,7 +121,8 @@
       .chart-container {
         position: relative;
         width: 100%;
-        max-width: 600px;
+        max-width: 900px; /* <-- nuevo */
+
         margin-left: auto;
         margin-right: auto;
         height: 280px;
@@ -106,7 +136,7 @@
       }
 
       .flowchart-step {
-        border: 2px solid #667eea;
+        border: 2px solid var(--c-primary);
         background-color: white;
         padding: 0.75rem;
         border-radius: 0.5rem;
@@ -114,6 +144,24 @@
         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
           0 2px 4px -2px rgb(0 0 0 / 0.1);
         flex-grow: 1;
+        position: relative;
+        padding-top: 2.5rem; /* espacio para badge */
+      }
+      .flowchart-step::before {
+        content: attr(data-step);
+        position: absolute;
+        top: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--c-primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
       }
 
       .flowchart-arrow {
@@ -121,7 +169,7 @@
         align-items: center;
         justify-content: center;
         font-size: 1.5rem;
-        color: #667eea;
+        color: var(--c-primary);
         margin: 0.25rem 0;
         transform: rotate(90deg);
       }
@@ -171,19 +219,19 @@
         font-size: 1.5rem;
         font-weight: bold;
         margin-bottom: 0.75rem;
-        color: #1e293b;
+        color: var(--c-primary-dark);
       }
 
       /* Estilos para secciones de atención y emergencia */
 
       .attention-section {
         background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
-        border-left: 4px solid #fbbf24; /* amber-500 */
+        border-left: 4px solid var(--c-warn); /* amber-500 */
       }
 
       .emergency-section {
         background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-        border-left: 4px solid #dc2626; /* red-600 */
+        border-left: 4px solid var(--c-error); /* red-600 */
       }
 
       /* Optimización de tabla */
@@ -211,12 +259,70 @@
           margin-top: calc(var(--header-height) + 0.5rem);
         }
       }
+      .toc-link {
+        display: block;
+        padding: 0.4rem 0.5rem;
+        border-left: 3px solid transparent;
+      }
+      .toc-link.active {
+        font-weight: 600;
+        border-color: var(--c-primary);
+      }
+      /* ===================  TOC fijo a la izquierda  =================== */
+      /* ===== TOC fijo lateral ===== */
+      #toc {
+        position: fixed;
+        top: calc(var(--header-height) + 1rem);
+        left: 0;
+        width: var(--toc-width);
+        padding: 0.5rem 1rem;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(4px);
+        z-index: 40;
+        display: none; /* se muestra en ≥lg */
+      }
+
+      @media (min-width: 1024px) {
+        #toc {
+          display: block;
+        }
+        /* ⬇ desplaza TODO el contenido para que no quede debajo */
+        .clinical-main-container {
+          margin-left: calc(var(--toc-width) + 1rem);
+        }
+      }
+
+      .toc-link {
+        display: block;
+        padding: 0.35rem 0.25rem;
+        white-space: nowrap;
+        border-left: 3px solid transparent;
+        transition: border-color 0.2s, font-weight 0.2s;
+      }
+
+      .toc-link:hover {
+        border-color: var(--c-primary);
+      }
+
+      .toc-link.active {
+        font-weight: 600;
+        border-color: var(--c-primary);
+      }
     </style>
   </head>
 
   <body class="antialiased">
     <script src="/assets/js/include.js"></script>
     <include src="header.html"></include>
+    <aside id="toc">
+      <a href="#section4" class="toc-link">Calculadora</a>
+      <a href="#section1" class="toc-link">Problema</a>
+      <a href="#section2" class="toc-link">Curva</a>
+      <a href="#section3" class="toc-link">Proceso</a>
+      <a href="#section5" class="toc-link">Diferencial</a>
+      <a href="#section6" class="toc-link">Efectos</a>
+      <a href="#section7" class="toc-link">🚨 Cuándo Contactar</a>
+    </aside>
 
     <div class="clinical-main-container">
       <header class="text-center mb-8">
@@ -240,6 +346,196 @@
         </div>
       </header>
 
+      <section id="section4" class="bg-white rounded-lg shadow-lg p-6 md:p-7">
+        <h2 class="text-2xl font-bold text-center mb-5 text-sky-700">
+          Calculadora de Pauta de Reducción Hiperbólica
+        </h2>
+        <div id="calculator" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-slate-50 p-5 rounded-lg border border-slate-200">
+            <h3 class="font-bold text-lg mb-3 text-sky-800">
+              1. Introducir Datos del Fármaco
+            </h3>
+            <div class="space-y-3">
+              <div>
+                <label
+                  for="drug"
+                  class="block text-sm font-medium text-slate-700"
+                  >Fármaco</label
+                >
+                <select
+                  id="drug"
+                  name="drug"
+                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                >
+                  <option value="Sertralina">Sertralina</option>
+                  <option value="Citalopram">Citalopram</option>
+                  <option value="Escitalopram">Escitalopram</option>
+                  <option value="Paroxetina">Paroxetina</option>
+                  <option value="Fluoxetina">Fluoxetina</option>
+                  <option value="Venlafaxina">Venlafaxina</option>
+                </select>
+                <label
+                  for="presentation"
+                  class="block text-sm font-medium text-slate-700 mt-3"
+                >
+                  Presentación inicial
+                </label>
+                <select
+                  id="presentation"
+                  name="presentation"
+                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                ></select>
+              </div>
+              <div>
+                <label
+                  for="currentDose"
+                  class="block text-sm font-medium text-slate-700"
+                  >Dosis Actual (mg)</label
+                >
+                <input
+                  type="number"
+                  id="currentDose"
+                  value="100"
+                  class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                />
+              </div>
+              <div>
+                <label
+                  for="reductionPercentage"
+                  class="block text-sm font-medium text-slate-700"
+                  >Reducción por Paso (%)</label
+                >
+                <input
+                  type="number"
+                  id="reductionPercentage"
+                  value="10"
+                  min="1"
+                  max="50"
+                  class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                />
+              </div>
+              <div class="flex gap-2">
+                <button
+                  id="calculateBtn"
+                  class="w-full bg-sky-600 text-white font-bold py-2 px-4 rounded-md hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
+                >
+                  Calcular Pauta
+                </button>
+                <button
+                  id="calculateSlowBtn"
+                  class="w-full bg-sky-200 text-sky-800 font-bold py-2 px-4 rounded-md hover:bg-sky-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
+                >
+                  Pauta Lenta (5%)
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            class="bg-slate-50 p-5 rounded-lg border border-slate-200 flex flex-col"
+          >
+            <h3 class="font-bold text-lg mb-3 text-sky-800">
+              2. Pauta de Reducción Sugerida
+            </h3>
+            <div id="taperingSchedule" class="overflow-auto max-h-80 flex-grow">
+              <p class="text-slate-500 text-sm">
+                Introduzca los datos y haga clic en "Calcular Pauta" para ver el
+                resultado.
+              </p>
+            </div>
+            <div id="exportButtons" class="mt-3 flex gap-3">
+              <button
+                id="copyBtn"
+                disabled
+                class="export-btn flex-1 bg-indigo-600 text-white font-bold py-2 px-3 text-sm rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Copiar para resumen clínico
+              </button>
+              <button
+                id="pdfBtn"
+                disabled
+                class="export-btn flex-1 bg-teal-600 text-white font-bold py-2 px-3 text-sm rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              >
+                Generar PDF
+              </button>
+            </div>
+          </div>
+        </div>
+        <div
+          class="mt-6 bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-3 rounded-md"
+          role="alert"
+        >
+          <p class="font-bold text-base">Nota sobre el Uso de Formulaciones</p>
+          <p class="mt-2 text-sm">
+            Para realizar una reducción de dosis precisa y segura, las
+            <span class="font-semibold">soluciones orales comerciales</span>
+            son siempre la primera opción. La preparación de suspensiones a
+            partir de comprimidos o cápsulas es una práctica "off-label" que
+            debe considerarse únicamente como una
+            <span class="font-semibold">alternativa secundaria</span> cuando no
+            existen preparados comerciales adecuados. Su implementación debe ser
+            una decisión consensuada entre el profesional sanitario y el
+            paciente.
+          </p>
+        </div>
+        <div
+          class="mt-4 emergency-section text-red-700 p-3 rounded-md"
+          role="alert"
+        >
+          <h3 class="font-bold text-base" style="color: var(--c-primary-dark)">
+            Advertencias Clínicas Esenciales
+          </h3>
+          <ul class="list-disc list-inside mt-2 space-y-1 text-sm">
+            <li>
+              <span class="font-semibold">NUNCA</span> utilice la dosificación
+              en días alternos. Provoca fluctuaciones drásticas en los niveles
+              del fármaco.
+            </li>
+            <li>
+              Las dosis finales antes de suspender deben ser
+              <span class="font-semibold">muy pequeñas</span> (ej. 0.5 - 2 mg)
+              para evitar una caída brusca.
+            </li>
+            <li>
+              El proceso de retirada puede ser largo, durando
+              <span class="font-semibold">meses o incluso más de un año</span>.
+            </li>
+            <li>
+              Las suspensiones preparadas artesanalmente deben
+              <span class="font-semibold">elaborarse cada día</span> para
+              garantizar su estabilidad y seguridad.
+            </li>
+          </ul>
+          <h4
+            class="font-bold text-sm mt-3"
+            style="color: var(--c-primary-dark)"
+          >
+            Consideraciones Adicionales:
+          </h4>
+          <ul class="list-disc list-inside mt-2 space-y-1 text-sm">
+            <li>
+              La velocidad de reducción puede requerir ajustes individuales
+              según tolerancia.
+            </li>
+            <li>
+              Las formulaciones líquidas comerciales o de farmacia comunitaria
+              son preferibles a las suspensiones caseras siempre que estén
+              disponibles.
+            </li>
+            <li>
+              Algunos pacientes pueden necesitar reducciones más lentas (5% o
+              menos por paso).
+            </li>
+            <li>
+              El proceso puede extenderse más allá de los pasos mostrados si es
+              necesario.
+            </li>
+            <li>
+              Para dosis finales muy pequeñas (&lt;5mg), se requiere supervisión
+              especial.
+            </li>
+          </ul>
+        </div>
+      </section>
       <main class="space-y-12">
         <section id="section1" class="bg-white rounded-lg shadow-lg p-6 md:p-7">
           <h2 class="text-2xl font-bold text-center mb-5 text-sky-700">
@@ -283,7 +579,7 @@
           <div class="chart-container mx-auto">
             <canvas id="hyperbolicChart"></canvas>
           </div>
-          <p class="text-center text-xs text-slate-500 mt-3">
+          <p class="text-center text-sm text-slate-500 mt-3">
             <strong>Cómo leer la figura:</strong>
             Cada punto de la curva azul indica la ocupación de SERT a esa
             dosis.<br />
@@ -309,239 +605,45 @@
           <div
             class="flex flex-col lg:flex-row justify-center items-stretch gap-3"
           >
-            <div class="flowchart-step">
+            <div class="flowchart-step" data-step="1">
               <h3 class="font-bold text-base text-indigo-700 mb-2">
                 1. Diálogo y Planificación
               </h3>
-              <p class="text-xs text-slate-600">
+              <p class="text-sm text-slate-600">
                 Explicar el proceso hiperbólico y acordar un plan inicial.
                 Informar sobre síntomas para no confundir con recaída.
               </p>
             </div>
             <div class="flowchart-arrow">➜</div>
-            <div class="flowchart-step">
+            <div class="flowchart-step" data-step="2">
               <h3 class="font-bold text-base text-indigo-700 mb-2">
                 2. Reducir y Esperar
               </h3>
-              <p class="text-xs text-slate-600">
+              <p class="text-sm text-slate-600">
                 Realizar una pequeña reducción porcentual (ej. 10% de la dosis
                 actual). Esperar 2-4 semanas para estabilizar y evaluar.
               </p>
             </div>
             <div class="flowchart-arrow">➜</div>
-            <div class="flowchart-step">
+            <div class="flowchart-step" data-step="3">
               <h3 class="font-bold text-base text-indigo-700 mb-2">
                 3. Evaluar Tolerancia
               </h3>
-              <p class="text-xs text-slate-600">
+              <p class="text-sm text-slate-600">
                 Si los síntomas son tolerables, proceder a la siguiente
                 reducción. Si no, pausar o volver a la dosis anterior.
               </p>
             </div>
             <div class="flowchart-arrow">➜</div>
-            <div class="flowchart-step">
+            <div class="flowchart-step" data-step="4">
               <h3 class="font-bold text-base text-indigo-700 mb-2">
                 4. Repetir hasta Dosis Mínima
               </h3>
-              <p class="text-xs text-slate-600">
+              <p class="text-sm text-slate-600">
                 Continuar el ciclo de "reducir-esperar-evaluar". Las reducciones
                 serán cada vez más pequeñas en mg.
               </p>
             </div>
-          </div>
-        </section>
-
-        <section id="section4" class="bg-white rounded-lg shadow-lg p-6 md:p-7">
-          <h2 class="text-2xl font-bold text-center mb-5 text-sky-700">
-            Calculadora de Pauta de Reducción Hiperbólica
-          </h2>
-          <div id="calculator" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-slate-50 p-5 rounded-lg border border-slate-200">
-              <h3 class="font-bold text-lg mb-3 text-sky-800">
-                1. Introducir Datos del Fármaco
-              </h3>
-              <div class="space-y-3">
-                <div>
-                  <label
-                    for="drug"
-                    class="block text-sm font-medium text-slate-700"
-                    >Fármaco</label
-                  >
-                  <select
-                    id="drug"
-                    name="drug"
-                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                  >
-                    <option value="Sertralina">Sertralina</option>
-                    <option value="Citalopram">Citalopram</option>
-                    <option value="Escitalopram">Escitalopram</option>
-                    <option value="Paroxetina">Paroxetina</option>
-                    <option value="Fluoxetina">Fluoxetina</option>
-                    <option value="Venlafaxina">Venlafaxina</option>
-                  </select>
-                  <label
-                    for="presentation"
-                    class="block text-sm font-medium text-slate-700 mt-3"
-                  >
-                    Presentación inicial
-                  </label>
-                  <select
-                    id="presentation"
-                    name="presentation"
-                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                  ></select>
-                </div>
-                <div>
-                  <label
-                    for="currentDose"
-                    class="block text-sm font-medium text-slate-700"
-                    >Dosis Actual (mg)</label
-                  >
-                  <input
-                    type="number"
-                    id="currentDose"
-                    value="100"
-                    class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                  />
-                </div>
-                <div>
-                  <label
-                    for="reductionPercentage"
-                    class="block text-sm font-medium text-slate-700"
-                    >Reducción por Paso (%)</label
-                  >
-                  <input
-                    type="number"
-                    id="reductionPercentage"
-                    value="10"
-                    min="1"
-                    max="50"
-                    class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                  />
-                </div>
-                <div class="flex gap-2">
-                  <button
-                    id="calculateBtn"
-                    class="w-full bg-sky-600 text-white font-bold py-2 px-4 rounded-md hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
-                  >
-                    Calcular Pauta
-                  </button>
-                  <button
-                    id="calculateSlowBtn"
-                    class="w-full bg-sky-200 text-sky-800 font-bold py-2 px-4 rounded-md hover:bg-sky-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
-                  >
-                    Pauta Lenta (5%)
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div
-              class="bg-slate-50 p-5 rounded-lg border border-slate-200 flex flex-col"
-            >
-              <h3 class="font-bold text-lg mb-3 text-sky-800">
-                2. Pauta de Reducción Sugerida
-              </h3>
-              <div
-                id="taperingSchedule"
-                class="overflow-auto max-h-80 flex-grow"
-              >
-                <p class="text-slate-500 text-sm">
-                  Introduzca los datos y haga clic en "Calcular Pauta" para ver
-                  el resultado.
-                </p>
-              </div>
-              <div id="exportButtons" class="mt-3 flex gap-3">
-                <button
-                  id="copyBtn"
-                  disabled
-                  class="export-btn flex-1 bg-indigo-600 text-white font-bold py-2 px-3 text-sm rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Copiar para resumen clínico
-                </button>
-                <button
-                  id="pdfBtn"
-                  disabled
-                  class="export-btn flex-1 bg-teal-600 text-white font-bold py-2 px-3 text-sm rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-                >
-                  Generar PDF
-                </button>
-              </div>
-            </div>
-          </div>
-          <div
-            class="mt-6 bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-3 rounded-md"
-            role="alert"
-          >
-            <p class="font-bold text-base">
-              Nota sobre el Uso de Formulaciones
-            </p>
-            <p class="mt-2 text-xs">
-              Para realizar una reducción de dosis precisa y segura, las
-              <span class="font-semibold">soluciones orales comerciales</span>
-              son siempre la primera opción. La preparación de suspensiones a
-              partir de comprimidos o cápsulas es una práctica "off-label" que
-              debe considerarse únicamente como una
-              <span class="font-semibold">alternativa secundaria</span> cuando
-              no existen preparados comerciales adecuados. Su implementación
-              debe ser una decisión consensuada entre el profesional sanitario y
-              el paciente.
-            </p>
-          </div>
-          <div
-            class="mt-4 emergency-section text-red-700 p-3 rounded-md"
-            role="alert"
-          >
-            <h3 class="font-bold text-base" style="color: #1e40af">
-              Advertencias Clínicas Esenciales
-            </h3>
-            <ul class="list-disc list-inside mt-2 space-y-1 text-xs">
-              <li>
-                <span class="font-semibold">NUNCA</span> utilice la dosificación
-                en días alternos. Provoca fluctuaciones drásticas en los niveles
-                del fármaco.
-              </li>
-              <li>
-                Las dosis finales antes de suspender deben ser
-                <span class="font-semibold">muy pequeñas</span> (ej. 0.5 - 2 mg)
-                para evitar una caída brusca.
-              </li>
-              <li>
-                El proceso de retirada puede ser largo, durando
-                <span class="font-semibold">meses o incluso más de un año</span
-                >.
-              </li>
-              <li>
-                Las suspensiones preparadas artesanalmente deben
-                <span class="font-semibold">elaborarse cada día</span> para
-                garantizar su estabilidad y seguridad.
-              </li>
-            </ul>
-            <h4 class="font-bold text-sm mt-3" style="color: #1e40af">
-              Consideraciones Adicionales:
-            </h4>
-            <ul class="list-disc list-inside mt-2 space-y-1 text-xs">
-              <li>
-                La velocidad de reducción puede requerir ajustes individuales
-                según tolerancia.
-              </li>
-              <li>
-                Las formulaciones líquidas comerciales o de farmacia comunitaria
-                son preferibles a las suspensiones caseras siempre que estén
-                disponibles.
-              </li>
-              <li>
-                Algunos pacientes pueden necesitar reducciones más lentas (5% o
-                menos por paso).
-              </li>
-              <li>
-                El proceso puede extenderse más allá de los pasos mostrados si
-                es necesario.
-              </li>
-              <li>
-                Para dosis finales muy pequeñas (&lt;5mg), se requiere
-                supervisión especial.
-              </li>
-            </ul>
           </div>
         </section>
 
@@ -578,47 +680,47 @@
               <tbody class="text-slate-700">
                 <tr class="hover:bg-slate-50">
                   <td
-                    class="p-3 border-b border-slate-200 font-semibold text-xs"
+                    class="p-3 border-b border-slate-200 font-semibold text-sm"
                   >
                     Inicio
                   </td>
-                  <td class="p-3 border-b border-slate-200 text-xs">
+                  <td class="p-3 border-b border-slate-200 text-sm">
                     Rápido (días-semanas tras reducir dosis) o
                     <span class="font-bold">retardado</span> (hasta 4 meses
                     después, esp. con fluoxetina).
                   </td>
-                  <td class="p-3 border-b border-slate-200 text-xs">
+                  <td class="p-3 border-b border-slate-200 text-sm">
                     Generalmente más gradual y tardío, semanas o meses después
                     de la suspensión.
                   </td>
                 </tr>
                 <tr class="hover:bg-slate-50">
                   <td
-                    class="p-3 border-b border-slate-200 font-semibold text-xs"
+                    class="p-3 border-b border-slate-200 font-semibold text-sm"
                   >
                     Síntomas
                   </td>
-                  <td class="p-3 border-b border-slate-200 text-xs">
+                  <td class="p-3 border-b border-slate-200 text-sm">
                     Aparecen
                     <span class="font-bold">nuevos síntomas físicos</span>:
                     mareos, "brain zaps", náuseas, parestesias.
                   </td>
-                  <td class="p-3 border-b border-slate-200 text-xs">
+                  <td class="p-3 border-b border-slate-200 text-sm">
                     Predominan los síntomas anímicos originales: tristeza,
                     anhedonia.
                   </td>
                 </tr>
                 <tr class="hover:bg-slate-50">
                   <td
-                    class="p-3 border-b border-slate-200 font-semibold text-xs"
+                    class="p-3 border-b border-slate-200 font-semibold text-sm"
                   >
                     Respuesta al Fármaco
                   </td>
-                  <td class="p-3 border-b border-slate-200 text-xs">
+                  <td class="p-3 border-b border-slate-200 text-sm">
                     Mejora <span class="font-bold">rápidamente</span> al
                     reinstaurar la dosis previa.
                   </td>
-                  <td class="p-3 border-b border-slate-200 text-xs">
+                  <td class="p-3 border-b border-slate-200 text-sm">
                     Mejora lentamente (semanas) al reinstaurar la medicación.
                   </td>
                 </tr>
@@ -689,7 +791,7 @@
       </main>
 
       <footer
-        class="text-center mt-12 pt-6 border-t border-slate-300 text-xs text-slate-600"
+        class="text-center mt-12 pt-6 border-t border-slate-300 text-sm text-slate-600"
       >
         <div class="max-w-1xl mx-auto" style="text-align: left">
           <p class="mb-3">
@@ -708,7 +810,7 @@
             <h4 class="font-bold text-sm text-slate-700 mb-2">
               Limitaciones y Responsabilidades
             </h4>
-            <p class="text-xs">
+            <p class="text-sm">
               Esta pauta es orientativa, y se presenta solo con finalidad
               educativa. Su uso es responsabilidad del profesional sanitario con
               formación y juicio clínico, quien debe adaptar cada caso
@@ -723,7 +825,7 @@
             <h4 class="font-bold text-sm text-slate-700 mb-2">
               Referencias Bibliográficas Fundamentales
             </h4>
-            <ol class="list-decimal list-inside text-left text-xs space-y-1">
+            <ol class="list-decimal list-inside text-left text-sm space-y-1">
               <li>
                 Horowitz MA, Taylor D. Tapering of SSRI treatment to mitigate
                 withdrawal symptoms. <i>Lancet Psychiatry</i>.
@@ -1009,8 +1111,9 @@
                 {
                   label: "Prevalencia de Efectos Adversos (%)",
                   data: [52.5, 50],
-                  backgroundColor: ["#4BC0C0", "#667EEA"],
-                  borderColor: ["#4BC0C0", "#667EEA"],
+                  backgroundColor: ["#4BC0C0", "#0ea5e9"],
+                  borderColor: ["#4BC0C0", "#0ea5e9"],
+                  borderColor: ["#4BC0C0", "var(--c-primary)"],
                   borderWidth: 1,
                 },
               ],
@@ -1173,8 +1276,8 @@
           lastCalculatedDrug = drug;
           lastCalculatedInitialDose = currentDose;
 
-          let html = `<table class="w-full text-xs text-left text-slate-500">
-                    <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+          let html = `<table class="w-full text-sm text-left text-slate-500">
+                    <thead class="text-sm text-slate-700 uppercase bg-slate-100">
                         <tr>
                             <th scope="col" class="px-3 py-2">Paso</th>
                             <th scope="col" class="px-3 py-2">Dosis (mg)</th>
@@ -1450,6 +1553,27 @@
           doc.save(`pauta_reduccion_${drug.toLowerCase()}.pdf`);
         });
       }
+    </script>
+    <script>
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) {
+              document
+                .querySelectorAll(".toc-link")
+                .forEach((l) => l.classList.remove("active"));
+              const id = e.target.getAttribute("id");
+              document
+                .querySelector('.toc-link[href="#' + id + '"]')
+                ?.classList.add("active");
+            }
+          });
+        },
+        { rootMargin: "-40% 0px -40% 0px", threshold: 0.1 }
+      );
+      document
+        .querySelectorAll("main section[id]")
+        .forEach((s) => observer.observe(s));
     </script>
   </body>
 </html>
