@@ -1,47 +1,157 @@
+<!--
+=====================
+  pocus.html
+  Versión educativa sobre ecografía clínica
+=====================
+-->
 <!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>POCUS-Clínic: Guía Anatómica Segmentada</title>
+    <title>POCUS-Clínic: Atlas Anatómico Interactivo Avanzado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700&display=swap"
       rel="stylesheet"
     />
     <style>
+      :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
       body {
-        font-family: "Inter", sans-serif;
-        background-color: #f0f4f8;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
       }
-      #human-svg .segment {
-        fill: rgba(219, 234, 254, 0.5); /* blue-100 with opacity */
-        stroke: #60a5fa; /* blue-400 */
-        stroke-width: 1.5;
-        transition: all 0.3s ease;
-        cursor: pointer;
-      }
-      #human-svg .segment:hover,
-      #human-svg .segment.active {
-        fill: rgba(59, 130, 246, 0.7); /* blue-500 with opacity */
-        stroke: #1d4ed8; /* blue-800 */
-        stroke-width: 2.5;
-      }
-      #tooltip {
-        position: absolute;
-        display: none;
-        background-color: #111827;
-        color: white;
-        padding: 5px 10px;
-        border-radius: 6px;
-        font-size: 0.875rem;
+
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+            circle at 20% 80%,
+            rgba(120, 119, 198, 0.1) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 80% 20%,
+            rgba(255, 119, 198, 0.1) 0%,
+            transparent 50%
+          );
         pointer-events: none;
-        z-index: 10;
+        z-index: 1;
       }
+
+      .glass-morphism {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+      }
+
+      .header-gradient {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.95) 0%,
+          rgba(255, 255, 255, 0.85) 100%
+        );
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      #anatomical-svg {
+        filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.2));
+        transition: transform 0.3s ease;
+      }
+
+      #anatomical-svg:hover {
+        transform: scale(1.02);
+      }
+
+      .anatomy-segment {
+        fill: rgba(147, 197, 253, 0.2);
+        stroke: #3b82f6;
+        stroke-width: 1;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+      }
+
+      .anatomy-segment:hover {
+        fill: rgba(59, 130, 246, 0.4);
+        stroke: #1d4ed8;
+        stroke-width: 2;
+        filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.3));
+        transform: translateY(-1px);
+      }
+
+      .anatomy-segment.active {
+        fill: url(#activeGradient);
+        stroke: #1e40af;
+        stroke-width: 2.5;
+        filter: drop-shadow(0 6px 12px rgba(59, 130, 246, 0.4));
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.03);
+        }
+      }
+
+      .tooltip-advanced {
+        position: absolute;
+        background: rgba(17, 24, 39, 0.95);
+        backdrop-filter: blur(10px);
+        color: white;
+        padding: 12px 18px;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        pointer-events: none;
+        z-index: 1000;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.3s ease;
+      }
+
+      .tooltip-advanced.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Estilos originales para las fichas de contenido */
       .content-card {
         display: none;
         animation: fadeIn 0.5s ease-in-out;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
       }
+
       @keyframes fadeIn {
         from {
           opacity: 0;
@@ -52,44 +162,53 @@
           transform: translateY(0);
         }
       }
+
       .tab-button {
         transition: all 0.3s ease;
       }
+
       .tab-button.active {
-        background-color: #1e3a8a; /* blue-900 */
+        background-color: #1e3a8a;
         color: white;
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
-          0 2px 4px -2px rgb(0 0 0 / 0.1);
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
       }
+
       .tab-content {
         display: none;
       }
+
       .tab-content.active {
         display: block;
         animation: fadeIn 0.4s;
       }
+
       .prose strong {
-        color: #1e40af; /* blue-800 */
+        color: #1e40af;
       }
+
       .prose .evidence {
-        background-color: #eef2ff; /* indigo-50 */
-        border-left: 4px solid #4f46e5; /* indigo-600 */
+        background-color: #eef2ff;
+        border-left: 4px solid #4f46e5;
         padding: 1rem;
         margin-top: 1rem;
         border-radius: 0.375rem;
       }
+
       .prose ul {
         list-style-position: inside;
       }
+
       .prose li::marker {
         color: #3b82f6;
       }
+
       .findings-description {
         background-color: #f3f4f6;
         border: 1px solid #e5e7eb;
         border-radius: 0.5rem;
         padding: 1rem;
       }
+
       .reference-link {
         font-size: 0.75rem;
         font-weight: 500;
@@ -97,6 +216,7 @@
         text-decoration: underline;
         cursor: pointer;
       }
+
       .pearls-section h5 {
         font-size: 1.05em;
         font-weight: 700;
@@ -104,201 +224,548 @@
         margin-top: 0.75rem;
         margin-bottom: 0.25rem;
       }
+
+      .zoom-controls {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .zoom-button {
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .zoom-button:hover {
+        background: white;
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .anatomy-label {
+        font-size: 10px;
+        font-weight: 600;
+        fill: #1f2937;
+        text-anchor: middle;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .show-labels .anatomy-label {
+        opacity: 1;
+      }
+
+      .welcome-card {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      }
+
+      .feature-icon {
+        width: 64px;
+        height: 64px;
+        background: var(--primary-gradient);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
+      }
+
+      @media (max-width: 1024px) {
+        .grid-layout {
+          grid-template-columns: 1fr !important;
+        }
+
+        .anatomy-container {
+          position: relative !important;
+          top: auto !important;
+        }
+      }
     </style>
   </head>
-  <body class="text-gray-800">
-    <header class="bg-white shadow-md sticky top-0 z-20">
-      <div
-        class="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center"
-      >
-        <div class="flex items-center space-x-3">
-          <svg
-            class="h-8 w-8 text-blue-700"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"
-            />
-          </svg>
-          <h1 class="text-xl sm:text-2xl font-bold text-blue-800">
-            POCUS-Clínic Interactivo
-          </h1>
+  <body>
+    <header
+      class="header-gradient sticky top-0 z-50 transition-all duration-300"
+    >
+      <div class="container mx-auto px-4 sm:px-6 py-4">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center space-x-4">
+            <div
+              class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center"
+            >
+              <svg
+                class="w-6 h-6 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h1
+                class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"
+              >
+                POCUS-Clínic Atlas
+              </h1>
+              <p class="text-sm text-gray-600">
+                Sistema Interactivo de Ultrasonido Point-of-Care
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </header>
 
-    <main class="container mx-auto p-4 md:p-8">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Left Column: Interactive Human -->
-        <div
-          class="lg:col-span-1 flex flex-col items-center p-4 bg-white rounded-xl shadow-lg self-start lg:sticky top-24"
-        >
-          <h2 class="text-xl font-bold text-gray-700 mb-4">
-            Seleccione una Zona
-          </h2>
-          <div id="tooltip"></div>
-          <svg
-            id="human-svg"
-            viewBox="0 0 200 400"
-            class="w-full max-w-xs h-auto"
-          >
-            <!-- Base body shape -->
-            <path
-              d="M100,10 C125,10 140,20 140,40 C140,60 130,70 130,85 L140,150 Q100,160 60,150 L70,85 C70,70 75,60 100,40 C100,20 75,10 100,10 M140,150 L135,240 Q100,250 65,240 L60,150 M65,90 Q50,115 50,165 L40,165 Q35,115 55,90 M135,90 Q150,115 150,165 L160,165 Q165,115 145,90 M65,245 L85,245 L80,380 Q70,390 60,380 M115,245 L135,245 L140,380 Q130,390 120,380"
-              fill="#e0e7ff"
-              stroke="#c7d2fe"
-              stroke-width="1"
-            />
+    <main class="container mx-auto p-4 md:p-8 relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 grid-layout">
+        <!-- Panel Izquierdo: Anatomía Interactiva Mejorada -->
+        <div class="lg:col-span-1 anatomy-container lg:sticky lg:top-24">
+          <div class="glass-morphism rounded-2xl p-6 relative">
+            <div class="flex justify-between items-center mb-6">
+              <h2 class="text-xl font-bold text-white">
+                Exploración Anatómica
+              </h2>
+              <button
+                id="toggle-labels"
+                class="px-3 py-1 bg-white/20 text-white rounded-lg text-sm hover:bg-white/30 transition-colors"
+              >
+                Mostrar Etiquetas
+              </button>
+            </div>
 
-            <!-- Segments -->
-            <circle
-              cx="100"
-              cy="40"
-              r="25"
-              class="segment"
-              data-segment="ocular"
-              data-tooltip="Ocular"
-            />
-            <path
-              d="M85,65 L115,65 L110,80 L90,80 Z"
-              class="segment"
-              data-segment="neck"
-              data-tooltip="Cuello (Tiroides/Linfático)"
-            />
+            <div id="tooltip" class="tooltip-advanced"></div>
 
-            <path
-              d="M75,88 h50 v25 h-50 z"
-              class="segment"
-              data-segment="cardiac"
-              data-tooltip="Cardíaco"
-            />
-            <path
-              d="M72,115 h25 v30 h-25 z"
-              class="segment"
-              data-segment="lung_left"
-              data-tooltip="Pulmonar Izquierdo"
-            />
-            <path
-              d="M103,115 h25 v30 h-25 z"
-              class="segment"
-              data-segment="lung_right"
-              data-tooltip="Pulmonar Derecho"
-            />
+            <div class="relative">
+              <svg
+                id="anatomical-svg"
+                viewBox="0 0 300 600"
+                class="w-full max-w-md mx-auto"
+              >
+                <defs>
+                  <linearGradient
+                    id="activeGradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
+                    <stop
+                      offset="0%"
+                      style="stop-color: #3b82f6; stop-opacity: 0.8"
+                    />
+                    <stop
+                      offset="100%"
+                      style="stop-color: #8b5cf6; stop-opacity: 0.8"
+                    />
+                  </linearGradient>
 
-            <!-- CORRECTED ABDOMINAL SEGMENTS -->
-            <path
-              d="M63,158 h35 v35 h-35 z"
-              class="segment"
-              data-segment="ruq"
-              data-tooltip="Hígado y Vía Biliar (CSD)"
-            />
-            <path
-              d="M102,158 h35 v35 h-35 z"
-              class="segment"
-              data-segment="luq"
-              data-tooltip="Bazo (CSI)"
-            />
-            <path
-              d="M70,195 h60 v20 h-60 z"
-              class="segment"
-              data-segment="epigastric"
-              data-tooltip="Aorta / Epigastrio"
-            />
-            <path
-              d="M68,217 h30 v20 h-30 z"
-              class="segment"
-              data-segment="rlq"
-              data-tooltip="Fosa Ilíaca Derecha (Apendicitis)"
-            />
-            <path
-              d="M102,217 h30 v20 h-30 z"
-              class="segment"
-              data-segment="llq"
-              data-tooltip="Fosa Ilíaca Izquierda"
-            />
-            <path
-              d="M75,238 h50 v20 h-50 z"
-              class="segment"
-              data-segment="suprapubic"
-              data-tooltip="Vejiga / Ginecológico"
-            />
-            <path
-              d="M85,260 h30 v15 h-30 z"
-              class="segment"
-              data-segment="scrotal"
-              data-tooltip="Testicular"
-            />
+                  <linearGradient
+                    id="bodyGradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="0%"
+                    y2="100%"
+                  >
+                    <stop
+                      offset="0%"
+                      style="stop-color: #fef3c7; stop-opacity: 0.3"
+                    />
+                    <stop
+                      offset="100%"
+                      style="stop-color: #fde68a; stop-opacity: 0.3"
+                    />
+                  </linearGradient>
+                </defs>
 
-            <path
-              d="M50,95 L63,92 L60,120 L48,122 Z"
-              class="segment"
-              data-segment="shoulder"
-              data-tooltip="Hombro"
-            />
-            <path
-              d="M137,92 L150,95 L152,122 L140,120 Z"
-              class="segment"
-              data-segment="shoulder"
-              data-tooltip="Hombro"
-            />
+                <!-- Cuerpo Base Mejorado -->
+                <g id="body-base">
+                  <!-- Cabeza -->
+                  <ellipse
+                    cx="150"
+                    cy="60"
+                    rx="40"
+                    ry="45"
+                    fill="url(#bodyGradient)"
+                    stroke="#fed7aa"
+                    stroke-width="2"
+                  />
 
-            <path
-              d="M118,245 L138,245 L138,300 L118,300 Z"
-              class="segment"
-              data-segment="dvt"
-              data-tooltip="TVP (Poplítea)"
-            />
-            <path
-              d="M62,245 L82,245 L82,300 L62,300 Z"
-              class="segment"
-              data-segment="dvt"
-              data-tooltip="TVP (Poplítea)"
-            />
-          </svg>
+                  <!-- Cuello -->
+                  <rect
+                    x="130"
+                    y="95"
+                    width="40"
+                    height="30"
+                    rx="8"
+                    fill="url(#bodyGradient)"
+                    stroke="#fed7aa"
+                    stroke-width="2"
+                  />
+
+                  <!-- Torso -->
+                  <path
+                    d="M 100 125 Q 100 120 110 120 L 190 120 Q 200 120 200 125 L 200 280 Q 200 290 190 290 L 110 290 Q 100 290 100 280 Z"
+                    fill="url(#bodyGradient)"
+                    stroke="#fed7aa"
+                    stroke-width="2"
+                  />
+
+                  <!-- Brazos -->
+                  <path
+                    d="M 100 140 Q 80 145 70 165 L 65 230 Q 65 240 70 245 L 75 240 Q 80 235 80 225 L 85 165 Q 90 150 100 145"
+                    fill="url(#bodyGradient)"
+                    stroke="#fed7aa"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M 200 140 Q 220 145 230 165 L 235 230 Q 235 240 230 245 L 225 240 Q 220 235 220 225 L 215 165 Q 210 150 200 145"
+                    fill="url(#bodyGradient)"
+                    stroke="#fed7aa"
+                    stroke-width="2"
+                  />
+
+                  <!-- Piernas -->
+                  <path
+                    d="M 120 290 L 115 450 Q 115 460 120 465 L 125 460 Q 130 455 130 445 L 135 290"
+                    fill="url(#bodyGradient)"
+                    stroke="#fed7aa"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M 165 290 L 170 450 Q 170 460 165 465 L 160 460 Q 155 455 155 445 L 150 290"
+                    fill="url(#bodyGradient)"
+                    stroke="#fed7aa"
+                    stroke-width="2"
+                  />
+                </g>
+
+                <!-- Zonas Interactivas Mejoradas -->
+                <g id="interactive-zones">
+                  <!-- Cabeza y Cuello -->
+                  <circle
+                    cx="150"
+                    cy="45"
+                    r="20"
+                    class="anatomy-segment"
+                    data-segment="ocular"
+                    data-tooltip="Ocular"
+                  />
+                  <text x="150" y="48" class="anatomy-label">Ocular</text>
+
+                  <rect
+                    x="125"
+                    y="95"
+                    width="50"
+                    height="25"
+                    rx="8"
+                    class="anatomy-segment"
+                    data-segment="neck"
+                    data-tooltip="Cuello (Tiroides/Linfático)"
+                  />
+                  <text x="150" y="110" class="anatomy-label">Tiroides</text>
+
+                  <!-- Tórax -->
+                  <ellipse
+                    cx="150"
+                    cy="155"
+                    rx="25"
+                    ry="20"
+                    class="anatomy-segment"
+                    data-segment="cardiac"
+                    data-tooltip="Cardíaco"
+                  />
+                  <text x="150" y="158" class="anatomy-label">Corazón</text>
+
+                  <path
+                    d="M 110 130 L 140 130 L 140 180 L 110 180 Z"
+                    class="anatomy-segment"
+                    data-segment="lung_left"
+                    data-tooltip="Pulmón Izquierdo"
+                  />
+                  <text x="125" y="155" class="anatomy-label">Pulmón Izq</text>
+
+                  <path
+                    d="M 160 130 L 190 130 L 190 180 L 160 180 Z"
+                    class="anatomy-segment"
+                    data-segment="lung_right"
+                    data-tooltip="Pulmón Derecho"
+                  />
+                  <text x="175" y="155" class="anatomy-label">Pulmón Der</text>
+
+                  <!-- Abdomen con Zonas Corregidas -->
+                  <rect
+                    x="110"
+                    y="205"
+                    width="40"
+                    height="40"
+                    rx="5"
+                    class="anatomy-segment"
+                    data-segment="ruq"
+                    data-tooltip="Hígado y Vía Biliar (CSD)"
+                  />
+                  <text x="130" y="228" class="anatomy-label">Hígado</text>
+
+                  <rect
+                    x="150"
+                    y="205"
+                    width="40"
+                    height="40"
+                    rx="5"
+                    class="anatomy-segment"
+                    data-segment="luq"
+                    data-tooltip="Bazo (CSI)"
+                  />
+                  <text x="170" y="228" class="anatomy-label">Bazo</text>
+
+                  <rect
+                    x="120"
+                    y="245"
+                    width="60"
+                    height="20"
+                    rx="5"
+                    class="anatomy-segment"
+                    data-segment="epigastric"
+                    data-tooltip="Aorta / Epigastrio"
+                  />
+                  <text x="150" y="258" class="anatomy-label">Aorta</text>
+
+                  <rect
+                    x="110"
+                    y="265"
+                    width="35"
+                    height="25"
+                    rx="5"
+                    class="anatomy-segment"
+                    data-segment="rlq"
+                    data-tooltip="Fosa Ilíaca Derecha (Apendicitis)"
+                  />
+                  <text x="127" y="280" class="anatomy-label">FID</text>
+
+                  <rect
+                    x="155"
+                    y="265"
+                    width="35"
+                    height="25"
+                    rx="5"
+                    class="anatomy-segment"
+                    data-segment="llq"
+                    data-tooltip="Fosa Ilíaca Izquierda"
+                  />
+                  <text x="172" y="280" class="anatomy-label">FII</text>
+
+                  <!-- Pelvis -->
+                  <ellipse
+                    cx="150"
+                    cy="305"
+                    rx="35"
+                    ry="15"
+                    class="anatomy-segment"
+                    data-segment="suprapubic"
+                    data-tooltip="Vejiga / Ginecológico"
+                  />
+                  <text x="150" y="308" class="anatomy-label">Vejiga</text>
+
+                  <ellipse
+                    cx="150"
+                    cy="325"
+                    rx="20"
+                    ry="10"
+                    class="anatomy-segment"
+                    data-segment="scrotal"
+                    data-tooltip="Testicular"
+                  />
+                  <text x="150" y="328" class="anatomy-label">Testicular</text>
+
+                  <!-- Extremidades -->
+                  <ellipse
+                    cx="85"
+                    cy="155"
+                    rx="12"
+                    ry="18"
+                    class="anatomy-segment"
+                    data-segment="shoulder"
+                    data-tooltip="Hombro"
+                  />
+                  <ellipse
+                    cx="215"
+                    cy="155"
+                    rx="12"
+                    ry="18"
+                    class="anatomy-segment"
+                    data-segment="shoulder"
+                    data-tooltip="Hombro"
+                  />
+
+                  <!-- TVP en piernas -->
+                  <rect
+                    x="118"
+                    y="350"
+                    width="12"
+                    height="60"
+                    rx="6"
+                    class="anatomy-segment"
+                    data-segment="dvt"
+                    data-tooltip="TVP (Femoral/Poplítea)"
+                  />
+                  <rect
+                    x="170"
+                    y="350"
+                    width="12"
+                    height="60"
+                    rx="6"
+                    class="anatomy-segment"
+                    data-segment="dvt"
+                    data-tooltip="TVP (Femoral/Poplítea)"
+                  />
+                </g>
+              </svg>
+
+              <div class="zoom-controls">
+                <button class="zoom-button" onclick="zoomIn()">
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 6v12m6-6H6"
+                    />
+                  </svg>
+                </button>
+                <button class="zoom-button" onclick="zoomOut()">
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M18 12H6"
+                    />
+                  </svg>
+                </button>
+                <button class="zoom-button" onclick="resetZoom()">
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Right Column: Content -->
+        <!-- Panel Derecho: Contenido -->
         <div id="content-area" class="lg:col-span-2">
-          <div
-            id="welcome-message"
-            class="flex flex-col items-center justify-center h-full bg-white p-8 rounded-xl shadow-lg text-center"
-          >
-            <svg
-              class="h-16 w-16 text-blue-500 mb-4"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
+          <div id="welcome-message" class="welcome-card">
+            <div class="feature-icon">
+              <svg
+                class="w-8 h-8 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+            </div>
+            <h3
+              class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M12 9.75L14.25 12m0 0l2.25 2.25M14.25 12l2.25-2.25M14.25 12L12 14.25m-2.58 4.92l-6.375-6.375a1.125 1.125 0 010-1.59L9.42 4.83c.211-.211.498-.33.796-.33H19.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-9.284c-.298 0-.585-.119-.796-.33z"
-              />
-            </svg>
-            <h3 class="text-2xl font-bold text-gray-800">
-              Bienvenido a la Guía POCUS Interactiva
+              Bienvenido al Atlas POCUS Interactivo
             </h3>
-            <p class="mt-2 text-gray-600">
-              Pase el cursor y haga clic en una zona anatómica a la izquierda
-              para ver las aplicaciones de ultrasonido relevantes.
+            <p class="text-gray-600 text-lg mb-6">
+              Explore el modelo anatómico y haga clic en cualquier región para
+              acceder a protocolos de ultrasonido detallados, técnicas avanzadas
+              y casos clínicos.
             </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+              <div
+                class="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl"
+              >
+                <h4 class="font-semibold text-indigo-700 mb-2">
+                  🎯 Precisión Diagnóstica
+                </h4>
+                <p class="text-sm text-gray-600">
+                  Protocolos validados y basados en evidencia
+                </p>
+              </div>
+              <div
+                class="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl"
+              >
+                <h4 class="font-semibold text-purple-700 mb-2">
+                  🚀 Interfaz Intuitiva
+                </h4>
+                <p class="text-sm text-gray-600">
+                  Navegación fluida y experiencia optimizada
+                </p>
+              </div>
+              <div
+                class="p-4 bg-gradient-to-br from-green-50 to-teal-50 rounded-xl"
+              >
+                <h4 class="font-semibold text-green-700 mb-2">
+                  📚 Contenido Actualizado
+                </h4>
+                <p class="text-sm text-gray-600">
+                  Últimas guías y recomendaciones clínicas
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- References Section -->
+      <!-- Referencias -->
       <div id="references-section" class="mt-12"></div>
     </main>
 
     <script>
+      // Base de datos de referencias (CONTENIDO ORIGINAL PRESERVADO)
       const references = {
         pneumonia_long_2017: {
           id: "pneumonia_long_2017",
@@ -356,6 +823,7 @@
         },
       };
 
+      // Base de datos POCUS (CONTENIDO ORIGINAL COMPLETO PRESERVADO)
       const pocusData = [
         {
           segment: "ocular",
@@ -607,46 +1075,72 @@
         },
       ];
 
+      // Sistema de gestión de la aplicación
       const contentArea = document.getElementById("content-area");
       const welcomeMessage = document.getElementById("welcome-message");
       const tooltip = document.getElementById("tooltip");
-      const segments = document.querySelectorAll(".segment");
+      const segments = document.querySelectorAll(".anatomy-segment");
+      let zoomLevel = 1;
+      let showLabels = false;
 
+      // Event listeners
       segments.forEach((segment) => {
         segment.addEventListener("click", (e) => {
           const segmentId = e.currentTarget.dataset.segment;
           segments.forEach((s) => s.classList.remove("active"));
 
-          // Activate all segments with the same data-segment
+          // Activar todos los segmentos con el mismo data-segment
           document
-            .querySelectorAll(`.segment[data-segment="${segmentId}"]`)
+            .querySelectorAll(`.anatomy-segment[data-segment="${segmentId}"]`)
             .forEach((s) => s.classList.add("active"));
 
           welcomeMessage.style.display = "none";
           renderSegmentContent(segmentId);
         });
 
-        segment.addEventListener("mousemove", function (e) {
-          tooltip.style.left = e.pageX + 10 + "px";
-          tooltip.style.top = e.pageY + 10 + "px";
-        });
-
-        segment.addEventListener("mouseover", (e) => {
+        segment.addEventListener("mouseenter", (e) => {
           const tooltipText = e.currentTarget.dataset.tooltip;
-          tooltip.style.display = "block";
           tooltip.textContent = tooltipText;
+          tooltip.classList.add("show");
+
+          const rect = e.target.getBoundingClientRect();
+          tooltip.style.left = rect.left + rect.width / 2 + "px";
+          tooltip.style.top = rect.top - 10 + "px";
         });
 
-        segment.addEventListener("mouseout", () => {
-          tooltip.style.display = "none";
+        segment.addEventListener("mouseleave", () => {
+          tooltip.classList.remove("show");
         });
       });
 
+      // Toggle etiquetas
+      document.getElementById("toggle-labels").addEventListener("click", () => {
+        showLabels = !showLabels;
+        document
+          .getElementById("anatomical-svg")
+          .classList.toggle("show-labels");
+        document.getElementById("toggle-labels").textContent = showLabels
+          ? "Ocultar Etiquetas"
+          : "Mostrar Etiquetas";
+      });
+
+      // Zoom con rueda del ratón
+      document
+        .getElementById("anatomical-svg")
+        .addEventListener("wheel", (e) => {
+          e.preventDefault();
+          if (e.deltaY < 0) {
+            zoomIn();
+          } else {
+            zoomOut();
+          }
+        });
+
       function renderSegmentContent(segmentId) {
-        contentArea.innerHTML = ""; // Clear previous content
+        contentArea.innerHTML = ""; // Limpiar contenido previo
         const data = pocusData.filter((app) => app.segment === segmentId);
         if (!data || data.length === 0) {
-          contentArea.innerHTML = `<div class="text-center p-8 bg-white rounded-xl shadow-lg"><p class="text-gray-600">No hay aplicaciones definidas para esta zona todavía.</p></div>`;
+          contentArea.innerHTML = `<div class="bg-white rounded-xl shadow-lg p-8 text-center"><p class="text-gray-600">No hay aplicaciones definidas para esta zona todavía.</p></div>`;
           return;
         }
 
@@ -659,7 +1153,7 @@
 
         renderReferences(usedRefs);
 
-        // Make all cards visible
+        // Hacer visibles todas las tarjetas
         contentArea.querySelectorAll(".content-card").forEach((card) => {
           card.style.display = "block";
         });
@@ -738,7 +1232,32 @@
         refContainer.innerHTML = refsHtml;
       }
 
-      // Smooth scroll for reference links
+      // Funciones de zoom
+      function zoomIn() {
+        if (zoomLevel < 2) {
+          zoomLevel += 0.1;
+          updateZoom();
+        }
+      }
+
+      function zoomOut() {
+        if (zoomLevel > 0.5) {
+          zoomLevel -= 0.1;
+          updateZoom();
+        }
+      }
+
+      function resetZoom() {
+        zoomLevel = 1;
+        updateZoom();
+      }
+
+      function updateZoom() {
+        const svg = document.getElementById("anatomical-svg");
+        svg.style.transform = `scale(${zoomLevel})`;
+      }
+
+      // Smooth scroll para referencias
       document.addEventListener("click", function (e) {
         if (e.target.matches("a.reference-link")) {
           e.preventDefault();
