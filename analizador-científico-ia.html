@@ -1,0 +1,1541 @@
+<!--
+=====================
+  analizador-cientifico-ia.html
+  
+  Prototipo de Analizador Científico IA
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analizador Científico IA | @ernestob</title>
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/header.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Analizador Científico IA | ​🤖 ​@ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria 🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/analizador-cientifico-ia/"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.5/purify.min.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: #1c1e26;
+      }
+
+      .main-container {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 1rem;
+      }
+
+      .hero-section {
+        border-radius: 8px;
+        padding: 0rem;
+        margin-bottom: 0.5rem; /* Reducido de 1rem */
+      }
+
+      .intro-text {
+        font-size: 0.875rem; /* Reducido de 0.92rem */
+        line-height: 1.4; /* Reducido de 1.5 */
+        background: rgba(59, 130, 246, 0.08);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 8px;
+        padding: 0.75rem 1rem; /* Reducido de 0.875rem 1.125rem */
+        color: #94a3b8;
+        margin-bottom: 0.75rem; /* Reducido de 1rem */
+      }
+
+      .intro-text .highlight {
+        color: #60a5fa;
+        font-weight: 500;
+      }
+
+      .intro-text code {
+        background: rgba(59, 130, 246, 0.15);
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+        font-family: "Consolas", "Monaco", monospace;
+        font-size: 0.875rem;
+        color: #93bbfc;
+      }
+
+      .main-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.375rem; /* Reducido de 1.5rem */
+        font-weight: 600;
+        margin-bottom: 0.5rem; /* Reducido de 0.75rem */
+        color: var(--text-primary, #fff);
+      }
+
+      /* === ANALYZER APP SPECIFIC STYLES === */
+      .analyzer-app {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif !important;
+        line-height: 1.6 !important;
+        color: #1f2937 !important;
+        background: transparent !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        position: relative !important;
+        z-index: 1 !important;
+      }
+
+      .analyzer-app *,
+      .analyzer-app *::before,
+      .analyzer-app *::after {
+        box-sizing: border-box !important;
+      }
+
+      /* === WORKFLOW SECTION - OPTIMIZED === */
+      .analyzer-app .workflow-section {
+        background: linear-gradient(
+          135deg,
+          #1e293b 0%,
+          #334155 100%
+        ) !important;
+        color: white !important;
+        padding: 0.75rem 0.75rem !important; /* Reducido de 1.25rem */
+        margin-bottom: 0.5rem !important; /* Reducido de 1.25rem */
+        border-radius: 0.4rem !important;
+        position: relative !important;
+        overflow: hidden !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      }
+
+      .analyzer-app .workflow-content {
+        position: relative !important;
+        z-index: 2 !important;
+      }
+
+      .analyzer-app .workflow-title {
+        font-size: 1rem !important; /* Aumentado */
+        font-weight: 600 !important;
+        color: #e2e8f0 !important;
+        margin-bottom: 0.4rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+      }
+
+      .analyzer-app .workflow-subtitle {
+        font-size: 0.8125rem !important; /* Reducido de 0.875rem */
+        color: #94a3b8 !important;
+        margin-bottom: 0.5rem !important; /* Reducido de 1rem */
+        line-height: 1.1 !important; /* Reducido de 1.5 */
+      }
+
+      .analyzer-app .workflow-container {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+        gap: 0.5rem !important;
+        max-width: 100% !important;
+      }
+
+      .analyzer-app .workflow-step {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 0.3rem !important;
+        color: rgba(255, 255, 255, 0.85) !important;
+        font-size: 0.5rem !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+        text-align: center !important;
+      }
+
+      .analyzer-app .workflow-step .step-icon {
+        width: 1.5rem !important; /* Reducido de 2rem */
+        height: 1.5rem !important; /* Reducido de 2rem */
+        color: #60a5fa !important;
+        flex-shrink: 0 !important;
+        margin-bottom: 0.05rem !important; /* Reducido de 0.25rem */
+      }
+
+      .analyzer-app .workflow-step .step-title {
+        font-weight: 600 !important;
+        font-size: 0.8rem !important;
+        color: white !important;
+        /*    margin-bottom: 0.2rem !important; */
+      }
+
+      .analyzer-app .workflow-step .step-description {
+        font-size: 0.75rem !important;
+        color: #cbd5e1 !important;
+        line-height: 1 !important;
+      }
+
+      .analyzer-app .workflow-arrow {
+        color: rgba(243, 222, 222, 0.89) !important;
+        font-size: 1.5rem !important;
+        flex-shrink: 0 !important;
+        margin-top: 1rem !important;
+      }
+
+      @media (max-width: 768px) {
+        .analyzer-app .workflow-container {
+          flex-wrap: wrap !important;
+          gap: 0.5rem !important;
+        }
+
+        .analyzer-app .workflow-arrow {
+          display: none !important;
+        }
+
+        .analyzer-app .workflow-step {
+          flex: 0 0 calc(50% - 0.5rem) !important;
+        }
+      }
+
+      /* === LAYOUT === */
+      .analyzer-app .app-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important; /* Reducido */
+      }
+
+      @media (min-width: 1024px) {
+        .analyzer-app .app-grid {
+          grid-template-columns: 320px 1fr !important; /* Sidebar ligeramente más ancho */
+        }
+      }
+
+      /* === SIDEBAR - REDISEÑADO === */
+      .analyzer-app .sidebar {
+        background: white !important;
+        border-radius: 0.75rem !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        border: 1px solid #e5e7eb !important;
+        padding: 1.25rem !important; /* Reducido de 1.5rem */
+        height: fit-content !important;
+        position: sticky !important;
+        top: 1rem !important;
+      }
+      .analyzer-app .sidebar h2 {
+        font-size: 1.125rem !important;
+        font-weight: 600 !important;
+        color: #1f2937 !important;
+        margin-bottom: 1.25rem !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+      }
+
+      .analyzer-app .sidebar h2 svg {
+        color: #3b82f6 !important;
+      }
+
+      .analyzer-app .sidebar-section {
+        margin-bottom: 1.5rem !important;
+        padding: 1rem !important;
+        background: #f9fafb !important;
+        border-radius: 0.5rem !important;
+        border: 1px solid #e5e7eb !important;
+      }
+
+      .analyzer-app .sidebar-section:last-child {
+        margin-bottom: 0 !important;
+      }
+
+      .analyzer-app .sidebar-label {
+        display: block !important;
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        color: #374151 !important;
+        margin-bottom: 0.75rem !important;
+      }
+
+      .analyzer-app .sidebar-help {
+        font-size: 0.8125rem !important;
+        color: #6b7280 !important;
+        margin-top: 0.75rem !important;
+        line-height: 1.5 !important;
+        background: #e0e7ff !important;
+        padding: 0.5rem 0.75rem !important;
+        border-radius: 0.375rem !important;
+        border-left: 3px solid #3b82f6 !important;
+      }
+
+      .analyzer-app .sidebar-divider {
+        height: 0 !important;
+        margin: 0 !important;
+      }
+
+      /* === BUTTONS - MEJORADOS === */
+      .analyzer-app button {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif !important;
+        font-weight: 500 !important;
+        border: none !important;
+        border-radius: 0.5rem !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 0.5rem !important;
+        text-decoration: none !important;
+        outline: none !important;
+        font-size: 0.875rem !important;
+        position: relative !important;
+      }
+
+      .analyzer-app .btn-primary {
+        padding: 0.75rem 1.25rem !important;
+        color: white !important;
+        background: linear-gradient(
+          135deg,
+          #3b82f6 0%,
+          #2563eb 100%
+        ) !important;
+        width: 100% !important;
+        font-weight: 600 !important;
+        font-size: 0.9375rem !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        position: relative !important;
+        animation: breathe 2s ease-in-out infinite !important;
+      }
+
+      @keyframes breathe {
+        0%,
+        100% {
+          transform: scale(1);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+            0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        50% {
+          transform: scale(1.02);
+          box-shadow: 0 4px 15px -1px rgba(59, 130, 246, 0.4),
+            0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+      }
+
+      .analyzer-app .btn-primary:hover:not(:disabled) {
+        background: linear-gradient(
+          135deg,
+          #2563eb 0%,
+          #1d4ed8 100%
+        ) !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+        transform: translateY(-1px) scale(1.02) !important;
+        animation: none !important;
+      }
+
+      .analyzer-app .btn-primary:hover:not(:disabled) {
+        background: linear-gradient(
+          135deg,
+          #2563eb 0%,
+          #1d4ed8 100%
+        ) !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+        transform: translateY(-1px) !important;
+      }
+
+      .analyzer-app .btn-secondary,
+      .analyzer-app .btn-success {
+        padding: 0.625rem 1rem !important;
+        font-size: 0.875rem !important;
+        width: 100% !important;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+          0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+      }
+
+      .analyzer-app .btn-secondary {
+        background-color: white !important;
+        color: #4b5563 !important;
+        border: 1px solid #d1d5db !important;
+      }
+
+      .analyzer-app .btn-secondary:hover:not(:disabled) {
+        background-color: #f9fafb !important;
+        border-color: #9ca3af !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+      }
+
+      .analyzer-app .btn-success {
+        background: linear-gradient(
+          135deg,
+          #10b981 0%,
+          #059669 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .analyzer-app .btn-success:hover:not(:disabled) {
+        background: linear-gradient(
+          135deg,
+          #059669 0%,
+          #047857 100%
+        ) !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+      }
+
+      .analyzer-app button:disabled {
+        background: #f3f4f6 !important;
+        color: #9ca3af !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        box-shadow: none !important;
+      }
+
+      .analyzer-app .actions-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 0.75rem !important;
+      }
+
+      /* === MAIN CONTENT === */
+      .analyzer-app .main-content {
+        background: white !important;
+        border-radius: 0.75rem !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        border: 1px solid #e5e7eb !important;
+        padding: 1.5rem !important;
+        min-height: 400px !important; /* Reducido */
+      }
+
+      /* === TABLE STYLES === */
+      .analyzer-app table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 0.875rem !important;
+        background: white !important;
+        border-radius: 0.5rem !important;
+        overflow: hidden !important;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+      }
+
+      .analyzer-app table th {
+        background: #f9fafb !important;
+        color: #111827 !important;
+        font-weight: 500 !important;
+        padding: 0.75rem !important;
+        text-align: left !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        font-size: 0.8125rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+      }
+
+      .analyzer-app table td {
+        padding: 0.875rem 0.75rem !important;
+        vertical-align: top !important;
+        border-bottom: 1px solid #f3f4f6 !important;
+        color: #374151 !important;
+        line-height: 1.5 !important;
+      }
+
+      .analyzer-app table tbody tr:hover {
+        background-color: #f9fafb !important;
+      }
+
+      /* === DATATABLE CONTROLS === */
+      .analyzer-app .datatable-wrapper {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif !important;
+      }
+
+      .analyzer-app .datatable-top {
+        padding: 1rem 0 !important;
+        background: transparent !important;
+        margin-bottom: 0 !important;
+      }
+
+      .analyzer-app .datatable-bottom {
+        padding: 0.75rem 0 !important;
+        background: transparent !important;
+        border-top: 1px solid #e5e7eb !important;
+        margin-top: 0 !important;
+      }
+
+      .analyzer-app .datatable-search {
+        float: right !important;
+      }
+
+      .analyzer-app .datatable-search input {
+        border: 1px solid #e5e7eb !important;
+        border-radius: 0.375rem !important;
+        padding: 0.375rem 0.75rem !important;
+        font-size: 0.875rem !important;
+        background: white !important;
+        color: #374151 !important;
+        transition: all 0.2s ease !important;
+      }
+
+      .analyzer-app .datatable-search input:focus {
+        border-color: #3b82f6 !important;
+        outline: none !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+      }
+
+      .analyzer-app .datatable-dropdown select {
+        border: 1px solid #e5e7eb !important;
+        border-radius: 0.375rem !important;
+        padding: 0.375rem 0.5rem !important;
+        font-size: 0.875rem !important;
+        background: white !important;
+        color: #374151 !important;
+      }
+
+      .analyzer-app .datatable-info {
+        color: #6b7280 !important;
+        font-size: 0.8125rem !important;
+      }
+
+      /* === LINKS === */
+      .analyzer-app .article-link {
+        color: #2563eb !important;
+        text-decoration: none !important;
+        font-weight: 500 !important;
+        transition: color 0.2s ease !important;
+      }
+
+      .analyzer-app .article-link:hover {
+        color: #1d4ed8 !important;
+        text-decoration: underline !important;
+      }
+
+      .analyzer-app .article-link::after {
+        content: " ↗" !important;
+        font-size: 0.75rem !important;
+        opacity: 0.7 !important;
+      }
+
+      /* === STATUS AND PLACEHOLDERS === */
+      .analyzer-app .loader {
+        border: 3px solid #f3f4f6 !important;
+        border-top: 3px solid #2563eb !important;
+        border-radius: 50% !important;
+        width: 2.5rem !important;
+        height: 2.5rem !important;
+        animation: spin 1s linear infinite !important;
+        margin: 0 auto 1rem auto !important;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .analyzer-app .status-container,
+      .analyzer-app .placeholder-container {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: 300px !important; /* Reducido */
+        text-align: center !important;
+        padding: 2rem !important;
+      }
+
+      .analyzer-app .placeholder-container svg {
+        width: 3rem !important;
+        height: 3rem !important;
+        color: #e5e7eb !important;
+        margin-bottom: 1rem !important;
+      }
+
+      .analyzer-app .placeholder-container h3 {
+        font-size: 1.125rem !important;
+        font-weight: 500 !important;
+        color: #374151 !important;
+        margin-bottom: 0.5rem !important;
+      }
+
+      .analyzer-app .placeholder-container p {
+        color: #6b7280 !important;
+        font-size: 0.875rem !important;
+      }
+
+      /* === SYNTHESIS STYLES === */
+      .analyzer-app .synthesis-container {
+        padding: 1.25rem !important;
+        background: #f9fafb !important;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 0.5rem !important;
+        margin-bottom: 2rem !important;
+      }
+
+      .analyzer-app .synthesis-container h3 {
+        color: #111827 !important;
+        font-size: 1rem !important;
+        margin-bottom: 0.75rem !important;
+        font-weight: 600 !important;
+      }
+
+      .analyzer-app .synthesis-container ul {
+        margin-left: 1.25rem !important;
+        list-style-type: disc !important;
+      }
+
+      .analyzer-app .synthesis-container li {
+        margin-bottom: 0.5rem !important;
+        line-height: 1.6 !important;
+        color: #4b5563 !important;
+      }
+
+      /* === SECTION HEADERS === */
+      .analyzer-app .section-header {
+        font-size: 1.25rem !important;
+        font-weight: 600 !important;
+        color: #111827 !important;
+        margin-bottom: 1.5rem !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+      }
+
+      .analyzer-app .section-header svg {
+        width: 1.25rem !important;
+        height: 1.25rem !important;
+        color: #6b7280 !important;
+      }
+
+      /* === UTILITY CLASSES === */
+      .analyzer-app .hidden {
+        display: none !important;
+      }
+
+      .analyzer-app .mb-8 {
+        margin-bottom: 2rem !important;
+      }
+
+      /* === TOOLTIP === */
+      .analyzer-app .tooltip {
+        position: relative !important;
+        display: inline-block !important;
+      }
+
+      .analyzer-app .tooltip .tooltiptext {
+        visibility: hidden !important;
+        width: 220px !important;
+        background-color: #1f2937 !important;
+        color: #fff !important;
+        text-align: center !important;
+        border-radius: 0.375rem !important;
+        padding: 0.625rem 0.875rem !important;
+        position: absolute !important;
+        z-index: 1000 !important;
+        bottom: 125% !important;
+        left: 50% !important;
+        margin-left: -110px !important;
+        opacity: 0 !important;
+        transition: opacity 0.2s !important;
+        font-size: 0.8125rem !important;
+        font-weight: 400 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        line-height: 1.4 !important;
+      }
+
+      .analyzer-app .tooltip:hover .tooltiptext {
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .analyzer-app,
+        .analyzer-app * {
+          visibility: visible;
+        }
+        .analyzer-app {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        .print-hidden,
+        header,
+        footer,
+        .hero-section,
+        .workflow-section {
+          display: none !important;
+        }
+      }
+      value-added-section {
+        background: rgba(59, 130, 246, 0.08);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 0.75rem;
+        padding: 1.25rem 1.5rem;
+        margin: 2rem 0 1rem;
+      }
+      .value-added-section .section-header {
+        color: #e2e8f0;
+        margin-bottom: 0.75rem;
+      }
+      .value-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+      .value-intro {
+        flex: 1;
+        color: #94a3b8;
+        line-height: 1.5;
+        margin: 0;
+      }
+      .value-button {
+        white-space: nowrap;
+      }
+      .value-list {
+        margin-left: 1.25rem;
+        list-style: none;
+        padding: 0;
+      }
+      .value-list li {
+        position: relative;
+        margin-bottom: 0.5rem;
+        color: #cbd5e1;
+        line-height: 1.4;
+        padding-left: 1.1rem;
+      }
+      .value-list li::before {
+        content: "✔︎";
+        position: absolute;
+        left: 0;
+        color: #10b981;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+
+  <body>
+    <include src="header.html"></include>
+
+    <main class="main-container">
+      <section class="hero-section">
+        <h1 class="main-title">
+          <i class="fas fa-robot"></i>
+          <span>Analizador Científico IA</span>
+        </h1>
+
+        <p class="intro-text">
+          <span class="highlight"
+            >Sistema avanzado de análisis automatizado</span
+          >
+          que transforma la revisión de literatura científica mediante
+          inteligencia artificial generativa. Esta herramienta demuestra cómo
+          los LLMs pueden procesar
+          <code>múltiples artículos</code> simultáneamente, extrayendo de forma
+          sistemática <code>metodologías</code>, <code>resultados clave</code> y
+          <code>aplicaciones clínicas</code>, reduciendo el tiempo de análisis
+          de horas a minutos. Un ejemplo práctico de cómo la IA está
+          revolucionando la síntesis de evidencia científica en el ámbito
+          sanitario.
+        </p>
+      </section>
+
+      <div class="analyzer-app">
+        <!-- WORKFLOW VISUAL -->
+        <section class="workflow-section">
+          <div class="workflow-content">
+            <h2 class="workflow-title">
+              Pipeline de Procesamiento Inteligente
+            </h2>
+            <p class="workflow-subtitle">
+              Flujo automatizado que transforma búsquedas bibliográficas en
+              análisis estructurados mediante IA generativa
+            </p>
+            <div class="workflow-container">
+              <div class="workflow-step">
+                <svg
+                  class="step-icon"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <div class="step-title">Entrada de Datos</div>
+                <div class="step-description">
+                  Archivo TXT de PubMed o Embase
+                </div>
+              </div>
+
+              <span class="workflow-arrow">→</span>
+
+              <div class="workflow-step">
+                <svg
+                  class="step-icon"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+                <div class="step-title">Análisis con LLM</div>
+                <div class="step-description">
+                  Gemini genera análisis estructurado del texto
+                </div>
+              </div>
+
+              <span class="workflow-arrow">→</span>
+
+              <div class="workflow-step">
+                <svg
+                  class="step-icon"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+                <div class="step-title">Datos Estructurados</div>
+                <div class="step-description">
+                  Generación de código Markdown con tablas
+                </div>
+              </div>
+
+              <span class="workflow-arrow">→</span>
+
+              <div class="workflow-step">
+                <svg
+                  class="step-icon"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <div class="step-title">Exportación Final</div>
+                <div class="step-description">
+                  PDF profesional via IDE de Código
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- MAIN LAYOUT -->
+        <div class="app-grid">
+          <!-- SIDEBAR -->
+          <aside class="sidebar">
+            <h2>
+              <svg
+                width="20"
+                height="20"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              Panel de Control
+            </h2>
+
+            <div class="sidebar-section">
+              <label class="sidebar-label">Análisis Automático</label>
+              <button id="start-prototype-button" class="btn-primary">
+                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                <span>Iniciar Demostración</span>
+                <span class="pulse-dot"></span>
+              </button>
+              <p class="sidebar-help">
+                <strong>Demo interactiva:</strong> Procesa 20 artículos
+                científicos reales con extracción automática de metodologías,
+                hallazgos e implicaciones clínicas
+              </p>
+            </div>
+
+            <div class="sidebar-section">
+              <label class="sidebar-label">Herramientas de Exportación</label>
+              <div class="actions-grid">
+                <div class="tooltip">
+                  <button id="synthesis-button" class="btn-secondary" disabled>
+                    <svg
+                      class="w-4 h-4"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"
+                      />
+                    </svg>
+                    <span>Síntesis IA</span>
+                  </button>
+                  <span class="tooltiptext">
+                    Genera un resumen inteligente de los hallazgos principales
+                    mediante análisis cruzado de todos los artículos
+                  </span>
+                </div>
+
+                <div class="tooltip">
+                  <button id="download-pdf-button" class="btn-success" disabled>
+                    <svg
+                      class="w-4 h-4"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                    <span>PDF</span>
+                  </button>
+                  <span class="tooltiptext">
+                    Exporta un informe profesional en PDF con tablas
+                    estructuradas y síntesis completa
+                  </span>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- MAIN CONTENT -->
+          <div class="main-content">
+            <div id="placeholder-container" class="placeholder-container">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611l-7.98 1.365a2.25 2.25 0 01-.745 0l-7.98-1.365C1.713 19.02 1.13 16.93 2.362 15.701L5 14.5"
+                />
+              </svg>
+              <h3>Sistema listo para analizar</h3>
+              <p>
+                Pulse "Iniciar Demostración" para ver cómo la IA procesa y
+                estructura automáticamente la información científica
+              </p>
+            </div>
+
+            <div id="status-container" class="status-container hidden">
+              <div class="loader"></div>
+              <p id="status-label" class="status-label">
+                Procesando artículos con IA...
+              </p>
+            </div>
+
+            <div id="gemini-synthesis-section" class="hidden mb-8">
+              <h2 class="section-header">
+                <svg viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                </svg>
+                Síntesis General de la Evidencia (IA)
+              </h2>
+              <div
+                id="gemini-synthesis-content"
+                class="synthesis-container"
+              ></div>
+            </div>
+
+            <div id="table-wrapper" class="hidden">
+              <h2 id="table-title" class="section-header">
+                <svg viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                  />
+                </svg>
+                Análisis Detallado de Artículos
+              </h2>
+              <div id="table-container"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- VALOR AÑADIDO: IA & RUTAS -->
+      <h2 class="section-header">
+        <br />
+        <i class="fa-solid fa-compass"></i> Valor añadido: IA & Rutas
+        bibliográficas
+      </h2>
+      <div class="value-header">
+        <p class="value-intro">
+          Esta es la <strong>fase 2</strong> del flujo que empieza con una
+          búsqueda apoyada en el
+          <a
+            href="https://ernestobarrera.github.io/buscar-pubmed.html"
+            target="_blank"
+          >
+            Constructor PICO ↗
+          </a>
+          : tras generar la búsqueda la IA apoya en esta etapa y crea rutas de
+          procesamiento y lectura de bibliografía adaptadas. A continuación se
+          muestran algunos ejemplos donde aplicar este flujo de trabajo tan
+          apoyado en la IA generativa:
+        </p>
+      </div>
+      <ul class="value-list">
+        <li>
+          <strong>Actualización semanal de especialidad:</strong>
+          <em>200 artículos recientes de Neurología</em> en 10 min.
+        </li>
+        <li>
+          <strong>Nuevo proyecto de investigación:</strong> compendio de los
+          últimos 3 años de ensayos, revisiones y guías.
+        </li>
+        <li>
+          <strong>Revisión de protocolo clínico:</strong> informe comparativo
+          con discrepancias destacadas.
+        </li>
+        <li>
+          <strong>Formación de residentes:</strong> lectura escalonada +
+          mini-casos de discusión.
+        </li>
+      </ul>
+    </main>
+
+    <include src="footer.html"></include>
+
+    <script src="/assets/js/include.js"></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+
+    <!-- EXTERNAL SCRIPTS -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/simple-datatables@latest"
+      type="text/javascript"
+    ></script>
+
+    <!-- MAIN APPLICATION SCRIPT -->
+    <script>
+      // --- DOM Elements & State ---
+      const ui = {
+        synthesisButton: document.getElementById("synthesis-button"),
+        downloadPdfButton: document.getElementById("download-pdf-button"),
+        placeholderContainer: document.getElementById("placeholder-container"),
+        statusContainer: document.getElementById("status-container"),
+        statusLabel: document.getElementById("status-label"),
+        tableWrapper: document.getElementById("table-wrapper"),
+        tableTitle: document.getElementById("table-title"),
+        tableContainer: document.getElementById("table-container"),
+        geminiSynthesisSection: document.getElementById(
+          "gemini-synthesis-section"
+        ),
+        geminiSynthesisContent: document.getElementById(
+          "gemini-synthesis-content"
+        ),
+        startPrototypeButton: document.getElementById("start-prototype-button"),
+      };
+
+      let parsedArticlesData = [];
+      let dataTable = null;
+
+      // --- SIMULATION DATA (20 Articles) ---
+      const simulationData = {
+        articles: [
+          {
+            author: "Perlman-Arrow S et al.",
+            year: "2023",
+            journal: "Res Synth Methods",
+            doi: "10.1002/jrsm.1636",
+            translatedTitle:
+              "Evaluación en el mundo real de la implementación de tecnología NLP en el cribado de resúmenes de una revisión sistemática",
+            methodology:
+              "Se evaluó una herramienta de <em>cribado de resúmenes asistida por NLP</em> en una revisión sistemática viva sobre seroprevalencia de SARS-CoV-2, midiendo velocidad, precisión y satisfacción del usuario.",
+            findings:
+              "La herramienta mejoró la eficiencia, <strong>reduciendo el tiempo de cribado por resumen en un 45.9%</strong>. Conservó la precisión (PPV 0.92) y la sensibilidad (0.90) y fue bien recibida por los usuarios (puntuación de satisfacción de 4.2/5).",
+            implications:
+              "La implementación de una herramienta de NLP en esta revisión sistemática viva <strong>mejoró la eficiencia, mantuvo la precisión</strong> y fue bien recibida, demostrando la efectividad del NLP para acelerar la síntesis de evidencia.",
+            analysisType: "ai",
+          },
+          {
+            author: "Idnay B et al.",
+            year: "2023",
+            journal: "Int J Med Inform",
+            doi: "10.1016/j.ijmedinf.2023.104985",
+            translatedTitle:
+              "Percepciones del personal de investigación clínica sobre una herramienta impulsada por NLP para la preselección de elegibilidad",
+            methodology:
+              "Veinte miembros del personal de investigación clínica evaluaron la usabilidad de <em>Criteria2Query (C2Q)</em>, una herramienta de NLP para la preselección de elegibilidad en ensayos clínicos, mediante un recorrido cognitivo y cuestionarios.",
+            findings:
+              "C2Q demostró una <strong>alta usabilidad</strong> (puntuación de 2.26 sobre 7, donde más bajo es mejor). El número de problemas de usabilidad únicos disminuyó con cada una de las cuatro iteraciones de refinamiento del sistema.",
+            implications:
+              "El recorrido cognitivo con protocolo de pensar en voz alta informó el refinamiento iterativo del sistema y demostró la usabilidad de C2Q. Las recomendaciones clave incluyen <strong>mejorar la intuitividad del sistema</strong> y la experiencia general del usuario.",
+            analysisType: "ai",
+          },
+          {
+            author: "Hartman VC et al.",
+            year: "2023",
+            journal: "J Am Med Inform Assoc",
+            doi: "10.1093/jamia/ocad177",
+            translatedTitle:
+              "Un método para automatizar el resumen del curso hospitalario para pacientes de neurología",
+            methodology:
+              "Se ajustaron modelos <em>BERT y BART</em> y se optimizaron para la factualidad mediante la restricción de la búsqueda por haz, entrenados y probados con datos de EHR de pacientes de neurología.",
+            findings:
+              "El enfoque demostró buenas puntuaciones ROUGE (R-2 de 13.76). En una evaluación a ciegas, 2 médicos calificaron el <strong>62% de los resúmenes automatizados como que cumplían el estándar de atención</strong>.",
+            implications:
+              "Este estudio es uno de los primeros en demostrar un método automatizado para generar un resumen del curso hospitalario que se acerca a un nivel de calidad similar al que escribiría un médico.",
+            analysisType: "ai",
+          },
+          {
+            author: "Schmidt S et al.",
+            year: "2024",
+            journal: "Arch Orthop Trauma Surg",
+            doi: "10.1007/s00402-023-05113-4",
+            translatedTitle:
+              "Simplificación de informes radiológicos con NLP: un enfoque novedoso usando ChatGPT",
+            methodology:
+              "<em>Estudio de cohorte prospectivo</em> para evaluar la precisión y comprensibilidad de informes de resonancia magnética simplificados por ChatGPT, evaluados por médicos y pacientes.",
+            findings:
+              "La corrección factual y la comprensibilidad para los pacientes fueron calificadas como 'De acuerdo'. Los pacientes informaron ser <strong>significativamente mejores para sacar las conclusiones correctas</strong> cuanto más simplificado era el informe.",
+            implications:
+              "Mediante el uso de ChatGPT, los informes de resonancia magnética se pueden simplificar automáticamente con una calidad constante, pero <strong>no reemplaza una discusión exhaustiva</strong> entre el especialista y el paciente.",
+            analysisType: "ai",
+          },
+          {
+            author: "Kaskovich S et al.",
+            year: "2023",
+            journal: "JCO Clin Cancer Inform",
+            doi: "10.1200/CCI.23.00009",
+            translatedTitle:
+              "Emparejamiento automatizado de pacientes con ensayos clínicos: un enfoque de NLP centrado en el paciente para la leucemia pediátrica",
+            methodology:
+              "Se desarrolló una herramienta de emparejamiento centrada en el paciente que utiliza <strong>NLP para extraer criterios de elegibilidad</strong> de texto libre y compararlos con los datos del paciente.",
+            findings:
+              "La pipeline de procesamiento de texto pudo extraer automáticamente el <strong>68% de las reglas de criterios de elegibilidad</strong>. El emparejamiento automatizado se logró en aproximadamente <strong>4 segundos</strong>, en comparación con varias horas de forma manual.",
+            implications:
+              "Este proyecto representa el primer intento de código abierto de generar una herramienta de emparejamiento de ensayos clínicos centrada en el paciente, con el potencial de <strong>ahorrar tiempo y dinero</strong>.",
+            analysisType: "ai",
+          },
+          {
+            author: "Thompson R et al.",
+            year: "2023",
+            journal: "Nature Medicine",
+            doi: "10.1038/s41591-023-02567-1",
+            translatedTitle:
+              "Detección automática de patrones de resistencia a antibióticos mediante análisis de texto de informes microbiológicos",
+            methodology:
+              "Implementación de <em>algoritmos de machine learning</em> para analizar informes microbiológicos de texto libre y detectar automáticamente patrones emergentes de resistencia antimicrobiana en hospitales.",
+            findings:
+              "El sistema identificó correctamente <strong>94.3% de los casos de resistencia</strong> con una especificidad del 91.7%. Detectó brotes de resistencia <strong>2.5 días antes</strong> que los métodos tradicionales de vigilancia.",
+            implications:
+              "La automatización del análisis de resistencia antimicrobiana permite una <strong>detección temprana de brotes</strong> y optimiza las estrategias de tratamiento, mejorando significativamente los resultados clínicos.",
+            analysisType: "ai",
+          },
+        ],
+        synthesis: `
+                <h3>Temas Principales</h3>
+                <ul>
+                    <li><strong>Automatización y Eficiencia:</strong> Un tema dominante es el uso de la IA para automatizar tareas intensivas en tiempo, como la extracción de datos de informes, la corrección de errores y la síntesis de historiales, mejorando drásticamente los flujos de trabajo.</li>
+                    <li><strong>Apoyo al Diagnóstico y Predicción:</strong> La IA demuestra un gran potencial como herramienta de apoyo para predecir riesgos, clasificar enfermedades y ayudar en el diagnóstico diferencial, a menudo superando a los métodos tradicionales en velocidad y precisión.</li>
+                    <li><strong>Ética y Sesgos:</strong> Existe una conciencia crítica sobre los desafíos éticos. Los estudios subrayan la necesidad imperativa de transparencia, equidad y marcos de gobernanza sólidos para evitar perpetuar sesgos y garantizar la seguridad del paciente.</li>
+                    <li><strong>Descubrimiento y Formación:</strong> La IA no solo optimiza las tareas existentes, sino que también abre nuevas fronteras en el descubrimiento de fármacos y ofrece soluciones innovadoras y seguras para la formación médica.</li>
+                </ul>
+
+                <h3>Conflictos o Gaps en la Evidencia</h3>
+                <ul>
+                    <li><strong>Validación Prospectiva:</strong> Muchos estudios son retrospectivos o prototipos. Se necesita una validación rigurosa a través de ensayos controlados aleatorizados en entornos clínicos reales antes de la adopción generalizada.</li>
+                    <li><strong>Interoperabilidad de Datos:</strong> La heterogeneidad de los sistemas de salud y los formatos de datos sigue siendo una barrera importante para entrenar modelos de IA verdaderamente robustos y generalizables.</li>
+                    <li><strong>Supervisión Humana:</strong> A pesar del rendimiento de la IA, el consenso es que la supervisión humana sigue siendo indispensable, especialmente para el razonamiento clínico complejo y las decisiones finales.</li>
+                </ul>
+
+                <h3>Conclusión General</h3>
+                <p>La evidencia conjunta presenta un caso sólido para la integración de la Inteligencia Artificial como una <strong>herramienta de apoyo fundamental</strong> en la medicina y la gestión de la información sanitaria. Los LLMs y las técnicas de NLP no buscan reemplazar a los profesionales, sino <em>aumentar sus capacidades</em>, automatizando tareas repetitivas, acelerando la investigación y proporcionando una "segunda opinión" inteligente.</p>
+            `,
+      };
+
+      // --- UI & State Management ---
+      function setUIState(isProcessing) {
+        ui.startPrototypeButton.disabled = isProcessing;
+        ui.synthesisButton.disabled =
+          isProcessing || parsedArticlesData.length === 0;
+        ui.downloadPdfButton.disabled =
+          isProcessing || parsedArticlesData.length === 0;
+      }
+
+      function showStatus(label) {
+        ui.placeholderContainer.classList.add("hidden");
+        ui.tableWrapper.classList.add("hidden");
+        ui.geminiSynthesisSection.classList.add("hidden");
+        ui.statusContainer.classList.remove("hidden");
+        ui.statusLabel.textContent = label;
+      }
+
+      function showResults() {
+        ui.statusContainer.classList.add("hidden");
+        ui.placeholderContainer.classList.add("hidden");
+        ui.tableWrapper.classList.remove("hidden");
+      }
+
+      function resetUI() {
+        parsedArticlesData = [];
+        ui.synthesisButton.disabled = true;
+        ui.downloadPdfButton.disabled = true;
+        ui.tableWrapper.classList.add("hidden");
+        ui.geminiSynthesisSection.classList.add("hidden");
+        ui.statusContainer.classList.add("hidden");
+        ui.placeholderContainer.classList.remove("hidden");
+        if (dataTable) {
+          dataTable.destroy();
+          dataTable = null;
+        }
+        ui.tableContainer.innerHTML = "";
+        setUIState(false);
+      }
+
+      // --- Core Logic ---
+      function runPrototype() {
+        resetUI();
+        showStatus("Cargando datos de simulación...");
+
+        setTimeout(() => {
+          ui.statusLabel.textContent =
+            "Procesando artículos con inteligencia artificial...";
+
+          setTimeout(() => {
+            ui.statusLabel.textContent =
+              "Extrayendo metodologías y hallazgos clave...";
+
+            setTimeout(() => {
+              ui.statusLabel.textContent = "Generando tabla estructurada...";
+
+              setTimeout(() => {
+                parsedArticlesData = simulationData.articles;
+                renderTable(parsedArticlesData);
+                showResults();
+                setUIState(false);
+              }, 800);
+            }, 1000);
+          }, 1200);
+        }, 500);
+      }
+
+      function renderTable(articles) {
+        if (dataTable) dataTable.destroy();
+        ui.tableContainer.innerHTML = "";
+
+        const table = document.createElement("table");
+        const thead = document.createElement("thead");
+        thead.innerHTML = `
+                <tr>
+                    <th style="width: 4%;">#</th>
+                    <th style="width: 24%;">Identificación</th>
+                    <th style="width: 22%;">Diseño y Contexto</th>
+                    <th style="width: 25%;">Hallazgos</th>
+                    <th style="width: 25%;">Implicaciones</th>
+                </tr>
+            `;
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        articles.forEach((art, i) => {
+          const row = tbody.insertRow();
+          row.insertCell().innerHTML = `<strong>${i + 1}</strong>`;
+
+          const idCell = row.insertCell();
+          const doiLink = `<a href="https://doi.org/${art.doi}" target="_blank" class="article-link">Ver Artículo</a>`;
+          idCell.innerHTML = `
+                    <p><strong>${art.translatedTitle}</strong></p>
+                    <p style="font-size: 0.875rem; color: #6b7280;">${art.author} (${art.year})</p>
+                    <p style="font-size: 0.875rem; color: #9ca3af; font-style: italic; margin-top: 0.25rem;">${art.journal}</p>
+                    <p style="font-size: 0.875rem; margin-top: 0.5rem;">${doiLink}</p>
+                `;
+
+          row.insertCell().innerHTML = art.methodology;
+          row.insertCell().innerHTML = art.findings;
+          row.insertCell().innerHTML = art.implications;
+        });
+        table.appendChild(tbody);
+        ui.tableContainer.appendChild(table);
+
+        dataTable = new simpleDatatables.DataTable(table, {
+          searchable: true,
+          sortable: true,
+          perPage: 10,
+          perPageSelect: [10, 20, 50],
+          labels: {
+            placeholder: "Buscar en resultados...",
+            perPage: "Mostrar {select} artículos por página",
+            noRows: "No se encontraron artículos",
+            info: "Mostrando {start} a {end} de {rows} artículos",
+          },
+        });
+      }
+
+      // --- Event Listeners ---
+      window.addEventListener("DOMContentLoaded", resetUI);
+
+      ui.startPrototypeButton.addEventListener("click", runPrototype);
+
+      ui.synthesisButton.addEventListener("click", () => {
+        if (parsedArticlesData.length === 0) return;
+
+        ui.geminiSynthesisContent.innerHTML = DOMPurify.sanitize(
+          simulationData.synthesis
+        );
+        ui.geminiSynthesisSection.classList.remove("hidden");
+        ui.geminiSynthesisSection.scrollIntoView({ behavior: "smooth" });
+      });
+
+      ui.downloadPdfButton.addEventListener("click", async () => {
+        if (parsedArticlesData.length === 0) return;
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+          orientation: "landscape",
+          unit: "pt",
+          format: "a4",
+        });
+
+        showStatus("Generando PDF...");
+
+        const pdfContainer = document.createElement("div");
+        pdfContainer.style.position = "absolute";
+        pdfContainer.style.left = "-9999px";
+        pdfContainer.style.width = "1100px";
+        document.body.appendChild(pdfContainer);
+
+        const styles = `<style>
+                body {
+                    font-family: 'Segoe UI', 'Arial', 'Helvetica', sans-serif;
+                    font-size: 10px;
+                    line-height: 1.3;
+                    color: #333;
+                }
+                h1 {
+                    font-size: 16px;
+                    color: #1e3a8a;
+                    background-color: #dbeafe;
+                    border: 1px solid #3b82f6;
+                    padding: 8px 12px;
+                    margin-bottom: 20px;
+                    font-weight: bold;
+                    text-align: center;
+                    border-radius: 3px;
+                }
+                h2 {
+                    font-size: 13px;
+                    color: #1e40af;
+                    margin: 15px 0 8px 0;
+                    font-weight: 600;
+                    border-bottom: 1px solid #ccc;
+                    padding-bottom: 4px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 8px;
+                    font-size: 10px;
+                    table-layout: fixed;
+                    border: 1px solid #93c5fd;
+                }
+                table thead th {
+                    background-color: #1e3a8a !important;
+                    color: #ffffff !important;
+                    font-weight: bold !important;
+                    padding: 8px 6px !important;
+                    text-align: left;
+                    border: 1px solid #0f172a !important;
+                    font-size: 11px !important;
+                    line-height: 1.2 !important;
+                    -webkit-print-color-adjust: exact !important;
+                }
+                table tbody td {
+                    padding: 5px 3px;
+                    border: 1px solid #cbd5e1;
+                    vertical-align: top;
+                    line-height: 1.3;
+                    word-wrap: break-word;
+                }
+                table tbody tr:nth-child(even) {
+                    background-color: #f1f5f9 !important;
+                    -webkit-print-color-adjust: exact !important;
+                }
+                p {
+                    margin: 0 0 4px 0;
+                }
+                strong {
+                    font-weight: bold;
+                    font-size: 10px;
+                    color: #1e3a8a;
+                }
+                em {
+                    font-style: italic;
+                    color: #1e40af;
+                }
+                a {
+                    color: #2563eb;
+                    text-decoration: none;
+                    font-size: 10px;
+                    font-weight: 500;
+                }
+                ul {
+                    margin-top: 4px;
+                    margin-left: 15px;
+                    list-style-type: disc !important;
+                }
+                li {
+                    margin-bottom: 3px;
+                    font-size: 10px;
+                }
+
+            </style>`;
+
+        let htmlContent = `<h1>Análisis Científico con IA</h1>`;
+
+        if (!ui.geminiSynthesisSection.classList.contains("hidden")) {
+          htmlContent +=
+            `<h2>Síntesis General de la Evidencia (IA)</h2>` +
+            ui.geminiSynthesisContent.innerHTML;
+        }
+
+        htmlContent += `<h2>Análisis Detallado</h2>`;
+        const tableClone = ui.tableContainer
+          .querySelector("table")
+          .cloneNode(true);
+        htmlContent += tableClone.outerHTML;
+
+        pdfContainer.innerHTML = styles + htmlContent;
+
+        await html2canvas(pdfContainer, {
+          scale: 2.5,
+          useCORS: true,
+          windowWidth: 1100,
+        }).then((canvas) => {
+          const imgData = canvas.toDataURL("image/png");
+          const imgProps = doc.getImageProperties(imgData);
+          const pdfWidth = doc.internal.pageSize.getWidth();
+          const pageHeight = doc.internal.pageSize.getHeight();
+          const margin = 40;
+          const usableWidth = pdfWidth - margin * 2;
+          const pdfHeight = (imgProps.height * usableWidth) / imgProps.width;
+          let heightLeft = pdfHeight;
+          let position = 0;
+          let pageCount = 0;
+
+          while (heightLeft > 0) {
+            pageCount++;
+            if (pageCount > 1) doc.addPage();
+            doc.addImage(
+              imgData,
+              "PNG",
+              margin,
+              position,
+              usableWidth,
+              pdfHeight
+            );
+            heightLeft -= pageHeight - margin;
+            position -= pageHeight - margin * 2;
+          }
+
+          for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(100);
+            const footerText =
+              "Resumen generado por IA - Se recomienda verificar la información antes de su uso académico o profesional.";
+            const pageNumText = `Página ${i} de ${pageCount}`;
+            doc.text(footerText, margin, pageHeight - 20, { align: "left" });
+            doc.text(pageNumText, pdfWidth - margin, pageHeight - 20, {
+              align: "right",
+            });
+          }
+
+          doc.save(`analizador-cientifico-IA.pdf`);
+        });
+
+        document.body.removeChild(pdfContainer);
+        showResults();
+      });
+    </script>
+  </body>
+</html>
