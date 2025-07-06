@@ -531,16 +531,16 @@
                   <path
                     d="M 110 130 L 140 130 L 140 180 L 110 180 Z"
                     class="anatomy-segment"
-                    data-segment="lung_left"
-                    data-tooltip="Pulmón Izquierdo"
+                    data-segment="lung"
+                    data-tooltip="Pulmonar"
                   />
                   <text x="120" y="145" class="anatomy-label">Pulmón Izq</text>
 
                   <path
                     d="M 160 130 L 190 130 L 190 180 L 160 180 Z"
                     class="anatomy-segment"
-                    data-segment="lung_right"
-                    data-tooltip="Pulmón Derecho"
+                    data-segment="lung"
+                    data-tooltip="Pulmonar"
                   />
                   <text x="180" y="145" class="anatomy-label">Pulmón Der</text>
 
@@ -960,29 +960,23 @@
           },
         },
         {
-          segment: "lung_left",
+          segment: "lung",
           system: "Pulmonar",
           color: "blue",
-          title: "Exploración Pulmonar Izquierda",
+          title: "Exploración Pulmonar (Protocolo BLUE)",
           refId: "pneumothorax_lichtenstein_2008",
           content: {
-            technique: `<ul><li><strong>Sonda:</strong> Convexa o lineal, dependiendo de la indicación.</li><li><strong>Técnica:</strong> Examen sistemático de las zonas anterior, lateral y posterior (punto PLAPS).</li></ul>`,
-            findings: `Buscar: <strong>Neumonía</strong> (consolidación, broncograma aéreo), <strong>Derrame Pleural</strong> (espacio anecoico), <strong>Edema Pulmonar</strong> (líneas B difusas), <strong>Neumotórax</strong> (ausencia de deslizamiento, punto pulmonar).`,
-            evidence: `<p>La ecografía pulmonar es una herramienta versátil para el diagnóstico diferencial de la disnea y el dolor torácico.</p>`,
-            pearls: `<div class="pearls-section"><h5>Clave de la Exploración</h5><p>Cada zona del pulmón puede revelar una patología diferente. Un examen completo es crucial. El punto PLAPS (PosteroLateral Alveolar and/or Pleural Syndrome) es el más sensible para derrames y consolidaciones basales.</p></div>`,
-          },
-        },
-        {
-          segment: "lung_right",
-          system: "Pulmonar",
-          color: "blue",
-          title: "Exploración Pulmonar Derecha",
-          refId: "pneumothorax_lichtenstein_2008",
-          content: {
-            technique: `<ul><li><strong>Sonda:</strong> Convexa o lineal, dependiendo de la indicación.</li><li><strong>Técnica:</strong> Examen sistemático de las zonas anterior, lateral y posterior (punto PLAPS).</li></ul>`,
-            findings: `Buscar: <strong>Neumonía</strong> (consolidación, broncograma aéreo), <strong>Derrame Pleural</strong> (espacio anecoico), <strong>Edema Pulmonar</strong> (líneas B difusas), <strong>Neumotórax</strong> (ausencia de deslizamiento, punto pulmonar).`,
-            evidence: `<p>La ecografía pulmonar es una herramienta versátil para el diagnóstico diferencial de la disnea y el dolor torácico.</p>`,
-            pearls: `<div class="pearls-section"><h5>Clave de la Exploración</h5><p>Cada zona del pulmón puede revelar una patología diferente. Un examen completo es crucial. El punto PLAPS (PosteroLateral Alveolar and/or Pleural Syndrome) es el más sensible para derrames y consolidaciones basales.</p></div>`,
+            technique: `<ul><li><strong>Sonda:</strong> Convexa (para una visión general y profunda) o lineal (para un mejor detalle de la pleura, como en la búsqueda de neumotórax).</li><li><strong>Técnica (Protocolo BLUE):</strong> Se examinan 3 puntos en cada hemitórax. <strong>Punto 1 y 2 (Anteriores):</strong> En línea medioclavicular, uno superior y otro inferior. <strong>Punto 3 (PLAPS):</strong> En línea axilar posterior, a nivel del diafragma. El examen debe ser bilateral y comparativo.</li></ul>`,
+            findings: `Se evalúa la presencia o ausencia de artefactos clave: <br>1) <strong>Deslizamiento pleural (Lung Sliding):</strong> Movimiento brillante de la pleura visceral contra la parietal. Su ausencia es el primer signo de <strong>neumotórax</strong>. <br>2) <strong>Líneas B:</strong> Artefactos verticales, similares a "colas de cometa", que nacen de la pleura y borran las líneas A. Múltiples y difusas sugieren <strong>edema pulmonar</strong>. Focales pueden indicar <strong>neumonía</strong>. <br>3) <strong>Consolidación:</strong> El pulmón adquiere una apariencia similar al hígado ("hepatización"), a menudo con broncograma aéreo (líneas hiperecogénicas). Típico de <strong>neumonía</strong>. <br>4) <strong>Derrame Pleural:</strong> Espacio anecoico (negro) entre las pleuras, mejor visualizado en el punto PLAPS.`,
+            evidence: `<p>La ecografía pulmonar, utilizando protocolos como el BLUE, ha demostrado una alta precisión diagnóstica para las principales causas de insuficiencia respiratoria aguda, superando en muchos casos a la radiografía de tórax portátil.</p>`,
+            pearls: `<div class="pearls-section"><h5>Clave de la Exploración</h5><p>El punto PLAPS (PosteroLateral Alveolar and/or Pleural Syndrome) es el área más sensible para detectar derrames pleurales y consolidaciones basales, que son las más comunes.</p><h5>Errores Comunes</h5><p>Confundir una línea B con una línea Z (más corta, no borra las líneas A). En un neumotórax, asegúrate de buscar el "punto pulmonar" (donde el deslizamiento reaparece), que es patognomónico.</p></div>`,
+            videos: [
+              {
+                id: "nWyF1SoIeBQ",
+                intro: "Introducción al Protocolo BLUE",
+                desc: "Revisión completa de la sistemática de exploración y los patrones ecográficos clave en la insuficiencia respiratoria aguda.",
+              },
+            ],
           },
         },
         {
