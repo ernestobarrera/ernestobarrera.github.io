@@ -1,7 +1,7 @@
 <!--
 =====================
   pocus.html
-  Versión educativa sobre ecografía clínica
+  Versión educativa sobre ecografía clínica - REFACTORIZADA
 =====================
 -->
 <!DOCTYPE html>
@@ -298,6 +298,24 @@
           top: auto !important;
         }
       }
+      .responsive-iframe-container {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        padding-top: 56.25%; /* Proporción 16:9 */
+      }
+
+      .responsive-iframe-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+        border-radius: 0.5rem; /* Opcional: para que tenga bordes redondeados */
+      }
     </style>
   </head>
   <body>
@@ -465,7 +483,6 @@
 
                 <!-- Zonas Interactivas Mejoradas -->
                 <g id="interactive-zones">
-                  <!-- Cabeza y Cuello -->
                   <circle
                     cx="150"
                     cy="45"
@@ -487,8 +504,19 @@
                     data-tooltip="Cuello (Tiroides/Linfático)"
                   />
                   <text x="150" y="110" class="anatomy-label">Tiroides</text>
+                  <circle
+                    cx="185"
+                    cy="110"
+                    r="14"
+                    class="anatomy-segment"
+                    data-segment="neck_lateral"
+                    data-tooltip="Cuello Lateral"
+                  />
+                  <text x="185" y="106" class="anatomy-label">
+                    <tspan x="185" dy="0">Cuello</tspan>
+                    <tspan x="185" dy="11">Lateral</tspan>
+                  </text>
 
-                  <!-- Tórax -->
                   <ellipse
                     cx="150"
                     cy="155"
@@ -498,7 +526,7 @@
                     data-segment="cardiac"
                     data-tooltip="Cardíaco"
                   />
-                  <text x="150" y="158" class="anatomy-label">Corazón</text>
+                  <text x="150" y="170" class="anatomy-label">Corazón</text>
 
                   <path
                     d="M 110 130 L 140 130 L 140 180 L 110 180 Z"
@@ -506,7 +534,7 @@
                     data-segment="lung_left"
                     data-tooltip="Pulmón Izquierdo"
                   />
-                  <text x="125" y="155" class="anatomy-label">Pulmón Izq</text>
+                  <text x="120" y="145" class="anatomy-label">Pulmón Izq</text>
 
                   <path
                     d="M 160 130 L 190 130 L 190 180 L 160 180 Z"
@@ -514,9 +542,8 @@
                     data-segment="lung_right"
                     data-tooltip="Pulmón Derecho"
                   />
-                  <text x="175" y="155" class="anatomy-label">Pulmón Der</text>
+                  <text x="180" y="145" class="anatomy-label">Pulmón Der</text>
 
-                  <!-- Abdomen con Zonas Corregidas -->
                   <rect
                     x="110"
                     y="205"
@@ -577,7 +604,6 @@
                   />
                   <text x="172" y="280" class="anatomy-label">FII</text>
 
-                  <!-- Pelvis -->
                   <ellipse
                     cx="150"
                     cy="305"
@@ -587,7 +613,7 @@
                     data-segment="suprapubic"
                     data-tooltip="Vejiga / Ginecológico"
                   />
-                  <text x="150" y="308" class="anatomy-label">Vejiga</text>
+                  <text x="150" y="302" class="anatomy-label">Vejiga</text>
 
                   <ellipse
                     cx="150"
@@ -598,9 +624,8 @@
                     data-segment="scrotal"
                     data-tooltip="Testicular"
                   />
-                  <text x="150" y="328" class="anatomy-label">Testicular</text>
+                  <text x="150" y="333" class="anatomy-label">Testicular</text>
 
-                  <!-- Extremidades -->
                   <ellipse
                     cx="85"
                     cy="155"
@@ -610,6 +635,7 @@
                     data-segment="shoulder"
                     data-tooltip="Hombro"
                   />
+                  <text x="85" y="158" class="anatomy-label">Hombro</text>
                   <ellipse
                     cx="215"
                     cy="155"
@@ -619,8 +645,8 @@
                     data-segment="shoulder"
                     data-tooltip="Hombro"
                   />
+                  <text x="215" y="158" class="anatomy-label">Hombro</text>
 
-                  <!-- TVP en piernas -->
                   <rect
                     x="118"
                     y="350"
@@ -631,6 +657,7 @@
                     data-segment="dvt"
                     data-tooltip="TVP (Femoral/Poplítea)"
                   />
+                  <text x="124" y="385" class="anatomy-label">TVP</text>
                   <rect
                     x="170"
                     y="350"
@@ -641,11 +668,12 @@
                     data-segment="dvt"
                     data-tooltip="TVP (Femoral/Poplítea)"
                   />
+                  <text x="176" y="385" class="anatomy-label">TVP</text>
                 </g>
               </svg>
 
               <div class="zoom-controls">
-                <button class="zoom-button" onclick="zoomIn()">
+                <button class="zoom-button" id="zoom-in-btn">
                   <svg
                     class="w-5 h-5"
                     fill="none"
@@ -660,7 +688,7 @@
                     />
                   </svg>
                 </button>
-                <button class="zoom-button" onclick="zoomOut()">
+                <button class="zoom-button" id="zoom-out-btn">
                   <svg
                     class="w-5 h-5"
                     fill="none"
@@ -675,7 +703,7 @@
                     />
                   </svg>
                 </button>
-                <button class="zoom-button" onclick="resetZoom()">
+                <button class="zoom-button" id="reset-zoom-btn">
                   <svg
                     class="w-5 h-5"
                     fill="none"
@@ -717,45 +745,51 @@
             <h3
               class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4"
             >
-              Bienvenido al Atlas POCUS Interactivo
+              Atlas POCUS Interactivo
+              <span class="text-sm align-top">(versión docente)</span>
             </h3>
+
             <p class="text-gray-600 text-lg mb-6">
-              Explore el modelo anatómico y haga clic en cualquier región para
-              acceder a protocolos de ultrasonido detallados, técnicas avanzadas
-              y casos clínicos.
+              Seleccione una región anatómica para acceder a protocolos
+              ecográficos paso a paso, clips comentados y bibliografía , para el
+              autoaprendizaje de POCUS (Point-of-Care ultrasonography o
+              Ecografía Clínica).
             </p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
               <div
                 class="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl"
               >
                 <h4 class="font-semibold text-indigo-700 mb-2">
-                  🎯 Precisión Diagnóstica
+                  🔍 Protocolos introductorios
                 </h4>
                 <p class="text-sm text-gray-600">
-                  Protocolos validados y basados en evidencia
+                  Secuencias de exploración explicadas paso a paso
                 </p>
               </div>
               <div
                 class="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl"
               >
                 <h4 class="font-semibold text-purple-700 mb-2">
-                  🚀 Interfaz Intuitiva
+                  🎥 Vídeos ilustrativos
                 </h4>
                 <p class="text-sm text-gray-600">
-                  Navegación fluida y experiencia optimizada
+                  Selección de videos POCUS con subtítulos en español
                 </p>
               </div>
               <div
                 class="p-4 bg-gradient-to-br from-green-50 to-teal-50 rounded-xl"
               >
                 <h4 class="font-semibold text-green-700 mb-2">
-                  📚 Contenido Actualizado
+                  📖 Contenido estructurado
                 </h4>
                 <p class="text-sm text-gray-600">
-                  Últimas guías y recomendaciones clínicas
+                  Guías básicas y secuencias para empezar en POCUS
                 </p>
               </div>
             </div>
+            <p class="text-xs text-gray-500 mt-8">
+              Autor: Ernesto Barrera Linares. Médico de Familia · 2025
+            </p>
           </div>
         </div>
       </div>
@@ -765,7 +799,16 @@
     </main>
 
     <script>
-      // Base de datos de referencias (CONTENIDO ORIGINAL PRESERVADO)
+      // Estado global de la aplicación
+      window.POCUSApp = {
+        videoPlayers: {},
+        zoomLevel: 1,
+        showLabels: false,
+        apiReady: false,
+        pendingVideos: [],
+      };
+
+      // Base de datos de referencias
       const references = {
         pneumonia_long_2017: {
           id: "pneumonia_long_2017",
@@ -821,20 +864,40 @@
             "Bandarkar AN, Blask AR. Testicular torsion with preserved flow: key sonographic features and value-added approach. Pediatr Radiol. 2019;49(9):1147-1154.",
           url: "https://pubmed.ncbi.nlm.nih.gov/31087031/",
         },
+
+        ocular_pocus101_guide: {
+          id: "ocular_pocus101_guide",
+          citation:
+            "POCUS 101. Ocular Ultrasound Made Easy: Step-by-Step Guide. POCUS 101. Consultado el 7 de julio de 2025.",
+          url: "https://www.pocus101.com/ocular-ultrasound-made-easy-step-by-step-guide/",
+        },
       };
 
-      // Base de datos POCUS (CONTENIDO ORIGINAL COMPLETO PRESERVADO)
+      // Base de datos POCUS
       const pocusData = [
         {
           segment: "ocular",
           system: "Ocular",
           color: "cyan",
           title: "POCUS Ocular",
+          refId: "ocular_pocus101_guide",
           content: {
             technique: `<ul><li><strong>Sonda:</strong> Lineal (alta frecuencia, >7.5 MHz).</li><li><strong>Técnica:</strong> Aplicar una capa gruesa de gel sobre el párpado cerrado del paciente para crear un "colchón" acústico. Apoyar la sonda suavemente, sin ejercer presión sobre el globo ocular. Evaluar en planos sagital y transversal, pidiendo al paciente que mueva el ojo para evaluar la dinámica de las estructuras.</li></ul>`,
             findings: `Se busca: 1) <strong>Desprendimiento de Retina:</strong> Membrana hiperecogénica gruesa, ondulante, que parece una "cuerda" flotando en el vítreo, anclada posteriormente al disco óptico. Muestra un movimiento característico de "flotación" con los movimientos oculares. 2) <strong>Aumento de PIC:</strong> Medir el diámetro de la vaina del nervio óptico (DVNO) 3 mm por detrás del globo. Un DVNO > 5 mm en adultos sugiere fuertemente hipertensión intracraneal. 3) <strong>Hemorragia Vítrea:</strong> Ecos de baja amplitud, móviles y difusos en la cavidad vítrea, que se arremolinan con el movimiento ocular como una "lavadora".`,
             evidence: `<p>El POCUS ocular es altamente sensible y específico para el desprendimiento de retina (>97% y >92% respectivamente). La medición del DVNO es una herramienta prometedora y no invasiva para estimar la PIC.</p>`,
             pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Presionar demasiado fuerte sobre el ojo, lo que puede ser peligroso si hay una rotura ocular. Use siempre una gran cantidad de gel.</p><h5>Impacto Clínico</h5><p>En un paciente con pérdida de visión aguda, diferenciar un desprendimiento de retina (emergencia oftalmológica) de una hemorragia vítrea cambia radicalmente el manejo urgente.</p></div>`,
+            videos: [
+              {
+                id: "a5UkjfQEtgk",
+                intro: "PoCUS en patología ocular",
+                desc: "Revisión de las principales aplicaciones del ultrasonido a la cabecera del paciente en patología ocular.",
+              },
+              {
+                id: "dI05sd7TQsY",
+                intro: "Evaluación ecográfica del globo ocular",
+                desc: "Guía detallada sobre la técnica y anatomía para la evaluación ecográfica del ojo.",
+              },
+            ],
           },
         },
         {
@@ -847,10 +910,22 @@
             findings: `Se evalúan las características del nódulo para estratificar el riesgo (ej. sistema TI-RADS). <strong>Hallazgos sospechosos:</strong> Hipoecogenicidad marcada (más oscuro que el músculo adyacente), forma "más alta que ancha" (taller-than-wide), márgenes irregulares, microlobulados o espiculados, y presencia de microcalcificaciones (puntos hiperecogénicos puntiformes sin sombra). <strong>Hallazgos de bajo riesgo:</strong> Nódulos puramente quísticos, espongiformes, o iso/hiperecogénicos con márgenes regulares y halo fino.`,
             evidence: `<p>El POCUS es la principal modalidad de imagen para evaluar nódulos tiroideos y guiar la necesidad de una biopsia por aspiración con aguja fina (BAAF).</p>`,
             pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Confundir vasos sanguíneos con nódulos. Use Doppler color para confirmar la ausencia de flujo en un nódulo verdadero.</p><h5>Impacto Clínico</h5><p>El objetivo en AP es identificar nódulos de alto riesgo (>1 cm con características sospechosas) que requieran derivación para una evaluación especializada y posible BAAF, evitando estudios innecesarios en nódulos de bajo riesgo.</p></div>`,
+            videos: [
+              {
+                id: "bwuUR_Z8kb4",
+                intro: "Curso de Ecografía de Tiroides",
+                desc: "Anatomía, técnicas de exploración y evaluación de nódulos, para el screening y procedimientos guiados",
+              },
+              {
+                id: "XR4nOMp_bGA",
+                intro: "Evaluación Ecográfica de la Enfermedad Tiroidea Difusa",
+                desc: "Evaluación ecográfica de patologías tiroideas difusas como Graves y Hashimoto, y la diferenciación de pseudonódulos",
+              },
+            ],
           },
         },
         {
-          segment: "neck",
+          segment: "neck_lateral",
           system: "Linfático",
           color: "lime",
           title: "Adenopatías Cervicales",
@@ -859,6 +934,14 @@
             findings: `<strong>Ganglios reactivos/benignos:</strong> Suelen ser ovalados (eje corto/largo < 0.5), con un centro hiperecogénico bien definido (hilio graso) y vascularización hiliar normal al Doppler. <strong>Ganglios sospechosos/malignos:</strong> Tienden a ser redondeados (eje corto/largo > 0.5), marcadamente hipoecoicos, con pérdida del hilio graso, y pueden mostrar calcificaciones o necrosis central quística. La vascularización periférica, mixta o caótica al Doppler es un signo de sospecha.`,
             evidence: `<p>El POCUS puede diferenciar con buena precisión entre adenopatías reactivas y sospechosas, guiando la necesidad de seguimiento o biopsia.</p>`,
             pearls: `<div class="pearls-section"><h5>Clave Diferencial</h5><p>La morfología es más importante que el tamaño. Un ganglio pequeño y redondo es más sospechoso que uno grande y ovalado.</p><h5>Impacto Clínico</h5><p>Permite tomar decisiones informadas sobre si una adenopatía requiere una actitud expectante (probable origen reactivo) o una investigación más profunda (sospecha de malignidad o infección específica como tuberculosis).</p></div>`,
+            videos: [
+              {
+                id: "fAMZ2M8PSok",
+                intro:
+                  "Utilidad de la ecografía en la evaluación de los nódulos cervicales",
+                desc: "descripción de la anatomía cervical, exploración ecográfica y evaluación de nódulos",
+              },
+            ],
           },
         },
         {
@@ -871,6 +954,7 @@
             findings: `Se busca: 1) <strong>Función VI:</strong> Evaluación cualitativa (hiperdinámico, normal, hipocontráctil). 2) <strong>Derrame Pericárdico:</strong> Espacio anecoico alrededor del corazón. Buscar colapso de cavidades derechas (taponamiento). 3) <strong>Tamaño VD:</strong> Comparar con VI en la vista A4C. Un VD > VI sugiere sobrecarga de presión aguda (ej. TEP masivo).`,
             evidence: `<p>Identifica rápidamente causas de shock y parada cardíaca. Guía la fluidoterapia y el uso de inotrópicos.</p>`,
             pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Confundir un derrame pleural izquierdo con un derrame pericárdico. El pericardio se ve anterior a la aorta descendente en la vista PSLA, mientras que el derrame pleural es posterior.</p><h5>Impacto Clínico</h5><p>La vista subcostal suele ser la más fácil de obtener en pacientes críticos o con EPOC. Es la vista de elección para detectar derrame pericárdico.</p></div>`,
+            videos: [{ id: "vr8KteyhVkI", intro: "FoCUS" }],
           },
         },
         {
@@ -996,6 +1080,7 @@
             findings: `Un DIU correctamente colocado se ve como una <strong>línea o una "T" hiperecogénica brillante</strong>, con sombra acústica posterior, localizada en el fondo de la cavidad endometrial. Si los hilos no son visibles en la exploración ginecológica, el POCUS puede confirmar rápidamente si el DIU está en su sitio, si ha sido expulsado o si ha perforado el miometrio.`,
             evidence: `<p>El POCUS es el método de primera línea, rápido y no invasivo para confirmar la posición de un DIU cuando los hilos no son visibles.</p>`,
             pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>El aire en la cavidad endometrial puede simular un DIU. Mueva la sonda para confirmar que la estructura es lineal y consistente con la forma del DIU.</p><h5>Impacto Clínico</h5><p>Evita la necesidad de radiografías y proporciona una respuesta inmediata a la paciente, permitiendo tomar decisiones sobre anticoncepción en la misma consulta.</p></div>`,
+            video: "9IG__pg1pQ8",
           },
         },
         {
@@ -1074,203 +1159,345 @@
           },
         },
       ];
+      // Fuerza subtítulos automáticos en español cuando el player esté listo
+      function activarSubtitulosEs(event) {
+        try {
+          event.target.setOption("captions", "track", {
+            languageCode: "es",
+            kind: "asr", // usa traducción automática si solo hay ASR
+          });
+        } catch (e) {
+          console.log("Subtítulos ES no disponibles");
+        }
+      }
 
-      // Sistema de gestión de la aplicación
-      const contentArea = document.getElementById("content-area");
-      const welcomeMessage = document.getElementById("welcome-message");
-      const tooltip = document.getElementById("tooltip");
-      const segments = document.querySelectorAll(".anatomy-segment");
-      let zoomLevel = 1;
-      let showLabels = false;
+      // Función llamada cuando la API de YouTube está lista
+      function onYouTubeIframeAPIReady() {
+        window.POCUSApp.apiReady = true;
 
-      // Event listeners
-      segments.forEach((segment) => {
-        segment.addEventListener("click", (e) => {
-          const segmentId = e.currentTarget.dataset.segment;
-          segments.forEach((s) => s.classList.remove("active"));
-
-          // Activar todos los segmentos con el mismo data-segment
-          document
-            .querySelectorAll(`.anatomy-segment[data-segment="${segmentId}"]`)
-            .forEach((s) => s.classList.add("active"));
-
-          welcomeMessage.style.display = "none";
-          renderSegmentContent(segmentId);
-        });
-
-        segment.addEventListener("mouseenter", (e) => {
-          const tooltipText = e.currentTarget.dataset.tooltip;
-          tooltip.textContent = tooltipText;
-          tooltip.classList.add("show");
-
-          const rect = e.target.getBoundingClientRect();
-          tooltip.style.left = rect.left + rect.width / 2 + "px";
-          tooltip.style.top = rect.top - 10 + "px";
-        });
-
-        segment.addEventListener("mouseleave", () => {
-          tooltip.classList.remove("show");
-        });
-      });
-
-      // Toggle etiquetas
-      document.getElementById("toggle-labels").addEventListener("click", () => {
-        showLabels = !showLabels;
-        document
-          .getElementById("anatomical-svg")
-          .classList.toggle("show-labels");
-        document.getElementById("toggle-labels").textContent = showLabels
-          ? "Ocultar Etiquetas"
-          : "Mostrar Etiquetas";
-      });
-
-      // Zoom con rueda del ratón
-      document
-        .getElementById("anatomical-svg")
-        .addEventListener("wheel", (e) => {
-          e.preventDefault();
-          if (e.deltaY < 0) {
-            zoomIn();
-          } else {
-            zoomOut();
+        // Procesar cualquier video pendiente
+        window.POCUSApp.pendingVideos.forEach(({ playerId, videoId }) => {
+          const container = document.getElementById(playerId);
+          if (container) {
+            window.POCUSApp.videoPlayers[playerId] = new YT.Player(playerId, {
+              videoId: videoId,
+              playerVars: {
+                playsinline: 1,
+                cc_lang_pref: "es",
+                cc_load_policy: 1,
+                hl: "es",
+              },
+              events: { onReady: activarSubtitulosEs },
+            });
           }
         });
 
-      function renderSegmentContent(segmentId) {
-        contentArea.innerHTML = ""; // Limpiar contenido previo
-        const data = pocusData.filter((app) => app.segment === segmentId);
-        if (!data || data.length === 0) {
-          contentArea.innerHTML = `<div class="bg-white rounded-xl shadow-lg p-8 text-center"><p class="text-gray-600">No hay aplicaciones definidas para esta zona todavía.</p></div>`;
-          return;
-        }
-
-        const usedRefs = new Set();
-        data.forEach((app, index) => {
-          if (app.refId) usedRefs.add(app.refId);
-          const card = createContentCard(app, index, segmentId);
-          contentArea.appendChild(card);
-        });
-
-        renderReferences(usedRefs);
-
-        // Hacer visibles todas las tarjetas
-        contentArea.querySelectorAll(".content-card").forEach((card) => {
-          card.style.display = "block";
-        });
+        window.POCUSApp.pendingVideos = [];
       }
 
-      function createContentCard(app, index, segmentId) {
-        const cardId = `card-${segmentId}-${index}`;
-        const card = document.createElement("div");
-        card.className = "content-card bg-white rounded-xl shadow-lg mb-6";
-        card.id = cardId;
-
-        let evidenceHtml = app.content.evidence;
-        if (app.refId && references[app.refId]) {
-          evidenceHtml += `<a href="#ref-${app.refId}" class="reference-link block mt-2">Ver referencia</a>`;
-        }
-
-        card.innerHTML = `
-                <div class="p-5 border-b-2 border-gray-100">
-                    <h3 class="text-2xl font-extrabold text-gray-800">${app.title}</h3>
-                    <p class="text-md font-semibold text-${app.color}-600">${app.system}</p>
-                </div>
-                <div class="p-5">
-                    <div class="flex border-b border-gray-200 mb-4 flex-wrap">
-                        <button class="tab-button active py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'findings', this)">Hallazgos Clave</button>
-                        <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'technique', this)">Técnica</button>
-                        <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'evidence', this)">Evidencia</button>
-                        <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'pearls', this)">Perlas Clínicas</button>
-                    </div>
-                    <div>
-                        <div id="technique-${cardId}" class="tab-content prose prose-sm max-w-none">${app.content.technique}</div>
-                        <div id="findings-${cardId}" class="tab-content active prose prose-sm max-w-none">
-                            <div class="findings-description">${app.content.findings}</div>
-                        </div>
-                        <div id="evidence-${cardId}" class="tab-content prose prose-sm max-w-none"><div class="evidence">${evidenceHtml}</div></div>
-                        <div id="pearls-${cardId}" class="tab-content prose prose-sm max-w-none"><div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 rounded-r-lg">${app.content.pearls}</div></div>
-                    </div>
-                </div>
-            `;
-        return card;
-      }
-
-      function switchTab(cardId, tabName, buttonElement) {
+      // Función para cambiar pestañas
+      window.switchTab = function (cardId, tabName, buttonElement) {
         const card = document.getElementById(cardId);
+        if (!card) return;
+
+        // Pausar video si existe
+        if (window.POCUSApp.videoPlayers[cardId]) {
+          try {
+            window.POCUSApp.videoPlayers[cardId].pauseVideo();
+          } catch (e) {
+            console.log("No se pudo pausar el video");
+          }
+        }
+
+        // Actualizar pestañas activas
         card
           .querySelectorAll(".tab-button")
           .forEach((btn) => btn.classList.remove("active"));
         buttonElement.classList.add("active");
+
         card
           .querySelectorAll(".tab-content")
           .forEach((content) => content.classList.remove("active"));
-        card.querySelector(`#${tabName}-${cardId}`).classList.add("active");
-      }
-
-      function renderReferences(refIds) {
-        const refContainer = document.getElementById("references-section");
-        if (refIds.size === 0) {
-          refContainer.innerHTML = "";
-          return;
+        const activeContent = card.querySelector(`#${tabName}-${cardId}`);
+        if (activeContent) {
+          activeContent.classList.add("active");
         }
 
-        let refsHtml = `<div class="bg-white p-6 rounded-xl shadow-lg">
-                                <h3 class="text-2xl font-bold text-gray-800 mb-4">Fuentes de Evidencia</h3>
-                                <ul class="space-y-4 text-sm">`;
+        // Si estamos en la pestaña de vídeo
+        if (tabName === "video") {
+          const list = card.querySelector(`#video-${cardId}`);
+          if (!list) return;
 
-        refIds.forEach((id) => {
-          const ref = references[id];
-          if (ref) {
-            refsHtml += `<li id="ref-${id}" class="leading-relaxed scroll-mt-24">
-                                    <p class="font-semibold text-gray-700">${ref.citation}</p>
-                                    <a href="${ref.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Acceder al artículo</a>
-                                 </li>`;
-          }
-        });
+          const vids = JSON.parse(list.dataset.videos || "[]");
 
-        refsHtml += `</ul></div>`;
-        refContainer.innerHTML = refsHtml;
-      }
+          vids.forEach((v, idx) => {
+            const playerId = `player-${cardId}-${idx}`;
+            if (window.POCUSApp.videoPlayers[playerId]) return; // ya existe
+
+            const build = () => {
+              window.POCUSApp.videoPlayers[playerId] = new YT.Player(playerId, {
+                videoId: v.id,
+                playerVars: {
+                  playsinline: 1,
+                  cc_lang_pref: "es",
+                  cc_load_policy: 1,
+                  hl: "es",
+                },
+                events: { onReady: activarSubtitulosEs },
+              });
+            };
+
+            if (window.POCUSApp.apiReady) {
+              build();
+            } else {
+              window.POCUSApp.pendingVideos.push({ playerId, videoId: v.id });
+            }
+          });
+        }
+      };
 
       // Funciones de zoom
-      function zoomIn() {
-        if (zoomLevel < 2) {
-          zoomLevel += 0.1;
-          updateZoom();
-        }
-      }
-
-      function zoomOut() {
-        if (zoomLevel > 0.5) {
-          zoomLevel -= 0.1;
-          updateZoom();
-        }
-      }
-
-      function resetZoom() {
-        zoomLevel = 1;
-        updateZoom();
-      }
-
-      function updateZoom() {
+      window.updateZoom = function () {
         const svg = document.getElementById("anatomical-svg");
-        svg.style.transform = `scale(${zoomLevel})`;
-      }
-
-      // Smooth scroll para referencias
-      document.addEventListener("click", function (e) {
-        if (e.target.matches("a.reference-link")) {
-          e.preventDefault();
-          const targetId = e.target.getAttribute("href");
-          const targetElement = document.querySelector(targetId);
-          if (targetElement) {
-            targetElement.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }
+        if (svg) {
+          svg.style.transform = `scale(${window.POCUSApp.zoomLevel})`;
         }
+      };
+
+      window.zoomIn = function () {
+        if (window.POCUSApp.zoomLevel < 2) {
+          window.POCUSApp.zoomLevel += 0.1;
+          updateZoom();
+        }
+      };
+
+      window.zoomOut = function () {
+        if (window.POCUSApp.zoomLevel > 0.5) {
+          window.POCUSApp.zoomLevel -= 0.1;
+          updateZoom();
+        }
+      };
+
+      window.resetZoom = function () {
+        window.POCUSApp.zoomLevel = 1;
+        updateZoom();
+      };
+
+      // Inicialización cuando el DOM esté listo
+      document.addEventListener("DOMContentLoaded", function () {
+        const contentArea = document.getElementById("content-area");
+        const welcomeMessage = document.getElementById("welcome-message");
+        const tooltip = document.getElementById("tooltip");
+        const segments = document.querySelectorAll(".anatomy-segment");
+
+        // Event listeners para segmentos anatómicos
+        segments.forEach((segment) => {
+          segment.addEventListener("click", function (e) {
+            const segmentId = e.currentTarget.dataset.segment;
+            segments.forEach((s) => s.classList.remove("active"));
+
+            // Activar todos los segmentos con el mismo data-segment
+            document
+              .querySelectorAll(`.anatomy-segment[data-segment="${segmentId}"]`)
+              .forEach((s) => s.classList.add("active"));
+
+            welcomeMessage.style.display = "none";
+            renderSegmentContent(segmentId);
+          });
+
+          segment.addEventListener("mouseenter", function (e) {
+            const tooltipText = e.currentTarget.dataset.tooltip;
+            tooltip.textContent = tooltipText;
+            tooltip.classList.add("show");
+
+            const rect = e.target.getBoundingClientRect();
+            tooltip.style.left = rect.left + rect.width / 2 + "px";
+            tooltip.style.top = rect.top - 10 + "px";
+          });
+
+          segment.addEventListener("mouseleave", function () {
+            tooltip.classList.remove("show");
+          });
+        });
+
+        // Toggle etiquetas
+        document
+          .getElementById("toggle-labels")
+          .addEventListener("click", function () {
+            window.POCUSApp.showLabels = !window.POCUSApp.showLabels;
+            document
+              .getElementById("anatomical-svg")
+              .classList.toggle("show-labels");
+            this.textContent = window.POCUSApp.showLabels
+              ? "Ocultar Etiquetas"
+              : "Mostrar Etiquetas";
+          });
+
+        // Event listeners para zoom
+        document
+          .getElementById("zoom-in-btn")
+          .addEventListener("click", zoomIn);
+        document
+          .getElementById("zoom-out-btn")
+          .addEventListener("click", zoomOut);
+        document
+          .getElementById("reset-zoom-btn")
+          .addEventListener("click", resetZoom);
+
+        // Zoom con rueda del ratón
+        document
+          .getElementById("anatomical-svg")
+          .addEventListener("wheel", function (e) {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+              zoomIn();
+            } else {
+              zoomOut();
+            }
+          });
+
+        // Función para renderizar contenido del segmento
+        function renderSegmentContent(segmentId) {
+          contentArea.innerHTML = "";
+
+          // Pausar todos los videos
+          Object.values(window.POCUSApp.videoPlayers).forEach((player) => {
+            try {
+              player.pauseVideo();
+            } catch (e) {}
+          });
+
+          window.POCUSApp.videoPlayers = {};
+
+          const data = pocusData.filter((app) => app.segment === segmentId);
+          if (!data || data.length === 0) {
+            contentArea.innerHTML = `<div class="bg-white rounded-xl shadow-lg p-8 text-center"><p class="text-gray-600">No hay aplicaciones definidas para esta zona todavía.</p></div>`;
+            return;
+          }
+
+          const usedRefs = new Set();
+          data.forEach((app, index) => {
+            if (app.refId) usedRefs.add(app.refId);
+            const card = createContentCard(app, index, segmentId);
+            contentArea.appendChild(card);
+          });
+
+          renderReferences(usedRefs);
+
+          // Hacer visibles todas las tarjetas
+          contentArea.querySelectorAll(".content-card").forEach((card) => {
+            card.style.display = "block";
+          });
+        }
+
+        // Función para crear tarjetas de contenido
+        function createContentCard(app, index, segmentId) {
+          const cardId = `card-${segmentId}-${index}`;
+          const card = document.createElement("div");
+          card.className = "content-card bg-white rounded-xl shadow-lg mb-6";
+          card.id = cardId;
+
+          let videoTabButton = "";
+          let videoTabContent = "";
+
+          if (app.content.videos && app.content.videos.length) {
+            videoTabButton = `<button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md"
+                        onclick="switchTab('${cardId}', 'video', this)">Vídeo</button>`;
+
+            const figures = app.content.videos
+              .map(
+                (v, idx) => `
+      <figure class="mb-6">
+        <figcaption class="mb-1 text-gray-800 font-semibold">
+          ${v.intro || ""}
+        </figcaption>
+        <p class="text-sm text-gray-600 mb-2">${v.desc || ""}</p>
+        <div class="responsive-iframe-container">
+          <div id="player-${cardId}-${idx}"></div>
+        </div>
+      </figure>`
+              )
+              .join("");
+
+            videoTabContent = `
+                      <div id="video-${cardId}" class="tab-content" data-videos='${JSON.stringify(
+              app.content.videos
+            ).replace(/"/g, "&quot;")}'>
+                        ${figures}
+                      </div>`;
+          }
+
+          let evidenceHtml = app.content.evidence || "";
+          if (app.refId && references[app.refId]) {
+            evidenceHtml += `<a href="#ref-${app.refId}" class="reference-link block mt-2">Ver referencia</a>`;
+          }
+
+          card.innerHTML = `
+                                  <div class="p-5 border-b-2 border-gray-100">
+                                      <h3 class="text-2xl font-extrabold text-gray-800">${app.title}</h3>
+                                      <p class="text-md font-semibold text-${app.color}-600">${app.system}</p>
+                                  </div>
+                                  <div class="p-5">
+                                      <div class="flex border-b border-gray-200 mb-4 flex-wrap">
+                                          <button class="tab-button active py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'findings', this)">Hallazgos Clave</button>
+                                          <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'technique', this)">Técnica</button>
+                                          <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'evidence', this)">Evidencia</button>
+                                          <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'pearls', this)">Perlas Clínicas</button>
+                                          ${videoTabButton}
+                                      </div>
+                                      <div>
+                                          <div id="technique-${cardId}" class="tab-content prose prose-sm max-w-none">${app.content.technique}</div>
+                                          <div id="findings-${cardId}" class="tab-content active prose prose-sm max-w-none"><div class="findings-description">${app.content.findings}</div></div>
+                                          <div id="evidence-${cardId}" class="tab-content prose prose-sm max-w-none"><div class="evidence">${evidenceHtml}</div></div>
+                                          <div id="pearls-${cardId}" class="tab-content prose prose-sm max-w-none"><div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 rounded-r-lg">${app.content.pearls}</div></div>
+                                          ${videoTabContent}
+                                      </div>
+                                  </div>`;
+          return card;
+        }
+
+        // Función para renderizar referencias
+        function renderReferences(refIds) {
+          const refContainer = document.getElementById("references-section");
+          if (refIds.size === 0) {
+            refContainer.innerHTML = "";
+            return;
+          }
+
+          let refsHtml = `<div class="bg-white p-6 rounded-xl shadow-lg">
+                                                  <h3 class="text-2xl font-bold text-gray-800 mb-4">Fuentes de Evidencia</h3>
+                                                  <ul class="space-y-4 text-sm">`;
+
+          refIds.forEach((id) => {
+            const ref = references[id];
+            if (ref) {
+              refsHtml += `<li id="ref-${id}" class="leading-relaxed scroll-mt-24">
+                                                  <p class="font-semibold text-gray-700">${ref.citation}</p>
+                                                  <a href="${ref.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Acceder al artículo</a>
+                                               </li>`;
+            }
+          });
+
+          refsHtml += `</ul></div>`;
+          refContainer.innerHTML = refsHtml;
+        }
+
+        // Smooth scroll para referencias
+        document.addEventListener("click", function (e) {
+          if (e.target.matches("a.reference-link")) {
+            e.preventDefault();
+            const targetId = e.target.getAttribute("href");
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+              targetElement.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            }
+          }
+        });
       });
     </script>
+    <script src="https://www.youtube.com/iframe_api"></script>
   </body>
 </html>
