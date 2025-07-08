@@ -1,0 +1,1159 @@
+<!--
+=====================
+  plantillas.html
+  Macros y plantillas médicas 
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <meta
+      name="description"
+      content="Sistema de atajos y plantillas clínicas editables para la Historia Clínica Electrónica (HCE), diseñado para optimizar el tiempo en consulta."
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="assets/images/icon.webp" />
+    <title>Plantillas Clínicas | @ernestob</title>
+
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="Plantillas Clínicas Editables | @ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Herramienta de productividad para profesionales sanitarios"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/plantillas.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+    <meta property="article:author" content="https://twitter.com/ernestob" />
+
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    />
+
+    <style>
+      /* --- ESTILOS DE LA HERRAMIENTA DE PLANTILLAS --- */
+      /* Reseteo y cuerpo de la herramienta */
+      .tool-body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial,
+          sans-serif;
+        background: #f0f4f8;
+        line-height: 1.6;
+        padding-top: 60px; /* Ajuste para el header fijo del sitio */
+      }
+
+      .tool-body * {
+        box-sizing: border-box;
+      }
+
+      .tool-header {
+        background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+        color: white;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        position: fixed;
+        width: 100%;
+        top: 60px; /* Se posiciona debajo del header principal */
+        left: 0;
+        z-index: 999;
+      }
+
+      .tool-header h1,
+      .tool-header p {
+        margin: 0;
+        padding: 0;
+      }
+
+      .tool-container {
+        display: flex;
+        max-width: 1600px;
+        margin: 140px auto 20px; /* Espacio para el header fijo del sitio Y el header de la herramienta */
+        gap: 20px;
+        padding: 20px;
+      }
+
+      .sidebar {
+        width: 280px;
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 180px; /* Ajuste para ambos headers fijos */
+        height: calc(100vh - 200px);
+        overflow-y: auto;
+      }
+
+      .sidebar h2 {
+        color: #2c3e50;
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 1.3em;
+      }
+
+      .category-item {
+        padding: 12px 16px;
+        margin: 5px 0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #555;
+      }
+
+      .category-item:hover {
+        background: #f0f4f8;
+        transform: translateX(5px);
+      }
+
+      .category-item.active {
+        background: #3498db;
+        color: white;
+      }
+
+      .tool-main-content {
+        flex: 1;
+        background: white;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .search-box {
+        width: 100%;
+        padding: 15px;
+        font-size: 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        transition: all 0.3s;
+      }
+
+      .search-box:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+      }
+
+      .category-section {
+        margin-bottom: 40px;
+        scroll-margin-top: 180px; /* Offset for sticky headers */
+      }
+
+      .category-header {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid #3498db;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.5em;
+      }
+
+      .templates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 20px;
+      }
+
+      .template-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        background: #f8f9fa;
+        transition: all 0.3s;
+        position: relative;
+      }
+
+      .template-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        border-color: #3498db;
+      }
+
+      .template-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+      }
+
+      .template-title {
+        font-size: 1.1em;
+        color: #2c3e50;
+        font-weight: 600;
+        flex: 1;
+      }
+
+      .shortcut-badge {
+        background: #3498db;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-family: monospace;
+        margin-left: 10px;
+      }
+
+      .template-content {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        font-family: "Consolas", "Monaco", monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        min-height: 100px;
+        max-height: 400px;
+        overflow-y: auto;
+        border: 2px solid #e0e0e0;
+        transition: all 0.3s;
+        position: relative;
+        color: #2c3e50; /* <-- ESTA ES LA LÍNEA AÑADIDA */
+      }
+
+      .template-content:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+      }
+
+      .template-content.edited {
+        background-color: #fffef0;
+        border-color: #f39c12;
+      }
+
+      .editable-field {
+        background: #fff3cd;
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px dashed #856404;
+        color: #856404;
+        cursor: text;
+        display: inline-block;
+        min-width: 40px;
+        transition: all 0.2s;
+      }
+
+      .editable-field:hover {
+        background: #ffeaa7;
+        border-style: solid;
+      }
+
+      .editable-field:focus {
+        background: white;
+        border-color: #3498db;
+        color: #2c3e50;
+        outline: none;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      .btn {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 500;
+      }
+
+      .btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn-secondary {
+        background: #95a5a6;
+      }
+
+      .btn-secondary:hover {
+        background: #7f8c8d;
+      }
+
+      .btn:disabled {
+        background: #bdc3c7;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .edit-indicator {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: #f39c12;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .template-card.has-changes .edit-indicator {
+        opacity: 1;
+      }
+
+      .notification {
+        position: fixed;
+        top: 180px; /* Debajo de los dos headers */
+        right: 20px;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        display: none;
+        z-index: 1000;
+        animation: slideIn 0.3s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      .notification.success {
+        background: #27ae60;
+        color: white;
+      }
+      .notification.info {
+        background: #3498db;
+        color: white;
+      }
+
+      .tooltip {
+        position: relative;
+      }
+      .tooltip::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #2c3e50;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        white-space: nowrap;
+        font-size: 12px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+      }
+
+      .tooltip:hover::after {
+        opacity: 1;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 60px;
+        color: #7f8c8d;
+      }
+
+      .empty-state h3 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+      }
+
+      .sidebar::-webkit-scrollbar,
+      .template-content::-webkit-scrollbar {
+        width: 8px;
+      }
+      .sidebar::-webkit-scrollbar-track,
+      .template-content::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      .sidebar::-webkit-scrollbar-thumb,
+      .template-content::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+      }
+      .sidebar::-webkit-scrollbar-thumb:hover,
+      .template-content::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+
+      /* Responsive */
+      @media (max-width: 1200px) {
+        .tool-container {
+          flex-direction: column;
+          margin-top: 140px;
+        }
+        .sidebar {
+          width: 100%;
+          height: auto;
+          position: static;
+        }
+        .templates-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 768px) {
+        .tool-header {
+          top: 50px; /* Ajuste para header móvil */
+        }
+        .tool-container {
+          margin-top: 120px;
+        }
+        .sidebar {
+          top: 130px;
+        }
+        .category-section {
+          scroll-margin-top: 130px;
+        }
+        .templates-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="tool-body">
+    <script src="./assets/js/include.js"></script>
+    <include src="header.html"></include>
+
+    <main>
+      <div class="tool-header">
+        <h1>🏥 Plantillas Médicas - Atención Primaria</h1>
+        <p>Sistema de plantillas editables con atajos rápidos</p>
+      </div>
+
+      <div class="tool-container">
+        <aside class="sidebar">
+          <h2>📑 Categorías</h2>
+          <div id="category-list"></div>
+        </aside>
+
+        <div class="tool-main-content">
+          <input
+            type="text"
+            class="search-box"
+            id="searchBox"
+            placeholder="🔍 Buscar por título, atajo (.an, .ef) o contenido..."
+            autocomplete="off"
+          />
+
+          <div id="templates-container"></div>
+
+          <div class="empty-state" id="empty-state" style="display: none">
+            <h3>No se encontraron resultados</h3>
+            <p>Intenta con otros términos de búsqueda</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="notification" id="notification"></div>
+    </main>
+    <include src="footer.html"></include>
+    <script src="./assets/js/utils.js"></script>
+
+    <script>
+      // --- BASE DE DATOS COMPLETA DE ATAJOS CLÍNICOS ---
+      const templates = [
+        // Anamnesis y Exploración
+        {
+          category: "Anamnesis y Exploración",
+          id: "anamnesis-asintomatico",
+          title: "Anamnesis Asintomático",
+          shortcut: ".an",
+          content:
+            "Anamnesis: Paciente asintomático, sin quejas relevantes. Refiere bienestar general. No informa fiebre, tos, disnea u otros síntomas.",
+        },
+        {
+          category: "Anamnesis y Exploración",
+          id: "exploracion-general",
+          title: "Exploración General",
+          shortcut: ".ef",
+          content:
+            "Exploración general: Constantes dentro de la normalidad. Aspecto general normohidratado y normocoloreado, sin signos de distress agudo.",
+        },
+        {
+          category: "Anamnesis y Exploración",
+          id: "auscultacion-cp",
+          title: "Auscultación Cardiopulmonar",
+          shortcut: ".cp",
+          content:
+            "Auscultación cardiopulmonar: Eupneico y normoventila, sin roncus ni crepitantes. Tonos cardiacos rítmicos, sin soplos ni extratonos.",
+        },
+        {
+          category: "Anamnesis y Exploración",
+          id: "exploracion-abdominal",
+          title: "Exploración Abdominal",
+          shortcut: ".ab",
+          content:
+            "Exploración abdominal: Blando y depresible, sin dolor a la palpación superficial ni profunda. Sin masas ni megalias. Ruidos hidroaéreos normales.",
+        },
+        {
+          category: "Anamnesis y Exploración",
+          id: "exploracion-neurologica",
+          title: "Exploración Neurológica",
+          shortcut: ".en",
+          content:
+            "Exploración neurológica: Pupilas isocóricas y normorreactivas. Pares craneales sin alteraciones. Fuerza y sensibilidad conservadas.",
+        },
+        {
+          category: "Anamnesis y Exploración",
+          id: "exploracion-orl",
+          title: "Exploración ORL",
+          shortcut: ".or",
+          content:
+            "Exploración ORL: Faringe hiperémica sin exudados, sin adenopatías cervicales palpables. Auscultación y voz sin alteraciones destacables.",
+        },
+        {
+          category: "Anamnesis y Exploración",
+          id: "exploracion-musculoesqueletica",
+          title: "Exploración Musculoesquelética",
+          shortcut: ".ms",
+          content:
+            "Exploración musculoesquelética: Movilidad conservada en extremidades, sin dolor a la movilización activa o pasiva. Sin signos inflamatorios ni deformidades.",
+        },
+        {
+          category: "Anamnesis y Exploración",
+          id: "exploracion-genitourinaria",
+          title: "Exploración Genitourinaria",
+          shortcut: ".gu",
+          content:
+            "Exploración genitourinaria: Micción normal, sin disuria ni polaquiuria. Puño-percusión renal negativa. No se evidencian masas ni dolor suprapúbico.",
+        },
+        {
+          category: "Anamnesis y Exploración",
+          id: "exploracion-dermatologica",
+          title: "Exploración Dermatológica",
+          shortcut: ".dm",
+          content:
+            "Exploración dermatológica: Piel íntegra, sin eritemas, lesiones exudativas o cambios pigmentarios. Faneras sin alteraciones significativas.",
+        },
+        {
+          category: "Anamnesis y Exploración",
+          id: "ecg-normal",
+          title: "ECG Normal",
+          shortcut: ".ec",
+          content:
+            "ECG: Ritmo sinusal, frecuencia cardíaca estable y sin alteraciones de la conducción. Sin signos de isquemia aguda.",
+        },
+        {
+          category: "Anamnesis y Exploración",
+          id: "analitica-normal",
+          title: "Analítica Normal",
+          shortcut: ".la",
+          content:
+            "Analítica: Hemograma y bioquímica sin alteraciones relevantes. Función renal y hepática en valores normales.",
+        },
+        {
+          category: "Anamnesis y Exploración",
+          id: "radiografia-normal",
+          title: "Radiografía Normal",
+          shortcut: ".rx",
+          content:
+            "RX: Sin signos de consolidación ni lesiones focales. No alteraciones osteoarticulares relevantes.",
+        },
+
+        // Patologías Frecuentes
+        {
+          category: "Patologías Frecuentes",
+          id: "ira",
+          title: "Infección Respiratoria Alta (IRA)",
+          shortcut: ".ira",
+          content:
+            "Infección respiratoria alta:\n- Síntomas: Rinorrea, odinofagia, tos irritativa\n- Exploración: Faringe hiperémica sin exudados. ACP normal\n- Plan: Hidratación, analgesia si precisa, lavados nasales\n- Signos alarma explicados. Control según evolución",
+        },
+        {
+          category: "Patologías Frecuentes",
+          id: "gea",
+          title: "Gastroenteritis Aguda (GEA)",
+          shortcut: ".gea",
+          content:
+            "Gastroenteritis aguda:\n- Clínica: Deposiciones líquidas sin productos patológicos\n- Exploración: No deshidratación. Abdomen blando, no doloroso\n- Plan: Dieta progresiva, hidratación, probióticos\n- Signos alarma explicados. Control si no mejoría",
+        },
+        {
+          category: "Patologías Frecuentes",
+          id: "lumbalgia",
+          title: "Lumbalgia Mecánica",
+          shortcut: ".lum",
+          content:
+            "Lumbalgia mecánica:\n- Dolor lumbar mecánico sin irradiación\n- No signos de alarma. No déficit neurológico\n- Lasègue y Bragard negativos\n- Plan: calor local, analgesia pautada, ejercicios específicos",
+        },
+        {
+          category: "Patologías Frecuentes",
+          id: "ansiedad",
+          title: "Ansiedad Situacional",
+          shortcut: "..ans",
+          content:
+            "Ansiedad situacional:\n- Desencadenante: []\n- Clínica: Ansiedad psíquica y somática. No depresión\n- Plan: Técnicas relajación, higiene sueño, apoyo psicológico\n- Control en 2 semanas o según evolución",
+        },
+        {
+          category: "Patologías Frecuentes",
+          id: "sintomas-inespecificos",
+          title: "Síntomas Inespecíficos",
+          shortcut: ".sine",
+          content:
+            "Evaluación inicial por síntomas inespecíficos:\n- Motivo de consulta: []\n- Anamnesis:\n  • Inicio: []\n  • Evolución: []\n  • Síntomas asociados: []\n  • Factores agravantes/aliviantes: []\n  • Impacto funcional: []\n- Exploración física:\n  • Estado general: []\n  • Constantes: TA: []/[] mmHg, FC: [] lpm, Tª: []ºC, SatO2: []%\n  • Hallazgos relevantes: []\n- Pruebas complementarias:\n  • Hemograma completo y plaquetas\n  • PCR, VSG\n  • Albúmina y perfil hepático\n- Plan:\n  • Seguimiento: revisión 4-6 semanas\n  • Medidas generales: []\n  • Signos de alarma explicados: []\n- Impresión diagnóstica: []",
+        },
+
+        // Prescripciones y ATB
+        {
+          category: "Prescripciones y ATB",
+          id: "pauta-analgesica",
+          title: "Pauta Analgésica",
+          shortcut: "..anal",
+          content:
+            "Pauta analgésica:\n1) Paracetamol 1g/8h\n2) Añadir si precisa: Ibuprofeno 600mg/8h\n3) Si dolor no controlado: Intercalar Metamizol 575mg\nUsar la mínima dosis efectiva. Ajustar según respuesta",
+        },
+        {
+          category: "Prescripciones y ATB",
+          id: "criterios-atb",
+          title: "Criterios Generales Uso ATB",
+          shortcut: "..crit-ab",
+          content:
+            "CRITERIOS GENERALES USO ATB:\nANTES DE PRESCRIBIR:\n1. Diagnóstico probable/seguro\n2. Beneficio supera riesgos\n3. No alternativas efectivas\n4. Considerar resistencias locales\n\nFACTORES PACIENTE:\n□ Edad y comorbilidades\n□ Alergias medicamentosas\n□ ATB recientes (3 meses)\n□ Hospitalizaciones previas\n□ Factores riesgo resistencia\n\nAL PRESCRIBIR:\n1. Elegir espectro más estrecho\n2. Dosis y duración adecuadas\n3. Vía administración óptima\n4. Coste-efectividad\n5. Disponibilidad local",
+        },
+        {
+          category: "Prescripciones y ATB",
+          id: "prescripcion-diferida",
+          title: "Prescripción Diferida de ATB",
+          shortcut: "..pd-ab",
+          content:
+            "PRESCRIPCIÓN DIFERIDA DE ANTIBIÓTICO:\nDebido a que su cuadro clínico actual:\n- Podría resolverse sin antibióticos\n- No presenta criterios de gravedad\n- Tiene bajo riesgo de complicaciones\nSe recomienda inicialmente manejo sintomático y observación.\n\nRECOGER ANTIBIÓTICO DE FARMACIA SI EN 72H:\n- No hay mejoría o empeoramiento claro\n- Fiebre persistente > 38ºC\n- Aparición de nuevos síntomas\n\nMEDIDAS MIENTRAS TANTO:\n- Analgesia/antitérmicos si precisa\n- Hidratación adecuada\n- Reposo relativo\nRECONSULTAR SI:\n- Aparición signos alarma explicados\n- Dudas sobre evolución",
+        },
+        {
+          category: "Prescripciones y ATB",
+          id: "faringoamigdalitis",
+          title: "Faringoamigdalitis (Centor)",
+          shortcut: "..far-ab",
+          content:
+            "FARINGOAMIGDALITIS - VALORACIÓN ATB:\nCriterios Centor modificados (1 punto cada uno):\n□ Ausencia de tos\n□ Adenopatías cervicales dolorosas\n□ Fiebre >38ºC\n□ Exudado amigdalar\n□ Edad 3-14 años (+1) o 15-44 (0) o >45 (-1)\nPuntuación total: []/5\n\nDECISIÓN SEGÚN SCORE:\n0-1: No precisa ATB ni test\n2-3: Considerar test rápido\n4-5: ATB empírico o test\n\nSi prescripción ATB:\n- 1ª elección: Penicilina V o Amoxicilina\n- Duración: 10 días completos\n- Alergia: Valorar macrólido",
+        },
+        {
+          category: "Prescripciones y ATB",
+          id: "otitis-media",
+          title: "Otitis Media Aguda (OMA)",
+          shortcut: "..oma-ab",
+          content:
+            "OTITIS MEDIA AGUDA - VALORACIÓN ATB:\nCriterios diagnósticos:\n□ Inicio agudo\n□ Signos inflamación timpánica\n□ Presencia exudado\n□ Signos/síntomas infección aguda\n\nCriterios prescripción inmediata:\n□ Edad <6 meses\n□ <2 años bilateral\n□ Otorrea\n□ Síntomas graves\n□ Factores riesgo\n\nDECISIÓN:\n□ ATB inmediato\n□ Prescripción diferida\n□ Observación\n\nSi ATB:\n- 1ª elección: Amoxicilina dosis alta\n- Duración: 5-7d (>2a), 7-10d (<2a)\nControl en 48-72h si no mejoría",
+        },
+        {
+          category: "Prescripciones y ATB",
+          id: "sinusitis",
+          title: "Sinusitis Aguda",
+          shortcut: "..sin-ab",
+          content:
+            "SINUSITIS AGUDA - VALORACIÓN ATB:\nCriterios diagnósticos (≥1 criterio mayor o ≥2 menores):\nMayores:\n□ Rinorrea purulenta con predominio unilateral\n□ Dolor facial unilateral\n□ Ocupación radiológica\n\nMenores:\n□ Cefalea\n□ Fiebre\n□ Tos\n□ Halitosis\n□ Dolor dental\n□ Oído taponado\n\nCriterios ATB inmediato:\n□ Síntomas graves o T>39ºC\n□ Curso bifásico\n□ No mejoría tras 10d\n□ Inmunodepresión\n\nPLAN:\n□ ATB inmediato\n□ Tratamiento sintomático\n□ Lavados nasales\nControl evolución 72h",
+        },
+        {
+          category: "Prescripciones y ATB",
+          id: "bronquitis",
+          title: "Bronquitis Aguda",
+          shortcut: "..bron-ab",
+          content:
+            "BRONQUITIS AGUDA - VALORACIÓN ATB:\nRecordar: Generalmente viral, ATB no indicado rutinariamente\n\nCriterios valoración:\n□ Duración tos <3 semanas\n□ No neumonía (exploración/Rx)\n□ No EPOC/bronquiectasias\n□ No signos gravedad\n\nPLAN:\n- Manejo sintomático\n- Explicar curso natural (2-3 sem)\n- Antitusivos si precisa\n- Broncodilatadores: valorar test terapéutico\n\nReconsultar si:\n- Fiebre >38ºC persistente\n- Disnea progresiva\n- Expectoración purulenta + fiebre >3d",
+        },
+        {
+          category: "Prescripciones y ATB",
+          id: "itu-no-complicada",
+          title: "ITU no Complicada",
+          shortcut: "..iu-ab",
+          content:
+            "ITU NO COMPLICADA - VALORACIÓN ATB:\nCriterios diagnósticos:\n□ Disuria, polaquiuria, urgencia\n□ No fiebre ni dolor lumbar\n□ No embarazo/inmunosupresión\n□ No alteración estructural\n\nFactores a valorar:\n□ ATB previos 3 meses\n□ Resistencias locales\n□ Alergias\n□ Recurrencias previas\n\nDECISIÓN ATB según resistencias locales:\n- 1ª elección: Fosfomicina/Nitrofurantoína\n- Alternativas según antibiograma\n- Duración: 3-5d (excepto Fosfomicina)\n\nMedidas adicionales:\n- Hidratación adecuada\n- Completar tratamiento\n- Medidas prevención recurrencias",
+        },
+
+        // Situaciones Urgentes
+        {
+          category: "Situaciones Urgentes",
+          id: "dolor-toracico",
+          title: "Dolor Torácico",
+          shortcut: ".dt",
+          content:
+            "DOLOR TORÁCICO:\n- Características: []. Irradiación: []\n- Factores modificantes: []\n- Constantes: TA []/[] FC []\n- ECG: []\nActuación: AAS, NTG si procede, valorar derivación urgente.",
+        },
+        {
+          category: "Situaciones Urgentes",
+          id: "disnea-aguda",
+          title: "Disnea Aguda",
+          shortcut: ".sd",
+          content:
+            "DISNEA AGUDA:\n- FR: []/min. SatO2 basal: []%. Con O2: []%\n- Trabajo respiratorio: []. Uso musculatura accesoria: []\n- Constantes: TA []/[] FC []\n- Auscultación: []\nActuación: O2, broncodilatadores, corticoide según proceda.",
+        },
+
+        // Seguimiento Crónicos
+        {
+          category: "Seguimiento Crónicos",
+          id: "control-hta",
+          title: "Control HTA",
+          shortcut: ".hta",
+          content:
+            "Control HTA:\nTA actual: []/[]\nTA previas revisadas\nAdherencia terapéutica correcta\nEfectos secundarios descartados\nFRCV controlados\nPróximo control 3m",
+        },
+        {
+          category: "Seguimiento Crónicos",
+          id: "control-dm2",
+          title: "Control DM2",
+          shortcut: ".2dm",
+          content:
+            "Control DM2:\n- HbA1c actual: []% (previa: []%)\n- Glucemias domiciliarias revisadas\n- Hipoglucemias: No referidas\n- Adherencia: Dieta / Ejercicio / Fármacos\n- Plan: Ajuste según valores. Próximo control 3m",
+        },
+
+        // Gestión y Certificados
+        {
+          category: "Gestión y Certificados",
+          id: "tramitacion-it",
+          title: "Tramitación IT",
+          shortcut: ".it",
+          content:
+            "Se tramita incapacidad temporal por proceso actual, reevaluar según evolución.",
+        },
+        {
+          category: "Gestión y Certificados",
+          id: "alta-it",
+          title: "Alta de IT",
+          shortcut: ".altait",
+          content:
+            "Paciente que acude para alta de Incapacidad Temporal. Se encuentra asintomático y apto para reincorporarse a su actividad laboral. Se tramita alta con fecha de hoy.",
+        },
+        {
+          category: "Gestión y Certificados",
+          id: "cert-asistencia",
+          title: "Certificado de Asistencia",
+          shortcut: ".acert",
+          content:
+            "CERTIFICADO DE ASISTENCIA A CONSULTA\n\nD./Dña. [], médico/a de atención primaria, \n\nCERTIFICA:\n\nQue D./Dña. [] ha acudido a consulta médica el día de hoy en horario de [] a [] horas.\n\nY para que conste donde proceda, firmo el presente certificado.",
+        },
+        {
+          category: "Gestión y Certificados",
+          id: "cert-basico",
+          title: "Certificado Médico Básico",
+          shortcut: ".cert",
+          content:
+            "CERTIFICADO MÉDICO\n\nD./Dña. [], médico/a colegiado/a nº [], \n\nCERTIFICA:\n\nQue D./Dña. [], con DNI [], ha sido atendido/a en consulta en el día de hoy por [] precisando []\n\nY para que conste a los efectos oportunos, firmo el presente certificado en [Lugar] a [Fecha].",
+        },
+        {
+          category: "Gestión y Certificados",
+          id: "cert-aptitud",
+          title: "Certificado de Aptitud Física",
+          shortcut: ".apcert",
+          content:
+            "CERTIFICADO DE APTITUD FÍSICA\n\nD./Dña. [], médico/a colegiado/a nº [], \n\nCERTIFICA:\n\nQue tras el examen médico realizado a D./Dña. [], con DNI [], no se encuentra en el momento actual contraindicación médica que le impida la realización de []\n\nEste certificado tiene validez de [] y se expide a petición del interesado/a en [Lugar] a [Fecha].",
+        },
+        {
+          category: "Gestión y Certificados",
+          id: "cert-seguimiento",
+          title: "Certificado de Seguimiento",
+          shortcut: ".scert",
+          content:
+            "CERTIFICADO DE SEGUIMIENTO MÉDICO\n\nD./Dña. [], médico/a de atención primaria, \n\nCERTIFICA:\n\nQue D./Dña. [] se encuentra en seguimiento en esta consulta por [] desde []. \nRequiere controles periódicos cada []. \nPróxima revisión prevista: []\n\nY para que conste, firmo el presente certificado en [Lugar] a [Fecha].",
+        },
+        {
+          category: "Gestión y Certificados",
+          id: "cert-detallado",
+          title: "Certificado Médico Detallado",
+          shortcut: ".dcert",
+          content:
+            "CERTIFICADO MÉDICO DETALLADO\n\nD./Dña. [], médico/a especialista en [], colegiado/a nº [], \n\nCERTIFICA:\n\nQue según los datos que constan en la historia clínica, D./Dña. [], con DNI [], \n\nANTECEDENTES RELEVANTES:\n- []\n\nSITUACIÓN ACTUAL:\n- []\n\nTRATAMIENTO ACTUAL:\n- []\n\nCONCLUSIONES:\n- []\n\nY para que conste a los efectos oportunos, firmo el presente certificado en [Lugar] a [Fecha].",
+        },
+
+        // Atajos Adicionales
+        {
+          category: "Atajos Adicionales",
+          id: "constantes-vitales",
+          title: "Constantes Vitales",
+          shortcut: ".ta",
+          content: "TA: []/[] mmHg, FC: [] lpm, SatO2: []%",
+        },
+        {
+          category: "Atajos Adicionales",
+          id: "escala-eva",
+          title: "Escala EVA",
+          shortcut: ".eva",
+          content: "Dolor según EVA: []/10",
+        },
+        {
+          category: "Atajos Adicionales",
+          id: "solicitud-interconsulta",
+          title: "Solicitud Interconsulta",
+          shortcut: ".sic",
+          content:
+            "Se solicita interconsulta con el servicio de [] para valoración de [].",
+        },
+        {
+          category: "Atajos Adicionales",
+          id: "justificacion-solicitud",
+          title: "Justificación Solicitud",
+          shortcut: ".jussol",
+          content:
+            "Justifico la solicitud de [] por sospecha diagnóstica de [].",
+        },
+        {
+          category: "Atajos Adicionales",
+          id: "dieta-astringente",
+          title: "Dieta Astringente",
+          shortcut: ".dieta",
+          content:
+            "Recomendaciones de dieta astringente:\n- Iniciar con líquidos (agua, suero oral, infusiones, caldo de arroz).\n- Progresar según tolerancia a: arroz cocido, zanahoria cocida, patata cocida, manzana (rallada y oxidada) o plátano maduro.\n- Posteriormente introducir pollo o pescado blanco a la plancha/hervido.\n- Evitar: fritos, grasas, lácteos, dulces, bebidas gaseosas y verduras crudas.",
+        },
+
+        // POCUS (Ecografía)
+        {
+          category: "POCUS (Ecografía)",
+          id: "pocus-general",
+          title: "Informe General",
+          shortcut: ".pocusgen",
+          content:
+            "En general:\nTamaño: []\nEcogenicidad: []\nMorfología: []\nVascularización: []",
+        },
+        {
+          category: "POCUS (Ecografía)",
+          id: "doppler-mmii",
+          title: "Doppler MMII",
+          shortcut: ".dopmmii",
+          content:
+            "ECO DOPPLER DE AMBOS MIEMBROS INFERIORES\nSE EXPLORAN AMBOS MIEMBROS INFERIORES\n\nEJE PROFUNDO\nVena femoral común: normal\nVena femoral superficial: normal\nVena poplítea: normal\n\nEJE SUPERFICIAL\nSafena mayor: normal\nSafena menor: normal",
+        },
+        {
+          category: "POCUS (Ecografía)",
+          id: "doppler-mmss",
+          title: "Doppler MMSS",
+          shortcut: ".dopmmss",
+          content:
+            "ECO DOPPLER DE MIEMBROS SUPERIORES\n- Vena yugular interna: Permeable.\n\nSistema Venoso PROFUNDO\n- Vena Subclavia: Permeable.\n- Vena Axilar: Permeable.\n- Vena Braquial: Permeable.\n- Vena Radial y Ulnar: Permeable.\n\nSistema Venoso SUPERFICIAL\n- Vena Basílica: Permeable.\n- Vena Cefálica: Permeable.\n- Vena mediana del antebrazo: Permeable.",
+        },
+        {
+          category: "POCUS (Ecografía)",
+          id: "eco-urologica",
+          title: "Eco Urológica",
+          shortcut: ".ecouro",
+          content:
+            "ECO UROLÓGICA\n- Riñones:\n  Quistes: []\n  Angiomiolipomas: []\n  Tamaño: Normal.\n  Diferenciación corticomedular: Normal.\n  Litiasis: No.\n  Dilatación de vía: No.\n\n- Vejiga Urinaria:\n  Grado de repleción: Adecuado.\n  Paredes: Normales\n  Próstata: [] cc.",
+        },
+        {
+          category: "POCUS (Ecografía)",
+          id: "doppler-mmii-detallado",
+          title: "Doppler MMII (Detallado)",
+          shortcut: ".dopmii2",
+          content:
+            "DOPPLER MMII\n\n*EJE PROFUNDO*\nVena femoral común: Normal.\nVena femoral: Normal.\nVena poplítea: Normal.\nTroncos distales (gemelares, sóleas y tibioperonea): Normales.\n\n*EJE SUPERFICIAL*\nSafena mayor: Normal.\nSafena menor: Normal.",
+        },
+        {
+          category: "POCUS (Ecografía)",
+          id: "eco-abdominal",
+          title: "Eco Abdominal",
+          shortcut: ".ecoabd",
+          content:
+            "ECO ABDOMEN\n- Hígado:\n  Morfología: Normal.\n  Ecogenicidad: Normal.\n  Lesiones focales: No.\n  Vía biliar: Normal.\n\n- Vesícula biliar: Normal.\n- Eje esplenoportal: Normal.\n- Área pancreática: Normal.\n- Bazo: Normal.\n\n- Riñones:\n  Quistes: []\n  Angiomiolipomas: []\n  Tamaño: Normal.\n  Dif corticomedular: Buena.\n  Dilatación pielocalicial: No.\n  Litiasis: No.\n\n- Retroperitoneo: Sin alteraciones.\n- Vejiga urinaria: Normal.",
+        },
+        {
+          category: "POCUS (Ecografía)",
+          id: "eco-cuello-completo",
+          title: "Eco de Cuello (Completo)",
+          shortcut: ".ecocuello",
+          content:
+            "ECO CUELLO COMPLETO\nTamaño: []\nEcogenicidad: []\nVascularización: []\nNódulos: []\nGanglios: []\nGlánd. submaxilares: []\nParótidas: []\nOtros: []",
+        },
+        {
+          category: "POCUS (Ecografía)",
+          id: "eco-cuello-patologico",
+          title: "Eco de Cuello (Patológico)",
+          shortcut: ".ecocuello2",
+          content:
+            "ECO CUELLO DISMINUIDO-HETEROGÉNEO\nTamaño: Disminuido\nEcogenicidad: Heterogéneo\nVascularización: Normal\nNódulos: No\nGanglios: No sospechosos\nGlánd. submaxilares: []\nParótidas: []\nOtros: []",
+        },
+      ];
+
+      // --- LÓGICA DE LA APLICACIÓN ---
+      let currentCategory = "";
+      let originalContents = new Map();
+
+      const categoryIcons = {
+        "Anamnesis y Exploración": "🔍",
+        "Patologías Frecuentes": "🏥",
+        "Prescripciones y ATB": "💊",
+        "Situaciones Urgentes": "🚨",
+        "Seguimiento Crónicos": "📊",
+        "Gestión y Certificados": "📋",
+        "Atajos Adicionales": "⚡",
+        "POCUS (Ecografía)": "📡",
+      };
+
+      function init() {
+        renderCategories();
+        renderTemplates();
+        setupEventListeners();
+        const categories = [...new Set(templates.map((t) => t.category))];
+        if (categories.length > 0) {
+          showCategory(categories[0]);
+        }
+      }
+
+      function renderCategories() {
+        const categoryList = document.getElementById("category-list");
+        const categories = [...new Set(templates.map((t) => t.category))];
+        categoryList.innerHTML = categories
+          .map(
+            (category) => `
+                <div class="category-item" data-category="${category}" onclick="showCategory('${category}')">
+                    <span>${categoryIcons[category] || "📁"}</span>
+                    <span>${category}</span>
+                </div>
+            `
+          )
+          .join("");
+      }
+
+      function renderTemplates(searchTerm = "") {
+        const container = document.getElementById("templates-container");
+        const categories = [...new Set(templates.map((t) => t.category))];
+        container.innerHTML = "";
+        categories.forEach((category) => {
+          const categoryTemplates = templates.filter((t) => {
+            if (t.category !== category) return false;
+            if (searchTerm) {
+              const search = searchTerm.toLowerCase();
+              return (
+                t.title.toLowerCase().includes(search) ||
+                t.shortcut.toLowerCase().includes(search) ||
+                t.content.toLowerCase().includes(search)
+              );
+            }
+            return true;
+          });
+          if (categoryTemplates.length === 0) return;
+          const section = document.createElement("div");
+          section.className = "category-section";
+          section.id = `category-${category
+            .replace(/[\s&]+/g, "-")
+            .toLowerCase()}`;
+          section.innerHTML = `
+                    <h2 class="category-header">
+                        ${categoryIcons[category] || "📁"} ${category}
+                    </h2>
+                    <div class="templates-grid">
+                        ${categoryTemplates
+                          .map((template) => createTemplateCard(template))
+                          .join("")}
+                    </div>
+                `;
+          container.appendChild(section);
+        });
+        const emptyState = document.getElementById("empty-state");
+        emptyState.style.display =
+          container.children.length === 0 ? "block" : "none";
+        processAllEditableFields();
+      }
+
+      function createTemplateCard(template) {
+        let content = template.content;
+        if (template.category === "Gestión y Certificados") {
+          const today = new Date().toLocaleDateString("es-ES", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+          content = content.replace(/\[Fecha\]/g, `[${today}]`);
+        }
+        return `
+                <div class="template-card" id="card-${template.id}">
+                    <div class="edit-indicator">Editado</div>
+                    <div class="template-header">
+                        <h3 class="template-title">${template.title}</h3>
+                        <span class="shortcut-badge">${template.shortcut}</span>
+                    </div>
+                    <div class="template-content" 
+                         contenteditable="true" 
+                         data-template-id="${template.id}"
+                         oninput="handleContentEdit(this)">${content}</div>
+                    <div class="button-group">
+                        <button class="btn tooltip" 
+                                onclick="copyTemplate('${template.id}')"
+                                data-tooltip="Copiar al portapapeles">
+                            📋 Copiar
+                        </button>
+                        <button class="btn btn-secondary tooltip" 
+                                onclick="resetTemplate('${template.id}')"
+                                data-tooltip="Restaurar original"
+                                id="reset-${template.id}"
+                                disabled>
+                            ↩️ Deshacer
+                        </button>
+                    </div>
+                </div>
+            `;
+      }
+
+      function processEditableFields(contentElement) {
+        if (!originalContents.has(contentElement.dataset.templateId)) {
+          originalContents.set(
+            contentElement.dataset.templateId,
+            contentElement.innerHTML
+          );
+        }
+        const text = contentElement.innerHTML;
+        const processed = text.replace(/\[(.*?)\]/g, (match, p1) => {
+          return `<span class="editable-field" contenteditable="true" onclick="event.stopPropagation()">${p1}</span>`;
+        });
+        if (contentElement.innerHTML !== processed) {
+          contentElement.innerHTML = processed;
+        }
+      }
+
+      function processAllEditableFields() {
+        document.querySelectorAll(".template-content").forEach((content) => {
+          processEditableFields(content);
+        });
+      }
+
+      function handleContentEdit(element) {
+        const templateId = element.dataset.templateId;
+        const card = document.getElementById(`card-${templateId}`);
+        const resetBtn = document.getElementById(`reset-${templateId}`);
+        const originalContent = originalContents.get(templateId);
+        if (element.innerHTML.trim() !== originalContent.trim()) {
+          element.classList.add("edited");
+          card.classList.add("has-changes");
+          resetBtn.disabled = false;
+        } else {
+          element.classList.remove("edited");
+          card.classList.remove("has-changes");
+          resetBtn.disabled = true;
+        }
+      }
+
+      function copyTemplate(templateId) {
+        const contentEl = document.querySelector(
+          `[data-template-id="${templateId}"]`
+        );
+        const cleanedText = contentEl.innerText.replace(/□/g, "");
+        navigator.clipboard
+          .writeText(cleanedText)
+          .then(() => {
+            showNotification("✅ Plantilla copiada al portapapeles", "success");
+          })
+          .catch((err) => {
+            const textarea = document.createElement("textarea");
+            textarea.value = cleanedText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+            showNotification("✅ Plantilla copiada", "success");
+          });
+      }
+
+      function resetTemplate(templateId) {
+        const content = document.querySelector(
+          `[data-template-id="${templateId}"]`
+        );
+        const card = document.getElementById(`card-${templateId}`);
+        const resetBtn = document.getElementById(`reset-${templateId}`);
+        const originalContent = originalContents.get(templateId);
+        if (originalContent) {
+          content.innerHTML = originalContent;
+          content.classList.remove("edited");
+          card.classList.remove("has-changes");
+          resetBtn.disabled = true;
+          processEditableFields(content);
+          showNotification("↩️ Plantilla restaurada", "info");
+        }
+      }
+
+      function showNotification(message, type = "success") {
+        const notification = document.getElementById("notification");
+        notification.textContent = message;
+        notification.className = `notification ${type}`;
+        notification.style.display = "block";
+        setTimeout(() => {
+          notification.style.display = "none";
+        }, 3000);
+      }
+
+      function showCategory(category) {
+        currentCategory = category;
+        document.querySelectorAll(".category-item").forEach((item) => {
+          item.classList.toggle("active", item.dataset.category === category);
+        });
+        const categoryElement = document.getElementById(
+          `category-${category.replace(/[\s&]+/g, "-").toLowerCase()}`
+        );
+        if (categoryElement) {
+          categoryElement.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }
+
+      function setupEventListeners() {
+        const searchBox = document.getElementById("searchBox");
+        let searchTimeout;
+        searchBox.addEventListener("input", (e) => {
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => {
+            renderTemplates(e.target.value);
+          }, 300);
+        });
+        document.addEventListener("keydown", (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+            e.preventDefault();
+            searchBox.focus();
+          }
+          if (e.key === "Escape" && document.activeElement === searchBox) {
+            searchBox.value = "";
+            renderTemplates();
+          }
+        });
+        window.addEventListener("beforeunload", (e) => {
+          if (document.querySelector(".template-card.has-changes")) {
+            e.preventDefault();
+            e.returnValue =
+              "¿Estás seguro? Hay cambios sin guardar en las plantillas.";
+          }
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", init);
+    </script>
+  </body>
+</html>
