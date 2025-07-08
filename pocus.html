@@ -479,7 +479,29 @@
                     stroke="#fed7aa"
                     stroke-width="2"
                   />
-                </g>
+                  <circle
+                    cx="72"
+                    cy="230"
+                    r="15"
+                    class="anatomy-segment"
+                    data-segment="hand_wrist"
+                    data-tooltip="Mano / Muñeca (AR)"
+                  />
+                  <text x="70" y="208" class="anatomy-label">Mano</text>
+
+                  <rect
+                    x="100"
+                    y="55"
+                    width="20"
+                    height="8"
+                    rx="4"
+                    class="anatomy-segment"
+                    data-segment="temporal_artery"
+                    data-tooltip="Arteria Temporal (ACG)"
+                  />
+                  <text x="100" y="45" class="anatomy-label">A. Temporal</text>
+
+                
 
                 <!-- Zonas Interactivas Mejoradas -->
                 <g id="interactive-zones">
@@ -669,6 +691,27 @@
                     data-tooltip="TVP (Femoral/Poplítea)"
                   />
                   <text x="176" y="385" class="anatomy-label">TVP</text>
+                  <rect
+                    x="100"
+                    y="55"
+                    width="20"
+                    height="8"
+                    rx="4"
+                    class="anatomy-segment"
+                    data-segment="temporal_artery"
+                    data-tooltip="Arteria Temporal (ACG)"
+                  />
+                  <text x="100" y="45" class="anatomy-label">A. Temporal</text>
+
+                  <circle
+                    cx="120"
+                    cy="460"
+                    r="10"
+                    class="anatomy-segment"
+                    data-segment="foot"
+                    data-tooltip="Pie (Gota)"
+                  />
+                  <text x="125" y="480" class="anatomy-label">Pie</text>
                 </g>
               </svg>
 
@@ -871,6 +914,13 @@
             "POCUS 101. Ocular Ultrasound Made Easy: Step-by-Step Guide. POCUS 101. Consultado el 7 de julio de 2025.",
           url: "https://www.pocus101.com/ocular-ultrasound-made-easy-step-by-step-guide/",
         },
+        // Dentro de const references = { ... }, añade este nuevo objeto:
+    tvp_rioja_2024: {
+      id: "tvp_rioja_2024",
+      citation:
+        "Rioja Delgado EM, et al. Diagnóstico ecográfico de trombosis venosa profunda de extremidades inferiores. FMC. 2024;31(6):320-5.",
+      url: "https://www.fmc.es/es-diagnostico-ecografico-de-trombosis-veno-articulo-S113420722400077X",
+    },
       };
 
       // Base de datos POCUS
@@ -1109,11 +1159,74 @@
           system: "Vascular",
           color: "pink",
           title: "Trombosis Venosa Profunda (TVP)",
-          refId: "dvt_pomero_2022",
+          refId: "tvp_rioja_2024",
           content: {
-            technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Ecografía de compresión (CUS) en 3 puntos: 1) Vena femoral común (VFC) en la ingle, 2) Bifurcación en femoral y femoral profunda, 3) Vena poplítea en la fosa poplítea.</li></ul>`,
-            findings: `El signo diagnóstico es la <strong>no compresibilidad</strong> total o parcial de una vena. Al aplicar presión con la sonda, la vena normal se colapsa por completo, mientras que una vena trombosada permanece abierta. La arteria adyacente, que no colapsa, sirve de control. A veces, el trombo puede visualizarse como material ecogénico dentro de la luz venosa.`,
-            evidence: `<p>Sensibilidad global: <strong>~90%</strong>, Especificidad: <strong>~95%</strong>. El protocolo de 3 puntos es más sensible que el de 2 puntos.</p>`,
+          technique: `<ul>
+    <li><strong>Sonda:</strong> Lineal de alta frecuencia (7,5-10 MHz). Considerar sonda convex en pacientes obesos.</li>
+    <li><strong>Modo:</strong> Modo B (escala de grises) en corte transversal, aplicando compresión con el transductor cada 1-2 cm.</li>
+    <li><strong>Protocolos de Compresión:</strong>
+        <ul>
+            <li><strong>Abreviado (2 puntos):</strong> Se realizan compresiones únicamente en la vena femoral común y en la vena poplítea.</li>
+            <li><strong>Extenso (5 puntos):</strong> Se evalúan los 5 puntos detallados en la guía visual, cubriendo desde la VFC hasta el hueco poplíteo.</li>
+        </ul>
+    </li>
+</ul>`,
+
+
+findings: `
+    <p class="mb-4">
+        El signo diagnóstico es la <strong>no compresibilidad</strong> total o parcial de una vena. Al aplicar presión con la sonda, la vena normal se colapsa por completo, mientras que una vena trombosada permanece abierta. La arteria adyacente, que no colapsa, sirve de control. A veces, el trombo puede visualizarse como material ecogénico dentro de la luz venosa.
+    </p>
+
+    <hr class="my-4">
+
+    <h4 class="text-base font-bold text-blue-700 mb-3">Guía Visual del Protocolo Diagnóstico TVP</h4>
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+        
+        <div class="md:col-span-4 flex justify-center pt-2">
+            <div class="relative w-full max-w-[120px]">
+                <svg viewBox="0 0 150 300" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto">
+                    <path d="M 110 5 C 130 5, 145 25, 145 50 L 140 150 C 140 160, 135 165, 125 170 L 120 230 C 120 260, 100 295, 75 295 S 30 260, 30 230 L 25 170 C 15 165, 10 160, 10 150 L 5 50 C 5 25, 20 5, 40 5 Z" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+                    <path d="M 75 20 L 75 80 L 80 165 L 75 240" stroke="#3b82f6" stroke-width="4" fill="none" stroke-linecap="round"/>
+                    <path d="M 75 80 L 65 130" stroke="#3b82f6" stroke-width="3" fill="none" stroke-linecap="round"/>
+                </svg>
+                <div class="absolute w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center font-bold text-[10px] text-slate-800 border border-white shadow" style="top: 12%; left: 48%;">1</div>
+                <div class="absolute w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center font-bold text-[10px] text-slate-800 border border-white shadow" style="top: 20%; left: 51%;">2</div>
+                <div class="absolute w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center font-bold text-[10px] text-slate-800 border border-white shadow" style="top: 29%; left: 42%;">3</div>
+                <div class="absolute w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center font-bold text-[10px] text-slate-800 border border-white shadow" style="top: 40%; left: 35%;">4</div>
+                <div class="absolute w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center font-bold text-[10px] text-slate-800 border border-white shadow" style="top: 57%; left: 48%;">5</div>
+            </div>
+        </div>
+
+        <div class="md:col-span-8 space-y-1 text-xs">
+            <div class="flex items-center gap-3 p-2 bg-sky-50 rounded-lg border h-[50px]"><p class="font-semibold text-slate-700 w-2/5"><span class="font-bold text-slate-500 mr-1.5">1.</span>V. Femoral Común</p><div class="flex-grow h-full relative"><div class="w-9 h-9 absolute" style="top: 50%; left: 30%; transform: translateY(-50%); background-color: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px; border: 1px solid #999;">VFC</div><div class="w-8 h-8 absolute" style="top: 50%; left: 60%; transform: translateY(-50%); background-color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px; border: 1px solid #999;">AFC</div></div></div>
+            <div class="flex items-center gap-3 p-2 bg-sky-50 rounded-lg border h-[50px]"><p class="font-semibold text-slate-700 w-2/5"><span class="font-bold text-slate-500 mr-1.5">2.</span>Unión Safeno-Femoral</p><div class="flex-grow flex justify-center items-center h-full"><div class="relative w-24 h-14"><div class="w-9 h-9 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full text-white font-bold text-[9px]" style="background-color: #3b82f6; border: 1px solid #999;">VFC</div><div class="w-8 h-8 absolute top-0 left-0 flex items-center justify-center rounded-full text-white font-bold text-[9px]" style="background-color: #3b82f6; border: 1px solid #999;">VSM</div><div class="w-8 h-8 absolute top-0 right-0 flex items-center justify-center rounded-full text-white font-bold text-[9px]" style="background-color: #ef4444; border: 1px solid #999;">AFC</div></div></div></div>
+            <div class="flex items-center gap-3 p-2 bg-sky-50 rounded-lg border h-[50px]"><p class="font-semibold text-slate-700 w-2/5"><span class="font-bold text-slate-500 mr-1.5">3.</span>Bifurcación Arterial</p><div class="flex-grow h-full relative"><div class="w-9 h-9 absolute" style="top: 50%; left: 25%; transform: translateY(-50%); background-color: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px; border: 1px solid #999;">VFC</div><div class="absolute" style="left: 60%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 1px;"><div class="w-7 h-7" style="background-color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px; border: 1px solid #999;">AFS</div><div class="w-7 h-7" style="background-color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px; border: 1px solid #999;">AFP</div></div></div></div>
+            <div class="flex items-center gap-3 p-2 bg-sky-50 rounded-lg border h-[50px]"><p class="font-semibold text-slate-700 w-2/5"><span class="font-bold text-slate-500 mr-1.5">4.</span>Bifurcación Venosa</p><div class="flex-grow h-full relative"><div class="absolute" style="left: 25%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 1px;"><div class="w-7 h-7" style="background-color: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px; border: 1px solid #999;">V.Fem</div><div class="w-7 h-7" style="background-color: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px; border: 1px solid #999;">VFP</div></div><div class="absolute" style="left: 60%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 1px;"><div class="w-7 h-7" style="background-color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px; border: 1px solid #999;">AFS</div><div class="w-7 h-7" style="background-color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px; border: 1px solid #999;">AFP</div></div></div></div>
+            <div class="flex items-center gap-3 p-2 bg-sky-50 rounded-lg border h-[50px]"><p class="font-semibold text-slate-700 w-2/5"><span class="font-bold text-slate-500 mr-1.5">5.</span>Hueco Poplíteo</p><div class="flex-grow h-full relative"><div class="w-9 h-9 absolute" style="top: 50%; left: 50%; transform: translate(-50%, -80%); background-color: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px; border: 1px solid #999;">VP</div><div class="w-8 h-8 absolute" style="top: 50%; left: 50%; transform: translate(-50%, 20%); background-color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px; border: 1px solid #999;">AP</div></div></div>
+        </div>
+    </div>
+
+    <div class="text-center text-amber-700 font-semibold text-xs mt-3">
+        <p>⚠️ V. Poplítea: ¡Vena superficial! No comprimir en exceso al buscar.</p>
+    </div>
+
+    <div class="mt-4 pt-3 border-t">
+        <h5 class="font-bold text-slate-700 mb-2 text-sm">Leyenda de Siglas:</h5>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1 text-xs text-slate-600">
+            <div><span class="font-semibold text-blue-600">VFC:</span> V. Femoral Común</div>
+            <div><span class="font-semibold text-red-600">AFC:</span> A. Femoral Común</div>
+            <div><span class="font-semibold text-blue-600">VSM:</span> V. Safena Mayor</div>
+            <div><span class="font-semibold text-blue-600">V.Fem:</span> V. Femoral</div>
+            <div><span class="font-semibold text-red-600">AFS:</span> A. Femoral Superficial</div>
+            <div><span class="font-semibold text-blue-600">VFP:</span> V. Femoral Profunda</div>
+            <div><span class="font-semibold text-red-600">AFP:</span> A. Femoral Profunda</div>
+            <div><span class="font-semibold text-blue-600">VP:</span> V. Poplítea</div>
+            <div><span class="font-semibold text-red-600">AP:</span> A. Poplítea</div>
+        </div>
+    </div>
+`,
+evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compresión venosa completa</strong>, considerado el signo más fiable con una <strong>sensibilidad del 93-100% y una especificidad del 97-100%</strong>. Los protocolos abreviados que exploran la vena femoral común y la poplítea son eficaces, ya que el 98% de las TVP afectan al menos a una de estas dos localizaciones.</p>`,
             pearls: `<p>Una técnica simple y rápida que puede evitar la necesidad de dímero-D o ecografía formal en muchos pacientes de baja probabilidad.</p>`,
           },
         },
@@ -1152,6 +1265,79 @@
             findings: `Se visualiza una <strong>colección de líquido anecoica o hipoecoica bien definida</strong>, a menudo con un "cuello" o "tallo" que se comunica con la articulación de la rodilla. Puede tener septos o detritos en su interior.`,
             evidence: `<p>El POCUS es la modalidad de elección para confirmar un quiste de Baker y diferenciarlo de otras masas de la fosa poplítea, como un aneurisma de la arteria poplítea (que mostrará flujo con Doppler) o una TVP.</p>`,
             pearls: `<div class="pearls-section"><h5>Clave Diferencial</h5><p>Siempre use Doppler color para asegurarse de que la estructura quística no es un vaso sanguíneo antes de considerar cualquier aspiración.</p></div>`,
+          },
+        },
+        // --- MÓDULO DE REUMATOLOGÍA ACTUALIZADO ---
+
+        // FICHA 1: ARTRITIS REUMATOIDE (REFINADA)
+        {
+          segment: "hand_wrist",
+          system: "Reumatológico",
+          color: "purple",
+          title: "Artritis Reumatoide (Mano/Muñeca)",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal de alta frecuencia.</li><li><strong>Técnica:</strong> Realizar un examen sistemático de muñeca, articulaciones metacarpofalángicas (MCF) e interfalángicas proximales (IFP), evaluando sinovial, tendones y superficie ósea.</li></ul>`,
+            findings: `Se buscan signos de inflamación y daño estructural:<br>1) <strong>Sinovitis:</strong> Se manifiesta como tejido sinovial hipoecoico anormal dentro de la articulación que, a diferencia del líquido simple (derrame), <strong>no se desplaza y es pobremente compresible</strong> con la presión de la sonda. La señal Doppler positiva indica actividad.<br>2) <strong>Tenosinovitis:</strong> Engrosamiento hipoecoico de la vaina tendinosa, a menudo con líquido peritendinoso y posible señal Doppler.<br>3) <strong>Erosiones Óseas:</strong> Discontinuidad de la cortical ósea, visible en dos planos.`,
+            evidence: `<p>La ecografía es más sensible que la exploración física para detectar sinovitis. Su presencia en pacientes de riesgo predice el desarrollo de AR clínica.</p>`,
+            pearls: `<div class="pearls-section"><h5>Clave Diagnóstica</h5><p>La tenosinovitis del tendón extensor cubital del carpo es un hallazgo muy específico y temprano de la AR. La compresión es clave para diferenciar hipertrofia sinovial (tejido sólido) de derrame (líquido).</p></div>`,
+            videos: [
+              {
+                id: "g-fESM8_4q4",
+                intro: "Exploración de Muñeca en Artritis Reumatoide",
+                desc: "Protocolo de exploración sistemática de la muñeca para la detección de sinovitis, tenosinovitis y erosiones.",
+              },
+            ],
+          },
+        },
+
+        {
+          segment: "foot",
+          system: "Reumatológico",
+          color: "orange",
+          title: "Gota (Signo del Doble Contorno y Tofos)",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal de alta frecuencia.</li><li><strong>Técnica:</strong> Evaluar el cartílago articular (1ª metatarsofalángica es un sitio clásico) y tendones (rotuliano, Aquiles) en busca de depósitos de cristales.</li></ul>`,
+            findings: `Los hallazgos son muy específicos:<br>1) <strong>Signo del Doble Contorno:</strong> Es el más característico. Se observa una línea hiperecoica sobre la superficie del cartílago hialino, paralela a la cortical ósea.<br>2) <strong>Tofos:</strong> Agregados hiperecoicos heterogéneos, a menudo rodeados de un pequeño halo anecoico.<br>3) <strong>Agregados (Tormenta de nieve):</strong> Con la compresión, pequeños agregados hiperecoicos en el líquido sinovial pueden arremolinarse.`,
+            evidence: `<p>La ecografía forma parte de los criterios de clasificación de gota ACR/EULAR 2015. La detección del signo del doble contorno o de un tofo tiene una alta especificidad y peso diagnóstico.</p>`,
+            pearls: `<div class="pearls-section"><h5>Clave Diferencial</h5><p>El signo del doble contorno es independiente del ángulo de insonación, a diferencia del artefacto normal de la interfase del cartílago.</p></div>`,
+            videos: [
+              {
+                id: "Yi44hVWAqP4",
+                intro: "Signo del Doble Contorno en Gota",
+                desc: "Visualización clara del signo del doble contorno en la articulación metatarsofalángica.",
+              },
+            ],
+          },
+        },
+        {
+          segment: "shoulder",
+          system: "Reumatológico",
+          color: "cyan",
+          title: "Polimialgia Reumática (PMR)",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Evaluación sistemática y bilateral de hombros (bursa subacromial-subdeltoidea, tendón del bíceps, articulación glenohumeral) y caderas.</li></ul>`,
+            findings: `Los hallazgos típicos son periarticulares y a menudo bilaterales:<br>1) <strong>Bursitis Subacromial-subdeltoidea (SAD):</strong> Distensión de la bursa con contenido hipoecoico, no compresible y que puede presentar señal Doppler.<br>2) <strong>Tenosinovitis Bicipital:</strong> Engrosamiento y líquido en la vaina del tendón de la porción larga del bíceps.<br>3) <strong>Sinovitis Glenohumeral y de Cadera:</strong> Menos frecuente pero posible.`,
+            evidence: `<p>Los hallazgos ecográficos bilaterales en hombros son uno de los criterios de clasificación de la PMR (EULAR/ACR 2012), con alta sensibilidad y especificidad.</p>`,
+            pearls: `<div class="pearls-section"><h5>Clave Diferencial con AR</h5><p>La afectación bilateral y simétrica de las bursas del hombro es mucho más sugestiva de PMR que de AR en un paciente anciano con dolor y rigidez de cinturas.</p></div>`,
+          },
+        },
+        {
+          segment: "temporal_artery",
+          system: "Reumatológico / Vascular",
+          color: "red",
+          title: "Arteritis de Células Gigantes (ACG)",
+          content: {
+            technique: `<ul><li><strong>Sonda:</strong> Lineal de muy alta frecuencia (≥15 MHz).</li><li><strong>Técnica:</strong> Exploración bilateral de las arterias temporales y sus ramas, así como de las arterias axilares.</li></ul>`,
+            findings: `Los signos clave son:<br>1) <strong>Signo del Halo:</strong> Engrosamiento de la pared arterial, homogéneo e hipoecoico, alrededor de la luz del vaso. Es el hallazgo más importante.<br>2) <strong>Signo de la Compresión:</strong> Una arteria inflamada no se colapsa con la presión de la sonda.`,
+            evidence: `<p>La ecografía, en manos experimentadas, tiene una sensibilidad y especificidad muy altas, y las guías EULAR la recomiendan como primera prueba de imagen, pudiendo evitar la biopsia.</p>`,
+            pearls: `<div class="pearls-section"><h5>Ventana Terapéutica</h5><p>El signo del halo puede desaparecer a los pocos días o semanas de iniciar el tratamiento con corticoides, por lo que la ecografía debe realizarse de forma urgente.</p></div>`,
+            videos: [
+              {
+                id: "uKq4s2o2myo",
+                intro: "Signo del Halo en Arteritis de Células Gigantes",
+                desc: "Exploración de la arteria temporal que muestra el característico halo hipoecoico.",
+              },
+            ],
           },
         },
       ];
