@@ -951,29 +951,95 @@
           },
         },
         {
-          segment: "neck",
-          system: "Endocrino",
-          color: "teal",
-          title: "Nódulo Tiroideo",
-          content: {
-            technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Examen sistemático de ambos lóbulos tiroideos y el istmo en planos transversal y longitudinal. Paciente en supino con una almohada bajo los hombros para hiperextender el cuello.</li></ul>`,
-            findings: `Se evalúan las características del nódulo para estratificar el riesgo (ej. sistema TI-RADS). <strong>Hallazgos sospechosos:</strong> Hipoecogenicidad marcada (más oscuro que el músculo adyacente), forma "más alta que ancha" (taller-than-wide), márgenes irregulares, microlobulados o espiculados, y presencia de microcalcificaciones (puntos hiperecogénicos puntiformes sin sombra). <strong>Hallazgos de bajo riesgo:</strong> Nódulos puramente quísticos, espongiformes, o iso/hiperecogénicos con márgenes regulares y halo fino.`,
-            evidence: `<p>El POCUS es la principal modalidad de imagen para evaluar nódulos tiroideos y guiar la necesidad de una biopsia por aspiración con aguja fina (BAAF).</p>`,
-            pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Confundir vasos sanguíneos con nódulos. Use Doppler color para confirmar la ausencia de flujo en un nódulo verdadero.</p><h5>Impacto Clínico</h5><p>El objetivo en AP es identificar nódulos de alto riesgo (>1 cm con características sospechosas) que requieran derivación para una evaluación especializada y posible BAAF, evitando estudios innecesarios en nódulos de bajo riesgo.</p></div>`,
-            videos: [
-              {
-                id: "bwuUR_Z8kb4",
-                intro: "Curso de Ecografía de Tiroides",
-                desc: "Anatomía, técnicas de exploración y evaluación de nódulos, para el screening y procedimientos guiados",
-              },
-              {
-                id: "XR4nOMp_bGA",
-                intro: "Evaluación Ecográfica de la Enfermedad Tiroidea Difusa",
-                desc: "Evaluación ecográfica de patologías tiroideas difusas como Graves y Hashimoto, y la diferenciación de pseudonódulos",
-              },
-            ],
-          },
-        },
+  segment: "neck",
+  system: "Endocrino",
+  color: "teal",
+  title: "Nódulo Tiroideo",
+  content: {
+    technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Examen sistemático de ambos lóbulos tiroideos y el istmo en planos transversal y longitudinal. Paciente en supino con una almohada bajo los hombros para hiperextender el cuello.</li></ul>`,
+    findings: `Se evalúan las características del nódulo para estratificar el riesgo. <strong>Hallazgos sospechosos:</strong> Hipoecogenicidad marcada (más oscuro que el músculo adyacente), forma "más alta que ancha" (taller-than-wide), márgenes irregulares, microlobulados o espiculados, y presencia de microcalcificaciones (puntos hiperecogénicos puntiformes sin sombra). <strong>Hallazgos de bajo riesgo:</strong> Nódulos puramente quísticos, espongiformes, o iso/hiperecogénicos con márgenes regulares y halo fino.
+    
+    <div class="mt-4 p-4 bg-teal-50 rounded-lg border border-teal-200">
+      <h4 class="text-base font-bold text-teal-700 mb-3">Sistema ACR TI-RADS (2017)</h4>
+      <p class="text-sm text-gray-600 mb-3">Se asignan puntos según 5 características ecográficas:</p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-4">
+        <div class="bg-white p-3 rounded border border-teal-100">
+          <strong>Composición (0-2 ptos)</strong>
+          <ul class="text-xs mt-1 space-y-1">
+            <li>• Quístico o casi completamente quístico: 0</li>
+            <li>• Espongiforme: 0</li>
+            <li>• Mixto quístico y sólido: 1</li>
+            <li>• Sólido o casi completamente sólido: 2</li>
+          </ul>
+        </div>
+        
+        <div class="bg-white p-3 rounded border border-teal-100">
+          <strong>Ecogenicidad (0-3 ptos)</strong>
+          <ul class="text-xs mt-1 space-y-1">
+            <li>• Anecoico: 0</li>
+            <li>• Hiper o isoecoico: 1</li>
+            <li>• Hipoecoico: 2</li>
+            <li>• Muy hipoecoico: 3</li>
+          </ul>
+        </div>
+        
+        <div class="bg-white p-3 rounded border border-teal-100">
+          <strong>Forma (0-3 ptos)</strong>
+          <ul class="text-xs mt-1 space-y-1">
+            <li>• Más ancho que alto: 0</li>
+            <li>• Más alto que ancho: 3</li>
+          </ul>
+        </div>
+        
+        <div class="bg-white p-3 rounded border border-teal-100">
+          <strong>Márgenes (0-2 ptos)</strong>
+          <ul class="text-xs mt-1 space-y-1">
+            <li>• Lisos: 0</li>
+            <li>• Mal definidos: 0</li>
+            <li>• Lobulados o irregulares: 2</li>
+            <li>• Extensión extratiroidea: 3</li>
+          </ul>
+        </div>
+        
+        <div class="bg-white p-3 rounded border border-teal-100 md:col-span-2">
+          <strong>Focos ecogénicos (0-3 ptos)</strong>
+          <ul class="text-xs mt-1 space-y-1">
+            <li>• Ninguno o artefacto en cola de cometa: 0</li>
+            <li>• Macrocalcificaciones: 1</li>
+            <li>• Calcificaciones periféricas (rim): 2</li>
+            <li>• Focos ecogénicos puntiformes: 3</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="border-t border-teal-200 pt-3">
+        <p class="font-semibold text-sm mb-2">Categorías y Manejo:</p>
+        <ul class="space-y-1 text-sm">
+          <li><strong>TR1 (0 puntos):</strong> Benigno - No requiere PAAF ni seguimiento</li>
+          <li><strong>TR2 (2 puntos):</strong> No sospechoso - No requiere PAAF ni seguimiento</li>
+          <li><strong>TR3 (3 puntos):</strong> Levemente sospechoso - PAAF si ≥2.5 cm, seguimiento si ≥1.5 cm</li>
+          <li><strong>TR4 (4-6 puntos):</strong> Moderadamente sospechoso - PAAF si ≥1.5 cm, seguimiento si ≥1 cm</li>
+          <li><strong>TR5 (≥7 puntos):</strong> Altamente sospechoso - PAAF si ≥1 cm, seguimiento si ≥0.5 cm</li>
+        </ul>
+      </div>
+    </div>`,
+    evidence: `<p>El POCUS es la principal modalidad de imagen para evaluar nódulos tiroideos y guiar la necesidad de una biopsia por aspiración con aguja fina (BAAF). El sistema TI-RADS (Thyroid Imaging, Reporting and Data System) del American College of Radiology proporciona un método estandarizado para estratificar el riesgo de los nódulos tiroideos basándose en características ecográficas, similar al BI-RADS para mama. Este sistema mejora la comunicación entre radiólogos y clínicos, y optimiza las decisiones sobre qué nódulos requieren biopsia o seguimiento.</p>`,
+    pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Confundir vasos sanguíneos con nódulos. Use Doppler color para confirmar la ausencia de flujo en un nódulo verdadero.</p><h5>Impacto Clínico</h5><p>El objetivo en AP es identificar nódulos de alto riesgo (>1 cm con características sospechosas) que requieran derivación para una evaluación especializada y posible BAAF, evitando estudios innecesarios en nódulos de bajo riesgo. Recuerde que un nódulo espongiforme tiene <1% de riesgo de malignidad independientemente de su tamaño.</p></div>`,
+    videos: [
+      {
+        id: "bwuUR_Z8kb4",
+        intro: "Curso de Ecografía de Tiroides",
+        desc: "Anatomía, técnicas de exploración y evaluación de nódulos, para el screening y procedimientos guiados",
+      },
+      {
+        id: "XR4nOMp_bGA",
+        intro: "Evaluación Ecográfica de la Enfermedad Tiroidea Difusa",
+        desc: "Evaluación ecográfica de patologías tiroideas difusas como Graves y Hashimoto, y la diferenciación de pseudonódulos",
+      },
+    ],
+  },
+},
         {
           segment: "neck_lateral",
           system: "Linfático",
