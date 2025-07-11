@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Asistente de Análisis de Registros de Hipertensión Arterial | @ernestob
+    </title>
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/header.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Asistente de Análisis de Registros de Hipertensión Arterial | ​👨‍⚕️ ​@ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria 🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/hta.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Inter", sans-serif;
+        background: #1c1e26;
+      }
+      .main-container {
+        max-width: 1400px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0.5rem 0.5rem;
+      }
+      .hero-section {
+        border-radius: 8px;
+        padding: 0rem;
+        margin-bottom: 0.1rem;
+      }
+      .intro-text {
+        font-size: 1rem;
+        line-height: 1.4;
+        background: rgba(220, 38, 38, 0.15);
+        border-radius: 6px;
+        padding: 0.75rem;
+        color: var(--text-secondary, #94a3b8);
+        margin-bottom: 1rem;
+      }
+      .main-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary, #fff);
+      }
+      .suite-content {
+        background-color: #f8fafc;
+        border-radius: 12px;
+        padding: 24px;
+        margin-top: 1rem;
+      }
+      .main-section {
+        background-color: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
+        border: 1px solid #e2e8f0;
+      }
+      .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #991b1b;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #fecaca;
+      }
+      .tool-card {
+        background-color: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1.5rem;
+        height: fit-content;
+      }
+      .tool-button {
+        background-color: #1e3a8a;
+        color: white;
+        font-weight: bold;
+        padding: 0.75rem 1rem;
+        border-radius: 0.375rem;
+        transition: background-color 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border: none;
+      }
+      .tool-button:hover:not(:disabled) {
+        background-color: #1e40af;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
+      }
+      .tool-button:disabled {
+        background-color: #94a3b8;
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+      .download-button {
+        background-color: #047857;
+      }
+      .download-button:hover:not(:disabled) {
+        background-color: #059669;
+      }
+      .clear-button {
+        background-color: #be123c;
+      }
+      .clear-button:hover:not(:disabled) {
+        background-color: #e11d48;
+      }
+
+      .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+      }
+      .editable-log-table {
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: collapse;
+      }
+
+      /* REVISIÓN FINAL: Regla más específica para todos los inputs de la app */
+      .suite-content input[type="text"],
+      .suite-content input[type="number"] {
+        color: #1f2937;
+        font-weight: 500;
+      }
+      .suite-content ::placeholder {
+        color: #9ca3af !important; /* Forzar el color del placeholder */
+        opacity: 1 !important;
+      }
+
+      .editable-log-table input {
+        width: 100%;
+        min-width: 40px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        text-align: center;
+        padding: 6px 8px;
+        font-size: 0.875rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        background-color: #ffffff;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+        outline: none;
+      }
+      .editable-log-table input.invalid {
+        border-color: #dc2626;
+        background-color: #fef2f2;
+      }
+      .editable-log-table th,
+      .editable-log-table td {
+        font-size: 0.875rem;
+        vertical-align: middle;
+        text-align: center;
+      }
+      .editable-log-table td {
+        padding: 4px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .editable-log-table th {
+        background-color: #1e3a8a;
+        color: white;
+        padding: 10px 4px;
+      }
+      .editable-log-table thead th {
+        border-bottom: 2px solid #1e40af;
+      }
+      .editable-log-table .day-label {
+        font-weight: 600;
+        text-align: left;
+        padding-left: 1rem;
+        width: 15%;
+        color: #111827;
+      }
+      .editable-log-table .obs-column {
+        width: 25%;
+      }
+      .editable-log-table tbody tr:nth-child(even) {
+        background-color: #f9fafb;
+      }
+
+      .info-tooltip {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+      }
+      .info-tooltip .tooltip-text {
+        visibility: hidden;
+        width: 220px;
+        background-color: #1f2937;
+        color: #fff;
+        text-align: left;
+        border-radius: 6px;
+        padding: 8px;
+        position: absolute;
+        z-index: 10;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -110px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 0.75rem;
+        font-weight: 400;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      }
+      .info-tooltip:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+      }
+      .criteria-met {
+        color: #16a34a;
+        font-weight: 600;
+      }
+      .criteria-not-met {
+        color: #dc2626;
+        font-weight: 600;
+      }
+
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .suite-content,
+        .suite-content * {
+          visibility: visible;
+        }
+        .suite-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        .print-hidden,
+        header,
+        footer,
+        .hero-section {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <include src="header.html"></include>
+    <main class="main-container">
+      <section class="hero-section">
+        <h1 class="main-title">
+          <i class="fas fa-heartbeat"></i>
+          <span
+            >Asistente de Análisis de Registros de Hipertensión Arterial</span
+          >
+        </h1>
+        <p class="intro-text">
+          Herramienta integral para el diagnóstico y seguimiento de la
+          hipertensión arterial. Implementa las recomendaciones de las guías de
+          la Sociedad Europea de Hipertensión (ESH 2023) y Cardiología (ESC
+          2024). Incluye registro AMPA (automedida de PA domiciliaria),
+          clasificación de fenotipos hipertensivos, calculadora de hipotensión
+          ortostática y análisis avanzado con gráficas evolutivas. Diseñada para
+          profesionales sanitarios como apoyo a la toma de decisiones clínicas
+          en Atención Primaria.
+        </p>
+      </section>
+      <div class="suite-content">
+        <section id="patient-data" class="main-section">
+          <h2 class="section-title">Datos del Informe</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label
+                for="patientName"
+                class="block text-sm font-medium text-gray-700"
+                >Nombre del Paciente</label
+              >
+              <input
+                type="text"
+                id="patientName"
+                placeholder="Introduzca el nombre completo"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
+              />
+            </div>
+            <div>
+              <label
+                for="reportPeriod"
+                class="block text-sm font-medium text-gray-700"
+                >Periodo de Registro</label
+              >
+              <input
+                type="text"
+                id="reportPeriod"
+                placeholder="Ej: 11/07/2025 - 17/07/2025"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
+              />
+            </div>
+          </div>
+        </section>
+        <section id="herramientas" class="main-section">
+          <h2 class="section-title">Panel de Control Interactivo</h2>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2">
+              <div class="tool-card">
+                <h3 class="font-bold text-lg text-blue-900 mb-4">
+                  Registro de PA Domiciliaria (AMPA)
+                </h3>
+                <div class="table-container">
+                  <table class="w-full text-sm editable-log-table">
+                    <thead>
+                      <tr>
+                        <th rowspan="2" class="day-label align-middle">Día</th>
+                        <th colspan="2" class="border-b border-blue-200">
+                          Mañana
+                        </th>
+                        <th colspan="2" class="border-b border-blue-200">
+                          Tarde/Noche
+                        </th>
+                        <th rowspan="2" class="align-middle obs-column">
+                          Observaciones
+                        </th>
+                      </tr>
+                      <tr>
+                        <th>Toma 1 (PAS/PAD/FC)</th>
+                        <th>Toma 2 (PAS/PAD/FC)</th>
+                        <th>Toma 1 (PAS/PAD/FC)</th>
+                        <th>Toma 2 (PAS/PAD/FC)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="interactiveLogBody"></tbody>
+                  </table>
+                </div>
+                <div
+                  class="flex items-center justify-start mt-4 gap-4 flex-wrap"
+                >
+                  <div>
+                    <label
+                      for="startDaySelect"
+                      class="text-sm font-medium text-gray-700"
+                      >Empezar en:</label
+                    ><select
+                      id="startDaySelect"
+                      class="rounded-md border-gray-300 shadow-sm text-sm p-2"
+                    ></select>
+                  </div>
+                  <button id="addDayBtn" class="tool-button text-sm py-2">
+                    Añadir Día
+                  </button>
+                </div>
+                <div
+                  id="summarySection"
+                  class="mt-6 p-4 bg-white rounded-lg shadow-inner border"
+                >
+                  <h4 class="font-bold text-center text-blue-900 mb-3">
+                    Resumen de Resultados
+                  </h4>
+                  <div
+                    class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center"
+                  >
+                    <div id="weeklyAvgResult">
+                      <p class="text-slate-700 text-sm">Promedio General</p>
+                      <p class="font-bold text-2xl text-blue-900">-- / --</p>
+                      <p class="text-xs text-slate-500">mmHg</p>
+                    </div>
+                    <div id="hrAvgResult">
+                      <p class="text-slate-700 text-sm">
+                        Promedio Frec. Cardíaca
+                      </p>
+                      <p class="font-bold text-2xl text-blue-900">--</p>
+                      <p class="text-xs text-slate-500">lpm</p>
+                    </div>
+                    <div id="variabilityResult">
+                      <p class="text-slate-700 text-sm">
+                        Variabilidad PAS (DE)
+                        <span class="info-tooltip"
+                          ><svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="inline-block"
+                          >
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line></svg
+                          ><span class="tooltip-text"
+                            >La Desviación Estándar (DE) mide la fluctuación de
+                            la PA. Una DE alta (>15 mmHg) es un factor de riesgo
+                            cardiovascular independiente.</span
+                          ></span
+                        >
+                      </p>
+                      <p class="font-bold text-2xl text-blue-900">--</p>
+                      <p class="text-xs text-slate-500">mmHg</p>
+                    </div>
+                  </div>
+                  <p
+                    id="weeklyAvgInfo"
+                    class="text-center text-xs text-slate-500 mt-3"
+                  >
+                    Introduzca valores para calcular. El promedio se calcula
+                    excluyendo el primer día, según las guías clínicas.
+                  </p>
+                </div>
+                <div class="mt-4 h-80"><canvas id="bpChart"></canvas></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                  <button id="clearLogBtn" class="tool-button clear-button">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      ></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                    Limpiar Tabla
+                  </button>
+                  <button
+                    id="downloadLogBtn"
+                    class="tool-button download-button"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                      ></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Descargar PDF
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="lg:col-span-1 space-y-8">
+              <div class="tool-card">
+                <h3 class="font-bold text-lg text-blue-900 mb-2">
+                  Clasificador de Fenotipo de HTA
+                  <span class="info-tooltip"
+                    ><svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="inline-block"
+                    >
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line></svg
+                    ><span class="tooltip-text"
+                      >Compara la PA de consulta con la domiciliaria (AMPA) para
+                      un diagnóstico preciso. Ayuda a identificar la HTA de Bata
+                      Blanca y la HTA Enmascarada.</span
+                    ></span
+                  >
+                </h3>
+                <p class="text-sm text-slate-600 mb-4">
+                  Compare la PA de consulta con la domiciliaria para un
+                  diagnóstico preciso.
+                </p>
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700"
+                      >1. PA en Consulta Médica</label
+                    >
+                    <div class="grid grid-cols-2 gap-2 mt-1">
+                      <input
+                        type="number"
+                        id="officeSbp"
+                        placeholder="PAS"
+                        class="pheno-input block w-full rounded-md border-gray-300 shadow-sm text-sm p-2"
+                      /><input
+                        type="number"
+                        id="officeDbp"
+                        placeholder="PAD"
+                        class="pheno-input block w-full rounded-md border-gray-300 shadow-sm text-sm p-2"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700"
+                      >2. Promedio PA Domiciliaria (Calculado)</label
+                    >
+                    <div
+                      class="mt-1 p-2 bg-slate-200 border border-gray-300 rounded-md text-center cursor-not-allowed"
+                    >
+                      <span
+                        id="ampaAvgForPheno"
+                        class="font-bold text-lg text-slate-700"
+                        >-- / --</span
+                      ><span class="text-sm text-slate-500"> mmHg</span>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  id="phenotypeResult"
+                  class="mt-4 text-center p-3 rounded-lg"
+                >
+                  <p class="font-bold text-lg text-blue-900">
+                    Introduzca la PA de consulta...
+                  </p>
+                </div>
+              </div>
+              <div class="tool-card">
+                <h3 class="font-bold text-lg text-blue-900 mb-4">
+                  Calculadora de Hipotensión Ortostática
+                </h3>
+                <div id="orthoCalculator" class="grid md:grid-cols-1 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700"
+                      >PA en Reposo (Sentado)</label
+                    >
+                    <div class="grid grid-cols-2 gap-2 mt-1">
+                      <input
+                        type="number"
+                        id="orthoSbpBase"
+                        placeholder="PAS"
+                        class="ortho-input block w-full rounded-md border-gray-300 shadow-sm text-sm p-2"
+                      /><input
+                        type="number"
+                        id="orthoDbpBase"
+                        placeholder="PAD"
+                        class="ortho-input block w-full rounded-md border-gray-300 shadow-sm text-sm p-2"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700"
+                      >PA de Pie (tras 1-3 min)</label
+                    >
+                    <div class="grid grid-cols-2 gap-2 mt-1">
+                      <input
+                        type="number"
+                        id="orthoSbpStand"
+                        placeholder="PAS"
+                        class="ortho-input block w-full rounded-md border-gray-300 shadow-sm text-sm p-2"
+                      /><input
+                        type="number"
+                        id="orthoDbpStand"
+                        placeholder="PAD"
+                        class="ortho-input block w-full rounded-md border-gray-300 shadow-sm text-sm p-2"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div
+                  id="orthoResult"
+                  class="mt-4 text-left p-4 rounded-lg bg-gray-100 border border-gray-200"
+                >
+                  <p
+                    id="orthoDiagnosis"
+                    class="font-bold text-lg mb-2 text-center text-gray-700"
+                  >
+                    Introduzca los 4 valores...
+                  </p>
+                  <div id="orthoDetails" class="text-sm space-y-1"></div>
+                  <p
+                    id="orthoClinicalNote"
+                    class="text-xs text-gray-500 mt-3 border-t pt-2"
+                  ></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <include src="footer.html"></include>
+
+    <script src="/assets/js/include.js"></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const logBody = document.getElementById("interactiveLogBody");
+        const addDayBtn = document.getElementById("addDayBtn");
+        const startDaySelect = document.getElementById("startDaySelect");
+        const days = [
+          "Lunes",
+          "Martes",
+          "Miércoles",
+          "Jueves",
+          "Viernes",
+          "Sábado",
+          "Domingo",
+        ];
+        let dayCounter = 0;
+        let bpChartInstance = null;
+        const LOCAL_STORAGE_KEY = "hypertensionSuiteData_v2";
+
+        function initializeApp() {
+          days.forEach((day, index) => {
+            const option = document.createElement("option");
+            option.value = index;
+            option.textContent = day;
+            startDaySelect.appendChild(option);
+          });
+          initializeChart();
+          loadDataFromLocalStorage();
+          setupEventListeners();
+        }
+
+        function setupEventListeners() {
+          logBody.addEventListener("input", handleLogInput);
+          addDayBtn.addEventListener("click", addDayRow);
+          startDaySelect.addEventListener("change", handleDayChange);
+          document
+            .getElementById("clearLogBtn")
+            .addEventListener("click", clearLog);
+          document
+            .getElementById("downloadLogBtn")
+            .addEventListener("click", downloadPdf);
+          document
+            .getElementById("orthoCalculator")
+            .addEventListener("input", calculateOrtho);
+          document
+            .querySelectorAll(".pheno-input")
+            .forEach((input) =>
+              input.addEventListener("input", classifyPhenotype)
+            );
+        }
+
+        function initializeChart() {
+          const ctx = document.getElementById("bpChart").getContext("2d");
+          bpChartInstance = new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: [],
+              datasets: [
+                {
+                  label: "Sistólica (PAS)",
+                  data: [],
+                  borderColor: "rgb(220, 38, 38)",
+                  tension: 0.2,
+                  yAxisID: "y",
+                },
+                {
+                  label: "Diastólica (PAD)",
+                  data: [],
+                  borderColor: "rgb(37, 99, 235)",
+                  tension: 0.2,
+                  yAxisID: "y",
+                },
+                {
+                  label: "Frec. Cardíaca (FC)",
+                  data: [],
+                  borderColor: "rgb(22, 163, 74)",
+                  tension: 0.2,
+                  yAxisID: "y1",
+                  hidden: false,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: { mode: "index", intersect: false },
+              plugins: {
+                legend: { position: "top" },
+                title: {
+                  display: true,
+                  text: "Evolución de la Presión Arterial y Frecuencia Cardíaca",
+                },
+                annotation: {
+                  annotations: {
+                    htaThresholdPAS: {
+                      type: "line",
+                      yMin: 135,
+                      yMax: 135,
+                      borderColor: "rgba(220, 38, 38, 0.5)",
+                      borderWidth: 2,
+                      borderDash: [6, 6],
+                      label: {
+                        content: "Umbral HTA (135)",
+                        position: "start",
+                        enabled: true,
+                        font: { size: 10 },
+                      },
+                      scaleID: "y",
+                    },
+                    htaThresholdPAD: {
+                      type: "line",
+                      yMin: 85,
+                      yMax: 85,
+                      borderColor: "rgba(37, 99, 235, 0.5)",
+                      borderWidth: 2,
+                      borderDash: [6, 6],
+                      label: {
+                        content: "Umbral HTA (85)",
+                        position: "start",
+                        enabled: true,
+                        font: { size: 10 },
+                      },
+                      scaleID: "y",
+                    },
+                  },
+                },
+              },
+              scales: {
+                y: { position: "left", title: { display: true, text: "mmHg" } },
+                y1: {
+                  position: "right",
+                  title: { display: true, text: "lpm" },
+                  grid: { drawOnChartArea: false },
+                },
+              },
+            },
+          });
+        }
+
+        function updateChart(allData) {
+          if (!bpChartInstance) return;
+          const labels = [],
+            sbpData = [],
+            dbpData = [],
+            hrData = [];
+          allData.forEach((d) => {
+            labels.push(d.label);
+            sbpData.push(d.sbp);
+            dbpData.push(d.dbp);
+            hrData.push(d.hr);
+          });
+          bpChartInstance.data.labels = labels;
+          bpChartInstance.data.datasets[0].data = sbpData;
+          bpChartInstance.data.datasets[1].data = dbpData;
+          bpChartInstance.data.datasets[2].data = hrData;
+          bpChartInstance.update();
+        }
+
+        function handleLogInput(e) {
+          if (e.target.tagName === "INPUT") {
+            if (e.target.type === "number") validateBPInput(e.target);
+            runAllCalculations();
+          }
+        }
+
+        function handleDayChange() {
+          reorderTable();
+          runAllCalculations();
+        }
+
+        function runAllCalculations() {
+          const { avgSbp, avgDbp, avgHr, sbpVariability, chartData } =
+            calculateAverages();
+          updateSummaryUI(avgSbp, avgDbp, avgHr, sbpVariability);
+          updateChart(chartData);
+          classifyPhenotype();
+          saveDataToLocalStorage();
+        }
+
+        function calculateAverages() {
+          const rows = Array.from(logBody.querySelectorAll("tr"));
+          const rowsToAverage = rows.length > 1 ? rows.slice(1) : rows;
+          let sbpValues = [],
+            dbpValues = [],
+            hrValues = [];
+          rowsToAverage.forEach((row) => {
+            row.querySelectorAll(".sbp").forEach((i) => {
+              if (i.value) sbpValues.push(parseFloat(i.value));
+            });
+            row.querySelectorAll(".dbp").forEach((i) => {
+              if (i.value) dbpValues.push(parseFloat(i.value));
+            });
+            row.querySelectorAll(".hr").forEach((i) => {
+              if (i.value) hrValues.push(parseFloat(i.value));
+            });
+          });
+          const avgSbp =
+            sbpValues.length > 0
+              ? sbpValues.reduce((a, b) => a + b, 0) / sbpValues.length
+              : null;
+          const avgDbp =
+            dbpValues.length > 0
+              ? dbpValues.reduce((a, b) => a + b, 0) / dbpValues.length
+              : null;
+          const avgHr =
+            hrValues.length > 0
+              ? hrValues.reduce((a, b) => a + b, 0) / hrValues.length
+              : null;
+          const calculateSD = (arr) => {
+            if (arr.length < 2) return 0;
+            const mean = arr.reduce((a, b) => a + b) / arr.length;
+            return Math.sqrt(
+              arr.map((x) => Math.pow(x - mean, 2)).reduce((a, b) => a + b) /
+                arr.length
+            );
+          };
+          const sbpVariability = calculateSD(sbpValues);
+          const chartData = [];
+          rows.forEach((row) => {
+            const day = row
+              .querySelector(".day-label")
+              .textContent.substring(0, 3);
+            const inputs = row.querySelectorAll('input[type="number"]');
+            const morningAvg = getPeriodAverage(
+              [inputs[0], inputs[1], inputs[2]],
+              [inputs[3], inputs[4], inputs[5]]
+            );
+            const eveningAvg = getPeriodAverage(
+              [inputs[6], inputs[7], inputs[8]],
+              [inputs[9], inputs[10], inputs[11]]
+            );
+            if (morningAvg)
+              chartData.push({ label: `${day}-M`, ...morningAvg });
+            if (eveningAvg)
+              chartData.push({ label: `${day}-T`, ...eveningAvg });
+          });
+          function getPeriodAverage(take1, take2) {
+            const sbp = [
+              parseFloat(take1[0].value),
+              parseFloat(take2[0].value),
+            ].filter((v) => !isNaN(v));
+            const dbp = [
+              parseFloat(take1[1].value),
+              parseFloat(take2[1].value),
+            ].filter((v) => !isNaN(v));
+            const hr = [
+              parseFloat(take1[2].value),
+              parseFloat(take2[2].value),
+            ].filter((v) => !isNaN(v));
+            if (sbp.length === 0) return null;
+            return {
+              sbp: sbp.reduce((a, b) => a + b, 0) / sbp.length,
+              dbp: dbp.reduce((a, b) => a + b, 0) / dbp.length,
+              hr:
+                hr.length > 0
+                  ? hr.reduce((a, b) => a + b, 0) / hr.length
+                  : null,
+            };
+          }
+          return { avgSbp, avgDbp, avgHr, sbpVariability, chartData };
+        }
+
+        function updateSummaryUI(avgSbp, avgDbp, avgHr, sbpVariability) {
+          document
+            .getElementById("weeklyAvgResult")
+            .querySelector("p:nth-child(2)").textContent =
+            avgSbp && avgDbp
+              ? `${Math.round(avgSbp)} / ${Math.round(avgDbp)}`
+              : "-- / --";
+          document
+            .getElementById("hrAvgResult")
+            .querySelector("p:nth-child(2)").textContent = avgHr
+            ? Math.round(avgHr)
+            : "--";
+          document
+            .getElementById("variabilityResult")
+            .querySelector("p:nth-child(2)").textContent = sbpVariability
+            ? sbpVariability.toFixed(1)
+            : "--";
+          document.getElementById("ampaAvgForPheno").textContent =
+            avgSbp && avgDbp
+              ? `${Math.round(avgSbp)} / ${Math.round(avgDbp)}`
+              : "-- / --";
+        }
+
+        function validateBPInput(input) {
+          const value = parseFloat(input.value);
+          const isInvalid =
+            input.value !== "" && (isNaN(value) || value < 30 || value > 300);
+          input.classList.toggle("invalid", isInvalid);
+        }
+
+        function addDayRow() {
+          if (dayCounter >= 7) return;
+          const startDayIndex = parseInt(startDaySelect.value, 10);
+          const dayName = days[(startDayIndex + dayCounter) % 7];
+          const row = document.createElement("tr");
+          row.innerHTML = `
+                <td class="day-label">${dayName}</td>
+                <td><div class="measurement-group"><div><input type="number" class="bp-input sbp" placeholder="PAS" aria-label="PAS Mañana Toma 1"><input type="number" class="bp-input dbp" placeholder="PAD" aria-label="PAD Mañana Toma 1"><input type="number" class="bp-input hr" placeholder="FC" aria-label="FC Mañana Toma 1"></div></div></td>
+                <td><div class="measurement-group"><div><input type="number" class="bp-input sbp" placeholder="PAS" aria-label="PAS Mañana Toma 2"><input type="number" class="bp-input dbp" placeholder="PAD" aria-label="PAD Mañana Toma 2"><input type="number" class="bp-input hr" placeholder="FC" aria-label="FC Mañana Toma 2"></div></div></td>
+                <td><div class="measurement-group"><div><input type="number" class="bp-input sbp" placeholder="PAS" aria-label="PAS Tarde Toma 1"><input type="number" class="bp-input dbp" placeholder="PAD" aria-label="PAD Tarde Toma 1"><input type="number" class="bp-input hr" placeholder="FC" aria-label="FC Tarde Toma 1"></div></div></td>
+                <td><div class="measurement-group"><div><input type="number" class="bp-input sbp" placeholder="PAS" aria-label="PAS Tarde Toma 2"><input type="number" class="bp-input dbp" placeholder="PAD" aria-label="PAD Tarde Toma 2"><input type="number" class="bp-input hr" placeholder="FC" aria-label="FC Tarde Toma 2"></div></div></td>
+                <td><input type="text" class="obs-input" placeholder="Síntomas, olvidos..." aria-label="Observaciones para ${dayName}"></td>
+            `;
+          logBody.appendChild(row);
+          dayCounter++;
+          addDayBtn.disabled = dayCounter >= 7;
+        }
+
+        function reorderTable() {
+          const startDayIndex = parseInt(startDaySelect.value, 10);
+          logBody.querySelectorAll("tr").forEach((row, index) => {
+            row.querySelector(".day-label").textContent =
+              days[(startDayIndex + index) % 7];
+          });
+        }
+
+        function clearLog() {
+          if (
+            confirm(
+              "¿Está seguro de que desea borrar todos los datos de la tabla? Esta acción no se puede deshacer."
+            )
+          ) {
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+            startDaySelect.value = "0";
+            logBody.innerHTML = "";
+            dayCounter = 0;
+            addDayRow();
+            addDayBtn.disabled = false;
+            runAllCalculations();
+          }
+        }
+
+        // REVISIÓN FINAL: Función de clasificación desacoplada de la UI
+        function getPhenotypeClassification() {
+          const officeSbp = parseFloat(
+            document.getElementById("officeSbp").value
+          );
+          const officeDbp = parseFloat(
+            document.getElementById("officeDbp").value
+          );
+          const { avgSbp, avgDbp } = calculateAverages();
+
+          if (isNaN(officeSbp) || isNaN(officeDbp)) {
+            return {
+              name: "Datos de Consulta Incompletos",
+              explanation:
+                "Introduzca los valores de Presión Arterial en consulta.",
+            };
+          }
+          if (!avgSbp || !avgDbp) {
+            return {
+              name: "Datos Domiciliarios Incompletos",
+              explanation:
+                "Introduzca los valores de Presión Arterial domiciliaria (AMPA).",
+            };
+          }
+
+          const isOfficeHigh = officeSbp >= 140 || officeDbp >= 90;
+          const isAmpaHigh = avgSbp >= 135 || avgDbp >= 85;
+
+          if (isOfficeHigh && isAmpaHigh)
+            return {
+              name: "HTA Sostenida",
+              explanation:
+                "La presión es alta tanto en la consulta como en casa. Es el tipo más común y requiere tratamiento y seguimiento.",
+            };
+          if (isOfficeHigh && !isAmpaHigh)
+            return {
+              name: "HTA de Bata Blanca",
+              explanation:
+                "La presión sube en el entorno médico, pero es normal en casa. El riesgo es menor, pero necesita vigilancia.",
+            };
+          if (!isOfficeHigh && isAmpaHigh)
+            return {
+              name: "HTA Enmascarada",
+              explanation:
+                "La presión es normal en consulta pero alta en casa. Es un fenotipo de alto riesgo porque puede pasar desapercibido.",
+            };
+          return {
+            name: "Normotensión",
+            explanation:
+              "La presión es normal en ambos entornos. ¡Excelente! Se recomienda mantener un estilo de vida saludable.",
+          };
+        }
+
+        function classifyPhenotype() {
+          const { name, explanation } = getPhenotypeClassification();
+          const resultEl = document.getElementById("phenotypeResult");
+
+          resultEl.className = "mt-4 p-4 rounded-lg"; // Reseteamos las clases base
+
+          // REVISIÓN FINAL: Se definen clases de color para cada estado posible
+          let cardBgClass = "bg-gray-100";
+          let titleColorClass = "text-blue-900";
+          let explanationColorClass = "text-slate-600";
+
+          if (name === "HTA Sostenida") {
+            cardBgClass = "bg-red-100 border border-red-300";
+            titleColorClass = "text-red-800";
+            explanationColorClass = "text-red-900";
+          } else if (name === "HTA de Bata Blanca") {
+            cardBgClass = "bg-yellow-100 border border-yellow-300";
+            titleColorClass = "text-amber-800";
+            explanationColorClass = "text-amber-900";
+          } else if (name === "HTA Enmascarada") {
+            cardBgClass = "bg-orange-100 border border-orange-300";
+            titleColorClass = "text-orange-800";
+            explanationColorClass = "text-orange-900";
+          } else if (name === "Normotensión") {
+            cardBgClass = "bg-green-100 border border-green-300";
+            titleColorClass = "text-green-800";
+            explanationColorClass = "text-green-900";
+          } else {
+            // Este bloque se encarga de los estados informativos (datos incompletos)
+            cardBgClass = "bg-yellow-100 border border-yellow-300";
+            titleColorClass = "text-amber-800";
+            explanationColorClass = "text-amber-900";
+          }
+
+          // Se genera el HTML con las clases de color dinámicas
+          resultEl.innerHTML = `<p class="font-bold text-lg text-center mb-2 ${titleColorClass}">${name}</p><p class="text-xs ${explanationColorClass} text-center">${explanation}</p>`;
+
+          // Se aplica la clase de fondo a la tarjeta
+          resultEl.classList.add(...cardBgClass.split(" "));
+        }
+
+        // REVISIÓN FINAL: Función reescrita para generar un resultado clínico detallado y con referencias.
+        function calculateOrtho() {
+          const sbpBase = parseFloat(
+            document.getElementById("orthoSbpBase").value
+          );
+          const dbpBase = parseFloat(
+            document.getElementById("orthoDbpBase").value
+          );
+          const sbpStand = parseFloat(
+            document.getElementById("orthoSbpStand").value
+          );
+          const dbpStand = parseFloat(
+            document.getElementById("orthoDbpStand").value
+          );
+
+          const diagnosisEl = document.getElementById("orthoDiagnosis");
+          const resultContainer = document.getElementById("orthoResult");
+          const detailsEl = document.getElementById("orthoDetails");
+          const noteEl = document.getElementById("orthoClinicalNote");
+
+          // Limpiar estilos y contenido previo
+          resultContainer.className = "mt-4 text-left p-4 rounded-lg";
+          detailsEl.innerHTML = "";
+          noteEl.innerHTML = "";
+
+          if (
+            isNaN(sbpBase) ||
+            isNaN(dbpBase) ||
+            isNaN(sbpStand) ||
+            isNaN(dbpStand)
+          ) {
+            diagnosisEl.textContent = "Introduzca los 4 valores...";
+            diagnosisEl.className =
+              "font-bold text-lg mb-2 text-center text-gray-700";
+            resultContainer.classList.add(
+              "bg-gray-100",
+              "border",
+              "border-gray-200"
+            );
+            return;
+          }
+
+          const sbpDrop = sbpBase - sbpStand;
+          const dbpDrop = dbpBase - dbpStand;
+
+          // --- LÓGICA DE CRITERIOS FORTALECIDA Y EXPLÍCITA ---
+          // La Guía ESC 2024 define el criterio como una caída "mayor o igual que" (>=).
+          const sbpCriterionMet = sbpDrop >= 20;
+          const dbpCriterionMet = dbpDrop >= 10;
+          const isPositive = sbpCriterionMet || dbpCriterionMet;
+
+          const sbpStatusHTML = sbpCriterionMet
+            ? `<span class="text-xs font-semibold text-green-600">[CUMPLE]</span>`
+            : `<span class="text-xs font-semibold text-red-600">[NO CUMPLE]</span>`;
+
+          const dbpStatusHTML = dbpCriterionMet
+            ? `<span class="text-xs font-semibold text-green-600">[CUMPLE]</span>`
+            : `<span class="text-xs font-semibold text-red-600">[NO CUMPLE]</span>`;
+
+          if (isPositive) {
+            diagnosisEl.textContent = "Positivo para Hipotensión Ortostática";
+            diagnosisEl.className =
+              "font-bold text-lg mb-2 text-center text-red-700";
+            resultContainer.classList.add(
+              "bg-red-100",
+              "border",
+              "border-red-300"
+            );
+
+            detailsEl.innerHTML = `
+              <div class="flex justify-between items-center ${
+                sbpCriterionMet ? "font-bold" : ""
+              } text-red-800">
+                  <span>Caída PAS: <strong class="text-base">${sbpDrop} mmHg</strong> <span class="text-xs text-red-700">(Criterio: &ge;20)</span></span>
+                  ${sbpStatusHTML}
+              </div>
+              <div class="flex justify-between items-center ${
+                dbpCriterionMet ? "font-bold" : ""
+              } text-red-800">
+                  <span>Caída PAD: <strong class="text-base">${dbpDrop} mmHg</strong> <span class="text-xs text-red-700">(Criterio: &ge;10)</span></span>
+                  ${dbpStatusHTML}
+              </div>
+            `;
+
+            let clinicalNoteText = "";
+            if (sbpCriterionMet && dbpCriterionMet) {
+              clinicalNoteText =
+                "Diagnóstico positivo por caída tanto sistólica como diastólica. Indica una respuesta ortostática marcadamente anormal que requiere especial atención en el manejo del paciente.";
+            } else if (sbpCriterionMet) {
+              clinicalNoteText =
+                "Diagnóstico positivo por caída aislada de la presión sistólica. Este es el criterio clásico y requiere una evaluación cuidadosa del riesgo-beneficio antes de intensificar el tratamiento.";
+            } else {
+              // Solo dbpCriterionMet
+              clinicalNoteText =
+                "Diagnóstico positivo por caída aislada de la presión diastólica. Este hallazgo es clínicamente significativo y debe ser considerado en el plan terapéutico.";
+            }
+            noteEl.innerHTML = `<strong>Nota Clínica:</strong> ${clinicalNoteText} (Guía ESC 2024)`;
+            noteEl.className =
+              "text-xs text-red-800 mt-3 border-t border-red-200 pt-2";
+          } else {
+            // Resultado Negativo
+            diagnosisEl.textContent = "Negativo para Hipotensión Ortostática";
+            diagnosisEl.className =
+              "font-bold text-lg mb-2 text-center text-green-700";
+            resultContainer.classList.add(
+              "bg-green-100",
+              "border",
+              "border-green-300"
+            );
+
+            detailsEl.innerHTML = `
+              <div class="flex justify-between items-center text-green-800">
+                  <span>Caída PAS: <strong class="text-base">${sbpDrop} mmHg</strong> <span class="text-xs text-green-700">(Criterio: &ge;20)</span></span>
+                  ${sbpStatusHTML}
+              </div>
+              <div class="flex justify-between items-center text-green-800">
+                  <span>Caída PAD: <strong class="text-base">${dbpDrop} mmHg</strong> <span class="text-xs text-green-700">(Criterio: &ge;10)</span></span>
+                  ${dbpStatusHTML}
+              </div>
+            `;
+
+            noteEl.innerHTML = `<strong>Nota Clínica:</strong> La respuesta hemodinámica al cambio postural está dentro de los límites normales.`;
+            noteEl.className =
+              "text-xs text-green-800 mt-3 border-t border-green-200 pt-2";
+          }
+        }
+        function saveDataToLocalStorage() {
+          const dataToSave = {
+            startDay: startDaySelect.value,
+            rows: Array.from(logBody.querySelectorAll("tr")).map((row) =>
+              Array.from(row.querySelectorAll("input")).map(
+                (input) => input.value
+              )
+            ),
+          };
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
+        }
+
+        function loadDataFromLocalStorage() {
+          const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (!savedData) {
+            addDayRow();
+            return;
+          }
+          const data = JSON.parse(savedData);
+          startDaySelect.value = data.startDay || "0";
+          logBody.innerHTML = "";
+          dayCounter = 0;
+          if (data.rows.length === 0) {
+            addDayRow();
+          } else {
+            data.rows.forEach((rowData) => {
+              addDayRow();
+              const newRow = logBody.lastElementChild;
+              newRow.querySelectorAll("input").forEach((input, index) => {
+                input.value = rowData[index] || "";
+              });
+            });
+          }
+          reorderTable();
+          runAllCalculations();
+        }
+
+        // REVISIÓN FINAL: PDF rediseñado con enfoque minimalista
+        async function downloadPdf() {
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF("p", "mm", "a4");
+          const docWidth = pdf.internal.pageSize.getWidth();
+          const margin = 15;
+          let yPos = margin;
+
+          // --- 1. Obtener Datos de forma robusta ---
+          const patientName =
+            document.getElementById("patientName").value || "No especificado";
+          const reportPeriod =
+            document.getElementById("reportPeriod").value || "No especificado";
+          const { avgSbp, avgDbp } = calculateAverages();
+          const phenotype = getPhenotypeClassification(); // Usar la función desacoplada
+
+          // --- 2. Cabecera ---
+          pdf
+            .setFontSize(20)
+            .setFont("helvetica", "bold")
+            .setTextColor("#991b1b");
+          pdf.text("Informe de Presión Arterial", margin, yPos);
+          yPos += 10;
+          pdf
+            .setFontSize(11)
+            .setFont("helvetica", "normal")
+            .setTextColor("#374151");
+          pdf.text(`Paciente: ${patientName}`, margin, yPos);
+          yPos += 6;
+          pdf.text(`Periodo: ${reportPeriod}`, margin, yPos);
+          yPos += 10;
+
+          // --- 3. Datos Clave ---
+          pdf
+            .setFontSize(12)
+            .setFont("helvetica", "bold")
+            .setTextColor("#1e3a8a");
+          pdf.text("Resultados Principales", margin, yPos);
+          yPos += 7;
+
+          const avgText = `Promedio Domiciliario: ${
+            avgSbp
+              ? `${Math.round(avgSbp)} / ${Math.round(avgDbp)} mmHg`
+              : "N/A"
+          }`;
+          const phenoText = `Diagnóstico de Fenotipo: ${phenotype.name}`;
+
+          pdf
+            .setFontSize(10)
+            .setFont("helvetica", "normal")
+            .setTextColor("#111827");
+          pdf.text(avgText, margin, yPos);
+          yPos += 6;
+          pdf.text(phenoText, margin, yPos);
+          yPos += 12;
+
+          // --- 4. Gráfica de Evolución ---
+          const chartCanvas = document.getElementById("bpChart");
+          const chartImage = chartCanvas.toDataURL("image/png", 1.0);
+          const chartWidth = docWidth - margin * 2;
+          const chartHeight = chartWidth * 0.4; // Ratio de aspecto
+          pdf
+            .setFontSize(12)
+            .setFont("helvetica", "bold")
+            .setTextColor("#1e3a8a");
+          pdf.text("Gráfica de Evolución", margin, yPos);
+          yPos += 5;
+          pdf.addImage(
+            chartImage,
+            "PNG",
+            margin,
+            yPos,
+            chartWidth,
+            chartHeight
+          );
+          yPos += chartHeight + 10;
+
+          // --- 5. Tabla de Registro Detallado ---
+          const tableData = [];
+          const headers = [
+            "Día",
+            "Mañana T1",
+            "Mañana T2",
+            "Tarde T1",
+            "Tarde T2",
+            "Observaciones",
+          ];
+          logBody.querySelectorAll("tr").forEach((row) => {
+            const inputs = row.querySelectorAll("input");
+            const formatTake = (s, d, h) =>
+              s.value || d.value || h.value
+                ? `${s.value || "-"}/${d.value || "-"}/${h.value || "-"}`
+                : "";
+            tableData.push([
+              row.querySelector(".day-label").textContent,
+              formatTake(inputs[0], inputs[1], inputs[2]),
+              formatTake(inputs[3], inputs[4], inputs[5]),
+              formatTake(inputs[6], inputs[7], inputs[8]),
+              formatTake(inputs[9], inputs[10], inputs[11]),
+              inputs[12].value,
+            ]);
+          });
+
+          pdf.autoTable({
+            startY: yPos,
+            head: [headers],
+            body: tableData,
+            theme: "grid",
+            headStyles: {
+              fillColor: "#1e3a8a",
+              textColor: "#ffffff",
+              fontStyle: "bold",
+            },
+            styles: {
+              fontSize: 7,
+              cellPadding: 1.5,
+              overflow: "linebreak",
+              lineColor: "#e5e7eb",
+              lineWidth: 0.1,
+            },
+            columnStyles: { 5: { cellWidth: "auto" } },
+          });
+
+          // --- 6. Pie de Página ---
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          pdf.setFontSize(8).setTextColor("#6b7280");
+          pdf.text(
+            `Informe generado el ${new Date().toLocaleDateString("es-ES")}.`,
+            margin,
+            pageHeight - 8
+          );
+
+          // --- 7. Guardar ---
+          const finalFileName =
+            patientName === "No especificado"
+              ? "Informe_Presion_Arterial.pdf"
+              : `Informe_PA_${patientName.replace(/ /g, "_")}.pdf`;
+          pdf.save(finalFileName);
+        }
+
+        initializeApp();
+      });
+    </script>
+  </body>
+</html>
