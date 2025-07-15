@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Guía Infográfica: Erradicación de H. pylori (Versión Experto)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8fafc; /* slate-50 */
+      }
+      .section-title {
+        font-size: 1.5rem; /* 24px */
+        font-weight: 700;
+        color: #1e3a8a; /* blue-800 */
+        border-bottom: 2px solid #3b82f6; /* blue-500 */
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+      }
+      .section-title svg {
+        margin-right: 0.75rem;
+      }
+      .card {
+        background-color: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #e5e7eb; /* gray-200 */
+      }
+      .flow-arrow {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 1rem 0;
+      }
+      .flow-arrow svg {
+        color: #6b7280; /* gray-500 */
+      }
+      .treatment-box {
+        border: 2px solid;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        position: relative;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      .treatment-box-content {
+        flex-grow: 1;
+      }
+      .treatment-box-title {
+        font-weight: 700;
+        font-size: 1.125rem;
+        margin-bottom: 0.5rem;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+        position: absolute;
+        top: -1rem;
+        left: 1rem;
+      }
+      .pill {
+        display: inline-block;
+        background-color: #e0e7ff; /* indigo-100 */
+        color: #3730a3; /* indigo-800 */
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-top: 1rem;
+      }
+      .accordion-button,
+      .indication-button {
+        width: 100%;
+        background-color: #eef2ff; /* indigo-50 */
+        color: #1e3a8a; /* blue-800 */
+        border: 1px solid #c7d2fe; /* indigo-200 */
+        padding: 0.75rem 1.5rem;
+        text-align: left;
+        font-weight: 600;
+        border-radius: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .accordion-button:hover,
+      .indication-button:hover {
+        background-color: #e0e7ff; /* indigo-100 */
+      }
+      .accordion-content,
+      .indication-content {
+        display: none;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        border-top: none;
+        border-radius: 0 0 0.5rem 0.5rem;
+        background-color: #fafbfe;
+        font-size: 0.875rem;
+        color: #334155;
+      }
+      .accordion-content ul {
+        list-style-type: disc;
+        padding-left: 1.5rem;
+      }
+      .accordion-arrow,
+      .indication-arrow {
+        transition: transform 0.3s;
+        flex-shrink: 0;
+        margin-left: 1rem;
+      }
+      .accordion-button.open .accordion-arrow,
+      .indication-button.open .indication-arrow {
+        transform: rotate(180deg);
+      }
+    </style>
+  </head>
+  <body class="text-slate-800">
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+      <header class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-blue-800">
+          Guía de Erradicación de <strong>Helicobacter pylori</strong>
+        </h1>
+        <p class="text-lg text-slate-600 mt-2">
+          Resumen para la Práctica Clínica basado en la V Conferencia Española
+          de Consenso
+        </p>
+      </header>
+
+      <div
+        class="card flex flex-col md:flex-row items-center text-center md:text-left"
+      >
+        <div class="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="80"
+            height="80"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#3b82f6"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-bug"
+          >
+            <path d="M8 2v4" />
+            <path d="M16 2v4" />
+            <path d="M12 11.5A3.5 3.5 0 0 0 8.5 8" />
+            <path d="M12 11.5A3.5 3.5 0 0 1 15.5 8" />
+            <path d="M12 18.5a3.5 3.5 0 0 0 3.5-3h-7a3.5 3.5 0 0 0 3.5 3Z" />
+            <path d="M19 12a7 7 0 1 0-14 0" />
+            <path d="M21 12h-2" />
+            <path d="M3 12H1" />
+            <path d="m18 16 1.5 1.5" />
+            <path d="m4.5 4.5 1.5 1.5" />
+            <path d="m18 8-1.5-1.5" />
+            <path d="m4.5 19.5-1.5-1.5" />
+          </svg>
+        </div>
+        <div>
+          <h2
+            class="section-title"
+            style="border: none; margin-bottom: 0.5rem; padding-bottom: 0"
+          >
+            ¿Por qué es crucial erradicar H. pylori?
+          </h2>
+          <p class="text-slate-700">
+            Es la causa principal de <strong>gastritis crónica</strong>,
+            <strong>úlcera péptica</strong> y
+            <strong>cáncer gástrico</strong> (carcinógeno tipo I, OMS). Afecta a
+            un 40-60% de la población en España. El objetivo del tratamiento es
+            alcanzar una tasa de curación empírica (por intención de tratar) de
+            al menos el
+            <span class="font-bold text-2xl text-green-600">90%</span>.
+          </p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
+            />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+          ¿A Quién Diagnosticar y Tratar? (Pulsa para ver detalles)
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <button class="indication-button">
+              <span>Úlcera Péptica</span
+              ><svg
+                class="indication-arrow"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <div class="indication-content">
+              <p>
+                Indicación absoluta. La erradicación cura la enfermedad
+                ulcerosa, previene recidivas y complicaciones (hemorragia,
+                perforación) de forma más eficaz que el tratamiento antisecretor
+                de mantenimiento.
+              </p>
+            </div>
+          </div>
+          <div>
+            <button class="indication-button">
+              <span>Dispepsia ("Test & Treat")</span
+              ><svg
+                class="indication-arrow"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <div class="indication-content">
+              <p>
+                Estrategia de elección en pacientes <55 años sin signos de
+                alarma. Es más coste-efectiva que la endoscopia inicial o el
+                tratamiento antisecretor empírico en poblaciones con prevalencia
+                de H. pylori >15-20%.
+              </p>
+            </div>
+          </div>
+          <div>
+            <button class="indication-button">
+              <span>Linfoma MALT Gástrico</span
+              ><svg
+                class="indication-arrow"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <div class="indication-content">
+              <p>
+                La erradicación es el tratamiento de primera línea para el
+                linfoma MALT (Tejido Linfoide Asociado a Mucosas) de bajo grado.
+                Se consigue la remisión completa del tumor en aproximadamente el
+                80% de los casos.
+              </p>
+            </div>
+          </div>
+          <div>
+            <button class="indication-button">
+              <span>Prevención Cáncer Gástrico</span
+              ><svg
+                class="indication-arrow"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <div class="indication-content">
+              <p>
+                Recomendado en familiares de 1er grado de pacientes con cáncer
+                gástrico, pacientes con resección previa de cáncer gástrico y en
+                aquellos con lesiones preneoplásicas (atrofia gástrica,
+                metaplasia intestinal).
+              </p>
+            </div>
+          </div>
+          <div>
+            <button class="indication-button">
+              <span>Anemia Ferropénica</span
+              ><svg
+                class="indication-arrow"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <div class="indication-content">
+              <p>
+                Tratar la infección en pacientes con anemia ferropénica de causa
+                no aclarada, tras descartar otras etiologías. La erradicación
+                puede mejorar o resolver la anemia.
+              </p>
+            </div>
+          </div>
+          <div>
+            <button class="indication-button">
+              <span>PTI y Déficit Vit. B12</span
+              ><svg
+                class="indication-arrow"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <div class="indication-content">
+              <p>
+                Investigar y tratar en Púrpura Trombocitopénica Idiopática (PTI)
+                y en déficit de Vitamina B12 no explicable por otras causas. La
+                erradicación se asocia con un aumento del recuento plaquetario
+                en un subgrupo de pacientes con PTI.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+          </svg>
+          Diagnóstico Preciso
+        </h2>
+        <div
+          class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-md mb-6"
+          role="alert"
+        >
+          <p class="font-bold">¡Atención! Condiciones Previas a la Prueba</p>
+          <p>
+            Para evitar falsos negativos, suspender: <br />•
+            <strong>IBP:</strong> al menos
+            <strong>2 semanas</strong> antes.<br />•
+            <strong>Antibióticos y Bismuto:</strong> al menos
+            <strong>4 semanas</strong> antes.
+          </p>
+        </div>
+        <div class="grid md:grid-cols-2 gap-8">
+          <div>
+            <h3 class="font-bold text-lg mb-2 text-sky-700">
+              Pruebas No Invasivas (Elección inicial y confirmación)
+            </h3>
+            <ul class="space-y-3">
+              <li class="flex items-start">
+                <span class="text-green-500 mr-2">✔</span>
+                <div>
+                  <strong>Test del Aliento con Urea-<sup>13</sup>C:</strong> El
+                  más fiable. Método de elección.
+                  <small class="text-slate-500 block"
+                    >(Protocolo europeo con ácido cítrico)</small
+                  >
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-blue-500 mr-2">✔</span>
+                <div>
+                  <strong>Test de Antígeno en Heces:</strong> Alternativa
+                  válida.
+                  <small class="text-slate-500 block"
+                    >(Usar método ELISA monoclonal)</small
+                  >
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-red-500 mr-2">✖</span>
+                <div>
+                  <strong>Serología:</strong> No recomendada para infección
+                  activa o confirmación.
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-bold text-lg mb-2 text-sky-700">
+              Pruebas Invasivas (con Endoscopia)
+            </h3>
+            <ul class="space-y-3">
+              <li class="flex items-start">
+                <span class="text-gray-500 mr-2">●</span>
+                <div>
+                  <strong>Test Rápido de Ureasa:</strong> Rápido y sencillo
+                  durante la endoscopia.
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-gray-500 mr-2">●</span>
+                <div>
+                  <strong>Histología:</strong> Evalúa la mucosa y posibles
+                  lesiones (atrofia, metaplasia).
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-gray-500 mr-2">●</span>
+                <div>
+                  <strong>Cultivo:</strong> Solo en casos de fracasos múltiples.
+                  No de rutina.
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div
+          class="mt-6 bg-green-100 border-l-4 border-green-500 text-green-800 p-4 rounded-md"
+          role="alert"
+        >
+          <p class="font-bold">Confirmación de la Erradicación</p>
+          <p>
+            Es <strong>obligatorio</strong> confirmar la curación. Realizar la
+            prueba (aliento o heces) como mínimo
+            <strong>4 semanas después</strong> de finalizar el tratamiento.
+          </p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M10.42 12.61a2.1 2.1 0 1 1 2.97 2.97L7.95 21 4 22l.99-3.95 5.43-5.44Z"
+            />
+            <path d="M14 4.04V4a2 2 0 0 0-4 0v.04" />
+            <path
+              d="M10.04 18.46 15 13.5l.9-3.02c.36-1.2.14-2.51-.58-3.52s-1.8-.97-2.9-.83l-3.02.9Z"
+            />
+            <path d="m14.5 8.5 4 4" />
+            <path d="M12 12v.9a2.1 2.1 0 0 1 -2.97 2.97L12 12Z" />
+          </svg>
+          Algoritmo de Tratamiento Erradicador
+        </h2>
+        <div
+          class="bg-red-100 border-l-4 border-red-500 text-red-800 p-4 rounded-md mb-8"
+          role="alert"
+        >
+          <p class="font-bold">Principio Fundamental</p>
+          <p>
+            La terapia triple clásica (IBP + Claritromicina + Amoxicilina)
+            <strong>NO SE RECOMIENDA</strong> como primera línea en España por
+            alta resistencia a claritromicina (>15%).
+          </p>
+        </div>
+
+        <h3 class="font-bold text-xl mb-4 text-center text-green-700">
+          1ª LÍNEA DE TRATAMIENTO (Elegir una opción)
+        </h3>
+        <div class="grid md:grid-cols-2 gap-8">
+          <div class="treatment-box border-green-500">
+            <div class="treatment-box-title bg-green-500">OPCIÓN A</div>
+            <div class="treatment-box-content">
+              <p class="font-semibold pt-6">Terapia Cuádruple Concomitante</p>
+              <p class="text-sm text-slate-600">(sin bismuto)</p>
+              <ul class="mt-2 space-y-1 text-slate-700 list-disc list-inside">
+                <li>
+                  <strong>IBP</strong> (dosis doble, ej. Omeprazol 40mg) /12h
+                </li>
+                <li><strong>Amoxicilina</strong> 1g /12h</li>
+                <li><strong>Claritromicina</strong> 500mg /12h</li>
+                <li><strong>Metronidazol</strong> 500mg /12h</li>
+              </ul>
+            </div>
+            <div class="pill bg-green-100 text-green-800">14 DÍAS</div>
+          </div>
+          <div class="treatment-box border-teal-500">
+            <div class="treatment-box-title bg-teal-500">OPCIÓN B</div>
+            <div class="treatment-box-content">
+              <p class="font-semibold pt-6">Terapia Cuádruple con Bismuto</p>
+              <p class="text-sm text-slate-600">
+                (Elección en alergia a penicilina)
+              </p>
+              <ul class="mt-2 space-y-1 text-slate-700 list-disc list-inside">
+                <li><strong>IBP</strong> (dosis estándar) /12h</li>
+                <li>
+                  <strong>Bismuto subcitrato</strong> +
+                  <strong>Metronidazol</strong> + <strong>Tetraciclina</strong>
+                </li>
+              </ul>
+              <p class="text-xs text-slate-600 mt-2">
+                <strong>Nota práctica:</strong> Existe una combinación en
+                cápsula única (ej. Pylera®) con posología de 3 cápsulas/6h.
+              </p>
+            </div>
+            <div class="pill bg-teal-100 text-teal-800">10 DÍAS</div>
+          </div>
+        </div>
+
+        <div class="flow-arrow">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 5v14" />
+            <path d="m19 12-7 7-7-7" />
+          </svg>
+        </div>
+
+        <h3 class="font-bold text-xl mb-4 text-center text-orange-600">
+          2ª LÍNEA (RESCATE)
+        </h3>
+        <div class="grid md:grid-cols-2 gap-8">
+          <div class="text-center p-4 bg-slate-50 rounded-lg">
+            <p class="font-semibold">Si fracasa 1ª línea con Claritromicina:</p>
+            <p class="mt-2 text-orange-700 font-bold">
+              Terapia cuádruple con Bismuto
+            </p>
+          </div>
+          <div class="text-center p-4 bg-slate-50 rounded-lg">
+            <p class="font-semibold">Si fracasa 1ª línea con Bismuto:</p>
+            <p class="mt-2 text-orange-700 font-bold">
+              Terapia cuádruple con Levofloxacino y Bismuto
+            </p>
+          </div>
+        </div>
+
+        <div class="flow-arrow">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 5v14" />
+            <path d="m19 12-7 7-7-7" />
+          </svg>
+        </div>
+
+        <h3 class="font-bold text-xl mb-4 text-center text-red-600">
+          3ª Y 4ª LÍNEA
+        </h3>
+        <div class="text-center p-4 bg-slate-50 rounded-lg space-y-3">
+          <p>
+            <span class="font-bold">3ª Línea:</span> Alternar la pauta de 2ª
+            línea no utilizada. Ej: tras fracaso de Bismuto y Levofloxacino, se
+            podría considerar la Terapia Concomitante.
+          </p>
+          <p>
+            <span class="font-bold">4ª Línea:</span> Tras 3 fracasos, reevaluar
+            indicación. Si es necesario, usar terapia con
+            <strong class="text-red-700">Rifabutina</strong> (150mg/12h) +
+            Amoxicilina + IBP (± Bismuto) durante 10-12 días. Guiada por
+            especialista, vigilando mielotoxicidad.
+          </p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+            />
+            <polyline points="14 2 14 8 20 8" />
+            <path d="m10 14 2 2 4-4" />
+          </svg>
+          Manejo Post-Erradicación en Úlcera Péptica
+        </h2>
+        <div class="grid md:grid-cols-2 gap-8">
+          <div class="p-4 bg-blue-50 rounded-lg text-center">
+            <h4 class="font-bold text-blue-800">
+              Úlcera Duodenal (no complicada)
+            </h4>
+            <p class="mt-2">
+              Una vez confirmada la erradicación,
+              <strong>NO es necesario</strong> mantener IBP.
+            </p>
+          </div>
+          <div class="p-4 bg-indigo-50 rounded-lg text-center">
+            <h4 class="font-bold text-indigo-800">
+              Úlcera Gástrica o Complicada
+            </h4>
+            <p class="mt-2">
+              <strong>SÍ se recomienda</strong> mantener IBP durante
+              <strong>4-8 semanas</strong> para asegurar la cicatrización
+              completa.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-library"
+          >
+            <path d="m16 6 4 14" />
+            <path d="M12 6v14" />
+            <path d="M8 8v12" />
+            <path d="M4 4v16" />
+          </svg>
+          Puntos Clave para la Práctica Clínica
+        </h2>
+        <div class="space-y-2">
+          <div>
+            <button class="accordion-button">
+              <span>Optimización del Tratamiento y Racionalidad</span>
+              <svg
+                class="accordion-arrow"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <div class="accordion-content">
+              <ul>
+                <li>
+                  <strong>Dosis de IBP:</strong> Dosis altas/dobles (ej.
+                  Omeprazol 40mg/12h o Esomeprazol 40mg/12h) mejoran la
+                  eficacia, especialmente en la terapia concomitante, al
+                  mantener un pH gástrico elevado que potencia la acción de los
+                  antibióticos.
+                </li>
+                <li>
+                  <strong>Duración:</strong> La extensión a 14 días ha
+                  demostrado ser superior a 7 o 10 días para las terapias con
+                  claritromicina. Para la terapia con bismuto, 10 días es el
+                  estándar, aunque 14 días podría ser más eficaz frente a cepas
+                  resistentes a metronidazol.
+                </li>
+                <li>
+                  <strong>Racionalidad de elección:</strong> La terapia
+                  concomitante es eficaz si la resistencia dual (Claritromicina
+                  + Metronidazol) es <15%. La terapia con bismuto es eficaz
+                  independientemente de la resistencia a claritromicina y supera
+                  parcialmente la resistencia a metronidazol.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div>
+            <button class="accordion-button">
+              <span>Resistencias y Terapias de Rescate</span>
+              <svg
+                class="accordion-arrow"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <div class="accordion-content">
+              <ul>
+                <li>
+                  <strong>Resistencia a Amoxicilina/Tetraciclina:</strong> Es
+                  extremadamente rara (<1%) y no influye en la elección del
+                  tratamiento empírico.
+                </li>
+                <li>
+                  <strong>Terapia con Levofloxacino:</strong> Su eficacia se ve
+                  comprometida con tasas de resistencia >20-25%. La adición de
+                  <strong>bismuto</strong> a la pauta triple con levofloxacino
+                  (convirtiéndola en cuádruple) ha demostrado superar
+                  parcialmente esta resistencia y aumentar la tasa de
+                  erradicación.
+                </li>
+                <li>
+                  <strong>Terapia guiada por susceptibilidad (Cultivo):</strong>
+                  No ha demostrado ser superior a la terapia empírica bien
+                  seleccionada en 2ª o 3ª línea y no se recomienda de forma
+                  rutinaria. Se reserva para centros con experiencia y tras
+                  múltiples fracasos.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div>
+            <button class="accordion-button">
+              <span>Consejos para la Consulta</span>
+              <svg
+                class="accordion-arrow"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <div class="accordion-content">
+              <ul>
+                <li>
+                  <strong>Adherencia:</strong> Sigue siendo el factor predictivo
+                  de éxito más importante. Explique al paciente la importancia
+                  de completar el tratamiento y cómo manejar los efectos
+                  adversos (sabor metálico, náuseas, etc.).
+                </li>
+                <li>
+                  <strong>Heces negras con Bismuto:</strong> Advierta siempre de
+                  este efecto secundario esperado e inocuo para evitar alarmas y
+                  abandonos del tratamiento.
+                </li>
+                <li>
+                  <strong>Tasa de reinfección:</strong> En España, es muy baja
+                  (aprox. 1-2% anual). No se requieren controles periódicos tras
+                  una erradicación confirmada.
+                </li>
+                <li>
+                  <strong>Probióticos:</strong> No se recomiendan de forma
+                  generalizada al no haber demostrado aumentar la tasa de
+                  erradicación de las terapias cuádruples.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="text-center text-sm text-slate-500 mt-8">
+        <p>
+          Este documento es un resumen y no sustituye el juicio clínico. Basado
+          en la V Conferencia Española de Consenso sobre el tratamiento de la
+          infección por H. pylori.
+        </p>
+      </footer>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const buttons = document.querySelectorAll(
+          ".accordion-button, .indication-button"
+        );
+        buttons.forEach((button) => {
+          button.addEventListener("click", () => {
+            const content = button.nextElementSibling;
+            button.classList.toggle("open");
+            if (content.style.display === "block") {
+              content.style.display = "none";
+            } else {
+              content.style.display = "block";
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
