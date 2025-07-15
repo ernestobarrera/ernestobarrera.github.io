@@ -35,8 +35,23 @@
       content="https://ernestobarrera.github.io/assets/images/me.png"
     />
 
+    <!-- Precargar Chart.js para mejorar el rendimiento -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Fallback para Chart.js -->
+    <script>
+      window.addEventListener("load", function () {
+        if (typeof Chart === "undefined") {
+          const script = document.createElement("script");
+          script.src =
+            "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js";
+          document.head.appendChild(script);
+        }
+      });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -151,6 +166,12 @@
       .clear-button:hover:not(:disabled) {
         background-color: #e11d48;
       }
+      .print-button {
+        background-color: #7c3aed;
+      }
+      .print-button:hover:not(:disabled) {
+        background-color: #6d28d9;
+      }
 
       .table-container {
         overflow-x: auto;
@@ -164,14 +185,25 @@
         border-collapse: collapse;
       }
 
-      /* REVISIÓN FINAL: Regla más específica para todos los inputs de la app */
+      /* FIX: Estilos específicos para el select y todos los inputs */
+      .suite-content select {
+        color: #1f2937 !important;
+        background-color: #ffffff !important;
+        font-weight: 500;
+      }
+
+      .suite-content select option {
+        color: #1f2937 !important;
+        background-color: #ffffff !important;
+      }
+
       .suite-content input[type="text"],
       .suite-content input[type="number"] {
         color: #1f2937;
         font-weight: 500;
       }
       .suite-content ::placeholder {
-        color: #9ca3af !important; /* Forzar el color del placeholder */
+        color: #9ca3af !important;
         opacity: 1 !important;
       }
 
@@ -270,21 +302,42 @@
         body * {
           visibility: hidden;
         }
-        .suite-content,
-        .suite-content * {
+        .print-sheet,
+        .print-sheet * {
           visibility: visible;
         }
-        .suite-content {
+        .print-sheet {
           position: absolute;
           left: 0;
           top: 0;
           width: 100%;
         }
-        .print-hidden,
+        .suite-content {
+          display: none !important;
+        }
         header,
         footer,
-        .hero-section {
+        .hero-section,
+        .main-container {
           display: none !important;
+        }
+      }
+
+      /* Estilos para la hoja de registro imprimible */
+      .print-sheet {
+        display: none;
+        background: white;
+        padding: 20mm;
+        font-family: Arial, sans-serif;
+      }
+
+      @media print {
+        .print-sheet {
+          display: block;
+        }
+        @page {
+          size: A4;
+          margin: 0;
         }
       }
     </style>
@@ -452,8 +505,68 @@
                     excluyendo el primer día, según las guías clínicas.
                   </p>
                 </div>
-                <div class="mt-4 h-80"><canvas id="bpChart"></canvas></div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                <div class="mt-4 h-80" style="position: relative">
+                  <canvas id="bpChart"></canvas>
+                  <div
+                    id="chartLoading"
+                    style="
+                      position: absolute;
+                      top: 50%;
+                      left: 50%;
+                      transform: translate(-50%, -50%);
+                      text-align: center;
+                      color: #6b7280;
+                    "
+                  >
+                    <div style="margin-bottom: 8px">
+                      <svg
+                        style="
+                          display: inline-block;
+                          width: 24px;
+                          height: 24px;
+                          animation: spin 1s linear infinite;
+                        "
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                    </div>
+                    <p style="font-size: 0.875rem">Cargando gráfica...</p>
+                  </div>
+                  <div
+                    id="chartError"
+                    style="
+                      display: none;
+                      text-align: center;
+                      padding: 40px;
+                      color: #6b7280;
+                    "
+                  >
+                    <p>La gráfica no se puede mostrar en este momento.</p>
+                    <p style="font-size: 0.875rem">
+                      Intente recargar la página.
+                    </p>
+                  </div>
+                </div>
+                <style>
+                  @keyframes spin {
+                    from {
+                      transform: rotate(0deg);
+                    }
+                    to {
+                      transform: rotate(360deg);
+                    }
+                  }
+                </style>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4">
                   <button id="clearLogBtn" class="tool-button clear-button">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -497,6 +610,26 @@
                       <line x1="12" y1="15" x2="12" y2="3"></line>
                     </svg>
                     Descargar PDF
+                  </button>
+                  <button id="printSheetBtn" class="tool-button print-button">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                      <path
+                        d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
+                      ></path>
+                      <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    Hoja de Registro
                   </button>
                 </div>
               </div>
@@ -640,6 +773,9 @@
       </div>
     </main>
 
+    <!-- Hoja de registro imprimible (oculta en pantalla) -->
+    <div class="print-sheet" id="printSheet"></div>
+
     <include src="footer.html"></include>
 
     <script src="/assets/js/include.js"></script>
@@ -658,301 +794,396 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        const logBody = document.getElementById("interactiveLogBody");
-        const addDayBtn = document.getElementById("addDayBtn");
-        const startDaySelect = document.getElementById("startDaySelect");
-        const days = [
-          "Lunes",
-          "Martes",
-          "Miércoles",
-          "Jueves",
-          "Viernes",
-          "Sábado",
-          "Domingo",
-        ];
-        let dayCounter = 0;
-        let bpChartInstance = null;
-        const LOCAL_STORAGE_KEY = "hypertensionSuiteData_v2";
+        // Función para cargar Chart.js dinámicamente si no está disponible
+        function loadChartJS(callback) {
+          if (typeof Chart !== "undefined") {
+            callback();
+            return;
+          }
 
-        function initializeApp() {
-          days.forEach((day, index) => {
-            const option = document.createElement("option");
-            option.value = index;
-            option.textContent = day;
-            startDaySelect.appendChild(option);
-          });
-          initializeChart();
-          loadDataFromLocalStorage();
-          setupEventListeners();
+          const script = document.createElement("script");
+          script.src =
+            "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js";
+          script.onload = callback;
+          script.onerror = () => {
+            console.error("No se pudo cargar Chart.js");
+            const canvas = document.getElementById("bpChart");
+            const errorDiv = document.getElementById("chartError");
+            const loadingDiv = document.getElementById("chartLoading");
+            if (canvas) canvas.style.display = "none";
+            if (loadingDiv) loadingDiv.style.display = "none";
+            if (errorDiv) errorDiv.style.display = "block";
+          };
+          document.head.appendChild(script);
         }
 
-        function setupEventListeners() {
-          logBody.addEventListener("input", handleLogInput);
-          addDayBtn.addEventListener("click", addDayRow);
-          startDaySelect.addEventListener("change", handleDayChange);
-          document
-            .getElementById("clearLogBtn")
-            .addEventListener("click", clearLog);
-          document
-            .getElementById("downloadLogBtn")
-            .addEventListener("click", downloadPdf);
-          document
-            .getElementById("orthoCalculator")
-            .addEventListener("input", calculateOrtho);
-          document
-            .querySelectorAll(".pheno-input")
-            .forEach((input) =>
-              input.addEventListener("input", classifyPhenotype)
-            );
-        }
+        // Esperar a que todas las librerías estén cargadas
+        loadChartJS(() => {
+          let checkLibraries = setInterval(() => {
+            if (typeof Chart !== "undefined" && typeof jspdf !== "undefined") {
+              clearInterval(checkLibraries);
+              initializeHypertensionApp();
+            }
+          }, 50);
+        });
 
-        function initializeChart() {
-          const ctx = document.getElementById("bpChart").getContext("2d");
-          bpChartInstance = new Chart(ctx, {
-            type: "line",
-            data: {
-              labels: [],
-              datasets: [
-                {
-                  label: "Sistólica (PAS)",
-                  data: [],
-                  borderColor: "rgb(220, 38, 38)",
-                  tension: 0.2,
-                  yAxisID: "y",
-                },
-                {
-                  label: "Diastólica (PAD)",
-                  data: [],
-                  borderColor: "rgb(37, 99, 235)",
-                  tension: 0.2,
-                  yAxisID: "y",
-                },
-                {
-                  label: "Frec. Cardíaca (FC)",
-                  data: [],
-                  borderColor: "rgb(22, 163, 74)",
-                  tension: 0.2,
-                  yAxisID: "y1",
-                  hidden: false,
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              interaction: { mode: "index", intersect: false },
-              plugins: {
-                legend: { position: "top" },
-                title: {
-                  display: true,
-                  text: "Evolución de la Presión Arterial y Frecuencia Cardíaca",
-                },
-                annotation: {
-                  annotations: {
-                    htaThresholdPAS: {
-                      type: "line",
-                      yMin: 135,
-                      yMax: 135,
-                      borderColor: "rgba(220, 38, 38, 0.5)",
-                      borderWidth: 2,
-                      borderDash: [6, 6],
-                      label: {
-                        content: "Umbral HTA (135)",
-                        position: "start",
-                        enabled: true,
-                        font: { size: 10 },
-                      },
-                      scaleID: "y",
+        function initializeHypertensionApp() {
+          const logBody = document.getElementById("interactiveLogBody");
+          const addDayBtn = document.getElementById("addDayBtn");
+          const startDaySelect = document.getElementById("startDaySelect");
+          const days = [
+            "Lunes",
+            "Martes",
+            "Miércoles",
+            "Jueves",
+            "Viernes",
+            "Sábado",
+            "Domingo",
+          ];
+          let dayCounter = 0;
+          let bpChartInstance = null;
+          let chartInitAttempts = 0;
+          const maxChartInitAttempts = 20;
+          const LOCAL_STORAGE_KEY = "hypertensionSuiteData_v2";
+
+          function initializeApp() {
+            // Primero inicializar el select de días
+            days.forEach((day, index) => {
+              const option = document.createElement("option");
+              option.value = index;
+              option.textContent = day;
+              startDaySelect.appendChild(option);
+            });
+
+            // Configurar event listeners
+            setupEventListeners();
+
+            // Inicializar el gráfico (con reintentos si es necesario)
+            initializeChart();
+
+            // Cargar datos después de un pequeño delay para asegurar que todo esté listo
+            setTimeout(() => {
+              loadDataFromLocalStorage();
+            }, 100);
+          }
+
+          function setupEventListeners() {
+            logBody.addEventListener("input", handleLogInput);
+            addDayBtn.addEventListener("click", addDayRow);
+            startDaySelect.addEventListener("change", handleDayChange);
+            document
+              .getElementById("clearLogBtn")
+              .addEventListener("click", clearLog);
+            document
+              .getElementById("downloadLogBtn")
+              .addEventListener("click", downloadPdf);
+            document
+              .getElementById("printSheetBtn")
+              .addEventListener("click", printRegistrationSheet);
+            document
+              .getElementById("orthoCalculator")
+              .addEventListener("input", calculateOrtho);
+            document
+              .querySelectorAll(".pheno-input")
+              .forEach((input) =>
+                input.addEventListener("input", classifyPhenotype)
+              );
+          }
+
+          function initializeChart() {
+            // Verificar que Chart.js esté cargado
+            if (typeof Chart === "undefined") {
+              chartInitAttempts++;
+              if (chartInitAttempts >= maxChartInitAttempts) {
+                console.error(
+                  "Chart.js no se pudo cargar después de múltiples intentos"
+                );
+                const canvas = document.getElementById("bpChart");
+                const errorDiv = document.getElementById("chartError");
+                const loadingDiv = document.getElementById("chartLoading");
+                if (canvas) canvas.style.display = "none";
+                if (loadingDiv) loadingDiv.style.display = "none";
+                if (errorDiv) errorDiv.style.display = "block";
+                return;
+              }
+              console.warn(
+                "Chart.js no está cargado. Intento " +
+                  chartInitAttempts +
+                  " de " +
+                  maxChartInitAttempts
+              );
+              setTimeout(initializeChart, 100);
+              return;
+            }
+
+            try {
+              const ctx = document.getElementById("bpChart").getContext("2d");
+              bpChartInstance = new Chart(ctx, {
+                type: "line",
+                data: {
+                  labels: [],
+                  datasets: [
+                    {
+                      label: "Sistólica (PAS)",
+                      data: [],
+                      borderColor: "rgb(220, 38, 38)",
+                      tension: 0.2,
+                      yAxisID: "y",
                     },
-                    htaThresholdPAD: {
-                      type: "line",
-                      yMin: 85,
-                      yMax: 85,
-                      borderColor: "rgba(37, 99, 235, 0.5)",
-                      borderWidth: 2,
-                      borderDash: [6, 6],
-                      label: {
-                        content: "Umbral HTA (85)",
-                        position: "start",
-                        enabled: true,
-                        font: { size: 10 },
+                    {
+                      label: "Diastólica (PAD)",
+                      data: [],
+                      borderColor: "rgb(37, 99, 235)",
+                      tension: 0.2,
+                      yAxisID: "y",
+                    },
+                    {
+                      label: "Frec. Cardíaca (FC)",
+                      data: [],
+                      borderColor: "rgb(22, 163, 74)",
+                      tension: 0.2,
+                      yAxisID: "y1",
+                      hidden: false,
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  interaction: { mode: "index", intersect: false },
+                  plugins: {
+                    legend: { position: "top" },
+                    title: {
+                      display: true,
+                      text: "Evolución de la Presión Arterial y Frecuencia Cardíaca",
+                    },
+                    annotation: {
+                      annotations: {
+                        htaThresholdPAS: {
+                          type: "line",
+                          yMin: 135,
+                          yMax: 135,
+                          borderColor: "rgba(220, 38, 38, 0.5)",
+                          borderWidth: 2,
+                          borderDash: [6, 6],
+                          label: {
+                            content: "Umbral HTA (135)",
+                            position: "start",
+                            enabled: true,
+                            font: { size: 10 },
+                          },
+                          scaleID: "y",
+                        },
+                        htaThresholdPAD: {
+                          type: "line",
+                          yMin: 85,
+                          yMax: 85,
+                          borderColor: "rgba(37, 99, 235, 0.5)",
+                          borderWidth: 2,
+                          borderDash: [6, 6],
+                          label: {
+                            content: "Umbral HTA (85)",
+                            position: "start",
+                            enabled: true,
+                            font: { size: 10 },
+                          },
+                          scaleID: "y",
+                        },
                       },
-                      scaleID: "y",
+                    },
+                  },
+                  scales: {
+                    y: {
+                      position: "left",
+                      title: { display: true, text: "mmHg" },
+                    },
+                    y1: {
+                      position: "right",
+                      title: { display: true, text: "lpm" },
+                      grid: { drawOnChartArea: false },
                     },
                   },
                 },
-              },
-              scales: {
-                y: { position: "left", title: { display: true, text: "mmHg" } },
-                y1: {
-                  position: "right",
-                  title: { display: true, text: "lpm" },
-                  grid: { drawOnChartArea: false },
-                },
-              },
-            },
-          });
-        }
+              });
+              // Ocultar el mensaje de carga
+              const loadingDiv = document.getElementById("chartLoading");
+              if (loadingDiv) loadingDiv.style.display = "none";
+            } catch (error) {
+              console.error("Error al inicializar el gráfico:", error);
+              const canvas = document.getElementById("bpChart");
+              const errorDiv = document.getElementById("chartError");
+              const loadingDiv = document.getElementById("chartLoading");
+              if (canvas) canvas.style.display = "none";
+              if (loadingDiv) loadingDiv.style.display = "none";
+              if (errorDiv) errorDiv.style.display = "block";
+            }
+          }
 
-        function updateChart(allData) {
-          if (!bpChartInstance) return;
-          const labels = [],
-            sbpData = [],
-            dbpData = [],
-            hrData = [];
-          allData.forEach((d) => {
-            labels.push(d.label);
-            sbpData.push(d.sbp);
-            dbpData.push(d.dbp);
-            hrData.push(d.hr);
-          });
-          bpChartInstance.data.labels = labels;
-          bpChartInstance.data.datasets[0].data = sbpData;
-          bpChartInstance.data.datasets[1].data = dbpData;
-          bpChartInstance.data.datasets[2].data = hrData;
-          bpChartInstance.update();
-        }
+          function updateChart(allData) {
+            // Verificar que el gráfico exista y Chart.js esté cargado
+            if (!bpChartInstance || typeof Chart === "undefined") {
+              console.warn("Chart no disponible aún. Reintentando...");
+              setTimeout(() => updateChart(allData), 100);
+              return;
+            }
 
-        function handleLogInput(e) {
-          if (e.target.tagName === "INPUT") {
-            if (e.target.type === "number") validateBPInput(e.target);
+            const labels = [],
+              sbpData = [],
+              dbpData = [],
+              hrData = [];
+            allData.forEach((d) => {
+              labels.push(d.label);
+              sbpData.push(d.sbp);
+              dbpData.push(d.dbp);
+              hrData.push(d.hr);
+            });
+            bpChartInstance.data.labels = labels;
+            bpChartInstance.data.datasets[0].data = sbpData;
+            bpChartInstance.data.datasets[1].data = dbpData;
+            bpChartInstance.data.datasets[2].data = hrData;
+            bpChartInstance.update();
+          }
+
+          function handleLogInput(e) {
+            if (e.target.tagName === "INPUT") {
+              if (e.target.type === "number") validateBPInput(e.target);
+              runAllCalculations();
+            }
+          }
+
+          function handleDayChange() {
+            reorderTable();
             runAllCalculations();
           }
-        }
 
-        function handleDayChange() {
-          reorderTable();
-          runAllCalculations();
-        }
-
-        function runAllCalculations() {
-          const { avgSbp, avgDbp, avgHr, sbpVariability, chartData } =
-            calculateAverages();
-          updateSummaryUI(avgSbp, avgDbp, avgHr, sbpVariability);
-          updateChart(chartData);
-          classifyPhenotype();
-          saveDataToLocalStorage();
-        }
-
-        function calculateAverages() {
-          const rows = Array.from(logBody.querySelectorAll("tr"));
-          const rowsToAverage = rows.length > 1 ? rows.slice(1) : rows;
-          let sbpValues = [],
-            dbpValues = [],
-            hrValues = [];
-          rowsToAverage.forEach((row) => {
-            row.querySelectorAll(".sbp").forEach((i) => {
-              if (i.value) sbpValues.push(parseFloat(i.value));
-            });
-            row.querySelectorAll(".dbp").forEach((i) => {
-              if (i.value) dbpValues.push(parseFloat(i.value));
-            });
-            row.querySelectorAll(".hr").forEach((i) => {
-              if (i.value) hrValues.push(parseFloat(i.value));
-            });
-          });
-          const avgSbp =
-            sbpValues.length > 0
-              ? sbpValues.reduce((a, b) => a + b, 0) / sbpValues.length
-              : null;
-          const avgDbp =
-            dbpValues.length > 0
-              ? dbpValues.reduce((a, b) => a + b, 0) / dbpValues.length
-              : null;
-          const avgHr =
-            hrValues.length > 0
-              ? hrValues.reduce((a, b) => a + b, 0) / hrValues.length
-              : null;
-          const calculateSD = (arr) => {
-            if (arr.length < 2) return 0;
-            const mean = arr.reduce((a, b) => a + b) / arr.length;
-            return Math.sqrt(
-              arr.map((x) => Math.pow(x - mean, 2)).reduce((a, b) => a + b) /
-                arr.length
-            );
-          };
-          const sbpVariability = calculateSD(sbpValues);
-          const chartData = [];
-          rows.forEach((row) => {
-            const day = row
-              .querySelector(".day-label")
-              .textContent.substring(0, 3);
-            const inputs = row.querySelectorAll('input[type="number"]');
-            const morningAvg = getPeriodAverage(
-              [inputs[0], inputs[1], inputs[2]],
-              [inputs[3], inputs[4], inputs[5]]
-            );
-            const eveningAvg = getPeriodAverage(
-              [inputs[6], inputs[7], inputs[8]],
-              [inputs[9], inputs[10], inputs[11]]
-            );
-            if (morningAvg)
-              chartData.push({ label: `${day}-M`, ...morningAvg });
-            if (eveningAvg)
-              chartData.push({ label: `${day}-T`, ...eveningAvg });
-          });
-          function getPeriodAverage(take1, take2) {
-            const sbp = [
-              parseFloat(take1[0].value),
-              parseFloat(take2[0].value),
-            ].filter((v) => !isNaN(v));
-            const dbp = [
-              parseFloat(take1[1].value),
-              parseFloat(take2[1].value),
-            ].filter((v) => !isNaN(v));
-            const hr = [
-              parseFloat(take1[2].value),
-              parseFloat(take2[2].value),
-            ].filter((v) => !isNaN(v));
-            if (sbp.length === 0) return null;
-            return {
-              sbp: sbp.reduce((a, b) => a + b, 0) / sbp.length,
-              dbp: dbp.reduce((a, b) => a + b, 0) / dbp.length,
-              hr:
-                hr.length > 0
-                  ? hr.reduce((a, b) => a + b, 0) / hr.length
-                  : null,
-            };
+          function runAllCalculations() {
+            const { avgSbp, avgDbp, avgHr, sbpVariability, chartData } =
+              calculateAverages();
+            updateSummaryUI(avgSbp, avgDbp, avgHr, sbpVariability);
+            updateChart(chartData);
+            classifyPhenotype();
+            saveDataToLocalStorage();
           }
-          return { avgSbp, avgDbp, avgHr, sbpVariability, chartData };
-        }
 
-        function updateSummaryUI(avgSbp, avgDbp, avgHr, sbpVariability) {
-          document
-            .getElementById("weeklyAvgResult")
-            .querySelector("p:nth-child(2)").textContent =
-            avgSbp && avgDbp
-              ? `${Math.round(avgSbp)} / ${Math.round(avgDbp)}`
-              : "-- / --";
-          document
-            .getElementById("hrAvgResult")
-            .querySelector("p:nth-child(2)").textContent = avgHr
-            ? Math.round(avgHr)
-            : "--";
-          document
-            .getElementById("variabilityResult")
-            .querySelector("p:nth-child(2)").textContent = sbpVariability
-            ? sbpVariability.toFixed(1)
-            : "--";
-          document.getElementById("ampaAvgForPheno").textContent =
-            avgSbp && avgDbp
-              ? `${Math.round(avgSbp)} / ${Math.round(avgDbp)}`
-              : "-- / --";
-        }
+          function calculateAverages() {
+            const rows = Array.from(logBody.querySelectorAll("tr"));
+            const rowsToAverage = rows.length > 1 ? rows.slice(1) : rows;
+            let sbpValues = [],
+              dbpValues = [],
+              hrValues = [];
+            rowsToAverage.forEach((row) => {
+              row.querySelectorAll(".sbp").forEach((i) => {
+                if (i.value) sbpValues.push(parseFloat(i.value));
+              });
+              row.querySelectorAll(".dbp").forEach((i) => {
+                if (i.value) dbpValues.push(parseFloat(i.value));
+              });
+              row.querySelectorAll(".hr").forEach((i) => {
+                if (i.value) hrValues.push(parseFloat(i.value));
+              });
+            });
+            const avgSbp =
+              sbpValues.length > 0
+                ? sbpValues.reduce((a, b) => a + b, 0) / sbpValues.length
+                : null;
+            const avgDbp =
+              dbpValues.length > 0
+                ? dbpValues.reduce((a, b) => a + b, 0) / dbpValues.length
+                : null;
+            const avgHr =
+              hrValues.length > 0
+                ? hrValues.reduce((a, b) => a + b, 0) / hrValues.length
+                : null;
+            const calculateSD = (arr) => {
+              if (arr.length < 2) return 0;
+              const mean = arr.reduce((a, b) => a + b) / arr.length;
+              return Math.sqrt(
+                arr.map((x) => Math.pow(x - mean, 2)).reduce((a, b) => a + b) /
+                  arr.length
+              );
+            };
+            const sbpVariability = calculateSD(sbpValues);
+            const chartData = [];
+            rows.forEach((row) => {
+              const day = row
+                .querySelector(".day-label")
+                .textContent.substring(0, 3);
+              const inputs = row.querySelectorAll('input[type="number"]');
+              const morningAvg = getPeriodAverage(
+                [inputs[0], inputs[1], inputs[2]],
+                [inputs[3], inputs[4], inputs[5]]
+              );
+              const eveningAvg = getPeriodAverage(
+                [inputs[6], inputs[7], inputs[8]],
+                [inputs[9], inputs[10], inputs[11]]
+              );
+              if (morningAvg)
+                chartData.push({ label: `${day}-M`, ...morningAvg });
+              if (eveningAvg)
+                chartData.push({ label: `${day}-T`, ...eveningAvg });
+            });
+            function getPeriodAverage(take1, take2) {
+              const sbp = [
+                parseFloat(take1[0].value),
+                parseFloat(take2[0].value),
+              ].filter((v) => !isNaN(v));
+              const dbp = [
+                parseFloat(take1[1].value),
+                parseFloat(take2[1].value),
+              ].filter((v) => !isNaN(v));
+              const hr = [
+                parseFloat(take1[2].value),
+                parseFloat(take2[2].value),
+              ].filter((v) => !isNaN(v));
+              if (sbp.length === 0) return null;
+              return {
+                sbp: sbp.reduce((a, b) => a + b, 0) / sbp.length,
+                dbp: dbp.reduce((a, b) => a + b, 0) / dbp.length,
+                hr:
+                  hr.length > 0
+                    ? hr.reduce((a, b) => a + b, 0) / hr.length
+                    : null,
+              };
+            }
+            return { avgSbp, avgDbp, avgHr, sbpVariability, chartData };
+          }
 
-        function validateBPInput(input) {
-          const value = parseFloat(input.value);
-          const isInvalid =
-            input.value !== "" && (isNaN(value) || value < 30 || value > 300);
-          input.classList.toggle("invalid", isInvalid);
-        }
+          function updateSummaryUI(avgSbp, avgDbp, avgHr, sbpVariability) {
+            document
+              .getElementById("weeklyAvgResult")
+              .querySelector("p:nth-child(2)").textContent =
+              avgSbp && avgDbp
+                ? `${Math.round(avgSbp)} / ${Math.round(avgDbp)}`
+                : "-- / --";
+            document
+              .getElementById("hrAvgResult")
+              .querySelector("p:nth-child(2)").textContent = avgHr
+              ? Math.round(avgHr)
+              : "--";
+            document
+              .getElementById("variabilityResult")
+              .querySelector("p:nth-child(2)").textContent = sbpVariability
+              ? sbpVariability.toFixed(1)
+              : "--";
+            document.getElementById("ampaAvgForPheno").textContent =
+              avgSbp && avgDbp
+                ? `${Math.round(avgSbp)} / ${Math.round(avgDbp)}`
+                : "-- / --";
+          }
 
-        function addDayRow() {
-          if (dayCounter >= 7) return;
-          const startDayIndex = parseInt(startDaySelect.value, 10);
-          const dayName = days[(startDayIndex + dayCounter) % 7];
-          const row = document.createElement("tr");
-          row.innerHTML = `
+          function validateBPInput(input) {
+            const value = parseFloat(input.value);
+            const isInvalid =
+              input.value !== "" && (isNaN(value) || value < 30 || value > 300);
+            input.classList.toggle("invalid", isInvalid);
+          }
+
+          function addDayRow() {
+            if (dayCounter >= 7) return;
+            const startDayIndex = parseInt(startDaySelect.value, 10);
+            const dayName = days[(startDayIndex + dayCounter) % 7];
+            const row = document.createElement("tr");
+            row.innerHTML = `
                 <td class="day-label">${dayName}</td>
                 <td><div class="measurement-group"><div><input type="number" class="bp-input sbp" placeholder="PAS" aria-label="PAS Mañana Toma 1"><input type="number" class="bp-input dbp" placeholder="PAD" aria-label="PAD Mañana Toma 1"><input type="number" class="bp-input hr" placeholder="FC" aria-label="FC Mañana Toma 1"></div></div></td>
                 <td><div class="measurement-group"><div><input type="number" class="bp-input sbp" placeholder="PAS" aria-label="PAS Mañana Toma 2"><input type="number" class="bp-input dbp" placeholder="PAD" aria-label="PAD Mañana Toma 2"><input type="number" class="bp-input hr" placeholder="FC" aria-label="FC Mañana Toma 2"></div></div></td>
@@ -960,199 +1191,189 @@
                 <td><div class="measurement-group"><div><input type="number" class="bp-input sbp" placeholder="PAS" aria-label="PAS Tarde Toma 2"><input type="number" class="bp-input dbp" placeholder="PAD" aria-label="PAD Tarde Toma 2"><input type="number" class="bp-input hr" placeholder="FC" aria-label="FC Tarde Toma 2"></div></div></td>
                 <td><input type="text" class="obs-input" placeholder="Síntomas, olvidos..." aria-label="Observaciones para ${dayName}"></td>
             `;
-          logBody.appendChild(row);
-          dayCounter++;
-          addDayBtn.disabled = dayCounter >= 7;
-        }
-
-        function reorderTable() {
-          const startDayIndex = parseInt(startDaySelect.value, 10);
-          logBody.querySelectorAll("tr").forEach((row, index) => {
-            row.querySelector(".day-label").textContent =
-              days[(startDayIndex + index) % 7];
-          });
-        }
-
-        function clearLog() {
-          if (
-            confirm(
-              "¿Está seguro de que desea borrar todos los datos de la tabla? Esta acción no se puede deshacer."
-            )
-          ) {
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-            startDaySelect.value = "0";
-            logBody.innerHTML = "";
-            dayCounter = 0;
-            addDayRow();
-            addDayBtn.disabled = false;
-            runAllCalculations();
-          }
-        }
-
-        // REVISIÓN FINAL: Función de clasificación desacoplada de la UI
-        function getPhenotypeClassification() {
-          const officeSbp = parseFloat(
-            document.getElementById("officeSbp").value
-          );
-          const officeDbp = parseFloat(
-            document.getElementById("officeDbp").value
-          );
-          const { avgSbp, avgDbp } = calculateAverages();
-
-          if (isNaN(officeSbp) || isNaN(officeDbp)) {
-            return {
-              name: "Datos de Consulta Incompletos",
-              explanation:
-                "Introduzca los valores de Presión Arterial en consulta.",
-            };
-          }
-          if (!avgSbp || !avgDbp) {
-            return {
-              name: "Datos Domiciliarios Incompletos",
-              explanation:
-                "Introduzca los valores de Presión Arterial domiciliaria (AMPA).",
-            };
+            logBody.appendChild(row);
+            dayCounter++;
+            addDayBtn.disabled = dayCounter >= 7;
           }
 
-          const isOfficeHigh = officeSbp >= 140 || officeDbp >= 90;
-          const isAmpaHigh = avgSbp >= 135 || avgDbp >= 85;
-
-          if (isOfficeHigh && isAmpaHigh)
-            return {
-              name: "HTA Sostenida",
-              explanation:
-                "La presión es alta tanto en la consulta como en casa. Es el tipo más común y requiere tratamiento y seguimiento.",
-            };
-          if (isOfficeHigh && !isAmpaHigh)
-            return {
-              name: "HTA de Bata Blanca",
-              explanation:
-                "La presión sube en el entorno médico, pero es normal en casa. El riesgo es menor, pero necesita vigilancia.",
-            };
-          if (!isOfficeHigh && isAmpaHigh)
-            return {
-              name: "HTA Enmascarada",
-              explanation:
-                "La presión es normal en consulta pero alta en casa. Es un fenotipo de alto riesgo porque puede pasar desapercibido.",
-            };
-          return {
-            name: "Normotensión",
-            explanation:
-              "La presión es normal en ambos entornos. ¡Excelente! Se recomienda mantener un estilo de vida saludable.",
-          };
-        }
-
-        function classifyPhenotype() {
-          const { name, explanation } = getPhenotypeClassification();
-          const resultEl = document.getElementById("phenotypeResult");
-
-          resultEl.className = "mt-4 p-4 rounded-lg"; // Reseteamos las clases base
-
-          // REVISIÓN FINAL: Se definen clases de color para cada estado posible
-          let cardBgClass = "bg-gray-100";
-          let titleColorClass = "text-blue-900";
-          let explanationColorClass = "text-slate-600";
-
-          if (name === "HTA Sostenida") {
-            cardBgClass = "bg-red-100 border border-red-300";
-            titleColorClass = "text-red-800";
-            explanationColorClass = "text-red-900";
-          } else if (name === "HTA de Bata Blanca") {
-            cardBgClass = "bg-yellow-100 border border-yellow-300";
-            titleColorClass = "text-amber-800";
-            explanationColorClass = "text-amber-900";
-          } else if (name === "HTA Enmascarada") {
-            cardBgClass = "bg-orange-100 border border-orange-300";
-            titleColorClass = "text-orange-800";
-            explanationColorClass = "text-orange-900";
-          } else if (name === "Normotensión") {
-            cardBgClass = "bg-green-100 border border-green-300";
-            titleColorClass = "text-green-800";
-            explanationColorClass = "text-green-900";
-          } else {
-            // Este bloque se encarga de los estados informativos (datos incompletos)
-            cardBgClass = "bg-yellow-100 border border-yellow-300";
-            titleColorClass = "text-amber-800";
-            explanationColorClass = "text-amber-900";
+          function reorderTable() {
+            const startDayIndex = parseInt(startDaySelect.value, 10);
+            logBody.querySelectorAll("tr").forEach((row, index) => {
+              row.querySelector(".day-label").textContent =
+                days[(startDayIndex + index) % 7];
+            });
           }
 
-          // Se genera el HTML con las clases de color dinámicas
-          resultEl.innerHTML = `<p class="font-bold text-lg text-center mb-2 ${titleColorClass}">${name}</p><p class="text-xs ${explanationColorClass} text-center">${explanation}</p>`;
+          function clearLog() {
+            if (
+              confirm(
+                "¿Está seguro de que desea borrar todos los datos de la tabla? Esta acción no se puede deshacer."
+              )
+            ) {
+              localStorage.removeItem(LOCAL_STORAGE_KEY);
+              startDaySelect.value = "0";
+              logBody.innerHTML = "";
+              dayCounter = 0;
+              addDayRow();
+              addDayBtn.disabled = false;
+              runAllCalculations();
+            }
+          }
 
-          // Se aplica la clase de fondo a la tarjeta
-          resultEl.classList.add(...cardBgClass.split(" "));
-        }
-
-        // REVISIÓN FINAL: Función reescrita para generar un resultado clínico detallado y con referencias.
-        function calculateOrtho() {
-          const sbpBase = parseFloat(
-            document.getElementById("orthoSbpBase").value
-          );
-          const dbpBase = parseFloat(
-            document.getElementById("orthoDbpBase").value
-          );
-          const sbpStand = parseFloat(
-            document.getElementById("orthoSbpStand").value
-          );
-          const dbpStand = parseFloat(
-            document.getElementById("orthoDbpStand").value
-          );
-
-          const diagnosisEl = document.getElementById("orthoDiagnosis");
-          const resultContainer = document.getElementById("orthoResult");
-          const detailsEl = document.getElementById("orthoDetails");
-          const noteEl = document.getElementById("orthoClinicalNote");
-
-          // Limpiar estilos y contenido previo
-          resultContainer.className = "mt-4 text-left p-4 rounded-lg";
-          detailsEl.innerHTML = "";
-          noteEl.innerHTML = "";
-
-          if (
-            isNaN(sbpBase) ||
-            isNaN(dbpBase) ||
-            isNaN(sbpStand) ||
-            isNaN(dbpStand)
-          ) {
-            diagnosisEl.textContent = "Introduzca los 4 valores...";
-            diagnosisEl.className =
-              "font-bold text-lg mb-2 text-center text-gray-700";
-            resultContainer.classList.add(
-              "bg-gray-100",
-              "border",
-              "border-gray-200"
+          function getPhenotypeClassification() {
+            const officeSbp = parseFloat(
+              document.getElementById("officeSbp").value
             );
-            return;
+            const officeDbp = parseFloat(
+              document.getElementById("officeDbp").value
+            );
+            const { avgSbp, avgDbp } = calculateAverages();
+
+            if (isNaN(officeSbp) || isNaN(officeDbp)) {
+              return {
+                name: "Datos de Consulta Incompletos",
+                explanation:
+                  "Introduzca los valores de Presión Arterial en consulta.",
+              };
+            }
+            if (!avgSbp || !avgDbp) {
+              return {
+                name: "Datos Domiciliarios Incompletos",
+                explanation:
+                  "Introduzca los valores de Presión Arterial domiciliaria (AMPA).",
+              };
+            }
+
+            const isOfficeHigh = officeSbp >= 140 || officeDbp >= 90;
+            const isAmpaHigh = avgSbp >= 135 || avgDbp >= 85;
+
+            if (isOfficeHigh && isAmpaHigh)
+              return {
+                name: "HTA Sostenida",
+                explanation:
+                  "La presión es alta tanto en la consulta como en casa. Es el tipo más común y requiere tratamiento y seguimiento.",
+              };
+            if (isOfficeHigh && !isAmpaHigh)
+              return {
+                name: "HTA de Bata Blanca",
+                explanation:
+                  "La presión sube en el entorno médico, pero es normal en casa. El riesgo es menor, pero necesita vigilancia.",
+              };
+            if (!isOfficeHigh && isAmpaHigh)
+              return {
+                name: "HTA Enmascarada",
+                explanation:
+                  "La presión es normal en consulta pero alta en casa. Es un fenotipo de alto riesgo porque puede pasar desapercibido.",
+              };
+            return {
+              name: "Normotensión",
+              explanation:
+                "La presión es normal en ambos entornos. ¡Excelente! Se recomienda mantener un estilo de vida saludable.",
+            };
           }
 
-          const sbpDrop = sbpBase - sbpStand;
-          const dbpDrop = dbpBase - dbpStand;
+          function classifyPhenotype() {
+            const { name, explanation } = getPhenotypeClassification();
+            const resultEl = document.getElementById("phenotypeResult");
 
-          // --- LÓGICA DE CRITERIOS FORTALECIDA Y EXPLÍCITA ---
-          // La Guía ESC 2024 define el criterio como una caída "mayor o igual que" (>=).
-          const sbpCriterionMet = sbpDrop >= 20;
-          const dbpCriterionMet = dbpDrop >= 10;
-          const isPositive = sbpCriterionMet || dbpCriterionMet;
+            resultEl.className = "mt-4 p-4 rounded-lg";
 
-          const sbpStatusHTML = sbpCriterionMet
-            ? `<span class="text-xs font-semibold text-green-600">[CUMPLE]</span>`
-            : `<span class="text-xs font-semibold text-red-600">[NO CUMPLE]</span>`;
+            let cardBgClass = "bg-gray-100";
+            let titleColorClass = "text-blue-900";
+            let explanationColorClass = "text-slate-600";
 
-          const dbpStatusHTML = dbpCriterionMet
-            ? `<span class="text-xs font-semibold text-green-600">[CUMPLE]</span>`
-            : `<span class="text-xs font-semibold text-red-600">[NO CUMPLE]</span>`;
+            if (name === "HTA Sostenida") {
+              cardBgClass = "bg-red-100 border border-red-300";
+              titleColorClass = "text-red-800";
+              explanationColorClass = "text-red-900";
+            } else if (name === "HTA de Bata Blanca") {
+              cardBgClass = "bg-yellow-100 border border-yellow-300";
+              titleColorClass = "text-amber-800";
+              explanationColorClass = "text-amber-900";
+            } else if (name === "HTA Enmascarada") {
+              cardBgClass = "bg-orange-100 border border-orange-300";
+              titleColorClass = "text-orange-800";
+              explanationColorClass = "text-orange-900";
+            } else if (name === "Normotensión") {
+              cardBgClass = "bg-green-100 border border-green-300";
+              titleColorClass = "text-green-800";
+              explanationColorClass = "text-green-900";
+            } else {
+              cardBgClass = "bg-yellow-100 border border-yellow-300";
+              titleColorClass = "text-amber-800";
+              explanationColorClass = "text-amber-900";
+            }
 
-          if (isPositive) {
-            diagnosisEl.textContent = "Positivo para Hipotensión Ortostática";
-            diagnosisEl.className =
-              "font-bold text-lg mb-2 text-center text-red-700";
-            resultContainer.classList.add(
-              "bg-red-100",
-              "border",
-              "border-red-300"
+            resultEl.innerHTML = `<p class="font-bold text-lg text-center mb-2 ${titleColorClass}">${name}</p><p class="text-xs ${explanationColorClass} text-center">${explanation}</p>`;
+            resultEl.classList.add(...cardBgClass.split(" "));
+          }
+
+          function calculateOrtho() {
+            const sbpBase = parseFloat(
+              document.getElementById("orthoSbpBase").value
+            );
+            const dbpBase = parseFloat(
+              document.getElementById("orthoDbpBase").value
+            );
+            const sbpStand = parseFloat(
+              document.getElementById("orthoSbpStand").value
+            );
+            const dbpStand = parseFloat(
+              document.getElementById("orthoDbpStand").value
             );
 
-            detailsEl.innerHTML = `
+            const diagnosisEl = document.getElementById("orthoDiagnosis");
+            const resultContainer = document.getElementById("orthoResult");
+            const detailsEl = document.getElementById("orthoDetails");
+            const noteEl = document.getElementById("orthoClinicalNote");
+
+            resultContainer.className = "mt-4 text-left p-4 rounded-lg";
+            detailsEl.innerHTML = "";
+            noteEl.innerHTML = "";
+
+            if (
+              isNaN(sbpBase) ||
+              isNaN(dbpBase) ||
+              isNaN(sbpStand) ||
+              isNaN(dbpStand)
+            ) {
+              diagnosisEl.textContent = "Introduzca los 4 valores...";
+              diagnosisEl.className =
+                "font-bold text-lg mb-2 text-center text-gray-700";
+              resultContainer.classList.add(
+                "bg-gray-100",
+                "border",
+                "border-gray-200"
+              );
+              return;
+            }
+
+            const sbpDrop = sbpBase - sbpStand;
+            const dbpDrop = dbpBase - dbpStand;
+
+            const sbpCriterionMet = sbpDrop >= 20;
+            const dbpCriterionMet = dbpDrop >= 10;
+            const isPositive = sbpCriterionMet || dbpCriterionMet;
+
+            const sbpStatusHTML = sbpCriterionMet
+              ? `<span class="text-xs font-semibold text-green-600">[CUMPLE]</span>`
+              : `<span class="text-xs font-semibold text-red-600">[NO CUMPLE]</span>`;
+
+            const dbpStatusHTML = dbpCriterionMet
+              ? `<span class="text-xs font-semibold text-green-600">[CUMPLE]</span>`
+              : `<span class="text-xs font-semibold text-red-600">[NO CUMPLE]</span>`;
+
+            if (isPositive) {
+              diagnosisEl.textContent = "Positivo para Hipotensión Ortostática";
+              diagnosisEl.className =
+                "font-bold text-lg mb-2 text-center text-red-700";
+              resultContainer.classList.add(
+                "bg-red-100",
+                "border",
+                "border-red-300"
+              );
+
+              detailsEl.innerHTML = `
               <div class="flex justify-between items-center ${
                 sbpCriterionMet ? "font-bold" : ""
               } text-red-800">
@@ -1167,33 +1388,31 @@
               </div>
             `;
 
-            let clinicalNoteText = "";
-            if (sbpCriterionMet && dbpCriterionMet) {
-              clinicalNoteText =
-                "Diagnóstico positivo por caída tanto sistólica como diastólica. Indica una respuesta ortostática marcadamente anormal que requiere especial atención en el manejo del paciente.";
-            } else if (sbpCriterionMet) {
-              clinicalNoteText =
-                "Diagnóstico positivo por caída aislada de la presión sistólica. Este es el criterio clásico y requiere una evaluación cuidadosa del riesgo-beneficio antes de intensificar el tratamiento.";
+              let clinicalNoteText = "";
+              if (sbpCriterionMet && dbpCriterionMet) {
+                clinicalNoteText =
+                  "Diagnóstico positivo por caída tanto sistólica como diastólica. Indica una respuesta ortostática marcadamente anormal que requiere especial atención en el manejo del paciente.";
+              } else if (sbpCriterionMet) {
+                clinicalNoteText =
+                  "Diagnóstico positivo por caída aislada de la presión sistólica. Este es el criterio clásico y requiere una evaluación cuidadosa del riesgo-beneficio antes de intensificar el tratamiento.";
+              } else {
+                clinicalNoteText =
+                  "Diagnóstico positivo por caída aislada de la presión diastólica. Este hallazgo es clínicamente significativo y debe ser considerado en el plan terapéutico.";
+              }
+              noteEl.innerHTML = `<strong>Nota Clínica:</strong> ${clinicalNoteText} (Guía ESC 2024)`;
+              noteEl.className =
+                "text-xs text-red-800 mt-3 border-t border-red-200 pt-2";
             } else {
-              // Solo dbpCriterionMet
-              clinicalNoteText =
-                "Diagnóstico positivo por caída aislada de la presión diastólica. Este hallazgo es clínicamente significativo y debe ser considerado en el plan terapéutico.";
-            }
-            noteEl.innerHTML = `<strong>Nota Clínica:</strong> ${clinicalNoteText} (Guía ESC 2024)`;
-            noteEl.className =
-              "text-xs text-red-800 mt-3 border-t border-red-200 pt-2";
-          } else {
-            // Resultado Negativo
-            diagnosisEl.textContent = "Negativo para Hipotensión Ortostática";
-            diagnosisEl.className =
-              "font-bold text-lg mb-2 text-center text-green-700";
-            resultContainer.classList.add(
-              "bg-green-100",
-              "border",
-              "border-green-300"
-            );
+              diagnosisEl.textContent = "Negativo para Hipotensión Ortostática";
+              diagnosisEl.className =
+                "font-bold text-lg mb-2 text-center text-green-700";
+              resultContainer.classList.add(
+                "bg-green-100",
+                "border",
+                "border-green-300"
+              );
 
-            detailsEl.innerHTML = `
+              detailsEl.innerHTML = `
               <div class="flex justify-between items-center text-green-800">
                   <span>Caída PAS: <strong class="text-base">${sbpDrop} mmHg</strong> <span class="text-xs text-green-700">(Criterio: &ge;20)</span></span>
                   ${sbpStatusHTML}
@@ -1204,189 +1423,587 @@
               </div>
             `;
 
-            noteEl.innerHTML = `<strong>Nota Clínica:</strong> La respuesta hemodinámica al cambio postural está dentro de los límites normales.`;
-            noteEl.className =
-              "text-xs text-green-800 mt-3 border-t border-green-200 pt-2";
+              noteEl.innerHTML = `<strong>Nota Clínica:</strong> La respuesta hemodinámica al cambio postural está dentro de los límites normales.`;
+              noteEl.className =
+                "text-xs text-green-800 mt-3 border-t border-green-200 pt-2";
+            }
           }
-        }
-        function saveDataToLocalStorage() {
-          const dataToSave = {
-            startDay: startDaySelect.value,
-            rows: Array.from(logBody.querySelectorAll("tr")).map((row) =>
-              Array.from(row.querySelectorAll("input")).map(
-                (input) => input.value
-              )
-            ),
-          };
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
-        }
 
-        function loadDataFromLocalStorage() {
-          const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-          if (!savedData) {
-            addDayRow();
-            return;
+          function saveDataToLocalStorage() {
+            const dataToSave = {
+              startDay: startDaySelect.value,
+              rows: Array.from(logBody.querySelectorAll("tr")).map((row) =>
+                Array.from(row.querySelectorAll("input")).map(
+                  (input) => input.value
+                )
+              ),
+            };
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
           }
-          const data = JSON.parse(savedData);
-          startDaySelect.value = data.startDay || "0";
-          logBody.innerHTML = "";
-          dayCounter = 0;
-          if (data.rows.length === 0) {
-            addDayRow();
-          } else {
-            data.rows.forEach((rowData) => {
+
+          function loadDataFromLocalStorage() {
+            const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (!savedData) {
               addDayRow();
-              const newRow = logBody.lastElementChild;
-              newRow.querySelectorAll("input").forEach((input, index) => {
-                input.value = rowData[index] || "";
+              return;
+            }
+            const data = JSON.parse(savedData);
+            startDaySelect.value = data.startDay || "0";
+            logBody.innerHTML = "";
+            dayCounter = 0;
+            if (data.rows.length === 0) {
+              addDayRow();
+            } else {
+              data.rows.forEach((rowData) => {
+                addDayRow();
+                const newRow = logBody.lastElementChild;
+                newRow.querySelectorAll("input").forEach((input, index) => {
+                  input.value = rowData[index] || "";
+                });
               });
-            });
+            }
+            reorderTable();
+            runAllCalculations();
           }
-          reorderTable();
-          runAllCalculations();
-        }
 
-        // REVISIÓN FINAL: PDF rediseñado con enfoque minimalista
-        async function downloadPdf() {
-          const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF("p", "mm", "a4");
-          const docWidth = pdf.internal.pageSize.getWidth();
-          const margin = 15;
-          let yPos = margin;
+          // Nueva función para imprimir hoja de registro
+          function printRegistrationSheet() {
+            const printDiv = document.getElementById("printSheet");
 
-          // --- 1. Obtener Datos de forma robusta ---
-          const patientName =
-            document.getElementById("patientName").value || "No especificado";
-          const reportPeriod =
-            document.getElementById("reportPeriod").value || "No especificado";
-          const { avgSbp, avgDbp } = calculateAverages();
-          const phenotype = getPhenotypeClassification(); // Usar la función desacoplada
+            // Generar contenido HTML de la hoja de registro
+            printDiv.innerHTML = `
+            <style>
+              @media print {
+                body { margin: 0; }
+.print-content {
+  font-family: Arial, sans-serif;
+  font-size: 9pt;
+  line-height: 1.1;
+  color: #000;
+  padding: 1mm 10mm 10mm 1mm;
+}
+         h1 { 
+  font-size: 13pt; 
+  margin: 0 0 2mm 0;
+  text-align: center;
+  color: #1e3a8a;
+  border-bottom: 1px solid #1e3a8a;
+  padding-bottom: 1mm;
+}
+              h2 { 
+  font-size: 11pt; 
+  margin: 4mm 0 2mm 0;
+  color: #1e3a8a;
+}
+h3 { 
+  font-size: 10pt; 
+  margin: 3mm 0 2mm 0;
+  color: #374151;
+}
+              .header-info {
+  margin-bottom: 3mm;
+  display: flex;
+  justify-content: space-between;
+  padding: 2mm;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  font-size: 9pt;
+}
+    .instructions {
+  background: #fef3c7;
+  padding: 1.5mm;
+  margin: 2mm 0;
+  border: 1px solid #fbbf24;
+  font-size: 8pt;
+}
+                .instructions ul {
+                  margin: 2mm 0;
+                  padding-left: 5mm;
+                }
+                table {
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin: 3mm 0;
+                  font-size: 10pt;
+                }
+                th {
+                  background: #1e3a8a;
+                  color: white;
+                  padding: 2mm;
+                  text-align: center;
+                  font-weight: bold;
+                  font-size: 9pt;
+                }
+        td {
+  border: 1px solid #374151;
+  padding: 1.5mm;
+  height: 10mm;
+  text-align: center;
+  font-size: 8pt;
+}
+                .day-col {
+                  background: #f3f4f6;
+                  font-weight: bold;
+                  text-align: left !important;
+                  padding-left: 3mm !important;
+                }
+                .input-cell {
+                  background: white;
+                }
+                .obs-col {
+                  text-align: left !important;
+                  font-size: 9pt;
+                }
+              .reference-box {
+  border: 2px solid #dc2626;
+  padding: 2mm;
+  margin: 3mm 0;
+  background: #fee2e2;
+  font-size: 9pt;
+}
+             .footer-notes {
+  margin-top: 2mm;
+  font-size: 8pt;
+  color: #6b7280;
+  border-top: 1px solid #d1d5db;
+  padding-top: 1mm;
+}
+                .measurement-guide {
+                  display: flex;
+                  justify-content: space-between;
+                  margin: 3mm 0;
+                  font-size: 9pt;
+                }
+                .guide-item {
+                  flex: 1;
+                  text-align: center;
+                  padding: 2mm;
+                  border: 1px solid #d1d5db;
+                  margin: 0 1mm;
+                }
+              }
+            </style>
+            
+            <div class="print-content">
+              <h1>REGISTRO DE AUTOMEDIDA DE PRESIÓN ARTERIAL (AMPA)</h1>
+              
+              <div class="header-info">
+                <div>
+                  <strong>Paciente:</strong> _______________________________________
+                </div>
+                <div>
+                  <strong>Fecha inicio:</strong> ____/____/______
+                </div>
+              </div>
+              
+              <div class="instructions">
+                <h3>📋 INSTRUCCIONES PARA EL PACIENTE:</h3>
+                <ul>
+                  <li><strong>Horario:</strong> Realice las mediciones por la MAÑANA (antes del desayuno y medicación) y por la TARDE/NOCHE (antes de cenar)</li>
+                  <li><strong>Preparación:</strong> Reposo de 5 minutos sentado, sin hablar ni moverse durante la medición</li>
+                  <li><strong>Posición:</strong> Brazo apoyado a la altura del corazón, espalda recta, pies en el suelo</li>
+                  <li><strong>Mediciones:</strong> Realice 2 tomas con 1-2 minutos de intervalo. Anote ambas</li>
+                  <li><strong>Duración:</strong> Registre durante 7 días consecutivos (mínimo 3 días)</li>
+                </ul>
+              </div>
+              
+              <div class="measurement-guide">
+                <div class="guide-item">
+                  <strong>PAS</strong><br>Presión Sistólica<br>(número mayor)
+                </div>
+                <div class="guide-item">
+                  <strong>PAD</strong><br>Presión Diastólica<br>(número menor)
+                </div>
+                <div class="guide-item">
+                  <strong>FC</strong><br>Frecuencia Cardíaca<br>(pulsaciones)
+                </div>
+              </div>
+              
+              <h2>📊 TABLA DE REGISTRO</h2>
+              
+              <table>
+                <thead>
+                  <tr>
+                    <th rowspan="2" style="width: 12%">DÍA</th>
+                    <th rowspan="2" style="width: 10%">FECHA</th>
+                    <th colspan="2">MAÑANA</th>
+                    <th colspan="2">TARDE/NOCHE</th>
+                    <th rowspan="2" style="width: 20%">OBSERVACIONES</th>
+                  </tr>
+                  <tr>
+                    <th>1ª Toma<br>PAS/PAD/FC</th>
+                    <th>2ª Toma<br>PAS/PAD/FC</th>
+                    <th>1ª Toma<br>PAS/PAD/FC</th>
+                    <th>2ª Toma<br>PAS/PAD/FC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${[
+                    "Lunes",
+                    "Martes",
+                    "Miércoles",
+                    "Jueves",
+                    "Viernes",
+                    "Sábado",
+                    "Domingo",
+                  ]
+                    .map(
+                      (day) => `
+                    <tr>
+                      <td class="day-col">${day}</td>
+                      <td class="input-cell">____/____</td>
+                      <td class="input-cell">____/____/____</td>
+                      <td class="input-cell">____/____/____</td>
+                      <td class="input-cell">____/____/____</td>
+                      <td class="input-cell">____/____/____</td>
+                      <td class="obs-col"></td>
+                    </tr>
+                  `
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+              
+              <div class="reference-box">
+<h3>⚠️ VALORES DE REFERENCIA</h3>
+                <div style="display: flex; justify-content: space-around; text-align: center;">
+                  <div>
+                    <strong>PA NORMAL en casa:</strong><br>
+                    < 135/85 mmHg
+                  </div>
+                  <div>
+                    <strong>PA ELEVADA en casa:</strong><br>
+                    ≥ 135/85 mmHg
+                  </div>
+                </div>
+              </div>
+              
+            <h3>💊 MEDICACIÓN ACTUAL</h3>
+<div style="border: 1px solid #d1d5db; padding: 2mm; min-height: 15mm;">
+  _________________________________________________________________________<br>
+  _________________________________________________________________________<br>
+  _________________________________________________________________________
+</div>
 
-          // --- 2. Cabecera ---
-          pdf
-            .setFontSize(20)
-            .setFont("helvetica", "bold")
-            .setTextColor("#991b1b");
-          pdf.text("Informe de Presión Arterial", margin, yPos);
-          yPos += 10;
-          pdf
-            .setFontSize(11)
-            .setFont("helvetica", "normal")
-            .setTextColor("#374151");
-          pdf.text(`Paciente: ${patientName}`, margin, yPos);
-          yPos += 6;
-          pdf.text(`Periodo: ${reportPeriod}`, margin, yPos);
-          yPos += 10;
+<h3>📝 SÍNTOMAS O INCIDENCIAS</h3>
+<div style="border: 1px solid #d1d5db; padding: 2mm; min-height: 15mm;">
+                _________________________________________________________________________<br>
+                _________________________________________________________________________<br>
+                _________________________________________________________________________
+              </div>
+              
+          <!--     <div class="footer-notes">
+                <p><strong>Importante:</strong> Traiga este registro completo a su próxima consulta. El primer día de mediciones no se incluye en el cálculo del promedio.</p>
+                <p style="text-align: center; margin-top: 1mm;">
+                 <em>Registro de Automedida de Presión Arterial (AMPA)</em>
+                </p>
+              </div> -->
+            </div>
+          `;
 
-          // --- 3. Datos Clave ---
-          pdf
-            .setFontSize(12)
-            .setFont("helvetica", "bold")
-            .setTextColor("#1e3a8a");
-          pdf.text("Resultados Principales", margin, yPos);
-          yPos += 7;
+            // Imprimir
+            // Guardar título original
+            const originalTitle = document.title;
 
-          const avgText = `Promedio Domiciliario: ${
-            avgSbp
+            // Cambiar título temporalmente para el PDF
+            document.title = "Registro_AMPA_Presion_Arterial";
+
+            // Imprimir
+            window.print();
+
+            // Restaurar título original después de un pequeño delay
+            setTimeout(() => {
+              document.title = originalTitle;
+            }, 100);
+          }
+
+          // PDF mejorado con diseño profesional
+          async function downloadPdf() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF("p", "mm", "a4");
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 20;
+            const contentWidth = pageWidth - margin * 2;
+            let yPos = margin;
+
+            // Colores corporativos
+            const primaryColor = [30, 58, 138]; // Azul oscuro
+            const secondaryColor = [220, 38, 38]; // Rojo
+            const grayColor = [107, 114, 128];
+            const blackColor = [17, 24, 39];
+
+            // Datos del informe
+            const patientName =
+              document.getElementById("patientName").value || "No especificado";
+            const reportPeriod =
+              document.getElementById("reportPeriod").value ||
+              "No especificado";
+            const { avgSbp, avgDbp, avgHr, sbpVariability } =
+              calculateAverages();
+            const phenotype = getPhenotypeClassification();
+
+            // 1. ENCABEZADO PROFESIONAL
+            pdf.setFillColor(...primaryColor);
+            pdf.rect(0, 0, pageWidth, 30, "F");
+
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(22);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("INFORME DE PRESIÓN ARTERIAL", pageWidth / 2, 15, {
+              align: "center",
+            });
+
+            pdf.setFontSize(12);
+            pdf.setFont("helvetica", "normal");
+            pdf.text("Automedida Domiciliaria (AMPA)", pageWidth / 2, 22, {
+              align: "center",
+            });
+
+            yPos = 40;
+
+            // 2. INFORMACIÓN DEL PACIENTE
+            pdf.setTextColor(...blackColor);
+            pdf.setFontSize(10);
+            pdf.setFont("helvetica", "normal");
+
+            // Cuadro de información
+            pdf.setDrawColor(229, 231, 235);
+            pdf.setLineWidth(0.5);
+            pdf.rect(margin, yPos, contentWidth, 20, "S");
+
+            pdf.text(`Paciente: ${patientName}`, margin + 5, yPos + 8);
+            pdf.text(
+              `Periodo de Registro: ${reportPeriod}`,
+              margin + 5,
+              yPos + 15
+            );
+            pdf.text(
+              `Fecha del Informe: ${new Date().toLocaleDateString("es-ES", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}`,
+              pageWidth - margin - 5,
+              yPos + 8,
+              { align: "right" }
+            );
+
+            yPos += 30;
+
+            // 3. RESUMEN EJECUTIVO
+            pdf.setFillColor(248, 250, 252);
+            pdf.rect(margin, yPos, contentWidth, 35, "F");
+
+            pdf.setTextColor(...primaryColor);
+            pdf.setFontSize(14);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("RESUMEN DE RESULTADOS", margin + 5, yPos + 8);
+
+            pdf.setTextColor(...blackColor);
+            pdf.setFontSize(11);
+            pdf.setFont("helvetica", "normal");
+
+            const avgText = avgSbp
               ? `${Math.round(avgSbp)} / ${Math.round(avgDbp)} mmHg`
-              : "N/A"
-          }`;
-          const phenoText = `Diagnóstico de Fenotipo: ${phenotype.name}`;
+              : "No disponible";
+            pdf.text(
+              `Promedio PA Domiciliaria: ${avgText}`,
+              margin + 5,
+              yPos + 18
+            );
 
-          pdf
-            .setFontSize(10)
-            .setFont("helvetica", "normal")
-            .setTextColor("#111827");
-          pdf.text(avgText, margin, yPos);
-          yPos += 6;
-          pdf.text(phenoText, margin, yPos);
-          yPos += 12;
+            const hrText = avgHr ? `${Math.round(avgHr)} lpm` : "No disponible";
+            pdf.text(
+              `Frecuencia Cardíaca Media: ${hrText}`,
+              margin + 5,
+              yPos + 25
+            );
 
-          // --- 4. Gráfica de Evolución ---
-          const chartCanvas = document.getElementById("bpChart");
-          const chartImage = chartCanvas.toDataURL("image/png", 1.0);
-          const chartWidth = docWidth - margin * 2;
-          const chartHeight = chartWidth * 0.4; // Ratio de aspecto
-          pdf
-            .setFontSize(12)
-            .setFont("helvetica", "bold")
-            .setTextColor("#1e3a8a");
-          pdf.text("Gráfica de Evolución", margin, yPos);
-          yPos += 5;
-          pdf.addImage(
-            chartImage,
-            "PNG",
-            margin,
-            yPos,
-            chartWidth,
-            chartHeight
-          );
-          yPos += chartHeight + 10;
+            const varText = sbpVariability
+              ? `${sbpVariability.toFixed(1)} mmHg`
+              : "No calculada";
+            pdf.text(
+              `Variabilidad PAS (DE): ${varText}`,
+              margin + 5,
+              yPos + 32
+            );
 
-          // --- 5. Tabla de Registro Detallado ---
-          const tableData = [];
-          const headers = [
-            "Día",
-            "Mañana T1",
-            "Mañana T2",
-            "Tarde T1",
-            "Tarde T2",
-            "Observaciones",
-          ];
-          logBody.querySelectorAll("tr").forEach((row) => {
-            const inputs = row.querySelectorAll("input");
-            const formatTake = (s, d, h) =>
-              s.value || d.value || h.value
-                ? `${s.value || "-"}/${d.value || "-"}/${h.value || "-"}`
-                : "";
-            tableData.push([
-              row.querySelector(".day-label").textContent,
-              formatTake(inputs[0], inputs[1], inputs[2]),
-              formatTake(inputs[3], inputs[4], inputs[5]),
-              formatTake(inputs[6], inputs[7], inputs[8]),
-              formatTake(inputs[9], inputs[10], inputs[11]),
-              inputs[12].value,
-            ]);
-          });
+            // Diagnóstico de Fenotipo en color
+            pdf.setFont("helvetica", "bold");
+            if (phenotype.name === "HTA Sostenida") {
+              pdf.setTextColor(...secondaryColor);
+            } else if (phenotype.name === "Normotensión") {
+              pdf.setTextColor(22, 163, 74);
+            } else {
+              pdf.setTextColor(245, 158, 11);
+            }
+            pdf.text(
+              `Diagnóstico: ${phenotype.name}`,
+              pageWidth - margin - 5,
+              yPos + 25,
+              { align: "right" }
+            );
 
-          pdf.autoTable({
-            startY: yPos,
-            head: [headers],
-            body: tableData,
-            theme: "grid",
-            headStyles: {
-              fillColor: "#1e3a8a",
-              textColor: "#ffffff",
-              fontStyle: "bold",
-            },
-            styles: {
-              fontSize: 7,
-              cellPadding: 1.5,
-              overflow: "linebreak",
-              lineColor: "#e5e7eb",
-              lineWidth: 0.1,
-            },
-            columnStyles: { 5: { cellWidth: "auto" } },
-          });
+            yPos += 45;
 
-          // --- 6. Pie de Página ---
-          const pageHeight = pdf.internal.pageSize.getHeight();
-          pdf.setFontSize(8).setTextColor("#6b7280");
-          pdf.text(
-            `Informe generado el ${new Date().toLocaleDateString("es-ES")}.`,
-            margin,
-            pageHeight - 8
-          );
+            // 4. GRÁFICA DE EVOLUCIÓN
+            pdf.setTextColor(...primaryColor);
+            pdf.setFontSize(14);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("EVOLUCIÓN TEMPORAL", margin, yPos);
+            yPos += 8;
 
-          // --- 7. Guardar ---
-          const finalFileName =
-            patientName === "No especificado"
-              ? "Informe_Presion_Arterial.pdf"
-              : `Informe_PA_${patientName.replace(/ /g, "_")}.pdf`;
-          pdf.save(finalFileName);
-        }
+            // Capturar y añadir gráfica con mejor calidad
+            try {
+              if (typeof html2canvas !== "undefined" && bpChartInstance) {
+                const chartCanvas = document.getElementById("bpChart");
+                const chartImage = await html2canvas(chartCanvas, {
+                  scale: 2,
+                  backgroundColor: "white",
+                });
+                const chartDataUrl = chartImage.toDataURL("image/png", 1.0);
 
-        initializeApp();
+                const chartWidth = contentWidth;
+                const chartHeight = 60;
+                pdf.addImage(
+                  chartDataUrl,
+                  "PNG",
+                  margin,
+                  yPos,
+                  chartWidth,
+                  chartHeight
+                );
+                yPos += chartHeight + 10;
+              } else {
+                // Si no se puede capturar la gráfica, añadir un texto explicativo
+                pdf.setTextColor(...grayColor);
+                pdf.setFontSize(10);
+                pdf.text(
+                  "(Gráfica no disponible en este momento)",
+                  margin,
+                  yPos + 20
+                );
+                yPos += 30;
+              }
+            } catch (error) {
+              console.error("Error al capturar la gráfica:", error);
+              yPos += 10;
+            }
+
+            // 5. TABLA DE REGISTROS DETALLADOS
+            if (yPos > pageHeight - 80) {
+              pdf.addPage();
+              yPos = margin;
+            }
+
+            pdf.setTextColor(...primaryColor);
+            pdf.setFontSize(14);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("REGISTRO DETALLADO", margin, yPos);
+            yPos += 8;
+
+            // Preparar datos de la tabla
+            const tableData = [];
+            logBody.querySelectorAll("tr").forEach((row) => {
+              const inputs = row.querySelectorAll("input");
+              const formatReading = (s, d, h) => {
+                if (!s.value && !d.value && !h.value) return "";
+                return `${s.value || "-"}/${d.value || "-"}/${h.value || "-"}`;
+              };
+
+              tableData.push([
+                row.querySelector(".day-label").textContent,
+                formatReading(inputs[0], inputs[1], inputs[2]),
+                formatReading(inputs[3], inputs[4], inputs[5]),
+                formatReading(inputs[6], inputs[7], inputs[8]),
+                formatReading(inputs[9], inputs[10], inputs[11]),
+                inputs[12].value || "",
+              ]);
+            });
+
+            pdf.autoTable({
+              startY: yPos,
+              head: [
+                [
+                  "Día",
+                  "Mañana T1",
+                  "Mañana T2",
+                  "Tarde T1",
+                  "Tarde T2",
+                  "Observaciones",
+                ],
+              ],
+              body: tableData,
+              theme: "grid",
+              headStyles: {
+                fillColor: [30, 58, 138],
+                textColor: [255, 255, 255],
+                fontStyle: "bold",
+                fontSize: 9,
+              },
+              bodyStyles: {
+                fontSize: 8,
+                cellPadding: 2,
+              },
+              alternateRowStyles: {
+                fillColor: [248, 250, 252],
+              },
+              columnStyles: {
+                0: { cellWidth: 20, fontStyle: "bold" },
+                5: { cellWidth: 40 },
+              },
+              margin: { left: margin, right: margin },
+            });
+
+            yPos = pdf.lastAutoTable.finalY + 10;
+
+            // 6. INTERPRETACIÓN CLÍNICA
+            if (yPos > pageHeight - 50) {
+              pdf.addPage();
+              yPos = margin;
+            }
+
+            pdf.setFillColor(254, 243, 199);
+            pdf.rect(margin, yPos, contentWidth, 25, "F");
+
+            pdf.setTextColor(...primaryColor);
+            pdf.setFontSize(12);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("INTERPRETACIÓN CLÍNICA", margin + 5, yPos + 8);
+
+            pdf.setTextColor(...blackColor);
+            pdf.setFontSize(9);
+            pdf.setFont("helvetica", "normal");
+            const lines = pdf.splitTextToSize(
+              phenotype.explanation,
+              contentWidth - 10
+            );
+            pdf.text(lines, margin + 5, yPos + 15);
+
+            // 7. PIE DE PÁGINA
+            pdf.setTextColor(...grayColor);
+            pdf.setFontSize(8);
+            pdf.setFont("helvetica", "italic");
+            pdf.text(
+              "Informe generado según las Guías ESC 2024 y ESH 2023",
+              pageWidth / 2,
+              pageHeight - 10,
+              { align: "center" }
+            );
+
+            // Guardar PDF
+            const fileName =
+              patientName === "No especificado"
+                ? "Informe_Presion_Arterial.pdf"
+                : `Informe_PA_${patientName.replace(/ /g, "_")}_${
+                    new Date().toISOString().split("T")[0]
+                  }.pdf`;
+            pdf.save(fileName);
+          }
+
+          initializeApp();
+        } // Fin de initializeHypertensionApp
       });
     </script>
   </body>
