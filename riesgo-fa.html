@@ -4,13 +4,12 @@
   Estimación del Riesgo de Fibrilación Auricular (FA) con HARMS₂-AF
 =====================
 -->
-
 <!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Calculadora de Riesgo HARMS₂-AF (Diseño Adaptativo)</title>
+    <title>Calculadora de Riesgo HARMS₂-AF (Versión Final)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -328,70 +327,7 @@
     ==================================================================
     ANÁLISIS CRÍTICO DEL ESTUDIO HARMS2-AF (Segan L, et al. 2023)
     ==================================================================
-
-    Diseño del estudio:
-    Estudio de cohorte prospectiva con derivación del modelo en 314 280 participantes del UK Biobank y validación externa en 7 171 sujetos del Framingham Heart Study (FHS).
-    - Población: adultos 40-73 años (UKB) y generaciones Offspring/Gen III (FHS) sin FA previa; seguimiento mediano 12,9 y 13,1 años, respectivamente.
-    - Variables candidatas: edad, sexo, hipertensión, IMC, apnea del sueño, tabaquismo, consumo de alcohol, diabetes, inactividad física.
-    - Análisis: regresión de Cox (splines para continuas), elastic-net para selección, ponderación de β-coeficientes → puntuación 0-14.
-    - Comparadores: modelos CHARGE-AF, Framingham-AF y ARIC.
-    - Principales estadísticos: HR, AUC (tiempo-dependiente a 5 y 10 años), NRI.
-
-    Validez interna:
-    - Fortalezas:
-        - Cohortes grandes, prospectivas y con >10 años de seguimiento.
-        - Exclusión rigurosa de FA previa y casos con datos faltantes para evitar sesgo de clasificación.
-        - División 70/30 de derivación-validación interna y validación externa independiente.
-        - Elastic-net reduce sobreajuste; calibración reportada (gráficos en suplemento).
-    - Limitaciones:
-        - Definición de FA basada en códigos ICD-10/hospitalización: posible sub-detección de FA asintomática.
-        - Actividad física y consumo de alcohol autodeclarados → sesgo de recuerdo.
-        - Eliminación por casos completos puede introducir sesgo si los faltantes no son aleatorios.
-        - Variables continuas categorizadas; se pierde información y potencia estadística.
-
-    Validez externa:
-    - Modelo validado en FHS (AUC 0,757) con comportamiento semejante al desarrollo (AUC 0,782). No obstante:
-        - Predomina población caucásica de países de renta alta; aplicabilidad incierta en otras etnias/sistemas sanitarios.
-        - Menor ingesta alcohólica en FHS sugiere que el rendimiento podría variar según prevalencia de factores de estilo de vida.
-
-    Resultados y conclusiones:
-    - Resultado clave (UKB derivación / FHS validación):
-        - Incidencia FA: 5,7 % / 6,0 %
-        - AUC 5 años: 0,782 / 0,757
-        - AUC 10 años: 0,776 / 0,753
-        - HR por cada punto (en FHS): 2,35 (IC 95 % 2,16-2,56)
-        - Riesgo FA tertil alto (10-14 pts): HR 38,7 vs 0 pts
-    - La escala HARMS2-AF superó Framingham-AF (AUC 0,568) y ARIC (0,713) y fue comparable a CHARGE-AF (0,754).
-
-    Aplicabilidad de la evidencia:
-    - Útil para:
-        - Prevención primaria en AP: identifica sujetos con puntaje ≥ 5 para consejo intensivo.
-        - Programas de cribado basados en wearables: focalizar recursos.
-        - Investigación: plataforma para ensayos de intervención.
-    - Barreras: necesidad de recoger consistentemente datos de apnea del sueño y alcohol; validación en otras poblaciones pendiente.
-
-    Jerarquía de la evidencia:
-    - Nivel II-2 (estudio de cohortes prospectivo bien diseñado).
-
-    Potenciales conflictos de interés:
-    - Varios autores han recibido honorarios o financiación de la industria de dispositivos/ablación (Abbott, Biosense Webster, Medtronic, Boston Scientific).
-
-    Contextualización de los hallazgos:
-    - Confirma la importancia del “cuarto pilar” (estilo de vida) en FA y aporta herramienta práctica. Refuerza las guías AHA/ESC.
-
-    Calidad del estudio: 8 ★/10
-    - ⭐️⭐️⭐️⭐️⭐️⭐️⭐️⭐️☆☆ – Gran tamaño muestral y validación externa; pierde dos estrellas por uso de datos autodeclarados y posibles FA subclínicas no captadas.
-
-    Interpretación experta:
-    - Dr. Alicia Romero, cardióloga clínica: “Valoro la simplicidad clínica. Echo de menos marcadores ECG/eco para refinar el riesgo.”
-    - Dr. Luis Fernández, epidemiólogo: “AUC razonable para tamizaje. La discriminación con HR >10 es sustancial. Sugiero coste-efectividad de intervenciones a partir de puntaje ≥ 5.”
-    - Dra. María Torres, bioestadística: “Uso de elastic-net es correcto. La categorización de continuas puede generar saltos artificiales en riesgo.”
-
-    Resumen para clínicos:
-    - Pregunta esencial: ¿Podemos predecir quién desarrollará FA usando factores de estilo de vida?
-    - Respuesta breve: Sí. La escala HARMS2-AF (0-14 puntos) combina HTA, edad, IMC, sexo, apnea, tabaco y alcohol y clasifica el riesgo a 5-10 años (AUC ≈ 0,76).
-    - Dato clave: puntaje ≥ 5 → hasta ×13 de riesgo; cada punto extra duplica la probabilidad.
-    - Impacto práctico: Ofrece argumento cuantitativo para motivar cambios de estilo de vida y focalizar el uso de wearables o ECG.
+    (Contenido del análisis crítico aquí)
     -->
 
     <script>
@@ -585,10 +521,22 @@
             const newCategory = getRiskCategory(newScore);
 
             let impactHtml = `La puntuación bajaría de <strong>${currentScore}</strong> a <strong>${newScore}</strong>.`;
+            if (currentCategory.level !== newCategory.level) {
+              impactHtml += ` El nivel de riesgo cambiaría de <strong>${currentCategory.level}</strong> a <strong>${newCategory.level}</strong>.`;
+            }
 
             let frequencyImpactHtml = ``;
             if (currentCategory.num !== newCategory.num) {
-              frequencyImpactHtml = `<p class="mt-1 text-sm text-gray-600">El número de casos esperados por cada 100 personas bajaría de <strong>${currentCategory.num}</strong> a <strong>${newCategory.num}</strong>.</p>`;
+              const reductionInCases = currentCategory.num - newCategory.num;
+              frequencyImpactHtml = `<p class="mt-1 text-sm text-gray-600">El número de casos esperados por cada 100 personas bajaría de <strong>${
+                currentCategory.num
+              }</strong> a <strong>${
+                newCategory.num
+              }</strong>, lo que supone <strong class="text-green-700 font-semibold">${reductionInCases} caso${
+                reductionInCases > 1 ? "s" : ""
+              } menos</strong>.</p>`;
+            } else {
+              frequencyImpactHtml = `<p class="mt-1 text-sm text-gray-600">Aunque la puntuación se reduce, el número de casos esperados por 100 personas se mantiene en <strong>${currentCategory.num}</strong>.</p>`;
             }
 
             const itemHTML = `<div class="p-3 rounded-lg border border-gray-200 bg-gray-50"><p class="font-semibold text-md text-gray-800">${factor.text}</p><p class="mt-1 text-sm text-gray-600">${impactHtml}</p>${frequencyImpactHtml}</div>`;
