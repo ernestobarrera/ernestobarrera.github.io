@@ -1,0 +1,556 @@
+<!--
+=====================
+  riesgo-fa.html
+  Estimación del Riesgo de Fibrilación Auricular (FA) con HARMS₂-AF
+=====================
+-->
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculadora de Riesgo HARMS₂-AF (Versión Profesional)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8fafc; /* bg-slate-50 */
+      }
+      .animated-card {
+        transition: all 0.5s ease-in-out;
+        transform: scale(0.98);
+        opacity: 0;
+      }
+      .animated-card.visible {
+        transform: scale(1);
+        opacity: 1;
+      }
+      .icon-grid svg {
+        transition: fill 0.3s ease;
+      }
+      input[type="number"]::-webkit-inner-spin-button,
+      input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
+    </style>
+  </head>
+  <body class="text-gray-800">
+    <div class="container mx-auto p-4 md:p-6 max-w-5xl">
+      <header class="text-center mb-6">
+        <h1 class="text-3xl md:text-4xl font-bold text-blue-700">
+          Calculadora de Riesgo HARMS₂-AF
+        </h1>
+        <p class="mt-2 text-md text-gray-600">
+          Herramienta para la estimación del riesgo de Fibrilación Auricular
+          (FA) de nuevo inicio.
+        </p>
+      </header>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Input Form -->
+        <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+          <h2 class="text-xl font-semibold mb-4 border-b pb-3 text-gray-700">
+            Parámetros
+          </h2>
+          <form id="harms-form" class="space-y-4">
+            <!-- Hypertension -->
+            <div>
+              <label class="font-medium text-gray-700">Hipertensión</label>
+              <div
+                class="flex items-center space-x-4 mt-1 p-2 bg-gray-100 rounded-lg"
+              >
+                <label class="flex items-center cursor-pointer"
+                  ><input
+                    type="radio"
+                    name="hypertension"
+                    value="4"
+                    class="h-5 w-5 text-blue-600"
+                  /><span class="ml-2">Sí</span></label
+                ><label class="flex items-center cursor-pointer"
+                  ><input
+                    type="radio"
+                    name="hypertension"
+                    value="0"
+                    class="h-5 w-5"
+                    checked
+                  /><span class="ml-2">No</span></label
+                >
+              </div>
+            </div>
+            <!-- Age -->
+            <div>
+              <label for="age" class="font-medium text-gray-700">Edad</label>
+              <select
+                id="age"
+                name="age"
+                class="mt-1 block w-full p-2 bg-gray-100 border-gray-200 rounded-lg shadow-sm"
+              >
+                <option value="0">Menos de 60 años</option>
+                <option value="1">60-64 años</option>
+                <option value="2">65 años o más</option>
+              </select>
+            </div>
+            <!-- BMI calculation -->
+            <div>
+              <label class="font-medium text-gray-700"
+                >Índice de Masa Corporal (IMC)</label
+              >
+              <div class="mt-1">
+                <div class="flex items-center space-x-4 mb-2">
+                  <label class="flex items-center text-sm"
+                    ><input
+                      type="radio"
+                      name="bmi_option"
+                      value="calculate"
+                      checked
+                      class="h-4 w-4 text-blue-600"
+                    /><span class="ml-2">Calcular con peso y talla</span></label
+                  >
+                  <label class="flex items-center text-sm"
+                    ><input
+                      type="radio"
+                      name="bmi_option"
+                      value="direct"
+                      class="h-4 w-4 text-blue-600"
+                    /><span class="ml-2">Introducir IMC</span></label
+                  >
+                </div>
+                <div id="bmi-calculator">
+                  <div class="flex space-x-2">
+                    <input
+                      type="number"
+                      id="weight"
+                      placeholder="Peso (kg)"
+                      class="w-1/2 p-2 bg-gray-100 rounded-lg shadow-sm"
+                    />
+                    <input
+                      type="number"
+                      id="height"
+                      placeholder="Talla (cm)"
+                      class="w-1/2 p-2 bg-gray-100 rounded-lg shadow-sm"
+                    />
+                  </div>
+                  <p class="text-sm text-gray-500 mt-1 h-5">
+                    IMC:
+                    <span id="bmi-value" class="font-semibold">-- kg/m²</span>
+                  </p>
+                </div>
+                <div id="bmi-direct-input" class="hidden">
+                  <input
+                    type="number"
+                    id="bmi_direct"
+                    placeholder="IMC (ej: 28.5)"
+                    class="w-full p-2 bg-gray-100 rounded-lg shadow-sm"
+                  />
+                </div>
+              </div>
+            </div>
+            <!-- Sex -->
+            <div>
+              <label class="font-medium text-gray-700">Sexo</label>
+              <div
+                class="flex items-center space-x-4 mt-1 p-2 bg-gray-100 rounded-lg"
+              >
+                <label class="flex items-center cursor-pointer"
+                  ><input
+                    type="radio"
+                    name="sex"
+                    value="2"
+                    class="h-5 w-5"
+                  /><span class="ml-2">Masculino</span></label
+                ><label class="flex items-center cursor-pointer"
+                  ><input
+                    type="radio"
+                    name="sex"
+                    value="0"
+                    class="h-5 w-5"
+                    checked
+                  /><span class="ml-2">Femenino</span></label
+                >
+              </div>
+            </div>
+            <!-- Sleep Apnea -->
+            <div>
+              <label class="font-medium text-gray-700">Apnea del sueño</label>
+              <div
+                class="flex items-center space-x-4 mt-1 p-2 bg-gray-100 rounded-lg"
+              >
+                <label class="flex items-center cursor-pointer"
+                  ><input
+                    type="radio"
+                    name="sleep_apnea"
+                    value="2"
+                    class="h-5 w-5"
+                  /><span class="ml-2">Sí</span></label
+                ><label class="flex items-center cursor-pointer"
+                  ><input
+                    type="radio"
+                    name="sleep_apnea"
+                    value="0"
+                    class="h-5 w-5"
+                    checked
+                  /><span class="ml-2">No</span></label
+                >
+              </div>
+            </div>
+            <!-- Smoking -->
+            <div>
+              <label class="font-medium text-gray-700"
+                >Fumador (actual o previo)</label
+              >
+              <div
+                class="flex items-center space-x-4 mt-1 p-2 bg-gray-100 rounded-lg"
+              >
+                <label class="flex items-center cursor-pointer"
+                  ><input
+                    type="radio"
+                    name="smoking"
+                    value="1"
+                    class="h-5 w-5"
+                  /><span class="ml-2">Sí</span></label
+                ><label class="flex items-center cursor-pointer"
+                  ><input
+                    type="radio"
+                    name="smoking"
+                    value="0"
+                    class="h-5 w-5"
+                    checked
+                  /><span class="ml-2">No</span></label
+                >
+              </div>
+            </div>
+            <!-- Alcohol -->
+            <div>
+              <label for="alcohol" class="font-medium text-gray-700"
+                >Consumo de alcohol</label
+              >
+              <select
+                id="alcohol"
+                name="alcohol"
+                class="mt-1 block w-full p-2 bg-gray-100 rounded-lg shadow-sm"
+              >
+                <option value="0">Bajo (0-6 bebidas/semana)</option>
+                <option value="1">Moderado (7-14 bebidas/semana)</option>
+                <option value="2">Alto (≥ 15 bebidas/semana)</option>
+              </select>
+            </div>
+          </form>
+        </div>
+
+        <!-- Results and Sensitivity Analysis -->
+        <div class="space-y-6">
+          <div
+            id="results-card"
+            class="animated-card bg-white p-6 rounded-2xl shadow-lg w-full border border-gray-200"
+          >
+            <h2 class="text-xl font-semibold mb-2 text-gray-700">
+              Estimación del Riesgo
+            </h2>
+            <div class="text-center">
+              <p class="text-md text-gray-600">Puntuación Total:</p>
+              <p id="total-score" class="text-6xl font-bold text-blue-700">0</p>
+            </div>
+            <div
+              id="risk-interpretation"
+              class="mt-2 p-3 rounded-lg text-center"
+            >
+              <p id="risk-level" class="text-lg font-semibold"></p>
+              <p id="risk-description" class="text-gray-700 mt-1 text-md"></p>
+              <div
+                id="icon-array"
+                class="icon-grid mt-3 grid grid-cols-10 gap-1 justify-center max-w-xs mx-auto"
+              ></div>
+            </div>
+          </div>
+          <div
+            id="sensitivity-card"
+            class="animated-card bg-white p-6 rounded-2xl shadow-lg w-full border border-gray-200"
+          >
+            <h3 class="text-xl font-semibold mb-3 text-gray-700">
+              Análisis de Escenarios
+            </h3>
+            <div id="sensitivity-list" class="space-y-3"></div>
+          </div>
+          <div id="placeholder" class="text-center text-gray-500 mt-8">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="mx-auto h-12 w-12"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="1"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+              />
+            </svg>
+            <p class="mt-4">Los resultados y escenarios aparecerán aquí.</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="mt-8 text-center text-xs text-gray-500">
+        <div
+          class="bg-amber-100 border-l-4 border-amber-500 text-amber-800 p-3 rounded-lg mb-4 max-w-4xl mx-auto"
+        >
+          <p class="font-bold">Nota Aclaratoria</p>
+          <p>
+            Esta calculadora es una herramienta de apoyo a la decisión clínica
+            basada en estudios poblacionales. No constituye un consejo médico
+            directo ni reemplaza el juicio clínico. Los resultados deben ser
+            interpretados por un profesional de la salud cualificado.
+          </p>
+        </div>
+        <p>
+          Puntuación basada en: Segan L, et al. Eur Heart J.
+          2023;44(36):3443-3452. Comunicación de riesgo inspirada en: Gigerenzer
+          G, et al. Psychol Sci Public Interest. 2007;8(2):53-96.
+        </p>
+      </footer>
+    </div>
+
+    <script>
+      const form = document.getElementById("harms-form");
+      const weightInput = document.getElementById("weight");
+      const heightInput = document.getElementById("height");
+      const bmiValueSpan = document.getElementById("bmi-value");
+      const bmiOptionRadios = document.querySelectorAll(
+        'input[name="bmi_option"]'
+      );
+      const bmiCalculatorDiv = document.getElementById("bmi-calculator");
+      const bmiDirectInputDiv = document.getElementById("bmi-direct-input");
+      const bmiDirectInput = document.getElementById("bmi_direct");
+
+      const totalScoreElement = document.getElementById("total-score");
+      const riskLevelElement = document.getElementById("risk-level");
+      const riskDescriptionElement =
+        document.getElementById("risk-description");
+      const riskInterpretationElement = document.getElementById(
+        "risk-interpretation"
+      );
+      const iconArrayContainer = document.getElementById("icon-array");
+      const resultsCard = document.getElementById("results-card");
+      const sensitivityCard = document.getElementById("sensitivity-card");
+      const sensitivityList = document.getElementById("sensitivity-list");
+      const placeholder = document.getElementById("placeholder");
+
+      const riskProbabilities = {
+        very_low: {
+          range: [0, 0],
+          level: "Riesgo de Referencia",
+          probability: "<1%",
+          num: 0,
+          color: "bg-blue-100",
+          textColor: "text-blue-800",
+          iconColor: "fill-blue-500",
+        },
+        low: {
+          range: [1, 4],
+          level: "Riesgo Bajo",
+          probability: "≈1%",
+          num: 1,
+          color: "bg-green-100",
+          textColor: "text-green-800",
+          iconColor: "fill-green-500",
+        },
+        moderate: {
+          range: [5, 9],
+          level: "Riesgo Moderado",
+          probability: "≈6%",
+          num: 6,
+          color: "bg-yellow-100",
+          textColor: "text-yellow-800",
+          iconColor: "fill-yellow-500",
+        },
+        high: {
+          range: [10, 14],
+          level: "Riesgo Alto",
+          probability: "≈18%",
+          num: 18,
+          color: "bg-red-100",
+          textColor: "text-red-800",
+          iconColor: "fill-red-500",
+        },
+      };
+
+      function getRiskCategory(score) {
+        for (const key in riskProbabilities) {
+          const category = riskProbabilities[key];
+          if (score >= category.range[0] && score <= category.range[1]) {
+            return category;
+          }
+        }
+        return riskProbabilities.high;
+      }
+
+      function generateIconArray(count, total, colorClass) {
+        let icons = "";
+        const personIcon = `<svg viewBox="0 0 20 20" class="w-5 h-5"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>`;
+        for (let i = 0; i < total; i++) {
+          const color = i < count ? colorClass : "fill-gray-300";
+          icons += `<div class="${color}">${personIcon}</div>`;
+        }
+        return icons;
+      }
+
+      function getBmiPoints() {
+        const bmiOption = document.querySelector(
+          'input[name="bmi_option"]:checked'
+        ).value;
+        let bmi = NaN;
+
+        if (bmiOption === "calculate") {
+          const weight = parseFloat(weightInput.value);
+          const height = parseFloat(heightInput.value);
+          if (weight > 0 && height > 0) {
+            const heightInMeters = height / 100;
+            bmi = weight / (heightInMeters * heightInMeters);
+            bmiValueSpan.textContent = `${bmi.toFixed(1)} kg/m²`;
+          } else {
+            bmiValueSpan.textContent = "-- kg/m²";
+          }
+        } else {
+          // direct input
+          bmi = parseFloat(bmiDirectInput.value);
+          bmiValueSpan.textContent =
+            bmi > 0 ? `${bmi.toFixed(1)} kg/m²` : "-- kg/m²";
+        }
+
+        return bmi >= 30 ? 1 : 0;
+      }
+
+      function calculateScore() {
+        const formData = new FormData(form);
+        let score = 0;
+
+        score += parseInt(formData.get("hypertension"));
+        score += parseInt(formData.get("age"));
+        score += parseInt(formData.get("sex"));
+        score += parseInt(formData.get("sleep_apnea"));
+        score += parseInt(formData.get("smoking"));
+        score += parseInt(formData.get("alcohol"));
+
+        const bmiPoints = getBmiPoints();
+        score += bmiPoints;
+
+        updateUI(score, formData, bmiPoints);
+      }
+
+      function updateUI(score, formData, bmiPoints) {
+        if (!resultsCard.classList.contains("visible")) {
+          placeholder.style.display = "none";
+          resultsCard.classList.add("visible");
+          sensitivityCard.classList.add("visible");
+        }
+
+        totalScoreElement.textContent = score;
+        const interpretation = getRiskCategory(score);
+
+        riskLevelElement.textContent = interpretation.level;
+
+        let descriptionHTML = `De 100 personas con este perfil, se estima que <strong class="font-bold">${interpretation.num}</strong> desarrollarán FA en 10 años.`;
+        if (interpretation.num > 0) {
+          const oneInY = Math.floor(100 / interpretation.num);
+          descriptionHTML += `<br>Esto equivale a un riesgo de <strong class="font-bold">1 de cada ${oneInY}</strong> personas.`;
+        }
+        riskDescriptionElement.innerHTML = descriptionHTML;
+
+        riskInterpretationElement.className = `mt-2 p-3 rounded-lg text-center ${interpretation.color} ${interpretation.textColor}`;
+        iconArrayContainer.innerHTML = generateIconArray(
+          interpretation.num,
+          100,
+          interpretation.iconColor
+        );
+
+        updateSensitivityAnalysis(score, formData, bmiPoints);
+      }
+
+      function updateSensitivityAnalysis(currentScore, formData, bmiPoints) {
+        sensitivityList.innerHTML = "";
+        let opportunities = 0;
+
+        const modifiableFactors = [
+          {
+            name: "hypertension",
+            points: 4,
+            text: "Controlar la hipertensión",
+          },
+          {
+            name: "bmi",
+            points: bmiPoints,
+            text: "Reducir el IMC (<30 kg/m²)",
+          },
+          { name: "sleep_apnea", points: 2, text: "Tratar la apnea del sueño" },
+          { name: "smoking", points: 1, text: "Cesar el tabaquismo" },
+          {
+            name: "alcohol",
+            points: parseInt(formData.get("alcohol")),
+            text: "Reducir el consumo de alcohol a bajo",
+          },
+        ];
+
+        modifiableFactors.forEach((factor) => {
+          const currentPoints =
+            factor.name === "bmi"
+              ? factor.points
+              : parseInt(formData.get(factor.name)) || 0;
+          if (currentPoints > 0) {
+            opportunities++;
+            const newScore = currentScore - currentPoints;
+            const currentCategory = getRiskCategory(currentScore);
+            const newCategory = getRiskCategory(newScore);
+
+            let impactHtml = `La puntuación bajaría de <strong>${currentScore}</strong> a <strong>${newScore}</strong>.`;
+
+            let frequencyImpactHtml = ``;
+            if (currentCategory.num !== newCategory.num) {
+              frequencyImpactHtml = `<p class="mt-1 text-sm text-gray-600">El número de casos esperados por cada 100 personas bajaría de <strong>${currentCategory.num}</strong> a <strong>${newCategory.num}</strong>.</p>`;
+            }
+
+            const itemHTML = `<div class="p-3 rounded-lg border border-gray-200 bg-gray-50"><p class="font-semibold text-md text-gray-800">${factor.text}</p><p class="mt-1 text-sm text-gray-600">${impactHtml}</p>${frequencyImpactHtml}</div>`;
+            sensitivityList.innerHTML += itemHTML;
+          }
+        });
+
+        if (opportunities === 0) {
+          sensitivityList.innerHTML = `<div class="p-3 rounded-lg bg-green-100 text-green-800 flex items-center"><svg class="h-5 w-5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span class="text-sm">No hay factores de riesgo modificables que sumen puntos actualmente.</span></div>`;
+        }
+      }
+
+      // --- Event Listeners ---
+      form.addEventListener("change", calculateScore);
+      weightInput.addEventListener("input", calculateScore);
+      heightInput.addEventListener("input", calculateScore);
+      bmiDirectInput.addEventListener("input", calculateScore);
+
+      bmiOptionRadios.forEach((radio) => {
+        radio.addEventListener("change", (e) => {
+          if (e.target.value === "calculate") {
+            bmiCalculatorDiv.classList.remove("hidden");
+            bmiDirectInputDiv.classList.add("hidden");
+          } else {
+            bmiCalculatorDiv.classList.add("hidden");
+            bmiDirectInputDiv.classList.remove("hidden");
+          }
+          calculateScore();
+        });
+      });
+
+      // Initial calculation on load
+      calculateScore();
+    </script>
+  </body>
+</html>

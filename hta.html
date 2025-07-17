@@ -1,3 +1,9 @@
+<!--
+=====================
+  hta.html
+  Ayuda para el Análisis de Registros de Hipertensión Arterial
+=====================
+-->
 <!DOCTYPE html>
 <html lang="es">
   <head>
@@ -1509,16 +1515,17 @@ h3 {
   border: 1px solid #d1d5db;
   font-size: 9pt;
 }
-    .instructions {
+.instructions {
   background: #fef3c7;
-  padding: 1.5mm;
-  margin: 2mm 0;
+  padding: 1mm;
+  margin: 1mm 0;
   border: 1px solid #fbbf24;
-  font-size: 8pt;
+  font-size: 9pt;
+  line-height: 1.3;
 }
                 .instructions ul {
-                  margin: 2mm 0;
-                  padding-left: 5mm;
+                  margin: 0.5mm 0;
+                  padding-left: 0mm;
                 }
                 table {
                   width: 100%;
@@ -1536,10 +1543,10 @@ h3 {
                 }
         td {
   border: 1px solid #374151;
-  padding: 1.5mm;
-  height: 10mm;
+  padding: 1mm;
+  height: 12mm;
   text-align: center;
-  font-size: 8pt;
+  font-size: 9pt;
 }
                 .day-col {
                   background: #f3f4f6;
@@ -1547,12 +1554,23 @@ h3 {
                   text-align: left !important;
                   padding-left: 3mm !important;
                 }
-                .input-cell {
+              .input-cell {
                   background: white;
+                }
+                .input-cell.evening-col {
+                  background: #e8e8e8 !important;
                 }
                 .obs-col {
                   text-align: left !important;
                   font-size: 9pt;
+                }
+              .evening-col {
+                  background: #e8e8e8 !important;
+                  border-left: 2px solid #d0d0d0 !important;
+                }
+                .evening-header {
+                  background: #1a3a52 !important;
+                  border-left: 2px solid #0f2940 !important;
                 }
               .reference-box {
   border: 2px solid #dc2626;
@@ -1619,51 +1637,47 @@ h3 {
                 </div>
               </div>
               
-              <h2>📊 TABLA DE REGISTRO</h2>
+              <div style="margin-top: 10mm;"></div>
+<h2>📊 TABLA DE REGISTRO</h2>
               
               <table>
                 <thead>
                   <tr>
-                    <th rowspan="2" style="width: 12%">DÍA</th>
-                    <th rowspan="2" style="width: 10%">FECHA</th>
-                    <th colspan="2">MAÑANA</th>
-                    <th colspan="2">TARDE/NOCHE</th>
-                    <th rowspan="2" style="width: 20%">OBSERVACIONES</th>
+              <th rowspan="2" style="width: 10%">DÍA</th>
+<th rowspan="2" style="width: 8%">FECHA</th>
+<th colspan="2" style="width: 32%">☀️ MAÑANA</th>
+<th colspan="2" style="width: 32%" class="evening-header">🌙 TARDE/NOCHE</th>
+<th rowspan="2" style="width: 18%">OBSERVACIONES</th>
                   </tr>
                   <tr>
-                    <th>1ª Toma<br>PAS/PAD/FC</th>
+                  <th>1ª Toma<br>PAS/PAD/FC</th>
                     <th>2ª Toma<br>PAS/PAD/FC</th>
-                    <th>1ª Toma<br>PAS/PAD/FC</th>
-                    <th>2ª Toma<br>PAS/PAD/FC</th>
+                    <th class="evening-header">1ª Toma<br>PAS/PAD/FC</th>
+                    <th class="evening-header">2ª Toma<br>PAS/PAD/FC</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${[
-                    "Lunes",
-                    "Martes",
-                    "Miércoles",
-                    "Jueves",
-                    "Viernes",
-                    "Sábado",
-                    "Domingo",
-                  ]
-                    .map(
-                      (day) => `
+   ${["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+     .map(
+       (day, index) => `
                     <tr>
-                      <td class="day-col">${day}</td>
+                      <td class="day-col">${day}<br><span style="font-size: 8pt; color: #6b7280; font-weight: normal;">Día ${
+         index + 1
+       }</span></td>
                       <td class="input-cell">____/____</td>
+                    <td class="input-cell">____/____/____</td>
                       <td class="input-cell">____/____/____</td>
-                      <td class="input-cell">____/____/____</td>
-                      <td class="input-cell">____/____/____</td>
-                      <td class="input-cell">____/____/____</td>
+                      <td class="input-cell evening-col">____/____/____</td>
+                      <td class="input-cell evening-col">____/____/____</td>
                       <td class="obs-col"></td>
                     </tr>
                   `
-                    )
-                    .join("")}
+     )
+     .join("")}
                 </tbody>
               </table>
-              
+                            <div style="margin-top: 15mm;"></div>
+
               <div class="reference-box">
 <h3>⚠️ VALORES DE REFERENCIA</h3>
                 <div style="display: flex; justify-content: space-around; text-align: center;">
@@ -1677,7 +1691,7 @@ h3 {
                   </div>
                 </div>
               </div>
-              
+           <!--    
             <h3>💊 MEDICACIÓN ACTUAL</h3>
 <div style="border: 1px solid #d1d5db; padding: 2mm; min-height: 15mm;">
   _________________________________________________________________________<br>
@@ -1690,7 +1704,7 @@ h3 {
                 _________________________________________________________________________<br>
                 _________________________________________________________________________<br>
                 _________________________________________________________________________
-              </div>
+              </div> -->
               
           <!--     <div class="footer-notes">
                 <p><strong>Importante:</strong> Traiga este registro completo a su próxima consulta. El primer día de mediciones no se incluye en el cálculo del promedio.</p>
