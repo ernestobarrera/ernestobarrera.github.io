@@ -1,0 +1,1154 @@
+<!--
+=====================
+  estructura-ia.html
+  Una infografía conceptual sobre la estructura de las revoluciones científicas en salud, inspirada en T.S. Kuhn y enriquecida con marcos teóricos contemporáneos.
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>La Hipótesis de la Revolución IA en Salud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-dark: #0a0a0f;
+        --bg-card: #111118;
+        --primary: #8b5cf6;
+        --secondary: #ec4899;
+        --accent: #06b6d4;
+        --border-color: rgba(255, 255, 255, 0.1);
+        --nav-height: 80px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: var(--nav-height);
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg-dark);
+        color: #e2e8f0;
+        overflow-x: hidden;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Smooth fade-in animation */
+      .fade-in {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+      }
+
+      .fade-in.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Navigation styles */
+      .nav-fixed {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 50;
+        backdrop-filter: blur(12px);
+        background-color: rgba(10, 10, 15, 0.8);
+        border-bottom: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+      }
+
+      .nav-link {
+        position: relative;
+        padding: 0.5rem 1rem;
+        color: #94a3b8;
+        transition: color 0.3s ease;
+        font-weight: 500;
+      }
+
+      .nav-link:hover {
+        color: #e2e8f0;
+      }
+
+      .nav-link.active {
+        color: var(--primary);
+      }
+
+      .nav-link::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        width: 0;
+        height: 2px;
+        background: var(--primary);
+        transition: all 0.3s ease;
+        transform: translateX(-50%);
+      }
+
+      .nav-link.active::after {
+        width: 80%;
+      }
+
+      /* Progress indicator */
+      .progress-bar {
+        position: fixed;
+        top: var(--nav-height);
+        left: 0;
+        width: 0%;
+        height: 3px;
+        background: linear-gradient(
+          90deg,
+          var(--primary),
+          var(--secondary),
+          var(--accent)
+        );
+        transition: width 0.3s ease;
+        z-index: 51;
+      }
+
+      /* Gradient text */
+      .gradient-text {
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--secondary),
+          var(--accent)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        background-size: 200% 200%;
+        animation: gradient-shift 3s ease infinite;
+      }
+
+      @keyframes gradient-shift {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      /* Card styles with better hover */
+      .card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        backdrop-filter: blur(5px);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(139, 92, 246, 0.1),
+          transparent
+        );
+        transition: left 0.5s ease;
+      }
+
+      .card:hover::before {
+        left: 100%;
+      }
+
+      .card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(139, 92, 246, 0.3);
+        box-shadow: 0 10px 30px -10px rgba(139, 92, 246, 0.3);
+      }
+
+      /* Concept card styles */
+      .concept-card {
+        background-color: var(--bg-card);
+        border-left-width: 4px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        height: 100%;
+      }
+
+      .concept-card:hover {
+        transform: translateX(8px);
+        box-shadow: -10px 0 30px -10px rgba(139, 92, 246, 0.2);
+      }
+
+      /* Details animation */
+      details {
+        border-radius: 8px;
+        padding: 0.5rem;
+        transition: all 0.3s ease;
+      }
+
+      details[open] {
+        background-color: rgba(139, 92, 246, 0.05);
+      }
+
+      details summary {
+        cursor: pointer;
+        color: var(--accent);
+        font-weight: 600;
+        outline: none;
+        padding: 0.5rem;
+        transition: all 0.3s ease;
+      }
+
+      details summary:hover {
+        color: var(--primary);
+      }
+
+      details summary::-webkit-details-marker {
+        display: none;
+      }
+
+      details summary::before {
+        content: "▶";
+        font-size: 0.8em;
+        margin-right: 0.5rem;
+        display: inline-block;
+        transition: transform 0.3s ease;
+      }
+
+      details[open] summary::before {
+        transform: rotate(90deg);
+      }
+
+      /* Cycle diagram styles */
+      .cycle-container {
+        position: relative;
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+        padding-top: 100%;
+      }
+
+      .cycle-node {
+        position: absolute;
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        cursor: pointer;
+        z-index: 10;
+      }
+
+      .cycle-node:hover {
+        z-index: 20;
+      }
+
+      .cycle-node .node-card {
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .cycle-node:hover .node-card {
+        transform: scale(1.1);
+        box-shadow: 0 0 40px rgba(139, 92, 246, 0.5);
+      }
+
+      .cycle-path {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 80%;
+        height: 80%;
+        border: 2px dashed rgba(139, 92, 246, 0.2);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        animation: rotate 60s linear infinite;
+      }
+
+      @keyframes rotate {
+        from {
+          transform: translate(-50%, -50%) rotate(0deg);
+        }
+        to {
+          transform: translate(-50%, -50%) rotate(360deg);
+        }
+      }
+
+      /* Pulse animation for center */
+      .pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.8;
+          transform: scale(1.05);
+        }
+      }
+
+      /* Table improvements */
+      .comparison-table {
+        overflow: hidden;
+        border-radius: 12px;
+      }
+
+      .comparison-table tr {
+        transition: all 0.3s ease;
+      }
+
+      .comparison-table tbody tr:hover {
+        background-color: rgba(139, 92, 246, 0.05);
+        transform: scale(1.01);
+      }
+
+      /* Smooth scroll indicator */
+      .scroll-indicator {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 50px;
+        height: 50px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+        z-index: 40;
+      }
+
+      .scroll-indicator.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .scroll-indicator:hover {
+        background: var(--primary);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.4);
+      }
+
+      /* Loading animation */
+      .loading-shimmer {
+        background: linear-gradient(
+          90deg,
+          var(--bg-card) 25%,
+          rgba(139, 92, 246, 0.1) 50%,
+          var(--bg-card) 75%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+      }
+
+      @keyframes shimmer {
+        0% {
+          background-position: -200% 0;
+        }
+        100% {
+          background-position: 200% 0;
+        }
+      }
+
+      /* Responsive improvements */
+      @media (max-width: 768px) {
+        .nav-link {
+          font-size: 0.875rem;
+          padding: 0.5rem;
+        }
+
+        .cycle-node {
+          font-size: 0.875rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Fixed Navigation -->
+    <nav class="nav-fixed">
+      <div class="container mx-auto px-4">
+        <div class="flex items-center justify-between h-20">
+          <div class="flex items-center space-x-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-8 w-8 text-violet-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+            <span class="text-xl font-bold gradient-text">RevoluciónIA</span>
+          </div>
+          <div class="hidden md:flex items-center space-x-1">
+            <a href="#hero" class="nav-link">Inicio</a>
+            <a href="#main-cycle" class="nav-link">El Ciclo</a>
+            <a href="#section1" class="nav-link">Ciencia Normal</a>
+            <a href="#section2" class="nav-link">Anomalías</a>
+            <a href="#section3" class="nav-link">Crisis</a>
+            <a href="#section4" class="nav-link">Revolución</a>
+            <a href="#paradigm-comparison" class="nav-link">Comparación</a>
+          </div>
+          <!-- Mobile menu button -->
+          <button class="md:hidden p-2" onclick="toggleMobileMenu()">
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar"></div>
+
+    <!-- Mobile Navigation -->
+    <div
+      id="mobileMenu"
+      class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"
+    >
+      <div class="fixed right-0 top-0 h-full w-64 bg-slate-900 p-6">
+        <button
+          onclick="toggleMobileMenu()"
+          class="absolute top-4 right-4 text-white"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+        <div class="mt-16 flex flex-col space-y-4">
+          <a href="#hero" class="nav-link" onclick="toggleMobileMenu()"
+            >Inicio</a
+          >
+          <a href="#main-cycle" class="nav-link" onclick="toggleMobileMenu()"
+            >El Ciclo</a
+          >
+          <a href="#section1" class="nav-link" onclick="toggleMobileMenu()"
+            >Ciencia Normal</a
+          >
+          <a href="#section2" class="nav-link" onclick="toggleMobileMenu()"
+            >Anomalías</a
+          >
+          <a href="#section3" class="nav-link" onclick="toggleMobileMenu()"
+            >Crisis</a
+          >
+          <a href="#section4" class="nav-link" onclick="toggleMobileMenu()"
+            >Revolución</a
+          >
+          <a
+            href="#paradigm-comparison"
+            class="nav-link"
+            onclick="toggleMobileMenu()"
+            >Comparación</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="relative min-h-screen pt-20">
+      <!-- Hero Section -->
+      <header
+        id="hero"
+        class="relative container mx-auto px-4 py-16 md:py-24 fade-in"
+      >
+        <div class="text-center mb-16 md:mb-20">
+          <h1 class="text-4xl md:text-6xl font-extrabold mb-6">
+            <span class="gradient-text"
+              >La Estructura de las Revoluciones Sanitarias</span
+            >
+          </h1>
+          <p class="text-xl md:text-2xl text-slate-300 mb-6 max-w-4xl mx-auto">
+            Una propuesta de evaluación para un nuevo paradigma donde la IA
+            recupera y potencia la visión sistémica.
+          </p>
+          <p
+            class="text-md text-slate-400 max-w-3xl mx-auto leading-relaxed italic"
+          >
+            El paradigma actual, en su búsqueda de la objetividad, ha devaluado
+            la capacidad de síntesis y el juicio clínico integral. Esta
+            infografía propone un nuevo marco donde la IA no es solo una
+            herramienta, sino el catalizador para restaurar una forma superior
+            de cognición clínica.
+          </p>
+        </div>
+      </header>
+
+      <!-- Cyclical Diagram Section -->
+      <section id="main-cycle" class="mb-20 md:mb-32 fade-in">
+        <div class="container mx-auto px-4">
+          <h2 class="text-3xl font-bold text-center mb-12 text-slate-200">
+            El Ciclo de la Transformación Científica
+          </h2>
+          <div class="cycle-container">
+            <div class="cycle-path"></div>
+            <div class="cycle-center pulse">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-20 w-20 mx-auto text-violet-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+              <p class="font-bold text-2xl gradient-text mt-2">Revolución</p>
+              <p class="text-slate-400 text-sm">Impulsada por IA</p>
+            </div>
+
+            <div
+              class="cycle-node w-40 h-40 md:w-48 md:h-48"
+              data-section="section1"
+            >
+              <div
+                class="node-card card rounded-full w-full h-full flex items-center justify-center text-center p-4 cursor-pointer"
+              >
+                <div>
+                  <p class="font-bold text-violet-400 text-lg">
+                    1. Ciencia Normal
+                  </p>
+                  <p class="text-xs text-slate-400 hidden md:block mt-1">
+                    El paradigma biomédico/MBE.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div
+              class="cycle-node w-40 h-40 md:w-48 md:h-48"
+              data-section="section2"
+            >
+              <div
+                class="node-card card rounded-full w-full h-full flex items-center justify-center text-center p-4 cursor-pointer"
+              >
+                <div>
+                  <p class="font-bold text-pink-400 text-lg">2. Anomalías</p>
+                  <p class="text-xs text-slate-400 hidden md:block mt-1">
+                    Cronicidad, deuda cognitiva.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div
+              class="cycle-node w-40 h-40 md:w-48 md:h-48"
+              data-section="section3"
+            >
+              <div
+                class="node-card card rounded-full w-full h-full flex items-center justify-center text-center p-4 cursor-pointer"
+              >
+                <div>
+                  <p class="font-bold text-red-400 text-lg">3. Crisis</p>
+                  <p class="text-xs text-slate-400 hidden md:block mt-1">
+                    Burnout y pérdida de confianza.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div
+              class="cycle-node w-40 h-40 md:w-48 md:h-48"
+              data-section="section4"
+            >
+              <div
+                class="node-card card rounded-full w-full h-full flex items-center justify-center text-center p-4 cursor-pointer border-cyan-500"
+                style="box-shadow: 0 0 20px rgba(6, 182, 212, 0.4)"
+              >
+                <div>
+                  <p class="font-bold text-cyan-400 text-lg">4. Revolución</p>
+                  <p class="text-xs text-slate-400 hidden md:block mt-1">
+                    El paradigma IA-Salutogénico.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="text-center mt-8 text-slate-500">
+            Haz clic en una fase del ciclo para explorar los detalles.
+          </p>
+        </div>
+      </section>
+
+      <!-- Detailed Sections -->
+      <div class="container mx-auto px-4">
+        <div class="space-y-16 max-w-6xl mx-auto">
+          <section id="section1" class="fade-in">
+            <h3
+              class="text-2xl md:text-3xl font-bold mb-6 pb-3 border-b-2 border-slate-700"
+            >
+              <span class="text-violet-400">1. Ciencia Normal:</span> El
+              Paradigma Establecido
+            </h3>
+            <div class="grid md:grid-cols-2 gap-8 mt-6">
+              <div class="concept-card p-6 rounded-lg border-violet-500">
+                <h4 class="text-xl font-semibold mb-3 text-violet-300">
+                  La Teoría de Kuhn
+                </h4>
+                <p>
+                  "Ciencia normal" es la investigación basada firmemente en
+                  realizaciones científicas pasadas que una comunidad reconoce
+                  como fundamento para su práctica. Su objetivo es la
+                  <strong>resolución de enigmas</strong> (puzzle-solving) que el
+                  paradigma define como solubles.
+                </p>
+              </div>
+              <div class="concept-card p-6 rounded-lg border-slate-500">
+                <h4 class="text-xl font-semibold mb-3 text-slate-300">
+                  El Paradigma Sanitario Actual
+                </h4>
+                <p>
+                  El paradigma dominante es el
+                  <strong>modelo biomédico</strong>, cuya herramienta principal
+                  es la <strong>Medicina Basada en la Evidencia (MBE)</strong>.
+                  La enfermedad es una disfunción biológica y los ECAs son la
+                  máxima autoridad epistémica.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section id="section2" class="fade-in">
+            <h3
+              class="text-2xl md:text-3xl font-bold mb-6 pb-3 border-b-2 border-slate-700"
+            >
+              <span class="text-pink-400">2. Anomalías:</span> Las Grietas en el
+              Edificio
+            </h3>
+            <div class="grid md:grid-cols-2 gap-8 mt-6">
+              <div class="concept-card p-6 rounded-lg border-pink-500">
+                <h4 class="text-xl font-semibold mb-3 text-pink-300">
+                  La Teoría de Kuhn
+                </h4>
+                <p>
+                  Una anomalía es un fenómeno que viola las expectativas
+                  inducidas por el paradigma. Es un enigma que se resiste a ser
+                  resuelto, revelando una inadecuación fundamental entre la
+                  teoría y la naturaleza.
+                </p>
+              </div>
+              <div class="concept-card p-6 rounded-lg border-slate-500">
+                <h4 class="text-xl font-semibold mb-3 text-slate-300">
+                  Anomalías del Paradigma Sanitario
+                </h4>
+                <p class="mb-4">
+                  La complejidad del siglo XXI ha generado anomalías que el
+                  modelo biomédico/MBE no puede resolver:
+                </p>
+                <details class="text-sm space-y-3">
+                  <summary>Marcos Teóricos para Entender la Anomalía</summary>
+                  <div
+                    class="mt-4 pl-6 border-l-2 border-slate-700 space-y-3 text-slate-400"
+                  >
+                    <p>
+                      <strong class="text-slate-300"
+                        >Erosión Epistémica y Crisis de Autoridad:</strong
+                      >
+                      La explosión de datos devalúa el conocimiento tácito (el
+                      "ojo clínico" de <strong>Michael Polanyi</strong>) frente
+                      al explícito (guías), creando una crisis de autoridad.
+                    </p>
+                    <p>
+                      <strong class="text-slate-300"
+                        >Deuda de Información y Carga Cognitiva:</strong
+                      >
+                      El sistema genera una "deuda de información" al forzar
+                      atajos cognitivos ante la avalancha de datos, lo que
+                      impone una carga cognitiva extrínseca que agota al
+                      profesional.
+                    </p>
+                    <p>
+                      <strong class="text-slate-300"
+                        >La Cronicidad y Multimorbilidad:</strong
+                      >
+                      El paradigma, diseñado para lo agudo, fracasa
+                      sistemáticamente ante el paciente complejo, generando
+                      polifarmacia y iatrogenia.
+                    </p>
+                  </div>
+                </details>
+              </div>
+            </div>
+          </section>
+
+          <section id="section3" class="fade-in">
+            <h3
+              class="text-2xl md:text-3xl font-bold mb-6 pb-3 border-b-2 border-slate-700"
+            >
+              <span class="text-red-400">3. Crisis:</span> La Pérdida de Fe
+            </h3>
+            <div class="grid md:grid-cols-2 gap-8 mt-6">
+              <div class="concept-card p-6 rounded-lg border-red-500">
+                <h4 class="text-xl font-semibold mb-3 text-red-300">
+                  La Teoría de Kuhn
+                </h4>
+                <p>
+                  La crisis es un periodo de "inseguridad profesional profunda"
+                  donde las anomalías se acumulan. Las reglas se relajan y se
+                  debate sobre los fundamentos mismos de la disciplina.
+                </p>
+              </div>
+              <div class="concept-card p-6 rounded-lg border-slate-500">
+                <h4 class="text-xl font-semibold mb-3 text-slate-300">
+                  La Crisis del Modelo Asistencial
+                </h4>
+                <p class="mb-4">
+                  La comunidad sanitaria vive una crisis manifiesta: burnout,
+                  fragmentación y disonancia entre métricas y realidad.
+                </p>
+                <details class="text-sm space-y-3">
+                  <summary>Marcos Teóricos para Entender la Crisis</summary>
+                  <div
+                    class="mt-4 pl-6 border-l-2 border-slate-700 space-y-3 text-slate-400"
+                  >
+                    <p>
+                      <strong class="text-slate-300"
+                        >Dependencia de la Trayectoria (Path
+                        Dependence):</strong
+                      >
+                      El sistema está "bloqueado" en el modelo biomédico por
+                      inversiones pasadas, dificultando la adopción de
+                      alternativas superiores.
+                    </p>
+                    <p>
+                      <strong class="text-slate-300"
+                        >Fragilidad Sistémica (Nassim Taleb):</strong
+                      >
+                      El modelo es frágil; los estresores (pandemias,
+                      complejidad) lo llevan al colapso. Se necesita un sistema
+                      <strong>antifrágil</strong> que mejore con la
+                      incertidumbre.
+                    </p>
+                    <p>
+                      <strong class="text-slate-300"
+                        >Paradoja de la Hiperespecialización (Paradoja de
+                        Braess):</strong
+                      >
+                      Más especialización fragmenta al paciente y empeora el
+                      problema en la cronicidad, limitando la visión integral.
+                    </p>
+                    <p>
+                      <strong class="text-slate-300"
+                        >Campo de Distorsión de la Realidad:</strong
+                      >
+                      El sistema se autoevalúa con métricas propias (adherencia
+                      a guías), creando una ilusión de éxito que enmascara la
+                      falta de resultados en salud integral.
+                    </p>
+                  </div>
+                </details>
+              </div>
+            </div>
+          </section>
+
+          <section id="section4" class="fade-in">
+            <h3
+              class="text-2xl md:text-3xl font-bold mb-6 pb-3 border-b-2 border-slate-700"
+            >
+              <span class="text-cyan-400">4. Revolución:</span> Hacia un Nuevo
+              Paradigma
+            </h3>
+            <div class="grid md:grid-cols-2 gap-8 mt-6">
+              <div class="concept-card p-6 rounded-lg border-cyan-500">
+                <h4 class="text-xl font-semibold mb-3 text-cyan-300">
+                  La Teoría de Kuhn
+                </h4>
+                <p>
+                  La revolución es un reemplazo no acumulativo de un paradigma
+                  por otro nuevo e incompatible. Debido a la
+                  <strong>inconmensurabilidad</strong>, la transición se produce
+                  por persuasión y la promesa de resolver la crisis.
+                </p>
+              </div>
+              <div class="concept-card p-6 rounded-lg border-slate-500">
+                <h4 class="text-xl font-semibold mb-3 text-slate-300">
+                  La Revolución hacia la Salud Salutogénica
+                </h4>
+                <p class="mb-4">
+                  El paradigma emergente es filosófico. Propone un nuevo
+                  propósito y una nueva forma de cognición clínica.
+                </p>
+                <details class="text-sm space-y-3">
+                  <summary>Características del Nuevo Paradigma</summary>
+                  <div
+                    class="mt-4 pl-6 border-l-2 border-slate-700 space-y-3 text-slate-400"
+                  >
+                    <p>
+                      <strong class="text-slate-300"
+                        >Salutogénesis (Aaron Antonovsky):</strong
+                      >
+                      El foco cambia de "¿qué causa la enfermedad?" a "¿qué
+                      genera salud?". El objetivo es aumentar el "Sentido de
+                      Coherencia" del individuo.
+                    </p>
+                    <p>
+                      <strong class="text-slate-300"
+                        >Mente Clínica Extendida (Clark & Chalmers):</strong
+                      >
+                      La IA se integra en el proceso cognitivo del clínico para
+                      gestionar la complejidad que antes generaba sobrecarga.
+                    </p>
+                    <p>
+                      <strong class="text-slate-300"
+                        >"Sense-Making" (Karl Weick):</strong
+                      >
+                      La meta es co-crear sentido en la complejidad, presentando
+                      mapas de posibilidades, no solo dando "la respuesta
+                      correcta".
+                    </p>
+                    <p>
+                      <strong class="text-slate-300"
+                        >Nuevas Herramientas:</strong
+                      >
+                      La Medicina 4P (Predictiva, Preventiva, Personalizada,
+                      Participativa) se vuelve operable a través de la IA.
+                    </p>
+                  </div>
+                </details>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Comparative Table Section -->
+        <section id="paradigm-comparison" class="my-20 md:my-32 fade-in">
+          <h2 class="text-3xl font-bold text-center mb-12">
+            <span class="gradient-text">Tabla Comparativa de Paradigmas</span>
+          </h2>
+          <div class="max-w-5xl mx-auto">
+            <div class="card rounded-lg p-1 comparison-table">
+              <table class="w-full text-left">
+                <thead class="bg-slate-800/50">
+                  <tr>
+                    <th class="p-4 font-semibold">Característica</th>
+                    <th class="p-4 font-semibold text-violet-300">
+                      Paradigma Actual (Biomédico/MBE)
+                    </th>
+                    <th class="p-4 font-semibold text-cyan-300">
+                      Nuevo Paradigma (Salutogénico/IA)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800 text-slate-300">
+                  <tr>
+                    <td class="p-4 font-medium text-slate-100">
+                      Meta Principal
+                    </td>
+                    <td class="p-4">Curar la enfermedad (Patogénesis)</td>
+                    <td class="p-4">Generar salud (Salutogénesis)</td>
+                  </tr>
+                  <tr>
+                    <td class="p-4 font-medium text-slate-100">
+                      Unidad de Análisis
+                    </td>
+                    <td class="p-4">La enfermedad / el órgano</td>
+                    <td class="p-4">La persona en su contexto</td>
+                  </tr>
+                  <tr>
+                    <td class="p-4 font-medium text-slate-100">
+                      Rol del Clínico
+                    </td>
+                    <td class="p-4">Aplicador de guías</td>
+                    <td class="p-4">Facilitador de "sense-making"</td>
+                  </tr>
+                  <tr>
+                    <td class="p-4 font-medium text-slate-100">
+                      Fuente de Evidencia
+                    </td>
+                    <td class="p-4">Jerarquía estricta (ECA en la cima)</td>
+                    <td class="p-4">
+                      Síntesis holística (ECA + RWD + valores)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="p-4 font-medium text-slate-100">
+                      Rol de la Tecnología
+                    </td>
+                    <td class="p-4">Herramienta de consulta (repositorio)</td>
+                    <td class="p-4">
+                      Parte integral de la cognición (Mente Extendida)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Conclusion -->
+        <section
+          id="next-steps"
+          class="text-center mt-20 md:mt-32 max-w-3xl mx-auto fade-in pb-20"
+        >
+          <h2 class="text-3xl font-bold mb-6">
+            <span class="gradient-text">El Camino a Seguir</span>
+          </h2>
+          <p class="text-slate-300 mb-8">
+            La transición a un nuevo paradigma no es automática. Requiere que la
+            comunidad científica y sanitaria aborde preguntas fundamentales:
+          </p>
+          <div class="space-y-4 text-left inline-block">
+            <div class="flex items-start card p-4 rounded-lg">
+              <svg
+                class="w-6 h-6 text-cyan-400 mr-3 flex-shrink-0 mt-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+              <span
+                ><strong>Nuevas Métricas:</strong> ¿Qué indicadores miden
+                realmente el éxito salutogénico, más allá de la ausencia de
+                enfermedad?</span
+              >
+            </div>
+            <div class="flex items-start card p-4 rounded-lg">
+              <svg
+                class="w-6 h-6 text-cyan-400 mr-3 flex-shrink-0 mt-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+              <span
+                ><strong>Validación Ética:</strong> ¿Cómo nos aseguramos de que
+                los sistemas de 'Mente Extendida' sean transparentes, justos y
+                potencien la autonomía?</span
+              >
+            </div>
+            <div class="flex items-start card p-4 rounded-lg">
+              <svg
+                class="w-6 h-6 text-cyan-400 mr-3 flex-shrink-0 mt-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+              <span
+                ><strong>Educación y Formación:</strong> ¿Qué cambios radicales
+                necesita la formación médica para preparar a los clínicos para
+                un rol de 'creadores de sentido'?</span
+              >
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Footer -->
+      <footer
+        class="relative z-10 text-center p-8 mt-12 border-t border-slate-800 text-slate-500"
+      >
+        <p>
+          Infografía conceptual basada en "La estructura de las revoluciones
+          científicas" de T.S. Kuhn y enriquecida con marcos teóricos
+          contemporáneos.
+        </p>
+      </footer>
+    </div>
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-indicator" onclick="scrollToTop()">
+      <svg
+        class="w-6 h-6"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M5 10l7-7m0 0l7 7m-7-7v18"
+        />
+      </svg>
+    </button>
+
+    <script>
+      // Initialize everything when DOM is loaded
+      document.addEventListener("DOMContentLoaded", function () {
+        adjustCycleLayout();
+        setupIntersectionObserver();
+        setupScrollListener();
+        setupCycleNodeListeners();
+      });
+
+      // Adjust cycle layout
+      function adjustCycleLayout() {
+        const container = document.querySelector(".cycle-container");
+        if (!container) return;
+
+        const width = container.clientWidth;
+        const radius = width / 2;
+        const nodeElements = document.querySelectorAll(".cycle-node");
+        const nodeCount = nodeElements.length;
+        const angleStep = 360 / nodeCount;
+
+        nodeElements.forEach((nodeEl, index) => {
+          const nodeSize = nodeEl.clientWidth;
+          const centerOffset = radius - nodeSize / 2;
+          const angle = -90 + index * angleStep;
+          const angleRad = (angle * Math.PI) / 180;
+
+          const x = centerOffset + centerOffset * 0.85 * Math.cos(angleRad);
+          const y = centerOffset + centerOffset * 0.85 * Math.sin(angleRad);
+
+          nodeEl.style.left = `${x}px`;
+          nodeEl.style.top = `${y}px`;
+        });
+      }
+
+      // Intersection Observer for fade-in animations
+      function setupIntersectionObserver() {
+        const fadeElements = document.querySelectorAll(".fade-in");
+
+        const observerOptions = {
+          threshold: 0.1,
+          rootMargin: "0px 0px -50px 0px",
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+            }
+          });
+        }, observerOptions);
+
+        fadeElements.forEach((el) => observer.observe(el));
+      }
+
+      // Scroll listener for navigation highlighting and progress bar
+      function setupScrollListener() {
+        const sections = document.querySelectorAll("section[id]");
+        const navLinks = document.querySelectorAll(".nav-link");
+        const progressBar = document.querySelector(".progress-bar");
+        const scrollIndicator = document.querySelector(".scroll-indicator");
+
+        window.addEventListener("scroll", () => {
+          const scrollY = window.scrollY;
+
+          // Update progress bar
+          const documentHeight =
+            document.documentElement.scrollHeight - window.innerHeight;
+          const scrollPercent = (scrollY / documentHeight) * 100;
+          progressBar.style.width = `${scrollPercent}%`;
+
+          // Show/hide scroll to top button
+          if (scrollY > 500) {
+            scrollIndicator.classList.add("show");
+          } else {
+            scrollIndicator.classList.remove("show");
+          }
+
+          // Update active nav link
+          sections.forEach((section) => {
+            const sectionTop = section.offsetTop - 100;
+            const sectionBottom = sectionTop + section.offsetHeight;
+
+            if (scrollY >= sectionTop && scrollY < sectionBottom) {
+              navLinks.forEach((link) => {
+                link.classList.remove("active");
+                if (link.getAttribute("href") === `#${section.id}`) {
+                  link.classList.add("active");
+                }
+              });
+            }
+          });
+        });
+      }
+
+      // Setup cycle node click listeners
+      function setupCycleNodeListeners() {
+        document.querySelectorAll(".cycle-node").forEach((node) => {
+          node.addEventListener("click", function () {
+            const sectionId = this.getAttribute("data-section");
+            if (sectionId) {
+              const section = document.getElementById(sectionId);
+              if (section) {
+                section.scrollIntoView({ behavior: "smooth" });
+              }
+            }
+          });
+        });
+      }
+
+      // Scroll to top function
+      function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      // Toggle mobile menu
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobileMenu");
+        menu.classList.toggle("hidden");
+      }
+
+      // Handle window resize
+      window.addEventListener("resize", adjustCycleLayout);
+    </script>
+  </body>
+</html>
