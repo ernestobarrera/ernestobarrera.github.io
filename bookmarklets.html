@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recursos Médicos | Dr. Ernesto Barrera</title>
+
+    <!-- Meta tags SEO -->
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Herramientas para buscar información sanitaria | ​👨‍⚕️ ​@ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria  🔎🩺⚕"
+    />
+    <meta property="og:url" content="https://ernestobarrera.github.io/" />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+
+    <style>
+      :root {
+        --primary-bg: #1a2634;
+        --secondary-bg: #2c3e50;
+        --accent-color: #ffd700;
+        --text-primary: #ffffff;
+        --text-secondary: #94a3b8;
+        --card-bg: #2a3b4d;
+        --hover-color: #34495e;
+        --success-color: #2ecc71;
+        --warning-color: #f39c12;
+        --danger-color: #e74c3c;
+        --info-color: #3498db;
+        --sidebar-width: 250px;
+        --header-height: 60px;
+        --border-radius: 8px;
+        --transition-speed: 0.3s;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--primary-bg);
+        color: var(--text-primary);
+        line-height: 1.6;
+        overflow-x: hidden;
+      }
+
+      /* Header */
+      header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: var(--secondary-bg);
+        height: var(--header-height);
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 20px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .brand img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+      }
+
+      .brand-text {
+        font-size: 1.2rem;
+        font-weight: 600;
+      }
+
+      .search-box {
+        flex-grow: 1;
+        max-width: 500px;
+        margin: 0 20px;
+        position: relative;
+      }
+
+      #search {
+        width: 100%;
+        padding: 8px 15px;
+        border-radius: 20px;
+        border: none;
+        background-color: var(--primary-bg);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        padding-left: 40px;
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-secondary);
+      }
+
+      .nav-toggle {
+        display: none;
+        cursor: pointer;
+        font-size: 1.5rem;
+      }
+
+      /* Sidebar */
+      .sidebar {
+        position: fixed;
+        top: var(--header-height);
+        left: 0;
+        width: var(--sidebar-width);
+        height: calc(100vh - var(--header-height));
+        background-color: var(--secondary-bg);
+        padding: 20px 0;
+        overflow-y: auto;
+        transition: transform var(--transition-speed);
+        z-index: 99;
+      }
+
+      .sidebar h2 {
+        padding: 0 20px;
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+        color: var(--accent-color);
+        font-weight: 600;
+      }
+
+      .sidebar-category {
+        margin-bottom: 20px;
+      }
+
+      .category-header {
+        display: flex;
+        align-items: center;
+        padding: 8px 20px;
+        cursor: pointer;
+      }
+
+      .category-header i {
+        margin-right: 10px;
+        color: var(--accent-color);
+      }
+
+      .category-name {
+        flex-grow: 1;
+      }
+
+      .toggle-icon {
+        transition: transform 0.3s;
+      }
+
+      .sidebar-subcategories {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+
+      .sidebar-subcategories.active {
+        max-height: 1000px;
+      }
+
+      .sidebar-subcategory {
+        padding: 8px 20px 8px 45px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .sidebar-subcategory:hover {
+        background-color: var(--hover-color);
+      }
+
+      .subcategory-selected {
+        border-left: 3px solid var(--accent-color);
+        background-color: rgba(255, 215, 0, 0.1);
+      }
+
+      /* Main content */
+      .main-content {
+        margin-left: var(--sidebar-width);
+        margin-top: var(--header-height);
+        padding: 20px;
+        min-height: calc(100vh - var(--header-height));
+      }
+
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--hover-color);
+      }
+
+      .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--accent-color);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .section-controls {
+        display: flex;
+        gap: 10px;
+      }
+
+      .control-btn {
+        background-color: var(--card-bg);
+        border: none;
+        color: var(--text-primary);
+        padding: 5px 10px;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: background-color 0.2s;
+      }
+
+      .control-btn:hover {
+        background-color: var(--hover-color);
+      }
+
+      .view-selector {
+        display: flex;
+        gap: 5px;
+        background-color: var(--card-bg);
+        border-radius: var(--border-radius);
+        padding: 5px;
+      }
+
+      .view-option {
+        padding: 5px 10px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+
+      .view-option.active {
+        background-color: var(--hover-color);
+      }
+
+      /* Card view */
+      .resources-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+      }
+
+      .resource-card {
+        background-color: var(--card-bg);
+        border-radius: var(--border-radius);
+        padding: 15px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        position: relative;
+      }
+
+      .resource-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+      }
+
+      .resource-icon {
+        background-color: var(--primary-bg);
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.2rem;
+        color: var(--accent-color);
+      }
+
+      .card-actions {
+        display: flex;
+        gap: 5px;
+      }
+
+      .card-action {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 0.9rem;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      .card-action:hover {
+        opacity: 1;
+      }
+
+      .card-title {
+        font-weight: 600;
+        margin-bottom: 5px;
+        font-size: 1.1rem;
+      }
+
+      .card-description {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+      }
+
+      .card-tag {
+        background-color: var(--primary-bg);
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+      }
+
+      .resource-link {
+        margin-top: 10px;
+        background-color: var(--secondary-bg);
+        padding: 8px 12px;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: background-color 0.2s;
+      }
+
+      .resource-link:hover {
+        background-color: var(--hover-color);
+      }
+
+      .resource-link i {
+        color: var(--accent-color);
+      }
+
+      /* List view */
+      .resources-list {
+        display: none;
+      }
+
+      .resource-item {
+        display: flex;
+        align-items: center;
+        background-color: var(--card-bg);
+        border-radius: var(--border-radius);
+        padding: 10px 15px;
+        margin-bottom: 10px;
+        transition: background-color 0.2s;
+      }
+
+      .resource-item:hover {
+        background-color: var(--hover-color);
+      }
+
+      .item-icon {
+        width: 30px;
+        height: 30px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1rem;
+        color: var(--accent-color);
+        margin-right: 15px;
+      }
+
+      .item-details {
+        flex-grow: 1;
+      }
+
+      .item-title {
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+
+      .item-meta {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+      }
+
+      .item-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      /* Resource Viewer */
+      .resource-viewer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 200;
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .viewer-content {
+        background-color: var(--card-bg);
+        width: 90%;
+        max-width: 1000px;
+        height: 80vh;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .viewer-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        background-color: var(--secondary-bg);
+      }
+
+      .viewer-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+      }
+
+      .viewer-close {
+        background: none;
+        border: none;
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        cursor: pointer;
+      }
+
+      .viewer-body {
+        flex-grow: 1;
+        display: flex;
+        overflow: hidden;
+      }
+
+      .viewer-iframe {
+        flex-grow: 1;
+        border: none;
+      }
+
+      .viewer-sidebar {
+        width: 250px;
+        background-color: var(--primary-bg);
+        padding: 15px;
+        overflow-y: auto;
+      }
+
+      .viewer-section {
+        margin-bottom: 20px;
+      }
+
+      .viewer-section-title {
+        color: var(--accent-color);
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+        font-weight: 600;
+      }
+
+      .related-item {
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .related-item:hover {
+        background-color: var(--hover-color);
+      }
+
+      /* Quick Access Menu */
+      .quick-access {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        z-index: 98;
+      }
+
+      .quick-menu-toggle {
+        width: 50px;
+        height: 50px;
+        background-color: var(--accent-color);
+        color: var(--primary-bg);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.5rem;
+        cursor: pointer;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        transition: transform 0.3s;
+      }
+
+      .quick-menu {
+        position: absolute;
+        bottom: 60px;
+        right: 0;
+        background-color: var(--card-bg);
+        border-radius: var(--border-radius);
+        width: 180px;
+        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.2);
+        transform: scale(0);
+        transform-origin: bottom right;
+        transition: transform 0.3s;
+        opacity: 0;
+      }
+
+      .quick-menu.active {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      .quick-menu-item {
+        padding: 10px 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .quick-menu-item:hover {
+        background-color: var(--hover-color);
+      }
+
+      .quick-menu-item:first-child {
+        border-top-left-radius: var(--border-radius);
+        border-top-right-radius: var(--border-radius);
+      }
+
+      .quick-menu-item:last-child {
+        border-bottom-left-radius: var(--border-radius);
+        border-bottom-right-radius: var(--border-radius);
+      }
+
+      .quick-menu-item i {
+        color: var(--accent-color);
+      }
+
+      /* Tags Filter Panel */
+      .tags-panel {
+        background-color: var(--card-bg);
+        padding: 15px;
+        border-radius: var(--border-radius);
+        margin-bottom: 20px;
+      }
+
+      .tags-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .tags-title {
+        font-weight: 600;
+      }
+
+      .tags-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .tag-filter {
+        background-color: var(--primary-bg);
+        padding: 5px 10px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .tag-filter:hover,
+      .tag-filter.active {
+        background-color: var(--hover-color);
+      }
+
+      .tag-filter.active {
+        background-color: var(--accent-color);
+        color: var(--primary-bg);
+      }
+
+      /* No results */
+      .no-results {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+      }
+
+      .no-results i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.5;
+      }
+
+      .no-results h3 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+      }
+
+      /* Responsive */
+      @media (max-width: 992px) {
+        .sidebar {
+          transform: translateX(-100%);
+        }
+
+        .sidebar.active {
+          transform: translateX(0);
+        }
+
+        .main-content {
+          margin-left: 0;
+        }
+
+        .nav-toggle {
+          display: block;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .search-box {
+          max-width: 200px;
+        }
+
+        .resources-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .viewer-body {
+          flex-direction: column;
+        }
+
+        .viewer-sidebar {
+          width: 100%;
+          height: 150px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .brand-text {
+          display: none;
+        }
+
+        .search-box {
+          max-width: 150px;
+        }
+
+        .section-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        .section-controls {
+          width: 100%;
+          justify-content: space-between;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="nav-toggle" id="navToggle">
+        <i class="fas fa-bars"></i>
+      </div>
+      <div class="brand">
+        <img src="assets/images/avatar_cabecera.png" alt="Avatar" />
+        <div class="brand-text">Dr. Ernesto Barrera</div>
+      </div>
+      <div class="search-box">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="search" placeholder="Buscar recursos..." />
+      </div>
+      <div class="header-actions">
+        <button class="control-btn" id="toggleLight" title="Cambiar tema">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
+    </header>
+
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-category">
+        <h2>Recursos clínicos</h2>
+
+        <div class="category-header" data-category="diagnostico">
+          <i class="fas fa-stethoscope"></i>
+          <span class="category-name">Diagnóstico</span>
+          <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="sidebar-subcategories" id="diagnostico">
+          <div class="sidebar-subcategory" data-subcategory="exploracion">
+            Exploración física
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="escalas">
+            Escalas y criterios
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="calculadoras">
+            Calculadoras clínicas
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="laboratorio">
+            Pruebas de laboratorio
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="imagen">
+            Pruebas de imagen
+          </div>
+        </div>
+
+        <div class="category-header" data-category="tratamiento">
+          <i class="fas fa-pills"></i>
+          <span class="category-name">Tratamiento</span>
+          <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="sidebar-subcategories" id="tratamiento">
+          <div class="sidebar-subcategory" data-subcategory="guias">
+            Guías clínicas
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="farmacos">
+            Fármacos
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="interacciones">
+            Interacciones
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="procedimientos">
+            Procedimientos
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="ajustes">
+            Ajustes especiales
+          </div>
+        </div>
+
+        <div class="category-header" data-category="pacientes">
+          <i class="fas fa-user-md"></i>
+          <span class="category-name">Atención pacientes</span>
+          <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="sidebar-subcategories" id="pacientes">
+          <div class="sidebar-subcategory" data-subcategory="educacion">
+            Educación sanitaria
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="decisiones">
+            Toma de decisiones
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="infografias">
+            Infografías
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="videos">
+            Vídeos explicativos
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-category">
+        <h2>Recursos formativos</h2>
+
+        <div class="category-header" data-category="formacion">
+          <i class="fas fa-graduation-cap"></i>
+          <span class="category-name">Formación</span>
+          <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="sidebar-subcategories" id="formacion">
+          <div class="sidebar-subcategory" data-subcategory="cursos">
+            Cursos
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="tutoriales">
+            Tutoriales
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="biblioteca">
+            Biblioteca
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="podcast">
+            Podcast
+          </div>
+        </div>
+
+        <div class="category-header" data-category="tutoria">
+          <i class="fas fa-chalkboard-teacher"></i>
+          <span class="category-name">Tutoría FSE</span>
+          <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="sidebar-subcategories" id="tutoria">
+          <div class="sidebar-subcategory" data-subcategory="itinerarios">
+            Itinerarios formativos
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="evaluacion">
+            Evaluación
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="recursos">
+            Recursos docentes
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-category">
+        <h2>Herramientas</h2>
+
+        <div class="category-header" data-category="ia">
+          <i class="fas fa-robot"></i>
+          <span class="category-name">Inteligencia Artificial</span>
+          <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="sidebar-subcategories" id="ia">
+          <div class="sidebar-subcategory" data-subcategory="asistentes">
+            Asistentes médicos
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="generacion">
+            Generación de contenido
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="prompts">
+            Biblioteca de prompts
+          </div>
+        </div>
+
+        <div class="category-header" data-category="organizacion">
+          <i class="fas fa-tasks"></i>
+          <span class="category-name">Organización</span>
+          <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="sidebar-subcategories" id="organizacion">
+          <div class="sidebar-subcategory" data-subcategory="agendas">
+            Agenda y planificación
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="notas">
+            Notas y documentación
+          </div>
+          <div class="sidebar-subcategory" data-subcategory="bookmarklets">
+            Bookmarklets
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="main-content">
+      <div class="section-header">
+        <h2 class="section-title">
+          <i class="fas fa-star"></i>
+          Recursos destacados
+        </h2>
+        <div class="section-controls">
+          <div class="view-selector">
+            <div class="view-option active" data-view="grid">
+              <i class="fas fa-th"></i>
+            </div>
+            <div class="view-option" data-view="list">
+              <i class="fas fa-list"></i>
+            </div>
+          </div>
+          <button class="control-btn" id="filterBtn">
+            <i class="fas fa-filter"></i>
+            Filtros
+          </button>
+        </div>
+      </div>
+
+      <div class="tags-panel" id="tagsPanel" style="display: none">
+        <div class="tags-header">
+          <div class="tags-title">Filtrar por etiquetas</div>
+          <button class="control-btn" id="clearFilters">
+            <i class="fas fa-times"></i>
+            Limpiar
+          </button>
+        </div>
+        <div class="tags-list">
+          <div class="tag-filter" data-tag="diagnostico">Diagnóstico</div>
+          <div class="tag-filter" data-tag="tratamiento">Tratamiento</div>
+          <div class="tag-filter" data-tag="guias">Guías</div>
+          <div class="tag-filter" data-tag="calculadoras">Calculadoras</div>
+          <div class="tag-filter" data-tag="farmacos">Fármacos</div>
+          <div class="tag-filter" data-tag="interacciones">Interacciones</div>
+          <div class="tag-filter" data-tag="educacion">Educación</div>
+          <div class="tag-filter" data-tag="formacion">Formación</div>
+          <div class="tag-filter" data-tag="ia">IA</div>
+        </div>
+      </div>
+
+      <div class="resources-grid" id="resourcesContainer">
+        <!-- Recurso 1: Interacciones -->
+        <div class="resource-card" data-tags="farmacos,interacciones">
+          <div class="card-header">
+            <div class="resource-icon">
+              <i class="fas fa-prescription"></i>
+            </div>
+            <div class="card-actions">
+              <button class="card-action" title="Favorito">
+                <i class="far fa-star"></i>
+              </button>
+              <button class="card-action" title="Más opciones">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+            </div>
+          </div>
+          <h3 class="card-title">Interactions Checker</h3>
+          <p class="card-description">
+            Verificador de interacciones medicamentosas completo con alertas de
+            seguridad y alternativas.
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">interacciones</span>
+            <span class="card-tag">fármacos</span>
+            <span class="card-tag">seguridad</span>
+          </div>
+          <a
+            href="https://reference.medscape.com/drug-interactionchecker"
+            class="resource-link"
+            target="_blank"
+          >
+            <span>Abrir recurso</span>
+            <i class="fas fa-external-link-alt"></i>
+          </a>
+        </div>
+
+        <!-- Recurso 2: Liverpool HIV -->
+        <div class="resource-card" data-tags="interacciones,farmacos">
+          <div class="card-header">
+            <div class="resource-icon">
+              <i class="fas fa-viruses"></i>
+            </div>
+            <div class="card-actions">
+              <button class="card-action" title="Favorito">
+                <i class="far fa-star"></i>
+              </button>
+              <button class="card-action" title="Más opciones">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+            </div>
+          </div>
+          <h3 class="card-title">Liverpool HIV Interactions</h3>
+          <p class="card-description">
+            Base de datos especializada en interacciones entre medicamentos para
+            VIH y otros fármacos.
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">VIH</span>
+            <span class="card-tag">interacciones</span>
+            <span class="card-tag">especialidad</span>
+          </div>
+          <a
+            href="https://www.hiv-druginteractions.org/"
+            class="resource-link"
+            target="_blank"
+          >
+            <span>Abrir recurso</span>
+            <i class="fas fa-external-link-alt"></i>
+          </a>
+        </div>
+
+        <!-- Recurso 3: Guía Terapéutica -->
+        <div class="resource-card" data-tags="tratamiento,guias">
+          <div class="card-header">
+            <div class="resource-icon">
+              <i class="fas fa-book-medical"></i>
+            </div>
+            <div class="card-actions">
+              <button class="card-action" title="Favorito">
+                <i class="far fa-star"></i>
+              </button>
+              <button class="card-action" title="Más opciones">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+            </div>
+          </div>
+          <h3 class="card-title">Guía Terapéutica</h3>
+          <p class="card-description">
+            Guía práctica con recomendaciones de tratamiento basadas en la
+            evidencia para Atención Primaria.
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">tratamiento</span>
+            <span class="card-tag">evidencia</span>
+            <span class="card-tag">AP</span>
+          </div>
+          <a
+            href="https://www.fisterra.com/guias-clinicas/"
+            class="resource-link"
+            target="_blank"
+          >
+            <span>Abrir recurso</span>
+            <i class="fas fa-external-link-alt"></i>
+          </a>
+        </div>
+
+        <!-- Recurso 4: Calculadora REGICOR -->
+        <div class="resource-card" data-tags="calculadoras,diagnostico">
+          <div class="card-header">
+            <div class="resource-icon">
+              <i class="fas fa-calculator"></i>
+            </div>
+            <div class="card-actions">
+              <button class="card-action" title="Favorito">
+                <i class="far fa-star"></i>
+              </button>
+              <button class="card-action" title="Más opciones">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+            </div>
+          </div>
+          <h3 class="card-title">Calculadora REGICOR</h3>
+          <p class="card-description">
+            Calcula el riesgo cardiovascular adaptado a la población española.
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">RCV</span>
+            <span class="card-tag">calculadora</span>
+            <span class="card-tag">prevención</span>
+          </div>
+          <a
+            href="https://www.imim.es/ofertadeserveis/software-public/regicor/?1"
+            class="resource-link"
+            target="_blank"
+          >
+            <span>Abrir recurso</span>
+            <i class="fas fa-external-link-alt"></i>
+          </a>
+        </div>
+
+        <!-- Recurso 5: Perplexity -->
+        <div class="resource-card" data-tags="ia">
+          <div class="card-header">
+            <div class="resource-icon">
+              <i class="fas fa-robot"></i>
+            </div>
+            <div class="card-actions">
+              <button class="card-action" title="Favorito">
+                <i class="far fa-star"></i>
+              </button>
+              <button class="card-action" title="Más opciones">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+            </div>
+          </div>
+          <h3 class="card-title">Perplexity</h3>
+          <p class="card-description">
+            Asistente IA con capacidad de búsqueda y procesamiento de
+            información médica actualizada.
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">IA</span>
+            <span class="card-tag">búsqueda</span>
+            <span class="card-tag">evidencia</span>
+          </div>
+          <a
+            href="https://www.perplexity.ai/"
+            class="resource-link"
+            target="_blank"
+          >
+            <span>Abrir recurso</span>
+            <i class="fas fa-external-link-alt"></i>
+          </a>
+        </div>
+
+        <!-- Recurso 6: MDCalc -->
+        <div class="resource-card" data-tags="calculadoras,diagnostico">
+          <div class="card-header">
+            <div class="resource-icon">
+              <i class="fas fa-calculator"></i>
+            </div>
+            <div class="card-actions">
+              <button class="card-action" title="Favorito">
+                <i class="far fa-star"></i>
+              </button>
+              <button class="card-action" title="Más opciones">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+            </div>
+          </div>
+          <h3 class="card-title">MDCalc</h3>
+          <p class="card-description">
+            Colección de calculadoras médicas, ecuaciones, puntuaciones y guías
+            clínicas.
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">calculadoras</span>
+            <span class="card-tag">diagnóstico</span>
+            <span class="card-tag">escalas</span>
+          </div>
+          <a
+            href="https://www.mdcalc.com/"
+            class="resource-link"
+            target="_blank"
+          >
+            <span>Abrir recurso</span>
+            <i class="fas fa-external-link-alt"></i>
+          </a>
+        </div>
+
+        <!-- Recurso 7: Criterios Diagnósticos HF -->
+        <div class="resource-card" data-tags="diagnostico,guias">
+          <div class="card-header">
+            <div class="resource-icon">
+              <i class="fas fa-clipboard-check"></i>
+            </div>
+            <div class="card-actions">
+              <button class="card-action" title="Favorito">
+                <i class="far fa-star"></i>
+              </button>
+              <button class="card-action" title="Más opciones">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+            </div>
+          </div>
+          <h3 class="card-title">Criterios Diagnósticos HF</h3>
+          <p class="card-description">
+            Criterios diagnósticos de hipercolesterolemia familiar y recursos de
+            MUFACE.
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">hiperlipidemia</span>
+            <span class="card-tag">criterios</span>
+            <span class="card-tag">MUFACE</span>
+          </div>
+          <a
+            href="https://www.muface.es/dam/CRITERIOS_HI"
+            class="resource-link"
+            target="_blank"
+          >
+            <span>Abrir recurso</span>
+            <i class="fas fa-external-link-alt"></i>
+          </a>
+        </div>
+
+        <!-- Recurso 8: EEAG -->
+        <div class="resource-card" data-tags="diagnostico,escalas">
+          <div class="card-header">
+            <div class="resource-icon">
+              <i class="fas fa-brain"></i>
+            </div>
+            <div class="card-actions">
+              <button class="card-action" title="Favorito">
+                <i class="far fa-star"></i>
+              </button>
+              <button class="card-action" title="Más opciones">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+            </div>
+          </div>
+          <h3 class="card-title">Escala EEAG</h3>
+          <p class="card-description">
+            Escala de Evaluación de la Actividad Global para valoración
+            psiquiátrica.
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">psiquiatría</span>
+            <span class="card-tag">escala</span>
+            <span class="card-tag">evaluación</span>
+          </div>
+          <a href="#" class="resource-link" target="_blank">
+            <span>Abrir recurso</span>
+            <i class="fas fa-external-link-alt"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Vista de lista (oculta por defecto) -->
+      <div class="resources-list" id="resourcesList" style="display: none">
+        <!-- Los recursos se generarán dinámicamente por JS -->
+      </div>
+
+      <!-- Mensaje sin resultados (oculto por defecto) -->
+      <div class="no-results" id="noResults" style="display: none">
+        <i class="fas fa-search"></i>
+        <h3>No se encontraron resultados</h3>
+        <p>Intenta con otros términos o elimina los filtros activos</p>
+      </div>
+    </main>
+
+    <!-- Visor de recursos -->
+    <div class="resource-viewer" id="resourceViewer">
+      <div class="viewer-content">
+        <div class="viewer-header">
+          <h3 class="viewer-title" id="viewerTitle">Título del recurso</h3>
+          <button class="viewer-close" id="closeViewer">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="viewer-body">
+          <iframe class="viewer-iframe" id="viewerFrame" src=""></iframe>
+          <div class="viewer-sidebar">
+            <div class="viewer-section">
+              <h4 class="viewer-section-title">Información</h4>
+              <div id="resourceInfo">
+                <p>
+                  <strong>Categoría:</strong>
+                  <span id="resourceCategory">Diagnóstico</span>
+                </p>
+                <p>
+                  <strong>Última visita:</strong>
+                  <span id="resourceLastVisit">Hace 2 días</span>
+                </p>
+              </div>
+            </div>
+            <div class="viewer-section">
+              <h4 class="viewer-section-title">Recursos relacionados</h4>
+              <div id="relatedResources">
+                <!-- Se generarán dinámicamente -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menú de acceso rápido -->
+    <div class="quick-access">
+      <div class="quick-menu-toggle" id="quickMenuToggle">
+        <i class="fas fa-bolt"></i>
+      </div>
+      <div class="quick-menu" id="quickMenu">
+        <div class="quick-menu-item">
+          <i class="fas fa-star"></i>
+          <span>Favoritos</span>
+        </div>
+        <div class="quick-menu-item">
+          <i class="fas fa-history"></i>
+          <span>Recientes</span>
+        </div>
+        <div class="quick-menu-item">
+          <i class="fas fa-plus"></i>
+          <span>Añadir recurso</span>
+        </div>
+        <div class="quick-menu-item">
+          <i class="fas fa-cog"></i>
+          <span>Configuración</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Toggle sidebar
+        const navToggle = document.getElementById("navToggle");
+        const sidebar = document.getElementById("sidebar");
+
+        navToggle.addEventListener("click", function () {
+          sidebar.classList.toggle("active");
+        });
+
+        // Toggle categories
+        const categoryHeaders = document.querySelectorAll(".category-header");
+
+        categoryHeaders.forEach((header) => {
+          header.addEventListener("click", function () {
+            const categoryId = this.getAttribute("data-category");
+            const subcategories = document.getElementById(categoryId);
+            const toggleIcon = this.querySelector(".toggle-icon");
+
+            subcategories.classList.toggle("active");
+            toggleIcon.style.transform = subcategories.classList.contains(
+              "active"
+            )
+              ? "rotate(180deg)"
+              : "rotate(0)";
+          });
+        });
+
+        // Toggle view mode
+        const viewOptions = document.querySelectorAll(".view-option");
+        const resourcesGrid = document.getElementById("resourcesContainer");
+        const resourcesList = document.getElementById("resourcesList");
+
+        viewOptions.forEach((option) => {
+          option.addEventListener("click", function () {
+            const viewMode = this.getAttribute("data-view");
+
+            viewOptions.forEach((opt) => opt.classList.remove("active"));
+            this.classList.add("active");
+
+            if (viewMode === "grid") {
+              resourcesGrid.style.display = "grid";
+              resourcesList.style.display = "none";
+            } else {
+              resourcesGrid.style.display = "none";
+              resourcesList.style.display = "block";
+
+              // Generar vista de lista si está vacía
+              if (resourcesList.children.length === 0) {
+                generateListView();
+              }
+            }
+          });
+        });
+
+        // Search functionality
+        const searchInput = document.getElementById("search");
+        const resourceCards = document.querySelectorAll(".resource-card");
+        const noResults = document.getElementById("noResults");
+
+        searchInput.addEventListener("input", function () {
+          const searchTerm = this.value.toLowerCase().trim();
+          let resultsFound = false;
+
+          resourceCards.forEach((card) => {
+            const title = card
+              .querySelector(".card-title")
+              .textContent.toLowerCase();
+            const description = card
+              .querySelector(".card-description")
+              .textContent.toLowerCase();
+            const tags = Array.from(card.querySelectorAll(".card-tag")).map(
+              (tag) => tag.textContent.toLowerCase()
+            );
+
+            if (
+              title.includes(searchTerm) ||
+              description.includes(searchTerm) ||
+              tags.some((tag) => tag.includes(searchTerm))
+            ) {
+              card.style.display = "block";
+              resultsFound = true;
+            } else {
+              card.style.display = "none";
+            }
+          });
+
+          noResults.style.display = resultsFound ? "none" : "block";
+
+          // Actualizar la vista de lista si está activa
+          if (resourcesList.style.display === "block") {
+            generateListView();
+          }
+        });
+
+        // Toggle filter panel
+        const filterBtn = document.getElementById("filterBtn");
+        const tagsPanel = document.getElementById("tagsPanel");
+
+        filterBtn.addEventListener("click", function () {
+          tagsPanel.style.display =
+            tagsPanel.style.display === "none" ? "block" : "none";
+        });
+
+        // Filter by tags
+        const tagFilters = document.querySelectorAll(".tag-filter");
+        const clearFilters = document.getElementById("clearFilters");
+        let activeFilters = [];
+
+        tagFilters.forEach((tag) => {
+          tag.addEventListener("click", function () {
+            const tagName = this.getAttribute("data-tag");
+
+            if (this.classList.contains("active")) {
+              // Remove filter
+              this.classList.remove("active");
+              activeFilters = activeFilters.filter(
+                (filter) => filter !== tagName
+              );
+            } else {
+              // Add filter
+              this.classList.add("active");
+              activeFilters.push(tagName);
+            }
+
+            applyFilters();
+          });
+        });
+
+        clearFilters.addEventListener("click", function () {
+          tagFilters.forEach((tag) => tag.classList.remove("active"));
+          activeFilters = [];
+          applyFilters();
+        });
+
+        function applyFilters() {
+          let resultsFound = false;
+
+          resourceCards.forEach((card) => {
+            const cardTags = card.getAttribute("data-tags").split(",");
+
+            if (
+              activeFilters.length === 0 ||
+              activeFilters.some((filter) => cardTags.includes(filter))
+            ) {
+              card.style.display = "block";
+              resultsFound = true;
+            } else {
+              card.style.display = "none";
+            }
+          });
+
+          noResults.style.display = resultsFound ? "none" : "block";
+
+          // Actualizar la vista de lista si está activa
+          if (resourcesList.style.display === "block") {
+            generateListView();
+          }
+        }
+
+        // Generate list view from cards
+        function generateListView() {
+          resourcesList.innerHTML = "";
+
+          resourceCards.forEach((card) => {
+            if (card.style.display !== "none") {
+              const title = card.querySelector(".card-title").textContent;
+              const icon = card.querySelector(".resource-icon i").className;
+              const tags = Array.from(card.querySelectorAll(".card-tag")).map(
+                (tag) => tag.textContent
+              );
+              const link = card
+                .querySelector(".resource-link")
+                .getAttribute("href");
+
+              const listItem = document.createElement("div");
+              listItem.className = "resource-item";
+              listItem.innerHTML = `
+                            <div class="item-icon">
+                                <i class="${icon}"></i>
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-title">${title}</h3>
+                                <div class="item-meta">
+                                    <span>${tags.join(", ")}</span>
+                                </div>
+                            </div>
+                            <div class="item-actions">
+                                <a href="${link}" target="_blank" class="control-btn">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                                <button class="control-btn">
+                                    <i class="far fa-star"></i>
+                                </button>
+                            </div>
+                        `;
+
+              resourcesList.appendChild(listItem);
+            }
+          });
+        }
+
+        // Quick access menu toggle
+        const quickMenuToggle = document.getElementById("quickMenuToggle");
+        const quickMenu = document.getElementById("quickMenu");
+
+        quickMenuToggle.addEventListener("click", function () {
+          quickMenu.classList.toggle("active");
+        });
+
+        // Click outside to close menus
+        document.addEventListener("click", function (event) {
+          if (
+            !event.target.closest(".quick-access") &&
+            quickMenu.classList.contains("active")
+          ) {
+            quickMenu.classList.remove("active");
+          }
+
+          if (
+            !event.target.closest("#filterBtn") &&
+            !event.target.closest("#tagsPanel") &&
+            tagsPanel.style.display === "block"
+          ) {
+            tagsPanel.style.display = "none";
+          }
+        });
+
+        // Resource viewer functionality
+        const resourceLinks = document.querySelectorAll(".resource-link");
+        const resourceViewer = document.getElementById("resourceViewer");
+        const viewerFrame = document.getElementById("viewerFrame");
+        const viewerTitle = document.getElementById("viewerTitle");
+        const closeViewer = document.getElementById("closeViewer");
+
+        resourceLinks.forEach((link) => {
+          link.addEventListener("click", function (e) {
+            // Uncomment the next line to enable the viewer
+            // e.preventDefault();
+
+            const url = this.getAttribute("href");
+            const cardTitle =
+              this.closest(".resource-card").querySelector(
+                ".card-title"
+              ).textContent;
+
+            viewerFrame.src = url;
+            viewerTitle.textContent = cardTitle;
+            resourceViewer.style.display = "flex";
+
+            // Simular recursos relacionados
+            const relatedContainer =
+              document.getElementById("relatedResources");
+            relatedContainer.innerHTML = "";
+
+            // Obtener 3 recursos aleatorios como "relacionados"
+            const allCards = Array.from(resourceCards);
+            for (let i = 0; i < 3; i++) {
+              const randomIndex = Math.floor(Math.random() * allCards.length);
+              const relatedTitle =
+                allCards[randomIndex].querySelector(".card-title").textContent;
+
+              const relatedItem = document.createElement("div");
+              relatedItem.className = "related-item";
+              relatedItem.textContent = relatedTitle;
+
+              relatedContainer.appendChild(relatedItem);
+            }
+          });
+        });
+
+        closeViewer.addEventListener("click", function () {
+          resourceViewer.style.display = "none";
+          viewerFrame.src = "";
+        });
+
+        // Light/Dark mode toggle
+        const toggleLight = document.getElementById("toggleLight");
+        let darkMode = true; // Comenzamos en modo oscuro
+
+        toggleLight.addEventListener("click", function () {
+          const root = document.documentElement;
+          const themeIcon = this.querySelector("i");
+
+          if (darkMode) {
+            // Cambiar a modo claro
+            root.style.setProperty("--primary-bg", "#f8f9fa");
+            root.style.setProperty("--secondary-bg", "#e9ecef");
+            root.style.setProperty("--card-bg", "#ffffff");
+            root.style.setProperty("--text-primary", "#212529");
+            root.style.setProperty("--text-secondary", "#6c757d");
+            root.style.setProperty("--hover-color", "#dee2e6");
+            themeIcon.classList.remove("fa-moon");
+            themeIcon.classList.add("fa-sun");
+          } else {
+            // Cambiar a modo oscuro
+            root.style.setProperty("--primary-bg", "#1a2634");
+            root.style.setProperty("--secondary-bg", "#2c3e50");
+            root.style.setProperty("--card-bg", "#2a3b4d");
+            root.style.setProperty("--text-primary", "#ffffff");
+            root.style.setProperty("--text-secondary", "#94a3b8");
+            root.style.setProperty("--hover-color", "#34495e");
+            themeIcon.classList.remove("fa-sun");
+            themeIcon.classList.add("fa-moon");
+          }
+
+          darkMode = !darkMode;
+        });
+
+        // Añadir subcategorías al historial de navegación (para el botón atrás)
+        const subcategories = document.querySelectorAll(".sidebar-subcategory");
+
+        subcategories.forEach((subcategory) => {
+          subcategory.addEventListener("click", function () {
+            const categoryName = this.closest(".sidebar-subcategories").id;
+            const subcategoryName = this.getAttribute("data-subcategory");
+
+            // Marcar como seleccionada
+            subcategories.forEach((sub) =>
+              sub.classList.remove("subcategory-selected")
+            );
+            this.classList.add("subcategory-selected");
+
+            // Aquí se cargarían los recursos específicos para esta categoría
+            // Por ahora solo simulamos un cambio en el título
+            document.querySelector(".section-title").innerHTML = `
+                        <i class="fas fa-folder-open"></i>
+                        ${
+                          categoryName.charAt(0).toUpperCase() +
+                          categoryName.slice(1)
+                        } > ${
+              subcategoryName.charAt(0).toUpperCase() + subcategoryName.slice(1)
+            }
+                    `;
+
+            // Para dispositivos móviles, cerrar el sidebar después de seleccionar
+            if (window.innerWidth <= 992) {
+              sidebar.classList.remove("active");
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
