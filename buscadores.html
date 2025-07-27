@@ -8,7 +8,94 @@
     />
 
 <!-- Justo después de la apertura del <head> -->
+  <script>
+    // Configuración de rutas
+    const config = {
+        isLocal: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
+        
+        get revealBase() {
+            return this.isLocal ? '../reveal.js' : 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js@master';
+        },
+        
+        get pluginsBase() {
+            return this.isLocal ? '../reveal.js-plugins' : 'https://cdn.jsdelivr.net/gh/ernestobarrera/reveal.js-plugins@master';
+        },
 
+        // Recursos CSS a cargar
+        stylesheets: [
+            { path: '/dist/reveal.css', base: 'reveal' },
+            { path: '/dist/theme/blood.css', base: 'reveal' },
+            { path: '/simplemenu/simplemenu.css', base: 'plugins' },
+            { path: '/highlight/zenburn.css', base: 'plugins' },
+            { path: '/chalkboard/style.css', base: 'plugins' },
+            { path: '/appearance/appearance.css', base: 'plugins' }
+        ],
+
+        // Scripts a cargar en orden
+        scripts: [
+            { path: '/dist/reveal.js', base: 'reveal' },
+            { path: '/plugin/markdown/markdown.js', base: 'reveal' },
+            { path: '/plugin/highlight/highlight.js', base: 'reveal' },
+            { path: '/menu/menu.js', base: 'plugins' },
+            { path: '/chalkboard/plugin.js', base: 'plugins' },
+            { path: '/appearance/appearance.js', base: 'plugins' },
+            { path: '/audio-slideshow/plugin.js', base: 'plugins' },
+            { path: '/audio-slideshow/RecordRTC.js', base: 'plugins' },
+            { path: '/audio-slideshow/recorder.js', base: 'plugins' },
+            { path: '/embed-tweet/plugin.js', base: 'plugins' }
+        ]
+    };
+
+    // Función para cargar recursos
+    function loadResources() {
+        // Cargar CSS
+        config.stylesheets.forEach(stylesheet => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = (stylesheet.base === 'reveal' ? config.revealBase : config.pluginsBase) + stylesheet.path;
+            document.head.appendChild(link);
+        });
+
+// Cargar Scripts en orden
+let promise = Promise.resolve();
+config.scripts.forEach(script => {
+    promise = promise.then(() => {
+        return new Promise((resolve, reject) => {
+            const scriptElement = document.createElement('script');
+            const url = (script.base === 'reveal' ? config.revealBase : config.pluginsBase) + script.path;
+            console.log('Cargando script:', url);  // Añadimos este log
+            scriptElement.src = url;
+            scriptElement.onload = () => {
+                console.log('Script cargado:', url);  // Añadimos este log
+                resolve();
+            };
+            scriptElement.onerror = (error) => {
+                console.error('Error cargando script:', url, error);  // Añadimos este log
+                reject(error);
+            };
+            document.body.appendChild(scriptElement);
+        });
+    });
+});
+
+        // Inicializar Reveal.js cuando todo esté cargado
+        promise.then(() => {
+            Reveal.initialize({
+                // Tu configuración actual de Reveal.js
+                controls: true,
+                progress: true,
+                history: true,
+                center: true
+
+            });
+        }).catch(error => {
+            console.error('Error cargando recursos:', error);
+        });
+    }
+
+    // Cargar recursos cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', loadResources);
+</script>
 <!-- meta_propio_inicio -->
 <meta name="description" content="Web con recursos para facilitar la búsqueda de información y gestión del conocimiento en Ciencias de la Salud">
 <meta name="author" content="Ernesto Barrera">
