@@ -72,26 +72,19 @@
         }
       }
 
-      /* Animación para la aparición de los detalles de la herramienta */
+      /* Animación Suave al Expandir Detalles */
       .tool-detail {
-        display: none;
+        max-height: 0;
         opacity: 0;
+        overflow: hidden;
+        transition: all 0.5s ease-out;
       }
 
       .tool-detail.active {
-        display: block;
-        animation: fadeInDetail 0.4s ease-out forwards;
-      }
-
-      @keyframes fadeInDetail {
-        from {
-          opacity: 0;
-          transform: translateY(-10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        max-height: 2000px; /* Valor suficientemente grande */
+        opacity: 1;
+        margin-top: 1rem;
+        transition: all 0.5s ease-in;
       }
 
       /* Tooltip personalizado */
@@ -126,6 +119,26 @@
           background-position: 200% center;
         }
       }
+
+      /* Estilo para chip activo */
+      .tool-chip.active-chip {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        border-color: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      }
+
+      .tool-chip.active-chip span {
+        background: rgba(255, 255, 255, 0.2) !important;
+        color: white !important;
+      }
+
+      .tool-chip.active-chip::after {
+        content: "▼";
+        margin-left: 8px;
+        font-size: 10px;
+      }
     </style>
   </head>
   <body class="text-slate-800">
@@ -147,6 +160,16 @@
       </header>
 
       <main class="bg-white p-6 md:p-8 rounded-3xl shadow-xl">
+        <div
+          id="progress-indicator"
+          class="hidden fixed top-4 right-4 bg-white px-4 py-2 rounded-full shadow-lg border border-slate-200 z-50"
+        >
+          <span class="text-sm font-medium text-slate-600"
+            >Explorando nivel
+            <span id="current-level" class="font-bold text-blue-600">5</span> de
+            5</span
+          >
+        </div>
         <div class="lg:grid lg:grid-cols-12 lg:gap-12">
           <aside class="lg:col-span-5 xl:col-span-4 mb-8 lg:mb-0">
             <div class="sticky top-8">
@@ -369,7 +392,12 @@
                   <strong>foreground questions</strong>.
                 </p>
                 <div class="p-3 bg-red-100/60 rounded-lg border border-red-200">
-                  <p><strong class="text-red-900">Conceptos Clave:</strong></p>
+                  <p class="flex items-center gap-2 mb-2">
+                    <span class="text-2xl">🔑</span
+                    ><strong class="text-red-900 text-base"
+                      >Conceptos Clave:</strong
+                    >
+                  </p>
                   <ul class="list-disc list-inside mt-1">
                     <li>
                       <strong>Just-in-time information:</strong> La evidencia
@@ -420,8 +448,11 @@
                 <div
                   class="p-3 bg-orange-100/60 rounded-lg border border-orange-200"
                 >
-                  <p>
-                    <strong class="text-orange-900">Conceptos Clave:</strong>
+                  <p class="flex items-center gap-2 mb-2">
+                    <span class="text-2xl">💡</span
+                    ><strong class="text-orange-900 text-base"
+                      >Conceptos Clave:</strong
+                    >
                   </p>
                   <ul class="list-disc list-inside mt-1">
                     <li>
@@ -505,8 +536,11 @@
                 <div
                   class="p-3 bg-amber-100/60 rounded-lg border border-amber-200"
                 >
-                  <p>
-                    <strong class="text-amber-900">Conceptos Clave:</strong>
+                  <p class="flex items-center gap-2 mb-2">
+                    <span class="text-2xl">📋</span
+                    ><strong class="text-amber-900 text-base"
+                      >Conceptos Clave:</strong
+                    >
                   </p>
                   <ul class="list-disc list-inside mt-1">
                     <li>
@@ -568,8 +602,11 @@
                 <div
                   class="p-3 bg-emerald-100/60 rounded-lg border border-emerald-200"
                 >
-                  <p>
-                    <strong class="text-emerald-900">Conceptos Clave:</strong>
+                  <p class="flex items-center gap-2 mb-2">
+                    <span class="text-2xl">🔍</span
+                    ><strong class="text-emerald-900 text-base"
+                      >Conceptos Clave:</strong
+                    >
                   </p>
                   <ul class="list-disc list-inside mt-1">
                     <li>
@@ -636,7 +673,12 @@
                 <div
                   class="p-3 bg-blue-100/60 rounded-lg border border-blue-200"
                 >
-                  <p><strong class="text-blue-900">Conceptos Clave:</strong></p>
+                  <p class="flex items-center gap-2 mb-2">
+                    <span class="text-2xl">📖</span
+                    ><strong class="text-blue-900 text-base"
+                      >Conceptos Clave:</strong
+                    >
+                  </p>
                   <ul class="list-disc list-inside mt-1">
                     <li>
                       <strong>Validez Interna/Externa:</strong> ¿Son fiables los
@@ -945,41 +987,104 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
               </div>
             </div>
           </div>
-
           <div
             class="mb-12 p-6 bg-indigo-50/50 border border-indigo-200 rounded-2xl"
           >
             <h3 class="text-xl font-bold text-indigo-900 mb-3">
               🧠 Cómo Aplicar la Pirámide a tus Preguntas
             </h3>
-            <p class="text-slate-700 mb-3 text-sm">
-              El secreto para usar esta guía eficazmente es diferenciar tu tipo
-              de pregunta clínica:
+            <p class="text-slate-700 mb-6 text-sm">
+              La clave para una búsqueda de evidencia eficiente es identificar
+              primero el tipo de pregunta clínica que necesitas resolver.
             </p>
-            <div class="grid md:grid-cols-2 gap-4 text-sm">
+            <div class="space-y-4 text-sm">
               <div class="bg-white p-4 rounded-lg border">
-                <h4 class="font-bold text-slate-800">
-                  1. Background Questions (De Fondo)
+                <h4 class="font-bold text-slate-800 mb-2">
+                  1. Background Questions (de Fondo)
                 </h4>
-                <p class="text-slate-600 mt-1">
-                  Preguntas generales sobre una condición: "¿Cuál es la
-                  fisiopatología de la HTA?". Se responden mejor con los niveles
-                  inferiores (<strong>Estudios, Revisiones</strong>) para
-                  construir conocimiento.
+                <p class="text-slate-600">
+                  Buscan
+                  <strong>conocimiento general y establecido</strong> sobre una
+                  condición, un test o un tratamiento. Por ejemplo:
+                  <em class="text-slate-500"
+                    >"¿Cuál es la fisiopatología de la insuficiencia
+                    cardíaca?"</em
+                  >
+                </p>
+                <p class="text-slate-600 mt-2">
+                  <strong class="text-slate-700">Fuentes Principales:</strong>
+                  Aunque tradicionalmente se respondían con libros de texto, hoy
+                  los
+                  <strong
+                    >recursos de sumario en el vértice de la pirámide</strong
+                  >
+                  (ej. UpToDate, Dynamed) son la fuente ideal por ofrecer
+                  información de fondo fiable y continuamente actualizada.
                 </p>
               </div>
               <div class="bg-white p-4 rounded-lg border">
-                <h4 class="font-bold text-slate-800">
-                  2. Foreground Questions (Específicas)
+                <h4 class="font-bold text-slate-800 mb-2">
+                  2. Foreground Questions (de Primer Plano)
                 </h4>
-                <p class="text-slate-600 mt-1">
-                  Preguntas sobre un paciente concreto: "¿Cuál es el mejor tto.
-                  para este diabético con ERC?". Se responden mejor y más rápido
-                  con los niveles superiores (<strong>Sistemas, Sumarios</strong
-                  >).
+                <p class="text-slate-600">
+                  Buscan
+                  <strong>evidencia específica y evaluada críticamente</strong>
+                  para resolver una <strong>incertidumbre clínica</strong> sobre
+                  un paciente individual. Son el motor de la Medicina Basada en
+                  la Evidencia.
                 </p>
+                <ul class="mt-3 space-y-2 list-disc list-inside text-slate-600">
+                  <li>
+                    <strong>Comparan alternativas</strong> para tomar una
+                    decisión: tratamiento A vs. B, utilidad de un test
+                    diagnóstico, etc.
+                  </li>
+                  <li>
+                    Se formulan con la
+                    <strong>estructura PICO</strong> (Paciente, Intervención,
+                    Comparación, Outcome) para poder realizar una búsqueda
+                    bibliográfica precisa y sistemática.
+                  </li>
+                  <li>
+                    <strong class="text-slate-700"
+                      >Son la razón de ser de la pirámide 5S:</strong
+                    >
+                    la respuesta debe buscarse empezando por el nivel más alto
+                    posible (Systems) y descendiendo solo si es necesario.
+                  </li>
+                </ul>
               </div>
             </div>
+            <div
+              class="mt-6 p-4 bg-emerald-50 rounded-lg border border-emerald-200"
+            >
+              <h4 class="font-semibold text-emerald-900 mb-2 flex items-center">
+                <span class="text-xl mr-2">💡</span> El Matiz Clave en la
+                Práctica
+              </h4>
+              <p class="text-sm text-emerald-800">
+                Los recursos del vértice de la pirámide (como UpToDate) son tan
+                completos que responden eficazmente a
+                <strong>AMBOS</strong> tipos de preguntas. La habilidad clínica
+                reside en saber si estás buscando un dato de fondo (un hecho) o
+                si necesitas evaluar la evidencia para una decisión de primer
+                plano (una comparación).
+              </p>
+            </div>
+            <p
+              class="mt-6 text-sm text-slate-600 border-t border-indigo-200 pt-4"
+            >
+              Este navegador se especializa en las nuevas herramientas de IA.
+              Para una guía detallada sobre los recursos más tradicionales de la
+              MBE (PubMed, Cochrane, etc.), puedes consultar esta
+              <a
+                href="https://ernestobarrera.github.io/piramide-evidencia.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="font-semibold text-blue-600 hover:underline"
+                >guía complementaria</a
+              >.
+            </p>
           </div>
 
           <div class="grid md:grid-cols-2 gap-8">
@@ -1390,6 +1495,16 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
           );
           pyramidLevelGroups.forEach((l) => l.classList.remove("active"));
           levelElement.classList.add("active");
+
+          // Actualizar indicador de progreso
+          const progressIndicator =
+            document.getElementById("progress-indicator");
+          const currentLevelSpan = document.getElementById("current-level");
+          if (progressIndicator && currentLevelSpan) {
+            progressIndicator.classList.remove("hidden");
+            currentLevelSpan.textContent = levelNum;
+          }
+
           resourceSections.forEach((s) => s.classList.remove("highlight"));
           if (targetSection) {
             targetSection.classList.add("highlight");
@@ -1436,11 +1551,19 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
               ".level-resources, #resources-llm"
             );
             const wasActive = detailEl.classList.contains("active");
+
+            // Cerrar todos los detalles y resetear todos los chips en la sección
             parentSection
               .querySelectorAll(".tool-detail")
               .forEach((detail) => detail.classList.remove("active"));
+            parentSection.querySelectorAll(".tool-chip").forEach((c) => {
+              c.classList.remove("active-chip");
+            });
+
+            // Si no estaba activo, abrir el actual y marcar el chip
             if (!wasActive) {
               detailEl.classList.add("active");
+              chip.classList.add("active-chip");
             }
           });
         });
