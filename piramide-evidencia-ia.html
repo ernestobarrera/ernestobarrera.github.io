@@ -1,14 +1,35 @@
 <!DOCTYPE html>
-<html lang="es" class="scroll-smooth">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>
-      Guía Interactiva: Pirámide de Evidencia 5.0 y Herramientas IA para
-      Síntesis Biomédica
-    </title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta
+      name="description"
+      content="Navegador interactivo de herramientas de inteligencia artificial para la síntesis de evidencia biomédica basado en la pirámide 5S."
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <title>Pirámide de Evidencia 5.0 y Herramientas IA | @ernestob</title>
+
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Pirámide de Evidencia 5.0 y Herramientas IA | ​👨‍⚕️ ​@ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria  🔎🩺⚕"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/calculadora_diagnostica.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -17,14 +38,83 @@
       rel="stylesheet"
     />
 
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <style>
-      /* Estilo para la fuente Inter y un fondo sutil */
-      body {
-        font-family: "Inter", sans-serif;
-        background-color: #f8fafc;
+      /* Variables locales para la pirámide - no afectan el sitio global */
+      .pyramid-card {
+        --pyramid-card-bg: #ffffff;
+        --pyramid-text-primary: #1e293b;
+        --pyramid-text-secondary: #64748b;
+        --pyramid-accent-color: #3b82f6;
       }
 
-      /* Estilos para la pirámide SVG */
+      .pyramid-container {
+        width: 100%;
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 0;
+      }
+      .pyramid-card {
+        background: var(--pyramid-card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+      .pyramid-title {
+        color: var(--pyramid-text-primary);
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--pyramid-accent-color);
+      }
+      .pyramid-description {
+        color: var(--pyramid-text-secondary);
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+      }
+
+      /* Mejora de contraste de textos */
+      .text-slate-700 {
+        color: #334155 !important;
+      }
+      .text-slate-600 {
+        color: #475569 !important;
+      }
+      .text-slate-500 {
+        color: #64748b !important;
+      }
+
+      /* Responsive mejorado */
+      @media (max-width: 1024px) and (min-width: 768px) {
+        .pyramid-container {
+          padding: 1rem;
+        }
+
+        .sidebar-container .sticky {
+          position: relative !important;
+          top: 0 !important;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .pyramid-card {
+          padding: 1rem;
+        }
+      }
+
+      /* Estilos de la pirámide */
       .pyramid-level-group {
         cursor: pointer;
         transition: all 0.3s ease-in-out;
@@ -53,13 +143,17 @@
         stroke-width: 5;
       }
 
-      /* Estilos para resaltar la sección de recursos activa */
+      /* Animaciones mejoradas */
+      .level-resources {
+        transform: translateZ(0);
+        will-change: box-shadow;
+      }
+
       .level-resources.highlight,
       #resources-llm.highlight {
         animation: highlightPulse 0.5s ease-out;
         box-shadow: 0 0 0 3px #3b82f6, 0 10px 25px rgba(59, 130, 246, 0.15);
       }
-
       @keyframes highlightPulse {
         0% {
           transform: scale(1);
@@ -72,34 +166,38 @@
         }
       }
 
-      /* Animación Suave al Expandir Detalles */
+      /* Tool chips mejorados */
+      .tool-chip {
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        transform: translateZ(0);
+      }
+
+      .tool-chip:active {
+        transform: scale(0.95);
+      }
+
       .tool-detail {
         max-height: 0;
         opacity: 0;
         overflow: hidden;
         transition: all 0.5s ease-out;
       }
-
       .tool-detail.active {
-        max-height: 2000px; /* Valor suficientemente grande */
+        max-height: 2000px;
         opacity: 1;
         margin-top: 1rem;
         transition: all 0.5s ease-in;
       }
-
-      /* Tooltip personalizado */
       .tooltip {
         opacity: 0;
         visibility: hidden;
         transition: all 0.3s ease;
       }
-
       .has-tooltip:hover .tooltip {
         opacity: 1;
         visibility: visible;
       }
-
-      /* Efecto de brillo para badges */
       .badge-shimmer {
         background: linear-gradient(
           120deg,
@@ -110,7 +208,6 @@
         background-size: 200% 100%;
         animation: shimmer 2s infinite;
       }
-
       @keyframes shimmer {
         0% {
           background-position: -200% center;
@@ -119,8 +216,6 @@
           background-position: 200% center;
         }
       }
-
-      /* Estilo para chip activo */
       .tool-chip.active-chip {
         background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         color: white;
@@ -128,55 +223,154 @@
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
       }
-
       .tool-chip.active-chip span {
         background: rgba(255, 255, 255, 0.2) !important;
         color: white !important;
       }
-
       .tool-chip.active-chip::after {
         content: "▼";
         margin-left: 8px;
         font-size: 10px;
       }
+
+      /* Fix para el indicador de progreso */
+      /* ⬇️ 1.  BLOQUE CSS – busca este selector  #progress-indicator  */
+      #progress-indicator {
+        position: fixed !important;
+        top: 5rem !important; /* antes: 1rem  →  ahora se alinea con el contenido */
+        right: 1rem !important;
+        z-index: 9999 !important;
+        background: #1e293b !important;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+      }
+
+      /* coloca esto al final de tu <style> local o en components.css */
+
+      /* los nombres de las herramientas deben verse siempre con opacidad plena
+   y con un color suficientemente oscuro para WCAG AA */
+      .tool-chip {
+        opacity: 1 !important; /* anula la opacidad heredada del contenedor */
+        color: #1e293b !important; /* slate‑800 → contraste > 4,5:1 sobre #fff */
+      }
+
+      .tool-chip span {
+        /* etiqueta Free, Freemium, etc. */
+        opacity: 1 !important; /* por si acaso heredan opacidad también   */
+      }
+
+      /* ================================================================= */
+      /* ===== COMIENZA EL BLOQUE DE CÓDIGO CORRECTO PARA PEGAR AQUÍ ===== */
+      /* ================================================================= */
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      :root {
+        /* Altura de la cabecera principal de la web (la que viene de header.html) */
+        --header-height: 4rem; /* 64px */
+        /* Altura del título de la página que también es sticky */
+        --intro-header-height: 5.5rem; /* 88px */
+        /* El offset total es la suma de ambos + un pequeño margen */
+
+        --scroll-offset: calc(
+          var(--header-height) + var(--intro-header-height) + 3.5rem
+        );
+      }
+      .main-container {
+        margin-top: 0;
+      }
+
+      /* El título principal se mantiene fijo arriba */
+      .intro-header {
+        position: sticky;
+        /* Se pega justo debajo del header principal del sitio */
+        top: var(--header-height);
+        z-index: 50;
+        background: #0f172a; /* Mismo color de fondo del body */
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+      }
+
+      /* La pirámide (sidebar) se pega debajo de los dos elementos anteriores */
+      @media (min-width: 1024px) {
+        .sidebar-container {
+          position: sticky;
+          /* Usa el offset total para alinearse perfectamente */
+          top: var(--scroll-offset);
+          align-self: start;
+        }
+      }
+
+      /* La magia para el scroll: añade un margen superior "virtual" a las tarjetas */
+      .level-resources,
+      #resources-llm {
+        scroll-margin-top: var(--scroll-offset);
+      }
+
+      /* ============================================================= */
+      /* ===== FIN DEL BLOQUE DE CÓDIGO QUE DEBES PEGAR ============= */
+      /* ============================================================= */
     </style>
+
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
   </head>
-  <body class="text-slate-800">
-    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
-      <header
-        class="text-center bg-gradient-to-br from-blue-50 to-indigo-50 p-6 md:p-8 rounded-3xl shadow-xl mb-8 border border-blue-100"
-      >
-        <div class="max-w-4xl mx-auto">
-          <h1
-            class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3"
-          >
-            🏛️ Pirámide de Evidencia 5.0 y Herramientas IA
-          </h1>
-          <p class="text-base md:text-lg text-slate-700 font-medium mb-4">
-            Navegador interactivo de herramientas de inteligencia artificial
-            para la síntesis de evidencia biomédica
-          </p>
-        </div>
+
+  <body>
+    <include src="header.html"></include>
+
+    <main class="main-container">
+      <!-- ========== INTRO CARD (título + descripción) ========== -->
+      <!-- ===== 1. ENVUELVE título + descripción FUERA de .pyramid-card =====
+     (pega justo DESPUÉS de  <main class="main-container"> ) -->
+      <header class="intro-header max-w-[1500px] mx-auto px-4">
+        <h1 class="text-xl font-extrabold text-slate-50">
+          🔼 Pirámide de Evidencia 5.0 y Herramientas IA
+        </h1>
+        <p class="mt-1 text-base text-slate-300">
+          Herramienta interactiva para conocer recursos apoyados en inteligencia
+          artificial para la síntesis de evidencia biomédica y su aplicación en
+          la práctica clínica. Esta pirámide de evidencia 5S permite acceder a
+          diferentes fuentes de información según su nivel de procesamiento y
+          síntesis de la evidencia.
+        </p>
+        <div class="h-0.5 bg-amber-400 mt-2"></div>
       </header>
 
-      <main class="bg-white p-6 md:p-8 rounded-3xl shadow-xl">
+      <!-- ========== FIN INTRO CARD ========== -->
+
+      <div class="pyramid-container pt-20">
         <div
           id="progress-indicator"
-          class="hidden fixed top-4 right-4 bg-white px-4 py-2 rounded-full shadow-lg border border-slate-200 z-50"
+          class="hidden fixed top-4 right-4 z-50 bg-slate-800 text-slate-200 px-4 py-2 rounded-full shadow-lg flex items-center gap-2"
         >
-          <span class="text-sm font-medium text-slate-600"
-            >Explorando nivel
-            <span id="current-level" class="font-bold text-blue-600">5</span> de
-            5</span
+          <i class="fa-solid fa-layer-group text-slate-400"></i>
+          <span class="text-sm font-medium"
+            >Nivel
+            <span id="current-level" class="font-bold text-blue-400">5</span>
+            de 5</span
           >
         </div>
-        <div class="lg:grid lg:grid-cols-12 lg:gap-12">
-          <aside class="lg:col-span-5 xl:col-span-4 mb-8 lg:mb-0">
+
+        <div class="lg:grid lg:grid-cols-12 lg:gap-12 lg:items-start">
+          <aside
+            class="lg:col-span-5 xl:col-span-4 mb-8 lg:mb-0 sidebar-container"
+          >
             <div class="sticky top-8">
               <h2 class="text-lg font-bold text-center mb-4 text-slate-700">
                 ⚡ Haz clic en un nivel para explorar
               </h2>
-
               <div class="flex flex-row items-stretch">
                 <div
                   class="flex-shrink-0 w-12 flex items-center justify-center mr-4"
@@ -210,7 +404,7 @@
                       >
                         <path
                           d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275z"
-                        />
+                        ></path>
                       </svg>
                     </div>
                     <div
@@ -225,6 +419,21 @@
                       class="w-full h-auto mx-auto filter drop-shadow-lg"
                     >
                       <defs>
+                        <filter
+                          id="text-shadow"
+                          x="-20%"
+                          y="-20%"
+                          width="140%"
+                          height="140%"
+                        >
+                          <feDropShadow
+                            dx="1"
+                            dy="1"
+                            stdDeviation="1.5"
+                            flood-color="#000000"
+                            flood-opacity="0.5"
+                          />
+                        </filter>
                         <linearGradient
                           id="grad5"
                           x1="0%"
@@ -235,11 +444,11 @@
                           <stop
                             offset="0%"
                             style="stop-color: #dc2626; stop-opacity: 1"
-                          />
+                          ></stop>
                           <stop
                             offset="100%"
                             style="stop-color: #b91c1c; stop-opacity: 1"
-                          />
+                          ></stop>
                         </linearGradient>
                         <linearGradient
                           id="grad4"
@@ -251,11 +460,11 @@
                           <stop
                             offset="0%"
                             style="stop-color: #ea580c; stop-opacity: 1"
-                          />
+                          ></stop>
                           <stop
                             offset="100%"
                             style="stop-color: #c2410c; stop-opacity: 1"
-                          />
+                          ></stop>
                         </linearGradient>
                         <linearGradient
                           id="grad3"
@@ -267,11 +476,11 @@
                           <stop
                             offset="0%"
                             style="stop-color: #f59e0b; stop-opacity: 1"
-                          />
+                          ></stop>
                           <stop
                             offset="100%"
                             style="stop-color: #d97706; stop-opacity: 1"
-                          />
+                          ></stop>
                         </linearGradient>
                         <linearGradient
                           id="grad2"
@@ -283,11 +492,11 @@
                           <stop
                             offset="0%"
                             style="stop-color: #10b981; stop-opacity: 1"
-                          />
+                          ></stop>
                           <stop
                             offset="100%"
                             style="stop-color: #059669; stop-opacity: 1"
-                          />
+                          ></stop>
                         </linearGradient>
                         <linearGradient
                           id="grad1"
@@ -299,29 +508,40 @@
                           <stop
                             offset="0%"
                             style="stop-color: #3b82f6; stop-opacity: 1"
-                          />
+                          ></stop>
                           <stop
                             offset="100%"
                             style="stop-color: #2563eb; stop-opacity: 1"
-                          />
+                          ></stop>
                         </linearGradient>
                       </defs>
-
                       <g class="pyramid-level-group" data-level="5">
                         <polygon
                           class="pyramid-shape"
                           points="200,20 300,20 375,100 125,100"
                           fill="url(#grad5)"
-                        />
-                        <text class="pyramid-text" x="250" y="70">SYSTEMS</text>
+                        ></polygon>
+                        <text
+                          class="pyramid-text"
+                          x="250"
+                          y="70"
+                          filter="url(#text-shadow)"
+                        >
+                          SYSTEMS
+                        </text>
                       </g>
                       <g class="pyramid-level-group" data-level="4">
                         <polygon
                           class="pyramid-shape"
                           points="125,105 375,105 440,195 60,195"
                           fill="url(#grad4)"
-                        />
-                        <text class="pyramid-text" x="250" y="155">
+                        ></polygon>
+                        <text
+                          class="pyramid-text"
+                          x="250"
+                          y="155"
+                          filter="url(#text-shadow)"
+                        >
                           SUMMARIES
                         </text>
                       </g>
@@ -330,8 +550,13 @@
                           class="pyramid-shape"
                           points="60,200 440,200 480,290 20,290"
                           fill="url(#grad3)"
-                        />
-                        <text class="pyramid-text" x="250" y="250">
+                        ></polygon>
+                        <text
+                          class="pyramid-text"
+                          x="250"
+                          y="250"
+                          filter="url(#text-shadow)"
+                        >
                           GUIDELINES
                         </text>
                       </g>
@@ -340,8 +565,13 @@
                           class="pyramid-shape"
                           points="20,295 480,295 500,400 0,400"
                           fill="url(#grad2)"
-                        />
-                        <text class="pyramid-text" x="250" y="355">
+                        ></polygon>
+                        <text
+                          class="pyramid-text"
+                          x="250"
+                          y="355"
+                          filter="url(#text-shadow)"
+                        >
                           REVIEWS
                         </text>
                       </g>
@@ -350,8 +580,13 @@
                           class="pyramid-shape"
                           points="0,405 500,405 500,480 0,480"
                           fill="url(#grad1)"
-                        />
-                        <text class="pyramid-text" x="250" y="450">
+                        ></polygon>
+                        <text
+                          class="pyramid-text"
+                          x="250"
+                          y="450"
+                          filter="url(#text-shadow)"
+                        >
                           STUDIES
                         </text>
                       </g>
@@ -383,7 +618,7 @@
                 >
                 Systems - Soporte a Decisión Integrado
               </h3>
-              <div class="text-sm text-slate-600 mb-4 space-y-2">
+              <div class="text-sm text-slate-700 mb-4 space-y-2">
                 <p>
                   Herramientas que se integran directamente en la Historia
                   Clínica Electrónica (HCE) para vincular los datos del paciente
@@ -398,7 +633,7 @@
                       >Conceptos Clave:</strong
                     >
                   </p>
-                  <ul class="list-disc list-inside mt-1">
+                  <ul class="list-disc list-inside mt-1 text-red-800">
                     <li>
                       <strong>Just-in-time information:</strong> La evidencia
                       aparece cuando y donde se necesita, sin buscarla
@@ -420,8 +655,8 @@
               <p
                 class="mt-6 mb-3 text-xs text-slate-500 italic flex items-center gap-2"
               >
-                <span class="text-base">👇</span>
-                <span>Haz clic en una herramienta para ver sus detalles.</span>
+                <span class="text-base">👇</span
+                ><span>Haz clic en una herramienta para ver sus detalles.</span>
               </p>
               <div class="flex flex-wrap gap-3">
                 <div class="tool-chip" data-tool="ebmeds">
@@ -445,11 +680,12 @@
                 >
                 Summaries - Resúmenes Clínicos Integrados
               </h3>
-              <div class="text-sm text-slate-600 mb-4 space-y-2">
+              <div class="text-sm text-slate-700 mb-4 space-y-2">
                 <p>
                   Plataformas que sintetizan hallazgos de múltiples fuentes para
                   la consulta en el punto de atención. Son el recurso principal
-                  para la mayoría de <strong>foreground questions</strong>.
+                  para la mayoría de
+                  <strong>foreground questions</strong>.
                 </p>
                 <div
                   class="p-3 bg-orange-100/60 rounded-lg border border-orange-200"
@@ -460,7 +696,7 @@
                       >Conceptos Clave:</strong
                     >
                   </p>
-                  <ul class="list-disc list-inside mt-1">
+                  <ul class="list-disc list-inside mt-1 text-orange-800">
                     <li>
                       <strong>Pre-appraised evidence:</strong> La evidencia ya
                       ha sido filtrada, evaluada y sintetizada por expertos,
@@ -482,8 +718,8 @@
               <p
                 class="mt-6 mb-3 text-xs text-slate-500 italic flex items-center gap-2"
               >
-                <span class="text-base">👇</span>
-                <span>Haz clic en una herramienta para ver sus detalles.</span>
+                <span class="text-base">👇</span
+                ><span>Haz clic en una herramienta para ver sus detalles.</span>
               </p>
               <div class="flex flex-wrap gap-3">
                 <div class="tool-chip" data-tool="openevidence-clinical">
@@ -538,7 +774,7 @@
                 >
                 Recommendations - Guías de Práctica Clínica
               </h3>
-              <div class="text-sm text-slate-600 mb-4 space-y-2">
+              <div class="text-sm text-slate-700 mb-4 space-y-2">
                 <p>
                   Acceso inteligente a Guías de Práctica Clínica (GPC). Son un
                   puente entre la evidencia y la decisión, equilibrando
@@ -554,7 +790,7 @@
                       >Conceptos Clave:</strong
                     >
                   </p>
-                  <ul class="list-disc list-inside mt-1">
+                  <ul class="list-disc list-inside mt-1 text-amber-800">
                     <li>
                       <strong>Niveles de Evidencia (GRADE):</strong> Fíjate en
                       la fuerza de la recomendación (fuerte/débil) y la calidad
@@ -575,8 +811,8 @@
               <p
                 class="mt-6 mb-3 text-xs text-slate-500 italic flex items-center gap-2"
               >
-                <span class="text-base">👇</span>
-                <span>Haz clic en una herramienta para ver sus detalles.</span>
+                <span class="text-base">👇</span
+                ><span>Haz clic en una herramienta para ver sus detalles.</span>
               </p>
               <div class="flex flex-wrap gap-3">
                 <div class="tool-chip" data-tool="openevidence-guidelines">
@@ -610,7 +846,7 @@
                 >
                 Systematic Reviews - Revisiones Sistemáticas
               </h3>
-              <div class="text-sm text-slate-600 mb-4 space-y-2">
+              <div class="text-sm text-slate-700 mb-4 space-y-2">
                 <p>
                   Herramientas para acelerar el proceso de revisión sistemática,
                   fundamental para construir y actualizar el
@@ -626,7 +862,7 @@
                       >Conceptos Clave:</strong
                     >
                   </p>
-                  <ul class="list-disc list-inside mt-1">
+                  <ul class="list-disc list-inside mt-1 text-emerald-800">
                     <li>
                       <strong>PICO, PRISMA:</strong> Estructura para formular
                       preguntas y reportar revisiones de forma estandarizada.
@@ -647,8 +883,8 @@
               <p
                 class="mt-6 mb-3 text-xs text-slate-500 italic flex items-center gap-2"
               >
-                <span class="text-base">👇</span>
-                <span>Haz clic en una herramienta para ver sus detalles.</span>
+                <span class="text-base">👇</span
+                ><span>Haz clic en una herramienta para ver sus detalles.</span>
               </p>
               <div class="flex flex-wrap gap-3">
                 <div class="tool-chip" data-tool="rayyan">
@@ -686,7 +922,7 @@
                 >
                 Studies - Estudios Individuales y Exploración
               </h3>
-              <div class="text-sm text-slate-600 mb-4 space-y-2">
+              <div class="text-sm text-slate-700 mb-4 space-y-2">
                 <p>
                   Herramientas para explorar y analizar literatura científica
                   individual. Es el último recurso, apropiado para investigar
@@ -703,7 +939,7 @@
                       >Conceptos Clave:</strong
                     >
                   </p>
-                  <ul class="list-disc list-inside mt-1">
+                  <ul class="list-disc list-inside mt-1 text-blue-800">
                     <li>
                       <strong>Validez Interna/Externa:</strong> ¿Son fiables los
                       resultados del estudio? ¿Se pueden aplicar a mi paciente?
@@ -724,8 +960,8 @@
               <p
                 class="mt-6 mb-3 text-xs text-slate-500 italic flex items-center gap-2"
               >
-                <span class="text-base">👇</span>
-                <span>Haz clic en una herramienta para ver sus detalles.</span>
+                <span class="text-base">👇</span
+                ><span>Haz clic en una herramienta para ver sus detalles.</span>
               </p>
               <div class="flex flex-wrap gap-3">
                 <div class="tool-chip" data-tool="scispace">
@@ -1059,9 +1295,10 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
                 <p class="text-slate-600">
                   Buscan
                   <strong>evidencia específica y evaluada críticamente</strong>
-                  para resolver una <strong>incertidumbre clínica</strong> sobre
-                  un paciente individual. Son el motor de la Medicina Basada en
-                  la Evidencia.
+                  para resolver una
+                  <strong>incertidumbre clínica</strong> sobre un paciente
+                  individual. Son el motor de la Medicina Basada en la
+                  Evidencia.
                 </p>
                 <ul class="mt-3 space-y-2 list-disc list-inside text-slate-600">
                   <li>
@@ -1116,7 +1353,6 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
               >.
             </p>
           </div>
-
           <div class="grid md:grid-cols-2 gap-8">
             <div>
               <h3
@@ -1196,11 +1432,12 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
             actualización: Julio 2025.
           </p>
         </footer>
-      </main>
-    </div>
+      </div>
+    </main>
+
+    <include src="footer.html"></include>
 
     <script>
-      // --- BASE DE DATOS DE CONTENIDO DE HERRAMIENTAS ---
       const toolData = {
         ebmeds: {
           name: "EBMeDS",
@@ -1474,8 +1711,18 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
         },
       };
 
-      // --- LÓGICA DE INTERACTIVIDAD ---
       document.addEventListener("DOMContentLoaded", () => {
+        // Manejo de errores para include.js
+        if (typeof includeHTML === "function") {
+          includeHTML()
+            .then(() => {
+              console.log("Includes loaded successfully");
+            })
+            .catch((err) => {
+              console.error("Error loading includes:", err);
+            });
+        }
+
         const pyramidLevelGroups = document.querySelectorAll(
           ".pyramid-level-group"
         );
@@ -1488,26 +1735,51 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
         const renderToolDetail = (toolId) => {
           const tool = toolData[toolId];
           if (!tool) return "";
-          return `<div class="p-5 bg-white rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition-shadow"><div class="flex justify-between items-start mb-3"><h4 class="font-bold text-lg text-slate-800">${
-            tool.name
-          }</h4><span class="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full">${
-            tool.pricing
-          }</span></div><p class="text-sm text-slate-600 mb-4">${
-            tool.description
-          }</p><div class="mb-4"><h5 class="font-semibold text-sm text-slate-700 mb-2">✨ Características principales:</h5><ul class="space-y-1">${tool.features
-            .map(
-              (f) =>
-                `<li class="text-sm text-slate-600 flex items-start"><svg class="w-4 h-4 text-emerald-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>${f}</li>`
-            )
-            .join(
-              ""
-            )}</ul></div><div class="grid md:grid-cols-2 gap-3 mb-4 text-sm"><div class="bg-blue-50 p-3 rounded-lg"><span class="font-semibold text-blue-800">Mejor para:</span><p class="text-blue-700 mt-1">${
-            tool.bestFor
-          }</p></div><div class="bg-amber-50 p-3 rounded-lg"><span class="font-semibold text-amber-800">Limitaciones:</span><p class="text-amber-700 mt-1">${
-            tool.limitations
-          }</p></div></div><a href="${
-            tool.link
-          }" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-full px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-sm hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all">Visitar Sitio Web<svg class="ml-2 -mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/><path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/></svg></a></div>`;
+
+          // Botón con mejor contraste y accesibilidad
+          return `<div class="p-5 bg-white rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition-shadow">
+            <div class="flex justify-between items-start mb-3">
+              <h4 class="font-bold text-lg text-slate-800">${tool.name}</h4>
+              <span class="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full">${
+                tool.pricing
+              }</span>
+            </div>
+            <p class="text-sm text-slate-600 mb-4">${tool.description}</p>
+            <div class="mb-4">
+              <h5 class="font-semibold text-sm text-slate-700 mb-2">✨ Características principales:</h5>
+              <ul class="space-y-1">${tool.features
+                .map(
+                  (f) =>
+                    `<li class="text-sm text-slate-600 flex items-start">
+                      <svg class="w-4 h-4 text-emerald-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>${f}
+                    </li>`
+                )
+                .join("")}
+              </ul>
+            </div>
+            <div class="grid md:grid-cols-2 gap-3 mb-4 text-sm">
+              <div class="bg-blue-50 p-3 rounded-lg">
+                <span class="font-semibold text-blue-800">Mejor para:</span>
+                <p class="text-blue-700 mt-1">${tool.bestFor}</p>
+              </div>
+              <div class="bg-amber-50 p-3 rounded-lg">
+                <span class="font-semibold text-amber-800">Limitaciones:</span>
+                <p class="text-amber-700 mt-1">${tool.limitations}</p>
+              </div>
+            </div>
+            <a href="${tool.link}" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="inline-flex items-center justify-center w-full px-4 py-3 text-base font-bold text-white bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all transform hover:scale-105">
+              Visitar Sitio Web
+              <svg class="ml-2 -mr-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/>
+                <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
+              </svg>
+            </a>
+          </div>`;
         };
 
         Object.keys(toolData).forEach((toolId) => {
@@ -1517,34 +1789,25 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
           }
         });
 
-        function activateLevel(levelElement) {
-          if (!levelElement) return;
-          const levelNum = levelElement.dataset.level;
-          const targetSection = document.getElementById(
-            `resources-${levelNum}`
+        function activateLevel(nivel) {
+          if (!nivel) return;
+          /* estado visual */ document
+            .querySelectorAll(".pyramid-level-group")
+            .forEach((l) => l.classList.remove("active"));
+          nivel.classList.add("active");
+          const n = nivel.dataset.level;
+          document.getElementById("current-level").textContent = n;
+          document
+            .getElementById("progress-indicator")
+            .classList.remove("hidden");
+          /* sección destino */ const destino = document.getElementById(
+            `resources-${n}`
           );
-          pyramidLevelGroups.forEach((l) => l.classList.remove("active"));
-          levelElement.classList.add("active");
-
-          // Actualizar indicador de progreso
-          const progressIndicator =
-            document.getElementById("progress-indicator");
-          const currentLevelSpan = document.getElementById("current-level");
-          if (progressIndicator && currentLevelSpan) {
-            progressIndicator.classList.remove("hidden");
-            currentLevelSpan.textContent = levelNum;
-          }
-
-          resourceSections.forEach((s) => s.classList.remove("highlight"));
-          if (targetSection) {
-            targetSection.classList.add("highlight");
-            const yOffset = -20;
-            const y =
-              targetSection.getBoundingClientRect().top +
-              window.pageYOffset +
-              yOffset;
-            window.scrollTo({ top: y, behavior: "smooth" });
-          }
+          document
+            .querySelectorAll(".level-resources, #resources-llm")
+            .forEach((s) => s.classList.remove("highlight"));
+          destino.classList.add("highlight");
+          destino.scrollIntoView({ behavior: "smooth", block: "start" });
         }
 
         pyramidLevelGroups.forEach((levelGroup) => {
@@ -1581,16 +1844,12 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
               ".level-resources, #resources-llm"
             );
             const wasActive = detailEl.classList.contains("active");
-
-            // Cerrar todos los detalles y resetear todos los chips en la sección
             parentSection
               .querySelectorAll(".tool-detail")
               .forEach((detail) => detail.classList.remove("active"));
-            parentSection.querySelectorAll(".tool-chip").forEach((c) => {
-              c.classList.remove("active-chip");
-            });
-
-            // Si no estaba activo, abrir el actual y marcar el chip
+            parentSection
+              .querySelectorAll(".tool-chip")
+              .forEach((c) => c.classList.remove("active-chip"));
             if (!wasActive) {
               detailEl.classList.add("active");
               chip.classList.add("active-chip");
@@ -1605,12 +1864,14 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
               pyramidLevelGroups.forEach((l) => l.classList.remove("active"));
               resourceSections.forEach((s) => s.classList.remove("highlight"));
               llmSection.classList.add("highlight");
-              const yOffset = -20;
-              const y =
-                llmSection.getBoundingClientRect().top +
-                window.pageYOffset +
-                yOffset;
-              window.scrollTo({ top: y, behavior: "smooth" });
+              llmSection.scrollIntoView({ behavior: "smooth", block: "start" });
+
+              // Ocultar indicador de progreso cuando se ve LLM
+              const progressIndicator =
+                document.getElementById("progress-indicator");
+              if (progressIndicator) {
+                progressIndicator.classList.add("hidden");
+              }
             }
           });
         }
@@ -1621,5 +1882,6 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
         activateLevel(initialLevel);
       });
     </script>
+    <script src="./assets/js/include.js"></script>
   </body>
 </html>
