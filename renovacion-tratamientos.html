@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Protocolo de Renovación Segura de Tratamientos Crónicos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8fafc;
+      }
+      .tab-button.active {
+        border-color: #3b82f6;
+        background-color: #3b82f6;
+        color: white;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      .decision-card {
+        transition: all 0.3s ease-in-out;
+      }
+      /* Estilos para los checkboxes por color */
+      .form-checkbox-red {
+        accent-color: #ef4444;
+      }
+      .form-checkbox-yellow {
+        accent-color: #f59e0b;
+      }
+      .form-checkbox-blue {
+        accent-color: #3b82f6;
+      }
+
+      /* Estilo para el modal */
+      .modal {
+        transition: opacity 0.25s ease;
+      }
+      .modal-active {
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+
+      /* Tooltip para info de persistencia */
+      .tooltip .tooltip-text {
+        visibility: hidden;
+        width: 280px;
+        background-color: #262626;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 8px;
+        position: absolute;
+        z-index: 10;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -140px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-weight: normal;
+      }
+      .tooltip:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+      }
+      /* Estilos para la sección de ayuda y footer */
+      dt {
+        font-weight: 600;
+        color: #1e3a8a; /* Un azul más oscuro */
+      }
+      dd {
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+        color: #4b5563;
+        border-left: 2px solid #dbeafe;
+        padding-left: 1rem;
+      }
+      #ayuda ul li::before,
+      footer ul li::before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #3b82f6;
+      }
+      footer ul li {
+        position: relative;
+        padding-left: 1.25rem;
+        margin-bottom: 0.5rem;
+      }
+    </style>
+  </head>
+
+  <body class="p-4 sm:p-6 md:p-8">
+    <div
+      class="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-8"
+    >
+      <header class="text-center mb-6 border-b pb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">
+          Protocolo de Renovación Segura
+        </h1>
+        <p class="text-sm sm:text-base text-gray-500 mt-2">
+          Herramienta de Soporte a la Decisión para Atención Primaria
+        </p>
+      </header>
+
+      <div id="quick-guide" class="mb-6">
+        <!-- Banner compacto por defecto -->
+        <div
+          class="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-3 flex items-center justify-between"
+        >
+          <div class="flex items-center gap-3">
+            <span class="text-2xl animate-pulse">👉</span>
+            <div>
+              <p class="font-semibold text-sm text-gray-800">
+                Primera vez? Comienza por la pestaña "Universales"
+              </p>
+              <p class="text-xs text-gray-600">
+                Marca los criterios que apliquen • La decisión aparecerá
+                automáticamente a la derecha
+              </p>
+            </div>
+          </div>
+          <button
+            onclick="toggleGuide()"
+            id="toggle-guide-btn"
+            class="text-blue-600 hover:text-blue-800 text-sm font-medium whitespace-nowrap"
+          >
+            Ver más ▼
+          </button>
+        </div>
+
+        <!-- Guía expandida (oculta por defecto) -->
+        <div
+          id="expanded-guide"
+          class="hidden mt-3 p-4 bg-white border border-gray-200 rounded-lg"
+        >
+          <h3 class="font-bold text-sm mb-3 text-gray-700">📖 Guía Completa</h3>
+          <div class="grid md:grid-cols-2 gap-3 text-xs">
+            <div class="flex gap-2">
+              <span class="text-green-500">①</span>
+              <div>
+                <b>Evalúa:</b> Revisa criterios universales + específicos de
+                cada patología
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <span class="text-blue-500">②</span>
+              <div>
+                <b>Decide:</b> La tarjeta mostrará NR (No Renovar), R6 (6 meses)
+                o R12 (12 meses)
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <span class="text-purple-500">③</span>
+              <div>
+                <b>Documenta:</b> Usa "Juicio Clínico" si necesitas override
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <span class="text-gray-500">④</span>
+              <div><b>Reinicia:</b> "Limpiar" para nuevo paciente</div>
+            </div>
+          </div>
+          <div class="mt-3 p-2 bg-yellow-50 rounded text-xs text-yellow-800">
+            💡 <b>Tip:</b> Usa Ctrl+F para buscar fármacos específicos en la HCE
+          </div>
+        </div>
+      </div>
+
+      <script>
+        function toggleGuide() {
+          const expanded = document.getElementById("expanded-guide");
+          const btn = document.getElementById("toggle-guide-btn");
+          if (expanded.classList.contains("hidden")) {
+            expanded.classList.remove("hidden");
+            btn.textContent = "Ver menos ▲";
+          } else {
+            expanded.classList.add("hidden");
+            btn.textContent = "Ver más ▼";
+          }
+        }
+      </script>
+
+      <div class="lg:flex lg:gap-8">
+        <main class="lg:w-2/3">
+          <div class="mb-6">
+            <div class="relative mb-4">
+              <input
+                type="text"
+                id="search-box"
+                placeholder="Buscar por patología o fármaco (ej. 'IECA', 'Asma'...)"
+                class="w-full p-3 pl-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <svg
+                class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                ></path>
+              </svg>
+            </div>
+            <div class="overflow-x-auto">
+              <div class="flex space-x-2 border-b" id="tabs-container">
+                <button
+                  class="tab-button whitespace-nowrap py-2 px-4 text-sm font-medium rounded-t-lg transition-colors duration-200 active"
+                  data-tab="universal"
+                >
+                  Universales
+                </button>
+                <button
+                  class="tab-button whitespace-nowrap py-2 px-4 text-sm font-medium rounded-t-lg transition-colors duration-200"
+                  data-tab="interacciones"
+                >
+                  🚨 Interacciones
+                </button>
+                <button
+                  class="tab-button whitespace-nowrap py-2 px-4 text-sm font-medium rounded-t-lg transition-colors duration-200"
+                  data-tab="cardio"
+                >
+                  🫀 Cardio
+                </button>
+                <button
+                  class="tab-button whitespace-nowrap py-2 px-4 text-sm font-medium rounded-t-lg transition-colors duration-200"
+                  data-tab="mental"
+                >
+                  🧠 S. Mental
+                </button>
+                <button
+                  class="tab-button whitespace-nowrap py-2 px-4 text-sm font-medium rounded-t-lg transition-colors duration-200"
+                  data-tab="respi"
+                >
+                  🫁 Respi
+                </button>
+                <button
+                  class="tab-button whitespace-nowrap py-2 px-4 text-sm font-medium rounded-t-lg transition-colors duration-200"
+                  data-tab="metabol"
+                >
+                  🩺 Metaból.
+                </button>
+                <button
+                  class="tab-button whitespace-nowrap py-2 px-4 text-sm font-medium rounded-t-lg transition-colors duration-200"
+                  data-tab="digest"
+                >
+                  💊 Digest.
+                </button>
+                <button
+                  class="tab-button whitespace-nowrap py-2 px-4 text-sm font-medium rounded-t-lg transition-colors duration-200"
+                  data-tab="osteo"
+                >
+                  🦴 Osteo.
+                </button>
+                <button
+                  class="tab-button whitespace-nowrap py-2 px-4 text-sm font-medium rounded-t-lg transition-colors duration-200"
+                  data-tab="dolor"
+                >
+                  ⚡ Dolor
+                </button>
+                <button
+                  class="tab-button whitespace-nowrap py-2 px-4 text-sm font-medium rounded-t-lg transition-colors duration-200"
+                  data-tab="ayuda"
+                >
+                  ❔ Ayuda
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="tab-contents">
+            <div
+              class="tab-content active"
+              id="universal"
+              data-keywords="universal, general, adherencia, persistencia"
+            >
+              <h2 class="text-xl font-bold text-gray-700 mb-4">
+                Criterios Universales
+              </h2>
+              <div class="space-y-3 text-gray-700">
+                <h4 class="text-md font-semibold text-red-600 mt-3 mb-2">
+                  Criterios de Alarma (Rojos)
+                </h4>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  />
+                  <span class="ml-3 flex items-center">
+                    <b>Persistencia/Adherencia estimada < 50%</b>
+                    <span class="ml-2 text-gray-400 tooltip relative">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span class="tooltip-text"
+                        >Técnicamente, el ratio de dispensación mide la
+                        <b>persistencia</b> (continuidad en la retirada del
+                        fármaco). Se usa como el mejor indicador indirecto
+                        disponible de la <b>adherencia</b> general.</span
+                      >
+                    </span>
+                  </span>
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>Hospitalización</b> por la patología en últimos 6
+                    meses</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>≥2 visitas a urgencias</b> por descompensación</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>Efectos adversos graves</b> documentados sin ajuste
+                    posterior</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>Interacciones graves</b> no resueltas (ver pestaña
+                    🚨)</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>Duplicidades</b> terapéuticas activas</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>Contraindicaciones nuevas</b> documentadas</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>Medicación hospitalaria sin conciliar >30 días</b></span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>≥3 solicitudes anticipadas</b> de
+                    opioides/benzodiacepinas en 6 meses</span
+                  >
+                </div>
+
+                <h4 class="text-md font-semibold text-yellow-600 mt-3 mb-2">
+                  Criterios de Precaución (Amarillos)
+                </h4>
+                <div class="space-y-2">
+                  <div class="flex items-start">
+                    <input
+                      type="checkbox"
+                      class="form-checkbox-yellow h-5 w-5 rounded"
+                      data-decision="yellow"
+                    /><span class="ml-2"
+                      >Persistencia/Adherencia entre 50-79%</span
+                    >
+                  </div>
+                  <div class="flex items-start">
+                    <input
+                      type="checkbox"
+                      class="form-checkbox-yellow h-5 w-5 rounded"
+                      data-decision="yellow"
+                    /><span class="ml-2"
+                      >Sin analítica >12 meses en fármaco que requiere
+                      monitorización</span
+                    >
+                  </div>
+                  <div class="flex items-start">
+                    <input
+                      type="checkbox"
+                      class="form-checkbox-yellow h-5 w-5 rounded"
+                      data-decision="yellow"
+                    /><span class="ml-2"
+                      >Patrón de cascada: Fármaco A → nuevo síntoma → Fármaco B
+                      añadido</span
+                    >
+                  </div>
+                  <div class="flex items-start">
+                    <input
+                      type="checkbox"
+                      class="form-checkbox-yellow h-5 w-5 rounded"
+                      data-decision="yellow"
+                    /><span class="ml-2"
+                      >Cambio reciente de hospital/especialista sin
+                      revisión</span
+                    >
+                  </div>
+                </div>
+
+                <h4 class="text-md font-semibold text-blue-600 mt-3 mb-2">
+                  Oportunidades de Optimización (Azules)
+                </h4>
+                <div class="space-y-2">
+                  <div class="flex items-start">
+                    <input
+                      type="checkbox"
+                      class="form-checkbox-blue h-5 w-5 rounded"
+                      data-decision="blue"
+                    /><span class="ml-2"
+                      >Mismo régimen exacto >2 años sin ningún cambio</span
+                    >
+                  </div>
+                  <div class="flex items-start">
+                    <input
+                      type="checkbox"
+                      class="form-checkbox-blue h-5 w-5 rounded"
+                      data-decision="blue"
+                    /><span class="ml-2"
+                      >Paciente >80 años con polifarmacia (≥5 fármacos)</span
+                    >
+                  </div>
+                  <div class="flex items-start">
+                    <input
+                      type="checkbox"
+                      class="form-checkbox-blue h-5 w-5 rounded"
+                      data-decision="blue"
+                    /><span class="ml-2"
+                      >Medicación "si precisa" dispensada regularmente</span
+                    >
+                  </div>
+                  <div class="flex items-start">
+                    <input
+                      type="checkbox"
+                      class="form-checkbox-blue h-5 w-5 rounded"
+                      data-decision="blue"
+                    />
+                    <span class="ml-2"
+                      >Medicación de origen hospitalario pendiente de
+                      conciliar</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="tab-content"
+              id="interacciones"
+              data-keywords="interacciones, triple whammy, sangrado, hiperpotasemia, sedacion, miopatia, serotoninergico"
+            >
+              <h2 class="text-xl font-bold text-gray-700 mb-4">
+                Combinaciones de Alto Riesgo que Obligan a Revisión
+              </h2>
+              <div class="space-y-3 text-gray-700">
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>Triple Whammy:</b> IECA/ARA-II + Diurético + AINE</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>Riesgo Sangrado:</b> Anticoagulante + Antiagregante +
+                    AINE</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>Hiperpotasemia:</b> IECA + Espironolactona + Suplemento
+                    K+</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>Sedación Excesiva:</b> Benzodiacepinas + Opioides +
+                    Antihistamínicos</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>Miopatía:</b> Estatina + Fibrato + Macrólido</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded mt-1"
+                    data-decision="red"
+                  /><span class="ml-3"
+                    ><b>Sd. Serotoninérgico:</b> ISRS + Tramadol +
+                    Triptanes</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="tab-content"
+              id="cardio"
+              data-keywords="cardio, hipertension, hta, ieca, ara, anticoagulacion, avk, acod, inr, ttr"
+            >
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">
+                Hipertensión Arterial (HTA)
+              </h3>
+              <div class="space-y-2 mb-4">
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >TA >160/100 en últimas 2 determinaciones</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >Hipotensión sintomática documentada</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >TFG <30 con IECA/ARA-II sin seguimiento nefro</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >K+ >5.5 con IECA/ARA-II/espironolactona</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2">TA 140-160/90-100 persistente</span>
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2">Sin analítica (Cr, K+) >12 meses</span>
+                </div>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">
+                Anticoagulación Oral
+              </h3>
+              <div class="space-y-2">
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >INR >5 o <1.5 (AVK) / Sangrado mayor <3m</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2">Cirugía programada <1 mes</span>
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2">Adherencia <80% en ACOD</span>
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >TTR <50% en últimos 3 controles (AVK)</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2"
+                    >TTR 50-65% (AVK) / Sin INR >6 semanas</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2"
+                    >ACOD sin control función renal >18 meses</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="tab-content"
+              id="mental"
+              data-keywords="salud mental, depresion, ansiedad, isrs, benzodiacepinas, bzd, antipsicotico"
+            >
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">
+                Depresión/Ansiedad
+              </h3>
+              <div class="space-y-2">
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >Ideación suicida activa o empeoramiento clínico</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >Combinación ≥3 psicofármacos sin revisión psiquiatría</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2"
+                    >Sin mejoría tras 6-8 semanas de tratamiento</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-blue h-5 w-5 rounded"
+                    data-decision="blue"
+                  /><span class="ml-2"
+                    >Benzodiacepinas >3 meses (planificar retirada)</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-blue h-5 w-5 rounded"
+                    data-decision="blue"
+                  /><span class="ml-2"
+                    >ISRS >12 meses en remisión (valorar retirada)</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >Antidepresivo iniciado >30 días sin NINGUNA
+                    dispensación</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >Escalada terapéutica: >3 cambios antidepresivos en 1
+                    año</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >BZD + Opioide + Edad >75 años (triple riesgo caídas)</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="tab-content"
+              id="respi"
+              data-keywords="respiratorio, asma, epoc, saba, ics, laba"
+            >
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">Asma</h3>
+              <div class="space-y-2 mb-4">
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2">≥3 SABA dispensados/año</span>
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2">≥2 ciclos corticoides orales/año</span>
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2">2 SABA/año</span>
+                </div>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">EPOC</h3>
+              <div class="space-y-2">
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >≥2 exacerbaciones moderadas/año o ≥1 grave</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >Solo SABA como tratamiento de mantenimiento</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2">1 exacerbación moderada/año</span>
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2">Sin espirometría >2 años</span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="tab-content"
+              id="metabol"
+              data-keywords="metabolico, diabetes, dm2, hba1c, dislipemia, estatinas, ldl, isglt2"
+            >
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">
+                Diabetes Tipo 2
+              </h3>
+              <div class="space-y-2 mb-4">
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2">HbA1c >9% persistente</span>
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >HbA1c >10% (fallo terapéutico absoluto)</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >Hipoglucemias graves (<54 mg/dl) recurrentes</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2">TFG <30 con metformina / iSGLT2</span>
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2">HbA1c 8-9%</span>
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2"
+                    >Sin analítica anual completa (HbA1c, p. lipídico, Cr)</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2"
+                    >Diabético con IC sin iSGLT2 (oportunidad perdida)</span
+                  >
+                </div>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">
+                Dislipemia
+              </h3>
+              <div class="space-y-2">
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >Miopatía/rabdomiolisis o ALT >3x LSN con estatinas</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2">LDL no en objetivo tras 6 meses</span>
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2">Sin analítica lipídica >18 meses</span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="tab-content"
+              id="digest"
+              data-keywords="digestivo, ibp, omeprazol, inhibidores bomba protones"
+            >
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">
+                IBP (Inhibidores Bomba Protones)
+              </h3>
+              <div class="space-y-2">
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >Hipomagnesemia o Déficit B12 documentado</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2"
+                    >Uso >8 semanas sin indicación clara de cronicidad</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2"
+                    >IBP >1 año sin indicación clara documentada</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-blue h-5 w-5 rounded"
+                    data-decision="blue"
+                  /><span class="ml-2"
+                    >IBP >2 años (valorar deprescripción gradual)</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="tab-content"
+              id="osteo"
+              data-keywords="osteo, osteoporosis, bifosfonatos"
+            >
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">
+                Osteoporosis
+              </h3>
+              <div class="space-y-2">
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2">Hipocalcemia no corregida</span>
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2">TFG <30 (mayoría bifosfonatos)</span>
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2"
+                    >Bifosfonatos orales >5 años continuos sin descanso</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2"
+                    >Sin revisión anual de función renal (Cr) y Calcio</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="tab-content"
+              id="dolor"
+              data-keywords="dolor, cronico, opioides, tramadol"
+            >
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">
+                Dolor Crónico (Opioides)
+              </h3>
+              <div class="space-y-2">
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >Señales de mal uso/desvío (p.ej. pérdida recetas)</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-red h-5 w-5 rounded"
+                    data-decision="red"
+                  /><span class="ml-2"
+                    >≥3 solicitudes anticipadas de opioides en últimos 6
+                    meses</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2"
+                    >Dosis estables >3 meses (intentar reducción gradual)</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-yellow h-5 w-5 rounded"
+                    data-decision="yellow"
+                  /><span class="ml-2"
+                    >Estreñimiento inducido por opioides no tratado</span
+                  >
+                </div>
+                <div class="flex items-start">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox-blue h-5 w-5 rounded"
+                    data-decision="blue"
+                  /><span class="ml-2"
+                    >Combinación con BZD (revisar riesgo/beneficio)</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="tab-content"
+              id="ayuda"
+              data-keywords="ayuda, conceptos, definicion, conciliacion, persistencia, adherencia, deprescripcion, implementacion"
+            >
+              <h2 class="text-xl font-bold text-gray-700 mb-4">
+                Ayuda y Documentación
+              </h2>
+              <div
+                class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg mb-6"
+              >
+                <h3 class="font-semibold text-blue-800 mb-2">
+                  Propósito de esta Herramienta
+                </h3>
+                <p class="text-blue-900 text-sm">
+                  En el contexto de una Atención Primaria donde cada clic
+                  cuenta, esta web no pretende ser una carga burocrática más. Su
+                  propósito es fundamentalmente
+                  <b>didáctico y de soporte cognitivo</b>: un ejercicio para
+                  estructurar el pensamiento clínico y recordar, de forma visual
+                  y ágil, los puntos clave de seguridad y eficacia en la
+                  renovación de tratamientos. Es un compañero formativo,
+                  diseñado para reforzar y agilizar el proceso de revisión
+                  farmacoterapéutica sin sustituir jamás el insustituible juicio
+                  clínico del profesional.
+                </p>
+              </div>
+
+              <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-4">
+                Definiciones Clave
+              </h3>
+              <dl>
+                <dt>Conciliación de la medicación</dt>
+                <dd>
+                  Proceso formal y explícito de obtener la lista más completa y
+                  precisa posible de los medicamentos actuales de un paciente y
+                  compararla con la prescripción activa para identificar y
+                  resolver discrepancias.
+                </dd>
+                <dt>Persistencia vs. Adherencia</dt>
+                <dd>
+                  La <b>persistencia</b> mide la continuidad (si el paciente
+                  sigue retirando el fármaco), mientras que la
+                  <b>adherencia</b> es un concepto más amplio que incluye si
+                  toma la dosis correcta, a la hora correcta, etc. Usamos la
+                  persistencia como el mejor indicador indirecto de la
+                  adherencia.
+                </dd>
+                <dt>Deprescripción</dt>
+                <dd>
+                  Proceso planificado y supervisado de retirada de un
+                  medicamento que ya no es necesario o cuyo riesgo supera el
+                  beneficio. Es una intervención activa, no un abandono
+                  terapéutico.
+                </dd>
+              </dl>
+
+              <div class="mt-8 border-t pt-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">
+                  Propuestas para la Integración en Sistemas de Salud
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">
+                  Esta herramienta sirve como modelo conceptual. Su máximo
+                  potencial se alcanzaría con su integración en la historia
+                  clínica electrónica mediante:
+                </p>
+                <ul
+                  class="text-gray-700 text-sm list-disc list-inside space-y-2"
+                >
+                  <li>Cálculo automático del ratio de persistencia.</li>
+                  <li>
+                    Alertas visuales (semáforos) que se activen con los datos
+                    del paciente (analíticas, diagnósticos).
+                  </li>
+                  <li>Recordatorios proactivos de controles pendientes.</li>
+                  <li>
+                    Sistemas de bloqueo o alerta de alta visibilidad ante
+                    interacciones graves.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <aside class="lg:w-1/3 mt-8 lg:mt-0 sticky top-8 self-start">
+          <div
+            id="decision-card"
+            class="decision-card bg-gray-50 rounded-xl p-6 border-2 border-gray-200"
+          >
+            <h2 class="text-xl font-bold text-center text-gray-700 mb-4">
+              Decisión de Renovación
+            </h2>
+            <div id="decision-output" class="text-center">
+              <div id="decision-placeholder" class="text-gray-400 py-10">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-12 w-12 mx-auto"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <p class="mt-2 text-sm">
+                  Marque las casillas para evaluar al paciente.
+                </p>
+              </div>
+              <div id="decision-result" class="hidden">
+                <p id="decision-code" class="text-3xl font-bold mb-2"></p>
+                <p id="decision-text" class="text-lg font-semibold mb-4"></p>
+                <!-- NUEVO: Lista de criterios marcados -->
+                <details
+                  id="marked-criteria-details"
+                  class="mb-3 bg-white rounded-lg border border-gray-200"
+                >
+                  <summary
+                    class="cursor-pointer p-2 hover:bg-gray-50 text-sm font-medium text-gray-700"
+                  >
+                    📋 Ver criterios marcados (<span id="criteria-count">0</span
+                    >)
+                  </summary>
+                  <div
+                    id="marked-criteria-list"
+                    class="p-3 text-xs space-y-1 max-h-40 overflow-y-auto"
+                  >
+                    <!-- Se llenará dinámicamente -->
+                  </div>
+                </details>
+                <p
+                  id="decision-reason"
+                  class="text-sm text-gray-600 bg-gray-100 rounded-md p-3"
+                ></p>
+                <div id="override-section" class="mt-4 hidden">
+                  <button
+                    id="override-button"
+                    class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors"
+                  >
+                    Aplicar Juicio Clínico
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
+              id="reset-button"
+              class="mt-6 w-full bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              <span id="reset-button-text">Limpiar para nuevo paciente</span>
+            </button>
+          </div>
+        </aside>
+      </div>
+
+      <footer class="mt-10 border-t-2 pt-6 text-gray-600">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">
+          Filosofía del Protocolo: Los 4 Pilares de la Renovación Segura
+        </h3>
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
+          <div class="p-4 bg-blue-50 rounded-lg">
+            <h4 class="font-bold text-blue-800 mb-2">🔢 Adherencia</h4>
+            <p class="text-blue-900">
+              ¿El paciente está retirando (y previsiblemente, tomando) la
+              medicación como se pautó? Una baja adherencia es el primer signo
+              de que un tratamiento puede no ser efectivo o aceptado.
+            </p>
+          </div>
+          <div class="p-4 bg-green-50 rounded-lg">
+            <h4 class="font-bold text-green-800 mb-2">🎯 Control</h4>
+            <p class="text-green-900">
+              ¿El tratamiento está funcionando? Se evalúa si se alcanzan los
+              objetivos terapéuticos (cifras de tensión, HbA1c, etc.) o si hay
+              signos de descompensación (visitas a urgencias, ingresos). [cite:
+              10]
+            </p>
+          </div>
+          <div class="p-4 bg-yellow-50 rounded-lg">
+            <h4 class="font-bold text-yellow-800 mb-2">🛡️ Seguridad</h4>
+            <p class="text-yellow-900">
+              ¿Sigue siendo seguro el tratamiento? Se vigila la aparición de
+              efectos adversos, interacciones con otros fármacos o la necesidad
+              de realizar controles analíticos para monitorizar su seguridad a
+              largo plazo.
+            </p>
+          </div>
+          <div class="p-4 bg-purple-50 rounded-lg">
+            <h4 class="font-bold text-purple-800 mb-2">❓ Necesidad</h4>
+            <p class="text-purple-900">
+              ¿Sigue siendo necesario el tratamiento? Con el tiempo, las
+              condiciones del paciente cambian. Este pilar nos obliga a
+              cuestionar si el fármaco todavía aporta un beneficio que supere
+              sus riesgos.
+            </p>
+          </div>
+        </div>
+        <div class="mt-8 pt-6 border-t border-gray-200 text-left">
+          <h4 class="font-semibold text-gray-700 mb-2">
+            ⚖️ Descargo de Responsabilidad
+          </h4>
+          <p class="text-xs text-gray-500 max-w-1xl mx-auto">
+            Esta herramienta se ofrece con fines exclusivamente educativos y
+            como apoyo a la reflexión clínica. No sustituye en ningún caso el
+            juicio profesional, la anamnesis del paciente ni la consulta de
+            guías clínicas oficiales y actualizadas del sistema sanitario
+            correspondiente. El autor no asume ninguna responsabilidad por las
+            decisiones tomadas basándose en su uso.
+            <br />
+            <strong class="font-semibold text-gray-600 mt-2 block"
+              >Esta página no recopila, almacena ni transmite ningún tipo de
+              dato introducido.</strong
+            >
+          </p>
+        </div>
+      </footer>
+    </div>
+
+    <div
+      id="override-modal"
+      class="modal-active hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4"
+    >
+      <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">
+          Documentar Juicio Clínico
+        </h3>
+        <p class="text-sm text-gray-600 mb-4">
+          La herramienta sugiere <b id="modal-suggestion-text"></b>. Por favor,
+          documente el motivo de la decisión final.
+        </p>
+        <div class="space-y-2 text-sm">
+          <label class="flex items-center"
+            ><input
+              type="radio"
+              name="override_reason"
+              class="form-radio"
+              value="Decisión consensuada con paciente"
+            />
+            <span class="ml-2">Decisión consensuada con paciente</span></label
+          >
+          <label class="flex items-center"
+            ><input
+              type="radio"
+              name="override_reason"
+              class="form-radio"
+              value="Priorización de confort (frágil/paliativo)"
+            />
+            <span class="ml-2"
+              >Priorización de confort (frágil/paliativo)</span
+            ></label
+          >
+          <label class="flex items-center"
+            ><input
+              type="radio"
+              name="override_reason"
+              class="form-radio"
+              value="Barrera socioeconómica temporal"
+            />
+            <span class="ml-2">Barrera socioeconómica temporal</span></label
+          >
+          <label class="flex items-center"
+            ><input
+              type="radio"
+              name="override_reason"
+              class="form-radio"
+              value="otro"
+            />
+            <span class="ml-2">Otro motivo</span></label
+          >
+        </div>
+        <textarea
+          id="override-text"
+          class="mt-3 w-full border rounded-md p-2 text-sm hidden"
+          placeholder="Especifique el motivo..."
+        ></textarea>
+        <div class="mt-6 flex justify-end space-x-3">
+          <button
+            id="cancel-override"
+            class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold"
+          >
+            Cancelar
+          </button>
+          <button
+            id="confirm-override"
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold"
+          >
+            Confirmar Decisión
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Elementos del DOM
+        const tabsContainer = document.getElementById("tabs-container");
+        const tabContents = document.getElementById("tab-contents");
+        const checkboxes = document.querySelectorAll(
+          'input[type="checkbox"][data-decision]'
+        );
+        const decisionCard = document.getElementById("decision-card");
+        const decisionPlaceholder = document.getElementById(
+          "decision-placeholder"
+        );
+        const decisionResult = document.getElementById("decision-result");
+        const decisionCode = document.getElementById("decision-code");
+        const decisionText = document.getElementById("decision-text");
+        const decisionReason = document.getElementById("decision-reason");
+        const resetButton = document.getElementById("reset-button");
+        const searchBox = document.getElementById("search-box");
+
+        // Elementos del override/juicio clínico
+        const overrideSection = document.getElementById("override-section");
+        const overrideButton = document.getElementById("override-button");
+        const overrideModal = document.getElementById("override-modal");
+        const cancelOverrideBtn = document.getElementById("cancel-override");
+        const confirmOverrideBtn = document.getElementById("confirm-override");
+        const overrideReasonRadios = document.querySelectorAll(
+          'input[name="override_reason"]'
+        );
+        const overrideTextInput = document.getElementById("override-text");
+        const modalSuggestionText = document.getElementById(
+          "modal-suggestion-text"
+        );
+
+        // --- LÓGICA DE PESTAÑAS Y BÚSQUEDA ---
+        function showActiveTab() {
+          const activeTabButton =
+            tabsContainer.querySelector(".tab-button.active");
+          if (!activeTabButton) return;
+          const activeTabId = activeTabButton.getAttribute("data-tab");
+
+          tabContents.querySelectorAll(".tab-content").forEach((content) => {
+            if (content.id === activeTabId) {
+              content.classList.add("active");
+            } else {
+              content.classList.remove("active");
+            }
+          });
+        }
+
+        tabsContainer.addEventListener("click", function (e) {
+          if (e.target.classList.contains("tab-button")) {
+            searchBox.value = ""; // Limpiar búsqueda al cambiar de pestaña
+            tabsContainer
+              .querySelectorAll(".tab-button")
+              .forEach((btn) => btn.classList.remove("active"));
+            e.target.classList.add("active");
+            showActiveTab();
+          }
+        });
+
+        searchBox.addEventListener("keyup", function () {
+          const searchTerm = searchBox.value.toLowerCase().trim();
+
+          if (searchTerm === "") {
+            showActiveTab(); // Restaurar vista de pestaña si la búsqueda está vacía
+            return;
+          }
+
+          // Desactivar el botón de pestaña activo para indicar que es una vista de búsqueda
+          tabsContainer
+            .querySelectorAll(".tab-button")
+            .forEach((btn) => btn.classList.remove("active"));
+
+          tabContents.querySelectorAll(".tab-content").forEach((content) => {
+            const keywords = content.getAttribute("data-keywords") || "";
+            const contentText = content.textContent.toLowerCase();
+
+            if (
+              keywords.includes(searchTerm) ||
+              contentText.includes(searchTerm)
+            ) {
+              content.classList.add("active"); // Mostrar contenido que coincide
+            } else {
+              content.classList.remove("active"); // Ocultar el que no coincide
+            }
+          });
+        });
+
+        // --- LÓGICA DE DECISIÓN ---
+        function updateDecision() {
+          let redFlags = 0,
+            yellowFlags = 0,
+            blueFlags = 0;
+          let redReasons = [],
+            yellowReasons = [],
+            blueReasons = [];
+          let allMarkedCriteria = []; // NUEVO: Array para todos los criterios
+
+          checkboxes.forEach((cb) => {
+            if (cb.checked) {
+              const decision = cb.getAttribute("data-decision");
+              const reasonText =
+                cb.nextElementSibling?.textContent?.trim() ||
+                cb.parentElement.textContent.trim();
+
+              // NUEVO: Guardar referencia al checkbox para poder desmarcarlo
+              allMarkedCriteria.push({
+                color: decision,
+                text: reasonText,
+                checkbox: cb,
+              });
+
+              if (decision === "red") {
+                redFlags++;
+                redReasons.push(reasonText);
+              } else if (decision === "yellow") {
+                yellowFlags++;
+                yellowReasons.push(reasonText);
+              } else if (decision === "blue") {
+                blueFlags++;
+                blueReasons.push(reasonText);
+              }
+            }
+          });
+
+          // NUEVO: Actualizar la lista de criterios marcados en la tarjeta
+          updateMarkedCriteriaDisplay(allMarkedCriteria);
+
+          const anyFlag = redFlags > 0 || yellowFlags > 0 || blueFlags > 0;
+          // NUEVO: Actualizar texto del botón reset
+          const totalChecked = redFlags + yellowFlags + blueFlags;
+          const resetButtonText = document.getElementById("reset-button-text");
+          if (resetButtonText) {
+            if (totalChecked > 0) {
+              resetButtonText.textContent = `Limpiar (${totalChecked} criterios marcados)`;
+            } else {
+              resetButtonText.textContent = "Limpiar para nuevo paciente";
+            }
+          }
+          decisionPlaceholder.classList.toggle("hidden", anyFlag);
+          decisionResult.classList.toggle("hidden", !anyFlag);
+          overrideSection.classList.add("hidden"); // Ocultar botón de override por defecto
+
+          // Lógica mejorada basada en evidencia
+          if (redFlags >= 3) {
+            setDecisionState(
+              "red",
+              "🔴 NR",
+              "No Renovar - Cita INMEDIATA",
+              `Múltiples señales críticas (${redFlags}). Requiere intervención urgente.`
+            );
+            overrideSection.classList.remove("hidden");
+            modalSuggestionText.textContent = "No Renovar - Cita INMEDIATA";
+          } else if (redFlags >= 2) {
+            setDecisionState(
+              "red",
+              "🔴 NR",
+              "No Renovar - Cita <1 semana",
+              `${redFlags} señales de alarma graves. Programar cita en menos de 1 semana.`
+            );
+            overrideSection.classList.remove("hidden");
+            modalSuggestionText.textContent = "No Renovar - Cita <1 semana";
+          } else if (redFlags === 1) {
+            setDecisionState(
+              "red",
+              "🔴 R1M",
+              "Renovar 1 MES + Cita urgente",
+              `Motivo: ${redReasons[0]}. Renovación mínima para garantizar continuidad.`
+            );
+            overrideSection.classList.remove("hidden");
+            modalSuggestionText.textContent = "Renovar 1 MES + Cita urgente";
+          } else if (yellowFlags >= 2) {
+            setDecisionState(
+              "yellow",
+              "🟡 R6",
+              "Renovar 6 Meses + Seguimiento",
+              `${yellowFlags} señales de precaución. Requiere optimización.`
+            );
+            overrideSection.classList.remove("hidden");
+            modalSuggestionText.textContent = "Renovar 6 Meses + Seguimiento";
+          } else if (yellowFlags === 1 || blueFlags >= 2) {
+            setDecisionState(
+              "yellow",
+              "🟡 R6",
+              "Renovar 6 Meses + Revisión",
+              `Oportunidad de mejora identificada. Principal: ${
+                yellowReasons[0] || blueReasons[0]
+              }`
+            );
+            overrideSection.classList.remove("hidden");
+            modalSuggestionText.textContent = "Renovar 6 Meses + Revisión";
+          } else if (blueFlags === 1) {
+            setDecisionState(
+              "blue",
+              "🔵 R12",
+              "Renovar 12 Meses con nota",
+              `Considerar: ${blueReasons[0]}`
+            );
+          } else {
+            setDecisionState(
+              "green",
+              "🟢 R12",
+              "Renovar 12 Meses",
+              "Tratamiento estable y bien controlado."
+            );
+          }
+        }
+
+        function setDecisionState(color, code, text, reason) {
+          const colorMap = {
+            red: {
+              bg: "bg-red-50",
+              border: "border-red-500",
+              text: "text-red-600",
+            },
+            yellow: {
+              bg: "bg-yellow-50",
+              border: "border-yellow-500",
+              text: "text-yellow-600",
+            },
+            blue: {
+              bg: "bg-blue-50",
+              border: "border-blue-500",
+              text: "text-blue-600",
+            },
+            green: {
+              bg: "bg-green-50",
+              border: "border-green-500",
+              text: "text-green-600",
+            },
+            gray: {
+              bg: "bg-gray-50",
+              border: "border-gray-200",
+              text: "text-gray-700",
+            },
+            indigo: {
+              bg: "bg-indigo-50",
+              border: "border-indigo-500",
+              text: "text-indigo-600",
+            },
+          };
+          const colors = colorMap[color];
+          decisionCard.className = `decision-card ${colors.bg} rounded-xl p-6 border-2 ${colors.border}`;
+          decisionCode.textContent = code;
+          decisionCode.className = `text-3xl font-bold mb-2 ${colors.text}`;
+          decisionText.textContent = text;
+          decisionReason.textContent = reason;
+        }
+
+        checkboxes.forEach((cb) =>
+          cb.addEventListener("change", () => {
+            updateDecision();
+            updateTabBadges(); // NUEVO: Actualizar badges
+          })
+        );
+
+        // NUEVO: Función para actualizar badges en pestañas
+        function updateTabBadges() {
+          const tabs = document.querySelectorAll(".tab-button");
+
+          tabs.forEach((tab) => {
+            const tabName = tab.getAttribute("data-tab");
+            const tabContent = document.getElementById(tabName);
+
+            if (!tabContent) return;
+
+            const checkedCount = tabContent.querySelectorAll(
+              'input[type="checkbox"]:checked'
+            ).length;
+
+            // Eliminar badge existente si lo hay
+            const existingBadge = tab.querySelector(".tab-badge");
+            if (existingBadge) existingBadge.remove();
+
+            // Añadir nuevo badge si hay checks
+            if (checkedCount > 0) {
+              const badge = document.createElement("span");
+              badge.className =
+                "tab-badge ml-1 px-1.5 py-0.5 text-xs rounded-full bg-red-500 text-white";
+              badge.textContent = checkedCount;
+              tab.appendChild(badge);
+            }
+          });
+        }
+
+        // --- LÓGICA DEL MODAL DE JUICIO CLÍNICO ---
+        overrideButton.addEventListener("click", () =>
+          overrideModal.classList.remove("hidden")
+        );
+        cancelOverrideBtn.addEventListener("click", () =>
+          overrideModal.classList.add("hidden")
+        );
+
+        overrideReasonRadios.forEach((radio) => {
+          radio.addEventListener("change", () => {
+            overrideTextInput.classList.toggle(
+              "hidden",
+              radio.value !== "otro"
+            );
+          });
+        });
+
+        confirmOverrideBtn.addEventListener("click", () => {
+          const selectedReasonRadio = document.querySelector(
+            'input[name="override_reason"]:checked'
+          );
+          if (!selectedReasonRadio) {
+            alert("Por favor, seleccione un motivo.");
+            return;
+          }
+          let reason = selectedReasonRadio.value;
+          if (reason === "otro") {
+            if (overrideTextInput.value.trim() === "") {
+              alert("Por favor, especifique el motivo 'otro'.");
+              return;
+            }
+            reason = overrideTextInput.value.trim();
+          }
+
+          setDecisionState(
+            "indigo",
+            "🔵 JC",
+            "Decisión Manual por Juicio Clínico",
+            `Motivo documentado: "${reason}"`
+          );
+          overrideSection.classList.add("hidden");
+          overrideModal.classList.add("hidden");
+        });
+
+        // --- LÓGICA DEL BOTÓN DE RESETEO ---
+        // NUEVO: Función para mostrar criterios marcados
+        function updateMarkedCriteriaDisplay(criteria) {
+          const listContainer = document.getElementById("marked-criteria-list");
+          const countSpan = document.getElementById("criteria-count");
+          const detailsElement = document.getElementById(
+            "marked-criteria-details"
+          );
+
+          if (!listContainer || !countSpan) return;
+
+          countSpan.textContent = criteria.length;
+
+          if (criteria.length === 0) {
+            listContainer.innerHTML =
+              '<p class="text-gray-400">No hay criterios marcados</p>';
+            if (detailsElement) detailsElement.style.display = "none";
+            return;
+          }
+
+          if (detailsElement) detailsElement.style.display = "block";
+
+          const colorEmojis = {
+            red: "🔴",
+            yellow: "🟡",
+            blue: "🔵",
+          };
+
+          listContainer.innerHTML = criteria
+            .map(
+              (item, index) => `
+            <div class="flex items-start justify-between p-1 hover:bg-gray-50 rounded">
+              <span class="flex-1">${colorEmojis[item.color]} ${
+                item.text
+              }</span>
+              <button 
+                onclick="uncheckCriteria(${index})" 
+                class="ml-2 text-gray-400 hover:text-red-500"
+                title="Desmarcar"
+              >✕</button>
+            </div>
+          `
+            )
+            .join("");
+        }
+
+        // NUEVO: Función global para desmarcar desde la tarjeta
+        window.uncheckCriteria = function (index) {
+          const checkboxes = document.querySelectorAll(
+            'input[type="checkbox"][data-decision]:checked'
+          );
+          if (checkboxes[index]) {
+            checkboxes[index].checked = false;
+            updateDecision();
+          }
+        };
+        resetButton.addEventListener("click", function () {
+          checkboxes.forEach((cb) => (cb.checked = false));
+
+          setDecisionState("gray", "", "", "");
+          decisionResult.classList.add("hidden");
+          overrideSection.classList.add("hidden");
+          decisionPlaceholder.classList.remove("hidden");
+
+          // Volver a la pestaña universal
+          searchBox.value = "";
+          tabsContainer
+            .querySelectorAll(".tab-button")
+            .forEach((btn) => btn.classList.remove("active"));
+          tabsContainer
+            .querySelector('[data-tab="universal"]')
+            .classList.add("active");
+          showActiveTab();
+          updateTabBadges();
+        });
+
+        // Estado inicial al cargar la página
+        showActiveTab();
+      });
+    </script>
+  </body>
+</html>

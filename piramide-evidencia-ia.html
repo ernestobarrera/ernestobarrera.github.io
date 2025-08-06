@@ -1135,7 +1135,185 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
             </section>
           </div>
         </div>
+        <section
+          id="critical-appraisal-guide"
+          class="level-resources p-6 rounded-xl border-l-8 border-indigo-600 bg-gradient-to-r from-indigo-50 to-white mt-8"
+        >
+          <details class="group">
+            <summary
+              class="flex items-center justify-between font-bold text-xl cursor-pointer text-indigo-900 list-none"
+            >
+              <div class="flex items-center gap-3">
+                <i class="fa-solid fa-clipboard-check text-indigo-500"></i>
+                <span
+                  >Guía Rápida para la Evaluación Crítica de Herramientas de
+                  IA</span
+                >
+              </div>
+              <span
+                class="text-indigo-500 transition-transform duration-300 group-open:rotate-180"
+              >
+                <i class="fa-solid fa-chevron-down"></i>
+              </span>
+            </summary>
 
+            <div class="mt-6 space-y-4">
+              <div class="p-4 bg-white rounded-lg border border-slate-200">
+                <h5 class="font-semibold text-slate-800">
+                  Fase 1: Fundamentos y Propósito
+                </h5>
+                <ul
+                  class="list-disc list-inside space-y-2 text-sm text-slate-700 mt-2"
+                >
+                  <li>
+                    <b>¿Cuál es el problema?</b> ¿Qué problema clínico
+                    específico resuelve y para qué población?
+                  </li>
+                  <li>
+                    <b>¿Quién está detrás?</b> ¿El equipo desarrollador es
+                    creíble y multidisciplinar (clínicos, técnicos, éticos)?
+                  </li>
+                  <li>
+                    <b>¿Cuál es el uso previsto?</b> ¿Deja claro sus límites y
+                    para qué NO debe usarse?
+                  </li>
+                </ul>
+              </div>
+
+              <div class="p-4 bg-white rounded-lg border border-slate-200">
+                <h5 class="font-semibold text-slate-800">
+                  Fase 2: El Motor de la IA (Validez Técnica)
+                </h5>
+                <ul
+                  class="list-disc list-inside space-y-3 text-sm text-slate-700 mt-2"
+                >
+                  <li>
+                    <b>¿Con qué "estudió"?</b> ¿Los datos de entrenamiento son
+                    representativos? ¿Hubo <b>validación externa</b>?
+                    <p class="mt-1 italic text-slate-500 text-xs ml-4">
+                      <span class="font-semibold text-slate-600"
+                        >Explicación:</span
+                      >
+                      La validación externa consiste en probar el modelo con
+                      datos de un hospital o población totalmente diferente al
+                      de su desarrollo. Es la prueba definitiva para saber si es
+                      generalizable.
+                    </p>
+                  </li>
+                  <li>
+                    <b>¿Es justa y equitativa?</b> ¿Se analizó y mitigó el
+                    riesgo de <b>sesgos</b>?
+                    <p class="mt-1 italic text-slate-500 text-xs ml-4">
+                      <span class="font-semibold text-slate-600"
+                        >Explicación:</span
+                      >
+                      El sesgo algorítmico ocurre cuando la IA toma decisiones
+                      incorrectas o injustas para ciertos grupos (ej. por etnia,
+                      género) debido a datos de entrenamiento desbalanceados.
+                    </p>
+                  </li>
+                  <li>
+                    <b>¿Es una "caja negra"</b> o facilita la
+                    <b>explicabilidad (XAI)</b>?
+                    <p class="mt-1 italic text-slate-500 text-xs ml-4">
+                      <span class="font-semibold text-slate-600"
+                        >Explicación:</span
+                      >
+                      Una "caja negra" es un modelo tan complejo que no se puede
+                      saber por qué da una respuesta. La IA Explicable (XAI) son
+                      las técnicas que hacen su razonamiento transparente.
+                    </p>
+                  </li>
+                  <li>
+                    <b>(Si es un LLM) ¿Riesgo de "alucinación"</b>?
+                    <p class="mt-1 italic text-slate-500 text-xs ml-4">
+                      <span class="font-semibold text-slate-600"
+                        >Explicación:</span
+                      >
+                      La "alucinación" es la tendencia de los LLMs a inventar
+                      hechos, datos o referencias que parecen reales pero son
+                      falsas. Es su debilidad más peligrosa en medicina.
+                    </p>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="p-4 bg-white rounded-lg border border-slate-200">
+                <h5 class="font-semibold text-slate-800">
+                  Fase 3: Evidencia de Funcionamiento (Resultados Clínicos)
+                </h5>
+                <ul
+                  class="list-disc list-inside space-y-2 text-sm text-slate-700 mt-2"
+                >
+                  <li>
+                    <b>¿Funciona en la práctica?</b> ¿Hay estudios de alta
+                    calidad (ej. ECA) que demuestren mejora en resultados
+                    clínicos relevantes?
+                  </li>
+                  <li>
+                    <b>¿Es segura?</b> ¿Se han evaluado y comunicado los riesgos
+                    (ej. falsos positivos/negativos, sobrediagnóstico)?
+                  </li>
+                </ul>
+              </div>
+
+              <div class="p-4 bg-white rounded-lg border border-slate-200">
+                <h5 class="font-semibold text-slate-800">
+                  Fase 4: Uso Responsable (Aplicabilidad Práctica)
+                </h5>
+                <ul
+                  class="list-disc list-inside space-y-2 text-sm text-slate-700 mt-2"
+                >
+                  <li>
+                    <b>¿Quién tiene el control?</b> ¿El sistema exige la
+                    supervisión de un profesional o fomenta el
+                    <b>sesgo de automatización</b>?
+                    <p class="mt-1 italic text-slate-500 text-xs ml-4">
+                      <span class="font-semibold text-slate-600"
+                        >Explicación:</span
+                      >
+                      Es la tendencia humana a confiar excesivamente en la
+                      sugerencia de una máquina, incluso cuando contradice
+                      nuestro propio juicio o la evidencia.
+                    </p>
+                  </li>
+                  <li>
+                    <b>¿Cómo la aplico a mi paciente?</b> ¿Cómo integro la
+                    recomendación general con el contexto y valores de mi
+                    paciente?
+                  </li>
+                </ul>
+              </div>
+
+              <div class="p-4 bg-white rounded-lg border border-slate-200">
+                <h5 class="font-semibold text-slate-800">
+                  Fase 5: A Largo Plazo (Sostenibilidad)
+                </h5>
+                <ul
+                  class="list-disc list-inside space-y-2 text-sm text-slate-700 mt-2"
+                >
+                  <li>
+                    <b>¿Se quedará obsoleta?</b> ¿Existe un plan para actualizar
+                    el modelo y evitar la <b>"degradación del concepto"</b>?
+                    <p class="mt-1 italic text-slate-500 text-xs ml-4">
+                      <span class="font-semibold text-slate-600"
+                        >Explicación:</span
+                      >
+                      Ocurre cuando la precisión del modelo disminuye con el
+                      tiempo porque la medicina cambia (nuevos tratamientos,
+                      guías) y los datos del mundo real ya no coinciden con los
+                      de su entrenamiento.
+                    </p>
+                  </li>
+                  <li>
+                    <b>¿Se vigilará su rendimiento?</b> ¿Hay un sistema para
+                    monitorizar su precisión y detectar si surgen nuevos sesgos?
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </details>
+        </section>
         <div
           class="mt-12 p-8 bg-gradient-to-br from-slate-50 to-blue-50 rounded-2xl border border-slate-200"
         >
