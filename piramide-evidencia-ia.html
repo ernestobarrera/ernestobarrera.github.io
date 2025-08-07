@@ -96,21 +96,47 @@
         color: #64748b !important;
       }
 
+      .badge-meaning {
+        background-color: #dbeafe;
+        color: #1e40af;
+        border: 1px solid #93c5fd;
+      }
+
+      .badge-model {
+        background-color: #f3e8ff;
+        color: #6b21a8;
+        border: 1px solid #c4b5fd;
+      }
+
+      .badge-meaning.inactive,
+      .badge-model.inactive {
+        background-color: #f1f5f9;
+        color: #64748b;
+        border: 1px solid #cbd5e1;
+        opacity: 0.6;
+      }
+
       /* Responsive mejorado */
       @media (max-width: 1024px) and (min-width: 768px) {
         .pyramid-container {
           padding: 1rem;
         }
 
-        .sidebar-container .sticky {
-          position: relative !important;
-          top: 0 !important;
+        .sidebar-container {
+          position: sticky;
+          top: calc(var(--scroll-offset) + 1rem);
         }
       }
 
       @media (max-width: 768px) {
         .pyramid-card {
           padding: 1rem;
+        }
+
+        .mode-switch-container {
+          position: static;
+          margin-top: 1rem;
+          justify-content: center;
         }
       }
 
@@ -176,6 +202,13 @@
       .tool-chip:active {
         transform: scale(0.95);
       }
+      .tool-chip:focus {
+        outline: 3px solid #3b82f6;
+        outline-offset: 2px;
+      }
+      .tool-chip:focus:not(:focus-visible) {
+        outline: none;
+      }
 
       .tool-detail {
         max-height: 0;
@@ -234,45 +267,34 @@
       }
 
       /* Fix para el indicador de progreso */
-      /* ⬇️ 1.  BLOQUE CSS – busca este selector  #progress-indicator  */
       #progress-indicator {
         position: fixed !important;
-        top: 5rem !important; /* antes: 1rem  →  ahora se alinea con el contenido */
+        top: calc(
+          var(--header-height) + var(--intro-header-height) + 1rem
+        ) !important;
         right: 1rem !important;
-        z-index: 9999 !important;
+        z-index: 40 !important; /* Reducido para no interferir con headers */
         background: #1e293b !important;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
       }
 
-      /* coloca esto al final de tu <style> local o en components.css */
-
-      /* los nombres de las herramientas deben verse siempre con opacidad plena
-   y con un color suficientemente oscuro para WCAG AA */
+      /* los nombres de las herramientas deben verse siempre con opacidad plena */
       .tool-chip {
-        opacity: 1 !important; /* anula la opacidad heredada del contenedor */
-        color: #1e293b !important; /* slate‑800 → contraste > 4,5:1 sobre #fff */
+        opacity: 1 !important;
+        color: #1e293b !important;
       }
 
       .tool-chip span {
-        /* etiqueta Free, Freemium, etc. */
-        opacity: 1 !important; /* por si acaso heredan opacidad también   */
+        opacity: 1 !important;
       }
-
-      /* ================================================================= */
-      /* ===== COMIENZA EL BLOQUE DE CÓDIGO CORRECTO PARA PEGAR AQUÍ ===== */
-      /* ================================================================= */
 
       html {
         scroll-behavior: smooth;
       }
 
       :root {
-        /* Altura de la cabecera principal de la web (la que viene de header.html) */
-        --header-height: 4rem; /* 64px */
-        /* Altura del título de la página que también es sticky */
-        --intro-header-height: 5.5rem; /* 88px */
-        /* El offset total es la suma de ambos + un pequeño margen */
-
+        --header-height: 4rem;
+        --intro-header-height: 5.5rem;
         --scroll-offset: calc(
           var(--header-height) + var(--intro-header-height) + 3.5rem
         );
@@ -281,36 +303,27 @@
         margin-top: 0;
       }
 
-      /* El título principal se mantiene fijo arriba */
       .intro-header {
         position: sticky;
-        /* Se pega justo debajo del header principal del sitio */
         top: var(--header-height);
         z-index: 50;
-        background: #0f172a; /* Mismo color de fondo del body */
+        background: #0f172a;
         padding-top: 1rem;
         padding-bottom: 1rem;
       }
 
-      /* La pirámide (sidebar) se pega debajo de los dos elementos anteriores */
       @media (min-width: 1024px) {
         .sidebar-container {
           position: sticky;
-          /* Usa el offset total para alinearse perfectamente */
           top: var(--scroll-offset);
           align-self: start;
         }
       }
 
-      /* La magia para el scroll: añade un margen superior "virtual" a las tarjetas */
       .level-resources,
       #resources-llm {
         scroll-margin-top: var(--scroll-offset);
       }
-
-      /* ============================================================= */
-      /* ===== FIN DEL BLOQUE DE CÓDIGO QUE DEBES PEGAR ============= */
-      /* ============================================================= */
     </style>
 
     <script
@@ -331,29 +344,35 @@
     <include src="header.html"></include>
 
     <main class="main-container">
-      <!-- ========== INTRO CARD (título + descripción) ========== -->
-      <!-- ===== 1. ENVUELVE título + descripción FUERA de .pyramid-card =====
-     (pega justo DESPUÉS de  <main class="main-container"> ) -->
+      <!-- === CAMBIO 1: Añadido eje semiótico visible === -->
       <header class="intro-header max-w-[1500px] mx-auto px-4">
         <h1 class="text-xl font-extrabold text-slate-50">
           🔼 Pirámide de Evidencia 5.0 y Herramientas IA
         </h1>
-        <p class="mt-1 text-base text-slate-300">
-          Herramienta interactiva para conocer recursos apoyados en inteligencia
-          artificial para la síntesis de evidencia biomédica y su aplicación en
-          la práctica clínica. Esta pirámide de evidencia 5S permite acceder a
-          diferentes fuentes de información según su nivel de procesamiento y
-          síntesis de la evidencia.
+        <p class="mt-2 text-base text-slate-300 leading-relaxed">
+          La medicina está viviendo una transformación sin precedentes. Donde
+          antes <strong>interpretamos</strong> síntomas como
+          <em class="text-amber-300">"este dolor torácico parece anginoso"</em>,
+          ahora los sistemas de IA <strong>modelizan</strong> patrones:
+          <em class="text-amber-300"
+            >"este vector de síntomas coincide en un 87% con clusters que
+            predicen IAM"</em
+          >. Esta herramienta describe y organiza algunas herramientas según la
+          pirámide 5S de evidencia.
         </p>
-        <div class="h-0.5 bg-amber-400 mt-2"></div>
+
+        <div
+          class="h-0.5 bg-gradient-to-r from-amber-400 via-blue-400 to-amber-400 mt-3 opacity-60"
+        ></div>
       </header>
 
-      <!-- ========== FIN INTRO CARD ========== -->
-
       <div class="pyramid-container pt-20">
+        <!-- === CAMBIO 6: Añadido aria-live="polite" === -->
         <div
           id="progress-indicator"
           class="hidden fixed top-4 right-4 z-50 bg-slate-800 text-slate-200 px-4 py-2 rounded-full shadow-lg flex items-center gap-2"
+          aria-live="polite"
+          aria-label="Indicador de nivel actual en la pirámide"
         >
           <i class="fa-solid fa-layer-group text-slate-400"></i>
           <span class="text-sm font-medium"
@@ -371,6 +390,7 @@
               <h2 class="text-lg font-bold text-center mb-4 text-slate-700">
                 ⚡ Haz clic en un nivel para explorar
               </h2>
+
               <div class="flex flex-row items-stretch">
                 <div
                   class="flex-shrink-0 w-12 flex items-center justify-center mr-4"
@@ -616,8 +636,14 @@
                   class="flex items-center justify-center w-10 h-10 rounded-full bg-red-600 text-white shadow-lg"
                   >5</span
                 >
-                Systems - Soporte a Decisión Integrado
+
+                <span class="text-black">
+                  Systems - Soporte a Decisión Integrado
+                </span>
               </h3>
+
+              <!-- === CAMBIO 3: Chips duales añadidos === -->
+
               <div class="text-sm text-slate-700 mb-4 space-y-2">
                 <p>
                   Herramientas que se integran directamente en la Historia
@@ -626,6 +652,16 @@
                   forma más eficiente de responder
                   <strong>foreground questions</strong>.
                 </p>
+
+                <!-- === CAMBIO 4: Línea IA-perspectiva añadida === -->
+                <div class="ia-perspective border-red-400 text-red-700">
+                  🤖 IA-perspectiva: Los sistemas integrados utilizan
+                  arquitecturas de deep learning para mapear automáticamente el
+                  contexto clínico del paciente con bases de conocimiento
+                  vectorizadas, realizando inferencia probabilística en tiempo
+                  real.
+                </div>
+
                 <div class="p-3 bg-red-100/60 rounded-lg border border-red-200">
                   <p class="flex items-center gap-2 mb-2">
                     <span class="text-2xl">🔑</span
@@ -678,8 +714,12 @@
                   class="flex items-center justify-center w-10 h-10 rounded-full bg-orange-500 text-white shadow-lg"
                   >4</span
                 >
-                Summaries - Resúmenes Clínicos Integrados
+
+                <span class="text-black">
+                  Summaries - Resúmenes Clínicos Integrados
+                </span>
               </h3>
+
               <div class="text-sm text-slate-700 mb-4 space-y-2">
                 <p>
                   Plataformas que sintetizan hallazgos de múltiples fuentes para
@@ -687,6 +727,15 @@
                   para la mayoría de
                   <strong>foreground questions</strong>.
                 </p>
+
+                <!-- === CAMBIO 4: Línea IA-perspectiva añadida === -->
+                <div class="ia-perspective border-orange-400 text-orange-700">
+                  🤖 IA-perspectiva: Utilizan modelos de lenguaje entrenados en
+                  corpus biomédicos para generar síntesis coherentes mediante
+                  retrieval-augmented generation (RAG), combinando embeddings
+                  semánticos con atención multi-cabeza.
+                </div>
+
                 <div
                   class="p-3 bg-orange-100/60 rounded-lg border border-orange-200"
                 >
@@ -772,8 +821,11 @@
                   class="flex items-center justify-center w-10 h-10 rounded-full bg-amber-500 text-white shadow-lg"
                   >3</span
                 >
-                Recommendations - Guías de Práctica Clínica
+                <span class="text-black"
+                  >Recommendations - Guías de Práctica Clínica</span
+                >
               </h3>
+
               <div class="text-sm text-slate-700 mb-4 space-y-2">
                 <p>
                   Acceso inteligente a Guías de Práctica Clínica (GPC). Son un
@@ -781,6 +833,15 @@
                   conocimiento de fondo actualizado y respuestas a preguntas
                   específicas.
                 </p>
+
+                <!-- === CAMBIO 4: Línea IA-perspectiva añadida === -->
+                <div class="ia-perspective border-amber-400 text-amber-700">
+                  🤖 IA-perspectiva: Transforman guías clínicas estructuradas en
+                  grafos de conocimiento navegables mediante NLP, permitiendo
+                  consultas contextuales a través de transformers fine-tuneados
+                  en dominios médicos específicos.
+                </div>
+
                 <div
                   class="p-3 bg-amber-100/60 rounded-lg border border-amber-200"
                 >
@@ -844,8 +905,11 @@
                   class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500 text-white shadow-lg"
                   >2</span
                 >
-                Systematic Reviews - Revisiones Sistemáticas
+                <span class="text-black"
+                  >Systematic Reviews - Revisiones Sistemáticas</span
+                >
               </h3>
+
               <div class="text-sm text-slate-700 mb-4 space-y-2">
                 <p>
                   Herramientas para acelerar el proceso de revisión sistemática,
@@ -853,6 +917,15 @@
                   <strong>background knowledge</strong> o para investigar
                   preguntas clínicas muy específicas.
                 </p>
+
+                <!-- === CAMBIO 4: Línea IA-perspectiva añadida === -->
+                <div class="ia-perspective border-emerald-400 text-emerald-700">
+                  🤖 IA-perspectiva: Aplican active learning y clasificación
+                  semi-supervisada para priorizar literatura relevante,
+                  reduciendo el espacio de búsqueda mediante representaciones
+                  vectoriales densas de abstracts científicos.
+                </div>
+
                 <div
                   class="p-3 bg-emerald-100/60 rounded-lg border border-emerald-200"
                 >
@@ -920,8 +993,12 @@
                   class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white shadow-lg"
                   >1</span
                 >
-                Studies - Estudios Individuales y Exploración
+
+                <span class="text-black">
+                  Studies - Estudios Individuales y Exploración
+                </span>
               </h3>
+
               <div class="text-sm text-slate-700 mb-4 space-y-2">
                 <p>
                   Herramientas para explorar y analizar literatura científica
@@ -930,6 +1007,15 @@
                   construir tu propio
                   <strong>background knowledge</strong> desde cero.
                 </p>
+
+                <!-- === CAMBIO 4: Línea IA-perspectiva añadida === -->
+                <div class="ia-perspective border-blue-400 text-blue-700">
+                  🤖 IA-perspectiva: Emplean técnicas de question-answering
+                  sobre PDFs mediante BERT-based models, generando embeddings
+                  contextuales que permiten búsqueda semántica y extracción
+                  automática de entidades biomédicas.
+                </div>
+
                 <div
                   class="p-3 bg-blue-100/60 rounded-lg border border-blue-200"
                 >
@@ -1038,12 +1124,21 @@
                 </svg>
                 Capa Transversal: El Rol de los LLMs Generalistas
               </h3>
+
               <div class="bg-violet-100 p-4 rounded-lg mb-4">
                 <p class="text-violet-900 font-medium">
                   <strong>¿Qué son?</strong> ChatGPT, Claude, Gemini, Perplexity
                   y otros. No son herramientas de evidencia, sino "copilotos"
                   versátiles que deben usarse con extremo cuidado.
                 </p>
+              </div>
+
+              <!-- === CAMBIO 4: Línea IA-perspectiva añadida === -->
+              <div class="ia-perspective border-violet-400 text-violet-700">
+                🤖 IA-perspectiva: Los LLMs generalistas operan como modelos
+                autorregresivos masivos (>100B parámetros) entrenados en corpus
+                web-scale, generando respuestas mediante decodificación
+                probabilística sin acceso garantizado a fuentes verificadas.
               </div>
 
               <div
@@ -1136,6 +1231,102 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
           </div>
         </div>
         <section
+          class="mt-8 p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl"
+        >
+          <h3 class="text-lg font-bold text-indigo-900 mb-4">
+            🔄 Dos Paradigmas Complementarios
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full bg-white rounded-lg overflow-hidden shadow-sm">
+              <thead>
+                <tr
+                  class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                >
+                  <th class="px-4 py-3 text-left text-sm font-semibold">
+                    Dimensión
+                  </th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold">
+                    🔤 Paradigma MBE (Interpretación)
+                  </th>
+                  <th class="px-4 py-3 text-left text-sm font-semibold">
+                    🧮 Paradigma IA (Modelización)
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr class="hover:bg-gray-50">
+                  <td class="px-4 py-3 font-semibold text-gray-800">
+                    Unidad básica
+                  </td>
+                  <td class="px-4 py-3 text-gray-700">
+                    Signo clínico (síntoma, resultado)
+                  </td>
+                  <td class="px-4 py-3 text-gray-700">
+                    Vector latente (embedding)
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-4 py-3 font-semibold text-gray-800">
+                    Relaciones
+                  </td>
+                  <td class="px-4 py-3 text-gray-700">
+                    Analogía, inferencia semántica
+                  </td>
+                  <td class="px-4 py-3 text-gray-700">
+                    Proximidad geométrica, clustering
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-4 py-3 font-semibold text-gray-800">
+                    Validación
+                  </td>
+                  <td class="px-4 py-3 text-gray-700">
+                    Jerarquía de evidencia, lógica
+                  </td>
+                  <td class="px-4 py-3 text-gray-700">
+                    Performance predictiva, ajuste empírico
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-4 py-3 font-semibold text-gray-800">
+                    Transparencia
+                  </td>
+                  <td class="px-4 py-3 text-green-700 font-medium">Alta ✓</td>
+                  <td class="px-4 py-3 text-amber-700 font-medium">
+                    Baja (requiere XAI) ⚠️
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-4 py-3 font-semibold text-gray-800">
+                    Velocidad
+                  </td>
+                  <td class="px-4 py-3 text-amber-700">
+                    Lenta (búsqueda + lectura)
+                  </td>
+                  <td class="px-4 py-3 text-green-700 font-medium">
+                    Instantánea ⚡
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-4 py-3 font-semibold text-gray-800">Riesgos</td>
+                  <td class="px-4 py-3 text-gray-700">
+                    Sesgo humano, carga cognitiva
+                  </td>
+                  <td class="px-4 py-3 text-gray-700">
+                    Caja negra, sesgo algorítmico
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="mt-4 text-sm text-gray-600 italic">
+            💡 <strong>Clave:</strong> No son paradigmas opuestos sino
+            complementarios. La IA acelera el procesamiento; el juicio clínico
+            contextualiza los resultados.
+          </p>
+        </section>
+        <!-- === CAMBIO 5: Reescritura de la Guía Rápida === -->
+        <section
           id="critical-appraisal-guide"
           class="level-resources p-6 rounded-xl border-l-8 border-indigo-600 bg-gradient-to-r from-indigo-50 to-white mt-8"
         >
@@ -1158,6 +1349,11 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
             </summary>
 
             <div class="mt-6 space-y-4">
+              <!-- === Subtítulo añadido === -->
+              <h4 class="text-lg font-bold text-indigo-800 mb-4">
+                Interpretación vs Modelización
+              </h4>
+
               <div class="p-4 bg-white rounded-lg border border-slate-200">
                 <h5 class="font-semibold text-slate-800">
                   Fase 1: Fundamentos y Propósito
@@ -1166,16 +1362,13 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
                   class="list-disc list-inside space-y-2 text-sm text-slate-700 mt-2"
                 >
                   <li>
-                    <b>¿Cuál es el problema?</b> ¿Qué problema clínico
-                    específico resuelve y para qué población?
+                    <b>🔤 Interpretación:</b> ¿Qué problema clínico específico
+                    resuelve y para qué población? ¿El equipo es creíble y
+                    multidisciplinar?
                   </li>
                   <li>
-                    <b>¿Quién está detrás?</b> ¿El equipo desarrollador es
-                    creíble y multidisciplinar (clínicos, técnicos, éticos)?
-                  </li>
-                  <li>
-                    <b>¿Cuál es el uso previsto?</b> ¿Deja claro sus límites y
-                    para qué NO debe usarse?
+                    <b>🧮 Modelización:</b> ¿Qué arquitectura de IA utiliza?
+                    ¿Cuál es el tamaño del modelo y su capacidad computacional?
                   </li>
                 </ul>
               </div>
@@ -1188,51 +1381,29 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
                   class="list-disc list-inside space-y-3 text-sm text-slate-700 mt-2"
                 >
                   <li>
-                    <b>¿Con qué "estudió"?</b> ¿Los datos de entrenamiento son
-                    representativos? ¿Hubo <b>validación externa</b>?
+                    <b>🔤 Interpretación:</b> ¿Los datos de entrenamiento son
+                    representativos? ¿Hubo validación externa? ¿Se analizaron
+                    sesgos?
                     <p class="mt-1 italic text-slate-500 text-xs ml-4">
                       <span class="font-semibold text-slate-600"
                         >Explicación:</span
                       >
                       La validación externa consiste en probar el modelo con
                       datos de un hospital o población totalmente diferente al
-                      de su desarrollo. Es la prueba definitiva para saber si es
-                      generalizable.
+                      de su desarrollo.
                     </p>
                   </li>
                   <li>
-                    <b>¿Es justa y equitativa?</b> ¿Se analizó y mitigó el
-                    riesgo de <b>sesgos</b>?
+                    <b>🧮 Modelización:</b> ¿Usa embeddings, transformers o
+                    CNNs? ¿Cómo maneja el espacio latente? ¿Es explicable o es
+                    una caja negra?
                     <p class="mt-1 italic text-slate-500 text-xs ml-4">
                       <span class="font-semibold text-slate-600"
                         >Explicación:</span
                       >
-                      El sesgo algorítmico ocurre cuando la IA toma decisiones
-                      incorrectas o injustas para ciertos grupos (ej. por etnia,
-                      género) debido a datos de entrenamiento desbalanceados.
-                    </p>
-                  </li>
-                  <li>
-                    <b>¿Es una "caja negra"</b> o facilita la
-                    <b>explicabilidad (XAI)</b>?
-                    <p class="mt-1 italic text-slate-500 text-xs ml-4">
-                      <span class="font-semibold text-slate-600"
-                        >Explicación:</span
-                      >
-                      Una "caja negra" es un modelo tan complejo que no se puede
-                      saber por qué da una respuesta. La IA Explicable (XAI) son
-                      las técnicas que hacen su razonamiento transparente.
-                    </p>
-                  </li>
-                  <li>
-                    <b>(Si es un LLM) ¿Riesgo de "alucinación"</b>?
-                    <p class="mt-1 italic text-slate-500 text-xs ml-4">
-                      <span class="font-semibold text-slate-600"
-                        >Explicación:</span
-                      >
-                      La "alucinación" es la tendencia de los LLMs a inventar
-                      hechos, datos o referencias que parecen reales pero son
-                      falsas. Es su debilidad más peligrosa en medicina.
+                      Los espacios latentes son representaciones vectoriales
+                      comprimidas donde conceptos similares están
+                      geométricamente cerca.
                     </p>
                   </li>
                 </ul>
@@ -1246,13 +1417,13 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
                   class="list-disc list-inside space-y-2 text-sm text-slate-700 mt-2"
                 >
                   <li>
-                    <b>¿Funciona en la práctica?</b> ¿Hay estudios de alta
-                    calidad (ej. ECA) que demuestren mejora en resultados
-                    clínicos relevantes?
+                    <b>🔤 Interpretación:</b> ¿Hay estudios (ECA) que demuestren
+                    mejora en resultados clínicos? ¿Se han evaluado los riesgos?
                   </li>
                   <li>
-                    <b>¿Es segura?</b> ¿Se han evaluado y comunicado los riesgos
-                    (ej. falsos positivos/negativos, sobrediagnóstico)?
+                    <b>🧮 Modelización:</b> ¿Cuáles son las métricas de
+                    performance (AUC, F1)? ¿Cómo se calibra la incertidumbre del
+                    modelo?
                   </li>
                 </ul>
               </div>
@@ -1265,22 +1436,20 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
                   class="list-disc list-inside space-y-2 text-sm text-slate-700 mt-2"
                 >
                   <li>
-                    <b>¿Quién tiene el control?</b> ¿El sistema exige la
-                    supervisión de un profesional o fomenta el
-                    <b>sesgo de automatización</b>?
+                    <b>🔤 Interpretación:</b> ¿El sistema exige supervisión
+                    profesional? ¿Cómo integro la recomendación con el contexto
+                    del paciente?
                     <p class="mt-1 italic text-slate-500 text-xs ml-4">
                       <span class="font-semibold text-slate-600"
-                        >Explicación:</span
+                        >Sesgo de automatización:</span
                       >
-                      Es la tendencia humana a confiar excesivamente en la
-                      sugerencia de una máquina, incluso cuando contradice
-                      nuestro propio juicio o la evidencia.
+                      Tendencia a confiar excesivamente en la máquina.
                     </p>
                   </li>
                   <li>
-                    <b>¿Cómo la aplico a mi paciente?</b> ¿Cómo integro la
-                    recomendación general con el contexto y valores de mi
-                    paciente?
+                    <b>🧮 Modelización:</b> ¿Permite ajuste de hiperparámetros?
+                    ¿Se puede acceder a las representaciones intermedias para
+                    debugging?
                   </li>
                 </ul>
               </div>
@@ -1293,27 +1462,25 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
                   class="list-disc list-inside space-y-2 text-sm text-slate-700 mt-2"
                 >
                   <li>
-                    <b>¿Se quedará obsoleta?</b> ¿Existe un plan para actualizar
-                    el modelo y evitar la <b>"degradación del concepto"</b>?
+                    <b>🔤 Interpretación:</b> ¿Existe un plan para actualizar el
+                    modelo? ¿Se monitoriza su precisión clínica?
                     <p class="mt-1 italic text-slate-500 text-xs ml-4">
                       <span class="font-semibold text-slate-600"
-                        >Explicación:</span
+                        >Degradación del concepto:</span
                       >
-                      Ocurre cuando la precisión del modelo disminuye con el
-                      tiempo porque la medicina cambia (nuevos tratamientos,
-                      guías) y los datos del mundo real ya no coinciden con los
-                      de su entrenamiento.
+                      Pérdida de precisión cuando la medicina evoluciona.
                     </p>
                   </li>
                   <li>
-                    <b>¿Se vigilará su rendimiento?</b> ¿Hay un sistema para
-                    monitorizar su precisión y detectar si surgen nuevos sesgos?
+                    <b>🧮 Modelización:</b> ¿Usa continuous learning? ¿Cómo
+                    maneja el concept drift en las distribuciones de datos?
                   </li>
                 </ul>
               </div>
             </div>
           </details>
         </section>
+
         <div
           class="mt-12 p-8 bg-gradient-to-br from-slate-50 to-blue-50 rounded-2xl border border-slate-200"
         >
