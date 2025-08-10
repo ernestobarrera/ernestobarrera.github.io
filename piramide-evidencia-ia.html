@@ -357,8 +357,9 @@
           <em class="text-amber-300"
             >"este vector de síntomas coincide en un 87% con clusters que
             predicen IAM"</em
-          >. Esta herramienta describe y organiza algunas herramientas según la
-          pirámide 5S de evidencia.
+          >. Esta herramienta presenta
+          <strong>ejemplos representativos</strong> de herramientas de IA
+          organizadas según la pirámide 5S de evidencia.
         </p>
 
         <div
@@ -648,8 +649,8 @@
                 <p>
                   Herramientas que se integran directamente en la Historia
                   Clínica Electrónica (HCE) para vincular los datos del paciente
-                  con la evidencia más relevante de forma automática. Son la
-                  forma más eficiente de responder
+                  con la evidencia externa más relevante de forma automática y
+                  contextualizada. Son la forma más eficiente de responder
                   <strong>foreground questions</strong>.
                 </p>
 
@@ -836,10 +837,11 @@
 
                 <!-- === CAMBIO 4: Línea IA-perspectiva añadida === -->
                 <div class="ia-perspective border-amber-400 text-amber-700">
-                  🤖 IA-perspectiva: Transforman guías clínicas estructuradas en
-                  grafos de conocimiento navegables mediante NLP, permitiendo
-                  consultas contextuales a través de transformers fine-tuneados
-                  en dominios médicos específicos.
+                  🤖 IA-perspectiva: Utilizan procesamiento de lenguaje natural
+                  para indexar y segmentar guías clínicas, permitiendo consultas
+                  contextuales mediante modelos de lenguaje especializados que
+                  mapean síntomas y condiciones clínicas con recomendaciones
+                  específicas de las guías.
                 </div>
 
                 <div
@@ -1128,8 +1130,31 @@
               <div class="bg-violet-100 p-4 rounded-lg mb-4">
                 <p class="text-violet-900 font-medium">
                   <strong>¿Qué son?</strong> ChatGPT, Claude, Gemini, Perplexity
-                  y otros. No son herramientas de evidencia, sino "copilotos"
-                  versátiles que deben usarse con extremo cuidado.
+                  y otros LLMs generalistas.
+                  <span class="font-bold text-red-700"
+                    >No son herramientas de evidencia</span
+                  >
+                  sino asistentes conversacionales entrenados en texto web
+                  general. Su conocimiento médico es compilado, no validado, y
+                  pueden generar información incorrecta con alta confianza.
+                </p>
+              </div>
+              <div class="bg-red-50 border border-red-200 p-4 rounded-lg mb-4">
+                <p class="text-red-900 font-medium">
+                  <strong>⚠️ Cuándo NO usarlos:</strong> Nunca para diagnósticos
+                  definitivos, dosificaciones específicas, contraindicaciones
+                  absolutas, o cualquier decisión clínica donde un error pueda
+                  tener consecuencias graves. Por el momento, siempre es
+                  preferible revisar con conocimiento experto o validar con las
+                  herramientas especializadas de la
+                  <a
+                    href="https://ernestobarrera.github.io/piramide-evidencia.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="font-semibold text-blue-600 hover:underline"
+                    >pirámide</a
+                  >
+                  para responder de forma definitiva preguntas de evidencia.
                 </p>
               </div>
 
@@ -1698,78 +1723,106 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
               >.
             </p>
           </div>
-          <div class="grid md:grid-cols-2 gap-8">
-            <div>
-              <h3
-                class="text-lg font-bold text-center md:text-left mb-4 text-slate-800"
-              >
-                💰 Modelos de Precio
-              </h3>
-              <div
-                class="flex flex-wrap justify-center md:justify-start items-center gap-x-6 gap-y-2 text-sm"
-              >
-                <div class="flex items-center gap-2">
-                  <span
-                    class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800"
-                    >Free</span
-                  ><span>Gratuito</span>
+          <section
+            class="mt-8 p-6 bg-gradient-to-br from-yellow-50 to-red-50 rounded-xl border border-yellow-200"
+          >
+            <h3 class="text-lg font-bold text-red-900 mb-4">
+              ⚠️ Estado Actual del Ecosistema
+            </h3>
+            <div class="space-y-3 text-sm text-slate-700">
+              <p>
+                <strong>Velocidad de cambio acelerada:</strong> Las herramientas
+                presentadas representan el estado actual (2025), pero el
+                ecosistema evoluciona mensualmente. Algunas pueden
+                discontinuarse o cambiar radicalmente sus funcionalidades.
+              </p>
+              <p>
+                <strong>Validación heterogénea:</strong> No todas estas
+                herramientas han pasado por validación clínica rigurosa.
+                Mientras que algunas tienen estudios de implementación, otras
+                están en fases experimentales.
+              </p>
+              <p>
+                <strong>Sesgo de selección:</strong> Las herramientas mostradas
+                priorizan aquellas con interfaces en inglés y accesibilidad
+                internacional, lo que puede excluir soluciones locales o
+                especializadas relevantes.
+              </p>
+
+              <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                  <h3
+                    class="text-lg font-bold text-center md:text-left mb-4 text-slate-800"
+                  >
+                    💰 Modelos de Precio
+                  </h3>
+                  <div
+                    class="flex flex-wrap justify-center md:justify-start items-center gap-x-6 gap-y-2 text-sm"
+                  >
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800"
+                        >Free</span
+                      ><span>Gratuito</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800"
+                        >Open Source</span
+                      ><span>Código Abierto</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800"
+                        >Freemium</span
+                      ><span>Plan Gratuito Limitado</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800"
+                        >Subscription</span
+                      ><span>Suscripción</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800"
+                        >Institutional</span
+                      ><span>Licencia Institucional</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800"
+                        >Enterprise</span
+                      ><span>Solución Empresarial</span>
+                    </div>
+                  </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span
-                    class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800"
-                    >Open Source</span
-                  ><span>Código Abierto</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span
-                    class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800"
-                    >Freemium</span
-                  ><span>Plan Gratuito Limitado</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span
-                    class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800"
-                    >Subscription</span
-                  ><span>Suscripción</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span
-                    class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800"
-                    >Institutional</span
-                  ><span>Licencia Institucional</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span
-                    class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800"
-                    >Enterprise</span
-                  ><span>Solución Empresarial</span>
+                <div class="text-center md:text-left">
+                  <h3 class="text-lg font-bold mb-4 text-slate-800">
+                    📖 Fuentes y Atribución
+                  </h3>
+                  <div class="text-sm text-slate-500 space-y-2">
+                    <p>
+                      Concepto y selección de herramientas basados en un
+                      análisis de mercado simulado por un asistente de IA.
+                      <em class="font-semibold"
+                        >Este contenido es generativo y debe usarse con fines
+                        orientativos.</em
+                      >
+                    </p>
+                    <p>
+                      Modelo piramidal adaptado de:
+                      <em class="font-semibold"
+                        >Alper BS, Haynes RB. EBHC pyramid 5.0 for accessing
+                        preappraised evidence and guidance. Evid Based Med.
+                        2016;21(4):123-5.</em
+                      >
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="text-center md:text-left">
-              <h3 class="text-lg font-bold mb-4 text-slate-800">
-                📖 Fuentes y Atribución
-              </h3>
-              <div class="text-sm text-slate-500 space-y-2">
-                <p>
-                  Concepto y selección de herramientas basados en un análisis de
-                  mercado simulado por un asistente de IA.
-                  <em class="font-semibold"
-                    >Este contenido es generativo y debe usarse con fines
-                    orientativos.</em
-                  >
-                </p>
-                <p>
-                  Modelo piramidal adaptado de:
-                  <em class="font-semibold"
-                    >Alper BS, Haynes RB. EBHC pyramid 5.0 for accessing
-                    preappraised evidence and guidance. Evid Based Med.
-                    2016;21(4):123-5.</em
-                  >
-                </p>
-              </div>
-            </div>
-          </div>
+          </section>
           <p
             class="text-center text-xs text-slate-400 mt-8 pt-4 border-t border-slate-200"
           >
@@ -1905,6 +1958,7 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
             "Genera diagnósticos diferenciales",
             "Proporciona justificaciones y enlaces a la evidencia",
             'Diseñado como un "borrador" para el razonamiento clínico',
+            "integra datos de la HCE del paciente",
             "Interfaz intuitiva para casos clínicos",
           ],
           pricing: "Freemium - Plan básico gratuito, Pro de pago",
