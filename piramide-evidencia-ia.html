@@ -1124,134 +1124,132 @@
                   <path d="M3 5h4" />
                   <path d="M17 19h4" />
                 </svg>
-                Capa Transversal: El Rol de los LLMs Generalistas
+                Capa Transversal: LLMs Generalistas en Medicina
               </h3>
 
-              <div class="bg-violet-100 p-4 rounded-lg mb-4">
-                <p class="text-violet-900 font-medium">
-                  <strong>¿Qué son?</strong> ChatGPT, Claude, Gemini, Perplexity
-                  y otros LLMs generalistas.
-                  <span class="font-bold text-red-700"
-                    >No son herramientas de evidencia</span
-                  >
-                  sino asistentes conversacionales entrenados en texto web
-                  general. Su conocimiento médico es compilado, no validado, y
-                  pueden generar información incorrecta con alta confianza.
+              <div class="text-sm text-slate-700 mb-4 space-y-2">
+                <p>
+                  Los LLMs generalistas (ChatGPT, Claude, Gemini, Perplexity)
+                  son herramientas de <strong>aumento cognitivo</strong>, no
+                  fuentes de evidencia. Funcionan como "sparring partners
+                  intelectuales" que ayudan a estructurar el pensamiento
+                  clínico, pero requieren verificación constante.
                 </p>
-              </div>
-              <div class="bg-red-50 border border-red-200 p-4 rounded-lg mb-4">
-                <p class="text-red-900 font-medium">
-                  <strong>⚠️ Cuándo NO usarlos:</strong> Nunca para diagnósticos
-                  definitivos, dosificaciones específicas, contraindicaciones
-                  absolutas, o cualquier decisión clínica donde un error pueda
-                  tener consecuencias graves. Por el momento, siempre es
-                  preferible revisar con conocimiento experto o validar con las
-                  herramientas especializadas de la
-                  <a
-                    href="https://ernestobarrera.github.io/piramide-evidencia.html"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="font-semibold text-blue-600 hover:underline"
-                    >pirámide</a
-                  >
-                  para responder de forma definitiva preguntas de evidencia.
-                </p>
-              </div>
 
-              <!-- === CAMBIO 4: Línea IA-perspectiva añadida === -->
-              <div class="ia-perspective border-violet-400 text-violet-700">
-                🤖 IA-perspectiva: Los LLMs generalistas operan como modelos
-                autorregresivos masivos (>100B parámetros) entrenados en corpus
-                web-scale, generando respuestas mediante decodificación
-                probabilística sin acceso garantizado a fuentes verificadas.
-              </div>
+                <div class="ia-perspective border-violet-400 text-violet-700">
+                  🤖 IA-perspectiva: Son modelos autorregresivos (>100B
+                  parámetros) entrenados en corpus web mediante next-token
+                  prediction. No acceden a bases médicas verificadas ni
+                  distinguen calidad de evidencia. Su "conocimiento" es
+                  compresión estadística de co-ocurrencias textuales.
+                </div>
 
-              <div
-                class="bg-white p-5 rounded-lg border-2 border-slate-200 shadow-sm mb-6"
-              >
-                <h4 class="font-bold text-lg mb-3 text-slate-800">
-                  ✅ Prompts Médicos Validados
-                </h4>
-                <p class="text-sm text-slate-600 mb-3">
-                  La calidad del prompt lo es todo. Usa plantillas específicas,
-                  da contexto y define el rol del LLM.
-                </p>
-                <div class="space-y-3">
-                  <div
-                    class="bg-slate-100 p-3 rounded font-mono text-xs text-slate-700 overflow-x-auto"
-                  >
-                    <pre><strong># Plantilla Chain-of-Thought para Razonamiento Clínico</strong>
-Actúa como un médico experto en [especialidad]. Dado el siguiente caso clínico, razona paso a paso para llegar a un diagnóstico diferencial. Para cada posible diagnóstico, evalúa la evidencia a favor y en contra.
-
-Caso: [pegar información del caso anonimizada]</pre>
-                  </div>
-                  <div
-                    class="bg-slate-100 p-3 rounded font-mono text-xs text-slate-700 overflow-x-auto"
-                  >
-                    <pre><strong># Plantilla Few-Shot para Extracción PICO</strong>
-Actúa como un investigador experto en revisiones sistemáticas. Extrae el PICO de los siguientes abstracts. Aquí tienes dos ejemplos de cómo hacerlo:
-
-Ejemplo 1: [Abstract 1] -> PICO 1: ...
-
-Ejemplo 2: [Abstract 2] -> PICO 2: ...
-
-Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
-                  </div>
+                <div
+                  class="p-3 bg-violet-100/60 rounded-lg border border-violet-200"
+                >
+                  <p class="flex items-center gap-2 mb-2">
+                    <span class="text-2xl">⚡</span>
+                    <strong class="text-violet-900 text-base"
+                      >Principio Central:</strong
+                    >
+                  </p>
+                  <ul class="list-disc list-inside mt-1 text-violet-800">
+                    <li>
+                      <strong>Hipótesis y estructura:</strong> Excelentes para
+                      generar diagnósticos diferenciales y organizar el
+                      pensamiento.
+                    </li>
+                    <li>
+                      <strong>Verificación obligatoria:</strong> Toda
+                      información crítica (dosis, guías, citas) debe validarse
+                      con fuentes primarias.
+                    </li>
+                    <li>
+                      <strong>Augmentación, no sustitución:</strong> Úsalos para
+                      pensar mejor, no para pensar menos.
+                    </li>
+                  </ul>
                 </div>
               </div>
 
-              <div
-                class="bg-white p-5 rounded-lg border-2 border-red-200 shadow-sm mb-6"
+              <p
+                class="mt-6 mb-3 text-xs text-slate-500 italic flex items-center gap-2"
               >
-                <h4 class="font-bold text-lg mb-3 text-red-800">
-                  ⚠️ Framework de Verificación y Reglas de Oro
-                </h4>
-                <ol
-                  class="list-decimal list-inside space-y-4 text-slate-700 text-base leading-relaxed"
+                <span class="text-base">👇</span>
+                <span
+                  >Haz clic en un concepto para explorar técnicas y
+                  precauciones.</span
                 >
-                  <li>
-                    <span class="font-semibold text-slate-800"
-                      >Verificar Siempre:</span
-                    >
-                    El LLM es un asistente.
-                    <span class="font-bold text-red-600"
-                      >Verifica todas las citas</span
-                    >
-                    y datos con la fuente original.
-                  </li>
-                  <li>
-                    <span class="font-semibold text-slate-800"
-                      >Cuidado con las "Alucinaciones":</span
-                    >
-                    Los LLMs inventan información.
-                    <strong>Señales de alerta:</strong> Citas con formato
-                    extraño, DOIs que no funcionan, revistas inexistentes.
-                  </li>
-                  <li>
-                    <span class="font-semibold text-slate-800"
-                      >Validación Cruzada:</span
-                    >
-                    Si dudas de una respuesta, haz la misma pregunta a un LLM
-                    diferente (p.ej., ChatGPT vs. Claude) o a una herramienta de
-                    la pirámide (p.ej., Consensus).
-                  </li>
-                  <li>
-                    <span class="font-semibold text-slate-800"
-                      >No Sustituyen el Juicio Clínico:</span
-                    >
-                    Son herramientas de productividad, no de decisión. La
-                    responsabilidad final es siempre del profesional.
-                  </li>
-                  <li>
-                    <span class="font-semibold text-slate-800"
-                      >Privacidad Ante Todo:</span
-                    >
-                    <span class="font-bold text-red-600">Nunca</span>
-                    introduzcas datos identificables de pacientes en un LLM
-                    público.
-                  </li>
-                </ol>
+              </p>
+
+              <div class="flex flex-wrap gap-3">
+                <div class="tool-chip" data-tool="prompt-engineering">
+                  Ingeniería de Prompts<span
+                    class="text-xs font-bold px-3 py-1 rounded-full bg-blue-200 text-blue-900 badge-shimmer shadow-sm"
+                    >Técnica</span
+                  >
+                </div>
+                <div class="tool-chip" data-tool="verification-framework">
+                  Marco de Verificación<span
+                    class="text-xs font-bold px-3 py-1 rounded-full bg-red-200 text-red-900 badge-shimmer shadow-sm"
+                    >Seguridad</span
+                  >
+                </div>
+                <div class="tool-chip" data-tool="rag-medical">
+                  RAG Médico<span
+                    class="text-xs font-bold px-3 py-1 rounded-full bg-purple-200 text-purple-900 badge-shimmer shadow-sm"
+                    >Avanzado</span
+                  >
+                </div>
+                <div class="tool-chip" data-tool="multimodal-clinical">
+                  IA Multimodal<span
+                    class="text-xs font-bold px-3 py-1 rounded-full bg-purple-200 text-purple-900 badge-shimmer shadow-sm"
+                    >Avanzado</span
+                  >
+                </div>
+                <div class="tool-chip" data-tool="deep-research">
+                  Deep Research<span
+                    class="text-xs font-bold px-3 py-1 rounded-full bg-purple-200 text-purple-900 badge-shimmer shadow-sm"
+                    >Avanzado</span
+                  >
+                </div>
+                <div class="tool-chip" data-tool="clinical-reasoning">
+                  Razonamiento Clínico<span
+                    class="text-xs font-bold px-3 py-1 rounded-full bg-blue-200 text-blue-900 badge-shimmer shadow-sm"
+                    >Técnica</span
+                  >
+                </div>
+                <div class="tool-chip" data-tool="hallucination-detection">
+                  Detección de Alucinaciones<span
+                    class="text-xs font-bold px-3 py-1 rounded-full bg-red-200 text-red-900 badge-shimmer shadow-sm"
+                    >Seguridad</span
+                  >
+                </div>
+                <div class="tool-chip" data-tool="epistemological-limits">
+                  Límites Fundamentales<span
+                    class="text-xs font-bold px-3 py-1 rounded-full bg-amber-200 text-amber-900 badge-shimmer shadow-sm"
+                    >Fundamentos</span
+                  >
+                </div>
               </div>
+
+              <div id="tool-prompt-engineering" class="tool-detail mt-4"></div>
+              <div
+                id="tool-verification-framework"
+                class="tool-detail mt-4"
+              ></div>
+              <div id="tool-rag-medical" class="tool-detail mt-4"></div>
+              <div id="tool-multimodal-clinical" class="tool-detail mt-4"></div>
+              <div id="tool-deep-research" class="tool-detail mt-4"></div>
+              <div id="tool-clinical-reasoning" class="tool-detail mt-4"></div>
+              <div
+                id="tool-hallucination-detection"
+                class="tool-detail mt-4"
+              ></div>
+              <div
+                id="tool-epistemological-limits"
+                class="tool-detail mt-4"
+              ></div>
             </section>
           </div>
         </div>
@@ -2108,6 +2106,149 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
           limitations: "Recupera frases, no genera resúmenes ni síntesis",
           link: "https://www.ncbi.nlm.nih.gov/research/litsense/",
         },
+        // === CONCEPTOS LLM TRANSVERSALES ===
+        "prompt-engineering": {
+          name: "Ingeniería de Prompts Médicos",
+          description:
+            "Técnicas estructuradas para maximizar la precisión y utilidad de las respuestas del LLM en contextos clínicos. La calidad del prompt determina la calidad de la respuesta.",
+          features: [
+            "Chain-of-Thought (CoT): Fuerza razonamiento paso a paso, mejora precisión diagnóstica en 40%",
+            "Few-Shot Learning: Proporciona 2-3 ejemplos antes de tu pregunta real",
+            "Role Assignment: 'Actúa como [especialista]' aumenta especificidad técnica",
+            "Structured Output: Solicita formatos específicos (SOAP, PICO, tablas)",
+          ],
+          pricing: "Aplicable a todos los LLMs",
+          bestFor:
+            "Casos complejos, diagnóstico diferencial, estructuración de información",
+          limitations:
+            "Un prompt perfecto no garantiza respuesta correcta; requiere verificación",
+          link: "",
+        },
+
+        "verification-framework": {
+          name: "Marco de Verificación Clínica",
+          description:
+            "Sistema estructurado para validar información generada por LLMs antes de cualquier aplicación clínica. En medicina, la verificación no es opcional.",
+          features: [
+            "Cross-Check: Pregunta lo mismo de 3 formas diferentes para detectar inconsistencias",
+            "Source Request: Exige citas específicas con revista, año y DOI verificable",
+            "Reverse Fact-Check: Introduce errores intencionales para probar fiabilidad",
+            "Red Flags: DOIs malformados, revistas inventadas, dosis perfectamente redondeadas",
+          ],
+          pricing: "Metodología gratuita",
+          bestFor: "Toda información que pueda afectar decisiones clínicas",
+          limitations:
+            "Consume tiempo adicional pero es absolutamente necesario",
+          link: "",
+        },
+
+        "rag-medical": {
+          name: "RAG (Retrieval-Augmented Generation) Médico",
+          description:
+            "Técnica que ancla las respuestas del LLM en bases de datos médicas verificadas. Primero recupera información relevante, luego genera síntesis contextualizada.",
+          features: [
+            "Reduce alucinaciones en >70% según estudios",
+            "Proporciona citas verificables a fuentes primarias",
+            "Actualización continua con nueva literatura",
+            "Implementado en: Perplexity Pro, ChatGPT con plugins, sistemas hospitalarios",
+          ],
+          pricing: "Precio variable según modelo y acceso",
+          bestFor:
+            "Preguntas que requieren evidencia actualizada y verificable",
+          limitations:
+            "Tan bueno como sus fuentes; puede ser lento para consultas complejas",
+          link: "",
+        },
+
+        "multimodal-clinical": {
+          name: "IA Multimodal en Clínica",
+          description:
+            "LLMs que procesan simultáneamente texto + imágenes médicas + datos estructurados. GPT-4V, Gemini Pro Vision y Med-PaLM M son ejemplos actuales.",
+          features: [
+            "Análisis de radiografías, ECGs y lesiones dermatológicas",
+            "Correlación automática imagen-historia clínica",
+            "Interpretación de resultados de laboratorio en imagen",
+            "Detección de hallazgos en múltiples modalidades",
+          ],
+          pricing: "Precio varía según modelo y acceso",
+          bestFor:
+            "Segunda opinión rápida, educación, triage inicial en telemedicina",
+          limitations:
+            "No certificado para diagnóstico; puede pasar por alto hallazgos sutiles",
+          link: "",
+        },
+
+        "deep-research": {
+          name: "Deep Research con Agentes IA",
+          description:
+            "Sistemas que realizan investigación autónoma profunda: ejecutan 10-100+ búsquedas iterativas, analizan miles de papers y generan síntesis comprehensivas.",
+          features: [
+            "Búsqueda iterativa inteligente con refinamiento automático",
+            "Análisis de miles de documentos en minutos",
+            "Generación de informes con citas completas",
+            "Disponible en: Perplexity Pro, Elicit, Consensus Premium",
+          ],
+          pricing: "Precio varía según modelo y acceso",
+          bestFor:
+            "Revisiones de literatura, horizon scanning, preguntas multi-dominio",
+          limitations:
+            "Requiere 10-30 minutos; no apto para decisiones urgentes",
+          link: "",
+        },
+
+        "clinical-reasoning": {
+          name: "Cadenas de Razonamiento Clínico",
+          description:
+            "Métodos para emular el proceso cognitivo médico experto, desde pattern recognition hasta razonamiento hipotético-deductivo estructurado.",
+          features: [
+            "Razonamiento Anatómico: Localización → Estructuras → Patología posible",
+            "Razonamiento Fisiopatológico: Mecanismo → Cascada → Manifestaciones",
+            "Razonamiento Bayesiano: Prevalencia → Likelihood ratios → Probabilidad posterior",
+            "Eliminación sistemática: Descartar imposibles → Priorizar por gravedad",
+          ],
+          pricing: "Técnica aplicable a cualquier LLM",
+          bestFor:
+            "Casos complejos, enseñanza médica, second opinion cognitiva",
+          limitations:
+            "El razonamiento puede parecer lógico pero ser médicamente incorrecto",
+          link: "",
+        },
+
+        "hallucination-detection": {
+          name: "Detección de Alucinaciones Médicas",
+          description:
+            "Estrategias críticas para identificar cuando el LLM genera información médica falsa con alta confianza. En medicina, una alucinación puede ser letal.",
+          features: [
+            "Test de Inconsistencia: Las alucinaciones varían entre consultas",
+            "Detección de Especificidad Sospechosa: Detalles excesivos sin fuente clara",
+            "Análisis de Números: Dosis perfectamente redondeadas son red flag",
+            "Verificación de Fuentes: Búsqueda manual de citas sospechosas",
+          ],
+          pricing: "Metodología gratuita, tiempo requerido",
+          bestFor:
+            "Información crítica: dosis, contraindicaciones, interacciones",
+          limitations:
+            "Requiere vigilancia constante y conocimiento médico base",
+          link: "",
+        },
+
+        "epistemological-limits": {
+          name: "Límites Epistemológicos de los LLMs",
+          description:
+            "Comprensión fundamental de qué pueden y no pueden 'saber' los LLMs sobre medicina. Estos límites son arquitectónicos, no se resolverán con más datos.",
+          features: [
+            "No comprenden causalidad, solo correlación textual estadística",
+            "Sin embodiment: no entienden dolor, sufrimiento o experiencia sensorial",
+            "Temporalidad colapsada: mezclan conocimiento de diferentes épocas",
+            "Sesgo de publicación: sobrerrepresentan lo más publicado vs lo más común",
+          ],
+          pricing: "Conocimiento conceptual crítico",
+          bestFor:
+            "Entender cuándo NO usar LLMs, establecer expectativas realistas",
+          limitations:
+            "Un LLM que describe perfectamente un infarto no 'comprende' el infarto",
+          link: "",
+        },
       };
 
       document.addEventListener("DOMContentLoaded", () => {
@@ -2137,48 +2278,53 @@ Ahora, extrae el PICO del siguiente abstract: [Pegar nuevo abstract]</pre>
 
           // Botón con mejor contraste y accesibilidad
           return `<div class="p-5 bg-white rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition-shadow">
-            <div class="flex justify-between items-start mb-3">
-              <h4 class="font-bold text-lg text-slate-800">${tool.name}</h4>
-              <span class="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full">${
-                tool.pricing
-              }</span>
-            </div>
-            <p class="text-sm text-slate-600 mb-4">${tool.description}</p>
-            <div class="mb-4">
-              <h5 class="font-semibold text-sm text-slate-700 mb-2">✨ Características principales:</h5>
-              <ul class="space-y-1">${tool.features
-                .map(
-                  (f) =>
-                    `<li class="text-sm text-slate-600 flex items-start">
-                      <svg class="w-4 h-4 text-emerald-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                      </svg>${f}
-                    </li>`
-                )
-                .join("")}
-              </ul>
-            </div>
-            <div class="grid md:grid-cols-2 gap-3 mb-4 text-sm">
-              <div class="bg-blue-50 p-3 rounded-lg">
-                <span class="font-semibold text-blue-800">Mejor para:</span>
-                <p class="text-blue-700 mt-1">${tool.bestFor}</p>
-              </div>
-              <div class="bg-amber-50 p-3 rounded-lg">
-                <span class="font-semibold text-amber-800">Limitaciones:</span>
-                <p class="text-amber-700 mt-1">${tool.limitations}</p>
-              </div>
-            </div>
-            <a href="${tool.link}" 
-               target="_blank" 
-               rel="noopener noreferrer" 
-               class="inline-flex items-center justify-center w-full px-4 py-3 text-base font-bold text-white bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all transform hover:scale-105">
-              Visitar Sitio Web
-              <svg class="ml-2 -mr-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/>
-                <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
-              </svg>
-            </a>
-          </div>`;
+    <div class="flex justify-between items-start mb-3">
+      <h4 class="font-bold text-lg text-slate-800">${tool.name}</h4>
+      <span class="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full">${
+        tool.pricing
+      }</span>
+    </div>
+    <p class="text-sm text-slate-600 mb-4">${tool.description}</p>
+    <div class="mb-4">
+      <h5 class="font-semibold text-sm text-slate-700 mb-2">✨ Características principales:</h5>
+      <ul class="space-y-1">${tool.features
+        .map(
+          (f) =>
+            `<li class="text-sm text-slate-600 flex items-start">
+              <svg class="w-4 h-4 text-emerald-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+              </svg>${f}
+            </li>`
+        )
+        .join("")}
+      </ul>
+    </div>
+    <div class="grid md:grid-cols-2 gap-3 mb-4 text-sm">
+      <div class="bg-blue-50 p-3 rounded-lg">
+        <span class="font-semibold text-blue-800">Mejor para:</span>
+        <p class="text-blue-700 mt-1">${tool.bestFor}</p>
+      </div>
+      <div class="bg-amber-50 p-3 rounded-lg">
+        <span class="font-semibold text-amber-800">Limitaciones:</span>
+        <p class="text-amber-700 mt-1">${tool.limitations}</p>
+      </div>
+    </div>
+
+    ${
+      tool.link
+        ? `<a href="${tool.link}" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="inline-flex items-center justify-center w-full px-4 py-3 text-base font-bold text-white bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all transform hover:scale-105">
+            Visitar Sitio Web
+            <svg class="ml-2 -mr-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/>
+              <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
+            </svg>
+          </a>`
+        : ""
+    }
+  </div>`;
         };
 
         Object.keys(toolData).forEach((toolId) => {
