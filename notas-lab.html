@@ -1,0 +1,673 @@
+<!--
+=====================
+  notas-lab.html
+  NotasLab AI - Editor Inteligente con Análisis de Legibilidad
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Laboratorio de texto optimizado para trabajar con outputs de LLMs. Convierte markdown, analiza legibilidad y procesa respuestas de ChatGPT, Claude y otros modelos de IA"
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <title>NotasLab AI | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="NotasLab AI | @ernestob" />
+    <meta
+      property="og:site_name"
+      content="Herramientas de productividad sanitaria"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/notaslab-ai"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    />
+
+    <style>
+      .editor-container {
+        width: 100%;
+        max-width: 1200px;
+        margin: 1rem auto;
+        padding: 0.75rem;
+      }
+
+      .editor-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .editor-title {
+        color: var(--text-primary);
+        font-size: 1.4rem;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 2px solid var(--accent-color);
+      }
+
+      .version-badge {
+        display: inline-block;
+        background: #ffc107;
+        color: #000;
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        margin-left: 0.5rem;
+      }
+
+      .calculator-description {
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin: 0.75rem 0 1rem 0;
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .bookmarklet-button {
+        display: inline-block;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.85rem 1.75rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1.05rem;
+        margin: 1rem 0;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s ease;
+        cursor: move;
+      }
+
+      .bookmarklet-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+      }
+
+      .installation-box {
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+        padding: 0.85rem;
+        margin: 1rem 0;
+      }
+
+      .installation-box h4 {
+        color: #ffc107;
+        margin-bottom: 0.35rem;
+        font-size: 1rem;
+      }
+
+      .installation-box p {
+        margin: 0.5rem 0;
+        font-size: 0.9rem;
+      }
+
+      .tip-text {
+        font-size: 0.85rem;
+        margin-top: 0.35rem;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* Pestañas compactas */
+      .tabs {
+        display: flex;
+        gap: 0.35rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .tab-button {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--bg-secondary, #e0e0e0);
+        border-radius: 6px;
+        background: transparent;
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+      }
+
+      .tab-button:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .tab-button.active {
+        background: #ffc107;
+        color: #000;
+        border-color: #ffc107;
+      }
+
+      .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .tab-content h3 {
+        font-size: 1.1rem;
+        margin: 0 0 0.75rem 0;
+        color: #ffc107;
+      }
+
+      .tab-content ol,
+      .tab-content ul {
+        line-height: 1.6;
+        margin: 0.5rem 0;
+      }
+
+      .tab-content li {
+        margin: 0.35rem 0;
+        font-size: 0.9rem;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.75rem;
+        margin-top: 0.75rem;
+      }
+
+      .feature-item {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .feature-item h4 {
+        color: #ffc107;
+        margin-bottom: 0.35rem;
+        font-size: 0.9rem;
+      }
+
+      .feature-item p {
+        font-size: 0.85rem;
+        line-height: 1.35;
+        color: rgba(255, 255, 255, 0.9);
+        margin: 0;
+      }
+
+      .keyboard-shortcuts {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-top: 0.75rem;
+      }
+
+      .shortcut-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.35rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 0.85rem;
+      }
+
+      .shortcut-item:last-child {
+        border-bottom: none;
+      }
+
+      .shortcut-key {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.8rem;
+      }
+
+      .use-cases {
+        margin-top: 0.75rem;
+      }
+
+      .use-case {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 0.85rem;
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+        border-left: 4px solid #ffc107;
+      }
+
+      .use-case h4 {
+        color: #ffc107;
+        margin: 0 0 0.35rem 0;
+        font-size: 0.95rem;
+      }
+
+      .use-case p {
+        font-size: 0.85rem;
+        line-height: 1.4;
+        margin: 0.35rem 0;
+      }
+
+      .use-case ul {
+        margin: 0.35rem 0 0 1.25rem;
+        font-size: 0.85rem;
+      }
+
+      .tech-details {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 0.85rem;
+        border-radius: 8px;
+        margin-top: 0.75rem;
+        font-size: 0.85rem;
+      }
+
+      .tech-details code {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.15rem 0.35rem;
+        border-radius: 3px;
+        font-family: monospace;
+      }
+
+      .tech-details p,
+      .tech-details ul {
+        margin: 0.5rem 0;
+      }
+
+      .tech-details h4 {
+        margin: 1rem 0 0.5rem 0;
+        color: #ffc107;
+        font-size: 0.95rem;
+      }
+
+      .alert-box {
+        background: rgba(76, 175, 80, 0.1);
+        border: 1px solid #4caf50;
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin: 0.75rem 0;
+      }
+
+      .alert-box p {
+        margin: 0;
+        font-size: 0.9rem;
+      }
+
+      /* Responsivo mejorado */
+      @media (max-width: 768px) {
+        .editor-container {
+          padding: 0.5rem;
+        }
+
+        .editor-card {
+          padding: 1rem;
+        }
+
+        .feature-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .bookmarklet-button {
+          font-size: 0.95rem;
+          padding: 0.75rem 1.25rem;
+        }
+
+        .tabs {
+          gap: 0.25rem;
+        }
+
+        .tab-button {
+          padding: 0.4rem 0.8rem;
+          font-size: 0.8rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <include src="header.html"></include>
+
+    <!-- Main Content -->
+    <main class="main-container">
+      <div class="editor-container">
+        <section class="editor-card">
+          <h2 class="editor-title">
+            📝 NotasLab AI
+            <span class="version-badge">v3.0</span>
+          </h2>
+          <p class="calculator-description">
+            Laboratorio de texto especializado en procesar contenido generado
+            por IA. Convierte markdown, analiza legibilidad bilingüe y optimiza
+            respuestas de ChatGPT, Claude y otros LLMs.
+          </p>
+
+          <!-- Botón del Bookmarklet -->
+          <div class="installation-box">
+            <h4>📌 Instalación Rápida</h4>
+            <p>Arrastra este botón a tu barra de marcadores:</p>
+            <div style="text-align: center; margin: 0.5rem 0">
+              <a
+                id="bookmarklet-link"
+                href="#"
+                class="bookmarklet-button"
+                onclick="alert('¡Arrástralo a tu barra de marcadores!'); return false;"
+              >
+                📝 NotasLab AI
+              </a>
+            </div>
+            <p class="tip-text">
+              💡 <strong>Tip:</strong> Activa la barra con Ctrl+Shift+B
+              (Win/Linux) o Cmd+Shift+B (Mac)
+            </p>
+          </div>
+
+          <!-- Pestañas -->
+          <div class="tabs">
+            <button class="tab-button active" onclick="openTab('inicio')">
+              🚀 Inicio
+            </button>
+            <button class="tab-button" onclick="openTab('caracteristicas')">
+              ✨ Funciones
+            </button>
+            <button class="tab-button" onclick="openTab('uso')">
+              💡 Casos de Uso
+            </button>
+            <button class="tab-button" onclick="openTab('atajos')">
+              ⌨️ Atajos
+            </button>
+            <button class="tab-button" onclick="openTab('tecnico')">
+              🔧 Técnico
+            </button>
+          </div>
+
+          <!-- Contenido de las pestañas -->
+          <div id="inicio" class="tab-content active">
+            <h3>Comenzar en 3 Pasos</h3>
+            <ol>
+              <li>
+                <strong>Instala:</strong> Arrastra el botón morado a marcadores
+              </li>
+              <li>
+                <strong>Úsalo:</strong> Selecciona texto y haz clic, o úsalo
+                vacío
+              </li>
+              <li>
+                <strong>Analiza:</strong> Métricas de legibilidad en tiempo real
+              </li>
+            </ol>
+
+            <div class="alert-box">
+              <p>
+                <strong>🎯 Ideal para:</strong> Procesar outputs de IA, mejorar
+                claridad de textos profesionales y analizar legibilidad
+                bilingüe.
+              </p>
+            </div>
+          </div>
+
+          <div id="caracteristicas" class="tab-content">
+            <h3>Características Principales</h3>
+            <div class="feature-grid">
+              <div class="feature-item">
+                <h4>🤖 Procesamiento IA</h4>
+                <p>Convierte markdown de ChatGPT/Claude instantáneamente</p>
+              </div>
+              <div class="feature-item">
+                <h4>🌐 Bilingüe</h4>
+                <p>Detecta español/inglés y aplica métricas específicas</p>
+              </div>
+              <div class="feature-item">
+                <h4>📊 Tiempo Real</h4>
+                <p>Estadísticas actualizadas mientras escribes</p>
+              </div>
+              <div class="feature-item">
+                <h4>📝 Markdown</h4>
+                <p>Convierte **negrita**, *cursiva*, # títulos, listas</p>
+              </div>
+              <div class="feature-item">
+                <h4>💾 Exportación</h4>
+                <p>Guarda como HTML o extrae texto plano</p>
+              </div>
+              <div class="feature-item">
+                <h4>↩️ Historial</h4>
+                <p>Deshacer hasta 50 cambios anteriores</p>
+              </div>
+            </div>
+
+            <div class="tech-details" style="margin-top: 1rem">
+              <p><strong>Índices de Legibilidad:</strong></p>
+              <ul style="margin-left: 1rem">
+                <li><strong>Español:</strong> Flesch-Szigriszt (adaptado)</li>
+                <li><strong>Inglés:</strong> Flesch Reading Ease</li>
+              </ul>
+              <p style="margin-top: 0.5rem">
+                <strong>Interpretación:</strong> 90-100 (Muy fácil) → 0-30 (Muy
+                difícil)
+              </p>
+            </div>
+          </div>
+
+          <div id="uso" class="tab-content">
+            <h3>Casos de Uso Principales</h3>
+
+            <div
+              class="use-case"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  rgba(102, 126, 234, 0.1),
+                  rgba(118, 75, 162, 0.1)
+                );
+                border-left-color: #667eea;
+              "
+            >
+              <h4>🤖 Procesamiento de Outputs de IA</h4>
+              <p>
+                <strong>Uso principal:</strong> Copia respuestas de ChatGPT,
+                Claude o Gemini y conviértelas al instante.
+              </p>
+              <ul>
+                <li>Limpia formatos markdown complejos</li>
+                <li>Verifica complejidad antes de publicar</li>
+                <li>Combina múltiples respuestas</li>
+              </ul>
+            </div>
+
+            <div class="use-case">
+              <h4>📋 Documentación Profesional</h4>
+              <p>
+                Informes, correos y documentación técnica con análisis de
+                claridad.
+              </p>
+            </div>
+
+            <div class="use-case">
+              <h4>📚 Material Educativo</h4>
+              <p>
+                Ajusta la complejidad según el nivel educativo del destinatario.
+              </p>
+            </div>
+
+            <div class="use-case">
+              <h4>📝 Notas Rápidas</h4>
+              <p>Captura ideas con dictado por voz (Win+H en Windows).</p>
+            </div>
+          </div>
+
+          <div id="atajos" class="tab-content">
+            <h3>Atajos de Teclado</h3>
+            <div class="keyboard-shortcuts">
+              <div class="shortcut-item">
+                <span>Guardar</span>
+                <span class="shortcut-key">Ctrl+S</span>
+              </div>
+              <div class="shortcut-item">
+                <span>Deshacer</span>
+                <span class="shortcut-key">Ctrl+Z</span>
+              </div>
+              <div class="shortcut-item">
+                <span>Rehacer</span>
+                <span class="shortcut-key">Ctrl+Y</span>
+              </div>
+              <div class="shortcut-item">
+                <span>Seleccionar todo</span>
+                <span class="shortcut-key">Ctrl+A</span>
+              </div>
+              <div class="shortcut-item">
+                <span>Pegar sin formato</span>
+                <span class="shortcut-key">Ctrl+Shift+V</span>
+              </div>
+              <div class="shortcut-item">
+                <span>Dictado (Windows)</span>
+                <span class="shortcut-key">Win+H</span>
+              </div>
+              <div class="shortcut-item">
+                <span>Negrita</span>
+                <span class="shortcut-key">Ctrl + B</span>
+              </div>
+              <div class="shortcut-item">
+                <span>Cursiva</span>
+                <span class="shortcut-key">Ctrl + I</span>
+              </div>
+            </div>
+
+            <div class="tech-details" style="margin-top: 0.75rem">
+              <p>
+                <strong>Comandos de voz:</strong> "punto", "coma", "nueva
+                línea", "borrar eso"
+              </p>
+            </div>
+          </div>
+
+          <div id="tecnico" class="tab-content">
+            <h3>Detalles Técnicos</h3>
+            <div class="tech-details">
+              <p>
+                <strong>Tecnología:</strong> JavaScript puro, sin dependencias
+              </p>
+              <p><strong>Tamaño:</strong> ~25KB minificado</p>
+              <p>
+                <strong>Privacidad:</strong> Todo se procesa localmente en tu
+                navegador
+              </p>
+
+              <h4>Algoritmos</h4>
+              <ul>
+                <li>
+                  Detección automática de idioma por patrones lingüísticos
+                </li>
+                <li>Conteo de sílabas específico para cada idioma</li>
+                <li>Fórmulas Flesch-Szigriszt (ES) y Flesch (EN)</li>
+              </ul>
+
+              <div
+                style="
+                  background: rgba(255, 193, 7, 0.1);
+                  padding: 0.65rem;
+                  border-radius: 8px;
+                  margin-top: 0.75rem;
+                "
+              >
+                <p style="margin: 0">
+                  📦
+                  <a
+                    href="https://github.com/ernestobarrera/Bookmarklet-Notas"
+                    target="_blank"
+                    style="color: #ffc107"
+                    >Código fuente</a
+                  >
+                  | 🐛
+                  <a
+                    href="https://github.com/ernestobarrera/Bookmarklet-Notas/issues"
+                    target="_blank"
+                    style="color: #ffc107"
+                    >Reportar errores</a
+                  >
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sección del autor más compacta -->
+        <section class="editor-card" style="padding: 1rem">
+          <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem">
+            👨‍💻 Sobre el Proyecto
+          </h3>
+          <p style="font-size: 0.9rem; line-height: 1.5; margin: 0">
+            Proyecto open source por
+            <a
+              href="https://bsky.app/profile/ernestob.bsky.social"
+              target="_blank"
+              style="color: #ffc107"
+              >Ernesto Barrera</a
+            >. Optimizado para profesionales que trabajan con IA y necesitan
+            procesar textos con claridad y eficiencia.
+          </p>
+        </section>
+      </div>
+    </main>
+
+    <include src="footer.html"></include>
+    <script src="./assets/js/include.js"></script>
+
+    <!-- Script para el bookmarklet y las pestañas -->
+    <script>
+      // Código del bookmarklet minificado (mismo código que el original)
+      const bookmarkletCode = `!function(){"use strict";if(!(window.location.hostname.includes("google.com")||window.location.hostname.includes("facebook.com")||window.location.hostname.includes("twitter.com"))||confirm("Este sitio tiene restricciones de seguridad estrictas. El bookmarklet podría no funcionar correctamente. ¿Deseas continuar?"))try{const e={spanishPatterns:{articles:/\\b(el|la|los|las|un|una|unos|unas)\\b/gi,conjunctions:/\\b(y|e|o|u|pero|sino|porque|que|si)\\b/gi,prepositions:/\\b(de|del|a|al|en|por|para|con|sin|sobre)\\b/gi,pronouns:/\\b(yo|tú|él|ella|nosotros|vosotros|ellos|ellas|me|te|se|nos|os)\\b/gi,accents:/[áéíóúñ¿¡]/g,commonWords:/\\b(está|son|ser|estar|tiene|hace|muy|más|también|todo|cuando|hay)\\b/gi},englishPatterns:{articles:/\\b(the|a|an)\\b/gi,conjunctions:/\\b(and|or|but|because|if|so)\\b/gi,prepositions:/\\b(in|on|at|to|for|with|by|from|of)\\b/gi,pronouns:/\\b(i|you|he|she|it|we|they|me|him|her|us|them)\\b/gi,auxiliaries:/\\b(is|are|was|were|have|has|had|do|does|did)\\b/gi,commonWords:/\\b(this|that|these|those|there|here|what|when|where|who|which)\\b/gi},calculateLanguageScore:function(e,t){let n=0;for(const i in t){n+=(e.match(t[i])||[]).length}return n},detectTechnicalTerms:function(e){return(e.match(/\\b(software|hardware|web|online|internet|email|smartphone|computer|app|website|cloud|server|database|api|framework|frontend|backend|browser|cookie|cache|debug|interface|network|plugin|script|update)\\b/gi)||[]).length},analyzeLanguageDistribution:function(e){const t=this.calculateLanguageScore(e,this.spanishPatterns),n=this.calculateLanguageScore(e,this.englishPatterns),i=this.detectTechnicalTerms(e),o=n-.75*i,a=t+o,r=a>0?t/a*100:50;return{mainLanguage:t>o?"es":"en",spanishPercentage:r.toFixed(1),technicalTerms:i,isHybrid:r>15&&r<85}},generateLanguageReport:function(e){const t=this.analyzeLanguageDistribution(e);let n="";return t.isHybrid?(n=\`Texto mixto (\${t.spanishPercentage}% español) con \${t.technicalTerms} términos técnicos. \`,n+="Aplicando análisis de legibilidad para el idioma predominante."):n="es"==t.mainLanguage?\`Texto principalmente en español (\${t.spanishPercentage}%) con terminología técnica.\`:"Texto principalmente en inglés con algunos términos en español.",{languageInfo:n,detectedLanguage:t.mainLanguage,isHybrid:t.isHybrid}}},t={countSyllables:function(e,t){if(e=e.toLowerCase(),"es"===t){const t=/(ai|au|ei|eu|io|ou|oi|ui|iu|ie|ue|ua)/g,n=/(uai|iai|uei|ioi)/g;let i=((e=e.replace(/[áéíóú]/g,"a").replace(/[üï]/g,"i").replace(/[^a-z]/g,"")).match(/[aeiou]+/g)||[]).length;return i=i-(e.match(t)||[]).length-2*(e.match(n)||[]).length,Math.max(i,1)}return((e=e.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/,"").replace(/^y/,"")).match(/[aeiouy]{1,2}/g)||[]).length||1},calculateSpanishIndex:function(e,t,n){return 206.835-e/t*62.3-t/n},calculateEnglishIndex:function(e,t,n){return 206.835-t/n*1.015-e/t*84.6},interpretScore:function(e,t){return"es"===t?e<=40?"Muy difícil (Nivel universitario o científico)":e<=55?"Algo difícil (Bachillerato, divulgación científica)":e<=65?"Normal (ESO, prensa general)":e<=80?"Bastante fácil (Educación primaria, prensa deportiva)":"Muy fácil (Educación primaria, comics)":e>=90?"Very easy (5th grade)":e>=80?"Easy (6th grade)":e>=70?"Fairly easy (7th grade)":e>=60?"Standard (8th-9th grade)":e>=50?"Fairly difficult (10th-12th grade)":e>=30?"Difficult (College)":"Very difficult (College graduate)"},analyzeText:function(t){if(!t||""===t.trim())return{language:"es",syllables:0,words:0,sentences:0,syllablesPerWord:"0",wordsPerSentence:"0",readabilityScore:"0",interpretation:"Sin texto para analizar",languageInfo:"",isHybrid:!1};const n=e.generateLanguageReport(t),i=n.detectedLanguage,o=t.replace(/\\s+/g," ").trim(),a=o.split(/\\s+/).filter((e=>e.length>0)),r=o.split(/[.!?]+/).filter((e=>e.trim().length>0));if(0===a.length||0===r.length)return{language:i,syllables:0,words:0,sentences:0,syllablesPerWord:"0",wordsPerSentence:"0",readabilityScore:"0",interpretation:"Texto muy corto para analizar",languageInfo:n.languageInfo,isHybrid:n.isHybrid};const l=a.reduce(((e,t)=>e+this.countSyllables(t,i)),0),s="es"===i?this.calculateSpanishIndex(l,a.length,r.length):this.calculateEnglishIndex(l,a.length,r.length);return{language:i,syllables:l,words:a.length,sentences:r.length,syllablesPerWord:(l/a.length).toFixed(2),wordsPerSentence:(a.length/r.length).toFixed(2),readabilityScore:s.toFixed(2),interpretation:this.interpretScore(s,i),languageInfo:n.languageInfo,isHybrid:n.isHybrid}}},n={convert:function(e){if(!e)return"";let t=e;const n=[];t=t.replace(/\`\`\`([\\s\\S]*?)\`\`\`/g,(function(e,t){return n.push(\`<pre><code>\${t.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</code></pre>\`),\`%%CODEBLOCK\${n.length-1}%%\`}));const i=[];t=t.replace(/\`([^\`\\n]+)\`/g,(function(e,t){return i.push(\`<code>\${t.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</code>\`),\`%%INLINECODE\${i.length-1}%%\`}));let o=t.split("\\n"),a=[],r=!1,l="",s=[];for(let e=0;e<o.length;e++){let t=o[e],n=!1;if(/^### /.test(t))r&&(a.push(this.closeList(s,l)),r=!1,s=[]),a.push(t.replace(/^### (.+)$/,"<h3>$1</h3>")),n=!0;else if(/^## /.test(t))r&&(a.push(this.closeList(s,l)),r=!1,s=[]),a.push(t.replace(/^## (.+)$/,"<h2>$1</h2>")),n=!0;else if(/^# /.test(t))r&&(a.push(this.closeList(s,l)),r=!1,s=[]),a.push(t.replace(/^# (.+)$/,"<h1>$1</h1>")),n=!0;else if(/^---+$/.test(t.trim()))r&&(a.push(this.closeList(s,l)),r=!1,s=[]),a.push("<hr>"),n=!0;else if(/^> /.test(t))r&&(a.push(this.closeList(s,l)),r=!1,s=[]),a.push(t.replace(/^> (.+)$/,"<blockquote>$1</blockquote>")),n=!0;else if(/^[\\*\\-\\+] /.test(t)){let e=t.replace(/^[\\*\\-\\+] (.+)$/,"$1");r&&"ul"===l||(r&&a.push(this.closeList(s,l)),r=!0,l="ul",s=[]),s.push(e),n=!0}else if(/^\\d+\\. /.test(t)){let e=t.replace(/^\\d+\\. (.+)$/,"$1");r&&"ol"===l||(r&&a.push(this.closeList(s,l)),r=!0,l="ol",s=[]),s.push(e),n=!0}else r&&""!==t.trim()&&(a.push(this.closeList(s,l)),r=!1,s=[]);n||r||a.push(t)}return r&&a.push(this.closeList(s,l)),t=a.join("\\n"),t=t.replace(/\\*\\*\\*([^\\*]+)\\*\\*\\*/g,"<b><i>$1</i></b>"),t=t.replace(/\\*\\*([^\\*]+)\\*\\*/g,"<b>$1</b>"),t=t.replace(/__([^_]+)__/g,"<b>$1</b>"),t=t.replace(/(?<!\\*)\\*([^\\*\\n]+)\\*(?!\\*)/g,"<i>$1</i>"),t=t.replace(/(?<!_)_([^_\\n]+)_(?!_)/g,"<i>$1</i>"),t=t.replace(/~~([^~]+)~~/g,"<del>$1</del>"),t=t.replace(/!\\[([^\\]]*)\\]\\(([^)]+)\\)/g,'<img alt="$1" src="$2" style="max-width:100%">'),t=t.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g,'<a href="$2" target="_blank">$1</a>'),t=t.replace(/%%CODEBLOCK(\\d+)%%/g,(function(e,t){return n[parseInt(t)]})),t=t.replace(/%%INLINECODE(\\d+)%%/g,(function(e,t){return i[parseInt(t)]})),t=t.replace(/\\n(?!<\\/?(h[1-6]|p|div|blockquote|pre|ul|ol|li|hr))/g,"<br>\\n"),t=t.replace(/(<br>\\n){3,}/g,"<br>\\n<br>\\n"),t},closeList:function(e,t){if(0===e.length)return"";let n=\`<\${t}>\`;return e.forEach((e=>{e=(e=(e=(e=(e=e.replace(/\\*\\*\\*([^\\*]+)\\*\\*\\*/g,"<b><i>$1</i></b>")).replace(/\\*\\*([^\\*]+)\\*\\*/g,"<b>$1</b>")).replace(/(?<!\\*)\\*([^\\*]+)\\*(?!\\*)/g,"<i>$1</i>")).replace(/~~([^~]+)~~/g,"<del>$1</del>")).replace(/\`([^\`]+)\`/g,"<code>$1</code>"),n+=\`<li>\${e}</li>\`})),n+=\`</\${t}>\`,n},detectAndConvert:function(e){if(!e)return"";return/^#{1,3} /m.test(e)||/\\*\\*[^\\*]+\\*\\*/g.test(e)||/\\*[^\\*\\n]+\\*/g.test(e)||/~~[^~]+~~/g.test(e)||/\\[.+?\\]\\(.+?\\)/.test(e)||/^> /m.test(e)||/^[\\*\\-\\+] /m.test(e)||/^\\d+\\. /m.test(e)||/\`\`\`[\\s\\S]*?\`\`\`/.test(e)||/\`[^\`]+\`/.test(e)||/^---+$/m.test(e)?this.convert(e):e}},i=function(e,t){let n;return function(...i){clearTimeout(n),n=setTimeout((()=>e.apply(this,i)),t)}},o=()=>{try{const e=window.getSelection();if(!e||0===e.rangeCount||e.isCollapsed)return"";const t=e.getRangeAt(0),n=document.createElement("div");try{n.appendChild(t.cloneContents())}catch(t){return e.toString()}return n.innerHTML||e.toString()}catch(e){return""}},a=(e,t)=>{try{if(window.trustedTypes&&window.trustedTypes.createPolicy){const n=window.trustedTypes.createPolicy("bookmarklet-policy",{createHTML:e=>e});e.innerHTML=n.createHTML(t)}else e.innerHTML=t}catch(n){e.textContent="";const i=document.createElement("template");i.innerHTML=t,e.appendChild(i.content.cloneNode(!0))}},r=()=>{const e=document.implementation.createHTMLDocument("Smart Editor Pro"),t=e.createElement("style");t.textContent='\\n                body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:1.3rem;margin:0;padding:50px 1rem 1rem;background-color:#f0f0f0;min-height:100vh;box-sizing:border-box}\\n                #header{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:8px 15px;background-color:rgba(250,250,250,.95);backdrop-filter:blur(5px);border-bottom:1px solid #e0e0e0;z-index:1001}\\n                #branding-title{font-size:1rem;font-weight:600;color:#333}\\n                #branding-title sup{font-size:.7rem;color:#888}\\n                #header-hints{display:flex;align-items:center;gap:15px;font-size:.8rem;color:#555}\\n                #saveButton{padding:.3rem .7rem;font-size:.8rem;color:#fff;border:none;border-radius:5px;cursor:pointer;background-color:#007bff;transition:all .2s ease}\\n                #saveButton:hover{background-color:#0056b3}\\n                #toggleInstructions{padding:5px 10px;background:#6c757d;color:#fff;border:none;border-radius:5px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.1);transition:background-color .2s ease}\\n                #toggleInstructions:hover{background-color:#5a6268}\\n                #instructions{background-color:#e0e0e0;padding:.7rem;margin-bottom:1.5rem;border-radius:5px;font-size:1rem;line-height:1.3;position:relative;z-index:100;transition:all .3s ease-out;max-height:2000px;overflow-y:auto;opacity:1}\\n                #instructions.hidden{max-height:0;opacity:0;margin:0;padding:0;overflow:hidden}\\n                #instructions ul{margin:0.5rem 0}\\n                #instructions li{margin:0.3rem 0}\\n                #notepad{background-color:#fff;min-height:300px;padding:.5rem;border:1px solid #ccc;border-radius:5px;width:95%;margin:1rem auto 120px;font-size:1.2rem;resize:vertical;overflow:auto;position:relative;z-index:1;scroll-behavior:auto;transition:margin-top .3s ease-out;line-height:1.6;text-align:justify;hyphens:auto;word-wrap:break-word}\\n                #notepad p{margin-top:0;margin-bottom:1rem}\\n                #notepad h1,#notepad h2,#notepad h3{margin-top:1rem;margin-bottom:0.5rem}\\n                #notepad a{color:#0066cc;text-decoration:underline;cursor:pointer}\\n                #notepad blockquote{border-left:3px solid #ccc;margin-left:0;padding-left:1rem;color:#666}\\n                #notepad code{background:#f4f4f4;padding:2px 4px;border-radius:3px;font-family:monospace}\\n                #notepad pre{background:#f4f4f4;padding:1rem;border-radius:5px;overflow-x:auto}\\n                #notepad ul,#notepad ol{margin-left:1.5rem}\\n                #fixedPanel{position:fixed;bottom:0;left:0;right:0;background-color:rgba(250,250,250,.97);box-shadow:0 -2px 10px rgba(0,0,0,.1);border-top:1px solid #e5e5e5;z-index:1000;padding:.3rem;transition:transform .3s ease,max-height .3s ease;max-height:30vh;overflow-y:auto;transform:translateY(0)}\\n                #fixedPanel.minimized{transform:translateY(calc(100% - 38px))}\\n                #fixedPanel.minimized .stats-row,#fixedPanel.minimized #interpretation,#fixedPanel.minimized #buttonContainer,#fixedPanel.minimized .footer,#fixedPanel.minimized #actionFeedback{display:none}\\n                #panel-hover-hint{display:none}\\n                #fixedPanel.minimized #panel-hover-hint{display:flex;justify-content:center;align-items:center;height:38px;font-size:.8rem;color:#666;user-select:none;gap:10px;animation:pulse-bg 2s infinite alternate}\\n                @keyframes pulse-bg{from{background-color:rgba(230,230,230,0)}to{background-color:rgba(220,220,220,.7)}}\\n                #fixedPanel:hover.minimized{transform:translateY(0)}\\n                #statsContainer{max-height:0;overflow:hidden;opacity:0;transition:all .3s ease;margin:0;padding:0}\\n                #fixedPanel:hover #statsContainer{max-height:500px;opacity:1;padding:8px;margin-bottom:8px;background-color:#f5f5f5;border-radius:4px}\\n                .stats-row{display:flex;justify-content:space-between;align-items:stretch;gap:8px;margin-bottom:8px}\\n                .statItem{flex:1;text-align:center;background-color:#fff;padding:8px 4px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.1);display:flex;flex-direction:column;justify-content:space-between}\\n                .statItem>div:first-child{font-weight:700;color:#666;font-size:.8rem;margin-bottom:4px}\\n                .statValue{font-size:1rem;color:#2196F3;font-weight:500}\\n                #interpretation{width:100%;text-align:center;padding:8px;background-color:#fff;border-radius:4px;margin-top:8px;font-size:.9rem;box-shadow:0 1px 3px rgba(0,0,0,.1)}\\n                #interpretation b{color:#666}\\n                #actionFeedback{font-size:.8rem;text-align:center;color:#333;height:0;opacity:0;transition:all .3s ease;margin:0 auto;padding:0}\\n                #actionFeedback.visible{height:auto;opacity:1;padding:4px 0}\\n                #buttonContainer{display:flex;justify-content:center;gap:.5rem;padding:4px 0;margin-bottom:4px}\\n                .copyButton{padding:.4rem .8rem;font-size:.9rem;color:#fff;border:none;border-radius:5px;cursor:pointer;background-color:#4CAF50;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:all .3s ease}\\n                #clearButton{background-color:#f44336}\\n                #undoButton{background-color:#2196F3}\\n                #convertMarkdownButton{background-color:#9C27B0}\\n                .copyButton:hover{opacity:.9}\\n                .footer{font-size:.75rem;text-align:center;color:#666;padding:4px 0;margin:0;display:flex;justify-content:center;align-items:center;gap:10px}\\n                .footer a{color:#0366d6;text-decoration:none;transition:color .2s ease}\\n                .footer a:hover{color:#0056b3;text-decoration:underline}\\n                #panel-info-hint{font-size:.7rem;color:#888;border:1px dotted #aaa;border-radius:50%;width:12px;height:12px;display:inline-flex;justify-content:center;align-items:center;cursor:help;font-style:italic}\\n                .notification{position:fixed;top:60px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:5px;color:#fff;font-size:.9rem;z-index:10002;animation:fadeIn .3s ease}\\n                .notification.success{background-color:#4CAF50}\\n                .notification.error{background-color:#f44336}\\n                @keyframes fadeIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}\\n            ',e.head.appendChild(t);return a(e.body,'\\n                <div id="header">\\n                    <div id="branding-title">Smart Editor Pro <sup>v3.0</sup></div>\\n                    <div id="header-hints">\\n                        <span>💾 Ctrl+S</span>\\n                        <button id="saveButton">Guardar</button>\\n                        <button id="toggleInstructions">Instrucciones</button>\\n                    </div>\\n                </div>\\n                <div id="instructions" class="hidden">\\n                    <h3 style="margin-bottom:1rem">📝 Bienvenido a Smart Editor Pro v3.0</h3>\\n                    <p><b>🚀 Características principales:</b></p>\\n                    <ul>\\n                        <li>📊 <b>Análisis en tiempo real:</b> Estadísticas de texto, legibilidad y detección de idioma</li>\\n                        <li>🔄 <b>Conversión automática de Markdown:</b> Detecta y convierte automáticamente al pegar o cargar</li>\\n                        <li>🌐 <b>Detección inteligente de idioma:</b> Español/Inglés con análisis híbrido</li>\\n                        <li>📋 <b>Múltiples opciones de copia:</b> Texto plano, enriquecido o Markdown convertido</li>\\n                        <li>↩️ <b>Sistema de deshacer:</b> Historial de 50 cambios</li>\\n                        <li>💾 <b>Guardado rápido:</b> HTML con formato preservado</li>\\n                        <li>📏 <b>Índice de legibilidad:</b> Flesch-Szigriszt para español, Flesch para inglés</li>\\n                        <li>⏱️ <b>Tiempo de lectura estimado:</b> Basado en 250 palabras por minuto</li>\\n                    </ul>\\n                    \\n                    <p><b>⌨️ Atajos de teclado:</b></p>\\n                    <ul>\\n                        <li><b>Ctrl+S:</b> Guardar documento</li>\\n                        <li><b>Ctrl+Z:</b> Deshacer cambio</li>\\n                        <li><b>Ctrl+Y:</b> Rehacer cambio</li>\\n                        <li><b>Ctrl+B:</b> Negrita (en navegadores compatibles)</li>\\n                        <li><b>Ctrl+I:</b> Cursiva (en navegadores compatibles)</li>\\n                    </ul>\\n                    \\n                    <p><b>📝 Sintaxis Markdown soportada:</b></p>\\n                    <ul>\\n                        <li><b># Título 1</b> | <b>## Título 2</b> | <b>### Título 3</b></li>\\n                        <li><b>**negrita**</b> | <b>*cursiva*</b> | <b>***negrita y cursiva***</b></li>\\n                        <li><b>~~tachado~~</b> | <b>\`código inline\`</b></li>\\n                        <li><b>[enlace](url)</b> | <b>![imagen](url)</b></li>\\n                        <li><b>&gt; cita</b> | <b>* lista</b> | <b>1. lista numerada</b></li>\\n                        <li><b>---</b> línea horizontal</li>\\n                        <li>Bloques de código con triple backtick</li>\\n                    </ul>\\n                    \\n                    <p><b>💡 Tips de uso:</b></p>\\n                    <ul>\\n                        <li>🎯 Selecciona texto en cualquier página antes de ejecutar para cargarlo automáticamente</li>\\n                        <li>📱 El panel inferior se minimiza para maximizar espacio de escritura</li>\\n                        <li>🔍 Las estadísticas se actualizan automáticamente mientras escribes</li>\\n                        <li>🎨 El Markdown se renderiza automáticamente al pegar o cargar</li>\\n                        <li>⚡ Ejecuta desde páginas simples para mejor rendimiento</li>\\n                    </ul>\\n                </div>\\n                <div id="notepad" contenteditable></div>\\n                <div id="fixedPanel">\\n                    <div id="statsContainer">\\n                        <div class="stats-row">\\n                            <div class="statItem">\\n                                <div>Palabras</div>\\n                                <div id="wordCount" class="statValue">0</div>\\n                            </div>\\n                            <div class="statItem">\\n                                <div>Caracteres</div>\\n                                <div id="charCount" class="statValue">0</div>\\n                            </div>\\n                            <div class="statItem">\\n                                <div>Frases</div>\\n                                <div id="sentenceCount" class="statValue">0</div>\\n                            </div>\\n                            <div class="statItem">\\n                                <div>Palabras/Frase</div>\\n                                <div id="avgWordsPerSentence" class="statValue">0</div>\\n                            </div>\\n                            <div class="statItem">\\n                                <div>Párrafos</div>\\n                                <div id="paragraphCount" class="statValue">0</div>\\n                            </div>\\n                            <div class="statItem">\\n                                <div>Tiempo de lectura</div>\\n                                <div id="readTime" class="statValue">0 min 0 seg</div>\\n                            </div>\\n                        </div>\\n                        <div id="interpretation">Resumen: Esperando texto...</div>\\n                    </div>\\n                    <div id="actionFeedback"></div>\\n                    <div id="buttonContainer">\\n                        <button id="copyPlainButton" class="copyButton">Copiar texto plano</button>\\n                        <button id="copyRichButton" class="copyButton">Copiar texto enriquecido</button>\\n                        <button id="convertMarkdownButton" class="copyButton">Markdown → HTML</button>\\n                        <button id="undoButton" class="copyButton">Deshacer</button>\\n                        <button id="clearButton" class="copyButton">Limpiar</button>\\n                    </div>\\n                    <div id="panel-hover-hint"><span>↑</span> Ver estadísticas y controles <span>↑</span></div>\\n                    <div class="footer">\\n                        <div>Creado por <a href="https://bsky.app/profile/ernestob.bsky.social" target="_blank" rel="noopener noreferrer">@ernestob</a> | Versión: <span id="version">3.0</span> | <a href="https://github.com/ernestobarrera/Bookmarklet-Notas" target="_blank" rel="noopener noreferrer">Ver en GitHub</a></div>\\n                        <span id="panel-info-hint" title="Este panel se oculta automáticamente al hacer scroll en el editor para maximizar el espacio.">i</span>\\n                    </div>\\n                </div>\\n            '),e},l=e=>{const t=e=>String(e).padStart(2,"0"),n=new Date(e);return\`\${n.getFullYear()}-\${t(n.getMonth()+1)}-\${t(n.getDate())}\`},s=e=>e.split(/[.!?¡¿]+/).filter((e=>e.trim().length>0)).length,c=(e,t)=>0===e||0===t?"0":(e/t).toFixed(1),d=e=>e.split(/\\n{2,}|(<\\/p>|<br\\s*\\/?>\\s*<br\\s*\\/?>)/g).filter((e=>e&&e.trim().length>1)).length||(e.trim()?1:0),u=e=>{if(0===e.wordCount)return"Esperando texto...";let t="";return e.wordCount<100?t+="Texto corto. ":e.wordCount<500?t+="Texto de longitud media. ":t+="Texto largo. ",e.avgWordsPerSentence<10?t+="Oraciones muy cortas, fácil de leer. ":e.avgWordsPerSentence<20?t+="Oraciones de longitud moderada, buena legibilidad. ":t+="Oraciones largas, puede ser más difícil de leer. ",e.paragraphCount<3?t+="Pocos párrafos, considera dividir el texto para mejor lectura.":t+="Buena división en párrafos, facilita la lectura.",t},p=function(e,t="success"){const n=this.document.createElement("div");n.textContent=e,n.className=\`notification \${t}\`,this.document.body.appendChild(n),setTimeout((()=>n.remove()),3e3)},g=function(e,t="success"){const n=this.document.getElementById("actionFeedback");n&&(n.textContent=e,n.style.color="error"===t?"#f44336":"#4CAF50",n.classList.add("visible"),setTimeout((()=>{n.classList.remove("visible")}),4e3))},m=function(){try{const e=this.document.getElementById("notepad"),n=e.innerText||e.textContent||"",i=n.trim().split(/\\s+/).filter((e=>e.length>0)).length,o=n.replace(/\\s+/g,"").length,a=s(n),r=c(i,a),l=d(n),p=250,g=Math.round(i/p*60),m=Math.floor(g/60),h=g%60;let b=t.analyzeText(n);if(this.document.getElementById("wordCount").textContent=i,this.document.getElementById("charCount").textContent=o,this.document.getElementById("sentenceCount").textContent=a,this.document.getElementById("avgWordsPerSentence").textContent=r,this.document.getElementById("paragraphCount").textContent=l,this.document.getElementById("readTime").textContent=\`\${m} min \${h} seg\`,""===n.trim())this.document.getElementById("interpretation").innerHTML="<b>Resumen:</b> Esperando texto...";else{const e=u({wordCount:i,charCount:o,sentenceCount:a,avgWordsPerSentence:r,paragraphCount:l});this.document.getElementById("interpretation").innerHTML=\`<b>Resumen:</b> \${e} Legibilidad: \${b.interpretation} (Puntuación: \${b.readabilityScore})\`}}catch(e){}},h=function(){const e=\`NOTAS_\${l(new Date)}.html\`,t=this.prompt("Introduce el nombre del archivo:",e);if(null===t)return void g.call(this,"Guardado cancelado","error");const n=t||e,i=new Blob([this.document.getElementById("notepad").innerHTML],{type:"text/html"}),o=this.document.createElement("a");o.href=URL.createObjectURL(i),o.download=n,o.style.display="none",this.document.body.appendChild(o),o.click(),this.document.body.removeChild(o),g.call(this,\`Archivo guardado como '\${n}'\`)},b=function(e){e.ctrlKey&&"s"===e.key&&(e.preventDefault(),h.call(this))},f=function(){try{const e=this.document.getElementById("notepad"),t=e.innerText||e.textContent;this.navigator.clipboard.writeText(t).then((()=>p.call(this,"Texto plano copiado"))).catch((e=>{p.call(this,"Error al copiar texto","error")}))}catch(e){p.call(this,"Error al copiar texto","error")}},x=function(){try{const e=this.document.getElementById("notepad"),t=e.innerHTML,n=e.innerText||e.textContent,i=[new ClipboardItem({"text/html":new Blob([t],{type:"text/html"}),"text/plain":new Blob([n],{type:"text/plain"})})];this.navigator.clipboard.write(i).then((()=>p.call(this,"Texto enriquecido copiado"))).catch((e=>{this.navigator.clipboard.writeText(n).then((()=>p.call(this,"Texto copiado (sin formato)")))}))}catch(e){p.call(this,"Error al copiar texto enriquecido","error")}},v=function(){try{const e=this.document.getElementById("notepad");let t=e.textContent||e.innerText||"",i=n.convert(t);C.call(this),a(e,i),m.call(this);const o=[new ClipboardItem({"text/html":new Blob([i],{type:"text/html"}),"text/plain":new Blob([t],{type:"text/plain"})})];this.navigator.clipboard.write(o).then((()=>p.call(this,"Markdown convertido y copiado"))).catch((e=>{p.call(this,"Markdown convertido en el editor")}))}catch(e){p.call(this,"Error al convertir Markdown","error")}};let y=[],w=[];const C=function(){const e=this.document.getElementById("notepad");y.push(e.innerHTML),y.length>50&&y.shift(),w=[]},k=function(){if(y.length>0){const e=this.document.getElementById("notepad");w.push(e.innerHTML);const t=y.pop();a(e,t),m.call(this),g.call(this,"Cambio deshecho")}else g.call(this,"No hay cambios para deshacer","error")},E=function(){const e=this.document.getElementById("notepad");C.call(this),e.innerHTML="",m.call(this),g.call(this,"Texto limpiado (usa Deshacer para recuperar)")},B=window.open("","_blank","width=900,height=700,toolbar=no,menubar=no,location=no,status=no");if(!B)return void alert("No se pudo abrir la ventana del editor. Por favor, desactiva el bloqueador de ventanas emergentes para este sitio.");const L=r();B.document.open(),B.document.write(L.documentElement.outerHTML),B.document.close();const I=B.document.getElementById("notepad"),T=i(m.bind(B),300);I.addEventListener("input",(function(){C.call(B),T()})),I.addEventListener("paste",(function(e){e.preventDefault(),C.call(B);const t=(e.clipboardData||B.clipboardData).getData("text");if(t){const e=n.detectAndConvert(t);if(e!==t){const t=B.getSelection();if(!t.rangeCount)return;t.deleteFromDocument();const n=t.getRangeAt(0),i=B.document.createDocumentFragment(),o=B.document.createElement("div");for(a.call(B,o,e);o.firstChild;)i.appendChild(o.firstChild);n.insertNode(i),n.collapse(!1),t.removeAllRanges(),t.addRange(n),g.call(B,"Markdown detectado y convertido")}else{const e=t.replace(/\\n/g,"<br>");B.document.execCommand("insertHTML",!1,e)}setTimeout(T,100)}})),B.document.addEventListener("keydown",b.bind(B)),B.document.getElementById("saveButton").addEventListener("click",(()=>h.call(B))),B.document.getElementById("copyPlainButton").addEventListener("click",(()=>f.call(B))),B.document.getElementById("copyRichButton").addEventListener("click",(()=>x.call(B))),B.document.getElementById("convertMarkdownButton").addEventListener("click",(()=>v.call(B))),B.document.getElementById("undoButton").addEventListener("click",(()=>k.call(B))),B.document.getElementById("clearButton").addEventListener("click",(()=>E.call(B))),B.document.getElementById("toggleInstructions").addEventListener("click",(function(){const e=B.document.getElementById("instructions");e.classList.toggle("hidden"),this.textContent=e.classList.contains("hidden")?"Instrucciones":"Ocultar"}));let $=!1;B.document.getElementById("fixedPanel").addEventListener("click",(function(e){("panel-hover-hint"===e.target.id||$&&!e.target.classList.contains("copyButton"))&&($=!$,this.classList.toggle("minimized",$))}));const z=o();if(z){const e=document.createElement("div");e.innerHTML=z;const t=e.textContent||e.innerText||"";if(/<[^>]+>/.test(z)&&z!==t)a(I,z),p.call(B,"Contenido HTML cargado");else{const e=n.detectAndConvert(t);a(I,e),e!==t?p.call(B,"Markdown detectado y convertido"):p.call(B,"Contenido cargado")}m.call(B)}m.call(B),I.focus()}catch(e){alert("Error al ejecutar Smart Editor Pro: "+e.message+"\\n\\nIntenta ejecutarlo desde una pestaña vacía o un sitio menos restrictivo.")}}();`;
+
+      // Función para configurar el bookmarklet cuando la página cargue
+      window.addEventListener("DOMContentLoaded", function () {
+        const bookmarkletLink = document.getElementById("bookmarklet-link");
+        if (bookmarkletLink) {
+          bookmarkletLink.href =
+            "javascript:" + encodeURIComponent(bookmarkletCode);
+        }
+      });
+
+      // Función para las pestañas
+      function openTab(tabName) {
+        const tabs = document.querySelectorAll(".tab-content");
+        tabs.forEach((tab) => tab.classList.remove("active"));
+
+        const buttons = document.querySelectorAll(".tab-button");
+        buttons.forEach((button) => button.classList.remove("active"));
+
+        document.getElementById(tabName).classList.add("active");
+        event.currentTarget.classList.add("active");
+      }
+    </script>
+  </body>
+</html>
