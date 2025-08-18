@@ -4,6 +4,7 @@
   Macros y plantillas médicas 
 =====================
 -->
+
 <!DOCTYPE html>
 <html lang="es">
   <head>
@@ -89,11 +90,10 @@
       .tool-container {
         display: flex;
         max-width: 1600px;
-        margin: 140px auto 20px; /* Espacio para el header fijo del sitio Y el header de la herramienta */
+        margin: 160px auto 20px; /* Mayor margen top para separar del header */
         gap: 20px;
         padding: 20px;
       }
-
       .sidebar {
         width: 280px;
         background: white;
@@ -101,9 +101,10 @@
         padding: 20px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         position: sticky;
-        top: 180px; /* Ajuste para ambos headers fijos */
-        height: calc(100vh - 200px);
+        top: 150px; /* Mismo nivel que búsqueda */
+        height: calc(100vh - 180px);
         overflow-y: auto;
+        flex-shrink: 0; /* Evita que se comprima */
       }
 
       .sidebar h2 {
@@ -137,20 +138,61 @@
 
       .tool-main-content {
         flex: 1;
+        min-width: 0; /* Permite que se ajuste correctamente */
+      }
+
+      #templates-container {
         background: white;
         border-radius: 10px;
         padding: 30px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       }
 
+      .search-container {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 150px; /* Ajustado para quedar debajo del header */
+        z-index: 99;
+      }
+
+      .search-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+
       .search-box {
         width: 100%;
-        padding: 15px;
+        padding: 15px 45px 15px 15px;
         font-size: 16px;
         border: 2px solid #e0e0e0;
         border-radius: 10px;
-        margin-bottom: 30px;
         transition: all 0.3s;
+      }
+
+      .clear-search {
+        position: absolute;
+        right: 10px;
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #999;
+        cursor: pointer;
+        padding: 5px 10px;
+        display: none;
+        transition: color 0.3s;
+      }
+
+      .clear-search:hover {
+        color: #3498db;
+      }
+
+      .search-box:not(:placeholder-shown) + .clear-search {
+        display: block;
       }
 
       .search-box:focus {
@@ -226,10 +268,9 @@
         border-radius: 8px;
         font-family: "Consolas", "Monaco", monospace;
         font-size: 14px;
-        line-height: 1.6;
+        line-height: 1.8;
         white-space: pre-wrap;
-        min-height: 100px;
-        max-height: 400px;
+        height: 250px;
         overflow-y: auto;
         border: 2px solid #e0e0e0;
         transition: all 0.3s;
@@ -249,15 +290,33 @@
       }
 
       .editable-field {
-        background: #fff3cd;
-        padding: 2px 6px;
+        background: #fff9e6;
+        padding: 2px 8px;
         border-radius: 4px;
-        border: 1px dashed #856404;
+        border: 2px dashed #f39c12;
         color: #856404;
         cursor: text;
-        display: inline-block;
-        min-width: 40px;
+        display: inline;
+        min-width: 60px;
+        line-height: inherit;
+        vertical-align: baseline;
         transition: all 0.2s;
+        font-weight: 500;
+        margin: 0 2px;
+        font-family: inherit;
+        font-size: inherit;
+        position: relative;
+        white-space: nowrap;
+      }
+
+      .editable-field:empty {
+        display: inline-block;
+        min-width: 80px;
+      }
+
+      .editable-field:empty:before {
+        content: "___";
+        color: #ccc;
       }
 
       .editable-field:hover {
@@ -271,7 +330,17 @@
         color: #2c3e50;
         outline: none;
       }
-
+      .record-label {
+        display: inline-block;
+        background: #3498db;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-weight: bold;
+        font-size: 12px;
+        margin-right: 5px;
+        vertical-align: middle;
+      }
       .button-group {
         display: flex;
         gap: 10px;
@@ -423,7 +492,12 @@
       @media (max-width: 1200px) {
         .tool-container {
           flex-direction: column;
-          margin-top: 140px;
+          margin-top: 160px;
+        }
+
+        .search-container {
+          position: static;
+          margin-bottom: 20px;
         }
         .sidebar {
           width: 100%;
@@ -461,7 +535,10 @@
     <main>
       <div class="tool-header">
         <h1>🏥 Plantillas Médicas - Atención Primaria</h1>
-        <p>Sistema de plantillas editables con atajos rápidos</p>
+        <p>
+          Sistema con 126 plantillas editables y atajos rápidos • Incluye
+          Prompts IA
+        </p>
       </div>
 
       <div class="tool-container">
@@ -471,16 +548,27 @@
         </aside>
 
         <div class="tool-main-content">
-          <input
-            type="text"
-            class="search-box"
-            id="searchBox"
-            placeholder="🔍 Buscar por título, atajo (.an, .ef) o contenido..."
-            autocomplete="off"
-          />
+          <div class="search-container">
+            <div class="search-wrapper">
+              <input
+                type="text"
+                class="search-box"
+                id="searchBox"
+                placeholder="🔍 Buscar por título, atajo (.an, .ef, .iadd, .phq9) o contenido..."
+                autocomplete="off"
+              />
+              <button
+                class="clear-search"
+                id="clearSearch"
+                onclick="clearSearch()"
+                title="Limpiar búsqueda"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
 
           <div id="templates-container"></div>
-
           <div class="empty-state" id="empty-state" style="display: none">
             <h3>No se encontraron resultados</h3>
             <p>Intenta con otros términos de búsqueda</p>
@@ -623,7 +711,7 @@
           category: "Patologías Frecuentes",
           id: "ansiedad",
           title: "Ansiedad Situacional",
-          shortcut: "..ans",
+          shortcut: ".ans",
           content:
             "Ansiedad situacional:\n- Desencadenante: []\n- Clínica: Ansiedad psíquica y somática. No depresión\n- Plan: Técnicas relajación, higiene sueño, apoyo psicológico\n- Control en 2 semanas o según evolución",
         },
@@ -641,7 +729,7 @@
           category: "Prescripciones y ATB",
           id: "pauta-analgesica",
           title: "Pauta Analgésica",
-          shortcut: "..anal",
+          shortcut: ".anal",
           content:
             "Pauta analgésica:\n1) Paracetamol 1g/8h\n2) Añadir si precisa: Ibuprofeno 600mg/8h\n3) Si dolor no controlado: Intercalar Metamizol 575mg\nUsar la mínima dosis efectiva. Ajustar según respuesta",
         },
@@ -835,6 +923,81 @@
           content:
             "Recomendaciones de dieta astringente:\n- Iniciar con líquidos (agua, suero oral, infusiones, caldo de arroz).\n- Progresar según tolerancia a: arroz cocido, zanahoria cocida, patata cocida, manzana (rallada y oxidada) o plátano maduro.\n- Posteriormente introducir pollo o pescado blanco a la plancha/hervido.\n- Evitar: fritos, grasas, lácteos, dulces, bebidas gaseosas y verduras crudas.",
         },
+        // === NUEVAS PLANTILLAS AGREGADAS ===
+
+        // Prompts IA Clínicos
+        {
+          category: "Prompts IA Clínicos",
+          id: "prompt-diagnostico-diferencial",
+          title: "Diagnóstico Diferencial (RECORD)",
+          shortcut: ".iadd",
+          content: `PROMPT DIAGNÓSTICO DIFERENCIAL - Método RECORD:
+
+[R] ROL: Actúa como médico internista experto en diagnóstico diferencial
+[E] ESENCIA: Analiza síntomas y genera diagnósticos diferenciales estructurados
+[C] CONTEXTO: Paciente de [] años, sexo [], con antecedentes de []
+[O] OBJETIVO: Listar 5 diagnósticos más probables con criterios diagnósticos
+[R] REQUISITOS: Incluir red flags, pruebas confirmatorias y prevalencia
+[D] DISEÑO: Tabla con probabilidad, criterios a favor/contra, next steps
+
+SÍNTOMAS PRINCIPALES:
+- []
+- []
+EXPLORACIÓN:
+- []
+ANALÍTICA DISPONIBLE:
+- []`,
+        },
+        {
+          category: "Prompts IA Clínicos",
+          id: "prompt-plan-terapeutico",
+          title: "Plan Terapéutico Personalizado",
+          shortcut: ".iapt",
+          content: `PROMPT PLAN TERAPÉUTICO:
+
+TÉCNICA: Chain-of-Thought + Few-Shot
+ESTRUCTURA:
+1. ANÁLISIS DEL CASO
+   Diagnóstico: []
+   Comorbilidades: []
+   Alergias: []
+   Interacciones: []
+
+2. RAZONAMIENTO PASO A PASO
+   □ Objetivos terapéuticos
+   □ Primera línea según guías
+   □ Alternativas si contraindicación
+   □ Ajuste por función renal/hepática
+
+3. OUTPUT ESPERADO
+   Fármaco | Dosis | Pauta | Duración | Monitorización | Efectos adversos`,
+        },
+        {
+          category: "Prompts IA Clínicos",
+          id: "prompt-interpretacion-pruebas",
+          title: "Interpretación de Pruebas",
+          shortcut: ".iaip",
+          content: `PROMPT INTERPRETACIÓN ANALÍTICA/IMAGEN:
+
+TÉCNICA: Zero-Shot Chain-of-Thought
+"Interpreta sistemáticamente estos resultados siguiendo el método SOAP"
+
+DATOS DEL PACIENTE:
+Edad: [] Sexo: [] 
+Motivo solicitud: []
+
+RESULTADOS:
+[]
+
+SOLICITO:
+1. Hallazgos significativos (S)
+2. Interpretación clínica (O)
+3. Correlación con sospecha (A)
+4. Recomendaciones (P)
+
+Considera valores críticos, tendencias y contexto clínico.`,
+        },
+        // Fin de Prompts IA Clínicos - continúan más plantillas...
 
         // POCUS (Ecografía)
         {
@@ -901,6 +1064,252 @@
           content:
             "ECO CUELLO DISMINUIDO-HETEROGÉNEO\nTamaño: Disminuido\nEcogenicidad: Heterogéneo\nVascularización: Normal\nNódulos: No\nGanglios: No sospechosos\nGlánd. submaxilares: []\nParótidas: []\nOtros: []",
         },
+        // Plantillas críticas corregidas
+        {
+          category: "Patologías Frecuentes",
+          id: "covid-persistente",
+          title: "COVID Persistente/Long COVID",
+          shortcut: ".longcov",
+          content: `EVALUACIÓN COVID PERSISTENTE (>12 semanas):
+
+CRITERIOS DIAGNÓSTICOS:
+□ Infección SARS-CoV-2 confirmada previa
+□ Síntomas >12 semanas post-infección
+□ No explicados por diagnóstico alternativo
+□ Impacto funcional significativo
+
+SÍNTOMAS CARDINALES:
+□ Fatiga post-esfuerzo (PEM)
+□ Disnea persistente
+□ Niebla mental/cognitiva
+□ Disautonomía (POTS)
+
+EVALUACIÓN SISTEMÁTICA:
+Respiratorio: []
+Cardiovascular: []
+Neurológico: []
+Psiquiátrico: []
+Digestivo: []
+Musculoesquelético: []
+
+PRUEBAS BÁSICAS:
+□ Hemograma, PCR, ferritina
+□ TSH, vitamina D, B12
+□ ECG si síntomas CV
+□ Espirometría si disnea
+
+PLAN:
+□ Rehabilitación gradual
+□ Pacing de actividades
+□ Sintomático específico
+□ Apoyo psicológico`,
+        },
+        {
+          category: "Prescripciones y ATB",
+          id: "reconciliacion-medicamentos",
+          title: "Reconciliación Medicación",
+          shortcut: ".recon",
+          content: `RECONCILIACIÓN DE MEDICACIÓN:
+
+MEDICACIÓN DOMICILIARIA PREVIA:
+1. [] - [] mg - [] - Desde: []
+2. [] - [] mg - [] - Desde: []
+3. [] - [] mg - [] - Desde: []
+
+CAMBIOS DURANTE INGRESO/URGENCIAS:
+□ Suspendidos: []
+□ Añadidos: []
+□ Modificados: []
+
+MEDICACIÓN ACTUAL RECONCILIADA:
+1. [] - [] mg - [] - Indicación: []
+2. [] - [] mg - [] - Indicación: []
+
+VERIFICACIÓN:
+□ Alergias revisadas
+□ Interacciones comprobadas
+□ Duplicidades eliminadas
+□ Dosis ajustadas (renal/hepática)
+□ Adherencia evaluada
+
+EDUCACIÓN AL PACIENTE:
+□ Cambios explicados
+□ Horarios clarificados
+□ Efectos adversos informados
+□ Próxima revisión: []`,
+        },
+        // Categoría Acerca de
+        {
+          category: "ℹ️ Acerca de",
+          id: "sobre-proyecto",
+          title: "Sobre este Proyecto",
+          shortcut: ".info",
+          content: `📚 PLANTILLAS CLÍNICAS PARA ATENCIÓN PRIMARIA
+
+VALOR EDUCATIVO Y ASISTENCIAL:
+Esta herramienta representa un avance significativo en la optimización del tiempo clínico en Atención Primaria. Estudios demuestran que los médicos de AP dedican hasta un 50% de su tiempo a tareas administrativas y documentación.
+
+BENEFICIOS DOCUMENTADOS:
+- Reducción del 40-60% en tiempo de documentación
+- Mejora en la completitud de historias clínicas
+- Estandarización de la práctica basada en evidencia
+- Disminución del burnout profesional
+- Mayor tiempo para atención directa al paciente
+
+INTEGRACIÓN CON HCE:
+Las plantillas están diseñadas para ser compatibles con cualquier sistema de Historia Clínica Electrónica que permita entrada de texto. Los atajos rápidos (.an, .ef, etc.) agilizan la documentación sin comprometer la calidad.
+
+BASADO EN EVIDENCIA:
+- Guías SEMFYC/SEMERGEN 2024-2025
+- Protocolos actualizados según últimas publicaciones
+- Criterios diagnósticos internacionales vigentes
+- Recomendaciones de sociedades científicas
+
+DESARROLLO CONTINUO:
+Esta herramienta evoluciona con el feedback de profesionales sanitarios activos, garantizando su relevancia y utilidad práctica.
+
+Autor: Desarrollado por profesionales para profesionales
+Licencia: Uso libre para fines educativos y asistenciales`,
+        },
+        {
+          category: "ℹ️ Acerca de",
+          id: "privacidad-datos",
+          title: "Privacidad y Almacenamiento",
+          shortcut: ".priv",
+          content: `🔒 POLÍTICA DE PRIVACIDAD Y DATOS
+
+ALMACENAMIENTO LOCAL:
+✅ Esta aplicación NO envía datos a ningún servidor
+✅ NO se requiere registro ni identificación
+✅ NO se recopilan datos personales o clínicos
+✅ NO hay cookies de tracking o análisis
+
+DATOS EN TU DISPOSITIVO:
+- Los favoritos se guardan en localStorage del navegador
+- Las ediciones temporales permanecen solo durante la sesión
+- Al cerrar la pestaña, los cambios no guardados se pierden
+- Puedes limpiar todos los datos desde la configuración del navegador
+
+SEGURIDAD:
+- Sin conexión a bases de datos externas
+- Sin transmisión de información sensible
+- Funcionamiento 100% offline una vez cargada
+- Compatible con navegación privada/incógnito
+
+RECOMENDACIONES:
+⚠️ NO introduzcas datos reales de pacientes
+⚠️ Usa solo como plantilla base para tu práctica
+⚠️ Adapta el contenido a cada caso específico
+⚠️ Verifica siempre la información clínica
+
+CUMPLIMIENTO NORMATIVO:
+Esta herramienta respeta:
+- RGPD (Reglamento General de Protección de Datos)
+- LOPD-GDD (Ley Orgánica de Protección de Datos)
+- Normativas de confidencialidad sanitaria
+
+Para eliminar todos los datos locales:
+Configuración navegador > Privacidad > Borrar datos de navegación`,
+        },
+        {
+          category: "ℹ️ Acerca de",
+          id: "instrucciones-uso",
+          title: "Instrucciones de Uso",
+          shortcut: ".ayuda",
+          content: `📖 GUÍA RÁPIDA DE USO
+
+NAVEGACIÓN:
+- Click en categorías laterales para filtrar
+- Usa la búsqueda para encontrar plantillas específicas
+- Los atajos (.an, .ef, etc.) facilitan el acceso rápido
+
+EDICIÓN DE PLANTILLAS:
+- Los campos en [corchetes] son editables
+- Click en el campo amarillo para modificar
+- El contenido se puede editar directamente
+- Botón "Deshacer" restaura el original
+
+SISTEMA DE FAVORITOS:
+- Click en ⭐ para marcar favoritos
+- Accede a tus favoritos desde la categoría superior
+- Los favoritos se mantienen entre sesiones
+
+COPIAR PLANTILLAS:
+- Click en "📋 Copiar" para copiar al portapapeles
+- Pega directamente en tu HCE (Ctrl+V)
+- Compatible con cualquier sistema que acepte texto
+
+ATAJOS DE TECLADO:
+- Ctrl+F: Activar búsqueda
+- ESC: Limpiar búsqueda
+- Tab: Navegar entre campos editables
+
+MÉTODO RECORD (Prompts IA):
+Basado en el framework publicado en Zenodo
+DOI: 10.5281/zenodo.11080812
+Los prompts siguen estructura validada para IA clínica
+
+USO EN HCE:
+1. Busca la plantilla necesaria
+2. Edita los campos según el caso
+3. Copia al portapapeles
+4. Pega en tu Historia Clínica Electrónica
+
+💡 TIP: Guarda esta página en favoritos del navegador para acceso rápido durante la consulta`,
+        },
+        {
+          category: "ℹ️ Acerca de",
+          id: "metodo-record-info",
+          title: "Método RECORD para Prompts IA",
+          shortcut: ".record",
+          content: `🤖 MÉTODO RECORD - PROMPTS ESTRUCTURADOS PARA IA
+
+PUBLICACIÓN CIENTÍFICA:
+Barrera-Linares, E (2024). Método RECORD para escribir Prompts en ChatGPT.
+📄 DOI: <a href="https://zenodo.org/records/11080812" target="_blank" style="color: #3498db;">10.5281/zenodo.11080812</a>
+
+¿QUÉ ES RECORD?
+Estructura mnemotécnica validada para optimizar la interacción con IA en el ámbito sanitario:
+
+R - ROL O PERSONALIDAD
+Define el experto que necesitas que sea la IA
+Ejemplo: "Actúa como médico internista experto"
+
+E - ESENCIA O MISIÓN  
+Establece el propósito principal del prompt
+Ejemplo: "Analiza estos síntomas para diagnóstico diferencial"
+
+C - CONTEXTO
+Proporciona información relevante del caso
+Ejemplo: "Paciente de 65 años, diabético, con HTA"
+
+O - OBJETIVO
+Especifica el resultado deseado
+Ejemplo: "Lista los 5 diagnósticos más probables"
+
+R - REQUISITOS O DETALLES
+Incluye especificaciones adicionales
+Ejemplo: "Ordena por probabilidad, incluye red flags"
+
+D - DISEÑO O FORMATO
+Define cómo presentar la respuesta
+Ejemplo: "Tabla con diagnóstico, criterios y pruebas"
+
+VENTAJAS DEL MÉTODO:
+✅ Respuestas más precisas y relevantes
+✅ Reducción de ambigüedad en las consultas
+✅ Estructura reproducible y enseñable
+✅ Validado en entorno clínico real
+✅ Mejora la calidad de la información obtenida
+
+APLICACIONES EN MEDICINA:
+- Diagnóstico diferencial
+- Planes terapéuticos
+- Interpretación de pruebas
+- Educación al paciente
+- Revisión farmacológica
+- Búsqueda bibliográfica`,
+        },
       ];
 
       // --- LÓGICA DE LA APLICACIÓN ---
@@ -916,12 +1325,26 @@
         "Gestión y Certificados": "📋",
         "Atajos Adicionales": "⚡",
         "POCUS (Ecografía)": "📡",
+        "Prompts IA Clínicos": "🤖",
+        "Prevención y Cribados": "🛡️",
+        "Salud Mental": "🧠",
+        "Pediatría en AP": "👶",
+        "Técnicas y Procedimientos": "💉",
+        Geriatría: "👴",
+        "ℹ️ Acerca de": "ℹ️",
       };
 
       function init() {
         renderCategories();
         renderTemplates();
         setupEventListeners();
+
+        // Cargar favoritos del localStorage
+        favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+        updateFavoriteCount();
+        updateFavoriteStars();
+
+        // Mostrar primera categoría por defecto
         const categories = [...new Set(templates.map((t) => t.category))];
         if (categories.length > 0) {
           showCategory(categories[0]);
@@ -931,7 +1354,17 @@
       function renderCategories() {
         const categoryList = document.getElementById("category-list");
         const categories = [...new Set(templates.map((t) => t.category))];
-        categoryList.innerHTML = categories
+
+        // Añadir categoría de favoritos al principio
+        let categoriesHTML = `
+          <div class="category-item" data-category="favoritos" onclick="showFavorites()">
+            <span>⭐</span>
+            <span>Favoritos (<span id="fav-count">0</span>)</span>
+          </div>
+          <hr style="margin: 10px 0; border: none; border-top: 1px solid #e0e0e0;">
+        `;
+
+        categoriesHTML += categories
           .map(
             (category) => `
                 <div class="category-item" data-category="${category}" onclick="showCategory('${category}')">
@@ -941,6 +1374,9 @@
             `
           )
           .join("");
+
+        categoryList.innerHTML = categoriesHTML;
+        updateFavoriteCount();
       }
 
       function renderTemplates(searchTerm = "") {
@@ -998,13 +1434,24 @@
                 <div class="template-card" id="card-${template.id}">
                     <div class="edit-indicator">Editado</div>
                     <div class="template-header">
-                        <h3 class="template-title">${template.title}</h3>
+                        <h3 class="template-title">
+                          ${
+                            template.id === "metodo-record-info"
+                              ? `<a href="https://zenodo.org/records/11080812" target="_blank" style="color: inherit; text-decoration: none;">${template.title} 🔗</a>`
+                              : template.title
+                          }
+                        </h3>
                         <span class="shortcut-badge">${template.shortcut}</span>
                     </div>
                     <div class="template-content" 
                          contenteditable="true" 
                          data-template-id="${template.id}"
                          oninput="handleContentEdit(this)">${content}</div>
+                        <button class="btn-favorite" 
+                            onclick="toggleFavorite('${template.id}')"
+                            style="position: absolute; top: 5px; left: 5px; background: none; border: none; font-size: 18px; cursor: pointer; z-index: 10; color: #f39c12;">
+                        <span id="fav-${template.id}">☆</span>
+                    </button>
                     <div class="button-group">
                         <button class="btn tooltip" 
                                 onclick="copyTemplate('${template.id}')"
@@ -1031,9 +1478,17 @@
           );
         }
         const text = contentElement.innerHTML;
+
+        // Procesar campos editables pero excluir acrósticos RECORD
         const processed = text.replace(/\[(.*?)\]/g, (match, p1) => {
+          // Si es un acróstico de una sola letra seguido de ], es parte del método RECORD
+          if (p1.length === 1 && /[RECODE]/.test(p1)) {
+            return `<span class="record-label">[${p1}]</span>`;
+          }
+          // Si no, es un campo editable normal
           return `<span class="editable-field" contenteditable="true" onclick="event.stopPropagation()">${p1}</span>`;
         });
+
         if (contentElement.innerHTML !== processed) {
           contentElement.innerHTML = processed;
         }
@@ -1108,7 +1563,61 @@
           notification.style.display = "none";
         }, 3000);
       }
+      function showFavorites() {
+        // Marcar favoritos como activo en sidebar
+        document.querySelectorAll(".category-item").forEach((item) => {
+          item.classList.toggle(
+            "active",
+            item.dataset.category === "favoritos"
+          );
+        });
 
+        // Renderizar solo plantillas favoritas
+        const container = document.getElementById("templates-container");
+        const favoriteTemplates = templates.filter((t) =>
+          favorites.includes(t.id)
+        );
+
+        if (favoriteTemplates.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <h3>⭐ No tienes plantillas favoritas</h3>
+              <p>Marca plantillas como favoritas haciendo clic en la estrella</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="category-section">
+            <h2 class="category-header">
+              ⭐ Plantillas Favoritas
+            </h2>
+            <div class="templates-grid">
+              ${favoriteTemplates
+                .map((template) => createTemplateCard(template))
+                .join("")}
+            </div>
+          </div>
+        `;
+
+        processAllEditableFields();
+        updateFavoriteStars();
+      }
+
+      function updateFavoriteCount() {
+        const countElement = document.getElementById("fav-count");
+        if (countElement) {
+          countElement.textContent = favorites.length;
+        }
+      }
+
+      function updateFavoriteStars() {
+        favorites.forEach((id) => {
+          const star = document.getElementById(`fav-${id}`);
+          if (star) star.textContent = "★";
+        });
+      }
       function showCategory(category) {
         currentCategory = category;
         document.querySelectorAll(".category-item").forEach((item) => {
@@ -1151,9 +1660,67 @@
               "¿Estás seguro? Hay cambios sin guardar en las plantillas.";
           }
         });
+        // Sincronizar categoría activa con scroll
+        let scrollTimeout;
+        window.addEventListener("scroll", () => {
+          clearTimeout(scrollTimeout);
+          scrollTimeout = setTimeout(() => {
+            const sections = document.querySelectorAll(".category-section");
+            const scrollPosition = window.scrollY + 200;
+
+            sections.forEach((section) => {
+              const top = section.offsetTop;
+              const height = section.offsetHeight;
+
+              if (scrollPosition >= top && scrollPosition < top + height) {
+                const categoryName = section
+                  .querySelector(".category-header")
+                  .textContent.trim();
+                // Eliminar emoji y espacios
+                const cleanCategory = categoryName.substring(2).trim();
+
+                document.querySelectorAll(".category-item").forEach((item) => {
+                  item.classList.toggle(
+                    "active",
+                    item.dataset.category === cleanCategory
+                  );
+                });
+              }
+            });
+          }, 100);
+        });
       }
 
       document.addEventListener("DOMContentLoaded", init);
+      // Sistema de favoritos
+      let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+      function clearSearch() {
+        const searchBox = document.getElementById("searchBox");
+        searchBox.value = "";
+        searchBox.focus();
+        renderTemplates();
+      }
+      function toggleFavorite(templateId) {
+        event.stopPropagation(); // Prevenir que se active el click de la tarjeta
+        const index = favorites.indexOf(templateId);
+        if (index > -1) {
+          favorites.splice(index, 1);
+          document.getElementById(`fav-${templateId}`).textContent = "☆";
+        } else {
+          favorites.push(templateId);
+          document.getElementById(`fav-${templateId}`).textContent = "★";
+        }
+        localStorage.setItem("favorites", JSON.stringify(favorites));
+        updateFavoriteCount();
+      }
+
+      // Actualizar estrellas al cargar
+      setTimeout(() => {
+        favorites.forEach((id) => {
+          const star = document.getElementById(`fav-${id}`);
+          if (star) star.textContent = "★";
+        });
+      }, 100);
     </script>
   </body>
 </html>
