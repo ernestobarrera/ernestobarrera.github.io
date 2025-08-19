@@ -2585,10 +2585,14 @@ filtros estructurados para profesionales sanitarios
         if (mainIconsContainer) {
           const btnApiConfig = document.createElement("button");
           btnApiConfig.id = "btnApiConfig";
-          btnApiConfig.innerHTML = '<i class="fas fa-key"></i>';
+          btnApiConfig.innerHTML =
+            '<i class="fas fa-key" style="font-size: 1.3em;"></i>';
           btnApiConfig.title = "Configurar API Key NCBI";
+
+          // --- LA ÚNICA LÍNEA QUE NECESITAS CAMBIAR ---
+          // Este estilo en línea contiene todo: reseteo, color, espaciado y la alineación correcta para Flexbox.
           btnApiConfig.style.cssText =
-            "background: transparent; border: none; color: inherit; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.3s ease; position: relative;";
+            "background: transparent; border: none; color: inherit; cursor: pointer; padding: 8px; font-size: inherit; line-height: 1; align-self: center; position: relative; border-radius: 8px;";
 
           // Verificar si hay API key guardada
           if (window.ApiKeyManager.hasApiKey()) {
@@ -2602,9 +2606,17 @@ filtros estructurados para profesionales sanitarios
             btnApiConfig.appendChild(indicator);
           }
 
-          // Insertar al final de mainIconsContainer (antes del último botón)
-          const lastButton = mainIconsContainer.lastElementChild;
-          mainIconsContainer.insertBefore(btnApiConfig, lastButton);
+          // Lógica de inserción (se mantiene igual)
+          const toggleCountersButton =
+            document.getElementById("toggleCountersBtn");
+          if (toggleCountersButton) {
+            toggleCountersButton.insertAdjacentElement(
+              "afterend",
+              btnApiConfig
+            );
+          } else {
+            mainIconsContainer.appendChild(btnApiConfig);
+          }
 
           // Event listener para abrir modal
           btnApiConfig.addEventListener("click", function () {
@@ -2912,16 +2924,16 @@ filtros estructurados para profesionales sanitarios
             <label for="apiKeyInput">
               <strong>API Key de NCBI:</strong>
               <a
-                href="https://www.ncbi.nlm.nih.gov/account/settings/"
+                href="https://account.ncbi.nlm.nih.gov/settings/"
                 target="_blank"
                 style="
                   margin-left: 10px;
-                  color: #0e04c8;
+                  color: #ffd700;
                   text-decoration: underline;
                   font-size: 0.9em;
                 "
               >
-                ¿Cómo obtener una API Key?
+                Consulta tu API Key
               </a>
             </label>
             <div style="position: relative">
@@ -2959,20 +2971,38 @@ filtros estructurados para profesionales sanitarios
               class="help-box"
               style="
                 margin-top: 15px;
-                padding: 10px;
-                background: #f5f5f5;
+                padding: 12px;
+                background: var(
+                  --card-bg,
+                  #2a2d3a
+                ); /* Fondo oscuro consistente */
+                border: 1px solid var(--border-color, #444); /* Borde sutil para definirlo */
                 border-radius: 8px;
               "
             >
-              <p style="margin: 0 0 10px 0; font-size: 0.9em">
+              <p
+                style="
+                  margin: 0 0 10px 0;
+                  font-size: 0.9em;
+                  color: var(--text-primary, #fff);
+                "
+              >
                 <strong>Para obtener tu API Key gratuita:</strong>
               </p>
-              <ol style="margin: 0; padding-left: 20px; font-size: 0.85em">
+              <ol
+                style="
+                  margin: 0;
+                  padding-left: 20px;
+                  font-size: 0.85em;
+                  color: var(--text-secondary, #ccc);
+                "
+              >
                 <li>
                   Crea una cuenta en
                   <a
                     href="https://www.ncbi.nlm.nih.gov/account/"
                     target="_blank"
+                    style="color: var(--accent-color, #ffd700)"
                     >NCBI</a
                   >
                 </li>
@@ -2981,13 +3011,20 @@ filtros estructurados para profesionales sanitarios
                   <a
                     href="https://www.ncbi.nlm.nih.gov/account/settings/"
                     target="_blank"
+                    style="color: var(--accent-color, #ffd700)"
                     >Settings</a
                   >
                 </li>
                 <li>En "API Key Management", haz clic en "Create API Key"</li>
                 <li>Copia la key generada y pégala aquí</li>
               </ol>
-              <p style="margin: 10px 0 0 0; font-size: 0.8em; color: #666">
+              <p
+                style="
+                  margin: 10px 0 0 0;
+                  font-size: 0.8em;
+                  color: var(--text-secondary, #aaa);
+                "
+              >
                 <i class="fas fa-lock"></i> Tu API key se almacena de forma
                 segura en tu navegador local y nunca se envía a servidores
                 externos.
