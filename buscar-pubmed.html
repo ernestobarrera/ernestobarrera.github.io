@@ -2585,10 +2585,14 @@ filtros estructurados para profesionales sanitarios
         if (mainIconsContainer) {
           const btnApiConfig = document.createElement("button");
           btnApiConfig.id = "btnApiConfig";
-          btnApiConfig.innerHTML = '<i class="fas fa-key"></i>';
+          btnApiConfig.innerHTML =
+            '<i class="fas fa-key" style="font-size: 1.3em;"></i>';
           btnApiConfig.title = "Configurar API Key NCBI";
+
+          // --- LA ÚNICA LÍNEA QUE NECESITAS CAMBIAR ---
+          // Este estilo en línea contiene todo: reseteo, color, espaciado y la alineación correcta para Flexbox.
           btnApiConfig.style.cssText =
-            "background: transparent; border: none; color: inherit; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.3s ease; position: relative;";
+            "background: transparent; border: none; color: inherit; cursor: pointer; padding: 8px; font-size: inherit; line-height: 1; align-self: center; position: relative; border-radius: 8px;";
 
           // Verificar si hay API key guardada
           if (window.ApiKeyManager.hasApiKey()) {
@@ -2602,9 +2606,17 @@ filtros estructurados para profesionales sanitarios
             btnApiConfig.appendChild(indicator);
           }
 
-          // Insertar al final de mainIconsContainer (antes del último botón)
-          const lastButton = mainIconsContainer.lastElementChild;
-          mainIconsContainer.insertBefore(btnApiConfig, lastButton);
+          // Lógica de inserción (se mantiene igual)
+          const toggleCountersButton =
+            document.getElementById("toggleCountersBtn");
+          if (toggleCountersButton) {
+            toggleCountersButton.insertAdjacentElement(
+              "afterend",
+              btnApiConfig
+            );
+          } else {
+            mainIconsContainer.appendChild(btnApiConfig);
+          }
 
           // Event listener para abrir modal
           btnApiConfig.addEventListener("click", function () {
