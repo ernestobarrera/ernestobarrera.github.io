@@ -14,7 +14,7 @@
    * Configuración y Estado del Módulo
    * -----------------------------------------------------------------------
    */
-  const NCBI_API_KEY = ""; // <-- Mantenido vacío por seguridad en entorno público
+  const NCBI_API_KEY = window.ApiKeyManager ? window.ApiKeyManager.getApiKey() : "";
   const PETICIONES_POR_SEGUNDO = NCBI_API_KEY ? 10 : 3;
   const DURACION_CACHE_MS = 5 * 60 * 1000;
   const RETRASO_DEBOUNCE_MS = 600;
@@ -784,6 +784,21 @@
 
     // Instanciar la cola (esta línea y las siguientes ya deberían existir y permanecer igual)
     requestQueue = new RequestQueue(NCBI_API_KEY, PETICIONES_POR_SEGUNDO);
+
+    // Escuchar cambios en la API key
+    if (window.ApiKeyManager) {
+      window.ApiKeyManager.onApiKeyChange((newApiKey) => {
+        const rps = newApiKey ? 10 : 3;
+        requestQueue = new RequestQueue(newApiKey, rps);
+        requestQueue.clearCache();
+        console.log(`API Key ${newApiKey ? 'configurada' : 'eliminada'}. Velocidad: ${rps} req/s`);
+
+        if (typeof window.triggerPubMedCounterUpdate === 'function') {
+          window.triggerPubMedCounterUpdate();
+        }
+      });
+    }
+
     setupSearchInputListener(); // Configurar listener input
     loadAndAttachFilters();     // Cargar filtros (esto llamará a enableToggleButton al final)
 

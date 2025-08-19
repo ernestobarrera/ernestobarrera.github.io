@@ -2573,6 +2573,183 @@ filtros estructurados para profesionales sanitarios
         }, 3000); // 3000 ms = 3 segundos
       }
     </script>
+    <!-- Gestión de API Key NCBI -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Solo ejecutar si existe el gestor de API
+        if (!window.ApiKeyManager) return;
+
+        // Crear botón de configuración de API
+        const mainIconsContainer =
+          document.getElementById("mainIconsContainer");
+        if (mainIconsContainer) {
+          const btnApiConfig = document.createElement("button");
+          btnApiConfig.id = "btnApiConfig";
+          btnApiConfig.innerHTML = '<i class="fas fa-key"></i>';
+          btnApiConfig.title = "Configurar API Key NCBI";
+          btnApiConfig.style.cssText =
+            "background: transparent; border: none; color: inherit; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.3s ease; position: relative;";
+
+          // Verificar si hay API key guardada
+          if (window.ApiKeyManager.hasApiKey()) {
+            btnApiConfig.classList.add("has-api");
+            btnApiConfig.title = "API Key configurada (10 req/s)";
+
+            // Añadir indicador verde
+            const indicator = document.createElement("span");
+            indicator.style.cssText =
+              "position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; background: #4caf50; border-radius: 50%; box-shadow: 0 0 4px #4caf50;";
+            btnApiConfig.appendChild(indicator);
+          }
+
+          // Insertar al final de mainIconsContainer (antes del último botón)
+          const lastButton = mainIconsContainer.lastElementChild;
+          mainIconsContainer.insertBefore(btnApiConfig, lastButton);
+
+          // Event listener para abrir modal
+          btnApiConfig.addEventListener("click", function () {
+            openApiKeyModal();
+          });
+        }
+
+        // Función para abrir el modal de API Key
+        function openApiKeyModal() {
+          const modal = document.getElementById("modalApiKeyFondo");
+          const statusIcon = modal.querySelector(".status-icon");
+          const statusText = modal.querySelector(".status-text");
+          const apiBenefits = modal.querySelector(".api-benefits");
+          const apiKeyInput = document.getElementById("apiKeyInput");
+          const apiKeyExisting = document.getElementById("apiKeyExisting");
+          const saveBtn = document.getElementById("saveApiKey");
+          const errorDiv = document.getElementById("apiKeyError");
+
+          // Resetear estado
+          errorDiv.style.display = "none";
+          apiKeyInput.value = "";
+
+          // Verificar estado actual
+          const hasKey = window.ApiKeyManager.hasApiKey();
+
+          if (hasKey) {
+            statusIcon.className = "status-icon";
+            statusIcon.style.cssText =
+              "width: 12px; height: 12px; border-radius: 50%; display: inline-block; background: #4caf50; box-shadow: 0 0 8px #4caf50;";
+            statusText.textContent = "API Key configurada y activa";
+            apiBenefits.style.display = "block";
+            apiKeyExisting.style.display = "block";
+            saveBtn.querySelector(".btn-text").textContent =
+              "Actualizar API Key";
+          } else {
+            statusIcon.className = "status-icon";
+            statusIcon.style.cssText =
+              "width: 12px; height: 12px; border-radius: 50%; display: inline-block; background: #ff9800; box-shadow: 0 0 8px #ff9800;";
+            statusText.textContent =
+              "Sin API Key configurada (usando límite público: 3 req/s)";
+            apiBenefits.style.display = "none";
+            apiKeyExisting.style.display = "none";
+            saveBtn.querySelector(".btn-text").textContent = "Guardar API Key";
+          }
+
+          // Mostrar modal usando la función existente
+          abrirModal("modalApiKeyFondo");
+        }
+
+        // Toggle visibilidad de API Key
+        const toggleVisBtn = document.getElementById("toggleApiKeyVisibility");
+        const apiKeyInput = document.getElementById("apiKeyInput");
+
+        if (toggleVisBtn && apiKeyInput) {
+          toggleVisBtn.addEventListener("click", function () {
+            const isPassword = apiKeyInput.type === "password";
+            apiKeyInput.type = isPassword ? "text" : "password";
+            this.innerHTML = isPassword
+              ? '<i class="fas fa-eye-slash"></i>'
+              : '<i class="fas fa-eye"></i>';
+          });
+        }
+
+        // Guardar API Key
+        const saveApiKeyBtn = document.getElementById("saveApiKey");
+        if (saveApiKeyBtn) {
+          saveApiKeyBtn.addEventListener("click", async function () {
+            const apiKey = apiKeyInput.value.trim();
+            const errorDiv = document.getElementById("apiKeyError");
+            const btnText = this.querySelector(".btn-text");
+            const btnLoading = this.querySelector(".btn-loading");
+
+            if (!apiKey) {
+              errorDiv.textContent = "Por favor ingresa una API Key";
+              errorDiv.style.display = "block";
+              return;
+            }
+
+            // Mostrar estado de carga
+            btnText.style.display = "none";
+            btnLoading.style.display = "inline";
+            this.disabled = true;
+
+            try {
+              const result = await window.ApiKeyManager.saveApiKey(apiKey);
+
+              if (result.success) {
+                mostrarToast(
+                  "API Key guardada correctamente. Los contadores ahora se actualizarán 3x más rápido."
+                );
+                cerrarModal("modalApiKeyFondo");
+
+                // Actualizar indicador visual
+                const btnApi = document.getElementById("btnApiConfig");
+                if (btnApi) {
+                  if (!btnApi.querySelector("span")) {
+                    const indicator = document.createElement("span");
+                    indicator.style.cssText =
+                      "position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; background: #4caf50; border-radius: 50%; box-shadow: 0 0 4px #4caf50;";
+                    btnApi.appendChild(indicator);
+                  }
+                  btnApi.classList.add("has-api");
+                  btnApi.title = "API Key configurada (10 req/s)";
+                }
+              }
+            } catch (error) {
+              errorDiv.textContent = error.message;
+              errorDiv.style.display = "block";
+            } finally {
+              // Restaurar botón
+              btnText.style.display = "inline";
+              btnLoading.style.display = "none";
+              this.disabled = false;
+            }
+          });
+        }
+
+        // Eliminar API Key
+        const removeApiKeyBtn = document.getElementById("removeApiKey");
+        if (removeApiKeyBtn) {
+          removeApiKeyBtn.addEventListener("click", function () {
+            if (
+              confirm(
+                "¿Estás seguro de que deseas eliminar tu API Key? Los contadores se actualizarán más lentamente."
+              )
+            ) {
+              window.ApiKeyManager.removeApiKey();
+              mostrarToast(
+                "API Key eliminada. Usando límite público (3 req/s)."
+              );
+              cerrarModal("modalApiKeyFondo");
+
+              // Actualizar indicador visual
+              const btnApi = document.getElementById("btnApiConfig");
+              if (btnApi) {
+                const indicator = btnApi.querySelector("span");
+                if (indicator) indicator.remove();
+                btnApi.classList.remove("has-api");
+                btnApi.title = "Configurar API Key NCBI";
+              }
+            }
+          });
+        }
+      });
+    </script>
     <!-- botón asistente GPT -->
     <script>
       document
@@ -2704,6 +2881,151 @@ filtros estructurados para profesionales sanitarios
         </div>
       </div>
     </div>
+    <!-- Modal API Key -->
+    <div class="modal-backdrop" id="modalApiKeyFondo">
+      <div class="modal" id="modalApiKey" style="max-width: 600px">
+        <div class="modal-header">
+          <h2 class="modal-title">
+            <i class="fas fa-key"></i> Configuración de API Key NCBI
+          </h2>
+          <button class="close-modal" data-close="modalApiKeyFondo">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="apiKeyStatus" class="api-status-box">
+            <div class="status-indicator">
+              <span class="status-icon"></span>
+              <span class="status-text"></span>
+            </div>
+            <div class="api-benefits" style="display: none">
+              <p><strong>Beneficios de usar API Key:</strong></p>
+              <ul style="margin: 10px 0 0 20px">
+                <li>✓ 10 peticiones/segundo (vs 3 sin key)</li>
+                <li>✓ Actualización 3x más rápida de contadores</li>
+                <li>✓ Menor probabilidad de límites de tasa</li>
+              </ul>
+            </div>
+          </div>
+
+          <div id="apiKeyForm">
+            <label for="apiKeyInput">
+              <strong>API Key de NCBI:</strong>
+              <a
+                href="https://www.ncbi.nlm.nih.gov/account/settings/"
+                target="_blank"
+                style="
+                  margin-left: 10px;
+                  color: #0e04c8;
+                  text-decoration: underline;
+                  font-size: 0.9em;
+                "
+              >
+                ¿Cómo obtener una API Key?
+              </a>
+            </label>
+            <div style="position: relative">
+              <input
+                type="password"
+                id="apiKeyInput"
+                placeholder="Ingresa tu API Key de NCBI (36-40 caracteres)"
+                style="width: 100%; padding-right: 40px"
+              />
+              <button
+                type="button"
+                id="toggleApiKeyVisibility"
+                style="
+                  position: absolute;
+                  right: 10px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  color: #666;
+                "
+              >
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+
+            <div
+              id="apiKeyError"
+              class="error-message"
+              style="display: none; color: #d32f2f; margin-top: 10px"
+            ></div>
+
+            <div
+              class="help-box"
+              style="
+                margin-top: 15px;
+                padding: 10px;
+                background: #f5f5f5;
+                border-radius: 8px;
+              "
+            >
+              <p style="margin: 0 0 10px 0; font-size: 0.9em">
+                <strong>Para obtener tu API Key gratuita:</strong>
+              </p>
+              <ol style="margin: 0; padding-left: 20px; font-size: 0.85em">
+                <li>
+                  Crea una cuenta en
+                  <a
+                    href="https://www.ncbi.nlm.nih.gov/account/"
+                    target="_blank"
+                    >NCBI</a
+                  >
+                </li>
+                <li>
+                  Ve a
+                  <a
+                    href="https://www.ncbi.nlm.nih.gov/account/settings/"
+                    target="_blank"
+                    >Settings</a
+                  >
+                </li>
+                <li>En "API Key Management", haz clic en "Create API Key"</li>
+                <li>Copia la key generada y pégala aquí</li>
+              </ol>
+              <p style="margin: 10px 0 0 0; font-size: 0.8em; color: #666">
+                <i class="fas fa-lock"></i> Tu API key se almacena de forma
+                segura en tu navegador local y nunca se envía a servidores
+                externos.
+              </p>
+            </div>
+          </div>
+
+          <div id="apiKeyExisting" style="display: none; margin-top: 15px">
+            <button
+              id="removeApiKey"
+              class="btn-danger"
+              style="
+                background: #d32f2f;
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+              "
+            >
+              <i class="fas fa-trash"></i> Eliminar API Key
+            </button>
+          </div>
+
+          <div class="modal-buttons">
+            <button class="modal-cancel" data-close="modalApiKeyFondo">
+              Cancelar
+            </button>
+            <button id="saveApiKey" class="modal-confirm">
+              <span class="btn-text">Guardar API Key</span>
+              <span class="btn-loading" style="display: none">
+                <i class="fas fa-spinner fa-spin"></i> Validando...
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div
       id="toastContainer"
       style="
@@ -2719,6 +3041,7 @@ filtros estructurados para profesionales sanitarios
     
 <script src="/assets/js/buscar-pubmed.js"></script>
  -->
+    <script src="/assets/js/api-key-manager.js"></script>
     <script defer src="/assets/js/counters-buscar-pubmed.js"></script>
   </body>
 </html>
