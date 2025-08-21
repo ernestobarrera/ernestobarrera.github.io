@@ -1,0 +1,1693 @@
+<!--
+=====================
+  absorbentes.html
+  Asistente Clínico para Selección de Absorbentes
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Herramienta de apoyo clínico para la selección personalizada de productos absorbentes para incontinencia"
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <meta name="DC.Identifier" content="10.5281/zenodo.4485682" />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <title>Asistente Clínico de Absorbentes | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Asistente Clínico de Absorbentes | ​👨‍⚕️ ​@ernestob"
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria 🔎🩺⚕"
+    />
+    <meta property="og:url" content="https://ernestobarrera.github.io/" />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+    <meta property="article:published_time" content="2024-01-04" />
+    <meta property="article:author" content="https://twitter.com/ernestob" />
+
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <!-- Tailwind CSS para los componentes del asistente -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Estilos específicos del asistente de absorbentes -->
+    <style>
+      .content-container {
+        width: 100%;
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .assistant-wrapper {
+        width: 100%;
+        background: var(--card-bg, #ffffff);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Estilos del asistente */
+      body {
+        font-family: "Inter", var(--font-family), sans-serif;
+      }
+
+      .card {
+        background-color: #ffffff;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transition: all 0.3s ease;
+      }
+
+      .btn-selector {
+        transition: all 0.2s ease-in-out;
+        border: 2px solid transparent;
+      }
+
+      .btn-selector.selected {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
+        color: #1e40af;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+      }
+
+      .btn-selector:hover:not(.selected) {
+        background-color: #f0f0f0;
+        transform: translateY(-2px);
+      }
+
+      .tab-btn {
+        transition: color 0.3s, border-color 0.3s;
+      }
+
+      .tab-btn.active {
+        color: #3b82f6;
+        border-bottom-color: #3b82f6;
+      }
+
+      .content-section {
+        display: none;
+      }
+
+      .content-section.active {
+        display: block;
+      }
+
+      .recommendation-fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .step-section {
+        transition: opacity 0.5s, max-height 0.5s ease-in-out;
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+      }
+
+      .step-section.visible {
+        max-height: 800px;
+        opacity: 1;
+      }
+
+      .alert-box {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 4px solid #f59e0b;
+      }
+
+      .size-calculator {
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+      }
+
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .content-container {
+          padding: 0.5rem;
+          margin: 1rem auto;
+        }
+
+        .assistant-wrapper {
+          padding: 1rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .content-container {
+          padding: 0.1rem;
+        }
+
+        .assistant-wrapper {
+          border-radius: 8px;
+          padding: 0.5rem;
+        }
+      }
+      /* ——— Anti-herencia de colores del sitio dentro del asistente ——— */
+      .main-container .assistant-wrapper {
+        color: #1f2937 !important; /* text-gray-800 */
+        background: #ffffff !important;
+        isolation: isolate; /* evita mezclas raras */
+      }
+      .main-container
+        .assistant-wrapper
+        :where(h1, h2, h3, h4, h5, h6, p, li, span, small, td, th, label) {
+        color: #1f2937 !important;
+      }
+      .main-container .assistant-wrapper a {
+        color: #1d4ed8 !important;
+      } /* enlaces visibles */
+      .main-container .assistant-wrapper .bg-white {
+        background: #ffffff !important;
+      }
+      .main-container .assistant-wrapper .bg-gray-50 {
+        background: #f9fafb !important;
+      }
+      .main-container .assistant-wrapper table th {
+        color: #111827 !important;
+      }
+      .main-container .assistant-wrapper table td {
+        color: #111827 !important;
+      }
+
+      /* respeta intencion de botones ya diseñados */
+      .main-container .assistant-wrapper .text-white {
+        color: #ffffff !important;
+      }
+      /* ——— Fila superior (tipo): chips seleccionables, feedback claro ——— */
+      .btn-selector-type {
+        cursor: pointer;
+        background: #f9fafb;
+        border: 2px solid #e5e7eb;
+        transition: transform 0.2s ease, box-shadow 0.2s ease,
+          background 0.2s ease, border-color 0.2s ease;
+      }
+      .btn-selector-type:hover {
+        transform: translateY(-1px);
+      }
+      .btn-selector-type.selected {
+        border-color: #a78bfa;
+        background: #f5f3ff;
+        color: #5b21b6;
+        box-shadow: 0 4px 12px rgba(167, 139, 250, 0.25);
+      }
+
+      /* ——— Fila inferior (severidad): botones “fuertes” ——— */
+      .btn-selector {
+        cursor: pointer;
+      }
+      .btn-selector:focus-visible,
+      .btn-selector-type:focus-visible,
+      .btn-selector-setting:focus-visible,
+      .btn-selector-period:focus-visible {
+        outline: 3px solid #60a5fa;
+        outline-offset: 2px; /* anillo de foco accesible */
+      }
+      /* refuerzo sutil de nitidez y separadores */
+      .assistant-wrapper .card {
+        backdrop-filter: saturate(1.05);
+      }
+      .assistant-wrapper .border-b-2 {
+        border-color: #e5e7eb !important;
+      }
+    </style>
+
+    <!-- Google Analytics -->
+    <!-- <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script> -->
+  </head>
+  <body>
+    <include src="header.html"></include>
+
+    <!-- Main Content -->
+    <main class="main-container">
+      <div class="content-container">
+        <div class="assistant-wrapper">
+          <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-800 mb-2">
+              Asistente Clínico de Absorbentes
+            </h1>
+            <p class="text-lg text-gray-600">
+              Herramienta de apoyo para la selección de productos absorbentes
+            </p>
+          </header>
+
+          <nav class="mb-8 border-b-2 border-gray-200 no-print">
+            <div class="flex justify-center space-x-2 md:space-x-8 flex-wrap">
+              <button
+                class="tab-btn py-4 px-2 md:px-4 text-base md:text-lg font-semibold border-b-4 border-transparent active"
+                data-tab="selector"
+              >
+                <span class="hidden md:inline">🛠️ </span>Asistente
+              </button>
+              <button
+                class="tab-btn py-4 px-2 md:px-4 text-base md:text-lg font-semibold border-b-4 border-transparent"
+                data-tab="calculator"
+              >
+                <span class="hidden md:inline">📏 </span>Tallas
+              </button>
+              <button
+                class="tab-btn py-4 px-2 md:px-4 text-base md:text-lg font-semibold border-b-4 border-transparent"
+                data-tab="consejos"
+              >
+                <span class="hidden md:inline">✅ </span>Consejos
+              </button>
+              <button
+                class="tab-btn py-4 px-2 md:px-4 text-base md:text-lg font-semibold border-b-4 border-transparent"
+                data-tab="tipos"
+              >
+                <span class="hidden md:inline">📖 </span>Tipos
+              </button>
+            </div>
+          </nav>
+
+          <div class="assistant-content">
+            <!-- Asistente Interactivo -->
+            <section id="selector" class="content-section active">
+              <div class="space-y-8">
+                <!-- Alert sobre valoración inicial -->
+                <div class="alert-box p-4 rounded-lg">
+                  <h3 class="font-bold text-amber-900 mb-2">
+                    ⚠️ Valoración Inicial Recomendada
+                  </h3>
+                  <p class="text-sm text-amber-800">
+                    Antes de indicar absorbentes, considere descartar causas
+                    reversibles de incontinencia: infección urinaria,
+                    impactación fecal, delirium, efectos farmacológicos
+                    (diuréticos, sedantes), limitaciones de movilidad.
+                  </p>
+                </div>
+
+                <div class="card p-6">
+                  <h2 class="text-2xl font-bold text-blue-700 mb-1">
+                    Algoritmo de Decisión Clínica
+                  </h2>
+                  <p class="text-gray-600 mb-6">
+                    Herramienta de apoyo para la selección individualizada
+                  </p>
+
+                  <!-- PASO 1: Evaluación Funcional -->
+                  <div class="mb-6">
+                    <h3 class="font-semibold text-lg mb-3">
+                      Paso 1: Evaluación Funcional
+                    </h3>
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                      <p class="text-sm text-gray-700">
+                        <strong>Índice de Barthel:</strong> ≥95 = Independiente
+                        | 60-90 = Dependencia leve | 40-55 = Moderada | 20-35 =
+                        Severa | <20 = Total<br />
+                        <strong>Valorar también:</strong> Estado cognitivo,
+                        capacidad para el manejo de ropa, transferencias
+                      </p>
+                    </div>
+                    <div
+                      id="functional-level-selector"
+                      class="grid grid-cols-1 md:grid-cols-3 gap-4"
+                    >
+                      <button
+                        class="btn-selector p-4 rounded-lg text-left space-y-2 border-2 border-gray-200"
+                        data-level="autonomo"
+                      >
+                        <h4 class="font-bold">Autónomo</h4>
+                        <p class="text-sm text-gray-500">
+                          Barthel ≥95. Independiente en AVD
+                        </p>
+                        <span
+                          class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded"
+                          >Continencia potencialmente recuperable</span
+                        >
+                      </button>
+                      <button
+                        class="btn-selector p-4 rounded-lg text-left space-y-2 border-2 border-gray-200"
+                        data-level="ayuda"
+                      >
+                        <h4 class="font-bold">Precisa Ayuda</h4>
+                        <p class="text-sm text-gray-500">
+                          Barthel 20-90. Dependencia parcial
+                        </p>
+                        <span
+                          class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded"
+                          >Valorar apoyo disponible</span
+                        >
+                      </button>
+                      <button
+                        class="btn-selector p-4 rounded-lg text-left space-y-2 border-2 border-gray-200"
+                        data-level="no_participa"
+                      >
+                        <h4 class="font-bold">Dependencia Total</h4>
+                        <p class="text-sm text-gray-500">
+                          Barthel <20. No colabora
+                        </p>
+                        <span
+                          class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded"
+                          >Contención prioritaria</span
+                        >
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- PASO 2: Tipo y Severidad de Incontinencia -->
+                  <div
+                    id="incontinence-level-section"
+                    class="step-section mb-6"
+                  >
+                    <h3 class="font-semibold text-lg mb-3">
+                      Paso 2: Tipo y Severidad de Incontinencia
+                    </h3>
+                    <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+                      <p class="text-sm text-blue-900">
+                        <strong>Cuestionario ICIQ-SF:</strong> Valora frecuencia
+                        + cantidad + impacto en calidad de vida
+                      </p>
+                    </div>
+                    <div
+                      id="incontinence-type-selector"
+                      class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"
+                    >
+                      <button
+                        class="btn-selector-type p-3 rounded-lg text-center border-2 border-gray-200"
+                        data-type="esfuerzo"
+                      >
+                        <h5 class="font-bold">Esfuerzo</h5>
+                        <p class="text-xs text-gray-500">
+                          Con tos, risa, ejercicio
+                        </p>
+                      </button>
+                      <button
+                        class="btn-selector-type p-3 rounded-lg text-center border-2 border-gray-200"
+                        data-type="urgencia"
+                      >
+                        <h5 class="font-bold">Urgencia</h5>
+                        <p class="text-xs text-gray-500">
+                          Deseo imperioso súbito
+                        </p>
+                      </button>
+                      <button
+                        class="btn-selector-type p-3 rounded-lg text-center border-2 border-gray-200"
+                        data-type="mixta"
+                      >
+                        <h5 class="font-bold">Mixta/Funcional</h5>
+                        <p class="text-xs text-gray-500">
+                          Combinada o por limitación física
+                        </p>
+                      </button>
+                    </div>
+                    <div
+                      id="incontinence-level-selector"
+                      class="grid grid-cols-1 md:grid-cols-3 gap-4"
+                    >
+                      <button
+                        class="btn-selector p-4 rounded-lg text-center border-2 border-gray-200"
+                        data-incontinence="leve"
+                      >
+                        <h4 class="font-bold">Leve</h4>
+                        <p class="text-sm text-gray-500">Gotas, <100ml/día</p>
+                        <p class="text-xs text-blue-600">ICIQ-SF: 1-5 puntos</p>
+                      </button>
+                      <button
+                        class="btn-selector p-4 rounded-lg text-center border-2 border-gray-200"
+                        data-incontinence="moderada"
+                      >
+                        <h4 class="font-bold">Moderada</h4>
+                        <p class="text-sm text-gray-500">
+                          Chorro pequeño, 100-400ml/día
+                        </p>
+                        <p class="text-xs text-blue-600">
+                          ICIQ-SF: 6-12 puntos
+                        </p>
+                      </button>
+                      <button
+                        class="btn-selector p-4 rounded-lg text-center border-2 border-gray-200"
+                        data-incontinence="severa"
+                      >
+                        <h4 class="font-bold">Severa</h4>
+                        <p class="text-sm text-gray-500">
+                          Pérdida completa, >400ml/día
+                        </p>
+                        <p class="text-xs text-blue-600">
+                          ICIQ-SF: 13-21 puntos
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- PASO 3: Contexto del Cuidado -->
+                  <div id="caregiver-section" class="step-section mb-6">
+                    <h3 class="font-semibold text-lg mb-3">
+                      Paso 3: Contexto del Cuidado
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div class="p-3 bg-green-50 rounded-lg">
+                        <h5 class="font-semibold text-green-900 mb-2">
+                          Disponibilidad de Cuidador Capacitado
+                        </h5>
+                        <div
+                          id="caregiver-selector"
+                          class="grid grid-cols-2 gap-2"
+                        >
+                          <button
+                            class="btn-selector p-3 rounded text-center border-2 border-gray-200"
+                            data-caregiver="si"
+                          >
+                            <span class="font-bold">Sí</span>
+                          </button>
+                          <button
+                            class="btn-selector p-3 rounded text-center border-2 border-gray-200"
+                            data-caregiver="no"
+                          >
+                            <span class="font-bold">No</span>
+                          </button>
+                        </div>
+                      </div>
+                      <div class="p-3 bg-purple-50 rounded-lg">
+                        <h5 class="font-semibold text-purple-900 mb-2">
+                          Entorno Principal de Cuidado
+                        </h5>
+                        <div
+                          id="setting-selector"
+                          class="grid grid-cols-2 gap-2"
+                        >
+                          <button
+                            class="btn-selector-setting p-3 rounded text-center border-2 border-gray-200"
+                            data-setting="domicilio"
+                          >
+                            <span class="text-sm">Domicilio</span>
+                          </button>
+                          <button
+                            class="btn-selector-setting p-3 rounded text-center border-2 border-gray-200"
+                            data-setting="institucion"
+                          >
+                            <span class="text-sm">Residencia/Hospital</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- PASO 4: Factores Adicionales -->
+                  <div
+                    id="additional-factors-section"
+                    class="step-section mb-6"
+                  >
+                    <h3 class="font-semibold text-lg mb-3">
+                      Paso 4: Factores Adicionales a Considerar
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h5 class="font-semibold mb-2">
+                          Condiciones Asociadas
+                        </h5>
+                        <div class="space-y-2">
+                          <label class="flex items-center">
+                            <input
+                              type="checkbox"
+                              id="dermatitis"
+                              class="mr-2"
+                            />
+                            <span class="text-sm"
+                              >Dermatitis asociada a incontinencia (DAI)</span
+                            >
+                          </label>
+                          <label class="flex items-center">
+                            <input
+                              type="checkbox"
+                              id="doble-incontinencia"
+                              class="mr-2"
+                            />
+                            <span class="text-sm"
+                              >Doble incontinencia (urinaria + fecal)</span
+                            >
+                          </label>
+                          <label class="flex items-center">
+                            <input type="checkbox" id="demencia" class="mr-2" />
+                            <span class="text-sm"
+                              >Deterioro cognitivo con manipulación</span
+                            >
+                          </label>
+                          <label class="flex items-center">
+                            <input
+                              type="checkbox"
+                              id="movilidad-reducida"
+                              class="mr-2"
+                            />
+                            <span class="text-sm"
+                              >Movilidad muy reducida/encamamiento</span
+                            >
+                          </label>
+                        </div>
+                      </div>
+                      <div>
+                        <h5 class="font-semibold mb-2">
+                          Periodo de Mayor Necesidad
+                        </h5>
+                        <div
+                          id="period-selector"
+                          class="grid grid-cols-2 gap-2"
+                        >
+                          <button
+                            class="btn-selector-period p-3 rounded text-center border-2 border-gray-200"
+                            data-period="diurno"
+                          >
+                            <span class="text-sm">Diurno</span>
+                          </button>
+                          <button
+                            class="btn-selector-period p-3 rounded text-center border-2 border-gray-200"
+                            data-period="nocturno"
+                          >
+                            <span class="text-sm">Nocturno</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- RECOMENDACIÓN -->
+                <div id="recommendation-section" class="hidden">
+                  <div
+                    class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-6 rounded-r-lg"
+                  >
+                    <h2 class="text-2xl font-bold mb-4">
+                      Recomendación Personalizada
+                    </h2>
+                    <div id="recommendation-content"></div>
+
+                    <!-- Botones de acción -->
+                    <div class="mt-6 flex gap-4 no-print">
+                      <button
+                        onclick="window.print()"
+                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                      >
+                        🖨️ Imprimir
+                      </button>
+                      <button
+                        onclick="resetForm()"
+                        class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+                      >
+                        🔄 Nueva Evaluación
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Calculadora de Tallas -->
+            <section id="calculator" class="content-section">
+              <div class="card p-6 md:p-8">
+                <h2 class="text-3xl font-bold text-blue-700 mb-6">
+                  📏 Guía de Tallas de Absorbentes
+                </h2>
+
+                <div class="size-calculator p-6 rounded-lg mb-6">
+                  <h3 class="font-bold text-lg mb-4">
+                    Calculadora de Talla Orientativa
+                  </h3>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label class="block text-sm font-medium mb-2"
+                        >Perímetro de Cintura (cm)</label
+                      >
+                      <input
+                        type="number"
+                        id="waist"
+                        class="w-full p-2 border rounded"
+                        placeholder="Ej: 95"
+                      />
+                      <p class="text-xs text-gray-600 mt-1">
+                        Medir a la altura del ombligo
+                      </p>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-2"
+                        >Perímetro de Cadera (cm)</label
+                      >
+                      <input
+                        type="number"
+                        id="hip"
+                        class="w-full p-2 border rounded"
+                        placeholder="Ej: 105"
+                      />
+                      <p class="text-xs text-gray-600 mt-1">
+                        Medir en la parte más ancha
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onclick="calculateSize()"
+                    class="mt-4 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+                  >
+                    Calcular Talla Orientativa
+                  </button>
+                  <div id="size-result" class="mt-4 hidden">
+                    <div class="bg-white p-4 rounded">
+                      <h4 class="font-bold mb-2">Talla Recomendada:</h4>
+                      <div id="size-recommendation"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tabla de rangos generales -->
+                <div class="overflow-x-auto">
+                  <h3 class="font-bold text-lg mb-4">
+                    Rangos de Tallas Habituales
+                  </h3>
+                  <table class="w-full text-left border-collapse">
+                    <thead>
+                      <tr>
+                        <th class="border-b-2 p-3 bg-gray-50">Talla</th>
+                        <th class="border-b-2 p-3 bg-gray-50">
+                          Perímetro Cintura (cm)
+                        </th>
+                        <th class="border-b-2 p-3 bg-gray-50">
+                          Perímetro Cadera (cm)
+                        </th>
+                        <th class="border-b-2 p-3 bg-gray-50">
+                          Peso Orientativo (kg)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3 font-semibold">Pequeña (S)</td>
+                        <td class="p-3">50-80</td>
+                        <td class="p-3">60-90</td>
+                        <td class="p-3">40-60</td>
+                      </tr>
+                      <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3 font-semibold">Mediana (M)</td>
+                        <td class="p-3">70-110</td>
+                        <td class="p-3">80-120</td>
+                        <td class="p-3">55-85</td>
+                      </tr>
+                      <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3 font-semibold">Grande (L)</td>
+                        <td class="p-3">100-150</td>
+                        <td class="p-3">110-160</td>
+                        <td class="p-3">75-110</td>
+                      </tr>
+                      <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3 font-semibold">Extra Grande (XL)</td>
+                        <td class="p-3">130-170</td>
+                        <td class="p-3">140-180</td>
+                        <td class="p-3">100-140</td>
+                      </tr>
+                      <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3 font-semibold">XXL</td>
+                        <td class="p-3">>160</td>
+                        <td class="p-3">>170</td>
+                        <td class="p-3">>130</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div
+                  class="mt-6 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded"
+                >
+                  <h4 class="font-bold text-yellow-900">
+                    ⚠️ Puntos Clave sobre Tallas
+                  </h4>
+                  <ul class="text-sm text-yellow-800 mt-2 space-y-1">
+                    <li>
+                      • Una talla incorrecta es la principal causa de fugas
+                    </li>
+                    <li>
+                      • Una talla más grande NO proporciona mayor absorción
+                    </li>
+                    <li>• Medir SIEMPRE antes de indicar el producto</li>
+                    <li>• En caso de duda entre dos tallas, elegir la menor</li>
+                    <li>
+                      • Verificar con las especificaciones del fabricante
+                      elegido
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <!-- Consejos Clave -->
+            <section id="consejos" class="content-section">
+              <div class="card p-6 md:p-8">
+                <h2 class="text-3xl font-bold text-blue-700 mb-6">
+                  ✅ 10 Consejos Fundamentales para el Uso Correcto
+                </h2>
+
+                <!-- Consejos críticos destacados -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                  <div class="bg-red-50 border-2 border-red-300 p-4 rounded-lg">
+                    <h3 class="font-bold text-red-900 mb-2">❌ NUNCA HACER</h3>
+                    <ul class="space-y-2 text-sm text-red-800">
+                      <li>• Usar 2 absorbentes superpuestos</li>
+                      <li>• Perforar el absorbente</li>
+                      <li>• Aplicar cremas sobre el producto</li>
+                      <li>• Sacudir el absorbente antes de colocar</li>
+                    </ul>
+                  </div>
+                  <div
+                    class="bg-green-50 border-2 border-green-300 p-4 rounded-lg"
+                  >
+                    <h3 class="font-bold text-green-900 mb-2">
+                      ✅ SIEMPRE HACER
+                    </h3>
+                    <ul class="space-y-2 text-sm text-green-800">
+                      <li>• Medir talla antes de indicar</li>
+                      <li>• Crear forma de "cuenco" al colocar</li>
+                      <li>• Revisar indicador de humedad</li>
+                      <li>• Retirar de delante hacia atrás</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Lista completa de consejos -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div class="space-y-6">
+                    <div class="flex items-start">
+                      <span class="text-3xl mr-4">1️⃣</span>
+                      <div>
+                        <h4 class="font-bold">Elegir la Talla Adecuada</h4>
+                        <p class="text-gray-600">
+                          Una talla grande no absorbe más, solo causa fugas.
+                          Mida siempre la complexión física.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex items-start">
+                      <span class="text-3xl mr-4">2️⃣</span>
+                      <div>
+                        <h4 class="font-bold">
+                          NUNCA usar dos absorbentes a la vez
+                        </h4>
+                        <p class="text-gray-600">
+                          No aumenta la absorción e incrementa el riesgo de
+                          fugas, dermatitis e infecciones.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex items-start">
+                      <span class="text-3xl mr-4">3️⃣</span>
+                      <div>
+                        <h4 class="font-bold">
+                          Potenciar la forma de "cuenco"
+                        </h4>
+                        <p class="text-gray-600">
+                          Doble el absorbente longitudinalmente antes de
+                          colocarlo para crear un canal que evite derrames.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex items-start">
+                      <span class="text-3xl mr-4">4️⃣</span>
+                      <div>
+                        <h4 class="font-bold">NO sacudir el absorbente</h4>
+                        <p class="text-gray-600">
+                          Hacerlo desplaza el núcleo absorbente (SAP) y aumenta
+                          el riesgo de fugas.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex items-start">
+                      <span class="text-3xl mr-4">5️⃣</span>
+                      <div>
+                        <h4 class="font-bold">Ajustar bien en la ingle</h4>
+                        <p class="text-gray-600">
+                          Asegúrese de que las barreras antifugas estén bien
+                          posicionadas en la zona inguinal.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="space-y-6">
+                    <div class="flex items-start">
+                      <span class="text-3xl mr-4">6️⃣</span>
+                      <div>
+                        <h4 class="font-bold">
+                          Revisar el Indicador de Humedad
+                        </h4>
+                        <p class="text-gray-600">
+                          Es la guía para saber cuándo cambiarlo. Evita cambios
+                          innecesarios e infrautilización del producto.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex items-start">
+                      <span class="text-3xl mr-4">7️⃣</span>
+                      <div>
+                        <h4 class="font-bold">
+                          NO aplicar cremas sobre el absorbente
+                        </h4>
+                        <p class="text-gray-600">
+                          Las cremas barrera o aceites deben aplicarse sobre la
+                          piel limpia y seca, nunca sobre el producto.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex items-start">
+                      <span class="text-3xl mr-4">8️⃣</span>
+                      <div>
+                        <h4 class="font-bold">NO perforar el absorbente</h4>
+                        <p class="text-gray-600">
+                          Puede liberar el material superabsorbente (SAP),
+                          causando irritaciones en la piel.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex items-start">
+                      <span class="text-3xl mr-4">9️⃣</span>
+                      <div>
+                        <h4 class="font-bold">
+                          Retirar de delante hacia atrás
+                        </h4>
+                        <p class="text-gray-600">
+                          Siempre de la zona más limpia (pubis) a la más sucia
+                          (sacro) para prevenir infecciones.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex items-start">
+                      <span class="text-3xl mr-4">🔟</span>
+                      <div>
+                        <h4 class="font-bold">
+                          Seguir las instrucciones de colocación
+                        </h4>
+                        <p class="text-gray-600">
+                          Cada tipo tiene una técnica específica para maximizar
+                          su eficacia.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Tipos y Colocación -->
+            <section id="tipos" class="content-section">
+              <div class="card p-6 md:p-8">
+                <h2 class="text-3xl font-bold text-blue-700 mb-6">
+                  📖 Guía de Tipos y Colocación
+                </h2>
+
+                <!-- Tabla Comparativa -->
+                <div class="mb-10">
+                  <h3 class="text-xl font-semibold mb-4">
+                    Comparativa de Tipos de Absorbentes
+                  </h3>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                      <thead>
+                        <tr>
+                          <th class="border-b-2 p-3 bg-gray-50 font-bold">
+                            Característica
+                          </th>
+                          <th
+                            class="border-b-2 p-3 bg-green-50 font-bold text-green-800"
+                          >
+                            Pants
+                          </th>
+                          <th
+                            class="border-b-2 p-3 bg-blue-50 font-bold text-blue-800"
+                          >
+                            Elástico
+                          </th>
+                          <th
+                            class="border-b-2 p-3 bg-yellow-50 font-bold text-yellow-800"
+                          >
+                            Anatómico
+                          </th>
+                          <th
+                            class="border-b-2 p-3 bg-purple-50 font-bold text-purple-800"
+                          >
+                            Rectangular
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="border-b">
+                          <td class="p-3 font-semibold">Perfil de Usuario</td>
+                          <td class="p-3">
+                            Activo, móvil, con deterioro cognitivo
+                          </td>
+                          <td class="p-3">Encamado, dependencia total</td>
+                          <td class="p-3">Móvil con ayuda, colaborador</td>
+                          <td class="p-3">Incontinencia leve, activo</td>
+                        </tr>
+                        <tr class="border-b">
+                          <td class="p-3 font-semibold">Capacidad Absorción</td>
+                          <td class="p-3">600-1800ml</td>
+                          <td class="p-3">900-3000ml</td>
+                          <td class="p-3">600-2000ml</td>
+                          <td class="p-3">200-600ml</td>
+                        </tr>
+                        <tr class="border-b">
+                          <td class="p-3 font-semibold">Sistema de Sujeción</td>
+                          <td class="p-3">
+                            Elástico integrado (como ropa interior)
+                          </td>
+                          <td class="p-3">Adhesivos reposicionables</td>
+                          <td class="p-3">Requiere malla elástica</td>
+                          <td class="p-3">Ropa interior ajustada</td>
+                        </tr>
+                        <tr class="border-b">
+                          <td class="p-3 font-semibold">Facilidad de Cambio</td>
+                          <td class="p-3">★★★★★</td>
+                          <td class="p-3">★★★☆☆</td>
+                          <td class="p-3">★★★★☆</td>
+                          <td class="p-3">★★★★★</td>
+                        </tr>
+                        <tr>
+                          <td class="p-3 font-semibold">Discreción</td>
+                          <td class="p-3">★★★★☆</td>
+                          <td class="p-3">★★☆☆☆</td>
+                          <td class="p-3">★★★☆☆</td>
+                          <td class="p-3">★★★★★</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Guías de Colocación Detalladas -->
+                <div class="space-y-8">
+                  <div>
+                    <div class="flex items-center mb-4">
+                      <svg
+                        class="w-10 h-10 text-green-500 mr-3"
+                        viewBox="0 0 100 100"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M20 30H80V40H20V30Z"
+                          stroke="currentColor"
+                          stroke-width="4"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                        <path
+                          d="M20 40L35 80H65L80 40"
+                          stroke="currentColor"
+                          stroke-width="4"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <h3 class="font-bold text-xl">
+                        Pants (Tipo Braga-Pañal)
+                      </h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="p-4 border rounded-lg bg-gray-50">
+                        <h4 class="font-semibold mb-2">Colocación:</h4>
+                        <ol
+                          class="list-decimal list-inside text-gray-700 space-y-1 text-sm"
+                        >
+                          <li>Identificar parte delantera (menor volumen)</li>
+                          <li>Colocar como ropa interior normal</li>
+                          <li>Asegurar ajuste en zona inguinal</li>
+                          <li>Verificar barreras antifugas desplegadas</li>
+                          <li>Comprobar que no quede torcido</li>
+                        </ol>
+                      </div>
+                      <div class="p-4 border rounded-lg bg-gray-50">
+                        <h4 class="font-semibold mb-2">Retirada:</h4>
+                        <ol
+                          class="list-decimal list-inside text-gray-700 space-y-1 text-sm"
+                        >
+                          <li>Rasgar las costuras laterales</li>
+                          <li>Retirar de delante hacia atrás</li>
+                          <li>Enrollar sobre sí mismo</li>
+                          <li>Usar la cinta adhesiva posterior para cerrar</li>
+                          <li>Desechar apropiadamente</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex items-center mb-4">
+                      <svg
+                        class="w-10 h-10 text-blue-500 mr-3"
+                        viewBox="0 0 100 100"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M20 70C20 50 35 30 50 30C65 30 80 50 80 70V80H20V70Z"
+                          stroke="currentColor"
+                          stroke-width="4"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                        <path
+                          d="M20 70H10V60H20"
+                          stroke="currentColor"
+                          stroke-width="4"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                        <path
+                          d="M80 70H90V60H80"
+                          stroke="currentColor"
+                          stroke-width="4"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <h3 class="font-bold text-xl">Elástico (Tipo Pañal)</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div class="p-4 border rounded-lg bg-gray-50">
+                        <h4 class="font-semibold mb-2">Paciente de Pie:</h4>
+                        <ol
+                          class="list-decimal list-inside text-gray-700 space-y-1 text-sm"
+                        >
+                          <li>Colocar parte con adhesivos en espalda</li>
+                          <li>Pasar parte delantera entre piernas</li>
+                          <li>Ajustar barreras en entrepierna</li>
+                          <li>Fijar adhesivos inferiores en diagonal</li>
+                          <li>Fijar adhesivos superiores horizontal</li>
+                          <li>Verificar ajuste sin oprimir</li>
+                        </ol>
+                      </div>
+                      <div class="p-4 border rounded-lg bg-gray-50">
+                        <h4 class="font-semibold mb-2">Paciente Acostado:</h4>
+                        <ol
+                          class="list-decimal list-inside text-gray-700 space-y-1 text-sm"
+                        >
+                          <li>Colocar al paciente de lado</li>
+                          <li>Desplegar absorbente bajo cadera</li>
+                          <li>Girar paciente boca arriba</li>
+                          <li>Pasar parte delantera entre piernas</li>
+                          <li>Ajustar y fijar adhesivos</li>
+                          <li>Comprobar dos dedos de holgura</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex items-center mb-4">
+                      <svg
+                        class="w-10 h-10 text-yellow-500 mr-3"
+                        viewBox="0 0 100 100"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M50 90C75 90 90 75 90 50C90 35 80 20 65 20C50 20 50 20 35 20C20 20 10 35 10 50C10 75 25 90 50 90Z"
+                          stroke="currentColor"
+                          stroke-width="4"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                        <path
+                          d="M50 90C60 70 60 70 60 50C60 30 50 20 50 20C50 20 40 30 40 50C40 70 40 70 50 90Z"
+                          stroke="currentColor"
+                          stroke-width="4"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <h3 class="font-bold text-xl">Anatómico con Malla</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div class="p-4 border rounded-lg bg-gray-50">
+                        <h4 class="font-semibold mb-2">Paciente de Pie:</h4>
+                        <ol
+                          class="list-decimal list-inside text-gray-700 space-y-1 text-sm"
+                        >
+                          <li>Colocar malla a altura de rodillas</li>
+                          <li>Pasar absorbente entre piernas</li>
+                          <li>Desplegar parte posterior</li>
+                          <li>Subir malla por detrás primero</li>
+                          <li>Estirar parte delantera y subir malla</li>
+                          <li>Ajustar sin arrugas</li>
+                        </ol>
+                      </div>
+                      <div class="p-4 border rounded-lg bg-gray-50">
+                        <h4 class="font-semibold mb-2">Paciente Acostado:</h4>
+                        <ol
+                          class="list-decimal list-inside text-gray-700 space-y-1 text-sm"
+                        >
+                          <li>Colocar malla a altura rodillas</li>
+                          <li>Con paciente de lado, pasar absorbente</li>
+                          <li>Abrir parte posterior sobre nalgas</li>
+                          <li>Girar paciente boca arriba</li>
+                          <li>Abrir parte anterior</li>
+                          <li>Subir malla y ajustar</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Footer del asistente -->
+          <footer class="text-center mt-12 text-sm text-gray-500 border-t pt-6">
+            <div class="mb-4 p-4 bg-gray-100 rounded-lg max-w-4xl mx-auto">
+              <p class="font-semibold text-gray-700 mb-2">
+                📋 Aviso Legal y Descargo de Responsabilidad
+              </p>
+              <p class="text-xs text-gray-600 leading-relaxed">
+                Esta herramienta es un recurso educativo e informativo de
+                carácter personal, desarrollado sin conflicto de interés alguno
+                y con fines exclusivamente docentes y de apoyo formativo. No
+                sustituye el juicio clínico profesional ni las recomendaciones
+                médicas individualizadas. La información aquí presentada debe
+                ser verificada y adaptada según el contexto clínico específico
+                de cada paciente. El autor no asume responsabilidad por el uso o
+                interpretación de esta información. Se recomienda siempre
+                consultar las guías clínicas actualizadas y las especificaciones
+                de los fabricantes de productos sanitarios.
+              </p>
+            </div>
+            <p class="mb-1">
+              Información sintetizada de las guías de práctica clínica
+              publicadas por:
+            </p>
+            <p class="text-xs">
+              Asociación Española de Urología (2022) • Protocolos Osakidetza •
+              SERGAS • GNEAUPP • I-Botika
+            </p>
+            <p class="mt-2 text-xs">
+              Última actualización: 2024 | Herramienta de apoyo para
+              profesionales sanitarios
+            </p>
+          </footer>
+        </div>
+      </div>
+    </main>
+
+    <include src="footer.html"></include>
+    <script src="./assets/js/include.js"></script>
+
+    <!-- JavaScript del asistente -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const state = {
+          functionalLevel: null,
+          incontinenceType: null,
+          incontinenceLevel: null,
+          caregiver: null,
+          setting: null,
+          period: null,
+          specialConditions: {
+            dermatitis: false,
+            dobleIncontinencia: false,
+            demencia: false,
+            movilidadReducida: false,
+          },
+        };
+
+        const selectors = {
+          functional: document.getElementById("functional-level-selector"),
+          incontinenceType: document.getElementById(
+            "incontinence-type-selector"
+          ),
+          incontinence: document.getElementById("incontinence-level-selector"),
+          caregiver: document.getElementById("caregiver-selector"),
+          setting: document.getElementById("setting-selector"),
+          period: document.getElementById("period-selector"),
+        };
+        // accesibilidad básica: estado aria y uso con teclado
+        function set_aria_pressed(grupo, boton) {
+          grupo
+            .querySelectorAll("button")
+            .forEach((b) => b.setAttribute("aria-pressed", "false"));
+          boton.setAttribute("aria-pressed", "true");
+        }
+        function habilitar_teclado(grupo) {
+          grupo.querySelectorAll("button").forEach((b) => {
+            b.setAttribute("tabindex", "0");
+            b.setAttribute("role", "button");
+            b.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                b.click();
+              }
+            });
+          });
+        }
+        // activar soporte de teclado en todos los grupos disponibles
+        [
+          selectors.functional,
+          selectors.incontinenceType,
+          selectors.incontinence,
+          selectors.caregiver,
+          selectors.setting,
+          selectors.period,
+        ]
+          .filter(Boolean)
+          .forEach(habilitar_teclado);
+
+        const sections = {
+          incontinence: document.getElementById("incontinence-level-section"),
+          caregiver: document.getElementById("caregiver-section"),
+          additional: document.getElementById("additional-factors-section"),
+          recommendation: document.getElementById("recommendation-section"),
+        };
+
+        const recommendationContent = document.getElementById(
+          "recommendation-content"
+        );
+
+        function resetStep(step) {
+          if (step <= 2) {
+            state.incontinenceType = null;
+            state.incontinenceLevel = null;
+            selectors.incontinenceType
+              .querySelectorAll(".btn-selector-type")
+              .forEach((btn) => btn.classList.remove("selected"));
+            selectors.incontinence
+              .querySelectorAll(".btn-selector")
+              .forEach((btn) => btn.classList.remove("selected"));
+            sections.incontinence.classList.remove("visible");
+          }
+          if (step <= 3) {
+            state.caregiver = null;
+            state.setting = null;
+            selectors.caregiver
+              .querySelectorAll(".btn-selector")
+              .forEach((btn) => btn.classList.remove("selected"));
+            selectors.setting
+              .querySelectorAll(".btn-selector-setting")
+              .forEach((btn) => btn.classList.remove("selected"));
+            sections.caregiver.classList.remove("visible");
+          }
+          if (step <= 4) {
+            state.period = null;
+            sections.additional.classList.remove("visible");
+          }
+          sections.recommendation.classList.add("hidden");
+        }
+
+        function updateSpecialConditions() {
+          state.specialConditions.dermatitis =
+            document.getElementById("dermatitis").checked;
+          state.specialConditions.dobleIncontinencia = document.getElementById(
+            "doble-incontinencia"
+          ).checked;
+          state.specialConditions.demencia =
+            document.getElementById("demencia").checked;
+          state.specialConditions.movilidadReducida =
+            document.getElementById("movilidad-reducida").checked;
+          generateRecommendation();
+        }
+
+        function getRecommendation() {
+          const {
+            functionalLevel,
+            incontinenceType,
+            incontinenceLevel,
+            caregiver,
+            setting,
+            period,
+            specialConditions,
+          } = state;
+
+          if (!functionalLevel || !incontinenceLevel) return null;
+
+          let recommendation = {
+            pauta: "",
+            producto: "",
+            justificacion: "",
+            adicionales: [],
+          };
+
+          // Lógica de recomendación
+          if (functionalLevel === "autonomo") {
+            if (incontinenceLevel === "leve") {
+              recommendation.pauta =
+                "Técnicas conductuales + Ejercicios de suelo pélvico. Considerar uso puntual de protectores.";
+              recommendation.producto =
+                "<strong>Compresas rectangulares</strong> para incontinencia leve (200-400ml) o <strong>Pants día</strong> (600-900ml) si busca mayor seguridad.";
+              recommendation.justificacion =
+                "En pacientes autónomos con pérdidas leves, el objetivo principal es la rehabilitación del suelo pélvico. Los absorbentes son un apoyo complementario.";
+            } else if (incontinenceLevel === "moderada") {
+              recommendation.pauta =
+                "Micción programada cada 2-3 horas + Pauta de 2-3 absorbentes día + 1 nocturno si precisa.";
+              recommendation.producto =
+                "<strong>Pants día</strong> (600-900ml) para uso diurno. <strong>Pants noche</strong> (900-1200ml) para descanso nocturno si es necesario.";
+              recommendation.justificacion =
+                "Los pants mantienen la autonomía y dignidad del paciente activo, permitiendo cambios independientes y manteniendo la movilidad.";
+            } else {
+              // severa
+              recommendation.pauta =
+                "Valorar tratamiento médico/quirúrgico. Pauta completa: 3 absorbentes día + 1 supernoche.";
+              recommendation.producto =
+                "<strong>Pants supernoche</strong> (>1200ml) o considerar <strong>Elástico día/noche</strong> si hay dificultad para cambios frecuentes.";
+              recommendation.justificacion =
+                "En incontinencia severa de paciente autónomo, valorar siempre opciones terapéuticas. Los absorbentes proporcionan seguridad mientras se exploran tratamientos.";
+            }
+          }
+
+          if (functionalLevel === "no_participa") {
+            recommendation.pauta =
+              "Pauta completa: 3 absorbentes día/noche + 1 supernoche. Cambios programados cada 4-6h o según indicador de humedad.";
+            recommendation.producto =
+              "<strong>Elástico (Pañal) día/noche</strong> (900-1200ml) y <strong>Elástico supernoche</strong> (>1800ml) para descanso nocturno.";
+            recommendation.justificacion =
+              "Máxima capacidad de absorción y facilidad para el cuidador. Los adhesivos reposicionables permiten inspección frecuente sin cambio completo.";
+
+            if (specialConditions.dobleIncontinencia) {
+              recommendation.adicionales.push(
+                "• Doble incontinencia detectada: Usar SIEMPRE elástico de máxima absorción. Aumentar frecuencia de cambios (cada 3-4h). Higiene exhaustiva en cada cambio."
+              );
+            }
+            if (specialConditions.movilidadReducida) {
+              recommendation.adicionales.push(
+                "• Paciente encamado: Considerar uso de empapadores adicionales para protección del colchón. Cambios posturales cada 2-3h para prevenir úlceras."
+              );
+            }
+          }
+
+          if (functionalLevel === "ayuda") {
+            if (!caregiver) return null;
+
+            if (caregiver === "si" && setting === "domicilio") {
+              recommendation.pauta =
+                "Micción programada con asistencia + 2-3 absorbentes día + 1 nocturno.";
+              recommendation.producto =
+                "<strong>Anatómico con malla elástica</strong> (600-1200ml) para día. <strong>Elástico noche</strong> para descanso nocturno sin interrupciones.";
+              recommendation.justificacion =
+                "El anatómico permite cambios rápidos y cómodos con ayuda del cuidador, manteniendo cierta participación del paciente en el proceso.";
+            } else if (caregiver === "si" && setting === "institucion") {
+              recommendation.pauta =
+                "Protocolo institucional: 3 cambios programados (8h-14h-20h) + 1 nocturno si precisa.";
+              recommendation.producto =
+                "<strong>Elástico día/noche</strong> para facilitar la labor del personal sanitario y garantizar protección continua.";
+              recommendation.justificacion =
+                "En entorno institucional, se prioriza la eficiencia del personal y la máxima protección del paciente con cambios programados.";
+            } else {
+              // sin cuidador capacitado
+              recommendation.pauta =
+                "Pauta de máxima seguridad: 3 absorbentes de larga duración día + 1 supernoche.";
+              recommendation.producto =
+                "<strong>Pants de alta absorción</strong> si mantiene algo de autonomía, o <strong>Elástico</strong> si precisa máxima contención.";
+              recommendation.justificacion =
+                "Sin cuidador adecuado, priorizar productos de larga duración que minimicen riesgos de dermatitis y proporcionen máxima protección.";
+            }
+          }
+
+          // Ajustes por condiciones especiales
+          if (specialConditions.dermatitis) {
+            recommendation.adicionales.push(
+              "• DAI presente: Cambios más frecuentes (máx. cada 4h). Aplicar cremas barrera con óxido de zinc en piel limpia y seca. NUNCA sobre el absorbente."
+            );
+          }
+          if (specialConditions.demencia) {
+            recommendation.adicionales.push(
+              "• Deterioro cognitivo con manipulación: USAR SIEMPRE PANTS. Evita que el paciente se quite el absorbente. Vigilar signos de incomodidad."
+            );
+          }
+          if (period === "nocturno") {
+            recommendation.adicionales.push(
+              "• Uso principalmente nocturno: Priorizar absorbentes supernoche (>1800ml) para evitar interrupciones del sueño."
+            );
+          }
+          if (incontinenceType === "urgencia") {
+            recommendation.adicionales.push(
+              "• Incontinencia de urgencia: Valorar tratamiento con anticolinérgicos. Ubicar absorbentes en lugares estratégicos para cambios rápidos."
+            );
+          }
+
+          return recommendation;
+        }
+
+        function generateRecommendation() {
+          const rec = getRecommendation();
+          if (rec) {
+            let additionalHtml = "";
+            if (rec.adicionales.length > 0) {
+              additionalHtml = `
+                            <div class="mt-4 p-3 bg-yellow-50 rounded">
+                                <h4 class="font-semibold text-yellow-900 mb-2">Consideraciones Adicionales:</h4>
+                                <div class="text-sm text-yellow-800">
+                                    ${rec.adicionales.join("<br>")}
+                                </div>
+                            </div>`;
+            }
+
+            recommendationContent.innerHTML = `
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded">
+                                <h4 class="font-semibold text-blue-900 mb-2">📋 Pauta Recomendada:</h4>
+                                <p class="text-sm">${rec.pauta}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded">
+                                <h4 class="font-semibold text-blue-900 mb-2">📦 Tipo de Producto:</h4>
+                                <p class="text-sm">${rec.producto}</p>
+                            </div>
+                            <div class="bg-white p-4 rounded">
+                                <h4 class="font-semibold text-blue-900 mb-2">🔬 Justificación Clínica:</h4>
+                                <p class="text-sm">${rec.justificacion}</p>
+                            </div>
+                            ${additionalHtml}
+                            <div class="mt-4 p-3 bg-blue-50 rounded">
+                                <p class="text-xs text-blue-800">
+                                    <strong>Recordatorio:</strong> Reevaluar la indicación cada 3 meses. Ajustar según evolución clínica y respuesta al tratamiento.
+                                </p>
+                            </div>
+                        </div>`;
+            sections.recommendation.classList.remove("hidden");
+            recommendationContent.classList.add("recommendation-fade-in");
+            setTimeout(
+              () =>
+                recommendationContent.classList.remove(
+                  "recommendation-fade-in"
+                ),
+              500
+            );
+          } else {
+            sections.recommendation.classList.add("hidden");
+          }
+        }
+
+        // Event Listeners
+        selectors.functional.addEventListener("click", (e) => {
+          const button = e.target.closest(".btn-selector");
+          if (!button) return;
+
+          resetStep(2);
+          state.functionalLevel = button.dataset.level;
+          selectors.functional
+            .querySelectorAll(".btn-selector")
+            .forEach((btn) => btn.classList.remove("selected"));
+          button.classList.add("selected");
+          set_aria_pressed(selectors.functional, button);
+
+          sections.incontinence.classList.add("visible");
+          if (state.functionalLevel === "no_participa") {
+            state.incontinenceLevel = "severa";
+            sections.additional.classList.add("visible");
+          }
+        });
+
+        selectors.incontinenceType?.addEventListener("click", (e) => {
+          const button = e.target.closest(".btn-selector-type");
+          if (!button) return;
+          state.incontinenceType = button.dataset.type;
+          selectors.incontinenceType
+            .querySelectorAll(".btn-selector-type")
+            .forEach((btn) => btn.classList.remove("selected"));
+          button.classList.add("selected");
+          set_aria_pressed(selectors.incontinenceType, button);
+        });
+
+        selectors.incontinence.addEventListener("click", (e) => {
+          const button = e.target.closest(".btn-selector");
+          if (!button) return;
+
+          resetStep(3);
+          state.incontinenceLevel = button.dataset.incontinence;
+          selectors.incontinence
+            .querySelectorAll(".btn-selector")
+            .forEach((btn) => btn.classList.remove("selected"));
+          button.classList.add("selected");
+          set_aria_pressed(selectors.incontinence, button);
+
+          if (state.functionalLevel === "ayuda") {
+            sections.caregiver.classList.add("visible");
+          } else {
+            sections.additional.classList.add("visible");
+          }
+        });
+
+        selectors.caregiver.addEventListener("click", (e) => {
+          const button = e.target.closest(".btn-selector");
+          if (!button) return;
+
+          state.caregiver = button.dataset.caregiver;
+          selectors.caregiver
+            .querySelectorAll(".btn-selector")
+            .forEach((btn) => btn.classList.remove("selected"));
+          button.classList.add("selected");
+          set_aria_pressed(selectors.caregiver, button);
+
+          sections.additional.classList.add("visible");
+        });
+
+        selectors.setting?.addEventListener("click", (e) => {
+          const button = e.target.closest(".btn-selector-setting");
+          if (!button) return;
+          state.setting = button.dataset.setting;
+          selectors.setting
+            .querySelectorAll(".btn-selector-setting")
+            .forEach((btn) => btn.classList.remove("selected"));
+          button.classList.add("selected");
+          set_aria_pressed(selectors.setting, button);
+
+          generateRecommendation();
+        });
+
+        selectors.period?.addEventListener("click", (e) => {
+          const button = e.target.closest(".btn-selector-period");
+          if (!button) return;
+          state.period = button.dataset.period;
+          selectors.period
+            .querySelectorAll(".btn-selector-period")
+            .forEach((btn) => btn.classList.remove("selected"));
+          button.classList.add("selected");
+          set_aria_pressed(selectors.period, button);
+
+          generateRecommendation();
+        });
+
+        // Special conditions checkboxes
+        document
+          .getElementById("dermatitis")
+          ?.addEventListener("change", updateSpecialConditions);
+        document
+          .getElementById("doble-incontinencia")
+          ?.addEventListener("change", updateSpecialConditions);
+        document
+          .getElementById("demencia")
+          ?.addEventListener("change", updateSpecialConditions);
+        document
+          .getElementById("movilidad-reducida")
+          ?.addEventListener("change", updateSpecialConditions);
+
+        // Tab navigation
+        const tabButtons = document.querySelectorAll(".tab-btn");
+        const contentSections = document.querySelectorAll(".content-section");
+
+        tabButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            tabButtons.forEach((btn) => btn.classList.remove("active"));
+            button.classList.add("active");
+
+            const tab = button.dataset.tab;
+            contentSections.forEach((section) => {
+              if (section.id === tab) {
+                section.classList.add("active");
+              } else {
+                section.classList.remove("active");
+              }
+            });
+          });
+        });
+
+        // Size calculator function
+        window.calculateSize = function () {
+          const waist = parseInt(document.getElementById("waist").value);
+          const hip = parseInt(document.getElementById("hip").value);
+
+          if (!waist || !hip) {
+            alert("Por favor, introduzca ambas medidas");
+            return;
+          }
+
+          const max = Math.max(waist, hip);
+          let size = "";
+          let recommendation = "";
+
+          if (max < 80) {
+            size = "Pequeña (S)";
+            recommendation = "Adecuada para complexión delgada o peso < 60kg";
+          } else if (max < 110) {
+            size = "Mediana (M)";
+            recommendation = "La talla más común, adecuada para peso 55-85kg";
+          } else if (max < 150) {
+            size = "Grande (L)";
+            recommendation = "Para complexión robusta o peso 75-110kg";
+          } else if (max < 170) {
+            size = "Extra Grande (XL)";
+            recommendation = "Para obesidad grado I-II o peso 100-140kg";
+          } else {
+            size = "XXL";
+            recommendation = "Para obesidad mórbida o peso > 130kg";
+          }
+
+          document.getElementById("size-result").classList.remove("hidden");
+          document.getElementById("size-recommendation").innerHTML = `
+                    <p class="text-lg font-bold text-blue-700">${size}</p>
+                    <p class="text-sm text-gray-600 mt-2">${recommendation}</p>
+                    <p class="text-xs text-yellow-700 mt-3">⚠️ Esta es una estimación orientativa. Verifique siempre con las especificaciones del fabricante específico.</p>
+                `;
+        };
+
+        // Reset form function
+        window.resetForm = function () {
+          location.reload();
+        };
+      });
+    </script>
+  </body>
+</html>
