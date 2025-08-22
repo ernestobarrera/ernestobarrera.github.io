@@ -60,7 +60,7 @@
     <style>
       .content-container {
         width: 100%;
-        max-width: 1200px;
+        max-width: 1400px;
         margin: 2rem auto;
         padding: 1rem;
         display: flex;
@@ -147,7 +147,7 @@
       }
 
       .step-section.visible {
-        max-height: 800px;
+        max-height: 1000px;
         opacity: 1;
       }
 
@@ -158,6 +158,117 @@
 
       .size-calculator {
         background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+      }
+
+      /* Indicador de paso completado */
+      .step-completed {
+        background-color: #10b981 !important;
+        color: white !important;
+      }
+
+      .step-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .step-indicator {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-color: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      .step-indicator.completed {
+        background-color: #10b981;
+        color: white;
+      }
+
+      .step-indicator.not-applicable {
+        background-color: #9ca3af;
+        color: white;
+        font-size: 10px;
+      }
+
+      .step-section.not-applicable {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+
+      /* Progress bar mejorada */
+      .progress-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 1rem;
+      }
+
+      .progress-step {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .progress-step-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        transition: all 0.3s ease;
+      }
+
+      .progress-step-number.active {
+        background-color: #3b82f6;
+        color: white;
+        transform: scale(1.1);
+      }
+
+      .progress-step-number.completed {
+        background-color: #10b981;
+        color: white;
+      }
+
+      .progress-step-number.not-applicable {
+        background-color: #9ca3af;
+        color: white;
+      }
+
+      .progress-step-line {
+        flex: 1;
+        height: 2px;
+        background-color: #e5e7eb;
+        transition: all 0.3s ease;
+      }
+
+      .progress-step-line.completed {
+        background-color: #10b981;
+      }
+
+      .progress-step-label {
+        font-size: 12px;
+        text-align: center;
+        margin-top: 4px;
+        color: #6b7280;
+      }
+
+      .progress-step-label.active {
+        color: #3b82f6;
+        font-weight: 600;
+      }
+
+      .progress-step-label.completed {
+        color: #10b981;
       }
 
       @media print {
@@ -236,7 +347,7 @@
         box-shadow: 0 4px 12px rgba(167, 139, 250, 0.25);
       }
 
-      /* ——— Fila inferior (severidad): botones “fuertes” ——— */
+      /* ——— Fila inferior (severidad): botones "fuertes" ——— */
       .btn-selector {
         cursor: pointer;
       }
@@ -255,20 +366,6 @@
         border-color: #e5e7eb !important;
       }
     </style>
-
-    <!-- Google Analytics -->
-    <!-- <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "G-YFKR6RB1ZC");
-    </script> -->
   </head>
   <body>
     <include src="header.html"></include>
@@ -340,11 +437,64 @@
                     Herramienta de apoyo para la selección individualizada
                   </p>
 
+                  <!-- Indicador de progreso mejorado -->
+                  <div
+                    id="progress-indicator"
+                    class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg hidden"
+                  >
+                    <h4 class="text-sm font-semibold text-gray-700 mb-3">
+                      Progreso de la evaluación:
+                    </h4>
+                    <div class="progress-bar">
+                      <div class="progress-step">
+                        <div class="progress-step-number" data-step="1">1</div>
+                        <div
+                          class="progress-step-line"
+                          data-step-line="1"
+                        ></div>
+                      </div>
+                      <div class="progress-step">
+                        <div class="progress-step-number" data-step="2">2</div>
+                        <div
+                          class="progress-step-line"
+                          data-step-line="2"
+                        ></div>
+                      </div>
+                      <div class="progress-step">
+                        <div class="progress-step-number" data-step="3">3</div>
+                        <div
+                          class="progress-step-line"
+                          data-step-line="3"
+                        ></div>
+                      </div>
+                      <div class="progress-step">
+                        <div class="progress-step-number" data-step="4">4</div>
+                      </div>
+                    </div>
+                    <div class="flex justify-between text-xs mt-2">
+                      <span class="progress-step-label" data-step-label="1"
+                        >Funcional</span
+                      >
+                      <span class="progress-step-label" data-step-label="2"
+                        >Incontinencia</span
+                      >
+                      <span class="progress-step-label" data-step-label="3"
+                        >Cuidado</span
+                      >
+                      <span class="progress-step-label" data-step-label="4"
+                        >Adicionales</span
+                      >
+                    </div>
+                  </div>
+
                   <!-- PASO 1: Evaluación Funcional -->
                   <div class="mb-6">
-                    <h3 class="font-semibold text-lg mb-3">
-                      Paso 1: Evaluación Funcional
-                    </h3>
+                    <div class="step-header">
+                      <h3 class="font-semibold text-lg mb-3">
+                        Paso 1: Evaluación Funcional
+                      </h3>
+                      <span class="step-indicator" id="step1-indicator"></span>
+                    </div>
                     <div class="mb-4 p-3 bg-gray-50 rounded-lg">
                       <p class="text-sm text-gray-700">
                         <strong>Índice de Barthel:</strong> ≥95 = Independiente
@@ -405,9 +555,12 @@
                     id="incontinence-level-section"
                     class="step-section mb-6"
                   >
-                    <h3 class="font-semibold text-lg mb-3">
-                      Paso 2: Tipo y Severidad de Incontinencia
-                    </h3>
+                    <div class="step-header">
+                      <h3 class="font-semibold text-lg mb-3">
+                        Paso 2: Tipo y Severidad de Incontinencia
+                      </h3>
+                      <span class="step-indicator" id="step2-indicator"></span>
+                    </div>
                     <div class="mb-4 p-3 bg-blue-50 rounded-lg">
                       <p class="text-sm text-blue-900">
                         <strong>Cuestionario ICIQ-SF:</strong> Valora frecuencia
@@ -485,55 +638,83 @@
                     </div>
                   </div>
 
-                  <!-- PASO 3: Contexto del Cuidado -->
+                  <!-- PASO 3: Contexto del Cuidado (Siempre visible) -->
                   <div id="caregiver-section" class="step-section mb-6">
-                    <h3 class="font-semibold text-lg mb-3">
-                      Paso 3: Contexto del Cuidado
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div class="p-3 bg-green-50 rounded-lg">
-                        <h5 class="font-semibold text-green-900 mb-2">
-                          Disponibilidad de Cuidador Capacitado
-                        </h5>
-                        <div
-                          id="caregiver-selector"
-                          class="grid grid-cols-2 gap-2"
-                        >
-                          <button
-                            class="btn-selector p-3 rounded text-center border-2 border-gray-200"
-                            data-caregiver="si"
+                    <div class="step-header">
+                      <h3 class="font-semibold text-lg mb-3">
+                        Paso 3: Contexto del Cuidado
+                      </h3>
+                      <span class="step-indicator" id="step3-indicator"></span>
+                    </div>
+
+                    <!-- Mensaje cuando no aplica -->
+                    <div
+                      id="step3-not-applicable"
+                      class="hidden p-4 bg-gray-100 rounded-lg mb-4"
+                    >
+                      <p class="text-gray-600 flex items-center">
+                        <span class="mr-2">ℹ️</span>
+                        Este paso no es necesario para el nivel funcional
+                        seleccionado.
+                      </p>
+                    </div>
+
+                    <!-- Contenido del paso 3 -->
+                    <div id="step3-content">
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="p-3 bg-green-50 rounded-lg">
+                          <h5 class="font-semibold text-green-900 mb-2">
+                            Disponibilidad de Cuidador Capacitado
+                          </h5>
+                          <div
+                            id="caregiver-selector"
+                            class="grid grid-cols-2 gap-2"
                           >
-                            <span class="font-bold">Sí</span>
-                          </button>
-                          <button
-                            class="btn-selector p-3 rounded text-center border-2 border-gray-200"
-                            data-caregiver="no"
+                            <button
+                              class="btn-selector p-3 rounded text-center border-2 border-gray-200"
+                              data-caregiver="si"
+                            >
+                              <span class="font-bold">Sí</span>
+                            </button>
+                            <button
+                              class="btn-selector p-3 rounded text-center border-2 border-gray-200"
+                              data-caregiver="no"
+                            >
+                              <span class="font-bold">No</span>
+                            </button>
+                          </div>
+                        </div>
+                        <div class="p-3 bg-purple-50 rounded-lg">
+                          <h5 class="font-semibold text-purple-900 mb-2">
+                            Entorno Principal de Cuidado
+                          </h5>
+                          <div
+                            id="setting-selector"
+                            class="grid grid-cols-2 gap-2"
                           >
-                            <span class="font-bold">No</span>
-                          </button>
+                            <button
+                              class="btn-selector-setting p-3 rounded text-center border-2 border-gray-200"
+                              data-setting="domicilio"
+                            >
+                              <span class="text-sm">Domicilio</span>
+                            </button>
+                            <button
+                              class="btn-selector-setting p-3 rounded text-center border-2 border-gray-200"
+                              data-setting="institucion"
+                            >
+                              <span class="text-sm">Residencia/Hospital</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <div class="p-3 bg-purple-50 rounded-lg">
-                        <h5 class="font-semibold text-purple-900 mb-2">
-                          Entorno Principal de Cuidado
-                        </h5>
-                        <div
-                          id="setting-selector"
-                          class="grid grid-cols-2 gap-2"
-                        >
-                          <button
-                            class="btn-selector-setting p-3 rounded text-center border-2 border-gray-200"
-                            data-setting="domicilio"
-                          >
-                            <span class="text-sm">Domicilio</span>
-                          </button>
-                          <button
-                            class="btn-selector-setting p-3 rounded text-center border-2 border-gray-200"
-                            data-setting="institucion"
-                          >
-                            <span class="text-sm">Residencia/Hospital</span>
-                          </button>
-                        </div>
+                      <div
+                        class="p-3 bg-yellow-50 rounded-lg text-sm text-yellow-800"
+                      >
+                        <p>
+                          <strong>Nota:</strong> Este paso es requerido solo
+                          para pacientes que precisan ayuda (dependencia
+                          parcial).
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -543,9 +724,12 @@
                     id="additional-factors-section"
                     class="step-section mb-6"
                   >
-                    <h3 class="font-semibold text-lg mb-3">
-                      Paso 4: Factores Adicionales a Considerar
-                    </h3>
+                    <div class="step-header">
+                      <h3 class="font-semibold text-lg mb-3">
+                        Paso 4: Factores Adicionales a Considerar
+                      </h3>
+                      <span class="step-indicator" id="step4-indicator"></span>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <h5 class="font-semibold mb-2">
@@ -1238,7 +1422,7 @@
     <include src="footer.html"></include>
     <script src="./assets/js/include.js"></script>
 
-    <!-- JavaScript del asistente -->
+    <!-- JavaScript del asistente CORREGIDO -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         const state = {
@@ -1254,6 +1438,7 @@
             demencia: false,
             movilidadReducida: false,
           },
+          currentStep: 1,
         };
 
         const selectors = {
@@ -1266,36 +1451,6 @@
           setting: document.getElementById("setting-selector"),
           period: document.getElementById("period-selector"),
         };
-        // accesibilidad básica: estado aria y uso con teclado
-        function set_aria_pressed(grupo, boton) {
-          grupo
-            .querySelectorAll("button")
-            .forEach((b) => b.setAttribute("aria-pressed", "false"));
-          boton.setAttribute("aria-pressed", "true");
-        }
-        function habilitar_teclado(grupo) {
-          grupo.querySelectorAll("button").forEach((b) => {
-            b.setAttribute("tabindex", "0");
-            b.setAttribute("role", "button");
-            b.addEventListener("keydown", (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                b.click();
-              }
-            });
-          });
-        }
-        // activar soporte de teclado en todos los grupos disponibles
-        [
-          selectors.functional,
-          selectors.incontinenceType,
-          selectors.incontinence,
-          selectors.caregiver,
-          selectors.setting,
-          selectors.period,
-        ]
-          .filter(Boolean)
-          .forEach(habilitar_teclado);
 
         const sections = {
           incontinence: document.getElementById("incontinence-level-section"),
@@ -1308,15 +1463,157 @@
           "recommendation-content"
         );
 
+        // Funciones de accesibilidad
+        function set_aria_pressed(grupo, boton) {
+          grupo
+            .querySelectorAll("button")
+            .forEach((b) => b.setAttribute("aria-pressed", "false"));
+          boton.setAttribute("aria-pressed", "true");
+        }
+
+        function habilitar_teclado(grupo) {
+          grupo.querySelectorAll("button").forEach((b) => {
+            b.setAttribute("tabindex", "0");
+            b.setAttribute("role", "button");
+            b.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                b.click();
+              }
+            });
+          });
+        }
+
+        // Activar soporte de teclado
+        [
+          selectors.functional,
+          selectors.incontinenceType,
+          selectors.incontinence,
+          selectors.caregiver,
+          selectors.setting,
+          selectors.period,
+        ]
+          .filter(Boolean)
+          .forEach(habilitar_teclado);
+
+        // Función mejorada para actualizar indicadores de progreso
+        function updateProgressIndicators() {
+          // Determinar el estado de cada paso
+          const step1Complete = state.functionalLevel !== null;
+          const step2Complete = state.incontinenceLevel !== null;
+          const step3NotApplicable =
+            state.functionalLevel && state.functionalLevel !== "ayuda";
+          const step3Complete =
+            step3NotApplicable ||
+            (state.functionalLevel === "ayuda" &&
+              state.caregiver !== null &&
+              state.setting !== null);
+          const step4Complete =
+            state.period !== null ||
+            state.specialConditions.dermatitis ||
+            state.specialConditions.dobleIncontinencia ||
+            state.specialConditions.demencia ||
+            state.specialConditions.movilidadReducida;
+
+          // Actualizar la barra de progreso principal
+          updateProgressBar(1, step1Complete, false);
+          updateProgressBar(2, step2Complete, false);
+          updateProgressBar(3, step3Complete, step3NotApplicable);
+          updateProgressBar(4, step4Complete, false);
+
+          // Actualizar indicadores individuales en cada paso
+          updateStepIndicator("step1-indicator", step1Complete);
+          updateStepIndicator("step2-indicator", step2Complete);
+          updateStepIndicator(
+            "step3-indicator",
+            step3Complete,
+            step3NotApplicable
+          );
+          updateStepIndicator("step4-indicator", step4Complete);
+
+          // Mostrar indicador de progreso si hay algún paso iniciado
+          const progressIndicator =
+            document.getElementById("progress-indicator");
+          if (progressIndicator && state.functionalLevel) {
+            progressIndicator.classList.remove("hidden");
+          }
+        }
+
+        function updateProgressBar(step, isComplete, isNotApplicable) {
+          const stepNumber = document.querySelector(
+            `.progress-step-number[data-step="${step}"]`
+          );
+          const stepLabel = document.querySelector(
+            `.progress-step-label[data-step-label="${step}"]`
+          );
+          const stepLine = document.querySelector(
+            `.progress-step-line[data-step-line="${step}"]`
+          );
+
+          if (stepNumber) {
+            stepNumber.classList.remove(
+              "active",
+              "completed",
+              "not-applicable"
+            );
+            if (isNotApplicable) {
+              stepNumber.classList.add("not-applicable");
+              stepNumber.innerHTML = "N/A";
+            } else if (isComplete) {
+              stepNumber.classList.add("completed");
+              stepNumber.innerHTML = "✓";
+            } else if (step === state.currentStep) {
+              stepNumber.classList.add("active");
+              stepNumber.innerHTML = step.toString();
+            } else {
+              stepNumber.innerHTML = step.toString();
+            }
+          }
+
+          if (stepLabel) {
+            stepLabel.classList.remove("active", "completed");
+            if (isComplete && !isNotApplicable) {
+              stepLabel.classList.add("completed");
+            } else if (step === state.currentStep && !isNotApplicable) {
+              stepLabel.classList.add("active");
+            }
+          }
+
+          if (stepLine) {
+            stepLine.classList.toggle("completed", isComplete);
+          }
+        }
+
+        function updateStepIndicator(
+          indicatorId,
+          isComplete,
+          isNotApplicable = false
+        ) {
+          const indicator = document.getElementById(indicatorId);
+          if (indicator) {
+            indicator.classList.remove("completed", "not-applicable");
+            if (isNotApplicable) {
+              indicator.classList.add("not-applicable");
+              indicator.innerHTML = "N/A";
+            } else if (isComplete) {
+              indicator.classList.add("completed");
+              indicator.innerHTML = "✓";
+            } else {
+              indicator.innerHTML = "";
+            }
+          }
+        }
+
+        // Función mejorada de reset
         function resetStep(step) {
           if (step <= 2) {
             state.incontinenceType = null;
             state.incontinenceLevel = null;
             selectors.incontinenceType
-              .querySelectorAll(".btn-selector-type")
+              ?.querySelectorAll(".btn-selector-type")
               .forEach((btn) => btn.classList.remove("selected"));
             selectors.incontinence
-              .querySelectorAll(".btn-selector")
+              ?.querySelectorAll(".btn-selector")
               .forEach((btn) => btn.classList.remove("selected"));
             sections.incontinence.classList.remove("visible");
           }
@@ -1324,20 +1621,76 @@
             state.caregiver = null;
             state.setting = null;
             selectors.caregiver
-              .querySelectorAll(".btn-selector")
+              ?.querySelectorAll(".btn-selector")
               .forEach((btn) => btn.classList.remove("selected"));
             selectors.setting
-              .querySelectorAll(".btn-selector-setting")
+              ?.querySelectorAll(".btn-selector-setting")
               .forEach((btn) => btn.classList.remove("selected"));
             sections.caregiver.classList.remove("visible");
+            // Resetear visualización del paso 3
+            const notApplicableMsg = document.getElementById(
+              "step3-not-applicable"
+            );
+            const step3Content = document.getElementById("step3-content");
+            if (notApplicableMsg) notApplicableMsg.classList.add("hidden");
+            if (step3Content) step3Content.style.opacity = "1";
+            if (step3Content) step3Content.style.pointerEvents = "auto";
           }
           if (step <= 4) {
             state.period = null;
+            // Reset checkboxes
+            state.specialConditions = {
+              dermatitis: false,
+              dobleIncontinencia: false,
+              demencia: false,
+              movilidadReducida: false,
+            };
+            document.getElementById("dermatitis").checked = false;
+            document.getElementById("doble-incontinencia").checked = false;
+            document.getElementById("demencia").checked = false;
+            document.getElementById("movilidad-reducida").checked = false;
+
+            selectors.period
+              ?.querySelectorAll(".btn-selector-period")
+              .forEach((btn) => btn.classList.remove("selected"));
             sections.additional.classList.remove("visible");
           }
           sections.recommendation.classList.add("hidden");
+          updateProgressIndicators();
         }
 
+        // Función para manejar la visualización del paso 3
+        function handleStep3Visibility() {
+          const notApplicableMsg = document.getElementById(
+            "step3-not-applicable"
+          );
+          const step3Content = document.getElementById("step3-content");
+
+          if (state.functionalLevel && state.functionalLevel !== "ayuda") {
+            // Paso 3 no aplica
+            notApplicableMsg.classList.remove("hidden");
+            step3Content.style.opacity = "0.5";
+            step3Content.style.pointerEvents = "none";
+          } else if (state.functionalLevel === "ayuda") {
+            // Paso 3 es requerido
+            notApplicableMsg.classList.add("hidden");
+            step3Content.style.opacity = "1";
+            step3Content.style.pointerEvents = "auto";
+          }
+        }
+
+        // Función para verificar si se puede generar recomendación
+        function canGenerateRecommendation() {
+          if (!state.functionalLevel || !state.incontinenceLevel) return false;
+
+          if (state.functionalLevel === "ayuda") {
+            return state.caregiver !== null && state.setting !== null;
+          }
+
+          return true;
+        }
+
+        // Función mejorada para actualizar condiciones especiales
         function updateSpecialConditions() {
           state.specialConditions.dermatitis =
             document.getElementById("dermatitis").checked;
@@ -1348,9 +1701,14 @@
             document.getElementById("demencia").checked;
           state.specialConditions.movilidadReducida =
             document.getElementById("movilidad-reducida").checked;
-          generateRecommendation();
+
+          updateProgressIndicators();
+          if (canGenerateRecommendation()) {
+            generateRecommendation();
+          }
         }
 
+        // Función para generar recomendación (sin cambios en la lógica)
         function getRecommendation() {
           const {
             functionalLevel,
@@ -1364,6 +1722,11 @@
 
           if (!functionalLevel || !incontinenceLevel) return null;
 
+          // Para el nivel "ayuda", verificar que tenga los datos necesarios
+          if (functionalLevel === "ayuda" && (!caregiver || !setting)) {
+            return null;
+          }
+
           let recommendation = {
             pauta: "",
             producto: "",
@@ -1371,7 +1734,7 @@
             adicionales: [],
           };
 
-          // Lógica de recomendación
+          // Lógica de recomendación (sin cambios)
           if (functionalLevel === "autonomo") {
             if (incontinenceLevel === "leve") {
               recommendation.pauta =
@@ -1419,8 +1782,6 @@
           }
 
           if (functionalLevel === "ayuda") {
-            if (!caregiver) return null;
-
             if (caregiver === "si" && setting === "domicilio") {
               recommendation.pauta =
                 "Micción programada con asistencia + 2-3 absorbentes día + 1 nocturno.";
@@ -1472,40 +1833,45 @@
         }
 
         function generateRecommendation() {
+          if (!canGenerateRecommendation()) {
+            sections.recommendation.classList.add("hidden");
+            return;
+          }
+
           const rec = getRecommendation();
           if (rec) {
             let additionalHtml = "";
             if (rec.adicionales.length > 0) {
               additionalHtml = `
-                            <div class="mt-4 p-3 bg-yellow-50 rounded">
-                                <h4 class="font-semibold text-yellow-900 mb-2">Consideraciones Adicionales:</h4>
-                                <div class="text-sm text-yellow-800">
-                                    ${rec.adicionales.join("<br>")}
-                                </div>
-                            </div>`;
+                <div class="mt-4 p-3 bg-yellow-50 rounded">
+                    <h4 class="font-semibold text-yellow-900 mb-2">Consideraciones Adicionales:</h4>
+                    <div class="text-sm text-yellow-800">
+                        ${rec.adicionales.join("<br>")}
+                    </div>
+                </div>`;
             }
 
             recommendationContent.innerHTML = `
-                        <div class="space-y-4">
-                            <div class="bg-white p-4 rounded">
-                                <h4 class="font-semibold text-blue-900 mb-2">📋 Pauta Recomendada:</h4>
-                                <p class="text-sm">${rec.pauta}</p>
-                            </div>
-                            <div class="bg-white p-4 rounded">
-                                <h4 class="font-semibold text-blue-900 mb-2">📦 Tipo de Producto:</h4>
-                                <p class="text-sm">${rec.producto}</p>
-                            </div>
-                            <div class="bg-white p-4 rounded">
-                                <h4 class="font-semibold text-blue-900 mb-2">🔬 Justificación Clínica:</h4>
-                                <p class="text-sm">${rec.justificacion}</p>
-                            </div>
-                            ${additionalHtml}
-                            <div class="mt-4 p-3 bg-blue-50 rounded">
-                                <p class="text-xs text-blue-800">
-                                    <strong>Recordatorio:</strong> Reevaluar la indicación cada 3 meses. Ajustar según evolución clínica y respuesta al tratamiento.
-                                </p>
-                            </div>
-                        </div>`;
+              <div class="space-y-4">
+                  <div class="bg-white p-4 rounded">
+                      <h4 class="font-semibold text-blue-900 mb-2">📋 Pauta Recomendada:</h4>
+                      <p class="text-sm">${rec.pauta}</p>
+                  </div>
+                  <div class="bg-white p-4 rounded">
+                      <h4 class="font-semibold text-blue-900 mb-2">📦 Tipo de Producto:</h4>
+                      <p class="text-sm">${rec.producto}</p>
+                  </div>
+                  <div class="bg-white p-4 rounded">
+                      <h4 class="font-semibold text-blue-900 mb-2">🔬 Justificación Clínica:</h4>
+                      <p class="text-sm">${rec.justificacion}</p>
+                  </div>
+                  ${additionalHtml}
+                  <div class="mt-4 p-3 bg-blue-50 rounded">
+                      <p class="text-xs text-blue-800">
+                          <strong>Recordatorio:</strong> Reevaluar la indicación cada 3 meses. Ajustar según evolución clínica y respuesta al tratamiento.
+                      </p>
+                  </div>
+              </div>`;
             sections.recommendation.classList.remove("hidden");
             recommendationContent.classList.add("recommendation-fade-in");
             setTimeout(
@@ -1520,13 +1886,14 @@
           }
         }
 
-        // Event Listeners
+        // Event Listeners mejorados
         selectors.functional.addEventListener("click", (e) => {
           const button = e.target.closest(".btn-selector");
           if (!button) return;
 
           resetStep(2);
           state.functionalLevel = button.dataset.level;
+          state.currentStep = 2;
           selectors.functional
             .querySelectorAll(".btn-selector")
             .forEach((btn) => btn.classList.remove("selected"));
@@ -1534,9 +1901,31 @@
           set_aria_pressed(selectors.functional, button);
 
           sections.incontinence.classList.add("visible");
+
+          // Mostrar el paso 3 siempre, pero indicar cuando no aplica
+          sections.caregiver.classList.add("visible");
+          handleStep3Visibility();
+
+          // Caso especial para "no_participa"
           if (state.functionalLevel === "no_participa") {
             state.incontinenceLevel = "severa";
+            // Marcar visualmente el botón de "severa"
+            const severaBtn = selectors.incontinence.querySelector(
+              '[data-incontinence="severa"]'
+            );
+            if (severaBtn) {
+              selectors.incontinence
+                .querySelectorAll(".btn-selector")
+                .forEach((btn) => btn.classList.remove("selected"));
+              severaBtn.classList.add("selected");
+              set_aria_pressed(selectors.incontinence, severaBtn);
+            }
+            state.currentStep = 4;
             sections.additional.classList.add("visible");
+            updateProgressIndicators();
+            generateRecommendation();
+          } else {
+            updateProgressIndicators();
           }
         });
 
@@ -1549,6 +1938,10 @@
             .forEach((btn) => btn.classList.remove("selected"));
           button.classList.add("selected");
           set_aria_pressed(selectors.incontinenceType, button);
+
+          if (canGenerateRecommendation()) {
+            generateRecommendation();
+          }
         });
 
         selectors.incontinence.addEventListener("click", (e) => {
@@ -1563,11 +1956,18 @@
           button.classList.add("selected");
           set_aria_pressed(selectors.incontinence, button);
 
+          // Siempre mostrar paso 3, pero manejar su aplicabilidad
+          sections.caregiver.classList.add("visible");
+          handleStep3Visibility();
+
           if (state.functionalLevel === "ayuda") {
-            sections.caregiver.classList.add("visible");
+            state.currentStep = 3;
           } else {
+            state.currentStep = 4;
             sections.additional.classList.add("visible");
+            generateRecommendation();
           }
+          updateProgressIndicators();
         });
 
         selectors.caregiver.addEventListener("click", (e) => {
@@ -1581,7 +1981,12 @@
           button.classList.add("selected");
           set_aria_pressed(selectors.caregiver, button);
 
-          sections.additional.classList.add("visible");
+          if (state.setting) {
+            state.currentStep = 4;
+            sections.additional.classList.add("visible");
+            generateRecommendation();
+          }
+          updateProgressIndicators();
         });
 
         selectors.setting?.addEventListener("click", (e) => {
@@ -1594,7 +1999,12 @@
           button.classList.add("selected");
           set_aria_pressed(selectors.setting, button);
 
-          generateRecommendation();
+          if (state.caregiver) {
+            state.currentStep = 4;
+            sections.additional.classList.add("visible");
+            generateRecommendation();
+          }
+          updateProgressIndicators();
         });
 
         selectors.period?.addEventListener("click", (e) => {
@@ -1607,7 +2017,10 @@
           button.classList.add("selected");
           set_aria_pressed(selectors.period, button);
 
-          generateRecommendation();
+          updateProgressIndicators();
+          if (canGenerateRecommendation()) {
+            generateRecommendation();
+          }
         });
 
         // Special conditions checkboxes
@@ -1677,15 +2090,89 @@
 
           document.getElementById("size-result").classList.remove("hidden");
           document.getElementById("size-recommendation").innerHTML = `
-                    <p class="text-lg font-bold text-blue-700">${size}</p>
-                    <p class="text-sm text-gray-600 mt-2">${recommendation}</p>
-                    <p class="text-xs text-yellow-700 mt-3">⚠️ Esta es una estimación orientativa. Verifique siempre con las especificaciones del fabricante específico.</p>
-                `;
+            <p class="text-lg font-bold text-blue-700">${size}</p>
+            <p class="text-sm text-gray-600 mt-2">${recommendation}</p>
+            <p class="text-xs text-yellow-700 mt-3">⚠️ Esta es una estimación orientativa. Verifique siempre con las especificaciones del fabricante específico.</p>
+          `;
         };
 
-        // Reset form function
+        // Función mejorada de reset
         window.resetForm = function () {
-          location.reload();
+          // Reset estado completo
+          state.functionalLevel = null;
+          state.incontinenceType = null;
+          state.incontinenceLevel = null;
+          state.caregiver = null;
+          state.setting = null;
+          state.period = null;
+          state.currentStep = 1;
+          state.specialConditions = {
+            dermatitis: false,
+            dobleIncontinencia: false,
+            demencia: false,
+            movilidadReducida: false,
+          };
+
+          // Limpiar todas las selecciones visuales
+          document
+            .querySelectorAll(
+              ".btn-selector, .btn-selector-type, .btn-selector-setting, .btn-selector-period"
+            )
+            .forEach((btn) => btn.classList.remove("selected"));
+
+          // Limpiar checkboxes
+          document
+            .querySelectorAll('input[type="checkbox"]')
+            .forEach((cb) => (cb.checked = false));
+
+          // Ocultar secciones
+          sections.incontinence.classList.remove("visible");
+          sections.caregiver.classList.remove("visible");
+          sections.additional.classList.remove("visible");
+          sections.recommendation.classList.add("hidden");
+
+          // Ocultar indicador de progreso
+          const progressIndicator =
+            document.getElementById("progress-indicator");
+          if (progressIndicator) {
+            progressIndicator.classList.add("hidden");
+          }
+
+          // Resetear mensaje de no aplicable del paso 3
+          const notApplicableMsg = document.getElementById(
+            "step3-not-applicable"
+          );
+          const step3Content = document.getElementById("step3-content");
+          if (notApplicableMsg) notApplicableMsg.classList.add("hidden");
+          if (step3Content) {
+            step3Content.style.opacity = "1";
+            step3Content.style.pointerEvents = "auto";
+          }
+
+          // Limpiar indicadores de paso
+          document
+            .querySelectorAll(".progress-step-number")
+            .forEach((indicator) => {
+              indicator.classList.remove(
+                "completed",
+                "active",
+                "not-applicable"
+              );
+              indicator.innerHTML = indicator.dataset?.step || "";
+            });
+          document.querySelectorAll(".progress-step-label").forEach((label) => {
+            label.classList.remove("completed", "active");
+          });
+          document.querySelectorAll(".progress-step-line").forEach((line) => {
+            line.classList.remove("completed");
+          });
+          document.querySelectorAll(".step-indicator").forEach((indicator) => {
+            indicator.classList.remove("completed", "not-applicable");
+            indicator.innerHTML = "";
+          });
+
+          // Scroll al inicio
+          window.scrollTo({ top: 0, behavior: "smooth" });
         };
       });
     </script>
