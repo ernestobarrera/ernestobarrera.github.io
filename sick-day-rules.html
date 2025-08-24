@@ -1,0 +1,1447 @@
+<!--
+=====================
+  sick-day.html
+ Herramienta de apoyo para el manejo de medicamentos en días de enfermedad
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Guía Educativa Sick Day Rules (SAD MANS)</title>
+    <link rel="manifest" href="manifest.json" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        color: #2d3748;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem;
+      }
+
+      .header {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .header h1 {
+        color: #2b6cb0;
+        font-size: 1.75rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .header p {
+        color: #64748b;
+        line-height: 1.6;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        background: white;
+        padding: 0.5rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .tab {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        background: transparent;
+        border: 2px solid transparent;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+
+      .tab:hover {
+        background: #f1f5f9;
+      }
+
+      .tab.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: transparent;
+      }
+
+      .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease-in;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .education-section {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .info-card {
+        background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
+        border-left: 4px solid #667eea;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-radius: 0.5rem;
+      }
+
+      .info-card h3 {
+        color: #1e293b;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .info-card p,
+      .info-card li {
+        color: #475569;
+        line-height: 1.6;
+      }
+
+      .reference-note {
+        font-size: 0.8rem;
+        color: #64748b;
+        font-style: italic;
+        margin-top: 0.5rem;
+      }
+
+      .acronym-breakdown {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0;
+      }
+
+      .acronym-card {
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        transition: all 0.3s;
+        cursor: pointer;
+      }
+
+      .acronym-card:hover {
+        border-color: #667eea;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+      }
+
+      .acronym-letter {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 0.25rem;
+      }
+
+      .acronym-title {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+      }
+
+      .acronym-desc {
+        font-size: 0.875rem;
+        color: #64748b;
+      }
+
+      .evaluation-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+      }
+
+      .evaluation-section {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #f1f5f9;
+      }
+
+      .section-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.25rem;
+      }
+
+      .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .checkbox-item {
+        position: relative;
+        padding: 0.75rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .checkbox-item:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+      }
+
+      .checkbox-item.selected {
+        background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
+        border-color: #667eea;
+      }
+
+      .checkbox-item input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .checkbox-label {
+        display: flex;
+        align-items: flex-start;
+        padding-left: 2rem;
+      }
+
+      .checkbox-label::before {
+        content: "";
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        border: 2px solid #cbd5e1;
+        border-radius: 0.25rem;
+        background: white;
+        transition: all 0.2s;
+      }
+
+      .checkbox-item.selected .checkbox-label::before {
+        background: #667eea;
+        border-color: #667eea;
+      }
+
+      .checkbox-item.selected .checkbox-label::after {
+        content: "✓";
+        position: absolute;
+        left: 0.9rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: white;
+        font-weight: bold;
+      }
+
+      .medication-label {
+        flex: 1;
+      }
+
+      .medication-name {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+      }
+
+      .medication-examples {
+        font-size: 0.875rem;
+        color: #64748b;
+      }
+
+      .tooltip {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        background: #f1f5f9;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: help;
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+
+      .tooltip:hover::after {
+        content: attr(data-tip);
+        position: absolute;
+        bottom: 100%;
+        right: 0;
+        background: #1e293b;
+        color: white;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        white-space: nowrap;
+        max-width: 250px;
+        font-size: 0.875rem;
+        z-index: 10;
+        margin-bottom: 0.25rem;
+      }
+
+      .results-section {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .alert-box {
+        background: #fef2f2;
+        border: 2px solid #fecaca;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .alert-box h3 {
+        color: #991b1b;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .recommendation-card {
+        background: #f0f9ff;
+        border-left: 4px solid #0284c7;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 0.375rem;
+      }
+
+      .recommendation-card h4 {
+        color: #0c4a6e;
+        margin-bottom: 0.5rem;
+      }
+
+      .recommendation-card p {
+        color: #075985;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      }
+
+      .btn-secondary {
+        background: white;
+        color: #475569;
+        border: 2px solid #e2e8f0;
+      }
+
+      .btn-secondary:hover {
+        background: #f8fafc;
+      }
+
+      .btn-success {
+        background: #10b981;
+        color: white;
+      }
+
+      .btn-success:hover {
+        background: #059669;
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .progress-indicator {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 0.5rem;
+      }
+
+      .progress-step {
+        flex: 1;
+        text-align: center;
+      }
+
+      .progress-step.completed {
+        color: #10b981;
+        font-weight: 600;
+      }
+
+      .footer {
+        background: white;
+        border-top: 2px solid #f1f5f9;
+        margin-top: 3rem;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        text-align: center;
+        font-size: 0.875rem;
+        color: #64748b;
+      }
+
+      .footer strong {
+        color: #1e293b;
+      }
+
+      .auto-update-notice {
+        background: #f0fdf4;
+        border: 1px solid #86efac;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+        color: #166534;
+        text-align: center;
+      }
+
+      @media (max-width: 768px) {
+        .evaluation-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .tabs {
+          flex-direction: column;
+        }
+
+        .acronym-breakdown {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+
+        .no-print {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <h1>🏥 Guía Educativa "Sick Day Rules" (SAD MANS)</h1>
+        <p>
+          Guía educativa para el manejo seguro de medicamentos en días de
+          enfermedad aguda con riesgo de deshidratación o complicaciones.
+          <i class="fa fa-envelope" aria-hidden="true"></i>
+        </p>
+      </div>
+
+      <!-- Tabs Navigation -->
+      <div class="tabs no-print">
+        <button class="tab active" onclick="showTab('education')">
+          <span>📚</span> Aprender
+        </button>
+        <button class="tab" onclick="showTab('evaluation')">
+          <span>📋</span> Evaluar Paciente
+        </button>
+        <button
+          class="tab"
+          onclick="showTab('results')"
+          id="results-tab"
+          disabled
+        >
+          <span>📄</span> Recomendaciones
+        </button>
+      </div>
+
+      <!-- Tab 1: Education -->
+      <div id="education" class="tab-content active">
+        <div class="education-section">
+          <div class="info-card">
+            <h3>❓ ¿Qué son las "Sick Day Rules"?</h3>
+            <p>
+              Las "Sick Day Rules" (Reglas para Días de Enfermedad) son un
+              conjunto de recomendaciones basadas en evidencia para ajustar
+              temporalmente ciertos medicamentos cuando un paciente presenta una
+              enfermedad aguda con riesgo de deshidratación.
+            </p>
+            <p style="margin-top: 0.75rem">
+              <strong>Objetivo:</strong> Prevenir complicaciones graves como
+              lesión renal aguda, hipoglucemia, cetoacidosis o hipotensión
+              severa.
+            </p>
+          </div>
+
+          <div class="info-card">
+            <h3>🎯 ¿Por qué son importantes?</h3>
+            <ul style="margin-left: 1.5rem; margin-top: 0.5rem">
+              <li>
+                Reducen significativamente las hospitalizaciones evitables
+              </li>
+              <li>
+                La suspensión temporal de fármacos durante enfermedades agudas
+                se puede asociar con una menor incidencia de lesión renal
+                aguda<sup>1-2</sup>
+              </li>
+              <li>
+                Minimizan el riesgo de hipoglucemia severa en pacientes
+                diabéticos
+              </li>
+              <li>
+                Aunque ampliamente utilizadas internacionalmente, su adopción
+                varía entre diferentes sistemas sanitarios
+              </li>
+            </ul>
+            <p class="reference-note">
+              <sup>1</sup>Morris et al. BMC Fam Pract 2016; <sup>2</sup>Whiting
+              et al. BMJ Open 2017;
+            </p>
+          </div>
+
+          <div class="info-card">
+            <h3>🔤 El Acrónimo SAD MANS</h3>
+            <p>
+              Una herramienta mnemotécnica para recordar los medicamentos de
+              riesgo:
+            </p>
+
+            <div class="acronym-breakdown">
+              <div class="acronym-card">
+                <div class="acronym-letter">S</div>
+                <div class="acronym-title">Sulfonilureas</div>
+                <div class="acronym-desc">
+                  Riesgo de hipoglucemia por ingesta reducida
+                </div>
+              </div>
+              <div class="acronym-card">
+                <div class="acronym-letter">A</div>
+                <div class="acronym-title">ACE inhibitors (IECA)</div>
+                <div class="acronym-desc">
+                  Riesgo de hipotensión y lesión renal
+                </div>
+              </div>
+              <div class="acronym-card">
+                <div class="acronym-letter">D</div>
+                <div class="acronym-title">Diuréticos</div>
+                <div class="acronym-desc">Depleción excesiva de volumen</div>
+              </div>
+              <div class="acronym-card">
+                <div class="acronym-letter">M</div>
+                <div class="acronym-title">Metformina</div>
+                <div class="acronym-desc">Riesgo de acidosis láctica</div>
+              </div>
+              <div class="acronym-card">
+                <div class="acronym-letter">A</div>
+                <div class="acronym-title">ARA-II</div>
+                <div class="acronym-desc">Similar a IECA</div>
+              </div>
+              <div class="acronym-card">
+                <div class="acronym-letter">N</div>
+                <div class="acronym-title">NSAIDs (AINEs)</div>
+                <div class="acronym-desc">Nefrotoxicidad potenciada</div>
+              </div>
+              <div class="acronym-card">
+                <div class="acronym-letter">S</div>
+                <div class="acronym-title">SGLT2 inhibitors</div>
+                <div class="acronym-desc">Riesgo de cetoacidosis</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <h3>⏱️ Duración y Monitorización</h3>
+            <p>
+              <strong>Duración máxima:</strong> 72 horas. Si los síntomas
+              persisten, contactar con profesional sanitario.
+            </p>
+            <p><strong>Monitorización recomendada:</strong></p>
+            <ul style="margin-left: 1.5rem; margin-top: 0.5rem">
+              <li>Glucemia cada 4-6 horas en diabéticos</li>
+              <li>Tensión arterial 2 veces al día</li>
+              <li>Cetonas si toma SGLT2i o insulina</li>
+              <li>Estado de hidratación cada 12 horas</li>
+            </ul>
+          </div>
+
+          <div class="info-card">
+            <h3>📊 Casos Especiales</h3>
+            <p>
+              <strong>Insulina:</strong> NO suspender. Si glucemia normal-baja:
+              mantener dosis. Si glucemia elevada: aumentar 10-20% dosis basal y
+              bolo.
+            </p>
+            <p>
+              <strong>Reanudación:</strong> 24-48 horas después de normalizar
+              ingesta oral y resolver síntomas agudos.
+            </p>
+          </div>
+
+          <div style="text-align: center; margin-top: 2rem">
+            <button class="btn btn-primary" onclick="showTab('evaluation')">
+              Continuar a Evaluación →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Evaluation -->
+      <div id="evaluation" class="tab-content">
+        <div class="progress-indicator">
+          <div class="progress-step" id="step-symptoms">⚠️ Síntomas</div>
+          <div class="progress-step" id="step-medications">💊 Medicación</div>
+          <div class="progress-step" id="step-complete">✅ Completado</div>
+        </div>
+
+        <div
+          class="auto-update-notice"
+          style="display: none"
+          id="auto-update-notice"
+        >
+          📊 Las recomendaciones se actualizan automáticamente al seleccionar
+          síntomas y medicamentos
+        </div>
+
+        <div class="evaluation-grid">
+          <!-- Symptoms Section -->
+          <div class="evaluation-section">
+            <div class="section-header">
+              <div class="section-icon">🌡️</div>
+              <div>
+                <h3>Síntomas Disparadores</h3>
+                <p style="font-size: 0.875rem; color: #64748b">
+                  Seleccione los síntomas presentes
+                </p>
+              </div>
+            </div>
+
+            <div class="checkbox-group">
+              <div class="checkbox-item" onclick="toggleCheckbox(this)">
+                <input type="checkbox" name="symptom" value="vomitos" />
+                <div class="checkbox-label">
+                  <div class="medication-label">
+                    <div class="medication-name">Vómitos o diarrea</div>
+                    <div class="medication-examples">
+                      Pérdida significativa de líquidos
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="tooltip"
+                  data-tip="Más de 4 episodios en 12h requiere atención urgente"
+                >
+                  ?
+                </div>
+              </div>
+
+              <div class="checkbox-item" onclick="toggleCheckbox(this)">
+                <input type="checkbox" name="symptom" value="anorexia" />
+                <div class="checkbox-label">
+                  <div class="medication-label">
+                    <div class="medication-name">Anorexia o náuseas</div>
+                    <div class="medication-examples">
+                      Reducción significativa de ingesta
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="checkbox-item" onclick="toggleCheckbox(this)">
+                <input type="checkbox" name="symptom" value="mareo" />
+                <div class="checkbox-label">
+                  <div class="medication-label">
+                    <div class="medication-name">Mareo o síncope</div>
+                    <div class="medication-examples">
+                      Especialmente postural
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="tooltip"
+                  data-tip="Caída >20mmHg TAS requiere evaluación"
+                >
+                  ?
+                </div>
+              </div>
+
+              <div class="checkbox-item" onclick="toggleCheckbox(this)">
+                <input type="checkbox" name="symptom" value="fiebre" />
+                <div class="checkbox-label">
+                  <div class="medication-label">
+                    <div class="medication-name">Fiebre</div>
+                    <div class="medication-examples">Temperatura >38°C</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Medications Section -->
+          <div class="evaluation-section">
+            <div class="section-header">
+              <div class="section-icon">💊</div>
+              <div>
+                <h3>Medicación Actual (SAD MANS)</h3>
+                <p style="font-size: 0.875rem; color: #64748b">
+                  Identifique los fármacos del paciente
+                </p>
+              </div>
+            </div>
+
+            <div class="checkbox-group">
+              <div class="checkbox-item" onclick="toggleCheckbox(this)">
+                <input
+                  type="checkbox"
+                  name="medication"
+                  value="sulfonilureas"
+                />
+                <div class="checkbox-label">
+                  <div class="medication-label">
+                    <div class="medication-name">
+                      <span style="color: #667eea; font-weight: bold">S</span> -
+                      Sulfonilureas
+                    </div>
+                    <div class="medication-examples">
+                      Gliclazida, Glimepirida
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="tooltip"
+                  data-tip="Solo pausar si glucemia <6 mmol/L"
+                >
+                  ?
+                </div>
+              </div>
+
+              <div class="checkbox-item" onclick="toggleCheckbox(this)">
+                <input type="checkbox" name="medication" value="ieca" />
+                <div class="checkbox-label">
+                  <div class="medication-label">
+                    <div class="medication-name">
+                      <span style="color: #667eea; font-weight: bold">A</span> -
+                      IECA
+                    </div>
+                    <div class="medication-examples">Enalapril, Ramipril</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="checkbox-item" onclick="toggleCheckbox(this)">
+                <input type="checkbox" name="medication" value="diureticos" />
+                <div class="checkbox-label">
+                  <div class="medication-label">
+                    <div class="medication-name">
+                      <span style="color: #667eea; font-weight: bold">D</span> -
+                      Diuréticos
+                    </div>
+                    <div class="medication-examples">
+                      Furosemida, Hidroclorotiazida
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="checkbox-item" onclick="toggleCheckbox(this)">
+                <input type="checkbox" name="medication" value="metformina" />
+                <div class="checkbox-label">
+                  <div class="medication-label">
+                    <div class="medication-name">
+                      <span style="color: #667eea; font-weight: bold">M</span> -
+                      Metformina
+                    </div>
+                    <div class="medication-examples">
+                      Todas las formulaciones
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="checkbox-item" onclick="toggleCheckbox(this)">
+                <input type="checkbox" name="medication" value="ara2" />
+                <div class="checkbox-label">
+                  <div class="medication-label">
+                    <div class="medication-name">
+                      <span style="color: #667eea; font-weight: bold">A</span> -
+                      ARA-II
+                    </div>
+                    <div class="medication-examples">Losartán, Valsartán</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="checkbox-item" onclick="toggleCheckbox(this)">
+                <input type="checkbox" name="medication" value="aines" />
+                <div class="checkbox-label">
+                  <div class="medication-label">
+                    <div class="medication-name">
+                      <span style="color: #667eea; font-weight: bold">N</span> -
+                      AINEs
+                    </div>
+                    <div class="medication-examples">Ibuprofeno, Naproxeno</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="checkbox-item" onclick="toggleCheckbox(this)">
+                <input type="checkbox" name="medication" value="sglt2" />
+                <div class="checkbox-label">
+                  <div class="medication-label">
+                    <div class="medication-name">
+                      <span style="color: #667eea; font-weight: bold">S</span> -
+                      SGLT2i
+                    </div>
+                    <div class="medication-examples">
+                      Dapagliflozina, Empagliflozina
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="tooltip"
+                  data-tip="Verificar cetonas. Alto riesgo cetoacidosis"
+                >
+                  ?
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Results -->
+      <div id="results" class="tab-content">
+        <div class="results-section">
+          <h2 style="color: #1e293b; margin-bottom: 1.5rem">
+            📋 Recomendaciones Personalizadas
+          </h2>
+
+          <div id="results-content">
+            <!-- Dynamic content will be inserted here -->
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn btn-secondary" onclick="showTab('evaluation')">
+              ← Modificar Evaluación
+            </button>
+            <button class="btn btn-success" onclick="generatePDF()">
+              📄 Descargar PDF
+            </button>
+            <button class="btn btn-secondary" onclick="resetAll()">
+              🔄 Nueva Evaluación
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p><strong>⚕️ Herramienta de Apoyo Clínico Educativo</strong></p>
+        <p>
+          Esta aplicación es una herramienta de apoyo para profesionales
+          sanitarios. No sustituye el juicio clínico profesional.
+        </p>
+        <p style="margin-top: 0.5rem">
+          <small>
+            Basado en: Watson KE, et al. Consensus Recommendations for Sick Day
+            Medication Guidance. Am J Kidney Dis. 2023;81(5):564-574.
+          </small>
+        </p>
+      </div>
+    </div>
+
+    <script>
+      // Data structures
+      const medicationData = {
+        sulfonilureas: {
+          name: "Sulfonilureas",
+          action: "Pausar solo si glucemia baja (<6 mmol/L)",
+          reason: "Alto riesgo de hipoglucemia por ingesta reducida",
+          monitoring: "Monitorizar glucemia cada 4-6 horas",
+        },
+        ieca: {
+          name: "Inhibidores de la ECA (IECA)",
+          action: "Pausar temporalmente durante enfermedad aguda",
+          reason:
+            "Riesgo de hipotensión y lesión renal aguda por depleción de volumen",
+          monitoring: "Controlar tensión arterial y función renal",
+        },
+        diureticos: {
+          name: "Diuréticos",
+          action: "Pausar todos los tipos",
+          reason: "Riesgo de depleción excesiva de volumen e hipotensión",
+          monitoring: "Evaluar estado de hidratación diariamente",
+        },
+        metformina: {
+          name: "Metformina",
+          action: "Pausar durante enfermedad aguda",
+          reason: "Riesgo de acidosis láctica si deterioro de función renal",
+          monitoring: "Verificar función renal antes de reanudar",
+        },
+        ara2: {
+          name: "Bloqueadores Receptores Angiotensina (ARA-II)",
+          action: "Pausar temporalmente",
+          reason: "Similar a IECA: riesgo de hipotensión y lesión renal",
+          monitoring: "Controlar tensión arterial y función renal",
+        },
+        aines: {
+          name: "Antiinflamatorios No Esteroideos (AINEs)",
+          action: "Suspender inmediatamente",
+          reason: "Nefrotoxicidad potenciada en depleción de volumen",
+          monitoring: "Usar paracetamol como alternativa analgésica",
+        },
+        sglt2: {
+          name: "Inhibidores SGLT2",
+          action: "Suspender inmediatamente",
+          reason: "Alto riesgo de cetoacidosis diabética euglucémica",
+          monitoring: "Verificar cetonas en sangre/orina",
+        },
+      };
+
+      const symptomDescriptions = {
+        vomitos: "Vómitos o diarrea con pérdida de líquidos",
+        anorexia: "Anorexia o náuseas con reducción de ingesta",
+        mareo: "Mareo o síncope postural",
+        fiebre: "Fiebre >38°C",
+      };
+
+      // Tab navigation
+      function showTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll(".tab-content").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+
+        // Remove active class from all tab buttons
+        document.querySelectorAll(".tab").forEach((button) => {
+          button.classList.remove("active");
+        });
+
+        // Show selected tab
+        document.getElementById(tabName).classList.add("active");
+
+        // Add active class to corresponding button
+        const buttons = document.querySelectorAll(".tab");
+        if (tabName === "education") buttons[0].classList.add("active");
+        if (tabName === "evaluation") buttons[1].classList.add("active");
+        if (tabName === "results") buttons[2].classList.add("active");
+      }
+
+      // Checkbox toggle
+      function toggleCheckbox(element) {
+        const checkbox = element.querySelector('input[type="checkbox"]');
+        checkbox.checked = !checkbox.checked;
+        element.classList.toggle("selected", checkbox.checked);
+        validateForm();
+      }
+
+      // Form validation and auto-generate
+      function validateForm() {
+        const symptoms = document.querySelectorAll(
+          'input[name="symptom"]:checked'
+        );
+        const medications = document.querySelectorAll(
+          'input[name="medication"]:checked'
+        );
+
+        // Update progress indicators
+        if (symptoms.length > 0) {
+          document.getElementById("step-symptoms").classList.add("completed");
+        } else {
+          document
+            .getElementById("step-symptoms")
+            .classList.remove("completed");
+        }
+
+        if (medications.length > 0) {
+          document
+            .getElementById("step-medications")
+            .classList.add("completed");
+        } else {
+          document
+            .getElementById("step-medications")
+            .classList.remove("completed");
+        }
+
+        // Auto-generate recommendations if both are selected
+        if (symptoms.length > 0 && medications.length > 0) {
+          document.getElementById("step-complete").classList.add("completed");
+          document.getElementById("auto-update-notice").style.display = "block";
+          generateRecommendations();
+        } else {
+          document
+            .getElementById("step-complete")
+            .classList.remove("completed");
+          document.getElementById("results-tab").disabled = true;
+          document.getElementById("auto-update-notice").style.display = "none";
+        }
+      }
+
+      // Generate recommendations
+      function generateRecommendations() {
+        const symptoms = Array.from(
+          document.querySelectorAll('input[name="symptom"]:checked')
+        ).map((cb) => symptomDescriptions[cb.value]);
+        const medications = Array.from(
+          document.querySelectorAll('input[name="medication"]:checked')
+        ).map((cb) => cb.value);
+
+        let resultsHTML = "";
+
+        // Critical symptoms warning
+        if (symptoms.some((s) => s.includes("Vómitos"))) {
+          resultsHTML += `
+                    <div class="alert-box">
+                        <h3>⚠️ Atención: Síntomas de Alerta</h3>
+                        <p>Si los vómitos son >4 veces en 12h o no puede retener líquidos, contacte con servicios sanitarios urgentemente.</p>
+                    </div>
+                `;
+        }
+
+        // Symptoms summary
+        resultsHTML += `
+                <div style="background: #f0fdf4; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+                    <h3 style="color: #166534; margin-bottom: 0.5rem;">Síntomas Identificados:</h3>
+                    <ul style="margin-left: 1.5rem; color: #15803d;">
+                        ${symptoms.map((s) => `<li>${s}</li>`).join("")}
+                    </ul>
+                </div>
+            `;
+
+        // Medication recommendations
+        resultsHTML +=
+          '<h3 style="color: #0c4a6e; margin-bottom: 1rem;">💊 Recomendaciones sobre Medicación:</h3>';
+
+        medications.forEach((med) => {
+          const data = medicationData[med];
+          resultsHTML += `
+                    <div class="recommendation-card">
+                        <h4>${data.name}</h4>
+                        <p><strong>Acción:</strong> ${data.action}</p>
+                        <p><strong>Razón:</strong> ${data.reason}</p>
+                        <p><strong>Monitorización:</strong> ${data.monitoring}</p>
+                    </div>
+                `;
+        });
+
+        // General management
+        resultsHTML += `
+                <div style="background: #eff6ff; padding: 1.5rem; border-radius: 0.5rem; margin-top: 1.5rem;">
+                    <h3 style="color: #1e3a8a; margin-bottom: 1rem;">📌 Pautas Generales de Manejo (Máximo 72 horas)</h3>
+                    <div style="display: grid; gap: 1rem;">
+                        <div>
+                            <strong>🔍 Monitorización:</strong>
+                            <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                                <li>Glucemia cada 4-6 horas en diabéticos</li>
+                                <li>Tensión arterial 2 veces al día</li>
+                                <li>Cetonas si toma SGLT2i o insulina</li>
+                                <li>Estado de hidratación cada 12 horas</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <strong>💧 Hidratación:</strong>
+                            <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                                <li>Pequeños sorbos frecuentes</li>
+                                <li>Soluciones de rehidratación oral si disponibles</li>
+                                <li>Objetivo: mantener diuresis adecuada</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <strong>🔄 Reanudación de Medicación:</strong>
+                            <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                                <li>24-48 horas después de normalizar ingesta oral</li>
+                                <li>Cuando se resuelvan los síntomas agudos</li>
+                                <li>Verificar función renal antes si tomaba metformina</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+        // Alarm signs
+        resultsHTML += `
+                <div class="alert-box" style="margin-top: 1.5rem;">
+                    <h3>🚨 Signos de Alarma - Contactar Urgentemente si:</h3>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                        <li>Confusión o alteración del nivel de conciencia</li>
+                        <li>Vómitos severos (>4/12h) o incapacidad para retener líquidos</li>
+                        <li>Hipotensión (TAS <80 mmHg o caída >20 mmHg)</li>
+                        <li>Taquicardia (aumento >30 lpm)</li>
+                        <li>Dificultad respiratoria</li>
+                        <li>Anuria (sin micción >8 horas)</li>
+                        <li>Cetonas moderadas-altas (diabéticos)</li>
+                    </ul>
+                </div>
+            `;
+
+        // Special cases
+        resultsHTML += `
+                <div style="background: #fef3c7; padding: 1rem; border-radius: 0.5rem; margin-top: 1.5rem;">
+                    <h4 style="color: #92400e;">📊 Casos Especiales:</h4>
+                    <p><strong>Insulina:</strong> NO suspender. Si glucemia alta persistente: aumentar 10-20% dosis basal y bolo.</p>
+                    <p><strong>Duración máxima protocolo:</strong> 72 horas. Si persisten síntomas, consultar.</p>
+                </div>
+            `;
+
+        document.getElementById("results-content").innerHTML = resultsHTML;
+
+        // Enable results tab
+        document.getElementById("results-tab").disabled = false;
+      }
+
+      // Generate PDF
+      function generatePDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Configure for UTF-8
+        doc.setLanguage("es");
+
+        // Get selected data
+        const symptoms = Array.from(
+          document.querySelectorAll('input[name="symptom"]:checked')
+        ).map((cb) => symptomDescriptions[cb.value]);
+        const medications = Array.from(
+          document.querySelectorAll('input[name="medication"]:checked')
+        ).map((cb) => medicationData[cb.value]);
+
+        // Header
+        doc.setFontSize(16);
+        doc.setFont(undefined, "bold");
+        doc.text(
+          "Guía Sick Day Rules - Recomendaciones Personalizadas",
+          105,
+          20,
+          { align: "center" }
+        );
+
+        doc.setFontSize(10);
+        doc.setFont(undefined, "normal");
+        doc.text("Fecha: " + new Date().toLocaleDateString("es-ES"), 105, 28, {
+          align: "center",
+        });
+
+        // Professional info box
+        doc.setDrawColor(200);
+        doc.rect(15, 35, 180, 10);
+        doc.setFontSize(9);
+        doc.text("Documento generado para uso profesional sanitario", 105, 41, {
+          align: "center",
+        });
+
+        let y = 55;
+
+        // Symptoms
+        doc.setFontSize(12);
+        doc.setFont(undefined, "bold");
+        doc.text("SÍNTOMAS IDENTIFICADOS:", 20, y);
+        y += 8;
+
+        doc.setFontSize(10);
+        doc.setFont(undefined, "normal");
+        symptoms.forEach((symptom) => {
+          // Avoid special characters issues
+          const cleanSymptom = symptom.replace(/°/g, " grados");
+          doc.text("• " + cleanSymptom, 25, y);
+          y += 6;
+        });
+
+        y += 5;
+
+        // Medications
+        doc.setFontSize(12);
+        doc.setFont(undefined, "bold");
+        doc.text("MEDICAMENTOS - RECOMENDACIONES:", 20, y);
+        y += 10;
+
+        medications.forEach((med) => {
+          if (y > 250) {
+            doc.addPage();
+            y = 20;
+          }
+
+          doc.setFontSize(11);
+          doc.setFont(undefined, "bold");
+          doc.text(med.name, 25, y);
+          y += 6;
+
+          doc.setFontSize(10);
+          doc.setFont(undefined, "normal");
+
+          // Clean text to avoid encoding issues
+          const action = "Acción: " + med.action;
+          const reason = "Razón: " + med.reason;
+          const monitoring = "Monitorización: " + med.monitoring;
+
+          doc.text(action, 30, y);
+          y += 5;
+
+          const reasonLines = doc.splitTextToSize(reason, 150);
+          reasonLines.forEach((line) => {
+            doc.text(line, 30, y);
+            y += 5;
+          });
+
+          doc.text(monitoring, 30, y);
+          y += 8;
+        });
+
+        // Management guidelines
+        if (y > 200) {
+          doc.addPage();
+          y = 20;
+        }
+
+        y += 5;
+        doc.setFontSize(12);
+        doc.setFont(undefined, "bold");
+        doc.text("PAUTAS DE MANEJO (Máximo 72 horas):", 20, y);
+        y += 8;
+
+        doc.setFontSize(10);
+        doc.setFont(undefined, "normal");
+
+        const guidelines = [
+          "MONITORIZACIÓN:",
+          "  - Glucemia cada 4-6 horas si diabetes",
+          "  - Tensión arterial 2 veces al día",
+          "  - Cetonas si SGLT2i o insulina",
+          "",
+          "HIDRATACIÓN:",
+          "  - Pequeños sorbos frecuentes",
+          "  - Soluciones de rehidratación oral",
+          "",
+          "REANUDACIÓN MEDICACIÓN:",
+          "  - 24-48h después de normalizar ingesta",
+          "  - Cuando resuelvan síntomas agudos",
+        ];
+
+        guidelines.forEach((line) => {
+          if (y > 270) {
+            doc.addPage();
+            y = 20;
+          }
+          doc.text(line, 25, y);
+          y += 5;
+        });
+
+        // Alarm signs
+        if (y > 220) {
+          doc.addPage();
+          y = 20;
+        }
+
+        y += 5;
+        doc.setFontSize(12);
+        doc.setFont(undefined, "bold");
+        doc.setTextColor(200, 0, 0);
+        doc.text("SIGNOS DE ALARMA - CONTACTAR URGENTEMENTE:", 20, y);
+        doc.setTextColor(0);
+        y += 8;
+
+        doc.setFontSize(10);
+        doc.setFont(undefined, "normal");
+
+        const alarmSigns = [
+          "Confusión o alteración conciencia",
+          "Vómitos >4 veces en 12 horas",
+          "Hipotensión (TAS <80 mmHg)",
+          "Taquicardia (aumento >30 lpm)",
+          "Dificultad respiratoria",
+          "Anuria >8 horas",
+          "Cetonas moderadas-altas",
+        ];
+
+        alarmSigns.forEach((sign) => {
+          doc.text("• " + sign, 25, y);
+          y += 6;
+        });
+
+        // Footer with reference
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        doc.text(
+          "Referencia: Watson KE, et al. Am J Kidney Dis. 2023;81(5):564-574",
+          105,
+          280,
+          { align: "center" }
+        );
+        doc.text(
+          "Documento generado: " + new Date().toLocaleString("es-ES"),
+          105,
+          285,
+          { align: "center" }
+        );
+
+        // Save
+        doc.save("sick_day_rules_" + new Date().getTime() + ".pdf");
+      }
+
+      // Reset all
+      function resetAll() {
+        document.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+          cb.checked = false;
+          cb.closest(".checkbox-item").classList.remove("selected");
+        });
+
+        document.querySelectorAll(".progress-step").forEach((step) => {
+          step.classList.remove("completed");
+        });
+
+        document.getElementById("results-tab").disabled = true;
+        document.getElementById("auto-update-notice").style.display = "none";
+        showTab("evaluation");
+        validateForm();
+      }
+
+      // Initialize
+      document.addEventListener("DOMContentLoaded", () => {
+        // Save/load from localStorage
+        const saveState = () => {
+          const state = {
+            symptoms: Array.from(
+              document.querySelectorAll('input[name="symptom"]:checked')
+            ).map((cb) => cb.value),
+            medications: Array.from(
+              document.querySelectorAll('input[name="medication"]:checked')
+            ).map((cb) => cb.value),
+            timestamp: Date.now(),
+          };
+          localStorage.setItem("sickDayRulesState", JSON.stringify(state));
+        };
+
+        const loadState = () => {
+          const saved = localStorage.getItem("sickDayRulesState");
+          if (saved) {
+            const state = JSON.parse(saved);
+            // Only restore if less than 24 hours old
+            if (Date.now() - state.timestamp < 86400000) {
+              state.symptoms.forEach((val) => {
+                const checkbox = document.querySelector(
+                  `input[name="symptom"][value="${val}"]`
+                );
+                if (checkbox) {
+                  checkbox.checked = true;
+                  checkbox.closest(".checkbox-item").classList.add("selected");
+                }
+              });
+              state.medications.forEach((val) => {
+                const checkbox = document.querySelector(
+                  `input[name="medication"][value="${val}"]`
+                );
+                if (checkbox) {
+                  checkbox.checked = true;
+                  checkbox.closest(".checkbox-item").classList.add("selected");
+                }
+              });
+              validateForm();
+            }
+          }
+        };
+
+        // Attach change listeners
+        document.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+          cb.addEventListener("change", saveState);
+        });
+
+        loadState();
+      });
+
+      // Service Worker for PWA
+      if ("serviceWorker" in navigator) {
+        const sw = `
+                const CACHE_NAME = 'sick-day-rules-v1';
+                const urlsToCache = ['/', '/index.html'];
+                
+                self.addEventListener('install', event => {
+                    event.waitUntil(
+                        caches.open(CACHE_NAME)
+                            .then(cache => cache.addAll(urlsToCache))
+                    );
+                });
+                
+                self.addEventListener('fetch', event => {
+                    event.respondWith(
+                        caches.match(event.request)
+                            .then(response => response || fetch(event.request))
+                    );
+                });
+            `;
+
+        const blob = new Blob([sw], { type: "application/javascript" });
+        const swUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(swUrl);
+      }
+    </script>
+  </body>
+</html>
