@@ -346,6 +346,122 @@
           margin: 0;
         }
       }
+      .editable-log-table input.warning {
+        border-color: #f59e0b !important;
+        background-color: #fffbeb !important;
+      }
+      /* Modal de confirmación moderno */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+      }
+
+      .confirm-modal {
+        background: white;
+        border-radius: 12px;
+        max-width: 450px;
+        margin: 20px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+          0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        animation: modalSlideIn 0.2s ease-out;
+      }
+
+      @keyframes modalSlideIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95) translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+
+      .modal-header {
+        padding: 24px 24px 16px 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-bottom: 1px solid #f3f4f6;
+      }
+
+      .modal-icon {
+        font-size: 24px;
+        color: #f59e0b;
+      }
+
+      .modal-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #111827;
+      }
+
+      .modal-body {
+        padding: 20px 24px;
+        color: #374151;
+        line-height: 1.6;
+      }
+
+      .modal-actions {
+        padding: 16px 24px 24px 24px;
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+
+      .modal-btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        font-size: 0.875rem;
+      }
+
+      .modal-btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+      }
+
+      .modal-btn-secondary:hover {
+        background: #e5e7eb;
+      }
+
+      .modal-btn-danger {
+        background: #dc2626;
+        color: white;
+      }
+
+      .modal-btn-danger:hover {
+        background: #b91c1c;
+      }
+      .editable-log-table input.invalid::placeholder {
+        color: #dc2626 !important;
+      }
+
+      .editable-log-table input.warning::placeholder {
+        color: #d97706 !important;
+      }
+
+      .editable-log-table input.invalid::before {
+        content: "⚠️";
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
     </style>
   </head>
   <body>
@@ -572,7 +688,7 @@
                     }
                   }
                 </style>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 mt-4">
                   <button id="clearLogBtn" class="tool-button clear-button">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -636,6 +752,36 @@
                       <rect x="6" y="14" width="12" height="8"></rect>
                     </svg>
                     Hoja de Registro
+                  </button>
+                  <button
+                    id="copyResultsBtn"
+                    class="tool-button"
+                    style="background-color: #059669"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <rect
+                        x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"
+                      ></rect>
+                      <path
+                        d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                      ></path>
+                    </svg>
+                    Copiar Resumen
                   </button>
                 </div>
               </div>
@@ -848,6 +994,7 @@
           ];
           let dayCounter = 0;
           let bpChartInstance = null;
+          let calculationTimeout = null;
           let chartInitAttempts = 0;
           const maxChartInitAttempts = 20;
           const LOCAL_STORAGE_KEY = "hypertensionSuiteData_v2";
@@ -887,6 +1034,9 @@
               .getElementById("printSheetBtn")
               .addEventListener("click", printRegistrationSheet);
             document
+              .getElementById("copyResultsBtn")
+              .addEventListener("click", copyResultsToClipboard);
+            document
               .getElementById("orthoCalculator")
               .addEventListener("input", calculateOrtho);
             document
@@ -897,34 +1047,29 @@
           }
 
           function initializeChart() {
-            // Verificar que Chart.js esté cargado
+            // Verificar que Chart.js esté cargado con reintentos
             if (typeof Chart === "undefined") {
               chartInitAttempts++;
               if (chartInitAttempts >= maxChartInitAttempts) {
                 console.error(
-                  "Chart.js no se pudo cargar después de múltiples intentos"
+                  "Chart.js no disponible después de múltiples intentos"
                 );
-                const canvas = document.getElementById("bpChart");
-                const errorDiv = document.getElementById("chartError");
-                const loadingDiv = document.getElementById("chartLoading");
-                if (canvas) canvas.style.display = "none";
-                if (loadingDiv) loadingDiv.style.display = "none";
-                if (errorDiv) errorDiv.style.display = "block";
+                showChartError(
+                  "El gráfico no está disponible. La aplicación funciona normalmente sin él."
+                );
                 return;
               }
-              console.warn(
-                "Chart.js no está cargado. Intento " +
-                  chartInitAttempts +
-                  " de " +
-                  maxChartInitAttempts
-              );
-              setTimeout(initializeChart, 100);
+              setTimeout(initializeChart, 200);
               return;
             }
 
             try {
-              const ctx = document.getElementById("bpChart").getContext("2d");
-              bpChartInstance = new Chart(ctx, {
+              const ctx = document.getElementById("bpChart");
+              if (!ctx) {
+                throw new Error("Canvas del gráfico no encontrado");
+              }
+
+              bpChartInstance = new Chart(ctx.getContext("2d"), {
                 type: "line",
                 data: {
                   labels: [],
@@ -963,40 +1108,6 @@
                       display: true,
                       text: "Evolución de la Presión Arterial y Frecuencia Cardíaca",
                     },
-                    annotation: {
-                      annotations: {
-                        htaThresholdPAS: {
-                          type: "line",
-                          yMin: 135,
-                          yMax: 135,
-                          borderColor: "rgba(220, 38, 38, 0.5)",
-                          borderWidth: 2,
-                          borderDash: [6, 6],
-                          label: {
-                            content: "Umbral HTA (135)",
-                            position: "start",
-                            enabled: true,
-                            font: { size: 10 },
-                          },
-                          scaleID: "y",
-                        },
-                        htaThresholdPAD: {
-                          type: "line",
-                          yMin: 85,
-                          yMax: 85,
-                          borderColor: "rgba(37, 99, 235, 0.5)",
-                          borderWidth: 2,
-                          borderDash: [6, 6],
-                          label: {
-                            content: "Umbral HTA (85)",
-                            position: "start",
-                            enabled: true,
-                            font: { size: 10 },
-                          },
-                          scaleID: "y",
-                        },
-                      },
-                    },
                   },
                   scales: {
                     y: {
@@ -1011,17 +1122,28 @@
                   },
                 },
               });
-              // Ocultar el mensaje de carga
+
+              // Ocultar indicador de carga
               const loadingDiv = document.getElementById("chartLoading");
               if (loadingDiv) loadingDiv.style.display = "none";
             } catch (error) {
               console.error("Error al inicializar el gráfico:", error);
-              const canvas = document.getElementById("bpChart");
-              const errorDiv = document.getElementById("chartError");
-              const loadingDiv = document.getElementById("chartLoading");
-              if (canvas) canvas.style.display = "none";
-              if (loadingDiv) loadingDiv.style.display = "none";
-              if (errorDiv) errorDiv.style.display = "block";
+              showChartError(
+                "Error al cargar el gráfico. Los cálculos funcionan normalmente."
+              );
+            }
+          }
+
+          function showChartError(message) {
+            const canvas = document.getElementById("bpChart");
+            const errorDiv = document.getElementById("chartError");
+            const loadingDiv = document.getElementById("chartLoading");
+
+            if (canvas) canvas.style.display = "none";
+            if (loadingDiv) loadingDiv.style.display = "none";
+            if (errorDiv) {
+              errorDiv.style.display = "block";
+              errorDiv.innerHTML = `<p style="text-align: center; color: #6b7280; padding: 20px;">${message}</p>`;
             }
           }
 
@@ -1053,7 +1175,16 @@
           function handleLogInput(e) {
             if (e.target.tagName === "INPUT") {
               if (e.target.type === "number") validateBPInput(e.target);
-              runAllCalculations();
+
+              // Debounce para evitar cálculos excesivos
+              if (calculationTimeout) {
+                clearTimeout(calculationTimeout);
+              }
+
+              calculationTimeout = setTimeout(() => {
+                runAllCalculations();
+                calculationTimeout = null;
+              }, 300);
             }
           }
 
@@ -1179,9 +1310,164 @@
 
           function validateBPInput(input) {
             const value = parseFloat(input.value);
-            const isInvalid =
-              input.value !== "" && (isNaN(value) || value < 30 || value > 300);
+
+            if (input.value === "") {
+              input.classList.remove("invalid", "warning");
+              // También limpiar el par si existe
+              clearPairValidation(input);
+              return;
+            }
+
+            if (isNaN(value)) {
+              input.classList.add("invalid");
+              input.classList.remove("warning");
+              return;
+            }
+
+            // Validación de rangos básicos
+            const fieldType = input.classList.contains("sbp")
+              ? "systolic"
+              : input.classList.contains("dbp")
+              ? "diastolic"
+              : "heartRate";
+
+            let isInvalid = false;
+            let isWarning = false;
+
+            switch (fieldType) {
+              case "systolic":
+                isInvalid = value < 60 || value >= 220;
+                isWarning = !isInvalid && (value < 90 || value >= 180);
+                break;
+              case "diastolic":
+                isInvalid = value < 30 || value >= 120;
+                isWarning = !isInvalid && (value < 60 || value >= 110);
+                break;
+              case "heartRate":
+                isInvalid = value < 30 || value > 220;
+                isWarning = !isInvalid && (value < 50 || value > 120);
+                break;
+            }
+
+            // Aplicar validación individual primero
             input.classList.toggle("invalid", isInvalid);
+            input.classList.toggle("warning", isWarning && !isInvalid);
+
+            // Validación de coherencia PAS/PAD para todos los pares de la medición
+            if (fieldType === "systolic" || fieldType === "diastolic") {
+              validateBPPair(input);
+            }
+          }
+
+          function validateBPPair(input) {
+            const measurementContainer = input.closest("td");
+            if (!measurementContainer) return;
+
+            const sbpInput = measurementContainer.querySelector(".sbp");
+            const dbpInput = measurementContainer.querySelector(".dbp");
+
+            if (!sbpInput || !dbpInput) return;
+
+            // Solo validar si ambos tienen valores
+            if (sbpInput.value && dbpInput.value) {
+              const sbpValue = parseFloat(sbpInput.value);
+              const dbpValue = parseFloat(dbpInput.value);
+
+              if (!isNaN(sbpValue) && !isNaN(dbpValue)) {
+                let bothInvalid = false;
+                let bothWarning = false;
+
+                // Validación crítica: PAS debe ser mayor que PAD
+                if (sbpValue <= dbpValue) {
+                  bothInvalid = true;
+                }
+                // Validación de presión de pulso
+                else {
+                  const pulsePressure = sbpValue - dbpValue;
+                  if (pulsePressure < 20 || pulsePressure > 80) {
+                    bothWarning = true;
+                  }
+                }
+
+                // Aplicar estados de validación al par
+                if (bothInvalid) {
+                  sbpInput.classList.add("invalid");
+                  dbpInput.classList.add("invalid");
+                  sbpInput.classList.remove("warning");
+                  dbpInput.classList.remove("warning");
+                } else if (bothWarning) {
+                  // Solo aplicar warning si no tienen invalid individual
+                  if (!sbpInput.classList.contains("invalid")) {
+                    sbpInput.classList.add("warning");
+                  }
+                  if (!dbpInput.classList.contains("invalid")) {
+                    dbpInput.classList.add("warning");
+                  }
+                } else {
+                  // Revalidar individualmente y aplicar solo warnings individuales si existen
+                  const sbpIndividualWarning = isIndividuallyWarning(sbpInput);
+                  const dbpIndividualWarning = isIndividuallyWarning(dbpInput);
+
+                  if (sbpIndividualWarning) {
+                    sbpInput.classList.add("warning");
+                    sbpInput.classList.remove("invalid");
+                  } else if (!isIndividuallyInvalid(sbpInput)) {
+                    sbpInput.classList.remove("invalid", "warning");
+                  }
+
+                  if (dbpIndividualWarning) {
+                    dbpInput.classList.add("warning");
+                    dbpInput.classList.remove("invalid");
+                  } else if (!isIndividuallyInvalid(dbpInput)) {
+                    dbpInput.classList.remove("invalid", "warning");
+                  }
+                }
+              }
+            }
+          }
+
+          function clearPairValidation(input) {
+            const measurementContainer = input.closest("td");
+            if (!measurementContainer) return;
+
+            const sbpInput = measurementContainer.querySelector(".sbp");
+            const dbpInput = measurementContainer.querySelector(".dbp");
+
+            // Revalidar el otro input del par si tiene valor
+            if (sbpInput && sbpInput !== input && sbpInput.value) {
+              validateBPInput(sbpInput);
+            }
+            if (dbpInput && dbpInput !== input && dbpInput.value) {
+              validateBPInput(dbpInput);
+            }
+          }
+
+          function isIndividuallyInvalid(input) {
+            const value = parseFloat(input.value);
+            if (isNaN(value)) return true;
+
+            if (input.classList.contains("sbp")) {
+              return value < 60 || value >= 220;
+            } else if (input.classList.contains("dbp")) {
+              return value < 30 || value >= 120;
+            } else if (input.classList.contains("hr")) {
+              return value < 30 || value > 220;
+            }
+            return false;
+          }
+
+          function isIndividuallyWarning(input) {
+            const value = parseFloat(input.value);
+            if (isNaN(value) || isIndividuallyInvalid(input)) return false;
+
+            if (input.classList.contains("sbp")) {
+              return value < 90 || value >= 180;
+            } else if (input.classList.contains("dbp")) {
+              return value < 60 || value >= 110;
+            } else if (input.classList.contains("hr")) {
+              return value < 50 || value > 120;
+            }
+            return false;
           }
 
           function addDayRow() {
@@ -1211,11 +1497,30 @@
           }
 
           function clearLog() {
-            if (
-              confirm(
-                "¿Está seguro de que desea borrar todos los datos de la tabla? Esta acción no se puede deshacer."
-              )
-            ) {
+            const rows = logBody.querySelectorAll("tr").length;
+            const filledInputs = logBody.querySelectorAll(
+              "input[type='number']"
+            ).length;
+            let filledCount = 0;
+
+            logBody
+              .querySelectorAll("input[type='number']")
+              .forEach((input) => {
+                if (input.value.trim() !== "") filledCount++;
+              });
+
+            if (filledCount === 0) {
+              alert("No hay datos que limpiar.");
+              return;
+            }
+
+            const patientName = document.getElementById("patientName").value;
+            const confirmMessage = patientName
+              ? `¿Está seguro de que desea borrar TODOS los datos del paciente "${patientName}"?\n\nSe perderán ${filledCount} mediciones en ${rows} días.\n\nEsta acción NO se puede deshacer.`
+              : `¿Está seguro de que desea borrar TODOS los datos?\n\nSe perderán ${filledCount} mediciones en ${rows} días.\n\nEsta acción NO se puede deshacer.`;
+
+            // Reemplazar el confirm() básico por este modal moderno
+            showConfirmModal(confirmMessage, () => {
               localStorage.removeItem(LOCAL_STORAGE_KEY);
               startDaySelect.value = "0";
               logBody.innerHTML = "";
@@ -1223,7 +1528,158 @@
               addDayRow();
               addDayBtn.disabled = false;
               runAllCalculations();
+            });
+
+            // Añadir esta función DENTRO de initializeHypertensionApp(), después de clearLog()
+            function showConfirmModal(message, onConfirm) {
+              // Crear overlay del modal
+              const modalOverlay = document.createElement("div");
+              modalOverlay.className = "modal-overlay";
+              modalOverlay.innerHTML = `
+    <div class="confirm-modal">
+      <div class="modal-header">
+        <div class="modal-icon">⚠️</div>
+        <h3>Confirmar Eliminación</h3>
+      </div>
+      <div class="modal-body">
+        <p>${message}</p>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-secondary" onclick="this.closest('.modal-overlay').remove()">
+          Cancelar
+        </button>
+        <button class="modal-btn modal-btn-danger" onclick="this.closest('.modal-overlay').remove(); (${onConfirm})();">
+          Eliminar Datos
+        </button>
+      </div>
+    </div>
+  `;
+
+              document.body.appendChild(modalOverlay);
+
+              // Cerrar modal al hacer clic fuera
+              modalOverlay.addEventListener("click", (e) => {
+                if (e.target === modalOverlay) {
+                  modalOverlay.remove();
+                }
+              });
+
+              // Cerrar modal con Escape
+              const handleKeyDown = (e) => {
+                if (e.key === "Escape") {
+                  modalOverlay.remove();
+                  document.removeEventListener("keydown", handleKeyDown);
+                }
+              };
+              document.addEventListener("keydown", handleKeyDown);
             }
+          }
+          function copyResultsToClipboard() {
+            const { avgSbp, avgDbp, avgHr, sbpVariability } =
+              calculateAverages();
+            const phenotype = getPhenotypeClassification();
+            const patientName =
+              document.getElementById("patientName").value || "Paciente";
+            const reportPeriod =
+              document.getElementById("reportPeriod").value ||
+              new Date().toLocaleDateString("es-ES");
+
+            if (!avgSbp || !avgDbp) {
+              alert(
+                "No hay suficientes datos para generar un resumen. Introduzca al menos algunas mediciones."
+              );
+              return;
+            }
+
+            const statusIcon = avgSbp >= 135 || avgDbp >= 85 ? "⚠️" : "✅";
+            const statusText =
+              avgSbp >= 135 || avgDbp >= 85 ? "ELEVADA" : "NORMAL";
+
+            const totalMeasurements = Array.from(
+              logBody.querySelectorAll('input[type="number"]')
+            ).filter((input) => input.value.trim() !== "").length;
+            const daysWithData =
+              Math.floor(totalMeasurements / 12) +
+              (totalMeasurements % 12 > 0 ? 1 : 0);
+
+            const resultText = `AUTOMEDIDA DE PRESIÓN ARTERIAL DOMICILIARIA (AMPA)
+
+DATOS DEL PACIENTE:
+Nombre: ${patientName}
+Periodo de registro: ${reportPeriod}
+Duración del registro: ${daysWithData} días
+Número total de mediciones: ${totalMeasurements}
+
+RESULTADOS:
+Presión arterial media: ${Math.round(avgSbp)}/${Math.round(avgDbp)} mmHg
+Frecuencia cardíaca media: ${
+              avgHr ? Math.round(avgHr) + " lpm" : "No registrada"
+            }
+Variabilidad de PA sistólica (DE): ${
+              sbpVariability
+                ? sbpVariability.toFixed(1) + " mmHg"
+                : "No calculada"
+            }
+${
+  sbpVariability > 15
+    ? "Variabilidad elevada (>15 mmHg)"
+    : "Variabilidad dentro de límites normales"
+}
+
+CLASIFICACIÓN DIAGNÓSTICA:
+Fenotipo hipertensivo: ${phenotype.name}
+
+INTERPRETACIÓN CLÍNICA:
+${phenotype.explanation}
+
+VALORES DE REFERENCIA (ESH 2023):
+- PA normal en domicilio: <135/85 mmHg
+- PA elevada en domicilio: ≥135/85 mmHg
+- Variabilidad normal: ≤15 mmHg (desviación estándar)
+
+OBSERVACIONES:
+${
+  avgSbp >= 135 || avgDbp >= 85
+    ? "Valores sugerentes de hipertensión arterial. Se recomienda correlación clínica y seguimiento."
+    : "Valores dentro de límites normales para medición domiciliaria."
+}
+${
+  sbpVariability > 15
+    ? "La variabilidad elevada de PA puede ser un factor de riesgo cardiovascular independiente."
+    : ""
+}
+
+Registro generado el ${new Date().toLocaleDateString("es-ES", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })} a las ${new Date().toLocaleTimeString("es-ES", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}`;
+
+            navigator.clipboard
+              .writeText(resultText)
+              .then(() => {
+                const button = document.getElementById("copyResultsBtn");
+                const originalHTML = button.innerHTML;
+                button.innerHTML =
+                  '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>¡Copiado!';
+                button.style.backgroundColor = "#16a34a";
+                setTimeout(() => {
+                  button.innerHTML = originalHTML;
+                  button.style.backgroundColor = "#059669";
+                }, 2000);
+              })
+              .catch(() => {
+                const textArea = document.createElement("textarea");
+                textArea.value = resultText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textArea);
+                alert("Resumen copiado al portapapeles");
+              });
           }
 
           function getPhenotypeClassification() {
@@ -1600,6 +2056,7 @@ h3 {
                   margin: 0 1mm;
                 }
               }
+         
             </style>
             
             <div class="print-content">
