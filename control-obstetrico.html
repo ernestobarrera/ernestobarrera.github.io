@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel de Control Obstétrico - Atención Primaria</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+        min-height: 100vh;
+      }
+
+      .card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        transition: all 0.3s ease;
+      }
+
+      .card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .timeline-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .timeline-card {
+        position: relative;
+        padding: 1.25rem;
+        border-left: 3px solid #e5e7eb;
+        transition: all 0.3s ease;
+      }
+
+      .timeline-card.completed {
+        border-left-color: #10b981;
+        background: #f0fdf4;
+      }
+
+      .timeline-card.current {
+        border-left-color: #3b82f6;
+        background: #eff6ff;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+      }
+
+      .timeline-card.next {
+        border-left-color: #f59e0b;
+        background: #fffbeb;
+      }
+
+      .progress-ring {
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke-dashoffset 0.5s ease;
+      }
+
+      .pulse-dot {
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .alert-banner {
+        background: linear-gradient(90deg, #fef2f2 0%, #fee2e2 100%);
+        border-left: 4px solid #ef4444;
+        padding: 1rem;
+        border-radius: 8px;
+        animation: slideIn 0.3s ease;
+      }
+
+      .warning-banner {
+        background: linear-gradient(90deg, #fffbeb 0%, #fef3c7 100%);
+        border-left: 4px solid #f59e0b;
+        padding: 1rem;
+        border-radius: 8px;
+        animation: slideIn 0.3s ease;
+      }
+
+      .info-banner {
+        background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 100%);
+        border-left: 4px solid #3b82f6;
+        padding: 1rem;
+        border-radius: 8px;
+        animation: slideIn 0.3s ease;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+      }
+
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+
+      .spinner {
+        border: 3px solid #e5e7eb;
+        border-top: 3px solid #3b82f6;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+        .no-print {
+          display: none !important;
+        }
+        .timeline-grid {
+          grid-template-columns: 1fr;
+        }
+        .card {
+          box-shadow: none;
+          border: 1px solid #e5e7eb;
+        }
+      }
+    </style>
+  </head>
+  <body class="p-4 md:p-8">
+    <!-- Loading -->
+    <div id="loading" class="loading-overlay hidden">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto">
+      <!-- Header -->
+      <header class="mb-8">
+        <div
+          class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6"
+        >
+          <div class="flex items-center gap-4">
+            <div
+              class="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-2xl text-white shadow-lg"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-8 w-8"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M12 2c-5.523 0-10 4.477-10 10s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"
+                />
+                <path d="M12.5 8H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-3xl font-bold text-gray-800">Panel Obstétrico</h1>
+              <p class="text-gray-500">
+                Calculadora gestacional para Atención Primaria
+              </p>
+            </div>
+          </div>
+
+          <!-- Date Inputs -->
+          <div class="flex flex-col sm:flex-row gap-4">
+            <div class="card p-4">
+              <label
+                for="fur-date"
+                class="block text-sm font-medium text-gray-700 mb-2"
+              >
+                FUR (Fecha Última Regla)
+              </label>
+              <input
+                type="date"
+                id="fur-date"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div class="card p-4">
+              <label
+                for="calc-date"
+                class="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Fecha de Cálculo
+              </label>
+              <input
+                type="date"
+                id="calc-date"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Error/Warning Messages -->
+      <div id="messages-container" class="mb-6 space-y-3"></div>
+
+      <!-- Main Content -->
+      <main id="results-container" class="hidden">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          <div class="card p-6">
+            <p class="text-sm text-gray-500 mb-1">Edad Gestacional</p>
+            <p
+              id="gestational-age"
+              class="text-2xl font-bold text-gray-800"
+            ></p>
+            <p id="gestational-days" class="text-xs text-gray-500 mt-1"></p>
+          </div>
+
+          <div class="card p-6">
+            <p class="text-sm text-gray-500 mb-1">FPP (Fecha Probable)</p>
+            <p id="edd" class="text-2xl font-bold text-gray-800"></p>
+            <p id="days-to-edd" class="text-xs text-gray-500 mt-1"></p>
+          </div>
+
+          <div class="card p-6">
+            <p class="text-sm text-gray-500 mb-1">Trimestre</p>
+            <p id="trimester" class="text-2xl font-bold text-gray-800"></p>
+            <p id="trimester-week" class="text-xs text-gray-500 mt-1"></p>
+          </div>
+
+          <div class="card p-6 flex flex-col items-center justify-center">
+            <svg class="w-24 h-24" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                stroke="#e5e7eb"
+                stroke-width="8"
+                fill="transparent"
+              />
+              <circle
+                id="progress-ring"
+                class="progress-ring"
+                cx="50"
+                cy="50"
+                r="45"
+                stroke="#3b82f6"
+                stroke-width="8"
+                fill="transparent"
+                stroke-linecap="round"
+              />
+            </svg>
+            <p id="progress-text" class="text-2xl font-bold text-blue-600 mt-2">
+              0%
+            </p>
+            <p class="text-xs text-gray-500">Progreso gestación</p>
+          </div>
+
+          <div class="card p-6 flex flex-col gap-2 no-print">
+            <!-- Botones de Copiar -->
+            <div class="flex gap-2">
+              <button
+                id="copy-brief-btn"
+                class="flex-1 flex items-center justify-center gap-1 bg-slate-700 text-white px-2 py-2 rounded-lg hover:bg-slate-800 transition-all text-sm"
+                title="Copiar resumen breve (Ctrl+C)"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path
+                    d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                  />
+                </svg>
+                <span>Breve</span>
+              </button>
+              <button
+                id="copy-full-btn"
+                class="flex-1 flex items-center justify-center gap-1 bg-slate-600 text-white px-2 py-2 rounded-lg hover:bg-slate-700 transition-all text-sm"
+                title="Copiar informe completo"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path
+                    d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                  />
+                </svg>
+                <span>Completo</span>
+              </button>
+            </div>
+            <!-- Botón PDF -->
+            <button
+              id="pdf-btn"
+              class="flex items-center justify-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              <span>Generar PDF</span>
+            </button>
+            <!-- Botón Limpiar -->
+            <button
+              id="clear-btn"
+              class="flex items-center justify-center gap-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"
+                />
+              </svg>
+              <span>Limpiar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Next Appointment Alert -->
+        <div id="next-appointment" class="hidden mb-6">
+          <div class="info-banner">
+            <div class="flex items-start gap-3">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-blue-600 mt-0.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <div>
+                <p class="font-semibold text-gray-800">
+                  Próxima cita recomendada
+                </p>
+                <p
+                  id="next-appointment-text"
+                  class="text-gray-600 text-sm mt-1"
+                ></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline Grid -->
+        <div class="card p-6 mb-8">
+          <h2 class="text-xl font-bold text-gray-800 mb-6">
+            Cronograma de Controles
+          </h2>
+          <div id="timeline" class="timeline-grid"></div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="card p-6 mb-8">
+          <h2 class="text-xl font-bold text-gray-800 mb-6">
+            Recomendaciones del Trimestre
+          </h2>
+          <div id="recommendations" class="space-y-4"></div>
+        </div>
+
+        <!-- Evidence Note -->
+        <div class="text-center text-xs text-gray-500 mt-8">
+          <p>
+            Basado en protocolos de la SEGO y guías de práctica clínica
+            actualizadas
+          </p>
+        </div>
+      </main>
+
+      <!-- Initial State -->
+      <div id="initial-state" class="text-center py-16">
+        <div class="card max-w-md mx-auto p-8">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="mx-auto h-16 w-16 text-blue-500 mb-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+          <h2 class="text-2xl font-semibold text-gray-800">
+            Calculadora Obstétrica
+          </h2>
+          <p class="mt-2 text-gray-600">
+            Introduce la FUR para comenzar el cálculo
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Estado de la aplicación
+      let state = {
+        fur: null,
+        calcDate: null,
+        results: null,
+      };
+
+      // Datos de protocolo
+      const pregnancyMilestones = [
+        {
+          name: "Consulta preconcepcional",
+          idealWeek: 0,
+          startMargin: -90,
+          endMargin: 0,
+          type: "visit",
+          description: "Planificación y ácido fólico 400mcg/día",
+          priority: "recommended",
+        },
+        {
+          name: "Analítica 1er Trimestre",
+          idealWeek: 10,
+          startMargin: -14,
+          endMargin: 14,
+          type: "test",
+          description: "Hemograma, bioquímica, serologías, TSH",
+          priority: "essential",
+        },
+        {
+          name: "Ecografía 1er Trimestre",
+          idealWeek: 12,
+          startMargin: -7,
+          endMargin: 7,
+          type: "ultrasound",
+          description: "Datación, TN, anatomía precoz",
+          priority: "essential",
+        },
+        {
+          name: "Primera Visita Obstétrica",
+          idealWeek: 12,
+          startMargin: -7,
+          endMargin: 14,
+          type: "visit",
+          description: "Historia clínica, exploración, plan de seguimiento",
+          priority: "essential",
+        },
+        {
+          name: "Control 2º Trimestre",
+          idealWeek: 16,
+          startMargin: -7,
+          endMargin: 7,
+          type: "visit",
+          description: "TA, peso, altura uterina, FCF",
+          priority: "recommended",
+        },
+        {
+          name: "Ecografía Morfológica",
+          idealWeek: 20,
+          startMargin: -7,
+          endMargin: 14,
+          type: "ultrasound",
+          description: "Anatomía fetal detallada, placenta",
+          priority: "essential",
+        },
+        {
+          name: "Test O'Sullivan",
+          idealWeek: 24,
+          startMargin: -7,
+          endMargin: 28,
+          type: "test",
+          description: "Cribado diabetes gestacional (50g glucosa)",
+          priority: "essential",
+        },
+        {
+          name: "Control Prenatal",
+          idealWeek: 28,
+          startMargin: -7,
+          endMargin: 7,
+          type: "visit",
+          description: "TA, peso, Anti-D si Rh negativo",
+          priority: "essential",
+        },
+        {
+          name: "Control 3er Trimestre",
+          idealWeek: 32,
+          startMargin: -7,
+          endMargin: 7,
+          type: "visit",
+          description: "Valoración bienestar fetal, presentación",
+          priority: "recommended",
+        },
+        {
+          name: "Ecografía 3er Trimestre",
+          idealWeek: 34,
+          startMargin: -7,
+          endMargin: 14,
+          type: "ultrasound",
+          description: "Crecimiento, líquido amniótico, placenta",
+          priority: "recommended",
+        },
+        {
+          name: "Analítica 3er Trimestre",
+          idealWeek: 35,
+          startMargin: -7,
+          endMargin: 14,
+          type: "test",
+          description: "Hemograma, coagulación, serologías",
+          priority: "essential",
+        },
+        {
+          name: "Cultivo SGB",
+          idealWeek: 36,
+          startMargin: -7,
+          endMargin: 7,
+          type: "test",
+          description: "Estreptococo grupo B vagino-rectal",
+          priority: "essential",
+        },
+        {
+          name: "Control Semanal",
+          idealWeek: 38,
+          startMargin: -3,
+          endMargin: 3,
+          type: "visit",
+          description: "Valoración cervical, bienestar fetal",
+          priority: "essential",
+        },
+        {
+          name: "Monitorización Fetal",
+          idealWeek: 40,
+          startMargin: 0,
+          endMargin: 7,
+          type: "test",
+          description: "RCTG, valoración líquido amniótico",
+          priority: "essential",
+        },
+        {
+          name: "Control Post-término",
+          idealWeek: 41,
+          startMargin: 0,
+          endMargin: 5,
+          type: "visit",
+          description: "Valoración para finalización gestación",
+          priority: "essential",
+        },
+      ];
+
+      const trimesterRecommendations = {
+        1: {
+          title: "Primer Trimestre (0-13 semanas)",
+          items: [
+            "Ácido fólico 400mcg/día (hasta semana 12)",
+            "Yodo 200mcg/día durante todo el embarazo",
+            "Evitar alcohol, tabaco y drogas",
+            "Alimentación equilibrada, evitar toxoplasma",
+            "Signos alarma: sangrado, dolor abdominal intenso",
+          ],
+        },
+        2: {
+          title: "Segundo Trimestre (14-27 semanas)",
+          items: [
+            "Ejercicio moderado regular (caminar, natación)",
+            "Vigilar movimientos fetales desde semana 20",
+            "Hierro si hemoglobina <11g/dL",
+            "Calcio 1000mg/día con la dieta",
+            "Signos alarma: pérdida líquido, contracciones regulares",
+          ],
+        },
+        3: {
+          title: "Tercer Trimestre (28-42 semanas)",
+          items: [
+            "Preparación al parto y lactancia",
+            "Movimientos fetales: mínimo 10 en 2 horas",
+            "Dormir en decúbito lateral izquierdo",
+            "Preparar bolsa para hospital",
+            "Signos alarma: disminución movimientos, cefalea intensa, visión borrosa",
+          ],
+        },
+      };
+
+      // DOM Elements
+      const furInput = document.getElementById("fur-date");
+      const calcInput = document.getElementById("calc-date");
+      const resultsContainer = document.getElementById("results-container");
+      const initialState = document.getElementById("initial-state");
+      const messagesContainer = document.getElementById("messages-container");
+      const loading = document.getElementById("loading");
+
+      // Initialize
+      document.addEventListener("DOMContentLoaded", function () {
+        // Set today as default calc date
+        const today = dayjs().format("YYYY-MM-DD");
+        calcInput.value = today;
+        calcInput.max = today; // No permitir fechas futuras en cálculo
+
+        // Load saved data
+        loadSavedData();
+
+        // Event listeners
+        furInput.addEventListener("change", handleDateChange);
+        calcInput.addEventListener("change", handleDateChange);
+        document
+          .getElementById("copy-brief-btn")
+          .addEventListener("click", copyBriefToClipboard);
+        document
+          .getElementById("copy-full-btn")
+          .addEventListener("click", copyFullToClipboard);
+        document
+          .getElementById("pdf-btn")
+          .addEventListener("click", generatePDF);
+        document
+          .getElementById("clear-btn")
+          .addEventListener("click", clearData);
+
+        // Keyboard shortcuts
+        document.addEventListener("keydown", function (e) {
+          if (
+            (e.ctrlKey || e.metaKey) &&
+            e.key === "c" &&
+            !window.getSelection().toString()
+          ) {
+            e.preventDefault();
+            copyBriefToClipboard();
+          }
+        });
+      });
+
+      function handleDateChange() {
+        clearMessages();
+
+        if (!furInput.value) {
+          showInitialState();
+          return;
+        }
+
+        const fur = dayjs(furInput.value);
+        const calcDate = dayjs(calcInput.value);
+        const today = dayjs();
+
+        // Validaciones con mensajes específicos
+        const errors = [];
+        const warnings = [];
+
+        // Validación: FUR no puede ser futura
+        if (fur.isAfter(today)) {
+          errors.push("La FUR no puede ser una fecha futura");
+        }
+
+        // Validación: Fecha de cálculo no puede ser futura
+        if (calcDate.isAfter(today)) {
+          errors.push("La fecha de cálculo no puede ser posterior a hoy");
+        }
+
+        // Validación: FUR no puede ser posterior a fecha de cálculo
+        if (fur.isAfter(calcDate)) {
+          errors.push("La FUR no puede ser posterior a la fecha de cálculo");
+        }
+
+        // Validación: Embarazo mayor a 42 semanas
+        const weeksDiff = calcDate.diff(fur, "week");
+        if (weeksDiff > 42) {
+          errors.push("El embarazo supera las 42 semanas (finalizado)");
+        }
+
+        // Advertencia: FUR muy antigua (>1 año)
+        if (fur.isBefore(today.subtract(1, "year"))) {
+          warnings.push("La FUR es de hace más de un año. Verifique la fecha");
+        }
+
+        // Advertencia: Embarazo muy temprano
+        if (weeksDiff < 4 && weeksDiff >= 0) {
+          warnings.push(
+            "Edad gestacional menor a 4 semanas. Considere confirmar con βhCG"
+          );
+        }
+
+        // Mostrar errores y advertencias
+        if (errors.length > 0) {
+          showMessages(errors, "error");
+          showInitialState();
+          return;
+        }
+
+        if (warnings.length > 0) {
+          showMessages(warnings, "warning");
+        }
+
+        // Si todo está bien, calcular
+        calculateAndDisplay(fur, calcDate);
+        saveData();
+      }
+
+      function calculateAndDisplay(fur, calcDate) {
+        const totalDays = calcDate.diff(fur, "day");
+        const weeks = Math.floor(totalDays / 7);
+        const days = totalDays % 7;
+
+        // Cálculos obstétricos correctos
+        const edd = fur.add(280, "day"); // Regla de Naegele
+        const daysToEdd = edd.diff(calcDate, "day");
+        const trimester = weeks < 14 ? 1 : weeks < 28 ? 2 : 3;
+        const progress = Math.min(Math.max((totalDays / 280) * 100, 0), 100);
+
+        // Fechas de trimestres
+        const secondTrimesterStart = fur.add(14, "week");
+        const thirdTrimesterStart = fur.add(28, "week");
+
+        // Update UI
+        document.getElementById(
+          "gestational-age"
+        ).textContent = `${weeks}s ${days}d`;
+        document.getElementById(
+          "gestational-days"
+        ).textContent = `${totalDays} días totales`;
+        document.getElementById("edd").textContent = edd.format("DD/MM/YYYY");
+        document.getElementById("days-to-edd").textContent =
+          daysToEdd > 0
+            ? `Faltan ${daysToEdd} días`
+            : daysToEdd === 0
+            ? `Hoy es la FPP`
+            : `Pasado ${Math.abs(daysToEdd)} días`;
+        document.getElementById(
+          "trimester"
+        ).textContent = `${trimester}º Trimestre`;
+        document.getElementById(
+          "trimester-week"
+        ).textContent = `Semana ${weeks} de 40`;
+
+        // Update progress ring (CORRECCIÓN IMPORTANTE)
+        const progressRing = document.getElementById("progress-ring");
+        const radius = 45;
+        const circumference = 2 * Math.PI * radius; // 282.74
+        progressRing.style.strokeDasharray = circumference;
+        const offset = circumference - (progress / 100) * circumference;
+        progressRing.style.strokeDashoffset = offset;
+        document.getElementById("progress-text").textContent = `${Math.round(
+          progress
+        )}%`;
+
+        // Update timeline
+        updateTimeline(fur, weeks, calcDate);
+
+        // Update recommendations
+        updateRecommendations(trimester);
+
+        // Find next appointment
+        findNextAppointment(fur, weeks, calcDate);
+
+        // Show results
+        resultsContainer.classList.remove("hidden");
+        initialState.classList.add("hidden");
+
+        // Store state
+        state = {
+          fur: fur,
+          calcDate: calcDate,
+          results: {
+            weeks,
+            days,
+            edd,
+            trimester,
+            progress,
+            secondTrimesterStart,
+            thirdTrimesterStart,
+            totalDays,
+          },
+        };
+      }
+
+      function updateTimeline(fur, currentWeeks, calcDate) {
+        const timeline = document.getElementById("timeline");
+        timeline.innerHTML = "";
+
+        pregnancyMilestones.forEach((milestone) => {
+          const idealDate = fur.add(milestone.idealWeek * 7, "day");
+          const startDate = idealDate.add(milestone.startMargin, "day");
+          const endDate = idealDate.add(milestone.endMargin, "day");
+
+          let status = "pending";
+          let statusBadge = "";
+
+          if (milestone.idealWeek < currentWeeks - 1) {
+            status = "completed";
+            statusBadge =
+              '<span class="badge bg-green-100 text-green-800">✓ Completado</span>';
+          } else if (
+            calcDate.isAfter(startDate) &&
+            calcDate.isBefore(endDate)
+          ) {
+            status = "current";
+            statusBadge =
+              '<span class="badge bg-blue-100 text-blue-800 pulse-dot">● Actual</span>';
+          } else if (
+            calcDate.add(7, "day").isAfter(startDate) &&
+            calcDate.isBefore(endDate)
+          ) {
+            status = "next";
+            statusBadge =
+              '<span class="badge bg-amber-100 text-amber-800">→ Próximo</span>';
+          } else {
+            statusBadge =
+              '<span class="badge bg-gray-100 text-gray-600">○ Pendiente</span>';
+          }
+
+          const priorityIcon =
+            milestone.priority === "essential"
+              ? '<span class="text-red-500 text-xs">★</span>'
+              : "";
+
+          const card = document.createElement("div");
+          card.className = `timeline-card ${status}`;
+          card.innerHTML = `
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-gray-500">Semana ${
+                              milestone.idealWeek
+                            }</span>
+                            ${priorityIcon}
+                        </div>
+                        ${statusBadge}
+                    </div>
+                    <h3 class="font-semibold text-gray-800 mb-2">${
+                      milestone.name
+                    }</h3>
+                    <p class="text-sm text-gray-600 mb-3">${
+                      milestone.description
+                    }</p>
+                    <div class="bg-gray-50 rounded-lg p-2">
+                        <p class="text-xs text-gray-700">
+                            <span class="font-medium">Período:</span><br>
+                            ${startDate.format("DD/MM/YY")} - ${endDate.format(
+            "DD/MM/YY"
+          )}
+                        </p>
+                    </div>
+                `;
+
+          timeline.appendChild(card);
+        });
+      }
+
+      function updateRecommendations(trimester) {
+        const recommendations = document.getElementById("recommendations");
+        const data = trimesterRecommendations[trimester];
+
+        recommendations.innerHTML = `
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-5">
+                    <h3 class="font-bold text-gray-800 mb-4">${data.title}</h3>
+                    <ul class="space-y-2">
+                        ${data.items
+                          .map(
+                            (item) => `
+                            <li class="flex items-start gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">${item}</span>
+                            </li>
+                        `
+                          )
+                          .join("")}
+                    </ul>
+                </div>
+            `;
+      }
+
+      function findNextAppointment(fur, currentWeeks, calcDate) {
+        const nextAppointmentDiv = document.getElementById("next-appointment");
+        const nextAppointmentText = document.getElementById(
+          "next-appointment-text"
+        );
+
+        const nextMilestone = pregnancyMilestones.find((m) => {
+          const idealDate = fur.add(m.idealWeek * 7, "day");
+          const startDate = idealDate.add(m.startMargin, "day");
+          return startDate.isAfter(calcDate) && m.priority === "essential";
+        });
+
+        if (nextMilestone) {
+          const idealDate = fur.add(nextMilestone.idealWeek * 7, "day");
+          const startDate = idealDate.add(nextMilestone.startMargin, "day");
+          const daysUntil = startDate.diff(calcDate, "day");
+
+          nextAppointmentText.innerHTML = `
+                    <strong>${nextMilestone.name}</strong> en semana ${
+            nextMilestone.idealWeek
+          }<br>
+                    Fecha recomendada: ${startDate.format(
+                      "DD/MM/YYYY"
+                    )} (en ${daysUntil} días)
+                `;
+          nextAppointmentDiv.classList.remove("hidden");
+        } else {
+          nextAppointmentDiv.classList.add("hidden");
+        }
+      }
+
+      function copyBriefToClipboard() {
+        if (!state.results) return;
+
+        const text = `CÁLCULO OBSTÉTRICO
+FUR: ${state.fur.format("DD/MM/YYYY")}
+--------------------------------------
+Edad Gestacional: ${state.results.weeks} sem y ${state.results.days} días
+FPP: ${state.results.edd.format("DD/MM/YYYY")}
+2º Trim: ${state.results.secondTrimesterStart.format("DD/MM/YYYY")}
+3º Trim: ${state.results.thirdTrimesterStart.format("DD/MM/YYYY")}`;
+
+        copyWithFeedback(text, "copy-brief-btn");
+      }
+
+      function copyFullToClipboard() {
+        if (!state.results) return;
+
+        const nextControls = getUpcomingAppointments();
+        const recommendations = getCurrentRecommendations();
+
+        const text = `CÁLCULO OBSTÉTRICO - INFORME COMPLETO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FUR: ${state.fur.format("DD/MM/YYYY")}
+Fecha de cálculo: ${state.calcDate.format("DD/MM/YYYY")}
+
+DATOS GESTACIONALES:
+• Edad gestacional: ${state.results.weeks} semanas + ${state.results.days} días
+• FPP: ${state.results.edd.format("DD/MM/YYYY")}
+• Trimestre actual: ${state.results.trimester}º
+• Inicio 2º trimestre: ${state.results.secondTrimesterStart.format(
+          "DD/MM/YYYY"
+        )}
+• Inicio 3º trimestre: ${state.results.thirdTrimesterStart.format("DD/MM/YYYY")}
+• Progreso: ${Math.round(state.results.progress)}%
+
+PRÓXIMOS CONTROLES:
+${nextControls}
+
+RECOMENDACIONES ACTUALES:
+${recommendations}`;
+
+        copyWithFeedback(text, "copy-full-btn");
+      }
+
+      function copyWithFeedback(text, buttonId) {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            const btn = document.getElementById(buttonId);
+            const originalHTML = btn.innerHTML;
+            const originalClass = btn.className;
+
+            btn.innerHTML =
+              '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> Copiado';
+            btn.className = btn.className.replace(
+              /bg-slate-\d+/,
+              "bg-green-600"
+            );
+
+            setTimeout(() => {
+              btn.innerHTML = originalHTML;
+              btn.className = originalClass;
+            }, 2000);
+          })
+          .catch((err) => {
+            console.error("Error al copiar:", err);
+            alert("Error al copiar el texto");
+          });
+      }
+
+      function getUpcomingAppointments() {
+        if (!state.fur || !state.calcDate)
+          return "• No hay controles pendientes";
+
+        const appointments = pregnancyMilestones
+          .filter((m) => {
+            const idealDate = state.fur.add(m.idealWeek * 7, "day");
+            const startDate = idealDate.add(m.startMargin, "day");
+            return (
+              startDate.isAfter(state.calcDate) && m.priority === "essential"
+            );
+          })
+          .slice(0, 3)
+          .map((m) => {
+            const idealDate = state.fur.add(m.idealWeek * 7, "day");
+            const startDate = idealDate.add(m.startMargin, "day");
+            return `• ${m.name} (Sem ${m.idealWeek}): ${startDate.format(
+              "DD/MM/YYYY"
+            )}`;
+          });
+
+        return appointments.length > 0
+          ? appointments.join("\n")
+          : "• No hay controles pendientes";
+      }
+
+      function getCurrentRecommendations() {
+        if (!state.results) return "";
+        const recs = trimesterRecommendations[state.results.trimester];
+        return recs.items
+          .slice(0, 3)
+          .map((item) => `• ${item}`)
+          .join("\n");
+      }
+
+      function generatePDF() {
+        if (!state.results) return;
+
+        showLoading();
+
+        setTimeout(() => {
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF("p", "mm", "a4");
+
+          // Header
+          pdf.setFontSize(20);
+          pdf.setTextColor(31, 41, 55);
+          pdf.text("Panel de Control Obstétrico", 20, 20);
+
+          pdf.setFontSize(10);
+          pdf.setTextColor(107, 114, 128);
+          pdf.text("Calculadora para Atención Primaria", 20, 28);
+
+          // Line
+          pdf.setDrawColor(229, 231, 235);
+          pdf.line(20, 32, 190, 32);
+
+          // Data
+          pdf.setFontSize(12);
+          pdf.setTextColor(31, 41, 55);
+          pdf.text("DATOS DEL CÁLCULO", 20, 42);
+
+          pdf.setFontSize(10);
+          pdf.text(`FUR: ${state.fur.format("DD/MM/YYYY")}`, 20, 50);
+          pdf.text(
+            `Fecha de cálculo: ${state.calcDate.format("DD/MM/YYYY")}`,
+            20,
+            56
+          );
+          pdf.text(
+            `Edad gestacional: ${state.results.weeks} semanas + ${state.results.days} días`,
+            20,
+            62
+          );
+          pdf.text(`FPP: ${state.results.edd.format("DD/MM/YYYY")}`, 20, 68);
+          pdf.text(`Trimestre: ${state.results.trimester}º`, 20, 74);
+          pdf.text(
+            `Inicio 2º trimestre: ${state.results.secondTrimesterStart.format(
+              "DD/MM/YYYY"
+            )}`,
+            20,
+            80
+          );
+          pdf.text(
+            `Inicio 3º trimestre: ${state.results.thirdTrimesterStart.format(
+              "DD/MM/YYYY"
+            )}`,
+            20,
+            86
+          );
+
+          // Timeline
+          pdf.setFontSize(12);
+          pdf.text("CRONOGRAMA DE CONTROLES", 20, 100);
+
+          let yPos = 108;
+          pregnancyMilestones.forEach((milestone) => {
+            if (yPos > 270) {
+              pdf.addPage();
+              yPos = 20;
+            }
+
+            const idealDate = state.fur.add(milestone.idealWeek * 7, "day");
+            const startDate = idealDate.add(milestone.startMargin, "day");
+            const endDate = idealDate.add(milestone.endMargin, "day");
+
+            const isCompleted = milestone.idealWeek < state.results.weeks - 1;
+            const isCurrent =
+              state.calcDate.isAfter(startDate) &&
+              state.calcDate.isBefore(endDate);
+
+            if (isCompleted) {
+              pdf.setTextColor(16, 185, 129);
+            } else if (isCurrent) {
+              pdf.setTextColor(59, 130, 246);
+            } else {
+              pdf.setTextColor(107, 114, 128);
+            }
+
+            pdf.setFontSize(10);
+            pdf.text(
+              `Semana ${milestone.idealWeek}: ${milestone.name}`,
+              25,
+              yPos
+            );
+
+            pdf.setTextColor(107, 114, 128);
+            pdf.setFontSize(9);
+            pdf.text(`${milestone.description}`, 30, yPos + 5);
+            pdf.text(
+              `Período: ${startDate.format("DD/MM/YYYY")} - ${endDate.format(
+                "DD/MM/YYYY"
+              )}`,
+              30,
+              yPos + 10
+            );
+
+            yPos += 18;
+          });
+
+          // Save
+          pdf.save(`control_obstetrico_${state.fur.format("YYYY-MM-DD")}.pdf`);
+          hideLoading();
+        }, 100);
+      }
+
+      function saveData() {
+        if (furInput.value) {
+          localStorage.setItem("obstetric_fur", furInput.value);
+          localStorage.setItem("obstetric_calc", calcInput.value);
+        }
+      }
+
+      function loadSavedData() {
+        const savedFur = localStorage.getItem("obstetric_fur");
+        const savedCalc = localStorage.getItem("obstetric_calc");
+
+        if (savedFur) {
+          furInput.value = savedFur;
+          if (savedCalc) {
+            calcInput.value = savedCalc;
+          }
+          handleDateChange();
+        }
+      }
+
+      function clearData() {
+        furInput.value = "";
+        calcInput.value = dayjs().format("YYYY-MM-DD");
+        localStorage.removeItem("obstetric_fur");
+        localStorage.removeItem("obstetric_calc");
+        clearMessages();
+        showInitialState();
+      }
+
+      function showInitialState() {
+        resultsContainer.classList.add("hidden");
+        initialState.classList.remove("hidden");
+      }
+
+      function showMessages(messages, type) {
+        const container = messagesContainer;
+
+        messages.forEach((message) => {
+          const div = document.createElement("div");
+          div.className = type === "error" ? "alert-banner" : "warning-banner";
+          div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ${
+                          type === "error" ? "text-red-600" : "text-amber-600"
+                        }" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="font-medium ${
+                          type === "error" ? "text-red-800" : "text-amber-800"
+                        }">${message}</span>
+                    </div>
+                `;
+          container.appendChild(div);
+        });
+      }
+
+      function clearMessages() {
+        messagesContainer.innerHTML = "";
+      }
+
+      function showLoading() {
+        loading.classList.remove("hidden");
+      }
+
+      function hideLoading() {
+        loading.classList.add("hidden");
+      }
+    </script>
+  </body>
+</html>
