@@ -1,0 +1,2371 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ECG Interpreter v2.2 - Asistente Diagnóstico</title>
+    <meta
+      name="description"
+      content="Asistente educativo profesional para la interpretación guiada de electrocardiogramas."
+    />
+
+    <style>
+      /* --- GENERAL & SETUP --- */
+      :root {
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --primary-light: #dbeafe;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --gray-900: #111827;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI",
+          Roboto, sans-serif;
+        background: var(--gray-50);
+        color: var(--gray-900);
+        line-height: 1.6;
+        font-size: 14px;
+      }
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      /* --- LAYOUT & CARDS --- */
+      .header {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      .header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .header p {
+        color: var(--gray-600);
+        font-size: 14px;
+      }
+      .disclaimer {
+        background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+        border: 1px solid #f59e0b;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+      }
+      .disclaimer-title {
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .disclaimer-content {
+        color: var(--gray-700);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+      @media (max-width: 1024px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+      }
+      .card-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* --- FORM ELEMENTS & CONTROLS --- */
+      .control-bar {
+        background: white;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        display: flex;
+        gap: 24px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .control-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .control-item label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--gray-700);
+      }
+      .control-item select,
+      .control-item input {
+        padding: 6px 10px;
+        border: 1px solid var(--gray-300);
+        border-radius: 6px;
+        font-size: 13px;
+        min-width: 100px;
+        background: white;
+      }
+      .control-item select:focus,
+      .control-item input:focus,
+      .input-field:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .form-group {
+        margin-bottom: 16px;
+      }
+      .form-label {
+        display: flex;
+        align-items: center;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--gray-700);
+        margin-bottom: 6px;
+      }
+      .input-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .input-field {
+        padding: 8px 12px;
+        border: 1px solid var(--gray-300);
+        border-radius: 6px;
+        font-size: 13px;
+        width: 120px;
+      }
+      .input-unit {
+        font-size: 13px;
+        color: var(--gray-500);
+      }
+      .calculated-value {
+        padding: 8px 12px;
+        background: var(--gray-50);
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        margin-left: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .calculated-value.normal {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .calculated-value.warning {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .calculated-value.danger {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      /* --- INTERACTIVE & DIAGNOSTIC ELEMENTS --- */
+      .radio-group,
+      .checkbox-group {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .radio-item,
+      .checkbox-item {
+        display: block;
+      }
+      .radio-item label,
+      .checkbox-item label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border: 1px solid var(--gray-300);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 13px;
+      }
+      .radio-item label:hover,
+      .checkbox-item label:hover {
+        border-color: var(--primary);
+        background: var(--gray-50);
+      }
+      .radio-item input[type="radio"],
+      .checkbox-item input[type="checkbox"] {
+        display: none;
+      }
+      .radio-item input:checked + label,
+      .checkbox-item input:checked + label {
+        border-color: var(--primary);
+        background: var(--primary-light);
+        color: var(--primary-dark);
+        font-weight: 600;
+      }
+      .checkbox-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 8px;
+      }
+      @media (max-width: 640px) {
+        .checkbox-grid {
+          grid-template-columns: repeat(4, 1fr);
+        }
+      }
+      .checkbox-grid .checkbox-item label {
+        justify-content: center;
+        padding: 6px;
+      }
+
+      .guided-question {
+        background-color: var(--gray-50);
+        border: 1px solid var(--gray-200);
+        border-radius: 6px;
+        padding: 12px;
+        margin-top: 16px;
+      }
+      .guided-question p {
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 8px;
+      }
+      .diagnostic-result {
+        margin-top: 12px;
+        padding: 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        text-align: center;
+      }
+      .hidden {
+        display: none;
+      }
+      .help-text {
+        font-size: 12px;
+        color: var(--gray-500);
+        margin-top: 4px;
+      }
+
+      /* --- TOOLTIP (RESTORED) --- */
+      .tooltip {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+      .tooltip-icon {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--primary-dark);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+        margin-left: 6px;
+        cursor: help;
+      }
+      .tooltip .tooltip-content {
+        position: absolute;
+        bottom: 120%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--gray-900);
+        color: white;
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        width: 250px;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s, visibility 0.2s;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+      .tooltip:hover .tooltip-content {
+        opacity: 1;
+        visibility: visible;
+      }
+      .tooltip .tooltip-content::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-top-color: var(--gray-900);
+      }
+      .tooltip-content strong {
+        color: #fbbf24;
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      /* --- TABS --- */
+      .criteria-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        border-bottom: 2px solid var(--gray-200);
+      }
+      .criteria-tab {
+        padding: 8px 16px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--gray-600);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: -2px;
+      }
+      .criteria-tab:hover {
+        color: var(--primary);
+      }
+      .criteria-tab.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+      }
+
+      /* --- LIVE FINDINGS --- */
+      #liveFindingsCard {
+        border: 1px solid var(--primary-light);
+        background: #eff6ff;
+      }
+      #liveFindingsList {
+        list-style: none;
+        padding: 0;
+      }
+      #liveFindingsList li {
+        padding: 6px 0;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      #liveFindingsList li::before {
+        content: "✓";
+        color: var(--success);
+        font-weight: bold;
+        font-size: 16px;
+      }
+      #liveFindingsList li.warning::before {
+        content: "⚠️";
+        color: var(--warning);
+      }
+      #liveFindingsList li.danger::before {
+        content: "🚨";
+        color: var(--danger);
+      }
+
+      /* --- Educational Box (RESTORED) --- */
+      .edu-box {
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+        border: 1px solid var(--primary);
+        border-radius: 6px;
+        padding: 12px;
+        margin-top: 16px;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .edu-box-title {
+        font-weight: 600;
+        color: var(--primary-dark);
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .edu-box-content {
+        color: var(--gray-700);
+      }
+      .edu-box-content ul {
+        margin: 6px 0;
+        padding-left: 20px;
+      }
+      .edu-box-content li {
+        margin: 4px 0;
+      }
+
+      /* --- REPORT & MODAL --- */
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        margin-top: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+      .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+      }
+      .btn-secondary {
+        background: var(--gray-100);
+        color: var(--gray-700);
+        border: 1px solid var(--gray-300);
+      }
+      .btn-secondary:hover {
+        background: var(--gray-200);
+      }
+      .btn-success {
+        background: var(--success);
+        color: white;
+      }
+      .btn-success:hover {
+        background: #059669;
+      }
+      .report-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        padding: 20px;
+        overflow-y: auto;
+      }
+      .report-modal.active {
+        display: block;
+      }
+      .report-content {
+        max-width: 900px;
+        margin: 40px auto;
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        animation: slideUp 0.3s ease;
+      }
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .report-header {
+        border-bottom: 2px solid var(--gray-200);
+        padding-bottom: 16px;
+        margin-bottom: 24px;
+      }
+      .report-header h2 {
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .report-header p {
+        color: var(--gray-600);
+      }
+      .report-section {
+        margin-bottom: 24px;
+      }
+      .report-section h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .parameters-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      @media (max-width: 640px) {
+        .parameters-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .parameter-card {
+        padding: 12px;
+        background: var(--gray-50);
+        border-radius: 6px;
+        border-left: 3px solid var(--primary);
+      }
+      .parameter-label {
+        font-size: 12px;
+        color: var(--gray-600);
+        margin-bottom: 4px;
+      }
+      .parameter-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--gray-900);
+      }
+      .findings-list {
+        list-style: none;
+        padding: 0;
+      }
+      .finding-item {
+        padding: 12px;
+        background: var(--gray-50);
+        border-radius: 6px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+      }
+      .finding-item.warning {
+        background: #fef3c7;
+        border-left: 3px solid var(--warning);
+      }
+      .finding-item.danger {
+        background: #fee2e2;
+        border-left: 3px solid var(--danger);
+      }
+      .critical-alert {
+        background: var(--danger);
+        color: white;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+      .critical-alert h4 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      .critical-alert ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .critical-alert li {
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        margin-bottom: 6px;
+      }
+      .report-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid var(--gray-200);
+      }
+      .copy-notification {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--gray-900);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s;
+      }
+      .copy-notification.show {
+        opacity: 1;
+        visibility: visible;
+      }
+      .divider {
+        height: 1px;
+        background: var(--gray-200);
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>ECG Interpreter v1.0 (actualizada sept 2025)</h1>
+        <p>
+          Asistente educativo profesional para la interpretación guiada de
+          electrocardiogramas.
+        </p>
+      </header>
+
+      <div class="disclaimer">
+        <div class="disclaimer-title">
+          ⚠️ HERRAMIENTA EDUCATIVA - SIN FINALIDAD DIAGNÓSTICA
+        </div>
+        <div class="disclaimer-content">
+          Esta aplicación es exclusivamente para fines educativos dirigida para
+          profesionales sanitarios. No debe utilizarse para decisiones clínicas
+          reales. Los resultados son orientativos.
+        </div>
+      </div>
+
+      <div class="control-bar">
+        <div class="control-item">
+          <label for="paperSpeed">Velocidad:</label>
+          <select id="paperSpeed">
+            <option value="25">25 mm/s</option>
+            <option value="50">50 mm/s</option>
+          </select>
+        </div>
+        <div class="control-item">
+          <label for="patientAge">Edad:</label>
+          <input
+            type="number"
+            id="patientAge"
+            placeholder="Años"
+            min="0"
+            max="120"
+          />
+        </div>
+        <div class="control-item">
+          <label for="patientSex">Sexo:</label>
+          <select id="patientSex">
+            <option value="">-</option>
+            <option value="M">Masculino</option>
+            <option value="F">Femenino</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="main-grid">
+        <!-- Columna Izquierda -->
+        <div>
+          <!-- Frecuencia y Ritmo -->
+          <div class="card">
+            <h3 class="card-title">❤️ Frecuencia y Ritmo</h3>
+            <div class="form-group">
+              <label class="form-label">Tipo de ritmo</label>
+              <div class="radio-group">
+                <div class="radio-item">
+                  <input
+                    type="radio"
+                    id="rhythmRegular"
+                    name="rhythmType"
+                    value="regular"
+                    checked
+                  /><label for="rhythmRegular">Regular</label>
+                </div>
+                <div class="radio-item">
+                  <input
+                    type="radio"
+                    id="rhythmIrregular"
+                    name="rhythmType"
+                    value="irregular"
+                  /><label for="rhythmIrregular">Irregular</label>
+                </div>
+              </div>
+            </div>
+            <div id="regularInput" class="form-group">
+              <label class="form-label">
+                Intervalo R-R
+                <span class="tooltip">
+                  <span class="tooltip-icon">?</span>
+                  <span class="tooltip-content"
+                    ><strong>Medición:</strong> Cuente los cuadrados grandes
+                    (5mm) entre dos picos R. A 25mm/s: FC = 300 / cuad. A
+                    50mm/s: FC = 600 / cuad.</span
+                  >
+                </span>
+              </label>
+              <div class="input-row">
+                <input
+                  type="number"
+                  class="input-field"
+                  id="rrInterval"
+                  placeholder="4"
+                  min="1"
+                  max="50"
+                  step="0.1"
+                />
+                <span class="input-unit">cuadrados grandes</span>
+                <span
+                  id="hrResult"
+                  class="calculated-value"
+                  style="display: none"
+                ></span>
+              </div>
+            </div>
+            <div id="irregularInput" class="form-group hidden">
+              <label class="form-label" id="qrsCountLabel"
+                >QRS en 6 segundos (30 cuad. grandes)</label
+              >
+              <div class="input-row">
+                <input
+                  type="number"
+                  class="input-field"
+                  id="qrsCount"
+                  placeholder="8"
+                  min="1"
+                  max="50"
+                />
+                <span class="input-unit">complejos</span>
+              </div>
+            </div>
+            <div id="afibHelper" class="guided-question hidden">
+              <p>
+                Ritmo irregular. ¿Se identifican ondas P claras y consistentes?
+              </p>
+              <div class="radio-group">
+                <div class="radio-item">
+                  <input
+                    type="radio"
+                    id="pWavesYes"
+                    name="pWaves"
+                    value="yes"
+                  /><label for="pWavesYes">Sí</label>
+                </div>
+                <div class="radio-item">
+                  <input
+                    type="radio"
+                    id="pWavesNo"
+                    name="pWaves"
+                    value="no"
+                  /><label for="pWavesNo">No (línea de base caótica)</label>
+                </div>
+              </div>
+              <div id="afibResult" class="diagnostic-result hidden"></div>
+            </div>
+          </div>
+
+          <!-- Intervalos y Bloqueos AV -->
+          <div class="card">
+            <h3 class="card-title">📏 Intervalos y Bloqueos AV</h3>
+            <div class="form-group">
+              <label class="form-label">
+                Intervalo PR
+                <span class="tooltip"
+                  ><span class="tooltip-icon">?</span
+                  ><span class="tooltip-content"
+                    ><strong>Normal:</strong> 3-5 cuadraditos (120-200ms). Mida
+                    desde el inicio de la P hasta el inicio del QRS.</span
+                  ></span
+                >
+              </label>
+              <div class="input-row">
+                <input
+                  type="number"
+                  class="input-field"
+                  id="prInterval"
+                  placeholder="4"
+                  min="0"
+                  max="20"
+                  step="0.5"
+                />
+                <span class="input-unit">cuadraditos</span>
+                <span
+                  id="prResult"
+                  class="calculated-value"
+                  style="display: none"
+                ></span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">
+                Duración QRS
+                <span class="tooltip"
+                  ><span class="tooltip-icon">?</span
+                  ><span class="tooltip-content"
+                    ><strong>Normal:</strong> &lt;3 cuadraditos (&lt;120ms).
+                    Mida desde el inicio hasta el final del complejo.</span
+                  ></span
+                >
+              </label>
+              <div class="input-row">
+                <input
+                  type="number"
+                  class="input-field"
+                  id="qrsInterval"
+                  placeholder="2"
+                  min="0"
+                  max="20"
+                  step="0.5"
+                />
+                <span class="input-unit">cuadraditos</span>
+                <span
+                  id="qrsResult"
+                  class="calculated-value"
+                  style="display: none"
+                ></span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">
+                Intervalo QT
+                <span class="tooltip"
+                  ><span class="tooltip-icon">?</span
+                  ><span class="tooltip-content"
+                    ><strong>Medición:</strong> Desde inicio del QRS al final de
+                    la onda T. Se debe corregir por FC (QTc).</span
+                  ></span
+                >
+              </label>
+              <div class="input-row">
+                <input
+                  type="number"
+                  class="input-field"
+                  id="qtInterval"
+                  placeholder="9"
+                  min="0"
+                  max="30"
+                  step="0.5"
+                />
+                <span class="input-unit">cuadraditos</span>
+                <span
+                  id="qtResult"
+                  class="calculated-value"
+                  style="display: none"
+                ></span>
+              </div>
+              <div
+                id="qtcResult"
+                class="help-text"
+                style="margin-top: 8px"
+              ></div>
+            </div>
+
+            <div id="avBlockHelper" class="guided-question hidden">
+              <div id="avStep1" class="form-group">
+                <p>
+                  El PR es anómalo. ¿Es <strong>constante</strong> o
+                  <strong>variable/ausente</strong>?
+                </p>
+                <div class="radio-group">
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="prConstant"
+                      name="prBehavior"
+                      value="constant"
+                    /><label for="prConstant">Constante</label>
+                  </div>
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="prVariable"
+                      name="prBehavior"
+                      value="variable"
+                    /><label for="prVariable">Variable</label>
+                  </div>
+                </div>
+              </div>
+              <div id="avStep2" class="form-group hidden">
+                <p>
+                  PR Variable. ¿Se alarga progresivamente hasta que una P no
+                  conduce?
+                </p>
+                <div class="radio-group">
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="wenckebachYes"
+                      name="wenckebach"
+                      value="yes"
+                    /><label for="wenckebachYes">Sí</label>
+                  </div>
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="wenckebachNo"
+                      name="wenckebach"
+                      value="no"
+                    /><label for="wenckebachNo">No</label>
+                  </div>
+                </div>
+              </div>
+              <div id="avStep3" class="form-group hidden">
+                <p>
+                  ¿Hay una disociación completa entre las ondas P y los QRS?
+                </p>
+                <div class="radio-group">
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="dissociationYes"
+                      name="dissociation"
+                      value="yes"
+                    /><label for="dissociationYes">Sí</label>
+                  </div>
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="dissociationNo"
+                      name="dissociation"
+                      value="no"
+                    /><label for="dissociationNo"
+                      >No (P ej. PR constante con P bloqueadas)</label
+                    >
+                  </div>
+                </div>
+              </div>
+              <div id="avBlockResult" class="diagnostic-result hidden"></div>
+            </div>
+          </div>
+
+          <!-- Eje Eléctrico y Hemibloqueos -->
+          <div class="card">
+            <h3 class="card-title">🧭 Eje Eléctrico y Hemibloqueos</h3>
+            <div class="form-group">
+              <label class="form-label">QRS en DI y aVF</label>
+              <div class="input-row">
+                <div class="radio-group">
+                  <span class="input-unit">DI:</span>
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="qrsIPos"
+                      name="qrsI"
+                      value="+"
+                    /><label for="qrsIPos">+</label>
+                  </div>
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="qrsINeg"
+                      name="qrsI"
+                      value="-"
+                    /><label for="qrsINeg">-</label>
+                  </div>
+                </div>
+                <div class="radio-group" style="margin-left: 16px">
+                  <span class="input-unit">aVF:</span>
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="qrsAVFPos"
+                      name="qrsAVF"
+                      value="+"
+                    /><label for="qrsAVFPos">+</label>
+                  </div>
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="qrsAVFNeg"
+                      name="qrsAVF"
+                      value="-"
+                    /><label for="qrsAVFNeg">-</label>
+                  </div>
+                </div>
+              </div>
+              <div
+                id="axisResult"
+                class="calculated-value hidden"
+                style="
+                  width: 100%;
+                  justify-content: center;
+                  margin-left: 0;
+                  margin-top: 16px;
+                "
+              ></div>
+            </div>
+
+            <div id="hemiblockHelper" class="guided-question hidden">
+              <p>Eje desviado a la izquierda. Analizar morfología para HBAI:</p>
+              <div class="checkbox-group">
+                <div class="checkbox-item">
+                  <input type="checkbox" id="qR_aVL" /><label for="qR_aVL"
+                    >qR en aVL</label
+                  >
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="rS_III" /><label for="rS_III"
+                    >rS en cara inferior (II, III, aVF)</label
+                  >
+                </div>
+              </div>
+              <div id="hemiblockResult" class="diagnostic-result hidden"></div>
+            </div>
+            <div class="edu-box">
+              <div class="edu-box-title">
+                💡 Tip Educativo: Cuadrantes del Eje
+              </div>
+              <div class="edu-box-content">
+                <ul>
+                  <li><strong>DI(+) aVF(+):</strong> Normal (0° a +90°)</li>
+                  <li>
+                    <strong>DI(+) aVF(-):</strong> Desviación izquierda (-0° a
+                    -90°)
+                  </li>
+                  <li>
+                    <strong>DI(-) aVF(+):</strong> Desviación derecha (+90° a
+                    +180°)
+                  </li>
+                  <li>
+                    <strong>DI(-) aVF(-):</strong> Desviación extrema (-90° a
+                    -180°)
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna Derecha -->
+        <div>
+          <!-- Trastornos de la Conducción Intraventricular -->
+          <div class="card">
+            <h3 class="card-title">🔀 Trastornos de Conducción IV</h3>
+            <div id="conductionPlaceholder" class="help-text">
+              <p>
+                Introduzca la duración del QRS en la sección de Intervalos. Si
+                es >120ms, esta sección se activará para guiarle en el
+                diagnóstico de bloqueos de rama.
+              </p>
+            </div>
+            <div id="conductionHelper" class="guided-question hidden">
+              <p>El QRS es ancho (>120ms). Analiza la morfología en V1 y V6:</p>
+              <div class="form-group">
+                <label class="form-label" style="font-weight: 600"
+                  >Morfología en V1/V2:</label
+                >
+                <div class="radio-group">
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="v1_rsr"
+                      name="v1morph"
+                      value="rsr"
+                    /><label for="v1_rsr">rSR' (orejas de conejo)</label>
+                  </div>
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="v1_wide_s"
+                      name="v1morph"
+                      value="wide_s"
+                    /><label for="v1_wide_s">Onda S ancha y profunda</label>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight: 600"
+                  >Morfología en I/V6:</label
+                >
+                <div class="radio-group">
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="v6_slurred_s"
+                      name="v6morph"
+                      value="slurred_s"
+                    /><label for="v6_slurred_s">Onda S ancha y empastada</label>
+                  </div>
+                  <div class="radio-item">
+                    <input
+                      type="radio"
+                      id="v6_wide_r"
+                      name="v6morph"
+                      value="wide_r"
+                    /><label for="v6_wide_r">Onda R ancha, sin Q</label>
+                  </div>
+                </div>
+              </div>
+              <div id="bbbResult" class="diagnostic-result hidden"></div>
+            </div>
+          </div>
+
+          <!-- Isquemia e Infarto -->
+          <div class="card">
+            <h3 class="card-title">📈 Isquemia, Lesión e Infarto</h3>
+            <div class="form-group">
+              <label class="form-label">
+                Elevación ST en:
+                <span class="tooltip"
+                  ><span class="tooltip-icon">?</span
+                  ><span class="tooltip-content"
+                    ><strong>IAMCEST:</strong> ≥1mm en ≥2 derivaciones contiguas
+                    (≥2mm en V2-V3).</span
+                  ></span
+                >
+              </label>
+              <div class="checkbox-grid" id="stElevationGrid">
+                <!-- Checkboxes will be dynamically generated by JS -->
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="form-group">
+              <label class="form-label">
+                Depresión ST en:
+                <span class="tooltip"
+                  ><span class="tooltip-icon">?</span
+                  ><span class="tooltip-content"
+                    ><strong>Isquemia:</strong> ≥0.5mm en ≥2 derivaciones
+                    contiguas. Puede ser un cambio recíproco a una elevación
+                    ST.</span
+                  ></span
+                >
+              </label>
+              <div class="checkbox-grid" id="stDepressionGrid">
+                <!-- Checkboxes will be dynamically generated by JS -->
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="form-group">
+              <label class="form-label">
+                Ondas Q Patológicas en:
+                <span class="tooltip"
+                  ><span class="tooltip-icon">?</span
+                  ><span class="tooltip-content"
+                    ><strong>Infarto antiguo:</strong> Duración >40ms (1
+                    cuadradito) O Profundidad >25% de la onda R.</span
+                  ></span
+                >
+              </label>
+              <div class="checkbox-grid" id="qWaveGrid">
+                <!-- Checkboxes will be dynamically generated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Hipertrofia y Otros Patrones -->
+          <div class="card">
+            <h3 class="card-title">❗ Hipertrofia y Otros Patrones</h3>
+            <div class="criteria-tabs">
+              <button id="tabSokolow" class="criteria-tab active">
+                Sokolow-Lyon
+              </button>
+              <button id="tabCornell" class="criteria-tab">Cornell</button>
+            </div>
+
+            <div id="sokolowCriteria" class="criteria-content">
+              <label class="form-label">
+                Criterio de Sokolow-Lyon
+                <span class="tooltip"
+                  ><span class="tooltip-icon">?</span
+                  ><span class="tooltip-content"
+                    ><strong>HVI si:</strong> S en V1 + R en V5/V6 ≥35mm.</span
+                  ></span
+                >
+              </label>
+              <div class="input-row">
+                <input
+                  type="number"
+                  class="input-field"
+                  id="sV1"
+                  placeholder="15"
+                  min="0"
+                  max="50"
+                  step="0.5"
+                />
+                <span class="input-unit">mm S en V1</span>
+                <span style="font-weight: bold; margin: 0 8px">+</span>
+                <input
+                  type="number"
+                  class="input-field"
+                  id="rV5V6"
+                  placeholder="25"
+                  min="0"
+                  max="50"
+                  step="0.5"
+                />
+                <span class="input-unit">mm R en V5/V6</span>
+              </div>
+              <div id="sokolowResult" class="diagnostic-result hidden"></div>
+            </div>
+            <div id="cornellCriteria" class="criteria-content hidden">
+              <label class="form-label">
+                Criterio de Cornell
+                <span class="tooltip"
+                  ><span class="tooltip-icon">?</span
+                  ><span class="tooltip-content"
+                    ><strong>HVI si:</strong> (R en aVL + S en V3) >28mm en ♂ o
+                    >20mm en ♀.</span
+                  ></span
+                >
+              </label>
+              <div class="input-row">
+                <input
+                  type="number"
+                  class="input-field"
+                  id="raVL"
+                  placeholder="12"
+                  min="0"
+                  max="50"
+                  step="0.5"
+                />
+                <span class="input-unit">mm R en aVL</span>
+                <span style="font-weight: bold; margin: 0 8px">+</span>
+                <input
+                  type="number"
+                  class="input-field"
+                  id="sV3"
+                  placeholder="18"
+                  min="0"
+                  max="50"
+                  step="0.5"
+                />
+                <span class="input-unit">mm S en V3</span>
+              </div>
+              <div id="cornellResult" class="diagnostic-result hidden"></div>
+            </div>
+            <div class="divider"></div>
+            <div class="form-group">
+              <label class="form-label">Sospecha de otros patrones:</label>
+              <div class="radio-group">
+                <div class="radio-item">
+                  <input
+                    type="radio"
+                    name="otherPatterns"
+                    id="patternNone"
+                    value="none"
+                    checked
+                  /><label for="patternNone">Ninguno</label>
+                </div>
+                <div class="radio-item">
+                  <input
+                    type="radio"
+                    name="otherPatterns"
+                    id="patternBrugada"
+                    value="brugada"
+                  /><label for="patternBrugada">S. de Brugada</label>
+                </div>
+                <div class="radio-item">
+                  <input
+                    type="radio"
+                    name="otherPatterns"
+                    id="patternPericarditis"
+                    value="pericarditis"
+                  /><label for="patternPericarditis">Pericarditis</label>
+                </div>
+                <div class="radio-item">
+                  <input
+                    type="radio"
+                    name="otherPatterns"
+                    id="patternWellens"
+                    value="wellens"
+                  /><label for="patternWellens">S. de Wellens</label>
+                </div>
+                <div class="radio-item">
+                  <input
+                    type="radio"
+                    name="otherPatterns"
+                    id="patternHyperkalemia"
+                    value="hyperkalemia"
+                  /><label for="patternHyperkalemia">Hiperpotasemia</label>
+                </div>
+              </div>
+            </div>
+            <div id="brugadaHelper" class="guided-question hidden">
+              <p>¿Qué tipo de patrón Brugada observa en V1-V2?</p>
+              <div class="radio-group">
+                <div class="radio-item">
+                  <input
+                    type="radio"
+                    name="brugadaType"
+                    id="brugadaType1"
+                    value="type1"
+                  /><label for="brugadaType1">Tipo 1 (Coved ST ≥2mm)</label>
+                </div>
+                <div class="radio-item">
+                  <input
+                    type="radio"
+                    name="brugadaType"
+                    id="brugadaType2"
+                    value="type2"
+                  /><label for="brugadaType2">Tipo 2 (Saddle-back)</label>
+                </div>
+              </div>
+              <div class="edu-box" style="margin-top: 12px">
+                <div class="edu-box-title">
+                  💡 Tip Educativo: Patrón de Brugada
+                </div>
+                <div class="edu-box-content">
+                  <strong>Tipo 1 (Coved):</strong> Elevación ST ≥2mm con
+                  descenso gradual y T negativa.<br />
+                  <strong>Tipo 2 (Saddle-back):</strong> Elevación ST ≥2mm con
+                  morfología en "silla de montar".<br />
+                  <strong>Importante:</strong> Solo el Tipo 1 es diagnóstico.
+                  Valorar en V1-V2.
+                </div>
+              </div>
+            </div>
+            <div id="pericarditisHelper" class="guided-question hidden">
+              <p>
+                ¿Confirma elevación del ST cóncava y difusa, junto a
+                infradesnivel del segmento PR?
+              </p>
+            </div>
+            <div id="wellensHelper" class="guided-question hidden">
+              <p>
+                ¿Confirma ondas T bifásicas o invertidas (>2mm) en V2-V3 en un
+                paciente con angina reciente?
+              </p>
+            </div>
+            <div id="hyperkalemiaHelper" class="guided-question hidden">
+              <p>¿Confirma ondas T altas, picudas y de base estrecha?</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="liveFindingsCard" class="card hidden">
+        <h3 class="card-title">💡 Hallazgos en Tiempo Real</h3>
+        <ul id="liveFindingsList"></ul>
+      </div>
+
+      <div class="action-buttons">
+        <button id="generateReportBtn" class="btn btn-primary">
+          📊 Generar Informe
+        </button>
+        <button id="resetBtn" class="btn btn-secondary">🔄 Limpiar Todo</button>
+      </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="report-modal">
+      <div class="report-content">
+        <div class="report-header">
+          <h2>Informe de Interpretación ECG</h2>
+          <p>Análisis educativo basado en parámetros introducidos</p>
+        </div>
+        <div
+          id="criticalSection"
+          class="critical-alert danger"
+          style="display: none"
+        >
+          <h4>⚠️ HALLAZGOS CRÍTICOS</h4>
+          <ul id="criticalList"></ul>
+        </div>
+        <div class="report-section">
+          <h3>📊 Parámetros Calculados</h3>
+          <div class="parameters-grid" id="parametersGrid"></div>
+        </div>
+        <div class="report-section">
+          <h3>🔍 Hallazgos</h3>
+          <ul class="findings-list" id="findingsList"></ul>
+        </div>
+        <div class="report-section">
+          <h3>📝 Resumen Narrativo</h3>
+          <div
+            id="narrativeSummary"
+            style="
+              background: var(--gray-50);
+              padding: 16px;
+              border-radius: 6px;
+              font-size: 14px;
+              line-height: 1.6;
+            "
+          ></div>
+        </div>
+        <div class="report-actions">
+          <button class="btn btn-success" id="copyShortBtn">
+            📋 Copiar Resumen
+          </button>
+          <button class="btn btn-success" id="copyLongBtn">
+            📋 Copiar Informe Completo
+          </button>
+          <button class="btn btn-primary" id="printBtn">🖨️ Imprimir PDF</button>
+          <button class="btn btn-secondary" id="closeModalBtn">
+            ✖️ Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="copyNotification" class="copy-notification">
+      ✓ Copiado al portapapeles
+    </div>
+
+    <script>
+      "use strict";
+
+      // --- SCRIPT INITIALIZATION ---
+      document.addEventListener("DOMContentLoaded", initialize);
+
+      // --- CLINICAL CONSTANTS ---
+      const PR_LOWER = 120,
+        PR_UPPER = 200;
+      const QRS_UPPER = 120;
+      const HR_LOWER = 60,
+        HR_UPPER = 100;
+      const SOKOLOW_THRESHOLD = 35;
+      const CORNELL_THRESHOLD_MALE = 28,
+        CORNELL_THRESHOLD_FEMALE = 20;
+      const QTC_NORMAL_MALE = 450,
+        QTC_NORMAL_FEMALE = 460;
+
+      // --- GLOBAL STATE ---
+      let ecgData = {};
+
+      function initialize() {
+        populateCheckboxes();
+        setupEventListeners();
+        loadSavedData();
+        updateAllCalculations();
+      }
+
+      function populateCheckboxes() {
+        const leads = [
+          "I",
+          "II",
+          "III",
+          "aVR",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6",
+        ];
+        const qLeads = [
+          "I",
+          "II",
+          "III",
+          "aVL",
+          "aVF",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6",
+        ];
+        const stElevationGrid = document.getElementById("stElevationGrid");
+        const stDepressionGrid = document.getElementById("stDepressionGrid");
+        const qWaveGrid = document.getElementById("qWaveGrid");
+
+        stElevationGrid.innerHTML = leads
+          .map(
+            (lead) => `
+            <div class="checkbox-item">
+                <input type="checkbox" id="stElev_${lead}" name="stElev" value="${lead}">
+                <label for="stElev_${lead}">${lead}</label>
+            </div>`
+          )
+          .join("");
+        stDepressionGrid.innerHTML = leads
+          .map(
+            (lead) => `
+            <div class="checkbox-item">
+                <input type="checkbox" id="stDep_${lead}" name="stDep" value="${lead}">
+                <label for="stDep_${lead}">${lead}</label>
+            </div>`
+          )
+          .join("");
+        qWaveGrid.innerHTML = qLeads
+          .map(
+            (lead) => `
+             <div class="checkbox-item">
+                <input type="checkbox" id="qWave_${lead}" name="qWave" value="${lead}">
+                <label for="qWave_${lead}">${lead}</label>
+            </div>`
+          )
+          .join("");
+      }
+
+      function setupEventListeners() {
+        const inputs = document.querySelectorAll("input, select");
+        inputs.forEach((input) =>
+          input.addEventListener("input", updateAndSave)
+        );
+
+        const buttons = {
+          generateReportBtn: generateReport,
+          resetBtn: resetAll,
+          copyShortBtn: () => copyReport("short"),
+          copyLongBtn: () => copyReport("long"),
+          printBtn: () => window.print(),
+          closeModalBtn: closeReport,
+          tabSokolow: () => switchTab("sokolow"),
+          tabCornell: () => switchTab("cornell"),
+        };
+        for (const [id, func] of Object.entries(buttons)) {
+          document.getElementById(id)?.addEventListener("click", func);
+        }
+      }
+
+      function updateAndSave() {
+        updateAllCalculations();
+        saveData();
+      }
+
+      // --- ORCHESTRATOR ---
+      function updateAllCalculations() {
+        updateRhythmUI();
+        calculateHR();
+        calculateIntervals();
+        calculateAxis();
+        calculateLVH();
+
+        updateAfibHelper();
+        updateAVBlockHelper();
+        updateConductionHelper();
+        updateHemiblockHelper();
+        updateOtherPatternsHelper();
+
+        updateLiveFindings();
+      }
+
+      // --- UI TOGGLERS ---
+      function updateRhythmUI() {
+        const isRegular = document.getElementById("rhythmRegular").checked;
+        document
+          .getElementById("regularInput")
+          .classList.toggle("hidden", !isRegular);
+        document
+          .getElementById("irregularInput")
+          .classList.toggle("hidden", isRegular);
+
+        const speed = document.getElementById("paperSpeed").value;
+        const qrsCountLabel = document.getElementById("qrsCountLabel");
+        qrsCountLabel.textContent = `QRS en 6 segundos (${
+          speed === "25" ? "30" : "60"
+        } cuad. grandes)`;
+      }
+
+      // --- CORE CALCULATORS ---
+      function calculateHR() {
+        const speed = parseInt(document.getElementById("paperSpeed").value, 10);
+        const isRegular = document.getElementById("rhythmRegular").checked;
+        let hr = null;
+
+        if (isRegular) {
+          const rrInterval = parseFloat(
+            document.getElementById("rrInterval").value
+          );
+          if (rrInterval > 0) hr = (speed === 25 ? 300 : 600) / rrInterval;
+        } else {
+          const qrsCount = parseFloat(
+            document.getElementById("qrsCount").value
+          );
+          if (qrsCount > 0) hr = qrsCount * 10;
+        }
+
+        ecgData.heartRate = hr ? Math.round(hr) : null;
+        const hrResultEl = document.getElementById("hrResult");
+        if (ecgData.heartRate) {
+          hrResultEl.style.display = "inline-flex";
+          let hrText = `${ecgData.heartRate} lpm`;
+          if (ecgData.heartRate < HR_LOWER) {
+            hrResultEl.className = "calculated-value warning";
+            hrText += " (Bradicardia)";
+          } else if (ecgData.heartRate > HR_UPPER) {
+            hrResultEl.className = "calculated-value warning";
+            hrText += " (Taquicardia)";
+          } else {
+            hrResultEl.className = "calculated-value normal";
+          }
+          hrResultEl.textContent = hrText;
+        } else {
+          hrResultEl.style.display = "none";
+        }
+      }
+
+      function calculateIntervals() {
+        const speed = parseInt(document.getElementById("paperSpeed").value, 10);
+        const msPerSquare = speed === 25 ? 40 : 20;
+
+        const intervals = {
+          pr: {
+            el: "prInterval",
+            resultEl: "prResult",
+            upper: PR_UPPER,
+            lower: PR_LOWER,
+            name: "PR",
+          },
+          qrs: {
+            el: "qrsInterval",
+            resultEl: "qrsResult",
+            upper: QRS_UPPER,
+            name: "QRS",
+          },
+          qt: { el: "qtInterval", resultEl: "qtResult", name: "QT" },
+        };
+
+        for (const [key, config] of Object.entries(intervals)) {
+          const squares = parseFloat(document.getElementById(config.el).value);
+          const resultEl = document.getElementById(config.resultEl);
+          if (squares >= 0 && document.getElementById(config.el).value !== "") {
+            const ms = squares * msPerSquare;
+            ecgData[key] = ms;
+            resultEl.style.display = "inline-flex";
+            let text = `${ms} ms`;
+            if (key === "pr" && ms > config.upper) text += " (BAV 1°)";
+            if (key === "qrs" && ms > config.upper) text += " (Ancho)";
+            resultEl.textContent = text;
+
+            if (config.upper && ms > config.upper)
+              resultEl.className = "calculated-value warning";
+            else if (config.lower && ms < config.lower)
+              resultEl.className = "calculated-value warning";
+            else resultEl.className = "calculated-value normal";
+          } else {
+            ecgData[key] = null;
+            resultEl.style.display = "none";
+          }
+        }
+        recalculateQTc();
+      }
+
+      function recalculateQTc() {
+        const qtcDiv = document.getElementById("qtcResult");
+        if (ecgData.qt !== null && ecgData.heartRate > 0) {
+          const rrInSec = 60 / ecgData.heartRate;
+          ecgData.qtc = Math.round(ecgData.qt / Math.sqrt(rrInSec));
+
+          const sex = document.getElementById("patientSex").value;
+          const qtcUpper = sex === "F" ? QTC_NORMAL_FEMALE : QTC_NORMAL_MALE;
+          let text = `QTc (Bazett): ${ecgData.qtc} ms`;
+          let color = "var(--gray-700)";
+          if (ecgData.qtc > qtcUpper) {
+            text += " (Prolongado)";
+            color = "var(--danger)";
+          }
+          qtcDiv.innerHTML = `<span style="font-weight: 500; color: ${color};">${text}</span>`;
+        } else {
+          ecgData.qtc = null;
+          qtcDiv.innerHTML = "";
+        }
+      }
+
+      function calculateAxis() {
+        const qrsI = getCheckedValue("qrsI");
+        const qrsAVF = getCheckedValue("qrsAVF");
+        const resultEl = document.getElementById("axisResult");
+        let axis = null,
+          className = "calculated-value hidden";
+
+        if (qrsI && qrsAVF) {
+          if (qrsI === "+" && qrsAVF === "+") {
+            axis = "Normal (0° a +90°)";
+            className = "calculated-value normal";
+          } else if (qrsI === "+" && qrsAVF === "-") {
+            axis = "Desviación izquierda (-0° a -90°)";
+            className = "calculated-value warning";
+          } else if (qrsI === "-" && qrsAVF === "+") {
+            axis = "Desviación derecha (+90° a +180°)";
+            className = "calculated-value warning";
+          } else {
+            axis = "Desviación extrema (-90° a -180°)";
+            className = "calculated-value danger";
+          }
+        }
+
+        ecgData.axis = axis;
+        resultEl.textContent = axis;
+        resultEl.className = className;
+      }
+
+      function calculateLVH() {
+        const sV1 = parseFloat(document.getElementById("sV1").value) || 0;
+        const rV5V6 = parseFloat(document.getElementById("rV5V6").value) || 0;
+        const sumSokolow = sV1 + rV5V6;
+        const sokolowResult = document.getElementById("sokolowResult");
+        if (sumSokolow > 0) {
+          ecgData.sokolowLvh = {
+            sum: sumSokolow,
+            positive: sumSokolow >= SOKOLOW_THRESHOLD,
+          };
+          sokolowResult.className = `diagnostic-result ${
+            ecgData.sokolowLvh.positive ? "warning" : "normal"
+          }`;
+          sokolowResult.textContent = `Suma = ${sumSokolow}mm. Criterio ${
+            ecgData.sokolowLvh.positive ? "Positivo" : "Negativo"
+          }`;
+        } else {
+          ecgData.sokolowLvh = null;
+          sokolowResult.className = "diagnostic-result hidden";
+        }
+
+        const raVL = parseFloat(document.getElementById("raVL").value) || 0;
+        const sV3 = parseFloat(document.getElementById("sV3").value) || 0;
+        const sumCornell = raVL + sV3;
+        const cornellResult = document.getElementById("cornellResult");
+        const sex = document.getElementById("patientSex").value;
+        const threshold =
+          sex === "F" ? CORNELL_THRESHOLD_FEMALE : CORNELL_THRESHOLD_MALE;
+        if (sumCornell > 0) {
+          ecgData.cornellLvh = {
+            sum: sumCornell,
+            positive: sumCornell > threshold,
+          };
+          cornellResult.className = `diagnostic-result ${
+            ecgData.cornellLvh.positive ? "warning" : "normal"
+          }`;
+          cornellResult.textContent = `Suma = ${sumCornell}mm. Criterio ${
+            ecgData.cornellLvh.positive ? "Positivo" : "Negativo"
+          }`;
+        } else {
+          ecgData.cornellLvh = null;
+          cornellResult.className = "diagnostic-result hidden";
+        }
+      }
+
+      // --- DIAGNOSTIC HELPERS ---
+
+      function updateAfibHelper() {
+        const isIrregular = document.getElementById("rhythmIrregular").checked;
+        const helper = document.getElementById("afibHelper");
+        helper.classList.toggle("hidden", !isIrregular);
+
+        const resultEl = document.getElementById("afibResult");
+        const pWaves = getCheckedValue("pWaves");
+        let diagnosis = null;
+        if (isIrregular && pWaves === "no") {
+          diagnosis = "Fibrilación Auricular (probable)";
+          resultEl.className = "diagnostic-result warning";
+        }
+
+        ecgData.rhythmDiagnosis = diagnosis;
+        resultEl.textContent = diagnosis;
+        resultEl.classList.toggle("hidden", !diagnosis);
+      }
+
+      function updateAVBlockHelper() {
+        const helper = document.getElementById("avBlockHelper");
+        const resultEl = document.getElementById("avBlockResult");
+        const pr = ecgData.pr;
+        const isPROutOfRange = pr !== null && (pr < PR_LOWER || pr > PR_UPPER);
+        helper.classList.toggle("hidden", !isPROutOfRange);
+        if (!isPROutOfRange) {
+          resultEl.className = "diagnostic-result hidden";
+          ecgData.avBlockDiagnosis = null;
+          return;
+        }
+
+        const behavior = getCheckedValue("prBehavior");
+        document
+          .getElementById("avStep2")
+          .classList.toggle("hidden", behavior !== "variable");
+        document
+          .getElementById("avStep3")
+          .classList.toggle(
+            "hidden",
+            behavior !== "variable" || getCheckedValue("wenckebach") === "yes"
+          );
+
+        const wenckebach = getCheckedValue("wenckebach");
+        const dissociation = getCheckedValue("dissociation");
+        let diagnosis = null,
+          className = "diagnostic-result hidden";
+
+        if (pr > PR_UPPER) {
+          if (behavior === "constant") {
+            diagnosis = "Bloqueo AV 1er Grado";
+            className = "diagnostic-result warning";
+          } else if (behavior === "variable" && wenckebach === "yes") {
+            diagnosis = "Bloqueo AV 2º Grado, Mobitz I";
+            className = "diagnostic-result warning";
+          }
+        }
+        if (behavior === "variable" && wenckebach === "no") {
+          if (dissociation === "yes") {
+            diagnosis = "Bloqueo AV 3er Grado (Completo)";
+            className = "diagnostic-result danger";
+          } else if (dissociation === "no") {
+            diagnosis = "Bloqueo AV 2º Grado, Mobitz II";
+            className = "diagnostic-result danger";
+          }
+        }
+
+        ecgData.avBlockDiagnosis = diagnosis;
+        resultEl.textContent = diagnosis;
+        resultEl.className = className;
+      }
+
+      function updateConductionHelper() {
+        const placeholder = document.getElementById("conductionPlaceholder");
+        const helper = document.getElementById("conductionHelper");
+        const resultEl = document.getElementById("bbbResult");
+        const qrs = ecgData.qrs || 0;
+
+        const showHelper = qrs > QRS_UPPER;
+        placeholder.classList.toggle("hidden", showHelper);
+        helper.classList.toggle("hidden", !showHelper);
+        if (!showHelper) {
+          resultEl.className = "diagnostic-result hidden";
+          ecgData.bundleBranchBlock = null;
+          return;
+        }
+
+        const v1 = getCheckedValue("v1morph");
+        const v6 = getCheckedValue("v6morph");
+        let diagnosis = null,
+          className = "diagnostic-result hidden";
+
+        if (v1 === "rsr" && v6 === "slurred_s") {
+          diagnosis = "Bloqueo de Rama Derecha (BRDHH)";
+          className = "diagnostic-result warning";
+        } else if (v1 === "wide_s" && v6 === "wide_r") {
+          diagnosis = "Bloqueo de Rama Izquierda (BRIHH)";
+          className = "diagnostic-result warning";
+        }
+
+        ecgData.bundleBranchBlock = diagnosis;
+        resultEl.textContent = diagnosis;
+        resultEl.className = className;
+      }
+
+      function updateHemiblockHelper() {
+        const helper = document.getElementById("hemiblockHelper");
+        const resultEl = document.getElementById("hemiblockResult");
+        const isLeftAxis = ecgData.axis?.includes("izquierda") || false;
+        helper.classList.toggle("hidden", !isLeftAxis);
+        if (!isLeftAxis) {
+          resultEl.className = "diagnostic-result hidden";
+          ecgData.hemiblock = null;
+          return;
+        }
+
+        const qR_aVL = document.getElementById("qR_aVL").checked;
+        const rS_III = document.getElementById("rS_III").checked;
+        let diagnosis = null,
+          className = "diagnostic-result hidden";
+
+        if (isLeftAxis && qR_aVL && rS_III) {
+          diagnosis = "Hemibloqueo Anterior Izquierdo (HBAI)";
+          className = "diagnostic-result warning";
+        }
+
+        ecgData.hemiblock = diagnosis;
+        resultEl.textContent = diagnosis;
+        resultEl.className = className;
+      }
+
+      function updateOtherPatternsHelper() {
+        const pattern = getCheckedValue("otherPatterns");
+        ecgData.otherPattern = pattern !== "none" ? pattern : null;
+        document
+          .getElementById("brugadaHelper")
+          .classList.toggle("hidden", pattern !== "brugada");
+        document
+          .getElementById("pericarditisHelper")
+          .classList.toggle("hidden", pattern !== "pericarditis");
+        document
+          .getElementById("wellensHelper")
+          .classList.toggle("hidden", pattern !== "wellens");
+        document
+          .getElementById("hyperkalemiaHelper")
+          .classList.toggle("hidden", pattern !== "hyperkalemia");
+      }
+
+      // --- LIVE FINDINGS ---
+      function updateLiveFindings() {
+        const card = document.getElementById("liveFindingsCard");
+        const list = document.getElementById("liveFindingsList");
+        let findings = [];
+
+        if (ecgData.heartRate < HR_LOWER)
+          findings.push({
+            text: `Bradicardia (${ecgData.heartRate} lpm)`,
+            severity: "warning",
+          });
+        if (ecgData.heartRate > HR_UPPER)
+          findings.push({
+            text: `Taquicardia (${ecgData.heartRate} lpm)`,
+            severity: "warning",
+          });
+        if (ecgData.axis && !ecgData.axis.includes("Normal"))
+          findings.push({ text: ecgData.axis, severity: "warning" });
+
+        if (ecgData.rhythmDiagnosis)
+          findings.push({ text: ecgData.rhythmDiagnosis, severity: "warning" });
+        if (ecgData.avBlockDiagnosis) {
+          const sev =
+            ecgData.avBlockDiagnosis.includes("3er") ||
+            ecgData.avBlockDiagnosis.includes("Mobitz II")
+              ? "danger"
+              : "warning";
+          findings.push({ text: ecgData.avBlockDiagnosis, severity: sev });
+        }
+        if (ecgData.bundleBranchBlock)
+          findings.push({
+            text: ecgData.bundleBranchBlock,
+            severity: "warning",
+          });
+        if (ecgData.hemiblock)
+          findings.push({ text: ecgData.hemiblock, severity: "warning" });
+
+        const stElev = getCheckedValues("stElev");
+        const stDep = getCheckedValues("stDep");
+        const qWaves = getCheckedValues("qWave");
+        if (stElev.length > 0)
+          findings.push({
+            text: `Elevación ST en cara ${determineTerritory(stElev)}`,
+            severity: "danger",
+          });
+        if (stDep.length > 0)
+          findings.push({
+            text: `Depresión ST en cara ${determineTerritory(stDep)}`,
+            severity: "warning",
+          });
+        if (qWaves.length > 0)
+          findings.push({
+            text: `Ondas Q en cara ${determineTerritory(qWaves)}`,
+            severity: "warning",
+          });
+
+        const brugadaType = getCheckedValue("brugadaType");
+        if (brugadaType === "type1")
+          findings.push({ text: "Patrón Brugada Tipo 1", severity: "danger" });
+
+        if (findings.length > 0) {
+          list.innerHTML = findings
+            .map((f) => `<li class="${f.severity}">${f.text}</li>`)
+            .join("");
+          card.classList.remove("hidden");
+        } else {
+          card.classList.add("hidden");
+        }
+      }
+
+      function determineTerritory(leads) {
+        const territories = {
+          Inferior: ["II", "III", "aVF"],
+          "Lateral Alta": ["I", "aVL"],
+          Septal: ["V1", "V2"],
+          Anterior: ["V3", "V4"],
+          "Lateral Baja": ["V5", "V6"],
+        };
+        let found = [];
+        for (const [name, territoryLeads] of Object.entries(territories)) {
+          if (territoryLeads.some((l) => leads.includes(l))) {
+            found.push(name);
+          }
+        }
+        return found.join(" y ") || "indeterminada";
+      }
+
+      // --- REPORTING ---
+      function generateReport() {
+        analyzeFindings();
+
+        const parametersGrid = document.getElementById("parametersGrid");
+        parametersGrid.innerHTML = "";
+        const params = {
+          FC: `${ecgData.heartRate || "-"} lpm`,
+          PR: `${ecgData.pr || "-"} ms`,
+          QRS: `${ecgData.qrs || "-"} ms`,
+          QT: `${ecgData.qt || "-"} ms`,
+          QTc: `${ecgData.qtc || "-"} ms`,
+          Eje: ecgData.axis || "-",
+        };
+        for (const [label, value] of Object.entries(params)) {
+          parametersGrid.innerHTML += `<div class="parameter-card"><div class="parameter-label">${label}</div><div class="parameter-value">${value}</div></div>`;
+        }
+
+        const findingsList = document.getElementById("findingsList");
+        findingsList.innerHTML =
+          ecgData.findings.length > 0
+            ? ecgData.findings
+                .map(
+                  (f) => `<li class="finding-item ${f.severity}">${f.text}</li>`
+                )
+                .join("")
+            : '<li class="finding-item">✓ Sin hallazgos patológicos en los parámetros analizados</li>';
+
+        const criticalList = document.getElementById("criticalList");
+        const criticalSection = document.getElementById("criticalSection");
+        if (ecgData.criticalFindings.length > 0) {
+          criticalList.innerHTML = ecgData.criticalFindings
+            .map((f) => `<li>${f}</li>`)
+            .join("");
+          criticalSection.style.display = "block";
+        } else {
+          criticalSection.style.display = "none";
+        }
+
+        generateNarrative();
+        document.getElementById("reportModal").classList.add("active");
+      }
+
+      function analyzeFindings() {
+        ecgData.findings = [];
+        ecgData.criticalFindings = [];
+
+        // Rate
+        if (ecgData.heartRate < HR_LOWER)
+          ecgData.findings.push({
+            text: `Bradicardia (${ecgData.heartRate} lpm)`,
+            severity: "warning",
+          });
+        if (ecgData.heartRate > HR_UPPER)
+          ecgData.findings.push({
+            text: `Taquicardia (${ecgData.heartRate} lpm)`,
+            severity: "warning",
+          });
+
+        // Rhythm
+        if (ecgData.rhythmDiagnosis)
+          ecgData.findings.push({
+            text: ecgData.rhythmDiagnosis,
+            severity: "warning",
+          });
+
+        // Intervals
+        if (ecgData.pr > PR_UPPER && !ecgData.avBlockDiagnosis)
+          ecgData.findings.push({
+            text: `Bloqueo AV 1er Grado (PR ${ecgData.pr} ms)`,
+            severity: "warning",
+          });
+        if (ecgData.avBlockDiagnosis) {
+          const severity =
+            ecgData.avBlockDiagnosis.includes("3er") ||
+            ecgData.avBlockDiagnosis.includes("Mobitz II")
+              ? "danger"
+              : "warning";
+          ecgData.findings.push({ text: ecgData.avBlockDiagnosis, severity });
+        }
+
+        // QTc
+        const sex = document.getElementById("patientSex").value;
+        const qtcUpper = sex === "F" ? QTC_NORMAL_FEMALE : QTC_NORMAL_MALE;
+        if (ecgData.qtc > qtcUpper)
+          ecgData.criticalFindings.push(
+            `QTc Prolongado (${ecgData.qtc} ms) - Riesgo de Torsades de Pointes`
+          );
+
+        // Axis & Hemiblock
+        if (ecgData.axis && !ecgData.axis.includes("Normal"))
+          ecgData.findings.push({ text: ecgData.axis, severity: "warning" });
+        if (ecgData.hemiblock)
+          ecgData.findings.push({
+            text: ecgData.hemiblock,
+            severity: "warning",
+          });
+
+        // Conduction
+        if (ecgData.bundleBranchBlock)
+          ecgData.findings.push({
+            text: ecgData.bundleBranchBlock,
+            severity: "warning",
+          });
+
+        // Ischemia/Infarction
+        const stElev = getCheckedValues("stElev");
+        if (stElev.length > 0)
+          ecgData.criticalFindings.push(
+            `Elevación ST en ${stElev.join(", ")} (${determineTerritory(
+              stElev
+            )}): compatible con IAMCEST`
+          );
+        const stDep = getCheckedValues("stDep");
+        if (stDep.length > 0)
+          ecgData.findings.push({
+            text: `Depresión ST en ${stDep.join(", ")} (${determineTerritory(
+              stDep
+            )}): compatible con isquemia subendocárdica`,
+            severity: "warning",
+          });
+        const qWaves = getCheckedValues("qWave");
+        if (qWaves.length > 0)
+          ecgData.findings.push({
+            text: `Ondas Q patológicas en ${qWaves.join(
+              ", "
+            )} (${determineTerritory(qWaves)}): sugieren infarto antiguo`,
+            severity: "warning",
+          });
+
+        // Hypertrophy
+        if (ecgData.sokolowLvh?.positive)
+          ecgData.findings.push({
+            text: `Criterios Sokolow-Lyon positivos para HVI (Suma ${ecgData.sokolowLvh.sum}mm)`,
+            severity: "warning",
+          });
+        if (ecgData.cornellLvh?.positive)
+          ecgData.findings.push({
+            text: `Criterios Cornell positivos para HVI (Suma ${ecgData.cornellLvh.sum}mm)`,
+            severity: "warning",
+          });
+
+        // Other patterns
+        const brugadaType = getCheckedValue("brugadaType");
+        if (brugadaType === "type1")
+          ecgData.criticalFindings.push(
+            `Patrón Brugada Tipo 1: Alto riesgo arrítmico`
+          );
+        if (brugadaType === "type2")
+          ecgData.findings.push({
+            text: "Patrón Brugada Tipo 2: Sospechoso, requiere valoración",
+            severity: "warning",
+          });
+        if (ecgData.otherPattern === "pericarditis")
+          ecgData.findings.push({
+            text: "Signos sugerentes de Pericarditis Aguda",
+            severity: "warning",
+          });
+        if (ecgData.otherPattern === "wellens")
+          ecgData.criticalFindings.push(
+            "Patrón de Wellens: Signo de oclusión crítica de la arteria descendente anterior"
+          );
+        if (ecgData.otherPattern === "hyperkalemia")
+          ecgData.criticalFindings.push(
+            "Signos de Hiperpotasemia: Requiere valoración urgente"
+          );
+      }
+
+      function generateNarrative() {
+        let narrative = `Electrocardiograma que muestra un ritmo ${
+          document.getElementById("rhythmIrregular").checked
+            ? "irregular"
+            : "sinusal regular"
+        } a ${ecgData.heartRate || "N/A"} lpm. `;
+
+        const mainFinding =
+          ecgData.findings.find((f) => f.severity === "danger") ||
+          ecgData.findings[0];
+        if (mainFinding) {
+          narrative += `Destaca la presencia de ${mainFinding.text.toLowerCase()}. `;
+        }
+        if (ecgData.pr && ecgData.qrs)
+          narrative += `Intervalo PR de ${ecgData.pr}ms y QRS de ${ecgData.qrs}ms. `;
+        if (ecgData.axis)
+          narrative += `El eje eléctrico se encuentra ${ecgData.axis.toLowerCase()}. `;
+        if (
+          ecgData.findings.length === 0 &&
+          ecgData.criticalFindings.length === 0
+        )
+          narrative =
+            "Interpretación dentro de límites normales según los datos introducidos.";
+
+        document.getElementById("narrativeSummary").textContent = narrative;
+      }
+
+      function generateNarrative() {
+        let narrativeParts = [];
+
+        // 1. Rhythm and Rate (always present)
+        const rhythmType = document.getElementById("rhythmIrregular").checked
+          ? "irregular"
+          : "sinusal regular";
+        narrativeParts.push(
+          `Electrocardiograma que muestra un ritmo ${rhythmType} a ${
+            ecgData.heartRate || "N/A"
+          } lpm.`
+        );
+
+        // 2. Collect ALL notable findings
+        const allFindingsTexts = [
+          ...ecgData.criticalFindings.map((text) => text.split(":")[0]), // "Patrón Brugada Tipo 1"
+          ...ecgData.findings.map((f) => f.text),
+        ];
+
+        const notableFindings = allFindingsTexts.filter((text) => {
+          const lowerText = text.toLowerCase();
+          // Filter out redundant info that will be added separately or is too basic
+          return (
+            !lowerText.includes("desviación") &&
+            !lowerText.includes("bradicardia") &&
+            !lowerText.includes("taquicardia")
+          );
+        });
+
+        // 3. Construct the findings sentence (CORRECTED LOGIC)
+        if (notableFindings.length > 0) {
+          // Join findings into a clean, comma-separated list.
+          let findingsText =
+            "Se objetivan los siguientes hallazgos: " +
+            notableFindings.join(", ") +
+            ".";
+          narrativeParts.push(findingsText);
+        }
+
+        // 4. Add specific parameters for context
+        let contextParts = [];
+        if (ecgData.pr && ecgData.qrs) {
+          contextParts.push(
+            `Intervalos PR de ${ecgData.pr}ms y QRS de ${ecgData.qrs}ms.`
+          );
+        }
+        if (ecgData.axis) {
+          contextParts.push(
+            `El eje eléctrico se encuentra ${ecgData.axis.toLowerCase()}.`
+          );
+        }
+        if (contextParts.length > 0) {
+          narrativeParts.push(contextParts.join(" "));
+        }
+
+        let finalNarrative = narrativeParts.join(" ");
+
+        if (
+          ecgData.findings.length === 0 &&
+          ecgData.criticalFindings.length === 0
+        ) {
+          finalNarrative =
+            "Interpretación dentro de límites normales según los datos introducidos.";
+        }
+
+        document.getElementById("narrativeSummary").textContent =
+          finalNarrative;
+      }
+
+      // --- UTILITIES ---
+      function switchTab(tabName) {
+        document
+          .getElementById("tabSokolow")
+          .classList.toggle("active", tabName === "sokolow");
+        document
+          .getElementById("sokolowCriteria")
+          .classList.toggle("hidden", tabName !== "sokolow");
+        document
+          .getElementById("tabCornell")
+          .classList.toggle("active", tabName === "cornell");
+        document
+          .getElementById("cornellCriteria")
+          .classList.toggle("hidden", tabName !== "cornell");
+      }
+
+      function closeReport() {
+        document.getElementById("reportModal").classList.remove("active");
+      }
+
+      function copyReport(type) {
+        let text = "";
+        if (type === "short") {
+          text = document.getElementById("narrativeSummary").textContent;
+        } else {
+          text += "INFORME ECG EDUCATIVO\n\n";
+          if (ecgData.criticalFindings.length > 0)
+            text +=
+              "HALLAZGOS CRÍTICOS:\n" +
+              ecgData.criticalFindings.map((f) => `• ${f}`).join("\n") +
+              "\n\n";
+          if (ecgData.findings.length > 0)
+            text +=
+              "HALLAZGOS GENERALES:\n" +
+              ecgData.findings.map((f) => `• ${f.text}`).join("\n") +
+              "\n\n";
+          text +=
+            "RESUMEN:\n" +
+            document.getElementById("narrativeSummary").textContent;
+        }
+
+        navigator.clipboard.writeText(text).then(() => {
+          const notification = document.getElementById("copyNotification");
+          notification.classList.add("show");
+          setTimeout(() => notification.classList.remove("show"), 2000);
+        });
+      }
+
+      function getCheckedValue(name) {
+        const checked = document.querySelector(`input[name="${name}"]:checked`);
+        return checked ? checked.value : null;
+      }
+
+      function getCheckedValues(name) {
+        const checked = document.querySelectorAll(
+          `input[name="${name}"]:checked`
+        );
+        return Array.from(checked).map((cb) => cb.value);
+      }
+
+      function resetAll() {
+        if (
+          !confirm(
+            "¿Está seguro de que desea borrar todos los datos introducidos?"
+          )
+        )
+          return;
+
+        document
+          .querySelectorAll('input[type="number"], input[type="text"], select')
+          .forEach((el) => {
+            if (el.tagName === "SELECT") el.selectedIndex = 0;
+            else el.value = "";
+          });
+        document
+          .querySelectorAll('input[type="radio"], input[type="checkbox"]')
+          .forEach((el) => (el.checked = false));
+
+        // Set defaults
+        document.getElementById("rhythmRegular").checked = true;
+        document.getElementById("patternNone").checked = true;
+
+        ecgData = {};
+        localStorage.removeItem("ecgInterpreterData");
+        updateAllCalculations();
+      }
+
+      function saveData() {
+        const state = {};
+        document.querySelectorAll("input, select").forEach((el) => {
+          if (el.id) {
+            if (el.type === "checkbox" || el.type === "radio")
+              state[el.id] = el.checked;
+            else state[el.id] = el.value;
+          }
+        });
+        localStorage.setItem("ecgInterpreterData", JSON.stringify(state));
+      }
+
+      function loadSavedData() {
+        const savedState = localStorage.getItem("ecgInterpreterData");
+        if (savedState) {
+          try {
+            const state = JSON.parse(savedState);
+            for (const [id, value] of Object.entries(state)) {
+              const el = document.getElementById(id);
+              if (el) {
+                if (el.type === "checkbox" || el.type === "radio")
+                  el.checked = value;
+                else el.value = value;
+              }
+            }
+          } catch (e) {
+            console.error("Error loading saved data:", e);
+            localStorage.removeItem("ecgInterpreterData");
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
