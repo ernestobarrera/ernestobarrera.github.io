@@ -1041,27 +1041,100 @@
   },
 },
         {
-          segment: "neck_lateral",
-          system: "Linfático",
-          color: "lime",
-          title: "Adenopatías Cervicales",
-          content: {
-            technique: `<ul><li><strong>Sonda:</strong> Lineal&nbsp;10–18&nbsp;MHz (curvo 5–9 MHz si cuello grueso).</li><li><strong>Posición:</strong> Supino, cuello extendido y girado contralateral.</li><li><strong>Técnica:</strong> Mapeo sistemático de niveles I–VI con Doppler color.</li></ul>`,
-            findings: `<strong>Benignos:</strong> Ovalados (corto/largo < 0.5), diámetro corto < 10 mm (hasta 11 mm en jugulodigástricos), corteza < 3 mm, hilio graso visible y vascularidad hiliar.<br>
-<strong>Sospechosos:</strong> Redondos (c/l > 0.5) o corteza > 3 mm, hipoecoicos, sin hilio, márgenes irregulares/lobulados, micro-calcificaciones o necrosis quística, “matting” (conglomerado de ganglios adheridos sin planos grasos) de ganglios, vascularidad periférica/caótica.
-`,
-            evidence: `<p>El POCUS puede diferenciar con buena precisión entre adenopatías reactivas y sospechosas, guiando la necesidad de seguimiento o biopsia.</p>`,
-            pearls: `<div class="pearls-section"><h5>Clave Diferencial</h5><p>La morfología es más importante que el tamaño. Un ganglio pequeño y redondo es más sospechoso que uno grande y ovalado.</p><h5>Impacto Clínico</h5><p>Permite tomar decisiones informadas sobre si una adenopatía requiere una actitud expectante (probable origen reactivo) o una investigación más profunda (sospecha de malignidad o infección específica como tuberculosis).</p></div>`,
-            videos: [
-              {
-                id: "fAMZ2M8PSok",
-                intro:
-                  "Utilidad de la ecografía en la evaluación de los nódulos cervicales",
-                desc: "descripción de la anatomía cervical, exploración ecográfica y evaluación de nódulos",
-              },
-            ],
-          },
-        },
+  segment: "neck_lateral",
+  system: "Linfático",
+  color: "lime",
+  title: "Adenopatías Cervicales",
+  content: {
+    technique: `<ul>
+        <li><strong>Sonda:</strong> Lineal de alta frecuencia (7.5-10 MHz) para ganglios superficiales. Sonda convexa (3.5-5 MHz) para los más profundos.</li>
+        <li><strong>Posicionamiento del paciente:</strong>
+            <ul>
+                <li class="ml-4"><strong>Cuello:</strong> Paciente en decúbito supino con ligera hiperextensión cervical y cabeza girada contralateralmente a la zona a explorar.</li>
+                <li class="ml-4"><strong>Axila:</strong> Paciente en decúbito supino, colocando el brazo ipsilateral por detrás de la cabeza para exponer completamente la fosa axilar.</li>
+                <li class="ml-4"><strong>Ingle:</strong> Paciente en decúbito supino, con la pierna del lado a explorar en ligera flexión y abducción (posición de "rana").</li>
+            </ul>
+        </li>
+        <li><strong>Técnica de exploración:</strong> Realizar siempre cortes longitudinales y transversales de la adenopatía. Comparar la ecogenicidad con los músculos adyacentes y evaluar la vascularización con Doppler color.</li>
+    </ul>`,
+    findings: `
+    <h3 class="text-lg font-bold text-gray-800 mb-3 text-center">Guía Visual para la Evaluación de Adenopatías</h3>
+    <div class="overflow-x-auto border rounded-lg">
+        <table class="w-full text-sm text-left">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                <tr>
+                    <th scope="col" class="py-3 px-4 w-1/4">Característica</th>
+                    <th scope="col" class="py-3 px-4 text-center text-blue-600">Hallazgos de Benignidad (Reactivos)</th>
+                    <th scope="col" class="py-3 px-4 text-center text-red-600">Hallazgos de Sospecha (Malignos)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="bg-white border-b">
+                    <td class="py-3 px-4 font-semibold">Morfología General</td>
+                    <td class="py-3 px-4 text-center">
+                        <svg width="60" height="40" class="mx-auto" aria-hidden="true"><ellipse cx="30" cy="20" rx="28" ry="15" stroke="#3b82f6" stroke-width="2" fill="#eff6ff"/><line x1="15" y1="20" x2="45" y2="20" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/></svg>
+                        <p class="mt-1">Forma <strong>ovalada</strong></p>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <svg width="50" height="40" class="mx-auto" aria-hidden="true"><ellipse cx="25" cy="20" rx="20" ry="18" stroke="#ef4444" stroke-width="2" fill="#fef2f2"/></svg>
+                        <p class="mt-1">Forma <strong>redondeada</strong></p>
+                    </td>
+                </tr>
+                <tr class="bg-gray-50 border-b">
+                    <td class="py-3 px-4 font-semibold">Métricas Clave</td>
+                    <td class="py-3 px-4">
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>Relación Largo/Corto: <strong>> 2</strong></li>
+                            <li>Eje corto: <strong>< 10 mm</strong></li>
+                            <li>Corteza: Fina, <strong>< 3 mm</strong></li>
+                        </ul>
+                    </td>
+                    <td class="py-3 px-4">
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>Relación Largo/Corto: <strong>< 2</strong></li>
+                            <li>Eje corto: <strong>> 10 mm</strong></li>
+                            <li>Corteza: Engrosada, <strong>> 3 mm</strong></li>
+                        </ul>
+                    </td>
+                </tr>
+                <tr class="bg-white border-b">
+                    <td class="py-3 px-4 font-semibold">Estructura Interna</td>
+                    <td class="py-3 px-4">
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>Hilio graso: <strong>Presente</strong> y central</li>
+                            <li>Ecoestructura: <strong>Homogénea</strong></li>
+                            <li>Bordes: Lisos y definidos</li>
+                        </ul>
+                    </td>
+                    <td class="py-3 px-4">
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>Hilio graso: <strong>Ausente</strong> o desplazado</li>
+                            <li>Ecoestructura: <strong>Heterogénea</strong></li>
+                            <li>Bordes: <strong>Irregulares</strong>, espiculados</li>
+                        </ul>
+                    </td>
+                </tr>
+                <tr class="bg-gray-50">
+                    <td class="py-3 px-4 font-semibold">Vascularización (Doppler)</td>
+                    <td class="py-3 px-4">Patrón <strong>hiliar o central</strong>, ordenado.</td>
+                    <td class="py-3 px-4">Patrón <strong>periférico, mixto o caótico</strong>.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    `,
+    evidence: `<p>El POCUS puede diferenciar con buena precisión entre adenopatías reactivas y sospechosas, guiando la necesidad de seguimiento o biopsia.</p>`,
+    pearls: `<div class="pearls-section"><h5>Clave Diferencial</h5><p>La morfología es más importante que el tamaño. Un ganglio pequeño y redondo es más sospechoso que uno grande y ovalado.</p><h5>Impacto Clínico</h5><p>Permite tomar decisiones informadas sobre si una adenopatía requiere una actitud expectante (probable origen reactivo) o una investigación más profunda (sospecha de malignidad o infección específica como tuberculosis).</p></div>`,
+    videos: [
+      {
+        id: "fAMZ2M8PSok",
+        intro:
+          "Utilidad de la ecografía en la evaluación de los nódulos cervicales",
+        desc: "descripción de la anatomía cervical, exploración ecográfica y evaluación de nódulos",
+      },
+    ],
+  },
+},
         {
           segment: "cardiac",
           system: "Cardiovascular",
