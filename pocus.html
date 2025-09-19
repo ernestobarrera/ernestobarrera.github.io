@@ -1122,6 +1122,55 @@
             </tbody>
         </table>
     </div>
+    <div class="mt-4 p-3 bg-lime-50 rounded-lg border border-lime-300">
+      <h5 class="text-sm font-bold text-lime-800 mb-3 text-center">Comparación Visual: Ganglio Normal vs Patológico</h5>
+      <div class="flex justify-center items-start gap-6">
+        <div class="text-center">
+          <svg width="120" height="140" viewBox="0 0 120 140">
+            <!-- Ganglio normal ovalado -->
+            <ellipse cx="60" cy="50" rx="35" ry="20" fill="#e0f2fe" stroke="#3b82f6" stroke-width="2"/>
+            <!-- Hilio graso central -->
+            <ellipse cx="60" cy="50" rx="12" ry="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+            <!-- Flujo vascular hiliar -->
+            <path d="M 60 42 L 60 58" stroke="#ef4444" stroke-width="2"/>
+            <path d="M 55 50 L 65 50" stroke="#ef4444" stroke-width="1"/>
+            
+            <text x="60" y="85" text-anchor="middle" font-size="11" font-weight="bold" fill="#3b82f6">BENIGNO</text>
+            <text x="60" y="98" text-anchor="middle" font-size="9" fill="#666">L/C > 2</text>
+            <text x="60" y="110" text-anchor="middle" font-size="9" fill="#666">Eje corto < 10mm</text>
+            <text x="60" y="122" text-anchor="middle" font-size="9" fill="#666">Hilio central</text>
+            <text x="60" y="134" text-anchor="middle" font-size="9" fill="#ef4444">Flujo hiliar</text>
+          </svg>
+        </div>
+        
+        <div class="text-center">
+          <svg width="120" height="140" viewBox="0 0 120 140">
+            <!-- Ganglio patológico redondeado -->
+            <circle cx="60" cy="50" r="30" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+            <!-- Textura heterogénea -->
+            <circle cx="50" cy="45" r="8" fill="#9ca3af" opacity="0.5"/>
+            <circle cx="70" cy="55" r="6" fill="#6b7280" opacity="0.5"/>
+            <!-- Flujo periférico caótico -->
+            <path d="M 35 35 Q 30 50 35 65" stroke="#ef4444" stroke-width="2"/>
+            <path d="M 85 35 Q 90 50 85 65" stroke="#ef4444" stroke-width="2"/>
+            <path d="M 45 30 Q 60 25 75 30" stroke="#ef4444" stroke-width="1"/>
+            <path d="M 45 70 Q 60 75 75 70" stroke="#ef4444" stroke-width="1"/>
+            
+            <text x="60" y="85" text-anchor="middle" font-size="11" font-weight="bold" fill="#dc2626">SOSPECHOSO</text>
+            <text x="60" y="98" text-anchor="middle" font-size="9" fill="#666">L/C < 2</text>
+            <text x="60" y="110" text-anchor="middle" font-size="9" fill="#666">Eje corto > 10mm</text>
+            <text x="60" y="122" text-anchor="middle" font-size="9" fill="#666">Hilio ausente</text>
+            <text x="60" y="134" text-anchor="middle" font-size="9" fill="#ef4444">Flujo periférico</text>
+          </svg>
+        </div>
+      </div>
+      
+      <div class="mt-3 p-2 bg-amber-50 border border-amber-200 rounded">
+        <p class="text-xs font-semibold text-amber-800 text-center">
+          ⚠️ Recuerda: La morfología es más importante que el tamaño
+        </p>
+      </div>
+    </div>
     `,
     evidence: `<p>El POCUS puede diferenciar con buena precisión entre adenopatías reactivas y sospechosas, guiando la necesidad de seguimiento o biopsia.</p>`,
     pearls: `<div class="pearls-section"><h5>Clave Diferencial</h5><p>La morfología es más importante que el tamaño. Un ganglio pequeño y redondo es más sospechoso que uno grande y ovalado.</p><h5>Impacto Clínico</h5><p>Permite tomar decisiones informadas sobre si una adenopatía requiere una actitud expectante (probable origen reactivo) o una investigación más profunda (sospecha de malignidad o infección específica como tuberculosis).</p></div>`,
@@ -1155,8 +1204,193 @@
           title: "Exploración Pulmonar (Protocolo BLUE)",
           refId: "pneumothorax_lichtenstein_2008",
           content: {
-            technique: `<ul><li><strong>Sonda:</strong> Convexa (para una visión general y profunda) o lineal (para un mejor detalle de la pleura, como en la búsqueda de neumotórax).</li><li><strong>Técnica (Protocolo BLUE):</strong> Se examinan 3 puntos en cada hemitórax. <strong>Punto 1 y 2 (Anteriores):</strong> En línea medioclavicular, uno superior y otro inferior. <strong>Punto 3 (PLAPS):</strong> En línea axilar posterior, a nivel del diafragma. El examen debe ser bilateral y comparativo.</li></ul>`,
-            findings: `Se evalúa la presencia o ausencia de artefactos clave: <br>1) <strong>Deslizamiento pleural (Lung Sliding):</strong> Movimiento brillante de la pleura visceral contra la parietal. Su ausencia es el primer signo de <strong>neumotórax</strong>. <br>2) <strong>Líneas B:</strong> Artefactos verticales, similares a "colas de cometa", que nacen de la pleura y borran las líneas A. Múltiples y difusas sugieren <strong>edema pulmonar</strong>. Focales pueden indicar <strong>neumonía</strong>. <br>3) <strong>Consolidación:</strong> El pulmón adquiere una apariencia similar al hígado ("hepatización"), a menudo con broncograma aéreo (líneas hiperecogénicas). Típico de <strong>neumonía</strong>. <br>4) <strong>Derrame Pleural:</strong> Espacio anecoico (negro) entre las pleuras, mejor visualizado en el punto PLAPS.`,
+            technique: `<ul><li><strong>Sonda:</strong> Convexa (para una visión general y profunda) o lineal (para un mejor detalle de la pleura, como en la búsqueda de neumotórax).</li><li><strong>Técnica (Protocolo BLUE):</strong> Se examinan 3 puntos en cada hemitórax. <strong>Punto 1 y 2 (Anteriores):</strong> En línea medioclavicular, uno superior y otro inferior. <strong>Punto 3 (PLAPS):</strong> En línea axilar posterior, a nivel del diafragma. El examen debe ser bilateral y comparativo.</li></ul>
+    
+    <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+      <h4 class="text-base font-bold text-blue-700 mb-3 text-center">Puntos del Protocolo BLUE</h4>
+      <div class="flex justify-center">
+        <svg width="240" height="280" viewBox="0 0 240 280">
+          <!-- Silueta del tórax -->
+          <path d="M 120 30 Q 90 30, 75 45 L 70 120 L 65 180 Q 65 210, 90 220 L 120 225 L 150 220 Q 175 210, 175 180 L 170 120 L 165 45 Q 150 30, 120 30" 
+                fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <!-- Línea media -->
+          <line x1="120" y1="30" x2="120" y2="225" stroke="#0284c7" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>
+          <!-- Clavículas -->
+          <path d="M 75 50 L 90 45" stroke="#6b7280" stroke-width="1"/>
+          <path d="M 165 50 L 150 45" stroke="#6b7280" stroke-width="1"/>
+          
+          <!-- LADO IZQUIERDO -->
+          <!-- Punto 1 - Superior -->
+          <circle cx="90" cy="70" r="10" fill="#3b82f6" stroke="#1e40af" stroke-width="2"/>
+          <text x="90" y="75" text-anchor="middle" font-size="12" fill="white" font-weight="bold">1</text>
+          <text x="50" y="70" font-size="10" fill="#1e40af">Superior</text>
+          
+          <!-- Punto 2 - Inferior -->
+          <circle cx="90" cy="130" r="10" fill="#3b82f6" stroke="#1e40af" stroke-width="2"/>
+          <text x="90" y="135" text-anchor="middle" font-size="12" fill="white" font-weight="bold">2</text>
+          <text x="50" y="130" font-size="10" fill="#1e40af">Inferior</text>
+          
+          <!-- Línea medioclavicular -->
+          <line x1="90" y1="50" x2="90" y2="160" stroke="#3b82f6" stroke-width="1" stroke-dasharray="2,2" opacity="0.5"/>
+          
+          <!-- Punto 3 - PLAPS -->
+          <circle cx="145" cy="170" r="10" fill="#10b981" stroke="#059669" stroke-width="2"/>
+          <text x="145" y="175" text-anchor="middle" font-size="12" fill="white" font-weight="bold">3</text>
+          <text x="180" y="170" font-size="10" fill="#059669">PLAPS</text>
+          
+          <!-- LADO DERECHO -->
+          <!-- Punto 1 - Superior -->
+          <circle cx="150" cy="70" r="10" fill="#3b82f6" stroke="#1e40af" stroke-width="2"/>
+          <text x="150" y="75" text-anchor="middle" font-size="12" fill="white" font-weight="bold">1</text>
+          
+          <!-- Punto 2 - Inferior -->
+          <circle cx="150" cy="130" r="10" fill="#3b82f6" stroke="#1e40af" stroke-width="2"/>
+          <text x="150" y="135" text-anchor="middle" font-size="12" fill="white" font-weight="bold">2</text>
+          
+          <!-- Línea medioclavicular derecha -->
+          <line x1="150" y1="50" x2="150" y2="160" stroke="#3b82f6" stroke-width="1" stroke-dasharray="2,2" opacity="0.5"/>
+          
+          <!-- Punto 3 - PLAPS derecho -->
+          <circle cx="95" cy="170" r="10" fill="#10b981" stroke="#059669" stroke-width="2"/>
+          <text x="95" y="175" text-anchor="middle" font-size="12" fill="white" font-weight="bold">3</text>
+        </svg>
+      </div>
+      <div class="mt-3 text-xs text-gray-600 text-center">
+        <p><span class="inline-block w-3 h-3 bg-blue-500 rounded-full mr-1"></span> Puntos 1-2: Línea medioclavicular (anterior)</p>
+        <p><span class="inline-block w-3 h-3 bg-green-500 rounded-full mr-1"></span> Punto 3 (PLAPS): Línea axilar posterior</p>
+        <p class="mt-2 font-semibold">Examinar siempre bilateral y comparativo</p>
+      </div>
+    </div>`,
+            findings: `<div class="mb-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-300">
+      <h4 class="text-lg font-bold text-blue-800 mb-4 text-center">🫁 Los 4 Artefactos Pulmonares Clave - Nemotecnia: "DABC"</h4>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- D: Deslizamiento -->
+        <div class="bg-white p-3 rounded-lg border border-blue-200">
+          <div class="flex items-start">
+            <div class="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">D</div>
+            <div class="flex-1">
+              <h5 class="font-bold text-blue-700">Deslizamiento Pleural (Lung Sliding)</h5>
+              <p class="text-xs text-gray-600 mt-1">Movimiento horizontal brillante de la pleura visceral contra la parietal</p>
+              <div class="mt-2">
+                <svg width="100" height="60" viewBox="0 0 100 60" class="mx-auto">
+                  <rect x="10" y="20" width="80" height="2" fill="#3b82f6"/>
+                  <rect x="10" y="38" width="80" height="2" fill="#3b82f6"/>
+                  <path d="M 15 21 L 20 21 M 30 21 L 35 21 M 45 21 L 50 21 M 60 21 L 65 21 M 75 21 L 80 21" 
+                        stroke="#fff" stroke-width="1">
+                    <animate attributeName="d" 
+                             values="M 15 21 L 20 21 M 30 21 L 35 21 M 45 21 L 50 21 M 60 21 L 65 21 M 75 21 L 80 21;
+                                     M 20 21 L 25 21 M 35 21 L 40 21 M 50 21 L 55 21 M 65 21 L 70 21 M 80 21 L 85 21;
+                                     M 15 21 L 20 21 M 30 21 L 35 21 M 45 21 L 50 21 M 60 21 L 65 21 M 75 21 L 80 21"
+                             dur="1s" repeatCount="indefinite"/>
+                  </path>
+                  <text x="50" y="55" text-anchor="middle" font-size="8" fill="#666">Pleura parietal/visceral</text>
+                </svg>
+              </div>
+              <div class="mt-2 p-2 bg-red-50 rounded text-xs">
+                <strong>Su ausencia es el primer signo de NEUMOTÓRAX</strong> 🚨
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- A: A-lines -->
+        <div class="bg-white p-3 rounded-lg border border-blue-200">
+          <div class="flex items-start">
+            <div class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">A</div>
+            <div class="flex-1">
+              <h5 class="font-bold text-blue-700">Líneas A</h5>
+              <p class="text-xs text-gray-600 mt-1">Líneas horizontales equidistantes (reverberación)</p>
+              <div class="mt-2">
+                <svg width="100" height="60" viewBox="0 0 100 60" class="mx-auto">
+                  <rect x="0" y="0" width="100" height="60" fill="#1f2937"/>
+                  <line x1="10" y1="15" x2="90" y2="15" stroke="#fff" stroke-width="2"/>
+                  <line x1="10" y1="30" x2="90" y2="30" stroke="#fff" stroke-width="1" opacity="0.7"/>
+                  <line x1="10" y1="45" x2="90" y2="45" stroke="#fff" stroke-width="1" opacity="0.5"/>
+                  <text x="50" y="57" text-anchor="middle" font-size="8" fill="#fff">Pulmón aireado normal</text>
+                </svg>
+              </div>
+              <div class="mt-2 p-2 bg-green-50 rounded text-xs">
+                <strong>Patrón normal = Pulmón aireado</strong> ✓
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- B: B-lines -->
+        <div class="bg-white p-3 rounded-lg border border-blue-200">
+          <div class="flex items-start">
+            <div class="bg-yellow-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">B</div>
+            <div class="flex-1">
+              <h5 class="font-bold text-blue-700">Líneas B</h5>
+              <p class="text-xs text-gray-600 mt-1">Artefactos verticales "colas de cometa" que nacen de la pleura</p>
+              <div class="mt-2">
+                <svg width="100" height="60" viewBox="0 0 100 60" class="mx-auto">
+                  <rect x="0" y="0" width="100" height="60" fill="#1f2937"/>
+                  <line x1="10" y1="10" x2="90" y2="10" stroke="#fff" stroke-width="2"/>
+                  <path d="M 25 10 L 25 60" stroke="#60a5fa" stroke-width="3" opacity="0.8"/>
+                  <path d="M 50 10 L 50 60" stroke="#60a5fa" stroke-width="3" opacity="0.8"/>
+                  <path d="M 75 10 L 75 60" stroke="#60a5fa" stroke-width="3" opacity="0.8"/>
+                  <text x="50" y="57" text-anchor="middle" font-size="8" fill="#60a5fa">Borran líneas A</text>
+                </svg>
+              </div>
+              <div class="mt-2 p-2 bg-yellow-50 rounded text-xs">
+                <p><strong>Múltiples y difusas = EDEMA PULMONAR</strong> 💧</p>
+                <p class="mt-1">Focales pueden indicar NEUMONÍA</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- C: Consolidación -->
+        <div class="bg-white p-3 rounded-lg border border-blue-200">
+          <div class="flex items-start">
+            <div class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">C</div>
+            <div class="flex-1">
+              <h5 class="font-bold text-blue-700">Consolidación</h5>
+              <p class="text-xs text-gray-600 mt-1">Pulmón con apariencia similar al hígado ("hepatización")</p>
+              <div class="mt-2">
+                <svg width="100" height="60" viewBox="0 0 100 60" class="mx-auto">
+                  <rect x="0" y="0" width="100" height="60" fill="#6b7280"/>
+                  <circle cx="30" cy="25" r="3" fill="#fff"/>
+                  <circle cx="50" cy="30" r="3" fill="#fff"/>
+                  <circle cx="70" cy="25" r="3" fill="#fff"/>
+                  <circle cx="40" cy="40" r="2" fill="#fff"/>
+                  <circle cx="60" cy="42" r="2" fill="#fff"/>
+                  <text x="50" y="57" text-anchor="middle" font-size="8" fill="#fff">Broncograma aéreo</text>
+                </svg>
+              </div>
+              <div class="mt-2 p-2 bg-purple-50 rounded text-xs">
+                <p><strong>Con broncograma aéreo = NEUMONÍA</strong> 🦠</p>
+                <p class="text-[10px] mt-1">Líneas hiperecogénicas dentro del tejido consolidado</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nemotecnia -->
+      <div class="mt-4 p-3 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg text-center">
+        <p class="font-bold text-sm text-blue-800">🧠 Nemotecnia: "DABC del Pulmón"</p>
+        <p class="text-xs mt-1 text-gray-700">
+          <strong>D</strong>eslizamiento ausente → Neumotórax |
+          <strong>A</strong>-líneas → Normal |
+          <strong>B</strong>-líneas → Edema |
+          <strong>C</strong>onsolidación → Neumonía
+        </p>
+      </div>
+
+      <!-- Hallazgo adicional -->
+      <div class="mt-3 p-3 bg-cyan-50 border border-cyan-300 rounded">
+        <h5 class="font-bold text-cyan-700 text-sm mb-1">Derrame Pleural</h5>
+        <p class="text-xs text-gray-700">Espacio anecoico (negro) entre las pleuras, mejor visualizado en el punto PLAPS. Se ve como una colección líquida que puede contener ecos móviles en su interior.</p>
+      </div>
+
+      <!-- Perla Clínica -->
+      <div class="mt-3 p-2 bg-amber-50 border border-amber-300 rounded text-xs">
+        <p><strong>💡 Perla del Modo M:</strong> El deslizamiento pleural normal muestra el "signo de la playa" (arena abajo = pulmón, mar arriba = pared torácica). Su ausencia muestra el "signo del código de barras" = neumotórax.</p>
+      </div>
+    </div>`,
             evidence: `<p>La ecografía pulmonar, utilizando protocolos como el BLUE, ha demostrado una alta precisión diagnóstica para las principales causas de insuficiencia respiratoria aguda, superando en muchos casos a la radiografía de tórax portátil.</p>`,
             pearls: `<div class="pearls-section"><h5>Clave de la Exploración</h5><p>El punto PLAPS (PosteroLateral Alveolar and/or Pleural Syndrome) es el área más sensible para detectar derrames pleurales y consolidaciones basales, que son las más comunes.</p><h5>Errores Comunes</h5><p>Confundir una línea B con una línea Z (más corta, no borra las líneas A). En un neumotórax, asegúrate de buscar el "punto pulmonar" (donde el deslizamiento reaparece), que es patognomónico.</p></div>`,
             videos: [
@@ -1213,7 +1447,39 @@
           refId: "aaa_rubano_2013",
           content: {
             technique: `<ul><li><strong>Sonda:</strong> Convexa.</li><li><strong>Técnica:</strong> Medir diámetro anteroposterior máximo de pared externa a externa, desde epigastrio a bifurcación.</li></ul>`,
-            findings: `Se busca una dilatación focal de la aorta. Un diámetro <strong>> 3.0 cm</strong> se considera aneurismático. Es importante medir el diámetro máximo y evaluar la presencia de trombo mural, que aparece como material ecogénico adherido a la pared que reduce la luz permeable.`,
+            findings: `Se busca una dilatación focal de la aorta. Un diámetro <strong>> 3.0 cm</strong> se considera aneurismático. Es importante medir el diámetro máximo y evaluar la presencia de trombo mural, que aparece como material ecogénico adherido a la pared que reduce la luz permeable.
+    
+    <div class="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+      <h4 class="text-base font-bold text-green-700 mb-3 text-center">Comparación Visual: Aorta Normal vs AAA</h4>
+      <div class="flex justify-center items-center gap-8">
+        <div class="text-center">
+          <svg width="140" height="120" viewBox="0 0 140 120">
+            <circle cx="60" cy="50" r="12" fill="#ef4444" stroke="#b91c1c" stroke-width="2"/>
+            <circle cx="60" cy="50" r="25" fill="none" stroke="#1e40af" stroke-width="2" stroke-dasharray="2,2"/>
+            <line x1="35" y1="50" x2="85" y2="50" stroke="#000" stroke-width="1" marker-end="url(#arrowhead)"/>
+            <text x="60" y="35" text-anchor="middle" font-size="9" fill="#000">2.2 cm</text>
+            <text x="60" y="90" text-anchor="middle" font-size="12" font-weight="bold">Normal</text>
+            <text x="60" y="105" text-anchor="middle" font-size="10" fill="#666">2.0-2.5 cm</text>
+          </svg>
+        </div>
+        <div class="text-center">
+          <svg width="140" height="120" viewBox="0 0 140 120">
+            <circle cx="60" cy="50" r="35" fill="#fef2f2" stroke="#ef4444" stroke-width="3"/>
+            <path d="M 35 35 Q 25 50 35 65 L 45 60 Q 40 50 45 40 Z" fill="#9ca3af" opacity="0.7"/>
+            <path d="M 85 35 Q 95 50 85 65 L 75 60 Q 80 50 75 40 Z" fill="#9ca3af" opacity="0.7"/>
+            <circle cx="60" cy="50" r="18" fill="#ef4444" stroke="#b91c1c" stroke-width="2"/>
+            <line x1="25" y1="50" x2="95" y2="50" stroke="#dc2626" stroke-width="1" marker-end="url(#arrowhead2)"/>
+            <text x="60" y="35" text-anchor="middle" font-size="9" fill="#dc2626">5.5 cm</text>
+            <text x="60" y="90" text-anchor="middle" font-size="12" font-weight="bold">AAA</text>
+            <text x="60" y="105" text-anchor="middle" font-size="10" fill="#dc2626">&gt; 3.0 cm</text>
+          </svg>
+        </div>
+      </div>
+      <div class="mt-3 text-xs text-gray-600 text-center">
+        <p><span class="inline-block w-3 h-3 bg-gray-400 opacity-70 rounded mr-1"></span> = Trombo mural (reduce luz vascular)</p>
+        <p class="mt-1 font-bold text-sm">Punto de corte diagnóstico: 3.0 cm</p>
+      </div>
+    </div>`,
             evidence: `<p>Excelente para cribado. Sensibilidad: <strong>99%</strong>, Especificidad: <strong>98%</strong>. Sigue las guías de cribado de la USPSTF.</p>`,
             pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Confundir la VCI con la aorta. La aorta tiene paredes más gruesas e hiperecogénicas, es pulsátil y no se comprime. La VCI tiene paredes finas, varía con la respiración y se comprime.</p><h5>Impacto Clínico</h5><p>El gas intestinal es el enemigo. Use compresión graduada para desplazarlo. Si la aorta no se ve bien, coloque al paciente en decúbito lateral izquierdo.</p></div>`,
           },
@@ -1226,24 +1492,236 @@
           refId: "appendicitis_bernardi_2022",
           content: {
             technique: `<ul><li><strong>Sonda:</strong> Lineal.</li><li><strong>Técnica:</strong> Compresión graduada sobre el punto de máximo dolor en fosa ilíaca derecha.</li></ul>`,
-            findings: `Se busca una estructura tubular, aperistáltica, <strong>no compresible</strong>, de extremo ciego. Un diámetro transverso <strong>> 6 mm</strong> es el criterio principal. En corte transversal, muestra el <strong>signo de la diana (Target sign)</strong>. Se pueden ver hallazgos secundarios como un apendicolito (foco hiperecogénico con sombra), líquido libre localizado, o aumento de la ecogenicidad de la grasa periapendicular.`,
+            findings: `Se busca una estructura tubular, aperistáltica, <strong>no compresible</strong>, de extremo ciego. Un diámetro transverso <strong>> 6 mm</strong> es el criterio principal. En corte transversal, muestra el <strong>signo de la diana (Target sign)</strong>. Se pueden ver hallazgos secundarios como un apendicolito (foco hiperecogénico con sombra), líquido libre localizado, o aumento de la ecogenicidad de la grasa periapendicular.
+    
+    <div class="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+      <h5 class="text-sm font-bold text-green-700 mb-2 text-center">Signo de la Diana en Apendicitis</h5>
+      <div class="flex justify-around items-center">
+        <div class="text-center">
+          <svg width="100" height="100" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="35" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+            <circle cx="50" cy="50" r="25" fill="#1f2937" opacity="0.3"/>
+            <circle cx="50" cy="50" r="15" fill="#fef3c7"/>
+            <circle cx="50" cy="50" r="8" fill="#1f2937" opacity="0.6"/>
+            <text x="50" y="85" text-anchor="middle" font-size="10" font-weight="bold">Corte Transversal</text>
+          </svg>
+        </div>
+        <div class="text-xs text-gray-600 max-w-xs">
+          <p class="mb-1">• Centro hipoecoico = luz</p>
+          <p class="mb-1">• Anillo intermedio hiperecogénico = mucosa/submucosa</p>
+          <p class="mb-1">• Anillo externo hipoecoico = muscular</p>
+          <p class="font-bold text-red-600">Diámetro total > 6 mm = Apendicitis</p>
+        </div>
+      </div>
+    </div>`,
             evidence: `<p>Excelente para <strong>confirmar (rule-in)</strong> si se visualiza el apéndice (LR+ de 9.24). Malo para <strong>descartar (rule-out)</strong>, ya que un apéndice normal o retrocecal puede no visualizarse.</p>`,
             pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Confundir un asa intestinal o un vaso con el apéndice. El apéndice es de extremo ciego y no tiene peristaltismo. La clave es la no compresibilidad.</p><h5>Impacto Clínico</h5><p>Un POCUS positivo es diagnóstico; uno negativo o no concluyente requiere más estudios o valoración clínica.</p></div>`,
           },
         },
         {
+  segment: "suprapubic",
+  system: "Urogenital",
+  color: "yellow",
+  title: "Evaluación Ecográfica de la Vejiga",
+  content: {
+    technique: `<ul>
+      <li><strong>Sonda:</strong> Convexa (3.5-5 MHz) o lineal para vejiga muy superficial.</li>
+      <li><strong>Preparación:</strong> Idealmente con vejiga moderadamente llena (150-300 ml) para evaluación de paredes. Para residuo postmiccional, medir dentro de 10 minutos tras micción.</li>
+      <li><strong>Técnica:</strong> Cortes transversales y sagitales suprapúbicos. Evaluar contenido, paredes, y medir en 3 dimensiones.</li>
+    </ul>`,
+    findings: `<div class="mb-4 p-4 bg-yellow-50 rounded-lg border border-yellow-300">
+      <h4 class="text-base font-bold text-yellow-700 mb-3 text-center">Evaluación Sistemática de la Vejiga</h4>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <!-- Anatomía Normal -->
+        <div class="bg-white p-3 rounded border border-yellow-200">
+          <h5 class="font-semibold text-sm text-yellow-700 mb-2">1. Anatomía Normal</h5>
+          <ul class="text-xs space-y-1">
+            <li>• <strong>Contenido:</strong> Anecoico (negro)</li>
+            <li>• <strong>Pared:</strong> 3-5 mm (llena), < 7 mm (vacía)</li>
+            <li>• <strong>Forma:</strong> Rectangular/piramidal (sagital)</li>
+            <li>• <strong>Jets ureterales:</strong> Flujo Doppler color</li>
+          </ul>
+        </div>
+        
+        <!-- Medición de Volumen -->
+        <div class="bg-white p-3 rounded border border-yellow-200">
+          <h5 class="font-semibold text-sm text-yellow-700 mb-2">2. Cálculo de Volumen</h5>
+          <div class="bg-gray-100 p-2 rounded text-center">
+            <p class="font-mono text-sm font-bold">V(ml) = 0.52 × H × W × L</p>
+            <p class="text-xs text-gray-600 mt-1">H=altura, W=ancho, L=longitud (cm)</p>
+          </div>
+          <div class="mt-2 text-xs">
+            <p class="font-semibold">Residuo Post-Miccional:</p>
+            <ul class="ml-3">
+              <li>• Normal: < 50 ml</li>
+              <li>• Límite: 50-100 ml</li>
+              <li class="text-red-600 font-bold">• Patológico: > 100 ml</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Hallazgos Patológicos -->
+      <div class="bg-white p-3 rounded border border-yellow-200">
+        <h5 class="font-semibold text-sm text-yellow-700 mb-2">3. Hallazgos Patológicos Frecuentes</h5>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+          <div class="border-l-4 border-red-400 pl-2">
+            <p class="font-semibold text-red-600">Retención/Globo:</p>
+            <ul class="ml-1">
+              <li>• Volumen > 400-600 ml</li>
+              <li>• Forma globulosa</li>
+              <li>• Paciente con RAO</li>
+            </ul>
+          </div>
+          <div class="border-l-4 border-blue-400 pl-2">
+            <p class="font-semibold text-blue-600">Litiasis:</p>
+            <ul class="ml-1">
+              <li>• Foco hiperecogénico</li>
+              <li>• Sombra acústica</li>
+              <li>• Móvil con cambios de posición</li>
+            </ul>
+          </div>
+          <div class="border-l-4 border-purple-400 pl-2">
+            <p class="font-semibold text-purple-600">Masa/Tumor:</p>
+            <ul class="ml-1">
+              <li>• Engrosamiento focal pared</li>
+              <li>• Masa intraluminal</li>
+              <li>• Fija, no móvil</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs mt-2">
+          <div class="border-l-4 border-orange-400 pl-2">
+            <p class="font-semibold text-orange-600">Cistitis:</p>
+            <ul class="ml-1">
+              <li>• Engrosamiento difuso > 7 mm</li>
+              <li>• Pared irregular</li>
+              <li>• Contenido con ecos (piuria)</li>
+            </ul>
+          </div>
+          <div class="border-l-4 border-green-400 pl-2">
+            <p class="font-semibold text-green-600">Coágulos:</p>
+            <ul class="ml-1">
+              <li>• Masas ecogénicas irregulares</li>
+              <li>• Sin sombra acústica</li>
+              <li>• Móviles, cambian forma</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Indicaciones clínicas -->
+      <div class="mt-3 p-2 bg-amber-50 border border-amber-300 rounded">
+        <p class="text-xs font-semibold text-amber-800">🔍 Indicaciones en AP:</p>
+        <ul class="text-xs ml-4 mt-1">
+          <li>• Sospecha de retención aguda o crónica</li>
+          <li>• STUI/LUTS con evaluación de residuo</li>
+          <li>• Hematuria para descartar litiasis/masas</li>
+          <li>• ITU recurrente (evaluar residuo, litiasis)</li>
+          <li>• Control post-sondaje</li>
+        </ul>
+      </div>
+    </div>`,
+    evidence: `<p>La ecografía vesical tiene una sensibilidad del 95% y especificidad del 99% para detectar volúmenes > 100 ml. Para litiasis vesical, la sensibilidad es del 96%. Es menos sensible para tumores pequeños (< 5 mm) pero detecta el 95% de los tumores > 1 cm. El residuo postmiccional elevado es predictor de retención aguda de orina y progresión de síntomas en HBP.</p>`,
+    pearls: `<div class="pearls-section">
+      <h5>Errores Comunes</h5>
+      <p>1) Subestimar el volumen por no obtener el diámetro máximo en cada uno de los 3 planos. 2) Diferenciar la vejiga de otras estructuras quísticas (ej. quiste ovárico grande) por su localización y forma. 3) Medir con vejiga excesivamente llena (>600 ml) puede dar formas anormales. 4) No esperar suficiente tiempo post-micción falsea el residuo.</p>
+      <h5>Impacto Clínico</h5>
+      <p>Permite una confirmación inmediata de la retención y la necesidad de sondaje, mejorando el confort del paciente. Evita sondajes innecesarios al cuantificar exactamente el volumen. Detecta complicaciones silentes de la HBP. Un residuo > 200 ml duplica el riesgo de ITU.</p>
+      <h5>Truco Práctico</h5>
+      <p>Si sospechas litiasis pero no la ves, pide al paciente que se ponga de pie y vuelve a explorar - las piedras caerán al suelo vesical y serán más visibles.</p>
+    </div>`,
+    videos: [
+      {
+        id: "POJozYVPgyw",
+        intro: "Evaluación ecográfica completa de la vejiga",
+        desc: "Técnica sistemática para evaluación vesical incluyendo medición de volumen, evaluación de paredes y detección de patología",
+      }
+    ],
+  },
+},
+        
+        
+        
+        {
           segment: "suprapubic",
           system: "Urogenital",
           color: "yellow",
-          title: "Retención Urinaria (Globo Vesical)",
+          title: "Evaluación Prostática",
           content: {
-            technique: `<ul><li><strong>Sonda:</strong> Convexa.</li><li><strong>Técnica:</strong> Colocar la sonda en la línea media suprapúbica. Obtener vistas transversales y sagitales de la vejiga.</li></ul>`,
-            findings: `Se visualiza la vejiga como una estructura anecoica (negra) de forma aproximadamente rectangular o elíptica. Se miden las 3 dimensiones: altura (H), anchura (W) y profundidad (L). El volumen se estima con la fórmula: <strong>Volumen (ml) ≈ 0.52 x H (cm) x W (cm) x L (cm)</strong>. Un volumen postmiccional > 100-150 ml se considera patológico.`,
-            evidence: `<p>El POCUS es mucho más preciso que la palpación o la percusión para diagnosticar la retención urinaria y evita cateterismos innecesarios.</p>`,
-            pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Subestimar el volumen por no obtener el diámetro máximo en cada uno de los 3 planos. Diferenciar la vejiga de otras estructuras quísticas (ej. quiste ovárico grande) por su localización y forma.</p><h5>Impacto Clínico</h5><p>Permite una confirmación inmediata de la retención y la necesidad de sondaje, mejorando el confort del paciente.</p></div>`,
+            technique: `<ul>
+              <li><strong>Sonda:</strong> Convexa (3.5-5 MHz) vía suprapúbica o endocavitaria (transrectal).</li>
+              <li><strong>Vía suprapúbica:</strong> Vejiga con 150-200 ml de orina como ventana acústica. Medir en planos transversal y sagital.</li>
+              <li><strong>Medición:</strong> Tres dimensiones - Transversal (T), Anteroposterior (AP) y Longitudinal (L).</li>
+            </ul>`,
+            findings: `<div class="mb-3 p-3 bg-yellow-50 rounded-lg border border-yellow-300">
+              <h5 class="text-sm font-bold text-yellow-700 mb-2">Evaluación del Volumen Prostático</h5>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="bg-white p-3 rounded border border-yellow-200">
+                  <p class="font-semibold text-xs mb-2">📐 Cálculo del Volumen:</p>
+                  <p class="text-center font-mono bg-gray-100 p-2 rounded text-sm">V(ml) = 0.52 × T × AP × L</p>
+                  <p class="text-xs text-gray-600 mt-1 text-center">Fórmula del elipsoide</p>
+                </div>
+                
+                <div class="bg-white p-3 rounded border border-yellow-200">
+                  <p class="font-semibold text-xs mb-2">📊 Valores Normales por Edad:</p>
+                  <ul class="text-xs space-y-1">
+                    <li>• 40-49 años: < 25 ml</li>
+                    <li>• 50-59 años: < 30 ml</li>
+                    <li>• 60-69 años: < 35 ml</li>
+                    <li>• ≥70 años: < 40 ml</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div class="mt-3 p-2 bg-white rounded border border-yellow-200">
+                <p class="font-semibold text-xs mb-2">🔍 Hallazgos Ecográficos:</p>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <p class="font-semibold text-green-600">HBP (Hiperplasia Benigna):</p>
+                    <ul class="ml-2">
+                      <li>• Aumento simétrico</li>
+                      <li>• Ecogenicidad homogénea</li>
+                      <li>• Contornos regulares</li>
+                      <li>• Lóbulo medio prominente</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p class="font-semibold text-red-600">Signos de Alarma:</p>
+                    <ul class="ml-2">
+                      <li>• Asimetría marcada</li>
+                      <li>• Nódulos hipoecoicos</li>
+                      <li>• Contornos irregulares</li>
+                      <li>• Invasión capsular</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <p class="text-sm mt-3"><strong>Índice de Protrusión Intravesical (IPP):</strong> Medir la distancia desde el cuello vesical hasta el punto más prominente de la próstata que protruye en la vejiga. Valores > 10 mm se asocian con obstrucción significativa.</p>`,
+            evidence: `<p>El volumen prostático por ecografía suprapúbica tiene buena correlación con la ecografía transrectal (r=0.89-0.95). Es útil para evaluar la respuesta al tratamiento médico y planificar cirugía. El IPP es un predictor independiente de obstrucción del tracto de salida vesical.</p>`,
+            pearls: `<div class="pearls-section">
+              <h5>Errores Comunes</h5>
+              <p>Medir con vejiga vacía o demasiado llena. El volumen vesical ideal es 150-300 ml. Una vejiga sobredistendida comprime la próstata y subestima su tamaño.</p>
+              <h5>Impacto Clínico</h5>
+              <p>En AP, la ecografía permite: 1) Cuantificar el tamaño prostático para decidir tratamiento (alfa-bloqueantes vs inhibidores 5-alfa reductasa), 2) Evaluar el residuo postmiccional, 3) Detectar complicaciones (retención, litiasis vesical).</p>
+              <h5>Correlación PSA</h5>
+              <p>PSA esperado ≈ Volumen prostático (ml) × 0.12. Un PSA mayor al esperado sugiere investigación adicional.</p>
+            </div>`,
+            videos: [
+              {
+                id: "Fzfz-V3t4DU",
+                intro: "Medición ecográfica del volumen prostático",
+                desc: "Técnica paso a paso para la evaluación suprapúbica de la próstata y cálculo del volumen",
+              }
+            ],
           },
-        },
-        {
+          },
+          {
           segment: "suprapubic",
           system: "Gineco-Obstétrico",
           color: "pink",
