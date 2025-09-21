@@ -633,6 +633,40 @@
         background: var(--gray-200);
         margin: 20px 0;
       }
+      /* --- CAMBIO: Estilos para la Interfaz Dual de FC --- */
+      .dual-option {
+        margin-bottom: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--gray-200);
+      }
+
+      .option-label {
+        display: block;
+        font-size: 12px;
+        color: var(--gray-600);
+        margin-bottom: 4px;
+        font-weight: 500;
+      }
+
+      .formula-text {
+        display: inline-block;
+        background: var(--primary-light);
+        color: var(--primary-dark);
+        font-size: 12px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 8px;
+        font-family: monospace;
+        vertical-align: middle;
+      }
+
+      .input-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* --- FIN CAMBIO --- */
     </style>
   </head>
   <body>
@@ -712,36 +746,58 @@
                 </div>
               </div>
             </div>
+            <!-- --- CAMBIO: Interfaz Dual para Cálculo de FC en Ritmo Regular --- -->
             <div id="regularInput" class="form-group">
-              <label class="form-label">
-                Intervalo R-R
-                <span class="tooltip">
-                  <span class="tooltip-icon">?</span>
-                  <span class="tooltip-content"
-                    ><strong>Medición:</strong> Cuente los cuadrados grandes
-                    (5mm) entre dos picos R. A 25mm/s: FC = 300 / cuad. A
-                    50mm/s: FC = 600 / cuad.</span
-                  >
-                </span>
-              </label>
-              <div class="input-row">
+              <label class="form-label"
+                >Intervalo R-R (Ritmo Regular)<span class="tooltip"
+                  ><span class="tooltip-icon">?</span
+                  ><span class="tooltip-content"
+                    ><strong>Método 1 (Cuadrados Grandes):</strong> Cuente los
+                    cuadrados grandes (5mm) entre dos picos R.<br /><strong
+                      >Método 2 (Cuadraditos):</strong
+                    >
+                    Cuente los cuadraditos (1mm) entre dos picos R.<br /><strong
+                      >Relación:</strong
+                    >
+                    1 cuadrado grande = 5 cuadraditos. Las constantes son: 300
+                    (grande), 1500 (pequeño).</span
+                  ></span
+                ></label
+              >
+
+              <!-- Opción 1: Cuadrados Grandes -->
+              <div class="input-row dual-option">
+                <div class="option-label">Método 1: Cuadrados Grandes</div>
                 <input
                   type="number"
                   class="input-field"
-                  id="rrInterval"
+                  id="rrIntervalLarge"
                   placeholder="4"
                   min="1"
                   max="50"
                   step="0.1"
                 />
-                <span class="input-unit">cuadrados grandes</span>
-                <span
-                  id="hrResult"
-                  class="calculated-value"
-                  style="display: none"
-                ></span>
+                <span class="input-unit">cuad. grandes</span>
+                <span class="formula-text">FC = 300 / RR</span>
+              </div>
+
+              <!-- Opción 2: Cuadraditos -->
+              <div class="input-row dual-option">
+                <div class="option-label">Método 2: Cuadraditos</div>
+                <input
+                  type="number"
+                  class="input-field"
+                  id="rrIntervalSmall"
+                  placeholder="20"
+                  min="1"
+                  max="500"
+                  step="0.5"
+                />
+                <span class="input-unit">cuad. pequeños</span>
+                <span class="formula-text">FC = 1500 / RR</span>
               </div>
             </div>
+            <!-- --- FIN CAMBIO --- -->
             <div id="irregularInput" class="form-group hidden">
               <label class="form-label" id="qrsCountLabel"
                 >QRS en 6 segundos (30 cuad. grandes)</label
@@ -758,6 +814,13 @@
                 <span class="input-unit">complejos</span>
               </div>
             </div>
+            <!-- - CAMBIO: Único div para mostrar la Frecuencia Cardiaca - -->
+            <div
+              id="hrResult"
+              class="calculated-value"
+              style="margin-top: 8px; font-weight: 500; display: none"
+            ></div>
+            <!-- - FIN CAMBIO - -->
             <div id="afibHelper" class="guided-question hidden">
               <p>
                 Ritmo irregular. ¿Se identifican ondas P claras y consistentes?
@@ -1530,6 +1593,20 @@
         for (const [id, func] of Object.entries(buttons)) {
           document.getElementById(id)?.addEventListener("click", func);
         }
+        // --- CAMBIO: Event Listeners para Actualización en Tiempo Real ---
+        // Escuchar cambios en los campos de RR para ritmo regular (Método 1 y Método 2)
+        document
+          .getElementById("rrIntervalLarge")
+          .addEventListener("input", calculateHR);
+        document
+          .getElementById("rrIntervalSmall")
+          .addEventListener("input", calculateHR);
+
+        // Escuchar cambios en el campo de QRS para ritmo irregular
+        document
+          .getElementById("qrsCount")
+          .addEventListener("input", calculateHR);
+        // --- FIN CAMBIO ---
       }
 
       function updateAndSave() {
@@ -1572,43 +1649,62 @@
       }
 
       // --- CORE CALCULATORS ---
+      // --- CAMBIO: Lógica de Cálculo Dual para FC (con actualización en tiempo real y claridad del método) ---
+      // --- CAMBIO: Lógica de Cálculo Dual para FC (con claridad del método y visualización correcta) ---
+      // - CAMBIO: Lógica de Cálculo Dual para FC (con identificación de método y corrección para irregular) -
+      // --- CAMBIO: Lógica de Cálculo Dual para FC (con identificación de método y corrección para irregular) ---
       function calculateHR() {
         const speed = parseInt(document.getElementById("paperSpeed").value, 10);
         const isRegular = document.getElementById("rhythmRegular").checked;
         let hr = null;
+        let methodText = ""; // Variable para almacenar el texto del método
 
         if (isRegular) {
-          const rrInterval = parseFloat(
-            document.getElementById("rrInterval").value
-          );
-          if (rrInterval > 0) hr = (speed === 25 ? 300 : 600) / rrInterval;
-        } else {
-          const qrsCount = parseFloat(
-            document.getElementById("qrsCount").value
-          );
-          if (qrsCount > 0) hr = qrsCount * 10;
-        }
+          // Obtener los valores de ambos campos
+          const rrLargeInput = document.getElementById("rrIntervalLarge");
+          const rrSmallInput = document.getElementById("rrIntervalSmall");
+          const rrLarge = parseFloat(rrLargeInput.value);
+          const rrSmall = parseFloat(rrSmallInput.value);
 
-        ecgData.heartRate = hr ? Math.round(hr) : null;
-        const hrResultEl = document.getElementById("hrResult");
-        if (ecgData.heartRate) {
-          hrResultEl.style.display = "inline-flex";
-          let hrText = `${ecgData.heartRate} lpm`;
-          if (ecgData.heartRate < HR_LOWER) {
-            hrResultEl.className = "calculated-value warning";
-            hrText += " (Bradicardia)";
-          } else if (ecgData.heartRate > HR_UPPER) {
-            hrResultEl.className = "calculated-value warning";
-            hrText += " (Taquicardia)";
-          } else {
-            hrResultEl.className = "calculated-value normal";
+          // Lógica robusta: Determinar qué método se usó y calcular FC
+          if (!isNaN(rrSmall) && rrSmall > 0) {
+            // Priorizamos el Método 2 (Cuadraditos) si tiene un valor válido
+            hr = (speed === 25 ? 1500 : 3000) / rrSmall;
+            methodText = " (Método: Cuadraditos)";
+          } else if (!isNaN(rrLarge) && rrLarge > 0) {
+            // Si no, usamos el Método 1 (Cuadrados Grandes)
+            hr = (speed === 25 ? 300 : 600) / rrLarge;
+            methodText = " (Método: Cuadrados Grandes)";
           }
-          hrResultEl.textContent = hrText;
+          // Si ninguno es válido, hr permanece null y methodText está vacío
         } else {
-          hrResultEl.style.display = "none";
+          // Mantener el cálculo para ritmo irregular
+          const qrsCountInput = document.getElementById("qrsCount");
+          const qrsCount = parseFloat(qrsCountInput.value);
+          // CORRECCIÓN: Comprobar NaN antes de usar el valor
+          if (!isNaN(qrsCount) && qrsCount > 0) {
+            hr = qrsCount * 10;
+            methodText = " (Método: Conteo QRS)";
+          }
+          // Si no es válido, hr permanece null y methodText está vacío
         }
-      }
 
+        // Guardar el resultado en ecgData
+        ecgData.heartRate = hr !== null ? Math.round(hr) : null;
+
+        // --- ACTUALIZAR el resultado visual INMEDIATAMENTE ---
+        const hrResultDiv = document.getElementById("hrResult");
+        if (ecgData.heartRate !== null) {
+          // Mostrar la FC junto con el método utilizado
+          hrResultDiv.textContent = `Frecuencia Cardíaca: ${ecgData.heartRate} lpm${methodText}`;
+          hrResultDiv.style.display = "block";
+        } else {
+          // Ocultar el div si no hay cálculo válido
+          hrResultDiv.style.display = "none";
+        }
+        // --- FIN ACTUALIZACIÓN VISUAL ---
+      }
+      // --- FIN CAMBIO ---
       function calculateIntervals() {
         const speed = parseInt(document.getElementById("paperSpeed").value, 10);
         const msPerSquare = speed === 25 ? 40 : 20;
@@ -1663,13 +1759,46 @@
 
           const sex = document.getElementById("patientSex").value;
           const qtcUpper = sex === "F" ? QTC_NORMAL_FEMALE : QTC_NORMAL_MALE;
-          let text = `QTc (Bazett): ${ecgData.qtc} ms`;
+          // --- CAMBIO: Mejora de Claridad en la Explicación del Cálculo del QTc ---
+          // (Dentro de la función recalculateQTc(), justo después de calcular ecgData.qtc y las constantes qtcUpper/sex)
+
+          let qtcText = `<strong>QTc (Bazett): ${ecgData.qtc} ms</strong>`;
+
+          // Solo mostrar detalles si los valores necesarios están disponibles
+          if (ecgData.qt !== null && ecgData.qt > 0 && ecgData.heartRate > 0) {
+            const rrInSec = 60 / ecgData.heartRate;
+            // Valores para mostrar
+            const qtMs = ecgData.qt;
+            // Calcular cuadraditos de QT asumiendo 40ms/cuadradito (25mm/s) - Necesita acceso al qtInterval original o recalcularlo
+            // Para simplificar y mantener claridad, podemos mostrar el valor de qtInterval si está disponible o decir "calculado"
+            // Como el valor original en cuadraditos no se guarda facilmente, lo mostramos como "calculado"
+            const rrSecRounded = Math.round(rrInSec * 1000) / 1000; // RR en segundos, redondeado para mostrar
+            const sqrtRrRounded = Math.round(Math.sqrt(rrInSec) * 1000) / 1000; // Raíz cuadrada del RR, redondeada a 3 decimales
+
+            qtcText += `<br><span style="font-size: 0.85em; line-height: 1.4;">`; // Iniciar bloque de detalles con tamaño de fuente más pequeño y espacio entre líneas
+            qtcText += `-> QTc = QT / √RR<br>`;
+            // Intentar obtener el valor original de qtInterval para mostrarlo
+            const qtIntervalInput =
+              parseFloat(document.getElementById("qtInterval")?.value) || null;
+            if (qtIntervalInput !== null) {
+              qtcText += `-> QT = ${qtMs} ms (de ${qtIntervalInput} cuadraditos)<br>`;
+            } else {
+              qtcText += `-> QT = ${qtMs} ms<br>`; // Fallback si no se puede obtener
+            }
+            qtcText += `-> RR = ${rrSecRounded} s (de FC=${ecgData.heartRate} bpm)<br>`;
+            qtcText += `-> √RR = ${sqrtRrRounded}<br>`;
+            qtcText += `-> QTc = ${qtMs} / ${sqrtRrRounded} = <strong>${ecgData.qtc} ms</strong>`;
+            qtcText += `</span>`; // Cerrar bloque de detalles
+          }
+
           let color = "var(--gray-700)";
-          if (ecgData.qtc > qtcUpper) {
-            text += " (Prolongado)";
+          if (ecgData.qtc !== null && ecgData.qtc > qtcUpper) {
+            qtcText += "<br> <strong>(Prolongado)</strong>";
             color = "var(--danger)";
           }
-          qtcDiv.innerHTML = `<span style="font-weight: 500; color: ${color};">${text}</span>`;
+
+          qtcDiv.innerHTML = `<span style="font-weight: 500; color: ${color};">${qtcText}</span>`;
+          // --- FIN CAMBIO ---
         } else {
           ecgData.qtc = null;
           qtcDiv.innerHTML = "";
