@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
       Sistema de Gestión de Avisos y Urgencias en Equipos de Atención Primaria
-      v1.0 (MVP)
+      v1.1
     </title>
     <style>
       /* === ESTILOS CSS === */
@@ -339,7 +339,7 @@
   <body>
     <div class="container">
       <header>
-        <h1>Sistema de Gestión de Avisos y Urgencias en AP v1.0 (MVP)</h1>
+        <h1>Sistema de Gestión de Avisos y Urgencias en AP v1.1</h1>
         <small>Round-Robin con MIXTOS como equilibradores del sistema</small>
       </header>
       <nav>
@@ -351,10 +351,45 @@
           <a href="#" onclick="mostrarSeccion('manual')">Manual de uso</a>
         </div>
         <div class="nav-right">
-          <button onclick="exportarConfiguracion()">Exportar</button>
-          <button onclick="document.getElementById('importarInput').click()">
-            Importar
-          </button>
+          <div style="display: flex; gap: 5px; align-items: center">
+            <span style="font-size: 0.85em; color: #666">Config:</span>
+            <button
+              onclick="exportarConfiguracion()"
+              title="Exportar configuración (médicos, festivos, etc.)"
+            >
+              📄 Exportar
+            </button>
+            <button
+              onclick="document.getElementById('importarInput').click()"
+              title="Importar configuración"
+            >
+              📥 Importar
+            </button>
+          </div>
+          <div style="display: flex; gap: 5px; align-items: center">
+            <span style="font-size: 0.85em; color: #666">Histórico:</span>
+            <button
+              onclick="exportarHistorico()"
+              class="warning"
+              title="Exportar histórico de guardias"
+            >
+              📊 Exportar
+            </button>
+            <button
+              onclick="document.getElementById('importarHistoricoInput').click()"
+              class="warning"
+              title="Importar histórico"
+            >
+              📈 Importar
+            </button>
+          </div>
+          <input
+            type="file"
+            id="importarHistoricoInput"
+            accept=".json"
+            style="display: none"
+            onchange="importarHistorico(event)"
+          />
           <input
             type="file"
             id="importarInput"
@@ -397,6 +432,9 @@
           <button class="tab-button" onclick="abrirTab(event, 'tabPlanTurnos')">
             Plan. Turnos (Mixtos)
           </button>
+          <button class="tab-button" onclick="abrirTab(event, 'tabParametros')">
+            Parámetros Avanzados
+          </button>
         </div>
         <!-- Tab Médicos -->
         <div id="tabMedicos" class="tab-content active">
@@ -422,6 +460,30 @@
             </label>
           </div>
           <button onclick="agregarMedico()">Agregar Médico</button>
+          <div
+            class="form-group"
+            style="
+              margin-top: 20px;
+              border-top: 1px solid #ddd;
+              padding-top: 20px;
+            "
+          >
+            <label for="importacionMasiva">
+              <strong>Importación rápida</strong> (pegar desde Excel):
+            </label>
+            <textarea
+              id="importacionMasiva"
+              placeholder="Formato: Nombre[TAB]Turno[TAB]Jornada%&#10;Ejemplo: GARCIA[TAB]MAÑANA[TAB]100"
+              style="width: 100%; height: 100px; font-family: monospace"
+            ></textarea>
+            <button onclick="procesarImportacionMasiva()">
+              Procesar Importación
+            </button>
+            <p class="help-text">
+              Copia las columnas desde Excel y pégalas aquí. Columnas: Nombre |
+              Turno (MAÑANA/TARDE/MIXTO) | Jornada% (opcional, por defecto 100)
+            </p>
+          </div>
           <h3 style="margin-top: 20px">Lista de Médicos</h3>
           <div class="table-container">
             <table id="tablaMedicos">
@@ -693,6 +755,121 @@
             </table>
           </div>
         </div>
+        <!-- Tab Parámetros Avanzados -->
+        <div id="tabParametros" class="tab-content">
+          <h3>Parámetros Avanzados del Sistema</h3>
+          <p class="help-text">
+            Configuración avanzada del algoritmo de asignación y compensación
+            histórica.
+          </p>
+
+          <div class="form-group">
+            <label for="factorCompensacion"
+              >Factor de Compensación Histórica:</label
+            >
+            <input
+              type="range"
+              id="factorCompensacion"
+              min="0"
+              max="100"
+              value="50"
+              oninput="document.getElementById('valorFactor').textContent = this.value + '%'"
+            />
+            <span id="valorFactor">50%</span>
+            <p class="help-text">
+              Determina qué porcentaje del desequilibrio histórico se compensa
+              cada mes. 0% = Sin compensación (sistema amnésico) 100% =
+              Compensación total (intenta equilibrar completamente cada mes)
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label for="ventanaHistorico">Ventana de Histórico (meses):</label>
+            <input
+              type="number"
+              id="ventanaHistorico"
+              min="1"
+              max="12"
+              value="6"
+            />
+            <p class="help-text">
+              Número de meses anteriores a considerar para el cálculo de
+              compensación.
+            </p>
+          </div>
+
+          <button onclick="guardarParametrosAvanzados()">
+            Guardar Parámetros
+          </button>
+          <h3 style="margin-top: 30px">Configuración del Algoritmo</h3>
+          <div class="form-group">
+            <label>
+              <input
+                type="checkbox"
+                id="usarAleatoriedad"
+                onchange="toggleAleatoriedad(this.checked)"
+              />
+              Usar desempate aleatorio controlado
+            </label>
+            <p class="help-text">
+              Varía las asignaciones en caso de empate manteniendo la equidad.
+            </p>
+          </div>
+
+          <div id="opcionesAleatoriedad" style="display: none">
+            <div class="form-group">
+              <label for="semillaAleatoria"
+                >Semilla (dejar vacío para automática):</label
+              >
+              <input
+                type="number"
+                id="semillaAleatoria"
+                placeholder="Ej: 12345"
+              />
+              <button onclick="generarSemillaAleatoria()">
+                Generar Nueva Semilla
+              </button>
+              <p class="help-text">
+                La misma semilla siempre produce el mismo resultado.
+              </p>
+            </div>
+          </div>
+          <div
+            style="
+              margin-top: 30px;
+              padding: 15px;
+              background-color: #f0f8ff;
+              border-radius: 5px;
+            "
+          >
+            <h4>📊 Resumen del Histórico</h4>
+            <div id="resumenHistorico" style="margin-top: 10px">
+              <!-- Se llena dinámicamente -->
+            </div>
+            <button
+              onclick="mostrarDetalleHistorico()"
+              class="info"
+              style="margin-top: 10px"
+            >
+              Ver Detalle por Meses
+            </button>
+          </div>
+          <h3 style="margin-top: 30px">Histórico de Saldos</h3>
+          <div class="table-container">
+            <table id="tablaHistorico">
+              <thead>
+                <tr>
+                  <th>Médico</th>
+                  <th>Saldo Acumulado</th>
+                  <th>Últimos 3 Meses</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyHistorico">
+                <!-- Se llena dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
       <!-- === SECCIÓN DEL CALENDARIO === -->
       <div id="calendario" class="seccion" style="display: none">
@@ -727,6 +904,9 @@
           <h3>Calendario de Guardias</h3>
           <button class="info" onclick="copiarCalendarioAlPortapapeles()">
             <span>📋</span> Copiar Calendario (HTML)
+          </button>
+          <button class="success" onclick="confirmarYGuardarHistorico()">
+            <span>💾</span> Guardar en Histórico
           </button>
           <div class="table-container">
             <table id="tablaCalendario">
@@ -778,114 +958,185 @@
       </div>
       <!-- === SECCIÓN MANUAL DE USO === -->
       <div id="manual" class="seccion" style="display: none">
-        <h2>Manual de Uso del Sistema v1.0</h2>
+        <h2>Manual de Uso del Sistema v1.1</h2>
 
-        <h3>1. Configuración</h3>
+        <h3>1. Introducción</h3>
         <p>
-          Antes de generar el calendario, debes configurar todos los parámetros:
+          Este documento es la guía de referencia para el
+          <strong>Sistema de Gestión de Avisos y Urgencias v1.1</strong>. El
+          objetivo de la aplicación es generar cuadrantes de guardias mensuales
+          de forma equitativa, distribuyendo la carga de trabajo entre los
+          profesionales.
+        </p>
+        <p>
+          La característica principal de esta versión es su
+          <strong>sistema de compensación histórica</strong>, que tiene en
+          cuenta la carga de trabajo de meses anteriores para garantizar un
+          equilibrio justo a largo plazo.
+        </p>
+
+        <h3>2. Paso 1: Configuración del Sistema</h3>
+        <p>
+          Antes de generar cualquier calendario, es imprescindible configurar
+          correctamente todos los parámetros del equipo. Esto se realiza a
+          través de las pestañas de la sección "Configuración".
         </p>
         <ul>
           <li>
-            <strong>Médicos:</strong> Añade todos los médicos participantes,
-            indicando su turno (MAÑANA, TARDE, MIXTO) y si están activos.
-          </li>
-          <li>
-            <strong>Jornada y Exclusiones:</strong> Define el porcentaje de
-            jornada (100% por defecto) y los días de la semana que un médico no
-            puede trabajar (por ejemplo, no hacer viernes).
+            <strong>Médicos:</strong> Permite añadir, eliminar y gestionar la
+            lista de profesionales. Cada médico tiene un turno asignado (MAÑANA,
+            TARDE o MIXTO) y un estado (Activo/Inactivo).
             <p class="help-text">
-              <strong>Explicación:</strong> El porcentaje de jornada afecta
-              directamente al número de guardias objetivo que se calcula para
-              ese médico. Las exclusiones semanales también reducen este
-              objetivo.
+              <strong>Nota:</strong> Se puede realizar una importación masiva de
+              profesionales pegando datos desde una hoja de cálculo en el campo
+              "Importación rápida". El formato es: `Nombre [TAB] Turno [TAB]
+              %Jornada`.
             </p>
           </li>
           <li>
-            <strong>Festivos:</strong> Añade las fechas de los días festivos que
-            no serán laborables.
+            <strong>Jornada y Exclusiones:</strong> Permite definir reducciones
+            de jornada (en %) y exclusiones de días fijos de la semana (ej. no
+            trabajar los viernes) para un médico.
             <p class="help-text">
-              <strong>Explicación:</strong> En los días festivos no se asignan
-              guardias. El sistema los ignora al calcular días laborables y
-              objetivos.
+              <strong>Efecto en el cálculo:</strong> Ambos parámetros reducen el
+              número de guardias "Objetivo" que el sistema calcula para ese
+              médico, de forma proporcional a los días que deja de estar
+              disponible.
             </p>
           </li>
           <li>
-            <strong>Ausencias:</strong> Registra periodos de vacaciones o bajas
-            de los médicos.
+            <strong>Festivos:</strong> Lista de fechas que se consideran no
+            laborables para todo el equipo.
             <p class="help-text">
-              <strong>Explicación:</strong> Las ausencias reducen el número de
-              días laborables para ese médico, lo que a su vez reduce su
-              objetivo de guardias.
+              <strong>Efecto en el cálculo:</strong> En estas fechas no se
+              asignará ninguna guardia. El total de guardias a cubrir en el mes
+              se reduce.
             </p>
           </li>
           <li>
-            <strong>Exclusiones Puntuales:</strong> Indica fechas específicas en
-            las que un médico no puede trabajar.
+            <strong>Ausencias (Vacaciones/Bajas):</strong> Permite registrar
+            rangos de fechas en los que un médico no está disponible.
             <p class="help-text">
-              <strong>Explicación:</strong> A diferencia de las ausencias, las
-              exclusiones puntuales no reducen el objetivo del médico. El
-              sistema simplemente evita asignarle guardias en esas fechas
-              específicas. Otros médicos deben cubrir esos días.
+              <strong>Efecto en el cálculo:</strong> Funciona de forma similar a
+              "Jornada y Exclusiones", reduciendo el objetivo de guardias del
+              médico afectado.
             </p>
           </li>
           <li>
-            <strong>Planificación de Turnos (Mixtos):</strong> Para los médicos
-            MIXTOS, define su jornada semanal (mañana o tarde para cada día
-            laborable).
+            <strong>Excl. Puntuales:</strong> Permite bloquear días específicos
+            para un médico por motivos personales.
             <p class="help-text">
-              <strong>Explicación:</strong> Los médicos MIXTOS solo pueden hacer
-              guardias en los turnos (mañana o tarde) que se les asignen en su
-              planificación semanal para cada día.
+              <strong>Diferencia clave con Ausencias:</strong> Una exclusión
+              puntual impide que al médico se le asigne una guardia ese día,
+              pero <strong>NO</strong> reduce su objetivo mensual. El sistema
+              intentará asignarle esa guardia en otro día disponible.
             </p>
+          </li>
+          <li>
+            <strong>Plan. Turnos (Mixtos):</strong> Define el turno (Mañana o
+            Tarde) que un médico de turno MIXTO realizará cada día de la semana.
+            <p class="help-text">
+              <strong>Efecto en el cálculo:</strong> Un médico MIXTO solo será
+              candidato para las guardias de la franja horaria que tenga
+              asignada ese día de la semana.
+            </p>
+          </li>
+          <li>
+            <strong>Parámetros Avanzados:</strong> Permite ajustar el
+            comportamiento del sistema de compensación histórica. Para un uso
+            estándar, no es necesario modificar los valores por defecto.
           </li>
         </ul>
 
-        <h3>2. Generación del Calendario</h3>
-        <p>Una vez configurado todo:</p>
+        <h3>3. Paso 2: Generación del Calendario Mensual</h3>
+        <p>Este es el proceso principal que se realiza cada mes.</p>
         <ol>
-          <li>Ve a la sección "Calendario".</li>
-          <li>Selecciona el mes y el año deseados.</li>
-          <li>Haz clic en "Generar Guardias".</li>
+          <li>Accede a la pestaña <strong>"Calendario"</strong>.</li>
+          <li>
+            Selecciona el <strong>Mes</strong> y el
+            <strong>Año</strong> deseados.
+          </li>
+          <li>Pulsa el botón <strong>"Generar Guardias"</strong>.</li>
         </ol>
-
-        <h3>3. Resultados</h3>
         <p>
-          El sistema generará un calendario con las asignaciones de guardias
-          para cada día laborable del mes, respetando todas las restricciones y
-          buscando la máxima equidad.
+          El sistema mostrará el calendario y la tabla de resumen con los
+          resultados.
+        </p>
+
+        <h3>4. Paso 3: Análisis y Guardado de Resultados</h3>
+        <p>Tras la generación, se presentan dos bloques de información:</p>
+        <ul>
+          <li>
+            <strong>Calendario de Guardias:</strong> La tabla principal que
+            muestra qué médico ha sido asignado a cada uno de los 4 puestos
+            diarios (Avisos/Urgencias de Mañana/Tarde).
+          </li>
+          <li>
+            <strong>Resumen de Asignación:</strong> Una tabla que desglosa por
+            médico el número de guardias objetivo, las finalmente asignadas, la
+            diferencia, y otros datos estadísticos.
+          </li>
+        </ul>
+        <h4>Acción Obligatoria: Guardar el Resultado en el Histórico</h4>
+        <p>
+          Una vez verificado y aprobado el calendario, es
+          <strong>IMPRESCINDIBLE</strong> realizar la siguiente acción para el
+          correcto funcionamiento del sistema de compensación:
+        </p>
+        <p style="text-align: center; margin: 15px 0">
+          <button class="success" style="pointer-events: none">
+            <span>💾</span> Guardar en Histórico
+          </button>
         </p>
         <p>
-          El <strong>Resumen de Asignación</strong> muestra para cada médico:
+          Esta acción registra la columna "Dif." (Diferencia) de cada médico en
+          una base de datos interna. Este dato es el que se utilizará en meses
+          futuros para aplicar la compensación.
+        </p>
+
+        <h3>5. Funcionalidad Clave: El Sistema de Compensación Histórica</h3>
+        <h4>Principio de Funcionamiento</h4>
+        <p>
+          El sistema calcula un <strong>"saldo"</strong> para cada médico, que
+          es la suma de las "Diferencias" de todos los meses guardados en el
+          histórico.
         </p>
         <ul>
           <li>
-            <strong>Objetivo:</strong> Número de guardias que debería hacer
-            según su jornada, ausencias y exclusiones.
+            Un <strong>saldo positivo</strong> (ej. `+3.5`) significa que el
+            médico ha realizado más guardias de las que le correspondían.
           </li>
           <li>
-            <strong>Asignadas:</strong> Número de guardias que se le han
-            asignado.
-          </li>
-          <li><strong>Dif.:</strong> Diferencia entre asignadas y objetivo.</li>
-          <li>
-            <strong>%AVI:</strong> Porcentaje de guardias que son de avisos.
-          </li>
-          <li>
-            <strong>L, V:</strong> Número de guardias hechas los lunes y
-            viernes.
+            Un <strong>saldo negativo</strong> (ej. `-2.0`) significa que ha
+            realizado menos.
           </li>
         </ul>
         <p>
-          El <strong>Análisis de Equidad</strong> indica si la diferencia entre
-          el médico con más y el de menos guardias es menor o igual a 2, lo cual
-          es el criterio de equidad del sistema.
+          Al calcular el "Objetivo" de un nuevo mes, el sistema primero calcula
+          un objetivo base (proporcional a la disponibilidad) y luego le aplica
+          un <strong>ajuste basado en el saldo</strong>. De esta forma, el
+          reparto tiende a un equilibrio de `0` a largo plazo.
         </p>
 
-        <h3>4. Importar/Exportar</h3>
+        <h3>6. Gestión de Datos: Importar y Exportar</h3>
         <p>
-          Puedes guardar toda tu configuración haciendo clic en "Exportar". Esto
-          descargará un archivo JSON. Para cargar una configuración previa, haz
-          clic en "Importar" y selecciona el archivo JSON correspondiente.
+          La aplicación permite importar y exportar dos tipos de datos
+          distintos:
+        </p>
+        <h4>Exportar/Importar Configuración (Botones Azules 📄/📥)</h4>
+        <p>
+          Guarda y carga el estado de la sección de
+          <strong>Configuración</strong> (lista de médicos, festivos, ausencias,
+          etc.). Es útil para tener una copia de seguridad de la estructura del
+          equipo o para trasladarla a otro ordenador.
+        </p>
+
+        <h4>Exportar/Importar Histórico (Botones Amarillos 📊/📈)</h4>
+        <p>
+          Guarda y carga la base de datos del
+          <strong>histórico de saldos</strong>. Es fundamental para mantener una
+          copia de seguridad de los datos de compensación acumulados a lo largo
+          del tiempo.
         </p>
       </div>
       <div
@@ -946,7 +1197,7 @@
         </div>
       </div>
       <div class="footer">
-        <p>Sistema v1.0 - Septiembre 2025</p>
+        <p>Sistema v1.1 - Septiembre 2025</p>
       </div>
     </div>
     <script>
@@ -960,6 +1211,19 @@
         planificacionesTurnos: [],
         calendarioGenerado: [],
         resumenAsignacion: {},
+        resumenAsignacion: {},
+
+        historico: {
+          meses: {},
+          saldoAcumulado: {},
+          factorCompensacion: 0.5,
+          ventanaHistorico: 6,
+        },
+        configuracionAlgoritmo: {
+          usarAleatoriedad: false,
+          semilla: null,
+          rotacionInicial: 0,
+        },
       };
       const MAX_DIFERENCIA_PERMITIDA = 2;
       const MIN_PORCENTAJE_TIPO = 0.35;
@@ -1016,11 +1280,74 @@
       }
       // === FUNCIONES DE GESTIÓN DE DATOS ===
       function guardarEnMemoria() {
-        localStorage.setItem("sistemaGuardias_v15", JSON.stringify(estado));
+        localStorage.setItem("sistemaGuardias_v16", JSON.stringify(estado));
         mostrarToast("Configuración guardada en memoria del navegador.");
       }
+      // === FUNCIONES DE GESTIÓN DE HISTÓRICO ===
+      function limpiarHistoricoAntiguo() {
+        const ventana = estado.historico.ventanaHistorico || 6;
+        const fechaActual = new Date();
+        const mesActual = fechaActual.getMonth();
+        const anioActual = fechaActual.getFullYear();
+
+        // Calcular fecha límite
+        let mesLimite = mesActual - ventana;
+        let anioLimite = anioActual;
+        while (mesLimite < 0) {
+          mesLimite += 12;
+          anioLimite--;
+        }
+
+        // Eliminar meses fuera de la ventana
+        for (const claveMes in estado.historico.meses) {
+          const [anio, mes] = claveMes.split("-").map(Number);
+          if (anio < anioLimite || (anio === anioLimite && mes < mesLimite)) {
+            delete estado.historico.meses[claveMes];
+          }
+        }
+
+        // Recalcular saldos acumulados solo con los meses en ventana
+        estado.historico.saldoAcumulado = {};
+        for (const claveMes in estado.historico.meses) {
+          const datosMes = estado.historico.meses[claveMes];
+          for (const medico in datosMes) {
+            if (!estado.historico.saldoAcumulado[medico]) {
+              estado.historico.saldoAcumulado[medico] = 0;
+            }
+            estado.historico.saldoAcumulado[medico] +=
+              datosMes[medico].diferencia;
+          }
+        }
+      }
+
+      function guardarHistoricoMes(mes, anio) {
+        const claveMes = `${anio}-${String(mes).padStart(2, "0")}`;
+
+        estado.historico.meses[claveMes] = {};
+
+        for (const medico in estado.resumenAsignacion.objetivos) {
+          const asignadas = estado.resumenAsignacion.asignaciones[medico] || 0;
+          const objetivo = estado.resumenAsignacion.objetivos[medico] || 0;
+          const diferencia = asignadas - objetivo;
+
+          estado.historico.meses[claveMes][medico] = {
+            asignadas,
+            objetivo,
+            diferencia,
+          };
+
+          if (!estado.historico.saldoAcumulado[medico]) {
+            estado.historico.saldoAcumulado[medico] = 0;
+          }
+          estado.historico.saldoAcumulado[medico] += diferencia;
+        }
+
+        limpiarHistoricoAntiguo();
+        guardarEnMemoria();
+        mostrarToast(`Histórico del mes ${mes}/${anio} guardado.`);
+      }
       function cargarDeMemoria() {
-        const datosGuardados = localStorage.getItem("sistemaGuardias_v15");
+        const datosGuardados = localStorage.getItem("sistemaGuardias_v16");
         if (datosGuardados) {
           Object.assign(estado, JSON.parse(datosGuardados));
           console.log("Estado cargado desde memoria:", estado);
@@ -1048,6 +1375,185 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+      }
+      function exportarHistorico() {
+        const datosHistorico = {
+          version: "1.0",
+          fechaExportacion: new Date().toISOString(),
+          historico: {
+            meses: estado.historico?.meses || {},
+            saldoAcumulado: estado.historico?.saldoAcumulado || {},
+            factorCompensacion: estado.historico?.factorCompensacion || 0.5,
+            ventanaHistorico: estado.historico?.ventanaHistorico || 6,
+          },
+          // Incluir resumen de meses guardados para referencia
+          resumenMeses: Object.keys(estado.historico?.meses || {}).map(
+            (mes) => ({
+              mes: mes,
+              totalGuardias: Object.values(estado.historico.meses[mes]).reduce(
+                (sum, m) => sum + (m.asignadas || 0),
+                0
+              ),
+            })
+          ),
+        };
+
+        const blob = new Blob([JSON.stringify(datosHistorico, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+
+        // Nombre descriptivo con fecha
+        const fecha = new Date();
+        const nombreArchivo = `historico_guardias_${fecha.getFullYear()}_${String(
+          fecha.getMonth() + 1
+        ).padStart(2, "0")}.json`;
+        a.download = nombreArchivo;
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        mostrarToast(
+          `Histórico exportado: ${
+            Object.keys(datosHistorico.historico.meses).length
+          } meses guardados`
+        );
+      }
+
+      function importarHistorico(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            const datosImportados = JSON.parse(e.target.result);
+
+            // Validar estructura del histórico
+            if (
+              !datosImportados.historico ||
+              !datosImportados.historico.meses
+            ) {
+              throw new Error("El archivo no contiene un histórico válido.");
+            }
+
+            // Preguntar si fusionar o reemplazar
+            const mesesExistentes = Object.keys(
+              estado.historico?.meses || {}
+            ).length;
+            const mesesNuevos = Object.keys(
+              datosImportados.historico.meses
+            ).length;
+
+            let mensaje = `El archivo contiene ${mesesNuevos} mes(es) de histórico.`;
+            if (mesesExistentes > 0) {
+              mensaje += ` Ya tienes ${mesesExistentes} mes(es) guardados. ¿Quieres fusionar los datos (se mantendrán ambos) o reemplazar todo?`;
+
+              // Crear diálogo personalizado
+              const modalContent = document.getElementById("modal-content");
+              const originalContent = modalContent.innerHTML;
+
+              modalContent.innerHTML = `
+          <p>${mensaje}</p>
+          <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+            <button onclick="procesarImportacionHistorico(${JSON.stringify(
+              datosImportados
+            ).replace(
+              /"/g,
+              "&quot;"
+            )}, 'fusionar')" class="success">Fusionar</button>
+            <button onclick="procesarImportacionHistorico(${JSON.stringify(
+              datosImportados
+            ).replace(
+              /"/g,
+              "&quot;"
+            )}, 'reemplazar')" class="warning">Reemplazar</button>
+            <button onclick="document.getElementById('modal-overlay').style.display='none'" class="secondary">Cancelar</button>
+          </div>
+        `;
+
+              document.getElementById("modal-overlay").style.opacity = "1";
+              document.getElementById("modal-overlay").style.visibility =
+                "visible";
+            } else {
+              // No hay datos previos, importar directamente
+              procesarImportacionHistorico(datosImportados, "reemplazar");
+            }
+          } catch (error) {
+            console.error("Error al importar histórico:", error);
+            mostrarToast(
+              "Error al importar el archivo de histórico. Verifica que sea un archivo válido."
+            );
+          }
+        };
+        reader.readAsText(file);
+
+        // Limpiar el input para permitir reimportar el mismo archivo
+        event.target.value = "";
+      }
+
+      function procesarImportacionHistorico(datosImportados, modo) {
+        try {
+          if (modo === "fusionar") {
+            // Fusionar: mantener datos existentes y añadir/actualizar con los nuevos
+            if (!estado.historico) {
+              estado.historico = {
+                meses: {},
+                saldoAcumulado: {},
+                factorCompensacion: 0.5,
+                ventanaHistorico: 6,
+              };
+            }
+
+            // Fusionar meses (los nuevos sobrescriben los existentes si hay conflicto)
+            Object.assign(
+              estado.historico.meses,
+              datosImportados.historico.meses
+            );
+
+            // Recalcular saldos acumulados con todos los meses
+            estado.historico.saldoAcumulado = {};
+            for (const claveMes in estado.historico.meses) {
+              const datosMes = estado.historico.meses[claveMes];
+              for (const medico in datosMes) {
+                if (!estado.historico.saldoAcumulado[medico]) {
+                  estado.historico.saldoAcumulado[medico] = 0;
+                }
+                estado.historico.saldoAcumulado[medico] +=
+                  datosMes[medico].diferencia || 0;
+              }
+            }
+
+            mostrarToast(
+              `Histórico fusionado: ${
+                Object.keys(estado.historico.meses).length
+              } meses totales`
+            );
+          } else {
+            // Reemplazar todo el histórico
+            estado.historico = datosImportados.historico;
+            mostrarToast(
+              `Histórico importado: ${
+                Object.keys(datosImportados.historico.meses).length
+              } meses cargados`
+            );
+          }
+
+          // Actualizar interfaz
+          actualizarTablaHistorico();
+          guardarEnMemoria();
+
+          // Cerrar modal si está abierto
+          document.getElementById("modal-overlay").style.opacity = "0";
+          document.getElementById("modal-overlay").style.visibility = "hidden";
+        } catch (error) {
+          console.error("Error procesando histórico:", error);
+          mostrarToast("Error al procesar el histórico importado");
+        }
       }
       function importarConfiguracion(event) {
         const file = event.target.files[0];
@@ -1149,6 +1655,84 @@
         document.getElementById("nuevoMedicoNombre").value = "";
         actualizarTablaMedicos();
         poblarSelects(); // Actualizar selects que dependen de médicos
+      }
+      function procesarImportacionMasiva() {
+        const texto = document.getElementById("importacionMasiva").value;
+        const lineas = texto.split("\n").filter((l) => l.trim());
+
+        let importados = 0;
+        let actualizados = 0;
+        let errores = [];
+
+        lineas.forEach((linea, index) => {
+          const campos = linea.split("\t").map((c) => c.trim());
+          if (campos.length >= 2) {
+            const nombre = campos[0].toUpperCase();
+            const turno = campos[1].toUpperCase();
+            const jornada = campos[2] ? parseInt(campos[2]) : 100;
+
+            if (!nombre) {
+              errores.push(`Línea ${index + 1}: Nombre vacío`);
+              return;
+            }
+
+            if (!["MAÑANA", "TARDE", "MIXTO"].includes(turno)) {
+              errores.push(`Línea ${index + 1}: Turno inválido "${turno}"`);
+              return;
+            }
+
+            // Verificar si el médico ya existe
+            const medicoExistente = estado.medicos.find(
+              (m) => m.nombre === nombre
+            );
+
+            if (medicoExistente) {
+              // Actualizar médico existente
+              medicoExistente.turno = turno;
+              actualizados++;
+            } else {
+              // Añadir nuevo médico
+              estado.medicos.push({ nombre, turno, activo: true });
+              importados++;
+            }
+
+            // Si tiene jornada reducida, gestionarla
+            if (jornada < 100) {
+              // Eliminar reducción existente si la hay
+              estado.reducciones = estado.reducciones.filter(
+                (r) => r.medico !== nombre
+              );
+              // Añadir la nueva
+              estado.reducciones.push({
+                medico: nombre,
+                porcentaje: jornada,
+                diasExcluidos: "",
+              });
+            }
+          } else {
+            errores.push(
+              `Línea ${index + 1}: Formato incorrecto (faltan columnas)`
+            );
+          }
+        });
+
+        actualizarTodasLasTablas();
+        poblarSelects();
+
+        let mensaje = "";
+        if (importados > 0) mensaje += `✓ ${importados} médicos importados\n`;
+        if (actualizados > 0)
+          mensaje += `✓ ${actualizados} médicos actualizados\n`;
+        if (errores.length > 0)
+          mensaje += `✗ ${errores.length} errores:\n${errores
+            .slice(0, 3)
+            .join("\n")}`;
+
+        mostrarToast(mensaje || "No se procesaron datos");
+        document.getElementById("importacionMasiva").value = "";
+
+        // Actualizar también la tabla de reducciones
+        actualizarTablaReducciones();
       }
       // CÓDIGO NUEVO (para reemplazar)
       function eliminarMedico(nombre) {
@@ -1459,6 +2043,203 @@
           cellAcciones.appendChild(btnEliminar);
         });
       }
+      function guardarParametrosAvanzados() {
+        estado.historico.factorCompensacion =
+          parseInt(document.getElementById("factorCompensacion").value) / 100;
+        estado.historico.ventanaHistorico = parseInt(
+          document.getElementById("ventanaHistorico").value
+        );
+
+        guardarEnMemoria();
+        mostrarToast("Parámetros avanzados guardados.");
+        actualizarTablaHistorico();
+      }
+
+      function actualizarTablaHistorico() {
+        const tbody = document.getElementById("tbodyHistorico");
+        if (!tbody) return;
+
+        tbody.innerHTML = "";
+
+        const medicosActivos = estado.medicos.filter((m) => m.activo);
+        medicosActivos.forEach((medico) => {
+          const row = tbody.insertRow();
+          row.insertCell(0).textContent = medico.nombre;
+
+          const saldo = estado.historico?.saldoAcumulado?.[medico.nombre] || 0;
+          const cellSaldo = row.insertCell(1);
+          cellSaldo.textContent = saldo.toFixed(1);
+          cellSaldo.style.fontWeight = "bold";
+
+          if (Math.abs(saldo) < 0.5) {
+            cellSaldo.style.backgroundColor = "#c8e6c9";
+          } else if (Math.abs(saldo) < 2) {
+            cellSaldo.style.backgroundColor = "#fff9c4";
+          } else {
+            cellSaldo.style.backgroundColor = "#ffcdd2";
+          }
+
+          // Mostrar últimos 3 meses
+          const ultimos3 = [];
+          const mesesOrdenados = Object.keys(estado.historico?.meses || {})
+            .sort()
+            .slice(-3);
+          mesesOrdenados.forEach((mes) => {
+            const datosMes = estado.historico.meses[mes]?.[medico.nombre];
+            if (datosMes) {
+              ultimos3.push(
+                `${mes}: ${
+                  datosMes.diferencia > 0 ? "+" : ""
+                }${datosMes.diferencia.toFixed(1)}`
+              );
+            }
+          });
+          row.insertCell(2).textContent = ultimos3.join(", ") || "Sin datos";
+        });
+      }
+      function actualizarResumenHistorico() {
+        const divResumen = document.getElementById("resumenHistorico");
+        if (!divResumen) return;
+
+        const mesesGuardados = Object.keys(estado.historico?.meses || {});
+
+        if (mesesGuardados.length === 0) {
+          divResumen.innerHTML = `
+      <p style="color: #666;">No hay meses guardados en el histórico.</p>
+      <p style="font-size: 0.85em; color: #999;">Genera calendarios y guárdalos para comenzar a acumular histórico.</p>
+    `;
+        } else {
+          const mesesOrdenados = mesesGuardados.sort();
+          const primerMes = mesesOrdenados[0];
+          const ultimoMes = mesesOrdenados[mesesOrdenados.length - 1];
+
+          divResumen.innerHTML = `
+      <p><strong>Meses en histórico:</strong> ${mesesGuardados.length}</p>
+      <p><strong>Periodo:</strong> ${primerMes} a ${ultimoMes}</p>
+      <p><strong>Total guardias registradas:</strong> <span id="totalGuardiasHistorico">calculando...</span></p>
+    `;
+
+          // Calcular total de guardias
+          let totalGuardias = 0;
+          for (const mes in estado.historico.meses) {
+            for (const medico in estado.historico.meses[mes]) {
+              totalGuardias +=
+                estado.historico.meses[mes][medico].asignadas || 0;
+            }
+          }
+          document.getElementById("totalGuardiasHistorico").textContent =
+            totalGuardias;
+        }
+      }
+
+      function mostrarDetalleHistorico() {
+        const meses = Object.keys(estado.historico?.meses || {}).sort();
+
+        if (meses.length === 0) {
+          mostrarToast("No hay histórico para mostrar");
+          return;
+        }
+
+        let htmlDetalle = "<h3>Detalle del Histórico por Mes</h3>";
+        htmlDetalle += '<table style="width: 100%; margin-top: 10px;">';
+        htmlDetalle +=
+          "<thead><tr><th>Mes</th><th>Total Guardias</th><th>Médicos</th><th>Acciones</th></tr></thead>";
+        htmlDetalle += "<tbody>";
+
+        meses.forEach((mes) => {
+          const datosMes = estado.historico.meses[mes];
+          const totalMes = Object.values(datosMes).reduce(
+            (sum, m) => sum + (m.asignadas || 0),
+            0
+          );
+          const numMedicos = Object.keys(datosMes).length;
+
+          htmlDetalle += `
+      <tr>
+        <td>${mes}</td>
+        <td>${totalMes}</td>
+        <td>${numMedicos}</td>
+        <td>
+          <button onclick="eliminarMesHistorico('${mes}')" class="danger" style="padding: 2px 6px; font-size: 0.85em;">
+            Eliminar
+          </button>
+        </td>
+      </tr>
+    `;
+        });
+
+        htmlDetalle += "</tbody></table>";
+
+        // Mostrar en un modal o área específica
+        const modalContent = document.getElementById("modal-content");
+        modalContent.innerHTML =
+          htmlDetalle +
+          `
+    <button onclick="document.getElementById('modal-overlay').style.opacity='0'; document.getElementById('modal-overlay').style.visibility='hidden';" 
+            class="secondary" style="margin-top: 15px;">
+      Cerrar
+    </button>
+  `;
+
+        document.getElementById("modal-overlay").style.opacity = "1";
+        document.getElementById("modal-overlay").style.visibility = "visible";
+      }
+
+      function eliminarMesHistorico(mes) {
+        mostrarConfirmacion(
+          `¿Eliminar el mes ${mes} del histórico? Esto recalculará todos los saldos acumulados.`,
+          () => {
+            delete estado.historico.meses[mes];
+
+            // Recalcular saldos
+            estado.historico.saldoAcumulado = {};
+            for (const claveMes in estado.historico.meses) {
+              const datosMes = estado.historico.meses[claveMes];
+              for (const medico in datosMes) {
+                if (!estado.historico.saldoAcumulado[medico]) {
+                  estado.historico.saldoAcumulado[medico] = 0;
+                }
+                estado.historico.saldoAcumulado[medico] +=
+                  datosMes[medico].diferencia || 0;
+              }
+            }
+
+            actualizarTablaHistorico();
+            actualizarResumenHistorico();
+            guardarEnMemoria();
+            mostrarToast(`Mes ${mes} eliminado del histórico`);
+            mostrarDetalleHistorico(); // Refrescar la vista si sigue abierta
+          }
+        );
+      }
+      function toggleAleatoriedad(activado) {
+        estado.configuracionAlgoritmo.usarAleatoriedad = activado;
+        document.getElementById("opcionesAleatoriedad").style.display = activado
+          ? "block"
+          : "none";
+        guardarEnMemoria();
+      }
+
+      function generarSemillaAleatoria() {
+        const semilla = Math.floor(Math.random() * 1000000);
+        document.getElementById("semillaAleatoria").value = semilla;
+        estado.configuracionAlgoritmo.semilla = semilla;
+        guardarEnMemoria();
+        mostrarToast(`Nueva semilla generada: ${semilla}`);
+      }
+
+      function cargarConfiguracionAlgoritmo() {
+        if (estado.configuracionAlgoritmo) {
+          document.getElementById("usarAleatoriedad").checked =
+            estado.configuracionAlgoritmo.usarAleatoriedad;
+          document.getElementById("semillaAleatoria").value =
+            estado.configuracionAlgoritmo.semilla || "";
+          document.getElementById("opcionesAleatoriedad").style.display = estado
+            .configuracionAlgoritmo.usarAleatoriedad
+            ? "block"
+            : "none";
+        }
+      }
       // === FUNCIONES DE CÁLCULO Y GENERACIÓN ===
       function esLaborable(fecha) {
         const diaSemana = fecha.getDay(); // 0 (Domingo) a 6 (Sábado)
@@ -1514,6 +2295,15 @@
         if (tieneExclusionPuntual(medicoNombre, fecha)) return false;
         return true;
       }
+      // === CÓDIGO NUEVO A AÑADIR ===
+      function puedeTrabajarParaObjetivo(medicoNombre, fecha) {
+        // Esta función es idéntica a puedeTrabajar pero IGNORA las exclusiones puntuales
+        // para que no afecten al cálculo del objetivo.
+        if (estaAusente(medicoNombre, fecha)) return false;
+        if (tieneDiaExcluido(medicoNombre, fecha)) return false;
+        // No se comprueba tieneExclusionPuntual
+        return true;
+      }
       function obtenerTurnoMixto(medicoNombre, fecha) {
         const plan = estado.planificacionesTurnos.find(
           (p) => p.medico === medicoNombre
@@ -1543,16 +2333,16 @@
       function calcularObjetivos(mes, anio) {
         const ultimoDia = new Date(anio, mes, 0).getDate();
         const medicosActivos = estado.medicos.filter((m) => m.activo);
-        const objetivos = {};
-        const disponibilidadPonderada = {}; // { medicoNombre: numeroDeSlotsDisponibles * porcentajeJornada }
+        const objetivosBase = {};
+        const disponibilidadPonderada = {};
         let totalDisponibilidadPonderada = 0;
         let totalPuestosACubrir = 0;
 
         // 1. Contar el total de puestos a cubrir en el mes
         for (let dia = 1; dia <= ultimoDia; dia++) {
-          const fecha = new Date(anio, mes - 1, dia);
+          const fecha = new Date(Date.UTC(anio, mes - 1, dia));
           if (esLaborable(fecha)) {
-            totalPuestosACubrir += 4; // 4 puestos por día laborable
+            totalPuestosACubrir += 4;
           }
         }
 
@@ -1560,9 +2350,12 @@
         for (const medico of medicosActivos) {
           let slotsDisponibles = 0;
           for (let dia = 1; dia <= ultimoDia; dia++) {
-            const fecha = new Date(anio, mes - 1, dia);
-            // Contamos slots solo si el médico puede trabajar ese día
-            if (esLaborable(fecha) && puedeTrabajar(medico.nombre, fecha)) {
+            const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+            // Usamos la función específica para objetivos que ignora exclusiones puntuales
+            if (
+              esLaborable(fecha) &&
+              puedeTrabajarParaObjetivo(medico.nombre, fecha)
+            ) {
               const turnoMixto =
                 medico.turno === "MIXTO"
                   ? obtenerTurnoMixto(medico.nombre, fecha)
@@ -1575,34 +2368,78 @@
               }
             }
           }
-
-          // Obtenemos el porcentaje de jornada del médico
           const reduccion = estado.reducciones.find(
             (r) => r.medico === medico.nombre
           );
           const porcentajeJornada = reduccion ? reduccion.porcentaje / 100 : 1;
-
-          // Ponderamos sus slots disponibles por su porcentaje de jornada
           disponibilidadPonderada[medico.nombre] =
             slotsDisponibles * porcentajeJornada;
           totalDisponibilidadPonderada +=
             disponibilidadPonderada[medico.nombre];
         }
 
-        // 3. Distribuir los puestos a cubrir proporcionalmente a la disponibilidad PONDERADA
+        // 3. Distribuir los puestos proporcionalmente
         if (totalDisponibilidadPonderada > 0) {
           medicosActivos.forEach((medico) => {
             const proporcion =
               disponibilidadPonderada[medico.nombre] /
               totalDisponibilidadPonderada;
             const objetivo = proporcion * totalPuestosACubrir;
-            objetivos[medico.nombre] = parseFloat(objetivo.toFixed(2));
+            objetivosBase[medico.nombre] = objetivo;
           });
         }
 
-        return objetivos;
+        // 4. Aplicar compensación histórica
+        const objetivosAjustados = {};
+        for (const medico of medicosActivos) {
+          const nombre = medico.nombre;
+          const objetivoBase = objetivosBase[nombre] || 0;
+          const saldoAcumulado =
+            estado.historico?.saldoAcumulado?.[nombre] || 0;
+          const factorCompensacion =
+            estado.historico?.factorCompensacion || 0.5;
+          const ajusteHistorico = -saldoAcumulado * factorCompensacion;
+          const ajusteMaximo = objetivoBase * 0.3;
+          const ajusteLimitado = Math.max(
+            -ajusteMaximo,
+            Math.min(ajusteMaximo, ajusteHistorico)
+          );
+          objetivosAjustados[nombre] = Math.max(
+            0,
+            objetivoBase + ajusteLimitado
+          );
+        }
+
+        // 5. Normalizar para mantener el total
+        const totalOriginal = Object.values(objetivosBase).reduce(
+          (a, b) => a + b,
+          0
+        );
+        const totalAjustado = Object.values(objetivosAjustados).reduce(
+          (a, b) => a + b,
+          0
+        );
+        if (totalAjustado > 0) {
+          const factor = totalOriginal / totalAjustado;
+          for (const nombre in objetivosAjustados) {
+            objetivosAjustados[nombre] = parseFloat(
+              (objetivosAjustados[nombre] * factor).toFixed(2)
+            );
+          }
+        }
+        return objetivosAjustados;
       }
       // === FUNCIÓN DE ASIGNACIÓN MEJORADA (ROUND-ROBIN CON PONDERACIÓN) ===
+      // Generador de números pseudoaleatorios con semilla (Mulberry32)
+      function mulberry32(seed) {
+        return function () {
+          let t = (seed += 0x6d2b79f5);
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
       function asignarPuesto(
         puestoKey,
         candidatos,
@@ -1613,45 +2450,77 @@
         lunesPorMedico,
         viernesPorMedico,
         tipoGuardia,
-        fecha
+        fecha,
+        ultimoTipoPorMedico // NUEVO PARÁMETRO
       ) {
         if (candidatos.length === 0) return "---";
-        let mejorCandidato = null;
-        let mejorPuntuacion = -Infinity;
-        for (const candidato of candidatos) {
+
+        // Calcular puntuaciones para todos los candidatos
+        const candidatosConPuntuacion = candidatos.map((candidato) => {
           let puntuacion = 0;
-          // 1. Factor principal: Menos asignadas (VBA: 100 - asignadas)
+
+          // 1. Factor principal: Menos asignadas
           const asignadas = asignacionesLocales[candidato] || 0;
           puntuacion += 100 - asignadas;
-          // 2. Factor secundario: Mayor déficit (VBA: deficit * 10)
+
+          // 2. Factor secundario: Mayor déficit
           const objetivo = objetivosLocales[candidato] || 0;
           const deficit = objetivo - asignadas;
           puntuacion += deficit * 10;
-          // 3. Factor terciario: Balance Avisos/Urgencias (VBA)
+
+          // 3. NUEVO: Penalización fuerte por repetir tipo de guardia
+          const ultimoTipo = ultimoTipoPorMedico[candidato];
+          if (ultimoTipo === tipoGuardia && asignadas > 0) {
+            puntuacion -= 50; // Penalización muy fuerte por repetir tipo
+          } else if (ultimoTipo && ultimoTipo !== tipoGuardia) {
+            puntuacion += 20; // Bonificación por alternar
+          }
+
+          // 4. Factor terciario: Balance Avisos/Urgencias global
           if (asignadas > 0) {
             const porcAvisos = (avisosLocales[candidato] || 0) / asignadas;
-            if (tipoGuardia === "AVISOS" && porcAvisos > 0.5) {
-              puntuacion -= 5;
-            } else if (tipoGuardia === "URGENCIAS" && porcAvisos < 0.5) {
-              puntuacion -= 5;
+            if (tipoGuardia === "AVISOS" && porcAvisos > 0.55) {
+              puntuacion -= 10;
+            } else if (tipoGuardia === "URGENCIAS" && porcAvisos < 0.45) {
+              puntuacion -= 10;
             }
           }
-          // 4. Factor cuarto: Penalización L/V (VBA)
-          const diaSemanaISO = fecha.getDay(); // 0(Dom) a 6(Sab). L=1, V=5
+
+          // 5. Factor cuarto: Penalización L/V
+          const diaSemanaISO = fecha.getDay();
           if (diaSemanaISO === 1) {
-            // Lunes
-            puntuacion -= lunesPorMedico[candidato] || 0;
+            puntuacion -= (lunesPorMedico[candidato] || 0) * 3;
           } else if (diaSemanaISO === 5) {
-            // Viernes
-            puntuacion -= viernesPorMedico[candidato] || 0;
+            puntuacion -= (viernesPorMedico[candidato] || 0) * 3;
           }
-          if (puntuacion > mejorPuntuacion) {
-            mejorPuntuacion = puntuacion;
-            mejorCandidato = candidato;
+
+          return { candidato, puntuacion };
+        });
+
+        // Ordenar por puntuación
+        candidatosConPuntuacion.sort((a, b) => b.puntuacion - a.puntuacion);
+
+        // Manejo de empates con aleatoriedad opcional
+        if (estado.configuracionAlgoritmo?.usarAleatoriedad) {
+          const mejorPuntuacion = candidatosConPuntuacion[0].puntuacion;
+          const empatados = candidatosConPuntuacion.filter(
+            (c) => Math.abs(c.puntuacion - mejorPuntuacion) < 0.01
+          );
+
+          if (empatados.length > 1) {
+            const semilla = estado.configuracionAlgoritmo.semilla || Date.now();
+            const rng = mulberry32(semilla + fecha.getTime());
+
+            for (let i = empatados.length - 1; i > 0; i--) {
+              const j = Math.floor(rng() * (i + 1));
+              [empatados[i], empatados[j]] = [empatados[j], empatados[i]];
+            }
+
+            return empatados[0].candidato;
           }
         }
-        // console.log(`Asignando ${puestoKey} entre [${candidatos.join(', ')}]. Ganador: ${mejorCandidato} (Punt: ${mejorPuntuacion})`); // Para depurar
-        return mejorCandidato || "---";
+
+        return candidatosConPuntuacion[0]?.candidato || "---";
       }
       function generarGuardias() {
         const mes = parseInt(document.getElementById("mes").value);
@@ -1690,8 +2559,10 @@
         console.log("Objetivos calculados:", objetivos);
         // 3. Crear calendario
         const ultimoDia = new Date(anio, mes, 0).getDate();
+        // NUEVO: Tracking del último tipo de guardia por médico
+        const ultimoTipoPorMedico = {};
         for (let dia = 1; dia <= ultimoDia; dia++) {
-          const fecha = new Date(anio, mes - 1, dia);
+          const fecha = new Date(Date.UTC(anio, mes - 1, dia));
           const esLab = esLaborable(fecha);
           const diaSemanaISO = fecha.getDay(); // 0 (Domingo) a 6 (Sábado)
           if (esLab) {
@@ -1778,11 +2649,13 @@
             lunesPorMedico,
             viernesPorMedico,
             "AVISOS",
-            fecha
+            fecha,
+            ultimoTipoPorMedico // NUEVO PARÁMETRO
           );
           if (medico !== "---") {
             diaInfo.avisos_manana = medico;
             avisosPorMedico[medico] = (avisosPorMedico[medico] || 0) + 1;
+            ultimoTipoPorMedico[medico] = "AVISOS"; // NUEVO: Registrar tipo
             procesarAsignacion(medico);
           }
 
@@ -1797,11 +2670,13 @@
             lunesPorMedico,
             viernesPorMedico,
             "URGENCIAS",
-            fecha
+            fecha,
+            ultimoTipoPorMedico // NUEVO PARÁMETRO
           );
           if (medico !== "---") {
             diaInfo.urgencias_manana = medico;
             urgenciasPorMedico[medico] = (urgenciasPorMedico[medico] || 0) + 1;
+            ultimoTipoPorMedico[medico] = "URGENCIAS"; // NUEVO: Registrar tipo
             procesarAsignacion(medico);
           }
 
@@ -1816,11 +2691,13 @@
             lunesPorMedico,
             viernesPorMedico,
             "AVISOS",
-            fecha
+            fecha,
+            ultimoTipoPorMedico // NUEVO PARÁMETRO
           );
           if (medico !== "---") {
             diaInfo.avisos_tarde = medico;
             avisosPorMedico[medico] = (avisosPorMedico[medico] || 0) + 1;
+            ultimoTipoPorMedico[medico] = "AVISOS"; // NUEVO: Registrar tipo
             procesarAsignacion(medico);
           }
 
@@ -1835,11 +2712,13 @@
             lunesPorMedico,
             viernesPorMedico,
             "URGENCIAS",
-            fecha
+            fecha,
+            ultimoTipoPorMedico // NUEVO PARÁMETRO
           );
           if (medico !== "---") {
             diaInfo.urgencias_tarde = medico;
             urgenciasPorMedico[medico] = (urgenciasPorMedico[medico] || 0) + 1;
+            ultimoTipoPorMedico[medico] = "URGENCIAS"; // NUEVO: Registrar tipo
             procesarAsignacion(medico);
           }
         });
@@ -1855,7 +2734,18 @@
         };
         mostrarResultados();
       }
+      function confirmarYGuardarHistorico() {
+        const mes = parseInt(document.getElementById("mes").value);
+        const anio = parseInt(document.getElementById("anio").value);
 
+        mostrarConfirmacion(
+          `¿Guardar el calendario de ${mes}/${anio} en el histórico? Esto actualizará los saldos acumulados para la compensación futura.`,
+          () => {
+            guardarHistoricoMes(mes, anio);
+            actualizarTablaHistorico();
+          }
+        );
+      }
       // === NUEVA FUNCIÓN: Copiar Calendario al Portapapeles ===
       function copiarCalendarioAlPortapapeles() {
         const tabla = document.getElementById("tablaCalendario");
@@ -2098,6 +2988,214 @@
         cargarDeMemoria(); // Cargar datos guardados si existen
         poblarSelects();
         actualizarTodasLasTablas();
+        // Cargar parámetros avanzados si existen
+        if (estado.historico) {
+          document.getElementById("factorCompensacion").value =
+            (estado.historico.factorCompensacion || 0.5) * 100;
+          document.getElementById("valorFactor").textContent = `${
+            (estado.historico.factorCompensacion || 0.5) * 100
+          }%`;
+          document.getElementById("ventanaHistorico").value =
+            estado.historico.ventanaHistorico || 6;
+
+          actualizarTablaHistorico();
+          actualizarResumenHistorico();
+        }
+        // === MEJORAS UX: SOPORTE PARA TECLA ENTER ===
+        // Formulario de Médicos
+        document
+          .getElementById("nuevoMedicoNombre")
+          .addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              agregarMedico();
+            }
+          });
+
+        document
+          .getElementById("nuevoMedicoTurno")
+          .addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              agregarMedico();
+            }
+          });
+
+        // Formulario de Festivos
+        document
+          .getElementById("nuevoFestivo")
+          .addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              agregarFestivo();
+            }
+          });
+
+        // Formulario de Reducciones
+        document
+          .getElementById("reduccionPorcentaje")
+          .addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              guardarReduccion();
+            }
+          });
+
+        // Formulario de Ausencias
+        document
+          .getElementById("ausenciaInicio")
+          .addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              document.getElementById("ausenciaFin").focus();
+            }
+          });
+
+        document
+          .getElementById("ausenciaFin")
+          .addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              agregarAusencia();
+            }
+          });
+
+        // Formulario de Exclusiones Puntuales
+        document
+          .getElementById("exclPuntFecha")
+          .addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              agregarExclusionPuntual();
+            }
+          });
+
+        // Cargar configuración del algoritmo si existe
+        if (typeof cargarConfiguracionAlgoritmo === "function") {
+          cargarConfiguracionAlgoritmo();
+        }
+        // === MEJORAS UX: VALIDACIÓN VISUAL ===
+        const inputNombre = document.getElementById("nuevoMedicoNombre");
+        inputNombre.addEventListener("input", (e) => {
+          const valor = e.target.value.trim().toUpperCase();
+          const existe = estado.medicos.some((m) => m.nombre === valor);
+
+          if (existe && valor !== "") {
+            inputNombre.style.borderColor = "#dc3545";
+            inputNombre.style.backgroundColor = "#fff5f5";
+
+            if (
+              !inputNombre.nextElementSibling?.classList.contains("error-msg")
+            ) {
+              const errorMsg = document.createElement("small");
+              errorMsg.className = "error-msg";
+              errorMsg.style.color = "#dc3545";
+              errorMsg.textContent = "Este médico ya existe";
+              inputNombre.parentNode.appendChild(errorMsg);
+            }
+          } else {
+            inputNombre.style.borderColor = "";
+            inputNombre.style.backgroundColor = "";
+
+            const errorMsg = inputNombre.parentNode.querySelector(".error-msg");
+            if (errorMsg) errorMsg.remove();
+          }
+        });
+
+        // Validación de rangos de fechas
+        const validarRangoFechas = () => {
+          const inicio = document.getElementById("ausenciaInicio");
+          const fin = document.getElementById("ausenciaFin");
+
+          if (inicio.value && fin.value) {
+            if (new Date(inicio.value) > new Date(fin.value)) {
+              fin.style.borderColor = "#dc3545";
+              if (!fin.nextElementSibling?.classList.contains("error-msg")) {
+                const errorMsg = document.createElement("small");
+                errorMsg.className = "error-msg";
+                errorMsg.style.color = "#dc3545";
+                errorMsg.textContent =
+                  "La fecha fin debe ser posterior al inicio";
+                fin.parentNode.appendChild(errorMsg);
+              }
+            } else {
+              fin.style.borderColor = "#28a745";
+              const errorMsg = fin.parentNode.querySelector(".error-msg");
+              if (errorMsg) errorMsg.remove();
+            }
+          }
+        };
+        // === MEJORAS UX: ATAJOS DE TECLADO ===
+        document.addEventListener("keydown", (e) => {
+          // Solo activar si no estamos en un campo de entrada
+          if (
+            document.activeElement.tagName === "INPUT" ||
+            document.activeElement.tagName === "TEXTAREA" ||
+            document.activeElement.tagName === "SELECT"
+          ) {
+            return;
+          }
+
+          // Alt + M: Ir a sección Médicos
+          if (e.altKey && e.key === "m") {
+            e.preventDefault();
+            mostrarSeccion("configuracion");
+            const primerTab = document.querySelector(".tab-button");
+            abrirTab({ currentTarget: primerTab }, "tabMedicos");
+          }
+
+          // Alt + C: Ir a Calendario
+          if (e.altKey && e.key === "c") {
+            e.preventDefault();
+            mostrarSeccion("calendario");
+          }
+
+          // Alt + G: Generar guardias (si estamos en calendario)
+          if (e.altKey && e.key === "g") {
+            e.preventDefault();
+            const seccionActual = document.querySelector(
+              '.seccion:not([style*="display: none"])'
+            );
+            if (seccionActual?.id === "calendario") {
+              generarGuardias();
+            }
+          }
+
+          // Alt + S: Guardar configuración
+          if (e.altKey && e.key === "s") {
+            e.preventDefault();
+            guardarEnMemoria();
+            mostrarToast("Configuración guardada (Alt+S)");
+          }
+
+          // Alt + H: Mostrar ayuda/manual
+          if (e.altKey && e.key === "h") {
+            e.preventDefault();
+            mostrarSeccion("manual");
+          }
+        });
+
+        // Añadir tooltips con los atajos
+        const tooltips = [
+          { selector: 'a[onclick*="configuracion"]', atajo: "Alt+M" },
+          { selector: 'a[onclick*="calendario"]', atajo: "Alt+C" },
+          { selector: 'a[onclick*="manual"]', atajo: "Alt+H" },
+          { selector: 'button[onclick="generarGuardias()"]', atajo: "Alt+G" },
+          { selector: 'button[onclick="guardarEnMemoria()"]', atajo: "Alt+S" },
+        ];
+
+        tooltips.forEach(({ selector, atajo }) => {
+          const elemento = document.querySelector(selector);
+          if (elemento) {
+            elemento.title = `${elemento.textContent} (${atajo})`;
+          }
+        });
+        document
+          .getElementById("ausenciaInicio")
+          .addEventListener("change", validarRangoFechas);
+        document
+          .getElementById("ausenciaFin")
+          .addEventListener("change", validarRangoFechas);
       });
     </script>
   </body>
