@@ -1881,6 +1881,20 @@
           cellAcciones.appendChild(btnEliminar);
         });
       }
+      function actualizarTablaFestivos() {
+        const tbody = document.querySelector("#tablaFestivos tbody");
+        tbody.innerHTML = "";
+        estado.festivos.forEach((fecha) => {
+          const row = tbody.insertRow();
+          row.insertCell(0).textContent = formatearFecha(fecha); // <-- LÍNEA MODIFICADA
+          const cellAcciones = row.insertCell(1);
+          const btnEliminar = document.createElement("button");
+          btnEliminar.textContent = "Eliminar";
+          btnEliminar.className = "danger";
+          btnEliminar.onclick = () => eliminarFestivo(fecha);
+          cellAcciones.appendChild(btnEliminar);
+        });
+      }
       // === FUNCIONES DE GESTIÓN DE AUSENCIAS ===
       function agregarAusencia() {
         const medico = document.getElementById("ausenciaMedico").value;
@@ -1927,8 +1941,8 @@
         estado.ausencias.forEach((ausencia, index) => {
           const row = tbody.insertRow();
           row.insertCell(0).textContent = ausencia.medico;
-          row.insertCell(1).textContent = ausencia.inicio;
-          row.insertCell(2).textContent = ausencia.fin;
+          row.insertCell(1).textContent = formatearFecha(ausencia.inicio); // <-- LÍNEA MODIFICADA
+          row.insertCell(2).textContent = formatearFecha(ausencia.fin); // <-- LÍNEA MODIFICADA
           const cellAcciones = row.insertCell(3);
           const btnEliminar = document.createElement("button");
           btnEliminar.textContent = "Eliminar";
@@ -1981,7 +1995,7 @@
         estado.exclusionesPuntuales.forEach((excl, index) => {
           const row = tbody.insertRow();
           row.insertCell(0).textContent = excl.medico;
-          row.insertCell(1).textContent = excl.fecha;
+          row.insertCell(1).textContent = formatearFecha(excl.fecha); // <-- LÍNEA MODIFICADA
           const cellAcciones = row.insertCell(2);
           const btnEliminar = document.createElement("button");
           btnEliminar.textContent = "Eliminar";
@@ -2241,6 +2255,12 @@
         }
       }
       // === FUNCIONES DE CÁLCULO Y GENERACIÓN ===
+
+      function formatearFecha(fechaStr) {
+        if (!fechaStr || !fechaStr.includes("-")) return fechaStr; // Si no es una fecha válida, la devuelve tal cual
+        const [anio, mes, dia] = fechaStr.split("-");
+        return `${dia}/${mes}/${anio}`;
+      }
       function esLaborable(fecha) {
         const diaSemana = fecha.getDay(); // 0 (Domingo) a 6 (Sábado)
         if (diaSemana === 0 || diaSemana === 6) return false; // Fin de semana
@@ -2813,7 +2833,11 @@
           row.insertCell(0).textContent = diaInfo.dia;
           row.insertCell(1).textContent = diaInfo.fecha.toLocaleDateString(
             "es-ES",
-            { weekday: "short", day: "numeric", month: "short" }
+            {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            }
           );
           if (diaInfo.esLaborable) {
             row.insertCell(2).textContent = diaInfo.avisos_manana;
