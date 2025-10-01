@@ -469,11 +469,14 @@
             "
           >
             <label for="importacionMasiva">
-              <strong>Importación rápida</strong> (pegar desde Excel):
+              <strong>Importación rápida</strong> (pegar desde Excel o texto con
+              formato):
             </label>
             <textarea
               id="importacionMasiva"
-              placeholder="Formato: Nombre[TAB]Turno[TAB]Jornada%&#10;Ejemplo: GARCIA[TAB]MAÑANA[TAB]100"
+              placeholder="Formato: Nombre[TAB]Turno[TAB]Jornada%  o  Nombre[TAB]Categoría[TAB]Turno[TAB]Jornada%
+Ejemplo 1: GARCIA[TAB]MAÑANA[TAB]100
+Ejemplo 2: GARCIA[TAB]Medicina de Familia[TAB]TARDE"
               style="width: 100%; height: 100px; font-family: monospace"
             ></textarea>
             <button onclick="procesarImportacionMasiva()">
@@ -1656,69 +1659,112 @@
         actualizarTablaMedicos();
         poblarSelects(); // Actualizar selects que dependen de médicos
       }
+      // === INICIO DEL CÓDIGO SIMPLIFICADO PARA PROCESAR IMPORTACIÓN MÁS FLEXIBLE ===
+      // === INICIO DEL CÓDIGO CORREGIDO Y ACTUALIZADO PARA PROCESAR IMPORTACIÓN MÁS FLEXIBLE ===
       function procesarImportacionMasiva() {
         const texto = document.getElementById("importacionMasiva").value;
+        // CORRECCIÓN: Dividir por salto de línea, no por espacios
         const lineas = texto.split("\n").filter((l) => l.trim());
-
         let importados = 0;
         let actualizados = 0;
         let errores = [];
 
         lineas.forEach((linea, index) => {
           const campos = linea.split("\t").map((c) => c.trim());
-          if (campos.length >= 2) {
-            const nombre = campos[0].toUpperCase();
-            const turno = campos[1].toUpperCase();
-            const jornada = campos[2] ? parseInt(campos[2]) : 100;
 
-            if (!nombre) {
-              errores.push(`Línea ${index + 1}: Nombre vacío`);
-              return;
-            }
+          let nombre = "";
+          let turno = "";
+          let jornada = 100; // Valor por defecto
 
-            if (!["MAÑANA", "TARDE", "MIXTO"].includes(turno)) {
-              errores.push(`Línea ${index + 1}: Turno inválido "${turno}"`);
-              return;
-            }
-
-            // Verificar si el médico ya existe
-            const medicoExistente = estado.medicos.find(
-              (m) => m.nombre === nombre
-            );
-
-            if (medicoExistente) {
-              // Actualizar médico existente
-              medicoExistente.turno = turno;
-              actualizados++;
-            } else {
-              // Añadir nuevo médico
-              estado.medicos.push({ nombre, turno, activo: true });
-              importados++;
-            }
-
-            // Si tiene jornada reducida, gestionarla
-            if (jornada < 100) {
-              // Eliminar reducción existente si la hay
-              estado.reducciones = estado.reducciones.filter(
-                (r) => r.medico !== nombre
-              );
-              // Añadir la nueva
-              estado.reducciones.push({
-                medico: nombre,
-                porcentaje: jornada,
-                diasExcluidos: "",
-              });
-            }
-          } else {
+          if (campos.length < 2) {
             errores.push(
               `Línea ${index + 1}: Formato incorrecto (faltan columnas)`
             );
+            return; // Importante: `return` aquí evita procesar esta línea con error
           }
-        });
+
+          // --- NUEVA: Lógica simplificada y corregida ---
+          // Caso 1: 2 campos -> Nombre, Turno (Formato original sin jornada)
+          if (campos.length === 2) {
+            nombre = campos[0];
+            turno = campos[1];
+          }
+          // Caso 2: 3 campos -> Nombre, [Categoría], Turno
+          // Asumimos que el turno es el último campo y el nombre es el primero
+          else if (campos.length === 3) {
+            turno = campos[2].toUpperCase(); // Último campo (índice 2)
+            nombre = campos[0]; // Primer campo (índice 0)
+            // El campo intermedio (índice 1) se ignora (es la categoría)
+          }
+          // Caso 3: 4 campos -> Nombre, [Categoría], Turno, Jornada
+          else if (campos.length === 4) {
+            turno = campos[2].toUpperCase(); // Turno en índice 2
+            const posibleJornada = parseInt(campos[3]); // Jornada en índice 3
+            if (!isNaN(posibleJornada)) {
+              jornada = posibleJornada;
+            } else {
+              // Si el 4to campo no es un número, asumimos que era parte de la categoría o error
+              // Tratamos como si fueran 3 campos: Nombre, [Categoría + Jornada erronea], Turno
+              turno = campos[2].toUpperCase();
+              nombre = campos[0];
+              // jornada = 100 por defecto
+            }
+            nombre = campos[0]; // Primer campo (índice 0)
+          }
+          // Otros casos (5 o más campos) -> No soportado por ahora, error
+          else {
+            errores.push(
+              `Línea ${index + 1}: Formato incorrecto (demasiadas columnas: ${
+                campos.length
+              })`
+            );
+            return; // Importante: `return` aquí evita procesar esta línea con error
+          }
+          // --- FIN NUEVA LÓGICA ---
+
+          nombre = nombre.toUpperCase().trim(); // Asegurar formato final
+          turno = turno.toUpperCase().trim(); // Asegurar formato final
+
+          if (!nombre) {
+            errores.push(`Línea ${index + 1}: Nombre vacío`);
+            return; // Importante: `return` aquí evita procesar esta línea con error
+          }
+          if (!["MAÑANA", "TARDE", "MIXTO"].includes(turno)) {
+            errores.push(`Línea ${index + 1}: Turno inválido "${turno}"`);
+            return; // Importante: `return` aquí evita procesar esta línea con error
+          }
+
+          // Verificar si el médico ya existe
+          const medicoExistente = estado.medicos.find(
+            (m) => m.nombre === nombre
+          );
+          if (medicoExistente) {
+            // Actualizar médico existente
+            medicoExistente.turno = turno;
+            actualizados++;
+          } else {
+            // Añadir nuevo médico
+            estado.medicos.push({ nombre, turno, activo: true });
+            importados++;
+          }
+
+          // Si tiene jornada reducida, gestionarla
+          if (jornada < 100) {
+            // Eliminar reducción existente si la hay
+            estado.reducciones = estado.reducciones.filter(
+              (r) => r.medico !== nombre
+            );
+            // Añadir la nueva
+            estado.reducciones.push({
+              medico: nombre,
+              porcentaje: jornada,
+              diasExcluidos: "",
+            });
+          }
+        }); // Fin del forEach
 
         actualizarTodasLasTablas();
-        poblarSelects();
-
+        poblarSelects(); // Actualizar selects que dependen de médicos
         let mensaje = "";
         if (importados > 0) mensaje += `✓ ${importados} médicos importados\n`;
         if (actualizados > 0)
@@ -1726,14 +1772,15 @@
         if (errores.length > 0)
           mensaje += `✗ ${errores.length} errores:\n${errores
             .slice(0, 3)
-            .join("\n")}`;
-
+            .join("\n")}`; // Mostrar hasta 3 primeros errores
         mostrarToast(mensaje || "No se procesaron datos");
-        document.getElementById("importacionMasiva").value = "";
+        document.getElementById("importacionMasiva").value = ""; // Limpiar después
 
         // Actualizar también la tabla de reducciones
         actualizarTablaReducciones();
       }
+      // === FIN DEL CÓDIGO CORREGIDO Y ACTUALIZADO ===
+      // === FIN DEL CÓDIGO SIMPLIFICADO ===
       // CÓDIGO NUEVO (para reemplazar)
       function eliminarMedico(nombre) {
         mostrarConfirmacion(
