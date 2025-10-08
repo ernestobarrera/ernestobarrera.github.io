@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Asistente de Espirometría Clínico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        scroll-behavior: smooth;
+      }
+      .step-card {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
+        margin-bottom: 2rem;
+      }
+      .step-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+      }
+      .step-number {
+        background-color: #3b82f6;
+        color: white;
+        border-radius: 9999px;
+        width: 2.25rem;
+        height: 2.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 0.75rem;
+        font-size: 1.25rem;
+      }
+      .input-mode-toggle label {
+        padding: 0.5rem 1rem;
+        border: 2px solid #d1d5db;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .input-mode-toggle input:checked + label {
+        background-color: #eff6ff;
+        border-color: #3b82f6;
+        color: #1e40af;
+        font-weight: 600;
+      }
+      .input-mode-toggle input {
+        display: none;
+      }
+      .quality-inspector {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1.5rem;
+        align-items: center;
+        border: 1px solid #e5e7eb;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+      }
+      .quality-feedback {
+        background-color: #f3f4f6;
+        border-left: 4px solid;
+        padding: 0.75rem;
+        border-radius: 0.25rem;
+        margin-top: 0.75rem;
+        font-size: 0.875rem;
+      }
+      .feedback-correct {
+        border-color: #10b981;
+      }
+      .feedback-incorrect {
+        border-color: #f59e0b;
+      }
+      .interpretation {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 1rem 0;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        text-align: center;
+      }
+      .pattern-normal {
+        background-color: #d1fae5;
+        color: #065f46;
+      }
+      .pattern-obstructive {
+        background-color: #fef3c7;
+        color: #92400e;
+      }
+      .pattern-restrictive {
+        background-color: #dbeafe;
+        color: #1e40af;
+      }
+      .pattern-mixed {
+        background-color: #fee2e2;
+        color: #991b1b;
+      }
+      .quality-warning {
+        background-color: #fffbeb;
+        color: #b45309;
+        border: 1px solid #fde68a;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+      }
+      .curve-container {
+        background: #f8fafc;
+        border-radius: 12px;
+        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+      }
+      .curve-grid {
+        background-image: linear-gradient(
+            rgba(203, 213, 225, 0.5) 1px,
+            transparent 1px
+          ),
+          linear-gradient(90deg, rgba(203, 213, 225, 0.5) 1px, transparent 1px);
+        background-size: 20px 20px;
+      }
+      .curve-path {
+        transition: d 0.4s ease-in-out;
+      }
+      .axis-label {
+        font-size: 10px;
+        fill: #4b5563;
+      }
+      .clinical-pearl {
+        background-color: #eff6ff;
+        border-left: 4px solid #3b82f6;
+        padding: 1rem;
+        margin-top: 1.5rem;
+        border-radius: 0.25rem;
+      }
+      .case-description {
+        font-size: 0.9rem;
+        color: #4b5563;
+        background-color: #f9fafb;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        min-height: 80px;
+      }
+
+      /* Input styling */
+      .data-input.w-full {
+        background-color: #f9fafb;
+        border-color: #d1d5db;
+      }
+      .data-input.w-full:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 1px #3b82f6;
+        outline: none;
+      }
+
+      /* Tooltip Styles */
+      .tooltip-container {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+      .tooltip-icon {
+        cursor: help;
+        margin-left: 8px;
+        color: #9ca3af;
+        border: 1px solid #d1d5db;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        font-style: normal;
+        font-weight: bold;
+        font-size: 12px;
+      }
+      .tooltip-text {
+        visibility: hidden;
+        width: 240px;
+        background-color: #1f2937;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 8px;
+        position: absolute;
+        z-index: 10;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -120px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 0.8rem;
+        font-weight: normal;
+      }
+      .tooltip-text::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #1f2937 transparent transparent transparent;
+      }
+      .tooltip-container:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 text-gray-800">
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+      <header class="text-center mb-10">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900">
+          Asistente de Espirometría Clínico
+        </h1>
+        <p class="text-lg text-gray-600 mt-2">
+          Herramienta educativa y de diagnóstico para Atención Primaria
+        </p>
+      </header>
+
+      <!-- PASO 1: DATOS -->
+      <div class="step-card">
+        <h2 class="step-title">
+          <span class="step-number">1</span>Introducción de Datos
+        </h2>
+        <div class="flex items-center space-x-4 mb-6">
+          <div class="input-mode-toggle flex space-x-4">
+            <input
+              type="radio"
+              id="mode_percent"
+              name="input_mode"
+              value="percent"
+              class="data-input"
+              checked
+            /><label for="mode_percent">Vía Rápida (%)</label>
+            <input
+              type="radio"
+              id="mode_abs"
+              name="input_mode"
+              value="absolute"
+              class="data-input"
+            /><label for="mode_abs">Absolutos (L)</label>
+          </div>
+          <div class="tooltip-container">
+            <i class="tooltip-icon">?</i>
+            <span class="tooltip-text"
+              >'Vía Rápida' permite usar los porcentajes que da el espirómetro.
+              'Absolutos' calcula todo desde los valores en litros.</span
+            >
+          </div>
+        </div>
+        <div id="percent_inputs" class="space-y-4">
+          <div>
+            <label
+              for="fev1fvc_ratio"
+              class="font-medium text-gray-700 tooltip-container"
+              >Cociente FEV1/FVC (%) <i class="tooltip-icon">?</i
+              ><span class="tooltip-text"
+                >Indica obstrucción si es <70%. Es el parámetro más importante
+                para empezar la interpretación.</span
+              ></label
+            >
+            <input
+              type="number"
+              min="0"
+              id="fev1fvc_ratio"
+              placeholder="Ej: 68"
+              class="data-input mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            />
+          </div>
+          <div>
+            <label
+              for="fvc_percent"
+              class="font-medium text-gray-700 tooltip-container"
+              >FVC (% del teórico) <i class="tooltip-icon">?</i
+              ><span class="tooltip-text"
+                >Capacidad Vital Forzada. Indica restricción si es <80%.</span
+              ></label
+            >
+            <input
+              type="number"
+              min="0"
+              id="fvc_percent"
+              placeholder="Ej: 85"
+              class="data-input mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            />
+          </div>
+          <div>
+            <label
+              for="fev1_percent"
+              class="font-medium text-gray-700 tooltip-container"
+              >FEV1 (% del teórico) <i class="tooltip-icon">?</i
+              ><span class="tooltip-text"
+                >Volumen Espiratorio Forzado en 1s. Sirve para graduar la
+                severidad de la obstrucción (Leve, Moderada, etc.).</span
+              ></label
+            >
+            <input
+              type="number"
+              min="0"
+              id="fev1_percent"
+              placeholder="Ej: 75"
+              class="data-input mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            />
+          </div>
+        </div>
+        <div id="abs_inputs" class="hidden grid grid-cols-2 gap-x-4 gap-y-4">
+          <div>
+            <label for="fvc_med">FVC Med (L)</label
+            ><input
+              type="number"
+              min="0"
+              step="0.01"
+              id="fvc_med"
+              placeholder="Ej: 4.26"
+              class="data-input mt-1 w-full rounded-md"
+            />
+          </div>
+          <div>
+            <label for="fvc_teo">FVC Teo (L)</label
+            ><input
+              type="number"
+              min="0"
+              step="0.01"
+              id="fvc_teo"
+              placeholder="Ej: 5.16"
+              class="data-input mt-1 w-full rounded-md"
+            />
+          </div>
+          <div>
+            <label for="fev1_med">FEV1 Med (L)</label
+            ><input
+              type="number"
+              min="0"
+              step="0.01"
+              id="fev1_med"
+              placeholder="Ej: 3.09"
+              class="data-input mt-1 w-full rounded-md"
+            />
+          </div>
+          <div>
+            <label for="fev1_teo">FEV1 Teo (L)</label
+            ><input
+              type="number"
+              min="0"
+              step="0.01"
+              id="fev1_teo"
+              placeholder="Ej: 4.09"
+              class="data-input mt-1 w-full rounded-md"
+            />
+          </div>
+        </div>
+        <div class="mt-6 border-t pt-4">
+          <input
+            type="checkbox"
+            id="pbd_check"
+            class="h-5 w-5 rounded data-input"
+          /><label for="pbd_check" class="ml-3 text-lg font-medium"
+            >Evaluar Prueba Broncodilatadora (PBD)</label
+          >
+          <div id="pbd_input_container" class="mt-4 hidden space-y-4"></div>
+        </div>
+      </div>
+
+      <!-- PASO 2: CALIDAD -->
+      <div class="step-card">
+        <div class="flex justify-between items-center">
+          <h2 class="step-title mb-0 border-b-0 pb-0">
+            <span class="step-number">2</span>Guía Interactiva de Calidad
+          </h2>
+          <div class="flex items-center space-x-2">
+            <label
+              for="pediatric_mode"
+              class="text-sm font-medium text-gray-700"
+              >Modo Pediátrico (<10 años)</label
+            >
+            <input
+              type="checkbox"
+              id="pediatric_mode"
+              class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+            />
+          </div>
+        </div>
+        <p class="text-gray-600 my-4">
+          Evalúe las curvas de su informe. Una técnica correcta y reproducible
+          es imprescindible para una interpretación válida.
+        </p>
+        <h3 class="font-semibold text-lg text-gray-800">
+          Aceptabilidad de la Maniobra
+        </h3>
+        <div class="quality-inspector">
+          <div>
+            <h4 class="font-semibold">A. Comienzo</h4>
+            <p class="text-sm text-gray-500 mt-1">
+              <strong>Qué mirar:</strong> Ascenso inicial.
+            </p>
+            <div class="mt-2 space-y-2">
+              <label
+                ><input
+                  type="radio"
+                  name="start"
+                  value="yes"
+                  class="quality-input"
+                />
+                Rápido y sin dudar</label
+              ><br /><label
+                ><input
+                  type="radio"
+                  name="start"
+                  value="no"
+                  class="quality-input"
+                />
+                Lento o con titubeos</label
+              >
+            </div>
+            <div id="start_feedback" class="quality-feedback hidden"></div>
+          </div>
+          <div class="w-20 h-20 bg-gray-50 rounded-md p-1">
+            <svg id="start_svg" viewBox="0 0 100 80">
+              <path
+                id="start_path"
+                d="M 10 70 C 25 15, 40 10, 90 8"
+                stroke="#3B82F6"
+                stroke-width="2"
+                fill="none"
+              />
+            </svg>
+          </div>
+        </div>
+        <div class="quality-inspector">
+          <div>
+            <h4 class="font-semibold">B. Morfología</h4>
+            <p class="text-sm text-gray-500 mt-1">
+              <strong>Qué mirar:</strong> Trayecto de la curva F-V.
+            </p>
+            <div class="mt-2 space-y-2">
+              <label
+                ><input
+                  type="radio"
+                  name="morphology"
+                  value="yes"
+                  class="quality-input"
+                />
+                Pico único y suave</label
+              ><br /><label
+                ><input
+                  type="radio"
+                  name="morphology"
+                  value="no"
+                  class="quality-input"
+                />
+                Con tos o artefactos</label
+              >
+            </div>
+            <div id="morphology_feedback" class="quality-feedback hidden"></div>
+          </div>
+          <div class="w-20 h-20 bg-gray-50 rounded-md p-1">
+            <svg id="morphology_svg" viewBox="0 0 100 80">
+              <path
+                id="morphology_path"
+                d="M 10 70 C 15 10, 40 10, 90 65"
+                stroke="#3B82F6"
+                stroke-width="2"
+                fill="none"
+              />
+            </svg>
+          </div>
+        </div>
+        <div class="quality-inspector">
+          <div>
+            <h4 class="font-semibold flex items-center">
+              C. Finalización
+              <span
+                id="pediatric_note"
+                class="hidden ml-2 text-xs bg-blue-100 text-blue-800 font-medium px-2 py-0.5 rounded-full"
+                >Umbral: 3s</span
+              >
+            </h4>
+            <p class="text-sm text-gray-500 mt-1">
+              <strong>Qué mirar:</strong> Final de la curva V-T.
+            </p>
+            <div class="mt-2 space-y-2">
+              <label
+                ><input
+                  type="radio"
+                  name="end"
+                  value="yes"
+                  class="quality-input"
+                />
+                <span id="end_duration_label">>6s</span> y con meseta</label
+              ><br /><label
+                ><input
+                  type="radio"
+                  name="end"
+                  value="no"
+                  class="quality-input"
+                />
+                Corte brusco o <<span id="end_duration_label_short"
+                  >6s</span
+                ></label
+              >
+            </div>
+            <div id="end_feedback" class="quality-feedback hidden"></div>
+          </div>
+          <div class="w-20 h-20 bg-gray-50 rounded-md p-1">
+            <svg id="end_svg" viewBox="0 0 100 80">
+              <path
+                id="end_path"
+                d="M 10 70 C 25 15, 40 10, 90 8"
+                stroke="#3B82F6"
+                stroke-width="2"
+                fill="none"
+              />
+            </svg>
+          </div>
+        </div>
+
+        <h3 class="font-semibold text-lg text-gray-800 mt-6 border-t pt-4">
+          Reproducibilidad de la Sesión
+        </h3>
+        <div id="repro_pre_container">
+          <p class="text-sm font-medium text-gray-700">Maniobras Pre-BD</p>
+          <div class="grid grid-cols-2 gap-4 mt-2">
+            <div>
+              <label for="fvc1" class="text-sm">Mejor FVC (L)</label
+              ><input
+                type="number"
+                min="0"
+                step="0.01"
+                id="fvc1"
+                class="data-input mt-1 w-full rounded-md"
+              />
+            </div>
+            <div>
+              <label for="fvc2" class="text-sm">2ª Mejor FVC (L)</label
+              ><input
+                type="number"
+                min="0"
+                step="0.01"
+                id="fvc2"
+                class="data-input mt-1 w-full rounded-md"
+              />
+            </div>
+            <div>
+              <label for="fev1_1" class="text-sm">Mejor FEV1 (L)</label
+              ><input
+                type="number"
+                min="0"
+                step="0.01"
+                id="fev1_1"
+                class="data-input mt-1 w-full rounded-md"
+              />
+            </div>
+            <div>
+              <label for="fev1_2" class="text-sm">2ª Mejor FEV1 (L)</label
+              ><input
+                type="number"
+                min="0"
+                step="0.01"
+                id="fev1_2"
+                class="data-input mt-1 w-full rounded-md"
+              />
+            </div>
+          </div>
+        </div>
+        <div
+          id="reproducibility_result"
+          class="mt-2 text-center font-bold p-2 rounded-md text-sm"
+        ></div>
+
+        <div id="repro_post_container" class="hidden mt-4">
+          <p class="text-sm font-medium text-gray-700">
+            Maniobras Post-BD (Opcional)
+          </p>
+          <div class="grid grid-cols-2 gap-4 mt-2">
+            <div>
+              <label for="fvc1_post" class="text-sm">Mejor FVC (L)</label
+              ><input
+                type="number"
+                min="0"
+                step="0.01"
+                id="fvc1_post"
+                class="data-input mt-1 w-full rounded-md"
+              />
+            </div>
+            <div>
+              <label for="fvc2_post" class="text-sm">2ª Mejor FVC (L)</label
+              ><input
+                type="number"
+                min="0"
+                step="0.01"
+                id="fvc2_post"
+                class="data-input mt-1 w-full rounded-md"
+              />
+            </div>
+            <div>
+              <label for="fev1_1_post" class="text-sm">Mejor FEV1 (L)</label
+              ><input
+                type="number"
+                min="0"
+                step="0.01"
+                id="fev1_1_post"
+                class="data-input mt-1 w-full rounded-md"
+              />
+            </div>
+            <div>
+              <label for="fev1_2_post" class="text-sm">2ª Mejor FEV1 (L)</label
+              ><input
+                type="number"
+                min="0"
+                step="0.01"
+                id="fev1_2_post"
+                class="data-input mt-1 w-full rounded-md"
+              />
+            </div>
+          </div>
+          <div
+            id="reproducibility_result_post"
+            class="mt-2 text-center font-bold p-2 rounded-md text-sm"
+          ></div>
+        </div>
+      </div>
+
+      <!-- PASO 3: DIAGNÓSTICO -->
+      <div class="step-card">
+        <h2 class="step-title">
+          <span class="step-number">3</span>Visualización y Diagnóstico
+        </h2>
+        <div id="results_container" class="opacity-50">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="curve-container p-3">
+              <h3 class="font-medium text-center text-gray-700 mb-2">
+                Curva Flujo-Volumen
+              </h3>
+              <div class="h-48 flex items-center justify-center curve-grid">
+                <svg
+                  width="100%"
+                  height="100%"
+                  viewBox="0 0 220 140"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <g transform="translate(20, 130) scale(1, -1)">
+                    <path
+                      d="M0,0 H200 M0,0 V120"
+                      stroke="#94A3B8"
+                      stroke-width="1.5"
+                    />
+                    <text
+                      class="axis-label"
+                      transform="scale(1,-1)"
+                      x="80"
+                      y="-120"
+                    >
+                      Volumen (L)
+                    </text>
+                    <text
+                      class="axis-label"
+                      transform="rotate(90) scale(-1,1)"
+                      x="40"
+                      y="15"
+                    >
+                      Flujo (L/s)
+                    </text>
+                    <path
+                      d="M0,0 C20,100 80,90 180,5"
+                      class="curve-path"
+                      id="flowVolumePath"
+                      fill="none"
+                      stroke="#3B82F6"
+                      stroke-width="2.5"
+                    />
+                  </g>
+                </svg>
+              </div>
+              <div
+                id="fv_explanation"
+                class="text-xs text-gray-600 mt-2 p-1 h-16"
+              ></div>
+            </div>
+            <div class="curve-container p-3">
+              <h3 class="font-medium text-center text-gray-700 mb-2">
+                Curva Volumen-Tiempo
+              </h3>
+              <div class="h-48 flex items-center justify-center curve-grid">
+                <svg
+                  width="100%"
+                  height="100%"
+                  viewBox="0 0 220 140"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <g transform="translate(20, 130) scale(1, -1)">
+                    <path
+                      d="M0,0 H200 M0,0 V120"
+                      stroke="#94A3B8"
+                      stroke-width="1.5"
+                    />
+                    <path d="M100,0 V-5" stroke="#94A3B8" stroke-width="1" />
+                    <text
+                      class="axis-label"
+                      transform="scale(1,-1)"
+                      x="95"
+                      y="15"
+                      id="time_axis_label"
+                    >
+                      6s
+                    </text>
+                    <text
+                      class="axis-label"
+                      transform="scale(1,-1)"
+                      x="80"
+                      y="-120"
+                    >
+                      Tiempo (s)
+                    </text>
+                    <text
+                      class="axis-label"
+                      transform="rotate(90) scale(-1,1)"
+                      x="40"
+                      y="15"
+                    >
+                      Volumen (L)
+                    </text>
+                    <path
+                      d="M0,0 C20,80 80,100 180,105"
+                      class="curve-path"
+                      id="volumeTimePath"
+                      fill="none"
+                      stroke="#10B981"
+                      stroke-width="2.5"
+                    />
+                  </g>
+                </svg>
+              </div>
+              <div
+                id="vt_explanation"
+                class="text-xs text-gray-600 mt-2 p-1 h-16"
+              ></div>
+            </div>
+          </div>
+          <div id="interpretation_section" class="mt-4" aria-live="polite">
+            <p class="text-center text-gray-500 py-8">
+              Introduzca los datos para ver la interpretación.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 4: BIBLIOTECA -->
+      <div class="step-card">
+        <h2 class="step-title">
+          <span class="step-number">4</span>Biblioteca de Casos Clínicos
+        </h2>
+        <p class="text-gray-600 mb-2">
+          Seleccione un caso para cargar sus datos en los campos de arriba y ver
+          la interpretación.
+        </p>
+        <select
+          id="case_library_select"
+          class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+        >
+          <option value="-1">-- Seleccione un escenario clínico --</option>
+        </select>
+        <div
+          id="case_description_container"
+          class="mt-4 case-description hidden"
+        ></div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // --- BIBLIOTECA DE CASOS ---
+        const caseLibrary = [
+          // Casos Válidos
+          {
+            title: "1. Paciente Sano",
+            description:
+              "Varón de 35 años, no fumador, asintomático. Espirometría de rutina.",
+            values: {
+              percent: { ratio: 85, fvc: 98, fev1: 102 },
+              absolute: {
+                fvc_med: 4.9,
+                fvc_teo: 5.0,
+                fev1_med: 4.17,
+                fev1_teo: 4.09,
+              },
+            },
+            quality: { start: "yes", morphology: "yes", end: "yes" },
+            reproducibility: {
+              fvc1: 4.9,
+              fvc2: 4.85,
+              fev1_1: 4.17,
+              fev1_2: 4.1,
+            },
+          },
+          {
+            title: "2. Obstrucción Leve (EPOC Inicial)",
+            description:
+              "Mujer de 55 años, fumadora de 20 paq/año. Presenta tos matutina ocasional.",
+            values: {
+              percent: { ratio: 68, fvc: 90, fev1: 85 },
+              absolute: {
+                fvc_med: 3.15,
+                fvc_teo: 3.5,
+                fev1_med: 2.14,
+                fev1_teo: 2.52,
+              },
+            },
+            quality: { start: "yes", morphology: "yes", end: "yes" },
+            reproducibility: {
+              fvc1: 3.15,
+              fvc2: 3.09,
+              fev1_1: 2.14,
+              fev1_2: 2.1,
+            },
+          },
+          {
+            title: "3. Obstrucción Grave con PBD Positiva (Asma)",
+            description:
+              "Joven de 22 años, atópico, con crisis de sibilancias y tos nocturna. Se realiza PBD.",
+            values: {
+              percent: { ratio: 61, fvc: 84, fev1: 59 },
+              absolute: {
+                fvc_med: 3.78,
+                fvc_teo: 4.5,
+                fev1_med: 2.31,
+                fev1_teo: 3.91,
+              },
+            },
+            pbd: { fev1_pre: 2.31, fev1_post: 2.73, fvc_post: 4.0 },
+            quality: { start: "yes", morphology: "yes", end: "yes" },
+            reproducibility: {
+              fvc1: 3.78,
+              fvc2: 3.7,
+              fev1_1: 2.31,
+              fev1_2: 2.25,
+            },
+          },
+          {
+            title: "4. Obstrucción Moderada con PBD Negativa (EPOC)",
+            description:
+              "Varón de 65 años, exfumador, disnea de esfuerzo. Se realiza PBD.",
+            values: {
+              percent: { ratio: 58, fvc: 85, fev1: 62 },
+              absolute: {
+                fvc_med: 3.4,
+                fvc_teo: 4.0,
+                fev1_med: 1.97,
+                fev1_teo: 3.18,
+              },
+            },
+            pbd: { fev1_pre: 1.97, fev1_post: 2.08 },
+            quality: { start: "yes", morphology: "yes", end: "yes" },
+            reproducibility: {
+              fvc1: 3.4,
+              fvc2: 3.35,
+              fev1_1: 1.97,
+              fev1_2: 1.9,
+            },
+          },
+          {
+            title: "5. Patrón Sugestivo de Restricción",
+            description:
+              "Mujer de 60 años con fibrosis pulmonar conocida. Disnea progresiva.",
+            values: {
+              percent: { ratio: 83, fvc: 68, fev1: 70 },
+              absolute: {
+                fvc_med: 1.84,
+                fvc_teo: 2.7,
+                fev1_med: 1.52,
+                fev1_teo: 2.17,
+              },
+            },
+            quality: { start: "yes", morphology: "yes", end: "yes" },
+            reproducibility: {
+              fvc1: 1.84,
+              fvc2: 1.8,
+              fev1_1: 1.52,
+              fev1_2: 1.49,
+            },
+          },
+          {
+            title: "6. Patrón Mixto que normaliza FVC con PBD",
+            description:
+              "Paciente con EPOC y atrapamiento aéreo. La FVC mejora tras BD, cambiando el patrón de mixto a obstructivo puro.",
+            values: {
+              percent: { ratio: 58, fvc: 66, fev1: 49 },
+              absolute: {
+                fvc_med: 2.21,
+                fvc_teo: 3.33,
+                fev1_med: 1.28,
+                fev1_teo: 2.61,
+              },
+            },
+            pbd: { fev1_pre: 1.28, fev1_post: 1.62, fvc_post: 2.9 },
+            quality: { start: "yes", morphology: "yes", end: "yes" },
+            reproducibility: {
+              fvc1: 2.21,
+              fvc2: 2.18,
+              fev1_1: 1.28,
+              fev1_2: 1.25,
+            },
+          },
+          // Casos con Mala Técnica
+          {
+            title: "7. MALA TÉCNICA: Inicio Lento",
+            description:
+              "Paciente que no comprende la instrucción de soplar de forma explosiva, iniciando la maniobra con lentitud.",
+            values: {
+              percent: { ratio: 75, fvc: 95, fev1: 78 },
+              absolute: {
+                fvc_med: 4.28,
+                fvc_teo: 4.5,
+                fev1_med: 3.21,
+                fev1_teo: 4.11,
+              },
+            },
+            quality: { start: "no", morphology: "yes", end: "yes" },
+          },
+          {
+            title: "8. MALA TÉCNICA: Tos en el primer segundo",
+            description:
+              "Paciente que sufre un acceso de tos justo al inicio de la espiración forzada.",
+            values: {
+              percent: { ratio: 65, fvc: 88, fev1: 60 },
+              absolute: {
+                fvc_med: 3.96,
+                fvc_teo: 4.5,
+                fev1_med: 2.57,
+                fev1_teo: 4.28,
+              },
+            },
+            quality: { start: "yes", morphology: "no", end: "yes" },
+          },
+          {
+            title: "9. MALA TÉCNICA: Finalización Brusca",
+            description:
+              "Paciente que interrumpe la espiración a los 4 segundos, sin alcanzar una meseta.",
+            values: {
+              percent: { ratio: 81, fvc: 75, fev1: 80 },
+              absolute: {
+                fvc_med: 3.38,
+                fvc_teo: 4.5,
+                fev1_med: 2.73,
+                fev1_teo: 3.41,
+              },
+            },
+            quality: { start: "yes", morphology: "yes", end: "no" },
+          },
+          {
+            title: "10. MALA TÉCNICA: No Reproducible",
+            description:
+              "Paciente realiza tres maniobras aceptables, pero la variabilidad entre ellas es demasiado alta, invalidando la sesión.",
+            values: {
+              percent: { ratio: 82, fvc: 91, fev1: 95 },
+              absolute: {
+                fvc_med: 4.1,
+                fvc_teo: 4.5,
+                fev1_med: 3.5,
+                fev1_teo: 3.68,
+              },
+            },
+            quality: { start: "yes", morphology: "yes", end: "yes" },
+            reproducibility: {
+              fvc1: 4.1,
+              fvc2: 3.85,
+              fev1_1: 3.5,
+              fev1_2: 3.55,
+            },
+          },
+        ];
+
+        const selectCase = document.getElementById("case_library_select");
+        const descriptionContainer = document.getElementById(
+          "case_description_container"
+        );
+
+        caseLibrary.forEach((caseItem, index) => {
+          const option = document.createElement("option");
+          option.value = index;
+          option.textContent = caseItem.title;
+          selectCase.appendChild(option);
+        });
+
+        selectCase.addEventListener("change", (e) => {
+          const caseIndex = parseInt(e.target.value);
+          if (caseIndex < 0) {
+            descriptionContainer.classList.add("hidden");
+            [
+              "fev1fvc_ratio",
+              "fvc_percent",
+              "fev1_percent",
+              "fvc_med",
+              "fvc_teo",
+              "fev1_med",
+              "fev1_teo",
+              "fvc1",
+              "fvc2",
+              "fev1_1",
+              "fev1_2",
+            ].forEach((id) => (document.getElementById(id).value = ""));
+            loadCase(null);
+            debounceAndInterpret();
+            return;
+          }
+          const selectedCase = caseLibrary[caseIndex];
+          descriptionContainer.textContent = selectedCase.description;
+          descriptionContainer.classList.remove("hidden");
+          loadCase(selectedCase);
+        });
+
+        function loadCase(caseData) {
+          ["fvc1", "fvc2", "fev1_1", "fev1_2"].forEach(
+            (id) => (document.getElementById(id).value = "")
+          );
+          if (!caseData) {
+            pbdCheck.checked = false;
+            document
+              .querySelectorAll(".quality-input")
+              .forEach((radio) => (radio.checked = false));
+            document
+              .querySelectorAll(".quality-feedback")
+              .forEach((el) => el.classList.add("hidden"));
+            renderPBDInputs();
+            return;
+          }
+          document.getElementById("fev1fvc_ratio").value =
+            caseData.values.percent.ratio;
+          document.getElementById("fvc_percent").value =
+            caseData.values.percent.fvc;
+          document.getElementById("fev1_percent").value =
+            caseData.values.percent.fev1;
+          document.getElementById("fvc_med").value =
+            caseData.values.absolute.fvc_med;
+          document.getElementById("fvc_teo").value =
+            caseData.values.absolute.fvc_teo;
+          document.getElementById("fev1_med").value =
+            caseData.values.absolute.fev1_med;
+          document.getElementById("fev1_teo").value =
+            caseData.values.absolute.fev1_teo;
+          if (caseData.reproducibility) {
+            document.getElementById("fvc1").value =
+              caseData.reproducibility.fvc1;
+            document.getElementById("fvc2").value =
+              caseData.reproducibility.fvc2;
+            document.getElementById("fev1_1").value =
+              caseData.reproducibility.fev1_1;
+            document.getElementById("fev1_2").value =
+              caseData.reproducibility.fev1_2;
+          }
+          pbdCheck.checked = !!caseData.pbd;
+          renderPBDInputs();
+          if (caseData.pbd) {
+            setTimeout(() => {
+              if (document.getElementById("fev1_pre"))
+                document.getElementById("fev1_pre").value =
+                  caseData.pbd.fev1_pre;
+              if (document.getElementById("fev1_post"))
+                document.getElementById("fev1_post").value =
+                  caseData.pbd.fev1_post;
+              if (document.getElementById("fvc_post"))
+                document.getElementById("fvc_post").value =
+                  caseData.pbd.fvc_post || "";
+              debounceAndInterpret();
+            }, 10);
+          }
+          document.querySelector(
+            `input[name="start"][value="${caseData.quality.start}"]`
+          ).checked = true;
+          document.querySelector(
+            `input[name="morphology"][value="${caseData.quality.morphology}"]`
+          ).checked = true;
+          document.querySelector(
+            `input[name="end"][value="${caseData.quality.end}"]`
+          ).checked = true;
+          document
+            .querySelectorAll(".quality-input:checked")
+            .forEach((radio) => radio.dispatchEvent(new Event("change")));
+          debounceAndInterpret();
+        }
+
+        document.querySelectorAll('input[type="number"]').forEach((el) => {
+          el.addEventListener("input", () => {
+            if (el.value.includes(",")) el.value = el.value.replace(",", ".");
+          });
+        });
+        const allInputs = document.querySelectorAll(
+          ".data-input, .quality-input"
+        );
+        const modeRadios = document.querySelectorAll(
+          'input[name="input_mode"]'
+        );
+        const pbdCheck = document.getElementById("pbd_check");
+        const pbdContainer = document.getElementById("pbd_input_container");
+        const pediatricMode = document.getElementById("pediatric_mode");
+        let debounceTimer;
+        function debounceAndInterpret() {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(interpretSpirometry, 50);
+        }
+        allInputs.forEach((input) => {
+          input.addEventListener("input", debounceAndInterpret);
+          input.addEventListener("change", debounceAndInterpret);
+        });
+        modeRadios.forEach((radio) =>
+          radio.addEventListener("change", () => {
+            const isAbs = radio.value === "absolute";
+            document
+              .getElementById("abs_inputs")
+              .classList.toggle("hidden", !isAbs);
+            document
+              .getElementById("percent_inputs")
+              .classList.toggle("hidden", isAbs);
+            renderPBDInputs();
+          })
+        );
+        pbdCheck.addEventListener("change", renderPBDInputs);
+        pediatricMode.addEventListener("change", () => {
+          const isPediatric = pediatricMode.checked;
+          document
+            .getElementById("pediatric_note")
+            .classList.toggle("hidden", !isPediatric);
+          document.getElementById("end_duration_label").textContent =
+            isPediatric ? ">3s" : ">6s";
+          document.getElementById("end_duration_label_short").textContent =
+            isPediatric ? "3s" : "6s";
+          document.getElementById("time_axis_label").textContent = isPediatric
+            ? "3s"
+            : "6s";
+        });
+
+        function renderPBDInputs() {
+          const reproPostContainer = document.getElementById(
+            "repro_post_container"
+          );
+          pbdContainer.classList.toggle("hidden", !pbdCheck.checked);
+          reproPostContainer.classList.toggle("hidden", !pbdCheck.checked);
+          pbdContainer.innerHTML = "";
+          if (pbdCheck.checked) {
+            pbdContainer.innerHTML = `<div><label for="fev1_pre" class="font-medium text-gray-700">FEV1 Pre-BD (L)</label><input type="number" min="0" step="0.01" id="fev1_pre" class="data-input mt-1 block w-full rounded-md"></div>
+                                            <div><label for="fev1_post" class="font-medium text-gray-700">FEV1 Post-BD (L)</label><input type="number" min="0" step="0.01" id="fev1_post" class="data-input mt-1 block w-full rounded-md"></div>
+                                            <div class="col-span-2"><label for="fvc_post" class="font-medium text-gray-700">FVC Post-BD (L) (Opcional)</label><input type="number" min="0" step="0.01" id="fvc_post" class="data-input mt-1 block w-full rounded-md"></div>`;
+            const fev1_pre_input = document.getElementById("fev1_pre");
+            const fev1_med_val = document.getElementById("fev1_med")?.value;
+            if (fev1_pre_input && fev1_med_val && !fev1_pre_input.value)
+              fev1_pre_input.value = fev1_med_val;
+
+            pbdContainer.querySelectorAll(".data-input").forEach((input) => {
+              input.addEventListener("input", debounceAndInterpret);
+              input.addEventListener("change", debounceAndInterpret);
+            });
+          }
+          debounceAndInterpret();
+        }
+
+        const qualitySections = [
+          {
+            name: "start",
+            pathEl: document.getElementById("start_path"),
+            feedbackEl: document.getElementById("start_feedback"),
+            correct: "M 10 70 C 25 15, 40 10, 90 8",
+            incorrect: "M 10 70 C 40 65, 50 20, 90 8",
+          },
+          {
+            name: "morphology",
+            pathEl: document.getElementById("morphology_path"),
+            feedbackEl: document.getElementById("morphology_feedback"),
+            correct: "M 10 70 C 15 10, 40 10, 90 65",
+            incorrect: "M 10 70 C 15 10, 30 15, 40 40 C 45 15, 55 20, 90 65",
+          },
+          {
+            name: "end",
+            pathEl: document.getElementById("end_path"),
+            feedbackEl: document.getElementById("end_feedback"),
+            correct: "M 10 70 C 25 15, 40 10, 90 8",
+            incorrect: "M 10 70 C 25 15, 40 10, 60 8",
+          },
+        ];
+        qualitySections.forEach((section) => {
+          document
+            .querySelectorAll(`input[name="${section.name}"]`)
+            .forEach((radio) => {
+              radio.addEventListener("change", () => {
+                const isCorrect = radio.value === "yes";
+                section.pathEl.setAttribute(
+                  "d",
+                  isCorrect ? section.correct : section.incorrect
+                );
+                section.feedbackEl.innerHTML = isCorrect
+                  ? "<strong>Correcto:</strong> Criterio cumplido."
+                  : "<strong>Atención:</strong> Compromete la validez.";
+                section.feedbackEl.className = `quality-feedback ${
+                  isCorrect ? "feedback-correct" : "feedback-incorrect"
+                }`;
+                section.feedbackEl.classList.remove("hidden");
+                debounceAndInterpret();
+              });
+            });
+        });
+
+        function comprobar_reproducibilidad(v1, v2) {
+          const a = parseFloat(v1),
+            b = parseFloat(v2);
+          if ([a, b].some(isNaN) || Math.max(a, b) <= 0)
+            return { ok: null, diff_ml: NaN, diff_pct: NaN };
+          const diff_ml = Math.abs(a - b);
+          const diff_pct = (diff_ml / Math.max(a, b)) * 100;
+          const ok = diff_ml <= 0.2 || diff_pct <= 5;
+          return { ok: ok, diff_ml: diff_ml, diff_pct: diff_pct };
+        }
+
+        function interpretSpirometry() {
+          const interpretationSection = document.getElementById(
+            "interpretation_section"
+          );
+          const resultsContainer = document.getElementById("results_container");
+          let fvc_percent, ratio_percent, fev1_percent;
+          let dataComplete = false;
+          const mode = document.querySelector(
+            'input[name="input_mode"]:checked'
+          ).value;
+          if (mode === "percent") {
+            fvc_percent = parseFloat(
+              document.getElementById("fvc_percent").value
+            );
+            ratio_percent = parseFloat(
+              document.getElementById("fev1fvc_ratio").value
+            );
+            fev1_percent = parseFloat(
+              document.getElementById("fev1_percent").value
+            );
+            dataComplete =
+              !isNaN(fvc_percent) &&
+              !isNaN(ratio_percent) &&
+              !isNaN(fev1_percent);
+          } else {
+            const fvc_med = parseFloat(
+              document.getElementById("fvc_med").value
+            );
+            const fvc_teo = parseFloat(
+              document.getElementById("fvc_teo").value
+            );
+            const fev1_med = parseFloat(
+              document.getElementById("fev1_med").value
+            );
+            const fev1_teo = parseFloat(
+              document.getElementById("fev1_teo").value
+            );
+            if (
+              ![fvc_med, fvc_teo, fev1_med, fev1_teo].some(isNaN) &&
+              fvc_teo > 0 &&
+              fvc_med > 0 &&
+              fev1_teo > 0
+            ) {
+              fvc_percent = (fvc_med / fvc_teo) * 100;
+              ratio_percent = (fev1_med / fvc_med) * 100;
+              fev1_percent = (fev1_med / fev1_teo) * 100;
+              dataComplete = true;
+            }
+          }
+          if (!dataComplete) {
+            resultsContainer.classList.add("opacity-50");
+            interpretationSection.innerHTML = `<p class="text-center text-gray-500 py-8">Introduzca los datos o seleccione un caso de la biblioteca.</p>`;
+            updateCurves(null, null, null);
+            return;
+          }
+
+          let incoherencias = [];
+          if (mode === "absolute") {
+            const fvc_med = parseFloat(
+              document.getElementById("fvc_med").value
+            );
+            const fev1_med = parseFloat(
+              document.getElementById("fev1_med").value
+            );
+            if (!isNaN(fvc_med) && !isNaN(fev1_med) && fev1_med > fvc_med)
+              incoherencias.push(
+                "• FEV1 medido > FVC medida (revise los valores)."
+              );
+          }
+          if (pbdCheck.checked) {
+            const fvc_med = parseFloat(
+              document.getElementById("fvc_med").value
+            );
+            const fvc_post = parseFloat(
+              document.getElementById("fvc_post")?.value
+            );
+            const fev1_pre = parseFloat(
+              document.getElementById("fev1_pre")?.value
+            );
+            const fev1_post = parseFloat(
+              document.getElementById("fev1_post")?.value
+            );
+            const final_fvc = isNaN(fvc_post) ? fvc_med : fvc_post;
+            if (!isNaN(final_fvc) && !isNaN(fev1_pre) && fev1_pre > final_fvc)
+              incoherencias.push("• FEV1 pre-BD > FVC.");
+            if (!isNaN(final_fvc) && !isNaN(fev1_post) && fev1_post > final_fvc)
+              incoherencias.push("• FEV1 post-BD > FVC.");
+          }
+          if (incoherencias.length) {
+            interpretationSection.innerHTML = `<div class="quality-warning mb-4"><strong>Datos incoherentes:</strong><br>${incoherencias.join(
+              "<br>"
+            )}</div>`;
+            return;
+          }
+
+          resultsContainer.classList.remove("opacity-50");
+          updateCurves(ratio_percent, fvc_percent, fev1_percent);
+
+          let pattern,
+            patternClass,
+            explanation = "",
+            severity = "";
+          let isObstructive = ratio_percent < 70;
+          let isRestrictive = fvc_percent < 80;
+
+          const fvc1 = parseFloat(document.getElementById("fvc1").value);
+          const fvc2 = parseFloat(document.getElementById("fvc2").value);
+          const fev1_1 = parseFloat(document.getElementById("fev1_1").value);
+          const fev1_2 = parseFloat(document.getElementById("fev1_2").value);
+          const r_fvc = comprobar_reproducibilidad(fvc1, fvc2);
+          const r_fev1 = comprobar_reproducibilidad(fev1_1, fev1_2);
+          let isReproducible = null;
+          const reproducibilityResultEl = document.getElementById(
+            "reproducibility_result"
+          );
+          if (r_fvc.ok !== null && r_fev1.ok !== null) {
+            isReproducible = r_fvc.ok && r_fev1.ok;
+            const txt = `FVC: Δ ${(r_fvc.diff_ml * 1000).toFixed(
+              0
+            )} ml (${r_fvc.diff_pct.toFixed(1)}%) · FEV1: Δ ${(
+              r_fev1.diff_ml * 1000
+            ).toFixed(0)} ml (${r_fev1.diff_pct.toFixed(1)}%) ${
+              isReproducible
+                ? " → Reproducible (≤200 ml o ≤5%)"
+                : " → NO reproducible"
+            }`;
+            reproducibilityResultEl.innerHTML = txt;
+            reproducibilityResultEl.className = `mt-4 text-center font-bold p-2 rounded-md ${
+              isReproducible
+                ? "bg-green-100 text-green-800"
+                : "bg-yellow-100 text-yellow-800"
+            }`;
+          } else {
+            reproducibilityResultEl.textContent = "";
+            reproducibilityResultEl.className =
+              "mt-4 text-center font-bold p-2 rounded-md";
+          }
+
+          const q_start = document.querySelector(
+            'input[name="start"]:checked'
+          )?.value;
+          const q_morph = document.querySelector(
+            'input[name="morphology"]:checked'
+          )?.value;
+          const q_end = document.querySelector(
+            'input[name="end"]:checked'
+          )?.value;
+          const es_aceptable =
+            q_start === "yes" && q_morph === "yes" && q_end === "yes";
+
+          const no_repro_comprobada = r_fvc.ok === null || r_fev1.ok === null;
+          if (
+            !es_aceptable ||
+            isReproducible === false ||
+            no_repro_comprobada
+          ) {
+            const motivos = [
+              !es_aceptable
+                ? "• Maniobra no aceptable (inicio/morfología/finalización)."
+                : "",
+              no_repro_comprobada
+                ? "• Falta comprobar reproducibilidad (introduzca las dos mejores FVC y FEV1)."
+                : "",
+              isReproducible === false
+                ? "• Sesión no reproducible (Δ ≤200 ml o ≤5% requerido)."
+                : "",
+            ]
+              .filter(Boolean)
+              .join("<br>");
+            interpretationSection.innerHTML = `<div class="quality-warning mb-4"><strong>No interpretable:</strong><br>${motivos}</div>`;
+            return;
+          }
+
+          let pbdHtml = "";
+          if (pbdCheck.checked) {
+            let esPositiva = false;
+            let textoPbd = "";
+            const fev1_pre = parseFloat(
+              document.getElementById("fev1_pre")?.value
+            );
+            const fev1_post = parseFloat(
+              document.getElementById("fev1_post")?.value
+            );
+            const fvc_post = parseFloat(
+              document.getElementById("fvc_post")?.value
+            );
+            const fvc_teo = parseFloat(
+              document.getElementById("fvc_teo")?.value
+            );
+            const fev1_teo = parseFloat(
+              document.getElementById("fev1_teo")?.value
+            );
+
+            if (!isNaN(fev1_pre) && !isNaN(fev1_post) && fev1_pre > 0) {
+              const delta_ml = (fev1_post - fev1_pre) * 1000;
+              const denom = (fev1_post + fev1_pre) / 2;
+              const delta_pct_media =
+                denom > 0 ? ((fev1_post - fev1_pre) / denom) * 100 : NaN;
+              esPositiva =
+                !isNaN(delta_pct_media) &&
+                delta_pct_media >= 12 &&
+                delta_ml >= 200;
+              textoPbd = `Cambio FEV1: <strong>${Math.round(
+                delta_ml
+              )} ml</strong> y <strong>${delta_pct_media.toFixed(
+                1
+              )}%</strong> (sobre media) → <strong class="${
+                esPositiva ? "text-green-700" : "text-yellow-700"
+              }">${esPositiva ? "PBD POSITIVA" : "PBD NEGATIVA"}</strong>`;
+
+              let postPatternHTML = "";
+              if (
+                !isNaN(fvc_post) &&
+                !isNaN(fvc_teo) &&
+                fvc_teo > 0 &&
+                !isNaN(fev1_teo) &&
+                fev1_teo > 0
+              ) {
+                const ratio_post = (fev1_post / fvc_post) * 100;
+                const fvc_pct_post = (fvc_post / fvc_teo) * 100;
+                const fev1_pct_post = (fev1_post / fev1_teo) * 100;
+
+                const isObstructive_post = ratio_post < 70;
+                const isRestrictive_post = fvc_pct_post < 80;
+                let pattern_post = "NORMAL";
+                if (isObstructive_post && isRestrictive_post)
+                  pattern_post = "MIXTO";
+                else if (isObstructive_post) pattern_post = "OBSTRUCTIVO";
+                else if (isRestrictive_post)
+                  pattern_post = "SUG. DE RESTRICCIÓN";
+                postPatternHTML = `<p class="mt-2">Patrón Post-BD: <strong>${pattern_post}</strong> (Cociente: ${ratio_post.toFixed(
+                  0
+                )}%, FVC: ${fvc_pct_post.toFixed(0)}%)</p>`;
+                isObstructive = isObstructive_post; // Update obstruction status for severity
+              }
+
+              if (isObstructive) {
+                const fev1_pct_post = (fev1_post / fev1_teo) * 100;
+                if (fev1_pct_post >= 80) severity = "Leve (GOLD 1)";
+                else if (fev1_pct_post >= 50) severity = "Moderada (GOLD 2)";
+                else if (fev1_pct_post >= 30) severity = "Grave (GOLD 3)";
+                else severity = "Muy Grave (GOLD 4)";
+              } else {
+                severity = ""; // No obstruction post-BD, no GOLD severity
+              }
+              pbdHtml = `<div class="bg-gray-50 p-3 rounded-md mt-4"><h4 class="font-bold">Prueba Broncodilatadora</h4><p class="text-sm mt-1">${textoPbd}</p>${postPatternHTML}</div>`;
+            } else {
+              pbdHtml = `<div class="bg-gray-50 p-3 rounded-md mt-4"><h4 class="font-bold">Prueba Broncodilatadora</h4><p class="text-sm mt-1">Introduzca FEV1 pre y post...</p></div>`;
+            }
+          }
+
+          if (isObstructive && isRestrictive) {
+            pattern = "PATRÓN MIXTO";
+            patternClass = "pattern-mixed";
+            explanation = `<p>Cociente Pre-BD (${ratio_percent.toFixed(
+              0
+            )}%) < 70% indica <strong>obstrucción</strong>.</p><p>FVC Pre-BD (${fvc_percent.toFixed(
+              0
+            )}%) < 80% sugiere <strong>restricción</strong>.</p>${
+              severity && isObstructive
+                ? `<p>Severidad Obstrucción Post-BD: <strong>${severity}</strong>.</p>`
+                : ""
+            }`;
+          } else if (isObstructive) {
+            pattern = "PATRÓN OBSTRUCTIVO";
+            patternClass = "pattern-obstructive";
+            explanation = `<p>Cociente Pre-BD (${ratio_percent.toFixed(
+              0
+            )}%) < 70% indica <strong>obstrucción</strong>.</p><p>FVC Pre-BD (${fvc_percent.toFixed(
+              0
+            )}%) ≥ 80% es normal.</p>${
+              severity && isObstructive
+                ? `<p>Severidad Post-BD: <strong>${severity}</strong>.</p>`
+                : ""
+            }`;
+          } else if (isRestrictive) {
+            pattern = "PATRÓN SUGESTIVO DE RESTRICCIÓN";
+            patternClass = "pattern-restrictive";
+            explanation = `<p>Cociente Pre-BD (${ratio_percent.toFixed(
+              0
+            )}%) ≥ 70% es normal.</p><p>FVC Pre-BD (${fvc_percent.toFixed(
+              0
+            )}%) < 80% es <strong>sugestivo de restricción</strong>.</p><p class="text-sm mt-1">Para confirmación se requiere medir la Capacidad Pulmonar Total (CPT).</p>`;
+          } else {
+            pattern = "ESPIROMETRÍA NORMAL";
+            patternClass = "pattern-normal";
+            explanation = `<p>Todos los parámetros están dentro de la normalidad.</p>`;
+          }
+
+          let finalHtml = `<div class="interpretation ${patternClass}">${pattern} (Pre-BD)</div>
+                                <div class="bg-gray-50 p-3 rounded-md"><h4 class="font-bold">Justificación</h4><div class="mt-1 text-sm text-gray-700">${explanation}</div></div>
+                                ${pbdHtml}`;
+          if (!pbdCheck.checked) {
+            finalHtml += `<div class="mt-2 text-sm text-center text-gray-500"><strong>Debe realizarse siempre la PBD en la primera espirometría diagnóstica.</strong></div>`;
+          }
+          finalHtml += `<div class="clinical-pearl">
+                                <p class="font-semibold text-blue-800">Píldora Clínica</p>
+                                <p class="text-sm text-blue-700 mt-1">Recuerde siempre correlacionar estos hallazgos con la clínica del paciente. Una PBD positiva es muy sugerente de asma, pero su ausencia no la descarta.</p>
+                             </div>`;
+          interpretationSection.innerHTML = finalHtml;
+        }
+
+        function updateCurves(ratio_percent, fvc_percent, fev1_percent) {
+          const flowPathEl = document.getElementById("flowVolumePath");
+          const volTimePathEl = document.getElementById("volumeTimePath");
+          const fv_explanation = document.getElementById("fv_explanation");
+          const vt_explanation = document.getElementById("vt_explanation");
+
+          if (ratio_percent === null || fvc_percent === null) {
+            flowPathEl.setAttribute("d", "M0,0 C20,100 80,90 180,5");
+            volTimePathEl.setAttribute("d", "M0,0 C20,80 80,100 180,105");
+            fv_explanation.innerHTML =
+              "Representa la velocidad del aire (flujo) frente al volumen exhalado.";
+            vt_explanation.innerHTML =
+              "Representa el volumen de aire exhalado a lo largo del tiempo.";
+            return;
+          }
+
+          const isObstructive = ratio_percent < 70;
+          const isRestrictive = fvc_percent < 80;
+
+          if (isObstructive)
+            fv_explanation.innerHTML =
+              '<strong>Signo de obstrucción:</strong> Se observa una "muesca" o concavidad en la rama descendente.';
+          else if (isRestrictive)
+            fv_explanation.innerHTML =
+              '<strong>Morfología de restricción:</strong> La forma es normal, pero "en miniatura" (más estrecha).';
+          else
+            fv_explanation.innerHTML =
+              "<strong>Morfología normal:</strong> Pico inicial rápido y un descenso casi rectilíneo y suave.";
+
+          if (isObstructive)
+            vt_explanation.innerHTML =
+              "<strong>Signo de obstrucción:</strong> La curva tarda más en alcanzar la meseta. La pendiente inicial es menos pronunciada.";
+          else if (isRestrictive)
+            vt_explanation.innerHTML =
+              "<strong>Signo de restricción:</strong> La curva es más baja, ya que el volumen total (FVC) está disminuido.";
+          else
+            vt_explanation.innerHTML =
+              "<strong>Morfología normal:</strong> Ascenso rápido inicial y meseta alcanzada en pocos segundos.";
+
+          const ratio_norm = Math.max(0.1, (ratio_percent - 30) / 50);
+          const fvc_norm = Math.max(0.1, (fvc_percent - 20) / 80);
+
+          const flow_peak_y = 100 * Math.min(1, fvc_norm * 1.2);
+          const flow_mid_y = 90 - (1 - ratio_norm) * 70;
+          const flow_end_x = 180 * fvc_norm;
+          const flowPath = `M0,0 C${20 * fvc_norm},${flow_peak_y} ${
+            80 * fvc_norm
+          },${flow_mid_y} ${flow_end_x},5`;
+          flowPathEl.setAttribute("d", flowPath);
+
+          const vol_end_y = 105 * fvc_norm;
+          const vol_mid_y = 100 * fvc_norm * (0.4 + ratio_norm * 0.6);
+          const volPath = `M0,0 C${30 * (2 - ratio_norm)},${vol_mid_y} 80,${
+            100 * fvc_norm
+          } 180,${vol_end_y}`;
+          volTimePathEl.setAttribute("d", volPath);
+        }
+      });
+    </script>
+  </body>
+</html>
