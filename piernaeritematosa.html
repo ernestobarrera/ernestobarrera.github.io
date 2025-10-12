@@ -1,0 +1,1919 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Asistente de Decisión Clínica 3.0: Celulitis vs. Pseudocelulitis
+    </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/intro.js/minified/introjs.min.css"
+    />
+    <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f0f2f5;
+      }
+      .transition-all {
+        transition: all 0.3s ease-in-out;
+      }
+      .contenedor-principal {
+        display: grid;
+        grid-template-columns: 45% 1fr;
+        gap: 2rem;
+      }
+      @media (max-width: 1024px) {
+        .contenedor-principal {
+          grid-template-columns: 1fr;
+        }
+      }
+      .item-check {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      }
+      .item-check:hover {
+        background: #f8fafc;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+          0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      }
+      .item-check.seleccionado {
+        background: #eef2ff;
+        border-color: #4f46e5;
+        box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.1),
+          0 2px 4px -1px rgba(79, 70, 229, 0.06);
+      }
+      .item-check input {
+        display: none;
+      }
+      .item-check .icono {
+        flex-shrink: 0;
+        width: 2.5rem;
+        height: 2.5rem;
+        margin-right: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e0e7ff;
+        border-radius: 50%;
+        color: #4f46e5;
+      }
+      .item-check.seleccionado .icono {
+        background: #4f46e5;
+        color: #fff;
+      }
+      .pestaña-seleccionada {
+        border-bottom: 3px solid #4f46e5;
+        color: #4f46e5;
+        font-weight: 700;
+      }
+      .pestaña {
+        cursor: pointer;
+      }
+      .btn-copiar {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: #e5e7eb;
+        color: #4b5563;
+        border: none;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        opacity: 0.3;
+        transition: opacity 0.2s ease;
+      }
+      .relative:hover .btn-copiar {
+        opacity: 1;
+      }
+      .medidor {
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+      }
+      .medidor__cuerpo {
+        width: 100%;
+        height: 0;
+        padding-bottom: 50%;
+        background: #e5e7eb;
+        position: relative;
+        border-top-left-radius: 150px 150px;
+        border-top-right-radius: 150px 150px;
+        overflow: hidden;
+      }
+      .medidor__relleno {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: inherit;
+        height: 100%;
+        background: #ef4444;
+        transform-origin: center top;
+        transform: rotate(0.5turn);
+        transition: transform 0.3s ease-out, background 0.2s ease;
+      }
+      .medidor__cobertura {
+        width: 75%;
+        height: 150%;
+        background: #f0f2f5;
+        border-radius: 50%;
+        position: absolute;
+        top: 25%;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        padding-bottom: 25%;
+        box-sizing: border-box;
+      }
+      #diagnostico-principal {
+        font-size: 1.1rem;
+      }
+      details summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: #4f46e5;
+      }
+      details summary:hover {
+        text-decoration: underline;
+      }
+      .aparece {
+        animation: aparece 0.25s ease-out;
+      }
+      @keyframes aparece {
+        from {
+          opacity: 0;
+          transform: translateY(-4px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .foco:focus {
+        outline: 2px solid #4f46e5;
+        outline-offset: 2px;
+      }
+      .tabla-alt70 th,
+      .tabla-alt70 td {
+        border-bottom: 1px solid #e5e7eb;
+        padding: 0.5rem 0.75rem;
+      }
+      /* Tooltip estilo post-it (amarillo, grande, con ligera inclinación) */
+      .introjs-tooltip {
+        background-color: #fff7a8;
+        border: none;
+        color: #333;
+        max-width: 380px;
+        box-shadow: 5px 5px 7px rgba(33, 33, 33, 0.35);
+        transform: rotate(2deg);
+        border-bottom-right-radius: 14px;
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+        border-bottom-left-radius: 0;
+        font-family: "Comic Sans MS", "Chalkboard SE", "Marker Felt", sans-serif;
+      }
+      .introjs-button {
+        background-color: #e5e7eb;
+        border: 1px solid #9ca3af;
+        color: #333;
+        text-shadow: none;
+        border-radius: 4px;
+      }
+      .introjs-button:hover {
+        background-color: #d1d5db;
+      }
+      .introjs-arrow.top {
+        border-bottom-color: #fff7a8;
+      }
+      .introjs-arrow.bottom {
+        border-top-color: #fff7a8;
+      }
+      .introjs-arrow.left {
+        border-right-color: #fff7a8;
+      }
+      .introjs-arrow.right {
+        border-left-color: #fff7a8;
+      }
+    </style>
+  </head>
+  <body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+      <header class="text-center mb-10">
+        <div class="flex items-center justify-center gap-3">
+          <svg
+            class="w-10 h-10 text-indigo-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M12 6V3m0 18v-3m6-9h.01M6 12h.01M12 18h.01M12 9h.01M18 12h.01M6 15h.01M12 15h.01M15 12h.01M9 15h.01"
+            ></path>
+          </svg>
+          <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800">
+            Asistente de Decisión Clínica 3.0
+          </h1>
+        </div>
+        <p class="text-lg text-gray-500 mt-2">
+          Herramienta educativa para el diagnóstico diferencial: Celulitis
+          infecciosa vs. Pseudocelulitis (Dermatitis por Estasis/SPT)
+        </p>
+        <div class="mt-4">
+          <button
+            id="btn_tour"
+            class="bg-white hover:bg-gray-50 text-indigo-600 font-semibold py-2 px-4 border border-indigo-300 rounded-lg shadow-sm"
+          >
+            ❓ Guía interactiva
+          </button>
+        </div>
+      </header>
+
+      <div class="contenedor-principal">
+        <!-- Columna de inputs -->
+        <div class="bg-transparent rounded-xl">
+          <h2
+            class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3"
+          >
+            <svg
+              class="w-8 h-8 text-indigo-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+              ></path>
+            </svg>
+            Checklist de hallazgos clínicos
+          </h2>
+
+          <form id="form-clinico">
+            <div class="space-y-4">
+              <label
+                class="item-check foco"
+                id="etiqueta-sintomas_sistemicos"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <input type="checkbox" name="sintomas_sistemicos" />
+                <div class="icono">
+                  <svg
+                    class="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7.014A8.003 8.003 0 0112 3c1.398 0 2.743.57 3.714 1.543C18.5 6.5 19 9 19 11c2 1 2.657 1.657 2.657 1.657a8 8 0 01-4.001 6.001z"
+                    ></path>
+                  </svg>
+                </div>
+                <div>
+                  <p class="font-semibold text-gray-800">
+                    Fiebre / síntomas sistémicos
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    Fuerte predictor de celulitis.
+                  </p>
+                </div>
+              </label>
+
+              <label
+                class="item-check foco"
+                id="etiqueta-inicio_agudo"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <input type="checkbox" name="inicio_agudo" />
+                <div class="icono">
+                  <svg
+                    class="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                </div>
+                <div>
+                  <p class="font-semibold text-gray-800">
+                    Inicio agudo (&lt; 72 h)
+                  </p>
+                  <p class="text-sm text-gray-500">Sugiere celulitis.</p>
+                </div>
+              </label>
+
+              <label
+                class="item-check foco"
+                id="etiqueta-afectacion_unilateral"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <input type="checkbox" name="afectacion_unilateral" />
+                <div class="icono">
+                  <svg
+                    class="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    ></path>
+                  </svg>
+                </div>
+                <div>
+                  <p class="font-semibold text-gray-800">
+                    Afectación unilateral
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    Típico en celulitis (no confirmatorio).
+                  </p>
+                </div>
+              </label>
+
+              <label
+                class="item-check foco"
+                id="etiqueta-eritema_delimitado"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <input type="checkbox" name="eritema_delimitado" />
+                <div class="icono">
+                  <svg
+                    class="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2h1a2 2 0 002-2v-1a2 2 0 012-2h1.945M7.884 5.036A9 9 0 0112 3v.01M16.116 5.036A9 9 0 0121 12h-1.945M4.935 16.116A9 9 0 013 12h1.945m12.18 4.116A9 9 0 0112 21v-.01M12 9a3 3 0 100 6 3 3 0 000-6z"
+                    ></path>
+                  </svg>
+                </div>
+                <div>
+                  <p class="font-semibold text-gray-800">
+                    Eritema bien delimitado
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    Placa erisipeloide (sugiere celulitis).
+                  </p>
+                </div>
+              </label>
+
+              <label
+                class="item-check foco"
+                id="etiqueta-bilateral"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <input type="checkbox" name="bilateral" />
+                <div class="icono">
+                  <svg
+                    class="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M11 18h3.75a5.25 5.25 0 10-10.5 0H8.25m3.75-10.5a5.25 5.25 0 00-10.5 0H6.75m3.75-1.5V6m3.75-1.5V6m0 12v-1.5m-3.75 1.5v-1.5"
+                    ></path>
+                  </svg>
+                </div>
+                <div>
+                  <p class="font-semibold text-gray-800">
+                    Afectación bilateral
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    Fuerte en contra de celulitis (sugiere estasis/SPT).
+                  </p>
+                </div>
+              </label>
+
+              <label
+                class="item-check foco"
+                id="etiqueta-antecedente_tvp"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <input type="checkbox" name="antecedente_tvp" />
+                <div class="icono">
+                  <svg
+                    class="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                    ></path>
+                  </svg>
+                </div>
+                <div>
+                  <p class="font-semibold text-gray-800">
+                    Antecedente de TVP ipsilateral
+                  </p>
+                  <p class="text-sm text-gray-500">Fuerte predictor de SPT.</p>
+                </div>
+              </label>
+
+              <label
+                class="item-check foco"
+                id="etiqueta-signos_estasis"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <input type="checkbox" name="signos_estasis" />
+                <div class="icono">
+                  <svg
+                    class="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                    ></path>
+                  </svg>
+                </div>
+                <div>
+                  <p class="font-semibold text-gray-800">
+                    Signos de estasis crónica
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    Pigmentación ocre, eccema, atrofia blanca.
+                    Lipodermatoesclerosis: aguda (placa indurada y dolorosa) /
+                    crónica (“botella de champán invertida”).
+                  </p>
+                </div>
+              </label>
+
+              <label
+                class="item-check foco"
+                id="etiqueta-prurito"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <input type="checkbox" name="prurito" />
+                <div class="icono">🪶</div>
+                <div>
+                  <p class="font-semibold text-gray-800">
+                    Prurito predominante
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    Favorece dermatitis por estasis.
+                  </p>
+                </div>
+              </label>
+
+              <label
+                class="item-check foco"
+                id="etiqueta-dolor_calor"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <input type="checkbox" name="dolor_calor" />
+                <div class="icono">🔥</div>
+                <div>
+                  <p class="font-semibold text-gray-800">
+                    Dolor/calor a la palpación
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    Favorece celulitis infecciosa.
+                  </p>
+                </div>
+              </label>
+
+              <label
+                class="item-check foco"
+                id="etiqueta-curso_cronico"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <input type="checkbox" name="curso_cronico" />
+                <div class="icono">🗓️</div>
+                <div>
+                  <p class="font-semibold text-gray-800">
+                    Curso crónico (≥ semanas)
+                  </p>
+                  <p class="text-sm text-gray-500">Favorece estasis.</p>
+                </div>
+              </label>
+
+              <label
+                class="item-check foco"
+                id="etiqueta-mejora_elevacion"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <input type="checkbox" name="mejora_elevacion" />
+                <div class="icono">🦵</div>
+                <div>
+                  <p class="font-semibold text-gray-800">
+                    Mejora con elevación
+                  </p>
+                  <p class="text-sm text-gray-500">Favorece estasis.</p>
+                </div>
+              </label>
+
+              <label
+                class="item-check foco"
+                id="etiqueta-puerta_entrada"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <input type="checkbox" name="puerta_entrada" />
+                <div class="icono">🚪</div>
+                <div>
+                  <p class="font-semibold text-gray-800">
+                    Puerta de entrada (tinea/grietas)
+                  </p>
+                  <p class="text-sm text-gray-500">Favorece celulitis.</p>
+                </div>
+              </label>
+            </div>
+
+            <!-- Factores que confunden la presentación (sección discreta) -->
+            <details
+              class="mt-6 bg-slate-50 border border-slate-200 rounded-lg p-4"
+            >
+              <summary class="text-slate-700">
+                Factores que pueden confundir la presentación
+              </summary>
+              <div class="mt-3 space-y-3">
+                <label
+                  class="item-check foco"
+                  id="etiqueta-calcioantagonista"
+                  role="button"
+                  tabindex="0"
+                  aria-pressed="false"
+                >
+                  <input type="checkbox" name="calcioantagonista" />
+                  <div class="icono">💊</div>
+                  <div>
+                    <p class="font-semibold text-gray-800">
+                      Uso de calcioantagonistas (p. ej., amlodipino)
+                    </p>
+                    <p class="text-sm text-gray-500">
+                      Edema maleolar que puede simular celulitis.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </details>
+
+            <!-- ALT-70 contextualizada (no aparece como "perla") -->
+            <div
+              class="mt-8 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg"
+            >
+              <div class="flex items-center justify-between flex-wrap gap-3">
+                <h4 class="font-bold text-blue-800">
+                  Escala ALT-70 (opcional, apoyo al diagnóstico en extremidad
+                  inferior)
+                </h4>
+
+                <span
+                  id="alt70-chip"
+                  class="text-xs px-2 py-1 rounded-full bg-blue-600 text-white"
+                  >ALT-70: —</span
+                >
+              </div>
+
+              <p class="text-sm text-blue-800 mt-2">
+                Regla clínica derivada en pacientes admitidos desde urgencias
+                por sospecha de celulitis de extremidad inferior, excluyendo
+                absceso, trauma penetrante, cirugía reciente (&lt;30 días) o
+                antibiótico IV previo. Se recomienda usar como apoyo junto con
+                la exploración, la evolución en 24–72 h y pruebas
+                complementarias cuando proceda.
+              </p>
+
+              <!-- Indicador de asimetría proveniente del checklist superior -->
+              <div class="mt-2">
+                <span
+                  id="alt70-asimetria-ind"
+                  class="text-xs px-2 py-1 rounded-full bg-slate-400 text-white"
+                >
+                  Asimetría: no (desde checklist superior)
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                <label class="text-sm text-slate-700"
+                  >Leucocitos (×10³/µL)
+                  <input
+                    id="alt70-leucos"
+                    type="text"
+                    inputmode="decimal"
+                    autocomplete="off"
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="p. ej., 9,8"
+                  />
+                </label>
+                <label class="text-sm text-slate-700"
+                  >Frecuencia cardiaca (lpm)
+                  <input
+                    id="alt70-fc"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="p. ej., 84"
+                  />
+                </label>
+                <label class="text-sm text-slate-700"
+                  >Edad (años)
+                  <input
+                    id="alt70-edad"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="p. ej., 72"
+                  />
+                </label>
+              </div>
+
+              <div class="mt-4">
+                <h5 class="font-semibold text-blue-900 text-sm">
+                  Cómo se calcula
+                </h5>
+                <ul class="list-disc list-inside text-sm mt-1 text-blue-900">
+                  <li>
+                    <strong>Asimetría de la pierna</strong> (<em
+                      >se toma automáticamente del ítem “afectación unilateral”
+                      del checklist superior</em
+                    >): <strong>+3</strong>.
+                  </li>
+                  <li><strong>Edad ≥ 70</strong> años: <strong>+2</strong>.</li>
+                  <li>
+                    Leucocitos en urgencias <strong>≥ 10,0 × 10³/µL</strong>:
+                    <strong>+1</strong>.
+                  </li>
+                  <li>
+                    Frecuencia cardiaca en urgencias <strong>≥ 90 lpm</strong>:
+                    <strong>+1</strong>.
+                  </li>
+                </ul>
+
+                <div class="overflow-auto mt-3">
+                  <table
+                    class="w-full text-sm text-blue-900 bg-white rounded-md"
+                  >
+                    <thead class="bg-blue-100">
+                      <tr>
+                        <th class="text-left p-2">Puntuación ALT-70</th>
+                        <th class="text-left p-2">Recomendación</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="p-2">0–2</td>
+                        <td class="p-2">
+                          Revaluar (≥83,3% probabilidad de pseudocelulitis).
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="p-2">3–4</td>
+                        <td class="p-2">
+                          Interconsulta Dermatología y/o Infecciosas.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="p-2">5–7</td>
+                        <td class="p-2">
+                          Tratar como celulitis (≥82,2% probabilidad de
+                          celulitis verdadera).
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <p
+                  id="alt70-interpretacion"
+                  class="text-sm mt-2 font-medium text-blue-900"
+                >
+                  Introduzca valores para calcular.
+                </p>
+
+                <p class="text-xs text-blue-800 mt-3 leading-relaxed">
+                  Referencias: Raff AB, Weng QY, Cohen JM, et&nbsp;al.
+                  <em>JAAD</em> 2017 (desarrollo del modelo); Li DG, Dewan AK,
+                  Di Xia F, et&nbsp;al. <em>JAAD</em> 2018 (validación
+                  prospectiva); Singer S, Li DG, Gunasekera N, et&nbsp;al.
+                  <em>JAAD</em> 2019 (rendimiento a 24–48 h).
+                </p>
+              </div>
+            </div>
+            <!-- Escala de Villalta (SPT) -->
+            <div
+              class="mt-8 bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg"
+            >
+              <div class="flex items-center justify-between flex-wrap gap-3">
+                <h4 class="font-bold text-green-800">
+                  Escala de Villalta (SPT tras TVP)
+                </h4>
+                <span
+                  id="villalta-chip"
+                  class="text-xs px-2 py-1 rounded-full bg-slate-400 text-white"
+                  >Villalta: —</span
+                >
+              </div>
+              <p class="text-sm text-green-900 mt-2">
+                Suma de síntomas y signos (0–3 cada uno). Interpretación: 0–4
+                ausente; 5–9 leve; 10–14 moderado; ≥15 o úlcera venosa = severo.
+              </p>
+
+              <!-- Síntomas -->
+              <h5 class="mt-3 font-semibold text-green-900 text-sm">
+                Síntomas
+              </h5>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+                <label class="text-sm text-slate-700"
+                  >Dolor
+                  <select
+                    id="vil_dolor"
+                    data-villalta
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2"
+                  >
+                    <option value="">—</option>
+                    <option value="0">Ausente (0)</option>
+                    <option value="1">Leve (+1)</option>
+                    <option value="2">Moderado (+2)</option>
+                    <option value="3">Severo (+3)</option>
+                  </select>
+                </label>
+                <label class="text-sm text-slate-700"
+                  >Calambres
+                  <select
+                    id="vil_calambres"
+                    data-villalta
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2"
+                  >
+                    <option value="">—</option>
+                    <option value="0">Ausente (0)</option>
+                    <option value="1">Leve (+1)</option>
+                    <option value="2">Moderado (+2)</option>
+                    <option value="3">Severo (+3)</option>
+                  </select>
+                </label>
+                <label class="text-sm text-slate-700"
+                  >Pesadez
+                  <select
+                    id="vil_pesadez"
+                    data-villalta
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2"
+                  >
+                    <option value="">—</option>
+                    <option value="0">Ausente (0)</option>
+                    <option value="1">Leve (+1)</option>
+                    <option value="2">Moderado (+2)</option>
+                    <option value="3">Severo (+3)</option>
+                  </select>
+                </label>
+                <label class="text-sm text-slate-700"
+                  >Parestesias
+                  <select
+                    id="vil_parestesias"
+                    data-villalta
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2"
+                  >
+                    <option value="">—</option>
+                    <option value="0">Ausente (0)</option>
+                    <option value="1">Leve (+1)</option>
+                    <option value="2">Moderado (+2)</option>
+                    <option value="3">Severo (+3)</option>
+                  </select>
+                </label>
+                <label class="text-sm text-slate-700"
+                  >Prurito
+                  <select
+                    id="vil_prurito"
+                    data-villalta
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2"
+                  >
+                    <option value="">—</option>
+                    <option value="0">Ausente (0)</option>
+                    <option value="1">Leve (+1)</option>
+                    <option value="2">Moderado (+2)</option>
+                    <option value="3">Severo (+3)</option>
+                  </select>
+                </label>
+              </div>
+
+              <!-- Signos clínicos -->
+              <h5 class="mt-4 font-semibold text-green-900 text-sm">
+                Signos clínicos
+              </h5>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+                <label class="text-sm text-slate-700"
+                  >Edema pretibial
+                  <select
+                    id="vil_edema"
+                    data-villalta
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2"
+                  >
+                    <option value="">—</option>
+                    <option value="0">Ausente (0)</option>
+                    <option value="1">Leve (+1)</option>
+                    <option value="2">Moderado (+2)</option>
+                    <option value="3">Severo (+3)</option>
+                  </select>
+                </label>
+                <label class="text-sm text-slate-700"
+                  >Induración cutánea
+                  <select
+                    id="vil_induracion"
+                    data-villalta
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2"
+                  >
+                    <option value="">—</option>
+                    <option value="0">Ausente (0)</option>
+                    <option value="1">Leve (+1)</option>
+                    <option value="2">Moderado (+2)</option>
+                    <option value="3">Severo (+3)</option>
+                  </select>
+                </label>
+                <label class="text-sm text-slate-700"
+                  >Hiperpigmentación
+                  <select
+                    id="vil_hiperpigmentacion"
+                    data-villalta
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2"
+                  >
+                    <option value="">—</option>
+                    <option value="0">Ausente (0)</option>
+                    <option value="1">Leve (+1)</option>
+                    <option value="2">Moderado (+2)</option>
+                    <option value="3">Severo (+3)</option>
+                  </select>
+                </label>
+                <label class="text-sm text-slate-700"
+                  >Eritema
+                  <select
+                    id="vil_eritema"
+                    data-villalta
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2"
+                  >
+                    <option value="">—</option>
+                    <option value="0">Ausente (0)</option>
+                    <option value="1">Leve (+1)</option>
+                    <option value="2">Moderado (+2)</option>
+                    <option value="3">Severo (+3)</option>
+                  </select>
+                </label>
+                <label class="text-sm text-slate-700"
+                  >Ectasia venosa
+                  <select
+                    id="vil_ectasia"
+                    data-villalta
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2"
+                  >
+                    <option value="">—</option>
+                    <option value="0">Ausente (0)</option>
+                    <option value="1">Leve (+1)</option>
+                    <option value="2">Moderado (+2)</option>
+                    <option value="3">Severo (+3)</option>
+                  </select>
+                </label>
+                <label class="text-sm text-slate-700"
+                  >Dolor a la compresión de pantorrilla
+                  <select
+                    id="vil_dolor_compresion"
+                    data-villalta
+                    class="mt-1 w-full rounded-md border border-slate-300 p-2"
+                  >
+                    <option value="">—</option>
+                    <option value="0">Ausente (0)</option>
+                    <option value="1">Leve (+1)</option>
+                    <option value="2">Moderado (+2)</option>
+                    <option value="3">Severo (+3)</option>
+                  </select>
+                </label>
+              </div>
+
+              <label class="inline-flex items-center gap-2 mt-3">
+                <input
+                  id="vil_ulcera"
+                  data-villalta
+                  type="checkbox"
+                  class="rounded border-slate-300"
+                />
+                <span class="text-sm text-slate-700"
+                  >Úlcera venosa presente (si la suma &lt; 15, se asignan 15
+                  puntos)</span
+                >
+              </label>
+
+              <p
+                id="villalta-interpretacion"
+                class="text-sm mt-2 font-medium text-green-900"
+              >
+                Complete los campos para calcular.
+              </p>
+            </div>
+
+            <div
+              class="mt-6 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg"
+            >
+              <h4 class="font-bold text-blue-800">Recordatorio</h4>
+              <p class="text-sm text-blue-700 mt-1">
+                Revise medicación activa y evolución 48–72 h antes de escalar
+                antibióticos si el cuadro sugiere estasis.
+              </p>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                id="btn-borrar"
+                class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-all"
+              >
+                Limpiar
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Columna de resultados -->
+        <div class="space-y-6">
+          <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">
+              Estimación diagnóstica
+            </h2>
+            <div class="medidor mx-auto">
+              <div class="medidor__cuerpo">
+                <div class="medidor__relleno" id="medidor-relleno"></div>
+                <div class="medidor__cobertura">
+                  <p class="text-base font-semibold text-gray-500 mb-1">
+                    Diagnóstico principal
+                  </p>
+                  <p
+                    id="diagnostico-principal"
+                    class="font-bold text-gray-800 text-center"
+                  >
+                    —
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div
+              class="flex justify-between items-center text-sm font-bold mt-2 max-w-sm mx-auto"
+            >
+              <span class="text-red-600">Celulitis</span>
+              <span class="text-blue-600">Pseudocelulitis</span>
+            </div>
+            <p
+              id="etiqueta-prob"
+              class="text-center text-sm text-gray-600 mt-2"
+            >
+              —
+            </p>
+            <details class="mt-3 text-xs text-gray-600">
+              <summary class="cursor-pointer text-indigo-700 font-semibold">
+                Nota metodológica
+              </summary>
+              <div class="mt-2 leading-relaxed">
+                La “estimación” de esta herramienta se basa en un balance
+                heurístico de hallazgos; no es una probabilidad calibrada. La
+                alta tasa de diagnóstico erróneo de celulitis procede de
+                metaanálisis que agrupan casos reclasificados como
+                pseudocelulitis tras segunda evaluación clínica especializada.
+              </div>
+            </details>
+          </div>
+
+          <div
+            class="bg-white p-6 rounded-xl shadow-lg"
+            id="contenedor-perlas"
+            style="display: none"
+          >
+            <h3
+              class="text-xl font-bold text-gray-800 mb-3 flex items-center gap-2"
+            >
+              <svg
+                class="w-6 h-6 text-yellow-500"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm-.707 7.072l.707-.707a1 1 0 10-1.414-1.414l-.707.707a1 1 0 101.414 1.414z"
+                  fill-rule="evenodd"
+                  clip-rule="evenodd"
+                ></path>
+              </svg>
+              Perlas clínicas
+            </h3>
+            <div id="lista-perlas" class="space-y-2"></div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="flex border-b bg-gray-50 p-1">
+              <div
+                id="pest-hce"
+                class="pestaña pestaña-seleccionada px-4 py-2 flex-1 text-center"
+                onclick="cambiar_pestana('hce')"
+              >
+                Historia clínica
+              </div>
+              <div
+                id="pest-plan"
+                class="pestaña px-4 py-2 text-gray-500 flex-1 text-center"
+                onclick="cambiar_pestana('plan')"
+              >
+                Plan de actuación
+              </div>
+            </div>
+
+            <div class="p-6">
+              <div id="contenido-hce" class="space-y-4">
+                <div class="relative">
+                  <h4 class="font-semibold text-gray-700 mb-1">
+                    Visto (cursograma):
+                  </h4>
+                  <div
+                    id="salida-cursograma"
+                    class="text-sm bg-gray-100 p-3 rounded-md font-mono text-gray-800"
+                  >
+                    Seleccione hallazgos…
+                  </div>
+                  <button
+                    onclick="copiar_al_portapapeles('salida-cursograma', this)"
+                    class="btn-copiar"
+                  >
+                    Copiar
+                  </button>
+                </div>
+                <div class="relative">
+                  <h4 class="font-semibold text-gray-700 mb-1">
+                    Texto para HCE (evolutivo):
+                  </h4>
+                  <div
+                    id="salida-hce"
+                    class="text-sm bg-gray-100 p-3 rounded-md text-gray-800"
+                  >
+                    Seleccione hallazgos…
+                  </div>
+                  <button
+                    onclick="copiar_al_portapapeles('salida-hce', this)"
+                    class="btn-copiar"
+                  >
+                    Copiar
+                  </button>
+                </div>
+              </div>
+
+              <div id="contenido-plan" class="hidden">
+                <ul id="salida-plan" class="space-y-3 text-gray-700">
+                  <li>Seleccione hallazgos para generar un plan.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="mt-12 text-center text-sm text-gray-500 bg-white p-6 rounded-xl shadow-lg"
+          >
+            <details>
+              <summary>Bibliografía clave</summary>
+              <div
+                class="mt-4 text-left text-xs text-gray-600 space-y-2 border-t pt-4"
+              >
+                <p>
+                  <strong>1. Celulitis vs. pseudocelulitis:</strong> Nightingale
+                  R, et al. Misdiagnosis of uncomplicated cellulitis.
+                  <em>JGIM</em>, 2023.
+                </p>
+                <p>
+                  <strong>2. Dermatitis por estasis:</strong> Yosipovitch G, et
+                  al. Stasis dermatitis overview. <em>Am J Clin Dermatol</em>,
+                  2023.
+                </p>
+                <p>
+                  <strong>3. Síndrome postrombótico:</strong> Visonà A, et al.
+                  Post-thrombotic syndrome. <em>JESVM</em>, 2021.
+                </p>
+                <p>
+                  <strong>4. Manejo SPT:</strong> Chaitidis N, et al. Management
+                  of PTS. <em>EJVES</em>, 2022.
+                </p>
+                <p>
+                  <strong>5. ALT-70 (desarrollo y validaciones):</strong> Raff
+                  AB, Weng QY, Cohen JM, et al. <em>JAAD</em>, 2017 · Li DG,
+                  Dewan AK, Di Xia F, et al. <em>JAAD</em>, 2018 · Singer S, Li
+                  DG, Gunasekera N, et al. <em>JAAD</em>, 2019.
+                </p>
+              </div>
+            </details>
+          </div>
+
+          <footer class="mt-4 text-center text-sm text-gray-500">
+            <p>Herramienta de soporte; no sustituye el juicio clínico.</p>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // pesos
+      const puntajes = {
+        sintomas_sistemicos: { cel: 3.0, pts: -2.0 },
+        inicio_agudo: { cel: 2.5, pts: -1.0 },
+        afectacion_unilateral: { cel: 1.5, pts: -1.0 },
+        eritema_delimitado: { cel: 3.0, pts: -2.0 },
+        bilateral: { cel: -4.0, pts: 3.5 },
+        antecedente_tvp: { cel: -3.0, pts: 4.0 },
+        signos_estasis: { cel: -2.0, pts: 3.0 },
+        prurito: { cel: -1.0, pts: 2.0 },
+        dolor_calor: { cel: 2.0, pts: -1.0 },
+        curso_cronico: { cel: -1.0, pts: 2.0 },
+        mejora_elevacion: { cel: -0.5, pts: 1.5 },
+        puerta_entrada: { cel: 1.5, pts: -0.5 },
+        calcioantagonista: { cel: -0.5, pts: 0.5 },
+      };
+
+      const descripciones = {
+        sintomas_sistemicos: "síntomas sistémicos (fiebre/malestar)",
+        inicio_agudo: "inicio agudo (<72 h)",
+        afectacion_unilateral: "afectación unilateral",
+        eritema_delimitado: "eritema con bordes netos",
+        bilateral: "afectación bilateral",
+        antecedente_tvp: "antecedente de TVP ipsilateral",
+        signos_estasis:
+          "signos de insuficiencia venosa crónica (ocre/eccema/atrofia)",
+        prurito: "prurito predominante",
+        dolor_calor: "dolor y calor a la palpación",
+        curso_cronico: "curso crónico (≥ semanas)",
+        mejora_elevacion: "mejora con elevación",
+        puerta_entrada: "puerta de entrada (tinea/grietas)",
+        calcioantagonista: "uso de calcioantagonistas (amlodipino, etc.)",
+      };
+
+      const perlas = {
+        base_cel:
+          "Si no hay mejoría tras 48–72 h de antibiótico, reconsidere el diagnóstico de celulitis.",
+        base_pts:
+          "La dermatitis por estasis es el imitador más frecuente de celulitis y explica gran parte del sobrediagnóstico.",
+        bilateral:
+          "La celulitis es casi siempre unilateral; la afectación bilateral sugiere estasis/otra causa sistémica.",
+        antecedente_tvp:
+          "El antecedente de TVP aumenta el riesgo de SPT y de edema crónico.",
+        signos_estasis:
+          "Pigmentación ocre, descamación y atrofia blanca orientan a estasis más que a infección.  Usar Villalta para gravedad (5–9 leve, 10–14 moderado, ≥15 severo; úlcera = severo).",
+
+        prurito:
+          "El prurito intenso inclina el diagnóstico hacia dermatitis por estasis.",
+        dolor_calor:
+          "Dolor y calor a la palpación favorecen etiología infecciosa.",
+        puerta_entrada:
+          "Busque tinea pedis o fisuras interdigitales como puerta de entrada de celulitis.",
+        calcioantagonista:
+          "Los calcioantagonistas causan edema maleolar que puede simular celulitis; revise la medicación.",
+      };
+
+      let perlas_mostradas = new Set();
+
+      function actualizar_resultados() {
+        let punt_cel = 5;
+        let punt_pts = 5;
+
+        const form = document.getElementById("form-clinico");
+        const datos = new FormData(form);
+        const hallazgos = [];
+
+        document
+          .querySelectorAll(".item-check")
+          .forEach((el) => el.classList.remove("seleccionado"));
+        document
+          .querySelectorAll(".item-check")
+          .forEach((el) => el.setAttribute("aria-pressed", "false"));
+
+        for (const [clave] of datos.entries()) {
+          punt_cel += puntajes[clave]?.cel || 0;
+          punt_pts += puntajes[clave]?.pts || 0;
+          hallazgos.push(clave);
+          const lab = document.getElementById(`etiqueta-${clave}`);
+          if (lab) {
+            lab.classList.add("seleccionado");
+            lab.setAttribute("aria-pressed", "true");
+          }
+        }
+
+        const cel_norm = Math.max(1, punt_cel);
+        const pts_norm = Math.max(1, punt_pts);
+        const total = cel_norm + pts_norm;
+        const prob_pts = pts_norm / total;
+
+        const relleno = document.getElementById("medidor-relleno");
+        const lbl_diag = document.getElementById("diagnostico-principal");
+        const lbl_prob = document.getElementById("etiqueta-prob");
+
+        const rotacion_deg = prob_pts * 180;
+        relleno.style.transform = `rotate(${rotacion_deg / 180}turn)`;
+
+        let diagnostico = "Diagnóstico incierto";
+        let clase_diag = "text-gray-800";
+        let color_medidor = "#f59e0b";
+        let clave_base = "base_neutral";
+
+        if (rotacion_deg > 110) {
+          diagnostico = "Pseudocelulitis (estasis/SPT)";
+          clase_diag = "text-blue-600";
+          color_medidor = "#3b82f6";
+          clave_base = "base_pts";
+        } else if (rotacion_deg < 70) {
+          diagnostico = "Celulitis infecciosa";
+          clase_diag = "text-red-600";
+          color_medidor = "#ef4444";
+          clave_base = "base_cel";
+        }
+        lbl_diag.className = `font-bold text-center ${clase_diag}`;
+        lbl_diag.textContent = diagnostico;
+        relleno.style.background = color_medidor;
+
+        const pct_pts = Math.round(prob_pts * 100);
+        const pct_cel = 100 - pct_pts;
+        lbl_prob.textContent = `Estimación: Celulitis ${pct_cel}% · Pseudocelulitis ${pct_pts}%`;
+
+        actualizar_perlas(hallazgos, clave_base);
+        generar_texto_hce(hallazgos, diagnostico);
+        generar_plan(hallazgos, diagnostico);
+
+        localStorage.setItem("cdc30_estado", JSON.stringify(hallazgos));
+        guardar_alt70();
+        actualizar_indicador_asimetria();
+      }
+
+      function actualizar_perlas(hallazgos, clave_base) {
+        const contenedor = document.getElementById("contenedor-perlas");
+        const lista = document.getElementById("lista-perlas");
+        lista.innerHTML = "";
+        perlas_mostradas = new Set();
+
+        const añadir = (clave) => {
+          if (!perlas[clave] || perlas_mostradas.has(clave)) return;
+          perlas_mostradas.add(clave);
+          const p = document.createElement("p");
+          p.className =
+            "text-gray-700 text-sm leading-relaxed border-l-4 border-yellow-300 pl-3 py-1 bg-yellow-50 rounded-r-md aparece";
+          p.textContent = `▪ ${perlas[clave]}`;
+          lista.appendChild(p);
+        };
+
+        hallazgos.forEach((h) => añadir(h));
+        if (clave_base === "base_cel") añadir("base_cel");
+        else if (clave_base === "base_pts") añadir("base_pts");
+
+        contenedor.style.display = perlas_mostradas.size ? "block" : "none";
+      }
+
+      function generar_texto_hce(hallazgos, diagnostico) {
+        const el_cur = document.getElementById("salida-cursograma");
+        const el_hce = document.getElementById("salida-hce");
+
+        if (!hallazgos.length) {
+          el_cur.textContent =
+            "Seleccione hallazgos clínicos para generar texto.";
+          el_hce.textContent =
+            "Seleccione hallazgos clínicos para generar texto.";
+          return;
+        }
+        const texto_hallazgos = hallazgos
+          .map((k) => descripciones[k])
+          .filter(Boolean)
+          .join(", ");
+        el_cur.textContent = `Eritema/edema MII con: ${texto_hallazgos}. JD: ${diagnostico}.`;
+
+        const r_alt = calcular_alt70_actual();
+        const ap_alt =
+          r_alt.puntuacion !== null
+            ? ` Escala ALT-70=${r_alt.puntuacion} (${r_alt.frase}).`
+            : "";
+        el_hce.textContent = `Paciente con eritema y edema en miembro inferior. A la exploración destacan: ${texto_hallazgos}. Con los datos disponibles, el diagnóstico de mayor probabilidad es ${diagnostico}.${ap_alt} Se establece plan y reevaluación.`;
+      }
+
+      function generar_plan(hallazgos, diagnostico) {
+        const el = document.getElementById("salida-plan");
+        let html = "";
+        const en_ccb = hallazgos.includes("calcioantagonista");
+
+        const li = (icono, texto) =>
+          `<li class="flex items-start"><span class="mr-3 text-lg">${icono}</span><span>${texto}</span></li>`;
+        const criterios_derivar = `
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <h4 class="font-bold text-gray-700 mb-2">Cuándo derivar a Cirugía Vascular</h4>
+          <ul class="list-disc list-inside space-y-1 text-sm">
+            <li><strong>Puntuación de Villalta ≥10</strong> (moderado–severo) o <strong>≥15</strong> (severo) <em>o</em> úlcera venosa activa.</li>
+            <li><strong>Fracaso del tratamiento conservador óptimo</strong> tras ≥3 meses con compresión <strong>30–40&nbsp;mmHg</strong> bien ajustada y medidas de estilo de vida.</li>
+            <li><strong>Claudicación venosa / dolor invalidante</strong> que limita actividad pese a manejo conservador.</li>
+            <li>Sospecha de <strong>obstrucción iliofemoral significativa</strong> (valorar imagen/derivación para estudio endovascular).</li>
+          </ul>
+        </div>`;
+
+        const r_alt = calcular_alt70_actual(); // { puntuacion, frase, tramo }
+        const r_vil = calcular_villalta_actual();
+        const linea_villalta =
+          r_vil.puntuacion === null
+            ? ""
+            : li(
+                "📏",
+                `Villalta=${r_vil.puntuacion} — ${
+                  r_vil.dx === "ausente"
+                    ? "PTS ausente"
+                    : "PTS " + r_vil.etiqueta
+                }.`
+              );
+
+        const linea_alt70 =
+          r_alt.puntuacion === null
+            ? ""
+            : r_alt.tramo === "bajo"
+            ? li(
+                "🧮",
+                `ALT-70=${r_alt.puntuacion} — Baja probabilidad (0–2). Revalúe diagnóstico; evite antibióticos si no hay otros datos de infección.`
+              )
+            : r_alt.tramo === "inter"
+            ? li(
+                "🧮",
+                `ALT-70=${r_alt.puntuacion} — Probabilidad intermedia (3–4). Considere interconsulta Dermatología / Infecciosas.`
+              )
+            : li(
+                "🧮",
+                `ALT-70=${r_alt.puntuacion} — Alta probabilidad (5–7). Trate como celulitis.`
+              );
+
+        if (diagnostico === "Celulitis infecciosa") {
+          html = `
+                <li class="font-bold text-lg mb-2 text-red-600">Plan sugerido (alta sospecha de celulitis)</li>
+                ${li(
+                  "💊",
+                  "<strong>Antibioterapia empírica oral</strong> frente a S. pyogenes y S. aureus MSSA (p. ej., cloxacilina, amoxicilina-clavulánico o cefadroxilo)."
+                )}
+                ${li(
+                  "📐",
+                  "<strong>Marcar la extensión del eritema</strong> para objetivar evolución en 24–48 h."
+                )}
+                ${li(
+                  "🦵",
+                  "<strong>Reposo relativo y elevación</strong> del miembro para reducir edema."
+                )}
+                ${li(
+                  "🗓️",
+                  "<strong>Reevaluación en 48–72 h</strong>. Si no mejora, reconsiderar diagnóstico/derivación."
+                )}
+                ${li(
+                  "🩸",
+                  "Valorar <strong>Eco-Doppler</strong> si hay factores de riesgo o edema desproporcionado."
+                )}
+                ${linea_alt70}
+                ${
+                  en_ccb
+                    ? li(
+                        "💊⚖️",
+                        "<strong>Revisar medicación antihipertensiva</strong> si toma calcioantagonistas y hay edema maleolar; valorar cambio a IECA/ARA-II si procede."
+                      )
+                    : ""
+                }
+              `;
+        } else if (diagnostico === "Pseudocelulitis (estasis/SPT)") {
+          html = `
+                <li class="font-bold text-lg mb-2 text-blue-600">Plan sugerido (alta sospecha de pseudocelulitis)</li>
+                ${li(
+                  "🚫💊",
+                  "<strong>Evitar antibióticos de rutina</strong>; la base del manejo es hemodinámica/inflamatoria."
+                )}
+                ${li(
+                  "🩺",
+                  "<strong>Eco-Doppler venoso</strong> para descartar TVP aguda y cuantificar insuficiencia venosa."
+                )}
+                   ${li(
+                     "🩹",
+                     "<strong>Estasis venosa:</strong> compresión <strong>30–40&nbsp;mmHg</strong> si no hay isquemia."
+                   )}
+
+
+                ${li(
+                  "🧴",
+                  "<strong>Emolientes</strong> y <strong>corticoides tópicos</strong> de potencia media en brotes."
+                )}
+                ${li(
+                  "🚶",
+                  "Fomentar <strong>movilización/ejercicio</strong> y elevación regular."
+                )}
+                ${li(
+                  "✨",
+                  "Venoactivos (p. ej., FFPM/diosmina, sulodexida) como adyuvantes a compresión si síntomas persisten."
+                )}
+                ${
+                  en_ccb
+                    ? li(
+                        "💊⚖️",
+                        "<strong>Si toma calcioantagonistas</strong> y hay edema maleolar, valorar ajuste (IECA/ARA-II) según perfil."
+                      )
+                    : ""
+                }
+                  ${criterios_derivar}
+        ${linea_villalta}
+        ${linea_alt70}
+     
+
+              `;
+        } else {
+          html = `
+                <li class="font-bold text-lg mb-2 text-amber-600">Plan sugerido (diagnóstico incierto)</li>
+                ${li(
+                  "🔬",
+                  "Solicitar <strong>hemograma y PCR</strong> y <strong>Eco-Doppler venoso</strong>."
+                )}
+                ${li("🛌", "<strong>Elevación y analgesia</strong> inicial.")}
+                ${li(
+                  "🧮",
+                  "Calcular <strong>ALT-70</strong> con asimetría, leucocitos, FC y edad como apoyo a la decisión."
+                )}
+                ${linea_alt70}
+                ${li(
+                  "🔄",
+                  "<strong>Reevaluar en 24–48 h</strong> según evolución y resultados."
+                )}
+              `;
+        }
+        el.innerHTML = html;
+      }
+      // aceptar coma decimal y validar rangos
+      function leer_num(id) {
+        const raw = (document.getElementById(id).value || "")
+          .trim()
+          .replace(/\s+/g, "");
+        if (!raw) return null;
+        const norm = raw.replace(",", ".");
+        const n = parseFloat(norm);
+        return isNaN(n) ? null : n;
+      }
+      function marcar_validez(id, val, min, max) {
+        const el = document.getElementById(id);
+        const ok = val === null ? true : val >= min && val <= max;
+        el.classList.toggle("border-red-500", !ok);
+        el.classList.toggle("ring-2", !ok);
+        el.classList.toggle("ring-red-300", !ok);
+        el.setAttribute("aria-invalid", (!ok).toString());
+        return ok;
+      }
+      function actualizar_indicador_asimetria() {
+        const badge = document.getElementById("alt70-asimetria-ind");
+        const asim = document.querySelector(
+          'input[name="afectacion_unilateral"]'
+        ).checked;
+        if (!badge) return;
+        badge.textContent = asim
+          ? "Asimetría: sí (desde checklist superior)"
+          : "Asimetría: no (desde checklist superior)";
+        badge.className =
+          "text-xs px-2 py-1 rounded-full " +
+          (asim ? "bg-green-600 text-white" : "bg-slate-400 text-white");
+      }
+
+      // ALT-70: asimetría (+3), edad ≥70 (+2), leucocitos ≥10.000/µL (+1), FC ≥90 lpm (+1) => 0–7
+      // ALT-70: asimetría (+3), edad ≥70 (+2), leucocitos ≥10 (×10³/µL) (+1), FC ≥90 lpm (+1) => 0–7
+      function calcular_alt70_actual() {
+        const asim = document.querySelector(
+          'input[name="afectacion_unilateral"]'
+        ).checked
+          ? 1
+          : 0;
+
+        const leucos = leer_num("alt70-leucos"); // en ×10³/µL (p. ej., 9,8)
+        const fc = leer_num("alt70-fc"); // lpm
+        const edad = leer_num("alt70-edad"); // años
+
+        // rangos plausibles; si se salen, el campo queda marcado y el dato se ignora
+        const ok_leu = marcar_validez("alt70-leucos", leucos, 0, 50);
+        const ok_fc = marcar_validez("alt70-fc", fc, 20, 250);
+        const ok_edad = marcar_validez("alt70-edad", edad, 0, 120);
+
+        let puntuacion = 0;
+        let hubo_dato = false;
+
+        if (asim) {
+          puntuacion += 3;
+          hubo_dato = true;
+        }
+        if (ok_edad && edad !== null && edad >= 70) {
+          puntuacion += 2;
+          hubo_dato = true;
+        }
+        if (ok_leu && leucos !== null && leucos >= 10) {
+          puntuacion += 1;
+          hubo_dato = true;
+        }
+        if (ok_fc && fc !== null && fc >= 90) {
+          puntuacion += 1;
+          hubo_dato = true;
+        }
+
+        actualizar_indicador_asimetria();
+
+        if (!hubo_dato) {
+          actualizar_chip_alt70(null, "—", null);
+          return { puntuacion: null, frase: "incompleta", tramo: null };
+        }
+
+        let frase = "probabilidad intermedia (3–4). Valorar interconsulta.";
+        let tramo = "inter";
+        if (puntuacion <= 2) {
+          frase = "baja probabilidad (0–2). Revalúe diagnóstico.";
+          tramo = "bajo";
+        }
+        if (puntuacion >= 5) {
+          frase = "alta probabilidad (5–7). Trate como celulitis.";
+          tramo = "alto";
+        }
+
+        actualizar_chip_alt70(puntuacion, frase, tramo);
+        return { puntuacion, frase, tramo };
+      }
+      function leer_sel_int(id) {
+        const v = document.getElementById(id).value;
+        return v === "" ? null : parseInt(v, 10);
+      }
+
+      function actualizar_chip_villalta(puntuacion, etiqueta, dx) {
+        const chip = document.getElementById("villalta-chip");
+        const p = document.getElementById("villalta-interpretacion");
+        if (puntuacion === null) {
+          chip.textContent = "Villalta: —";
+          chip.className =
+            "text-xs px-2 py-1 rounded-full bg-slate-400 text-white";
+          p.textContent = "Complete los campos para calcular.";
+          return;
+        }
+        chip.textContent = `Villalta: ${puntuacion}`;
+        let clase = "bg-amber-600";
+        if (etiqueta === "ausente") clase = "bg-slate-500";
+        if (etiqueta === "leve") clase = "bg-blue-600";
+        if (etiqueta === "moderado") clase = "bg-indigo-600";
+        if (etiqueta === "severo") clase = "bg-red-600";
+        chip.className = "text-xs px-2 py-1 rounded-full text-white " + clase;
+        p.textContent =
+          dx === "ausente"
+            ? "PTS ausente (0–4)."
+            : `PTS ${etiqueta} (${puntuacion} puntos).`;
+      }
+
+      function calcular_villalta_actual() {
+        const ids = [
+          "vil_dolor",
+          "vil_calambres",
+          "vil_pesadez",
+          "vil_parestesias",
+          "vil_prurito",
+          "vil_edema",
+          "vil_induracion",
+          "vil_hiperpigmentacion",
+          "vil_eritema",
+          "vil_ectasia",
+          "vil_dolor_compresion",
+        ];
+        let suma = 0;
+        let usados = 0;
+        ids.forEach((id) => {
+          const val = leer_sel_int(id);
+          if (val !== null) {
+            suma += val;
+            usados++;
+          }
+        });
+        const ulcera = document.getElementById("vil_ulcera")?.checked || false;
+
+        if (!usados && !ulcera) {
+          actualizar_chip_villalta(null, null, null);
+          return { puntuacion: null, etiqueta: null, dx: null };
+        }
+
+        // úlcera confiere severidad: si suma < 15, se asigna 15 según guías ISTH
+        if (ulcera && suma < 15) suma = 15;
+
+        let etiqueta = "ausente";
+        let dx = "ausente";
+        if (suma <= 4) {
+          etiqueta = "ausente";
+          dx = "ausente";
+        } else if (suma <= 9) {
+          etiqueta = "leve";
+          dx = "presente";
+        } else if (suma <= 14) {
+          etiqueta = "moderado";
+          dx = "presente";
+        } else {
+          etiqueta = "severo";
+          dx = "presente";
+        }
+
+        actualizar_chip_villalta(suma, etiqueta, dx);
+        return { puntuacion: suma, etiqueta, dx };
+      }
+
+      function actualizar_chip_alt70(puntuacion, frase, tramo) {
+        const chip = document.getElementById("alt70-chip");
+        const texto =
+          puntuacion === null ? "ALT-70: —" : `ALT-70: ${puntuacion}`;
+        chip.textContent = texto;
+        chip.className =
+          "text-xs px-2 py-1 rounded-full text-white " +
+          (puntuacion === null
+            ? "bg-slate-400"
+            : tramo === "alto"
+            ? "bg-red-600"
+            : tramo === "bajo"
+            ? "bg-blue-600"
+            : "bg-amber-600");
+        const p = document.getElementById("alt70-interpretacion");
+        if (puntuacion === null)
+          p.textContent = "Introduzca valores para calcular.";
+        else p.textContent = `Resultado: ${texto} — ${frase}`;
+      }
+
+      function copiar_al_portapapeles(id_elemento, boton) {
+        const texto = document.getElementById(id_elemento).innerText;
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard
+            .writeText(texto)
+            .then(() => {
+              const t = boton.textContent;
+              boton.textContent = "¡Copiado!";
+              setTimeout(() => {
+                boton.textContent = t;
+              }, 1500);
+            })
+            .catch(() => copia_respaldo(texto, boton));
+        } else {
+          copia_respaldo(texto, boton);
+        }
+      }
+      function copia_respaldo(texto, boton) {
+        const ta = document.createElement("textarea");
+        ta.value = texto;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "absolute";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        const t = boton.textContent;
+        boton.textContent = "¡Copiado!";
+        setTimeout(() => {
+          boton.textContent = t;
+        }, 1500);
+      }
+
+      function cambiar_pestana(nombre) {
+        const es_hce = nombre === "hce";
+        document
+          .getElementById("contenido-hce")
+          .classList.toggle("hidden", !es_hce);
+        document
+          .getElementById("contenido-plan")
+          .classList.toggle("hidden", es_hce);
+        document
+          .getElementById("pest-hce")
+          .classList.toggle("pestaña-seleccionada", es_hce);
+        document
+          .getElementById("pest-hce")
+          .classList.toggle("text-gray-500", !es_hce);
+        document
+          .getElementById("pest-plan")
+          .classList.toggle("pestaña-seleccionada", !es_hce);
+        document
+          .getElementById("pest-plan")
+          .classList.toggle("text-gray-500", es_hce);
+      }
+
+      // accesibilidad y eventos
+      document.querySelectorAll(".item-check").forEach((lbl) => {
+        lbl.addEventListener("keydown", (e) => {
+          if (e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            const inp = lbl.querySelector('input[type="checkbox"]');
+            inp.checked = !inp.checked;
+            actualizar_resultados();
+          }
+        });
+        lbl.addEventListener("click", () => {
+          setTimeout(actualizar_resultados, 0);
+        });
+      });
+
+      // exclusión mutua unilateral/bilateral
+      document
+        .getElementById("etiqueta-afectacion_unilateral")
+        .addEventListener("click", () => {
+          const bi = document.querySelector('input[name="bilateral"]');
+          if (bi.checked) {
+            bi.checked = false;
+          }
+        });
+      document
+        .getElementById("etiqueta-bilateral")
+        .addEventListener("click", () => {
+          const uni = document.querySelector(
+            'input[name="afectacion_unilateral"]'
+          );
+          if (uni.checked) {
+            uni.checked = false;
+          }
+        });
+
+      // ALT-70: recalcular en cambios
+      ["alt70-leucos", "alt70-fc", "alt70-edad"].forEach((id) => {
+        document.getElementById(id).addEventListener("input", () => {
+          calcular_alt70_actual();
+          actualizar_resultados();
+        });
+      });
+
+      // limpiar
+      document.getElementById("btn-borrar").addEventListener("click", () => {
+        document
+          .querySelectorAll('#form-clinico input[type="checkbox"]')
+          .forEach((i) => (i.checked = false));
+        ["alt70-leucos", "alt70-fc", "alt70-edad"].forEach(
+          (id) => (document.getElementById(id).value = "")
+        );
+        localStorage.removeItem("cdc30_estado");
+        localStorage.removeItem("cdc30_alt70");
+        actualizar_resultados();
+      });
+      document.querySelectorAll("[data-villalta]").forEach((el) => {
+        el.addEventListener("change", () => {
+          calcular_villalta_actual();
+          actualizar_resultados();
+        });
+      });
+
+      function cargar_estado() {
+        try {
+          const guardado = JSON.parse(
+            localStorage.getItem("cdc30_estado") || "[]"
+          );
+          guardado.forEach((k) => {
+            const el = document.querySelector(`input[name="${k}"]`);
+            if (el) el.checked = true;
+          });
+          const alt = JSON.parse(localStorage.getItem("cdc30_alt70") || "{}");
+          if (alt.leucos !== undefined)
+            document.getElementById("alt70-leucos").value = alt.leucos ?? "";
+          if (alt.fc !== undefined)
+            document.getElementById("alt70-fc").value = alt.fc ?? "";
+          if (alt.edad !== undefined)
+            document.getElementById("alt70-edad").value = alt.edad ?? "";
+        } catch (e) {}
+      }
+
+      function guardar_alt70() {
+        const leucos = document.getElementById("alt70-leucos").value || "";
+        const fc = document.getElementById("alt70-fc").value || "";
+        const edad = document.getElementById("alt70-edad").value || "";
+        localStorage.setItem(
+          "cdc30_alt70",
+          JSON.stringify({ leucos, fc, edad })
+        );
+      }
+
+      window.onload = () => {
+        cargar_estado();
+        actualizar_resultados();
+      };
+      /* Tour cognitivo Dx-Tx para Celulitis vs. Pseudocelulitis */
+      document.addEventListener("DOMContentLoaded", function () {
+        var btn_tour = document.getElementById("btn_tour");
+
+        function iniciar_tour_cdc30() {
+          var pasos = [
+            {
+              element: document.querySelector("#form-clinico"),
+              intro:
+                "Checklist clínico: activa solo lo que ves. Esto alimenta el estimador y el texto para HCE.",
+            },
+            {
+              element: document.querySelector("#alt70-chip"),
+              intro:
+                "ALT-70: apoya el Dx en extremidad inferior. Se calcula con asimetría, edad, leucocitos y FC.",
+            },
+            {
+              element: document.querySelector("#villalta-chip"),
+              intro:
+                "Villalta (SPT tras TVP): cuantifica gravedad y dispara criterios de derivación si es moderado-severo.",
+            },
+            {
+              element: document.querySelector(".medidor"),
+              intro:
+                "Estimación heurística de celulitis vs. pseudocelulitis. Úsala con reevaluación a 24–72 h.",
+            },
+            {
+              element: document.querySelector("#contenedor-perlas"),
+              intro:
+                "Perlas contextuales según hallazgos: sobrediagnóstico de celulitis, puertas de entrada, fármacos, etc.",
+            },
+            {
+              element: document.querySelector("#pest-hce"),
+              intro:
+                "Salida para HCE: cursograma y texto listo para copiar con ALT-70/Villalta cuando proceda.",
+            },
+            {
+              element: document.querySelector("#contenido-plan"),
+              intro:
+                "Plan de actuación adaptativo: antibióticos cuando toca, compresión y venotonicos si es estasis.",
+            },
+          ].filter(function (p) {
+            return p.element && p.element.offsetParent !== null;
+          });
+
+          introJs()
+            .setOptions({
+              steps: pasos,
+              nextLabel: "Siguiente >",
+              prevLabel: "< Anterior",
+              doneLabel: "¡Entendido!",
+              exitOnOverlayClick: false,
+              showStepNumbers: true,
+              scrollToElement: true,
+            })
+            .start();
+        }
+
+        if (btn_tour) btn_tour.addEventListener("click", iniciar_tour_cdc30);
+
+        /* Mostrarlo automáticamente la primera vez y memorizar preferencia */
+        if (!localStorage.getItem("cdc30TourVisto")) {
+          setTimeout(function () {
+            iniciar_tour_cdc30();
+            localStorage.setItem("cdc30TourVisto", "true");
+          }, 600);
+        }
+      });
+    </script>
+  </body>
+</html>
