@@ -1077,7 +1077,10 @@
         <div>
           <section class="tarjeta" id="sec_ritmo">
             <h3 class="titulo-tarjeta">❤️ Ritmo y patrones</h3>
-            <div class="mini-galeria" data-ids="ritmo_normal,fa,ev"></div>
+            <div
+              class="mini-galeria"
+              data-ids="ritmo_normal,fa,flutter,ev,tsv,tv"
+            ></div>
 
             <p style="font-size: 12px; color: var(--g600); margin-top: -6px">
               Consejos docentes: empieza por el
@@ -3484,6 +3487,53 @@
 </svg>`;
             },
           },
+          flutter: {
+            title: "Flutter auricular",
+            desc: "Ondas F en 'dientes de sierra' a 250-350 lpm, conducción 2:1 o 3:1.",
+            render: function () {
+              return `
+<svg viewBox="0 0 300 120" role="img" aria-label="Flutter auricular">
+  <!-- Fondo papel ECG -->
+  <defs>
+    <pattern id="smallGrid18" width="2" height="2" patternUnits="userSpaceOnUse">
+      <path d="M 2 0 L 0 0 0 2" fill="none" stroke="#fce4ec" stroke-width="0.3"/>
+    </pattern>
+    <pattern id="ecgGrid18" width="10" height="10" patternUnits="userSpaceOnUse">
+      <rect width="10" height="10" fill="url(#smallGrid18)"/>
+      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#f8bbd0" stroke-width="0.4"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="300" height="120" rx="8" fill="#fff5f7"/>
+  <rect x="5" y="5" width="290" height="110" fill="url(#ecgGrid18)" opacity="0.4"/>
+  <line x1="10" y1="70" x2="290" y2="70" stroke="#e0e0e0" stroke-width="0.5" stroke-dasharray="3,2" opacity="0.5"/>
+  
+  <!-- Ondas F en dientes de sierra (300 lpm) -->
+  <path d="M 10,70 L 15,60 L 20,75 L 25,60 L 30,75 L 35,60 L 40,75 L 45,60 L 50,75 L 55,60 L 60,75 L 65,60 L 70,75 L 75,60 L 80,75 L 85,60 L 90,75 L 95,60 L 100,75 L 105,60 L 110,75 L 115,60 L 120,75 L 125,60 L 130,75 L 135,60 L 140,75 L 145,60 L 150,75 L 155,60 L 160,75 L 165,60 L 170,75 L 175,60 L 180,75 L 185,60 L 190,75 L 195,60 L 200,75 L 205,60 L 210,75 L 215,60 L 220,75 L 225,60 L 230,75 L 235,60 L 240,75 L 245,60 L 250,75 L 255,60 L 260,75 L 265,60 L 270,75 L 275,60 L 280,75 L 285,60" 
+        stroke="#ff9800" stroke-width="1.2" fill="none" opacity="0.8"/>
+  
+  <!-- QRS con conducción 2:1 (cada 2 ondas F, 1 QRS) -->
+  <!-- QRS 1 -->
+  <path d="M 30,75 L 31,77 L 33,30 L 35,85 L 37,75" stroke="currentColor" stroke-width="2" fill="none"/>
+  
+  <!-- QRS 2 -->
+  <path d="M 70,75 L 71,77 L 73,30 L 75,85 L 77,75" stroke="currentColor" stroke-width="2" fill="none"/>
+  
+  <!-- QRS 3 -->
+  <path d="M 110,75 L 111,77 L 113,30 L 115,85 L 117,75" stroke="currentColor" stroke-width="2" fill="none"/>
+  
+  <!-- QRS 4 -->
+  <path d="M 150,75 L 151,77 L 153,30 L 155,85 L 157,75" stroke="currentColor" stroke-width="2" fill="none"/>
+  
+  <!-- QRS 5 -->
+  <path d="M 190,75 L 191,77 L 193,30 L 195,85 L 197,75" stroke="currentColor" stroke-width="2" fill="none"/>
+  
+  <!-- QRS 6 -->
+  <path d="M 230,75 L 231,77 L 233,30 L 235,85 L 237,75" stroke="currentColor" stroke-width="2" fill="none"/>
+  
+  <text x="150" y="110" font-size="8" fill="#6b7280" text-anchor="middle">Ondas F "dientes de sierra" - Conducción 2:1</text>
+</svg>`;
+            },
+          },
 
           ev: {
             title: "Extrasístole ventricular (EV)",
@@ -3536,6 +3586,163 @@
     <line x1="225" y1="70" x2="235" y2="70" stroke="currentColor" stroke-width="1.5"/>
     <path d="M 235,70 Q 245,55 255,70" stroke="currentColor" stroke-width="1.5" fill="none"/>
   </g>
+</svg>`;
+            },
+          },
+          tsv: {
+            title: "Taquicardia supraventricular",
+            desc: "QRS estrechos regulares >150 lpm, P no visibles o retrógradas.",
+            render: function () {
+              return `
+<svg viewBox="0 0 300 120" role="img" aria-label="Taquicardia supraventricular">
+  <!-- Fondo papel ECG -->
+  <defs>
+    <pattern id="smallGrid20" width="2" height="2" patternUnits="userSpaceOnUse">
+      <path d="M 2 0 L 0 0 0 2" fill="none" stroke="#fce4ec" stroke-width="0.3"/>
+    </pattern>
+    <pattern id="ecgGrid20" width="10" height="10" patternUnits="userSpaceOnUse">
+      <rect width="10" height="10" fill="url(#smallGrid20)"/>
+      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#f8bbd0" stroke-width="0.4"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="300" height="120" rx="8" fill="#fff5f7"/>
+  <rect x="5" y="5" width="290" height="110" fill="url(#ecgGrid20)" opacity="0.4"/>
+  <line x1="10" y1="70" x2="290" y2="70" stroke="#e0e0e0" stroke-width="0.5" stroke-dasharray="3,2" opacity="0.5"/>
+  
+  <!-- TSV - QRS estrechos muy rápidos (180 lpm) -->
+  <!-- Complejo 1 -->
+  <g>
+    <path d="M 20,70 L 21,73 L 23,25 L 25,85 L 27,70" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <!-- P retrógrada (después del QRS, parcialmente oculta en T) -->
+    <path d="M 27,70 Q 32,76 37,70" stroke="#ff9800" stroke-width="1" fill="none" opacity="0.6"/>
+  </g>
+  
+  <!-- Complejo 2 -->
+  <g>
+    <path d="M 45,70 L 46,73 L 48,25 L 50,85 L 52,70" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <path d="M 52,70 Q 57,76 62,70" stroke="#ff9800" stroke-width="1" fill="none" opacity="0.6"/>
+  </g>
+  
+  <!-- Complejo 3 -->
+  <g>
+    <path d="M 70,70 L 71,73 L 73,25 L 75,85 L 77,70" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <path d="M 77,70 Q 82,76 87,70" stroke="#ff9800" stroke-width="1" fill="none" opacity="0.6"/>
+  </g>
+  
+  <!-- Complejo 4 -->
+  <g>
+    <path d="M 95,70 L 96,73 L 98,25 L 100,85 L 102,70" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <path d="M 102,70 Q 107,76 112,70" stroke="#ff9800" stroke-width="1" fill="none" opacity="0.6"/>
+  </g>
+  
+  <!-- Complejo 5 -->
+  <g>
+    <path d="M 120,70 L 121,73 L 123,25 L 125,85 L 127,70" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <path d="M 127,70 Q 132,76 137,70" stroke="#ff9800" stroke-width="1" fill="none" opacity="0.6"/>
+  </g>
+  
+  <!-- Complejo 6 -->
+  <g>
+    <path d="M 145,70 L 146,73 L 148,25 L 150,85 L 152,70" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <path d="M 152,70 Q 157,76 162,70" stroke="#ff9800" stroke-width="1" fill="none" opacity="0.6"/>
+  </g>
+  
+  <!-- Complejo 7 -->
+  <g>
+    <path d="M 170,70 L 171,73 L 173,25 L 175,85 L 177,70" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <path d="M 177,70 Q 182,76 187,70" stroke="#ff9800" stroke-width="1" fill="none" opacity="0.6"/>
+  </g>
+  
+  <!-- Complejo 8 -->
+  <g>
+    <path d="M 195,70 L 196,73 L 198,25 L 200,85 L 202,70" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <path d="M 202,70 Q 207,76 212,70" stroke="#ff9800" stroke-width="1" fill="none" opacity="0.6"/>
+  </g>
+  
+  <!-- Complejo 9 -->
+  <g>
+    <path d="M 220,70 L 221,73 L 223,25 L 225,85 L 227,70" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <path d="M 227,70 Q 232,76 237,70" stroke="#ff9800" stroke-width="1" fill="none" opacity="0.6"/>
+  </g>
+  
+  <!-- Complejo 10 -->
+  <g>
+    <path d="M 245,70 L 246,73 L 248,25 L 250,85 L 252,70" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <path d="M 252,70 Q 257,76 262,70" stroke="#ff9800" stroke-width="1" fill="none" opacity="0.6"/>
+  </g>
+  
+  <text x="150" y="110" font-size="8" fill="#6b7280" text-anchor="middle">
+    FC ~200 lpm - QRS estrechos - P ocultas en T
+  </text>
+</svg>`;
+            },
+          },
+          tv: {
+            title: "Taquicardia ventricular",
+            desc: "QRS anchos regulares >100 lpm, sin ondas P visibles.",
+            render: function () {
+              return `
+<svg viewBox="0 0 300 120" role="img" aria-label="Taquicardia ventricular">
+  <!-- Fondo papel ECG -->
+  <defs>
+    <pattern id="smallGrid19" width="2" height="2" patternUnits="userSpaceOnUse">
+      <path d="M 2 0 L 0 0 0 2" fill="none" stroke="#fce4ec" stroke-width="0.3"/>
+    </pattern>
+    <pattern id="ecgGrid19" width="10" height="10" patternUnits="userSpaceOnUse">
+      <rect width="10" height="10" fill="url(#smallGrid19)"/>
+      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#f8bbd0" stroke-width="0.4"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="300" height="120" rx="8" fill="#fff5f7"/>
+  <rect x="5" y="5" width="290" height="110" fill="url(#ecgGrid19)" opacity="0.4"/>
+  <line x1="10" y1="70" x2="290" y2="70" stroke="#e0e0e0" stroke-width="0.5" stroke-dasharray="3,2" opacity="0.5"/>
+  
+  <!-- TV monomórfica - QRS anchos regulares rápidos -->
+  <!-- Complejo 1 -->
+  <g>
+    <path d="M 20,70 L 22,75 L 26,20 L 32,90 L 38,85 L 44,80 L 48,70" 
+          stroke="var(--peligro)" stroke-width="2.5" fill="none"/>
+    <path d="M 48,70 Q 54,85 60,70" stroke="var(--peligro)" stroke-width="2" fill="none"/>
+  </g>
+  
+  <!-- Complejo 2 -->
+  <g>
+    <path d="M 65,70 L 67,75 L 71,20 L 77,90 L 83,85 L 89,80 L 93,70" 
+          stroke="var(--peligro)" stroke-width="2.5" fill="none"/>
+    <path d="M 93,70 Q 99,85 105,70" stroke="var(--peligro)" stroke-width="2" fill="none"/>
+  </g>
+  
+  <!-- Complejo 3 -->
+  <g>
+    <path d="M 110,70 L 112,75 L 116,20 L 122,90 L 128,85 L 134,80 L 138,70" 
+          stroke="var(--peligro)" stroke-width="2.5" fill="none"/>
+    <path d="M 138,70 Q 144,85 150,70" stroke="var(--peligro)" stroke-width="2" fill="none"/>
+  </g>
+  
+  <!-- Complejo 4 -->
+  <g>
+    <path d="M 155,70 L 157,75 L 161,20 L 167,90 L 173,85 L 179,80 L 183,70" 
+          stroke="var(--peligro)" stroke-width="2.5" fill="none"/>
+    <path d="M 183,70 Q 189,85 195,70" stroke="var(--peligro)" stroke-width="2" fill="none"/>
+  </g>
+  
+  <!-- Complejo 5 -->
+  <g>
+    <path d="M 200,70 L 202,75 L 206,20 L 212,90 L 218,85 L 224,80 L 228,70" 
+          stroke="var(--peligro)" stroke-width="2.5" fill="none"/>
+    <path d="M 228,70 Q 234,85 240,70" stroke="var(--peligro)" stroke-width="2" fill="none"/>
+  </g>
+  
+  <!-- Complejo 6 -->
+  <g>
+    <path d="M 245,70 L 247,75 L 251,20 L 257,90 L 263,85 L 269,80 L 273,70" 
+          stroke="var(--peligro)" stroke-width="2.5" fill="none"/>
+    <path d="M 273,70 Q 279,85 285,70" stroke="var(--peligro)" stroke-width="2" fill="none"/>
+  </g>
+  
+  <text x="150" y="110" font-size="8" fill="var(--peligro)" text-anchor="middle" font-weight="600">
+    FC ~180 lpm - QRS anchos - ¡EMERGENCIA!
+  </text>
 </svg>`;
             },
           },
