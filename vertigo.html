@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VESTILAB 3.0 · Asistente Clínico Vestibular (Educativo)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <style>
+      :root {
+        --pad: 0.9rem;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f8fafc;
+      }
+      .main-container {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        box-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.1);
+      }
+      .step {
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+      .step-circle {
+        width: 36px;
+        height: 36px;
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #475569;
+        background: #e2e8f0;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
+      }
+      .step-line {
+        height: 3px;
+        background: #e2e8f0;
+        transition: all 0.2s ease;
+      }
+      .step.active .step-circle {
+        background: #4f46e5;
+        color: #fff;
+        transform: scale(1.02);
+      }
+      .step.completed .step-circle {
+        background: #16a34a;
+        color: #fff;
+      }
+      .step.completed + .step-line {
+        background: #16a34a;
+      }
+      .category-card {
+        border: 2px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 1rem;
+        transition: all 0.15s ease;
+        cursor: pointer;
+      }
+      .category-card.selected {
+        border-color: #4f46e5;
+        box-shadow: 0 12px 18px -14px rgba(79, 70, 229, 0.6);
+        transform: translateY(-3px);
+      }
+      .tag-chip {
+        padding: 0.4rem 0.8rem;
+        border-radius: 9999px;
+        border: 1px solid #cbd5e1;
+        font-weight: 500;
+        cursor: pointer;
+        user-select: none;
+      }
+      .tag-chip[data-active="true"] {
+        background: #e0e7ff;
+        color: #3730a3;
+        border-color: #a5b4fc;
+      }
+      .toggle-pill {
+        position: relative;
+        width: 50px;
+        height: 26px;
+        background: #cbd5e1;
+        border-radius: 9999px;
+        cursor: pointer;
+      }
+      .toggle-dot {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 20px;
+        height: 20px;
+        background: #fff;
+        border-radius: 9999px;
+        transition: transform 0.2s;
+      }
+      .toggle-pill[data-on="true"] {
+        background: #4f46e5;
+      }
+      .toggle-pill[data-on="true"] .toggle-dot {
+        transform: translateX(24px);
+      }
+      .alert-box {
+        border-left-width: 4px;
+        padding: 0.7rem;
+        border-radius: 0.5rem;
+      }
+      .alert-info {
+        background: #eff6ff;
+        border-color: #3b82f6;
+      }
+      .alert-danger {
+        background: #fee2e2;
+        border-color: #ef4444;
+      }
+      .alert-warn {
+        background: #fffbeb;
+        border-color: #f59e0b;
+      }
+      .alert-ok {
+        background: #f0fdf4;
+        border-color: #22c55e;
+      }
+      .badge {
+        font-size: 0.7rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 9999px;
+        padding: 0.12rem 0.5rem;
+      }
+      .badge-low {
+        background: #fff7ed;
+        color: #9a3412;
+        border-color: #fdba74;
+      }
+      .badge-high {
+        background: #ecfeff;
+        color: #155e75;
+        border-color: #67e8f9;
+      }
+      .step-section {
+        display: none;
+      }
+      .step-section.active {
+        display: block;
+      }
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 60;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.2s ease;
+      }
+      .modal-overlay.open {
+        opacity: 1;
+        visibility: visible;
+      }
+      .modal-card {
+        background: white;
+        border-radius: 14px;
+        width: min(820px, 92vw);
+        max-height: 92vh;
+        overflow: auto;
+        transform: scale(0.98);
+        transition: transform 0.2s ease;
+      }
+      .modal-overlay.open .modal-card {
+        transform: scale(1);
+      }
+      .maneuver-step {
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.8rem;
+        display: flex;
+        gap: 0.8rem;
+        align-items: center;
+      }
+      #popover {
+        position: absolute;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.8rem;
+        box-shadow: 0 20px 30px -16px rgba(0, 0, 0, 0.25);
+        z-index: 70;
+      }
+      #popover.hidden {
+        display: none;
+      }
+      .summary-bar {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 0.4rem 0.6rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        background: #fff;
+      }
+      .summary-pill {
+        font-size: 0.8rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 9999px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+      }
+      .meter {
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .meter > span {
+        display: block;
+        height: 100%;
+        background: #4f46e5;
+      }
+      details > summary {
+        cursor: pointer;
+      }
+      .help-rail p {
+        margin: 0.2rem 0;
+      }
+      .toast {
+        position: fixed;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #111827;
+        color: white;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 12px;
+        z-index: 90;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        display: none;
+      }
+      .toast.show {
+        display: block;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+    </style>
+  </head>
+
+  <body class="p-4 md:p-6">
+    <div class="max-w-7xl mx-auto main-container p-5 md:p-7">
+      <header class="mb-4">
+        <div
+          class="flex flex-col md:flex-row md:items-center md:justify-between gap-2"
+        >
+          <div>
+            <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800">
+              VESTILAB <span class="text-indigo-600">3.0</span>
+            </h1>
+            <p class="text-slate-500 text-sm">
+              Asistente Clínico-Didáctico de Síndromes Vestibulares
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              data-action="open-tutorial"
+              class="px-3 py-2 rounded-full border bg-slate-50 text-slate-700 hover:bg-slate-100 text-sm"
+            >
+              <i class="fa-regular fa-circle-question mr-2"></i>Tutorial
+            </button>
+            <button
+              data-action="open-academy"
+              class="px-3 py-2 rounded-full border bg-slate-50 text-slate-700 hover:bg-slate-100 text-sm"
+            >
+              <i class="fa-solid fa-graduation-cap mr-2"></i>Academia
+            </button>
+            <button
+              data-action="open-glossary"
+              class="px-3 py-2 rounded-full border bg-slate-50 text-slate-700 hover:bg-slate-100 text-sm"
+            >
+              <i class="fa-solid fa-book mr-2"></i>Glosario
+            </button>
+
+            <button
+              data-action="open-emerg"
+              class="px-3 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 text-sm"
+            >
+              <i class="fa-solid fa-triangle-exclamation mr-2"></i>Urgencias
+            </button>
+            <button
+              data-action="reset"
+              class="px-3 py-2 rounded-full border bg-slate-50 text-slate-700 hover:bg-slate-100 text-sm"
+            >
+              <i class="fa-solid fa-rotate-right mr-2"></i>Reiniciar
+            </button>
+          </div>
+        </div>
+
+        <!-- resumen vivo reforzado (mejora: estado visible) -->
+        <div
+          id="summary"
+          class="summary-bar mt-3 text-slate-700 text-sm"
+          aria-live="polite"
+        >
+          <span class="font-semibold">Resumen:</span>
+          <span class="summary-pill" id="sum-cat">Categoría: —</span>
+          <span class="summary-pill" id="sum-trg">Triggers: 0</span>
+          <span class="summary-pill" id="sum-rf">Red flags: 0</span>
+          <span class="summary-pill" id="sum-nyst">Nistagmo: —</span>
+          <span class="summary-pill" id="sum-atax">Ataxia: —</span>
+          <span class="summary-pill" id="sum-train">HINTS entrenado: —</span>
+        </div>
+      </header>
+
+      <div id="stepper" class="flex items-center w-full max-w-2xl mx-auto mb-5">
+        <div data-step="1" class="step flex-1 text-center active" tabindex="0">
+          <div class="step-circle mx-auto">1</div>
+          <p class="text-xs mt-1 font-medium text-slate-600">Clasificación</p>
+        </div>
+        <div class="step-line flex-1"></div>
+        <div data-step="2" class="step flex-1 text-center" tabindex="0">
+          <div class="step-circle mx-auto">2</div>
+          <p class="text-xs mt-1 font-medium text-slate-600">Evaluación</p>
+        </div>
+        <div class="step-line flex-1"></div>
+        <div data-step="3" class="step flex-1 text-center" tabindex="0">
+          <div class="step-circle mx-auto">3</div>
+          <p class="text-xs mt-1 font-medium text-slate-600">Diagnóstico</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
+        <div id="app-col">
+          <!-- ===== paso 1: clasificación (TiTrATE) ===== -->
+          <section
+            id="section-1"
+            class="step-section active space-y-5 compact max-w-4xl mx-auto"
+          >
+            <div class="text-center">
+              <h2 class="text-2xl md:text-3xl font-bold text-slate-800">
+                1. Clasificación
+              </h2>
+              <p class="text-slate-500 text-xs">
+                Basado en cronología y desencadenantes (Timing & Triggers).
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="cat-grid">
+              <div
+                class="category-card"
+                data-cat="AVS"
+                tabindex="0"
+                role="button"
+                aria-label="Síndrome Vestibular Agudo"
+              >
+                <div class="text-2xl mb-1">⚡</div>
+                <h3 class="font-bold text-base text-slate-800">
+                  S.V. AGUDO (AVS)
+                </h3>
+                <p class="text-xs text-slate-600">
+                  Continuo (≥24 h), inicio súbito.
+                  <button
+                    class="text-[11px] text-indigo-700 underline js-popover"
+                    data-title="¿Qué es AVS?"
+                    data-body="<p>AVS = inicio agudo con nistagmo espontáneo o de mirada y síntomas continuos ≥24 h; prioriza descartar ictus posterior si signos centrales.</p>"
+                  >
+                    ¿Qué es?
+                  </button>
+                </p>
+              </div>
+              <div
+                class="category-card"
+                data-cat="EVS"
+                tabindex="0"
+                role="button"
+                aria-label="Síndrome Vestibular Episódico"
+              >
+                <div class="text-2xl mb-1">🔄</div>
+                <h3 class="font-bold text-base text-slate-800">
+                  S.V. EPISÓDICO (EVS)
+                </h3>
+                <p class="text-xs text-slate-600">
+                  Recurrente (segundos-horas).
+                  <button
+                    class="text-[11px] text-indigo-700 underline js-popover"
+                    data-title="¿Qué es EVS?"
+                    data-body="<p>EVS = episodios. t-EVS (disparados por posición) orienta a VPPB; s-EVS (espontáneos) orienta a VM/Ménière/TIA según acompañantes.</p>"
+                  >
+                    ¿Qué es?
+                  </button>
+                </p>
+              </div>
+              <div
+                class="category-card"
+                data-cat="CVS"
+                tabindex="0"
+                role="button"
+                aria-label="Síndrome Vestibular Crónico"
+              >
+                <div class="text-2xl mb-1">📅</div>
+                <h3 class="font-bold text-base text-slate-800">
+                  S.V. CRÓNICO (CVS)
+                </h3>
+                <p class="text-xs text-slate-600">
+                  Persistente &gt;3 meses.
+                  <button
+                    class="text-[11px] text-indigo-700 underline js-popover"
+                    data-title="¿Qué es CVS?"
+                    data-body="<p>CVS = síntomas crónicos; busca hipofunción vestibular, bilateral vestibulopatía y PPPD (<em>vértigo postural perceptual persistente</em>).</p>"
+                  >
+                    ¿Qué es?
+                  </button>
+                </p>
+              </div>
+            </div>
+
+            <!-- mejora: ayuda “disparo vs exacerbación” + triggers -->
+            <div id="triage_extras" class="hidden space-y-4">
+              <div>
+                <div class="flex items-center justify-between">
+                  <label class="block font-semibold text-slate-700 text-sm"
+                    >Desencadenantes</label
+                  >
+                  <button
+                    class="text-indigo-700 underline text-xs js-popover"
+                    data-title="Posicional: ¿disparo o exacerbación?"
+                    data-body="<p><strong>Disparo posicional</strong> = episodios discretos, breves, desencadenados por una posición (típico BPPB).</p><p><strong>Exacerbación posicional</strong> = síntoma continuo que empeora al moverse (posible AVS/central). Usa <em>Timing & Triggers</em> antes de etiquetar.</p>"
+                  >
+                    ¿Por qué?
+                  </button>
+                </div>
+                <div class="flex flex-wrap gap-2" id="chips_triggers">
+                  <button class="tag-chip" data-value="posicional">
+                    Cambios de posición
+                  </button>
+                  <button class="tag-chip" data-value="postural">
+                    Estar de pie/caminar
+                  </button>
+                  <button class="tag-chip" data-value="visual">
+                    Estímulos visuales
+                  </button>
+                  <button class="tag-chip" data-value="espontaneo">
+                    Espontáneo
+                  </button>
+                </div>
+              </div>
+
+              <!-- mejora: red flags + ataxia 3 con impacto fuerte de flujo -->
+              <div class="p-3 border rounded-xl bg-slate-50 space-y-2">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-semibold text-slate-800 text-sm">
+                    Red flags
+                  </h3>
+                  <button
+                    class="text-indigo-700 underline text-xs js-popover"
+                    data-title="Ataxia grado 3"
+                    data-body="<p>Incapaz de sentarse o estar de pie sin ayuda. Especificidad muy alta para ictus en AVS.</p>"
+                  >
+                    Definición
+                  </button>
+                </div>
+                <div
+                  class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm"
+                  id="rf-grid"
+                >
+                  <label class="flex items-center gap-2"
+                    ><input
+                      type="checkbox"
+                      class="rf"
+                      value="Diplopía"
+                    />Diplopía</label
+                  >
+                  <label class="flex items-center gap-2"
+                    ><input
+                      type="checkbox"
+                      class="rf"
+                      value="Disartria"
+                    />Disartria</label
+                  >
+                  <label class="flex items-center gap-2"
+                    ><input
+                      type="checkbox"
+                      class="rf"
+                      value="Disfagia"
+                    />Disfagia</label
+                  >
+                  <label class="flex items-center gap-2"
+                    ><input
+                      type="checkbox"
+                      class="rf"
+                      value="Debilidad focal"
+                    />Debilidad focal</label
+                  >
+                  <label class="flex items-center gap-2"
+                    ><input
+                      type="checkbox"
+                      class="rf"
+                      value="Dismetría"
+                    />Dismetría</label
+                  >
+                  <label class="flex items-center gap-2"
+                    ><input
+                      type="checkbox"
+                      class="rf"
+                      value="Cefalea súbita intensa"
+                    />Cefalea súbita</label
+                  >
+                  <label class="flex items-center gap-2"
+                    ><input
+                      type="checkbox"
+                      class="rf"
+                      value="Hipoacusia neurosensorial aguda"
+                    />Hipoacusia neurosensorial aguda</label
+                  >
+                  <label class="flex items-center gap-2"
+                    ><input
+                      type="checkbox"
+                      class="rf"
+                      value="Riesgo vascular alto (ABCD2≥4)"
+                    />Riesgo vascular alto (ABCD2≥4)</label
+                  >
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="font-medium text-xs">Ataxia marcha grado 3</span>
+                  <div
+                    id="tg_ataxia3"
+                    role="switch"
+                    aria-checked="false"
+                    class="toggle-pill"
+                  >
+                    <span class="toggle-dot"></span>
+                  </div>
+                </div>
+                <div id="alertas_seguridad" class="space-y-2"></div>
+              </div>
+            </div>
+
+            <div class="text-center">
+              <button
+                id="btn_continuar1"
+                class="px-6 py-2 rounded-full text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
+                disabled
+              >
+                Continuar a Evaluación
+                <i class="fa-solid fa-arrow-right ml-2"></i>
+              </button>
+            </div>
+          </section>
+
+          <!-- ===== paso 2: evaluación (con puertas de seguridad) ===== -->
+          <section
+            id="section-2"
+            class="step-section space-y-5 compact"
+          ></section>
+
+          <!-- ===== paso 3: diagnóstico ===== -->
+          <section
+            id="section-3"
+            class="step-section space-y-5 compact"
+          ></section>
+        </div>
+
+        <aside id="help-rail" class="hidden lg:block sticky top-4 h-max">
+          <div class="p-3 border rounded-xl bg-slate-50 help-rail">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-sm">Ayuda</h3>
+              <button
+                id="toggle-help"
+                class="text-xs text-indigo-700 underline"
+              >
+                Ocultar
+              </button>
+            </div>
+            <div
+              id="help-rail-body"
+              class="text-xs text-slate-700 space-y-2 mt-2"
+            >
+              <p>Selecciona una categoría para ver recomendaciones.</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <footer class="mt-6 text-[11px] leading-5 text-slate-500">
+        <p>
+          <strong>Descargo:</strong> VESTILAB es una herramienta
+          <em>educativa</em>; no sustituye el juicio clínico, protocolos locales
+          ni la valoración presencial.
+        </p>
+      </footer>
+    </div>
+
+    <!-- modal y popover -->
+    <div id="modal" class="modal-overlay" aria-hidden="true">
+      <div class="modal-card p-5 md:p-6">
+        <div class="flex items-center justify-between mb-3">
+          <h3 id="modal-title" class="text-xl font-bold text-slate-800"></h3>
+          <button
+            class="text-slate-500 hover:text-slate-800 text-2xl"
+            data-action="close-modal"
+            aria-label="Cerrar"
+          >
+            &times;
+          </button>
+        </div>
+        <div id="modal-body" class="prose max-w-none text-sm"></div>
+      </div>
+    </div>
+    <div id="popover" class="hidden"></div>
+    <div id="toast" class="toast"></div>
+
+    <script>
+      (function () {
+        /* ====================== estado global ====================== */
+        const estado = {
+          paso: 1,
+          categoria: "",
+          triggers: new Set(),
+          red_flags: new Set(),
+          ataxia3: false,
+
+          /* mejora: puertas de seguridad HINTS */
+          entrenado_hints: false,
+          nistagmo: false,
+          hints: { hi: "", ny: "", sk: "" },
+          hints_plus_hipoacusia: false /* finger rub/hipoacusia aguda */,
+          marcha: "",
+
+          /* EVS */
+          evs_duracion: "",
+          dix_d: "",
+          dix_i: "",
+          roll: "",
+          eight_q: { answers: {}, score_mv: 0, score_em: 0, score_vppb: 0 },
+          mv: { headache: false, photophobia: false, history: false },
+          em: { hearing: false, tinnitus: false, fullness: false },
+
+          /* CVS */
+          pppd: { tiempo: false, postura: false, mov: false, visual: false },
+
+          dx: null,
+        };
+
+        /* ====================== helpers UI ====================== */
+        const qs = (sel, root = document) => root.querySelector(sel);
+        const qsa = (sel, root = document) => [...root.querySelectorAll(sel)];
+        const ayuda_body = () => qs("#help-rail-body");
+
+        function set_ayuda(clave) {
+          const dict = {
+            triage: `<p><strong>Timing & Triggers</strong> guía la hipótesis (TiTrATE).</p><p>Disparo posicional + segundos ⇒ VPPB; continuo sin disparador ⇒ prioriza central.</p><p class='text-[11px] text-slate-600'>Evita basarte en “mareo vs vértigo”: no discrimina etiología.</p>`,
+            avs: `<p><strong>AVS</strong>: HINTS solo con nistagmo espontáneo y <em>si estás entrenado</em>. Si no, usa marcha y patrón de nistagmo + RM-DWI si sospecha central.</p>`,
+            "evs-vppb": `<p><strong>t-EVS</strong>: usa Dix-Hallpike (posterior) y Supine Roll (horizontal) para confirmar.</p>`,
+            "evs-mvem": `<p><strong>s-EVS</strong>: MV (cefalea/foto-fono/historia) vs EM (hipoacusia/acúfenos/plenitud).</p>`,
+            "evs-8q": `<p><strong>8Q</strong>: sólo orientación formativa, no diagnóstico.</p>`,
+            cvs: `<p><strong>CVS/PPPD</strong>: si cumple criterios (≥3 meses; peor de pie, con movimiento o estímulos visuales), orientar manejo <em>multimodal</em>: rehabilitación vestibular y TCC; farmacoterapia individualizada.</p>`,
+          };
+          ayuda_body().innerHTML = dict[clave] || "—";
+        }
+
+        function update_stepper(paso) {
+          qsa("#stepper .step").forEach((n) => {
+            n.classList.remove("active", "completed");
+            const val = Number(n.dataset.step);
+            if (val < paso) n.classList.add("completed");
+            else if (val === paso) n.classList.add("active");
+          });
+        }
+
+        function show_section(paso) {
+          qsa(".step-section").forEach((s) => s.classList.remove("active"));
+          qs("#section-" + paso).classList.add("active");
+          estado.paso = paso;
+          update_stepper(paso);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          if (paso === 1) hydrate_step1();
+          if (paso === 2) {
+            render_step2();
+            hydrate_step2();
+          }
+          if (paso === 3) {
+            render_step3();
+          }
+        }
+
+        /* popover */
+        const popover = qs("#popover");
+        function open_popover(anchor, title, html) {
+          popover.innerHTML = `<div class="flex justify-between items-center mb-1">
+          <h4 class="font-bold text-sm">${title}</h4>
+          <button class="text-slate-500 text-sm" data-action="close-popover">✕</button>
+        </div><div class="text-xs">${html}</div>`;
+          const r = anchor.getBoundingClientRect();
+          popover.style.left = r.left + window.scrollX + "px";
+          popover.style.top = r.bottom + 8 + window.scrollY + "px";
+          popover.classList.remove("hidden");
+        }
+        function close_popover() {
+          popover.classList.add("hidden");
+        }
+        document.addEventListener(
+          "mousedown",
+          (e) => {
+            if (
+              !popover.classList.contains("hidden") &&
+              !e.target.closest("#popover") &&
+              !e.target.closest(".js-popover")
+            )
+              close_popover();
+          },
+          { passive: true }
+        );
+        window.addEventListener("scroll", close_popover, { passive: true });
+
+        /* modal */
+        const modal = qs("#modal"),
+          m_title = qs("#modal-title"),
+          m_body = qs("#modal-body");
+        function open_modal(t, html) {
+          m_title.textContent = t;
+          m_body.innerHTML = html;
+          modal.classList.add("open");
+          modal.setAttribute("aria-hidden", "false");
+        }
+        function close_modal() {
+          modal.classList.remove("open");
+          modal.setAttribute("aria-hidden", "true");
+        }
+
+        /* resumen */
+        function update_resumen() {
+          qs("#sum-cat").textContent =
+            "Categoría: " + (estado.categoria || "—");
+          qs("#sum-trg").textContent = "Triggers: " + estado.triggers.size;
+          qs("#sum-rf").textContent =
+            "Red flags: " + (estado.red_flags.size + (estado.ataxia3 ? 1 : 0));
+          qs("#sum-nyst").textContent =
+            "Nistagmo: " + (estado.nistagmo ? "sí" : "no/NC");
+          qs("#sum-atax").textContent =
+            "Ataxia: " + (estado.marcha || (estado.ataxia3 ? "severa" : "—"));
+          qs("#sum-train").textContent =
+            "HINTS entrenado: " + (estado.entrenado_hints ? "sí" : "no");
+        }
+
+        /* ===== paso 1 ===== */
+        function render_alertas_seguridad() {
+          const box = qs("#alertas_seguridad");
+          box.innerHTML = "";
+          const hay = estado.red_flags.size || estado.ataxia3;
+          if (hay) {
+            const d = document.createElement("div");
+            d.className = "alert-box alert-danger text-xs";
+            d.innerHTML = `<strong><i class="fa-solid fa-skull-crossbones mr-1"></i>Alerta:</strong> ${
+              [...estado.red_flags].join(", ") || "—"
+            }${
+              estado.ataxia3 ? " + ataxia G3" : ""
+            }. Prioriza ictus/HINTS por experto o RM-DWI.`;
+            box.appendChild(d);
+          }
+        }
+
+        function hydrate_step1() {
+          set_ayuda("triage");
+          qsa("#cat-grid .category-card").forEach((c) =>
+            c.classList.toggle("selected", c.dataset.cat === estado.categoria)
+          );
+          if (estado.categoria) {
+            qs("#triage_extras").classList.remove("hidden");
+            qs("#btn_continuar1").disabled = false;
+          }
+          qsa("#chips_triggers .tag-chip").forEach((ch) => {
+            ch.setAttribute(
+              "data-active",
+              estado.triggers.has(ch.dataset.value) ? "true" : "false"
+            );
+          });
+          qsa("#rf-grid .rf").forEach((cb) => {
+            cb.checked = estado.red_flags.has(cb.value);
+          });
+          const tg = qs("#tg_ataxia3");
+          tg.setAttribute("data-on", estado.ataxia3.toString());
+          tg.setAttribute("aria-checked", estado.ataxia3.toString());
+          render_alertas_seguridad();
+          update_resumen();
+        }
+
+        function init_step1() {
+          hydrate_step1();
+          qs("#cat-grid").addEventListener("click", (e) => {
+            const card = e.target.closest(".category-card");
+            if (!card) return;
+            qsa(".category-card").forEach((c) =>
+              c.classList.remove("selected")
+            );
+            card.classList.add("selected");
+            estado.categoria = card.dataset.cat;
+            qs("#triage_extras").classList.remove("hidden");
+            qs("#btn_continuar1").disabled = false;
+            update_resumen();
+          });
+
+          qs("#chips_triggers").addEventListener("click", (e) => {
+            const chip = e.target.closest(".tag-chip");
+            if (!chip) return;
+            const act = chip.getAttribute("data-active") === "true";
+            chip.setAttribute("data-active", (!act).toString());
+            if (act) estado.triggers.delete(chip.dataset.value);
+            else estado.triggers.add(chip.dataset.value);
+            update_resumen();
+          });
+
+          qs("#rf-grid").addEventListener("change", (e) => {
+            if (!e.target.classList.contains("rf")) return;
+            if (e.target.checked) estado.red_flags.add(e.target.value);
+            else estado.red_flags.delete(e.target.value);
+            render_alertas_seguridad();
+            update_resumen();
+          });
+
+          const tg = qs("#tg_ataxia3");
+          tg.addEventListener("click", () => {
+            const on = tg.getAttribute("data-on") === "true";
+            tg.setAttribute("data-on", (!on).toString());
+            tg.setAttribute("aria-checked", (!on).toString());
+            estado.ataxia3 = !on;
+            if (estado.ataxia3)
+              estado.categoria = "AVS"; /* mejora: fuerza AVS por seguridad */
+            render_alertas_seguridad();
+            update_resumen();
+          });
+
+          document.addEventListener("click", (e) => {
+            if (e.target.matches(".js-popover"))
+              open_popover(
+                e.target,
+                e.target.dataset.title,
+                e.target.dataset.body
+              );
+            else if (e.target.matches('[data-action="close-popover"]'))
+              close_popover();
+          });
+
+          qs("#btn_continuar1").addEventListener("click", () => {
+            if (
+              estado.red_flags.has("Cefalea súbita intensa") ||
+              estado.ataxia3
+            )
+              estado.categoria = "AVS";
+            render_step2();
+            hydrate_step2();
+            show_section(2);
+          });
+        }
+
+        /* ===== paso 2 ===== */
+        function render_step2() {
+          const s2 = qs("#section-2");
+          let html = `
+          <div class="text-center">
+            <h2 class="text-2xl md:text-3xl font-bold text-slate-800">2. Evaluación</h2>
+            <p class="text-slate-500 text-xs">Completa las pruebas de la categoría.</p>
+          </div>`;
+
+          if (estado.categoria === "AVS") {
+            set_ayuda("avs");
+            html += `
+          <div class="p-4 border rounded-xl space-y-3" id="avs-box">
+            <div id="avs-alert"></div>
+
+            <!-- mejora: declaración de entrenamiento HINTS -->
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span class="text-sm">¿Estás entrenado para aplicar HINTS correctamente?</span>
+              <div class="flex items-center gap-3">
+                <span class="text-xs text-slate-600">Entrenado HINTS</span>
+                <div id="tg_train" role="switch" aria-checked="false" class="toggle-pill"><span class="toggle-dot"></span></div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span class="text-sm">¿Nistagmo espontáneo continuo?</span>
+              <div class="flex items-center gap-3">
+                <button class="text-xs px-2 py-1 border rounded" data-action="open-training" data-key="HINTS"><i class="fa-solid fa-graduation-cap mr-1"></i>Entrenamiento HINTS</button>
+                <div id="tg_nist" role="switch" aria-checked="false" class="toggle-pill"><span class="toggle-dot"></span></div>
+              </div>
+            </div>
+            <div class="text-[11px] text-slate-600 -mt-1">HINTS solo es válido con nistagmo espontáneo continuo y con entrenamiento adecuado; cuando lo realiza personal entrenado, es más exacto que una RM-DWI precoz (&lt;48 h) para ictus en AVS.
+</div>
+<div class="text-[11px] text-red-700 mt-1">
+  Nota: en práctica rutinaria, HINTS <strong>no</strong> es estándar sin entrenamiento específico; evita su uso si no cumples criterios.
+</div>
+
+            <!-- mejora: HINTS-PLUS (oído) -->
+            <div class="p-3 border rounded-lg bg-indigo-50">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-semibold">HINTS-plus (cribado auditivo)</span>
+                <button class="text-xs text-indigo-700 underline js-popover"
+                        data-title="HINTS-plus"
+                        data-body="<p>Incluye cribado auditivo rápido (p. ej., frote digital). Una <strong>hipoacusia neurosensorial aguda</strong> sugiere lesión central (AICA) hasta demostrar lo contrario.</p>"
+>¿Qué es?</button>
+              </div>
+              <label class="flex items-center gap-2 text-sm mt-1"><input type="checkbox" id="chk_hloss"> Hipoacusia neurosensorial aguda / prueba del frote disminuida</label>
+            </div>
+
+            <div id="hints_panel" class="opacity-50 pointer-events-none space-y-3 mt-1">
+              <div class="grid md:grid-cols-3 gap-3">
+                <div class="p-3 border rounded-lg">
+                  <h4 class="font-bold mb-1">H — Head Impulse <span class="badge badge-high">Alta certeza</span></h4>
+                  <label class="flex items-center gap-2 text-sm"><input type="radio" name="hi" value="positive"> Positivo (sacadas correctivas)</label>
+                  <label class="flex items-center gap-2 text-sm"><input type="radio" name="hi" value="negative"> Negativo</label>
+                </div>
+                <div class="p-3 border rounded-lg">
+                  <h4 class="font-bold mb-1">N — Nistagmo <span class="badge badge-high">Alta certeza</span></h4>
+                  <label class="flex items-center gap-2 text-sm"><input type="radio" name="ny" value="unidirectional"> Unidireccional</label>
+                  <label class="flex items-center gap-2 text-sm"><input type="radio" name="ny" value="direction-changing"> Cambia dirección</label>
+                  <label class="flex items-center gap-2 text-sm"><input type="radio" name="ny" value="vertical"> Vertical/Downbeat</label>
+                </div>
+                <div class="p-3 border rounded-lg">
+                  <h4 class="font-bold mb-1">TS — Test of Skew <span class="badge badge-high">Alta certeza</span></h4>
+                  <label class="flex items-center gap-2 text-sm"><input type="radio" name="sk" value="negative"> Negativo</label>
+                  <label class="flex items-center gap-2 text-sm"><input type="radio" name="sk" value="positive"> Positivo</label>
+                </div>
+              </div>
+
+              <div>
+                <h4 class="font-bold mb-1">Evaluación de marcha</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                  <label class="p-2 bg-slate-50 rounded-lg flex items-center gap-2"><input type="radio" name="marcha" value="normal"> 0-1: deambula</label>
+                  <label class="p-2 bg-slate-50 rounded-lg flex items-center gap-2"><input type="radio" name="marcha" value="moderada"> 2: inestable</label>
+                  <label class="p-2 bg-red-100 rounded-lg flex items-center gap-2"><input type="radio" name="marcha" value="severa"> 3: no se sienta sin ayuda</label>
+                </div>
+              </div>
+              <div class="text-[11px] text-slate-700">
+  Regla: si <em>cualquier</em> componente HINTS es central (HI−, nistagmo vertical/cambiante, skew+), clasifica como <strong>central</strong>.
+</div>
+
+            </div>
+          </div>`;
+          } else if (estado.categoria === "EVS") {
+            set_ayuda("evs-vppb");
+            html += `
+          <div class="p-4 border rounded-xl space-y-3" id="evs-box">
+            <div id="evs-alert-min" class="alert-box alert-info text-xs hidden"><strong>Completa duración</strong> antes de generar diagnóstico.</div>
+
+            <div class="flex items-center justify-between">
+              <label class="block font-semibold text-slate-700 text-sm">Duración del episodio</label>
+              <button class="text-indigo-700 underline text-xs js-popover" data-title="¿Duración?"
+                      data-body="<p>Segundos → VPPB típico (t-EVS). Minutos-horas + auditivos → considera Ménière (s-EVS). Episodios espontáneos → valora TIA/MV.</p>">¿Por qué?</button>
+            </div>
+            <div id="chips_evs" class="flex flex-wrap gap-2" aria-label="Duración">
+              <button class="tag-chip" data-value="segundos">Segundos (&lt;1 min)</button>
+              <button class="tag-chip" data-value="minutos">Minutos</button>
+              <button class="tag-chip" data-value="horas">Horas</button>
+              <button class="tag-chip" data-value="dias">Días</button>
+            </div>
+
+            <!-- panel VPPB -->
+            <div id="vppb-panel" class="hidden space-y-3 pt-1">
+              <div class="flex items-center justify-between">
+  <h4 class="font-semibold text-sm">Maniobras (VPPB)</h4>
+  <div class="flex gap-2">
+    <button class="text-xs px-2 py-1 border rounded" data-action="open-training" data-key="Dix"><i class="fa-solid fa-graduation-cap mr-1"></i>Dix-Hallpike</button>
+    <button class="text-xs px-2 py-1 border rounded" data-action="open-training" data-key="Epley"><i class="fa-solid fa-graduation-cap mr-1"></i>Epley</button>
+    <button class="text-xs px-2 py-1 border rounded" data-action="open-training" data-key="Gufoni"><i class="fa-solid fa-graduation-cap mr-1"></i>Gufoni</button>
+    <button class="text-xs px-2 py-1 border rounded" data-action="open-training" data-key="Barbecue"><i class="fa-solid fa-graduation-cap mr-1"></i>Barbecue</button>
+  </div>
+</div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">Dix-Hallpike (derecho)</label>
+                  <select id="dix_d" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                    <option value="">Seleccione…</option>
+                    <option value="positive-upbeat">Positivo (torsional-ascendente)</option>
+                    <option value="positive-horizontal">Positivo (horizontal)</option>
+                    <option value="negative">Negativo</option>
+                  </select>
+                  <div class="flex items-center gap-2 mt-1">
+                    <button class="text-xs text-indigo-600 hover:underline" data-action="open-maneuver" data-m="Dix-Hallpike">Ver maniobra</button>
+                    <button class="text-xs text-indigo-600 hover:underline" data-action="open-maneuver" data-m="Epley">Epley (terapia)</button>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">Dix-Hallpike (izquierdo)</label>
+                  <select id="dix_i" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                    <option value="">Seleccione…</option>
+                    <option value="positive-upbeat">Positivo (torsional-ascendente)</option>
+                    <option value="positive-horizontal">Positivo (horizontal)</option>
+                    <option value="negative">Negativo</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between">
+                  <label class="block text-xs font-medium text-gray-700">Supine Roll Test (horizontal)</label>
+                  <button class="text-xs px-2 py-1 border rounded" data-action="open-training" data-key="Roll"><i class="fa-solid fa-graduation-cap mr-1"></i>Entrenamiento Roll</button>
+                </div>
+                <select id="roll_test" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                  <option value="">Seleccione…</option>
+                  <option value="geotropico">Nistagmo geotrópico</option>
+                  <option value="apogeotropico">Nistagmo apogeotrópico</option>
+                  <option value="negativo">Negativo</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- orientación formativa 8Q -->
+            <div id="eightQ" class="space-y-2 pt-2">
+              <div class="flex items-center justify-between">
+                <h4 class="font-semibold text-sm">Cuestionario 8Q (orientación formativa: MV / EM / VPPB)</h4>
+                <button class="text-xs px-2 py-1 border rounded" data-action="open-training" data-key="Tele"><i class="fa-solid fa-mobile-screen mr-1"></i>Tele-apoyo</button>
+              </div>
+              <div class="grid md:grid-cols-2 gap-2 text-sm">
+                <label class="flex items-center gap-2"><input type="checkbox" data-8q="posicional"> Crisis al acostarse/girar en cama</label>
+                <label class="flex items-center gap-2"><input type="checkbox" data-8q="segundos"> Duración en segundos</label>
+                <label class="flex items-center gap-2"><input type="checkbox" data-8q="auditivos"> Hipoacusia/fluctuación o acúfenos</label>
+                <label class="flex items-center gap-2"><input type="checkbox" data-8q="plenitud"> Plenitud ótica</label>
+                <label class="flex items-center gap-2"><input type="checkbox" data-8q="cefalea"> Cefalea tipo migraña</label>
+                <label class="flex items-center gap-2"><input type="checkbox" data-8q="fotofono"> Foto/fonofobia</label>
+                <label class="flex items-center gap-2"><input type="checkbox" data-8q="histmig"> Historia de migrañas</label>
+                <label class="flex items-center gap-2"><input type="checkbox" data-8q="spont"> Episodios espontáneos (sin trigger)</label>
+              </div>
+              <div class="flex gap-2 items-center">
+                <button class="px-3 py-1.5 rounded bg-slate-800 text-white text-xs" data-action="calc-8q">Calcular orientación</button>
+                <span class="text-[11px] text-slate-600">Heurística educativa (no clasificador clínico)</span>
+              </div>
+              <div class="grid md:grid-cols-3 gap-3 text-xs mt-1">
+                <div><div class="flex justify-between"><span>VPPB</span><span id="gVPPB">0%</span></div><div class="meter"><span id="mVPPB" style="width:0%"></span></div></div>
+                <div><div class="flex justify-between"><span>Migraña Vestibular</span><span id="gMV">0%</span></div><div class="meter"><span id="mMV" style="width:0%"></span></div></div>
+                <div><div class="flex justify-between"><span>Ménière</span><span id="gEM">0%</span></div><div class="meter"><span id="mEM" style="width:0%"></span></div></div>
+              </div>
+            </div>
+
+            <!-- panel MV vs EM -->
+            <div id="mvem-panel" class="hidden space-y-2 pt-1">
+              <h4 class="font-semibold text-sm">Heurística formativa MV vs EM</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="mvEmPanel">
+                <div class="p-3 rounded-lg bg-purple-50">
+                  <h5 class="font-bold text-purple-700 mb-1 text-sm">Migraña Vestibular <span class="badge badge-low">Baja certeza</span></h5>
+                  <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-mv="headache"> Cefalea asociada</label>
+                  <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-mv="photophobia"> Foto/fonofobia</label>
+                  <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-mv="history"> Historia de migrañas</label>
+                </div>
+                <div class="p-3 rounded-lg bg-blue-50">
+                  <h5 class="font-bold text-blue-700 mb-1 text-sm">Enfermedad de Ménière <span class="badge badge-low">Baja certeza</span></h5>
+                  <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-em="hearing"> Hipoacusia fluctuante</label>
+                  <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-em="tinnitus"> Acúfenos</label>
+                  <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-em="fullness"> Plenitud ótica</label>
+                </div>
+              </div>
+              <div id="mvem-score" class="text-xs font-semibold"></div>
+            </div>
+          </div>`;
+          } else {
+            set_ayuda("cvs");
+            html += `
+          <div class="p-4 border rounded-xl space-y-3" id="cvs-box">
+            <h3 class="text-lg font-bold text-green-700">CVS: PPPD / hipofunción / fármacos</h3>
+            <div class="grid md:grid-cols-2 gap-3">
+              <div class="p-3 rounded-lg bg-green-50">
+                <h4 class="font-bold text-green-700 mb-1 text-sm">Criterios PPPD</h4>
+                <label class="flex items-start gap-2 text-sm"><input type="checkbox" data-pppd="tiempo"> <span>≥3 meses (≥15 d/mes)</span></label>
+                <label class="flex items-start gap-2 text-sm"><input type="checkbox" data-pppd="postura"> <span>Peor de pie</span></label>
+                <label class="flex items-start gap-2 text-sm"><input type="checkbox" data-pppd="mov"> <span>Peor con movimiento</span></label>
+                <label class="flex items-start gap-2 text-sm"><input type="checkbox" data-pppd="visual"> <span>Peor con estímulos visuales</span></label>
+              </div>
+              <div class="p-3 rounded-lg bg-yellow-50">
+                <h4 class="font-bold text-yellow-700 mb-1 text-sm">Revisión de medicación</h4>
+                <p class="text-[11px] text-slate-700 mb-1">Antihipertensivos, diuréticos, BZD, anticolinérgicos…</p>
+                <ul class="text-sm list-disc ml-5"><li>IECA/ARA-II</li><li>Diuréticos</li><li>BZD/Anticolinérgicos</li></ul>
+              </div>
+            </div>
+            <div class="p-3 border rounded-lg">
+              <h4 class="font-semibold mb-1 text-sm">Riesgo de caídas</h4>
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="fallAge"> Edad ≥65</label>
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="fallPrev"> Caída previa</label>
+              <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="fallFear"> Miedo a caer</label>
+            </div>
+          </div>`;
+          }
+
+          html += `
+        <div class="flex justify-between pt-1 max-w-4xl mx-auto">
+          <button class="px-5 py-2 rounded-full border bg-slate-50 text-slate-700 hover:bg-slate-100 text-sm font-semibold" data-action="back-to-1">
+            <i class="fa-solid fa-arrow-left mr-2"></i>Volver
+          </button>
+          <button id="btn_gen_dx" class="px-6 py-2 rounded-full text-white bg-indigo-600 hover:bg-indigo-700 text-sm font-semibold" data-action="gen-dx">
+            Generar diagnóstico <i class="fa-solid fa-stethoscope ml-2"></i>
+          </button>
+        </div>`;
+          s2.innerHTML = html;
+        }
+
+        function hydrate_step2() {
+          if (estado.categoria === "AVS") {
+            const tg_train = qs("#tg_train");
+            tg_train.setAttribute("data-on", estado.entrenado_hints.toString());
+            tg_train.setAttribute(
+              "aria-checked",
+              estado.entrenado_hints.toString()
+            );
+
+            const tg = qs("#tg_nist");
+            tg.setAttribute("data-on", estado.nistagmo.toString());
+            tg.setAttribute("aria-checked", estado.nistagmo.toString());
+
+            const panel = qs("#hints_panel");
+            toggle_hints_panel(panel);
+
+            if (estado.hints.hi)
+              qs(
+                'input[name="hi"][value="' + estado.hints.hi + '"]'
+              ).checked = true;
+            if (estado.hints.ny)
+              qs(
+                'input[name="ny"][value="' + estado.hints.ny + '"]'
+              ).checked = true;
+            if (estado.hints.sk)
+              qs(
+                'input[name="sk"][value="' + estado.hints.sk + '"]'
+              ).checked = true;
+            if (estado.marcha)
+              qs(
+                'input[name="marcha"][value="' + estado.marcha + '"]'
+              ).checked = true;
+            qs("#chk_hloss").checked = !!estado.hints_plus_hipoacusia;
+            update_avs_alerts();
+          }
+
+          if (estado.categoria === "EVS") {
+            qsa("#chips_evs .tag-chip").forEach((c) =>
+              c.setAttribute("data-active", "false")
+            );
+            if (estado.evs_duracion) {
+              const chip = qs(
+                '#chips_evs .tag-chip[data-value="' + estado.evs_duracion + '"]'
+              );
+              if (chip) chip.setAttribute("data-active", "true");
+            }
+            const vppb = qs("#vppb-panel"),
+              mvem = qs("#mvem-panel");
+            if (vppb && mvem) {
+              if (
+                estado.evs_duracion === "segundos" ||
+                estado.triggers.has("posicional")
+              ) {
+                vppb.classList.remove("hidden");
+                mvem.classList.add("hidden");
+                set_ayuda("evs-vppb");
+              } else if (estado.evs_duracion) {
+                mvem.classList.remove("hidden");
+                vppb.classList.add("hidden");
+                set_ayuda("evs-mvem");
+              } else {
+                set_ayuda("evs-8q");
+              }
+            }
+            if (estado.dix_d) qs("#dix_d").value = estado.dix_d;
+            if (estado.dix_i) qs("#dix_i").value = estado.dix_i;
+            if (estado.roll) qs("#roll_test").value = estado.roll;
+
+            Object.entries(estado.mv).forEach(([k, v]) => {
+              const el = qs('[data-mv="' + k + '"]');
+              if (el) el.checked = v;
+            });
+            Object.entries(estado.em).forEach(([k, v]) => {
+              const el = qs('[data-em="' + k + '"]');
+              if (el) el.checked = v;
+            });
+            render_mv_em_score();
+
+            const checks = qsa("[data-8q]");
+            checks.forEach((ch) => {
+              ch.checked = !!estado.eight_q.answers[ch.getAttribute("data-8q")];
+            });
+            update_eight_gauges();
+            calc_eight_q();
+            validar_evs_ready();
+            /* tip contextual anti-TC en EVS */
+            const evs_box = qs("#evs-box");
+            if (evs_box && !qs("#evs-ct-tip")) {
+              const tip = document.createElement("div");
+              tip.id = "evs-ct-tip";
+              tip.className = "alert-box alert-info text-xs";
+              tip.innerHTML =
+                "<strong>Evita TC de rutina</strong> en t-EVS (BPPV) y s-EVS sin datos de alarma; sigue maniobras/algoritmo y usa RM/angio solo si está indicado.";
+              evs_box.prepend(tip);
+            }
+          }
+
+          if (estado.categoria === "CVS") {
+            Object.entries(estado.pppd).forEach(([k, v]) => {
+              const el = qs('[data-pppd="' + k + '"]');
+              if (el) el.checked = v;
+            });
+          }
+        }
+
+        function toggle_hints_panel(panel) {
+          if (!panel) return;
+          const activo = estado.entrenado_hints && estado.nistagmo;
+          panel.classList.toggle("opacity-50", !activo);
+          panel.classList.toggle("pointer-events-none", !activo);
+        }
+
+        function hints_central_count() {
+          let c = 0;
+          if (estado.hints.hi === "negative") c++;
+          if (
+            estado.hints.ny === "direction-changing" ||
+            estado.hints.ny === "vertical"
+          )
+            c++;
+          if (estado.hints.sk === "positive") c++;
+          if (estado.hints_plus_hipoacusia)
+            c++; /* mejora: HINTS-plus pesa hacia central/AICA */
+          return c;
+        }
+
+        function update_avs_alerts() {
+          const alert = qs("#avs-alert");
+          if (!alert) return;
+          const central = hints_central_count();
+          const has_red = estado.red_flags.size > 0 || estado.ataxia3;
+          const marcha_severa = estado.marcha === "severa";
+          const peligro = has_red || marcha_severa || central > 0;
+
+          if (peligro) {
+            alert.innerHTML = `<div class="alert-box alert-danger text-sm">
+            <strong>Riesgo central:</strong> ${has_red ? "red flags; " : ""}${
+              marcha_severa ? "ataxia G3; " : ""
+            }${central ? "HINTS(+)/HINTS-plus; " : ""}prioriza ictus/derivación.
+            <div class="text-[11px] mt-1">Evita TC para descartar fosa posterior. Preferir RM-DWI según disponibilidad.</div>
+          </div>`;
+          } else if (
+            estado.entrenado_hints &&
+            estado.nistagmo &&
+            estado.hints.hi === "positive" &&
+            estado.hints.ny === "unidirectional" &&
+            estado.hints.sk === "negative"
+          ) {
+            alert.innerHTML = `<div class="alert-box alert-ok text-sm">
+            <strong>Patrón periférico compatible</strong> (neuritis vestibular probable). RM no necesaria salvo atípicos.
+          </div>`;
+          } else {
+            alert.innerHTML = ``;
+          }
+
+          const btn = qs("#btn_gen_dx");
+          if (!btn) return;
+          if (peligro) {
+            btn.textContent = "Derivar urgente / Generar informe";
+            btn.classList.remove("bg-indigo-600");
+            btn.classList.add("bg-red-600", "hover:bg-red-700");
+          } else {
+            btn.textContent = "Generar diagnóstico";
+            btn.classList.add("bg-indigo-600", "hover:bg-indigo-700");
+            btn.classList.remove("bg-red-600", "hover:bg-red-700");
+          }
+          update_resumen();
+        }
+
+        /* academia y vídeos (IDs a configurar por el usuario) */
+        const yt = {
+          HINTS: "1q-VTKPweuk", // HINTS (Universidad de Ottawa, EM)
+          Dix: "vRpwf2mI3SU", // Dix-Hallpike
+          Epley: "jBzID5nVQjk", // Epley (BMJ Learning)
+          Roll: "ns8XZ4rKiJc", // Supine Roll Test (canal horizontal)
+          Gufoni: "3VfgHZtgx_s", // Maniobra de Gufoni
+          Barbecue: "-_Oc46ZyQfU", // Barbecue / Lempert roll (HC-BPPV)
+          Brand: "QsJTFzwf46g", // Ejercicios Brandt-Daroff
+          Tele: "7ZgUx9G0uEs", // Epley domiciliaria (instrucciones para paciente)
+        };
+
+        function open_training_modal(key) {
+          const id = yt[key];
+          const tit =
+            {
+              HINTS: "HINTS",
+              Dix: "Dix-Hallpike",
+              Epley: "Epley",
+              Roll: "Supine Roll (horizontal)",
+              Gufoni: "Gufoni",
+              Barbecue: "Barbecue roll (Lempert)",
+              Brand: "Brandt-Daroff",
+              Tele: "Tele-apoyo (domicilio)",
+            }[key] || "Entrenamiento";
+
+          const html = id
+            ? `<div class="aspect-video rounded-md overflow-hidden border">
+               <iframe class="w-full h-full" src="https://www.youtube.com/embed/${id}?rel=0&modestbranding=1" title="${tit}" allow="accelerometer; gyroscope; clipboard-write; encrypted-media; picture-in-picture; web-share" allowfullscreen></iframe>
+             </div>`
+            : `<p class="text-sm">Configura el <strong>ID</strong> del vídeo en el objeto <code>yt</code>.</p>`;
+          open_modal(tit, html);
+        }
+
+        /* 8Q */
+        function calc_eight_q() {
+          const a = estado.eight_q.answers;
+          let vppb = 0,
+            mv = 0,
+            em = 0;
+          if (a.posicional) {
+            vppb += 3;
+            em -= 1;
+          }
+          if (a.segundos) vppb += 3;
+          if (a.auditivos) em += 3;
+          if (a.plenitud) em += 2;
+          if (a.cefalea) mv += 2;
+          if (a.fotofono) mv += 2;
+          if (a.histmig) mv += 2;
+          if (a.spont) {
+            mv += 1;
+            em += 1;
+          }
+          const max = Math.max(1, vppb, mv, em),
+            pct = (x) => Math.round((x / max) * 100);
+          estado.eight_q.score_vppb = pct(vppb);
+          estado.eight_q.score_mv = pct(mv);
+          estado.eight_q.score_em = pct(em);
+          update_eight_gauges();
+        }
+        function update_eight_gauges() {
+          const set = (idGauge, idBar, val) => {
+            const g = qs(idGauge),
+              b = qs(idBar);
+            if (g) g.textContent = (val || 0) + "%";
+            if (b) b.style.width = (val || 0) + "%";
+          };
+          set("#gVPPB", "#mVPPB", estado.eight_q.score_vppb || 0);
+          set("#gMV", "#mMV", estado.eight_q.score_mv || 0);
+          set("#gEM", "#mEM", estado.eight_q.score_em || 0);
+        }
+        function render_mv_em_score() {
+          const mv =
+            (estado.mv.headache ? 1 : 0) +
+            (estado.mv.photophobia ? 1 : 0) +
+            (estado.mv.history ? 1 : 0);
+          const em =
+            (estado.em.hearing ? 1 : 0) +
+            (estado.em.tinnitus ? 1 : 0) +
+            (estado.em.fullness ? 1 : 0);
+          const el = qs("#mvem-score");
+          if (el)
+            el.textContent = `Heurística formativa — MV: ${mv} · EM: ${em}`;
+        }
+
+        /* validaciones */
+        function validar_evs_ready() {
+          const alerta = qs("#evs-alert-min"),
+            btn = qs("#btn_gen_dx");
+          if (!alerta || !btn) return;
+          if (estado.categoria === "EVS" && !estado.evs_duracion) {
+            alerta.classList.remove("hidden");
+            btn.disabled = true;
+            btn.classList.add("opacity-60", "cursor-not-allowed");
+          } else {
+            alerta.classList.add("hidden");
+            btn.disabled = false;
+            btn.classList.remove("opacity-60", "cursor-not-allowed");
+          }
+        }
+
+        function show_toast(txt) {
+          const t = qs("#toast");
+          t.textContent = txt;
+          t.classList.add("show");
+          setTimeout(() => t.classList.remove("show"), 1900);
+        }
+
+        /* eventos: click */
+        document.addEventListener("click", (e) => {
+          if (e.target.matches('[data-action="open-tutorial"]')) {
+            open_modal(
+              "Tutorial",
+              `<ol class="list-decimal list-inside space-y-1 text-sm">
+              <li><strong>Clasificación</strong>: patrón temporal + triggers + red flags.</li>
+              <li><strong>Evaluación</strong>: HINTS/HINTS-plus/marcha (AVS) · DH/Roll (t-EVS) · 8Q y heurísticas.</li>
+              <li><strong>Diagnóstico</strong>: orientación y plan (evidencia y límites).</li>
+            </ol>`
+            );
+          }
+          if (e.target.matches('[data-action="open-glossary"]')) {
+            open_modal(
+              "Glosario de siglas",
+              `
+  <dl class="grid md:grid-cols-2 gap-2 text-sm">
+    <div><dt class="font-semibold">AVS</dt><dd>síndrome vestibular agudo</dd></div>
+    <div><dt class="font-semibold">EVS</dt><dd>síndrome vestibular episódico</dd></div>
+    <div><dt class="font-semibold">CVS</dt><dd>síndrome vestibular crónico</dd></div>
+    <div><dt class="font-semibold">HINTS</dt><dd>head impulse, nystagmus, test of skew</dd></div>
+    <div><dt class="font-semibold">HIT</dt><dd>head impulse test</dd></div>
+    <div><dt class="font-semibold">SN / GEN</dt><dd>nistagmo espontáneo / de la mirada</dd></div>
+    <div><dt class="font-semibold">PPPD</dt><dd>vértigo postural perceptual persistente</dd></div>
+    <div><dt class="font-semibold">BPPV (VPPB)</dt><dd>vértigo posicional paroxístico benigno</dd></div>
+    <div><dt class="font-semibold">AUVP</dt><dd>neuritis vestibular (aguda unilateral)</dd></div>
+    <div><dt class="font-semibold">VOR</dt><dd>reflejo vestíbulo-ocular</dd></div>
+    <div><dt class="font-semibold">TiTrATE</dt><dd>tiempo, disparadores y exploración dirigida</dd></div>
+  </dl>`
+            );
+          }
+
+          if (e.target.matches('[data-action="open-academy"]')) {
+            open_modal(
+              "Academia VESTILAB",
+              `<p>Acceso rápido a módulos de práctica:</p>
+             <div class="grid md:grid-cols-2 gap-2 mt-2">
+               <button class="px-3 py-2 border rounded text-sm" data-action="open-training" data-key="HINTS">HINTS</button>
+               <button class="px-3 py-2 border rounded text-sm" data-action="open-training" data-key="Dix">Dix-Hallpike</button>
+               <button class="px-3 py-2 border rounded text-sm" data-action="open-training" data-key="Epley">Epley</button>
+               <button class="px-3 py-2 border rounded text-sm" data-action="open-training" data-key="Roll">Supine Roll</button>
+               <button class="px-3 py-2 border rounded text-sm" data-action="open-training" data-key="Brand">Brandt-Daroff</button>
+               <button class="px-3 py-2 border rounded text-sm" data-action="open-training" data-key="Gufoni">Gufoni</button>
+<button class="px-3 py-2 border rounded text-sm" data-action="open-training" data-key="Barbecue">Barbecue roll</button>
+
+             </div>
+             <p class="text-[11px] text-slate-600 mt-2">La precisión depende del entrenamiento del clínico.</p>`
+            );
+          }
+
+          if (e.target.matches('[data-action="open-emerg"]')) {
+            open_modal(
+              "Protocolo de urgencia",
+              `<div class="space-y-1 text-sm">
+    <p><strong>Indicios</strong>: cefalea súbita, ataxia G3, diplopía, disartria, disfagia, déficit focal…</p>
+    <ol class="list-decimal list-inside">
+      <li>Activar código ictus; monitorizar.</li>
+      <li>No usar TC para excluir fosa posterior; priorizar RM-DWI (si HINTS no disponible o sugiere central); considerar angio-TC/RM según sospecha.</li>
+      <li>HINTS entrenado: HI− / nistagmo vertical-cambiante / skew+ ⇒ central.</li>
+      <li>Valora <strong>riesgo vascular (ABCD2)</strong> si episodios compatibles con isquemia transitoria.</li>
+    </ol>
+  </div>`
+            );
+          }
+
+          if (e.target.matches('[data-action="reset"]'))
+            window.location.reload();
+          if (
+            e.target.matches('[data-action="close-modal"]') ||
+            e.target === modal
+          )
+            close_modal();
+          if (e.target.matches('[data-action="close-popover"]'))
+            close_popover();
+
+          const step_el = e.target.closest("#stepper .step");
+          if (step_el) {
+            const target = Number(step_el.dataset.step);
+            if (target < estado.paso) show_section(target);
+          }
+
+          if (e.target.matches('[data-action="back-to-1"]')) show_section(1);
+          if (e.target.matches('[data-action="open-maneuver"]'))
+            open_maniobra(e.target.dataset.m);
+          if (e.target.matches('[data-action="open-training"]')) {
+            const k = e.target.dataset.key;
+            if (k) open_training_modal(k);
+          }
+
+          if (e.target.matches('[data-action="gen-dx"]')) {
+            if (estado.categoria === "EVS" && !estado.evs_duracion) {
+              show_toast("Selecciona duración del episodio");
+              return;
+            }
+            generate_dx();
+            show_section(3);
+          }
+
+          if (e.target.matches('[data-action="back-to-2"]')) show_section(2);
+          if (e.target.matches('[data-action="new-eval"]'))
+            window.location.reload();
+          if (e.target.matches('[data-action="export-report"]'))
+            export_report();
+
+          if (e.target.matches(".js-popover"))
+            open_popover(
+              e.target,
+              e.target.dataset.title,
+              e.target.dataset.body
+            );
+        });
+
+        /* eventos: change */
+        document.addEventListener("change", (e) => {
+          const t = e.target;
+          if (t.id === "chk_hloss") {
+            estado.hints_plus_hipoacusia = t.checked;
+            update_avs_alerts();
+          }
+          if (t.name === "hi") {
+            estado.hints.hi = t.value;
+            update_avs_alerts();
+          }
+          if (t.name === "ny") {
+            estado.hints.ny = t.value;
+            update_avs_alerts();
+          }
+          if (t.name === "sk") {
+            estado.hints.sk = t.value;
+            update_avs_alerts();
+          }
+          if (t.name === "marcha") {
+            estado.marcha = t.value;
+            if (t.value === "severa") estado.ataxia3 = true;
+            update_avs_alerts();
+            update_resumen();
+          }
+
+          if (t.id === "dix_d") estado.dix_d = t.value;
+          if (t.id === "dix_i") estado.dix_i = t.value;
+          if (t.id === "roll_test") estado.roll = t.value;
+
+          if (t.hasAttribute("data-mv")) {
+            estado.mv[t.getAttribute("data-mv")] = t.checked;
+            render_mv_em_score();
+          }
+          if (t.hasAttribute("data-em")) {
+            estado.em[t.getAttribute("data-em")] = t.checked;
+            render_mv_em_score();
+          }
+          if (t.hasAttribute("data-pppd")) {
+            estado.pppd[t.getAttribute("data-pppd")] = t.checked;
+          }
+
+          if (t.hasAttribute("data-8q")) {
+            const k = t.getAttribute("data-8q");
+            estado.eight_q.answers[k] = t.checked;
+            calc_eight_q();
+          }
+        });
+
+        /* toggles y chips */
+        document.addEventListener("click", (e) => {
+          const tg_train = e.target.closest("#tg_train");
+          if (tg_train) {
+            const on = tg_train.getAttribute("data-on") === "true";
+            tg_train.setAttribute("data-on", (!on).toString());
+            tg_train.setAttribute("aria-checked", (!on).toString());
+            estado.entrenado_hints = !on;
+            toggle_hints_panel(qs("#hints_panel"));
+            update_avs_alerts();
+          }
+
+          const tg = e.target.closest("#tg_nist");
+          if (tg) {
+            const on = tg.getAttribute("data-on") === "true";
+            tg.setAttribute("data-on", (!on).toString());
+            tg.setAttribute("aria-checked", (!on).toString());
+            estado.nistagmo = !on;
+            toggle_hints_panel(qs("#hints_panel"));
+            update_avs_alerts();
+          }
+
+          const chip_wrap = e.target.closest("#chips_evs");
+          if (chip_wrap) {
+            const chip = e.target.closest(".tag-chip");
+            if (!chip) return;
+            qsa("#chips_evs .tag-chip").forEach((c) =>
+              c.setAttribute("data-active", "false")
+            );
+            chip.setAttribute("data-active", "true");
+            estado.evs_duracion = chip.dataset.value;
+
+            const vppb = qs("#vppb-panel"),
+              mvem = qs("#mvem-panel");
+            if (vppb && mvem) {
+              if (estado.evs_duracion === "segundos") {
+                vppb.classList.remove("hidden");
+                mvem.classList.add("hidden");
+                set_ayuda("evs-vppb");
+              } else {
+                mvem.classList.remove("hidden");
+                vppb.classList.add("hidden");
+                set_ayuda("evs-mvem");
+              }
+            }
+            validar_evs_ready();
+          }
+
+          if (e.target.matches('[data-action="calc-8q"]')) calc_eight_q();
+        });
+
+        /* exportar */
+        function export_report() {
+          const now = new Date().toLocaleString("es-ES");
+          const mv =
+            (estado.mv.headache ? 1 : 0) +
+            (estado.mv.photophobia ? 1 : 0) +
+            (estado.mv.history ? 1 : 0);
+          const em =
+            (estado.em.hearing ? 1 : 0) +
+            (estado.em.tinnitus ? 1 : 0) +
+            (estado.em.fullness ? 1 : 0);
+
+          let claves = [];
+          if (estado.dx?.type === "neuritis")
+            claves.push("AVS periférico: evita TC de rutina; RV precoz.");
+          if (estado.dx?.type?.startsWith("vppb"))
+            claves.push(
+              "VPPB: Epley/Gufoni; evita supresores y restricciones posturales."
+            );
+          if (estado.dx?.type === "central")
+            claves.push("Derivación urgente; ictus territorio posterior.");
+
+          const txt = `
+INFORME — VESTILAB 3.0 (educativo)
+Fecha/Hora: ${now}
+Categoría: ${estado.categoria || "-"}
+Triggers: ${[...estado.triggers].join(", ") || "—"}
+Red Flags: ${[...estado.red_flags].join(", ") || "—"}${
+            estado.ataxia3 ? " + Ataxia G3" : ""
+          }
+
+AVS/HINTS: entrenado=${estado.entrenado_hints}; nistagmo=${
+            estado.nistagmo
+          }; HI=${estado.hints.hi || "-"}; NY=${estado.hints.ny || "-"}; SK=${
+            estado.hints.sk || "-"
+          }; hipoacusia(HINTS-plus)=${estado.hints_plus_hipoacusia}; marcha=${
+            estado.marcha || "-"
+          }
+EVS: duración=${estado.evs_duracion || "-"}; DH_d=${
+            estado.dix_d || "-"
+          }; DH_i=${estado.dix_i || "-"}; Roll=${estado.roll || "-"}
+8Q: VPPB=${estado.eight_q.score_vppb || 0}% · MV=${
+            estado.eight_q.score_mv || 0
+          }% · EM=${estado.eight_q.score_em || 0}%
+MV(panel)=${mv} · EM(panel)=${em}
+PPPD: ${
+            Object.entries(estado.pppd)
+              .filter(([k, v]) => v)
+              .map(([k]) => k)
+              .join(", ") || "—"
+          }
+
+DIAGNÓSTICO: ${estado.dx ? estado.dx.label : "Por determinar"}
+
+Claves de calidad: ${claves.join(" · ") || "—"}
+
+*Nota*: Herramienta educativa. No sustituye juicio clínico ni guías locales.
+`.trim();
+
+          navigator.clipboard
+            .writeText(txt)
+            .then(() => alert("Informe copiado al portapapeles."))
+            .catch(() => {
+              const blob = new Blob([txt], {
+                type: "text/plain;charset=utf-8",
+              });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "Informe_VESTILAB.txt";
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              URL.revokeObjectURL(url);
+            });
+        }
+
+        /* maniobras */
+        function open_maniobra(nombre) {
+          const data = {
+            "Dix-Hallpike": {
+              title: "Dix-Hallpike (diagnóstica)",
+              steps: [
+                "Paciente sentado, cabeza 45° hacia el lado a explorar.",
+                "Acueste rápido con cabeza extendida ~20° fuera de la camilla.",
+                "Observe 30–60 s nistagmo/vértigo (pc-VPPB: torsional-ascendente).",
+                "Regrese a sedestación lentamente (puede haber reversa).",
+              ],
+              info: '<div class="mt-2 alert-box alert-warn text-xs"><strong>Precaución:</strong> Evitar en patología cervical severa. Nistagmo vertical puro/no fatigable ⇒ sospecha central.</div>',
+            },
+            Epley: {
+              title: "Epley (terapéutica)",
+              steps: [
+                "Pos 1: como DH positivo; 30–60 s.",
+                "Pos 2: gire cabeza 90° hacia el lado sano; 30–60 s.",
+                "Pos 3: gire cuerpo+cabeza otros 90° (nariz al suelo); 30–60 s.",
+                "Pos 4: incorpore lentamente.",
+                "Paso final: repetir la maniobra de provocación (Dix-Hallpike del lado tratado); si sigue positivo, repita Epley 1–2 veces.",
+              ],
+              info: '<div class="mt-2 alert-box alert-ok text-xs">No se recomiendan restricciones posturales tras Epley.</div>',
+            },
+            Gufoni: {
+              title: "Gufoni (horizontal)",
+              steps: [
+                "Decúbito lateral rápido.",
+                "Cabeza 45° hacia suelo/techo según variante.",
+                "Mantener 2–3 min y sentar.",
+              ],
+              info: '<div class="mt-2 text-xs">Útil en canal horizontal. Complemento: Barbecue roll.</div>',
+            },
+            Barbecue: {
+              title: "Barbecue roll (Lempert)",
+              steps: [
+                "Supino → rotar 90° cada 15–30 s.",
+                "Completar 360° hasta supino.",
+              ],
+              info: '<div class="mt-2 text-xs">Indicada en variante geotrópica.</div>',
+            },
+            Roll: {
+              title: "Supine Roll Test",
+              steps: [
+                "Supino, cabeza 30° flexionada.",
+                "Rotar 90° a un lado: observar nistagmo.",
+                "Volver a medio y rotar al otro: comparar.",
+              ],
+              info: '<div class="mt-2 text-xs">Geotrópico (canalitiasis) vs apogeotrópico (cupulolitiasis).</div>',
+            },
+            "Brandt-Daroff": {
+              title: "Brandt-Daroff (domiciliaria)",
+              steps: [
+                "Sentado al borde, gira la cabeza ~45° a un lado.",
+                "Acuéstate rápido sobre el lado opuesto (nariz arriba). Espera 30–60 s tras cesar síntomas.",
+                "Vuelve a sentado, pausa 30 s.",
+                "Repite al otro lado. Serie de 5 ciclos, 2–3 veces/día varios días.",
+              ],
+              info: '<div class="mt-2 text-xs">Habituación en VPPB cuando no es posible CRP; menor eficacia aguda que Epley.</div>',
+            },
+          };
+          const m = data[nombre];
+          if (!m) return;
+          const cuerpo =
+            m.steps
+              .map(
+                (t, i) => `
+          <div class="maneuver-step">
+            <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-sm font-bold">${
+              i + 1
+            }</div>
+            <div class="text-sm">${t}</div>
+          </div>`
+              )
+              .join("") + (m.info || "");
+          open_modal(m.title, cuerpo);
+        }
+
+        /* diagnóstico */
+        function generate_dx() {
+          // --- puerta TIA en s-EVS (cláusula de guarda) ---
+          const es_spont =
+            !!estado.eight_q.answers.spont || estado.triggers.has("espontaneo");
+          const es_duracion_suf =
+            estado.evs_duracion === "minutos" ||
+            estado.evs_duracion === "horas";
+          if (es_spont && es_duracion_suf && estado.red_flags.size > 0) {
+            estado.dx = {
+              type: "evs-tia",
+              label: "s-EVS con signos centrales — sospecha de TIA",
+              details: { motivo: "episodios espontáneos + red flags" },
+            };
+            return; // ← 'return' = salir aquí y NO seguir con las demás reglas de EVS
+          }
+
+          const has_red = estado.red_flags.size > 0 || estado.ataxia3;
+
+          if (estado.categoria === "AVS") {
+            // --- NUEVO: puerta de seguridad s-EVS (TIA) ---
+            const es_sEVS =
+              !!estado.eight_q.answers.spont &&
+              (estado.evs_duracion === "minutos" ||
+                estado.evs_duracion === "horas");
+            const tiene_red_flags = estado.red_flags.size > 0;
+            if (es_sEVS && tiene_red_flags) {
+              estado.dx = {
+                type: "evs-tia",
+                label: "s-EVS con signos centrales — sospecha de TIA",
+                details: { motivo: "episodios espontáneos + red flags" },
+              };
+              return;
+            }
+
+            const central = hints_central_count();
+            /* reglas: prioridad seguridad; si no entrenado o no hay nistagmo → ponderar marcha y red flags */
+            const alto_riesgo =
+              has_red || estado.marcha === "severa" || central > 0;
+            if (alto_riesgo) {
+              estado.dx = {
+                type: "central",
+                label: "Sospecha de ictus (territorio posterior)",
+                details: { central },
+              };
+            } else {
+              /* sólo si HINTS válido por experto (entrenado+nistagmo) con patrón periférico */
+              if (
+                estado.entrenado_hints &&
+                estado.nistagmo &&
+                estado.hints.hi === "positive" &&
+                estado.hints.ny === "unidirectional" &&
+                estado.hints.sk === "negative"
+              ) {
+                estado.dx = {
+                  type: "neuritis",
+                  label: "Neuritis vestibular probable",
+                  details: {},
+                };
+              } else {
+                estado.dx = {
+                  type: "avs-inesp",
+                  label:
+                    "AVS inespecífico — seguimiento/derivación según evolución",
+                  details: {},
+                };
+              }
+            }
+            return;
+          }
+
+          if (estado.categoria === "EVS") {
+            calc_eight_q();
+
+            const mv_score =
+              estado.eight_q.score_mv +
+              (estado.mv.headache ? 15 : 0) +
+              (estado.mv.photophobia ? 15 : 0) +
+              (estado.mv.history ? 15 : 0);
+            const em_score =
+              estado.eight_q.score_em +
+              (estado.em.hearing ? 20 : 0) +
+              (estado.em.tinnitus ? 10 : 0) +
+              (estado.em.fullness ? 10 : 0);
+            const vppb_score =
+              estado.eight_q.score_vppb +
+              (estado.evs_duracion === "segundos" ? 20 : 0) +
+              (estado.dix_d === "positive-upbeat" ||
+              estado.dix_i === "positive-upbeat"
+                ? 40
+                : 0) +
+              (estado.roll && estado.roll !== "negativo" ? 20 : 0);
+
+            const hay_pistas_vppb =
+              estado.evs_duracion === "segundos" ||
+              estado.triggers.has("posicional") ||
+              !!estado.eight_q.answers.posicional ||
+              !!estado.eight_q.answers.segundos;
+
+            if (estado.evs_duracion === "segundos") {
+              if (estado.dix_d === "positive-upbeat") {
+                estado.dx = {
+                  type: "vppb-posterior",
+                  label: "VPPB canal posterior derecho",
+                };
+                return;
+              }
+              if (estado.dix_i === "positive-upbeat") {
+                estado.dx = {
+                  type: "vppb-posterior",
+                  label: "VPPB canal posterior izquierdo",
+                };
+                return;
+              }
+              if (estado.roll === "geotropico") {
+                estado.dx = {
+                  type: "vppb-horizontal",
+                  label: "VPPB canal horizontal (geotrópico)",
+                };
+                return;
+              }
+              if (estado.roll === "apogeotropico") {
+                estado.dx = {
+                  type: "vppb-horizontal",
+                  label: "VPPB canal horizontal (apogeotrópico)",
+                };
+                return;
+              }
+            }
+
+            if (
+              hay_pistas_vppb &&
+              vppb_score >= Math.max(mv_score + 10, em_score + 10)
+            ) {
+              estado.dx = {
+                type: "vppb-indet",
+                label: "VPPB probable (canal por determinar)",
+              };
+              return;
+            }
+            if (em_score >= 50 && em_score >= mv_score + 5) {
+              estado.dx = {
+                type: "meniere",
+                label: "Sospecha de Enfermedad de Ménière",
+              };
+              return;
+            }
+            if (mv_score >= 50 && mv_score >= em_score + 5) {
+              estado.dx = {
+                type: "mv",
+                label: "Sospecha de Migraña Vestibular",
+              };
+              return;
+            }
+            if (hay_pistas_vppb && vppb_score >= 20) {
+              estado.dx = {
+                type: "vppb-indet",
+                label: "VPPB probable (canal por determinar)",
+              };
+              return;
+            }
+
+            estado.dx = {
+              type: "evs-inesp",
+              label: "EVS inespecífico — seguimiento/derivación",
+            };
+            return;
+          }
+
+          if (estado.categoria === "CVS") {
+            const p = ["tiempo", "postura", "mov", "visual"].filter(
+              (k) => estado.pppd[k]
+            ).length;
+            if (p >= 3)
+              estado.dx = {
+                type: "pppd",
+                label: "PPPD (Vértigo Postural Perceptual Persistente)",
+              };
+            else
+              estado.dx = {
+                type: "cvs-inesp",
+                label: "CVS inespecífico — hipofunción/fármacos",
+              };
+          }
+        }
+
+        function render_step3() {
+          const s3 = qs("#section-3");
+          const dx = estado.dx || { label: "Por determinar", type: "none" };
+          let html = `
+          <div class="bg-white p-5 border rounded-xl shadow-sm">
+            <h2 class="text-2xl font-bold mb-2">3. Diagnóstico</h2>
+            <p class="text-slate-500 mb-3 text-sm">Orientación didáctica basada en tu entrada.</p>`;
+
+          if (estado.red_flags.size || estado.ataxia3) {
+            html += `<div class="alert-box alert-danger mb-3 text-sm">
+            <strong>⚠️ Red flags:</strong> ${
+              [...estado.red_flags].join(", ") || "—"
+            } ${estado.ataxia3 ? "+ ataxia G3" : ""}
+          </div>`;
+          }
+
+          if (dx.type === "central") {
+            html += `
+            <div class="p-4 rounded-xl border-2 border-red-500 bg-red-50">
+              <h3 class="text-xl font-extrabold text-red-700 mb-1">${dx.label}</h3>
+              <ul class="list-disc ml-5 text-sm">
+                <li>Activar protocolo ictus; derivación inmediata.</li>
+                <li>No usar TC para descartar fosa posterior; priorizar RM-DWI.</li>
+                <li><strong>No</strong> recomendaciones domiciliarias: manejo en urgencias.</li>
+              </ul>
+            </div>`;
+          } else if (dx.type === "evs-tia") {
+            html += `
+  <div class="p-4 rounded-xl border-2 border-amber-500 bg-amber-50">
+    <h3 class="text-xl font-extrabold text-amber-700 mb-1">${dx.label}</h3>
+    <ul class="list-disc ml-5 text-sm">
+      <li><strong>No</strong> TC craneal para descartar isquemia.</li>
+      <li>Valorar <strong>angio-TC o angio-RM</strong> según disponibilidad y ventana temporal.</li>
+      <li>Orientar manejo como evento isquémico transitorio; derivación urgente.</li>
+    </ul>
+  </div>`;
+          } else if (dx.type === "neuritis") {
+            html += `
+            <div class="p-4 rounded-xl border-2 border-green-500 bg-green-50">
+              <h3 class="text-xl font-extrabold text-green-700 mb-1">${dx.label}</h3>
+              <div class="alert-box alert-info text-xs mb-2"><strong>Evitar</strong> TC de rutina en AVS periférico.</div>
+              <div class="grid md:grid-cols-2 gap-2 text-sm">
+                <div class="alert-box alert-ok">
+                  <p class="font-semibold">Agudo (&lt;72 h) <span class="badge badge-high">Alta certeza</span></p>
+                  <ul class="list-disc ml-5"><li>Antiemético/antivertiginoso si precisa (&lt;72 h).</li><li>Evitar BZD si es posible.</li></ul>
+                </div>
+                <div class="alert-box alert-info">
+                  <p class="font-semibold">Seguimiento <span class="badge badge-high">Alta certeza</span></p>
+                  <ul class="list-disc ml-5"><li>Rehabilitación vestibular precoz.</li><li>Revisión en 72 h–1 semana.</li></ul>
+                </div>
+              </div>
+            </div>`;
+          } else if (dx.type?.startsWith("vppb")) {
+            const posterior =
+              dx.type === "vppb-posterior" || dx.type === "vppb-indet";
+            const es_horizontal = dx.type === "vppb-horizontal";
+            const es_geotropico = estado.roll === "geotropico";
+            const sugerida = es_horizontal
+              ? es_geotropico
+                ? "Gufoni geotrópico: decúbito rápido al lado sano y giro 'nariz abajo'"
+                : "Gufoni apogeotrópico: decúbito al lado afecto y giro 'nariz arriba'"
+              : "Epley";
+
+            html += `
+            <div class="p-4 rounded-xl border-2 border-blue-500 bg-blue-50">
+              <h3 class="text-xl font-extrabold text-blue-700 mb-1">${
+                dx.label
+              }</h3>
+              <div class="alert-box alert-info text-xs mb-2"><strong>Desmedicalización:</strong> evita supresores vestibulares de rutina; sin restricciones postmaniobra.</div>
+              <div class="grid md:grid-cols-2 gap-2 text-sm">
+                <div class="alert-box alert-ok">
+                  <p class="font-semibold">Acción <span class="badge badge-high">Alta certeza</span></p>
+                  <ul class="list-disc ml-5">
+                    <li><strong>${sugerida}</strong></li>
+<li>${
+              es_horizontal
+                ? "Alternativa: Barbecue roll."
+                : "Mareo residual posible días."
+            }</li>
+
+                    <li>Mareo residual posible días.</li>
+                  </ul>
+                </div>
+                <div class="alert-box alert-warn">
+                  <p class="font-semibold">Autogestión y recurrencias</p>
+                  <ul class="list-disc ml-5">
+                    <li>Recurrencia frecuente. Enseñar autotratamiento (Epley/Semont) si recidiva sin red flags.</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="mt-2 flex gap-2">
+                ${
+                  posterior
+                    ? '<button class="px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700 text-sm" data-action="open-maneuver" data-m="Epley">Ver Epley</button>'
+                    : ""
+                }
+                ${
+                  !posterior
+                    ? '<button class="px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700 text-sm" data-action="open-maneuver" data-m="Gufoni">Gufoni</button><button class="px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700 text-sm" data-action="open-maneuver" data-m="Barbecue">Barbecue roll</button>'
+                    : ""
+                }
+                <button class="px-3 py-2 rounded bg-slate-700 text-white hover:bg-slate-800 text-sm" data-action="open-maneuver" data-m="Brandt-Daroff">Brandt-Daroff (casa)</button>
+              </div>
+            </div>`;
+          } else if (
+            dx.type === "meniere" ||
+            dx.type === "mv" ||
+            dx.type === "evs-inesp"
+          ) {
+            html += `
+            <div class="p-4 rounded-xl border-2 border-amber-500 bg-amber-50">
+              <h3 class="text-xl font-extrabold text-amber-700 mb-1">${
+                dx.label
+              }</h3>
+              <ul class="list-disc ml-5 text-sm">
+                ${
+                  dx.type === "meniere"
+                    ? "<li>Audiometría; decisiones compartidas (fármacos evidencia limitada).</li>"
+                    : ""
+                }
+                ${
+                  dx.type === "mv"
+                    ? "<li>Profilaxis migrañosa si procede; evidencia aguda limitada.</li>"
+                    : ""
+                }
+                <li>Seguimiento estructurado.</li>
+              </ul>
+            </div>`;
+          } else if (dx.type === "pppd" || dx.type === "cvs-inesp") {
+            html += `
+            <div class="p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50">
+              <h3 class="text-xl font-extrabold text-emerald-700 mb-1">${dx.label}</h3>
+              <ul class="list-disc ml-5 text-sm">
+                <li>Primera línea: Rehabilitación Vestibular (incluida modalidad online).</li>
+                <li>TCC y considerar ISRS/IRSN.</li>
+                <li>Revisar fármacos y riesgo de caídas.</li>
+              </ul>
+            </div>`;
+          } else {
+            html += `<div class="p-3 border rounded-lg text-sm">Introduce más datos para orientar el diagnóstico.</div>`;
+          }
+
+          html += `
+          <div class="mt-4 flex justify-between">
+            <button class="px-5 py-2 rounded-full border bg-slate-50 text-slate-700 hover:bg-slate-100 text-sm font-semibold" data-action="back-to-2">
+              <i class="fa-solid fa-arrow-left mr-2"></i>Volver
+            </button>
+            <div class="flex gap-2">
+              <button class="px-5 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 text-sm font-semibold" data-action="export-report">
+                <i class="fa-solid fa-file-export mr-2"></i>Exportar
+              </button>
+              <button class="px-5 py-2 rounded-full bg-green-600 text-white hover:bg-green-700 text-sm font-semibold" data-action="new-eval">
+                <i class="fa-solid fa-plus mr-2"></i>Nueva
+              </button>
+            </div>
+          </div>
+        </div>`;
+          s3.innerHTML = html;
+        }
+
+        /* teclado accesible */
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") {
+            close_popover();
+            close_modal();
+          }
+          if (e.key === "Enter") {
+            const step_el = document.activeElement?.closest("#stepper .step");
+            if (step_el) {
+              const target = Number(step_el.dataset.step);
+              if (target < estado.paso) show_section(target);
+            }
+          }
+        });
+
+        /* boot */
+        function boot() {
+          qs("#help-rail").classList.remove("hidden");
+          init_step1();
+          update_resumen();
+          const btn_help = qs("#toggle-help");
+          if (btn_help) {
+            btn_help.addEventListener("click", () => {
+              const body = qs("#help-rail-body");
+              const hidden = body.classList.toggle("hidden");
+              btn_help.textContent = hidden ? "Mostrar" : "Ocultar";
+            });
+          }
+        }
+        if (document.readyState === "loading")
+          document.addEventListener("DOMContentLoaded", boot);
+        else boot();
+      })();
+    </script>
+  </body>
+</html>
