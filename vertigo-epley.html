@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>Maniobras Vestibulares · Guía Visual</title>
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      :root {
+        --primary: #3b82f6;
+        --primary-dark: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --gray-900: #111827;
+      }
+
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: var(--gray-900);
+        overflow-x: hidden;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem;
+      }
+
+      /* Header minimalista */
+      .header {
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(10px);
+        padding: 0.75rem 1rem;
+        border-radius: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .logo-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        background: var(--primary);
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .logo-text {
+        font-size: 1.125rem;
+        font-weight: 800;
+        color: var(--gray-800);
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .btn-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.75rem;
+        border: none;
+        background: var(--gray-100);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+
+      .btn-icon:hover {
+        background: var(--gray-200);
+        transform: scale(1.05);
+      }
+
+      /* Panel de configuración */
+      .config-panel {
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(10px);
+        padding: 1.5rem;
+        border-radius: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .config-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .config-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .config-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--gray-500);
+      }
+
+      .canal-selector {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+      }
+
+      .canal-btn {
+        padding: 0.75rem;
+        border: 2px solid var(--gray-200);
+        background: white;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+        text-align: center;
+      }
+
+      .canal-btn:hover {
+        border-color: var(--primary);
+        background: var(--gray-50);
+      }
+
+      .canal-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+
+      .lado-selector {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+      }
+
+      .lado-btn {
+        padding: 0.75rem;
+        border: 2px solid var(--gray-200);
+        background: white;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+      }
+
+      .lado-btn:hover {
+        border-color: var(--primary);
+        background: var(--gray-50);
+      }
+
+      .lado-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+
+      .duracion-control {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .duracion-slider {
+        flex: 1;
+        -webkit-appearance: none;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--gray-200);
+        outline: none;
+      }
+
+      .duracion-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--primary);
+        cursor: pointer;
+      }
+
+      .duracion-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--primary);
+        cursor: pointer;
+      }
+
+      .duracion-value {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--primary);
+        min-width: 3rem;
+      }
+
+      /* Panel principal */
+      .main-panel {
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(10px);
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1rem;
+      }
+
+      .cronometro-section {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .cronometro {
+        font-size: 5rem;
+        font-weight: 900;
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin: 0.5rem 0;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .paso-actual {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gray-600);
+        margin-bottom: 1rem;
+      }
+
+      .controles {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 1.5rem;
+      }
+
+      .btn {
+        padding: 1rem 2rem;
+        border-radius: 0.75rem;
+        border: none;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+      }
+
+      .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 10px rgba(59, 130, 246, 0.4);
+      }
+
+      .btn-secondary {
+        background: white;
+        color: var(--gray-700);
+        border: 2px solid var(--gray-200);
+      }
+
+      .btn-secondary:hover {
+        background: var(--gray-50);
+        border-color: var(--gray-300);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Visualización SVG de posturas */
+      .posturas-container {
+        margin-top: 2rem;
+        border-top: 2px solid var(--gray-100);
+        padding-top: 2rem;
+      }
+
+      .posturas-titulo {
+        font-size: 0.875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--gray-500);
+        text-align: center;
+        margin-bottom: 1.5rem;
+      }
+
+      .posturas-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+      }
+
+      .postura-item {
+        text-align: center;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        border: 2px solid var(--gray-200);
+        background: white;
+        transition: all 0.3s;
+      }
+
+      .postura-item.active {
+        border-color: var(--primary);
+        background: linear-gradient(
+          135deg,
+          rgba(59, 130, 246, 0.1),
+          rgba(37, 99, 235, 0.1)
+        );
+        transform: scale(1.05);
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.2);
+      }
+
+      .postura-numero {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--gray-400);
+        margin-bottom: 0.5rem;
+      }
+
+      .postura-item.active .postura-numero {
+        color: var(--primary);
+      }
+
+      .postura-svg {
+        width: 100%;
+        height: 120px;
+        margin-bottom: 0.5rem;
+      }
+
+      .postura-titulo {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-700);
+        margin-bottom: 0.25rem;
+      }
+
+      .postura-duracion {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+      }
+
+      /* Progreso visual */
+      .progreso-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--gray-200);
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 1rem 0;
+      }
+
+      .progreso-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+        border-radius: 4px;
+        transition: width 1s linear;
+      }
+
+      /* Pantalla completa */
+      .fullscreen-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        z-index: 1000;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        text-align: center;
+        padding: 2rem;
+      }
+
+      .fullscreen-overlay.active {
+        display: flex;
+      }
+
+      .fs-close {
+        position: absolute;
+        top: 2rem;
+        right: 2rem;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+
+      .fs-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
+      }
+
+      .fs-maniobra {
+        font-size: 1.5rem;
+        font-weight: 600;
+        opacity: 0.9;
+        margin-bottom: 1rem;
+      }
+
+      .fs-cronometro {
+        font-size: 10rem;
+        font-weight: 900;
+        line-height: 1;
+        margin: 1rem 0;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .fs-paso {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+
+      .fs-descripcion {
+        font-size: 1.5rem;
+        opacity: 0.95;
+        max-width: 800px;
+        line-height: 1.5;
+      }
+
+      .fs-svg-container {
+        width: 300px;
+        height: 300px;
+        margin: 2rem auto;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2rem;
+        padding: 2rem;
+        backdrop-filter: blur(10px);
+      }
+
+      .fs-progreso {
+        position: absolute;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 600px;
+      }
+
+      .fs-progreso-bar {
+        width: 100%;
+        height: 12px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+
+      .fs-progreso-fill {
+        height: 100%;
+        background: white;
+        border-radius: 6px;
+        transition: width 1s linear;
+      }
+
+      /* Opciones compactas */
+      .opciones-row {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .opcion-check {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+      }
+
+      .opcion-check input {
+        width: 1.25rem;
+        height: 1.25rem;
+        cursor: pointer;
+      }
+
+      .opcion-check label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      /* Animaciones */
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.05);
+          opacity: 0.9;
+        }
+      }
+
+      .pulse {
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .fade-in {
+        animation: fadeIn 0.5s ease-out;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .cronometro {
+          font-size: 4rem;
+        }
+
+        .fs-cronometro {
+          font-size: 6rem;
+        }
+
+        .fs-paso {
+          font-size: 1.75rem;
+        }
+
+        .fs-descripcion {
+          font-size: 1.25rem;
+        }
+
+        .posturas-grid {
+          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        }
+
+        .canal-selector {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* Toast notifications */
+      .toast {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 0.75rem;
+        font-weight: 500;
+        opacity: 0;
+        transition: all 0.3s;
+        z-index: 2000;
+      }
+
+      .toast.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+          </div>
+          <div class="logo-text">Maniobras Vestibulares</div>
+        </div>
+        <div class="header-actions">
+          <button id="btnFullscreen" class="btn-icon" title="Pantalla completa">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
+              />
+            </svg>
+          </button>
+          <button id="btnInfo" class="btn-icon" title="Información">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4m0-4h.01" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel de configuración -->
+      <div class="config-panel">
+        <div class="config-grid">
+          <div class="config-group">
+            <div class="config-label">Canal Afectado</div>
+            <div class="canal-selector">
+              <button class="canal-btn active" data-canal="posterior">
+                Posterior
+              </button>
+              <button class="canal-btn" data-canal="horizontal">
+                Horizontal
+              </button>
+              <button class="canal-btn" data-canal="anterior">Anterior</button>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <div class="config-label">Lado Afectado</div>
+            <div class="lado-selector">
+              <button class="lado-btn active" data-lado="derecho">
+                Derecho
+              </button>
+              <button class="lado-btn" data-lado="izquierdo">Izquierdo</button>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <div class="config-label">Duración por Posición</div>
+            <div class="duracion-control">
+              <input
+                type="range"
+                class="duracion-slider"
+                id="duracionSlider"
+                min="20"
+                max="90"
+                step="5"
+                value="45"
+              />
+              <span class="duracion-value" id="duracionValue">45s</span>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <div class="config-label">Opciones</div>
+            <div class="opciones-row">
+              <div class="opcion-check">
+                <input type="checkbox" id="optVoz" checked />
+                <label for="optVoz">Voz</label>
+              </div>
+              <div class="opcion-check">
+                <input type="checkbox" id="optVibracion" checked />
+                <label for="optVibracion">Vibración</label>
+              </div>
+              <div class="opcion-check">
+                <input type="checkbox" id="optPantalla" checked />
+                <label for="optPantalla">Mantener pantalla</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel principal -->
+      <div class="main-panel">
+        <div class="cronometro-section">
+          <div class="paso-actual" id="pasoActual">Preparado para iniciar</div>
+          <div class="cronometro" id="cronometro">00:45</div>
+          <div class="progreso-bar">
+            <div
+              class="progreso-fill"
+              id="progresoFill"
+              style="width: 100%"
+            ></div>
+          </div>
+          <div class="controles">
+            <button class="btn btn-primary" id="btnIniciar">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+              Iniciar
+            </button>
+            <button class="btn btn-secondary" id="btnPausar" disabled>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="6" y="4" width="4" height="16" />
+                <rect x="14" y="4" width="4" height="16" />
+              </svg>
+              Pausar
+            </button>
+            <button class="btn btn-secondary" id="btnSiguiente" disabled>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polygon points="5 4 15 12 5 20 5 4" />
+                <line x1="19" y1="5" x2="19" y2="19" />
+              </svg>
+              Siguiente
+            </button>
+          </div>
+        </div>
+
+        <div class="posturas-container">
+          <div class="posturas-titulo">Secuencia de Posiciones</div>
+          <div class="posturas-grid" id="posturasGrid">
+            <!-- Se generarán dinámicamente -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay de pantalla completa -->
+    <div class="fullscreen-overlay" id="fullscreenOverlay">
+      <button class="fs-close" id="fsClose">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          stroke-width="2"
+        >
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+
+      <div class="fs-maniobra" id="fsManiobra">Maniobra de Epley</div>
+      <div class="fs-cronometro" id="fsCronometro">00:45</div>
+      <div class="fs-paso" id="fsPaso">Posición inicial</div>
+      <div class="fs-svg-container" id="fsSvgContainer">
+        <!-- SVG de la postura actual -->
+      </div>
+      <div class="fs-descripcion" id="fsDescripcion">
+        Paciente sentado, cabeza girada 45° hacia la derecha
+      </div>
+
+      <div class="fs-progreso">
+        <div class="fs-progreso-bar">
+          <div
+            class="fs-progreso-fill"
+            id="fsProgresoFill"
+            style="width: 100%"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+      // ==============================================
+      // ESTADO GLOBAL
+      // ==============================================
+      const estado = {
+        canal: "posterior",
+        lado: "derecho",
+        duracion: 45,
+        pasoActual: 0,
+        tiempoRestante: 45,
+        enMarcha: false,
+        pausado: false,
+        timer: null,
+        wakeLock: null,
+        vozActiva: true,
+        vibracionActiva: true,
+        pantallaActiva: true,
+        modoFullscreen: false,
+      };
+
+      // ==============================================
+      // DEFINICIÓN DE MANIOBRAS CON SVG
+      // ==============================================
+      const maniobras = {
+        posterior: {
+          nombre: "Maniobra de Epley",
+          descripcion: "Para VPPB del canal posterior",
+          pasos: (lado) => [
+            {
+              titulo: "Posición inicial",
+              descripcion: `Paciente sentado, cabeza girada 45° hacia ${
+                lado === "derecho" ? "la derecha" : "la izquierda"
+              }`,
+              duracion: estado.duracion,
+              voz: `Posición inicial. Gire la cabeza 45 grados hacia ${
+                lado === "derecho" ? "la derecha" : "la izquierda"
+              }.`,
+              svg: crearSVGSentado(lado),
+            },
+            {
+              titulo: "Dix-Hallpike",
+              descripcion: "Recostar con cabeza en extensión de 20°",
+              duracion: estado.duracion,
+              voz: "Recostamos rápidamente. Cabeza en extensión. Observe el nistagmo.",
+              svg: crearSVGDixHallpike(lado),
+            },
+            {
+              titulo: "Rotación contralateral",
+              descripcion: `Girar cabeza 90° hacia ${
+                lado === "derecho" ? "la izquierda" : "la derecha"
+              }`,
+              duracion: estado.duracion,
+              voz: `Giramos la cabeza 90 grados hacia ${
+                lado === "derecho" ? "la izquierda" : "la derecha"
+              }.`,
+              svg: crearSVGRotacion(lado),
+            },
+            {
+              titulo: "Decúbito lateral",
+              descripcion: `Girar el cuerpo, cabeza mirando al suelo`,
+              duracion: estado.duracion,
+              voz: "Giramos todo el cuerpo. Cabeza mirando hacia abajo.",
+              svg: crearSVGDecubito(lado),
+            },
+            {
+              titulo: "Incorporación",
+              descripcion: "Sentar lentamente con cabeza flexionada",
+              duracion: 30,
+              voz: "Nos incorporamos lentamente. Cabeza hacia adelante.",
+              svg: crearSVGIncorporacion(),
+            },
+          ],
+        },
+        horizontal: {
+          nombre: "BBQ Roll (Barbacoa)",
+          descripcion: "Para VPPB del canal horizontal",
+          pasos: (lado) => [
+            {
+              titulo: "Posición inicial",
+              descripcion: "Paciente en supino, cabeza elevada 30°",
+              duracion: estado.duracion,
+              voz: "Posición inicial. Acostado boca arriba con cabeza elevada.",
+              svg: crearSVGSupino(),
+            },
+            {
+              titulo: `Giro hacia ${lado}`,
+              descripcion: `Girar 90° hacia el lado ${lado}`,
+              duracion: estado.duracion,
+              voz: `Giramos 90 grados hacia ${
+                lado === "derecho" ? "la derecha" : "la izquierda"
+              }.`,
+              svg: crearSVGGiroLateral(lado, 90),
+            },
+            {
+              titulo: "Giro a prono",
+              descripcion: "Continuar girando hasta quedar boca abajo",
+              duracion: estado.duracion,
+              voz: "Continuamos girando hasta quedar boca abajo.",
+              svg: crearSVGProno(),
+            },
+            {
+              titulo: "Giro al lado opuesto",
+              descripcion: `Girar hacia el lado ${
+                lado === "derecho" ? "izquierdo" : "derecho"
+              }`,
+              duracion: estado.duracion,
+              voz: `Giramos hacia el lado ${
+                lado === "derecho" ? "izquierdo" : "derecho"
+              }.`,
+              svg: crearSVGGiroLateral(
+                lado === "derecho" ? "izquierdo" : "derecho",
+                90
+              ),
+            },
+            {
+              titulo: "Retorno a supino",
+              descripcion: "Volver a posición boca arriba y sentar",
+              duracion: 30,
+              voz: "Volvemos a la posición inicial y nos sentamos.",
+              svg: crearSVGSupino(),
+            },
+          ],
+        },
+        anterior: {
+          nombre: "Maniobra de Yacovino",
+          descripcion: "Para VPPB del canal anterior (raro)",
+          pasos: (lado) => [
+            {
+              titulo: "Posición inicial",
+              descripcion: "Paciente sentado en el borde de la camilla",
+              duracion: estado.duracion,
+              voz: "Posición inicial. Sentado en el borde de la camilla.",
+              svg: crearSVGSentado("centro"),
+            },
+            {
+              titulo: "Hiperextensión",
+              descripcion: "Recostar con cabeza colgando en máxima extensión",
+              duracion: estado.duracion,
+              voz: "Recostamos con la cabeza en máxima extensión.",
+              svg: crearSVGHiperextension(),
+            },
+            {
+              titulo: "Flexión cervical",
+              descripcion: "Llevar mentón al pecho manteniendo decúbito",
+              duracion: estado.duracion,
+              voz: "Llevamos el mentón hacia el pecho.",
+              svg: crearSVGFlexion(),
+            },
+            {
+              titulo: "Incorporación",
+              descripcion: "Sentar manteniendo flexión cervical",
+              duracion: 30,
+              voz: "Nos incorporamos manteniendo la cabeza flexionada.",
+              svg: crearSVGIncorporacion(),
+            },
+          ],
+        },
+      };
+
+      // ==============================================
+      // FUNCIONES DE CREACIÓN DE SVG
+      // ==============================================
+      function crearSVGSentado(lado) {
+        const rotacion =
+          lado === "derecho" ? -45 : lado === "izquierdo" ? 45 : 0;
+        return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="70" y="120" width="60" height="80" fill="#e5e7eb" rx="5"/>
+          <circle cx="100" cy="80" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2" transform="rotate(${rotacion} 100 80)"/>
+          <line x1="100" y1="80" x2="${
+            100 + 20 * Math.cos(((rotacion - 90) * Math.PI) / 180)
+          }" y2="${
+          80 + 20 * Math.sin(((rotacion - 90) * Math.PI) / 180)
+        }" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+          <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">SENTADO</text>
+          ${
+            lado !== "centro"
+              ? `<text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">45° ${lado}</text>`
+              : ""
+          }
+        </svg>
+      `;
+      }
+
+      function crearSVGDixHallpike(lado) {
+        return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5"/>
+          <circle cx="${
+            lado === "derecho" ? 35 : 165
+          }" cy="100" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
+          <path d="M ${lado === "derecho" ? "35 100" : "165 100"} L ${
+          lado === "derecho" ? "55 90" : "145 90"
+        }" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+          <line x1="40" y1="150" x2="160" y2="150" stroke="#6b7280" stroke-width="2" stroke-dasharray="5,5"/>
+          <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">DIX-HALLPIKE</text>
+          <text x="100" y="190" text-anchor="middle" fill="#ef4444" font-size="12">Cabeza colgando 20°</text>
+        </svg>
+      `;
+      }
+
+      function crearSVGRotacion(lado) {
+        return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5"/>
+          <circle cx="100" cy="100" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
+          <path d="M 75 100 Q 100 80 125 100" stroke="#3b82f6" stroke-width="3" fill="none" stroke-linecap="round" marker-end="url(#arrow)"/>
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#3b82f6"/>
+            </marker>
+          </defs>
+          <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">ROTACIÓN</text>
+          <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">90° hacia ${
+            lado === "derecho" ? "izquierda" : "derecha"
+          }</text>
+        </svg>
+      `;
+      }
+
+      function crearSVGDecubito(lado) {
+        return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="${
+            lado === "derecho" ? 40 : 80
+          }" y="70" width="60" height="120" fill="#e5e7eb" rx="5" transform="rotate(${
+          lado === "derecho" ? -90 : 90
+        } 100 100)"/>
+          <circle cx="${
+            lado === "derecho" ? 70 : 130
+          }" cy="100" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
+          <line x1="${lado === "derecho" ? 70 : 130}" y1="100" x2="${
+          lado === "derecho" ? 70 : 130
+        }" y2="130" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+          <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">DECÚBITO LATERAL</text>
+          <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">Cabeza mirando abajo</text>
+        </svg>
+      `;
+      }
+
+      function crearSVGIncorporacion() {
+        return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="70" y="120" width="60" height="80" fill="#e5e7eb" rx="5"/>
+          <circle cx="100" cy="80" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
+          <path d="M 100 105 L 100 90" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" marker-end="url(#arrowDown)"/>
+          <defs>
+            <marker id="arrowDown" markerWidth="10" markerHeight="10" refX="5" refY="0" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,10 L5,0 L10,10" fill="none" stroke="#3b82f6" stroke-width="2"/>
+            </marker>
+          </defs>
+          <path d="M 60 150 Q 100 140 140 150" stroke="#10b981" stroke-width="2" fill="none" stroke-dasharray="5,5" opacity="0.5"/>
+          <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">INCORPORACIÓN</text>
+          <text x="100" y="190" text-anchor="middle" fill="#10b981" font-size="12">Cabeza flexionada</text>
+        </svg>
+      `;
+      }
+
+      function crearSVGSupino() {
+        return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5"/>
+          <circle cx="100" cy="70" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
+          <line x1="40" y1="150" x2="160" y2="150" stroke="#6b7280" stroke-width="2"/>
+          <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">SUPINO</text>
+          <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">Cabeza elevada 30°</text>
+        </svg>
+      `;
+      }
+
+      function crearSVGGiroLateral(lado, grados) {
+        return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5" transform="rotate(${
+            lado === "derecho" ? -grados / 2 : grados / 2
+          } 100 120)"/>
+          <circle cx="100" cy="80" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
+          <path d="M 70 80 Q 100 60 130 80" stroke="#3b82f6" stroke-width="3" fill="none" stroke-linecap="round" marker-end="url(#arrowRot)"/>
+          <defs>
+            <marker id="arrowRot" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#3b82f6"/>
+            </marker>
+          </defs>
+          <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">GIRO ${grados}°</text>
+          <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">Hacia ${lado}</text>
+        </svg>
+      `;
+      }
+
+      function crearSVGProno() {
+        return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5"/>
+          <circle cx="100" cy="120" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
+          <circle cx="90" cy="120" r="3" fill="#6b7280"/>
+          <circle cx="110" cy="120" r="3" fill="#6b7280"/>
+          <line x1="40" y1="90" x2="160" y2="90" stroke="#6b7280" stroke-width="2"/>
+          <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">PRONO</text>
+          <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">Boca abajo</text>
+        </svg>
+      `;
+      }
+
+      function crearSVGHiperextension() {
+        return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5"/>
+          <circle cx="30" cy="110" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2" transform="rotate(-30 30 110)"/>
+          <path d="M 30 110 L 50 100" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+          <line x1="40" y1="150" x2="160" y2="150" stroke="#6b7280" stroke-width="2" stroke-dasharray="5,5"/>
+          <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">HIPEREXTENSIÓN</text>
+          <text x="100" y="190" text-anchor="middle" fill="#ef4444" font-size="12">Cabeza en máxima extensión</text>
+        </svg>
+      `;
+      }
+
+      function crearSVGFlexion() {
+        return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5"/>
+          <circle cx="100" cy="100" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
+          <path d="M 100 75 L 100 95" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" marker-end="url(#arrowFlex)"/>
+          <defs>
+            <marker id="arrowFlex" markerWidth="10" markerHeight="10" refX="5" refY="10" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L5,10 L10,0" fill="none" stroke="#3b82f6" stroke-width="2"/>
+            </marker>
+          </defs>
+          <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">FLEXIÓN CERVICAL</text>
+          <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">Mentón al pecho</text>
+        </svg>
+      `;
+      }
+
+      // ==============================================
+      // INICIALIZACIÓN
+      // ==============================================
+      document.addEventListener("DOMContentLoaded", () => {
+        inicializarApp();
+        configurarEventListeners();
+        renderizarPosturas();
+      });
+
+      function inicializarApp() {
+        // Actualizar valores iniciales
+        actualizarCronometro();
+
+        // Configurar síntesis de voz
+        if ("speechSynthesis" in window) {
+          window.speechSynthesis.onvoiceschanged = () => {
+            const voces = window.speechSynthesis.getVoices();
+            const vozEspanol = voces.find((v) => v.lang.startsWith("es"));
+            if (vozEspanol) estado.vozSeleccionada = vozEspanol;
+          };
+        }
+      }
+
+      function configurarEventListeners() {
+        // Selectores de canal
+        document.querySelectorAll(".canal-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll(".canal-btn")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            estado.canal = btn.dataset.canal;
+            reiniciar();
+          });
+        });
+
+        // Selectores de lado
+        document.querySelectorAll(".lado-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll(".lado-btn")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            estado.lado = btn.dataset.lado;
+            reiniciar();
+          });
+        });
+
+        // Control de duración
+        const duracionSlider = document.getElementById("duracionSlider");
+        const duracionValue = document.getElementById("duracionValue");
+
+        duracionSlider.addEventListener("input", (e) => {
+          estado.duracion = parseInt(e.target.value);
+          duracionValue.textContent = `${estado.duracion}s`;
+          if (!estado.enMarcha) {
+            estado.tiempoRestante = estado.duracion;
+            actualizarCronometro();
+          }
+        });
+
+        // Botones de control
+        document
+          .getElementById("btnIniciar")
+          .addEventListener("click", iniciarManiobra);
+        document
+          .getElementById("btnPausar")
+          .addEventListener("click", pausarManiobra);
+        document
+          .getElementById("btnSiguiente")
+          .addEventListener("click", siguientePaso);
+
+        // Opciones
+        document.getElementById("optVoz").addEventListener("change", (e) => {
+          estado.vozActiva = e.target.checked;
+        });
+
+        document
+          .getElementById("optVibracion")
+          .addEventListener("change", (e) => {
+            estado.vibracionActiva = e.target.checked;
+          });
+
+        document
+          .getElementById("optPantalla")
+          .addEventListener("change", (e) => {
+            estado.pantallaActiva = e.target.checked;
+            if (!e.target.checked) liberarWakeLock();
+          });
+
+        // Pantalla completa
+        document
+          .getElementById("btnFullscreen")
+          .addEventListener("click", toggleFullscreen);
+
+        // Modo fullscreen overlay
+        document.getElementById("fsClose").addEventListener("click", () => {
+          document
+            .getElementById("fullscreenOverlay")
+            .classList.remove("active");
+          estado.modoFullscreen = false;
+        });
+
+        // Información
+        document
+          .getElementById("btnInfo")
+          .addEventListener("click", mostrarInfo);
+      }
+
+      // ==============================================
+      // RENDERIZADO DE POSTURAS
+      // ==============================================
+      function renderizarPosturas() {
+        const container = document.getElementById("posturasGrid");
+        const pasos = maniobras[estado.canal].pasos(estado.lado);
+
+        container.innerHTML = "";
+
+        pasos.forEach((paso, index) => {
+          const div = document.createElement("div");
+          div.className = "postura-item";
+          div.id = `postura-${index}`;
+
+          div.innerHTML = `
+          <div class="postura-numero">PASO ${index + 1}</div>
+          <div class="postura-svg">${paso.svg}</div>
+          <div class="postura-titulo">${paso.titulo}</div>
+          <div class="postura-duracion">${paso.duracion}s</div>
+        `;
+
+          container.appendChild(div);
+        });
+      }
+
+      function actualizarPosturaActiva() {
+        document.querySelectorAll(".postura-item").forEach((item, index) => {
+          if (index === estado.pasoActual) {
+            item.classList.add("active");
+          } else {
+            item.classList.remove("active");
+          }
+        });
+      }
+
+      // ==============================================
+      // CONTROL DE MANIOBRA
+      // ==============================================
+      function iniciarManiobra() {
+        if (estado.pausado) {
+          reanudarManiobra();
+          return;
+        }
+
+        estado.enMarcha = true;
+        estado.pasoActual = 0;
+        const pasos = maniobras[estado.canal].pasos(estado.lado);
+        estado.tiempoRestante = pasos[0].duracion;
+
+        // Actualizar UI
+        document.getElementById("btnIniciar").innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="6" y="4" width="4" height="16"/>
+          <rect x="14" y="4" width="4" height="16"/>
+        </svg>
+        Pausar
+      `;
+        document.getElementById("btnPausar").disabled = false;
+        document.getElementById("btnSiguiente").disabled = false;
+
+        // Modo fullscreen
+        if (document.getElementById("optPantalla").checked) {
+          document.getElementById("fullscreenOverlay").classList.add("active");
+          estado.modoFullscreen = true;
+          actualizarFullscreen();
+        }
+
+        // Iniciar
+        actualizarPasoActual();
+        iniciarCronometro();
+
+        // Feedback
+        if (estado.vozActiva) hablar(pasos[estado.pasoActual].voz);
+        if (estado.vibracionActiva) vibrar([200, 100, 200]);
+        if (estado.pantallaActiva) solicitarWakeLock();
+      }
+
+      function pausarManiobra() {
+        estado.pausado = true;
+        clearInterval(estado.timer);
+
+        document.getElementById("btnIniciar").innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Reanudar
+      `;
+
+        if (estado.vozActiva) hablar("Pausado");
+        mostrarToast("Maniobra pausada");
+      }
+
+      function reanudarManiobra() {
+        estado.pausado = false;
+
+        document.getElementById("btnIniciar").innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="6" y="4" width="4" height="16"/>
+          <rect x="14" y="4" width="4" height="16"/>
+        </svg>
+        Pausar
+      `;
+
+        iniciarCronometro();
+        if (estado.vozActiva) hablar("Continuamos");
+      }
+
+      function siguientePaso() {
+        const pasos = maniobras[estado.canal].pasos(estado.lado);
+
+        if (estado.pasoActual < pasos.length - 1) {
+          estado.pasoActual++;
+          estado.tiempoRestante = pasos[estado.pasoActual].duracion;
+
+          actualizarPasoActual();
+
+          if (estado.vozActiva) hablar(pasos[estado.pasoActual].voz);
+          if (estado.vibracionActiva) vibrar([200]);
+        } else {
+          finalizarManiobra();
+        }
+      }
+
+      function finalizarManiobra() {
+        clearInterval(estado.timer);
+        estado.enMarcha = false;
+        estado.pasoActual = 0;
+
+        document.getElementById("pasoActual").textContent =
+          "✅ Maniobra completada";
+        document.getElementById("fullscreenOverlay").classList.remove("active");
+        estado.modoFullscreen = false;
+
+        if (estado.vozActiva) hablar("Maniobra completada exitosamente");
+        if (estado.vibracionActiva) vibrar([200, 100, 200, 100, 200]);
+
+        mostrarToast("¡Maniobra completada con éxito!");
+
+        setTimeout(() => {
+          reiniciar();
+        }, 3000);
+      }
+
+      function reiniciar() {
+        clearInterval(estado.timer);
+        estado.enMarcha = false;
+        estado.pausado = false;
+        estado.pasoActual = 0;
+        estado.tiempoRestante = estado.duracion;
+
+        document.getElementById("btnIniciar").innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Iniciar
+      `;
+        document.getElementById("btnPausar").disabled = true;
+        document.getElementById("btnSiguiente").disabled = true;
+        document.getElementById("pasoActual").textContent =
+          "Preparado para iniciar";
+
+        actualizarCronometro();
+        renderizarPosturas();
+        liberarWakeLock();
+      }
+
+      // ==============================================
+      // ACTUALIZACIÓN DE UI
+      // ==============================================
+      function actualizarPasoActual() {
+        const pasos = maniobras[estado.canal].pasos(estado.lado);
+        const paso = pasos[estado.pasoActual];
+
+        // Actualizar texto
+        document.getElementById("pasoActual").textContent = `Paso ${
+          estado.pasoActual + 1
+        }/${pasos.length}: ${paso.titulo}`;
+
+        // Actualizar posturas activas
+        actualizarPosturaActiva();
+
+        // Actualizar fullscreen si está activo
+        if (estado.modoFullscreen) {
+          actualizarFullscreen();
+        }
+      }
+
+      function actualizarFullscreen() {
+        const pasos = maniobras[estado.canal].pasos(estado.lado);
+        const paso = pasos[estado.pasoActual];
+
+        document.getElementById("fsManiobra").textContent =
+          maniobras[estado.canal].nombre;
+        document.getElementById("fsPaso").textContent = `${paso.titulo}`;
+        document.getElementById("fsDescripcion").textContent = paso.descripcion;
+        document.getElementById("fsSvgContainer").innerHTML = paso.svg;
+      }
+
+      // ==============================================
+      // CRONÓMETRO
+      // ==============================================
+      function iniciarCronometro() {
+        estado.timer = setInterval(() => {
+          if (estado.tiempoRestante > 0) {
+            estado.tiempoRestante--;
+            actualizarCronometro();
+            actualizarProgreso();
+
+            // Avisos
+            if (estado.tiempoRestante === 10 && estado.vozActiva) {
+              hablar("10 segundos");
+            } else if (estado.tiempoRestante === 5 && estado.vozActiva) {
+              hablar("5 segundos");
+            } else if (estado.tiempoRestante === 3) {
+              document.getElementById("cronometro").classList.add("pulse");
+              if (estado.modoFullscreen) {
+                document.getElementById("fsCronometro").classList.add("pulse");
+              }
+            }
+          } else {
+            document.getElementById("cronometro").classList.remove("pulse");
+            if (estado.modoFullscreen) {
+              document.getElementById("fsCronometro").classList.remove("pulse");
+            }
+            siguientePaso();
+          }
+        }, 1000);
+      }
+
+      function actualizarCronometro() {
+        const minutos = Math.floor(estado.tiempoRestante / 60);
+        const segundos = estado.tiempoRestante % 60;
+        const display = `${minutos.toString().padStart(2, "0")}:${segundos
+          .toString()
+          .padStart(2, "0")}`;
+
+        document.getElementById("cronometro").textContent = display;
+        document.getElementById("fsCronometro").textContent = display;
+      }
+
+      function actualizarProgreso() {
+        const pasos = maniobras[estado.canal].pasos(estado.lado);
+        const duracionTotal = pasos[estado.pasoActual].duracion;
+        const porcentaje = (estado.tiempoRestante / duracionTotal) * 100;
+
+        document.getElementById("progresoFill").style.width = `${porcentaje}%`;
+        document.getElementById(
+          "fsProgresoFill"
+        ).style.width = `${porcentaje}%`;
+      }
+
+      // ==============================================
+      // UTILIDADES
+      // ==============================================
+      function hablar(texto) {
+        if (!estado.vozActiva || !window.speechSynthesis) return;
+
+        const utterance = new SpeechSynthesisUtterance(texto);
+        utterance.lang = "es-ES";
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+
+        if (estado.vozSeleccionada) {
+          utterance.voice = estado.vozSeleccionada;
+        }
+
+        window.speechSynthesis.speak(utterance);
+      }
+
+      function vibrar(patron) {
+        if (!estado.vibracionActiva || !navigator.vibrate) return;
+        navigator.vibrate(patron);
+      }
+
+      async function solicitarWakeLock() {
+        if ("wakeLock" in navigator) {
+          try {
+            estado.wakeLock = await navigator.wakeLock.request("screen");
+          } catch (err) {
+            console.log("Wake Lock error:", err);
+          }
+        }
+      }
+
+      function liberarWakeLock() {
+        if (estado.wakeLock) {
+          estado.wakeLock.release();
+          estado.wakeLock = null;
+        }
+      }
+
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch((err) => {
+            console.log("Error al entrar en pantalla completa:", err);
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      }
+
+      function mostrarToast(mensaje) {
+        const toast = document.getElementById("toast");
+        toast.textContent = mensaje;
+        toast.classList.add("show");
+
+        setTimeout(() => {
+          toast.classList.remove("show");
+        }, 3000);
+      }
+
+      function mostrarInfo() {
+        const info = `
+        📍 MANIOBRAS VESTIBULARES
+        
+        ✅ Canal Posterior: Maniobra de Epley
+        ✅ Canal Horizontal: BBQ Roll
+        ✅ Canal Anterior: Maniobra de Yacovino
+        
+        ⚠️ Contraindicaciones:
+        • Inestabilidad cervical
+        • Estenosis carotídea severa
+        • Patología retiniana
+        
+        💡 Mantener cada posición hasta:
+        • Cese del nistagmo + 30s
+        • O tiempo configurado
+        
+        📱 Funciones disponibles:
+        • Guía por voz en español
+        • Vibración en cambios
+        • Pantalla siempre activa
+        • Modo pantalla completa
+      `;
+
+        alert(info);
+      }
+
+      // Service Worker para PWA (opcional)
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("data:text/javascript,")
+          .catch(() => {});
+      }
+    </script>
+  </body>
+</html>
