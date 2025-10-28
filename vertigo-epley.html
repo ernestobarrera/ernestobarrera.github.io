@@ -458,7 +458,24 @@
         transition: all 0.2s;
       }
 
-      .fs-close:hover {
+      .fs-mute {
+        position: absolute;
+        top: 2rem;
+        right: 6rem;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+
+      .fs-close:hover,
+      .fs-mute:hover {
         background: rgba(255, 255, 255, 0.3);
         transform: scale(1.1);
       }
@@ -655,6 +672,36 @@
           <div class="logo-text">Maniobras Vestibulares</div>
         </div>
         <div class="header-actions">
+          <button id="btnMute" class="btn-icon" title="Silenciar audio">
+            <svg
+              id="iconVolume"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <path
+                d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"
+              />
+            </svg>
+            <svg
+              id="iconMute"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              style="display: none"
+            >
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <line x1="23" y1="9" x2="17" y2="15" />
+              <line x1="17" y1="9" x2="23" y2="15" />
+            </svg>
+          </button>
           <button id="btnFullscreen" class="btn-icon" title="Pantalla completa">
             <svg
               width="20"
@@ -829,6 +876,37 @@
         </svg>
       </button>
 
+      <button class="fs-mute" id="fsMute" title="Silenciar audio">
+        <svg
+          id="fsIconVolume"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          stroke-width="2"
+        >
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+          <path
+            d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"
+          />
+        </svg>
+        <svg
+          id="fsIconMute"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          stroke-width="2"
+          style="display: none"
+        >
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+          <line x1="23" y1="9" x2="17" y2="15" />
+          <line x1="17" y1="9" x2="23" y2="15" />
+        </svg>
+      </button>
+
       <div class="fs-maniobra" id="fsManiobra">Maniobra de Epley</div>
       <div class="fs-cronometro" id="fsCronometro">00:45</div>
       <div class="fs-paso" id="fsPaso">Posición inicial</div>
@@ -871,6 +949,7 @@
         vibracionActiva: true,
         pantallaActiva: true,
         modoFullscreen: false,
+        audioSilenciado: false,
       };
 
       // ==============================================
@@ -1013,24 +1092,56 @@
       };
 
       // ==============================================
-      // FUNCIONES DE CREACIÓN DE SVG
+      // FUNCIONES DE CREACIÓN DE SVG MEJORADAS
       // ==============================================
       function crearSVGSentado(lado) {
         const rotacion =
           lado === "derecho" ? -45 : lado === "izquierdo" ? 45 : 0;
         return `
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect x="70" y="120" width="60" height="80" fill="#e5e7eb" rx="5"/>
-          <circle cx="100" cy="80" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2" transform="rotate(${rotacion} 100 80)"/>
-          <line x1="100" y1="80" x2="${
-            100 + 20 * Math.cos(((rotacion - 90) * Math.PI) / 180)
-          }" y2="${
-          80 + 20 * Math.sin(((rotacion - 90) * Math.PI) / 180)
-        }" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+          <!-- Camilla -->
+          <rect x="30" y="140" width="140" height="8" fill="#6b7280" rx="2"/>
+          <rect x="40" y="148" width="10" height="40" fill="#4b5563"/>
+          <rect x="150" y="148" width="10" height="40" fill="#4b5563"/>
+          
+          <!-- Cuerpo sentado -->
+          <rect x="70" y="100" width="60" height="40" fill="#fbbf24" rx="8"/>
+          <rect x="85" y="80" width="30" height="25" fill="#fde68a" rx="4"/>
+          
+          <!-- Cabeza -->
+          <g transform="rotate(${rotacion} 100 60)">
+            <circle cx="100" cy="60" r="20" fill="#fde68a" stroke="#f59e0b" stroke-width="2"/>
+            <!-- Nariz indicando dirección -->
+            <circle cx="${
+              100 + (lado === "derecho" ? 15 : lado === "izquierdo" ? -15 : 0)
+            }" cy="60" r="3" fill="#f59e0b"/>
+            <!-- Ojos -->
+            <circle cx="93" cy="55" r="2" fill="#92400e"/>
+            <circle cx="107" cy="55" r="2" fill="#92400e"/>
+          </g>
+          
+          <!-- Flecha de rotación -->
+          ${
+            lado !== "centro"
+              ? `
+            <path d="M ${lado === "derecho" ? "120 60" : "80 60"} A 20 20 0 0 ${
+                  lado === "derecho" ? "1" : "0"
+                } ${lado === "derecho" ? "100 40" : "100 40"}" 
+                  stroke="#3b82f6" stroke-width="3" fill="none" stroke-linecap="round" marker-end="url(#arrowRot)"/>
+          `
+              : ""
+          }
+          
+          <defs>
+            <marker id="arrowRot" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+              <polygon points="0,0 10,5 0,10" fill="#3b82f6"/>
+            </marker>
+          </defs>
+          
           <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">SENTADO</text>
           ${
             lado !== "centro"
-              ? `<text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">45° ${lado}</text>`
+              ? `<text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">Cabeza 45° ${lado}</text>`
               : ""
           }
         </svg>
@@ -1040,16 +1151,51 @@
       function crearSVGDixHallpike(lado) {
         return `
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5"/>
-          <circle cx="${
-            lado === "derecho" ? 35 : 165
-          }" cy="100" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
-          <path d="M ${lado === "derecho" ? "35 100" : "165 100"} L ${
-          lado === "derecho" ? "55 90" : "145 90"
-        }" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
-          <line x1="40" y1="150" x2="160" y2="150" stroke="#6b7280" stroke-width="2" stroke-dasharray="5,5"/>
+          <!-- Camilla -->
+          <rect x="30" y="110" width="140" height="8" fill="#6b7280" rx="2"/>
+          
+          <!-- Cuerpo acostado -->
+          <rect x="50" y="95" width="100" height="20" fill="#fbbf24" rx="8"/>
+          <rect x="50" y="90" width="30" height="15" fill="#fde68a" rx="4"/>
+          
+          <!-- Cabeza colgando -->
+          <g transform="rotate(${lado === "derecho" ? -20 : 20} ${
+          lado === "derecho" ? 25 : 175
+        } 100)">
+            <circle cx="${
+              lado === "derecho" ? 25 : 175
+            }" cy="100" r="20" fill="#fde68a" stroke="#f59e0b" stroke-width="2"/>
+            <!-- Nariz -->
+            <circle cx="${
+              lado === "derecho" ? 20 : 180
+            }" cy="100" r="3" fill="#f59e0b"/>
+            <!-- Ojos -->
+            <circle cx="${
+              lado === "derecho" ? 20 : 170
+            }" cy="95" r="2" fill="#92400e"/>
+            <circle cx="${
+              lado === "derecho" ? 30 : 180
+            }" cy="95" r="2" fill="#92400e"/>
+          </g>
+          
+          <!-- Línea del suelo -->
+          <line x1="20" y1="130" x2="180" y2="130" stroke="#ef4444" stroke-width="2" stroke-dasharray="5,5" opacity="0.7"/>
+          
+          <!-- Indicador de extensión -->
+          <path d="M ${lado === "derecho" ? "25 120" : "175 120"} L ${
+          lado === "derecho" ? "25 130" : "175 130"
+        }" 
+                stroke="#ef4444" stroke-width="2" marker-end="url(#arrowDown)"/>
+          
+          <defs>
+            <marker id="arrowDown" markerWidth="8" markerHeight="8" refX="4" refY="8" orient="auto">
+              <polygon points="0,0 8,0 4,8" fill="#ef4444"/>
+            </marker>
+          </defs>
+          
           <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">DIX-HALLPIKE</text>
           <text x="100" y="190" text-anchor="middle" fill="#ef4444" font-size="12">Cabeza colgando 20°</text>
+          <text x="100" y="155" text-anchor="middle" fill="#6b7280" font-size="10">Observar nistagmo</text>
         </svg>
       `;
       }
@@ -1057,18 +1203,46 @@
       function crearSVGRotacion(lado) {
         return `
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5"/>
-          <circle cx="100" cy="100" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
-          <path d="M 75 100 Q 100 80 125 100" stroke="#3b82f6" stroke-width="3" fill="none" stroke-linecap="round" marker-end="url(#arrow)"/>
+          <!-- Camilla -->
+          <rect x="30" y="110" width="140" height="8" fill="#6b7280" rx="2"/>
+          
+          <!-- Cuerpo acostado -->
+          <rect x="50" y="95" width="100" height="20" fill="#fbbf24" rx="8"/>
+          
+          <!-- Cabeza en rotación -->
+          <g>
+            <circle cx="100" cy="95" r="20" fill="#fde68a" stroke="#f59e0b" stroke-width="2"/>
+            <!-- Nariz indicando nueva dirección -->
+            <circle cx="${
+              lado === "derecho" ? 85 : 115
+            }" cy="95" r="3" fill="#f59e0b"/>
+            <!-- Ojos -->
+            <circle cx="95" cy="90" r="2" fill="#92400e"/>
+            <circle cx="105" cy="90" r="2" fill="#92400e"/>
+          </g>
+          
+          <!-- Flecha de rotación grande y clara -->
+          <path d="M ${lado === "derecho" ? "130 95" : "70 95"} A 30 30 0 0 ${
+          lado === "derecho" ? "0" : "1"
+        } ${lado === "derecho" ? "70 95" : "130 95"}" 
+                stroke="#3b82f6" stroke-width="4" fill="none" stroke-linecap="round" 
+                stroke-dasharray="2,2" opacity="0.7"/>
+          <path d="M ${lado === "derecho" ? "120 95" : "80 95"} A 20 20 0 0 ${
+          lado === "derecho" ? "0" : "1"
+        } ${lado === "derecho" ? "80 95" : "120 95"}" 
+                stroke="#3b82f6" stroke-width="3" fill="none" stroke-linecap="round" marker-end="url(#arrowRot2)"/>
+          
           <defs>
-            <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-              <path d="M0,0 L0,6 L9,3 z" fill="#3b82f6"/>
+            <marker id="arrowRot2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+              <polygon points="0,0 10,5 0,10" fill="#3b82f6"/>
             </marker>
           </defs>
+          
           <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">ROTACIÓN</text>
           <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">90° hacia ${
             lado === "derecho" ? "izquierda" : "derecha"
           }</text>
+          <text x="100" y="155" text-anchor="middle" fill="#6b7280" font-size="10">Mantener cabeza extendida</text>
         </svg>
       `;
       }
@@ -1076,19 +1250,53 @@
       function crearSVGDecubito(lado) {
         return `
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect x="${
-            lado === "derecho" ? 40 : 80
-          }" y="70" width="60" height="120" fill="#e5e7eb" rx="5" transform="rotate(${
-          lado === "derecho" ? -90 : 90
-        } 100 100)"/>
-          <circle cx="${
-            lado === "derecho" ? 70 : 130
-          }" cy="100" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
-          <line x1="${lado === "derecho" ? 70 : 130}" y1="100" x2="${
-          lado === "derecho" ? 70 : 130
-        }" y2="130" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+          <!-- Camilla -->
+          <rect x="30" y="110" width="140" height="8" fill="#6b7280" rx="2"/>
+          
+          <!-- Cuerpo de lado -->
+          <g transform="rotate(${lado === "derecho" ? -90 : 90} 100 105)">
+            <rect x="70" y="95" width="60" height="20" fill="#fbbf24" rx="8"/>
+            <rect x="70" y="90" width="20" height="15" fill="#fde68a" rx="4"/>
+          </g>
+          
+          <!-- Cabeza mirando abajo -->
+          <g>
+            <circle cx="${
+              lado === "derecho" ? 65 : 135
+            }" cy="105" r="20" fill="#fde68a" stroke="#f59e0b" stroke-width="2"/>
+            <!-- Nariz hacia abajo -->
+            <circle cx="${
+              lado === "derecho" ? 65 : 135
+            }" cy="120" r="3" fill="#f59e0b"/>
+            <!-- Ojos -->
+            <circle cx="${
+              lado === "derecho" ? 60 : 130
+            }" cy="105" r="2" fill="#92400e"/>
+            <circle cx="${
+              lado === "derecho" ? 70 : 140
+            }" cy="105" r="2" fill="#92400e"/>
+          </g>
+          
+          <!-- Indicador de dirección de mirada -->
+          <path d="M ${lado === "derecho" ? 65 : 135} 125 L ${
+          lado === "derecho" ? 65 : 135
+        } 140" 
+                stroke="#3b82f6" stroke-width="3" marker-end="url(#arrowLook)"/>
+          
+          <!-- Suelo -->
+          <rect x="20" y="145" width="160" height="3" fill="#d1d5db"/>
+          
+          <defs>
+            <marker id="arrowLook" markerWidth="8" markerHeight="8" refX="4" refY="8" orient="auto">
+              <polygon points="0,0 8,0 4,8" fill="#3b82f6"/>
+            </marker>
+          </defs>
+          
           <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">DECÚBITO LATERAL</text>
-          <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">Cabeza mirando abajo</text>
+          <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">Cabeza mirando al suelo</text>
+          <text x="100" y="175" text-anchor="middle" fill="#6b7280" font-size="10">Lado ${
+            lado === "derecho" ? "izquierdo" : "derecho"
+          }</text>
         </svg>
       `;
       }
@@ -1096,17 +1304,38 @@
       function crearSVGIncorporacion() {
         return `
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect x="70" y="120" width="60" height="80" fill="#e5e7eb" rx="5"/>
-          <circle cx="100" cy="80" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
-          <path d="M 100 105 L 100 90" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" marker-end="url(#arrowDown)"/>
+          <!-- Camilla -->
+          <rect x="30" y="140" width="140" height="8" fill="#6b7280" rx="2"/>
+          <rect x="40" y="148" width="10" height="40" fill="#4b5563"/>
+          <rect x="150" y="148" width="10" height="40" fill="#4b5563"/>
+          
+          <!-- Cuerpo sentándose con movimiento -->
+          <rect x="70" y="100" width="60" height="40" fill="#fbbf24" rx="8" opacity="0.5"/>
+          <rect x="70" y="110" width="60" height="30" fill="#fbbf24" rx="8"/>
+          <rect x="85" y="90" width="30" height="25" fill="#fde68a" rx="4"/>
+          
+          <!-- Cabeza flexionada -->
+          <g transform="rotate(30 100 70)">
+            <circle cx="100" cy="70" r="20" fill="#fde68a" stroke="#f59e0b" stroke-width="2"/>
+            <!-- Nariz hacia abajo -->
+            <circle cx="100" cy="85" r="3" fill="#f59e0b"/>
+            <!-- Ojos mirando abajo -->
+            <circle cx="93" cy="70" r="2" fill="#92400e"/>
+            <circle cx="107" cy="70" r="2" fill="#92400e"/>
+          </g>
+          
+          <!-- Flecha de incorporación -->
+          <path d="M 60 120 Q 60 100 70 90" stroke="#10b981" stroke-width="3" fill="none" 
+                stroke-linecap="round" marker-end="url(#arrowUp)" stroke-dasharray="5,3"/>
+          
           <defs>
-            <marker id="arrowDown" markerWidth="10" markerHeight="10" refX="5" refY="0" orient="auto" markerUnits="strokeWidth">
-              <path d="M0,10 L5,0 L10,10" fill="none" stroke="#3b82f6" stroke-width="2"/>
+            <marker id="arrowUp" markerWidth="10" markerHeight="10" refX="5" refY="0" orient="auto">
+              <polygon points="5,0 10,10 0,10" fill="#10b981"/>
             </marker>
           </defs>
-          <path d="M 60 150 Q 100 140 140 150" stroke="#10b981" stroke-width="2" fill="none" stroke-dasharray="5,5" opacity="0.5"/>
+          
           <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">INCORPORACIÓN</text>
-          <text x="100" y="190" text-anchor="middle" fill="#10b981" font-size="12">Cabeza flexionada</text>
+          <text x="100" y="190" text-anchor="middle" fill="#10b981" font-size="12">Sentar con cabeza flexionada</text>
         </svg>
       `;
       }
@@ -1114,9 +1343,32 @@
       function crearSVGSupino() {
         return `
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5"/>
-          <circle cx="100" cy="70" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
-          <line x1="40" y1="150" x2="160" y2="150" stroke="#6b7280" stroke-width="2"/>
+          <!-- Camilla con inclinación -->
+          <g transform="rotate(-5 100 110)">
+            <rect x="30" y="110" width="140" height="8" fill="#6b7280" rx="2"/>
+          </g>
+          
+          <!-- Cuerpo acostado -->
+          <rect x="50" y="92" width="100" height="25" fill="#fbbf24" rx="8"/>
+          <rect x="50" y="87" width="30" height="20" fill="#fde68a" rx="4"/>
+          
+          <!-- Cabeza elevada -->
+          <g transform="rotate(-30 75 75)">
+            <circle cx="75" cy="75" r="20" fill="#fde68a" stroke="#f59e0b" stroke-width="2"/>
+            <!-- Nariz -->
+            <circle cx="70" cy="75" r="3" fill="#f59e0b"/>
+            <!-- Ojos -->
+            <circle cx="70" cy="70" r="2" fill="#92400e"/>
+            <circle cx="80" cy="70" r="2" fill="#92400e"/>
+          </g>
+          
+          <!-- Almohada -->
+          <ellipse cx="75" cy="95" rx="25" ry="8" fill="#e5e7eb" opacity="0.7"/>
+          
+          <!-- Indicador de ángulo -->
+          <path d="M 30 110 L 50 110 L 50 95" stroke="#3b82f6" stroke-width="2" fill="none" stroke-dasharray="3,3"/>
+          <text x="35" y="100" fill="#3b82f6" font-size="10">30°</text>
+          
           <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">SUPINO</text>
           <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">Cabeza elevada 30°</text>
         </svg>
@@ -1126,18 +1378,38 @@
       function crearSVGGiroLateral(lado, grados) {
         return `
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5" transform="rotate(${
-            lado === "derecho" ? -grados / 2 : grados / 2
-          } 100 120)"/>
-          <circle cx="100" cy="80" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
-          <path d="M 70 80 Q 100 60 130 80" stroke="#3b82f6" stroke-width="3" fill="none" stroke-linecap="round" marker-end="url(#arrowRot)"/>
+          <!-- Camilla -->
+          <rect x="30" y="110" width="140" height="8" fill="#6b7280" rx="2"/>
+          
+          <!-- Cuerpo girando -->
+          <g transform="rotate(${
+            lado === "derecho" ? -grados / 4 : grados / 4
+          } 100 105)">
+            <rect x="50" y="95" width="100" height="20" fill="#fbbf24" rx="8"/>
+            <rect x="50" y="90" width="30" height="15" fill="#fde68a" rx="4"/>
+          </g>
+          
+          <!-- Cabeza -->
+          <circle cx="100" cy="90" r="20" fill="#fde68a" stroke="#f59e0b" stroke-width="2"/>
+          <circle cx="${
+            lado === "derecho" ? 115 : 85
+          }" cy="90" r="3" fill="#f59e0b"/>
+          
+          <!-- Flecha de giro corporal -->
+          <path d="M 60 130 A 40 20 0 0 ${
+            lado === "derecho" ? "1" : "0"
+          } 140 130" 
+                stroke="#3b82f6" stroke-width="4" fill="none" stroke-linecap="round" marker-end="url(#arrowBody)"/>
+          
           <defs>
-            <marker id="arrowRot" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-              <path d="M0,0 L0,6 L9,3 z" fill="#3b82f6"/>
+            <marker id="arrowBody" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+              <polygon points="0,0 10,5 0,10" fill="#3b82f6"/>
             </marker>
           </defs>
+          
           <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">GIRO ${grados}°</text>
-          <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">Hacia ${lado}</text>
+          <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">Rotar hacia ${lado}</text>
+          <text x="100" y="175" text-anchor="middle" fill="#6b7280" font-size="10">Todo el cuerpo</text>
         </svg>
       `;
       }
@@ -1145,11 +1417,26 @@
       function crearSVGProno() {
         return `
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5"/>
-          <circle cx="100" cy="120" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
-          <circle cx="90" cy="120" r="3" fill="#6b7280"/>
-          <circle cx="110" cy="120" r="3" fill="#6b7280"/>
-          <line x1="40" y1="90" x2="160" y2="90" stroke="#6b7280" stroke-width="2"/>
+          <!-- Camilla -->
+          <rect x="30" y="110" width="140" height="8" fill="#6b7280" rx="2"/>
+          
+          <!-- Cuerpo boca abajo -->
+          <rect x="50" y="93" width="100" height="25" fill="#fbbf24" rx="8"/>
+          <rect x="120" y="88" width="30" height="20" fill="#fde68a" rx="4"/>
+          
+          <!-- Cabeza vista desde arriba -->
+          <g>
+            <circle cx="100" cy="93" r="20" fill="#fde68a" stroke="#f59e0b" stroke-width="2"/>
+            <!-- Parte posterior de la cabeza (pelo) -->
+            <path d="M 80 93 Q 100 85 120 93 Q 110 103 90 103 Q 80 103 80 93" fill="#92400e" opacity="0.7"/>
+            <!-- Orejas -->
+            <ellipse cx="78" cy="93" rx="4" ry="8" fill="#f59e0b"/>
+            <ellipse cx="122" cy="93" rx="4" ry="8" fill="#f59e0b"/>
+          </g>
+          
+          <!-- Indicador de posición -->
+          <text x="100" y="140" text-anchor="middle" fill="#6b7280" font-size="10">Vista desde arriba</text>
+          
           <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">PRONO</text>
           <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">Boca abajo</text>
         </svg>
@@ -1159,12 +1446,38 @@
       function crearSVGHiperextension() {
         return `
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5"/>
-          <circle cx="30" cy="110" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2" transform="rotate(-30 30 110)"/>
-          <path d="M 30 110 L 50 100" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
-          <line x1="40" y1="150" x2="160" y2="150" stroke="#6b7280" stroke-width="2" stroke-dasharray="5,5"/>
+          <!-- Camilla -->
+          <rect x="30" y="110" width="140" height="8" fill="#6b7280" rx="2"/>
+          
+          <!-- Cuerpo acostado -->
+          <rect x="50" y="95" width="100" height="20" fill="#fbbf24" rx="8"/>
+          <rect x="50" y="90" width="30" height="15" fill="#fde68a" rx="4"/>
+          
+          <!-- Cabeza en hiperextensión -->
+          <g transform="rotate(45 25 115)">
+            <circle cx="25" cy="115" r="20" fill="#fde68a" stroke="#f59e0b" stroke-width="2"/>
+            <!-- Nariz apuntando hacia atrás -->
+            <circle cx="15" cy="115" r="3" fill="#f59e0b"/>
+            <!-- Ojos -->
+            <circle cx="20" cy="110" r="2" fill="#92400e"/>
+            <circle cx="30" cy="110" r="2" fill="#92400e"/>
+          </g>
+          
+          <!-- Línea del suelo -->
+          <line x1="10" y1="140" x2="190" y2="140" stroke="#ef4444" stroke-width="2" stroke-dasharray="5,5"/>
+          
+          <!-- Indicador de hiperextensión -->
+          <path d="M 25 95 Q 15 105 25 135" stroke="#ef4444" stroke-width="3" fill="none" 
+                marker-end="url(#arrowExt)" stroke-dasharray="3,2"/>
+          
+          <defs>
+            <marker id="arrowExt" markerWidth="8" markerHeight="8" refX="4" refY="8" orient="auto">
+              <polygon points="0,0 8,0 4,8" fill="#ef4444"/>
+            </marker>
+          </defs>
+          
           <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">HIPEREXTENSIÓN</text>
-          <text x="100" y="190" text-anchor="middle" fill="#ef4444" font-size="12">Cabeza en máxima extensión</text>
+          <text x="100" y="190" text-anchor="middle" fill="#ef4444" font-size="12">Máxima extensión cervical</text>
         </svg>
       `;
       }
@@ -1172,14 +1485,35 @@
       function crearSVGFlexion() {
         return `
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <rect x="40" y="90" width="120" height="60" fill="#e5e7eb" rx="5"/>
-          <circle cx="100" cy="100" r="25" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
-          <path d="M 100 75 L 100 95" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" marker-end="url(#arrowFlex)"/>
+          <!-- Camilla -->
+          <rect x="30" y="110" width="140" height="8" fill="#6b7280" rx="2"/>
+          
+          <!-- Cuerpo acostado -->
+          <rect x="50" y="95" width="100" height="20" fill="#fbbf24" rx="8"/>
+          <rect x="50" y="90" width="30" height="15" fill="#fde68a" rx="4"/>
+          
+          <!-- Cabeza en flexión -->
+          <g>
+            <circle cx="100" cy="85" r="20" fill="#fde68a" stroke="#f59e0b" stroke-width="2"/>
+            <!-- Barbilla tocando pecho -->
+            <path d="M 100 105 Q 100 100 100 95" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+            <!-- Nariz hacia el pecho -->
+            <circle cx="100" cy="100" r="3" fill="#f59e0b"/>
+            <!-- Ojos mirando abajo -->
+            <circle cx="93" cy="85" r="2" fill="#92400e"/>
+            <circle cx="107" cy="85" r="2" fill="#92400e"/>
+          </g>
+          
+          <!-- Indicador de flexión -->
+          <path d="M 100 65 Q 110 75 100 85" stroke="#3b82f6" stroke-width="3" fill="none" 
+                marker-end="url(#arrowFlex2)"/>
+          
           <defs>
-            <marker id="arrowFlex" markerWidth="10" markerHeight="10" refX="5" refY="10" orient="auto" markerUnits="strokeWidth">
-              <path d="M0,0 L5,10 L10,0" fill="none" stroke="#3b82f6" stroke-width="2"/>
+            <marker id="arrowFlex2" markerWidth="8" markerHeight="8" refX="4" refY="8" orient="auto">
+              <polygon points="0,0 8,0 4,8" fill="#3b82f6"/>
             </marker>
           </defs>
+          
           <text x="100" y="20" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="600">FLEXIÓN CERVICAL</text>
           <text x="100" y="190" text-anchor="middle" fill="#3b82f6" font-size="12">Mentón al pecho</text>
         </svg>
@@ -1258,9 +1592,19 @@
           .getElementById("btnSiguiente")
           .addEventListener("click", siguientePaso);
 
+        // Botón de silenciar
+        document
+          .getElementById("btnMute")
+          .addEventListener("click", toggleMute);
+        document.getElementById("fsMute").addEventListener("click", toggleMute);
+
         // Opciones
         document.getElementById("optVoz").addEventListener("change", (e) => {
           estado.vozActiva = e.target.checked;
+          if (e.target.checked) {
+            estado.audioSilenciado = false;
+            actualizarIconosMute();
+          }
         });
 
         document
@@ -1550,7 +1894,12 @@
       // UTILIDADES
       // ==============================================
       function hablar(texto) {
-        if (!estado.vozActiva || !window.speechSynthesis) return;
+        if (
+          !estado.vozActiva ||
+          !window.speechSynthesis ||
+          estado.audioSilenciado
+        )
+          return;
 
         const utterance = new SpeechSynthesisUtterance(texto);
         utterance.lang = "es-ES";
@@ -1562,6 +1911,49 @@
         }
 
         window.speechSynthesis.speak(utterance);
+      }
+
+      function toggleMute() {
+        estado.audioSilenciado = !estado.audioSilenciado;
+        actualizarIconosMute();
+
+        if (estado.audioSilenciado) {
+          // Cancelar cualquier voz en curso
+          if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+          }
+          mostrarToast("🔇 Audio silenciado");
+        } else {
+          mostrarToast("🔊 Audio activado");
+        }
+      }
+
+      function actualizarIconosMute() {
+        // Iconos del header
+        const iconVolume = document.getElementById("iconVolume");
+        const iconMute = document.getElementById("iconMute");
+
+        // Iconos del fullscreen
+        const fsIconVolume = document.getElementById("fsIconVolume");
+        const fsIconMute = document.getElementById("fsIconMute");
+
+        if (estado.audioSilenciado) {
+          if (iconVolume) iconVolume.style.display = "none";
+          if (iconMute) iconMute.style.display = "block";
+          if (fsIconVolume) fsIconVolume.style.display = "none";
+          if (fsIconMute) fsIconMute.style.display = "block";
+        } else {
+          if (iconVolume) iconVolume.style.display = "block";
+          if (iconMute) iconMute.style.display = "none";
+          if (fsIconVolume) fsIconVolume.style.display = "block";
+          if (fsIconMute) fsIconMute.style.display = "none";
+        }
+
+        // También actualizar el checkbox si está desmarcado
+        const optVoz = document.getElementById("optVoz");
+        if (estado.audioSilenciado && optVoz) {
+          optVoz.checked = false;
+        }
       }
 
       function vibrar(patron) {
