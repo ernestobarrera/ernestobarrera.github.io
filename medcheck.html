@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedCheck | Herramienta Clínica de Medicamentos</title>
+    <meta name="description"
+        content="Herramienta clínica para médicos de familia. Verificación de seguridad, equivalencias y alertas de medicamentos." />
+
+    <!-- Prevent indexing -->
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="googlebot" content="noindex, nofollow">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" />
+
+    <!-- PWA Support -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0ea5e9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MedCheck">
+    <link rel="apple-touch-icon" href="assets/icons/medcheck-icon-192.png">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="assets/css/cima-app.css" />
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Top Header with Logo and Patient Context -->
+        <header class="app-header">
+            <div class="header-brand">
+                <i class="fas fa-pills"></i>
+                <span class="brand-name">MedCheck</span>
+                <span class="brand-tag">BETA</span>
+            </div>
+            <!-- Patient Context Bar -->
+            <div class="patient-context" id="patient-context">
+                <span class="context-label"><i class="fas fa-user-injured"></i> Contexto:</span>
+
+                <div class="context-toggles">
+                    <button class="context-toggle" data-context="pregnancy" title="Embarazo">
+                        <i class="fas fa-baby"></i>
+                        <span>Embarazo</span>
+                    </button>
+                    <button class="context-toggle" data-context="lactation" title="Lactancia">
+                        <i class="fas fa-baby-carriage"></i>
+                        <span>Lactancia</span>
+                    </button>
+                    <button class="context-toggle" data-context="elderly" title="Mayor de 65 años">
+                        <i class="fas fa-user-clock"></i>
+                        <span>&gt;65 años</span>
+                    </button>
+                    <button class="context-toggle" data-context="driving" title="Conduce vehículos">
+                        <i class="fas fa-car"></i>
+                        <span>Conducción</span>
+                    </button>
+
+                    <button class="context-toggle" data-context="renal" title="Insuficiencia renal">
+                        <i class="fas fa-kidneys"></i>
+                        <span>I.Renal</span>
+                    </button>
+
+                    <button class="context-toggle" data-context="hepatic" title="Insuficiencia hepática">
+                        <i class="fas fa-disease"></i>
+                        <span>I.Hepática</span>
+                    </button>
+                </div>
+
+                <button class="context-clear" id="clear-context" title="Limpiar contexto para nuevo paciente">
+                    <i class="fas fa-eraser"></i>
+                    <span>Limpiar</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="app-nav">
+            <button class="nav-tab active" data-view="search">
+                <i class="fas fa-search"></i>
+                <span>Buscar</span>
+            </button>
+            <button class="nav-tab" data-view="indications">
+                <i class="fas fa-stethoscope"></i>
+                <span>Indicaciones</span>
+            </button>
+            <button class="nav-tab" data-view="safety">
+                <i class="fas fa-shield-alt"></i>
+                <span>Seguridad</span>
+            </button>
+            <button class="nav-tab" data-view="interactions">
+                <i class="fas fa-random"></i>
+                <span>Interacciones</span>
+            </button>
+            <button class="nav-tab" data-view="adverse">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Reacciones</span>
+            </button>
+            <button class="nav-tab" data-view="equivalences">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Equivalencias</span>
+            </button>
+            <button class="nav-tab" data-view="supply">
+                <i class="fas fa-boxes"></i>
+                <span>Suministro</span>
+            </button>
+            <button class="nav-tab" data-view="alerts">
+                <i class="fas fa-bell"></i>
+                <span>Alertas</span>
+            </button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="app-main" id="app-content">
+            <!-- Content injected by JS -->
+            <div class="loading-spinner"></div>
+        </main>
+
+        <!-- Status Bar -->
+        <footer class="app-status">
+            <div class="status-left">
+                <span class="status-indicator online" id="api-status">
+                    <i class="fas fa-circle"></i> API AEMPS
+                </span>
+            </div>
+            <div class="status-center">
+                <span class="status-version" id="atc-version"
+                    title="Diccionario ATC local para navegación por categorías">
+                    <i class="fas fa-book-medical"></i> <span id="atc-version-text">Diccionario ATC: cargando...</span>
+                </span>
+            </div>
+            <div class="status-right">
+                <span><i class="fas fa-database"></i> Datos: AEMPS tiempo real</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Medicine Detail Modal/Flyout -->
+    <div id="med-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close" id="close-modal">
+                <i class="fas fa-times"></i>
+            </button>
+            <div id="modal-body">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Legal Disclaimer Modal -->
+    <div id="legal-modal" class="modal-overlay" style="z-index: 9999; background: rgba(0,0,0,0.9);">
+        <div class="modal-content" style="max-width: 520px;">
+            <div class="modal-header" style="border-bottom: 2px solid var(--warning);">
+                <h2 class="modal-title" style="color: var(--warning);">
+                    <i class="fas fa-exclamation-triangle"></i> AVISO IMPORTANTE
+                </h2>
+            </div>
+            <div class="modal-body p-lg">
+                <p class="mb-md"><strong>MedCheck es una herramienta experimental en fase de pruebas (BETA).</strong>
+                </p>
+
+                <ul style="list-style: disc; padding-left: 1.5rem; margin-bottom: 1.5rem;" class="text-muted">
+                    <li class="mb-sm">La información proviene de la <strong>API pública de la AEMPS</strong> pero podría
+                        contener
+                        errores de procesamiento o estar desactualizada.</li>
+                    <li class="mb-sm"><strong>NO introduzca datos reales de pacientes</strong> (Nombres, DNI, Historia
+                        Clínica). Esta versión utiliza un proxy público y no garantiza la privacidad de los datos
+                        transmitidos.</li>
+                    <li class="mb-sm">El <strong>criterio clínico del profesional prevalece siempre</strong> sobre esta
+                        herramienta.</li>
+                    <li class="mb-sm">Esta herramienta es de <strong>uso personal y educativo</strong>. No está afiliada
+                        ni respaldada por AEMPS.</li>
+                    <li>El autor no se hace responsable del uso incorrecto de esta información.
+                    </li>
+                </ul>
+
+                <button id="accept-legal-btn" class="btn btn-primary w-full btn-lg">
+                    He leído y acepto verificar los datos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/cima-api.js"></script>
+    <script src="assets/js/cima-app.js"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((reg) => console.log('[PWA] Service Worker registered:', reg.scope))
+                    .catch((err) => console.log('[PWA] Service Worker registration failed:', err));
+            });
+        }
+    </script>
+</body>
+
+</html>

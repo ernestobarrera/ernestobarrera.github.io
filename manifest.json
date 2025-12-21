@@ -1,0 +1,54 @@
+{
+    "name": "MedCheck - Herramienta Clínica",
+    "short_name": "MedCheck",
+    "description": "Herramienta clínica de medicamentos para médicos de familia. Verificación de seguridad, equivalencias y alertas.",
+    "start_url": "/medcheck.html",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#0ea5e9",
+    "orientation": "any",
+    "categories": [
+        "medical",
+        "health",
+        "utilities"
+    ],
+    "icons": [
+        {
+            "src": "assets/icons/medcheck-icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "assets/icons/medcheck-icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Buscar medicamento",
+            "short_name": "Buscar",
+            "url": "/medcheck.html?view=search",
+            "icons": [
+                {
+                    "src": "assets/icons/medcheck-icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Analizar seguridad",
+            "short_name": "Seguridad",
+            "url": "/medcheck.html?view=safety",
+            "icons": [
+                {
+                    "src": "assets/icons/medcheck-icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ]
+}
