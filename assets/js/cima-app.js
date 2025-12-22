@@ -36,6 +36,9 @@ class MedCheckApp {
         this.currentView = 'search';
         this.currentMed = null;
 
+        // URL Router state - prevents URL update during popstate navigation
+        this.isPopstateNavigation = false;
+
         // Selection persistence across views
         this.selectedMedication = null; // { nregistro, nombre }
 
@@ -79,15 +82,25 @@ class MedCheckApp {
 
 
     async init() {
-        // Legal Check First
+        // Setup URL router (popstate listener)
+        this.setupURLRouter();
+
+        // Legal Check First - URL params processed after acceptance
         this.checkLegalDisclaimer();
 
         this.setupNavigation();
         this.setupPatientContext();
         this.setupModal();
-        this.loadView('search');
         this.checkAPIStatus();
         this.updateATCVersion();
+
+        // If legal already accepted, process URL params now
+        if (sessionStorage.getItem('medcheck_legal_accepted')) {
+            this.processURLParams();
+        } else {
+            // Default view while waiting for legal acceptance
+            this.loadView('search');
+        }
     }
 
     checkLegalDisclaimer() {
@@ -106,6 +119,8 @@ class MedCheckApp {
             sessionStorage.setItem('medcheck_legal_accepted', 'true');
             modal.style.display = 'none';
             document.body.style.overflow = '';
+            // Process URL params after legal acceptance
+            this.processURLParams();
         });
     }
 
@@ -133,9 +148,14 @@ class MedCheckApp {
         });
     }
 
-    async loadView(viewName) {
+    async loadView(viewName, updateURL = true) {
         this.currentView = viewName;
         this.content.innerHTML = '<div class="loading-spinner"></div>';
+
+        // Update URL unless this is a popstate navigation or explicitly disabled
+        if (updateURL && !this.isPopstateNavigation) {
+            this.updateURL({ view: viewName });
+        }
 
         try {
             switch (viewName) {
@@ -508,6 +528,18 @@ class MedCheckApp {
 
             this.displaySearchResults(this.lastSearchResults);
 
+            // Update URL with search parameters
+            if (!this.isPopstateNavigation) {
+                const urlParams = {
+                    view: 'search',
+                    q: query,
+                    type: searchType
+                };
+                if (this.lastSearchFilters.comerc) urlParams.comerc = '1';
+                if (this.lastSearchFilters.generic) urlParams.generic = '1';
+                this.updateURL(urlParams);
+            }
+
         } catch (error) {
             this.handleSearchError(resultsContainer, error);
         }
@@ -792,6 +824,8 @@ class MedCheckApp {
                 this.groupingState.groupBy = e.target.value;
                 this.groupingState.collapsedGroups.clear();
                 this.displaySearchResults(data);
+                // Update URL with new groupBy
+                this.updateURLWithCurrentState();
             });
         }
 
@@ -819,6 +853,8 @@ class MedCheckApp {
                         break;
                 }
                 this.displaySearchResults(data);
+                // Update URL with new sortBy
+                this.updateURLWithCurrentState();
             });
         }
 
@@ -1345,6 +1381,11 @@ class MedCheckApp {
             this.resultsDisplayedCount = 50; // Reset pagination
 
             this.displayIndicationResults(data, label);
+
+            // Update URL with ATC code
+            if (!this.isPopstateNavigation) {
+                this.updateURL({ view: 'indications', atc: atcCode, label: label });
+            }
         } catch (error) {
             this.handleSearchError(resultsContainer, error);
         }
@@ -3009,6 +3050,11 @@ class MedCheckApp {
             // Save as selected medication for banner persistence
             this.setSelectedMedication(med);
 
+            // Update URL with medication nregistro
+            if (!this.isPopstateNavigation) {
+                this.updateURL({ view: this.currentView, nregistro: nregistro });
+            }
+
             // Determine which tab should be active
             const isInfoActive = initialTab === 'info';
             const isDocsActive = initialTab === 'docs';
@@ -3973,6 +4019,227 @@ class MedCheckApp {
                 this.displayGroupedIndicationResults(data, searchQuery);
             });
         });
+    }
+
+    // ============================================
+    // URL ROUTER - GET Parameters & History API
+    // ============================================
+
+    /**
+     * Setup popstate listener for browser back/forward navigation
+     */
+    setupURLRouter() {
+        window.addEventListener('popstate', (event) => {
+            // Set flag to prevent URL updates during popstate handling
+            this.isPopstateNavigation = true;
+
+            // Process URL params to restore state
+            this.processURLParams();
+
+            // Reset flag after a short delay
+            setTimeout(() => {
+                this.isPopstateNavigation = false;
+            }, 100);
+        });
+    }
+
+    /**
+     * Get current URL parameters as an object
+     * @returns {Object} URL parameters
+     */
+    getURLParams() {
+        const params = new URLSearchParams(window.location.search);
+        const result = {};
+        for (const [key, value] of params) {
+            result[key] = value;
+        }
+        return result;
+    }
+
+    /**
+     * Update URL with new parameters (pushState)
+     * @param {Object} params - Parameters to set in URL
+     */
+    updateURL(params) {
+        const url = new URL(window.location.href);
+
+        // Clear existing search params
+        url.search = '';
+
+        // Add new params
+        for (const [key, value] of Object.entries(params)) {
+            if (value !== undefined && value !== null && value !== '') {
+                url.searchParams.set(key, value);
+            }
+        }
+
+        // Push state without reloading
+        window.history.pushState(params, '', url.toString());
+    }
+
+    /**
+     * Update URL with current search state (used when groupBy/sortBy changes)
+     */
+    updateURLWithCurrentState() {
+        if (this.isPopstateNavigation) return;
+
+        const params = { view: this.currentView };
+
+        // Add search params if in search view with results
+        if (this.currentView === 'search' && this.lastSearchQuery) {
+            params.q = this.lastSearchQuery;
+            params.type = this.lastSearchFilters?.searchType || 'pa';
+            if (this.lastSearchFilters?.comerc) params.comerc = '1';
+            if (this.lastSearchFilters?.generic) params.generic = '1';
+        }
+
+        // Add grouping/sorting params if not default
+        if (this.groupingState) {
+            if (this.groupingState.groupBy && this.groupingState.groupBy !== 'activeIngredient') {
+                params.groupBy = this.groupingState.groupBy;
+            }
+            if (this.groupingState.sortBy && this.groupingState.sortBy !== 'nameAsc') {
+                params.sortBy = this.groupingState.sortBy;
+            }
+        }
+
+        // Add ATC params if in indications view with ATC search
+        if (this.currentView === 'indications' && this.lastATCCode) {
+            params.atc = this.lastATCCode;
+        }
+
+        this.updateURL(params);
+    }
+
+    /**
+     * Process URL parameters to restore application state
+     * Called after legal disclaimer acceptance or on popstate
+     */
+    async processURLParams() {
+        const params = this.getURLParams();
+
+        // If no params, load default view
+        if (Object.keys(params).length === 0) {
+            this.loadView('search', false);
+            return;
+        }
+
+        // Get view from params (default to search)
+        const view = params.view || 'search';
+        const validViews = ['search', 'indications', 'safety', 'interactions', 'adverse', 'equivalences', 'supply', 'alerts'];
+        const targetView = validViews.includes(view) ? view : 'search';
+
+        // Update nav tab UI
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        const activeTab = document.querySelector(`.nav-tab[data-view="${targetView}"]`);
+        if (activeTab) activeTab.classList.add('active');
+
+        // Restore grouping state from URL params
+        if (params.groupBy) {
+            const validGroupBy = ['activeIngredient', 'route', 'form', 'none'];
+            if (validGroupBy.includes(params.groupBy)) {
+                this.groupingState.groupBy = params.groupBy;
+            }
+        }
+        if (params.sortBy) {
+            const validSortBy = ['nameAsc', 'nameDesc', 'doseAsc', 'doseDesc'];
+            if (validSortBy.includes(params.sortBy)) {
+                this.groupingState.sortBy = params.sortBy;
+            }
+        }
+
+        // Handle nregistro - open medication detail
+        if (params.nregistro) {
+            // First load the base view without URL update
+            await this.loadView(targetView, false);
+            // Then open the medication detail
+            this.openMedDetails(params.nregistro);
+            return;
+        }
+
+        // Handle search parameters
+        if (targetView === 'search' && params.q) {
+            // Load search view first
+            await this.loadView('search', false);
+
+            // Set search input value
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                searchInput.value = params.q;
+            }
+
+            // Set search type if provided
+            const searchTypeSelect = document.getElementById('search-type');
+            if (searchTypeSelect && params.type) {
+                searchTypeSelect.value = params.type;
+            }
+
+            // Set filters
+            const filterComerc = document.getElementById('filter-comerc');
+            if (filterComerc) {
+                filterComerc.checked = params.comerc === '1';
+            }
+            const filterGeneric = document.getElementById('filter-generic');
+            if (filterGeneric) {
+                filterGeneric.checked = params.generic === '1';
+            }
+
+            // Restore grouping UI selectors
+            const groupBySelect = document.getElementById('group-by-select');
+            if (groupBySelect && params.groupBy) {
+                groupBySelect.value = params.groupBy;
+            }
+            const sortBySelect = document.getElementById('sort-by-select');
+            if (sortBySelect && params.sortBy) {
+                sortBySelect.value = params.sortBy;
+            }
+
+            // Perform the search
+            this.performSearch();
+            return;
+        }
+
+        // Handle ATC code for indications
+        if (targetView === 'indications' && params.atc) {
+            await this.loadView('indications', false);
+
+            // Build breadcrumb from ATC code levels
+            const atcCode = params.atc.toUpperCase();
+            const breadcrumb = [];
+
+            // Build breadcrumb progressively: N -> N02 -> N02B -> N02BE
+            for (let i = 1; i <= atcCode.length; i++) {
+                const partialCode = atcCode.substring(0, i);
+                // Skip intermediate partial codes (e.g., N0, N02B without E)
+                if (i === 1 || i === 3 || i === 4 || i === 5 || i >= 7) {
+                    breadcrumb.push({ code: partialCode, label: partialCode });
+                }
+            }
+
+            // Get label from params or use ATC code
+            const label = params.label || atcCode;
+
+            // Perform ATC search
+            this.searchByATCCode(atcCode, label, breadcrumb);
+            return;
+        }
+
+        // Handle indication search query
+        if (targetView === 'indications' && params.indication) {
+            await this.loadView('indications', false);
+
+            // Set the indication search input and perform search
+            const indicationInput = document.getElementById('indication-search');
+            if (indicationInput) {
+                indicationInput.value = params.indication;
+            }
+            this.lastIndicationQuery = params.indication;
+            this.performIndicationSearch();
+            return;
+        }
+
+        // Default: just load the view
+        this.loadView(targetView, false);
     }
 }
 
