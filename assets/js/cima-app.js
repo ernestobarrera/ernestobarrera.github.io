@@ -223,39 +223,23 @@ class MedCheckApp {
      * Refresca los resultados actuales para reflejar cambios de contexto
      */
     refreshCurrentResults() {
-        // Si hay resultados de indicaciones guardados, refrescar con el nuevo contexto
+        // Si hay resultados de indicaciones guardados - re-renderizar completamente
         if (this.lastIndicationResults && this.currentView === 'indications') {
-            const resultsGrid = document.getElementById('results-grid');
-            if (resultsGrid) {
-                const displayCount = this.resultsDisplayedCount || 50;
-                resultsGrid.innerHTML = this.lastIndicationResults.resultados
-                    .slice(0, displayCount)
-                    .map(med => this.renderIndicationMedCard(med, this.lastIndicationResults.matchedIndication?.label || this.lastIndicationQuery))
-                    .join('');
-
-                // Re-bind click handlers
-                resultsGrid.querySelectorAll('.result-card').forEach(card => {
-                    card.addEventListener('click', () => {
-                        this.openMedDetails(card.dataset.nregistro);
-                    });
-                });
-            }
+            this.displayIndicationResults(
+                this.lastIndicationResults,
+                this.lastIndicationResults.matchedIndication?.label || this.lastIndicationQuery
+            );
         }
 
-        // Si hay resultados de búsqueda guardados
-        if (this.lastSearchResults && this.currentView === 'search') {
-            const resultsContainer = document.getElementById('search-results');
-            const resultsGrid = resultsContainer?.querySelector('.results-grid');
-            if (resultsGrid) {
-                resultsGrid.innerHTML =
-                    this.lastSearchResults.resultados.map(med => this.renderMedCard(med)).join('');
+        // Si hay resultados de búsqueda guardados - re-renderizar completamente
+        // para manejar correctamente la estructura de grupos colapsables
+        if (this._lastSearchData && this.currentView === 'search') {
+            this.displaySearchResults(this._lastSearchData);
+        }
 
-                resultsGrid.querySelectorAll('.result-card').forEach(card => {
-                    card.addEventListener('click', () => {
-                        this.openMedDetails(card.dataset.nregistro);
-                    });
-                });
-            }
+        // Si hay resultados de equivalencias guardados - re-aplicar filtros para re-renderizar
+        if (this.equivAllResults && this.currentView === 'equivalences') {
+            this.applyEquivFilters();
         }
     }
 
@@ -318,20 +302,14 @@ class MedCheckApp {
         const comercChecked = this.lastSearchFilters.comerc ? 'checked' : '';
         const genericChecked = this.lastSearchFilters.generic ? 'checked' : '';
         const showBrandsChecked = this.lastSearchFilters.showBrands ? 'checked' : '';
-        const searchType = this.lastSearchFilters.searchType || 'pa';
 
         this.content.innerHTML = `
             <div class="search-box">
                 <div class="search-row-main">
-                    <select id="search-type" class="search-type-select">
-                        <option value="pa" ${searchType === 'pa' ? 'selected' : ''}>Principio Activo</option>
-                        <option value="marca" ${searchType === 'marca' ? 'selected' : ''}>Marca Comercial</option>
-                        <option value="cn" ${searchType === 'cn' ? 'selected' : ''}>Código Nacional</option>
-                    </select>
                     <div class="search-input-wrapper">
                         <i class="fas fa-search"></i>
                         <input type="text" id="search-input" class="search-input" 
-                               placeholder="${this._getSearchPlaceholder(searchType)}" 
+                               placeholder="Buscar medicamento (nombre, principio activo o CN)..." 
                                value="${this.lastSearchQuery}"
                                autocomplete="off"
                                autofocus>
@@ -355,7 +333,6 @@ class MedCheckApp {
 
         const searchInput = document.getElementById('search-input');
         const searchBtn = document.getElementById('search-btn');
-        const searchTypeSelect = document.getElementById('search-type');
         const filterComerc = document.getElementById('filter-comerc');
         const filterGeneric = document.getElementById('filter-generic');
         const filterShowBrands = document.getElementById('filter-show-brands');
@@ -363,20 +340,6 @@ class MedCheckApp {
         searchBtn.addEventListener('click', () => {
             document.getElementById('search-autocomplete').classList.add('hidden');
             this.performSearch();
-        });
-
-        // Search type selector changes
-        searchTypeSelect.addEventListener('change', () => {
-            const type = searchTypeSelect.value;
-            searchInput.placeholder = this._getSearchPlaceholder(type);
-            // Show/hide "Mostrar marcas" checkbox (only for PA)
-            const showBrandsFilter = document.getElementById('show-brands-filter');
-            if (showBrandsFilter) {
-                showBrandsFilter.style.display = type === 'pa' ? '' : 'none';
-            }
-            // Clear previous results when type changes
-            this.lastSearchResults = null;
-            document.getElementById('search-results').innerHTML = '';
         });
 
         searchInput.addEventListener('keydown', (e) => {
@@ -469,17 +432,20 @@ class MedCheckApp {
 
     async performSearch() {
         const query = document.getElementById('search-input').value.trim();
-        const searchType = document.getElementById('search-type')?.value || 'pa';
 
         if (query.length < 2) {
             this.showToast('Introduce al menos 2 caracteres', 'warning');
             return;
         }
 
+        // Auto-detectar tipo de búsqueda
+        // CN = 6-7 dígitos numéricos, todo lo demás = búsqueda inteligente combinada
+        const isCN = /^\d{6,7}$/.test(query);
+        const searchType = isCN ? 'cn' : 'smart';
+
         // Save search state for persistence
         this.lastSearchQuery = query;
         this.lastSearchFilters = {
-            searchType: searchType,
             comerc: document.getElementById('filter-comerc').checked,
             generic: document.getElementById('filter-generic').checked,
             showBrands: document.getElementById('filter-show-brands')?.checked || false
@@ -493,8 +459,14 @@ class MedCheckApp {
                 comerc: this.lastSearchFilters.comerc ? 1 : undefined
             };
 
-            // Usar searchByType con el tipo seleccionado
-            const rawData = await this.api.searchByType(query, searchType, filters);
+            // Búsqueda inteligente: CN directo, texto usa búsqueda combinada
+            let rawData;
+            if (isCN) {
+                rawData = await this.api.searchByType(query, 'cn', filters);
+            } else {
+                // Búsqueda combinada: nombre + principio activo + palabras individuales
+                rawData = await this._performSmartSearch(query, filters);
+            }
 
             if (!rawData.resultados || rawData.resultados.length === 0) {
                 this.lastSearchResults = null;
@@ -502,7 +474,7 @@ class MedCheckApp {
                     <div class="empty-state">
                         <i class="fas fa-search-minus"></i>
                         <h3>Sin resultados</h3>
-                        <p>No se encontraron medicamentos para "${query}" (${this._getSearchTypeLabel(searchType)})</p>
+                        <p>No se encontraron medicamentos para "${query}"</p>
                     </div>
                 `;
                 return;
@@ -546,11 +518,108 @@ class MedCheckApp {
     }
 
     /**
-     * Get human readable label for search type
+     * Búsqueda inteligente combinada con filtrado de relevancia
+     * Estrategia: Primero buscar query completo (+ versión con sinónimos), luego expandir solo si necesario
+     */
+    async _performSmartSearch(query, filters = {}) {
+        // Diccionario de sinónimos
+        const synonyms = {
+            'ferroso': 'hierro',
+            'ferrico': 'hierro',
+            'potasico': 'potasio',
+            'sodico': 'sodio',
+            'calcico': 'calcio',
+            'magnésico': 'magnesio',
+            'magnesico': 'magnesio'
+        };
+
+        // Normalizar query
+        const normalizedQuery = query.toLowerCase();
+        const words = normalizedQuery.split(/\s+/).filter(w => w.length >= 3);
+
+        // Crear versión del query con sinónimos aplicados
+        // "sulfato ferroso" → "hierro sulfato" (invierte orden para API CIMA)
+        const transformedWords = words.map(w => synonyms[w] || w);
+        const synonymQuery = transformedWords.join(' ');
+        const reversedSynonymQuery = [...transformedWords].reverse().join(' ');
+
+        // FASE 1: Búsquedas por query completo (original + variantes con sinónimos)
+        const primarySearches = [
+            this.api.searchMedicamentos({ nombre: query, ...filters }),
+            this.api.searchMedicamentos({ practiv1: query, ...filters })
+        ];
+
+        // Añadir búsquedas con sinónimos si son diferentes del original
+        if (synonymQuery !== normalizedQuery) {
+            primarySearches.push(this.api.searchMedicamentos({ practiv1: synonymQuery, ...filters }));
+            // También probar orden invertido (HIERRO SULFATO vs SULFATO HIERRO)
+            if (reversedSynonymQuery !== synonymQuery) {
+                primarySearches.push(this.api.searchMedicamentos({ practiv1: reversedSynonymQuery, ...filters }));
+            }
+        }
+
+        const primaryResults = await Promise.allSettled(primarySearches);
+
+        // Combinar y deduplicar resultados primarios
+        const seen = new Set();
+        let allResults = [];
+
+        for (const result of primaryResults) {
+            if (result.status !== 'fulfilled') continue;
+            for (const med of (result.value?.resultados || [])) {
+                if (!seen.has(med.nregistro)) {
+                    seen.add(med.nregistro);
+                    allResults.push(med);
+                }
+            }
+        }
+
+        // Si hay resultados de fase 1, usarlos (son los más relevantes)
+        if (allResults.length > 0) {
+            return {
+                resultados: allResults,
+                totalFilas: allResults.length
+            };
+        }
+
+        // FASE 2: Fallback a palabras individuales solo si fase 1 no encuentra nada
+        const expandedWords = new Set(words);
+        for (const word of words) {
+            if (synonyms[word]) {
+                expandedWords.add(synonyms[word]);
+            }
+        }
+
+        const fallbackSearches = [];
+        for (const word of expandedWords) {
+            fallbackSearches.push(this.api.searchMedicamentos({ practiv1: word, ...filters }));
+        }
+
+        const fallbackResults = await Promise.allSettled(fallbackSearches);
+
+        for (const result of fallbackResults) {
+            if (result.status !== 'fulfilled') continue;
+            for (const med of (result.value?.resultados || [])) {
+                if (!seen.has(med.nregistro)) {
+                    seen.add(med.nregistro);
+                    allResults.push(med);
+                }
+            }
+        }
+
+        return {
+            resultados: allResults,
+            totalFilas: allResults.length
+        };
+    }
+
+    /**
+     * Get human readable label for search type (kept for backwards compatibility)
      */
     _getSearchTypeLabel(type) {
         switch (type) {
             case 'cn': return 'Código Nacional';
+            case 'smart': return 'búsqueda inteligente';
             case 'marca': return 'marca comercial';
             case 'pa':
             default: return 'principio activo';
@@ -571,13 +640,88 @@ class MedCheckApp {
         clearTimeout(this.autocompleteTimer);
         this.autocompleteTimer = setTimeout(async () => {
             try {
-                const results = await this.api.smartSearch(query, { comerc: 1, pagina: 1 });
-                if (!results.resultados?.length) {
+                // Diccionario de sinónimos para términos comunes en español
+                // Permite encontrar "HIERRO SULFATO" cuando se busca "sulfato ferroso"
+                const synonyms = {
+                    'ferroso': 'hierro',
+                    'ferrico': 'hierro',
+                    'potasico': 'potasio',
+                    'sodico': 'sodio',
+                    'calcico': 'calcio',
+                    'magnésico': 'magnesio',
+                    'magnesico': 'magnesio'
+                };
+
+                // Normalizar query y expandir sinónimos
+                const normalizedQuery = query.toLowerCase();
+                const words = normalizedQuery.split(/\s+/).filter(w => w.length >= 3);
+
+                // Expandir palabras con sinónimos
+                const expandedWords = new Set(words);
+                for (const word of words) {
+                    if (synonyms[word]) {
+                        expandedWords.add(synonyms[word]);
+                    }
+                }
+
+                // Estrategia de búsqueda múltiple para autocomplete:
+                // 1. Búsqueda por nombre comercial (query exacto)
+                // 2. Búsqueda por principio activo (practiv1 - query completo)
+                // 3. Búsqueda por cada palabra individual (incluyendo sinónimos)
+                const searches = [
+                    this.api.searchMedicamentos({ nombre: query, comerc: 1, pagina: 1 }),
+                    this.api.searchMedicamentos({ practiv1: query, comerc: 1, pagina: 1 })
+                ];
+
+                // Buscar por cada palabra expandida (incluyendo sinónimos)
+                // Siempre buscar por palabras individuales para mejor cobertura
+                for (const word of expandedWords) {
+                    searches.push(this.api.searchMedicamentos({ practiv1: word, comerc: 1, pagina: 1 }));
+                }
+
+                const results = await Promise.allSettled(searches);
+
+                // Combinar y deduplicar resultados (por nregistro)
+                const seen = new Set();
+                let allResults = [];
+
+                // Procesar todos los resultados
+                for (const result of results) {
+                    if (result.status !== 'fulfilled') continue;
+                    for (const med of (result.value?.resultados || [])) {
+                        if (!seen.has(med.nregistro)) {
+                            seen.add(med.nregistro);
+                            allResults.push(med);
+                        }
+                    }
+                }
+
+                // Rankear resultados por relevancia si hay matcheos locales posibles
+                // NOTA: El campo pactivos viene undefined en búsquedas (solo en detalle)
+                // Por eso NO filtramos, solo ordenamos. La API ya pre-filtra por practiv1.
+                if (allResults.length > 0) {
+                    allResults = allResults.map(med => {
+                        const pactivos = (med.pactivos || med.vtm?.nombre || '').toLowerCase();
+                        const nombre = (med.nombre || '').toLowerCase();
+
+                        // Contar cuántas palabras de la query (o sus sinónimos) aparecen
+                        let matchCount = 0;
+                        for (const word of expandedWords) {
+                            if (pactivos.includes(word) || nombre.includes(word)) {
+                                matchCount++;
+                            }
+                        }
+                        return { ...med, _matchScore: matchCount };
+                    })
+                        .sort((a, b) => b._matchScore - a._matchScore);  // Solo ordenar, NO filtrar
+                }
+
+                if (!allResults.length) {
                     dropdown.classList.add('hidden');
                     return;
                 }
 
-                dropdown.innerHTML = results.resultados.slice(0, 8).map(med => {
+                dropdown.innerHTML = allResults.slice(0, 8).map(med => {
                     const atcInfo = this.getATCClinicalInfo(med);
                     const pactivos = med.pactivos || '';
 
@@ -941,23 +1085,37 @@ class MedCheckApp {
         if (this.patientContext.driving && med.conduc) {
             contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Afecta a la conducción" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-car"></i> Conducción</div>`);
         }
+        if (this.patientContext.elderly) {
+            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Paciente mayor de 65 años - Ver precauciones" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-user-clock"></i> Revisar >65</div>`);
+        }
         if (this.patientContext.pregnancy || this.patientContext.lactation) {
             contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Ver sección 4.6 - Fertilidad, embarazo y lactancia" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-baby"></i> Revisar Emb/Lact</div>`);
         }
-        if ((this.patientContext.renal || this.patientContext.gfr) && this.patientContext.gfr < 60) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Verificar ajuste renal" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-kidneys"></i> Revisar Renal</div>`);
+        if (this.patientContext.renal) {
+            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Insuficiencia renal - Ver ajuste de dosis" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-kidneys"></i> Revisar Renal</div>`);
+        }
+        if (this.patientContext.hepatic) {
+            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Insuficiencia hepática - Ver ajuste de dosis" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-disease"></i> Revisar Hepático</div>`);
         }
 
-        // Información principal - Mejor extracción del principio activo
-        let pActivo = med.pactivos || (med.principiosActivos && med.principiosActivos[0]?.nombre) || '';
-        if (!pActivo && med.nombre) {
-            // Fallback: extraer del nombre (ej: "ABIRATERONA GLENMARK 500 MG...")
-            const labPatterns = /\s+(EFG|STADA|TEVA|NORMON|CINFA|SANDOZ|RATIOPHARM|MYLAN|KERN|AUROVITAS|ZENTIVA|ACCORD|SUN|VIATRIS|RANBAXY|GLENMARK|ARISTO|QUALIGEN|PENSA|ALTER|FARMALIDER|ALMUS|MEDCHEMAX|APOTEX|PHARMAKERN|DAVUR|FLAS)[\s,]?/gi;
-            const dosePattern = /\s+\d+[\.,]?\d*\s*(MG|MCG|G|ML|UI|%|mg|mcg|g|ml|ui).*/i;
-            let extracted = med.nombre.replace(labPatterns, ' ').replace(dosePattern, '').trim();
-            extracted = extracted.replace(/\s+(COMPRIMIDOS|CAPSULAS|SOBRES|SOLUCION|POLVO|INYECTABLE|VIAL|SUSPENSION|JARABE|GOTAS|CREMA|GEL|POMADA).*$/gi, '').trim();
-            if (extracted && extracted !== med.nombre) {
-                pActivo = extracted;
+        // Información principal - Principio activo desde la API
+        // Solo usar campos oficiales de la API, no intentar extraer del nombre comercial
+        let pActivo = '';
+        if (med.pactivos) {
+            pActivo = med.pactivos;
+        } else if (med.vtm?.nombre) {
+            pActivo = med.vtm.nombre;
+        } else if (med.principiosActivos && med.principiosActivos.length > 0) {
+            pActivo = med.principiosActivos.map(pa => pa.nombre).join(', ');
+        }
+
+        // Evitar mostrar pActivo si es igual o muy similar al título (redundante)
+        if (pActivo) {
+            const nombreLower = med.nombre.toLowerCase();
+            const pActivoLower = pActivo.toLowerCase();
+            // Si el nombre contiene el principio activo completo, es redundante
+            if (nombreLower.includes(pActivoLower) || pActivoLower.includes(nombreLower.split(' ')[0])) {
+                pActivo = ''; // No mostrar para evitar redundancia
             }
         }
         const dosis = med.dosis || '';
@@ -1534,8 +1692,8 @@ class MedCheckApp {
         if (this.patientContext.pregnancy || this.patientContext.lactation) {
             contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Ver sección 4.6 - Fertilidad, embarazo y lactancia" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-baby"></i> Revisar Emb/Lact</div>`);
         }
-        if ((this.patientContext.renal || this.patientContext.gfr) && this.patientContext.gfr < 60) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Verificar ajuste renal" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-kidneys"></i> Revisar Renal</div>`);
+        if (this.patientContext.renal) {
+            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Insuficiencia renal - Ver ajuste de dosis" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-kidneys"></i> Revisar Renal</div>`);
         }
         if (this.patientContext.hepatic) {
             contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Verificar ajuste hepático" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-disease"></i> Revisar Hep.</div>`);
@@ -1544,22 +1702,22 @@ class MedCheckApp {
             contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Paciente mayor" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-user-clock"></i> >65</div>`);
         }
 
-        // Mejor extracción del principio activo
+        // Principio activo desde la API - sin fallback del nombre comercial
         let pActivo = '';
         if (med.pactivos) {
             pActivo = med.pactivos;
+        } else if (med.vtm?.nombre) {
+            pActivo = med.vtm.nombre;
         } else if (med.principiosActivos && med.principiosActivos.length > 0) {
             pActivo = med.principiosActivos.map(pa => pa.nombre).join(', ');
-        } else if (med.nombre) {
-            // Fallback: extraer del nombre (ej: "ABIRATERONA GLENMARK 500 MG...")
-            // Eliminar laboratorios y dosis comunes
-            const labPatterns = /\s+(EFG|STADA|TEVA|NORMON|CINFA|SANDOZ|RATIOPHARM|MYLAN|KERN|AUROVITAS|ZENTIVA|ACCORD|SUN|VIATRIS|RANBAXY|GLENMARK|ARISTO|QUALIGEN|PENSA|ALTER|FARMALIDER|ALMUS|MEDCHEMAX|APOTEX|PHARMAKERN|DAVUR|FLAS)[\s,]?/gi;
-            const dosePattern = /\s+\d+[\.,]?\d*\s*(MG|MCG|G|ML|UI|%|mg|mcg|g|ml|ui).*/i;
-            let extracted = med.nombre.replace(labPatterns, ' ').replace(dosePattern, '').trim();
-            // Limpiar palabras extra finales (COMPRIMIDOS, etc.)
-            extracted = extracted.replace(/\s+(COMPRIMIDOS|CAPSULAS|SOBRES|SOLUCION|POLVO|INYECTABLE|VIAL|SUSPENSION|JARABE|GOTAS|CREMA|GEL|POMADA).*$/gi, '').trim();
-            if (extracted && extracted !== med.nombre) {
-                pActivo = extracted;
+        }
+
+        // Evitar mostrar pActivo si es redundante con el título
+        if (pActivo) {
+            const nombreLower = med.nombre.toLowerCase();
+            const pActivoLower = pActivo.toLowerCase();
+            if (nombreLower.includes(pActivoLower) || pActivoLower.includes(nombreLower.split(' ')[0])) {
+                pActivo = ''; // No mostrar para evitar redundancia
             }
         }
 
@@ -3987,7 +4145,10 @@ class MedCheckApp {
         this.groupingState.expandedGroups.add(groupId);
 
         // Re-render results to show all items
-        if (this.lastIndicationResults) {
+        // Check if we're in search view or indications view
+        if (this._lastSearchData) {
+            this.displaySearchResults(this._lastSearchData);
+        } else if (this.lastIndicationResults) {
             this.displayGroupedIndicationResults(this.lastIndicationResults, this.lastIndicationQuery);
         }
     }
