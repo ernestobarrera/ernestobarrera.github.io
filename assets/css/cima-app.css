@@ -525,6 +525,7 @@ body {
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
 }
 
@@ -1247,22 +1248,25 @@ body {
 /* Modal Tabs */
 .modal-tabs {
     display: flex;
-    gap: var(--space-sm);
+    flex-wrap: wrap;
+    gap: var(--space-xs);
     border-bottom: 1px solid var(--border-default);
     margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-xs);
 }
 
 .modal-tab {
-    padding: var(--space-sm) var(--space-md);
+    padding: var(--space-xs) var(--space-sm);
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition-fast);
     font-family: inherit;
+    white-space: nowrap;
 }
 
 .modal-tab:hover {
@@ -3604,6 +3608,135 @@ body {
 }
 
 /* ============================================
+   Posology Tab - Section 4.2 Highlighting
+   ============================================ */
+
+/* Section header for all modal tabs */
+.section-header {
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--border-default);
+}
+
+.section-header h4 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    color: var(--primary);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.section-header h4 i {
+    font-size: 1.1rem;
+}
+
+/* Section text container - for FT/prospectus content */
+.section-text {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.02);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    max-height: 450px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Override any inherited dark/muted colors from API HTML */
+.section-text,
+.section-text * {
+    color: var(--text-primary) !important;
+}
+
+/* Keep highlights with their specific colors */
+.section-text mark.posology-food {
+    color: #fbbf24 !important;
+}
+
+.section-text mark.posology-timing {
+    color: #60a5fa !important;
+}
+
+.section-text p {
+    margin-bottom: var(--space-sm);
+}
+
+.section-text ul,
+.section-text ol {
+    margin: var(--space-sm) 0;
+    padding-left: var(--space-lg);
+}
+
+.section-text li {
+    margin-bottom: var(--space-xs);
+}
+
+/* Tables inside section text - prevent overflow */
+.section-text table {
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+    font-size: 0.8rem;
+}
+
+.section-text td,
+.section-text th {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    padding: var(--space-xs);
+}
+
+/* Posology legend */
+.posology-legend {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--bg-surface);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+}
+
+.posology-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    color: var(--text-secondary);
+}
+
+/* Food-related keyword highlight - warm yellow/orange */
+.posology-food,
+mark.posology-food {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.35), rgba(245, 158, 11, 0.25));
+    color: #fbbf24 !important;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+/* Timing keyword highlight - cool blue */
+.posology-timing,
+mark.posology-timing {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.30), rgba(99, 102, 241, 0.20));
+    color: #60a5fa !important;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+/* Section viewer content container */
+.section-viewer-content {
+    min-height: 150px;
+}
+
+
+/* ============================================
    Responsive Design - Prevent Overflow
    ============================================ */
 
@@ -3768,24 +3901,19 @@ code {
         font-size: 0.8rem;
     }
 
-    /* Modal tabs - more compact */
+    /* Modal tabs - two rows layout for 6 tabs */
     .modal-tabs {
-        gap: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
         margin-bottom: var(--space-md);
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-    }
-
-    .modal-tabs::-webkit-scrollbar {
-        display: none;
+        justify-content: center;
     }
 
     .modal-tab {
-        padding: var(--space-sm) var(--space-md);
-        font-size: 0.8rem;
-        white-space: nowrap;
-        flex-shrink: 0;
+        padding: var(--space-xs) var(--space-sm);
+        font-size: 0.75rem;
+        flex: 0 1 auto;
     }
 
     /* Detail list compact */

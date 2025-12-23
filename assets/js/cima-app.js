@@ -3058,6 +3058,7 @@ class MedCheckApp {
             // Determine which tab should be active
             const isInfoActive = initialTab === 'info';
             const isDocsActive = initialTab === 'docs';
+            const isPosologyActive = initialTab === 'posology';
             const isInteractionsActive = initialTab === 'interactions';
             const isAdverseActive = initialTab === 'adverse';
             const isSafetyActive = initialTab === 'safety';
@@ -3071,6 +3072,7 @@ class MedCheckApp {
                 <div class="modal-tabs">
                     <button class="modal-tab ${isInfoActive ? 'active' : ''}" data-tab="info">Información</button>
                     <button class="modal-tab ${isDocsActive ? 'active' : ''}" data-tab="docs">Documentos</button>
+                    <button class="modal-tab ${isPosologyActive ? 'active' : ''}" data-tab="posology">Posología</button>
                     <button class="modal-tab ${isInteractionsActive ? 'active' : ''}" data-tab="interactions">Interacciones</button>
                     <button class="modal-tab ${isAdverseActive ? 'active' : ''}" data-tab="adverse">Reacciones</button>
                     <button class="modal-tab ${isSafetyActive ? 'active' : ''}" data-tab="safety">Seguridad</button>
@@ -3082,6 +3084,10 @@ class MedCheckApp {
 
                 <div id="tab-docs" class="tab-content ${isDocsActive ? 'active' : ''}">
                     ${this.renderDocsTab(med)}
+                </div>
+
+                <div id="tab-posology" class="tab-content ${isPosologyActive ? 'active' : ''}">
+                    ${this.renderModalPosologyTab(med)}
                 </div>
 
                 <div id="tab-interactions" class="tab-content ${isInteractionsActive ? 'active' : ''}">
@@ -3307,6 +3313,104 @@ class MedCheckApp {
             </div>
     `;
     }
+
+    /**
+     * Renders the Posology tab content in the modal
+     * Shows section 4.2 (Dosage and Administration) from technical sheet
+     */
+    renderModalPosologyTab(med) {
+        // Return placeholder that loads content asynchronously
+        setTimeout(() => this.loadPosologyContent(med.nregistro), 100);
+
+        return `
+    <div id="posology-tab-content" class="section-viewer-content">
+                <div class="loading-spinner"></div>
+                <p class="text-muted text-center">Cargando sección 4.2...</p>
+            </div>
+    `;
+    }
+
+    /**
+     * Loads section 4.2 content asynchronously with food-related keyword highlighting
+     */
+    async loadPosologyContent(nregistro) {
+        const container = document.getElementById('posology-tab-content');
+        if (!container) return;
+
+        try {
+            let content = await this.api.getDocSeccion(nregistro, '4.2');
+
+            if (!content || content.length < 50) {
+                container.innerHTML = `
+    <div class="empty-state">
+                        <i class="fas fa-info-circle"></i>
+                        <p>Sección 4.2 no disponible para este medicamento</p>
+                    </div>
+    `;
+                return;
+            }
+
+            // Highlight food-related and important posology keywords
+            const foodKeywords = [
+                'alimento', 'alimentos', 'comida', 'comidas',
+                'desayuno', 'almuerzo', 'cena',
+                'ayunas', 'ayuno',
+                'antes de comer', 'después de comer',
+                'antes de las comidas', 'después de las comidas',
+                'con las comidas', 'sin alimentos',
+                'con comida', 'sin comida', 'con alimentos',
+                'estómago vacío', 'estómago lleno',
+                'leche', 'lácteos', 'zumo', 'agua',
+                'grasa', 'grasas', 'alto contenido graso'
+            ];
+
+            const timingKeywords = [
+                'una vez al día', 'dos veces al día', 'tres veces al día',
+                'cada 24 horas', 'cada 12 horas', 'cada 8 horas', 'cada 6 horas',
+                'por la mañana', 'por la noche', 'antes de acostarse',
+                'mañana', 'noche'
+            ];
+
+            // Apply highlighting
+            let highlightedContent = content;
+
+            // Food keywords - yellow highlight
+            foodKeywords.forEach(keyword => {
+                const regex = new RegExp(`(${keyword})`, 'gi');
+                highlightedContent = highlightedContent.replace(regex,
+                    '<mark class="posology-food">$1</mark>');
+            });
+
+            // Timing keywords - blue highlight
+            timingKeywords.forEach(keyword => {
+                const regex = new RegExp(`(${keyword})`, 'gi');
+                highlightedContent = highlightedContent.replace(regex,
+                    '<mark class="posology-timing">$1</mark>');
+            });
+
+            container.innerHTML = `
+    <div class="section-header">
+        <h4><i class="fas fa-clock"></i> Sección 4.2: Posología y forma de administración</h4>
+                </div>
+    <div class="posology-legend">
+        <span class="legend-item"><mark class="posology-food">Alimentos</mark></span>
+        <span class="legend-item"><mark class="posology-timing">Horario</mark></span>
+    </div>
+    <div class="section-text">
+        ${highlightedContent}
+    </div>
+`;
+        } catch (error) {
+            console.error('Error loading section 4.2:', error);
+            container.innerHTML = `
+    <div class="empty-state">
+                    <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i>
+                    <p>Error al cargar la sección de posología</p>
+                </div>
+    `;
+        }
+    }
+
 
     /**
      * Renders the Interactions tab content in the modal
