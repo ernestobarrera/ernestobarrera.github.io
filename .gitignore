@@ -49,3 +49,11 @@ $RECYCLE.BIN/
 # Archivos personales de desarrollo, no publicar
 documentos/
 
+# Nomenclátor AEMPS (archivos grandes, no subir)
+docs/cima/prescripcion.zip
+docs/cima/prescripcion/
+docs/cima/Presentaciones.xls
+docs/cima/Presentaciones.xls.csv
+docs/cima/*.txt
+docs/cima/MEDCHECK-CHECKPOINT.md
+
