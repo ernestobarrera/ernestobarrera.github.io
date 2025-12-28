@@ -2796,20 +2796,62 @@ class MedCheckApp {
                 return;
             }
 
-            // Obtener detalles del primer medicamento para extraer principio activo
-            const firstMed = searchData.resultados[0];
-            const details = await this.api.getMedicamento(firstMed.nregistro);
+            // Buscar el medicamento que mejor coincida con la búsqueda
+            // Usamos un sistema de scoring más robusto
+            const queryLower = query.toLowerCase();
+            let bestMatch = searchData.resultados[0];
+            let bestScore = 0;
 
-            // Extraer principio activo
-            let principioActivo = '';
-            if (details.principiosActivos && details.principiosActivos.length > 0) {
-                principioActivo = details.principiosActivos[0].nombre;
-            } else if (firstMed.pactivos) {
-                // Extraer solo el primer principio activo del campo pactivos
-                principioActivo = firstMed.pactivos.split(',')[0].trim();
+            for (const med of searchData.resultados) {
+                const medName = (med.nombre || '').toLowerCase();
+                let score = 0;
+
+                // Coincidencia exacta del nombre
+                if (medName === queryLower) {
+                    score = 100;
+                }
+                // El nombre empieza con la búsqueda
+                else if (medName.startsWith(queryLower)) {
+                    score = 90;
+                }
+                // La búsqueda está contenida en el nombre
+                else if (medName.includes(queryLower)) {
+                    score = 80;
+                }
+                // Palabras de la búsqueda están en el nombre
+                else {
+                    const queryWords = queryLower.split(/\s+/);
+                    const matchedWords = queryWords.filter(w => medName.includes(w));
+                    score = (matchedWords.length / queryWords.length) * 70;
+                }
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMatch = med;
+                }
             }
 
-            if (!principioActivo) {
+            console.log(`🔍 Mejor coincidencia para "${query}": ${bestMatch.nombre} (score: ${bestScore})`);
+
+            const firstMed = bestMatch;
+            const details = await this.api.getMedicamento(firstMed.nregistro);
+
+            // Extraer todos los principios activos (solo nombres, sin dosis)
+            let principiosActivos = [];
+            const numPrincipiosOriginal = details.principiosActivos?.length || 0;
+
+            if (details.principiosActivos && details.principiosActivos.length > 0) {
+                principiosActivos = details.principiosActivos.map(pa => pa.nombre);
+            } else if (firstMed.pactivos) {
+                // Fallback: extraer de pactivos, pero esto incluye dosis
+                // Intentar limpiar nombres quitando patrones de dosis
+                principiosActivos = firstMed.pactivos.split(',').map(p => {
+                    // Quitar dosis: eliminar patron " XX mg" o " XX,XX %"
+                    return p.trim().replace(/\s+\d+[\d,\.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s\/]*/gi, '').trim();
+                }).filter(p => p);
+            }
+
+            if (principiosActivos.length === 0) {
                 resultsContainer.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-info-circle"></i>
@@ -2820,31 +2862,48 @@ class MedCheckApp {
                 return;
             }
 
-            // Buscar todos los medicamentos con ese principio activo
-            const equivData = await this.api.searchMedicamentos({
-                practiv1: principioActivo,
-                comerc: 1
-            });
+            // Construir parámetros de búsqueda con los principios activos
+            // Usar npactiv para filtrar por número exacto de principios activos (solución canónica de la API)
+            const searchParams = { comerc: 1 };
+
+            // Añadir todos los principios activos disponibles (la API soporta practiv1 y practiv2)
+            if (principiosActivos[0]) searchParams.practiv1 = principiosActivos[0];
+            if (principiosActivos[1]) searchParams.practiv2 = principiosActivos[1];
+
+            // CLAVE: Usar npactiv para garantizar mismo número de principios activos
+            // Esto filtra directamente en la API, evitando problemas con comas decimales en pactivos
+            if (numPrincipiosOriginal > 0) {
+                searchParams.npactiv = numPrincipiosOriginal;
+            }
+
+            console.log(`🔍 Buscando equivalentes con:`, searchParams);
+
+            // Buscar todos los medicamentos con esos principios activos y mismo número de PA
+            const equivData = await this.api.searchMedicamentos(searchParams);
 
             if (!equivData.resultados || equivData.resultados.length === 0) {
+                const displayPactivos = principiosActivos.join(' + ');
                 resultsContainer.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-exchange-alt"></i>
                         <h3>Sin equivalencias</h3>
-                        <p>No hay otros medicamentos con ${principioActivo}</p>
+                        <p>No hay otros medicamentos con ${displayPactivos}</p>
                     </div>
                 `;
                 return;
             }
 
-            this.renderEquivResults(equivData.resultados, principioActivo);
+            // Con npactiv ya filtramos en la API, los resultados son exactos
+            const resultsToShow = equivData.resultados;
+
+            this.renderEquivResults(resultsToShow, principiosActivos.join(' + '), false, numPrincipiosOriginal);
 
         } catch (error) {
             this.handleSearchError(resultsContainer, error);
         }
     }
 
-    renderEquivResults(results, principioActivo) {
+    renderEquivResults(results, principioActivo, isFiltered = false, numPa = 0) {
         const container = document.getElementById('equiv-results');
 
         if (!results || !Array.isArray(results) || results.length === 0) {
@@ -3221,10 +3280,44 @@ class MedCheckApp {
             const isAdverseActive = initialTab === 'adverse';
             const isSafetyActive = initialTab === 'safety';
 
+            // Get medication images for thumbnail and lightbox
+            const medFotos = med.fotos || [];
+            const thumbnailUrl = medFotos.find(f => f.tipo === 'materialas')?.url
+                || medFotos.find(f => f.tipo === 'formafarmac')?.url;
+
+            // Build image data for lightbox
+            const lightboxImages = medFotos.map(f => ({
+                url: f.url.replace('/thumbnails/', '/full/'),
+                thumbUrl: f.url,
+                caption: f.tipo === 'materialas' ? 'Envase / Acondicionamiento' : 'Forma farmacéutica'
+            }));
+
+            // Create badge text for images
+            const imageCount = lightboxImages.length;
+            const imageBadge = imageCount > 0
+                ? `<span class="med-thumbnail-badge" title="Click para ver ${imageCount} imagen${imageCount > 1 ? 'es' : ''}: envase${imageCount > 1 ? ' y forma farmacéutica' : ''}">
+                       <i class="fas fa-search-plus"></i> ${imageCount}
+                   </span>`
+                : '';
+
             this.modalBody.innerHTML = `
     <div class="modal-header">
-                    <h2 class="modal-title">${med.nombre}</h2>
-                    <p class="modal-subtitle">${med.labtitular}</p>
+                    <div class="med-thumbnail-wrapper">
+                        ${thumbnailUrl && lightboxImages.length > 0
+                    ? `<div class="med-thumbnail-container">
+                           <img src="${thumbnailUrl}" alt="Imagen del medicamento" class="med-thumbnail" 
+                                onclick="app.openImageLightbox(${JSON.stringify(lightboxImages).replace(/"/g, '&quot;')}, 0)"
+                                onerror="this.parentElement.outerHTML='<div class=\\'med-thumbnail-placeholder\\'><i class=\\'fas fa-pills\\'></i></div>'"
+                                title="Click para ver imágenes del medicamento">
+                           ${imageBadge}
+                       </div>`
+                    : `<div class="med-thumbnail-placeholder"><i class="fas fa-pills"></i></div>`
+                }
+                        <div class="med-header-info">
+                            <h2 class="modal-title">${med.nombre}</h2>
+                            <p class="modal-subtitle">${med.labtitular}</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="modal-tabs">
@@ -3349,7 +3442,7 @@ class MedCheckApp {
             </div>
             
             <div class="mt-lg" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="app.searchEquivalences('${pActivos.split(',')[0].split(' ')[0]}')">
+                <button class="btn btn-primary" onclick="app.searchEquivalences('${med.nombre.replace(/'/g, "\\'")}')">
                     <i class="fas fa-exchange-alt"></i> Equivalencias
                 </button>
                 <button class="btn btn-secondary" onclick="app.goToSafetyWithMed('${med.nombre}')">
@@ -4505,6 +4598,93 @@ class MedCheckApp {
 
         // Default: just load the view
         this.loadView(targetView, false);
+    }
+
+    // ============================================
+    // IMAGE LIGHTBOX
+    // ============================================
+
+    /**
+     * Opens a lightbox to display medication images
+     * @param {Array} images - Array of {url, thumbUrl, caption} objects
+     * @param {number} startIndex - Index of image to show first
+     */
+    openImageLightbox(images, startIndex = 0) {
+        if (!images || images.length === 0) return;
+
+        this.lightboxImages = images;
+        this.lightboxIndex = startIndex;
+
+        // Create lightbox if it doesn't exist
+        let lightbox = document.getElementById('image-lightbox');
+        if (!lightbox) {
+            lightbox = document.createElement('div');
+            lightbox.id = 'image-lightbox';
+            lightbox.className = 'image-lightbox';
+            document.body.appendChild(lightbox);
+        }
+
+        this.renderLightbox();
+        lightbox.classList.add('active');
+
+        // Close on escape key
+        this._lightboxEscHandler = (e) => {
+            if (e.key === 'Escape') this.closeImageLightbox();
+        };
+        document.addEventListener('keydown', this._lightboxEscHandler);
+    }
+
+    renderLightbox() {
+        const lightbox = document.getElementById('image-lightbox');
+        if (!lightbox) return;
+
+        const currentImage = this.lightboxImages[this.lightboxIndex];
+        const hasMultiple = this.lightboxImages.length > 1;
+
+        lightbox.innerHTML = `
+            <div class="lightbox-content">
+                <button class="lightbox-close" onclick="app.closeImageLightbox()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <img src="${currentImage.url}" alt="${currentImage.caption}" class="lightbox-image"
+                     onerror="this.src='${currentImage.thumbUrl}'">
+                <div class="lightbox-caption">
+                    <i class="fas fa-${currentImage.caption.includes('Envase') ? 'box-open' : 'pills'}"></i>
+                    ${currentImage.caption}
+                </div>
+                ${hasMultiple ? `
+                    <div class="lightbox-nav">
+                        ${this.lightboxImages.map((img, i) => `
+                            <button class="lightbox-nav-btn ${i === this.lightboxIndex ? 'active' : ''}"
+                                    onclick="app.showLightboxImage(${i})">
+                                <i class="fas fa-${img.caption.includes('Envase') ? 'box-open' : 'pills'}"></i>
+                                ${img.caption.includes('Envase') ? 'Envase' : 'Comprimido'}
+                            </button>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        // Close on click outside
+        lightbox.onclick = (e) => {
+            if (e.target === lightbox) this.closeImageLightbox();
+        };
+    }
+
+    showLightboxImage(index) {
+        this.lightboxIndex = index;
+        this.renderLightbox();
+    }
+
+    closeImageLightbox() {
+        const lightbox = document.getElementById('image-lightbox');
+        if (lightbox) {
+            lightbox.classList.remove('active');
+        }
+        if (this._lightboxEscHandler) {
+            document.removeEventListener('keydown', this._lightboxEscHandler);
+        }
     }
 }
 
