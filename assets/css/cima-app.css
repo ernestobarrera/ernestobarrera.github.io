@@ -406,14 +406,30 @@ body {
 .search-input-wrapper {
     display: flex;
     align-items: center;
-    gap: var(--space-md);
+    gap: var(--space-sm);
     position: relative;
     flex: 1;
+    /* Estilos de input visible */
+    background: var(--bg-dark);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.75rem;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.search-input-wrapper:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.search-input-wrapper:hover:not(:focus-within) {
+    border-color: var(--border-hover);
 }
 
 .search-input-wrapper i {
     color: var(--text-muted);
-    font-size: 1.1rem;
+    font-size: 1rem;
+    flex-shrink: 0;
 }
 
 /* Autocomplete dropdown */
@@ -4207,5 +4223,208 @@ code {
     .filter-chip {
         padding: 0.3rem 0.55rem;
         font-size: 0.75rem;
+    }
+}
+
+/* ============================================
+   Medication Images - Thumbnail & Lightbox
+   ============================================ */
+
+/* Thumbnail in modal header */
+.med-thumbnail-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+}
+
+.med-thumbnail {
+    width: 70px;
+    height: 70px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    border: 2px solid var(--border-default);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background: var(--bg-surface);
+    flex-shrink: 0;
+}
+
+.med-thumbnail:hover {
+    border-color: var(--primary);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.med-thumbnail-placeholder {
+    width: 70px;
+    height: 70px;
+    border-radius: var(--radius-md);
+    background: var(--bg-surface-hover);
+    border: 2px dashed var(--border-default);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.med-thumbnail-container {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.med-thumbnail-badge {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.15rem 0.4rem;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.med-thumbnail-badge:hover {
+    transform: scale(1.1);
+    box-shadow: 0 3px 8px rgba(14, 165, 233, 0.4);
+}
+
+.med-thumbnail-badge i {
+    font-size: 0.6rem;
+}
+
+.med-header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Image Lightbox */
+.image-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.92);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.image-lightbox.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.lightbox-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.lightbox-image {
+    max-width: 100%;
+    max-height: 70vh;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    object-fit: contain;
+}
+
+.lightbox-caption {
+    color: white;
+    font-size: 0.9rem;
+    text-align: center;
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+}
+
+.lightbox-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.lightbox-nav {
+    display: flex;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+}
+
+.lightbox-nav-btn {
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    color: white;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.lightbox-nav-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.lightbox-nav-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+/* Responsive adjustments for lightbox */
+@media (max-width: 480px) {
+    .med-thumbnail {
+        width: 56px;
+        height: 56px;
+    }
+
+    .med-thumbnail-placeholder {
+        width: 56px;
+        height: 56px;
+        font-size: 1.2rem;
+    }
+
+    .lightbox-content {
+        padding: var(--space-sm);
+    }
+
+    .lightbox-nav {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 }
