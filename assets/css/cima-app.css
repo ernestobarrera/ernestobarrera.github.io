@@ -1017,6 +1017,26 @@ body {
     color: white;
 }
 
+.safety-check-item.review {
+    background: rgba(99, 102, 241, 0.1);
+    border-left: 3px solid var(--primary);
+}
+
+.safety-check-item.review .safety-check-icon {
+    background: var(--primary);
+    color: white;
+}
+
+.safety-check-item.unknown {
+    background: var(--bg-surface-hover);
+    border-left: 3px solid var(--text-muted);
+}
+
+.safety-check-item.unknown .safety-check-icon {
+    background: var(--text-muted);
+    color: white;
+}
+
 .safety-check-content {
     flex: 1;
 }

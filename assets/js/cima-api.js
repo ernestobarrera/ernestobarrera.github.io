@@ -379,6 +379,45 @@ class CimaAPI {
     }
 
     /**
+     * Extrae subcódigos ATC únicos del siguiente nivel a partir de los resultados de búsqueda
+     * Esto permite derivar subcategorías dinámicamente sin mantener datos manuales
+     * @param {Array} medications - Lista de medicamentos con sus ATCs
+     * @param {string} parentCode - Código ATC padre
+     * @returns {Array} Lista de subcódigos únicos con conteo
+     */
+    extractATCSubcodes(medications, parentCode) {
+        const nextLevel = this.getNextATCLevel(parentCode.length);
+        const subcodes = new Map(); // codigo -> { count, nombres }
+        const upperParent = parentCode.toUpperCase();
+
+        for (const med of medications) {
+            if (!med.atcs || !Array.isArray(med.atcs)) continue;
+
+            for (const atc of med.atcs) {
+                const code = atc.codigo?.toUpperCase();
+                if (!code || !code.startsWith(upperParent)) continue;
+                if (code === upperParent) continue; // Skip exact match
+
+                const subcode = code.substring(0, nextLevel);
+                if (subcode.length >= nextLevel) {
+                    if (!subcodes.has(subcode)) {
+                        subcodes.set(subcode, { count: 0, nombre: atc.nombre || subcode });
+                    }
+                    subcodes.get(subcode).count++;
+                }
+            }
+        }
+
+        return Array.from(subcodes.entries())
+            .map(([codigo, data]) => ({
+                codigo,
+                nombre: data.nombre,
+                count: data.count
+            }))
+            .sort((a, b) => a.codigo.localeCompare(b.codigo));
+    }
+
+    /**
      * Nombres de categorías ATC principales
      */
     getATCCategoryName(code) {
@@ -410,7 +449,8 @@ class CimaAPI {
     async searchByATC(atcCode, options = {}) {
         const params = {
             atc: atcCode,
-            comerc: options.comercializados !== false ? 1 : undefined
+            comerc: options.comercializados !== false ? 1 : undefined,
+            tamanioPagina: 100  // Aumentado para capturar más resultados por categoría ATC
         };
         const results = await this.searchMedicamentos(params);
 
@@ -632,6 +672,29 @@ class CimaAPI {
         'demencia': { atc: 'N06D', label: 'Antidemencia', synonyms: ['alzheimer', 'deterioro cognitivo'] },
         'vértigo': { atc: 'N07C', label: 'Antivertiginosos', synonyms: ['mareo'] },
         'tdah': { atc: 'N06B', label: 'TDAH', synonyms: ['déficit atención', 'hiperactividad'] },
+
+        // ===== ADICCIONES =====
+        'tabaquismo': {
+            atc: 'N07BA',
+            label: 'Tratamiento tabaquismo',
+            category: 'Sistema Nervioso',
+            synonyms: ['dejar de fumar', 'cesación tabáquica', 'nicotina', 'vareniclina', 'champix', 'todacitan', 'citisiniclina']
+        },
+        'adicciones': {
+            atc: 'N07B',
+            label: 'Tratamiento adicciones',
+            synonyms: ['dependencia', 'deshabituación', 'drogas']
+        },
+        'alcoholismo': {
+            atc: 'N07BB',
+            label: 'Tratamiento dependencia alcohólica',
+            synonyms: ['dependencia alcohol', 'deshabituación alcohol', 'disulfiram', 'naltrexona', 'antabus']
+        },
+        'dependencia opioides': {
+            atc: 'N07BC',
+            label: 'Tratamiento dependencia opioides',
+            synonyms: ['metadona', 'suboxone', 'buprenorfina', 'sustitutivo opiáceos']
+        },
 
         // ===== DIGESTIVO Y METABOLISMO =====
         'diabetes': { atc: 'A10', label: 'Antidiabéticos', category: 'Metabolismo' },
@@ -1177,7 +1240,22 @@ class CimaAPI {
                         { code: 'N06D', name: 'Antidemencia' }
                     ]
                 },
-                { code: 'N07', name: 'Otros SNC' }
+                {
+                    code: 'N07', name: 'Otros SNC',
+                    subcategories: [
+                        { code: 'N07A', name: 'Parasimpaticomiméticos' },
+                        {
+                            code: 'N07B', name: 'Tratamiento adicciones',
+                            subcategories: [
+                                { code: 'N07BA', name: 'Tratamiento tabaquismo (nicotina, vareniclina, citisiniclina)' },
+                                { code: 'N07BB', name: 'Tratamiento dependencia alcohol (disulfiram, naltrexona)' },
+                                { code: 'N07BC', name: 'Tratamiento dependencia opioides (metadona, buprenorfina)' }
+                            ]
+                        },
+                        { code: 'N07C', name: 'Antivertiginosos (betahistina)' },
+                        { code: 'N07X', name: 'Otros SNC (fampridina, riluzol)' }
+                    ]
+                }
             ]
         },
         {
@@ -1348,7 +1426,8 @@ class CimaAPI {
         );
 
         // La API devuelve un array de objetos con {seccion, titulo, contenido, orden}
-        // Necesitamos extraer el campo 'contenido' del primer elemento
+        // IMPORTANTE: Algunas secciones tienen subsecciones (ej: 4.2 -> 4.2.1, 4.2.2)
+        // El elemento 0 (la sección padre) suele estar vacío, el contenido real está en los hijos
         let data = response;
 
         // Si viene como string JSON, parsearlo
@@ -1361,24 +1440,40 @@ class CimaAPI {
             }
         }
 
-        // Si es un array, extraer el contenido del primer elemento
-        if (Array.isArray(data) && data.length > 0) {
-            // Limpiar el contenido de \r\n y caracteres de escape
-            const rawContent = data[0].contenido || '';
-            return rawContent
+        // Función auxiliar para limpiar contenido
+        const cleanContent = (raw) => {
+            if (!raw) return '';
+            return raw
                 .replace(/\\r\\n/g, '<br>')
                 .replace(/\\n/g, '<br>')
                 .replace(/\r\n/g, '<br>')
                 .replace(/\n/g, '<br>');
+        };
+
+        // Si es un array, CONCATENAR el contenido de TODOS los elementos
+        // (no solo el primero, ya que las subsecciones contienen el contenido real)
+        if (Array.isArray(data) && data.length > 0) {
+            const allContent = data
+                .map(item => {
+                    // Añadir título de subsección si existe y hay contenido
+                    const title = item.titulo ? `<strong>${item.titulo}</strong><br>` : '';
+                    const content = cleanContent(item.contenido || '');
+                    // Solo incluir si hay contenido real (más de espacios/tags vacíos)
+                    const strippedContent = content.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, '').trim();
+                    if (strippedContent.length > 10) {
+                        return title + content;
+                    }
+                    return '';
+                })
+                .filter(c => c.length > 0)
+                .join('<br><br>');
+
+            return allContent;
         }
 
         // Si tiene propiedad contenido directamente
         if (data && data.contenido) {
-            return data.contenido
-                .replace(/\\r\\n/g, '<br>')
-                .replace(/\\n/g, '<br>')
-                .replace(/\r\n/g, '<br>')
-                .replace(/\n/g, '<br>');
+            return cleanContent(data.contenido);
         }
 
         return '';
@@ -1388,6 +1483,9 @@ class CimaAPI {
      * Análisis de seguridad: busca menciones en secciones clave
      * @param {string} nregistro 
      * @param {Object} patientContext - Contexto del paciente
+     * 
+     * MODIFICADO: Ahora siempre muestra las secciones clave (4.4, 4.6, 4.7)
+     * independientemente del contexto activo
      */
     async analyzeSafety(nregistro, patientContext) {
         const results = {
@@ -1395,71 +1493,144 @@ class CimaAPI {
             checks: []
         };
 
-        // Mapeo de contexto a secciones relevantes
+        // Secciones clave que SIEMPRE se deben mostrar
+        const coreSections = [
+            { section: '4.4', label: 'Advertencias y precauciones especiales', icon: 'exclamation-triangle' },
+            { section: '4.6', label: 'Fertilidad, embarazo y lactancia', icon: 'baby' },
+            { section: '4.7', label: 'Efectos sobre conducción y maquinaria', icon: 'car' }
+        ];
+
+        // Mapeo de contexto a secciones y palabras clave para énfasis
         const contextMapping = {
             pregnancy: {
                 section: '4.6',
                 label: 'Embarazo',
-                keywords: ['embarazo', 'gestación', 'embarazada']
+                keywords: ['embarazo', 'gestación', 'embarazada', 'teratógeno', 'malformacion']
             },
             lactation: {
                 section: '4.6',
                 label: 'Lactancia',
-                keywords: ['lactancia', 'lactante', 'leche materna']
+                keywords: ['lactancia', 'lactante', 'leche materna', 'amamant']
             },
             elderly: {
                 section: '4.4',
                 label: 'Paciente mayor',
-                keywords: ['anciano', 'edad avanzada', 'pacientes de edad', 'mayores de 65']
+                keywords: ['anciano', 'edad avanzada', 'pacientes de edad', 'mayores de 65', 'poblacion de edad avanzada']
             },
             hepatic: {
                 section: '4.4',
                 label: 'Insuficiencia hepática',
-                keywords: ['insuficiencia hepática', 'hepatopatía', 'cirrosis', 'hepático']
+                keywords: ['insuficiencia hepática', 'hepatopatía', 'cirrosis', 'hepático', 'función hepática']
             },
             renal: {
                 section: '4.4',
                 label: 'Insuficiencia renal',
-                keywords: ['insuficiencia renal', 'aclaramiento', 'filtrado glomerular', 'ClCr', 'renal']
+                keywords: ['insuficiencia renal', 'aclaramiento', 'filtrado glomerular', 'ClCr', 'función renal', 'creatinina']
             },
             driving: {
                 section: '4.7',
                 label: 'Conducción',
-                keywords: ['conducción', 'maquinaria', 'conducir']
+                keywords: ['conducción', 'maquinaria', 'conducir', 'capacidad para conducir']
             }
         };
 
-        // Para cada contexto activo del paciente, verificar en la sección correspondiente
-        for (const [contextKey, isActive] of Object.entries(patientContext)) {
+        // 1. SIEMPRE cargar las 3 secciones clave para mostrar información
+        for (const coreSection of coreSections) {
+            try {
+                const sectionContent = await this.getDocSeccion(nregistro, coreSection.section);
+
+                if (sectionContent && sectionContent.length > 50) {
+                    // Limpiar HTML para preview
+                    const plainText = sectionContent
+                        .replace(/<[^>]*>/g, ' ')
+                        .replace(/\\n/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+
+                    // Recortar para mostrar solo preview
+                    const preview = plainText.length > 300
+                        ? plainText.substring(0, 300) + '...'
+                        : plainText;
+
+                    results.checks.push({
+                        context: null, // No es contexto específico
+                        label: coreSection.label,
+                        section: coreSection.section,
+                        status: 'info', // Estado base informativo
+                        message: 'Ver información completa',
+                        excerpt: preview,
+                        isCore: true
+                    });
+                }
+            } catch (error) {
+                // Si falla, no añadir (sección no disponible)
+                console.warn(`Sección ${coreSection.section} no disponible:`, error);
+            }
+        }
+
+        // 2. Para cada contexto ACTIVO, SIEMPRE mostrar sección correspondiente
+        // Principio: "Siempre Revisar, Nunca Asumir" - evitar falsos negativos clínicos
+        for (const [contextKey, isActive] of Object.entries(patientContext || {})) {
             if (!isActive || !contextMapping[contextKey]) continue;
 
             const mapping = contextMapping[contextKey];
 
             try {
-                // Intentar obtener el contenido de la sección
                 const sectionContent = await this.getDocSeccion(nregistro, mapping.section);
 
-                // Analizar si hay menciones
+                if (!sectionContent || sectionContent.length < 50) {
+                    results.checks.push({
+                        context: contextKey,
+                        label: `⚠️ ${mapping.label}`,
+                        section: mapping.section,
+                        status: 'unknown',
+                        message: 'Sección no disponible - verificar ficha técnica',
+                        excerpt: null,
+                        isContextSpecific: true
+                    });
+                    continue;
+                }
+
+                // Limpiar HTML para preview
+                const plainText = sectionContent
+                    .replace(/<[^>]*>/g, ' ')
+                    .replace(/\\n/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+                // Preview SIEMPRE (más largo para dar contexto al clínico)
+                const preview = plainText.length > 400
+                    ? plainText.substring(0, 400) + '...'
+                    : plainText;
+
+                // Keywords solo para determinar SEVERIDAD, no para decidir SI mostrar
                 const analysis = this._analyzeSection(sectionContent, mapping.keywords);
+
+                // Si encontró keywords → advertencia/peligro
+                // Si NO encontró → igual mostrar como "review" (NUNCA safe cuando contexto activo)
+                const finalStatus = analysis.status === 'safe' ? 'review' : analysis.status;
+                const finalMessage = analysis.status === 'safe'
+                    ? 'Revisar sección completa - sin keywords detectados'
+                    : analysis.message;
 
                 results.checks.push({
                     context: contextKey,
-                    label: mapping.label,
+                    label: `⚠️ ${mapping.label}`,
                     section: mapping.section,
-                    status: analysis.status,
-                    message: analysis.message,
-                    excerpt: analysis.excerpt
+                    status: finalStatus,
+                    message: finalMessage,
+                    excerpt: preview, // SIEMPRE mostrar preview
+                    isContextSpecific: true
                 });
-
             } catch (error) {
-                // Si falla, marcamos como no disponible
                 results.checks.push({
                     context: contextKey,
                     label: mapping.label,
                     section: mapping.section,
                     status: 'unknown',
-                    message: 'Sección no disponible',
-                    excerpt: null
+                    message: 'Error al cargar - verificar manualmente',
+                    excerpt: null,
+                    isContextSpecific: true
                 });
             }
         }

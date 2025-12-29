@@ -1453,7 +1453,58 @@ class MedCheckApp {
                     });
                 });
             } else {
-                // No subcategories found - search directly
+                // No subcategories from maestras - try dynamic derivation from search results
+                console.log(`🔄 No maestras subcodes for ${atcCode}, trying dynamic derivation...`);
+
+                const searchResults = await this.api.searchByATC(atcCode, { comercializados: true });
+
+                if (searchResults.resultados && searchResults.resultados.length > 0) {
+                    const derivedSubcodes = this.api.extractATCSubcodes(searchResults.resultados, atcCode);
+
+                    if (derivedSubcodes.length >= 1) {
+                        // Subcategories found - show drill-down
+                        console.log(`✅ Derived ${derivedSubcodes.length} subcategories from search results`);
+                        const currentBreadcrumb = [...breadcrumb, { code: atcCode, name: categoryName }];
+                        const breadcrumbHtml = this.renderATCBreadcrumb(currentBreadcrumb);
+
+                        const subcatHtml = derivedSubcodes.map(sub => `
+                            <button class="atc-subcategory-btn" data-atc="${sub.codigo}" data-name="${sub.nombre}">
+                                <span class="subcat-code">${sub.codigo}</span>
+                                <span class="subcat-name">${sub.nombre}</span>
+                                <span class="subcat-count">(${sub.count})</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        `).join('');
+
+                        resultsContainer.innerHTML = `
+                            <div class="atc-subcategories-panel">
+                                <div class="subcat-header">
+                                    ${breadcrumbHtml}
+                                </div>
+                                <p class="text-muted text-xs mb-md">Subcategorías derivadas de ${searchResults.resultados.length} medicamentos encontrados</p>
+                                <div class="subcat-actions">
+                                    <button class="btn btn-primary" onclick="app.searchByATCCode('${atcCode}', '${categoryName.replace(/'/g, "\\'")}')">
+                                        <i class="fas fa-search"></i> Ver todos: ${searchResults.resultados.length} medicamentos
+                                    </button>
+                                </div>
+                                <div class="subcat-list">
+                                    ${subcatHtml}
+                                </div>
+                            </div>
+                        `;
+
+                        // Add click handlers for deeper drill-down
+                        const self = this;
+                        resultsContainer.querySelectorAll('.atc-subcategory-btn').forEach(btn => {
+                            btn.addEventListener('click', () => {
+                                self.showATCSubcategories(btn.dataset.atc, currentBreadcrumb);
+                            });
+                        });
+                        return;
+                    }
+                }
+
+                // No subcategories possible - search directly
                 const currentBreadcrumb = [...breadcrumb, { code: atcCode, name: categoryName }];
                 this.searchByATCCode(atcCode, categoryName, currentBreadcrumb);
             }
@@ -3533,6 +3584,8 @@ class MedCheckApp {
             let colorClass = 'text-info';
             if (check.status === 'danger') { icon = 'ban'; colorClass = 'text-danger'; }
             else if (check.status === 'warning') { icon = 'exclamation-triangle'; colorClass = 'text-warning'; }
+            else if (check.status === 'review') { icon = 'search'; colorClass = 'text-primary'; }
+            else if (check.status === 'unknown') { icon = 'question-circle'; colorClass = 'text-muted'; }
             else if (check.status === 'safe') { icon = 'check-circle'; colorClass = 'text-success'; }
 
             const evidenceHtml = check.excerpt
