@@ -447,66 +447,137 @@ class CimaAPI {
      * @returns {Promise<Object>} Resultados de medicamentos
      */
     async searchByATC(atcCode, options = {}) {
-        const params = {
-            atc: atcCode,
+        const upperCode = atcCode.toUpperCase();
+        const pageSize = 500; // Máximo razonable para reducir llamadas
+
+        console.log(`🔍 Buscando ATC ${upperCode}...`);
+
+        // Primera página para obtener totalFilas
+        const firstPageParams = {
+            atc: upperCode,
             comerc: options.comercializados !== false ? 1 : undefined,
-            tamanioPagina: 100  // Aumentado para capturar más resultados por categoría ATC
+            tamanioPagina: pageSize,
+            pagina: 1
         };
-        const results = await this.searchMedicamentos(params);
 
-        // Filtrar resultados: solo medicamentos cuyo ATC COMIENCE con el código buscado
-        // Esto evita que A07 matchee con G03AA07 (levonorgestrel) o M05BA06
-        if (results && results.resultados && atcCode.length >= 3) {
-            const upperCode = atcCode.toUpperCase();
+        const firstPage = await this.searchMedicamentos(firstPageParams);
 
-            // Separar medicamentos con y sin datos ATC
-            const withAtc = [];
-            const withoutAtc = [];
+        if (!firstPage || !firstPage.resultados) {
+            return { resultados: [], totalFilas: 0 };
+        }
 
-            for (const med of results.resultados) {
+        let allResults = [...firstPage.resultados];
+        const totalFilas = firstPage.totalFilas || allResults.length;
+
+        console.log(`📥 Página 1: ${allResults.length} de ${totalFilas} resultados`);
+
+        // Si hay más páginas, obtenerlas
+        if (totalFilas > allResults.length) {
+            const totalPages = Math.ceil(totalFilas / pageSize);
+            console.log(`📄 Paginando: ${totalPages} páginas totales...`);
+
+            for (let page = 2; page <= totalPages; page++) {
+                try {
+                    const pageParams = {
+                        atc: upperCode,
+                        comerc: options.comercializados !== false ? 1 : undefined,
+                        tamanioPagina: pageSize,
+                        pagina: page
+                    };
+                    const pageData = await this.searchMedicamentos(pageParams);
+                    if (pageData.resultados && pageData.resultados.length > 0) {
+                        allResults = allResults.concat(pageData.resultados);
+                        console.log(`📥 Página ${page}: +${pageData.resultados.length} (total: ${allResults.length})`);
+                    }
+                } catch (e) {
+                    console.warn(`Error en página ${page}:`, e);
+                }
+            }
+        }
+
+        // FILTRO ESTRICTO: solo medicamentos cuyo ATC COMIENCE con el código buscado
+        // La API CIMA hace match de substring, no de prefijo, causando falsos positivos
+        // Ej: buscar "C10" devuelve S01BC10 (nepafenaco) porque contiene "C10"
+        if (allResults.length > 0 && upperCode.length >= 2) {
+            const filtered = [];
+            const needsVerification = [];
+            let rejected = 0;
+
+            for (const med of allResults) {
                 if (med.atcs && Array.isArray(med.atcs) && med.atcs.length > 0) {
-                    // Tiene ATC: verificar que comience con el código buscado
+                    // Tiene datos ATC: verificar que ALGUNO comience con el código buscado
                     const matches = med.atcs.some(atc =>
                         atc.codigo && atc.codigo.toUpperCase().startsWith(upperCode)
                     );
                     if (matches) {
-                        withAtc.push(med);
+                        filtered.push(med);
+                    } else {
+                        rejected++;
                     }
                 } else {
-                    // Sin ATC: necesita verificación
-                    withoutAtc.push(med);
+                    // Sin datos ATC en la respuesta: necesita verificación
+                    needsVerification.push(med);
                 }
             }
 
-            // Verificar medicamentos sin ATC (solo primeros 20 para rendimiento)
-            const toVerify = withoutAtc.slice(0, 20);
-            const verified = [];
+            // Verificar TODOS los medicamentos sin datos ATC (en lotes paralelos)
+            if (needsVerification.length > 0) {
+                console.log(`🔎 Verificando ${needsVerification.length} medicamentos sin ATC en respuesta...`);
 
-            for (const med of toVerify) {
-                try {
-                    const fullMed = await this.getMedicamento(med.nregistro);
-                    if (fullMed && fullMed.atcs && Array.isArray(fullMed.atcs)) {
-                        const matches = fullMed.atcs.some(atc =>
-                            atc.codigo && atc.codigo.toUpperCase().startsWith(upperCode)
-                        );
-                        if (matches) {
-                            // Actualizar med con datos ATC completos
-                            med.atcs = fullMed.atcs;
-                            verified.push(med);
+                // Procesar en lotes de 20 para no saturar
+                const batchSize = 20;
+                for (let i = 0; i < needsVerification.length; i += batchSize) {
+                    const batch = needsVerification.slice(i, i + batchSize);
+                    const batchPromises = batch.map(async (med) => {
+                        try {
+                            const fullMed = await this.getMedicamento(med.nregistro);
+                            if (fullMed && fullMed.atcs && Array.isArray(fullMed.atcs) && fullMed.atcs.length > 0) {
+                                const matches = fullMed.atcs.some(atc =>
+                                    atc.codigo && atc.codigo.toUpperCase().startsWith(upperCode)
+                                );
+                                if (matches) {
+                                    med.atcs = fullMed.atcs;
+                                    return { med, valid: true };
+                                }
+                            }
+                            return { med, valid: false };
+                        } catch (e) {
+                            return { med, valid: false };
+                        }
+                    });
+
+                    const results = await Promise.all(batchPromises);
+                    for (const r of results) {
+                        if (r.valid) {
+                            filtered.push(r.med);
+                        } else {
+                            rejected++;
                         }
                     }
-                } catch (e) {
-                    // Si falla, descartar para evitar falsos positivos
-                    console.warn('No se pudo verificar ATC de:', med.nombre);
                 }
             }
 
-            // Combinar resultados verificados
-            results.resultados = [...withAtc, ...verified];
-            results.totalFilas = results.resultados.length;
+            if (rejected > 0) {
+                console.log(`🚫 Filtrados ${rejected} falsos positivos (ATC no coincide con prefijo ${upperCode})`);
+            }
+
+            allResults = filtered;
         }
 
-        return results;
+        // Deduplicar por nregistro
+        const seen = new Set();
+        const unique = allResults.filter(med => {
+            if (seen.has(med.nregistro)) return false;
+            seen.add(med.nregistro);
+            return true;
+        });
+
+        console.log(`✅ ATC ${upperCode}: ${unique.length} medicamentos únicos`);
+
+        return {
+            resultados: unique,
+            totalFilas: unique.length
+        };
     }
 
 
