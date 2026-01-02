@@ -3654,56 +3654,192 @@ class MedCheckApp {
                 return;
             }
 
-            // Highlight food-related and important posology keywords
-            const foodKeywords = [
-                'alimento', 'alimentos', 'comida', 'comidas',
-                'desayuno', 'almuerzo', 'cena',
-                'ayunas', 'ayuno',
-                'antes de comer', 'después de comer',
-                'antes de las comidas', 'después de las comidas',
-                'con las comidas', 'sin alimentos',
-                'con comida', 'sin comida', 'con alimentos',
-                'estómago vacío', 'estómago lleno',
-                'leche', 'lácteos', 'zumo', 'agua',
-                'grasa', 'grasas', 'alto contenido graso'
-            ];
+            // Normalize content
+            content = content.normalize('NFC');
 
-            const timingKeywords = [
-                'una vez al día', 'dos veces al día', 'tres veces al día',
-                'cada 24 horas', 'cada 12 horas', 'cada 8 horas', 'cada 6 horas',
-                'por la mañana', 'por la noche', 'antes de acostarse',
-                'mañana', 'noche'
-            ];
-
-            // Apply highlighting
-            let highlightedContent = content;
-
-            // Food keywords - yellow highlight
-            foodKeywords.forEach(keyword => {
-                const regex = new RegExp(`(${keyword})`, 'gi');
-                highlightedContent = highlightedContent.replace(regex,
-                    '<mark class="posology-food">$1</mark>');
-            });
-
-            // Timing keywords - blue highlight
-            timingKeywords.forEach(keyword => {
-                const regex = new RegExp(`(${keyword})`, 'gi');
-                highlightedContent = highlightedContent.replace(regex,
-                    '<mark class="posology-timing">$1</mark>');
-            });
-
+            // First, render the HTML without highlighting
             container.innerHTML = `
     <div class="section-header">
         <h4><i class="fas fa-clock"></i> Sección 4.2: Posología y forma de administración</h4>
-                </div>
+    </div>
     <div class="posology-legend">
         <span class="legend-item"><mark class="posology-food">Alimentos</mark></span>
-        <span class="legend-item"><mark class="posology-timing">Horario</mark></span>
+        <span class="legend-item"><mark class="posology-timing">Posología</mark></span>
     </div>
-    <div class="section-text">
-        ${highlightedContent}
+    <div id="posology-section-text" class="section-text">
+        ${content}
     </div>
 `;
+
+            // Now apply format-safe highlighting using TreeWalker
+            const textContainer = document.getElementById('posology-section-text');
+            if (!textContainer) return;
+
+            // Food-related patterns (yellow)
+            const foodPatterns = [
+                /\b(alimentos?|comidas?)\b/gi,
+                /\b(desayuno|almuerzo|cena)\b/gi,
+                /\b(ayunas?|ayuno)\b/gi,
+                /\b(estómago\s+vacío|estómago\s+lleno)\b/gi,
+                /\b(con\s+las\s+comidas|sin\s+alimentos)\b/gi,
+                /\b(leche|lácteos|zumo|agua)\b/gi,
+                /\b(grasa|grasas)\b/gi
+            ];
+
+            // Timing/dosing patterns (blue) - sorted by specificity (longer first)
+            const timingPatterns = [
+                // Frequency phrases
+                /\b(una\s+vez\s+al\s+día)\b/gi,
+                /\b(dos\s+veces\s+al\s+día)\b/gi,
+                /\b(tres\s+veces\s+al\s+día)\b/gi,
+                /\b(cuatro\s+veces\s+al\s+día)\b/gi,
+
+                // Time intervals with numbers
+                /\b(cada\s+\d+\s*horas?)\b/gi,
+                /\b(cada\s+\d+\s*días?)\b/gi,
+                /(≥\s*\d+\s*horas?)/gi,
+
+                // Duration patterns
+                /\b(durante\s+\d+[\s-]*(?:a\s+\d+\s*)?(?:días?|semanas?|meses?))\b/gi,
+                /\b(\d+\s*(?:a\s+\d+\s*)?semanas?)\b/gi,
+                /\b(\d+\s*(?:a\s+\d+\s*)?meses?)\b/gi,
+                /\b(\d+\s*días?)\b/gi,
+
+                // Dose units - handle combination doses like "10/80 mg" or "10/ 80 mg"
+                // Match full combination first, then single doses
+                /\b(\d+\s*\/\s*\d+\s*(?:mg|mcg|µg|g|ml|UI))\b/gi,  // "10/80 mg", "10/ 80 mg"
+                // Single dose - but NOT if followed by "/" (part of combination)
+                /\b(\d+(?:[.,]\d+)?\s*(?:mg|mcg|µg|g|ml|UI))(?!\s*\/)/gi,
+                /\b(\d+\s*(?:comprimidos?|cápsulas?|sobres?|gotas?|ampollas?|parches?))\b/gi,
+
+                // Per day patterns
+                /(\/\s*día)/gi,
+                /\b(al\s+día)\b/gi,
+                /\b(por\s+día)\b/gi,
+
+                // Time of day
+                /\b(por\s+la\s+mañana)\b/gi,
+                /\b(por\s+la\s+noche)\b/gi,
+                /\b(por\s+la\s+tarde)\b/gi,
+                /\b(antes\s+de\s+acostarse)\b/gi,
+                /\b(a\s+la\s+misma\s+hora)\b/gi,
+
+                // Clinical phrases
+                /\b(dosis\s+(?:inicial|máxima|mínima|recomendada|única|diaria|habitual))\b/gi,
+                /\b(ajustes?\s+de\s+dosis)\b/gi,
+                /\b(inicio\s+del\s+tratamiento)\b/gi,
+                /\b(duración\s+del\s+tratamiento)\b/gi,
+                /\b(no\s+(?:debe\s+)?(?:superar|exceder))\b/gi,
+                /\b(máximo|mínimo)\b/gi,
+
+                // Administration
+                /\b(vía\s+oral)\b/gi,
+                /\b(uso\s+(?:oral|tópico|cutáneo))\b/gi
+            ];
+
+            // TreeWalker-based safe highlighting function
+            const highlightTextNodes = (container, patterns, className) => {
+                // Get all text nodes using TreeWalker
+                const walker = document.createTreeWalker(
+                    container,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+
+                const textNodes = [];
+                let node;
+                while (node = walker.nextNode()) {
+                    // Skip if parent is already a mark
+                    if (node.parentNode.tagName === 'MARK') continue;
+                    // Only process nodes with actual text content
+                    if (node.textContent.trim().length > 0) {
+                        textNodes.push(node);
+                    }
+                }
+
+                // Process each text node
+                textNodes.forEach(textNode => {
+                    let text = textNode.textContent;
+                    let hasMatch = false;
+
+                    // Check if any pattern matches
+                    for (const pattern of patterns) {
+                        if (pattern.test(text)) {
+                            hasMatch = true;
+                            break;
+                        }
+                    }
+
+                    if (!hasMatch) return;
+
+                    // Create a temporary container to build the new content
+                    const fragment = document.createDocumentFragment();
+                    let lastIndex = 0;
+                    let currentText = text;
+
+                    // Apply all patterns
+                    patterns.forEach(pattern => {
+                        // Reset pattern lastIndex
+                        pattern.lastIndex = 0;
+                    });
+
+                    // Find all matches and their positions
+                    const matches = [];
+                    patterns.forEach(pattern => {
+                        pattern.lastIndex = 0;
+                        let match;
+                        while ((match = pattern.exec(text)) !== null) {
+                            matches.push({
+                                start: match.index,
+                                end: match.index + match[0].length,
+                                text: match[0]
+                            });
+                        }
+                    });
+
+                    // Sort by position and remove overlaps
+                    matches.sort((a, b) => a.start - b.start);
+                    const filteredMatches = [];
+                    let lastEnd = -1;
+                    matches.forEach(m => {
+                        if (m.start >= lastEnd) {
+                            filteredMatches.push(m);
+                            lastEnd = m.end;
+                        }
+                    });
+
+                    // Build fragment with highlights
+                    filteredMatches.forEach(match => {
+                        // Add text before match
+                        if (match.start > lastIndex) {
+                            fragment.appendChild(
+                                document.createTextNode(text.slice(lastIndex, match.start))
+                            );
+                        }
+                        // Add highlighted match
+                        const mark = document.createElement('mark');
+                        mark.className = className;
+                        mark.textContent = match.text;
+                        fragment.appendChild(mark);
+                        lastIndex = match.end;
+                    });
+
+                    // Add remaining text
+                    if (lastIndex < text.length) {
+                        fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+                    }
+
+                    // Replace the text node with the fragment
+                    if (filteredMatches.length > 0) {
+                        textNode.parentNode.replaceChild(fragment, textNode);
+                    }
+                });
+            };
+
+            // Apply highlighting in order: timing first (more specific), then food
+            highlightTextNodes(textContainer, timingPatterns, 'posology-timing');
+            highlightTextNodes(textContainer, foodPatterns, 'posology-food');
         } catch (error) {
             console.error('Error loading section 4.2:', error);
             container.innerHTML = `
