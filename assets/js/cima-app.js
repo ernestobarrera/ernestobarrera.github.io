@@ -1,4 +1,4 @@
-﻿/**
+/**
  * MedCheck - Clinical Medication Tool
  * Main Application Controller
  */
@@ -1074,11 +1074,17 @@ class MedCheckApp {
         if (med.generico) badges.push('<span class="badge badge-success">Genérico</span>');
         if (med.receta) badges.push('<span class="badge badge-info">Receta</span>');
         if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro - Vigilancia adicional">▲ Vigilancia</span>');
-        if (med.psum) badges.push('<span class="badge badge-danger">Sin stock</span>');
+        if (med.psum) {
+            // Always make badge clickable using nregistro (ATC might not be available in search results)
+            badges.push(`<span class="badge badge-danger badge-clickable" title="Sin stock - Click para ver alternativas" onclick="event.stopPropagation(); app.showSupplyAlternativesByNregistro('${med.nregistro}', '${med.nombre.replace(/'/g, "\\'")}')"><i class="fas fa-exclamation-triangle"></i> Sin stock</span>`);
+        }
         if (med.huerfano) badges.push('<span class="badge badge-info">Huérfano</span>');
         if (med.bioSimil) badges.push('<span class="badge badge-purple" title="Medicamento biológico/biosimilar">Biológico</span>');
         if (med.estupiTemp) badges.push('<span class="badge badge-dark" title="Estupefaciente - Receta especial">⚠ Estupef.</span>');
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
+        // Notas de seguridad oficiales de la AEMPS
+        if (med.notas) badges.push('<span class="badge badge-warning" title="Tiene alertas de seguridad de la AEMPS"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>');
+        if (med.materialesInf) badges.push('<span class="badge badge-info" title="Materiales informativos de seguridad disponibles"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
 
         // Alertas según contexto del paciente
         const contextAlerts = [];
@@ -1729,11 +1735,18 @@ class MedCheckApp {
         if (med.generico) badges.push('<span class="badge badge-success">Genérico</span>');
         if (med.receta) badges.push('<span class="badge badge-info">Receta</span>');
         if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro">▲ Vigilancia</span>');
-        if (med.psum) badges.push('<span class="badge badge-danger">Sin stock</span>');
+        // Badge psum clickable para ver alternativas
+        if (med.psum) {
+            // Always make badge clickable using nregistro
+            badges.push(`<span class="badge badge-danger badge-clickable" title="Sin stock - Click para ver alternativas" onclick="event.stopPropagation(); app.showSupplyAlternativesByNregistro('${med.nregistro}', '${med.nombre.replace(/'/g, "\\'")}')"><i class="fas fa-exclamation-triangle"></i> Sin stock</span>`);
+        }
         if (med.huerfano) badges.push('<span class="badge badge-info">Huérfano</span>');
         if (med.bioSimil) badges.push('<span class="badge badge-purple" title="Medicamento biológico/biosimilar">Biológico</span>');
         if (med.estupiTemp) badges.push('<span class="badge badge-dark" title="Estupefaciente - Receta especial">⚠ Estupef.</span>');
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
+        // Notas de seguridad AEMPS
+        if (med.notas) badges.push('<span class="badge badge-warning" title="Alertas de seguridad AEMPS"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>');
+        if (med.materialesInf) badges.push('<span class="badge badge-info" title="Materiales informativos"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
 
         // Alertas según contexto del paciente - AÑADIDO
         const contextAlerts = [];
@@ -3330,6 +3343,10 @@ class MedCheckApp {
             const isInteractionsActive = initialTab === 'interactions';
             const isAdverseActive = initialTab === 'adverse';
             const isSafetyActive = initialTab === 'safety';
+            const isAlertsActive = initialTab === 'alerts';
+
+            // Check if medication has AEMPS alerts (notas or materiales)
+            const hasAempsAlerts = med.notas || med.materialesInf;
 
             // Get medication images for thumbnail and lightbox
             const medFotos = med.fotos || [];
@@ -3378,6 +3395,7 @@ class MedCheckApp {
                     <button class="modal-tab ${isInteractionsActive ? 'active' : ''}" data-tab="interactions">Interacciones</button>
                     <button class="modal-tab ${isAdverseActive ? 'active' : ''}" data-tab="adverse">Reacciones</button>
                     <button class="modal-tab ${isSafetyActive ? 'active' : ''}" data-tab="safety">Seguridad</button>
+                    ${hasAempsAlerts ? `<button class="modal-tab alert-pulse ${isAlertsActive ? 'active' : ''}" data-tab="alerts"><i class="fas fa-exclamation-triangle"></i> Alertas AEMPS</button>` : ''}
                 </div>
 
                 <div id="tab-info" class="tab-content ${isInfoActive ? 'active' : ''}">
@@ -3403,7 +3421,20 @@ class MedCheckApp {
                 <div id="tab-safety" class="tab-content ${isSafetyActive ? 'active' : ''}">
                     ${this.renderModalSafetyTab(med, safetyReport)}
                 </div>
+
+                ${hasAempsAlerts ? `
+                <div id="tab-alerts" class="tab-content ${isAlertsActive ? 'active' : ''}">
+                    <div id="alerts-content" class="loading-placeholder">
+                        <div class="loading-spinner"></div>
+                        <p class="text-muted">Cargando alertas...</p>
+                    </div>
+                </div>` : ''}
 `;
+
+            // Load AEMPS alerts asynchronously if present
+            if (hasAempsAlerts) {
+                this.loadAempsAlerts(med.nregistro);
+            }
 
             // Tab switching
             this.modalBody.querySelectorAll('.modal-tab').forEach(tab => {
@@ -3960,6 +3991,652 @@ class MedCheckApp {
                 </div>
     `;
         }
+    }
+
+    /**
+     * Loads AEMPS safety alerts (notas + materiales) asynchronously
+     * Called when the medication has notas or materialesInf flags
+     * @param {string} nregistro - Medication registration number
+     */
+    async loadAempsAlerts(nregistro) {
+        const container = document.getElementById('alerts-content');
+        if (!container) return;
+
+        try {
+            // Load both notas and materiales in parallel
+            const [notas, materiales] = await Promise.all([
+                this.api.getNotas(nregistro),
+                this.api.getMateriales(nregistro)
+            ]);
+
+            let html = '';
+
+            // Render Notas de Seguridad
+            if (notas && notas.length > 0) {
+                html += `
+                    <div class="alerts-section">
+                        <h4 class="alerts-section-title">
+                            <i class="fas fa-exclamation-triangle text-warning"></i>
+                            Notas de Seguridad (${notas.length})
+                        </h4>
+                        <p class="alerts-description text-muted">
+                            Comunicaciones oficiales de la AEMPS sobre problemas de seguridad detectados con este medicamento.
+                        </p>
+                        <div class="alerts-list">
+                            ${notas.map(nota => this.renderNotaCard(nota)).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Render Materiales Informativos
+            if (materiales && materiales.length > 0) {
+                html += `
+                    <div class="alerts-section">
+                        <h4 class="alerts-section-title">
+                            <i class="fas fa-file-medical-alt text-info"></i>
+                            Materiales Informativos de Seguridad (${materiales.length})
+                        </h4>
+                        <p class="alerts-description text-muted">
+                            Documentos adicionales de seguridad: guías para profesionales, tarjetas de alerta, información para pacientes.
+                        </p>
+                        <div class="alerts-list">
+                            ${materiales.map(mat => this.renderMaterialCard(mat)).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // No data case (shouldn't happen if hasAempsAlerts is true, but fallback)
+            if (!html) {
+                html = `
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle text-success"></i>
+                        <p>No hay alertas de seguridad activas para este medicamento.</p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+
+        } catch (error) {
+            console.error('Error loading AEMPS alerts:', error);
+            container.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>Error al cargar alertas de seguridad</p>
+                    <p class="text-muted text-sm">${error.message}</p>
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * Renders a single Nota de Seguridad card
+     */
+    renderNotaCard(nota) {
+        // Format date if available
+        let fechaStr = '';
+        if (nota.fecha) {
+            try {
+                const fecha = new Date(nota.fecha);
+                fechaStr = fecha.toLocaleDateString('es-ES', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            } catch (e) {
+                fechaStr = nota.fecha;
+            }
+        }
+
+        return `
+            <div class="alert-card alert-card-warning">
+                <div class="alert-card-header">
+                    <span class="alert-card-date">${fechaStr}</span>
+                    ${nota.tipo ? `<span class="alert-card-type">${nota.tipo}</span>` : ''}
+                </div>
+                <div class="alert-card-body">
+                    <p class="alert-card-title">${nota.titulo || nota.ref || 'Nota de seguridad'}</p>
+                    ${nota.asunto ? `<p class="alert-card-desc">${nota.asunto}</p>` : ''}
+                </div>
+                ${nota.url ? `
+                    <div class="alert-card-actions">
+                        <a href="${nota.url}" target="_blank" class="btn btn-sm btn-warning">
+                            <i class="fas fa-external-link-alt"></i> Ver documento AEMPS
+                        </a>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
+     * Renders a single Material Informativo card
+     */
+    renderMaterialCard(mat) {
+        // Determine icon based on material type
+        let icon = 'file-pdf';
+        let typeLabel = 'Documento';
+
+        if (mat.tipoDoc) {
+            const tipo = mat.tipoDoc.toLowerCase();
+            if (tipo.includes('video')) {
+                icon = 'video';
+                typeLabel = 'Vídeo';
+            } else if (tipo.includes('guía') || tipo.includes('guia')) {
+                icon = 'book-medical';
+                typeLabel = 'Guía';
+            } else if (tipo.includes('tarjeta')) {
+                icon = 'id-card';
+                typeLabel = 'Tarjeta de alerta';
+            } else if (tipo.includes('paciente')) {
+                icon = 'user-circle';
+                typeLabel = 'Para pacientes';
+            }
+        }
+
+        return `
+            <div class="alert-card alert-card-info">
+                <div class="alert-card-header">
+                    <span class="alert-card-type"><i class="fas fa-${icon}"></i> ${typeLabel}</span>
+                </div>
+                <div class="alert-card-body">
+                    <p class="alert-card-title">${mat.nombre || mat.descripcion || 'Material informativo'}</p>
+                    ${mat.descripcion && mat.nombre ? `<p class="alert-card-desc">${mat.descripcion}</p>` : ''}
+                </div>
+                ${mat.url ? `
+                    <div class="alert-card-actions">
+                        <a href="${mat.url}" target="_blank" class="btn btn-sm btn-info">
+                            <i class="fas fa-download"></i> Descargar
+                        </a>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
+     * Shows supply alternatives using nregistro to first fetch ATC code
+     * Used when search results don't include ATC data
+     * @param {string} nregistro - Registration number of the medication
+     * @param {string} medName - Name of the medication
+     */
+    async showSupplyAlternativesByNregistro(nregistro, medName) {
+        // Show modal with loading
+        this.modal.classList.remove('hidden');
+        this.modalBody.innerHTML = `
+            <div class="modal-header">
+                <h2 class="modal-title"><i class="fas fa-exchange-alt"></i> Alternativas de Suministro</h2>
+                <p class="modal-subtitle">Obteniendo información de: ${medName}</p>
+            </div>
+            <div class="alternatives-loading">
+                <div class="loading-spinner"></div>
+                <p class="text-muted">Obteniendo código ATC...</p>
+            </div>
+        `;
+
+        try {
+            // Get the medication details to obtain the active ingredient
+            const medDetails = await this.api.getMedicamento(nregistro);
+
+            // Check if this is a combination medication (multiple active ingredients)
+            const principiosActivos = medDetails?.principiosActivos || [];
+            const isCombination = principiosActivos.length > 1;
+
+            // Get display name for the active ingredient(s)
+            const pactivos = medDetails?.vtm?.nombre || medDetails?.pactivos || '';
+            const atcCode = medDetails?.atcs?.[0]?.codigo || '';
+
+            if (!pactivos && principiosActivos.length === 0) {
+                this.modalBody.innerHTML = `
+                    <div class="modal-header">
+                        <h2 class="modal-title"><i class="fas fa-exchange-alt"></i> Alternativas de Suministro</h2>
+                        <p class="modal-subtitle">${medName}</p>
+                    </div>
+                    <div class="empty-state">
+                        <i class="fas fa-info-circle"></i>
+                        <h3>Sin información de principio activo</h3>
+                        <p class="text-muted">No se puede buscar alternativas sin conocer el principio activo del medicamento.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Update loading message
+            this.modalBody.innerHTML = `
+                <div class="modal-header">
+                    <h2 class="modal-title"><i class="fas fa-exchange-alt"></i> Alternativas de Suministro</h2>
+                    <p class="modal-subtitle">Buscando alternativas para: ${medName}</p>
+                </div>
+                <div class="alternatives-loading">
+                    <div class="loading-spinner"></div>
+                    <p class="text-muted">Buscando medicamentos con ${isCombination ? 'asociación' : 'principio activo'}: ${pactivos}</p>
+                </div>
+            `;
+
+            // Build search parameters based on whether it's a combination or single ingredient
+            let searchParams = { comerc: 1, tamanioPagina: 100 };
+
+            if (isCombination && principiosActivos.length >= 2) {
+                // For combinations, use practiv1 and practiv2 separately
+                // Extract base name without salt form (e.g., "TRAMADOL HIDROCLORURO" -> "tramadol")
+                const pa1 = principiosActivos[0].nombre.split(' ')[0].toLowerCase();
+                const pa2 = principiosActivos[1].nombre.split(' ')[0].toLowerCase();
+                searchParams.practiv1 = pa1;
+                searchParams.practiv2 = pa2;
+                console.log(`🔍 Buscando combinación: practiv1=${pa1}, practiv2=${pa2}`);
+            } else {
+                // For single ingredients, use practiv1 with vtm.nombre
+                searchParams.practiv1 = pactivos;
+                console.log(`🔍 Buscando monocomponente: practiv1=${pactivos}`);
+            }
+
+            const results = await this.api.searchMedicamentos(searchParams);
+
+            if (!results.resultados || results.resultados.length === 0) {
+                this.modalBody.innerHTML = `
+                    <div class="modal-header">
+                        <h2 class="modal-title"><i class="fas fa-exchange-alt"></i> Alternativas de Suministro</h2>
+                        <p class="modal-subtitle">${medName}</p>
+                    </div>
+                    <div class="empty-state">
+                        <i class="fas fa-box-open"></i>
+                        <h3>Sin alternativas encontradas</h3>
+                        <p class="text-muted">No se encontraron medicamentos comercializados con el principio activo: ${pactivos}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // STRICT FILTER: Only show medications with EXACT same ATC code if available
+            // This ensures we don't mix different insulins, etc.
+            let filteredResults = results.resultados;
+            if (atcCode && atcCode.length >= 7) {
+                filteredResults = results.resultados.filter(m => {
+                    // If result has ATC info, it must match exactly
+                    if (m.atcs && Array.isArray(m.atcs) && m.atcs.length > 0) {
+                        return m.atcs.some(atc => atc.codigo && atc.codigo.toUpperCase() === atcCode.toUpperCase());
+                    }
+                    // If no ATC in result, include but we'll verify the name matches closely
+                    return true;
+                });
+            }
+
+            // Helper function to normalize dose for grouping
+            // Extracts numeric values: "37,5 mg/325 mg" → "37.5/325 mg"
+            const normalizeDosis = (dosisStr) => {
+                if (!dosisStr) return 'Sin dosis';
+                // Extract all numbers (including decimals with , or .)
+                const nums = dosisStr.match(/[\d]+[,.]?[\d]*/g);
+                if (!nums || nums.length === 0) return 'Sin dosis';
+                // Normalize decimal separator and join
+                const normalized = nums.map(n => n.replace(',', '.')).join('/');
+                // Add unit if present
+                const unitMatch = dosisStr.match(/\s*(mg|g|ml|mcg|ui|u)/i);
+                const unit = unitMatch ? ' ' + unitMatch[1].toLowerCase() : ' mg';
+                return normalized + unit;
+            };
+
+            // Filter and group by normalized dose
+            const available = filteredResults.filter(m => !m.psum);
+            const unavailable = filteredResults.filter(m => m.psum);
+
+            // Group available meds by normalized dose
+            const doseGroups = {};
+            available.forEach(med => {
+                const normalizedDose = normalizeDosis(med.dosis);
+                if (!doseGroups[normalizedDose]) {
+                    doseGroups[normalizedDose] = [];
+                }
+                doseGroups[normalizedDose].push(med);
+            });
+
+            // Sort dose groups by numeric value
+            const sortedDoses = Object.keys(doseGroups).sort((a, b) => {
+                const numA = parseFloat(a.split('/')[0]) || 0;
+                const numB = parseFloat(b.split('/')[0]) || 0;
+                return numA - numB;
+            });
+
+            // Get unique forms and labs for filters
+            const uniqueForms = [...new Set(available.map(m => m.formaFarmaceuticaSimplificada?.nombre || 'Otra').filter(Boolean))];
+            const uniqueLabs = [...new Set(available.map(m => {
+                const lab = m.labtitular || m.labcomercializador || '';
+                return lab.split(' ')[0]; // First word only
+            }).filter(Boolean))].slice(0, 10); // Limit to 10
+
+            // Get ATC name from API or fallback
+            const atcName = atcCode ? (this.api.getATCCategoryName(atcCode) || pactivos) : pactivos;
+
+            this.modalBody.innerHTML = `
+                <div class="modal-header">
+                    <h2 class="modal-title"><i class="fas fa-exchange-alt"></i> Alternativas de Suministro</h2>
+                    <p class="modal-subtitle">
+                        <span class="text-muted">Principio activo:</span> ${pactivos}
+                        ${atcCode ? `<br><span class="text-muted">ATC:</span> ${atcCode}` : ''}
+                    </p>
+                </div>
+                
+                <div class="alternatives-summary">
+                    <div class="summary-stat summary-stat-success">
+                        <i class="fas fa-check-circle"></i>
+                        <span class="summary-number">${available.length}</span>
+                        <span class="summary-label">Disponibles</span>
+                    </div>
+                    <div class="summary-stat summary-stat-info">
+                        <i class="fas fa-layer-group"></i>
+                        <span class="summary-number">${sortedDoses.length}</span>
+                        <span class="summary-label">Dosis</span>
+                    </div>
+                    <div class="summary-stat summary-stat-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span class="summary-number">${unavailable.length}</span>
+                        <span class="summary-label">Sin stock</span>
+                    </div>
+                </div>
+
+                ${sortedDoses.length > 0 ? `
+                    <!-- Filter bar -->
+                    <div class="alternatives-filters" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; padding: 0.75rem; background: var(--card-bg); border-radius: 8px;">
+                        <select id="filter-dose" style="padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 0.85rem;">
+                            <option value="">Todas las dosis</option>
+                            ${sortedDoses.map(d => `<option value="${d}">${d}</option>`).join('')}
+                        </select>
+                        <select id="filter-form" style="padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 0.85rem;">
+                            <option value="">Todas las formas</option>
+                            ${uniqueForms.map(f => `<option value="${f}">${f}</option>`).join('')}
+                        </select>
+                        <label style="display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; color: var(--text-muted);">
+                            <input type="checkbox" id="filter-efg" style="accent-color: var(--color-success);"> Solo EFG
+                        </label>
+                    </div>
+
+                    <!-- Results grouped by dose -->
+                    <div id="alternatives-results">
+                        ${sortedDoses.map(dose => `
+                            <div class="dose-group" data-dose="${dose}">
+                                <h4 class="dose-group-title" style="display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0 0.5rem; padding: 0.5rem; background: linear-gradient(90deg, var(--color-primary-dark), transparent); border-radius: 6px 0 0 6px; color: var(--text-color);">
+                                    <i class="fas fa-pills" style="color: var(--color-primary);"></i>
+                                    <span style="font-weight: 600;">${dose}</span>
+                                    <span class="badge badge-info" style="font-size: 0.75rem; margin-left: auto;">${doseGroups[dose].length} opciones</span>
+                                </h4>
+                                <div class="alternatives-grid">
+                                    ${doseGroups[dose].slice(0, 10).map(med => this.renderAlternativeCard(med, true)).join('')}
+                                </div>
+                                ${doseGroups[dose].length > 10 ? `<p class="text-muted text-center text-sm">... y ${doseGroups[dose].length - 10} más</p>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="alternatives-section">
+                        <div class="empty-state-inline">
+                            <i class="fas fa-exclamation-circle text-warning"></i>
+                            <p>No hay alternativas disponibles actualmente para este principio activo</p>
+                        </div>
+                    </div>
+                `}
+
+                ${unavailable.length > 0 ? `
+                    <div class="alternatives-section alternatives-section-muted" style="margin-top: 1.5rem; opacity: 0.7;">
+                        <h4 class="alternatives-section-title text-danger">
+                            <i class="fas fa-exclamation-triangle"></i> También Sin Stock (${unavailable.length})
+                        </h4>
+                        <div class="alternatives-chips">
+                            ${unavailable.slice(0, 10).map(med => `<span class="alternative-chip-muted">${med.nombre.split(' ')[0]}</span>`).join('')}
+                            ${unavailable.length > 10 ? `<span class="alternative-chip-muted">+${unavailable.length - 10} más</span>` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+
+            // Add click handlers for alternative cards
+            this.modalBody.querySelectorAll('.alternative-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    this.openMedDetails(card.dataset.nregistro);
+                });
+            });
+
+            // Add filter event listeners
+            const filterDose = this.modalBody.querySelector('#filter-dose');
+            const filterForm = this.modalBody.querySelector('#filter-form');
+            const filterEfg = this.modalBody.querySelector('#filter-efg');
+
+            const applyFilters = () => {
+                const selectedDose = filterDose?.value || '';
+                const selectedForm = filterForm?.value || '';
+                const onlyEfg = filterEfg?.checked || false;
+
+                this.modalBody.querySelectorAll('.dose-group').forEach(group => {
+                    const groupDose = group.dataset.dose;
+                    const isVisibleByDose = !selectedDose || groupDose === selectedDose;
+
+                    if (!isVisibleByDose) {
+                        group.style.display = 'none';
+                    } else {
+                        group.style.display = 'block';
+                        // Filter cards within group
+                        group.querySelectorAll('.alternative-card').forEach(card => {
+                            const cardForm = card.dataset.forma || '';
+                            const cardGenerico = card.dataset.generico === 'true';
+
+                            const matchesForm = !selectedForm || cardForm.includes(selectedForm);
+                            const matchesEfg = !onlyEfg || cardGenerico;
+
+                            card.style.display = (matchesForm && matchesEfg) ? 'block' : 'none';
+                        });
+                    }
+                });
+            };
+
+            filterDose?.addEventListener('change', applyFilters);
+            filterForm?.addEventListener('change', applyFilters);
+            filterEfg?.addEventListener('change', applyFilters);
+        } catch (error) {
+            console.error('Error fetching medication for alternatives:', error);
+            this.modalBody.innerHTML = `
+                <div class="modal-header">
+                    <h2 class="modal-title"><i class="fas fa-exchange-alt"></i> Alternativas de Suministro</h2>
+                    <p class="modal-subtitle">${medName}</p>
+                </div>
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h3>Error al buscar alternativas</h3>
+                    <p class="text-muted">${error.message}</p>
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * Renders a compact card for an alternative medication
+     * @param {Object} med - Medication object from API
+     * @param {boolean} isAvailable - Whether the medication is in stock
+     * @returns {string} HTML string for the card
+     */
+    renderAlternativeCard(med, isAvailable = true) {
+        const formaSimp = med.formaFarmaceuticaSimplificada?.nombre || '';
+        const lab = (med.labtitular || med.labcomercializador || '').split(' ')[0];
+        const isGenerico = med.generico || false;
+
+        return `
+            <div class="alternative-card ${isAvailable ? '' : 'alternative-card-unavailable'}" 
+                 data-nregistro="${med.nregistro}"
+                 data-forma="${formaSimp}"
+                 data-generico="${isGenerico}"
+                 style="padding: 0.6rem; border-radius: 6px; background: var(--card-bg); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-pills" style="color: ${isAvailable ? 'var(--color-success)' : 'var(--color-danger)'}; font-size: 0.9rem;"></i>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 500; font-size: 0.85rem; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            ${med.nombre.split(' ')[0]}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">
+                            ${formaSimp} · ${lab}
+                        </div>
+                    </div>
+                    ${isGenerico ? '<span class="badge badge-success" style="font-size: 0.65rem; padding: 0.15rem 0.3rem;">EFG</span>' : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Shows a modal with supply alternatives for a medication in shortage
+     * Searches for other medications with the same ATC code that are commercialized and in stock
+     * @param {string} atcCode - ATC code of the medication in shortage
+     * @param {string} medName - Name of the medication in shortage
+     */
+    async showSupplyAlternatives(atcCode, medName) {
+        // Show modal with loading
+        this.modal.classList.remove('hidden');
+        this.modalBody.innerHTML = `
+            <div class="modal-header">
+                <h2 class="modal-title"><i class="fas fa-exchange-alt"></i> Alternativas de Suministro</h2>
+                <p class="modal-subtitle">Buscando alternativas para: ${medName}</p>
+            </div>
+            <div class="alternatives-loading">
+                <div class="loading-spinner"></div>
+                <p class="text-muted">Buscando medicamentos con código ATC ${atcCode} disponibles...</p>
+            </div>
+        `;
+
+        try {
+            // Search for medications with the same ATC code that are commercialized
+            const results = await this.api.searchByATC(atcCode, {
+                comercializados: true,
+                pageSize: 100
+            });
+
+            if (!results.resultados || results.resultados.length === 0) {
+                this.modalBody.innerHTML = `
+                    <div class="modal-header">
+                        <h2 class="modal-title"><i class="fas fa-exchange-alt"></i> Alternativas de Suministro</h2>
+                        <p class="modal-subtitle">${medName}</p>
+                    </div>
+                    <div class="empty-state">
+                        <i class="fas fa-box-open"></i>
+                        <h3>Sin alternativas encontradas</h3>
+                        <p class="text-muted">No se encontraron medicamentos comercializados con el código ATC ${atcCode}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // STRICT FILTER: Only show medications with EXACT same ATC code (same active ingredient)
+            // ATC code with 7 characters = specific chemical substance (e.g., N05BA12 = alprazolam)
+            const exactAtcMatches = results.resultados.filter(m => {
+                if (!m.atcs || !Array.isArray(m.atcs)) return false;
+                return m.atcs.some(atc => atc.codigo && atc.codigo.toUpperCase() === atcCode.toUpperCase());
+            });
+
+            // Filter out medications that also have supply problems
+            const available = exactAtcMatches.filter(m => !m.psum);
+            const unavailable = exactAtcMatches.filter(m => m.psum);
+
+            // Get ATC name from API or fallback
+            const atcName = this.api.getATCCategoryName(atcCode) || atcCode;
+
+            this.modalBody.innerHTML = `
+                <div class="modal-header">
+                    <h2 class="modal-title"><i class="fas fa-exchange-alt"></i> Alternativas de Suministro</h2>
+                    <p class="modal-subtitle">
+                        <span class="text-muted">ATC:</span> ${atcCode} - ${atcName}
+                    </p>
+                </div>
+                
+                <div class="alternatives-summary">
+                    <div class="summary-stat summary-stat-success">
+                        <i class="fas fa-check-circle"></i>
+                        <span class="summary-number">${available.length}</span>
+                        <span class="summary-label">Disponibles</span>
+                    </div>
+                    <div class="summary-stat summary-stat-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span class="summary-number">${unavailable.length}</span>
+                        <span class="summary-label">Sin stock</span>
+                    </div>
+                </div>
+
+                ${available.length > 0 ? `
+                    <div class="alternatives-section">
+                        <h4 class="alternatives-section-title text-success">
+                            <i class="fas fa-check-circle"></i> Alternativas Disponibles
+                        </h4>
+                        <div class="alternatives-grid">
+                            ${available.slice(0, 20).map(med => this.renderAlternativeCard(med, true)).join('')}
+                        </div>
+                        ${available.length > 20 ? `<p class="text-muted text-center">... y ${available.length - 20} más</p>` : ''}
+                    </div>
+                ` : `
+                    <div class="alternatives-section">
+                        <div class="empty-state-inline">
+                            <i class="fas fa-exclamation-circle text-warning"></i>
+                            <p>No hay alternativas disponibles actualmente para este código ATC</p>
+                        </div>
+                    </div>
+                `}
+
+                ${unavailable.length > 0 ? `
+                    <div class="alternatives-section alternatives-section-muted">
+                        <h4 class="alternatives-section-title text-danger">
+                            <i class="fas fa-exclamation-triangle"></i> También Sin Stock (${unavailable.length})
+                        </h4>
+                        <p class="text-muted text-sm mb-md">Estos medicamentos del mismo grupo también tienen problemas de suministro:</p>
+                        <div class="alternatives-chips">
+                            ${unavailable.slice(0, 10).map(med => `<span class="alternative-chip-muted">${med.nombre.split(' ')[0]}</span>`).join('')}
+                            ${unavailable.length > 10 ? `<span class="alternative-chip-muted">+${unavailable.length - 10} más</span>` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+
+            // Add click handlers for alternative cards
+            this.modalBody.querySelectorAll('.alternative-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    this.openMedDetails(card.dataset.nregistro);
+                });
+            });
+
+        } catch (error) {
+            console.error('Error loading supply alternatives:', error);
+            this.modalBody.innerHTML = `
+                <div class="modal-header">
+                    <h2 class="modal-title"><i class="fas fa-exchange-alt"></i> Alternativas de Suministro</h2>
+                </div>
+                <div class="error-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>Error al buscar alternativas</p>
+                    <p class="text-muted text-sm">${error.message}</p>
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * Renders a compact card for an alternative medication
+     */
+    renderAlternativeCard(med, isAvailable) {
+        const dosis = med.dosis || '';
+        const forma = med.formaFarmaceutica?.nombre || '';
+        const lab = med.labtitular?.split(' ')[0] || '';
+
+        return `
+            <div class="alternative-card ${isAvailable ? 'available' : 'unavailable'}" data-nregistro="${med.nregistro}">
+                <div class="alternative-card-header">
+                    <span class="alternative-name">${med.nombre}</span>
+                    ${med.generico ? '<span class="badge badge-success badge-xs">EFG</span>' : ''}
+                </div>
+                <div class="alternative-card-meta">
+                    ${dosis ? `<span class="alternative-dose">${dosis}</span>` : ''}
+                    ${forma ? `<span class="alternative-form">${forma}</span>` : ''}
+                </div>
+                <div class="alternative-card-footer">
+                    <span class="alternative-lab">${lab}</span>
+                    <span class="alternative-action"><i class="fas fa-chevron-right"></i></span>
+                </div>
+            </div>
+        `;
     }
 
     closeModal() {
