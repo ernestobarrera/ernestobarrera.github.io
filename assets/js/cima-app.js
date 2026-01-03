@@ -1304,6 +1304,10 @@ class MedCheckApp {
     // ============================================
 
     renderIndications() {
+        // Preload ATC cache in background for autocomplete
+        // This ensures searchATCByName works when user starts typing
+        this.api.getATCCodes().catch(e => console.warn('ATC cache preload failed:', e));
+
         // Generate category cards for drill-down
         const categories = CimaAPI.ATC_CATEGORIES || [];
         const categoryCardsHtml = categories.map(cat => `
@@ -1314,20 +1318,17 @@ class MedCheckApp {
             </button>
         `).join('');
 
-        // Quick access chips - expanded for common clinical scenarios
+        // Quick access chips - only terms that work with hybrid system
+        // (either in CLINICAL_DICTIONARY or reliable ATC name matches)
         const quickTerms = [
-            // Cardiovascular
-            'Hipertensión', 'Colesterol', 'Anticoagulación', 'Insuficiencia Cardiaca',
-            // Metabólico
-            'Diabetes', 'GLP1', 'SGLT2', 'Omeprazol',
-            // Dolor/Neuro 
-            'Dolor', 'Ansiedad', 'Antidepresivos', 'Insomnio',
-            // Infeccioso
-            'Antibiótico', 'Amoxicilina',
-            // Respiratorio
-            'EPOC', 'Alergia', 'Asma',
-            // Otros frecuentes
-            'AINE', 'Osteoporosis', 'Tiroides'
+            // From CLINICAL_DICTIONARY (síndromes multi-ATC)
+            'Hipertensión', 'Insuficiencia Cardiaca', 'Fibrilación Auricular',
+            'Diabetes', 'Dolor', 'Depresión', 'Asma', 'EPOC',
+            // Abreviaturas clínicas (en diccionario)
+            'IECA', 'ARA II', 'AINE', 'IBP', 'SGLT2', 'GLP1', 'ACOD',
+            // Términos que coinciden bien con nombres ATC
+            'Ansiolíticos', 'Diuréticos', 'Antiepilépticos', 'Antibióticos',
+            'Antidepresivos', 'Insulinas', 'Anticoagulantes'
         ];
         const chipsHtml = quickTerms.map(term =>
             `<button class="indication-chip" data-indication="${term}">${term}</button>`
@@ -1346,8 +1347,8 @@ class MedCheckApp {
                                value="${this.lastIndicationQuery}"
                                autocomplete="off">
                         <button id="indication-btn" class="search-btn">Buscar</button>
+                        <div id="autocomplete-results" class="autocomplete-dropdown hidden"></div>
                     </div>
-                    <div id="autocomplete-results" class="autocomplete-dropdown hidden"></div>
                     <div class="indication-chips-inline">
                         ${chipsHtml}
                     </div>
@@ -1370,6 +1371,7 @@ class MedCheckApp {
 
         searchBtn.addEventListener('click', () => this.performIndicationSearch());
         searchInput.addEventListener('keyup', (e) => {
+            console.log('⌨️ Keyup:', e.key, 'Value:', e.target.value);
             if (e.key === 'Enter') this.performIndicationSearch();
             else this.showIndicationAutocomplete(e.target.value);
         });
@@ -1412,29 +1414,131 @@ class MedCheckApp {
         }
 
         const matches = this.api.findIndicationMatches(query.toLowerCase());
+        console.log(`🔍 Autocomplete para "${query}": ${matches.length} matches`, matches);
+
         if (matches.length === 0) {
             dropdown.classList.add('hidden');
             return;
         }
 
-        dropdown.innerHTML = matches.slice(0, 6).map(match => `
-            <button class="autocomplete-item" data-term="${match.term}">
-                <span class="autocomplete-term">${match.term}</span>
-                <span class="autocomplete-label">${match.label}</span>
-                <span class="autocomplete-atc">${match.atc}</span>
-            </button>
-        `).join('');
+        // Render matches with visual differentiation
+        dropdown.innerHTML = matches.slice(0, 8).map(match => {
+            const isATC = match.source === 'atc-cache';
+            const atcCodes = Array.isArray(match.atc) ? match.atc : [match.atc];
+            const atcDisplay = atcCodes.length > 1
+                ? `${atcCodes.length} grupos`
+                : atcCodes[0];
+
+            // Different styling based on source
+            const badgeClass = isATC ? 'badge-atc' : 'badge-clinical';
+            const badgeText = isATC ? 'ATC' : 'Clínico';
+            const icon = isATC ? 'fa-sitemap' : 'fa-stethoscope';
+
+            // Format the display name - for ATC include the code prefix
+            let displayName;
+            if (isATC) {
+                // Show as "N05B - Ansiolíticos" for ATC matches
+                const formattedName = this._formatATCName(match.label);
+                displayName = `${atcCodes[0]} - ${formattedName}`;
+            } else {
+                // For clinical dictionary, show the term with label as subtitle
+                displayName = match.term;
+            }
+
+            return `
+                <button class="autocomplete-item" 
+                        data-atc="${atcCodes[0]}" 
+                        data-label="${match.label}"
+                        data-is-multi="${atcCodes.length > 1}"
+                        data-all-atc='${JSON.stringify(atcCodes)}'>
+                    <div class="autocomplete-main">
+                        <i class="fas ${icon} autocomplete-icon"></i>
+                        <span class="autocomplete-term">${displayName}</span>
+                    </div>
+                    <div class="autocomplete-meta">
+                        ${!isATC ? `<span class="autocomplete-atc-code">${atcDisplay}</span>` : ''}
+                        <span class="badge ${badgeClass}">${badgeText}</span>
+                    </div>
+                </button>
+            `;
+        }).join('');
+
 
         dropdown.classList.remove('hidden');
 
+        // Click handler: perform ATC search directly
         dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
             item.addEventListener('click', () => {
-                document.getElementById('indication-input').value = item.dataset.term;
                 dropdown.classList.add('hidden');
-                this.performIndicationSearch();
+                document.getElementById('indication-input').value = '';
+
+                const label = item.dataset.label;
+                const atcCodes = JSON.parse(item.dataset.allAtc);
+
+                // Always use _searchMultipleATCs (works for single and multi ATCs)
+                this._searchMultipleATCs(atcCodes, label);
             });
         });
     }
+
+    /**
+     * Format ATC name from UPPERCASE to Title Case
+     * @private
+     */
+    _formatATCName(name) {
+        if (!name) return '';
+        return name.toLowerCase()
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+
+    /**
+     * Search multiple ATC codes and show combined results
+     * Used for clinical syndromes that span multiple ATCs
+     * @private
+     */
+    async _searchMultipleATCs(atcCodes, label) {
+        const resultsContainer = document.getElementById('indication-results');
+        resultsContainer.innerHTML = `
+            <div class="text-center p-xl">
+                <div class="loading-spinner mb-md"></div>
+                <p class="text-muted">Buscando ${label} en ${atcCodes.length} categorías ATC...</p>
+            </div>
+        `;
+
+        try {
+            let allResults = [];
+            for (const atcCode of atcCodes) {
+                const results = await this.api.searchByATC(atcCode, { comercializados: true });
+                if (results.resultados && results.resultados.length > 0) {
+                    allResults = allResults.concat(results.resultados);
+                }
+            }
+
+            // Deduplicate
+            const seen = new Set();
+            const unique = allResults.filter(med => {
+                if (seen.has(med.nregistro)) return false;
+                seen.add(med.nregistro);
+                return true;
+            });
+
+            const data = {
+                resultados: unique,
+                totalFilas: unique.length,
+                matchedIndication: { label, atc: atcCodes }
+            };
+
+            this.lastIndicationQuery = label;
+            this.lastIndicationResults = data;
+            this.displayIndicationResults(data, label);
+
+        } catch (error) {
+            this.handleSearchError(resultsContainer, error);
+        }
+    }
+
 
     /**
      * Recursively find a static ATC category by code
@@ -4920,6 +5024,19 @@ class MedCheckApp {
                 case 'lab':
                     key = med.labtitular || 'Sin laboratorio';
                     break;
+                case 'atc':
+                    // Group by ATC subgroup (level 3-5)
+                    if (med.atcs && med.atcs.length > 0) {
+                        const atc = med.atcs[0];
+                        const code = atc.codigo || '';
+                        // Use level 5 if available (5 chars), else level 4, else level 3
+                        const groupCode = code.length >= 5 ? code.substring(0, 5) :
+                            code.length >= 4 ? code.substring(0, 4) :
+                                code.length >= 3 ? code.substring(0, 3) : code;
+                        key = `${groupCode} - ${atc.nombre || 'Sin nombre'}`;
+                        subtitle = groupCode;
+                    }
+                    break;
                 default:
                     key = 'Todos';
             }
@@ -5027,6 +5144,7 @@ class MedCheckApp {
                 <div class="control-row-main">
                     <div class="control-section">
                         <select id="group-by-select" class="control-select">
+                            <option value="atc" ${this.groupingState.groupBy === 'atc' ? 'selected' : ''}>Agrupar ATC</option>
                             <option value="activeIngredient" ${this.groupingState.groupBy === 'activeIngredient' ? 'selected' : ''}>Agrupar PA</option>
                             <option value="none" ${this.groupingState.groupBy === 'none' ? 'selected' : ''}>Sin agrupar</option>
                         </select>
@@ -5272,6 +5390,12 @@ class MedCheckApp {
         // Initialize grouping state if needed
         if (!this.groupingState) {
             this.initGroupingState();
+        }
+
+        // For indication results, default to ATC grouping for better organization
+        // User can still change via control bar
+        if (this.groupingState.groupBy === 'activeIngredient') {
+            this.groupingState.groupBy = 'atc';
         }
 
         // Apply route filter if set (supports multi-selection)

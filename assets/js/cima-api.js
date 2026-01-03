@@ -253,6 +253,45 @@ class CimaAPI {
     }
 
     // ============================================
+    // NOTAS DE SEGURIDAD Y MATERIALES INFORMATIVOS
+    // ============================================
+
+    /**
+     * Obtener notas de seguridad de un medicamento
+     * Las notas contienen alertas oficiales de la AEMPS sobre seguridad del fármaco
+     * @param {string} nregistro - Número de registro del medicamento
+     * @returns {Promise<Array>} Array de notas con fecha, tipo, url, etc.
+     */
+    async getNotas(nregistro) {
+        try {
+            const response = await this._request(`/notas/${nregistro}`);
+            // Normalizar respuesta - puede venir vacía, null, o con datos
+            if (!response) return [];
+            return Array.isArray(response) ? response : [response];
+        } catch (error) {
+            console.warn(`No hay notas de seguridad para ${nregistro}`);
+            return [];
+        }
+    }
+
+    /**
+     * Obtener materiales informativos de seguridad
+     * Incluye guías para profesionales/pacientes, tarjetas de alerta, vídeos, etc.
+     * @param {string} nregistro - Número de registro del medicamento
+     * @returns {Promise<Array>} Array de materiales con tipo, url, descripción
+     */
+    async getMateriales(nregistro) {
+        try {
+            const response = await this._request(`/materiales/${nregistro}`);
+            if (!response) return [];
+            return Array.isArray(response) ? response : [response];
+        } catch (error) {
+            console.warn(`No hay materiales informativos para ${nregistro}`);
+            return [];
+        }
+    }
+
+    // ============================================
     // FICHAS TÉCNICAS Y DOCUMENTOS
     // ============================================
 
@@ -286,30 +325,76 @@ class CimaAPI {
                 this._atcCacheLoading = true;
                 console.log('📦 Cargando catálogo ATC completo de CIMA...');
 
-                const data = await this._request('/maestras?maestra=7');
+                // Try localStorage first (cache for 24h)
+                const cached = localStorage.getItem('medcheck_atc_cache');
+                const cacheTime = localStorage.getItem('medcheck_atc_cache_time');
+                const cacheAge = cacheTime ? Date.now() - parseInt(cacheTime) : Infinity;
+                const cacheValid = cacheAge < 24 * 60 * 60 * 1000; // 24 hours
 
-                if (data && data.resultados && data.resultados.length > 0) {
-                    this._atcCache = data.resultados.map(item => ({
-                        codigo: item.codigo,
-                        nombre: item.nombre
-                    }));
-                    console.log(`✅ Cargados ${this._atcCache.length} códigos ATC`);
-                } else {
-                    console.warn('⚠️ No se pudieron cargar códigos ATC');
-                    this._atcCache = [];
+                if (cached && cacheValid) {
+                    try {
+                        this._atcCache = JSON.parse(cached);
+                        console.log(`✅ Cargados ${this._atcCache.length} códigos ATC desde cache local`);
+                        this._atcCacheLoading = false;
+                    } catch (e) {
+                        console.warn('⚠️ Cache local corrupto, recargando desde API...');
+                        localStorage.removeItem('medcheck_atc_cache');
+                    }
+                }
+
+                // If no valid local cache, fetch from API
+                if (!this._atcCache) {
+                    try {
+                        const data = await this._request('/maestras?maestra=7');
+
+                        if (data && data.resultados && data.resultados.length > 0) {
+                            this._atcCache = data.resultados.map(item => ({
+                                codigo: item.codigo,
+                                nombre: item.nombre
+                            }));
+                            console.log(`✅ Cargados ${this._atcCache.length} códigos ATC desde API`);
+
+                            // Save to localStorage for next time
+                            try {
+                                localStorage.setItem('medcheck_atc_cache', JSON.stringify(this._atcCache));
+                                localStorage.setItem('medcheck_atc_cache_time', Date.now().toString());
+                            } catch (e) {
+                                console.warn('⚠️ No se pudo guardar cache en localStorage');
+                            }
+                        } else {
+                            console.warn('⚠️ API devolvió datos vacíos');
+                            this._atcCache = [];
+                        }
+                    } catch (apiError) {
+                        console.error('❌ Error cargando ATC desde API:', apiError.message);
+                        // Try stale cache as last resort
+                        if (cached) {
+                            try {
+                                this._atcCache = JSON.parse(cached);
+                                console.log(`⚠️ Usando cache ATC antiguo (${this._atcCache.length} códigos)`);
+                            } catch (e) {
+                                this._atcCache = [];
+                            }
+                        } else {
+                            this._atcCache = [];
+                        }
+                    }
                 }
                 this._atcCacheLoading = false;
             }
+
 
             // Esperar si está cargando
             while (this._atcCacheLoading) {
                 await new Promise(r => setTimeout(r, 100));
             }
 
+            // Fallback: if cache is empty, use static minimal data
             if (!this._atcCache || this._atcCache.length === 0) {
-                console.log('ℹ️ Cache ATC vacío, no hay subcategorías disponibles');
-                return [];
+                console.log('⚠️ Usando catálogo ATC estático de emergencia');
+                this._atcCache = CimaAPI.STATIC_ATC_FALLBACK;
             }
+
 
             // Si no hay código padre, devolver categorías principales (nivel 1)
             if (!parentCode) {
@@ -376,6 +461,68 @@ class CimaAPI {
         if (currentLength === 4) return 5;  // A01A -> A01AA
         if (currentLength === 5) return 7;  // A01AA -> A01AA01
         return currentLength + 1;
+    }
+
+    /**
+     * Busca categorías ATC por nombre en el cache de maestras
+     * Esto permite encontrar términos como "ansiolíticos" → N05B
+     * @param {string} query - Término de búsqueda (ej: "ansiolíticos", "diuréticos")
+     * @param {Object} options - Opciones de búsqueda
+     * @param {number} options.maxResults - Máximo de resultados (default: 5)
+     * @param {number} options.minCodeLength - Longitud mínima de código ATC a devolver (default: 3)
+     * @param {number} options.maxCodeLength - Longitud máxima de código ATC (default: 5, evita principios activos)
+     * @returns {Promise<Array>} Lista de matches { codigo, nombre, score }
+     */
+    async searchATCByName(query, options = {}) {
+        const { maxResults = 5, minCodeLength = 3, maxCodeLength = 5 } = options;
+
+        // Asegurar que el cache está cargado
+        if (!this._atcCache) {
+            await this.getATCCodes();
+        }
+
+        if (!this._atcCache || this._atcCache.length === 0) {
+            return [];
+        }
+
+        const normalizedQuery = query.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Quitar acentos
+
+        const matches = [];
+
+        for (const item of this._atcCache) {
+            const code = item.codigo;
+            const codeLen = code?.length || 0;
+
+            // Filtrar por longitud de código (queremos grupos terapéuticos, no principios activos)
+            if (codeLen < minCodeLength || codeLen > maxCodeLength) continue;
+
+            const nombre = (item.nombre || '').toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+            // Match exacto
+            if (nombre === normalizedQuery) {
+                matches.push({ codigo: code, nombre: item.nombre, score: 100 });
+                continue;
+            }
+
+            // El nombre contiene la query completa
+            if (nombre.includes(normalizedQuery)) {
+                // Priorizar matches más cortos (más específicos)
+                const score = 80 - (nombre.length - normalizedQuery.length) / 10;
+                matches.push({ codigo: code, nombre: item.nombre, score: Math.max(score, 60) });
+                continue;
+            }
+
+            // La query contiene el nombre ATC (ej: "anti" en "anticoagulantes")
+            if (normalizedQuery.length >= 4 && nombre.includes(normalizedQuery)) {
+                matches.push({ codigo: code, nombre: item.nombre, score: 50 });
+            }
+        }
+
+        // Ordenar por score y limitar resultados
+        matches.sort((a, b) => b.score - a.score);
+        return matches.slice(0, maxResults);
     }
 
     /**
@@ -582,31 +729,58 @@ class CimaAPI {
 
 
     /**
-     * Busca indicación en el diccionario y devuelve medicamentos por ATC
-     * Soporta múltiples códigos ATC por indicación
-     * @param {string} query - Término de búsqueda (ej: "hipertensión", "infección urinaria")
+     * Busca indicación usando enfoque HÍBRIDO:
+     * 1. Primero busca en diccionario clínico reducido (síndromes multi-ATC)
+     * 2. Si no hay match, busca en nombres ATC del cache de maestras
+     * 3. Fallback: búsqueda directa si parece código ATC
+     * @param {string} query - Término de búsqueda (ej: "hipertensión", "ansiolíticos")
      * @returns {Promise<Object>} Resultados con medicamentos y metadata
      */
     async searchByIndication(query, options = {}) {
-        const normalizedQuery = query.toLowerCase().trim();
+        // Normalize: lowercase + remove accents for consistent matching
+        const normalizedQuery = query.toLowerCase().trim()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-        // Buscar coincidencias en el diccionario
-        const matches = this.findIndicationMatches(normalizedQuery);
+        // 1. Buscar en diccionario clínico (síndromes, abreviaturas, sinónimos españoles)
+        const clinicalMatches = this.findClinicalDictionaryMatches(normalizedQuery);
 
-        if (matches.length === 0) {
-            // Fallback: intento de búsqueda directa por ATC si parece código
-            if (/^[A-Z]\d{2}/i.test(query)) {
-                const results = await this.searchByATC(query.toUpperCase(), options);
-                return { ...results, matchedIndication: { label: query, atc: query } };
-            }
-            return { resultados: [], totalFilas: 0, noMatch: true };
+        if (clinicalMatches.length > 0) {
+            console.log(`📚 Match en diccionario clínico: "${clinicalMatches[0].term}"`);
+            return this._executeIndicationSearch(clinicalMatches[0], options);
         }
 
-        // Usar la primera coincidencia (mejor match)
-        const bestMatch = matches[0];
-        const atcCodes = Array.isArray(bestMatch.atc) ? bestMatch.atc : [bestMatch.atc];
+        // 2. Buscar en nombres ATC del cache de maestras
+        const atcNameMatches = await this.searchATCByName(normalizedQuery);
 
-        // Buscar en todos los códigos ATC y combinar resultados
+        if (atcNameMatches.length > 0) {
+            const bestMatch = atcNameMatches[0];
+            console.log(`🔍 Match en nombres ATC: "${bestMatch.nombre}" (${bestMatch.codigo})`);
+
+            const matchData = {
+                atc: bestMatch.codigo,
+                label: bestMatch.nombre,
+                term: normalizedQuery,
+                source: 'atc-cache'
+            };
+            return this._executeIndicationSearch(matchData, options);
+        }
+
+        // 3. Fallback: si parece código ATC, búsqueda directa
+        if (/^[A-Z]\d{2}/i.test(query)) {
+            const results = await this.searchByATC(query.toUpperCase(), options);
+            return { ...results, matchedIndication: { label: query, atc: query } };
+        }
+
+        return { resultados: [], totalFilas: 0, noMatch: true };
+    }
+
+    /**
+     * Ejecuta la búsqueda ATC basada en un match de indicación
+     * @private
+     */
+    async _executeIndicationSearch(matchData, options) {
+        const atcCodes = Array.isArray(matchData.atc) ? matchData.atc : [matchData.atc];
+
         let allResults = [];
         for (const atcCode of atcCodes) {
             try {
@@ -630,33 +804,55 @@ class CimaAPI {
         return {
             resultados: uniqueResults,
             totalFilas: uniqueResults.length,
-            matchedIndication: bestMatch
+            matchedIndication: matchData
         };
     }
 
     /**
-     * Busca coincidencias en el diccionario de indicaciones
+     * Busca coincidencias en el diccionario clínico reducido
+     * Solo contiene: síndromes multi-ATC, abreviaturas españolas, términos coloquiales
      * @param {string} query - Término normalizado
      * @returns {Array} Coincidencias ordenadas por relevancia
      */
-    findIndicationMatches(query) {
+    findClinicalDictionaryMatches(query) {
         const matches = [];
 
-        for (const [term, data] of Object.entries(CimaAPI.INDICATION_DICTIONARY)) {
+        // Normalize query (should already be normalized, but ensure)
+        const normalizedQuery = query.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+        for (const [term, data] of Object.entries(CimaAPI.CLINICAL_DICTIONARY)) {
+            // Normalize dictionary term for comparison
+            const normalizedTerm = term.toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
             // Coincidencia exacta
-            if (term === query) {
+            if (normalizedTerm === normalizedQuery) {
                 matches.unshift({ ...data, term, score: 100 });
                 continue;
             }
-            // Coincidencia parcial (término contiene query o viceversa)
-            if (term.includes(query) || query.includes(term)) {
+
+            // Coincidencia parcial (require min 4 chars to avoid false positives)
+            if (normalizedQuery.length >= 4 && normalizedTerm.includes(normalizedQuery)) {
                 matches.push({ ...data, term, score: 80 });
                 continue;
             }
-            // Buscar en sinónimos
+
+            // Buscar en sinónimos (require min 4 chars to avoid 'ic' matching 'ansioliticos')
             if (data.synonyms) {
                 for (const syn of data.synonyms) {
-                    if (syn.includes(query) || query.includes(syn)) {
+                    const normalizedSyn = syn.toLowerCase()
+                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+                    // Only match if synonym is long enough and matches well
+                    if (normalizedSyn.length >= 4) {
+                        if (normalizedSyn === normalizedQuery ||
+                            (normalizedQuery.length >= 4 && normalizedSyn.includes(normalizedQuery))) {
+                            matches.push({ ...data, term, score: 70 });
+                            break;
+                        }
+                    } else if (normalizedSyn === normalizedQuery) {
+                        // Short synonyms only match exactly
                         matches.push({ ...data, term, score: 70 });
                         break;
                     }
@@ -664,40 +860,178 @@ class CimaAPI {
             }
         }
 
-        // Ordenar por score
         matches.sort((a, b) => b.score - a.score);
         return matches;
     }
 
     /**
-     * Diccionario de indicaciones médicas → códigos ATC
-     * Optimizado para Atención Primaria
-     * Formato: atc puede ser string (un código) o array (múltiples códigos)
+     * Busca en AMBAS fuentes para autocompletado
+     * Combina diccionario clínico + nombres ATC del cache
+     * @param {string} query - Término de búsqueda
+     * @returns {Array} Matches combinados
      */
-    static INDICATION_DICTIONARY = {
-        // ===== CARDIOVASCULAR =====
+    findIndicationMatches(query) {
+        // Primero matches del diccionario clínico
+        const clinicalMatches = this.findClinicalDictionaryMatches(query);
+
+        // Nota: Para ATC names, usamos versión síncrona (cache ya cargado)
+        // Si el cache no está listo, solo devolvemos clinical matches
+        const atcMatches = this._findATCNameMatchesSync(query);
+
+        // Combinar y ordenar por score
+        const combined = [...clinicalMatches, ...atcMatches];
+        combined.sort((a, b) => b.score - a.score);
+
+        // Eliminar duplicados por código ATC
+        const seen = new Set();
+        return combined.filter(m => {
+            const key = Array.isArray(m.atc) ? m.atc.join(',') : m.atc;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }
+
+    /**
+     * Versión síncrona de searchATCByName para autocompletado
+     * @private
+     */
+    _findATCNameMatchesSync(query) {
+        // Use cache if available, otherwise use static fallback
+        const dataSource = (this._atcCache && this._atcCache.length > 0)
+            ? this._atcCache
+            : CimaAPI.STATIC_ATC_FALLBACK;
+
+        if (!dataSource || dataSource.length === 0) return [];
+
+        const normalizedQuery = query.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+        const matches = [];
+
+        for (const item of dataSource) {
+            const code = item.codigo;
+            const codeLen = code?.length || 0;
+
+            // Solo grupos terapéuticos (nivel 3-5), no principios activos
+            if (codeLen < 3 || codeLen > 5) continue;
+
+            const nombre = (item.nombre || '').toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+            if (nombre.includes(normalizedQuery) || normalizedQuery.includes(nombre)) {
+                matches.push({
+                    atc: code,
+                    label: item.nombre,
+                    term: item.nombre.toLowerCase(),
+                    score: nombre === normalizedQuery ? 90 : 65,
+                    source: 'atc-cache'
+                });
+            }
+        }
+
+        matches.sort((a, b) => b.score - a.score);
+        return matches.slice(0, 5);
+    }
+
+    /**
+     * Catálogo ATC de emergencia - grupos terapéuticos más buscados
+     * Se usa cuando la API de CIMA falla
+     */
+    static STATIC_ATC_FALLBACK = [
+        // Cardiovascular
+        { codigo: 'C02', nombre: 'ANTIHIPERTENSIVOS' },
+        { codigo: 'C03', nombre: 'DIURETICOS' },
+        { codigo: 'C07', nombre: 'BETABLOQUEANTES' },
+        { codigo: 'C08', nombre: 'BLOQUEANTES DE CANALES DE CALCIO' },
+        { codigo: 'C09', nombre: 'AGENTES QUE ACTUAN SOBRE SISTEMA RENINA-ANGIOTENSINA' },
+        { codigo: 'C09A', nombre: 'INHIBIDORES ECA' },
+        { codigo: 'C09C', nombre: 'ANTAGONISTAS DE ANGIOTENSINA II' },
+        { codigo: 'C10', nombre: 'HIPOLIPEMIANTES' },
+        { codigo: 'B01A', nombre: 'ANTITROMBOTICOS' },
+        // Sistema nervioso
+        { codigo: 'N02', nombre: 'ANALGESICOS' },
+        { codigo: 'N02A', nombre: 'OPIOIDES' },
+        { codigo: 'N02B', nombre: 'OTROS ANALGESICOS Y ANTIPIRETICOS' },
+        { codigo: 'N03', nombre: 'ANTIEPILEPTICOS' },
+        { codigo: 'N05A', nombre: 'ANTIPSICOTICOS' },
+        { codigo: 'N05B', nombre: 'ANSIOLITICOS' },
+        { codigo: 'N05C', nombre: 'HIPNOTICOS Y SEDANTES' },
+        { codigo: 'N06A', nombre: 'ANTIDEPRESIVOS' },
+        { codigo: 'N06AA', nombre: 'INHIBIDORES NO SELECTIVOS DE LA RECAPTACION DE MONOAMINAS' },
+        { codigo: 'N06AB', nombre: 'INHIBIDORES SELECTIVOS DE LA RECAPTACION DE SEROTONINA' },
+        // Metabolismo
+        { codigo: 'A10', nombre: 'ANTIDIABETICOS' },
+        { codigo: 'A10A', nombre: 'INSULINAS' },
+        { codigo: 'A10B', nombre: 'ANTIDIABETICOS ORALES' },
+        { codigo: 'A10BK', nombre: 'INHIBIDORES DEL COTRANSPORTADOR SODIO-GLUCOSA 2 (SGLT2)' },
+        { codigo: 'A10BJ', nombre: 'ANALOGOS DEL GLP-1' },
+        { codigo: 'A02B', nombre: 'ANTIULCEROSOS' },
+        { codigo: 'A02BC', nombre: 'INHIBIDORES DE LA BOMBA DE PROTONES' },
+        // Musculoesquelético
+        { codigo: 'M01', nombre: 'ANTIINFLAMATORIOS Y ANTIREUMATICOS' },
+        { codigo: 'M01A', nombre: 'ANTIINFLAMATORIOS NO ESTEROIDEOS (AINES)' },
+        { codigo: 'M05B', nombre: 'MEDICAMENTOS PARA OSTEOPOROSIS' },
+        // Respiratorio
+        { codigo: 'R03', nombre: 'ANTIASTMATICOS' },
+        { codigo: 'R03A', nombre: 'ADRENERGICOS INHALATORIOS' },
+        { codigo: 'R03B', nombre: 'CORTICOIDES INHALATORIOS' },
+        { codigo: 'R06', nombre: 'ANTIHISTAMINICOS' },
+        // Antiinfecciosos
+        { codigo: 'J01', nombre: 'ANTIBACTERIANOS DE USO SISTEMICO' },
+        { codigo: 'J01C', nombre: 'PENICILINAS' },
+        { codigo: 'J01D', nombre: 'CEFALOSPORINAS' },
+        { codigo: 'J01F', nombre: 'MACROLIDOS Y LINCOSAMIDAS' },
+        { codigo: 'J01M', nombre: 'QUINOLONAS' },
+        // Hormonas
+        { codigo: 'H02', nombre: 'CORTICOSTEROIDES SISTEMICOS' },
+        { codigo: 'H03', nombre: 'TERAPIA TIROIDEA' },
+        // Dermatología
+        { codigo: 'D01', nombre: 'ANTIFUNGICOS DERMATOLOGICOS' },
+        { codigo: 'D02', nombre: 'EMOLIENTES Y PROTECTORES' },
+        { codigo: 'D05', nombre: 'ANTIPSORIATICOS' },
+        { codigo: 'D06', nombre: 'ANTIBIOTICOS Y QUIMIOTERAPICOS DERMATOLOGICOS' },
+        { codigo: 'D07', nombre: 'CORTICOSTEROIDES TOPICOS' },
+        { codigo: 'D10', nombre: 'ANTIACNEICOS' },
+        { codigo: 'D10A', nombre: 'PREPARADOS ANTIACNE TOPICOS' },
+        // Ginecología
+        { codigo: 'G01', nombre: 'ANTIINFECCIOSOS Y ANTISEPTICOS GINECOLOGICOS' },
+        { codigo: 'G01A', nombre: 'ANTIINFECCIOSOS VAGINALES' },
+        { codigo: 'G02', nombre: 'OTROS GINECOLOGICOS' },
+        { codigo: 'G03', nombre: 'HORMONAS SEXUALES' },
+        { codigo: 'G03A', nombre: 'ANTICONCEPTIVOS HORMONALES' },
+        { codigo: 'G04', nombre: 'UROLOGICOS' },
+        { codigo: 'G04B', nombre: 'OTROS UROLOGICOS (PROSTATA)' },
+        { codigo: 'G04C', nombre: 'HIPERPLASIA PROSTATICA BENIGNA' },
+        // Oftalmología
+        { codigo: 'S01', nombre: 'OFTALMOLOGICOS' },
+        { codigo: 'S01A', nombre: 'ANTIINFECCIOSOS OFTALMICOS' },
+        { codigo: 'S01E', nombre: 'ANTIGLAUCOMATOSOS' },
+        // Antifúngicos sistémicos
+        { codigo: 'J02', nombre: 'ANTIMICOTICOS SISTEMICOS' },
+        // Antivirales
+        { codigo: 'J05', nombre: 'ANTIVIRALES DE USO SISTEMICO' },
+        // Otros
+        { codigo: 'L01', nombre: 'ANTINEOPLASICOS' },
+        { codigo: 'L04', nombre: 'INMUNOSUPRESORES' },
+        { codigo: 'P01', nombre: 'ANTIPROTOZOARIOS' },
+        { codigo: 'P02', nombre: 'ANTIHELMINTICOS' }
+    ];
+
+    /**
+     * DICCIONARIO CLÍNICO REDUCIDO
+     * Solo términos que:
+     * 1. Agrupan múltiples ATCs por síndrome/indicación clínica
+     * 2. Son abreviaturas o sinónimos españoles que no existen en ATC
+     * Para términos que coinciden con nombres ATC, se busca directamente en el cache
+     */
+    static CLINICAL_DICTIONARY = {
+        // ===== SÍNDROMES CARDIOVASCULARES (multi-ATC) =====
         'hipertensión': {
             atc: ['C02', 'C03', 'C07', 'C08', 'C09'],
             label: 'Antihipertensivos (todos)',
-            category: 'Cardiovascular',
-            synonyms: ['hta', 'tensión alta', 'hipertensión arterial', 'presión alta', 'antihta']
+            synonyms: ['hta', 'tensión alta', 'hipertensión arterial', 'presión alta']
         },
-        'diuréticos': { atc: 'C03', label: 'Diuréticos' },
-        'betabloqueantes': { atc: 'C07', label: 'Betabloqueantes', synonyms: ['beta bloqueantes'] },
-        'calcioantagonistas': { atc: 'C08', label: 'Calcioantagonistas', synonyms: ['antagonistas calcio'] },
-        'ieca': { atc: 'C09A', label: 'IECA', synonyms: ['inhibidores eca', 'enalapril', 'ramipril'] },
-        'ara ii': { atc: 'C09C', label: 'ARA-II', synonyms: ['araii', 'sartanes', 'losartan', 'valsartan'] },
-
-        // Combinaciones antihipertensivas de dosis fija
-        'ieca + diurético': { atc: 'C09B', label: 'IECA + diurético', synonyms: ['enalapril hidroclorotiazida', 'ramipril hctz'] },
-        'ara-ii + diurético': { atc: 'C09D', label: 'ARA-II + diurético', synonyms: ['losartan hctz', 'valsartan hctz', 'olmesartan hctz'] },
-        'ara-ii + calcioantagonista': { atc: 'C09DB', label: 'ARA-II + calcioantagonista', synonyms: ['valsartan amlodipino', 'olmesartan amlodipino'] },
-        'combinaciones antihta': {
-            atc: ['C02L', 'C09B', 'C09D', 'C09DB', 'C09DX'],
-            label: 'Combinaciones antihipertensivas',
-            synonyms: ['politerapia hta', 'asociaciones', 'antihta combinados']
-        },
-
         'insuficiencia cardiaca': {
             atc: ['C03', 'C07', 'C09', 'A10BK'],
             label: 'IC (diuréticos, BB, IECA/ARA, iSGLT2)',
@@ -706,170 +1040,96 @@ class CimaAPI {
         'fibrilación auricular': {
             atc: ['B01A', 'C01B', 'C07'],
             label: 'FA (anticoag, antiarrit, BB)',
-            synonyms: ['fa', 'acfa', 'arritmia']
+            synonyms: ['fa', 'acfa', 'arritmia auricular']
         },
-        'arritmia': { atc: 'C01B', label: 'Antiarrítmicos' },
-        'angina': { atc: ['C01D', 'C07', 'C08'], label: 'Antianginosos' },
+        'angina': {
+            atc: ['C01D', 'C07', 'C08'],
+            label: 'Antianginosos',
+            synonyms: ['angor', 'angina de pecho']
+        },
 
-        'colesterol': { atc: 'C10', label: 'Hipolipemiantes', synonyms: ['dislipemia', 'hipercolesterolemia', 'estatinas'] },
-        'estatinas': { atc: 'C10AA', label: 'Estatinas' },
+        // ===== SÍNDROMES METABÓLICOS (multi-ATC) =====
+        'diabetes': {
+            atc: ['A10A', 'A10B'],
+            label: 'Antidiabéticos (insulinas + orales)',
+            synonyms: ['dm', 'azúcar alta']
+        },
 
-        'anticoagulación': { atc: 'B01A', label: 'Antitrombóticos', synonyms: ['sintrom', 'acenocumarol', 'acod', 'naco', 'anticoagulantes'] },
-        'antiagregación': { atc: 'B01AC', label: 'Antiagregantes', synonyms: ['aas', 'aspirina', 'clopidogrel', 'adiro'] },
-        'trombosis': { atc: 'B01A', label: 'Antitrombóticos', synonyms: ['embolia', 'tep', 'tvp'] },
-        'anemia': { atc: 'B03', label: 'Antianémicos', synonyms: ['hierro', 'ferropenia'] },
+        // ===== DOLOR (multi-ATC) =====
+        'dolor': {
+            atc: ['N02', 'M01A'],
+            label: 'Analgésicos y AINE',
+            synonyms: ['analgesia']
+        },
+        'dolor neuropático': {
+            atc: ['N03', 'N06A'],
+            label: 'Dolor neuropático (antiepilépticos + antidepresivos)',
+            synonyms: ['neuropatía', 'neuralgia']
+        },
+        'dolor crónico': {
+            atc: ['N02A', 'N03', 'N06A'],
+            label: 'Dolor crónico (opioides, antiepil, antidep)'
+        },
 
-        // ===== SISTEMA NERVIOSO =====
-        'dolor': { atc: ['N02', 'M01A'], label: 'Analgésicos y AINE', category: 'Sistema Nervioso' },
-        'dolor crónico': { atc: ['N02A', 'N03', 'N06A'], label: 'Dolor crónico (opioides, antiepil, antidep)' },
-        'dolor neuropático': { atc: ['N03', 'N06A'], label: 'Dolor neuropático', synonyms: ['neuropatía'] },
-        'migraña': { atc: 'N02C', label: 'Antimigrañosos', synonyms: ['cefalea', 'jaqueca'] },
-
-        'ansiedad': { atc: 'N05B', label: 'Ansiolíticos', synonyms: ['nerviosismo', 'angustia', 'benzodiacepinas'] },
-        'insomnio': { atc: 'N05C', label: 'Hipnóticos', synonyms: ['dormir', 'sueño'] },
+        // ===== PSIQUIATRÍA (multi-ATC) =====
         'depresión': {
             atc: ['N06AA', 'N06AB', 'N06AX'],
             label: 'Antidepresivos (tricíclicos, ISRS, otros)',
-            synonyms: ['tristeza', 'isrs', 'antidepresivo', 'sertralina', 'escitalopram', 'duloxetina']
-        },
-        'antidepresivos': {
-            atc: 'N06A',
-            label: 'Antidepresivos (todos)',
-            synonyms: ['isrs', 'irsn', 'tricíclicos']
+            synonyms: ['tristeza', 'antidepresivo']
         },
 
-        'epilepsia': { atc: 'N03', label: 'Antiepilépticos', synonyms: ['convulsiones', 'crisis'] },
-        'parkinson': { atc: 'N04', label: 'Antiparkinsonianos' },
-        'demencia': { atc: 'N06D', label: 'Antidemencia', synonyms: ['alzheimer', 'deterioro cognitivo'] },
-        'vértigo': { atc: 'N07C', label: 'Antivertiginosos', synonyms: ['mareo'] },
-        'tdah': { atc: 'N06B', label: 'TDAH', synonyms: ['déficit atención', 'hiperactividad'] },
-
-        // ===== ADICCIONES =====
-        'tabaquismo': {
-            atc: 'N07BA',
-            label: 'Tratamiento tabaquismo',
-            category: 'Sistema Nervioso',
-            synonyms: ['dejar de fumar', 'cesación tabáquica', 'nicotina', 'vareniclina', 'champix', 'todacitan', 'citisiniclina']
+        // ===== INFECCIONES (multi-ATC) =====
+        'infección urinaria': {
+            atc: ['J01'],
+            label: 'Antibióticos (ITU)',
+            synonyms: ['itu', 'cistitis', 'pielonefritis']
         },
-        'adicciones': {
-            atc: 'N07B',
-            label: 'Tratamiento adicciones',
-            synonyms: ['dependencia', 'deshabituación', 'drogas']
-        },
-        'alcoholismo': {
-            atc: 'N07BB',
-            label: 'Tratamiento dependencia alcohólica',
-            synonyms: ['dependencia alcohol', 'deshabituación alcohol', 'disulfiram', 'naltrexona', 'antabus']
-        },
-        'dependencia opioides': {
-            atc: 'N07BC',
-            label: 'Tratamiento dependencia opioides',
-            synonyms: ['metadona', 'suboxone', 'buprenorfina', 'sustitutivo opiáceos']
+        'infección respiratoria': {
+            atc: ['J01'],
+            label: 'Antibióticos (respiratorio)',
+            synonyms: ['bronquitis', 'neumonía']
         },
 
-        // ===== DIGESTIVO Y METABOLISMO =====
-        'diabetes': { atc: 'A10', label: 'Antidiabéticos', category: 'Metabolismo' },
-        'diabetes tipo 2': { atc: 'A10B', label: 'Antidiabéticos orales', synonyms: ['dm2', 'azúcar alta'] },
-        'insulinas': { atc: 'A10A', label: 'Insulinas' },
-        'metformina': { atc: 'A10BA', label: 'Biguanidas' },
-        'sglt2': {
-            atc: 'A10BK',
-            label: 'iSGLT2 (gliflozinas)',
-            synonyms: ['isglt2', 'empagliflozina', 'dapagliflozina', 'canagliflozina', 'gliflozinas', 'jardiance', 'forxiga']
+        // ===== RESPIRATORIO (multi-ATC) =====
+        'asma': {
+            atc: ['R03'],
+            label: 'Antiasmáticos',
+            synonyms: ['broncoespasmo']
         },
-        'glp1': { atc: 'A10BJ', label: 'Agonistas GLP-1', synonyms: ['semaglutida', 'ozempic', 'liraglutida'] },
-
-        // Combinaciones antidiabéticas de dosis fija
-        'metformina + isglt2': { atc: 'A10BD', label: 'Metformina + iSGLT2', synonyms: ['metformina empagliflozina', 'metformina dapagliflozina'] },
-        'metformina + idpp4': { atc: 'A10BD', label: 'Metformina + iDPP4', synonyms: ['metformina sitagliptina', 'metformina vildagliptina'] },
-        'combinaciones diabetes': {
-            atc: 'A10BD',
-            label: 'Combinaciones antidiabéticas',
-            synonyms: ['asociaciones diabetes', 'politerapia dm', 'combos metformina']
+        'epoc': {
+            atc: ['R03'],
+            label: 'EPOC',
+            synonyms: ['broncodilatadores', 'enfisema']
         },
-        'dpp4': { atc: 'A10BH', label: 'iDPP4 (gliptinas)', synonyms: ['idpp4', 'sitagliptina', 'vildagliptina', 'linagliptina', 'saxagliptina'] },
 
-        'reflujo': { atc: 'A02B', label: 'IBP/Anti-H2', synonyms: ['acidez', 'ardor', 'rge', 'hernia hiato'] },
-        'omeprazol': { atc: 'A02BC', label: 'IBP', synonyms: ['protector gástrico', 'ibp'] },
-        'gastroprotección': { atc: 'A02B', label: 'Gastroprotectores' },
-
-        'estreñimiento': { atc: 'A06', label: 'Laxantes' },
-        'diarrea': { atc: 'A07', label: 'Antidiarreicos' },
-        'náuseas': { atc: 'A04', label: 'Antieméticos', synonyms: ['vómitos'] },
-        'vitaminas': { atc: ['A11', 'A12'], label: 'Vitaminas y minerales' },
-        'hierro': { atc: 'B03A', label: 'Suplementos de hierro' },
-        'b12': { atc: 'B03B', label: 'Vitamina B12', synonyms: ['vitamina b12', 'cianocobalamina'] },
-        'calcio': { atc: 'A12A', label: 'Suplementos de calcio' },
-        'vitamina d': { atc: 'A11CC', label: 'Vitamina D', synonyms: ['colecalciferol'] },
-
-        // ===== ANTIINFECCIOSOS =====
-        'antibiótico': { atc: 'J01', label: 'Antibióticos sistémicos', category: 'Infecciones' },
-        'infección urinaria': { atc: 'J01', label: 'Antibióticos (ITU)', synonyms: ['itu', 'cistitis', 'pielonefritis'] },
-        'infección respiratoria': { atc: 'J01', label: 'Antibióticos (resp)', synonyms: ['bronquitis', 'neumonía'] },
-        'amoxicilina': { atc: 'J01CA', label: 'Penicilinas amplio espectro' },
-        'augmentine': { atc: 'J01CR', label: 'Amoxicilina-clavulánico', synonyms: ['amoxicilina clavulanico'] },
-        'azitromicina': { atc: 'J01FA', label: 'Macrólidos' },
-        'quinolonas': { atc: 'J01MA', label: 'Fluoroquinolonas', synonyms: ['ciprofloxacino', 'levofloxacino'] },
-        'cefalosporinas': { atc: 'J01D', label: 'Cefalosporinas' },
-
-        'antiviral': { atc: 'J05', label: 'Antivirales' },
-        'herpes': { atc: 'J05', label: 'Antivirales (herpes)', synonyms: ['aciclovir'] },
-        'antifúngico': { atc: ['J02', 'D01'], label: 'Antifúngicos', synonyms: ['hongos', 'candidiasis'] },
-
-        // ===== RESPIRATORIO =====
-        'asma': { atc: 'R03', label: 'Antiasmáticos', category: 'Respiratorio' },
-        'epoc': { atc: 'R03', label: 'EPOC', synonyms: ['broncodilatadores', 'inhaladores'] },
-        'broncodilatadores': { atc: 'R03', label: 'Broncodilatadores' },
-        'corticoides inhalados': { atc: 'R03BA', label: 'Corticoides inhalados' },
-
-        'alergia': { atc: 'R06', label: 'Antihistamínicos', synonyms: ['rinitis alérgica', 'urticaria'] },
-        'antihistamínico': { atc: 'R06', label: 'Antihistamínicos' },
-        'tos': { atc: 'R05', label: 'Antitusivos' },
-
-        // ===== MUSCULOESQUELÉTICO =====
-        'aine': { atc: 'M01A', label: 'AINE', category: 'Musculoesquelético', synonyms: ['antiinflamatorio', 'ibuprofeno', 'naproxeno'] },
-        'artrosis': { atc: 'M01A', label: 'AINE (artrosis)' },
-        'artritis': { atc: ['M01A', 'L04'], label: 'Artritis (AINE, inmunomod)', synonyms: ['artritis reumatoide'] },
-        'osteoporosis': { atc: 'M05B', label: 'Antiosteoporóticos', synonyms: ['bifosfonatos'] },
-        'gota': { atc: 'M04', label: 'Antigotosos', synonyms: ['ácido úrico', 'alopurinol'] },
-        'relajante muscular': { atc: 'M03', label: 'Relajantes musculares', synonyms: ['contractura'] },
-
-        // ===== ENDOCRINO =====
-        'hipotiroidismo': { atc: 'H03A', label: 'Hormonas tiroideas', category: 'Endocrino', synonyms: ['tiroides', 'levotiroxina', 'eutirox'] },
-        'hipertiroidismo': { atc: 'H03B', label: 'Antitiroideos' },
-        'corticoides': { atc: 'H02', label: 'Corticoides sistémicos', synonyms: ['prednisona', 'metilprednisolona'] },
-
-        // ===== UROLOGÍA/GINECOLOGÍA =====
-        'próstata': { atc: 'G04C', label: 'HBP', category: 'Urología', synonyms: ['hbp', 'prostatismo', 'tamsulosina'] },
-        'disfunción eréctil': { atc: 'G04BE', label: 'Disfunción eréctil' },
-        'anticonceptivos': { atc: 'G03A', label: 'Anticonceptivos', synonyms: ['píldora', 'aco'] },
-        'menopausia': { atc: 'G03', label: 'THS', synonyms: ['sofocos', 'climaterio'] },
-        'incontinencia': { atc: 'G04BD', label: 'Incontinencia urinaria', synonyms: ['vejiga hiperactiva'] },
-
-        // ===== DERMATOLOGÍA =====
-        'corticoide tópico': { atc: 'D07', label: 'Corticoides tópicos', category: 'Piel', synonyms: ['eccema', 'dermatitis'] },
-        'acné': { atc: 'D10', label: 'Antiacneicos' },
-        'psoriasis': { atc: 'D05', label: 'Antipsoriásicos' },
-        'antibiótico tópico': { atc: 'D06', label: 'Antibióticos tópicos' },
-
-        // ===== OFTALMOLOGÍA =====
-        'glaucoma': { atc: 'S01E', label: 'Antiglaucomatosos', category: 'Ojos' },
-        'conjuntivitis': { atc: 'S01A', label: 'Antiinfecciosos oculares' },
-        'ojo seco': { atc: 'S01X', label: 'Lágrimas artificiales' },
-
-        // ===== INMUNOSUPRESORES =====
-        'inmunosupresor': {
-            atc: 'L04',
-            label: 'Inmunosupresores',
-            category: 'Inmunomoduladores',
-            synonyms: ['biológico', 'anti-tnf', 'metotrexato', 'azatioprina', 'ciclosporina']
-        },
+        // ===== REUMATOLOGÍA (multi-ATC) =====
         'artritis reumatoide': {
             atc: ['M01A', 'L04'],
             label: 'AR (AINE + inmunomod)',
             synonyms: ['ar', 'reumatoide']
-        }
+        },
+
+        // ===== ABREVIATURAS Y SINÓNIMOS ESPAÑOLES =====
+        // (términos que NO existen en nomenclatura ATC)
+        'ieca': { atc: 'C09A', label: 'IECA', synonyms: ['inhibidores eca'] },
+        'ara ii': { atc: 'C09C', label: 'ARA-II', synonyms: ['araii', 'sartanes'] },
+        'aine': { atc: 'M01A', label: 'AINE', synonyms: ['antiinflamatorio'] },
+        'ibp': { atc: 'A02BC', label: 'IBP', synonyms: ['protector gástrico', 'omeprazol'] },
+        'isrs': { atc: 'N06AB', label: 'ISRS', synonyms: ['sertralina', 'escitalopram'] },
+        'sglt2': { atc: 'A10BK', label: 'iSGLT2', synonyms: ['isglt2', 'gliflozinas', 'empagliflozina', 'dapagliflozina'] },
+        'glp1': { atc: 'A10BJ', label: 'Agonistas GLP-1', synonyms: ['semaglutida', 'ozempic', 'liraglutida'] },
+        'dpp4': { atc: 'A10BH', label: 'iDPP4', synonyms: ['idpp4', 'gliptinas', 'sitagliptina'] },
+        'acod': { atc: 'B01AF', label: 'ACOD', synonyms: ['naco', 'rivaroxaban', 'apixaban', 'dabigatran'] },
+        'hbp': { atc: 'G04C', label: 'HBP', synonyms: ['próstata', 'prostatismo'] }
     };
+
+    /**
+     * Mantener compatibilidad con código existente que referencia INDICATION_DICTIONARY
+     * Alias al nuevo CLINICAL_DICTIONARY
+     */
+    static get INDICATION_DICTIONARY() {
+        return this.CLINICAL_DICTIONARY;
+    }
 
     /**
      * Categorías ATC principales para navegación drill-down
