@@ -6,11 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MedCheck | Herramienta Clínica de Medicamentos</title>
     <meta name="description"
-        content="Herramienta clínica para médicos de familia. Verificación de seguridad, equivalencias y alertas de medicamentos." />
-
-    <!-- Prevent indexing -->
-    <meta name="robots" content="noindex, nofollow">
-    <meta name="googlebot" content="noindex, nofollow">
+        content="Herramienta clínica para médicos de familia. Verificación de seguridad, equivalencias y alertas de medicamentos con datos CIMA en tiempo real." />
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
@@ -18,14 +14,6 @@
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" />
-
-    <!-- PWA Support -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0ea5e9">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="MedCheck">
-    <link rel="apple-touch-icon" href="assets/icons/medcheck-icon-192.png">
 
     <!-- Styles -->
     <link rel="stylesheet" href="assets/css/cima-app.css" />
@@ -38,7 +26,7 @@
             <div class="header-brand">
                 <i class="fas fa-pills"></i>
                 <span class="brand-name">MedCheck</span>
-                <span class="brand-tag">BETA</span>
+                <span class="brand-tag">CIMA</span>
             </div>
             <!-- Patient Context Bar -->
             <div class="patient-context" id="patient-context">
@@ -126,7 +114,7 @@
         <footer class="app-status">
             <div class="status-left">
                 <span class="status-indicator online" id="api-status">
-                    <i class="fas fa-circle"></i> API AEMPS
+                    <i class="fas fa-circle"></i> API CIMA
                 </span>
             </div>
             <div class="status-center">
@@ -136,7 +124,7 @@
                 </span>
             </div>
             <div class="status-right">
-                <span><i class="fas fa-database"></i> Datos: AEMPS tiempo real</span>
+                <span><i class="fas fa-database"></i> Medicamentos: AEMPS tiempo real</span>
             </div>
         </footer>
     </div>
@@ -158,10 +146,10 @@
 
     <!-- Legal Disclaimer Modal -->
     <div id="legal-modal" class="modal-overlay" style="z-index: 9999; background: rgba(0,0,0,0.9);">
-        <div class="modal-content" style="max-width: 520px;">
+        <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header" style="border-bottom: 2px solid var(--warning);">
                 <h2 class="modal-title" style="color: var(--warning);">
-                    <i class="fas fa-exclamation-triangle"></i> AVISO IMPORTANTE
+                    <i class="fas fa-exclamation-triangle"></i> IMPORTANTE
                 </h2>
             </div>
             <div class="modal-body p-lg">
@@ -169,17 +157,13 @@
                 </p>
 
                 <ul style="list-style: disc; padding-left: 1.5rem; margin-bottom: 1.5rem;" class="text-muted">
-                    <li class="mb-sm">La información proviene de la <strong>API pública de la AEMPS</strong> pero podría
-                        contener
-                        errores de procesamiento o estar desactualizada.</li>
+                    <li class="mb-sm">La información proviene de la API pública de CIMA (AEMPS) pero podría contener
+                        errores de procesamiento.</li>
                     <li class="mb-sm"><strong>NO introduzca datos reales de pacientes</strong> (Nombres, DNI, Historia
-                        Clínica). Esta versión utiliza un proxy público y no garantiza la privacidad de los datos
+                        Clínica). Esta versión utiliza un proxy público y no asegura la privacidad de los datos
                         transmitidos.</li>
-                    <li class="mb-sm">El <strong>criterio clínico del profesional prevalece siempre</strong> sobre esta
-                        herramienta.</li>
-                    <li class="mb-sm">Esta herramienta es de <strong>uso personal y educativo</strong>. No está afiliada
-                        ni respaldada por AEMPS.</li>
-                    <li>El autor no se hace responsable del uso incorrecto de esta información.
+                    <li class="mb-sm">El criterio clínico del profesional prevalece siempre sobre esta herramienta.</li>
+                    <li>El autor no se hace responsable del uso de esta información para la toma de decisiones clínicas.
                     </li>
                 </ul>
 
@@ -191,19 +175,8 @@
     </div>
 
     <!-- Scripts -->
-    <script src="assets/js/cima-api.js?v=20260102i"></script>
-    <script src="assets/js/cima-app.js?v=20260102i"></script>
-
-    <!-- Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then((reg) => console.log('[PWA] Service Worker registered:', reg.scope))
-                    .catch((err) => console.log('[PWA] Service Worker registration failed:', err));
-            });
-        }
-    </script>
+    <script src="assets/js/cima-api.js"></script>
+    <script src="assets/js/cima-app.js"></script>
 </body>
 
 </html>
