@@ -259,6 +259,112 @@ class MedCheckApp {
         return Object.values(this.patientContext).some(v => v === true || (typeof v === 'number' && v > 0));
     }
 
+    /**
+     * Normaliza una dosis para permitir agrupación consistente
+     * Maneja formato europeo: "1.000 mg" = 1000mg, "1,5 mg" = 1.5mg
+     * Ejemplos:
+     * - "1 G", "1 g", "1000 mg", "1.000 mg", "1 g paracetamol" → "1000 mg"
+     * - "650 mg", "650 mg paracetamol" → "650 mg"
+     * - "37,5/325 mg/mg", "37,5 mg/325 mg" → "37.5/325 mg"
+     * - "10 mg/ml", "10 MG/ML" → "10 mg/ml"
+     * @param {string} dosisStr - String de dosis de la API
+     * @returns {string} Dosis normalizada
+     */
+    normalizeDosis(dosisStr) {
+        if (!dosisStr) return 'Sin dosis';
+
+        const str = dosisStr.toLowerCase().trim();
+
+        // Detectar si es concentración (mg/ml, etc.)
+        const isConcentration = /\d+\s*(mg|g|mcg)?\s*\/\s*ml/i.test(str);
+        if (isConcentration) {
+            // Para concentraciones, extraer y normalizar
+            const match = str.match(/(\d[\d.,]*)\s*(mg|g|mcg)?\s*\/\s*ml/i);
+            if (match) {
+                const value = this._parseEuropeanNumber(match[1]);
+                const unit = match[2] || 'mg';
+                return `${value} ${unit}/ml`;
+            }
+        }
+
+        // Detectar si es combinación con guión (ej: "875-125 mg", "250 -62,5 mg")
+        const dashMatch = str.match(/(\d[\d.,]*)\s*[/-]\s*(\d[\d.,]*)\s*(mg)?/i);
+        if (dashMatch) {
+            const val1 = this._parseEuropeanNumber(dashMatch[1]);
+            const val2 = this._parseEuropeanNumber(dashMatch[2]);
+            return `${val1}/${val2} mg`;
+        }
+
+        // Detectar si es combinación (dos dosis separadas por /)
+        const slashMatch = str.match(/(\d[\d.,]*)\s*(mg|g)?\s*\/\s*(\d[\d.,]*)\s*(mg)?/i);
+        if (slashMatch && !isConcentration) {
+            const val1 = this._parseEuropeanNumber(slashMatch[1]);
+            const val2 = this._parseEuropeanNumber(slashMatch[3]);
+            return `${val1}/${val2} mg`;
+        }
+
+        // Monocomponente: extraer el primer número que EMPIEZA con un dígito
+        // Esto evita capturar ".250" de "a.clav.250"
+        const monoMatch = str.match(/(\d[\d.,]*)\s*(mg|g|mcg|ui)?/i);
+        if (!monoMatch) return 'Sin dosis';
+
+        let value = this._parseEuropeanNumber(monoMatch[1]);
+        let unit = (monoMatch[2] || 'mg').toLowerCase();
+
+        // Convertir gramos a miligramos para dosis orales típicas (< 10g)
+        if (unit === 'g' && value < 10) {
+            value = Math.round(value * 1000);
+            unit = 'mg';
+        }
+
+        // Formatear sin decimales innecesarios
+        const formatted = Number.isInteger(value) ? value.toString() : value.toFixed(1).replace(/\.0$/, '');
+
+        return `${formatted} ${unit}`;
+    }
+
+    /**
+     * Parsea un número en formato europeo
+     * Casos:
+     * - "1.000" → 1000 (punto como separador de miles)
+     * - "1,5" → 1.5 (coma como separador decimal)
+     * - "2.500,0" → 2500.0 (punto = miles, coma = decimal)
+     * - "37,5" → 37.5
+     */
+    _parseEuropeanNumber(numStr) {
+        if (!numStr) return 0;
+
+        let str = numStr.trim();
+
+        // Si tiene ambos . y , → europeo completo (punto miles, coma decimal)
+        // Ej: "2.500,0" → remove dots, replace comma with dot
+        if (str.includes('.') && str.includes(',')) {
+            str = str.replace(/\./g, '').replace(',', '.');
+            return parseFloat(str) || 0;
+        }
+
+        // Si tiene punto seguido de exactamente 3 dígitos (al final o antes de espacio)
+        // Ej: "1.000", "10.500"
+        if (/^\d+\.\d{3}(?:\s|$)/.test(str) || /^\d+\.\d{3}$/.test(str)) {
+            return parseInt(str.replace('.', ''), 10);
+        }
+
+        // Si tiene coma, es decimal europeo
+        // Ej: "37,5", "1,5", "62,5"
+        if (str.includes(',')) {
+            return parseFloat(str.replace(',', '.')) || 0;
+        }
+
+        // Si tiene punto con 1-2 decimales, es decimal normal
+        // Ej: "37.5", "1.5"
+        if (/^\d+\.\d{1,2}$/.test(str)) {
+            return parseFloat(str);
+        }
+
+        // Default: parse como número
+        return parseFloat(str) || 0;
+    }
+
     // ============================================
     // SELECTED MEDICATION BANNER
     // ============================================
@@ -349,6 +455,8 @@ class MedCheckApp {
 
             if (e.key === 'Enter') {
                 e.preventDefault();
+                // Cancel pending autocomplete to prevent dropdown from reappearing
+                clearTimeout(this.autocompleteTimer);
                 dropdown?.classList.add('hidden');
 
                 if (hasVisibleItems) {
@@ -497,6 +605,12 @@ class MedCheckApp {
                 totalFilas: totalFilas,
                 searchType: searchType
             };
+
+            // Reset filters when performing a new search
+            this.filterState = { form: null, lab: null, doses: new Set() };
+            if (this.groupingState?.routeFilters) {
+                this.groupingState.routeFilters.clear();
+            }
 
             this.displaySearchResults(this.lastSearchResults);
 
@@ -927,8 +1041,9 @@ class MedCheckApp {
             );
         }
         if (this.filterState?.doses?.size > 0) {
+            // Filter by normalized dose to capture variations like "1 G" = "1000 mg"
             filteredResults = filteredResults.filter(med =>
-                med.dosis && this.filterState.doses.has(med.dosis)
+                med.dosis && this.filterState.doses.has(this.normalizeDosis(med.dosis))
             );
         }
 
@@ -1098,7 +1213,7 @@ class MedCheckApp {
             contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Ver sección 4.6 - Fertilidad, embarazo y lactancia" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-baby"></i> Revisar Emb/Lact</div>`);
         }
         if (this.patientContext.renal) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Insuficiencia renal - Ver ajuste de dosis" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-kidneys"></i> Revisar Renal</div>`);
+            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Insuficiencia renal - Ver ajuste de dosis" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-droplet"></i> Revisar Renal</div>`);
         }
         if (this.patientContext.hepatic) {
             contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Insuficiencia hepática - Ver ajuste de dosis" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-disease"></i> Revisar Hepático</div>`);
@@ -1757,7 +1872,7 @@ class MedCheckApp {
             contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Ver sección 4.6 - Fertilidad, embarazo y lactancia" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-baby"></i> Revisar Emb/Lact</div>`);
         }
         if (this.patientContext.renal) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Insuficiencia renal - Ver ajuste de dosis" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-kidneys"></i> Revisar Renal</div>`);
+            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Insuficiencia renal - Ver ajuste de dosis" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-droplet"></i> Revisar Renal</div>`);
         }
         if (this.patientContext.hepatic) {
             contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Verificar ajuste hepático" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-disease"></i> Revisar Hep.</div>`);
@@ -2985,18 +3100,29 @@ class MedCheckApp {
         this.equivAllResults = results;
         this.equivPrincipioActivo = principioActivo;
 
-        // Extraer opciones únicas para filtros
-        const dosisSet = new Set();
+        // Extraer opciones únicas para filtros (con normalización de dosis)
+        const dosisMap = new Map(); // normalized → [original values]
         const formaSet = new Set();
         const labSet = new Set();
 
         results.forEach(med => {
-            if (med.dosis) dosisSet.add(med.dosis);
+            if (med.dosis) {
+                const normalized = this.normalizeDosis(med.dosis);
+                if (!dosisMap.has(normalized)) {
+                    dosisMap.set(normalized, []);
+                }
+                dosisMap.get(normalized).push(med.dosis);
+            }
             if (med.formaFarmaceutica?.nombre) formaSet.add(med.formaFarmaceutica.nombre);
             if (med.labtitular) labSet.add(med.labtitular);
         });
 
-        const dosisOptions = Array.from(dosisSet).sort();
+        // Ordenar dosis numéricamente
+        const dosisOptions = Array.from(dosisMap.keys()).sort((a, b) => {
+            const numA = parseFloat(a.match(/[\d.]+/)?.[0] || 0);
+            const numB = parseFloat(b.match(/[\d.]+/)?.[0] || 0);
+            return numA - numB;
+        });
         const formaOptions = Array.from(formaSet).sort();
         const labOptions = Array.from(labSet).sort();
 
@@ -3075,7 +3201,8 @@ class MedCheckApp {
         let filtered = [...this.equivAllResults];
 
         if (dosisFilter) {
-            filtered = filtered.filter(m => m.dosis === dosisFilter);
+            // Comparar dosis normalizadas para agrupar "1 G", "1000 mg", etc.
+            filtered = filtered.filter(m => this.normalizeDosis(m.dosis) === dosisFilter);
         }
         if (formaFilter) {
             filtered = filtered.filter(m => m.formaFarmaceutica?.nombre === formaFilter);
@@ -4860,13 +4987,12 @@ class MedCheckApp {
      * Renders the results control bar with faceted filters
      */
     renderResultsControlBar(totalResults, filteredData = null, originalData = null) {
-        // Extract unique values - use original data for forms/labs, filtered for doses
+        // Extract unique values - use original data for all filters (so they remain visible)
         const sourceForFilters = originalData?.resultados || filteredData?.resultados || [];
-        const sourceForDoses = filteredData?.resultados || [];
 
         const forms = this._extractUniqueForms(sourceForFilters);
         const labs = this._extractUniqueLabs(sourceForFilters);
-        const doses = this._extractUniqueDoses(sourceForDoses);
+        const doses = this._extractUniqueDoses(sourceForFilters);
 
         // Initialize filter state if needed
         if (!this.filterState) {
@@ -4883,8 +5009,9 @@ class MedCheckApp {
             `<option value="${l.name}" ${this.filterState.lab === l.name ? 'selected' : ''}>${l.name} (${l.count})</option>`
         ).join('');
 
-        // Build dose chips (max 6 for compact layout)
-        const doseChipsHtml = doses.slice(0, 6).map(d => {
+        // Build dose chips - sorted by frequency (most common first), max 8
+        const dosesByFrequency = [...doses].sort((a, b) => b.count - a.count);
+        const doseChipsHtml = dosesByFrequency.slice(0, 8).map(d => {
             const isActive = this.filterState.doses?.has(d.name);
             return `<button class="filter-chip ${isActive ? 'active' : ''}" data-dose="${d.name}">${d.name} <span class="chip-count">${d.count}</span></button>`;
         }).join('');
@@ -4973,16 +5100,29 @@ class MedCheckApp {
     }
 
     /**
-     * Extract unique doses from results
+     * Extract unique doses from results (with normalization for grouping)
+     * Groups variations like "1 G", "1 g", "1000 mg" under same normalized key
      */
     _extractUniqueDoses(results) {
-        const counts = new Map();
+        const counts = new Map(); // normalized -> count
+        const originals = new Map(); // normalized -> [original values]
+
         results.forEach(med => {
             const dose = med.dosis || null;
             if (dose) {
-                counts.set(dose, (counts.get(dose) || 0) + 1);
+                const normalized = this.normalizeDosis(dose);
+                counts.set(normalized, (counts.get(normalized) || 0) + 1);
+                if (!originals.has(normalized)) {
+                    originals.set(normalized, new Set());
+                }
+                originals.get(normalized).add(dose);
             }
         });
+
+        // Store mapping for filter use
+        this._doseNormalizationMap = originals;
+
+        // Return sorted by count (most frequent first) for better UX
         return Array.from(counts.entries())
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
