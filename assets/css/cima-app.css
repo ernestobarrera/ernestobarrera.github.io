@@ -1683,6 +1683,11 @@ body {
     .modal-content {
         max-width: 100%;
     }
+
+    /* Contenedor principal con padding para evitar cortes */
+    .app-main {
+        padding: var(--space-sm);
+    }
 }
 
 @media (max-width: 480px) {
@@ -1700,6 +1705,50 @@ body {
 
     .nav-tab {
         padding: 0.6rem;
+    }
+
+    /* Botones de tarjetas en columna para móviles pequeños */
+    .result-card-actions {
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .result-card-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Tarjetas más compactas en móvil */
+    .result-card {
+        padding: var(--space-xs);
+    }
+
+    .result-card-title {
+        font-size: 0.85rem;
+    }
+
+    .med-detail-tag {
+        font-size: 0.65rem;
+    }
+
+    /* Badges más compactos */
+    .badge {
+        font-size: 0.6rem;
+        padding: 0.15rem 0.35rem;
+    }
+
+    /* Mejoras en el buscador */
+    .search-box {
+        padding: var(--space-xs);
+    }
+
+    .search-input {
+        font-size: 1rem;
+    }
+
+    .search-options {
+        padding: 0 var(--space-sm);
+        gap: var(--space-sm);
     }
 }
 
@@ -3925,7 +3974,9 @@ code {
     }
 
     /* Cards */
-    .result-cards-grid {
+    .result-cards-grid,
+    .result-group-grid,
+    .results-grid {
         grid-template-columns: 1fr;
     }
 
@@ -4229,6 +4280,17 @@ code {
     .btn-sm {
         padding: 0.2rem 0.4rem;
         font-size: 0.7rem;
+    }
+
+    /* Card action buttons - stack vertically on very small screens */
+    .result-card-actions {
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .result-card-actions .btn {
+        width: 100%;
+        justify-content: center;
     }
 
     /* Footer status bar */

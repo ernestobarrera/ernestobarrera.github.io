@@ -4,6 +4,16 @@ Historial de cambios por sesión de desarrollo.
 
 ---
 
+## [Sesión 15] - 2026-01-04
+
+### Corregido
+- **Layout móvil de tarjetas de resultados** - Las cards ahora se muestran en 1 columna en pantallas <768px
+  - Añadido `.result-group-grid` a las media queries de 768px
+  - Los botones "Ficha" y "Seguridad" ahora se apilan verticalmente en pantallas <480px
+  - Mejor padding y spacing en modo móvil
+
+---
+
 ## [Sesión 14] - 2026-01-03
 
 ### Añadido
