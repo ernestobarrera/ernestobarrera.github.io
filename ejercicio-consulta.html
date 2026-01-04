@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExerCheck – Intérprete Clínico de Ejercicio</title>
+    <meta name="description"
+        content="Herramienta para clínicos: interpreta la actividad física del paciente y genera recomendaciones basadas en evidencia">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #252541;
+            --bg-card-hover: #2f2f50;
+            --surface: #16213e;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+            --text-muted: #6b6b80;
+            --accent-primary: #6366f1;
+            --accent-secondary: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --success: #10b981;
+            --success-soft: rgba(16, 185, 129, 0.15);
+            --warning: #f59e0b;
+            --warning-soft: rgba(245, 158, 11, 0.15);
+            --danger: #ef4444;
+            --danger-soft: rgba(239, 68, 68, 0.15);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(99, 102, 241, 0.5);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.3);
+            --transition: all 0.2s ease;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 12px 20px;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 12px 0 16px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        /* Activity Selector */
+        .activity-selector {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .activity-btn {
+            background: var(--bg-card);
+            border: 2px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 12px 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+        }
+
+        .activity-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-focus);
+            transform: translateY(-2px);
+        }
+
+        .activity-btn.active {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-color: transparent;
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+
+        .activity-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .activity-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .activity-selector {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-glow);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            flex: 1;
+            background: var(--surface);
+            border: 2px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .unit {
+            background: var(--surface);
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        /* Quick Options */
+        .quick-options {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+
+        .quick-chip {
+            background: var(--surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .quick-chip:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        .quick-chip.highlighted {
+            background: var(--accent-glow);
+            border-color: var(--accent-primary);
+            color: var(--accent-secondary);
+        }
+
+        /* Primary Button */
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: var(--radius-md);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 8px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--accent-glow);
+        }
+
+        /* Results Panel */
+        .results-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .results-placeholder-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .results-content {
+            display: none;
+        }
+
+        .results-content.active {
+            display: block;
+        }
+
+        /* Zone Indicator */
+        .zone-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .zone-badge.zone-green {
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
+        .zone-badge.zone-yellow {
+            background: var(--warning-soft);
+            color: var(--warning);
+        }
+
+        .zone-badge.zone-red {
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .metric-card {
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent-secondary);
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        /* Progress Bar */
+        .progress-section {
+            margin-bottom: 24px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: var(--surface);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.good {
+            background: linear-gradient(90deg, var(--success), #34d399);
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, var(--warning), #fbbf24);
+        }
+
+        .progress-fill.low {
+            background: linear-gradient(90deg, var(--danger), #f87171);
+        }
+
+        /* Talk Test */
+        .talk-test-box {
+            background: var(--surface);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .talk-test-icon {
+            font-size: 32px;
+        }
+
+        .talk-test-text {
+            font-size: 14px;
+        }
+
+        .talk-test-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        /* Recommendations */
+        .recommendations {
+            margin-bottom: 24px;
+        }
+
+        .rec-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .rec-item:last-child {
+            border-bottom: none;
+        }
+
+        .rec-icon {
+            font-size: 18px;
+        }
+
+        .rec-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Patient Copy Box */
+        .patient-copy-section {
+            background: linear-gradient(135deg, var(--accent-glow), rgba(129, 140, 248, 0.1));
+            border: 1px solid var(--accent-primary);
+            border-radius: var(--radius-md);
+            padding: 20px;
+        }
+
+        .patient-copy-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .patient-text {
+            background: var(--bg-primary);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            white-space: pre-wrap;
+        }
+
+        .btn-copy {
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-copy:hover {
+            background: var(--accent-secondary);
+        }
+
+        .btn-copy.copied {
+            background: var(--success);
+        }
+
+        /* Evidence Accordion */
+        .evidence-section {
+            margin-top: 32px;
+        }
+
+        .evidence-toggle {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .evidence-toggle:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .evidence-content {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-top: none;
+            border-radius: 0 0 var(--radius-md) var(--radius-md);
+            padding: 20px;
+        }
+
+        .evidence-content.open {
+            display: block;
+        }
+
+        .evidence-item {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .evidence-item:last-child {
+            border-bottom: none;
+        }
+
+        .evidence-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--success);
+            color: white;
+            padding: 14px 24px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        /* Device-specific inputs */
+        .device-inputs {
+            display: none;
+        }
+
+        .device-inputs.active {
+            display: block;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 0 24px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        footer a {
+            color: var(--accent-secondary);
+            text-decoration: none;
+        }
+
+        /* Red Flag Alert */
+        .red-flag {
+            background: var(--danger-soft);
+            border: 1px solid var(--danger);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .red-flag.show {
+            display: block;
+        }
+
+        .red-flag-title {
+            color: var(--danger);
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .red-flag-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">🩺</div>
+                <h1>ExerCheck</h1>
+            </div>
+            <p class="subtitle">Intérprete clínico de ejercicio • Recomendaciones basadas en evidencia</p>
+        </header>
+
+        <!-- Activity Selector -->
+        <div class="activity-selector">
+            <button class="activity-btn active" data-activity="walk">
+                <div class="activity-icon">🚶</div>
+                <div class="activity-label">Caminata</div>
+            </button>
+            <button class="activity-btn" data-activity="steps">
+                <div class="activity-icon">⌚</div>
+                <div class="activity-label">Pasos/Pulsera</div>
+            </button>
+            <button class="activity-btn" data-activity="treadmill">
+                <div class="activity-icon">🏃</div>
+                <div class="activity-label">Cinta</div>
+            </button>
+            <button class="activity-btn" data-activity="elliptical">
+                <div class="activity-icon">⚡</div>
+                <div class="activity-label">Elíptica</div>
+            </button>
+            <button class="activity-btn" data-activity="gym">
+                <div class="activity-icon">💪</div>
+                <div class="activity-label">Gimnasio</div>
+            </button>
+        </div>
+
+        <div class="main-grid">
+            <!-- Input Panel -->
+            <div class="card">
+                <div class="card-title">
+                    <div class="card-title-icon">📝</div>
+                    ¿Qué hace el paciente?
+                </div>
+
+                <form id="exerciseForm">
+                    <!-- Walk Inputs -->
+                    <div id="walk-inputs" class="device-inputs active">
+                        <div class="form-group">
+                            <label>Duración por sesión</label>
+                            <div class="input-row">
+                                <input type="number" id="walk-duration" placeholder="30" min="1" max="180">
+                                <span class="unit">min</span>
+                            </div>
+                            <div class="quick-options">
+                                <span class="quick-chip" data-value="10">10 min</span>
+                                <span class="quick-chip" data-value="20">20 min</span>
+                                <span class="quick-chip" data-value="30">30 min</span>
+                                <span class="quick-chip" data-value="45">45 min</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Frecuencia semanal</label>
+                            <div class="input-row">
+                                <input type="number" id="walk-frequency" placeholder="5" min="1" max="7">
+                                <span class="unit">días</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Ritmo percibido</label>
+                            <select id="walk-pace">
+                                <option value="slow">Paseo tranquilo (puede cantar)</option>
+                                <option value="moderate" selected>Paso ligero (habla con pausas)</option>
+                                <option value="brisk">Muy rápido (solo palabras sueltas)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Timing</label>
+                            <select id="walk-timing">
+                                <option value="any">Sin horario específico</option>
+                                <option value="postprandial">Después de comer</option>
+                                <option value="morning">Por la mañana</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Steps/Wearable Inputs -->
+                    <div id="steps-inputs" class="device-inputs">
+                        <div class="form-group">
+                            <label>Pasos diarios promedio</label>
+                            <div class="input-row">
+                                <input type="number" id="steps-count" placeholder="8000" min="0" max="50000">
+                                <span class="unit">pasos</span>
+                            </div>
+                            <div class="quick-options">
+                                <span class="quick-chip" data-value="5000">5.000</span>
+                                <span class="quick-chip" data-value="8000">8.000</span>
+                                <span class="quick-chip highlighted" data-value="10000">10.000 ⭐</span>
+                                <span class="quick-chip" data-value="12000">12.000</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Minutos activos/día (si conoce)</label>
+                            <div class="input-row">
+                                <input type="number" id="steps-active" placeholder="30" min="0" max="300">
+                                <span class="unit">min</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Velocidad media del smartwatch (para calcular cadencia)</label>
+                            <div class="input-row">
+                                <input type="number" id="steps-speed" placeholder="5.5" min="0" max="15" step="0.1">
+                                <span class="unit">km/h</span>
+                            </div>
+                            <div class="quick-options">
+                                <span class="quick-chip" data-value="4.0">4.0 (paseo)</span>
+                                <span class="quick-chip highlighted" data-value="5.5">5.5 (rápido)</span>
+                                <span class="quick-chip" data-value="6.5">6.5 (muy rápido)</span>
+                            </div>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;" id="cadenceEstimate">
+                            </p>
+                        </div>
+                        <div class="form-group">
+                            <label>Cadencia (si no usa velocidad)</label>
+                            <select id="steps-cadence">
+                                <option value="unknown">Calcular desde velocidad ↑</option>
+                                <option value="low">Baja (&lt;100 ppm)</option>
+                                <option value="moderate">Moderada (100-120 ppm)</option>
+                                <option value="high">Alta (&gt;120 ppm)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Treadmill Inputs -->
+                    <div id="treadmill-inputs" class="device-inputs">
+                        <div class="form-group">
+                            <label>Velocidad</label>
+                            <div class="input-row">
+                                <input type="number" id="treadmill-speed" placeholder="4.8" min="1" max="15" step="0.1">
+                                <span class="unit">km/h</span>
+                            </div>
+                            <div class="quick-options">
+                                <span class="quick-chip" data-value="4.0">4.0 km/h</span>
+                                <span class="quick-chip highlighted" data-value="4.8">4.8 (12-3-30)</span>
+                                <span class="quick-chip" data-value="5.5">5.5 km/h</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Inclinación</label>
+                            <div class="input-row">
+                                <input type="number" id="treadmill-incline" placeholder="6" min="0" max="20" step="0.5">
+                                <span class="unit">%</span>
+                            </div>
+                            <div class="quick-options">
+                                <span class="quick-chip" data-value="3">3%</span>
+                                <span class="quick-chip" data-value="6">6%</span>
+                                <span class="quick-chip highlighted" data-value="12">12% (12-3-30)</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Duración</label>
+                            <div class="input-row">
+                                <input type="number" id="treadmill-duration" placeholder="30" min="1" max="120">
+                                <span class="unit">min</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Frecuencia semanal</label>
+                            <div class="input-row">
+                                <input type="number" id="treadmill-frequency" placeholder="3" min="1" max="7">
+                                <span class="unit">días</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Elliptical Inputs -->
+                    <div id="elliptical-inputs" class="device-inputs">
+                        <div class="form-group">
+                            <label>¿Conoce los vatios?</label>
+                            <div class="input-row">
+                                <input type="number" id="elliptical-watts" placeholder="100" min="0" max="400">
+                                <span class="unit">W</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Nivel de resistencia (si no conoce vatios)</label>
+                            <select id="elliptical-level">
+                                <option value="">Seleccionar...</option>
+                                <option value="1-5">Bajo (1-5)</option>
+                                <option value="6-10">Medio (6-10)</option>
+                                <option value="11-15">Alto (11-15)</option>
+                                <option value="16+">Muy alto (16+)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Duración</label>
+                            <div class="input-row">
+                                <input type="number" id="elliptical-duration" placeholder="30" min="1" max="120">
+                                <span class="unit">min</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Frecuencia semanal</label>
+                            <div class="input-row">
+                                <input type="number" id="elliptical-frequency" placeholder="3" min="1" max="7">
+                                <span class="unit">días</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Dirección del pedaleo</label>
+                            <select id="elliptical-direction">
+                                <option value="forward">Siempre adelante</option>
+                                <option value="mixed">Alterna adelante/atrás</option>
+                                <option value="backward">Predomina atrás (problemas de rodilla)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Gym Inputs -->
+                    <div id="gym-inputs" class="device-inputs">
+                        <div class="form-group">
+                            <label>Días por semana</label>
+                            <div class="input-row">
+                                <input type="number" id="gym-days" placeholder="2" min="1" max="7">
+                                <span class="unit">días</span>
+                            </div>
+                            <div class="quick-options">
+                                <span class="quick-chip highlighted" data-value="2">2 (mínimo OMS)</span>
+                                <span class="quick-chip" data-value="3">3 (óptimo)</span>
+                                <span class="quick-chip" data-value="4">4 (avanzado)</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de entrenamiento</label>
+                            <select id="gym-type">
+                                <option value="mixed">Mixto (cardio + pesas)</option>
+                                <option value="strength">Solo fuerza/pesas</option>
+                                <option value="cardio">Solo cardio (máquinas)</option>
+                                <option value="classes">Clases dirigidas</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Número de ejercicios diferentes</label>
+                            <div class="input-row">
+                                <input type="number" id="gym-exercises" placeholder="4" min="1" max="12">
+                                <span class="unit">ejerc.</span>
+                            </div>
+                            <div class="quick-options">
+                                <span class="quick-chip highlighted" data-value="4">4-6 (mínimo efectivo)</span>
+                                <span class="quick-chip" data-value="8">8+ (avanzado)</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Series por ejercicio</label>
+                            <select id="gym-sets">
+                                <option value="1">1 serie</option>
+                                <option value="2" selected>2 series</option>
+                                <option value="3">3 series</option>
+                                <option value="4+">4+ series</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>¿Cómo percibe el esfuerzo en las últimas repeticiones?</label>
+                            <select id="gym-effort">
+                                <option value="easy">Fácil (podría hacer 5+ reps más)</option>
+                                <option value="moderate">Moderado (podría hacer 2-3 reps más)</option>
+                                <option value="hard">Intenso (solo quedan 1-2 reps en reserva - RPE 8-9)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Duración de la sesión</label>
+                            <div class="input-row">
+                                <input type="number" id="gym-duration" placeholder="45" min="10" max="180">
+                                <span class="unit">min</span>
+                            </div>
+                        </div>
+                        <div
+                            style="background: var(--surface); border-radius: var(--radius-sm); padding: 12px; margin-top: 16px;">
+                            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">📚 Estructura
+                                mínima efectiva (según evidencia):</p>
+                            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                                • <strong>Empuje</strong>: flexiones, press<br>
+                                • <strong>Tracción</strong>: remo<br>
+                                • <strong>Pierna anterior</strong>: sentadilla, prensa<br>
+                                • <strong>Pierna posterior</strong>: peso muerto, hip thrust
+                            </p>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary">🔍 Interpretar actividad</button>
+                </form>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="card">
+                <div class="card-title">
+                    <div class="card-title-icon">📊</div>
+                    Interpretación clínica
+                </div>
+
+                <!-- Placeholder -->
+                <div class="results-placeholder" id="resultsPlaceholder">
+                    <div class="results-placeholder-icon">🎯</div>
+                    <p>Introduce los datos de actividad del paciente<br>para ver la interpretación clínica</p>
+                </div>
+
+                <!-- Results Content -->
+                <div class="results-content" id="resultsContent">
+                    <!-- Red Flag Alert -->
+                    <div class="red-flag" id="redFlag">
+                        <div class="red-flag-title">⚠️ Señal de alerta</div>
+                        <div class="red-flag-text" id="redFlagText"></div>
+                    </div>
+
+                    <!-- Zone Badge -->
+                    <div id="zoneBadge" class="zone-badge zone-yellow">
+                        <span id="zoneIcon">🟡</span>
+                        <span id="zoneText">ZONA 2 • Moderada</span>
+                    </div>
+
+                    <!-- Metrics -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value" id="metsValue">-</div>
+                            <div class="metric-label">METs estimados</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="weeklyMinutes">-</div>
+                            <div class="metric-label">min/semana</div>
+                        </div>
+                    </div>
+
+                    <!-- OMS Progress -->
+                    <div class="progress-section">
+                        <div class="progress-header">
+                            <span>Cumplimiento OMS</span>
+                            <span id="omsPercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill good" id="omsBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Talk Test -->
+                    <div class="talk-test-box">
+                        <div class="talk-test-icon" id="talkTestIcon">💬</div>
+                        <div class="talk-test-text">
+                            <div class="talk-test-title" id="talkTestTitle">Talk Test</div>
+                            <div id="talkTestDesc">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Recommendations -->
+                    <div class="recommendations" id="recommendations">
+                        <!-- Dynamic content -->
+                    </div>
+
+                    <!-- Patient Copy Section -->
+                    <div class="patient-copy-section">
+                        <div class="patient-copy-title">
+                            📋 Texto para el paciente
+                        </div>
+                        <div class="patient-text" id="patientText">-</div>
+                        <button class="btn-copy" id="copyBtn" onclick="copyPatientText()">
+                            📋 Copiar texto
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evidence Section -->
+        <div class="evidence-section">
+            <button class="evidence-toggle" id="evidenceToggle">
+                <span>📚 Ver evidencia científica</span>
+                <span id="evidenceArrow">▼</span>
+            </button>
+            <div class="evidence-content" id="evidenceContent">
+                <div class="evidence-item">
+                    <div class="evidence-title">Cadencia ≥100 pasos/min = Intensidad moderada</div>
+                    Tudor-Locke C, et al. Int J Behav Nutr Phys Act. 2011. PMID: 21798015
+                </div>
+                <div class="evidence-item">
+                    <div class="evidence-title">Talk Test correlaciona con Umbral Ventilatorio</div>
+                    Reed JL, Pipe AL. Curr Opin Cardiol. 2014. PMID: 25010379
+                </div>
+                <div class="evidence-item">
+                    <div class="evidence-title">Ejercicio postprandial > preprandial para control glucémico</div>
+                    Engeroff T, et al. Sports Med. 2023. PMID: 36715875
+                </div>
+                <div class="evidence-item">
+                    <div class="evidence-title">3×10 min = 1×30 min para beneficios cardiovasculares</div>
+                    Shambrook P, et al. Eur J Appl Physiol. 2020. PMID: 32776220
+                </div>
+                <div class="evidence-item">
+                    <div class="evidence-title">Protocolo 12-3-30: 41% grasa vs 33% en carrera</div>
+                    Wong MWH, et al. Int J Exerc Sci. 2025. PMID: 39917588
+                </div>
+                <div class="evidence-item">
+                    <div class="evidence-title">Cargas ligeras = cargas pesadas si hay esfuerzo alto</div>
+                    Carvalho L, et al. Appl Physiol Nutr Metab. 2022. PMID: 35015560
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>ExerCheck • Herramienta clínica basada en evidencia</p>
+            <p style="margin-top: 8px;">Basado en guías OMS 2020 y ACSM 2025 • <a href="#">Ver referencias completas</a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">✓ Texto copiado al portapapeles</div>
+
+    <script>
+        // State
+        let currentActivity = 'walk';
+
+        // Activity Selector
+        document.querySelectorAll('.activity-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.activity-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentActivity = this.dataset.activity;
+
+                document.querySelectorAll('.device-inputs').forEach(div => div.classList.remove('active'));
+                document.getElementById(`${currentActivity}-inputs`).classList.add('active');
+
+                // Reset results
+                document.getElementById('resultsPlaceholder').style.display = 'flex';
+                document.getElementById('resultsContent').classList.remove('active');
+            });
+        });
+
+        // Quick chips
+        document.querySelectorAll('.quick-chip').forEach(chip => {
+            chip.addEventListener('click', function () {
+                const value = this.dataset.value;
+                const input = this.closest('.form-group').querySelector('input');
+                if (input) {
+                    input.value = value;
+                    input.dispatchEvent(new Event('input'));
+                }
+            });
+        });
+
+        // Evidence toggle
+        document.getElementById('evidenceToggle').addEventListener('click', function () {
+            const content = document.getElementById('evidenceContent');
+            const arrow = document.getElementById('evidenceArrow');
+            content.classList.toggle('open');
+            arrow.textContent = content.classList.contains('open') ? '▲' : '▼';
+        });
+
+        // Form submission
+        document.getElementById('exerciseForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            analyzeActivity();
+        });
+
+        function analyzeActivity() {
+            const results = calculateResults();
+            displayResults(results);
+        }
+
+        function calculateResults() {
+            let mets = 0;
+            let weeklyMinutes = 0;
+            let intensity = 'moderate';
+            let recommendations = [];
+            let talkTest = { icon: '🟡', title: 'Zona Amarilla', desc: 'Habla con pausas - Intensidad óptima' };
+            let redFlag = null;
+            let postprandial = false;
+
+            switch (currentActivity) {
+                case 'walk': {
+                    const duration = parseFloat(document.getElementById('walk-duration').value) || 30;
+                    const frequency = parseFloat(document.getElementById('walk-frequency').value) || 5;
+                    const pace = document.getElementById('walk-pace').value;
+                    const timing = document.getElementById('walk-timing').value;
+
+                    weeklyMinutes = duration * frequency;
+                    postprandial = timing === 'postprandial';
+
+                    switch (pace) {
+                        case 'slow':
+                            mets = 2.5;
+                            intensity = 'light';
+                            talkTest = { icon: '🟢', title: 'Zona Verde', desc: 'Puede cantar - Intensidad insuficiente' };
+                            recommendations.push({ icon: '⚡', text: 'Aumentar el ritmo: caminar como si llegara tarde a una cita' });
+                            recommendations.push({ icon: '📊', text: 'Objetivo: cadencia ≥100 pasos/minuto' });
+                            break;
+                        case 'moderate':
+                            mets = 4.0;
+                            intensity = 'moderate';
+                            talkTest = { icon: '🟡', title: 'Zona Amarilla', desc: 'Habla con pausas - ¡Zona terapéutica!' };
+                            recommendations.push({ icon: '✓', text: 'Intensidad adecuada para beneficios cardiovasculares' });
+                            break;
+                        case 'brisk':
+                            mets = 5.5;
+                            intensity = 'vigorous';
+                            talkTest = { icon: '🔴', title: 'Zona Roja', desc: 'Solo palabras sueltas - Intensidad vigorosa' };
+                            recommendations.push({ icon: '✓', text: 'Intensidad vigorosa: excelente para mejorar VO₂max' });
+                            break;
+                    }
+
+                    if (postprandial) {
+                        recommendations.push({ icon: '⭐', text: 'Beneficio extra: el ejercicio postprandial mejora el control glucémico' });
+                    } else if (timing === 'any') {
+                        recommendations.push({ icon: '💡', text: 'Sugerencia: caminar 10-15 min después de comer controla mejor la glucemia' });
+                    }
+
+                    if (duration < 20 && frequency >= 3) {
+                        recommendations.push({ icon: '💊', text: '¿Poco tiempo? La "💊 Píldora 3×10" es igual de efectiva: 10 min mañana + 10 min post-almuerzo + 10 min tarde (Shambrook 2020)' });
+                    } else if (duration >= 30) {
+                        recommendations.push({ icon: '💡', text: 'Alternativa equivalente: dividir en 3 bloques de 10 min distribuidos en el día' });
+                    }
+                    break;
+                }
+
+                case 'steps': {
+                    const steps = parseFloat(document.getElementById('steps-count').value) || 8000;
+                    const activeMin = parseFloat(document.getElementById('steps-active').value) || 0;
+                    const speedKmh = parseFloat(document.getElementById('steps-speed').value) || 0;
+                    let cadence = document.getElementById('steps-cadence').value;
+
+                    // Calculate cadence from speed if provided
+                    // Formula: cadence (steps/min) ≈ speed (km/h) * 18.5 (average stride)
+                    let estimatedCadence = 0;
+                    if (speedKmh > 0) {
+                        estimatedCadence = Math.round(speedKmh * 18.5);
+                        if (estimatedCadence < 100) {
+                            cadence = 'low';
+                        } else if (estimatedCadence <= 120) {
+                            cadence = 'moderate';
+                        } else {
+                            cadence = 'high';
+                        }
+                        recommendations.push({ icon: '📱', text: `Velocidad ${speedKmh} km/h ≈ ${estimatedCadence} pasos/min (cadencia ${cadence === 'low' ? 'baja' : cadence === 'moderate' ? 'moderada' : 'alta'})` });
+                    }
+
+                    // Estimate weekly minutes from steps (assume 100 steps/min moderate)
+                    weeklyMinutes = activeMin > 0 ? activeMin * 7 : Math.round((steps / 100) * 7 * 0.5);
+
+                    if (steps < 5000) {
+                        mets = 2.0;
+                        intensity = 'light';
+                        talkTest = { icon: '🟢', title: 'Sedentario', desc: 'Menos de 5.000 pasos = inactivo' };
+                        recommendations.push({ icon: '🎯', text: 'Objetivo inicial: llegar a 7.500 pasos/día' });
+                        recommendations.push({ icon: '📊', text: 'Progresión sugerida: +1.000 pasos/semana' });
+                    } else if (steps < 7500) {
+                        mets = 3.0;
+                        intensity = 'light';
+                        talkTest = { icon: '🟡', title: 'Baja actividad', desc: '5.000-7.500 pasos = poco activo' };
+                        recommendations.push({ icon: '🎯', text: 'Objetivo: superar 8.000 pasos/día' });
+                    } else if (steps < 10000) {
+                        mets = 3.5;
+                        intensity = 'moderate';
+                        talkTest = { icon: '🟡', title: 'Activo', desc: '7.500-10.000 pasos = activo' };
+                        recommendations.push({ icon: '✓', text: 'Buen nivel de actividad general' });
+                    } else {
+                        mets = 4.5;
+                        intensity = 'moderate';
+                        talkTest = { icon: '🟡', title: 'Muy activo', desc: '>10.000 pasos = muy activo' };
+                        recommendations.push({ icon: '✓', text: 'Excelente volumen de actividad' });
+                    }
+
+                    // Cadence recommendations
+                    if (cadence === 'low') {
+                        recommendations.push({ icon: '⚡', text: 'Cadencia baja (<100 ppm): intensidad insuficiente para beneficios óptimos' });
+                        recommendations.push({ icon: '💡', text: 'Objetivo: aumentar ritmo hasta hablar con pausas (Talk Test amarillo)' });
+                    } else if (cadence === 'unknown' && speedKmh === 0) {
+                        recommendations.push({ icon: '⚡', text: 'Clave: no solo pasos, sino CADENCIA ≥100 pasos/minuto' });
+                        recommendations.push({ icon: '💡', text: 'Introduzca la velocidad del smartwatch para estimar cadencia automáticamente' });
+                    } else if (cadence === 'moderate' || cadence === 'high') {
+                        recommendations.push({ icon: '✓', text: 'Buena cadencia = intensidad moderada confirmada' });
+                    }
+
+                    // Pluricotidiano / 3×10 recommendation
+                    if (activeMin > 0 && activeMin < 30) {
+                        recommendations.push({ icon: '💊', text: '¿Poco tiempo? Pruebe la "💊 Píldora 3×10": 10 min mañana + 10 min post-almuerzo + 10 min tarde = igual de efectivo que 30 min continuos' });
+                    }
+                    break;
+                }
+
+                case 'treadmill': {
+                    const speed = parseFloat(document.getElementById('treadmill-speed').value) || 4.8;
+                    const incline = parseFloat(document.getElementById('treadmill-incline').value) || 6;
+                    const duration = parseFloat(document.getElementById('treadmill-duration').value) || 30;
+                    const frequency = parseFloat(document.getElementById('treadmill-frequency').value) || 3;
+
+                    weeklyMinutes = duration * frequency;
+
+                    // Lankford equation approximation
+                    // METs = 0.1 * speed (m/min) + 1.8 * speed * grade + 3.5
+                    const speedMmin = speed * 1000 / 60; // km/h to m/min
+                    const grade = incline / 100;
+                    mets = (0.1 * speedMmin + 1.8 * speedMmin * grade + 3.5) / 3.5;
+                    mets = Math.round(mets * 10) / 10;
+
+                    // Detect 12-3-30
+                    const is1230 = speed >= 4.5 && speed <= 5.0 && incline >= 10 && incline <= 14;
+
+                    if (is1230) {
+                        recommendations.push({ icon: '🔥', text: 'Protocolo 12-3-30 detectado: validado científicamente' });
+                        recommendations.push({ icon: '✓', text: '41% de grasa utilizada vs 33% en carrera (Wong 2025)' });
+                    }
+
+                    if (mets < 3) {
+                        intensity = 'light';
+                        talkTest = { icon: '🟢', title: 'Zona Verde', desc: 'Intensidad ligera' };
+                        recommendations.push({ icon: '⚡', text: 'Aumentar velocidad o inclinación para llegar a zona moderada' });
+                    } else if (mets < 6) {
+                        intensity = 'moderate';
+                        talkTest = { icon: '🟡', title: 'Zona Amarilla', desc: 'Intensidad moderada - Zona terapéutica' };
+                        recommendations.push({ icon: '✓', text: 'Intensidad óptima para oxidación de grasas (Zona 2)' });
+                    } else {
+                        intensity = 'vigorous';
+                        talkTest = { icon: '🔴', title: 'Zona Roja', desc: 'Intensidad vigorosa' };
+                        recommendations.push({ icon: '✓', text: 'Intensidad vigorosa: mejora VO₂max' });
+                        if (!is1230) {
+                            recommendations.push({ icon: '💡', text: 'Para quema de grasa, reducir a 6-8% de inclinación' });
+                        }
+                    }
+                    break;
+                }
+
+                case 'elliptical': {
+                    const watts = parseFloat(document.getElementById('elliptical-watts').value) || 0;
+                    const level = document.getElementById('elliptical-level').value;
+                    const duration = parseFloat(document.getElementById('elliptical-duration').value) || 30;
+                    const frequency = parseFloat(document.getElementById('elliptical-frequency').value) || 3;
+                    const direction = document.getElementById('elliptical-direction').value;
+
+                    weeklyMinutes = duration * frequency;
+
+                    if (watts > 0) {
+                        // METs from watts (assuming 75kg)
+                        mets = (watts * 1.08 / 75) + 1;
+                        mets = Math.round(mets * 10) / 10;
+                    } else {
+                        switch (level) {
+                            case '1-5': mets = 3.5; break;
+                            case '6-10': mets = 5.0; break;
+                            case '11-15': mets = 6.5; break;
+                            case '16+': mets = 8.0; break;
+                            default: mets = 4.5;
+                        }
+                        recommendations.push({ icon: '⚠️', text: 'Los "niveles" varían 20-30% entre marcas. Prescribir por vatios es más preciso.' });
+                    }
+
+                    if (mets < 3) {
+                        intensity = 'light';
+                        talkTest = { icon: '🟢', title: 'Zona Verde', desc: 'Intensidad ligera' };
+                    } else if (mets < 6) {
+                        intensity = 'moderate';
+                        talkTest = { icon: '🟡', title: 'Zona Amarilla', desc: 'Intensidad moderada' };
+                    } else {
+                        intensity = 'vigorous';
+                        talkTest = { icon: '🔴', title: 'Zona Roja', desc: 'Intensidad vigorosa' };
+                    }
+
+                    if (direction === 'forward') {
+                        recommendations.push({ icon: '💡', text: 'Sugerencia: alternar 80% adelante + 20% atrás para equilibrio muscular' });
+                    } else if (direction === 'backward') {
+                        recommendations.push({ icon: '✓', text: 'Pedaleo hacia atrás: reduce carga patelofemoral 30%, ideal para problemas de rodilla' });
+                    } else {
+                        recommendations.push({ icon: '✓', text: 'Alternar direcciones: óptimo para desarrollo muscular equilibrado' });
+                    }
+                    break;
+                }
+
+                case 'gym': {
+                    const days = parseFloat(document.getElementById('gym-days').value) || 2;
+                    const type = document.getElementById('gym-type').value;
+                    const effort = document.getElementById('gym-effort').value;
+                    const duration = parseFloat(document.getElementById('gym-duration').value) || 45;
+                    const exercises = parseFloat(document.getElementById('gym-exercises').value) || 4;
+                    const sets = document.getElementById('gym-sets').value;
+
+                    weeklyMinutes = duration * days;
+
+                    // METs vary by gym type
+                    switch (type) {
+                        case 'strength':
+                            mets = effort === 'hard' ? 5.0 : effort === 'moderate' ? 4.0 : 3.0;
+                            break;
+                        case 'cardio':
+                            mets = effort === 'hard' ? 7.0 : effort === 'moderate' ? 5.5 : 4.0;
+                            break;
+                        case 'mixed':
+                            mets = effort === 'hard' ? 5.5 : effort === 'moderate' ? 4.5 : 3.5;
+                            break;
+                        case 'classes':
+                            mets = effort === 'hard' ? 6.0 : effort === 'moderate' ? 5.0 : 4.0;
+                            break;
+                    }
+
+                    if (mets < 4) {
+                        intensity = 'light';
+                        talkTest = { icon: '🟢', title: 'Esfuerzo bajo', desc: 'Podría hacer mucho más - RPE <6' };
+                    } else if (mets < 6) {
+                        intensity = 'moderate';
+                        talkTest = { icon: '🟡', title: 'Esfuerzo moderado', desc: 'Cuesta pero controlable - RPE 6-7' };
+                    } else {
+                        intensity = 'vigorous';
+                        talkTest = { icon: '🔴', title: 'Esfuerzo alto', desc: 'Las últimas reps cuestan - RPE 8-9' };
+                    }
+
+                    // Frequency recommendations
+                    if (days < 2) {
+                        recommendations.push({ icon: '⚠️', text: 'Mínimo recomendado: 2 días/semana de fuerza (guías OMS)' });
+                    } else if (days === 2) {
+                        recommendations.push({ icon: '✓', text: 'Frecuencia de fuerza adecuada (≥2 días/semana)' });
+                    } else {
+                        recommendations.push({ icon: '⭐', text: `Excelente frecuencia: ${days} días/semana permite mayor volumen semanal` });
+                    }
+
+                    // Exercise count recommendations
+                    if (type === 'strength' || type === 'mixed') {
+                        if (exercises < 4) {
+                            recommendations.push({ icon: '💡', text: 'Rec. mínima efectiva: 4-6 ejercicios multiarticulares' });
+                        } else if (exercises >= 4 && exercises <= 6) {
+                            recommendations.push({ icon: '✓', text: 'Número de ejercicios ideal para principiantes/intermedios' });
+                        }
+
+                        // Sets recommendations
+                        if (sets === '1') {
+                            recommendations.push({ icon: '💡', text: 'Una serie puede ser suficiente para principiantes, pero 2-3 es óptimo' });
+                        } else if (sets === '2' || sets === '3') {
+                            recommendations.push({ icon: '✓', text: '2-3 series por ejercicio: rango óptimo para hipertrofia' });
+                        }
+
+                        // Effort recommendations
+                        if (effort === 'easy') {
+                            recommendations.push({ icon: '⚡', text: 'Clave: las últimas 2-3 reps DEBEN costar. Si es fácil, el peso es muy ligero.' });
+                            recommendations.push({ icon: '📚', text: 'Evidencia: cargas ligeras = cargas pesadas SI hay esfuerzo alto (Carvalho 2022)' });
+                        } else if (effort === 'hard') {
+                            recommendations.push({ icon: '✓', text: 'Esfuerzo cercano al fallo (RPE 8-9): óptimo para hipertrofia' });
+                            recommendations.push({ icon: '💡', text: 'No es necesario llegar al fallo completo - "dejar 1-2 en reserva" es suficiente' });
+                        }
+
+                        // Weekly volume estimate
+                        const setsNum = sets === '4+' ? 4 : parseInt(sets);
+                        const weeklyVolume = exercises * setsNum * days;
+                        recommendations.push({ icon: '📊', text: `Volumen semanal estimado: ~${weeklyVolume} series totales (buen predictor de hipertrofia)` });
+                    }
+
+                    if (type === 'cardio') {
+                        recommendations.push({ icon: '💡', text: 'Añadir 2 días de fuerza para beneficios completos (OMS)' });
+                    }
+
+                    // Progression suggestion
+                    if (effort === 'moderate' && days >= 2) {
+                        recommendations.push({ icon: '📈', text: 'Progresión sugerida: aumentar series o peso cuando las últimas reps dejen de costar' });
+                    }
+                    break;
+                }
+            }
+
+            // Calculate OMS compliance
+            // OMS: 150 min moderate OR 75 min vigorous per week
+            let omsTarget = 150;
+            let effectiveMinutes = weeklyMinutes;
+            if (intensity === 'vigorous') {
+                effectiveMinutes = weeklyMinutes * 2; // Count double
+            } else if (intensity === 'light') {
+                effectiveMinutes = weeklyMinutes * 0.5; // Count half
+            }
+            const omsPercent = Math.min(100, Math.round((effectiveMinutes / omsTarget) * 100));
+
+            // Red flags
+            if (mets < 3 && currentActivity !== 'steps') {
+                redFlag = 'Intensidad por debajo del umbral terapéutico. Considerar aumentar esfuerzo gradualmente.';
+            }
+
+            return {
+                mets,
+                weeklyMinutes,
+                intensity,
+                talkTest,
+                recommendations,
+                omsPercent,
+                redFlag,
+                postprandial
+            };
+        }
+
+        function displayResults(results) {
+            document.getElementById('resultsPlaceholder').style.display = 'none';
+            document.getElementById('resultsContent').classList.add('active');
+
+            // Zone badge
+            const zoneBadge = document.getElementById('zoneBadge');
+            const zoneIcon = document.getElementById('zoneIcon');
+            const zoneText = document.getElementById('zoneText');
+
+            zoneBadge.className = 'zone-badge';
+            switch (results.intensity) {
+                case 'light':
+                    zoneBadge.classList.add('zone-green');
+                    zoneIcon.textContent = '🟢';
+                    zoneText.textContent = 'ZONA 1 • Ligera';
+                    break;
+                case 'moderate':
+                    zoneBadge.classList.add('zone-yellow');
+                    zoneIcon.textContent = '🟡';
+                    zoneText.textContent = 'ZONA 2 • Moderada';
+                    break;
+                case 'vigorous':
+                    zoneBadge.classList.add('zone-red');
+                    zoneIcon.textContent = '🔴';
+                    zoneText.textContent = 'ZONA 3+ • Vigorosa';
+                    break;
+            }
+
+            // Metrics
+            document.getElementById('metsValue').textContent = results.mets.toFixed(1);
+            document.getElementById('weeklyMinutes').textContent = results.weeklyMinutes;
+
+            // OMS Progress
+            document.getElementById('omsPercent').textContent = results.omsPercent + '%';
+            const omsBar = document.getElementById('omsBar');
+            omsBar.style.width = results.omsPercent + '%';
+            omsBar.className = 'progress-fill';
+            if (results.omsPercent >= 100) {
+                omsBar.classList.add('good');
+            } else if (results.omsPercent >= 50) {
+                omsBar.classList.add('warning');
+            } else {
+                omsBar.classList.add('low');
+            }
+
+            // Talk Test
+            document.getElementById('talkTestIcon').textContent = results.talkTest.icon;
+            document.getElementById('talkTestTitle').textContent = results.talkTest.title;
+            document.getElementById('talkTestDesc').textContent = results.talkTest.desc;
+
+            // Red Flag
+            const redFlagEl = document.getElementById('redFlag');
+            if (results.redFlag) {
+                redFlagEl.classList.add('show');
+                document.getElementById('redFlagText').textContent = results.redFlag;
+            } else {
+                redFlagEl.classList.remove('show');
+            }
+
+            // Recommendations
+            const recsContainer = document.getElementById('recommendations');
+            recsContainer.innerHTML = results.recommendations.map(rec => `
+                <div class="rec-item">
+                    <span class="rec-icon">${rec.icon}</span>
+                    <span class="rec-text">${rec.text}</span>
+                </div>
+            `).join('');
+
+            // Patient text
+            generatePatientText(results);
+        }
+
+        function generatePatientText(results) {
+            let text = '';
+
+            if (results.omsPercent >= 100) {
+                text += `✅ EVALUACIÓN: Cumple las recomendaciones de ejercicio de la OMS.\n\n`;
+            } else if (results.omsPercent >= 50) {
+                text += `🟡 EVALUACIÓN: Está en buen camino, pero aún no alcanza las recomendaciones óptimas.\n\n`;
+            } else {
+                text += `⚠️ EVALUACIÓN: Su nivel de actividad está por debajo de lo recomendado.\n\n`;
+            }
+
+            text += `📊 DATOS:\n`;
+            text += `• Intensidad estimada: ${results.mets.toFixed(1)} METs (${results.intensity === 'light' ? 'ligera' : results.intensity === 'moderate' ? 'moderada' : 'vigorosa'})\n`;
+            text += `• Tiempo semanal: ${results.weeklyMinutes} minutos\n`;
+            text += `• Cumplimiento OMS: ${results.omsPercent}%\n\n`;
+
+            text += `💡 RECOMENDACIONES:\n`;
+
+            if (results.intensity === 'light') {
+                text += `• Aumente la intensidad: camine como si llegara tarde a una cita\n`;
+                text += `• Objetivo: que pueda hablar pero necesite pausas para tomar aire\n`;
+            }
+
+            if (results.omsPercent < 100) {
+                const remaining = Math.ceil((150 - (results.weeklyMinutes * (results.intensity === 'vigorous' ? 2 : 1))) / 7);
+                if (remaining > 0) {
+                    text += `• Añada ${remaining} minutos más de ejercicio moderado al día\n`;
+                }
+            }
+
+            if (!results.postprandial) {
+                text += `• Consejo: caminar 10-15 minutos después de comer ayuda a controlar el azúcar en sangre\n`;
+            }
+
+            if (currentActivity === 'steps') {
+                text += `• Recuerde: no solo importan los pasos, sino la VELOCIDAD. Objetivo: ≥100 pasos por minuto\n`;
+            }
+
+            text += `\n🎯 META SEMANAL: 150 minutos de ejercicio moderado (o 75 minutos vigoroso)`;
+
+            document.getElementById('patientText').textContent = text;
+        }
+
+        function copyPatientText() {
+            const text = document.getElementById('patientText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.classList.add('copied');
+                btn.innerHTML = '✓ Copiado';
+
+                showToast();
+
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = '📋 Copiar texto';
+                }, 2000);
+            });
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>
