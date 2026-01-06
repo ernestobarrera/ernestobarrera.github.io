@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Complejidad 360: Suite Analítica Completa</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React & ReactDOM -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+      body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      .fade-in {
+        animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .prose h3 {
+        color: #1e293b;
+        font-weight: 800;
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+        font-size: 1.1rem;
+      }
+      .prose p {
+        margin-bottom: 1em;
+        line-height: 1.6;
+        color: #475569;
+      }
+      .prose strong {
+        color: #0f172a;
+        font-weight: 700;
+      }
+      .prose ul {
+        list-style-type: disc;
+        padding-left: 1.2em;
+        margin-bottom: 1rem;
+        color: #475569;
+      }
+
+      input[type="number"]::-webkit-inner-spin-button,
+      input[type="number"]::-webkit-outer-spin-button {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-800 font-sans pb-20">
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useMemo, useEffect } = React;
+
+      // --- ICONOS ---
+      const IconSettings = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      );
+      const IconUser = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      );
+      const IconBriefcase = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect width="20" height="14" x="2" y="7" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+      );
+      const IconBook = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </svg>
+      );
+      const IconShield = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      );
+      const IconArrowRight = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="5" y1="12" x2="19" y2="12" />
+          <polyline points="12 5 19 12 12 19" />
+        </svg>
+      );
+      const IconArrowLeft = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="19" y1="12" x2="5" y2="12" />
+          <polyline points="12 19 5 12 12 5" />
+        </svg>
+      );
+      const IconInfo = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 16v-4" />
+          <path d="M12 8h.01" />
+        </svg>
+      );
+      const IconActivity = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+        </svg>
+      );
+
+      // --- DATOS INICIALES ---
+      const DEFAULT_FACTORS = [
+        {
+          id: "cat_clinic",
+          category: "Clínica Pura",
+          color: "bg-blue-50 text-blue-700",
+          items: [
+            {
+              id: "p_multi",
+              label: "Multimorbilidad (>2 enfermedades)",
+              time: 5,
+              load: 2,
+              explain: "Verificación cruzada de guías (interacciones).",
+            },
+            {
+              id: "p_poly",
+              label: "Polimedicación (>5 fármacos)",
+              time: 4,
+              load: 1.5,
+              explain: "Revisión de cascada terapéutica y adherencia.",
+            },
+            {
+              id: "p_alarm",
+              label: "Señal de Alarma (Gut Feeling)",
+              time: 3,
+              load: 1.5,
+              explain: "Procesamiento Sistema 2 (lento/analítico).",
+            },
+          ],
+        },
+        {
+          id: "cat_prof",
+          category: "Profesional y Relación",
+          color: "bg-purple-50 text-purple-700",
+          items: [
+            {
+              id: "pr_continuity",
+              label: "Pérdida de Continuidad / Desconocido",
+              time: 5,
+              load: 2.5,
+              explain:
+                "Ausencia de conocimiento acumulado. Revisión completa de Hª requerida.",
+            },
+            {
+              id: "pr_uncertainty",
+              label: "Incertidumbre Diagnóstica",
+              time: 4,
+              load: 1.5,
+              explain: "Gestión de la ambigüedad y safety netting.",
+            },
+          ],
+        },
+        {
+          id: "cat_social",
+          category: "Contexto Social",
+          color: "bg-emerald-50 text-emerald-700",
+          items: [
+            {
+              id: "p_ses",
+              label: "Vulnerabilidad Social / Soledad",
+              time: 5,
+              load: 1.5,
+              explain: "Gestión de recursos sociales (papel del médico).",
+            },
+            {
+              id: "p_lang",
+              label: "Barrera Idiomática / Cultural",
+              time: 7,
+              load: 2.0,
+              explain: "Dificultad comunicativa y validación de comprensión.",
+            },
+          ],
+        },
+        {
+          id: "cat_system",
+          category: "Burocracia y Sistema",
+          color: "bg-amber-50 text-amber-700",
+          items: [
+            {
+              id: "s_admin",
+              label: "Burocracia Extra (IT, Visados)",
+              time: 4,
+              load: 1.0,
+              explain: "Desplazamiento de atención clínica a administrativa.",
+            },
+            {
+              id: "s_guide_collision",
+              label: "Colisión de Guías Clínicas",
+              time: 6,
+              load: 2.0,
+              explain: "Priorización ante recomendaciones contradictorias.",
+            },
+            {
+              id: "s_tech",
+              label: "Fricción Tecnológica (Lentitud)",
+              time: 3,
+              load: 1.5,
+              explain: "Coste de frustración y atención dividida.",
+            },
+          ],
+        },
+      ];
+
+      // Coste de Task Switching a 0 por defecto como solicitado
+      const DEFAULT_SYSTEM_PARAMS = {
+        baseConsultationTime: 10,
+        taskSwitchingCost: 0,
+        interruptionLoad: 0.5,
+        patientsPerDay: 35,
+      };
+
+      // Reordenación de pestañas: Patient primero, Calibración al final
+      const TABS = [
+        {
+          id: "patient",
+          label: "1. El Paciente",
+          icon: <IconUser className="w-4 h-4" />,
+        },
+        {
+          id: "impact",
+          label: "2. El Impacto",
+          icon: <IconBriefcase className="w-4 h-4" />,
+        },
+        {
+          id: "strategy",
+          label: "3. Estrategia",
+          icon: <IconShield className="w-4 h-4" />,
+        },
+        {
+          id: "theory",
+          label: "4. Fundamentos",
+          icon: <IconBook className="w-4 h-4" />,
+        },
+        {
+          id: "calib",
+          label: "5. Calibración",
+          icon: <IconSettings className="w-4 h-4" />,
+        },
+      ];
+
+      // --- COMPONENTES AUXILIARES ---
+
+      const NavButtons = ({ currentTabId, onChangeTab }) => {
+        const currentIndex = TABS.findIndex((t) => t.id === currentTabId);
+        const prevTab = currentIndex > 0 ? TABS[currentIndex - 1] : null;
+        const nextTab =
+          currentIndex < TABS.length - 1 ? TABS[currentIndex + 1] : null;
+
+        return (
+          <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-200">
+            {prevTab ? (
+              <button
+                onClick={() => onChangeTab(prevTab.id)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors font-medium text-sm"
+              >
+                <IconArrowLeft className="w-4 h-4" /> Anterior: {prevTab.label}
+              </button>
+            ) : (
+              <div></div>
+            )}
+
+            {nextTab ? (
+              <button
+                onClick={() => onChangeTab(nextTab.id)}
+                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg transition-all font-bold text-sm"
+              >
+                Siguiente: {nextTab.label}{" "}
+                <IconArrowRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <div></div>
+            )}
+          </div>
+        );
+      };
+
+      // --- COMPONENTES PRINCIPALES ---
+
+      const ConfigPanel = ({
+        factors,
+        setFactors,
+        sysParams,
+        setSysParams,
+      }) => {
+        const handleFactorChange = (catIdx, itemIdx, field, value) => {
+          const newFactors = [...factors];
+          newFactors[catIdx].items[itemIdx][field] = Number(value);
+          setFactors(newFactors);
+        };
+
+        const handleSysChange = (field, value) => {
+          setSysParams((prev) => ({ ...prev, [field]: Number(value) }));
+        };
+
+        return (
+          <div className="space-y-6 fade-in">
+            <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-6">
+              <h3 className="font-bold text-indigo-900 flex items-center gap-2">
+                <IconSettings className="w-5 h-5" />
+                Calibración del Entorno
+              </h3>
+              <p className="text-sm text-indigo-700 mt-1">
+                Ajusta estos valores a tu realidad local para que los cálculos
+                sean precisos.
+              </p>
+            </div>
+
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <h4 className="font-bold text-slate-800 border-b border-slate-100 pb-2 mb-4 uppercase text-xs tracking-wider">
+                Constantes del Sistema
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">
+                    Tiempo Base Consulta (min)
+                  </label>
+                  <input
+                    type="number"
+                    value={sysParams.baseConsultationTime}
+                    onChange={(e) =>
+                      handleSysChange("baseConsultationTime", e.target.value)
+                    }
+                    className="w-full border rounded p-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">
+                    Pacientes / Día
+                  </label>
+                  <input
+                    type="number"
+                    value={sysParams.patientsPerDay}
+                    onChange={(e) =>
+                      handleSysChange("patientsPerDay", e.target.value)
+                    }
+                    className="w-full border rounded p-2 text-sm"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">
+                    Coste de "Task Switching" (min)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={sysParams.taskSwitchingCost}
+                      onChange={(e) =>
+                        handleSysChange("taskSwitchingCost", e.target.value)
+                      }
+                      className="w-24 border rounded p-2 text-sm"
+                    />
+                    <p className="text-xs text-slate-400 self-center">
+                      Tiempo perdido en "reconectar" tras cada interrupción.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {factors.map((cat, catIdx) => (
+                <div
+                  key={cat.id}
+                  className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"
+                >
+                  <h4
+                    className={`font-bold pb-2 mb-2 border-b uppercase text-xs tracking-wider ${
+                      cat.color.split(" ")[1]
+                    }`}
+                  >
+                    {cat.category} (Pesos Editables)
+                  </h4>
+                  <div className="space-y-3">
+                    {cat.items.map((item, itemIdx) => (
+                      <div
+                        key={item.id}
+                        className="grid grid-cols-12 gap-2 items-center"
+                      >
+                        <div className="col-span-6">
+                          <span className="text-sm font-medium text-slate-700">
+                            {item.label}
+                          </span>
+                        </div>
+                        <div className="col-span-3">
+                          <label className="text-[9px] font-bold text-slate-400 block">
+                            Tiempo (m)
+                          </label>
+                          <input
+                            type="number"
+                            value={item.time}
+                            onChange={(e) =>
+                              handleFactorChange(
+                                catIdx,
+                                itemIdx,
+                                "time",
+                                e.target.value
+                              )
+                            }
+                            className="w-full border border-slate-200 rounded px-2 py-1 text-sm bg-slate-50"
+                          />
+                        </div>
+                        <div className="col-span-3">
+                          <label className="text-[9px] font-bold text-slate-400 block">
+                            Carga (1-5)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={item.load}
+                            onChange={(e) =>
+                              handleFactorChange(
+                                catIdx,
+                                itemIdx,
+                                "load",
+                                e.target.value
+                              )
+                            }
+                            className="w-full border border-slate-200 rounded px-2 py-1 text-sm bg-slate-50"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      };
+
+      const PatientChecklist = ({ factors, checkedItems, toggleItem }) => {
+        return (
+          <div className="fade-in space-y-6">
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+              <div className="flex items-start gap-3">
+                <IconActivity className="w-6 h-6 text-blue-600 mt-1" />
+                <div>
+                  <h2 className="font-bold text-blue-900 text-sm">
+                    ¿En qué consiste este sistema?
+                  </h2>
+                  <p className="text-sm text-blue-800 mt-1 leading-relaxed">
+                    Esta herramienta permite cuantificar la discrepancia entre
+                    el tiempo asignado en agenda y el tiempo real (cognitivo y
+                    clínico) que requieren los pacientes complejos. Selecciona
+                    los factores del caso actual para visualizar el impacto real
+                    en tu jornada y carga mental.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-slate-800">
+                  Perfil del Caso Actual
+                </h2>
+                <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-1 rounded">
+                  Nota: Valores configurables en pestaña "Calibración"
+                </span>
+              </div>
+
+              <div className="space-y-6">
+                {factors.map((cat) => (
+                  <div key={cat.id}>
+                    <h3
+                      className={`text-xs font-bold uppercase tracking-wider mb-3 ${
+                        cat.color.split(" ")[1]
+                      }`}
+                    >
+                      {cat.category}
+                    </h3>
+                    <div className="grid gap-3">
+                      {cat.items.map((item) => (
+                        <label
+                          key={item.id}
+                          className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                            checkedItems[item.id]
+                              ? "bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200"
+                              : "bg-white border-slate-200"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!!checkedItems[item.id]}
+                            onChange={() => toggleItem(item.id)}
+                            className="mt-1 w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                          />
+                          <div className="flex-1">
+                            <div className="flex justify-between">
+                              <span className="font-bold text-slate-700">
+                                {item.label}
+                              </span>
+                              <div className="flex gap-2 text-[10px] font-mono text-slate-400">
+                                <span className="bg-slate-100 px-1 rounded">
+                                  +{item.time}m
+                                </span>
+                                <span className="bg-slate-100 px-1 rounded">
+                                  +{item.load}ch
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1">
+                              {item.explain}
+                            </p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const Simulator = ({ factors, sysParams, checkedItems }) => {
+        const [percentage, setPercentage] = useState(10); // Default 10%
+
+        const patientStats = useMemo(() => {
+          let addedTime = 0;
+          let addedLoad = 0;
+          factors.forEach((cat) => {
+            cat.items.forEach((item) => {
+              if (checkedItems[item.id]) {
+                addedTime += item.time;
+                addedLoad += item.load;
+              }
+            });
+          });
+          const totalTime =
+            sysParams.baseConsultationTime +
+            addedTime +
+            sysParams.taskSwitchingCost;
+          const totalLoad = addedLoad + sysParams.interruptionLoad;
+          return { totalTime, totalLoad, addedTime };
+        }, [factors, checkedItems, sysParams]);
+
+        const dayStats = useMemo(() => {
+          const complexCount = Math.round(
+            sysParams.patientsPerDay * (percentage / 100)
+          );
+          const standardCount = sysParams.patientsPerDay - complexCount;
+          const standardPatientTime =
+            sysParams.baseConsultationTime + sysParams.taskSwitchingCost;
+          const totalMinutes =
+            complexCount * patientStats.totalTime +
+            standardCount * standardPatientTime;
+          const startTime = new Date();
+          startTime.setHours(8, 0, 0);
+          const finishTime = new Date(
+            startTime.getTime() + totalMinutes * 60000
+          );
+          return { totalMinutes, finishTime, complexCount, standardCount };
+        }, [percentage, patientStats, sysParams]);
+
+        return (
+          <div className="space-y-6 fade-in">
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+              <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <IconUser className="w-5 h-5 text-indigo-600" />
+                Impacto Micro (1 Paciente)
+              </h3>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center">
+                  <div className="text-xs uppercase font-bold text-slate-400">
+                    Tiempo Necesario
+                  </div>
+                  <div className="text-3xl font-black text-slate-800">
+                    {patientStats.totalTime}m
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-1">
+                    vs {sysParams.baseConsultationTime}m asignados
+                  </div>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-center">
+                  <div className="text-xs uppercase font-bold text-slate-400">
+                    Carga Mental
+                  </div>
+                  <div
+                    className={`text-3xl font-black ${
+                      patientStats.totalLoad > 4
+                        ? "text-red-600"
+                        : "text-emerald-600"
+                    }`}
+                  >
+                    {patientStats.totalLoad.toFixed(1)}
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-1">
+                    Límite Cowan: 4.0
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 text-white rounded-xl shadow-xl overflow-hidden">
+              <div className="p-4 border-b border-slate-700 bg-slate-800/50">
+                <h3 className="font-bold flex items-center gap-2">
+                  <IconBriefcase className="w-5 h-5 text-amber-400" />
+                  Impacto Macro (Jornada)
+                </h3>
+              </div>
+              <div className="p-6">
+                <div className="mb-6">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-slate-400">
+                      ¿% de pacientes como este hoy?
+                    </span>
+                    <div className="text-right">
+                      <span className="font-bold text-amber-400 text-lg">
+                        {percentage}%
+                      </span>
+                      <span className="text-xs text-slate-500 ml-2">
+                        (~
+                        {Math.round(
+                          sysParams.patientsPerDay * (percentage / 100)
+                        )}{" "}
+                        pacientes)
+                      </span>
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={percentage}
+                    onChange={(e) => setPercentage(Number(e.target.value))}
+                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-slate-400 uppercase font-bold">
+                      Hora Salida Estimada
+                    </div>
+                    <div className="text-4xl font-black text-white">
+                      {dayStats.finishTime.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-1">
+                      *Inicio 08:00 sin pausas
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-slate-400 uppercase font-bold">
+                      Déficit Tiempo
+                    </div>
+                    <div
+                      className={`text-2xl font-bold ${
+                        dayStats.totalMinutes >
+                        sysParams.patientsPerDay *
+                          sysParams.baseConsultationTime +
+                          60
+                          ? "text-red-400"
+                          : "text-emerald-400"
+                      }`}
+                    >
+                      +
+                      {Math.round(
+                        dayStats.totalMinutes -
+                          sysParams.patientsPerDay *
+                            sysParams.baseConsultationTime
+                      )}{" "}
+                      min
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const StrategyPanel = ({ checkedItems }) => {
+        const hasGuideCollision =
+          checkedItems["s_guide_collision"] || checkedItems["p_multi"];
+        const hasOverload = checkedItems["p_lang"] || checkedItems["p_ses"];
+        const hasUncertainty =
+          checkedItems["p_alarm"] || checkedItems["pr_uncertainty"];
+        const hasDiscontinuity = checkedItems["pr_continuity"];
+
+        return (
+          <div className="fade-in space-y-6">
+            <div className="bg-indigo-600 text-white p-6 rounded-xl shadow-md">
+              <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                <IconShield className="w-6 h-6" /> Estrategias de Supervivencia
+              </h2>
+              <p className="text-indigo-100 text-sm">
+                El modelo ha detectado los puntos de dolor específicos. Aquí
+                tienes estrategias basadas en evidencia para este caso.
+              </p>
+            </div>
+
+            <div className="grid gap-4">
+              {hasDiscontinuity && (
+                <div className="bg-white p-5 rounded-xl border border-l-4 border-l-purple-500 border-slate-200 shadow-sm">
+                  <h4 className="font-bold text-purple-700 mb-1 flex items-center gap-2">
+                    Prioritario: Inversión en Vínculo
+                  </h4>
+                  <p className="text-sm text-slate-600">
+                    <strong>Problema:</strong> Sin conocimiento acumulado
+                    (Paciente Nuevo/Desconocido).
+                    <br />
+                    <strong>Acción:</strong> No intentes resolver todos los
+                    problemas biomédicos hoy. Tu objetivo prioritario es
+                    establecer la relación y entender la agenda del paciente.
+                    Construir la base de confianza ahorra tiempo futuro.
+                  </p>
+                </div>
+              )}
+
+              {hasGuideCollision && (
+                <div className="bg-white p-5 rounded-xl border border-l-4 border-l-red-500 border-slate-200 shadow-sm">
+                  <h4 className="font-bold text-red-700 mb-1 flex items-center gap-2">
+                    Deprescripción Activa (Guías en Conflicto)
+                  </h4>
+                  <p className="text-sm text-slate-600">
+                    <strong>Problema:</strong> Las guías chocan (ej. diabetes vs
+                    fragilidad).
+                    <br />
+                    <strong>Acción:</strong> Ignora los objetivos biomarcadores
+                    estrictos hoy. Prioriza solo UN objetivo funcional (ej.
+                    "poder caminar sin dolor") y negocia dejar el resto.
+                  </p>
+                </div>
+              )}
+
+              {hasOverload && (
+                <div className="bg-white p-5 rounded-xl border border-l-4 border-l-amber-500 border-slate-200 shadow-sm">
+                  <h4 className="font-bold text-amber-700 mb-1 flex items-center gap-2">
+                    Satisficing (Herbert Simon)
+                  </h4>
+                  <p className="text-sm text-slate-600">
+                    <strong>Problema:</strong> Carga cognitiva/social saturada.
+                    <br />
+                    <strong>Acción:</strong> No busques la solución óptima
+                    (requiere 26h). Busca la solución "suficientemente buena" y
+                    segura. Acepta que hoy no puedes resolverlo todo.
+                  </p>
+                </div>
+              )}
+
+              {hasUncertainty && (
+                <div className="bg-white p-5 rounded-xl border border-l-4 border-l-indigo-500 border-slate-200 shadow-sm">
+                  <h4 className="font-bold text-indigo-700 mb-1 flex items-center gap-2">
+                    Safety Netting (Red de Seguridad)
+                  </h4>
+                  <p className="text-sm text-slate-600">
+                    <strong>Problema:</strong> Incertidumbre/Alarma.
+                    <br />
+                    <strong>Acción:</strong> No intentes diagnosticarlo todo hoy
+                    para calmar tu ansiedad. Comparte la incertidumbre: "No sé
+                    qué es, pero sé qué vigilar. Si pasa X, vuelve mañana".
+                  </p>
+                </div>
+              )}
+
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 shadow-sm opacity-80">
+                <h4 className="font-bold text-slate-700 mb-1">
+                  Estrategia General: Protección de Agenda
+                </h4>
+                <p className="text-sm text-slate-600">
+                  Agrupa tareas administrativas ("Batching") al final de la
+                  mañana. No dejes que la burocracia interrumpa tu flujo clínico
+                  profundo (Sistema 2).
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const TheoryPanel = () => {
+        return (
+          <div className="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200 prose prose-slate fade-in">
+            <h2 className="flex items-center gap-3 text-2xl font-black text-indigo-900 !mt-0">
+              <IconBook className="w-8 h-8" />
+              Fundamentos del Modelo (2026)
+            </h2>
+            <p className="lead text-lg">
+              Este simulador traduce la evidencia de la{" "}
+              <strong>Paradoja Cognitiva</strong> en números reales.
+            </p>
+
+            <h3>1. La Imposibilidad Aritmética</h3>
+            <p>
+              Basado en <strong>Porter et al. (2022)</strong>. Calcularon el
+              tiempo necesario para cumplir todas las guías para un cupo de
+              2,500 pacientes: <strong>26.7 horas al día</strong>. El simulador
+              demuestra que incluso con pocos pacientes complejos, la jornada se
+              desborda.
+            </p>
+
+            <h3>2. El Límite Biológico (Cowan)</h3>
+            <p>
+              La memoria de trabajo humana solo procesa{" "}
+              <strong>4 ± 1 "chunks"</strong> simultáneos. Un paciente complejo
+              obliga a mantener activos >5 chunks, provocando saturación y
+              olvidos involuntarios.
+            </p>
+
+            <h3>3. Factores Sistémicos</h3>
+            <p>
+              La complejidad no es solo el paciente. Incluye el{" "}
+              <strong>"Task Switching"</strong> (coste cognitivo de cambiar de
+              tarea), la <strong>Pérdida de Continuidad</strong> (que obliga a
+              reconstruir la historia clínica mentalmente) y el{" "}
+              <strong>"Moral Injury"</strong> (daño ético de no poder atender
+              bien por falta de tiempo).
+            </p>
+          </div>
+        );
+      };
+
+      // --- APP MAIN ---
+      function App() {
+        const [activeTab, setActiveTab] = useState("patient");
+        const [factors, setFactors] = useState(DEFAULT_FACTORS);
+        const [sysParams, setSysParams] = useState(DEFAULT_SYSTEM_PARAMS);
+        const [checkedItems, setCheckedItems] = useState({});
+
+        const toggleItem = (id) => {
+          setCheckedItems((prev) => ({ ...prev, [id]: !prev[id] }));
+        };
+
+        const renderContent = () => {
+          switch (activeTab) {
+            case "calib":
+              return (
+                <ConfigPanel
+                  factors={factors}
+                  setFactors={setFactors}
+                  sysParams={sysParams}
+                  setSysParams={setSysParams}
+                />
+              );
+            case "patient":
+              return (
+                <PatientChecklist
+                  factors={factors}
+                  checkedItems={checkedItems}
+                  toggleItem={toggleItem}
+                />
+              );
+            case "impact":
+              return (
+                <Simulator
+                  factors={factors}
+                  sysParams={sysParams}
+                  checkedItems={checkedItems}
+                />
+              );
+            case "strategy":
+              return <StrategyPanel checkedItems={checkedItems} />;
+            case "theory":
+              return <TheoryPanel />;
+            default:
+              return null;
+          }
+        };
+
+        return (
+          <div className="min-h-screen bg-slate-50 max-w-4xl mx-auto px-4 py-8">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-black text-slate-900 mb-1">
+                Complejidad 360
+              </h1>
+              <p className="text-slate-500 font-medium">
+                Modelo Analítico de Carga en Atención Primaria
+              </p>
+            </div>
+
+            {/* NAVEGACIÓN SUPERIOR */}
+            <div className="flex flex-wrap justify-center gap-2 mb-8 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-fit mx-auto">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? "bg-indigo-600 text-white shadow-md"
+                      : "text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* CONTENIDO PRINCIPAL */}
+            <div className="min-h-[500px]">{renderContent()}</div>
+
+            {/* NAVEGACIÓN INFERIOR (WIZARD) */}
+            <NavButtons currentTabId={activeTab} onChangeTab={setActiveTab} />
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
