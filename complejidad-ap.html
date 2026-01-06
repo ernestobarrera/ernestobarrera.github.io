@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Complejidad 360: Atención Primaria</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React & ReactDOM -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+
+    <!-- Babel para traducir JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+      /* Ajustes finos para suavizar fuentes */
+      body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      .fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-800 font-sans selection:bg-blue-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useMemo } = React;
+
+      // --- ICONOS (SVG Inline para evitar dependencias externas) ---
+      const IconActivity = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+        </svg>
+      );
+      const IconUsers = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      );
+      const IconBuilding2 = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+          <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+          <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+          <path d="M10 6h4" />
+          <path d="M10 10h4" />
+          <path d="M10 14h4" />
+          <path d="M10 18h4" />
+        </svg>
+      );
+      const IconSettings = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      );
+      const IconMap = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+          <line x1="9" x2="9" y1="3" y2="18" />
+          <line x1="15" x2="15" y1="6" y2="21" />
+        </svg>
+      );
+      const IconAlertCircle = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" x2="12" y1="8" y2="12" />
+          <line x1="12" x2="12.01" y1="16" y2="16" />
+        </svg>
+      );
+      const IconCheckCircle2 = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+      );
+      const IconBrain = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
+          <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
+        </svg>
+      );
+      const IconStethoscope = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3" />
+          <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
+          <circle cx="20" cy="10" r="2" />
+        </svg>
+      );
+      const IconInfo = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 16v-4" />
+          <path d="M12 8h.01" />
+        </svg>
+      );
+      const IconLightbulb = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2.4 1.5-3.8 0-3.2-2.8-6-6-6S6 4.8 6 8c0 1.4.5 2.8 1.5 3.8.8.8 1.3 1.5 1.5 2.5" />
+          <path d="M9 18h6" />
+          <path d="M10 22h4" />
+        </svg>
+      );
+      const IconHelpCircle = (props) => (
+        <svg
+          {...props}
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <path d="M12 17h.01" />
+        </svg>
+      );
+
+      // --- DATA STRUCTURES (Braspenning et al., 2025) ---
+      const FACTORS = {
+        patient: {
+          title: "Nivel Paciente",
+          subtitle: "Médico, Social y Conductual",
+          icon: <IconUsers className="w-5 h-5" />,
+          color: "text-blue-600",
+          bg: "bg-blue-50",
+          border: "border-blue-200",
+          items: [
+            {
+              id: "p_multimorbidity",
+              label: "Multimorbilidad (Severidad/Riesgo)",
+              category: "Médico",
+              ref: "Table 2: Medical",
+            },
+            {
+              id: "p_polypharmacy",
+              label: "Polifarmacia (Interacciones)",
+              category: "Médico",
+              ref: "Table 2: Medical",
+            },
+            {
+              id: "p_psych",
+              label: "Desorden Psiquiátrico / Vulnerabilidad",
+              category: "Médico",
+              ref: "Table 2: Medical",
+            },
+            {
+              id: "p_somatic",
+              label: "Somatización de malestar psicosocial",
+              category: "Médico",
+              ref: "Focus Group",
+            },
+            {
+              id: "p_ses",
+              label: "Bajo NSE / Circunstancias vitales difíciles",
+              category: "Social",
+              ref: "Table 2: Social",
+            },
+            {
+              id: "p_literacy",
+              label: "Alfabetización en salud / Barreras idioma",
+              category: "Social",
+              ref: "Table 2: Social",
+            },
+            {
+              id: "p_social_capital",
+              label: "Falta de Capital Social (Red de apoyo)",
+              category: "Social",
+              ref: "Table 2: Social",
+            },
+            {
+              id: "p_coping",
+              label: "Baja capacidad de afrontamiento (Coping)",
+              category: "Conducta",
+              ref: "Table 2: Health Behaviour",
+            },
+            {
+              id: "p_passive",
+              label: "Actitud pasiva ante la salud",
+              category: "Conducta",
+              ref: "Table 2: Health Behaviour",
+            },
+            {
+              id: "p_secondary",
+              label: "Ganancia secundaria",
+              category: "Conducta",
+              ref: "Table 2: Health Behaviour",
+            },
+          ],
+        },
+        professional: {
+          title: "Nivel Profesional",
+          subtitle: "Experiencia y Relación",
+          icon: <IconStethoscope className="w-5 h-5" />,
+          color: "text-emerald-600",
+          bg: "bg-emerald-50",
+          border: "border-emerald-200",
+          items: [
+            {
+              id: "pr_experience",
+              label: "Falta de experiencia/expertise en el caso",
+              category: "Expertise",
+              ref: "Table 2: Professional",
+            },
+            {
+              id: "pr_relationship",
+              label: "Relación médico-paciente difícil",
+              category: "Relación",
+              ref: "Table 2: Professional",
+            },
+            {
+              id: "pr_comm",
+              label: "Comunicación interprofesional deficiente",
+              category: "Comunicación",
+              ref: "Focus Group",
+            },
+            {
+              id: "pr_uncertainty",
+              label: "Incertidumbre diagnóstica ('Gut feeling')",
+              category: "Expertise",
+              ref: "Focus Group",
+            },
+          ],
+        },
+        organization: {
+          title: "Nivel Organización",
+          subtitle: "Coordinación de Servicios",
+          icon: <IconBuilding2 className="w-5 h-5" />,
+          color: "text-amber-600",
+          bg: "bg-amber-50",
+          border: "border-amber-200",
+          items: [
+            {
+              id: "o_coordination",
+              label: "Falta de coordinación entre proveedores",
+              category: "Coordinación",
+              ref: "Table 2: Org",
+            },
+            {
+              id: "o_fragmentation",
+              label: "Fragmentación (múltiples especialistas)",
+              category: "Procesos",
+              ref: "Focus Group",
+            },
+            {
+              id: "o_time",
+              label: "Recursos de tiempo insuficientes",
+              category: "Recursos",
+              ref: "Table 2: System/Org",
+            },
+          ],
+        },
+        system: {
+          title: "Nivel Sistema",
+          subtitle: "Acceso y Navegación",
+          icon: <IconSettings className="w-5 h-5" />,
+          color: "text-purple-600",
+          bg: "bg-purple-50",
+          border: "border-purple-200",
+          items: [
+            {
+              id: "s_access",
+              label: "Problemas de acceso (Listas espera)",
+              category: "Acceso",
+              ref: "Table 2: System",
+            },
+            {
+              id: "s_navigation",
+              label: "Dificultad navegando el sistema",
+              category: "Navegación",
+              ref: "Table 2: System",
+            },
+            {
+              id: "s_resources",
+              label: "Falta de recursos financieros/comunitarios",
+              category: "Recursos",
+              ref: "Table 2: System",
+            },
+          ],
+        },
+      };
+
+      const DISTRICTS = [
+        {
+          id: 1,
+          name: "Zona Centro (Envejecida)",
+          risk: "Medio",
+          primaryFactor: "Capital Social (Soledad)",
+          desc: "Predominio de aislamiento social y tensión del cuidador informal (Informal caregiver strain).",
+          coords: "10,10 90,10 90,90 10,90",
+          color: "#fbbf24",
+          opacity: 0.4,
+        },
+        {
+          id: 2,
+          name: "Barrio Norte (Expansión)",
+          risk: "Bajo",
+          primaryFactor: "Navegación del Sistema",
+          desc: "Población joven con dificultades para entender circuitos complejos ('Difficulty navigating').",
+          coords: "100,10 180,10 160,80 100,90",
+          color: "#34d399",
+          opacity: 0.3,
+        },
+        {
+          id: 3,
+          name: "Distrito Sur (Vulnerable)",
+          risk: "Muy Alto",
+          primaryFactor: "Alfabetización + NSE",
+          desc: "Baja alfabetización en salud (Health Literacy) combinada con circunstancias vitales difíciles.",
+          coords: "10,100 80,100 80,180 30,190 10,150",
+          color: "#ef4444",
+          opacity: 0.6,
+        },
+        {
+          id: 4,
+          name: "Zona Periurbana",
+          risk: "Alto",
+          primaryFactor: "Acceso al Paciente",
+          desc: "Barreras físicas de acceso a servicios ('Patient access') y recursos limitados.",
+          coords: "90,100 190,90 190,190 90,190",
+          color: "#f97316",
+          opacity: 0.5,
+        },
+      ];
+
+      // --- COMPONENTES VISUALES ---
+      const RadarChart = ({ scores }) => {
+        const size = 200;
+        const center = size / 2;
+        const radius = 70;
+
+        const axes = [
+          { label: "Paciente", angle: 0, key: "patient" },
+          { label: "Profesional", angle: 90, key: "professional" },
+          { label: "Organización", angle: 180, key: "organization" },
+          { label: "Sistema", angle: 270, key: "system" },
+        ];
+
+        const getCoord = (angle, value) => {
+          const rad = (angle - 90) * (Math.PI / 180);
+          return {
+            x: center + radius * value * Math.cos(rad),
+            y: center + radius * value * Math.sin(rad),
+          };
+        };
+
+        const points = axes
+          .map((axis) => {
+            const val = scores[axis.key] || 0.1;
+            const { x, y } = getCoord(axis.angle, val);
+            return `${x},${y}`;
+          })
+          .join(" ");
+
+        return (
+          <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm border border-slate-100">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
+              Radar de Complejidad
+            </h3>
+            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+              <circle
+                cx={center}
+                cy={center}
+                r={radius}
+                fill="none"
+                stroke="#e2e8f0"
+                strokeWidth="1"
+              />
+              <circle
+                cx={center}
+                cy={center}
+                r={radius * 0.5}
+                fill="none"
+                stroke="#e2e8f0"
+                strokeDasharray="4 4"
+              />
+              {axes.map((axis) => {
+                const { x, y } = getCoord(axis.angle, 1);
+                return (
+                  <line
+                    key={axis.label}
+                    x1={center}
+                    y1={center}
+                    x2={x}
+                    y2={y}
+                    stroke="#e2e8f0"
+                  />
+                );
+              })}
+              <polygon
+                points={points}
+                fill="rgba(37, 99, 235, 0.15)"
+                stroke="#2563eb"
+                strokeWidth="2"
+                strokeLinejoin="round"
+              />
+              {axes.map((axis) => {
+                const { x, y } = getCoord(axis.angle, 1.25);
+                return (
+                  <text
+                    key={axis.label}
+                    x={x}
+                    y={y}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="text-[10px] fill-slate-500 font-semibold uppercase"
+                  >
+                    {axis.label}
+                  </text>
+                );
+              })}
+            </svg>
+          </div>
+        );
+      };
+
+      const MapVisualization = () => {
+        const [selectedZone, setSelectedZone] = useState(null);
+
+        return (
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <IconMap className="w-5 h-5 text-blue-600" />
+                  Mapa de Factores (Distrito Sanitario)
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">
+                  Visualización de factores de la <strong>Tabla 2</strong>{" "}
+                  distribuidos geográficamente.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="flex items-center gap-1 bg-red-50 text-red-700 px-2 py-1 rounded">
+                  <span className="w-2 h-2 rounded-full bg-red-500"></span>{" "}
+                  Complejidad Alta
+                </span>
+                <span className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded">
+                  <span className="w-2 h-2 rounded-full bg-amber-400"></span>{" "}
+                  Complejidad Media
+                </span>
+                <span className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-1 rounded">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>{" "}
+                  Complejidad Baja
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col lg:flex-row gap-8">
+              <div className="flex-1 relative bg-slate-50 rounded-xl overflow-hidden border border-slate-200 h-96 flex items-center justify-center group">
+                <svg
+                  viewBox="0 0 200 200"
+                  className="w-full h-full cursor-pointer drop-shadow-sm transform transition-transform duration-500 group-hover:scale-[1.02]"
+                >
+                  {DISTRICTS.map((d) => (
+                    <g
+                      key={d.id}
+                      onClick={() => setSelectedZone(d)}
+                      className="transition-all duration-300 hover:opacity-90 cursor-pointer"
+                    >
+                      <polygon
+                        points={d.coords}
+                        fill={d.color}
+                        fillOpacity={d.opacity}
+                        stroke="white"
+                        strokeWidth="1.5"
+                        className="hover:stroke-slate-400"
+                      />
+                      <text
+                        x={d.coords.split(" ")[0].split(",")[0]}
+                        y={d.coords.split(" ")[0].split(",")[1]}
+                        dx="25"
+                        dy="25"
+                        className="text-[6px] fill-slate-700 font-bold opacity-60 pointer-events-none uppercase tracking-wider"
+                      >
+                        {d.name}
+                      </text>
+                    </g>
+                  ))}
+                </svg>
+                <div className="absolute bottom-3 right-3 text-[10px] text-slate-400 bg-white/80 px-2 py-1 rounded backdrop-blur-sm">
+                  Haga clic en una zona para ver determinantes
+                </div>
+              </div>
+
+              <div className="w-full lg:w-80 space-y-4">
+                {selectedZone ? (
+                  <div className="fade-in h-full flex flex-col">
+                    <div className="p-5 rounded-xl bg-white border border-slate-200 shadow-sm flex-1">
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="font-bold text-lg text-slate-800">
+                          {selectedZone.name}
+                        </h3>
+                        <span
+                          className={`text-[10px] px-2 py-1 rounded-full text-white font-bold uppercase tracking-wider ${
+                            selectedZone.risk === "Muy Alto"
+                              ? "bg-red-500"
+                              : selectedZone.risk === "Alto"
+                              ? "bg-orange-500"
+                              : selectedZone.risk === "Medio"
+                              ? "bg-amber-500"
+                              : "bg-emerald-500"
+                          }`}
+                        >
+                          {selectedZone.risk}
+                        </span>
+                      </div>
+
+                      <div className="space-y-6">
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">
+                            Factor Predominante (Review)
+                          </label>
+                          <p className="text-base font-semibold text-slate-700">
+                            {selectedZone.primaryFactor}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">
+                            Descripción del Impacto
+                          </label>
+                          <p className="text-sm text-slate-600 leading-relaxed">
+                            {selectedZone.desc}
+                          </p>
+                        </div>
+
+                        <div className="pt-4 mt-2 border-t border-slate-100">
+                          <p className="text-xs text-slate-500 italic flex items-start gap-2">
+                            <IconLightbulb className="w-4 h-4 text-amber-500 shrink-0" />
+                            Recomendación basada en Braspenning: Integrar
+                            cuidados con servicios sociales para abordar la
+                            carga no médica.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 p-8 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                    <IconMap className="w-12 h-12 mb-3 opacity-20" />
+                    <p className="text-sm font-medium">
+                      Selecciona una zona sanitaria
+                    </p>
+                    <p className="text-xs mt-1 opacity-70">
+                      Verás qué factores del estudio predominan
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // --- COMPONENTE PRINCIPAL (APP) ---
+      function App() {
+        const [activeTab, setActiveTab] = useState("calculator");
+        const [checkedItems, setCheckedItems] = useState({});
+        const [surpriseAnswer, setSurpriseAnswer] = useState(null);
+
+        const scores = useMemo(() => {
+          const newScores = {};
+          Object.keys(FACTORS).forEach((key) => {
+            const items = FACTORS[key].items;
+            const checkedCount = items.filter((i) => checkedItems[i.id]).length;
+            newScores[key] = items.length > 0 ? checkedCount / items.length : 0;
+          });
+          return newScores;
+        }, [checkedItems]);
+
+        const toggleItem = (id) => {
+          setCheckedItems((prev) => ({ ...prev, [id]: !prev[id] }));
+        };
+
+        const getOverallRisk = () => {
+          const totalItems = Object.values(FACTORS).reduce(
+            (acc, cat) => acc + cat.items.length,
+            0
+          );
+          const totalChecked = Object.keys(checkedItems).filter(
+            (k) => checkedItems[k]
+          ).length;
+          const percentage = totalChecked / totalItems;
+
+          const isSurprising = surpriseAnswer === "yes";
+
+          if (percentage > 0.5 || (percentage > 0.3 && isSurprising))
+            return {
+              label: "Complejidad Alta",
+              color: "text-red-700",
+              bg: "bg-red-50",
+              border: "border-red-200",
+              desc: "Múltiples dominios afectados. Alta probabilidad de interacción negativa entre factores médicos y del sistema.",
+            };
+          if (percentage > 0.2 || isSurprising)
+            return {
+              label: "Complejidad Moderada",
+              color: "text-amber-700",
+              bg: "bg-amber-50",
+              border: "border-amber-200",
+              desc: "Presencia de factores de riesgo que requieren coordinación activa.",
+            };
+          return {
+            label: "Complejidad Baja",
+            color: "text-emerald-700",
+            bg: "bg-emerald-50",
+            border: "border-emerald-200",
+            desc: "Manejo rutinario posible, pero vigilar cambios en factores sociales.",
+          };
+        };
+
+        const riskStatus = getOverallRisk();
+
+        return (
+          <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-100 pb-10">
+            {/* Header */}
+            <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+              <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-sm shadow-blue-200">
+                    <IconActivity size={20} strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold text-slate-900 leading-none">
+                      Complejidad 360
+                    </h1>
+                    <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide mt-1">
+                      Basado en Braspenning et al. (2025)
+                    </p>
+                  </div>
+                </div>
+
+                <nav className="hidden sm:flex bg-slate-100 p-1 rounded-lg">
+                  {[
+                    { id: "calculator", label: "Evaluación (Checklist)" },
+                    { id: "map", label: "Mapa Poblacional" },
+                    { id: "info", label: "Marco Teórico" },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all uppercase tracking-wide ${
+                        activeTab === tab.id
+                          ? "bg-white text-blue-700 shadow-sm"
+                          : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </header>
+
+            <main className="max-w-6xl mx-auto px-4 py-8">
+              {/* TAB 1: CALCULATOR */}
+              {activeTab === "calculator" && (
+                <div className="fade-in">
+                  {/* Surprise Question */}
+                  <div className="mb-8 bg-indigo-50 border border-indigo-100 p-5 rounded-xl flex flex-col sm:flex-row gap-6 items-center shadow-sm">
+                    <div className="flex gap-4">
+                      <div className="bg-white p-3 rounded-full shadow-sm text-indigo-600 h-fit">
+                        <IconHelpCircle className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-base font-bold text-indigo-900">
+                          La "Pregunta Sorpresa" (Surprise Question)
+                        </h3>
+                        <p className="text-sm text-indigo-700 mt-1 leading-relaxed">
+                          Sugerida en la discusión del estudio para identificar
+                          complejidad intuitivamente:
+                          <em>
+                            {" "}
+                            "¿Le sorprendería si este paciente tuviera una
+                            evolución compleja/negativa este año?"
+                          </em>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <button
+                        onClick={() => setSurpriseAnswer("yes")}
+                        className={`flex-1 sm:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all border ${
+                          surpriseAnswer === "yes"
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-200 ring-offset-1"
+                            : "bg-white text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                        }`}
+                      >
+                        No me sorprendería (Riesgo)
+                      </button>
+                      <button
+                        onClick={() => setSurpriseAnswer("no")}
+                        className={`flex-1 sm:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all border ${
+                          surpriseAnswer === "no"
+                            ? "bg-white text-slate-400 border-slate-200"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        Me sorprendería (Estable)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col lg:flex-row gap-8">
+                    {/* Checklist */}
+                    <div className="flex-1 space-y-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                          <IconCheckCircle2 className="w-5 h-5 text-blue-600" />
+                          Factores Identificados (Tabla 2)
+                        </h2>
+                        <span className="text-xs font-medium text-slate-400">
+                          Seleccione los presentes
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4">
+                        {Object.entries(FACTORS).map(([key, section]) => (
+                          <div
+                            key={key}
+                            className={`rounded-xl border ${section.border} overflow-hidden transition-all hover:shadow-md bg-white`}
+                          >
+                            <div
+                              className={`px-4 py-3 ${section.bg} flex items-center gap-3 border-b ${section.border}`}
+                            >
+                              <div
+                                className={`p-1.5 rounded-lg bg-white/60 ${section.color}`}
+                              >
+                                {section.icon}
+                              </div>
+                              <div>
+                                <h3
+                                  className={`font-bold text-sm ${section.color} uppercase tracking-wide`}
+                                >
+                                  {section.title}
+                                </h3>
+                                <p className="text-[10px] text-slate-500 font-medium">
+                                  {section.subtitle}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {section.items.map((item) => (
+                                <label
+                                  key={item.id}
+                                  className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors group"
+                                >
+                                  <div className="relative flex items-center mt-0.5">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!checkedItems[item.id]}
+                                      onChange={() => toggleItem(item.id)}
+                                      className="peer h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                  </div>
+                                  <div className="flex-1">
+                                    <span className="text-sm font-medium text-slate-700 group-hover:text-blue-700 block leading-tight">
+                                      {item.label}
+                                    </span>
+                                    <span className="text-[9px] text-slate-400 font-medium bg-slate-100 px-1.5 py-0.5 rounded mt-1 inline-block">
+                                      {item.ref}
+                                    </span>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Visualization Right */}
+                    <div className="lg:w-80 space-y-6">
+                      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm sticky top-24">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6 text-center">
+                          Síntesis de Complejidad
+                        </h3>
+
+                        <div className="flex justify-center mb-8">
+                          <RadarChart scores={scores} />
+                        </div>
+
+                        <div
+                          className={`p-4 rounded-xl mb-6 border ${riskStatus.border} ${riskStatus.bg}`}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <IconAlertCircle
+                              className={`w-5 h-5 ${riskStatus.color}`}
+                            />
+                            <span
+                              className={`font-bold text-sm ${riskStatus.color}`}
+                            >
+                              {riskStatus.label}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            {riskStatus.desc}
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            setCheckedItems({});
+                            setSurpriseAnswer(null);
+                          }}
+                          className="w-full py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors uppercase tracking-wide"
+                        >
+                          Nueva Evaluación
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: MAP */}
+              {activeTab === "map" && (
+                <div className="fade-in">
+                  <div className="bg-blue-50 border border-blue-100 p-5 rounded-xl mb-8 flex gap-4 items-start">
+                    <div className="bg-white p-2 rounded-full shadow-sm text-blue-600 shrink-0">
+                      <IconInfo className="w-5 h-5" />
+                    </div>
+                    <div className="text-sm text-blue-900 leading-relaxed space-y-2">
+                      <p>
+                        <strong>Contexto Geográfico:</strong> Aunque el artículo
+                        no incluye un mapa físico, identifica factores como
+                        <em> "Neighborhood safety"</em>,{" "}
+                        <em>"Access to resources"</em> y{" "}
+                        <em>"Social capital"</em> como determinantes clave.
+                      </p>
+                      <p className="opacity-80">
+                        Este mapa conceptual sitúa estos hallazgos en un entorno
+                        urbano español típico para visualizar la distribución de
+                        riesgos.
+                      </p>
+                    </div>
+                  </div>
+
+                  <MapVisualization />
+
+                  <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[
+                      {
+                        title: "Navegación del Sistema",
+                        desc: "El estudio (System Factors) identifica la dificultad para entender el sistema sanitario como un multiplicador de complejidad, especialmente en áreas de expansión o fragmentadas.",
+                      },
+                      {
+                        title: "Capital Social",
+                        desc: "Clasificado en 'Social Factors', la falta de red de apoyo (Soledad) es crítica en zonas envejecidas, más allá de lo puramente médico.",
+                      },
+                      {
+                        title: "Alfabetización en Salud",
+                        desc: "La barrera idiomática y la baja comprensión (Health Literacy) son barreras fundamentales mencionadas en la revisión de literatura (Table 2).",
+                      },
+                    ].map((card, i) => (
+                      <div
+                        key={i}
+                        className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <h3 className="font-bold text-slate-800 mb-3 text-sm uppercase tracking-wide border-b border-slate-100 pb-2">
+                          {card.title}
+                        </h3>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                          {card.desc}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: INFO */}
+              {activeTab === "info" && (
+                <div className="fade-in max-w-4xl mx-auto">
+                  <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
+                      <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+                        <IconBrain className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-slate-900">
+                          Marco Teórico: 4 Niveles de Complejidad
+                        </h2>
+                        <p className="text-slate-500 mt-1">
+                          Síntesis del Scoping Review + Focus Group (Braspenning
+                          et al.)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="prose prose-slate prose-sm max-w-none text-slate-600">
+                      <p className="text-lg leading-relaxed mb-6 font-medium text-slate-700">
+                        El estudio concluye que la complejidad no es una
+                        característica inherente exclusiva del paciente, sino el
+                        resultado de la interacción dinámica entre cuatro
+                        niveles.
+                      </p>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-8 not-prose">
+                        <div className="p-5 bg-blue-50 rounded-xl border border-blue-100">
+                          <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                            <IconUsers className="w-4 h-4" /> 1. Nivel Paciente
+                          </h4>
+                          <ul className="list-disc list-inside text-xs text-blue-800 space-y-1 ml-1">
+                            <li>
+                              <strong>Médico:</strong> Multimorbilidad,
+                              Psiquiátrico.
+                            </li>
+                            <li>
+                              <strong>Social:</strong> Alfabetización, NSE,
+                              Capital Social.
+                            </li>
+                            <li>
+                              <strong>Conducta:</strong> Coping, Actitud pasiva,
+                              Ganancia secundaria.
+                            </li>
+                          </ul>
+                        </div>
+
+                        <div className="p-5 bg-emerald-50 rounded-xl border border-emerald-100">
+                          <h4 className="font-bold text-emerald-900 mb-2 flex items-center gap-2">
+                            <IconStethoscope className="w-4 h-4" /> 2. Nivel
+                            Profesional
+                          </h4>
+                          <p className="text-xs text-emerald-800 leading-relaxed">
+                            La complejidad aumenta cuando el profesional carece
+                            de <strong>expertise</strong> específica o cuando la{" "}
+                            <strong>relación médico-paciente</strong> es tensa.
+                            El grupo focal destacó la "incertidumbre"
+                            diagnóstica.
+                          </p>
+                        </div>
+
+                        <div className="p-5 bg-amber-50 rounded-xl border border-amber-100">
+                          <h4 className="font-bold text-amber-900 mb-2 flex items-center gap-2">
+                            <IconBuilding2 className="w-4 h-4" /> 3. Nivel
+                            Organización
+                          </h4>
+                          <p className="text-xs text-amber-800 leading-relaxed">
+                            La falta de <strong>coordinación</strong> entre
+                            servicios y la <strong>fragmentación</strong>{" "}
+                            (múltiples especialistas sin conexión) son
+                            generadores clave de complejidad externa.
+                          </p>
+                        </div>
+
+                        <div className="p-5 bg-purple-50 rounded-xl border border-purple-100">
+                          <h4 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
+                            <IconSettings className="w-4 h-4" /> 4. Nivel
+                            Sistema
+                          </h4>
+                          <p className="text-xs text-purple-800 leading-relaxed">
+                            Barreras macroestructurales: Problemas de{" "}
+                            <strong>acceso</strong>, falta de{" "}
+                            <strong>recursos</strong> y dificultad de{" "}
+                            <strong>navegación</strong> por el sistema.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mt-8">
+                        <h3 className="font-bold text-slate-900 mb-2">
+                          Implicación Práctica: La Coordinación es Clave
+                        </h3>
+                        <p className="mb-4">
+                          El estudio enfatiza que los profesionales suelen
+                          trabajar dentro de sus silos ("framework of their own
+                          specialities"), lo que aumenta la complejidad
+                          percibida por el paciente.
+                        </p>
+                        <p className="italic border-l-4 border-blue-400 pl-4 py-1 text-slate-500">
+                          "Primary care providers suggested... customize
+                          treatment to the needs of patients, which is likely to
+                          require coordination across disciplines and integrated
+                          care."
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </main>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
