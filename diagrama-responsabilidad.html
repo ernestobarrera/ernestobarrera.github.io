@@ -6,243 +6,605 @@
 -->
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Diagrama de Responsabilidad Profesional | @ernestob</title>
-    <link rel="icon" href="/assets/images/icon.webp" />
-    <link rel="stylesheet" href="/assets/css/main.css" />
-    <link rel="stylesheet" href="/assets/css/header.css" />
-    <link rel="stylesheet" href="/assets/css/components.css" />
-    <link rel="stylesheet" href="/assets/css/footer.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
 
-    <style>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagrama de Responsabilidad Profesional | @ernestob</title>
+  <link rel="icon" href="/assets/images/icon.webp" />
+  <link rel="stylesheet" href="/assets/css/main.css" />
+  <link rel="stylesheet" href="/assets/css/header.css" />
+  <link rel="stylesheet" href="/assets/css/components.css" />
+  <link rel="stylesheet" href="/assets/css/footer.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    .diagrama-contenedor {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0.5rem;
+    }
+
+    .nodo {
+      background: #1a2634;
+      border: 1px solid #3498db;
+      border-radius: 6px;
+      padding: 0.5rem;
+      margin: 0.25rem 0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .nodo.warning {
+      border-color: #f39c12;
+    }
+
+    .nodo.success {
+      border-color: #27ae60;
+    }
+
+    .nodo-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #fff;
+      min-height: 32px;
+    }
+
+    .nodo-icono {
+      min-width: 24px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: bold;
+      background: #3498db;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .nodo.warning .nodo-icono {
+      background: #f39c12;
+    }
+
+    .nodo.success .nodo-icono {
+      background: #27ae60;
+    }
+
+    .nodo-titulo {
+      margin: 0;
+      font-size: 1.2rem;
+      line-height: 1.2;
+    }
+
+    .nodo-contenido {
+      display: none;
+      margin-top: 0.5rem;
+      padding-left: 2rem;
+      color: #94a3b8;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    .nodo.activo .nodo-contenido {
+      display: block;
+    }
+
+    .conector {
+      text-align: center;
+      padding: 0.25rem;
+      color: #3498db;
+      font-size: 0.8rem;
+    }
+
+    .referencias {
+      background: #1a2634;
+      border: 1px solid #3498db;
+      border-radius: 6px;
+      padding: 0.5rem;
+      margin-top: 4rem;
+      cursor: pointer;
+    }
+
+    .referencias-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #fff;
+    }
+
+    .referencias-contenido {
+      display: none;
+      margin-top: 0.5rem;
+      color: #94a3b8;
+      font-size: 0.85rem;
+    }
+
+    .referencias.activo .referencias-contenido {
+      display: block;
+    }
+
+    .referencias-lista {
+      margin: 0;
+      padding-left: 1.5rem;
+    }
+
+    .referencias-lista li {
+      margin-bottom: 0.25rem;
+    }
+
+    b {
+      color: #3498db;
+    }
+
+    .warning b {
+      color: #f39c12;
+    }
+
+    .success b {
+      color: #27ae60;
+    }
+
+    main {
+      margin-top: 0;
+      padding-top: 0;
+    }
+
+    .hero-section {
+      padding-top: 0;
+      margin-top: 0;
+    }
+
+    .subnodo {
+      background: #0f1a24;
+      border-left: 3px solid #3498db;
+      padding: 0.5rem 0.75rem;
+      margin: 0.5rem 0;
+      font-size: 0.95rem;
+    }
+
+    .subnodo.warning-sub {
+      border-left-color: #f39c12;
+    }
+
+    .subnodo-titulo {
+      color: #fff;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .lista-factores {
+      margin: 0.5rem 0;
+      padding-left: 1.2rem;
+    }
+
+    .lista-factores li {
+      margin-bottom: 0.3rem;
+    }
+
+    .disclaimer {
+      background: linear-gradient(135deg, #1a2634 0%, #0f1a24 100%);
+      border: 2px solid #3498db;
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      margin: 2rem 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .disclaimer-icon {
+      color: #3498db;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      margin-top: 0.2rem;
+    }
+
+    .disclaimer-text {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* ========================================
+         ANIMACIONES Y TRANSICIONES SUAVES
+         ======================================== */
+
+    /* Hover en nodos - efecto de elevación */
+    .nodo:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+      border-color: #5dade2;
+    }
+
+    .nodo.warning:hover {
+      box-shadow: 0 4px 12px rgba(243, 156, 18, 0.2);
+      border-color: #f8b739;
+    }
+
+    .nodo.success:hover {
+      box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2);
+      border-color: #52c77a;
+    }
+
+    /* Animación suave de expansión de contenido */
+    .nodo-contenido {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.3s ease,
+        margin-top 0.3s ease;
+      opacity: 0;
+    }
+
+    .nodo.activo .nodo-contenido {
+      display: block;
+      max-height: 5000px;
+      /* Suficientemente grande para cualquier contenido */
+      opacity: 1;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Indicador visual de estado activo */
+    .nodo.activo {
+      background: linear-gradient(135deg, #1a2634 0%, #0f1a24 100%);
+      border-width: 2px;
+    }
+
+    /* Rotación suave del icono al expandir (opcional) */
+    .nodo-icono {
+      transition: transform 0.3s ease;
+    }
+
+    .nodo.activo .nodo-icono {
+      transform: rotate(90deg);
+    }
+
+    /* Animación para el conector */
+    .conector {
+      transition: transform 0.3s ease, color 0.3s ease;
+    }
+
+    .conector:hover {
+      transform: scale(1.2);
+      color: #5dade2;
+    }
+
+    /* Animaciones para subnodos */
+    .subnodo {
+      transition: all 0.3s ease;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .subnodo:hover {
+      background: #152030;
+      border-left-width: 4px;
+    }
+
+    /* Referencias con transición suave */
+    .referencias:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+    }
+
+    .referencias-contenido {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.3s ease;
+      opacity: 0;
+    }
+
+    .referencias.activo .referencias-contenido {
+      max-height: 2000px;
+      opacity: 1;
+    }
+
+    /* ========================================
+         RESPONSIVIDAD MÓVIL
+         ======================================== */
+
+    /* Tablets y móviles grandes (768px y menos) */
+    @media (max-width: 768px) {
       .diagrama-contenedor {
-        max-width: 1200px;
-        margin: 0 auto;
+        padding: 0.75rem;
+      }
+
+      .nodo-titulo {
+        font-size: 1.1rem;
+      }
+
+      .nodo-contenido {
+        padding-left: 1rem;
+        font-size: 0.95rem;
+      }
+
+      .subnodo {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+      }
+
+      .lista-factores {
+        padding-left: 1rem;
+      }
+
+      .disclaimer {
+        padding: 0.75rem 1rem;
+        gap: 0.75rem;
+      }
+
+      .disclaimer-icon {
+        font-size: 1.2rem;
+      }
+
+      .disclaimer-text {
+        font-size: 0.9rem;
+      }
+    }
+
+    /* Móviles pequeños (480px y menos) */
+    @media (max-width: 480px) {
+      .diagrama-contenedor {
         padding: 0.5rem;
       }
 
       .nodo {
-        background: #1a2634;
-        border: 1px solid #3498db;
-        border-radius: 6px;
-        padding: 0.5rem;
-        margin: 0.25rem 0;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-
-      .nodo.warning {
-        border-color: #f39c12;
+        padding: 0.75rem 0.5rem;
+        margin: 0.5rem 0;
       }
 
       .nodo-header {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: #fff;
-        min-height: 32px;
+        gap: 0.75rem;
       }
 
       .nodo-icono {
-        min-width: 24px;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        font-weight: bold;
-        background: #3498db;
-        color: white;
-        flex-shrink: 0;
-      }
-
-      .nodo.warning .nodo-icono {
-        background: #f39c12;
+        min-width: 28px;
+        width: 28px;
+        height: 28px;
+        font-size: 16px;
       }
 
       .nodo-titulo {
-        margin: 0;
-        font-size: 1.2rem;
-        line-height: 1.2;
+        font-size: 1rem;
+        line-height: 1.3;
       }
 
       .nodo-contenido {
-        display: none;
-        margin-top: 0.5rem;
-        padding-left: 2rem;
-        color: #94a3b8;
-        font-size: 1rem;
-        line-height: 1.5;
+        padding-left: 0.5rem;
+        font-size: 0.9rem;
+        margin-top: 0.75rem;
       }
 
-      .nodo.activo .nodo-contenido {
-        display: block;
-      }
-
-      .conector {
-        text-align: center;
-        padding: 0.25rem;
-        color: #3498db;
-        font-size: 0.8rem;
-      }
-
-      .referencias {
-        background: #1a2634;
-        border: 1px solid #3498db;
-        border-radius: 6px;
+      .subnodo {
         padding: 0.5rem;
-        margin-top: 4rem;
-        cursor: pointer;
+        margin: 0.5rem 0;
+        font-size: 0.85rem;
+        border-left-width: 2px;
       }
 
-      .referencias-header {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: #fff;
+      .subnodo-titulo {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
       }
 
-      .referencias-contenido {
-        display: none;
-        margin-top: 0.5rem;
-        color: #94a3b8;
+      .lista-factores {
+        padding-left: 0.75rem;
         font-size: 0.85rem;
       }
 
-      .referencias.activo .referencias-contenido {
-        display: block;
+      .lista-factores li {
+        margin-bottom: 0.5rem;
       }
 
-      .referencias-lista {
-        margin: 0;
-        padding-left: 1.5rem;
+      .referencias {
+        padding: 0.75rem 0.5rem;
+        margin-top: 2rem;
       }
 
-      .referencias-lista li {
-        margin-bottom: 0.25rem;
+      .referencias-contenido {
+        font-size: 0.8rem;
+      }
+
+      .disclaimer {
+        flex-direction: column;
+        padding: 1rem;
+        gap: 0.5rem;
+        text-align: left;
+      }
+
+      .disclaimer-icon {
+        font-size: 1.5rem;
+        margin-top: 0;
+      }
+
+      .disclaimer-text {
+        font-size: 0.85rem;
+        line-height: 1.5;
+      }
+
+      /* Mejoras de toque para móvil */
+      .nodo,
+      .referencias {
+        min-height: 44px;
+        /* Tamaño mínimo recomendado para touch targets */
+      }
+
+      /* Aumentar área táctil del header */
+      .nodo-header {
+        min-height: 44px;
+        padding: 0.25rem 0;
+      }
+    }
+
+    /* Mejoras de accesibilidad y toque */
+    @media (hover: none) and (pointer: coarse) {
+
+      /* Dispositivos táctiles */
+      .nodo:hover,
+      .referencias:hover,
+      .subnodo:hover {
+        transform: none;
+        /* Desactivar hover en táctiles */
+      }
+
+      /* Feedback visual al tocar */
+      .nodo:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+      }
+
+      .referencias:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+      }
+    }
+
+    /* Optimización para pantallas muy pequeñas */
+    @media (max-width: 360px) {
+      .nodo-titulo {
+        font-size: 0.95rem;
+      }
+
+      .nodo-contenido,
+      .subnodo {
+        font-size: 0.8rem;
+      }
+
+      .lista-factores {
+        font-size: 0.75rem;
       }
 
       b {
-        color: #3498db;
+        font-weight: 600;
+        /* Mantener legibilidad en texto pequeño */
       }
+    }
+  </style>
+</head>
 
-      .warning b {
-        color: #f39c12;
-      }
+<body>
+  <include src="header.html"></include>
 
-      main {
-        margin-top: 0;
-        padding-top: 0;
-      }
-
-      .hero-section {
-        padding-top: 0;
-        margin-top: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <include src="header.html"></include>
-
-    <main class="main-container">
-      <section class="hero-section">
-        <h1 class="main-title">
-          <i class="fas fa-balance-scale"></i>
-          <span
-            >Diagrama Interactivo: Análisis de Responsabilidad Profesional</span
-          >
-        </h1>
-        <p class="intro-text">
-          Herramienta visual que facilita la comprensión de los principales
-          aspectos a considerar en casos con potencial responsabilidad
-          profesional sanitaria. No sustituye al asesoramiento legal
-          profesional, sino que busca ayudar a entender mejor este complejo
-          proceso tanto a profesionales como a pacientes. Elaborada desde la
-          experiencia clínica y apoyada en jurisprudencia indicada. El código de
-          colores indica:
-          <span
-            style="
+  <main class="main-container">
+    <section class="hero-section">
+      <h1 class="main-title">
+        <i class="fas fa-balance-scale"></i>
+        <span>Diagrama Interactivo: Análisis de Responsabilidad Profesional</span>
+      </h1>
+      <p class="intro-text">
+        Herramienta visual que facilita la comprensión de los principales
+        aspectos a considerar en casos con potencial responsabilidad
+        profesional sanitaria. No sustituye al asesoramiento legal
+        profesional, sino que busca ayudar a entender mejor este complejo
+        proceso tanto a profesionales como a pacientes. Elaborada desde la
+        experiencia clínica y apoyada en jurisprudencia indicada. El código de
+        colores indica:
+        <span style="
               display: inline-flex;
               align-items: center;
               gap: 1rem;
               margin-top: 0.5rem;
-            "
-          >
-            <span style="display: inline-flex; align-items: center">
-              <span
-                style="
+              flex-wrap: wrap;
+            ">
+          <span style="display: inline-flex; align-items: center">
+            <span style="
                   display: inline-block;
                   width: 10px;
                   height: 10px;
                   border-radius: 50%;
                   background-color: #3498db;
                   margin-right: 6px;
-                "
-              ></span>
-              <span>Información general</span>
-            </span>
-            <span style="display: inline-flex; align-items: center">
-              <span
-                style="
+                "></span>
+            <span>Información general</span>
+          </span>
+          <span style="display: inline-flex; align-items: center">
+            <span style="
                   display: inline-block;
                   width: 10px;
                   height: 10px;
                   border-radius: 50%;
                   background-color: #f39c12;
                   margin-right: 6px;
-                "
-              ></span>
-              <span>Puntos críticos de atención</span>
-            </span>
+                "></span>
+            <span>Puntos críticos de atención</span>
           </span>
-        </p>
-        <p
-          class="tip-text"
-          style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.5rem"
-        >
-          <i
-            class="fas fa-hand-pointer pulse"
-            style="color: #3498db; font-size: 1.2rem; margin-right: 0.5rem"
-          ></i>
-          Pulsa sobre cada elemento para expandir su contenido y profundizar en
-          los detalles.
-        </p>
+          <span style="display: inline-flex; align-items: center">
+            <span style="
+                  display: inline-block;
+                  width: 10px;
+                  height: 10px;
+                  border-radius: 50%;
+                  background-color: #27ae60;
+                  margin-right: 6px;
+                "></span>
+            <span>Factores atenuantes o eximentes</span>
+          </span>
+        </span>
+      </p>
+      <p class="tip-text" style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.5rem">
+        <i class="fas fa-hand-pointer pulse" style="color: #3498db; font-size: 1.2rem; margin-right: 0.5rem"></i>
+        Pulsa sobre cada elemento para expandir su contenido y profundizar en
+        los detalles.
+      </p>
 
-        <style>
-          @keyframes pulse {
-            0% {
-              transform: scale(1.3);
-              opacity: 1;
-              color: #f1e4ce;
-            }
-            50% {
-              transform: scale(1.5);
-              opacity: 0.8;
-              color: #f43906;
-            }
-            100% {
-              transform: scale(1.3);
-              opacity: 1;
-              color: #f1e4ce;
-            }
+      <style>
+        @keyframes pulse {
+          0% {
+            transform: scale(1.3);
+            opacity: 1;
+            color: #f1e4ce;
           }
-          .pulse {
-            animation: pulse 2s ease-in-out infinite;
-            display: inline-block;
-            vertical-align: middle;
-          }
-        </style>
-      </section>
 
-      <!--       <div class="diagrama-contenedor">
+          50% {
+            transform: scale(1.5);
+            opacity: 0.8;
+            color: #f43906;
+          }
+
+          100% {
+            transform: scale(1.3);
+            opacity: 1;
+            color: #f1e4ce;
+          }
+        }
+
+        .pulse {
+          animation: pulse 2s ease-in-out infinite;
+          display: inline-block;
+          vertical-align: middle;
+        }
+      </style>
+    </section>
+
+    <!--       <div class="diagrama-contenedor">
         <div class="nodo">
           <div class="nodo-header">
             <div class="nodo-icono">i</div>
@@ -405,217 +767,408 @@
         </div>
       </div> -->
 
-      <div class="diagrama-contenedor">
-        <!-- Primer nodo -->
-        <div class="nodo">
-          <div class="nodo-header">
-            <div class="nodo-icono">i</div>
-            <h3 class="nodo-titulo">
-              ¿El paciente tuvo una evolución desfavorable no esperada?
-            </h3>
-          </div>
-          <div class="nodo-contenido">
-            La práctica clínica requiere una <b>evaluación objetiva</b> de los
-            resultados obtenidos en relación con las
-            <b>expectativas razonables</b> según el estado actual de la ciencia
-            y el <b>contexto asistencial específico</b> (nivel de atención,
-            recursos disponibles, urgencia de la situación). Una evolución
-            desfavorable no anticipada debe analizarse considerando múltiples
-            factores: la <b>complejidad inherente</b> a cada situación clínica,
-            las <b>circunstancias particulares del paciente</b> (comorbilidades,
-            factores de riesgo, adherencia al tratamiento), y las
-            <b>características del proceso asistencial</b> (continuidad de
-            cuidados, trabajo en equipo, comunicación).
-          </div>
+    <div class="diagrama-contenedor">
+      <!-- Primer nodo -->
+      <div class="nodo">
+        <div class="nodo-header">
+          <div class="nodo-icono">i</div>
+          <h3 class="nodo-titulo">
+            ¿El paciente tuvo una evolución desfavorable no esperada?
+          </h3>
         </div>
-        <div class="conector"><i class="fas fa-arrow-down"></i></div>
-
-        <!-- Segundo nodo -->
-        <div class="nodo warning">
-          <div class="nodo-header">
-            <div class="nodo-icono">!</div>
-            <h3 class="nodo-titulo">
-              ¿Posible Error en el diagnóstico o tratamiento?
-            </h3>
-          </div>
-          <div class="nodo-contenido">
-            La respuesta del paciente al tratamiento prescrito es impredecible.
-            De ahí que el eventual fracaso de un tratamiento no se pueda imputar
-            sin más a una hipotética, y las más de las veces infundada, mala
-            praxis médica, sino a las simples circunstancias o alteraciones
-            biológicas de cada cual por la potísima razón de que
-            <b
-              >se actúa sobre un organismo vivo de reacciones y sensibilidades
-              imprevisibles</b
-            >, máxime si coetánea y racionalmente se actúa con otros
-            medicamentos o medios quirúrgicos o profesionales sobre el mismo
-            paciente (interacción)¹.
-          </div>
+        <div class="nodo-contenido">
+          La práctica clínica requiere una <b>evaluación objetiva</b> de los
+          resultados obtenidos en relación con las
+          <b>expectativas razonables</b> según el estado actual de la ciencia
+          y el <b>contexto asistencial específico</b> (nivel de atención,
+          recursos disponibles, urgencia de la situación). Una evolución
+          desfavorable no anticipada debe analizarse considerando múltiples
+          factores: la <b>complejidad inherente</b> a cada situación clínica,
+          las <b>circunstancias particulares del paciente</b> (comorbilidades,
+          factores de riesgo, adherencia al tratamiento), y las
+          <b>características del proceso asistencial</b> (continuidad de
+          cuidados, trabajo en equipo, comunicación).
         </div>
-        <div class="conector"><i class="fas fa-arrow-down"></i></div>
+      </div>
+      <div class="conector"><i class="fas fa-arrow-down"></i></div>
 
-        <!-- Tercer nodo -->
-        <div class="nodo warning">
-          <div class="nodo-header">
-            <div class="nodo-icono">!</div>
-            <h3 class="nodo-titulo">
-              ¿Incumplimiento de <i>lex artis ad hoc</i>?
-            </h3>
-          </div>
-          <div class="nodo-contenido">
-            La práctica se evalúa en la situación y síntomas del momento en el
-            que se realiza, considerando la obligación de aplicar todos los
-            <b>medios clínicamente indicados</b> disponibles para el diagnóstico
-            y tratamiento, de forma proporcional al contexto y probabilidad de
-            padecer una determinada patología (<b
-              >Obligación de medios y no de resultados</b
-            >)².
-          </div>
+      <!-- Segundo nodo -->
+      <div class="nodo warning">
+        <div class="nodo-header">
+          <div class="nodo-icono">!</div>
+          <h3 class="nodo-titulo">
+            ¿Posible Error en el diagnóstico o tratamiento?
+          </h3>
         </div>
-        <div class="conector"><i class="fas fa-arrow-down"></i></div>
+        <div class="nodo-contenido">
+          La respuesta del paciente al tratamiento prescrito es impredecible.
+          De ahí que el eventual fracaso de un tratamiento no se pueda imputar
+          sin más a una hipotética, y las más de las veces infundada, mala
+          praxis médica, sino a las simples circunstancias o alteraciones
+          biológicas de cada cual por la potísima razón de que
+          <b>se actúa sobre un organismo vivo de reacciones y sensibilidades
+            imprevisibles</b>, máxime si coetánea y racionalmente se actúa con otros
+          medicamentos o medios quirúrgicos o profesionales sobre el mismo
+          paciente (interacción)¹.
 
-        <!-- Cuarto nodo -->
-        <div class="nodo">
-          <div class="nodo-header">
-            <div class="nodo-icono">i</div>
-            <h3 class="nodo-titulo">¿Daño antijurídico?</h3>
-          </div>
-          <div class="nodo-contenido">
-            Existe un daño real que el paciente no tiene la obligación de
-            soportar y supone una <b>pérdida de oportunidad</b> en la
-            probabilidad de obtener un resultado distinto y más favorable para
-            la salud y definitiva, para la vida si se hubiera actuado de
-            distinta forma³. No incluye una <b>complicación previsible</b> como
-            materialización resultante de un riesgo permitido, o al menos
-            permisible, conocido o contingente y además típicamente inherente a
-            los cuidados dispensados debida y adecuadamente según la
-            <i>lex artis ad hoc</i>⁴.
-          </div>
-        </div>
-        <div class="conector"><i class="fas fa-arrow-down"></i></div>
-
-        <!-- Quinto nodo -->
-        <div class="nodo">
-          <div class="nodo-header">
-            <div class="nodo-icono">i</div>
-            <h3 class="nodo-titulo">
-              ¿Hay relación de causalidad entre error y daño?
-            </h3>
-          </div>
-          <div class="nodo-contenido">
-            Con carácter general la <b>carga de la prueba</b> de la realidad del
-            daño efectivamente causado debe ser soportada por la parte
-            supuestamente perjudicada por el mismo. Puede incluir el
-            <b>daño moral</b> valorado mediante una apreciación racional,
-            objetiva y contextualmente consistente con la pretendida atribución
-            de causalidad. No obstante, en algunos supuestos podría darse una
-            <b>inversión de la carga de la prueba</b> dependiendo, por ejemplo,
-            de la disponibilidad y facilidad probatoria o del caso de un daño
-            desproporcionado⁵.
-          </div>
-        </div>
-        <div class="conector"><i class="fas fa-arrow-down"></i></div>
-
-        <!-- Sexto nodo -->
-        <div class="nodo">
-          <div class="nodo-header">
-            <div class="nodo-icono">i</div>
-            <h3 class="nodo-titulo">
-              ¿La imputabilidad cumple la prohibición de regreso?
-            </h3>
-          </div>
-          <div class="nodo-contenido">
-            <b
-              >La <i>lex artis</i> sólo puede ser enjuiciada con los datos de
-              los que se dispone cuando las decisiones se adoptan</b
-            >. La imposibilidad de predecir la posterior evolución del proceso
-            impide que sea esta evolución la pauta de valoración de la actuación
-            profesional⁶.
-          </div>
-        </div>
-        <div class="conector"><i class="fas fa-arrow-down"></i></div>
-
-        <!-- Séptimo nodo -->
-        <div class="nodo">
-          <div class="nodo-header">
-            <div class="nodo-icono">i</div>
-            <h3 class="nodo-titulo">
-              Concurren condiciones que pueden asociar algún tipo de
-              responsabilidad u obligación reparadora
-            </h3>
-          </div>
-          <div class="nodo-contenido">
-            La valoración final debe considerar todos los elementos analizados
-            en el proceso de forma integral, evaluando el conjunto de
-            circunstancias y factores que han intervenido en el caso.
-          </div>
-        </div>
-
-        <div class="referencias">
-          <div class="referencias-header">
-            <i class="fas fa-book"></i>
-            <h4 style="margin: 0; font-size: 0.95rem">Referencias</h4>
-          </div>
-          <div class="referencias-contenido">
-            <ol class="referencias-lista">
+          <div class="subnodo warning-sub">
+            <div class="subnodo-titulo">
+              Patrones frecuentes de error diagnóstico:
+            </div>
+            <ul class="lista-factores">
               <li>
-                Extraído de la STS de 1 de junio de 1994 dictada en el recurso
-                de casación nº 02005/1991
+                <b>Sesgo de anclaje:</b> mantener el diagnóstico inicial pese
+                a datos contradictorios o falta de respuesta al tratamiento
               </li>
               <li>
-                Sentencia del Tribunal Supremo de 19 de marzo de 2019 (recurso
-                de casación 2228/2014)
+                <b>Cierre diagnóstico prematuro:</b> aceptar la primera
+                hipótesis sin explorar diagnósticos alternativos
               </li>
               <li>
-                Sentencia del Tribunal Supremo de 23 de enero de 2012 (rec. num.
-                43/2010)
+                <b>Atribución a causa funcional:</b> clasificar síntomas como
+                "ansiedad", "estrés" o "menopausia" sin descartar organicidad
               </li>
               <li>
-                Extraído y adaptado de la publicación: La función mediadora del
-                Defensor del Paciente de la Comunidad de Madrid
+                <b>Sesgo de representatividad:</b> descartar patología grave
+                porque el paciente "no encaja" en el perfil típico (edad,
+                sexo, aspecto)
               </li>
-              <li>
-                Extraído y adaptado del Dictamen nº 143/19 de Responsabilidad
-                Patrimonial. Comisión Jurídica Asesora de la Comunidad de Madrid
-              </li>
-              <li>
-                SJ de Madrid, Sala de lo Contencioso administrativo, Sección 9ª,
-                de 12 de noviembre de 2009
-              </li>
-            </ol>
+            </ul>
           </div>
         </div>
       </div>
-    </main>
+      <div class="conector"><i class="fas fa-arrow-down"></i></div>
 
-    <include src="footer.html"></include>
+      <!-- Tercer nodo -->
+      <div class="nodo warning">
+        <div class="nodo-header">
+          <div class="nodo-icono">!</div>
+          <h3 class="nodo-titulo">
+            ¿Incumplimiento de <i>lex artis ad hoc</i>?
+          </h3>
+        </div>
+        <div class="nodo-contenido">
+          La práctica se evalúa en la situación y síntomas del momento en el
+          que se realiza, considerando la obligación de aplicar todos los
+          <b>medios clínicamente indicados</b> disponibles para el diagnóstico
+          y tratamiento, de forma proporcional al contexto y probabilidad de
+          padecer una determinada patología (<b>Obligación de medios y no de resultados</b>)².
 
-    <script>
-      document.querySelectorAll(".nodo").forEach((nodo) => {
-        nodo.addEventListener("click", () => {
-          nodo.classList.toggle("activo");
-        });
+          <div class="subnodo warning-sub">
+            <div class="subnodo-titulo">
+              Elementos frecuentemente valorados como infracción de lex artis:
+            </div>
+            <ul class="lista-factores">
+              <li>
+                <b>Ausencia de exploración física documentada:</b> la falta de
+                registro de exploración del área sintomática se interpreta
+                habitualmente como exploración no realizada
+              </li>
+              <li>
+                <b>Pruebas prescritas no realizadas:</b> cuando una prueba
+                diagnóstica indicada no llega a ejecutarse por fallos en el
+                circuito asistencial
+              </li>
+              <li>
+                <b>Derivaciones ordenadas no tramitadas:</b> anotar en
+                historia la necesidad de derivar sin emitir efectivamente el
+                volante
+              </li>
+              <li>
+                <b>Falta de correlación clínico-radiológica:</b> aceptar
+                resultado de prueba "normal" cuando la clínica sugiere lo
+                contrario
+              </li>
+              <li>
+                <b>Múltiples contactos sin revisión diagnóstica:</b> mantener
+                el mismo diagnóstico en visitas sucesivas sin mejoría y sin
+                ampliar estudio
+              </li>
+            </ul>
+          </div>
+
+          <div class="subnodo">
+            <div class="subnodo-titulo">
+              El papel del Informe de Inspección Sanitaria:
+            </div>
+            El criterio técnico de la Inspección Sanitaria constituye un
+            elemento de juicio relevante para la apreciación de los hechos,
+            dada su
+            <b>profesionalidad, objetividad e imparcialidad</b>. Sus
+            conclusiones sobre el cumplimiento o incumplimiento de protocolos
+            y guías clínicas suelen tener peso significativo en la valoración
+            final.
+          </div>
+        </div>
+      </div>
+      <div class="conector"><i class="fas fa-arrow-down"></i></div>
+
+      <!-- Cuarto nodo -->
+      <div class="nodo">
+        <div class="nodo-header">
+          <div class="nodo-icono">i</div>
+          <h3 class="nodo-titulo">¿Daño antijurídico?</h3>
+        </div>
+        <div class="nodo-contenido">
+          Existe un daño real que el paciente no tiene la obligación de
+          soportar y supone una <b>pérdida de oportunidad</b> en la
+          probabilidad de obtener un resultado distinto y más favorable para
+          la salud y, en definitiva, para la vida si se hubiera actuado de
+          distinta forma³. No incluye una <b>complicación previsible</b> como
+          materialización resultante de un riesgo permitido, o al menos
+          permisible, conocido o contingente y además típicamente inherente a
+          los cuidados dispensados debida y adecuadamente según la
+          <i>lex artis ad hoc</i>⁴.
+
+          <div class="subnodo">
+            <div class="subnodo-titulo">
+              Doctrina de la pérdida de oportunidad:
+            </div>
+            No es necesario probar que una actuación diferente hubiera evitado
+            el daño con certeza. Basta con acreditar que
+            <b>
+              se perdió una probabilidad significativa de obtener un mejor
+              resultado</b>. La indemnización se modula proporcionalmente según el grado de
+            incertidumbre: a mayor probabilidad de que el resultado hubiera
+            sido diferente, mayor indemnización; a mayor incertidumbre, mayor
+            reducción proporcional (habitualmente entre un tercio y dos
+            tercios del daño total).
+          </div>
+
+          <div class="subnodo">
+            <div class="subnodo-titulo">Daño moral:</div>
+            Puede reconocerse daño moral autónomo derivado de la
+            <b>angustia, incertidumbre o sufrimiento psíquico</b> causados por
+            el retraso diagnóstico o el error asistencial, incluso cuando el
+            daño físico final hubiera sido inevitable. También puede
+            reconocerse a familiares cuidadores en casos de especial gravedad.
+          </div>
+        </div>
+      </div>
+      <div class="conector"><i class="fas fa-arrow-down"></i></div>
+
+      <!-- Quinto nodo -->
+      <div class="nodo">
+        <div class="nodo-header">
+          <div class="nodo-icono">i</div>
+          <h3 class="nodo-titulo">
+            ¿Hay relación de causalidad entre error y daño?
+          </h3>
+        </div>
+        <div class="nodo-contenido">
+          Con carácter general la <b>carga de la prueba</b> de la realidad del
+          daño efectivamente causado debe ser soportada por la parte
+          supuestamente perjudicada por el mismo. Puede incluir el
+          <b>daño moral</b> valorado mediante una apreciación racional,
+          objetiva y contextualmente consistente con la pretendida atribución
+          de causalidad. No obstante, en algunos supuestos podría darse una
+          <b>inversión de la carga de la prueba</b> dependiendo, por ejemplo,
+          de la disponibilidad y facilidad probatoria o del caso de un daño
+          desproporcionado⁵.
+
+          <div class="subnodo">
+            <div class="subnodo-titulo">
+              El valor probatorio de la historia clínica:
+            </div>
+            La documentación clínica constituye el elemento probatorio
+            fundamental.
+            <b>Lo no registrado se presume no realizado</b>: la ausencia de
+            documentación de una exploración, información al paciente o
+            razonamiento diagnóstico dificulta acreditar que efectivamente se
+            llevaron a cabo. Por ello, documentar hallazgos negativos
+            relevantes ("pulsos presentes", "no masas palpables") tiene valor
+            defensivo significativo.
+          </div>
+        </div>
+      </div>
+      <div class="conector"><i class="fas fa-arrow-down"></i></div>
+
+      <!-- Sexto nodo -->
+      <div class="nodo">
+        <div class="nodo-header">
+          <div class="nodo-icono">i</div>
+          <h3 class="nodo-titulo">
+            ¿La imputabilidad cumple la prohibición de regreso?
+          </h3>
+        </div>
+        <div class="nodo-contenido">
+          <b>
+            La <i>lex artis</i> sólo puede ser enjuiciada con los datos de
+            los que se dispone cuando las decisiones se adoptan</b>
+          (<b>juicio ex ante</b>). La imposibilidad de predecir la posterior
+          evolución del proceso impide que sea esta evolución la pauta de
+          valoración de la actuación profesional⁶.
+
+          <div class="subnodo">
+            <div class="subnodo-titulo">Implicación práctica:</div>
+            Un diagnóstico que posteriormente resulta erróneo
+            <b>no genera automáticamente responsabilidad</b> si, con la
+            información disponible en cada momento, la actuación fue razonable
+            y conforme a los protocolos aplicables. La existencia de patología
+            grave que se manifiesta de forma atípica o silente no implica
+            necesariamente mala praxis si los síntomas iniciales no sugerían
+            dicha patología.
+          </div>
+        </div>
+      </div>
+      <div class="conector"><i class="fas fa-arrow-down"></i></div>
+
+      <!-- NUEVO NODO - FACTORES ATENUANTES -->
+      <div class="nodo success">
+        <div class="nodo-header">
+          <div class="nodo-icono">✓</div>
+          <h3 class="nodo-titulo">
+            ¿Concurren factores atenuantes o eximentes?
+          </h3>
+        </div>
+        <div class="nodo-contenido">
+          Determinadas circunstancias pueden atenuar o excluir la
+          responsabilidad, reduciendo proporcionalmente la indemnización o
+          eximiendo completamente de ella.
+
+          <div class="subnodo">
+            <div class="subnodo-titulo">
+              Concurrencia de culpa del paciente:
+            </div>
+            Cuando el paciente
+            <b>
+              rechaza pruebas diagnósticas, no acude a citas programadas, o
+              no sigue las indicaciones terapéuticas</b>, puede apreciarse concurrencia de culpas que reduce la
+            indemnización. No obstante, el profesional mantiene la obligación
+            de documentar el rechazo, informar de sus consecuencias y ofrecer
+            alternativas.
+          </div>
+
+          <div class="subnodo">
+            <div class="subnodo-titulo">
+              Patología de curso imprevisible:
+            </div>
+            Algunas enfermedades presentan un
+            <b>curso clínico silente o atípico</b> que dificulta
+            objetivamente el diagnóstico precoz incluso con actuación
+            diligente. En estos casos, si la sintomatología inicial no
+            contenía elementos de alarma y la actuación fue razonable, puede
+            no existir responsabilidad pese al diagnóstico tardío.
+          </div>
+
+          <div class="subnodo">
+            <div class="subnodo-titulo">Limitaciones del sistema:</div>
+            Las
+            <b>
+              demoras estructurales del sistema sanitario (listas de espera,
+              disponibilidad de pruebas)</b>
+            pueden valorarse como factor atenuante cuando el profesional
+            actuó diligentemente dentro de los medios disponibles, aunque no
+            eximen de la obligación de utilizar vías preferentes cuando la
+            situación clínica lo requiere.
+          </div>
+        </div>
+      </div>
+      <div class="conector"><i class="fas fa-arrow-down"></i></div>
+
+      <!-- Séptimo nodo -->
+      <div class="nodo">
+        <div class="nodo-header">
+          <div class="nodo-icono">i</div>
+          <h3 class="nodo-titulo">
+            Concurren condiciones que pueden asociar algún tipo de
+            responsabilidad u obligación reparadora
+          </h3>
+        </div>
+        <div class="nodo-contenido">
+          La valoración final debe considerar todos los elementos analizados
+          en el proceso de forma integral, evaluando el conjunto de
+          circunstancias y factores que han intervenido en el caso.
+
+          <div class="subnodo">
+            <div class="subnodo-titulo">Cuantificación de la indemnización:</div>
+            La indemnización se determina considerando: el <b>daño efectivamente causado</b>
+            (secuelas físicas, incapacidad, fallecimiento), el <b>grado de certeza causal</b>
+            (reducción proporcional en casos de pérdida de oportunidad), la
+            <b>concurrencia de factores atenuantes</b> (culpa del paciente, limitaciones
+            del sistema), y el <b>daño moral</b> asociado. Los baremos de tráfico suelen
+            utilizarse como referencia orientativa.
+          </div>
+        </div>
+      </div>
+
+      <div class="referencias">
+        <div class="referencias-header">
+          <i class="fas fa-book"></i>
+          <h4 style="margin: 0; font-size: 0.95rem">Referencias</h4>
+        </div>
+        <div class="referencias-contenido">
+          <ol class="referencias-lista">
+            <li>
+              Extraído de la STS de 1 de junio de 1994 dictada en el recurso
+              de casación nº 02005/1991
+            </li>
+            <li>
+              Sentencia del Tribunal Supremo de 19 de marzo de 2019 (recurso
+              de casación 2228/2014)
+            </li>
+            <li>
+              Sentencia del Tribunal Supremo de 23 de enero de 2012 (rec. num.
+              43/2010)
+            </li>
+            <li>
+              Extraído y adaptado de la publicación: La función mediadora del
+              Defensor del Paciente de la Comunidad de Madrid
+            </li>
+            <li>
+              Extraído y adaptado del Dictamen nº 143/19 de Responsabilidad
+              Patrimonial. Comisión Jurídica Asesora de la Comunidad de Madrid
+            </li>
+            <li>
+              SJ de Madrid, Sala de lo Contencioso administrativo, Sección 9ª,
+              de 12 de noviembre de 2009
+            </li>
+          </ol>
+          <p style="margin-top: 1rem; font-style:italic;">
+            Contenido enriquecido con patrones identificados en el análisis
+            sistemático de dictámenes de responsabilidad patrimonial sanitaria
+            de la Comisión Jurídica Asesora de la Comunidad de Madrid (2008-2025).
+          </p>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        <i class="fas fa-info-circle disclaimer-icon"></i>
+        <p class="disclaimer-text">
+          <strong>Aviso importante:</strong> Esta herramienta tiene finalidad exclusivamente educativa y divulgativa. Su
+          objetivo es promover la seguridad del paciente y la reflexión sobre buenas prácticas clínicas, no asesorar en
+          reclamaciones concretas.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <include src="footer.html"></include>
+
+  <script>
+    document.querySelectorAll(".nodo").forEach((nodo) => {
+      nodo.addEventListener("click", () => {
+        nodo.classList.toggle("activo");
       });
+    });
 
-      document
-        .querySelector(".referencias")
-        .addEventListener("click", function () {
-          this.classList.toggle("activo");
-        });
-    </script>
+    document
+      .querySelector(".referencias")
+      .addEventListener("click", function () {
+        this.classList.toggle("activo");
+      });
+  </script>
 
-    <script src="/assets/js/include.js"></script>
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "G-YFKR6RB1ZC");
-    </script>
-  </body>
+  <script src="/assets/js/include.js"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag("js", new Date());
+    gtag("config", "G-YFKR6RB1ZC");
+  </script>
+</body>
+
 </html>
