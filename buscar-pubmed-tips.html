@@ -1,0 +1,431 @@
+<!--
+=====================
+  buscar-pubmed-tips.html
+  Tips Avanzados para Búsquedas en PubMed
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tips Avanzados para Búsquedas en PubMed | @ernestob</title>
+    <meta name="description"
+        content="Tips avanzados para optimizar búsquedas bibliográficas en PubMed con filtros estructurados" />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+    <link rel="stylesheet" href="assets/css/buscar-pubmed.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        .tips-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent-color, #ffd700);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+            transition: transform 0.2s;
+        }
+
+        .back-link:hover {
+            transform: translateX(-5px);
+        }
+
+        .tips-header {
+            background: var(--card-bg, #2a3b4d);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--accent-color, #ffd700);
+        }
+
+        .tips-header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--accent-color, #ffd700);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .tips-header p {
+            margin: 0.75rem 0 0;
+            color: var(--text-secondary, #94a3b8);
+        }
+
+        .tips-grid {
+            display: grid;
+            gap: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <include src="header.html"></include>
+    <main class="main-container">
+        <div class="tips-container">
+            <a href="/buscar-pubmed.html" class="back-link">
+                <i class="fas fa-arrow-left"></i>
+                Volver al Asistente de Búsqueda
+            </a>
+
+            <div class="tips-header">
+                <h1>
+                    <i class="fas fa-lightbulb"></i>
+                    Tips Avanzados para Búsquedas en PubMed
+                </h1>
+                <p>Optimiza tus búsquedas bibliográficas usando filtros estructurados</p>
+            </div>
+
+            <div class="tips-grid">
+                <!-- Tip 1 -->
+                <div class="tip">
+                    <h3 class="tip-title">
+                        <span class="tip-number">01</span>
+                        Best Match como Herramienta de Descubrimiento
+                    </h3>
+                    <div class="tip-content">
+                        <div class="tip-section">
+                            <strong>¿Qué es Best Match?</strong>
+                            Best Match es el algoritmo de relevancia de PubMed que ordena los resultados según su
+                            importancia para tu búsqueda. Utiliza factores como la coincidencia de términos, fecha de
+                            publicación y relevancia del journal.
+                        </div>
+                        <div class="tip-section">
+                            <strong>Cómo aprovecharlo con nuestros filtros:</strong>
+                            1. Realiza tu búsqueda inicial usando los filtros metodológicos (como MBE o
+                            Meta-análisis)<br />
+                            2. Selecciona "Best match" en el ordenamiento de resultados<br />
+                            3. Revisa los primeros 10-20 resultados para identificar:<br />
+                            &nbsp;&nbsp;• Términos MeSH relevantes<br />
+                            &nbsp;&nbsp;• Variantes terminológicas<br />
+                            &nbsp;&nbsp;• Conceptos relacionados
+                        </div>
+                        <div class="example-box">
+                            Ejemplo: Para una búsqueda sobre "cancer screening", Best Match podría revelarte términos
+                            como "Early Detection of Cancer"[Mesh] o "Mass Screening"[Mesh]
+                        </div>
+                        <div class="pro-tip">
+                            💡 Pro-tip: Combina Best Match con los filtros de ámbito (como Atención Primaria o
+                            Geriatría) para descubrir terminología específica de cada contexto.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tip 2 -->
+                <div class="tip">
+                    <h3 class="tip-title">
+                        <span class="tip-number">02</span>
+                        Búsqueda por Proximidad en PubMed
+                    </h3>
+                    <div class="tip-content">
+                        <div class="tip-section">
+                            <strong>Nueva funcionalidad de PubMed</strong>
+                            La búsqueda por proximidad permite encontrar términos cercanos entre sí, incluso si no están
+                            exactamente juntos o en el mismo orden.
+                        </div>
+                        <div class="tip-section">
+                            <strong>Sintaxis básica:</strong>
+                            "término1 término2"[campo:~N]<br />
+                            Donde N = número máximo de palabras entre los términos
+                        </div>
+                        <div class="example-box">
+                            "diabetes treatment"[Title/Abstract:~2]<br />
+                            Encuentra: "diabetes and its treatment", "treatment of diabetes", "diabetes receiving
+                            treatment"
+                        </div>
+                        <div class="tip-section">
+                            <strong>Uso con nuestros filtros:</strong>
+                            Combina la búsqueda por proximidad con filtros clínicos para mayor precisión:<br />
+                            • Con filtro de Tratamiento-CQ: mayor especificidad en resultados terapéuticos<br />
+                            • Con filtro de Efectos Adversos: mejor detección de complicaciones
+                        </div>
+                        <div class="pro-tip">
+                            💡 Pro-tip: Usa N=0 para encontrar términos adyacentes en cualquier orden. Especialmente
+                            útil con los filtros de Ámbito y Población.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tip 3 -->
+                <div class="tip">
+                    <h3 class="tip-title">
+                        <span class="tip-number">03</span>
+                        Estrategia Sensible/Específica
+                    </h3>
+                    <div class="tip-content">
+                        <div class="tip-section">
+                            <strong>¿Por qué usar dos enfoques?</strong>
+                            La estrategia sensible/específica permite evolucionar desde una búsqueda amplia que captura
+                            todo lo relevante hacia una más precisa que elimina el ruido.
+                        </div>
+                        <div class="tip-section">
+                            <strong>Uso con nuestros filtros:</strong>
+                            • En filtros clínicos (Diagnóstico, Etiología, etc.): usa primero la versión Sensible (S)
+                            para identificar toda la terminología relevante<br />
+                            • En filtros de ámbito (IA, Atención Primaria): cambia a versión Específica (E) cuando
+                            necesites mayor precisión
+                        </div>
+                        <div class="example-box">
+                            Ejemplo para búsqueda sobre diagnóstico de diabetes:<br />
+                            1. Inicia con "Diagnóstico-CQ (S)" + términos básicos<br />
+                            2. Identifica términos clave en resultados<br />
+                            3. Refina usando "Diagnóstico-CQ (E)" + términos identificados
+                        </div>
+                        <div class="pro-tip">
+                            💡 Pro-tip: Combina versiones Sensibles para temas poco estudiados y Específicas para temas
+                            con mucha literatura.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tip 4 -->
+                <div class="tip">
+                    <h3 class="tip-title">
+                        <span class="tip-number">04</span>
+                        Clinical Queries Estratégicos
+                    </h3>
+                    <div class="tip-content">
+                        <div class="tip-section">
+                            <strong>Filtros Clinical Queries (CQ)</strong>
+                            Son filtros metodológicos validados científicamente para diferentes tipos de estudios
+                            clínicos, optimizados para maximizar la recuperación de artículos relevantes.
+                        </div>
+                        <div class="tip-section">
+                            <strong>Uso óptimo en nuestra herramienta:</strong>
+                            • Diagnóstico-CQ: Para pruebas diagnósticas y screening<br />
+                            • Tratamiento-CQ: Para intervenciones terapéuticas<br />
+                            • Etiología-CQ: Para factores de riesgo y causas<br />
+                            • Pronóstico-CQ: Para evolución y resultados
+                        </div>
+                        <div class="example-box">
+                            Para estudio sobre tratamiento nuevo:<br />
+                            "nuevo fármaco" + Tratamiento-CQ (E) + Efectos Adversos Medicamentos
+                        </div>
+                        <div class="pro-tip">
+                            💡 Pro-tip: Combina CQ con filtros de ámbito para contextos específicos (ej: Tratamiento-CQ
+                            + Atención Primaria).
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tip 5 -->
+                <div class="tip">
+                    <h3 class="tip-title">
+                        <span class="tip-number">05</span>
+                        Control Temporal Inteligente
+                    </h3>
+                    <div class="tip-content">
+                        <div class="tip-section">
+                            <strong>Estrategia en dos fases</strong>
+                            Combina búsquedas recientes para capturar terminología actual con búsquedas históricas para
+                            no perder estudios fundamentales.
+                        </div>
+                        <div class="tip-section">
+                            <strong>Implementación con nuestros filtros:</strong>
+                            1. Búsqueda reciente (últimos 6 meses):<br />
+                            &nbsp;&nbsp;• Usa filtros metodológicos en versión Sensible<br />
+                            &nbsp;&nbsp;• Activa "Últimos 6 meses" en el selector de fecha<br />
+                            2. Búsqueda histórica (5 años):<br />
+                            &nbsp;&nbsp;• Incorpora términos descubiertos<br />
+                            &nbsp;&nbsp;• Cambia a versión Específica de los filtros
+                        </div>
+                        <div class="example-box">
+                            Fase 1: IA Generativa (S) + "últimos 6 meses"<br />
+                            Fase 2: IA Generativa (E) + nuevos términos + "últimos 5 años"
+                        </div>
+                        <div class="pro-tip">
+                            💡 Pro-tip: Para temas emergentes, prioriza resultados recientes. Para temas establecidos,
+                            amplía el rango temporal.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tip 6 -->
+                <div class="tip">
+                    <h3 class="tip-title">
+                        <span class="tip-number">06</span>
+                        Validación Sistemática
+                    </h3>
+                    <div class="tip-content">
+                        <div class="tip-section">
+                            <strong>Proceso de validación</strong>
+                            Verifica la calidad de tu estrategia de búsqueda mediante un análisis sistemático de los
+                            resultados.
+                        </div>
+                        <div class="tip-section">
+                            <strong>Lista de verificación:</strong>
+                            1. Relevancia de resultados:<br />
+                            &nbsp;&nbsp;• ¿Los primeros 10 resultados son pertinentes?<br />
+                            &nbsp;&nbsp;• ¿Hay ruido temático significativo?<br />
+                            2. Cobertura temática:<br />
+                            &nbsp;&nbsp;• ¿Se recuperan todos los aspectos relevantes?<br />
+                            &nbsp;&nbsp;• ¿Faltan conceptos importantes?
+                        </div>
+                        <div class="example-box">
+                            Para validar búsqueda sobre seguridad del paciente:<br />
+                            1. Aplicar Safety (S) + Best Match<br />
+                            2. Verificar primeros resultados<br />
+                            3. Ajustar a Safety (E) si hay exceso de ruido
+                        </div>
+                        <div class="pro-tip">
+                            💡 Pro-tip: Si encuentras artículos irrelevantes en los primeros resultados, considera
+                            cambiar de versión Sensible a Específica.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tip 7 -->
+                <div class="tip">
+                    <h3 class="tip-title">
+                        <span class="tip-number">07</span>
+                        Refinamiento Iterativo
+                    </h3>
+                    <div class="tip-content">
+                        <div class="tip-section">
+                            <strong>Proceso de mejora continua</strong>
+                            Optimiza tu búsqueda mediante ciclos de refinamiento, incorporando nuevos términos y
+                            ajustando filtros según los resultados.
+                        </div>
+                        <div class="tip-section">
+                            <strong>Ciclo de refinamiento:</strong>
+                            1. Búsqueda inicial con filtros base<br />
+                            2. Análisis de mejores resultados<br />
+                            3. Identificación de nuevos términos<br />
+                            4. Ajuste de filtros y operadores<br />
+                            5. Validación de cambios
+                        </div>
+                        <div class="example-box">
+                            Iteración para búsqueda en geriatría:<br />
+                            1. Geriatría (S) + términos iniciales<br />
+                            2. Identificar subgrupos relevantes<br />
+                            3. Añadir Cuidados Paliativos si aparece frecuentemente
+                        </div>
+                        <div class="pro-tip">
+                            💡 Pro-tip: Documenta cada iteración y su impacto para crear un histórico de mejoras.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tip 8 -->
+                <div class="tip">
+                    <h3 class="tip-title">
+                        <span class="tip-number">08</span>
+                        Combinación de Campos
+                    </h3>
+                    <div class="tip-content">
+                        <div class="tip-section">
+                            <strong>Estrategia de campos múltiples</strong>
+                            Maximiza la precisión combinando búsqueda por proximidad en título/abstract con términos
+                            MeSH y nuestros filtros estructurados.
+                        </div>
+                        <div class="tip-section">
+                            <strong>Estructura óptima:</strong>
+                            1. Términos de proximidad en [Title/Abstract]<br />
+                            2. Términos MeSH relevantes<br />
+                            3. Filtros metodológicos o clínicos<br />
+                            4. Filtros de ámbito según necesidad
+                        </div>
+                        <div class="example-box">
+                            "diabetes management"[Title/Abstract:~2] AND<br />
+                            "Diabetes Mellitus/therapy"[Mesh] AND<br />
+                            {Aplicar filtro Primary (E) + Treatment (E)}
+                        </div>
+                        <div class="pro-tip">
+                            💡 Pro-tip: Usa diferentes valores de proximidad (~1, ~2, ~3) para encontrar el balance
+                            óptimo de resultados.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tip 9 -->
+                <div class="tip">
+                    <h3 class="tip-title">
+                        <span class="tip-number">09</span>
+                        Análisis de Resultados
+                    </h3>
+                    <div class="tip-content">
+                        <div class="tip-section">
+                            <strong>Evaluación de calidad</strong>
+                            Analiza sistemáticamente los resultados para garantizar que tu estrategia de búsqueda es
+                            efectiva.
+                        </div>
+                        <div class="tip-section">
+                            <strong>Criterios de evaluación:</strong>
+                            • Precisión: relevancia de los primeros resultados<br />
+                            • Exhaustividad: recuperación de artículos clave<br />
+                            • Balance: proporción de resultados útiles<br />
+                            • Actualidad: distribución temporal adecuada
+                        </div>
+                        <div class="example-box">
+                            Para evaluar búsqueda de terapias CAR-T:<br />
+                            1. Aplicar filtro CAR-T + Best Match<br />
+                            2. Verificar presencia de papers clave<br />
+                            3. Analizar distribución temporal
+                        </div>
+                        <div class="pro-tip">
+                            💡 Pro-tip: La calidad de los primeros 10-20 resultados es un buen predictor de la
+                            efectividad global de tu búsqueda.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tip 10 -->
+                <div class="tip">
+                    <h3 class="tip-title">
+                        <span class="tip-number">10</span>
+                        Verificación Final
+                    </h3>
+                    <div class="tip-content">
+                        <div class="tip-section">
+                            <strong>Lista de verificación completa</strong>
+                            Asegura la calidad de tu búsqueda mediante una revisión sistemática de todos los
+                            componentes.
+                        </div>
+                        <div class="tip-section">
+                            <strong>Elementos a verificar:</strong>
+                            1. Estructura de búsqueda:<br />
+                            &nbsp;&nbsp;• Términos MeSH apropiados<br />
+                            &nbsp;&nbsp;• Operadores booleanos correctos<br />
+                            &nbsp;&nbsp;• Filtros metodológicos adecuados<br />
+                            2. Resultados:<br />
+                            &nbsp;&nbsp;• Artículos clave recuperados<br />
+                            &nbsp;&nbsp;• Balance sensibilidad/especificidad<br />
+                            3. Documentación:<br />
+                            &nbsp;&nbsp;• Estrategia documentada<br />
+                            &nbsp;&nbsp;• Filtros utilizados registrados
+                        </div>
+                        <div class="example-box">
+                            Checklist final:<br />
+                            ☐ Términos principales incluidos<br />
+                            ☐ Filtros apropiados seleccionados<br />
+                            ☐ Operadores verificados<br />
+                            ☐ Resultados validados
+                        </div>
+                        <div class="pro-tip">
+                            💡 Pro-tip: Guarda tu estrategia final completa para futuras actualizaciones o
+                            refinamientos.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <include src="footer.html"></include>
+    <script src="./assets/js/include.js"></script>
+</body>
+
+</html>
