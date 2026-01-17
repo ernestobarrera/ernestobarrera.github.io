@@ -10,6 +10,14 @@
   "use strict";
 
   /**
+   * Formatea un número con separador de miles (punto) al estilo español
+   */
+  function formatNumber(num) {
+    if (typeof num !== 'number' || isNaN(num)) return num;
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
+  /**
    * -----------------------------------------------------------------------
    * Configuración y Estado del Módulo
    * -----------------------------------------------------------------------
@@ -17,7 +25,7 @@
   const NCBI_API_KEY = window.ApiKeyManager ? window.ApiKeyManager.getApiKey() : "";
   const PETICIONES_POR_SEGUNDO = NCBI_API_KEY ? 10 : 3;
   const DURACION_CACHE_MS = 5 * 60 * 1000;
-  const RETRASO_DEBOUNCE_MS = 600;
+  const RETRASO_DEBOUNCE_MS = 1200;
 
   let filtersLoaded = false;
   let countersVisible = false; // Inicia oculto por defecto
@@ -30,6 +38,8 @@
   let toggleCountersBtn = null; // Referencia al botón (ahora icono)
   let persistentSearchCountDisplay = null; // Para el span del texto del contador
   let persistentSearchCountContainer = null; // Para el div contenedor del contador persistente
+  let journalsResultCounter = null; // Para el contador comparativo de revistas
+  let journalsCounterText = null; // Para el texto del contador de revistas
 
   let filterMap = null;
   let categories = null;
@@ -199,22 +209,19 @@
 
     const searchTermValue = searchInput.value.trim();
 
-    if (!searchTermValue) {
-      persistentSearchCountContainer.style.display = 'none';
-      persistentSearchCountDisplay.textContent = '';
-      return;
+    // Construir la query con el término (puede ser vacío) + filtros activos + fecha
+    let mainQuery = constructQuery(searchTermValue);
+
+    // Si no hay query, usar all[sb] para mostrar el total de PubMed
+    const isShowingTotal = !mainQuery;
+    if (isShowingTotal) {
+      mainQuery = 'all[sb]';
     }
 
-    persistentSearchCountContainer.style.display = 'block'; // Mostrar contenedor
-    persistentSearchCountDisplay.textContent = 'Calculando resultados...'; // Estado de carga
+    persistentSearchCountContainer.style.display = 'block'; // Siempre mostrar contenedor
+    persistentSearchCountDisplay.textContent = isShowingTotal ? 'Calculando total PubMed...' : 'Calculando resultados...';
 
-    // constructQuery ya incluye el término de búsqueda, filtros de categoría y el filtro de fecha.
-    const mainQuery = constructQuery(searchTermValue);
 
-    if (!mainQuery) {
-      persistentSearchCountDisplay.textContent = 'N/A (sin consulta)';
-      return;
-    }
 
     try {
       const result = await requestQueue.add(`mainSearch_${currentCycleId}`, mainQuery, currentCycleId, signal);
@@ -228,12 +235,15 @@
       }
 
       // INICIO DE LA SECCIÓN MODIFICADA
-      if (typeof result.count === 'number' && !isNaN(result.count)) { // Añadido !isNaN(result.count)
-        persistentSearchCountDisplay.textContent = `${result.count.toLocaleString('es-ES')} resultados encontrados`;
+      if (typeof result.count === 'number' && !isNaN(result.count)) {
+        if (isShowingTotal) {
+          persistentSearchCountDisplay.textContent = `${formatNumber(result.count)} artículos en PubMed`;
+        } else {
+          persistentSearchCountDisplay.textContent = `${formatNumber(result.count)} resultados encontrados`;
+        }
       } else if (result.count === "Error") {
         persistentSearchCountDisplay.textContent = 'Error al calcular resultados';
       } else {
-        // Esto ahora cubrirá el caso de NaN o si result.count no es un número por otras razones.
         persistentSearchCountDisplay.textContent = 'N/A (conteo inválido)';
       }
       // FIN DE LA SECCIÓN MODIFICADA
@@ -248,6 +258,120 @@
       console.error("Error al obtener contador principal:", errorData.error || errorData);
       persistentSearchCountDisplay.textContent = 'Error al calcular';
     }
+  }
+
+  /**
+   * -----------------------------------------------------------------------
+   * NUEVA FUNCIÓN: Actualiza el contador comparativo de revistas
+   * Muestra: total resultados → resultados con filtro de revistas (porcentaje)
+   * -----------------------------------------------------------------------
+   */
+  async function updateJournalsComparativeCounter(currentCycleId, signal) {
+    if (!journalsResultCounter || !journalsCounterText || typeof constructQuery !== 'function') {
+      if (journalsResultCounter) journalsResultCounter.style.display = 'none';
+      return;
+    }
+
+    // Obtener los filtros de revistas activos
+    const activeJournalButtons = document.querySelectorAll('.filter-button.journals.active');
+
+    if (activeJournalButtons.length === 0) {
+      journalsResultCounter.style.display = 'none';
+      journalsCounterText.textContent = '';
+      return;
+    }
+
+    const searchTermValue = searchInput?.value?.trim() ?? '';
+
+    // Query SIN filtros de revistas (solo término + otros filtros + fecha)
+    // Si no hay nada, usar all[sb] para comparar contra el total de PubMed
+    let baseQueryWithoutJournals = buildQueryWithoutJournals(searchTermValue);
+    const isComparingToTotal = !baseQueryWithoutJournals;
+    if (isComparingToTotal) {
+      baseQueryWithoutJournals = 'all[sb]';
+    }
+
+    // Query CON filtros de revistas (query completa incluyendo journals)
+    const fullQuery = constructQuery(searchTermValue);
+
+    journalsResultCounter.style.display = 'inline';
+    journalsCounterText.innerHTML = '⏳';
+
+    try {
+      // Hacer las dos peticiones en paralelo
+      const [baseResult, filteredResult] = await Promise.all([
+        requestQueue.add(`journalsBase_${currentCycleId}`, baseQueryWithoutJournals, currentCycleId, signal),
+        fullQuery
+          ? requestQueue.add(`journalsFiltered_${currentCycleId}`, fullQuery, currentCycleId, signal)
+          : Promise.resolve({ count: null })
+      ]);
+
+      if (signal.aborted || currentCycleId !== currentUpdateCycleId) {
+        return;
+      }
+
+      const baseCount = typeof baseResult?.count === 'number' ? baseResult.count : null;
+      const filteredCount = typeof filteredResult?.count === 'number' ? filteredResult.count : null;
+
+      if (filteredCount !== null) {
+        // Formato descriptivo similar al contador principal
+        if (baseCount !== null && baseCount > 0) {
+          journalsCounterText.textContent = `${formatNumber(filteredCount)} resultados en revistas seleccionadas, de ${formatNumber(baseCount)} en total`;
+        } else {
+          journalsCounterText.textContent = `${formatNumber(filteredCount)} resultados en revistas seleccionadas`;
+        }
+      } else {
+        journalsCounterText.textContent = '';
+      }
+
+    } catch (errorData) {
+      if (!signal.aborted) {
+        console.error("Error en contador de revistas:", errorData);
+        journalsCounterText.textContent = 'Error al calcular';
+      }
+    }
+  }
+
+  /**
+   * Construye query excluyendo filtros de journals
+   */
+  function buildQueryWithoutJournals(term) {
+    if (typeof constructQuery !== 'function' || !categories) return '';
+
+    // Obtener filtros activos excluyendo journals
+    const activeButtons = document.querySelectorAll('.filter-button.active:not(.journals)');
+    if (activeButtons.length === 0 && !term) {
+      // Si no hay término ni otros filtros, devolver vacío
+      return term || '';
+    }
+
+    // Usamos constructQuery pero primero desactivamos temporalmente los journals
+    // Alternativa más simple: construir manualmente sin journals
+    let query = term || '';
+
+    const categoryKeys = Object.keys(categories).filter(cat => cat !== 'journals');
+
+    categoryKeys.forEach(cat => {
+      const activeInCat = [];
+      document.querySelectorAll(`.filter-button.${cat === 'methodology' ? 'methodological' : cat}.active`).forEach(btn => {
+        const filterQuery = btn.dataset.query || filterMap?.[btn.dataset.type] || filterMap?.[btn.dataset.base + '_sensible'];
+        if (filterQuery) activeInCat.push(filterQuery);
+      });
+
+      if (activeInCat.length > 0) {
+        const catQuery = `(${activeInCat.join(' OR ')})`;
+        query = query ? `(${query}) AND ${catQuery}` : catQuery;
+      }
+    });
+
+    // Añadir filtro de fecha si existe
+    const dateValue = dateRange?.value;
+    if (dateValue) {
+      const dateFilter = `("last ${dateValue} days"[dp])`;
+      query = query ? `(${query}) AND ${dateFilter}` : dateFilter;
+    }
+
+    return query.trim();
   }
   /**
    * -----------------------------------------------------------------------
@@ -385,21 +509,12 @@
         // Si se ocultan los contadores de los botones:
         renderCounters(false); // Elimina los displays de los contadores de los botones.
 
-        // Aborta el ciclo actual, que podría tener peticiones para los contadores de botones.
+        // Aborta el ciclo actual para cancelar peticiones pendientes de contadores de botones.
         if (currentAbortController) {
-          // console.log("Ocultando contadores de botones, abortando ciclo actual para ellos.");
           currentAbortController.abort();
-          // No se pone a null; triggerImmediateUpdate creará uno nuevo.
         }
-
-        // Es crucial llamar a triggerImmediateUpdate aquí también.
-        // Esto asegura que, aunque los contadores de botones estén ahora ocultos,
-        // el contador persistente pueda (re)iniciar su propia actualización si es necesario
-        // (por ejemplo, si su petición fue abortada por el currentAbortController.abort() anterior,
-        // o si simplemente queremos que refleje el estado actual sin los contadores de botones).
-        // La lógica interna de triggerImmediateUpdate manejará el no actualizar los contadores de botones
-        // porque countersVisible es ahora false.
-        triggerImmediateUpdate();
+        // NO llamamos a triggerImmediateUpdate aquí - no tiene sentido hacer peticiones
+        // si los contadores están ocultos. El contador persistente mantiene su último valor.
       }
     });
     console.log("Listener del botón Toggle de contadores (icono) configurado.");
@@ -663,8 +778,9 @@
     };
   }
 
-  function triggerImmediateUpdate() {
-    console.log("%cTriggering PubMed Counter Update...", "color: blue; font-weight: bold;");
+  function triggerImmediateUpdate(options = {}) {
+    const { skipJournalsCounter = false } = options;
+    console.log("%cTriggering PubMed Counter Update...", "color: blue; font-weight: bold;", skipJournalsCounter ? "(sin contador revistas)" : "");
 
     // 1. Verificar dependencia crítica
     if (typeof constructQuery !== "function") {
@@ -675,20 +791,23 @@
 
     // 2. Abortar ciclo anterior y preparar nuevo ciclo
     if (currentAbortController) {
-      // console.log("Abortando ciclo anterior:", currentUpdateCycleId);
       currentAbortController.abort();
     }
     currentAbortController = new AbortController();
     const signal = currentAbortController.signal;
     currentUpdateCycleId++;
     const cycleToRun = currentUpdateCycleId;
-    // console.log(`Nuevo ID de ciclo para contadores: ${cycleToRun}`);
 
     // 3. Actualizar el contador persistente principal (siempre se intenta)
     // setTimeout para encolar esta tarea, permitiendo que el aborto anterior se procese.
     setTimeout(() => {
-      if (!signal.aborted) { // Verificar si este nuevo ciclo no fue abortado inmediatamente por otra acción
+      if (!signal.aborted) {
         updatePersistentMainCounter(cycleToRun, signal);
+        // Solo actualizar el contador de revistas si no se indica lo contrario
+        // (se omite cuando cambian filtros que no son de revistas)
+        if (!skipJournalsCounter) {
+          updateJournalsComparativeCounter(cycleToRun, signal);
+        }
       }
     }, 0);
 
@@ -742,6 +861,11 @@
       // No marcamos allOk = false aquí, ya que los contadores de filtros individuales aún podrían funcionar.
     }
     // FIN: Obtener elementos del contador persistente
+
+    // INICIO: Obtener elementos del contador comparativo de revistas
+    journalsResultCounter = document.getElementById('journalsResultCounter');
+    journalsCounterText = document.getElementById('journalsCounterText');
+    // FIN: Obtener elementos del contador comparativo de revistas
 
 
     if (!searchInput) { console.error("Falta: #searchTerm o window.searchTerm."); allOk = false; }
