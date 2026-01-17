@@ -9,17 +9,20 @@ body {
   font-family: sans-serif;
   background: #1c1e26;
 }
+
 .main-container {
   max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
   padding: 0rem 0rem;
 }
+
 .hero-section {
   border-radius: 8px;
   padding: 0;
   margin-bottom: 0.5rem;
 }
+
 .main-title {
   margin-bottom: 0.5rem;
   font-size: 1.5rem;
@@ -28,6 +31,7 @@ body {
   gap: 0.5rem;
   color: var(--text-primary, #fff);
 }
+
 .search-container {
   max-width: 100%;
   margin: 0 auto;
@@ -35,6 +39,7 @@ body {
   color: var(--text-primary, #fff);
   position: relative;
 }
+
 .intro-text {
   font-size: 0.95rem;
   line-height: 1.4;
@@ -44,12 +49,14 @@ body {
   color: var(--text-secondary, #94a3b8);
   margin-bottom: 0.5rem;
 }
+
 .search-box {
   background: var(--card-bg, #2a3b4d);
   padding: 1rem;
   border-radius: 12px;
   margin-bottom: 1rem;
 }
+
 /* Reemplazo de input por textarea */
 .search-textarea {
   width: 100%;
@@ -64,8 +71,10 @@ body {
   line-height: 1.5;
   margin-bottom: 0;
   transition: border-color 0.3s ease, height 0.3s ease;
-  resize: vertical; /* Permitir redimensionamiento vertical */
-  overflow-y: auto; /* Mostrar scroll solo cuando sea necesario */
+  resize: vertical;
+  /* Permitir redimensionamiento vertical */
+  overflow-y: auto;
+  /* Mostrar scroll solo cuando sea necesario */
   min-height: 3rem;
   max-height: 300px;
 }
@@ -75,16 +84,16 @@ body {
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
 }
+
 .filters-section {
   display: grid;
-  grid-template-columns: minmax(300px, 1fr) minmax(300px, 1.75fr) minmax(
-      450px,
-      1.85fr
-    );
+  grid-template-columns: minmax(300px, 1fr) minmax(300px, 1.75fr) minmax(450px,
+      1.85fr);
   gap: 0rem;
   margin-top: 1rem;
   /* Se retira la altura fija */
 }
+
 .filter-category {
   background: var(--primary-bg, #1c1e26);
   padding: 0.7rem;
@@ -92,25 +101,31 @@ body {
   border-left: 4px solid transparent;
   transition: all 0.4s ease;
 }
+
 .filter-category.methodological {
   border-left-color: rgba(59, 130, 246, 0.5);
 }
+
 .filter-category.clinical {
   border-left-color: rgba(16, 185, 129, 0.5);
 }
+
 .filter-category.clinical .filter-buttons-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.5rem;
 }
+
 .filter-category.scope {
   border-left-color: rgba(139, 92, 246, 0.5);
 }
+
 .filter-category.scope .filter-buttons-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.5rem;
 }
+
 .category-title {
   font-size: 1.05rem;
   color: var(--accent-color, #ffd700);
@@ -120,6 +135,7 @@ body {
   gap: 0.5rem;
   font-weight: 600;
 }
+
 .filter-button {
   width: 100%;
   padding: 0.45rem 0.45rem;
@@ -137,38 +153,46 @@ body {
   gap: 0.5rem;
   font-size: 0.9rem;
 }
+
 .filter-button:hover {
   background: var(--hover-color, #34495e);
   transform: translateX(2px);
 }
+
 .filter-button.active.methodological {
   background: rgba(59, 130, 246, 0.2);
   border-left-color: rgb(59, 130, 246);
 }
+
 .filter-button.active.clinical {
   background: rgba(16, 185, 129, 0.2);
   border-left-color: rgb(16, 185, 129);
 }
+
 .filter-button.active.scope {
   background: rgba(139, 92, 246, 0.2);
   border-left-color: rgb(139, 92, 246);
 }
+
 .versions-toggle {
   margin-left: auto;
   display: flex;
   gap: 0.3rem;
   align-items: center;
 }
+
 .versions-toggle input[type="radio"] {
   margin-right: 0rem;
   transform: scale(0.9);
 }
+
 .info-section {
   margin-top: 1rem;
   background: rgba(59, 130, 246, 0.1);
   padding: 0.5rem;
   border-radius: 8px;
 }
+
 .info-title {
   font-size: 1.1rem;
   color: var(--accent-color, #ffd700);
@@ -177,18 +201,21 @@ body {
   align-items: center;
   gap: 0.3rem;
 }
+
 .info-text {
   color: var(--text-secondary, #94a3b8);
   line-height: 1.4;
   font-size: 0.9rem;
   margin: 0;
 }
+
 .centered-controls select {
   background: var(--card-bg);
   color: var(--text-primary);
   border: 1px solid var(--accent-color);
   border-radius: 8px;
-  padding: 0.7rem; /* Igualamos el padding al de los botones */
+  padding: 0.7rem;
+  /* Igualamos el padding al de los botones */
   font-size: 0.9rem;
   cursor: pointer;
 }
@@ -198,7 +225,8 @@ body {
   font-size: 0.9rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem; /* Espacio entre el texto y el select */
+  gap: 0.5rem;
+  /* Espacio entre el texto y el select */
 }
 
 /* Para alinear todo verticalmente */
@@ -217,6 +245,7 @@ body {
   align-items: center;
   gap: 1rem;
 }
+
 .search-button {
   background: linear-gradient(135deg, #ffd700, #ff9a00);
   border: none;
@@ -232,10 +261,12 @@ body {
   align-items: center;
   gap: 0.5rem;
 }
+
 .search-button:hover {
   transform: translateY(-2px) scale(1.03);
   box-shadow: 0 8px 12px rgba(0, 0, 0, 0.25);
 }
+
 .filter-info {
   display: flex;
   align-items: center;
@@ -244,6 +275,7 @@ body {
   font-weight: 500;
   color: #fff;
 }
+
 .filter-count {
   min-width: 2.2rem;
   min-height: 2.2rem;
@@ -258,27 +290,33 @@ body {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   border: 2px solid #ffd700;
 }
+
 @media (max-width: 1200px) {
   .filters-section {
     grid-template-columns: 1fr;
     max-height: none;
     overflow-y: visible;
   }
+
   .filter-category {
     margin-bottom: 1rem;
   }
 }
+
 @media (max-width: 768px) {
   .main-container {
     padding: 0.75rem;
   }
+
   .search-box {
     padding: 0.75rem;
   }
+
   .filter-button {
     margin-bottom: 0.25rem;
   }
 }
+
 .introjs-tooltip {
   animation: fadeIn 0.8s ease;
   background-color: #fef9c3 !important;
@@ -290,34 +328,42 @@ body {
   max-width: 380px;
   min-width: 280px;
 }
+
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
   }
 }
+
 .introjs-arrow {
   border-color: #fef9c3 transparent transparent transparent !important;
 }
+
 .introjs-helperNumberLayer {
   background: #ffd700 !important;
   color: #1a2634 !important;
 }
+
 .introjs-bullets .introjs-bullet {
   background: #34495e !important;
 }
+
 .introjs-bullets .introjs-bullet.active {
   box-shadow: 0 0 0 2px #ffd700 !important;
 }
+
 .introjs-tooltipbuttons {
   white-space: nowrap;
   border-top: 1px solid #fbbf24 !important;
   padding-top: 0.75rem;
 }
+
 .introjs-skipbutton {
   position: absolute;
   font-size: 1rem;
@@ -327,6 +373,7 @@ body {
   border-radius: 4px;
   color: #1e2328c0 !important;
 }
+
 .introjs-prevbutton,
 .introjs-nextbutton,
 .introjs-donebutton {
@@ -341,18 +388,21 @@ body {
   text-shadow: none !important;
   font-weight: normal !important;
 }
+
 .introjs-prevbutton:hover,
 .introjs-nextbutton:hover,
 .introjs-donebutton:hover {
   background: #ffd700 !important;
   color: #1a2634 !important;
 }
+
 .introjs-tooltiptext {
   color: #1a2634 !important;
   font-size: 1.1rem !important;
   line-height: 1.4 !important;
   font-family: system-ui, -apple-system, sans-serif !important;
 }
+
 .myHighlight {
   background: #333;
   box-shadow: 0 0 8px 4px rgba(255, 215, 0, 0.8) !important;
@@ -370,6 +420,7 @@ body {
   color: #ffd700;
   font-size: 0.85rem;
 }
+
 .category-header {
   display: flex;
   justify-content: space-between;
@@ -408,6 +459,7 @@ body {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 1px var(--accent-color);
 }
+
 /* tooltips metadatos */
 /* Estilos base para tippy */
 .tippy-box {
@@ -426,6 +478,7 @@ body {
 .tippy-box[data-animation="fade"][data-state="visible"] {
   z-index: 9999 !important;
 }
+
 .tippy-box[data-theme~="custom"] {
   background-color: var(--card-bg, #2a3b4d) !important;
   border: 1px solid var(--accent-color, #ffd700) !important;
@@ -434,7 +487,7 @@ body {
   z-index: 9999 !important;
 }
 
-.tippy-box[data-theme~="custom"][data-placement^="top"] > .tippy-arrow::before {
+.tippy-box[data-theme~="custom"][data-placement^="top"]>.tippy-arrow::before {
   border-top-color: var(--accent-color, #ffd700) !important;
 }
 
@@ -443,6 +496,7 @@ body {
   line-height: 1.4 !important;
   padding: 0rem 0rem !important;
 }
+
 /* Estilos para el diagrama de Venn */
 .venn-container {
   margin-top: 1rem;
@@ -486,9 +540,11 @@ body {
 .venn-circle-methodology path {
   fill: #3b82f6;
 }
+
 .venn-circle-clinical path {
   fill: #10b981;
 }
+
 .venn-circle-scope path {
   fill: #8b5cf6;
 }
@@ -508,6 +564,7 @@ body {
   font-size: 14px;
   font-weight: 500;
 }
+
 .venn-container {
   display: grid;
   grid-template-columns: 250px 500px 250px;
@@ -564,8 +621,10 @@ body {
 .scope-list {
   color: #8b5cf6;
 }
+
 .venn-container {
-  display: none; /* Oculto por defecto */
+  display: none;
+  /* Oculto por defecto */
 }
 
 .venn-container.visible {
@@ -574,6 +633,7 @@ body {
   gap: 1rem;
   align-items: start;
 }
+
 .info-button {
   margin: 0 0.5rem;
   background: var(--card-bg);
@@ -594,6 +654,7 @@ body {
   background: var(--accent-color);
   color: var(--primary-bg);
 }
+
 /* Estilos para los tips de búsqueda */
 .search-tips {
   margin-top: 1rem;
@@ -710,6 +771,7 @@ body {
   opacity: 0.8;
   margin-left: 0.5rem;
 }
+
 .search-header-icons {
   position: absolute;
   top: 10px;
@@ -721,7 +783,8 @@ body {
 .search-header-icons button {
   background: transparent;
   border: none;
-  color: #ffd700; /* O el color que prefieras para resaltar */
+  color: #ffd700;
+  /* O el color que prefieras para resaltar */
   font-size: 1.5rem;
   cursor: pointer;
 }
@@ -729,6 +792,7 @@ body {
 .search-header-icons button:hover {
   color: #fff;
 }
+
 /* MODALES PARA GUARDAR/RECUPERAR/BORRAR/EXPORTAR/IMPORTAR */
 .modal-backdrop {
   position: fixed;
@@ -742,9 +806,11 @@ body {
   align-items: center;
   justify-content: center;
 }
+
 .modal-backdrop.show {
   display: flex;
 }
+
 .modal {
   background: #2a3b4d;
   border: 2px solid #ffd700;
@@ -754,6 +820,7 @@ body {
   color: #fff;
   position: relative;
 }
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -762,12 +829,14 @@ body {
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
 }
+
 .modal-title {
   font-size: 1rem;
   font-weight: bold;
   margin: 0;
   color: #ffd700;
 }
+
 .close-modal {
   background: transparent;
   border: none;
@@ -775,12 +844,14 @@ body {
   color: #ffd700;
   font-size: 1.2rem;
 }
+
 .modal-body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   font-size: 0.9rem;
 }
+
 .modal-body input,
 .modal-body select {
   background: #1c1e26;
@@ -791,6 +862,7 @@ body {
   font-size: 0.85rem;
   width: 100%;
 }
+
 .modal-body button {
   background: #ffd700;
   color: #1c1e26;
@@ -800,9 +872,11 @@ body {
   cursor: pointer;
   font-size: 0.85rem;
 }
+
 .modal-body button:hover {
   background: #ffca1c;
 }
+
 .modal-buttons {
   display: flex;
   gap: 1rem;
@@ -818,7 +892,8 @@ body {
   padding: 0.5rem 1rem;
   cursor: pointer;
   font-size: 0.85rem;
-  opacity: 1 !important; /* Aseguramos que no esté atenuado */
+  opacity: 1 !important;
+  /* Aseguramos que no esté atenuado */
 }
 
 .modal-cancel:hover {
@@ -843,6 +918,7 @@ body {
   opacity: 1;
   cursor: pointer;
 }
+
 .chatgpt-button {
   /* Para que sea uniforme con el resto: sin fondos extra */
   background: none;
@@ -856,54 +932,190 @@ body {
 
 /* Color base del icono */
 .chatgpt-button i {
-  color: #8b5cf6; /* Morado de la paleta */
+  color: #8b5cf6;
+  /* Morado de la paleta */
 }
 
 /* Hover resaltado */
 .chatgpt-button:hover i {
-  color: #a78bfa; /* Un tono un poco más claro al pasar el ratón */
+  color: #a78bfa;
+  /* Un tono un poco más claro al pasar el ratón */
 }
 
 .filter-count.highlighted {
-  background-color: rgba(
-    174,
-    23,
-    23,
-    0.1
-  ); /* Fondo semitransparente blanco o gris claro */
-  color: var(--accent-color, #ffd700); /* Texto en color acento (amarillo) */
+  background-color: rgba(174,
+      23,
+      23,
+      0.1);
+  /* Fondo semitransparente blanco o gris claro */
+  color: var(--accent-color, #ffd700);
+  /* Texto en color acento (amarillo) */
   padding: 2px 6px;
   border-radius: 4px;
   font-weight: bold;
   margin-left: 5px;
-  transition: background-color 0.3s ease, color 0.3s ease, text-shadow 0.3s ease; /* Añadida transición para sombra */
-  border: 1px solid rgba(255, 255, 255, 0.2); /* Borde sutil opcional */
+  transition: background-color 0.3s ease, color 0.3s ease, text-shadow 0.3s ease;
+  /* Añadida transición para sombra */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  /* Borde sutil opcional */
 
   /* --- NUEVAS LÍNEAS PARA DESTACAR MÁS EL NÚMERO --- */
-  font-size: 1.3em; /* Hacemos el número un 5% más grande que el texto normal */
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); /* Sombra oscura sutil (ajusta opacidad 0.5 si es mucho/poco) */
+  font-size: 1.3em;
+  /* Hacemos el número un 5% más grande que el texto normal */
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  /* Sombra oscura sutil (ajusta opacidad 0.5 si es mucho/poco) */
   /* --- FIN NUEVAS LÍNEAS --- */
 }
 
 /* INICIO: Estilos para el contador persistente de búsqueda */
 .search-box {
   /* Puede que necesites ajustar el padding-bottom si el nuevo elemento causa problemas de layout */
- padding-bottom: 10px;  Ajusta este valor si es necesario 
-}
-.search-count-display-container {
-  margin-top: 0px; /* Espacio sobre el contador */
-  margin-bottom: 0px; /* Espacio debajo del contador, antes de los iconos */
-  padding-left: 5px; /* Ajusta para alinear con el textarea si es necesario */
-  min-height: 1.2em; /* Para evitar saltos de layout cuando el texto aparece/desaparece */
+  padding-bottom: 10px;
+  /* Ajusta este valor si es necesario */
 }
 
-#persistentSearchCountText {
-  font-size: 0.95em; /* Tamaño de fuente ligeramente más pequeño */
-  color: #ebab34; /* Color de texto oscuro para buena legibilidad */
-  font-style: italic; /* Estilo itálico para diferenciarlo */
+.search-count-display-container {
+  margin-top: 0px;
+  /* Espacio sobre el contador */
+  margin-bottom: 0px;
+  /* Espacio debajo del contador, antes de los iconos */
+  padding-left: 5px;
+  /* Ajusta para alinear con el textarea si es necesario */
+  min-height: 1.2em;
+  /* Para evitar saltos de layout cuando el texto aparece/desaparece */
 }
+
+#persistentSearchCountText,
+#journalsCounterText {
+  font-size: 0.95em;
+  /* Tamaño de fuente ligeramente más pequeño */
+  color: #ebab34;
+  /* Color de texto oscuro para buena legibilidad */
+  font-style: italic;
+  /* Estilo itálico para diferenciarlo */
+}
+
 /* FIN: Estilos para el contador persistente de búsqueda */
 /* En tu archivo CSS principal o en un bloque <style> */
 .introjs-wide-tooltip {
-    max-width: 350px; /* O el ancho que necesites */
+  max-width: 350px;
+  /* O el ancho que necesites */
+}
+
+/* ===========================================
+   NUEVA SECCIÓN: Filtros de Revistas por Especialidad
+   =========================================== */
+.filter-category.journals.full-width {
+  grid-column: 1 / -1;
+  margin-top: 1rem;
+  background: var(--primary-bg, #1c1e26);
+  border-left: 4px solid rgba(255, 215, 0, 0.4);
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+}
+
+.filter-category.journals .category-title {
+  color: var(--accent-color, #ffd700);
+}
+
+.journals-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4rem;
+}
+
+.filter-button.journals {
+  background: var(--secondary-bg, #2c3e50);
+  border: none;
+  border-left: 4px solid transparent;
+  font-size: 0.78rem;
+  padding: 0.4rem 0.35rem;
+  text-align: center;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary, #fff);
+}
+
+.filter-button.journals:hover {
+  background: var(--hover-color, #34495e);
+  transform: translateX(2px);
+  border-left-color: var(--accent-color, #ffd700);
+}
+
+.filter-button.journals.active {
+  background: rgba(255, 215, 0, 0.15);
+  border-left-color: var(--accent-color, #ffd700);
+}
+
+/* Botón Top Publications - solo destaca al hover o activo */
+.filter-button.journals.top-journals:hover {
+  background: rgba(255, 215, 0, 0.15);
+  border-left-color: var(--accent-color, #ffd700);
+}
+
+.filter-button.journals.top-journals.active {
+  background: rgba(255, 215, 0, 0.2);
+  border-left-color: var(--accent-color, #ffd700);
+}
+
+/* Enlace a Tips */
+.tips-link-section {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.tips-link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 170, 0, 0.15));
+  color: #ffd700;
+  text-decoration: none;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  transition: all 0.3s ease;
+}
+
+.tips-link-button:hover {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.35), rgba(255, 170, 0, 0.25));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.2);
+}
+
+.tips-link-button i:last-child {
+  transition: transform 0.2s ease;
+}
+
+.tips-link-button:hover i:last-child {
+  transform: translateX(5px);
+}
+
+/* Responsive para grid de revistas */
+@media (max-width: 1200px) {
+  .journals-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .journals-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .journals-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .filter-button.journals {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.3rem;
+  }
 }
