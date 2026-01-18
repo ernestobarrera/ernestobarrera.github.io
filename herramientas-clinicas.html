@@ -1,0 +1,620 @@
+<!--
+=====================
+  herramientas-clinicas.html
+  Herramientas Clínicas Interactivas
+=====================
+-->
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="Herramientas clínicas interactivas para profesionales sanitarios: guías de interpretación, calculadoras, protocolos y apoyo a la toma de decisiones." />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <title>Herramientas Clínicas | @ernestob</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+
+    <!-- CSS externo -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" />
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag("js", new Date());
+        gtag("config", "G-YFKR6RB1ZC");
+    </script>
+
+    <style>
+        /* Filtros de especialidad */
+        .filtros-especialidad {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+            justify-content: center;
+        }
+
+        .filtro-btn {
+            padding: 8px 16px;
+            border: 1px solid #475569 !important;
+            border-radius: 20px;
+            background: #1e293b !important;
+            font-size: 13px;
+            font-weight: 500;
+            color: #cbd5e1 !important;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filtro-btn:hover {
+            border-color: #3b82f6 !important;
+            color: #3b82f6 !important;
+            background: #1e3a5f !important;
+        }
+
+        .filtro-btn.active {
+            background: #3b82f6 !important;
+            border-color: #3b82f6 !important;
+            color: white !important;
+        }
+
+        .contador-resultados {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary, #64748b);
+            margin-bottom: 16px;
+        }
+
+        /* Grid dinámico de recursos */
+        #recursos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .recurso-card {
+            background: #1e293b !important;
+            border: 1px solid #334155 !important;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .recurso-card:hover {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .recurso-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .recurso-icono {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .recurso-titulo {
+            font-size: 15px !important;
+            font-weight: 600 !important;
+            color: #f1f5f9 !important;
+            margin: 0 0 4px 0 !important;
+        }
+
+        .recurso-descripcion {
+            font-size: 13px !important;
+            color: #cbd5e1 !important;
+            line-height: 1.5 !important;
+            margin-bottom: 12px !important;
+            flex-grow: 1;
+        }
+
+        .recurso-especialidad {
+            display: inline-block;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #94a3b8 !important;
+        }
+
+        .recurso-tag {
+            font-size: 10px !important;
+            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 4px;
+            color: #94a3b8 !important;
+        }
+
+        /* Modo oscuro */
+        @media (prefers-color-scheme: dark) {
+            .recurso-titulo {
+                color: #f1f5f9 !important;
+            }
+
+            .recurso-descripcion {
+                color: #cbd5e1 !important;
+            }
+
+            .recurso-especialidad {
+                background: rgba(255, 255, 255, 0.15) !important;
+                color: #e2e8f0 !important;
+            }
+
+            .recurso-tag {
+                background: rgba(255, 255, 255, 0.08) !important;
+                border-color: rgba(255, 255, 255, 0.15) !important;
+                color: #94a3b8 !important;
+            }
+        }
+
+        /* Soporte para clase dark del sitio */
+        .dark .recurso-titulo,
+        [data-theme="dark"] .recurso-titulo,
+        body.dark .recurso-titulo {
+            color: #f1f5f9 !important;
+        }
+
+        .dark .recurso-descripcion,
+        [data-theme="dark"] .recurso-descripcion,
+        body.dark .recurso-descripcion {
+            color: #cbd5e1 !important;
+        }
+
+        .dark .recurso-especialidad,
+        [data-theme="dark"] .recurso-especialidad,
+        body.dark .recurso-especialidad {
+            background: rgba(255, 255, 255, 0.15) !important;
+            color: #e2e8f0 !important;
+        }
+
+        .dark .recurso-tag,
+        [data-theme="dark"] .recurso-tag,
+        body.dark .recurso-tag {
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
+            color: #94a3b8 !important;
+        }
+
+        .recurso-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .recurso-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .recurso-tag {
+            font-size: 10px;
+            padding: 2px 6px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            color: #64748b;
+        }
+
+        .recurso-link {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+        }
+
+        .recurso-estado {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .estado-nuevo {
+            background: #22c55e;
+            color: #fff;
+        }
+
+        .estado-beta {
+            background: #f59e0b;
+            color: #fff;
+        }
+
+        /* Colores por especialidad - Alto contraste */
+        .esp-cardiologia {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .esp-neumologia {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .esp-neurologia {
+            background: #a855f7;
+            color: #fff;
+        }
+
+        .esp-dermatologia {
+            background: #ec4899;
+            color: #fff;
+        }
+
+        .esp-digestivo {
+            background: #10b981;
+            color: #fff;
+        }
+
+        .esp-gestion {
+            background: #6366f1;
+            color: #fff;
+        }
+
+        .esp-urgencias {
+            background: #f59e0b;
+            color: #fff;
+        }
+
+        .esp-general {
+            background: #64748b;
+            color: #fff;
+        }
+
+        .esp-obstetricia {
+            background: #f472b6;
+            color: #fff;
+        }
+
+        .esp-farmacologia {
+            background: #10b981;
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="./assets/js/include.js"></script>
+    <include src="header.html"></include>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <section class="hero-section">
+            <h1 class="main-title">
+                <span class="icon">🩺</span>
+                <span>Herramientas Clínicas</span>
+            </h1>
+            <p class="intro-text">
+                Aplicaciones interactivas de apoyo a la práctica clínica diaria.
+                Desde guías de interpretación hasta calculadoras especializadas,
+                diseñadas para facilitar la toma de decisiones en consulta.
+            </p>
+            <!-- Disclaimer -->
+            <div
+                style="background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 8px; padding: 12px 16px; margin-top: 16px; display: flex; align-items: flex-start; gap: 10px;">
+                <span style="font-size: 18px;">⚠️</span>
+                <p style="margin: 0; font-size: 13px; color: #fbbf24; line-height: 1.5;">
+                    <strong>Aviso importante:</strong> Estas herramientas son <strong>prototipos educativos y de
+                        demostración</strong> y pueden contener errores.
+                    No han sido validadas clínicamente ni están destinadas a la toma de decisiones asistenciales reales.
+                    Cualquier uso debe realizarse bajo supervisión de un profesional cualificado.
+                </p>
+            </div>
+        </section>
+
+        <!-- Filtros -->
+        <div class="filtros-especialidad" id="filtros">
+            <button class="filtro-btn active" data-filtro="todos">Todos</button>
+            <button class="filtro-btn" data-filtro="cardiologia">❤️ Cardiología</button>
+            <button class="filtro-btn" data-filtro="neumologia">🫁 Neumología</button>
+            <button class="filtro-btn" data-filtro="neurologia">🧠 Neurología</button>
+            <button class="filtro-btn" data-filtro="gestion">📊 Gestión</button>
+            <button class="filtro-btn" data-filtro="urgencias">🚨 Urgencias</button>
+            <button class="filtro-btn" data-filtro="general">📋 General</button>
+            <button class="filtro-btn" data-filtro="obstetricia">🤰 Obstetricia</button>
+            <button class="filtro-btn" data-filtro="farmacologia">💊 Farmacología</button>
+        </div>
+
+        <div class="contador-resultados" id="contador"></div>
+
+        <!-- Grid de recursos -->
+        <div id="recursos-grid"></div>
+    </main>
+
+    <include src="footer.html"></include>
+    <script src="./assets/js/utils.js"></script>
+
+    <script>
+        // =============================================
+        // DATOS DE HERRAMIENTAS CLÍNICAS
+        // Para añadir nueva herramienta, solo añade entrada aquí
+        // =============================================
+        const HERRAMIENTAS_CLINICAS = [
+            {
+                id: 1,
+                titulo: "Suite HTA",
+                url: "hta.html",
+                icono: "❤️",
+                especialidad: "cardiologia",
+                descripcion: "Registro AMPA, clasificación de fenotipos (bata blanca, enmascarada), calculadora de hipotensión ortostática. Guías ESH 2023/ESC 2024.",
+                tags: ["AMPA", "Fenotipos", "Guías"],
+                estado: null
+            },
+            {
+                id: 2,
+                titulo: "Guía de Interpretación ECG",
+                url: "ekg.html",
+                icono: "💓",
+                especialidad: "cardiologia",
+                descripcion: "Intérprete sistemático de ECG v2.7. Guía paso a paso con glosario y ayudas clínicas.",
+                tags: ["ECG", "Interpretación"],
+                estado: null
+            },
+            {
+                id: 3,
+                titulo: "Riesgo en Fibrilación Auricular",
+                url: "riesgo-fa.html",
+                icono: "⚡",
+                especialidad: "cardiologia",
+                descripcion: "Calculadora CHA₂DS₂-VASc y HAS-BLED. Indicación de anticoagulación.",
+                tags: ["FA", "CHA2DS2-VASc", "HAS-BLED"],
+                estado: null
+            },
+            {
+                id: 4,
+                titulo: "Asistente de Espirometría",
+                url: "espirometria-v2.html",
+                icono: "🫁",
+                especialidad: "neumologia",
+                descripcion: "Interpretación guiada con evaluación de calidad, patrones y prueba broncodilatadora. Tutorial integrado.",
+                tags: ["FEV1", "Patrones", "Tutorial"],
+                estado: null
+            },
+            {
+                id: 5,
+                titulo: "CAD-Q Asma/EPOC",
+                url: "calculadora-asma-epoc.html",
+                icono: "🌬️",
+                especialidad: "neumologia",
+                descripcion: "Calculadora CAD-Q para diferenciación EPOC vs Asma. Score validado.",
+                tags: ["EPOC", "Asma", "CAD-Q"],
+                estado: null
+            },
+            {
+                id: 6,
+                titulo: "Diagnóstico de Vértigo",
+                url: "vertigo.html",
+                icono: "🌀",
+                especialidad: "neurologia",
+                descripcion: "Algoritmo clínico interactivo de diagnóstico diferencial del vértigo.",
+                tags: ["VPPB", "Algoritmo"],
+                estado: null
+            },
+            {
+                id: 7,
+                titulo: "Maniobra de Epley",
+                url: "vertigo-epley.html",
+                icono: "🔄",
+                especialidad: "neurologia",
+                descripcion: "Guía visual paso a paso de la maniobra de Epley para VPPB.",
+                tags: ["VPPB", "Maniobra"],
+                estado: null
+            },
+            {
+                id: 8,
+                titulo: "Escala S-LANSS",
+                url: "escala-dolor-neuropatico.html",
+                icono: "⚡",
+                especialidad: "neurologia",
+                descripcion: "Evaluación de dolor neuropático. Cuestionario interactivo con interpretación.",
+                tags: ["Dolor", "Neuropático"],
+                estado: null
+            },
+            {
+                id: 9,
+                titulo: "Pierna Eritematosa",
+                url: "piernaeritematosa.html",
+                icono: "🦵",
+                especialidad: "dermatologia",
+                descripcion: "Algoritmo diagnóstico de pierna eritematosa. Celulitis vs. otras causas.",
+                tags: ["Celulitis", "Diagnóstico"],
+                estado: null
+            },
+            {
+                id: 10,
+                titulo: "SCORAD Dermatitis",
+                url: "scorad-dermatitis.html",
+                icono: "🩹",
+                especialidad: "dermatologia",
+                descripcion: "Calculadora SCORAD para evaluación de gravedad de dermatitis atópica.",
+                tags: ["SCORAD", "Atópica"],
+                estado: null
+            },
+            {
+                id: 11,
+                titulo: "Complejidad 360",
+                url: "complejidad-360.html",
+                icono: "📊",
+                especialidad: "gestion",
+                descripcion: "Suite analítica de complejidad asistencial. Modelo de carga en Atención Primaria.",
+                tags: ["Carga", "Análisis"],
+                estado: "nuevo"
+            },
+            {
+                id: 12,
+                titulo: "Complejidad AP",
+                url: "complejidad-ap.html",
+                icono: "📈",
+                especialidad: "gestion",
+                descripcion: "Herramienta basada en Braspenning et al. 2025. Evaluación multinivel de complejidad en AP.",
+                tags: ["AP", "Braspenning"],
+                estado: "nuevo"
+            },
+            {
+                id: 13,
+                titulo: "Lumbalgia",
+                url: "lumbalgia.html",
+                icono: "🦴",
+                especialidad: "general",
+                descripcion: "Evaluación y manejo de lumbalgia. Banderas rojas, estratificación, plan de tratamiento.",
+                tags: ["Banderas rojas", "Manejo"],
+                estado: null
+            },
+            {
+                id: 14,
+                titulo: "ExerCheck",
+                url: "ejercicio-consulta.html",
+                icono: "🏃",
+                especialidad: "general",
+                descripcion: "Intérprete clínico de ejercicio. Prescripción de actividad física basada en evidencia.",
+                tags: ["Ejercicio", "Prescripción"],
+                estado: null
+            },
+            {
+                id: 15,
+                titulo: "Guardias AP",
+                url: "guardias-ap.html",
+                icono: "🚨",
+                especialidad: "urgencias",
+                descripcion: "Recurso de apoyo para asignar guardias (avisos y urgencias) en los turnos de Atención Continuada en Atención Primaria. ",
+                tags: ["Urgencias", "Protocolos"],
+                estado: null
+            },
+            {
+                id: 16,
+                titulo: "Sick Day Rules",
+                url: "sick-day-rules.html",
+                icono: "💊",
+                especialidad: "general",
+                descripcion: "Reglas de días de enfermedad: ajuste de medicación en enfermedad aguda.",
+                tags: ["Ajuste", "Medicación"],
+                estado: null
+            },
+            {
+                id: 17,
+                titulo: "Control Obstétrico",
+                url: "control-obstetrico-v2.html",
+                icono: "🤰",
+                especialidad: "obstetricia",
+                descripcion: "Panel gestacional completo: cálculo de EG, FPP, trimestres, calendario de controles y exportación de citas.",
+                tags: ["Embarazo", "FPP", "Calendario"],
+                estado: "nuevo"
+            },
+            {
+                id: 18,
+                titulo: "Vademécum Esencial AP",
+                url: "vademecum-ap.html",
+                icono: "💊",
+                especialidad: "farmacologia",
+                descripcion: "Prueba de concepto: núcleo optimizado de ~142 principios activos para el 90% de la prescripción en Atención Primaria.",
+                tags: ["Prescripción", "Pareto", "CIAP-2"],
+                estado: "nuevo"
+            }
+        ];
+
+        // =============================================
+        // LÓGICA DE RENDERIZADO
+        // =============================================
+        const grid = document.getElementById('recursos-grid');
+        const contador = document.getElementById('contador');
+        const filtros = document.getElementById('filtros');
+        let filtroActivo = 'todos';
+
+        function renderRecursos() {
+            const recursos = filtroActivo === 'todos'
+                ? HERRAMIENTAS_CLINICAS
+                : HERRAMIENTAS_CLINICAS.filter(r => r.especialidad === filtroActivo);
+
+            contador.textContent = `Mostrando ${recursos.length} de ${HERRAMIENTAS_CLINICAS.length} herramientas`;
+
+            grid.innerHTML = recursos.map(r => `
+        <article class="recurso-card">
+          <a href="${r.url}" class="recurso-link" aria-label="${r.titulo}"></a>
+          <div class="recurso-header">
+            <div class="recurso-icono esp-${r.especialidad}">${r.icono}</div>
+            <div>
+              <h3 class="recurso-titulo">${r.titulo}</h3>
+              <span class="recurso-especialidad">${formatEspecialidad(r.especialidad)}</span>
+            </div>
+          </div>
+          <p class="recurso-descripcion">${r.descripcion}</p>
+          <div class="recurso-footer">
+            <div class="recurso-tags">
+              ${r.tags.map(t => `<span class="recurso-tag">${t}</span>`).join('')}
+            </div>
+            ${r.estado ? `<span class="recurso-estado estado-${r.estado}">${r.estado.toUpperCase()}</span>` : ''}
+          </div>
+        </article>
+      `).join('');
+        }
+
+        function formatEspecialidad(esp) {
+            const nombres = {
+                cardiologia: 'Cardiología',
+                neumologia: 'Neumología',
+                neurologia: 'Neurología',
+                dermatologia: 'Dermatología',
+                digestivo: 'Digestivo',
+                gestion: 'Gestión',
+                urgencias: 'Urgencias',
+                general: 'General',
+                obstetricia: 'Obstetricia',
+                farmacologia: 'Farmacología'
+            };
+            return nombres[esp] || esp;
+        }
+
+        // Event listeners para filtros
+        filtros.addEventListener('click', (e) => {
+            if (e.target.classList.contains('filtro-btn')) {
+                document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                filtroActivo = e.target.dataset.filtro;
+                renderRecursos();
+            }
+        });
+
+        // Render inicial
+        renderRecursos();
+    </script>
+</body>
+
+</html>
