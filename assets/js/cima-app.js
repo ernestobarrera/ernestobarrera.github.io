@@ -107,12 +107,21 @@ class MedCheckApp {
         const modal = document.getElementById('legal-modal');
         const btn = document.getElementById('accept-legal-btn');
 
+        // Check if demo mode is enabled via URL parameter (skip disclaimer for demos/presentations)
+        const urlParams = new URLSearchParams(window.location.search);
+        const isDemoMode = urlParams.get('demo') === 'true';
+
         // Always show on new session (sessionStorage instead of localStorage)
-        if (!sessionStorage.getItem('medcheck_legal_accepted')) {
+        // Unless in demo mode
+        if (!sessionStorage.getItem('medcheck_legal_accepted') && !isDemoMode) {
             modal.style.display = 'flex'; // Force show
             document.body.style.overflow = 'hidden'; // Prevent scrolling
         } else {
             modal.style.display = 'none';
+            // If demo mode, also process URL params immediately
+            if (isDemoMode) {
+                this.processURLParams();
+            }
         }
 
         btn.addEventListener('click', () => {
