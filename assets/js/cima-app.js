@@ -12,6 +12,8 @@ class MedCheckApp {
         this.modal = document.getElementById('med-modal');
         this.modalBody = document.getElementById('modal-body');
         this.toastContainer = document.getElementById('toast-container');
+        this.LEGAL_ACCEPT_KEY = 'medcheck_legal_accepted';
+        this._legalAcceptedInMemory = false;
 
         // Patient Context State
         this.patientContext = {
@@ -95,7 +97,7 @@ class MedCheckApp {
         this.updateATCVersion();
 
         // If legal already accepted, process URL params now
-        if (sessionStorage.getItem('medcheck_legal_accepted')) {
+        if (this.hasAcceptedLegalDisclaimer()) {
             this.processURLParams();
         } else {
             // Default view while waiting for legal acceptance
@@ -106,14 +108,15 @@ class MedCheckApp {
     checkLegalDisclaimer() {
         const modal = document.getElementById('legal-modal');
         const btn = document.getElementById('accept-legal-btn');
+        if (!modal || !btn) return;
 
         // Check if demo mode is enabled via URL parameter (skip disclaimer for demos/presentations)
         const urlParams = new URLSearchParams(window.location.search);
         const isDemoMode = urlParams.get('demo') === 'true';
+        const alreadyAccepted = this.hasAcceptedLegalDisclaimer();
 
-        // Always show on new session (sessionStorage instead of localStorage)
-        // Unless in demo mode
-        if (!sessionStorage.getItem('medcheck_legal_accepted') && !isDemoMode) {
+        // Show legal only when not accepted and not in demo mode
+        if (!alreadyAccepted && !isDemoMode) {
             modal.style.display = 'flex'; // Force show
             document.body.style.overflow = 'hidden'; // Prevent scrolling
         } else {
@@ -125,12 +128,60 @@ class MedCheckApp {
         }
 
         btn.addEventListener('click', () => {
-            sessionStorage.setItem('medcheck_legal_accepted', 'true');
+            this.setLegalAccepted();
             modal.style.display = 'none';
             document.body.style.overflow = '';
             // Process URL params after legal acceptance
             this.processURLParams();
         });
+    }
+
+    hasAcceptedLegalDisclaimer() {
+        if (this._legalAcceptedInMemory) {
+            return true;
+        }
+
+        try {
+            if (window.localStorage.getItem(this.LEGAL_ACCEPT_KEY) === 'true') {
+                return true;
+            }
+        } catch (error) {
+            // localStorage unavailable; fallback to sessionStorage.
+            try {
+                return window.sessionStorage.getItem(this.LEGAL_ACCEPT_KEY) === 'true' || this._legalAcceptedInMemory;
+            } catch (sessionError) {
+                return this._legalAcceptedInMemory;
+            }
+        }
+
+        // Migrate from legacy session-based flag if present.
+        try {
+            if (window.sessionStorage.getItem(this.LEGAL_ACCEPT_KEY) === 'true') {
+                this.setLegalAccepted();
+                window.sessionStorage.removeItem(this.LEGAL_ACCEPT_KEY);
+                return true;
+            }
+        } catch (error) {
+            // Ignore migration failures.
+        }
+
+        return false;
+    }
+
+    setLegalAccepted() {
+        try {
+            window.localStorage.setItem(this.LEGAL_ACCEPT_KEY, 'true');
+            return;
+        } catch (error) {
+            // localStorage unavailable; fallback to sessionStorage first.
+            try {
+                window.sessionStorage.setItem(this.LEGAL_ACCEPT_KEY, 'true');
+                return;
+            } catch (sessionError) {
+                // Fallback to in-memory session flag when browser storage is blocked.
+                this._legalAcceptedInMemory = true;
+            }
+        }
     }
 
     /**
@@ -619,6 +670,8 @@ class MedCheckApp {
             this.filterState = { form: null, lab: null, doses: new Set() };
             if (this.groupingState?.routeFilters) {
                 this.groupingState.routeFilters.clear();
+                this.groupingState.collapsedGroups.clear();
+                this.groupingState.expandedGroups.clear();
             }
 
             this.displaySearchResults(this.lastSearchResults);
@@ -1072,6 +1125,7 @@ class MedCheckApp {
 
         // Setup event listeners for grouping controls
         this.setupSearchGroupingEventListeners(data);
+        this.setupGroupedResultsEventListeners(resultsContainer);
 
         // Add click handlers for cards
         resultsContainer.querySelectorAll('.result-card').forEach(card => {
@@ -1091,6 +1145,7 @@ class MedCheckApp {
             groupBySelect.addEventListener('change', (e) => {
                 this.groupingState.groupBy = e.target.value;
                 this.groupingState.collapsedGroups.clear();
+                this.groupingState.expandedGroups.clear();
                 this.displaySearchResults(data);
                 // Update URL with new groupBy
                 this.updateURLWithCurrentState();
@@ -1539,6 +1594,8 @@ class MedCheckApp {
                 matchedIndication: { label, atc: atcCodes }
             };
 
+            this.groupingState.collapsedGroups.clear();
+            this.groupingState.expandedGroups.clear();
             this.lastIndicationQuery = label;
             this.lastIndicationResults = data;
             this.displayIndicationResults(data, label);
@@ -1819,6 +1876,8 @@ class MedCheckApp {
             // Create a synthetic matchedIndication for display
             data.matchedIndication = { label, atc: atcCode };
 
+            this.groupingState.collapsedGroups.clear();
+            this.groupingState.expandedGroups.clear();
             this.lastIndicationQuery = label;
             this.lastIndicationResults = data;
             this.resultsDisplayedCount = 50; // Reset pagination
@@ -1894,6 +1953,8 @@ class MedCheckApp {
             }
 
             // Save for persistence
+            this.groupingState.collapsedGroups.clear();
+            this.groupingState.expandedGroups.clear();
             this.lastIndicationResults = data;
 
             this.displayIndicationResults(data, query);
@@ -4970,8 +5031,51 @@ class MedCheckApp {
             groupBy: 'activeIngredient', // activeIngredient | route | form | none
             sortBy: 'nameAsc',           // nameAsc | nameDesc | doseAsc | doseDesc
             routeFilters: new Set(),     // Set of selected route names (empty = show all)
-            collapsedGroups: new Set()   // Set of collapsed group IDs
+            collapsedGroups: new Set(),  // Set of collapsed group IDs
+            expandedGroups: new Set()    // Set of expanded group IDs (for "Ver más")
         };
+    }
+
+    buildGroupId(groupName) {
+        const raw = String(groupName || 'grupo');
+        const slug = raw
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
+        let hash = 0;
+        for (let i = 0; i < raw.length; i++) {
+            hash = ((hash << 5) - hash + raw.charCodeAt(i)) >>> 0;
+        }
+
+        return `group-${slug || 'grupo'}-${hash.toString(36)}`;
+    }
+
+    setupGroupedResultsEventListeners(container) {
+        if (!container) return;
+
+        container.querySelectorAll('.result-group-header[data-group-id]').forEach(header => {
+            header.addEventListener('click', () => {
+                this.toggleGroup(header.dataset.groupId);
+            });
+
+            header.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    this.toggleGroup(header.dataset.groupId);
+                }
+            });
+        });
+
+        container.querySelectorAll('.view-more-btn[data-group-id]').forEach(btn => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                this.expandGroup(btn.dataset.groupId);
+            });
+        });
     }
 
     /**
@@ -5302,7 +5406,7 @@ class MedCheckApp {
         }
 
         return groups.map(group => {
-            const groupId = `group-${group.name.replace(/\s+/g, '-').toLowerCase()}`;
+            const groupId = this.buildGroupId(group.name);
             const isCollapsed = this.groupingState.collapsedGroups.has(groupId);
             const isExpanded = this.groupingState.expandedGroups?.has(groupId);
 
@@ -5317,14 +5421,14 @@ class MedCheckApp {
             ).join('');
 
             const viewMoreBtn = hasMore ? `
-                <button class="view-more-btn" onclick="app.expandGroup('${groupId}')">
+                <button type="button" class="view-more-btn" data-group-id="${groupId}">
                     <i class="fas fa-chevron-down"></i> Ver ${remainingCount} más
                 </button>
             ` : '';
 
             return `
                 <div class="result-group ${isCollapsed ? 'collapsed' : ''}" id="${groupId}">
-                    <div class="result-group-header" onclick="app.toggleGroup('${groupId}')">
+                    <div class="result-group-header" role="button" tabindex="0" aria-expanded="${isCollapsed ? 'false' : 'true'}" data-group-id="${groupId}">
                         <div class="result-group-toggle">
                             <i class="fas fa-chevron-down"></i>
                         </div>
@@ -5359,6 +5463,11 @@ class MedCheckApp {
             this.groupingState.collapsedGroups.add(groupId);
             groupEl.classList.add('collapsed');
         }
+
+        const header = groupEl.querySelector('.result-group-header[data-group-id]');
+        if (header) {
+            header.setAttribute('aria-expanded', this.groupingState.collapsedGroups.has(groupId) ? 'false' : 'true');
+        }
     }
 
     /**
@@ -5369,10 +5478,14 @@ class MedCheckApp {
             this.groupingState.expandedGroups = new Set();
         }
         this.groupingState.expandedGroups.add(groupId);
+        this.groupingState.collapsedGroups.delete(groupId);
 
-        // Re-render results to show all items
-        // Check if we're in search view or indications view
-        if (this._lastSearchData) {
+        // Re-render according to the current view.
+        if (this.currentView === 'search' && this._lastSearchData) {
+            this.displaySearchResults(this._lastSearchData);
+        } else if (this.currentView === 'indications' && this.lastIndicationResults) {
+            this.displayGroupedIndicationResults(this.lastIndicationResults, this.lastIndicationQuery);
+        } else if (this._lastSearchData) {
             this.displaySearchResults(this._lastSearchData);
         } else if (this.lastIndicationResults) {
             this.displayGroupedIndicationResults(this.lastIndicationResults, this.lastIndicationQuery);
@@ -5454,6 +5567,7 @@ class MedCheckApp {
 
         // Setup event listeners
         this.setupGroupingEventListeners(data, searchQuery);
+        this.setupGroupedResultsEventListeners(resultsContainer);
 
         // Add click handlers for cards
         resultsContainer.querySelectorAll('.result-card').forEach(card => {
@@ -5473,6 +5587,7 @@ class MedCheckApp {
             groupBySelect.addEventListener('change', (e) => {
                 this.groupingState.groupBy = e.target.value;
                 this.groupingState.collapsedGroups.clear();
+                this.groupingState.expandedGroups.clear();
                 this.displayGroupedIndicationResults(data, searchQuery);
             });
         }
