@@ -3600,13 +3600,14 @@ body {
 
 .result-group-content {
     padding: var(--space-md);
-    max-height: 1000px;
-    overflow: hidden;
-    transition: max-height 0.3s ease, padding 0.3s ease;
+    max-height: none;
+    overflow: visible;
+    transition: padding 0.3s ease;
 }
 
 .result-group.collapsed .result-group-content {
     max-height: 0;
+    overflow: hidden;
     padding-top: 0;
     padding-bottom: 0;
 }
