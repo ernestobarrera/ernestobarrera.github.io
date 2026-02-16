@@ -117,10 +117,10 @@ class MedCheckApp {
 
         // Show legal only when not accepted and not in demo mode
         if (!alreadyAccepted && !isDemoMode) {
-            modal.style.display = 'flex'; // Force show
+            modal.classList.remove('hidden');
             document.body.style.overflow = 'hidden'; // Prevent scrolling
         } else {
-            modal.style.display = 'none';
+            modal.classList.add('hidden');
             // If demo mode, also process URL params immediately
             if (isDemoMode) {
                 this.processURLParams();
@@ -129,7 +129,7 @@ class MedCheckApp {
 
         btn.addEventListener('click', () => {
             this.setLegalAccepted();
-            modal.style.display = 'none';
+            modal.classList.add('hidden');
             document.body.style.overflow = '';
             // Process URL params after legal acceptance
             this.processURLParams();
