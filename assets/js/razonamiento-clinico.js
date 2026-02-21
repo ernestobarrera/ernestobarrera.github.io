@@ -183,13 +183,12 @@ function renderCards() {
     const items = DATA[S.tab];
     const resps = S.responses[S.tab];
     $('criteriaArea').innerHTML = items.map((c, i) => {
-        const isOpen = S.openIdx === i;
         const r = resps[i];
         const refsHtml = c.refs.map(ref =>
             `<div class="ref-item">${ref.url ? `<a href="${ref.url}" target="_blank" rel="noopener">` : ''}<span class="ref-authors">${ref.txt.split('.')[0]}.</span> ${ref.txt.split('.').slice(1).join('.')}${ref.url ? '</a>' : ''}</div>`
         ).join('');
         return `
-    <div class="criterion-card${isOpen ? ' open' : ''}" id="ccard-${i}">
+    <div class="criterion-card" id="ccard-${i}">
       <div class="card-head" onclick="toggleCard(${i})">
         <span class="card-icon">${c.icon}</span>
         <div class="card-head-info">
@@ -197,9 +196,9 @@ function renderCards() {
           <div class="card-cat">${c.q}</div>
         </div>
         <div class="card-resp">
-          <button class="rbtn${r === 'yes' ? ' a-yes' : ''}" onclick="event.stopPropagation();respond(${i},'yes')" title="Sí">✓</button>
-          <button class="rbtn${r === 'no' ? ' a-no' : ''}" onclick="event.stopPropagation();respond(${i},'no')" title="No">✗</button>
-          <button class="rbtn${r === 'ns' ? ' a-ns' : ''}" onclick="event.stopPropagation();respond(${i},'ns')" title="No sé">?</button>
+          <button class="rbtn" data-idx="${i}" data-val="yes" onclick="event.stopPropagation();respond(${i},'yes')" title="Sí">✓</button>
+          <button class="rbtn" data-idx="${i}" data-val="no" onclick="event.stopPropagation();respond(${i},'no')" title="No">✗</button>
+          <button class="rbtn" data-idx="${i}" data-val="ns" onclick="event.stopPropagation();respond(${i},'ns')" title="No sé">?</button>
         </div>
         <span class="card-chevron">▼</span>
       </div>
@@ -224,6 +223,24 @@ function renderCards() {
       </div>
     </div>`;
     }).join('');
+    // Apply initial states after DOM is built
+    updateCardStates();
+}
+
+/* Update open/close + button highlights WITHOUT rebuilding DOM */
+function updateCardStates() {
+    const resps = S.responses[S.tab];
+    document.querySelectorAll('.criterion-card').forEach((card, i) => {
+        // Toggle open/close
+        if (i === S.openIdx) card.classList.add('open');
+        else card.classList.remove('open');
+        // Update response button highlights
+        card.querySelectorAll('.rbtn').forEach(btn => {
+            const val = btn.dataset.val;
+            btn.classList.remove('a-yes', 'a-no', 'a-ns');
+            if (resps[i] === val) btn.classList.add('a-' + val);
+        });
+    });
 }
 
 function renderProgress() {
@@ -300,7 +317,7 @@ function renderSummary(yes, no, ns, pct) {
 /* ── INTERACTIONS ── */
 function toggleCard(i) {
     S.openIdx = S.openIdx === i ? -1 : i;
-    renderCards(); renderProgress();
+    updateCardStates(); renderProgress();
     if (S.openIdx >= 0) {
         setTimeout(() => {
             const el = document.getElementById('ccard-' + i);
@@ -311,7 +328,7 @@ function toggleCard(i) {
 
 function openFirst() {
     S.openIdx = 0;
-    renderCards(); renderProgress();
+    updateCardStates(); renderProgress();
     setTimeout(() => {
         const el = document.getElementById('ccard-0');
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -321,17 +338,17 @@ function openFirst() {
 function respond(i, val) {
     const resps = S.responses[S.tab];
     resps[i] = resps[i] === val ? null : val;
-    renderCards(); renderProgress(); renderVerdict();
+    updateCardStates(); renderProgress(); renderVerdict();
     // Auto-advance to next unanswered
     if (resps[i] !== null && i < 9) {
         const next = resps.findIndex((r, idx) => idx > i && r === null);
         if (next >= 0) {
             setTimeout(() => {
                 S.openIdx = next;
-                renderCards(); renderProgress();
+                updateCardStates(); renderProgress();
                 const el = document.getElementById('ccard-' + next);
                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 350);
+            }, 450);
         }
     }
 }
