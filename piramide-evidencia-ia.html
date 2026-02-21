@@ -19,7 +19,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root {
-      --header-h: 0px
+      --header-h: 60px
     }
 
     html,
@@ -33,8 +33,9 @@
     .app-shell {
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      overflow: hidden
+      height: calc(100vh - var(--header-h));
+      overflow: hidden;
+      margin-top: var(--header-h)
     }
 
     .app-header {
