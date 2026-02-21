@@ -1,0 +1,943 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Razonamiento Clínico con IA — Herramienta de Evaluación | @ernestob</title>
+  <meta name="description"
+    content="Herramienta interactiva de autoevaluación para profesionales sanitarios: integración segura de IA en la práctica clínica y evaluación normativa de herramientas.">
+  <link rel="icon" href="/assets/images/icon.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/header.css">
+  <link rel="stylesheet" href="assets/css/footer.css">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: rgba(30, 41, 59, 0.7);
+      --surface-hover: rgba(30, 41, 59, 0.9);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.15);
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      --white: #f1f5f9;
+      /* Tab 1 - Práctica Clínica */
+      --t1: #a78bfa;
+      --t1-dim: rgba(167, 139, 250, 0.15);
+      --t1-border: rgba(167, 139, 250, 0.3);
+      /* Tab 2 - Evaluar Herramienta */
+      --t2: #60a5fa;
+      --t2-dim: rgba(96, 165, 250, 0.15);
+      --t2-border: rgba(96, 165, 250, 0.3);
+      /* Semantic */
+      --ok: #34d399;
+      --ok-dim: rgba(52, 211, 153, 0.12);
+      --ok-border: rgba(52, 211, 153, 0.3);
+      --danger: #f87171;
+      --danger-dim: rgba(248, 113, 113, 0.12);
+      --danger-border: rgba(248, 113, 113, 0.3);
+      --warn: #fbbf24;
+      --warn-dim: rgba(251, 191, 36, 0.12);
+      --warn-border: rgba(251, 191, 36, 0.3);
+      /* Risk-level colors */
+      --risk-critical-bg: rgba(239, 68, 68, 0.08);
+      --risk-critical-border: rgba(239, 68, 68, 0.25);
+      --risk-critical-text: #fca5a5;
+      --risk-high-bg: rgba(245, 158, 11, 0.08);
+      --risk-high-border: rgba(245, 158, 11, 0.25);
+      --risk-high-text: #fcd34d;
+      --risk-info-bg: rgba(139, 92, 246, 0.08);
+      --risk-info-border: rgba(139, 92, 246, 0.25);
+      --risk-info-text: #c4b5fd;
+      --radius: 12px;
+      --header-h: var(--header-height, 60px);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      margin-top: var(--header-h);
+    }
+
+    /* ── APP SHELL ── */
+    .app-shell {
+      min-height: calc(100vh - var(--header-h));
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── STICKY TOOLBAR ── */
+    .toolbar {
+      position: sticky;
+      top: var(--header-h);
+      z-index: 50;
+      background: linear-gradient(180deg, var(--bg) 0%, rgba(15, 23, 42, 0.98) 100%);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.25rem;
+    }
+
+    .toolbar-inner {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .toolbar-row-1 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--white);
+    }
+
+    .toolbar-title .badge {
+      font-size: 0.6rem;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-weight: 700;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .tab-btn {
+      padding: 6px 16px;
+      border-radius: 99px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+    }
+
+    .tab-btn.active-t1 {
+      background: var(--t1-dim);
+      color: var(--t1);
+      border-color: var(--t1-border);
+    }
+
+    .tab-btn.active-t2 {
+      background: var(--t2-dim);
+      color: var(--t2);
+      border-color: var(--t2-border);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .print-btn {
+      padding: 5px 14px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .print-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text);
+    }
+
+    /* Progress bar */
+    .progress-row {
+      margin-top: 0.6rem;
+    }
+
+    .progress-dots {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pdot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      border: 2px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      flex-shrink: 0;
+    }
+
+    .pdot:hover {
+      border-color: var(--border-hover);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .pdot.done-yes {
+      border-color: var(--ok);
+      color: var(--ok);
+      background: var(--ok-dim);
+    }
+
+    .pdot.done-no {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: var(--danger-dim);
+    }
+
+    .pdot.done-ns {
+      border-color: var(--warn);
+      color: var(--warn);
+      background: var(--warn-dim);
+    }
+
+    .pdot.current {
+      transform: scale(1.15);
+      box-shadow: 0 0 12px rgba(167, 139, 250, 0.3);
+    }
+
+    .progress-label {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* Verdict banner */
+    .verdict-banner {
+      margin-top: 0.5rem;
+      padding: 8px 14px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-dim);
+    }
+
+    .verdict-banner:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .verdict-banner.v-ok {
+      background: var(--ok-dim);
+      border-color: var(--ok-border);
+      color: var(--ok);
+    }
+
+    .verdict-banner.v-warn {
+      background: var(--warn-dim);
+      border-color: var(--warn-border);
+      color: var(--warn);
+    }
+
+    .verdict-banner.v-stop {
+      background: var(--danger-dim);
+      border-color: var(--danger-border);
+      color: var(--danger);
+    }
+
+    /* ── MAIN CONTENT ── */
+    .main-content {
+      flex: 1;
+      padding: 1.25rem 1rem 3rem;
+    }
+
+    .content-wrap {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* ── INTRO HERO ── */
+    .intro-hero {
+      padding: 2rem;
+      border-radius: var(--radius);
+      margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+      border: 1px solid var(--border);
+    }
+
+    .intro-hero .hero-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .intro-hero h2 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--white);
+      margin-bottom: 0.75rem;
+      line-height: 1.2;
+    }
+
+    .intro-hero p {
+      color: var(--text);
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .intro-bullets {
+      list-style: none;
+      padding: 0;
+      margin: 0.75rem 0;
+    }
+
+    .intro-bullets li {
+      padding: 0.4rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+      font-size: 0.9rem;
+    }
+
+    .intro-bullets li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.65rem;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .intro-callout {
+      margin-top: 1rem;
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .intro-cta {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 10px 24px;
+      border-radius: 99px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      color: white;
+    }
+
+    .intro-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Theme-specific intro colors */
+    .is-t1 .intro-bullets li::before {
+      background: var(--t1);
+    }
+
+    .is-t1 .intro-callout {
+      background: var(--t1-dim);
+      border-left: 3px solid var(--t1);
+    }
+
+    .is-t1 .intro-cta {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    }
+
+    .is-t2 .intro-bullets li::before {
+      background: var(--t2);
+    }
+
+    .is-t2 .intro-callout {
+      background: var(--t2-dim);
+      border-left: 3px solid var(--t2);
+    }
+
+    .is-t2 .intro-cta {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+    }
+
+    /* ── CRITERION CARDS ── */
+    .criterion-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      margin-bottom: 10px;
+      transition: all 0.3s ease;
+      scroll-margin-top: calc(var(--header-h) + 200px);
+      overflow: hidden;
+    }
+
+    .criterion-card:hover {
+      border-color: var(--border-hover);
+    }
+
+    .criterion-card.open {
+      border-color: var(--border-hover);
+      background: var(--surface-hover);
+    }
+
+    .is-t1 .criterion-card.open {
+      border-left: 3px solid var(--t1);
+    }
+
+    .is-t2 .criterion-card.open {
+      border-left: 3px solid var(--t2);
+    }
+
+    /* Card header (always visible) */
+    .card-head {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .card-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .card-num {
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .card-cat {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .card-head-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* Response buttons inline */
+    .card-resp {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .rbtn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rbtn:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .rbtn.a-yes {
+      background: var(--ok-dim);
+      border-color: var(--ok-border);
+      color: var(--ok);
+    }
+
+    .rbtn.a-no {
+      background: var(--danger-dim);
+      border-color: var(--danger-border);
+      color: var(--danger);
+    }
+
+    .rbtn.a-ns {
+      background: var(--warn-dim);
+      border-color: var(--warn-border);
+      color: var(--warn);
+    }
+
+    .card-chevron {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      transition: transform 0.3s;
+      flex-shrink: 0;
+      margin-left: 4px;
+    }
+
+    .criterion-card.open .card-chevron {
+      transform: rotate(180deg);
+    }
+
+    /* Card body (expandable) */
+    .card-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .criterion-card.open .card-body {
+      max-height: 2000px;
+    }
+
+    .card-body-inner {
+      padding: 0 1rem 1rem 1rem;
+    }
+
+    .card-question {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--white);
+      line-height: 1.4;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 700px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .info-panel {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      padding: 1rem;
+      border: 1px solid var(--border);
+    }
+
+    .info-panel-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .is-t1 .info-panel-title.accent {
+      color: var(--t1);
+    }
+
+    .is-t2 .info-panel-title.accent {
+      color: var(--t2);
+    }
+
+    .info-panel-title.dim {
+      color: var(--text-dim);
+    }
+
+    .info-panel-body {
+      font-size: 0.9rem;
+      line-height: 1.65;
+      color: var(--text);
+    }
+
+    .info-panel-body strong {
+      color: var(--white);
+    }
+
+    .info-panel-body ul {
+      padding-left: 1.2rem;
+      margin-top: 0.4rem;
+    }
+
+    .info-panel-body li {
+      margin-bottom: 0.25rem;
+      font-size: 0.85rem;
+    }
+
+    /* Risk badges */
+    .risk-badge {
+      margin-top: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: block;
+      line-height: 1.4;
+    }
+
+    .risk-critical {
+      background: var(--risk-critical-bg);
+      border: 1px solid var(--risk-critical-border);
+      color: var(--risk-critical-text);
+    }
+
+    .risk-high {
+      background: var(--risk-high-bg);
+      border: 1px solid var(--risk-high-border);
+      color: var(--risk-high-text);
+    }
+
+    .risk-purple,
+    .risk-medium {
+      background: var(--risk-info-bg);
+      border: 1px solid var(--risk-info-border);
+      color: var(--risk-info-text);
+    }
+
+    /* Technique box */
+    .technique-box {
+      background: rgba(0, 0, 0, 0.25);
+      padding: 0.85rem;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+
+    .is-t1 .technique-box {
+      border-left: 3px solid var(--t1);
+    }
+
+    .is-t2 .technique-box {
+      border-left: 3px solid var(--t2);
+    }
+
+    .technique-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      color: var(--white);
+    }
+
+    .technique-text {
+      color: var(--text);
+    }
+
+    .howto-list {
+      padding-left: 1.2rem;
+    }
+
+    .howto-list li {
+      margin-bottom: 0.3rem;
+      font-size: 0.85rem;
+    }
+
+    /* Evidence collapsible */
+    .evidence-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-top: 1px solid var(--border);
+      margin-top: 0.75rem;
+      transition: color 0.2s;
+    }
+
+    .evidence-toggle:hover {
+      color: var(--text);
+    }
+
+    .evidence-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease;
+    }
+
+    .evidence-body.show {
+      max-height: 800px;
+    }
+
+    .ref-item {
+      padding: 0.4rem 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .ref-item:last-child {
+      border-bottom: none;
+    }
+
+    .ref-item a {
+      color: var(--t1);
+      text-decoration: none;
+    }
+
+    .is-t2 .ref-item a {
+      color: var(--t2);
+    }
+
+    .ref-item a:hover {
+      text-decoration: underline;
+    }
+
+    .ref-authors {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .ref-journal {
+      font-style: italic;
+      opacity: 0.9;
+    }
+
+    /* ── SUMMARY PANEL ── */
+    .summary-panel {
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+
+    .summary-panel h3 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+    }
+
+    .summary-item {
+      padding: 0.75rem;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+    }
+
+    .summary-item .s-cat {
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .is-t1 .summary-item .s-cat {
+      color: var(--t1);
+    }
+
+    .is-t2 .summary-item .s-cat {
+      color: var(--t2);
+    }
+
+    .summary-item .s-q {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 6px;
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      body {
+        background: #fff !important;
+        color: #000 !important;
+        margin-top: 0;
+      }
+
+      .toolbar,
+      .card-resp,
+      .card-chevron,
+      .intro-cta,
+      .verdict-banner,
+      .progress-row {
+        display: none !important;
+      }
+
+      .site-header,
+      .site-footer {
+        display: none !important;
+      }
+
+      .criterion-card {
+        break-inside: avoid;
+        border: 1px solid #ccc;
+        background: none;
+      }
+
+      .card-body {
+        max-height: none !important;
+      }
+
+      .card-question {
+        color: #000;
+      }
+
+      .info-panel {
+        border: 1px solid #ddd;
+        background: #f9f9f9;
+      }
+
+      .info-panel-body,
+      .info-panel-body strong {
+        color: #222;
+      }
+
+      .risk-badge {
+        border: 1px solid #999;
+        background: #f0f0f0;
+        color: #333;
+      }
+
+      .evidence-body {
+        max-height: none !important;
+        display: block !important;
+      }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .toolbar-row-1 {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .tabs {
+        justify-content: center;
+      }
+
+      .pdot {
+        width: 24px;
+        height: 24px;
+        font-size: 0.55rem;
+      }
+
+      .card-head {
+        padding: 0.7rem;
+        gap: 0.5rem;
+      }
+
+      .card-icon {
+        font-size: 1.2rem;
+      }
+
+      .card-resp .rbtn {
+        width: 30px;
+        height: 30px;
+        font-size: 0.65rem;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .intro-hero h2 {
+        font-size: 1.3rem;
+      }
+    }
+  </style>
+</head>
+
+<body class="is-t1">
+  <include src="header.html"></include>
+
+  <div class="app-shell">
+    <!-- ═══ TOOLBAR ═══ -->
+    <div class="toolbar">
+      <div class="toolbar-inner">
+        <div class="toolbar-row-1">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="toolbar-title">🧠 Razonamiento Médico & IA
+              <span class="badge" style="background:var(--t1-dim);color:var(--t1);border:1px solid var(--t1-border)">v2
+                · 2026</span>
+            </span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="tabs">
+              <button class="tab-btn active-t1" id="tabT1" onclick="switchTab('t1')">🧠 Práctica Clínica</button>
+              <button class="tab-btn" id="tabT2" onclick="switchTab('t2')">🛡️ Evaluar Herramienta</button>
+            </div>
+            <button class="print-btn" onclick="printReport()">🖨️ Guardar Informe</button>
+          </div>
+        </div>
+        <!-- Progress dots -->
+        <div class="progress-row">
+          <div class="progress-dots" id="progressDots"></div>
+          <div class="progress-label" id="progressLabel">0 / 10 completado</div>
+        </div>
+        <div class="verdict-banner" id="verdictBanner" onclick="scrollToSummary()">💡 Responde los criterios para ver el
+          veredicto</div>
+      </div>
+    </div>
+
+    <!-- ═══ MAIN ═══ -->
+    <main class="main-content">
+      <div class="content-wrap">
+        <div id="introArea"></div>
+        <div id="criteriaArea"></div>
+        <div id="summaryArea"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ═══ FOOTER ═══ -->
+  <div style="padding:6px 1rem;background:var(--bg);border-top:1px solid var(--border);text-align:center">
+    <span style="font-size:0.65rem;color:var(--text-muted)">Basado en el Libro Blanco: IA y Toma de Decisiones Clínicas
+      · © Ernesto Barrera 2026 · Herramienta educativa</span>
+  </div>
+
+  <script src="assets/js/razonamiento-clinico.js"></script>
+  <include src="footer.html"></include>
+  <script src="./assets/js/include.js"></script>
+</body>
+
+</html>
