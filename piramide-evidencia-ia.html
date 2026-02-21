@@ -1,2432 +1,965 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta
-      name="description"
-      content="Navegador interactivo de herramientas de inteligencia artificial para la síntesis de evidencia biomédica basado en la pirámide 5S."
-    />
-    <meta name="author" content="Ernesto Barrera" />
-    <link rel="icon" href="/assets/images/icon.webp" />
-    <title>Pirámide de Evidencia 5.0 y Herramientas IA | @ernestob</title>
-
-    <meta property="og:type" content="article" />
-    <meta
-      property="og:title"
-      content="Pirámide de Evidencia 5.0 y Herramientas IA | ​👨‍⚕️ ​@ernestob"
-    />
-    <meta
-      property="og:site_name"
-      content="Recursos para la gestión de información sanitaria  🔎🩺⚕"
-    />
-    <meta
-      property="og:url"
-      content="https://ernestobarrera.github.io/piramide-evidencia-ia.html"
-    />
-    <meta
-      property="og:image"
-      content="https://ernestobarrera.github.io/assets/images/me.png"
-    />
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-
-    <link rel="stylesheet" href="assets/css/main.css" />
-    <link rel="stylesheet" href="assets/css/header.css" />
-    <link rel="stylesheet" href="assets/css/components.css" />
-    <link rel="stylesheet" href="assets/css/footer.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
-
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <style>
-      /* Variables locales para la pirámide - no afectan el sitio global */
-      .pyramid-card {
-        --pyramid-card-bg: #ffffff;
-        --pyramid-text-primary: #1e293b;
-        --pyramid-text-secondary: #64748b;
-        --pyramid-accent-color: #3b82f6;
-      }
-
-      .pyramid-container {
-        width: 100%;
-        max-width: 1500px;
-        margin: 0 auto;
-        padding: 0;
-      }
-      .pyramid-card {
-        background: var(--pyramid-card-bg);
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-bottom: 0.5rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-      }
-      .pyramid-title {
-        color: var(--pyramid-text-primary);
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid var(--pyramid-accent-color);
-      }
-      .pyramid-description {
-        color: var(--pyramid-text-secondary);
-        margin-bottom: 1.5rem;
-        line-height: 1.6;
-      }
-
-      /* Mejora de contraste de textos */
-      .text-slate-700 {
-        color: #334155 !important;
-      }
-      .text-slate-600 {
-        color: #475569 !important;
-      }
-      .text-slate-500 {
-        color: #64748b !important;
-      }
-
-      .badge-meaning {
-        background-color: #dbeafe;
-        color: #1e40af;
-        border: 1px solid #93c5fd;
-      }
-
-      .badge-model {
-        background-color: #f3e8ff;
-        color: #6b21a8;
-        border: 1px solid #c4b5fd;
-      }
-
-      .badge-meaning.inactive,
-      .badge-model.inactive {
-        background-color: #f1f5f9;
-        color: #64748b;
-        border: 1px solid #cbd5e1;
-        opacity: 0.6;
-      }
-
-      /* Responsive mejorado */
-      @media (max-width: 1024px) and (min-width: 768px) {
-        .pyramid-container {
-          padding: 1rem;
-        }
-
-        .sidebar-container {
-          position: sticky;
-          top: calc(var(--scroll-offset) + 1rem);
-        }
-      }
-
-      @media (max-width: 768px) {
-        .pyramid-card {
-          padding: 1rem;
-        }
-
-        .mode-switch-container {
-          position: static;
-          margin-top: 1rem;
-          justify-content: center;
-        }
-      }
-
-      /* Estilos de la pirámide */
-      .pyramid-level-group {
-        cursor: pointer;
-        transition: all 0.3s ease-in-out;
-      }
-      .pyramid-level-group .pyramid-shape {
-        transition: all 0.3s ease-in-out;
-        stroke: #ffffff;
-        stroke-width: 3;
-      }
-      .pyramid-level-group .pyramid-text {
-        font-family: "Inter", sans-serif;
-        font-weight: 700;
-        fill: white;
-        text-anchor: middle;
-        pointer-events: none;
-        font-size: 24px;
-      }
-      .pyramid-level-group:hover .pyramid-shape {
-        filter: brightness(1.15);
-        transform: scale(1.03);
-        transform-origin: center;
-      }
-      .pyramid-level-group.active .pyramid-shape {
-        filter: brightness(1.25);
-        stroke: #1e293b;
-        stroke-width: 5;
-      }
-
-      /* Animaciones mejoradas */
-      .level-resources {
-        transform: translateZ(0);
-        will-change: box-shadow;
-      }
-
-      .level-resources.highlight,
-      #resources-llm.highlight {
-        animation: highlightPulse 0.5s ease-out;
-        box-shadow: 0 0 0 3px #3b82f6, 0 10px 25px rgba(59, 130, 246, 0.15);
-      }
-      @keyframes highlightPulse {
-        0% {
-          transform: scale(1);
-        }
-        50% {
-          transform: scale(1.02);
-        }
-        100% {
-          transform: scale(1);
-        }
-      }
-
-      /* Tool chips mejorados */
-      .tool-chip {
-        user-select: none;
-        -webkit-tap-highlight-color: transparent;
-        transform: translateZ(0);
-      }
-
-      .tool-chip:active {
-        transform: scale(0.95);
-      }
-      .tool-chip:focus {
-        outline: 3px solid #3b82f6;
-        outline-offset: 2px;
-      }
-      .tool-chip:focus:not(:focus-visible) {
-        outline: none;
-      }
-
-      .tool-detail {
-        max-height: 0;
-        opacity: 0;
-        overflow: hidden;
-        transition: all 0.5s ease-out;
-      }
-      .tool-detail.active {
-        max-height: 2000px;
-        opacity: 1;
-        margin-top: 1rem;
-        transition: all 0.5s ease-in;
-      }
-      .tooltip {
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-      }
-      .has-tooltip:hover .tooltip {
-        opacity: 1;
-        visibility: visible;
-      }
-      .badge-shimmer {
-        background: linear-gradient(
-          120deg,
-          transparent,
-          rgba(255, 255, 255, 0.3),
-          transparent
-        );
-        background-size: 200% 100%;
-        animation: shimmer 2s infinite;
-      }
-      @keyframes shimmer {
-        0% {
-          background-position: -200% center;
-        }
-        100% {
-          background-position: 200% center;
-        }
-      }
-      .tool-chip.active-chip {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        color: white;
-        border-color: #1d4ed8;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-      }
-      .tool-chip.active-chip span {
-        background: rgba(255, 255, 255, 0.2) !important;
-        color: white !important;
-      }
-      .tool-chip.active-chip::after {
-        content: "▼";
-        margin-left: 8px;
-        font-size: 10px;
-      }
-
-      /* Fix para el indicador de progreso */
-      #progress-indicator {
-        position: fixed !important;
-        top: calc(
-          var(--header-height) + var(--intro-header-height) + 1rem
-        ) !important;
-        right: 0.05rem !important;
-        z-index: 40 !important; /* Reducido para no interferir con headers */
-        background: #1e293b !important;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
-      }
-
-      /* los nombres de las herramientas deben verse siempre con opacidad plena */
-      .tool-chip {
-        opacity: 1 !important;
-        color: #1e293b !important;
-      }
-
-      .tool-chip span {
-        opacity: 1 !important;
-      }
-
-      html {
-        scroll-behavior: smooth;
-      }
-
-      :root {
-        --header-height: 4rem;
-        --intro-header-height: 5.5rem;
-        --scroll-offset: calc(
-          var(--header-height) + var(--intro-header-height) + 3.5rem
-        );
-      }
-      .main-container {
-        margin-top: 0;
-      }
-
-      .intro-header {
-        position: sticky;
-        top: var(--header-height);
-        z-index: 50;
-        background: #0f172a;
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-      }
-
-      @media (min-width: 1024px) {
-        .sidebar-container {
-          position: sticky;
-          top: var(--scroll-offset);
-          align-self: start;
-        }
-      }
-
-      .level-resources,
-      #resources-llm {
-        scroll-margin-top: var(--scroll-offset);
-      }
-    </style>
-
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "G-YFKR6RB1ZC");
-    </script>
-  </head>
-
-  <body>
-    <include src="header.html"></include>
-
-    <main class="main-container">
-      <!-- === CAMBIO 1: Añadido eje semiótico visible === -->
-      <header class="intro-header max-w-[1500px] mx-auto px-4">
-        <h1 class="text-xl font-extrabold text-slate-50">
-          🔼 Pirámide de Evidencia 5.0 y Herramientas IA
-        </h1>
-        <p class="mt-2 text-base text-slate-300 leading-relaxed">
-          La medicina está viviendo una transformación sin precedentes. Donde
-          antes <strong>interpretamos</strong> síntomas como
-          <em class="text-amber-300">"este dolor torácico parece anginoso"</em>,
-          ahora los sistemas de IA <strong>modelizan</strong> patrones:
-          <em class="text-amber-300"
-            >"este vector de síntomas coincide en un 87% con clusters que
-            predicen IAM"</em
-          >. Esta herramienta presenta
-          <strong>ejemplos representativos</strong> de herramientas de IA
-          organizadas según la pirámide 5S de evidencia.
-        </p>
-
-        <div
-          class="h-0.5 bg-gradient-to-r from-amber-400 via-blue-400 to-amber-400 mt-3 opacity-60"
-        ></div>
-      </header>
-
-      <div class="pyramid-container pt-20">
-        <!-- === CAMBIO 6: Añadido aria-live="polite" === -->
-        <div
-          id="progress-indicator"
-          class="hidden fixed top-4 right-4 z-50 bg-slate-800 text-slate-200 px-4 py-2 rounded-full shadow-lg flex items-center gap-2"
-          aria-live="polite"
-          aria-label="Indicador de nivel actual en la pirámide"
-        >
-          <i class="fa-solid fa-layer-group text-slate-400"></i>
-          <span class="text-sm font-medium"
-            >Nivel
-            <span id="current-level" class="font-bold text-blue-400">5</span>
-            de 5</span
-          >
-        </div>
-
-        <div class="lg:grid lg:grid-cols-12 lg:gap-12 lg:items-start">
-          <aside
-            class="lg:col-span-5 xl:col-span-4 mb-8 lg:mb-0 sidebar-container"
-          >
-            <div class="sticky top-8">
-              <h2 class="text-lg font-bold text-center mb-4 text-slate-700">
-                ⚡ Haz clic en un nivel para explorar
-              </h2>
-
-              <div class="flex flex-row items-stretch">
-                <div
-                  class="flex-shrink-0 w-12 flex items-center justify-center mr-4"
-                >
-                  <div
-                    id="llm-layer-label"
-                    class="relative flex items-center h-full group cursor-pointer has-tooltip"
-                    title="Explora el rol de los LLMs generalistas"
-                  >
-                    <div
-                      class="tooltip absolute left-full ml-4 bg-slate-800 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap z-10"
-                    >
-                      Clic para ver cómo usar ChatGPT, Claude, etc.
-                    </div>
-                    <div class="flex items-center gap-2 -rotate-90">
-                      <span
-                        class="text-xs font-bold uppercase tracking-wider text-violet-700 group-hover:text-violet-900 transition-colors whitespace-nowrap"
-                        >Capa LLM Transversal</span
-                      >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="text-violet-600 animate-pulse"
-                      >
-                        <path
-                          d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275z"
-                        ></path>
-                      </svg>
-                    </div>
-                    <div
-                      class="h-full w-3 bg-gradient-to-b from-violet-500/60 via-violet-400/30 to-violet-500/60 rounded-full ml-2 group-hover:from-violet-600/70 group-hover:via-violet-500/40 group-hover:to-violet-600/70 transition-all"
-                    ></div>
-                  </div>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="relative w-full mx-auto">
-                    <svg
-                      viewBox="0 0 500 500"
-                      class="w-full h-auto mx-auto filter drop-shadow-lg"
-                    >
-                      <defs>
-                        <filter
-                          id="text-shadow"
-                          x="-20%"
-                          y="-20%"
-                          width="140%"
-                          height="140%"
-                        >
-                          <feDropShadow
-                            dx="1"
-                            dy="1"
-                            stdDeviation="1.5"
-                            flood-color="#000000"
-                            flood-opacity="0.5"
-                          />
-                        </filter>
-                        <linearGradient
-                          id="grad5"
-                          x1="0%"
-                          y1="0%"
-                          x2="0%"
-                          y2="100%"
-                        >
-                          <stop
-                            offset="0%"
-                            style="stop-color: #dc2626; stop-opacity: 1"
-                          ></stop>
-                          <stop
-                            offset="100%"
-                            style="stop-color: #b91c1c; stop-opacity: 1"
-                          ></stop>
-                        </linearGradient>
-                        <linearGradient
-                          id="grad4"
-                          x1="0%"
-                          y1="0%"
-                          x2="0%"
-                          y2="100%"
-                        >
-                          <stop
-                            offset="0%"
-                            style="stop-color: #ea580c; stop-opacity: 1"
-                          ></stop>
-                          <stop
-                            offset="100%"
-                            style="stop-color: #c2410c; stop-opacity: 1"
-                          ></stop>
-                        </linearGradient>
-                        <linearGradient
-                          id="grad3"
-                          x1="0%"
-                          y1="0%"
-                          x2="0%"
-                          y2="100%"
-                        >
-                          <stop
-                            offset="0%"
-                            style="stop-color: #f59e0b; stop-opacity: 1"
-                          ></stop>
-                          <stop
-                            offset="100%"
-                            style="stop-color: #d97706; stop-opacity: 1"
-                          ></stop>
-                        </linearGradient>
-                        <linearGradient
-                          id="grad2"
-                          x1="0%"
-                          y1="0%"
-                          x2="0%"
-                          y2="100%"
-                        >
-                          <stop
-                            offset="0%"
-                            style="stop-color: #10b981; stop-opacity: 1"
-                          ></stop>
-                          <stop
-                            offset="100%"
-                            style="stop-color: #059669; stop-opacity: 1"
-                          ></stop>
-                        </linearGradient>
-                        <linearGradient
-                          id="grad1"
-                          x1="0%"
-                          y1="0%"
-                          x2="0%"
-                          y2="100%"
-                        >
-                          <stop
-                            offset="0%"
-                            style="stop-color: #3b82f6; stop-opacity: 1"
-                          ></stop>
-                          <stop
-                            offset="100%"
-                            style="stop-color: #2563eb; stop-opacity: 1"
-                          ></stop>
-                        </linearGradient>
-                      </defs>
-                      <g class="pyramid-level-group" data-level="5">
-                        <polygon
-                          class="pyramid-shape"
-                          points="200,20 300,20 375,100 125,100"
-                          fill="url(#grad5)"
-                        ></polygon>
-                        <text
-                          class="pyramid-text"
-                          x="250"
-                          y="70"
-                          filter="url(#text-shadow)"
-                        >
-                          SYSTEMS
-                        </text>
-                      </g>
-                      <g class="pyramid-level-group" data-level="4">
-                        <polygon
-                          class="pyramid-shape"
-                          points="125,105 375,105 440,195 60,195"
-                          fill="url(#grad4)"
-                        ></polygon>
-                        <text
-                          class="pyramid-text"
-                          x="250"
-                          y="155"
-                          filter="url(#text-shadow)"
-                        >
-                          SUMMARIES
-                        </text>
-                      </g>
-                      <g class="pyramid-level-group" data-level="3">
-                        <polygon
-                          class="pyramid-shape"
-                          points="60,200 440,200 480,290 20,290"
-                          fill="url(#grad3)"
-                        ></polygon>
-                        <text
-                          class="pyramid-text"
-                          x="250"
-                          y="250"
-                          filter="url(#text-shadow)"
-                        >
-                          GUIDELINES
-                        </text>
-                      </g>
-                      <g class="pyramid-level-group" data-level="2">
-                        <polygon
-                          class="pyramid-shape"
-                          points="20,295 480,295 500,400 0,400"
-                          fill="url(#grad2)"
-                        ></polygon>
-                        <text
-                          class="pyramid-text"
-                          x="250"
-                          y="355"
-                          filter="url(#text-shadow)"
-                        >
-                          REVIEWS
-                        </text>
-                      </g>
-                      <g class="pyramid-level-group" data-level="1">
-                        <polygon
-                          class="pyramid-shape"
-                          points="0,405 500,405 500,480 0,480"
-                          fill="url(#grad1)"
-                        ></polygon>
-                        <text
-                          class="pyramid-text"
-                          x="250"
-                          y="450"
-                          filter="url(#text-shadow)"
-                        >
-                          STUDIES
-                        </text>
-                      </g>
-                    </svg>
-                    <div
-                      class="mt-6 text-xs text-slate-600 bg-slate-50 p-3 rounded-lg"
-                    >
-                      <p class="font-semibold mb-1">💡 Principio clave:</p>
-                      <p>
-                        Empieza por el nivel más alto posible. Solo desciende si
-                        no encuentras respuesta.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          <div class="lg:col-span-7 xl:col-span-8 space-y-8">
-            <section
-              id="resources-5"
-              class="level-resources p-6 rounded-xl border-l-8 border-red-600 bg-gradient-to-r from-red-50 to-white"
-            >
-              <h3 class="flex items-center gap-3 text-xl font-bold mb-4">
-                <span
-                  class="flex items-center justify-center w-10 h-10 rounded-full bg-red-600 text-white shadow-lg"
-                  >5</span
-                >
-
-                <span class="text-black">
-                  Systems - Soporte a Decisión Integrado
-                </span>
-              </h3>
-
-              <!-- === CAMBIO 3: Chips duales añadidos === -->
-
-              <div class="text-sm text-slate-700 mb-4 space-y-2">
-                <p>
-                  Herramientas que se integran directamente en la Historia
-                  Clínica Electrónica (HCE) para vincular los datos del paciente
-                  con la evidencia externa más relevante de forma automática y
-                  contextualizada. Son la forma más eficiente de responder
-                  <strong>foreground questions</strong>.
-                </p>
-
-                <!-- === CAMBIO 4: Línea IA-perspectiva añadida === -->
-                <div class="ia-perspective border-red-400 text-red-700">
-                  🤖 IA-perspectiva: Los sistemas integrados utilizan
-                  arquitecturas de deep learning para mapear automáticamente el
-                  contexto clínico del paciente con bases de conocimiento
-                  vectorizadas, realizando inferencia probabilística en tiempo
-                  real.
-                </div>
-
-                <div class="p-3 bg-red-100/60 rounded-lg border border-red-200">
-                  <p class="flex items-center gap-2 mb-2">
-                    <span class="text-2xl">🔑</span
-                    ><strong class="text-red-900 text-base"
-                      >Conceptos Clave:</strong
-                    >
-                  </p>
-                  <ul class="list-disc list-inside mt-1 text-red-800">
-                    <li>
-                      <strong>Just-in-time information:</strong> La evidencia
-                      aparece cuando y donde se necesita, sin buscarla
-                      activamente.
-                    </li>
-                    <li>
-                      <strong>Alert Fatigue:</strong> El exceso de alertas
-                      irrelevantes. Estos sistemas buscan mitigarla ofreciendo
-                      solo avisos de alto valor.
-                    </li>
-                    <li>
-                      <strong>Integración con prescripción:</strong> Pueden
-                      sugerir o advertir sobre tratamientos en el momento de
-                      recetar.
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <p
-                class="mt-6 mb-3 text-xs text-slate-500 italic flex items-center gap-2"
-              >
-                <span class="text-base">👇</span
-                ><span>Haz clic en una herramienta para ver sus detalles.</span>
-              </p>
-              <div class="flex flex-wrap gap-3">
-                <div class="tool-chip" data-tool="ebmeds">
-                  EBMeDS<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-red-200 text-red-900 badge-shimmer shadow-sm"
-                    >Enterprise</span
-                  >
-                </div>
-              </div>
-              <div id="tool-ebmeds" class="tool-detail mt-4"></div>
-            </section>
-
-            <section
-              id="resources-4"
-              class="level-resources p-6 rounded-xl border-l-8 border-orange-500 bg-gradient-to-r from-orange-50 to-white"
-            >
-              <h3 class="flex items-center gap-3 text-xl font-bold mb-4">
-                <span
-                  class="flex items-center justify-center w-10 h-10 rounded-full bg-orange-500 text-white shadow-lg"
-                  >4</span
-                >
-
-                <span class="text-black">
-                  Summaries - Resúmenes Clínicos Integrados
-                </span>
-              </h3>
-
-              <div class="text-sm text-slate-700 mb-4 space-y-2">
-                <p>
-                  Plataformas que sintetizan hallazgos de múltiples fuentes para
-                  la consulta en el punto de atención. Son el recurso principal
-                  para la mayoría de
-                  <strong>foreground questions</strong>.
-                </p>
-
-                <!-- === CAMBIO 4: Línea IA-perspectiva añadida === -->
-                <div class="ia-perspective border-orange-400 text-orange-700">
-                  🤖 IA-perspectiva: Utilizan modelos de lenguaje entrenados en
-                  corpus biomédicos para generar síntesis coherentes mediante
-                  retrieval-augmented generation (RAG), combinando embeddings
-                  semánticos con atención multi-cabeza.
-                </div>
-
-                <div
-                  class="p-3 bg-orange-100/60 rounded-lg border border-orange-200"
-                >
-                  <p class="flex items-center gap-2 mb-2">
-                    <span class="text-2xl">💡</span
-                    ><strong class="text-orange-900 text-base"
-                      >Conceptos Clave:</strong
-                    >
-                  </p>
-                  <ul class="list-disc list-inside mt-1 text-orange-800">
-                    <li>
-                      <strong>Pre-appraised evidence:</strong> La evidencia ya
-                      ha sido filtrada, evaluada y sintetizada por expertos,
-                      ahorrando tiempo.
-                    </li>
-                    <li>
-                      <strong>Frecuencia de actualización:</strong> Un factor
-                      crítico para la fiabilidad. ¿Se actualiza la plataforma
-                      mensual o anualmente?
-                    </li>
-                    <li>
-                      <strong>Síntesis narrativa vs. sistemática:</strong> Las
-                      mejores herramientas usan métodos sistemáticos para
-                      encontrar y resumir la evidencia.
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <p
-                class="mt-6 mb-3 text-xs text-slate-500 italic flex items-center gap-2"
-              >
-                <span class="text-base">👇</span
-                ><span>Haz clic en una herramienta para ver sus detalles.</span>
-              </p>
-              <div class="flex flex-wrap gap-3">
-                <div class="tool-chip" data-tool="openevidence-clinical">
-                  OpenEvidence (Clinical)<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-200 text-emerald-900 badge-shimmer shadow-sm"
-                    >Free</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="scopus-ai">
-                  Scopus AI<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-red-200 text-red-900 badge-shimmer shadow-sm"
-                    >Institutional</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="dimensions-ai">
-                  Dimensions AI<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-red-200 text-red-900 badge-shimmer shadow-sm"
-                    >Institutional</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="consensus">
-                  Consensus<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-amber-200 text-amber-900 badge-shimmer shadow-sm"
-                    >Freemium</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="tripdatabase">
-                  Trip Pro AI<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-amber-200 text-amber-900 badge-shimmer shadow-sm"
-                    >Freemium</span
-                  >
-                </div>
-              </div>
-              <div
-                id="tool-openevidence-clinical"
-                class="tool-detail mt-4"
-              ></div>
-              <div id="tool-scopus-ai" class="tool-detail mt-4"></div>
-              <div id="tool-dimensions-ai" class="tool-detail mt-4"></div>
-              <div id="tool-consensus" class="tool-detail mt-4"></div>
-              <div id="tool-tripdatabase" class="tool-detail mt-4"></div>
-            </section>
-
-            <section
-              id="resources-3"
-              class="level-resources p-6 rounded-xl border-l-8 border-amber-500 bg-gradient-to-r from-amber-50 to-white"
-            >
-              <h3 class="flex items-center gap-3 text-xl font-bold mb-4">
-                <span
-                  class="flex items-center justify-center w-10 h-10 rounded-full bg-amber-500 text-white shadow-lg"
-                  >3</span
-                >
-                <span class="text-black"
-                  >Recommendations - Guías de Práctica Clínica</span
-                >
-              </h3>
-
-              <div class="text-sm text-slate-700 mb-4 space-y-2">
-                <p>
-                  Acceso inteligente a Guías de Práctica Clínica (GPC). Son un
-                  puente entre la evidencia y la decisión, equilibrando
-                  conocimiento de fondo actualizado y respuestas a preguntas
-                  específicas.
-                </p>
-
-                <!-- === CAMBIO 4: Línea IA-perspectiva añadida === -->
-                <div class="ia-perspective border-amber-400 text-amber-700">
-                  🤖 IA-perspectiva: Utilizan procesamiento de lenguaje natural
-                  para indexar y segmentar guías clínicas, permitiendo consultas
-                  contextuales mediante modelos de lenguaje especializados que
-                  mapean síntomas y condiciones clínicas con recomendaciones
-                  específicas de las guías.
-                </div>
-
-                <div
-                  class="p-3 bg-amber-100/60 rounded-lg border border-amber-200"
-                >
-                  <p class="flex items-center gap-2 mb-2">
-                    <span class="text-2xl">📋</span
-                    ><strong class="text-amber-900 text-base"
-                      >Conceptos Clave:</strong
-                    >
-                  </p>
-                  <ul class="list-disc list-inside mt-1 text-amber-800">
-                    <li>
-                      <strong>Niveles de Evidencia (GRADE):</strong> Fíjate en
-                      la fuerza de la recomendación (fuerte/débil) y la calidad
-                      de la evidencia (alta/baja).
-                    </li>
-                    <li>
-                      <strong>Calidad de la Guía (AGREE II):</strong> Las guías
-                      rigurosas siguen este checklist para su elaboración.
-                    </li>
-                    <li>
-                      <strong>Variabilidad Geográfica:</strong> Una guía de
-                      EE.UU. (AHA) puede no ser aplicable directamente en Europa
-                      (ESC).
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <p
-                class="mt-6 mb-3 text-xs text-slate-500 italic flex items-center gap-2"
-              >
-                <span class="text-base">👇</span
-                ><span>Haz clic en una herramienta para ver sus detalles.</span>
-              </p>
-              <div class="flex flex-wrap gap-3">
-                <div class="tool-chip" data-tool="openevidence-guidelines">
-                  OpenEvidence (Guides)<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-200 text-emerald-900 badge-shimmer shadow-sm"
-                    >Free</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="glass-ai">
-                  Glass AI<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-amber-200 text-amber-900 badge-shimmer shadow-sm"
-                    >Freemium</span
-                  >
-                </div>
-              </div>
-              <div
-                id="tool-openevidence-guidelines"
-                class="tool-detail mt-4"
-              ></div>
-              <div id="tool-glass-ai" class="tool-detail mt-4"></div>
-            </section>
-
-            <section
-              id="resources-2"
-              class="level-resources p-6 rounded-xl border-l-8 border-emerald-500 bg-gradient-to-r from-emerald-50 to-white"
-            >
-              <h3 class="flex items-center gap-3 text-xl font-bold mb-4">
-                <span
-                  class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500 text-white shadow-lg"
-                  >2</span
-                >
-                <span class="text-black"
-                  >Systematic Reviews - Revisiones Sistemáticas</span
-                >
-              </h3>
-
-              <div class="text-sm text-slate-700 mb-4 space-y-2">
-                <p>
-                  Herramientas para acelerar el proceso de revisión sistemática,
-                  fundamental para construir y actualizar el
-                  <strong>background knowledge</strong> o para investigar
-                  preguntas clínicas muy específicas.
-                </p>
-
-                <!-- === CAMBIO 4: Línea IA-perspectiva añadida === -->
-                <div class="ia-perspective border-emerald-400 text-emerald-700">
-                  🤖 IA-perspectiva: Aplican active learning y clasificación
-                  semi-supervisada para priorizar literatura relevante,
-                  reduciendo el espacio de búsqueda mediante representaciones
-                  vectoriales densas de abstracts científicos.
-                </div>
-
-                <div
-                  class="p-3 bg-emerald-100/60 rounded-lg border border-emerald-200"
-                >
-                  <p class="flex items-center gap-2 mb-2">
-                    <span class="text-2xl">🔍</span
-                    ><strong class="text-emerald-900 text-base"
-                      >Conceptos Clave:</strong
-                    >
-                  </p>
-                  <ul class="list-disc list-inside mt-1 text-emerald-800">
-                    <li>
-                      <strong>PICO, PRISMA:</strong> Estructura para formular
-                      preguntas y reportar revisiones de forma estandarizada.
-                    </li>
-                    <li>
-                      <strong>Living Systematic Reviews:</strong> Revisiones que
-                      se actualizan continuamente a medida que surge nueva
-                      evidencia.
-                    </li>
-                    <li>
-                      <strong>AMSTAR 2:</strong> Herramienta estándar para
-                      evaluar la calidad metodológica de una revisión
-                      sistemática.
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <p
-                class="mt-6 mb-3 text-xs text-slate-500 italic flex items-center gap-2"
-              >
-                <span class="text-base">👇</span
-                ><span>Haz clic en una herramienta para ver sus detalles.</span>
-              </p>
-              <div class="flex flex-wrap gap-3">
-                <div class="tool-chip" data-tool="rayyan">
-                  Rayyan<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-amber-200 text-amber-900 badge-shimmer shadow-sm"
-                    >Freemium</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="elicit">
-                  Elicit<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-amber-200 text-amber-900 badge-shimmer shadow-sm"
-                    >Freemium</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="asreview">
-                  ASReview<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-200 text-emerald-900 badge-shimmer shadow-sm"
-                    >Open Source</span
-                  >
-                </div>
-              </div>
-              <div id="tool-rayyan" class="tool-detail mt-4"></div>
-              <div id="tool-elicit" class="tool-detail mt-4"></div>
-              <div id="tool-asreview" class="tool-detail mt-4"></div>
-            </section>
-
-            <section
-              id="resources-1"
-              class="level-resources p-6 rounded-xl border-l-8 border-blue-500 bg-gradient-to-r from-blue-50 to-white"
-            >
-              <h3 class="flex items-center gap-3 text-xl font-bold mb-4">
-                <span
-                  class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white shadow-lg"
-                  >1</span
-                >
-
-                <span class="text-black">
-                  Studies - Estudios Individuales y Exploración
-                </span>
-              </h3>
-
-              <div class="text-sm text-slate-700 mb-4 space-y-2">
-                <p>
-                  Herramientas para explorar y analizar literatura científica
-                  individual. Es el último recurso, apropiado para investigar
-                  <strong>casos raros</strong>, evidencia muy novedosa o para
-                  construir tu propio
-                  <strong>background knowledge</strong> desde cero.
-                </p>
-
-                <!-- === CAMBIO 4: Línea IA-perspectiva añadida === -->
-                <div class="ia-perspective border-blue-400 text-blue-700">
-                  🤖 IA-perspectiva: Emplean técnicas de question-answering
-                  sobre PDFs mediante BERT-based models, generando embeddings
-                  contextuales que permiten búsqueda semántica y extracción
-                  automática de entidades biomédicas.
-                </div>
-
-                <div
-                  class="p-3 bg-blue-100/60 rounded-lg border border-blue-200"
-                >
-                  <p class="flex items-center gap-2 mb-2">
-                    <span class="text-2xl">📖</span
-                    ><strong class="text-blue-900 text-base"
-                      >Conceptos Clave:</strong
-                    >
-                  </p>
-                  <ul class="list-disc list-inside mt-1 text-blue-800">
-                    <li>
-                      <strong>Validez Interna/Externa:</strong> ¿Son fiables los
-                      resultados del estudio? ¿Se pueden aplicar a mi paciente?
-                    </li>
-                    <li>
-                      <strong>Red Flags:</strong> Señales de alerta de baja
-                      calidad, como ausencia de grupo control, alto riesgo de
-                      sesgo, o conclusiones no apoyadas por los datos.
-                    </li>
-                    <li>
-                      <strong>Lectura Crítica:</strong> Habilidad esencial en
-                      este nivel. Estas herramientas ayudan, pero no sustituyen
-                      el análisis de la metodología.
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <p
-                class="mt-6 mb-3 text-xs text-slate-500 italic flex items-center gap-2"
-              >
-                <span class="text-base">👇</span
-                ><span>Haz clic en una herramienta para ver sus detalles.</span>
-              </p>
-              <div class="flex flex-wrap gap-3">
-                <div class="tool-chip" data-tool="scispace">
-                  SciSpace<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-amber-200 text-amber-900 badge-shimmer shadow-sm"
-                    >Freemium</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="scite">
-                  Scite.ai<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-amber-200 text-amber-900 badge-shimmer shadow-sm"
-                    >Freemium</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="researchrabbit">
-                  ResearchRabbit<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-200 text-emerald-900 badge-shimmer shadow-sm"
-                    >Free</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="chatpdf">
-                  ChatPDF<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-amber-200 text-amber-900 badge-shimmer shadow-sm"
-                    >Freemium</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="connected-papers">
-                  Connected Papers<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-amber-200 text-amber-900 badge-shimmer shadow-sm"
-                    >Freemium</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="litsense">
-                  LitSense<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-200 text-emerald-900 badge-shimmer shadow-sm"
-                    >Free</span
-                  >
-                </div>
-              </div>
-              <div id="tool-scispace" class="tool-detail mt-4"></div>
-              <div id="tool-scite" class="tool-detail mt-4"></div>
-              <div id="tool-researchrabbit" class="tool-detail mt-4"></div>
-              <div id="tool-chatpdf" class="tool-detail mt-4"></div>
-              <div id="tool-connected-papers" class="tool-detail mt-4"></div>
-              <div id="tool-litsense" class="tool-detail mt-4"></div>
-            </section>
-
-            <section
-              id="resources-llm"
-              class="level-resources p-6 rounded-xl border-l-8 border-violet-600 bg-gradient-to-r from-violet-50 to-white"
-            >
-              <h3
-                class="flex items-center gap-3 text-xl font-bold mb-4 text-violet-900"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="text-violet-600"
-                >
-                  <path
-                    d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275z"
-                  />
-                  <path d="M5 3v4" />
-                  <path d="M19 17v4" />
-                  <path d="M3 5h4" />
-                  <path d="M17 19h4" />
-                </svg>
-                Capa Transversal: LLMs Generalistas en Medicina
-              </h3>
-
-              <div class="text-sm text-slate-700 mb-4 space-y-2">
-                <p>
-                  Los LLMs generalistas (ChatGPT, Claude, Gemini, Perplexity)
-                  son herramientas de <strong>aumento cognitivo</strong>, no
-                  fuentes de evidencia. Funcionan como "sparring partners
-                  intelectuales" que ayudan a estructurar el pensamiento
-                  clínico, pero requieren verificación constante.
-                </p>
-
-                <div class="ia-perspective border-violet-400 text-violet-700">
-                  🤖 IA-perspectiva: Son modelos autorregresivos (>100B
-                  parámetros) entrenados en corpus web mediante next-token
-                  prediction. No acceden a bases médicas verificadas ni
-                  distinguen calidad de evidencia. Su "conocimiento" es
-                  compresión estadística de co-ocurrencias textuales.
-                </div>
-
-                <div
-                  class="p-3 bg-violet-100/60 rounded-lg border border-violet-200"
-                >
-                  <p class="flex items-center gap-2 mb-2">
-                    <span class="text-2xl">⚡</span>
-                    <strong class="text-violet-900 text-base"
-                      >Principio Central:</strong
-                    >
-                  </p>
-                  <ul class="list-disc list-inside mt-1 text-violet-800">
-                    <li>
-                      <strong>Hipótesis y estructura:</strong> Excelentes para
-                      generar diagnósticos diferenciales y organizar el
-                      pensamiento.
-                    </li>
-                    <li>
-                      <strong>Verificación obligatoria:</strong> Toda
-                      información crítica (dosis, guías, citas) debe validarse
-                      con fuentes primarias.
-                    </li>
-                    <li>
-                      <strong>Augmentación, no sustitución:</strong> Úsalos para
-                      pensar mejor, no para pensar menos.
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <p
-                class="mt-6 mb-3 text-xs text-slate-500 italic flex items-center gap-2"
-              >
-                <span class="text-base">👇</span>
-                <span
-                  >Haz clic en un concepto para explorar técnicas y
-                  precauciones.</span
-                >
-              </p>
-
-              <div class="flex flex-wrap gap-3">
-                <div class="tool-chip" data-tool="prompt-engineering">
-                  Ingeniería de Prompts<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-blue-200 text-blue-900 badge-shimmer shadow-sm"
-                    >Técnica</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="verification-framework">
-                  Marco de Verificación<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-red-200 text-red-900 badge-shimmer shadow-sm"
-                    >Seguridad</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="rag-medical">
-                  RAG Médico<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-purple-200 text-purple-900 badge-shimmer shadow-sm"
-                    >Avanzado</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="multimodal-clinical">
-                  IA Multimodal<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-purple-200 text-purple-900 badge-shimmer shadow-sm"
-                    >Avanzado</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="deep-research">
-                  Deep Research<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-purple-200 text-purple-900 badge-shimmer shadow-sm"
-                    >Avanzado</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="clinical-reasoning">
-                  Razonamiento Clínico<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-blue-200 text-blue-900 badge-shimmer shadow-sm"
-                    >Técnica</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="hallucination-detection">
-                  Detección de Alucinaciones<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-red-200 text-red-900 badge-shimmer shadow-sm"
-                    >Seguridad</span
-                  >
-                </div>
-                <div class="tool-chip" data-tool="epistemological-limits">
-                  Límites Fundamentales<span
-                    class="text-xs font-bold px-3 py-1 rounded-full bg-amber-200 text-amber-900 badge-shimmer shadow-sm"
-                    >Fundamentos</span
-                  >
-                </div>
-              </div>
-
-              <div id="tool-prompt-engineering" class="tool-detail mt-4"></div>
-              <div
-                id="tool-verification-framework"
-                class="tool-detail mt-4"
-              ></div>
-              <div id="tool-rag-medical" class="tool-detail mt-4"></div>
-              <div id="tool-multimodal-clinical" class="tool-detail mt-4"></div>
-              <div id="tool-deep-research" class="tool-detail mt-4"></div>
-              <div id="tool-clinical-reasoning" class="tool-detail mt-4"></div>
-              <div
-                id="tool-hallucination-detection"
-                class="tool-detail mt-4"
-              ></div>
-              <div
-                id="tool-epistemological-limits"
-                class="tool-detail mt-4"
-              ></div>
-            </section>
-          </div>
-        </div>
-        <section
-          class="mt-8 p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl"
-        >
-          <h3 class="text-lg font-bold text-indigo-900 mb-4">
-            🔄 Dos Paradigmas Complementarios
-          </h3>
-          <div class="overflow-x-auto">
-            <table class="w-full bg-white rounded-lg overflow-hidden shadow-sm">
-              <thead>
-                <tr
-                  class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
-                >
-                  <th class="px-4 py-3 text-left text-sm font-semibold">
-                    Dimensión
-                  </th>
-                  <th class="px-4 py-3 text-left text-sm font-semibold">
-                    🔤 Paradigma MBE (Interpretación)
-                  </th>
-                  <th class="px-4 py-3 text-left text-sm font-semibold">
-                    🧮 Paradigma IA (Modelización)
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-200">
-                <tr class="hover:bg-gray-50">
-                  <td class="px-4 py-3 font-semibold text-gray-800">
-                    Unidad básica
-                  </td>
-                  <td class="px-4 py-3 text-gray-700">
-                    Signo clínico (síntoma, resultado)
-                  </td>
-                  <td class="px-4 py-3 text-gray-700">
-                    Vector latente (embedding)
-                  </td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-4 py-3 font-semibold text-gray-800">
-                    Relaciones
-                  </td>
-                  <td class="px-4 py-3 text-gray-700">
-                    Analogía, inferencia semántica
-                  </td>
-                  <td class="px-4 py-3 text-gray-700">
-                    Proximidad geométrica, clustering
-                  </td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-4 py-3 font-semibold text-gray-800">
-                    Validación
-                  </td>
-                  <td class="px-4 py-3 text-gray-700">
-                    Jerarquía de evidencia, lógica
-                  </td>
-                  <td class="px-4 py-3 text-gray-700">
-                    Performance predictiva, ajuste empírico
-                  </td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-4 py-3 font-semibold text-gray-800">
-                    Transparencia
-                  </td>
-                  <td class="px-4 py-3 text-green-700 font-medium">Alta ✓</td>
-                  <td class="px-4 py-3 text-amber-700 font-medium">
-                    Baja (requiere XAI) ⚠️
-                  </td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-4 py-3 font-semibold text-gray-800">
-                    Velocidad
-                  </td>
-                  <td class="px-4 py-3 text-amber-700">
-                    Lenta (búsqueda + lectura)
-                  </td>
-                  <td class="px-4 py-3 text-green-700 font-medium">
-                    Instantánea ⚡
-                  </td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-4 py-3 font-semibold text-gray-800">Riesgos</td>
-                  <td class="px-4 py-3 text-gray-700">
-                    Sesgo humano, carga cognitiva
-                  </td>
-                  <td class="px-4 py-3 text-gray-700">
-                    Caja negra, sesgo algorítmico
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="mt-4 text-sm text-gray-600 italic">
-            💡 <strong>Clave:</strong> No son paradigmas opuestos sino
-            complementarios. La IA acelera el procesamiento; el juicio clínico
-            contextualiza los resultados.
-          </p>
-        </section>
-        <!-- === CAMBIO 5: Reescritura de la Guía Rápida === -->
-        <section
-          id="critical-appraisal-guide"
-          class="level-resources p-6 rounded-xl border-l-8 border-indigo-600 bg-gradient-to-r from-indigo-50 to-white mt-8"
-        >
-          <details class="group">
-            <summary
-              class="flex items-center justify-between font-bold text-xl cursor-pointer text-indigo-900 list-none"
-            >
-              <div class="flex items-center gap-3">
-                <i class="fa-solid fa-clipboard-check text-indigo-500"></i>
-                <span
-                  >Guía Rápida para la Evaluación Crítica de Herramientas de
-                  IA</span
-                >
-              </div>
-              <span
-                class="text-indigo-500 transition-transform duration-300 group-open:rotate-180"
-              >
-                <i class="fa-solid fa-chevron-down"></i>
-              </span>
-            </summary>
-
-            <div class="mt-6 space-y-4">
-              <!-- === Subtítulo añadido === -->
-              <h4 class="text-lg font-bold text-indigo-800 mb-4">
-                Interpretación vs Modelización
-              </h4>
-
-              <div class="p-4 bg-white rounded-lg border border-slate-200">
-                <h5 class="font-semibold text-slate-800">
-                  Fase 1: Fundamentos y Propósito
-                </h5>
-                <ul
-                  class="list-disc list-inside space-y-2 text-sm text-slate-700 mt-2"
-                >
-                  <li>
-                    <b>🔤 Interpretación:</b> ¿Qué problema clínico específico
-                    resuelve y para qué población? ¿El equipo es creíble y
-                    multidisciplinar?
-                  </li>
-                  <li>
-                    <b>🧮 Modelización:</b> ¿Qué arquitectura de IA utiliza?
-                    ¿Cuál es el tamaño del modelo y su capacidad computacional?
-                  </li>
-                </ul>
-              </div>
-
-              <div class="p-4 bg-white rounded-lg border border-slate-200">
-                <h5 class="font-semibold text-slate-800">
-                  Fase 2: El Motor de la IA (Validez Técnica)
-                </h5>
-                <ul
-                  class="list-disc list-inside space-y-3 text-sm text-slate-700 mt-2"
-                >
-                  <li>
-                    <b>🔤 Interpretación:</b> ¿Los datos de entrenamiento son
-                    representativos? ¿Hubo validación externa? ¿Se analizaron
-                    sesgos?
-                    <p class="mt-1 italic text-slate-500 text-xs ml-4">
-                      <span class="font-semibold text-slate-600"
-                        >Explicación:</span
-                      >
-                      La validación externa consiste en probar el modelo con
-                      datos de un hospital o población totalmente diferente al
-                      de su desarrollo.
-                    </p>
-                  </li>
-                  <li>
-                    <b>🧮 Modelización:</b> ¿Usa embeddings, transformers o
-                    CNNs? ¿Cómo maneja el espacio latente? ¿Es explicable o es
-                    una caja negra?
-                    <p class="mt-1 italic text-slate-500 text-xs ml-4">
-                      <span class="font-semibold text-slate-600"
-                        >Explicación:</span
-                      >
-                      Los espacios latentes son representaciones vectoriales
-                      comprimidas donde conceptos similares están
-                      geométricamente cerca.
-                    </p>
-                  </li>
-                </ul>
-              </div>
-
-              <div class="p-4 bg-white rounded-lg border border-slate-200">
-                <h5 class="font-semibold text-slate-800">
-                  Fase 3: Evidencia de Funcionamiento (Resultados Clínicos)
-                </h5>
-                <ul
-                  class="list-disc list-inside space-y-2 text-sm text-slate-700 mt-2"
-                >
-                  <li>
-                    <b>🔤 Interpretación:</b> ¿Hay estudios (ECA) que demuestren
-                    mejora en resultados clínicos? ¿Se han evaluado los riesgos?
-                  </li>
-                  <li>
-                    <b>🧮 Modelización:</b> ¿Cuáles son las métricas de
-                    performance (AUC, F1)? ¿Cómo se calibra la incertidumbre del
-                    modelo?
-                  </li>
-                </ul>
-              </div>
-
-              <div class="p-4 bg-white rounded-lg border border-slate-200">
-                <h5 class="font-semibold text-slate-800">
-                  Fase 4: Uso Responsable (Aplicabilidad Práctica)
-                </h5>
-                <ul
-                  class="list-disc list-inside space-y-2 text-sm text-slate-700 mt-2"
-                >
-                  <li>
-                    <b>🔤 Interpretación:</b> ¿El sistema exige supervisión
-                    profesional? ¿Cómo integro la recomendación con el contexto
-                    del paciente?
-                    <p class="mt-1 italic text-slate-500 text-xs ml-4">
-                      <span class="font-semibold text-slate-600"
-                        >Sesgo de automatización:</span
-                      >
-                      Tendencia a confiar excesivamente en la máquina.
-                    </p>
-                  </li>
-                  <li>
-                    <b>🧮 Modelización:</b> ¿Permite ajuste de hiperparámetros?
-                    ¿Se puede acceder a las representaciones intermedias para
-                    debugging?
-                  </li>
-                </ul>
-              </div>
-
-              <div class="p-4 bg-white rounded-lg border border-slate-200">
-                <h5 class="font-semibold text-slate-800">
-                  Fase 5: A Largo Plazo (Sostenibilidad)
-                </h5>
-                <ul
-                  class="list-disc list-inside space-y-2 text-sm text-slate-700 mt-2"
-                >
-                  <li>
-                    <b>🔤 Interpretación:</b> ¿Existe un plan para actualizar el
-                    modelo? ¿Se monitoriza su precisión clínica?
-                    <p class="mt-1 italic text-slate-500 text-xs ml-4">
-                      <span class="font-semibold text-slate-600"
-                        >Degradación del concepto:</span
-                      >
-                      Pérdida de precisión cuando la medicina evoluciona.
-                    </p>
-                  </li>
-                  <li>
-                    <b>🧮 Modelización:</b> ¿Usa continuous learning? ¿Cómo
-                    maneja el concept drift en las distribuciones de datos?
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </details>
-        </section>
-
-        <div
-          class="mt-12 p-8 bg-gradient-to-br from-slate-50 to-blue-50 rounded-2xl border border-slate-200"
-        >
-          <h3 class="text-2xl font-bold text-slate-800 mb-4">
-            🎯 Conclusiones y Recomendaciones
-          </h3>
-          <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-white p-5 rounded-lg shadow-sm">
-              <h4 class="font-bold text-lg mb-3 text-blue-800">
-                Para Clínicos
-              </h4>
-              <ul
-                class="space-y-2 text-sm text-slate-700 list-disc list-inside"
-              >
-                <li>
-                  Usa <strong>OpenEvidence</strong> o
-                  <strong>Trip Pro</strong> para preguntas clínicas rápidas.
-                </li>
-                <li>
-                  Verifica siempre las fuentes primarias antes de aplicar la
-                  información.
-                </li>
-                <li>
-                  Documenta qué herramienta usaste para mayor transparencia.
-                </li>
-              </ul>
-            </div>
-            <div class="bg-white p-5 rounded-lg shadow-sm">
-              <h4 class="font-bold text-lg mb-3 text-emerald-800">
-                Para Investigadores
-              </h4>
-              <ul
-                class="space-y-2 text-sm text-slate-700 list-disc list-inside"
-              >
-                <li>
-                  Combina herramientas: <strong>Elicit</strong> para extracción
-                  + <strong>Scite</strong> para validación.
-                </li>
-                <li>
-                  Usa <strong>ResearchRabbit</strong> para mapear nuevos campos
-                  de estudio.
-                </li>
-                <li>
-                  Declara el uso de IA de forma explícita en la sección de
-                  métodos.
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div class="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
-            <p class="text-sm font-medium text-amber-900">
-              <strong>🔑 Mensaje clave:</strong> Estas herramientas aumentan, no
-              reemplazan, tu juicio profesional. El escepticismo algorítmico
-              informado es la habilidad más importante. Siempre verifica la
-              información generada y nunca cites un artículo que no hayas leído
-              y evaluado críticamente.
-            </p>
-          </div>
-          <p class="text-sm text-slate-700 mt-4">
-            La explosión de publicaciones biomédicas —PubMed contiene ya más de
-            36 millones de artículos y crece en más de un millón al año— obliga
-            a utilizar buscadores y sintetizadores avanzados. Pero los
-            resultados varían: Elicit afirma reducir el tiempo de las revisiones
-            sistemáticas en torno al 80 %, mientras que Consensus basa sus
-            respuestas en un corpus de más de 200 millones de documentos. Estas
-            cifras subrayan que el uso de IA para la síntesis de evidencia
-            requiere herramientas validadas y la supervisión crítica de expertos
-            humanos.
-          </p>
-        </div>
-
-        <footer class="mt-12 pt-8 border-t border-slate-200 text-slate-600">
-          <div
-            class="mb-12 p-6 bg-blue-50/50 border border-blue-200 rounded-2xl"
-          >
-            <h3 class="text-xl font-bold text-blue-900 mb-3">
-              📚 Comprendiendo la Pirámide de Evidencia 5.0
-            </h3>
-            <div class="space-y-4 text-slate-700">
-              <p>
-                La pirámide es un modelo conceptual que organiza los recursos de
-                IA según su nivel de procesamiento de la evidencia. La idea es
-                simple pero poderosa:
-                <strong class="text-blue-800"
-                  >para encontrar la respuesta más fiable y rápida a una
-                  pregunta clínica, empieza a buscar en el nivel más alto
-                  posible y desciende solo si no encuentras respuesta</strong
-                >.
-              </p>
-              <div class="grid md:grid-cols-3 gap-4 mt-4">
-                <div class="bg-white p-4 rounded-lg">
-                  <h4 class="font-semibold text-red-700 mb-2">
-                    Niveles Superiores
-                  </h4>
-                  <p class="text-sm">
-                    Evidencia altamente procesada y lista para aplicar. Máxima
-                    eficiencia.
-                  </p>
-                </div>
-                <div class="bg-white p-4 rounded-lg">
-                  <h4 class="font-semibold text-amber-700 mb-2">
-                    Niveles Intermedios
-                  </h4>
-                  <p class="text-sm">
-                    Síntesis crítica de múltiples estudios. Guías y revisiones
-                    sistemáticas.
-                  </p>
-                </div>
-                <div class="bg-white p-4 rounded-lg">
-                  <h4 class="font-semibold text-blue-700 mb-2">Nivel Base</h4>
-                  <p class="text-sm">
-                    Estudios originales. Requieren análisis crítico individual.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            class="mb-12 p-6 bg-indigo-50/50 border border-indigo-200 rounded-2xl"
-          >
-            <h3 class="text-xl font-bold text-indigo-900 mb-3">
-              🧠 Cómo Aplicar la Pirámide a tus Preguntas
-            </h3>
-            <p class="text-slate-700 mb-6 text-sm">
-              La clave para una búsqueda de evidencia eficiente es identificar
-              primero el tipo de pregunta clínica que necesitas resolver.
-            </p>
-            <div class="space-y-4 text-sm">
-              <div class="bg-white p-4 rounded-lg border">
-                <h4 class="font-bold text-slate-800 mb-2">
-                  1. Background Questions (de Fondo)
-                </h4>
-                <p class="text-slate-600">
-                  Buscan
-                  <strong>conocimiento general y establecido</strong> sobre una
-                  condición, un test o un tratamiento. Por ejemplo:
-                  <em class="text-slate-500"
-                    >"¿Cuál es la fisiopatología de la insuficiencia
-                    cardíaca?"</em
-                  >
-                </p>
-                <p class="text-slate-600 mt-2">
-                  <strong class="text-slate-700">Fuentes Principales:</strong>
-                  Aunque tradicionalmente se respondían con libros de texto, hoy
-                  los
-                  <strong
-                    >recursos de sumario en el vértice de la pirámide</strong
-                  >
-                  (ej. UpToDate, Dynamed) son la fuente ideal por ofrecer
-                  información de fondo fiable y continuamente actualizada.
-                </p>
-              </div>
-              <div class="bg-white p-4 rounded-lg border">
-                <h4 class="font-bold text-slate-800 mb-2">
-                  2. Foreground Questions (de Primer Plano)
-                </h4>
-                <p class="text-slate-600">
-                  Buscan
-                  <strong>evidencia específica y evaluada críticamente</strong>
-                  para resolver una
-                  <strong>incertidumbre clínica</strong> sobre un paciente
-                  individual. Son el motor de la Medicina Basada en la
-                  Evidencia.
-                </p>
-                <ul class="mt-3 space-y-2 list-disc list-inside text-slate-600">
-                  <li>
-                    <strong>Comparan alternativas</strong> para tomar una
-                    decisión: tratamiento A vs. B, utilidad de un test
-                    diagnóstico, etc.
-                  </li>
-                  <li>
-                    Se formulan con la
-                    <strong>estructura PICO</strong> (Paciente, Intervención,
-                    Comparación, Outcome) para poder realizar una búsqueda
-                    bibliográfica precisa y sistemática.
-                  </li>
-                  <li>
-                    <strong class="text-slate-700"
-                      >Son la razón de ser de la pirámide 5S:</strong
-                    >
-                    la respuesta debe buscarse empezando por el nivel más alto
-                    posible (Systems) y descendiendo solo si es necesario.
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div
-              class="mt-6 p-4 bg-emerald-50 rounded-lg border border-emerald-200"
-            >
-              <h4 class="font-semibold text-emerald-900 mb-2 flex items-center">
-                <span class="text-xl mr-2">💡</span> El Matiz Clave en la
-                Práctica
-              </h4>
-              <p class="text-sm text-emerald-800">
-                Los recursos del vértice de la pirámide (como UpToDate) son tan
-                completos que responden eficazmente a
-                <strong>AMBOS</strong> tipos de preguntas. La habilidad clínica
-                reside en saber si estás buscando un dato de fondo (un hecho) o
-                si necesitas evaluar la evidencia para una decisión de primer
-                plano (una comparación).
-              </p>
-            </div>
-            <p
-              class="mt-6 text-sm text-slate-600 border-t border-indigo-200 pt-4"
-            >
-              Este navegador se especializa en las nuevas herramientas de IA.
-              Para una guía detallada sobre los recursos más tradicionales de la
-              MBE (PubMed, Cochrane, etc.), puedes consultar esta
-              <a
-                href="https://ernestobarrera.github.io/piramide-evidencia.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="font-semibold text-blue-600 hover:underline"
-                >guía complementaria</a
-              >.
-            </p>
-          </div>
-          <section
-            class="mt-8 p-6 bg-gradient-to-br from-yellow-50 to-red-50 rounded-xl border border-yellow-200"
-          >
-            <h3 class="text-lg font-bold text-red-900 mb-4">
-              ⚠️ Estado Actual del Ecosistema
-            </h3>
-            <div class="space-y-3 text-sm text-slate-700">
-              <p>
-                <strong>Velocidad de cambio acelerada:</strong> Las herramientas
-                presentadas representan el estado actual (2025), pero el
-                ecosistema evoluciona mensualmente. Algunas pueden
-                discontinuarse o cambiar radicalmente sus funcionalidades.
-              </p>
-              <p>
-                <strong>Validación heterogénea:</strong> No todas estas
-                herramientas han pasado por validación clínica rigurosa.
-                Mientras que algunas tienen estudios de implementación, otras
-                están en fases experimentales.
-              </p>
-              <p>
-                <strong>Sesgo de selección:</strong> Las herramientas mostradas
-                priorizan aquellas con interfaces en inglés y accesibilidad
-                internacional, lo que puede excluir soluciones locales o
-                especializadas relevantes.
-              </p>
-
-              <div class="grid md:grid-cols-2 gap-8">
-                <div>
-                  <h3
-                    class="text-lg font-bold text-center md:text-left mb-4 text-slate-800"
-                  >
-                    💰 Modelos de Precio
-                  </h3>
-                  <div
-                    class="flex flex-wrap justify-center md:justify-start items-center gap-x-6 gap-y-2 text-sm"
-                  >
-                    <div class="flex items-center gap-2">
-                      <span
-                        class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800"
-                        >Free</span
-                      ><span>Gratuito</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <span
-                        class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800"
-                        >Open Source</span
-                      ><span>Código Abierto</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <span
-                        class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800"
-                        >Freemium</span
-                      ><span>Plan Gratuito Limitado</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <span
-                        class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800"
-                        >Subscription</span
-                      ><span>Suscripción</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <span
-                        class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800"
-                        >Institutional</span
-                      ><span>Licencia Institucional</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <span
-                        class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800"
-                        >Enterprise</span
-                      ><span>Solución Empresarial</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="text-center md:text-left">
-                  <h3 class="text-lg font-bold mb-4 text-slate-800">
-                    📖 Fuentes y Atribución
-                  </h3>
-                  <div class="text-sm text-slate-500 space-y-2">
-                    <p>
-                      Concepto y selección de herramientas basados en un
-                      análisis de mercado simulado por un asistente de IA.
-                      <em class="font-semibold"
-                        >Este contenido es generativo y debe usarse con fines
-                        orientativos.</em
-                      >
-                    </p>
-                    <p>
-                      Modelo piramidal adaptado de:
-                      <em class="font-semibold"
-                        >Alper BS, Haynes RB. EBHC pyramid 5.0 for accessing
-                        preappraised evidence and guidance. Evid Based Med.
-                        2016;21(4):123-5.</em
-                      >
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-          <p
-            class="text-center text-xs text-slate-400 mt-8 pt-4 border-t border-slate-200"
-          >
-            Interfaz interactiva desarrollada con fines educativos. Última
-            actualización: Julio 2025.
-          </p>
-        </footer>
-      </div>
-    </main>
-
-    <include src="footer.html"></include>
-
-    <script>
-      const toolData = {
-        ebmeds: {
-          name: "EBMeDS",
-          description:
-            "Sistema de soporte a decisiones clínicas (CDSS) que se integra en las HCE para proporcionar alertas y recomendaciones en tiempo real basadas en la evidencia.",
-          features: [
-            "Alertas y recordatorios basados en la evidencia",
-            "Personalización según características del paciente",
-            "Reduce la sobrecarga de información",
-            "Integración directa con sistemas de HCE",
-          ],
-          pricing: "Licencia empresarial",
-          bestFor: "Hospitales y sistemas de salud con HCE integradas",
-          limitations:
-            "Requiere integración técnica compleja y licencia costosa",
-          link: "https://www.ebmeds.org/",
-        },
-        "openevidence-clinical": {
-          name: "OpenEvidence - IA para Decisiones Clínicas",
-          description:
-            "Plataforma de IA diseñada para responder preguntas clínicas complejas en el punto de atención, sintetizando información de fuentes de alta calidad.",
-          features: [
-            "Conformidad con HIPAA",
-            "Cita directamente de fuentes como NEJM, JAMA y guías",
-            "Respuestas rápidas para casos específicos",
-            'Función "DeepConsult" para análisis profundos',
-          ],
-          pricing: "Gratuito para clínicos individuales",
-          bestFor:
-            "Médicos en consulta que necesitan respuestas basadas en evidencia",
-          limitations:
-            "Enfocado en decisión clínica, no en investigación académica general",
-          link: "https://www.openevidence.com/",
-        },
-        "scopus-ai": {
-          name: "Scopus AI",
-          description:
-            "Herramienta de IA generativa integrada en Scopus para proporcionar resúmenes rápidos, mapas conceptuales y encontrar expertos en un campo.",
-          features: [
-            "Genera resúmenes concisos basados en millones de abstracts",
-            "Visualiza conexiones entre conceptos",
-            "Identifica investigadores influyentes y tendencias",
-            "Acceso a la base de datos curada de Elsevier",
-          ],
-          pricing: "Requiere suscripción institucional a Scopus",
-          bestFor: "Bibliotecarios e investigadores con acceso institucional",
-          limitations:
-            "Costoso, basado principalmente en abstracts, no en texto completo",
-          link: "https://www.elsevier.com/products/scopus/scopus-ai",
-        },
-        "dimensions-ai": {
-          name: "Dimensions AI Assistant",
-          description:
-            "Plataforma que usa IA para analizar publicaciones, becas, patentes y ensayos clínicos, proporcionando resúmenes y análisis de tendencias.",
-          features: [
-            "Análisis multimodal del ciclo de investigación",
-            "Asistente de IA para generar resúmenes",
-            "Integración con Papers para análisis de PDF",
-            "Búsqueda en ensayos clínicos y patentes",
-          ],
-          pricing: "Requiere suscripción institucional a Dimensions",
-          bestFor: "Análisis bibliométrico y horizon scanning institucional",
-          limitations: "Costoso, requiere suscripción institucional",
-          link: "https://www.dimensions.ai/",
-        },
-        consensus: {
-          name: "Consensus",
-          description:
-            "Motor de búsqueda por IA que extrae y sintetiza hallazgos directamente de la investigación científica. Usa arquitectura RAG estricta para máxima fiabilidad.",
-          features: [
-            "Resultados basados únicamente en estudios revisados por pares",
-            '"Consensus Meter" para ver el nivel de acuerdo científico',
-            "Cada afirmación está vinculada a su fuente original",
-            "Corpus de más de 200 millones de documentos",
-          ],
-          pricing: "Gratuito (limitado) / Premium",
-          bestFor: "Obtener una visión general rápida y fiable de la evidencia",
-          limitations:
-            "Las síntesis pueden ser generales, menos funciones de análisis avanzado",
-          link: "https://consensus.app/",
-        },
-        tripdatabase: {
-          name: "Trip Pro con IA",
-          description:
-            "Trip combina su tradicional motor de búsqueda de evidencia de alta calidad con IA generativa. Permite hacer preguntas en lenguaje natural y obtener respuestas resumidas y referenciadas, basadas en la mejor evidencia encontrada (Guías, Revisiones, etc.).",
-          features: [
-            "Búsqueda inteligente en la cima de la pirámide",
-            "Respuestas rápidas generadas por IA con enlaces a las fuentes",
-            "Función de 'resumir resultados' de la búsqueda",
-            "Filtros PICO para refinar la búsqueda tradicional",
-          ],
-          pricing:
-            "Freemium (búsqueda básica gratis, funciones IA en plan Pro)",
-          bestFor:
-            "Clínicos que quieren respuestas rápidas y fiables sin renunciar al acceso directo a la evidencia de máxima calidad.",
-          limitations:
-            "Las funciones de IA más potentes requieren suscripción Pro.",
-          link: "https://www.tripdatabase.com/",
-        },
-        "openevidence-guidelines": {
-          name: "OpenEvidence (Consulta de Guías)",
-          description:
-            "Plataforma de IA que responde preguntas clínicas complejas consultando directamente las guías de práctica clínica más actualizadas de sociedades científicas.",
-          features: [
-            "Acceso directo a recomendaciones de NICE, AHA, etc.",
-            "Sintetiza la información relevante para el caso",
-            "Reduce el tiempo de búsqueda en documentos extensos",
-            "Actualización continua de guías",
-          ],
-          pricing: "Gratuito para uso clínico",
-          bestFor: "Consulta rápida de recomendaciones de guías clínicas",
-          limitations: "Limitado a guías, no incluye estudios primarios",
-          link: "https://www.openevidence.com/",
-        },
-        "glass-ai": {
-          name: "Glass AI",
-          description:
-            "Herramienta de IA para el razonamiento diagnóstico. Ayuda a los médicos a construir diagnósticos diferenciales y planes de tratamiento, aprendiendo de la literatura médica.",
-          features: [
-            "Genera diagnósticos diferenciales",
-            "Proporciona justificaciones y enlaces a la evidencia",
-            'Diseñado como un "borrador" para el razonamiento clínico',
-            "integra datos de la HCE del paciente",
-            "Interfaz intuitiva para casos clínicos",
-          ],
-          pricing: "Freemium - Plan básico gratuito, Pro de pago",
-          bestFor:
-            "Médicos y estudiantes desarrollando razonamiento diagnóstico",
-          limitations: "No reemplaza el juicio clínico, requiere verificación",
-          link: "https://glass.health/",
-        },
-        rayyan: {
-          name: "Rayyan",
-          description:
-            "Aplicación web para facilitar el cribado de títulos y resúmenes en una revisión sistemática, especialmente en equipos colaborativos.",
-          features: [
-            "Cribado ciego por múltiples revisores",
-            "IA para sugerir estudios relevantes",
-            "Detección automática de duplicados",
-            "Colaboración en tiempo real",
-          ],
-          pricing: "Gratuito (limitado) / Pro de pago",
-          bestFor: "Equipos realizando revisiones sistemáticas colaborativas",
-          limitations: "Enfocado solo en la fase de cribado, no en síntesis",
-          link: "https://www.rayyan.ai/",
-        },
-        elicit: {
-          name: "Elicit",
-          description:
-            "Asistente de investigación de IA que automatiza partes del flujo de trabajo de una revisión de literatura. Encuentra artículos y extrae información clave en tablas.",
-          features: [
-            "Indexa más de 125 millones de artículos",
-            "Extrae datos clave en columnas personalizables (PICO, etc.)",
-            "Encuentra temas y conceptos más allá de palabras clave",
-            "Síntesis automática de hallazgos",
-          ],
-          pricing: "Básico gratuito / Planes de pago",
-          bestFor:
-            "Fase inicial de revisiones sistemáticas y extracción de datos",
-          limitations: "La extracción de datos requiere verificación manual",
-          link: "https://elicit.com/",
-        },
-        asreview: {
-          name: "ASReview",
-          description:
-            "Software de código abierto que utiliza aprendizaje activo para priorizar los artículos más relevantes durante el cribado, reduciendo drásticamente el tiempo de revisión.",
-          features: [
-            "El revisor entrena al modelo de IA",
-            "Presenta los artículos más probables primero",
-            "Reduce el tiempo de cribado hasta en un 95%",
-            "Gratuito, transparente y validado",
-          ],
-          pricing: "Completamente gratuito y de código abierto",
-          bestFor:
-            "Investigadores con grandes volúmenes de literatura para cribar",
-          limitations:
-            "Requiere conocimientos técnicos para instalación y uso óptimo",
-          link: "https://asreview.ai/",
-        },
-        scispace: {
-          name: "SciSpace (formerly Typeset)",
-          description:
-            "Plataforma de IA para decodificar artículos de investigación. Permite resaltar texto, hacer preguntas y obtener explicaciones en lenguaje sencillo.",
-          features: [
-            "Copilot de IA que responde preguntas sobre el artículo",
-            "Explicaciones de conceptos y tablas",
-            "Integración con Zotero",
-            "Resúmenes y simplificación de textos",
-          ],
-          pricing: "Gratuito limitado / Planes de pago",
-          bestFor: "Estudiantes e investigadores leyendo papers complejos",
-          limitations:
-            "Mejor para análisis de papers individuales que síntesis",
-          link: "https://scispace.com/",
-        },
-        scite: {
-          name: "Scite.ai",
-          description:
-            "Herramienta que muestra cómo ha sido citado un artículo, indicando si la cita apoya, contrasta o simplemente menciona el hallazgo.",
-          features: [
-            '"Smart Citations" para ver el contexto de cada cita',
-            "Identifica artículos con fuerte apoyo o controversia",
-            "Reference Check para validar bibliografías",
-            "Extracción de datos PICO",
-          ],
-          pricing: "Limitado gratuito / Planes de pago",
-          bestFor: "Evaluar la robustez de hallazgos científicos",
-          limitations: "Requiere suscripción para funciones avanzadas",
-          link: "https://scite.ai/",
-        },
-        researchrabbit: {
-          name: "ResearchRabbit",
-          description:
-            "Herramienta de descubrimiento que usa IA para crear redes de conocimiento visuales e interactivas entre artículos y autores.",
-          features: [
-            "Visualiza colecciones como mapas interactivos",
-            "Recibe alertas de nueva literatura",
-            'Sugiere "Similar Work" y rastrea referencias',
-            "Integración con Zotero",
-          ],
-          pricing: "Completamente gratuito",
-          bestFor: "Explorar nuevos campos y mantener colecciones actualizadas",
-          limitations: "No ofrece síntesis de contenido, solo mapeo",
-          link: "https://www.researchrabbit.ai/",
-        },
-        chatpdf: {
-          name: "ChatPDF",
-          description:
-            'Herramienta sencilla que permite "chatear" con cualquier documento PDF para interrogar rápidamente un artículo científico.',
-          features: [
-            "Asistente virtual para cada PDF",
-            "Resume rápidamente el contenido",
-            "Responde preguntas específicas sobre el documento",
-            "Interfaz simple y directa",
-          ],
-          pricing: "Gratuito (limitado) / Plan de pago",
-          bestFor: "Primera aproximación rápida a un estudio individual",
-          limitations: "Solo para PDFs individuales, no para síntesis múltiple",
-          link: "https://www.chatpdf.com/",
-        },
-        "connected-papers": {
-          name: "Connected Papers",
-          description:
-            "Herramienta que crea un grafo visual de papers relacionados basándose en co-citación. Excelente para obtener una visión general rápida de un campo.",
-          features: [
-            "Genera grafos visuales instantáneos",
-            "Identifica trabajos seminales y derivados",
-            "Visualiza clusters de investigación",
-            "Exportación a gestores de referencias",
-          ],
-          pricing: "Gratuito (limitado) / Planes de pago",
-          bestFor: "Investigadores explorando un nuevo campo",
-          limitations:
-            "Se basa en un único paper semilla, puede sesgar la perspectiva",
-          link: "https://www.connectedpapers.com/",
-        },
-        litsense: {
-          name: "LitSense",
-          description:
-            "Motor de búsqueda de frases para literatura biomédica que combina recuperación por términos con embeddings neuronales para hallar resultados semánticamente relevantes.",
-          features: [
-            "Acceso a más de 500M de frases de PubMed y PMC",
-            "Búsqueda semántica (sent2vec)",
-            "Resalta entidades biomédicas",
-            "Filtra por sección del artículo y fecha",
-          ],
-          pricing: "Gratuito",
-          bestFor:
-            "Investigadores que necesitan encontrar evidencias concretas en oraciones de artículos",
-          limitations: "Recupera frases, no genera resúmenes ni síntesis",
-          link: "https://www.ncbi.nlm.nih.gov/research/litsense/",
-        },
-        // === CONCEPTOS LLM TRANSVERSALES ===
-        "prompt-engineering": {
-          name: "Ingeniería de Prompts Médicos",
-          description:
-            "Técnicas estructuradas para maximizar la precisión y utilidad de las respuestas del LLM en contextos clínicos. La calidad del prompt determina la calidad de la respuesta.",
-          features: [
-            "Chain-of-Thought (CoT): Fuerza razonamiento paso a paso, mejora precisión diagnóstica en 40%",
-            "Few-Shot Learning: Proporciona 2-3 ejemplos antes de tu pregunta real",
-            "Role Assignment: 'Actúa como [especialista]' aumenta especificidad técnica",
-            "Structured Output: Solicita formatos específicos (SOAP, PICO, tablas)",
-          ],
-          pricing: "Aplicable a todos los LLMs",
-          bestFor:
-            "Casos complejos, diagnóstico diferencial, estructuración de información",
-          limitations:
-            "Un prompt perfecto no garantiza respuesta correcta; requiere verificación",
-          link: "",
-        },
-
-        "verification-framework": {
-          name: "Marco de Verificación Clínica",
-          description:
-            "Sistema estructurado para validar información generada por LLMs antes de cualquier aplicación clínica. En medicina, la verificación no es opcional.",
-          features: [
-            "Cross-Check: Pregunta lo mismo de 3 formas diferentes para detectar inconsistencias",
-            "Source Request: Exige citas específicas con revista, año y DOI verificable",
-            "Reverse Fact-Check: Introduce errores intencionales para probar fiabilidad",
-            "Red Flags: DOIs malformados, revistas inventadas, dosis perfectamente redondeadas",
-          ],
-          pricing: "Metodología gratuita",
-          bestFor: "Toda información que pueda afectar decisiones clínicas",
-          limitations:
-            "Consume tiempo adicional pero es absolutamente necesario",
-          link: "",
-        },
-
-        "rag-medical": {
-          name: "RAG (Retrieval-Augmented Generation) Médico",
-          description:
-            "Técnica que ancla las respuestas del LLM en bases de datos médicas verificadas. Primero recupera información relevante, luego genera síntesis contextualizada.",
-          features: [
-            "Reduce alucinaciones en >70% según estudios",
-            "Proporciona citas verificables a fuentes primarias",
-            "Actualización continua con nueva literatura",
-            "Implementado en: Perplexity Pro, ChatGPT con plugins, sistemas hospitalarios",
-          ],
-          pricing: "Precio variable según modelo y acceso",
-          bestFor:
-            "Preguntas que requieren evidencia actualizada y verificable",
-          limitations:
-            "Tan bueno como sus fuentes; puede ser lento para consultas complejas",
-          link: "",
-        },
-
-        "multimodal-clinical": {
-          name: "IA Multimodal en Clínica",
-          description:
-            "LLMs que procesan simultáneamente texto + imágenes médicas + datos estructurados. GPT-4V, Gemini Pro Vision y Med-PaLM M son ejemplos actuales.",
-          features: [
-            "Análisis de radiografías, ECGs y lesiones dermatológicas",
-            "Correlación automática imagen-historia clínica",
-            "Interpretación de resultados de laboratorio en imagen",
-            "Detección de hallazgos en múltiples modalidades",
-          ],
-          pricing: "Precio varía según modelo y acceso",
-          bestFor:
-            "Segunda opinión rápida, educación, triage inicial en telemedicina",
-          limitations:
-            "No certificado para diagnóstico; puede pasar por alto hallazgos sutiles",
-          link: "",
-        },
-
-        "deep-research": {
-          name: "Deep Research con Agentes IA",
-          description:
-            "Sistemas que realizan investigación autónoma profunda: ejecutan 10-100+ búsquedas iterativas, analizan miles de papers y generan síntesis comprehensivas.",
-          features: [
-            "Búsqueda iterativa inteligente con refinamiento automático",
-            "Análisis de miles de documentos en minutos",
-            "Generación de informes con citas completas",
-            "Disponible en: Perplexity Pro, Elicit, Consensus Premium",
-          ],
-          pricing: "Precio varía según modelo y acceso",
-          bestFor:
-            "Revisiones de literatura, horizon scanning, preguntas multi-dominio",
-          limitations:
-            "Requiere 10-30 minutos; no apto para decisiones urgentes",
-          link: "",
-        },
-
-        "clinical-reasoning": {
-          name: "Cadenas de Razonamiento Clínico",
-          description:
-            "Métodos para emular el proceso cognitivo médico experto, desde pattern recognition hasta razonamiento hipotético-deductivo estructurado.",
-          features: [
-            "Razonamiento Anatómico: Localización → Estructuras → Patología posible",
-            "Razonamiento Fisiopatológico: Mecanismo → Cascada → Manifestaciones",
-            "Razonamiento Bayesiano: Prevalencia → Likelihood ratios → Probabilidad posterior",
-            "Eliminación sistemática: Descartar imposibles → Priorizar por gravedad",
-          ],
-          pricing: "Técnica aplicable a cualquier LLM",
-          bestFor:
-            "Casos complejos, enseñanza médica, second opinion cognitiva",
-          limitations:
-            "El razonamiento puede parecer lógico pero ser médicamente incorrecto",
-          link: "",
-        },
-
-        "hallucination-detection": {
-          name: "Detección de Alucinaciones Médicas",
-          description:
-            "Estrategias críticas para identificar cuando el LLM genera información médica falsa con alta confianza. En medicina, una alucinación puede ser letal.",
-          features: [
-            "Test de Inconsistencia: Las alucinaciones varían entre consultas",
-            "Detección de Especificidad Sospechosa: Detalles excesivos sin fuente clara",
-            "Análisis de Números: Dosis perfectamente redondeadas son red flag",
-            "Verificación de Fuentes: Búsqueda manual de citas sospechosas",
-          ],
-          pricing: "Metodología gratuita, tiempo requerido",
-          bestFor:
-            "Información crítica: dosis, contraindicaciones, interacciones",
-          limitations:
-            "Requiere vigilancia constante y conocimiento médico base",
-          link: "",
-        },
-
-        "epistemological-limits": {
-          name: "Límites Epistemológicos de los LLMs",
-          description:
-            "Comprensión fundamental de qué pueden y no pueden 'saber' los LLMs sobre medicina. Estos límites son arquitectónicos, no se resolverán con más datos.",
-          features: [
-            "No comprenden causalidad, solo correlación textual estadística",
-            "Sin embodiment: no entienden dolor, sufrimiento o experiencia sensorial",
-            "Temporalidad colapsada: mezclan conocimiento de diferentes épocas",
-            "Sesgo de publicación: sobrerrepresentan lo más publicado vs lo más común",
-          ],
-          pricing: "Conocimiento conceptual crítico",
-          bestFor:
-            "Entender cuándo NO usar LLMs, establecer expectativas realistas",
-          limitations:
-            "Un LLM que describe perfectamente un infarto no 'comprende' el infarto. ⚠️ Cuándo NO usarlos: Nunca para diagnósticos definitivos sin revisión, dosificaciones específicas, contraindicaciones absolutas, o cualquier decisión clínica donde un error pueda tener consecuencias graves. Por el momento, siempre es preferible revisar con conocimiento experto o validar con las herramientas especializadas de la pirámide de evidencia antes de tomar decisiones clínicas para responder de forma definitiva preguntas de evidencia.",
-          link: "",
-        },
-      };
-
-      document.addEventListener("DOMContentLoaded", () => {
-        // Manejo de errores para include.js
-        if (typeof includeHTML === "function") {
-          includeHTML()
-            .then(() => {
-              console.log("Includes loaded successfully");
-            })
-            .catch((err) => {
-              console.error("Error loading includes:", err);
-            });
-        }
-
-        const pyramidLevelGroups = document.querySelectorAll(
-          ".pyramid-level-group"
-        );
-        const resourceSections = document.querySelectorAll(
-          ".level-resources, #resources-llm"
-        );
-        const toolChips = document.querySelectorAll(".tool-chip");
-        const llmLayerLabel = document.getElementById("llm-layer-label");
-
-        const renderToolDetail = (toolId) => {
-          const tool = toolData[toolId];
-          if (!tool) return "";
-
-          // Botón con mejor contraste y accesibilidad
-          return `<div class="p-5 bg-white rounded-xl border border-slate-200 shadow-md hover:shadow-lg transition-shadow">
-    <div class="flex justify-between items-start mb-3">
-      <h4 class="font-bold text-lg text-slate-800">${tool.name}</h4>
-      <span class="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full">${
-        tool.pricing
-      }</span>
-    </div>
-    <p class="text-sm text-slate-600 mb-4">${tool.description}</p>
-    <div class="mb-4">
-      <h5 class="font-semibold text-sm text-slate-700 mb-2">✨ Características principales:</h5>
-      <ul class="space-y-1">${tool.features
-        .map(
-          (f) =>
-            `<li class="text-sm text-slate-600 flex items-start">
-              <svg class="w-4 h-4 text-emerald-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-              </svg>${f}
-            </li>`
-        )
-        .join("")}
-      </ul>
-    </div>
-    <div class="grid md:grid-cols-2 gap-3 mb-4 text-sm">
-      <div class="bg-blue-50 p-3 rounded-lg">
-        <span class="font-semibold text-blue-800">Mejor para:</span>
-        <p class="text-blue-700 mt-1">${tool.bestFor}</p>
-      </div>
-      <div class="bg-amber-50 p-3 rounded-lg">
-        <span class="font-semibold text-amber-800">Limitaciones:</span>
-        <p class="text-amber-700 mt-1">${tool.limitations}</p>
-      </div>
-    </div>
-
-    ${
-      tool.link
-        ? `<a href="${tool.link}" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              class="inline-flex items-center justify-center w-full px-4 py-3 text-base font-bold text-white bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all transform hover:scale-105">
-            Visitar Sitio Web
-            <svg class="ml-2 -mr-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/>
-              <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
-            </svg>
-          </a>`
-        : ""
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description"
+    content="Modelo bidimensional interactivo: Pirámide de Evidencia 5.0 y Herramientas IA. Trazabilidad ≠ evidencia preevaluada." />
+  <title>IA y Evidencia 5.0: Modelo Bidimensional | @ernestob</title>
+  <link rel="icon" href="/assets/images/icon.webp" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <link rel="stylesheet" href="assets/css/header.css" />
+  <link rel="stylesheet" href="assets/css/components.css" />
+  <link rel="stylesheet" href="assets/css/footer.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --header-h: 0px
     }
-  </div>`;
-        };
 
-        Object.keys(toolData).forEach((toolId) => {
-          const detailContainer = document.getElementById(`tool-${toolId}`);
-          if (detailContainer) {
-            detailContainer.innerHTML = renderToolDetail(toolId);
-          }
-        });
+    html,
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background: #0f172a
+    }
 
-        function activateLevel(nivel) {
-          if (!nivel) return;
-          /* estado visual */ document
-            .querySelectorAll(".pyramid-level-group")
-            .forEach((l) => l.classList.remove("active"));
-          nivel.classList.add("active");
-          const n = nivel.dataset.level;
-          document.getElementById("current-level").textContent = n;
-          document
-            .getElementById("progress-indicator")
-            .classList.remove("hidden");
-          /* sección destino */ const destino = document.getElementById(
-            `resources-${n}`
-          );
-          document
-            .querySelectorAll(".level-resources, #resources-llm")
-            .forEach((s) => s.classList.remove("highlight"));
-          destino.classList.add("highlight");
-          destino.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden
+    }
 
-        pyramidLevelGroups.forEach((levelGroup) => {
-          levelGroup.addEventListener("click", () => activateLevel(levelGroup));
-        });
+    .app-header {
+      flex-shrink: 0;
+      padding: .6rem 1.25rem .5rem;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border-bottom: 1px solid rgba(255, 255, 255, .06)
+    }
 
-        toolChips.forEach((chip) => {
-          chip.classList.add(
-            "inline-flex",
-            "items-center",
-            "gap-2",
-            "px-4",
-            "py-2.5",
-            "rounded-full",
-            "bg-white",
-            "border",
-            "border-slate-200",
-            "hover:bg-blue-50",
-            "hover:border-blue-300",
-            "hover:shadow-md",
-            "transition-all",
-            "duration-200",
-            "cursor-pointer",
-            "text-sm",
-            "font-medium",
-            "group"
-          );
-          chip.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const toolId = chip.dataset.tool;
-            const detailEl = document.getElementById(`tool-${toolId}`);
-            if (!detailEl) return;
-            const parentSection = chip.closest(
-              ".level-resources, #resources-llm"
-            );
-            const wasActive = detailEl.classList.contains("active");
-            parentSection
-              .querySelectorAll(".tool-detail")
-              .forEach((detail) => detail.classList.remove("active"));
-            parentSection
-              .querySelectorAll(".tool-chip")
-              .forEach((c) => c.classList.remove("active-chip"));
-            if (!wasActive) {
-              detailEl.classList.add("active");
-              chip.classList.add("active-chip");
-            }
-          });
-        });
+    .app-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 230px 1fr 0fr;
+      gap: 0;
+      overflow: hidden;
+      min-height: 0;
+      transition: grid-template-columns .4s cubic-bezier(.4, 0, .2, 1)
+    }
 
-        if (llmLayerLabel) {
-          llmLayerLabel.addEventListener("click", () => {
-            const llmSection = document.getElementById("resources-llm");
-            if (llmSection) {
-              pyramidLevelGroups.forEach((l) => l.classList.remove("active"));
-              resourceSections.forEach((s) => s.classList.remove("highlight"));
-              llmSection.classList.add("highlight");
-              llmSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    .app-body.panel-open {
+      grid-template-columns: 230px 1fr 370px
+    }
 
-              // Ocultar indicador de progreso cuando se ve LLM
-              const progressIndicator =
-                document.getElementById("progress-indicator");
-              if (progressIndicator) {
-                progressIndicator.classList.add("hidden");
-              }
-            }
-          });
-        }
+    /* PYRAMID */
+    .zone-pyramid {
+      padding: .75rem .6rem;
+      overflow-y: auto;
+      border-right: 1px solid rgba(255, 255, 255, .06);
+      display: flex;
+      flex-direction: column;
+      gap: .5rem
+    }
 
-        const initialLevel = document.querySelector(
-          '.pyramid-level-group[data-level="5"]'
-        );
-        activateLevel(initialLevel);
+    .zone-pyramid::-webkit-scrollbar {
+      width: 3px
+    }
+
+    .zone-pyramid::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, .15);
+      border-radius: 4px
+    }
+
+    .pyramid-level {
+      transition: all .35s ease;
+      cursor: default
+    }
+
+    .pyramid-level.lit {
+      filter: url(#glow);
+      transform: scale(1.05);
+      transform-origin: center 70%
+    }
+
+    .pyramid-level.dim {
+      opacity: .2
+    }
+
+    /* MATRIX */
+    .zone-matrix {
+      overflow: auto;
+      padding: .5rem .75rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 0
+    }
+
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: 90px 1fr 1fr;
+      grid-template-rows: 44px repeat(3, 1fr);
+      gap: 0;
+      flex: 1;
+      min-height: 0;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .1);
+      background: rgba(255, 255, 255, .03)
+    }
+
+    .matrix-header {
+      background: rgba(15, 23, 42, .8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: .3rem .5rem;
+      border: 1px solid rgba(255, 255, 255, .05)
+    }
+
+    .matrix-row-label {
+      background: rgba(15, 23, 42, .6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .1rem;
+      padding: .3rem;
+      border: 1px solid rgba(255, 255, 255, .05)
+    }
+
+    .matrix-cell {
+      padding: .45rem;
+      display: flex;
+      flex-direction: column;
+      gap: .3rem;
+      border: 1px solid rgba(255, 255, 255, .05);
+      overflow-y: auto;
+      transition: background .2s
+    }
+
+    .matrix-cell::-webkit-scrollbar {
+      width: 2px
+    }
+
+    .matrix-cell::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, .1);
+      border-radius: 4px
+    }
+
+    .matrix-cell:hover {
+      background: rgba(255, 255, 255, .04)
+    }
+
+    .cell-label {
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: rgba(255, 255, 255, .3);
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
+      padding-bottom: 2px;
+      margin-bottom: 2px
+    }
+
+    /* CHIPS */
+    .tc {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      border: 1px solid rgba(255, 255, 255, .1);
+      background: rgba(255, 255, 255, .06);
+      color: #e2e8f0;
+      user-select: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .tc:hover {
+      background: rgba(59, 130, 246, .15);
+      border-color: rgba(59, 130, 246, .4);
+      transform: translateY(-1px)
+    }
+
+    .tc.active {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+      border-color: #1d4ed8;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, .3)
+    }
+
+    .tc .badge {
+      font-size: 8px;
+      padding: 1px 5px;
+      border-radius: 99px;
+      font-weight: 700;
+      text-transform: uppercase;
+      flex-shrink: 0
+    }
+
+    .badge-free {
+      background: #065f46;
+      color: #6ee7b7
+    }
+
+    .badge-freemium {
+      background: #78350f;
+      color: #fcd34d
+    }
+
+    .badge-oss {
+      background: #1e3a5f;
+      color: #93c5fd
+    }
+
+    .badge-institutional {
+      background: #7f1d1d;
+      color: #fca5a5
+    }
+
+    /* DETAIL PANEL */
+    .zone-detail {
+      background: #111827;
+      border-left: 1px solid rgba(255, 255, 255, .08);
+      overflow-y: auto;
+      transform: translateX(100%);
+      opacity: 0;
+      transition: all .35s cubic-bezier(.4, 0, .2, 1)
+    }
+
+    .app-body.panel-open .zone-detail {
+      transform: translateX(0);
+      opacity: 1
+    }
+
+    .zone-detail::-webkit-scrollbar {
+      width: 4px
+    }
+
+    .zone-detail::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, .15);
+      border-radius: 4px
+    }
+
+    .detail-header {
+      padding: .75rem 1rem;
+      background: linear-gradient(135deg, #1e40af, #4338ca);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 2
+    }
+
+    .detail-body {
+      padding: 1rem
+    }
+
+    /* MODALS */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity .3s
+    }
+
+    .modal-overlay.show {
+      display: flex;
+      opacity: 1
+    }
+
+    .modal-box {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, .5)
+    }
+
+    .modal-box::-webkit-scrollbar {
+      width: 4px
+    }
+
+    .modal-box::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, .15);
+      border-radius: 4px
+    }
+
+    .modal-top {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, .08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: #1e293b;
+      z-index: 2
+    }
+
+    .modal-content {
+      padding: 1.25rem;
+      color: #cbd5e1;
+      font-size: 14px;
+      line-height: 1.7
+    }
+
+    .modal-content h4 {
+      color: #f1f5f9;
+      font-size: 16px;
+      font-weight: 700;
+      margin: 1rem 0 .5rem
+    }
+
+    .modal-content ul {
+      padding-left: 1.25rem;
+      margin: .5rem 0
+    }
+
+    .modal-content li {
+      margin: .25rem 0
+    }
+
+    .modal-content strong {
+      color: #f1f5f9
+    }
+
+    .modal-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 13px
+    }
+
+    .modal-content th {
+      background: #334155;
+      color: #f1f5f9;
+      padding: .5rem;
+      text-align: left;
+      border: 1px solid #475569
+    }
+
+    .modal-content td {
+      padding: .5rem;
+      border: 1px solid #334155
+    }
+
+    /* ACTION BUTTONS */
+    .action-btn {
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(255, 255, 255, .05);
+      color: #94a3b8;
+      transition: all .2s;
+      white-space: nowrap
+    }
+
+    .action-btn:hover {
+      background: rgba(59, 130, 246, .15);
+      border-color: rgba(59, 130, 246, .3);
+      color: #e2e8f0
+    }
+
+    .action-btn i {
+      margin-right: 3px
+    }
+
+    /* LLM STRIPE */
+    .llm-stripe-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      cursor: pointer;
+      position: relative;
+      padding: 2px 0
+    }
+
+    .llm-stripe-wrap:hover .llm-label {
+      color: #c4b5fd
+    }
+
+    .llm-bar {
+      width: 5px;
+      flex: 1;
+      background: linear-gradient(to bottom, #7c3aed, #8b5cf6, #a78bfa, #8b5cf6, #7c3aed);
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden
+    }
+
+    .llm-bar::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 30%, rgba(255, 255, 255, .3) 50%, transparent 70%);
+      animation: llm-pulse 2s infinite
+    }
+
+    @keyframes llm-pulse {
+      0% {
+        transform: translateY(-100%)
+      }
+
+      100% {
+        transform: translateY(100%)
+      }
+    }
+
+    .llm-label {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #a78bfa;
+      padding: 4px 0;
+      transition: color .2s
+    }
+
+    .llm-icon {
+      font-size: 14px;
+      color: #a78bfa;
+      margin: 4px 0
+    }
+
+    /* RESPONSIVE */
+    @media(max-width:1024px) {
+
+      html,
+      body {
+        overflow: auto
+      }
+
+      .app-shell {
+        height: auto;
+        min-height: 100vh
+      }
+
+      .app-body,
+      .app-body.panel-open {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto
+      }
+
+      .zone-pyramid {
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, .06);
+        max-height: 300px
+      }
+
+      .zone-detail {
+        position: fixed;
+        inset: 0;
+        z-index: 90;
+        transform: translateX(100%);
+        width: 100%
+      }
+
+      .app-body.panel-open .zone-detail {
+        transform: translateX(0)
+      }
+    }
+
+    @media(max-width:640px) {
+      .matrix-grid {
+        grid-template-columns: 60px 1fr 1fr
+      }
+
+      .tc {
+        font-size: 9px;
+        padding: 3px 6px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <include src="header.html"></include>
+  <div class="app-shell" id="app">
+    <!-- === HEADER === -->
+    <div class="app-header">
+      <div style="max-width:1600px;margin:0 auto;width:100%">
+        <!-- Row 1: Title + Badge -->
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <h1 style="font-size:15px;font-weight:800;color:#f1f5f9;margin:0">🔼 Pirámide de Evidencia 5.0 + Herramientas
+            IA</h1>
+          <span
+            style="font-size:9px;padding:2px 8px;border-radius:99px;background:rgba(59,130,246,.12);color:#60a5fa;font-weight:700;border:1px solid rgba(59,130,246,.2)">Modelo
+            Bidimensional</span>
+          <span
+            style="font-size:9px;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,.1);color:#fbbf24;font-weight:700;border:1px solid rgba(245,158,11,.2)">🔎
+            Fuente trazable · ≠ evidencia preevaluada</span>
+        </div>
+        <!-- Row 2: Key insight -->
+        <p style="font-size:11px;color:#94a3b8;margin:3px 0 0;line-height:1.5"><strong style="color:#fbbf24">La
+            trazabilidad dice de dónde viene; la metodología dice cuánto pesa.</strong> <span style="color:#64748b">Que
+            una IA cite fuentes no convierte su respuesta en evidencia de alto nivel. Acceder a Cochrane no equivale a
+            producir una revisión Cochrane.</span></p>
+        <!-- Row 3: Action buttons + hints -->
+        <div style="display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap">
+          <button class="action-btn" onclick="openModal('modalGrounding')"><i class="fa-solid fa-triangle-exclamation"
+              style="color:#fbbf24"></i>Grounding ≠ Appraisal</button>
+          <button class="action-btn" onclick="openModal('modalGuia')"><i class="fa-solid fa-clipboard-check"
+              style="color:#818cf8"></i>Guía Rápida</button>
+          <button class="action-btn" onclick="openModal('modalParadigmas')"><i class="fa-solid fa-arrows-rotate"
+              style="color:#34d399"></i>Paradigmas</button>
+          <button class="action-btn" onclick="openModal('modalConclusiones')"><i class="fa-solid fa-bullseye"
+              style="color:#f87171"></i>Conclusiones</button>
+          <button class="action-btn" onclick="openModal('modalLLM')"><i class="fa-solid fa-wand-magic-sparkles"
+              style="color:#a78bfa"></i>Capa LLM</button>
+          <span style="margin-left:auto;font-size:9px;color:#475569;display:flex;gap:8px" class="hidden lg:flex">
+            <span><i class="fa-solid fa-hand-pointer" style="color:#60a5fa;margin-right:2px"></i>Click = detalle</span>
+            <span><i class="fa-solid fa-arrows-left-right" style="color:#60a5fa;margin-right:2px"></i>Hover =
+              pirámide</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- === BODY === -->
+    <div class="app-body" id="appBody">
+      <!-- ZONE 1: PYRAMID -->
+      <div class="zone-pyramid">
+        <div style="text-align:center"><span
+            style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px">Jerarquía
+            MBE (5S)</span></div>
+        <div style="display:flex;align-items:stretch;gap:3px;flex:1;min-height:0">
+          <!-- LLM stripe -->
+          <div class="llm-stripe-wrap" id="llmStripe" title="Capa LLM Transversal: ChatGPT, Claude, Gemini…">
+            <span class="llm-icon"><i class="fa-solid fa-microchip"></i></span>
+            <div class="llm-bar"></div>
+            <span class="llm-label">LLM</span>
+            <div class="llm-bar"></div>
+            <span class="llm-icon"><i class="fa-solid fa-microchip"></i></span>
+          </div>
+          <!-- SVG -->
+          <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+            <svg viewBox="0 0 500 480" style="width:100%;height:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,.3))"
+              id="pyramidSvg">
+              <defs>
+                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="4" result="b" />
+                  <feComposite in="SourceGraphic" in2="b" operator="over" />
+                </filter>
+                <filter id="ts" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="1" dy="1" stdDeviation="1" flood-color="#000" flood-opacity=".5" />
+                </filter>
+                <linearGradient id="g5" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#dc2626" />
+                  <stop offset="100%" stop-color="#b91c1c" />
+                </linearGradient>
+                <linearGradient id="g4" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ea580c" />
+                  <stop offset="100%" stop-color="#c2410c" />
+                </linearGradient>
+                <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#f59e0b" />
+                  <stop offset="100%" stop-color="#d97706" />
+                </linearGradient>
+                <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#10b981" />
+                  <stop offset="100%" stop-color="#059669" />
+                </linearGradient>
+                <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3b82f6" />
+                  <stop offset="100%" stop-color="#2563eb" />
+                </linearGradient>
+              </defs>
+              <g class="pyramid-level" id="lv5">
+                <polygon points="200,20 300,20 375,100 125,100" fill="url(#g5)" /><text x="250" y="68"
+                  font-family="Inter" font-weight="700" font-size="22" fill="#fff" text-anchor="middle"
+                  filter="url(#ts)">SYSTEMS</text>
+              </g>
+              <g class="pyramid-level" id="lv4">
+                <polygon points="125,105 375,105 440,195 60,195" fill="url(#g4)" /><text x="250" y="158"
+                  font-family="Inter" font-weight="700" font-size="22" fill="#fff" text-anchor="middle"
+                  filter="url(#ts)">SUMMARIES</text>
+              </g>
+              <g class="pyramid-level" id="lv3">
+                <polygon points="60,200 440,200 480,290 20,290" fill="url(#g3)" /><text x="250" y="252"
+                  font-family="Inter" font-weight="700" font-size="22" fill="#fff" text-anchor="middle"
+                  filter="url(#ts)">GUIDELINES</text>
+              </g>
+              <g class="pyramid-level" id="lv2">
+                <polygon points="20,295 480,295 500,400 0,400" fill="url(#g2)" /><text x="250" y="355"
+                  font-family="Inter" font-weight="700" font-size="22" fill="#fff" text-anchor="middle"
+                  filter="url(#ts)">REVIEWS</text>
+              </g>
+              <g class="pyramid-level" id="lv1">
+                <polygon points="0,405 500,405 500,480 0,480" fill="url(#g1)" /><text x="250" y="450"
+                  font-family="Inter" font-weight="700" font-size="22" fill="#fff" text-anchor="middle"
+                  filter="url(#ts)">STUDIES</text>
+              </g>
+            </svg>
+            <!-- Legend -->
+            <div style="padding-top:4px;border-top:1px solid rgba(255,255,255,.06);margin-top:auto">
+              <p style="font-size:8px;font-weight:700;color:#475569;text-transform:uppercase;margin:0 0 2px">Referentes
+                clásicos MBE</p>
+              <div style="display:flex;flex-direction:column;gap:1px;font-size:9px;color:#64748b">
+                <span><span
+                    style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#dc2626;margin-right:3px;vertical-align:middle"></span>N5:
+                  HCE Inteligente</span>
+                <span><span
+                    style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#ea580c;margin-right:3px;vertical-align:middle"></span>N4:
+                  UpToDate · DynaMed</span>
+                <span><span
+                    style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;margin-right:3px;vertical-align:middle"></span>N3:
+                  Guías Práctica Clínica</span>
+                <span><span
+                    style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;margin-right:3px;vertical-align:middle"></span>N2:
+                  Rev. Cochrane · DARE</span>
+                <span><span
+                    style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#3b82f6;margin-right:3px;vertical-align:middle"></span>N1:
+                  PubMed · Ensayos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ZONE 2: MATRIX (2 columnas: Fundacional | RAG) -->
+      <div class="zone-matrix">
+        <div style="text-align:center;margin-bottom:4px">
+          <span
+            style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">Herramientas
+            IA — Clasificadas por tipo de supervisión</span>
+        </div>
+        <div class="matrix-grid" id="matrixGrid">
+          <!-- Header row -->
+          <div class="matrix-header"></div>
+          <div class="matrix-header" style="background:rgba(239,68,68,.06)"><span
+              style="font-size:10px;font-weight:700;color:#f87171;letter-spacing:.5px">FUNDACIONAL</span><span
+              style="font-size:7px;color:#ef4444">LLM puro · Supervisión imprescindible</span></div>
+          <div class="matrix-header" style="background:rgba(245,158,11,.06)"><span
+              style="font-size:10px;font-weight:700;color:#fbbf24;letter-spacing:.5px">RAG / SUPERVISIÓN
+              ALGORÍTMICA</span><span style="font-size:7px;color:#d97706">Recupera de fuentes · Trazable</span></div>
+
+          <!-- Row 1: Point-of-Care -->
+          <div class="matrix-row-label"><i class="fa-solid fa-stethoscope"
+              style="font-size:14px;color:#64748b"></i><span style="font-size:8px;font-weight:700;color:#e2e8f0">POINT
+              OF CARE</span><span style="font-size:7px;color:#475569">Decisión clínica</span></div>
+          <div class="matrix-cell" style="background:rgba(239,68,68,.02)">
+            <div class="cell-label" style="color:rgba(248,113,113,.4)">LLM puro — no específico para clínica</div>
+            <p style="font-size:8px;color:#64748b;margin:0;line-height:1.3;font-style:italic">Los LLMs generalistas no
+              son herramientas point-of-care. Úsalos como apoyo cognitivo con verificación obligatoria.</p>
+          </div>
+          <div class="matrix-cell" style="background:rgba(245,158,11,.03)">
+            <div class="cell-label">Motores RAG clínicos · Búsqueda con IA</div>
+            <div class="tc" data-tool="openevidence-clinical">OpenEvidence<span class="badge badge-free">Free</span>
+            </div>
+            <div class="tc" data-tool="glass-ai">Glass AI<span class="badge badge-freemium">Freem.</span></div>
+            <div class="tc" data-tool="perplexity">Perplexity AI<span class="badge badge-freemium">Freem.</span></div>
+            <div class="tc" data-tool="tripdatabase">Trip Database Pro<span class="badge badge-freemium">Freem.</span>
+            </div>
+          </div>
+
+          <!-- Row 2: Lectura / Síntesis -->
+          <div class="matrix-row-label"><i class="fa-solid fa-book-open-reader"
+              style="font-size:14px;color:#64748b"></i><span
+              style="font-size:8px;font-weight:700;color:#e2e8f0">LECTURA</span><span
+              style="font-size:7px;color:#475569">Síntesis</span></div>
+          <div class="matrix-cell" style="background:rgba(239,68,68,.02)">
+            <div class="cell-label" style="color:rgba(248,113,113,.4)">Contexto largo — sin fuentes externas</div>
+            <div class="tc" data-tool="claude-pro">Claude (PDF/contexto)<span class="badge badge-freemium">Freem.</span>
+            </div>
+            <div class="tc" data-tool="clinical-reasoning">ChatGPT / GPT-4<span
+                class="badge badge-freemium">Freem.</span></div>
+            <div class="tc" data-tool="gemini">Gemini (Google)<span class="badge badge-freemium">Freem.</span></div>
+          </div>
+          <div class="matrix-cell" style="background:rgba(245,158,11,.03)">
+            <div class="cell-label">Extracción RAG · Análisis de citas</div>
+            <div class="tc" data-tool="notebooklm">NotebookLM (Google)<span class="badge badge-free">Free</span></div>
+            <div class="tc" data-tool="chatpdf">ChatPDF / SciSpace<span class="badge badge-freemium">Freem.</span></div>
+            <div class="tc" data-tool="scite">Scite.ai<span class="badge badge-freemium">Freem.</span></div>
+            <div class="tc" data-tool="asreview">ASReview<span class="badge badge-oss">Open S.</span></div>
+            <div class="tc" data-tool="rayyan">Rayyan<span class="badge badge-freemium">Freem.</span></div>
+          </div>
+
+          <!-- Row 3: Búsqueda / Mapeo -->
+          <div class="matrix-row-label"><i class="fa-solid fa-magnifying-glass"
+              style="font-size:14px;color:#64748b"></i><span
+              style="font-size:8px;font-weight:700;color:#e2e8f0">BÚSQUEDA</span><span
+              style="font-size:7px;color:#475569">Mapeo</span></div>
+          <div class="matrix-cell" style="background:rgba(239,68,68,.02)">
+            <div class="cell-label" style="color:rgba(248,113,113,.4)">Buscadores abiertos — sin filtro metodológico
+            </div>
+            <div class="tc" data-tool="google-scholar">Google Scholar<span class="badge badge-free">Free</span></div>
+            <div class="tc" data-tool="pubmed-ai">PubMed.ai<span class="badge badge-free">Free</span></div>
+          </div>
+          <div class="matrix-cell" style="background:rgba(245,158,11,.03)">
+            <div class="cell-label">Buscadores GenIA · Grafos · Cribado</div>
+            <div class="tc" data-tool="consensus">Consensus<span class="badge badge-freemium">Freem.</span></div>
+            <div class="tc" data-tool="elicit">Elicit<span class="badge badge-freemium">Freem.</span></div>
+            <div class="tc" data-tool="researchrabbit">ResearchRabbit<span class="badge badge-free">Free</span></div>
+            <div class="tc" data-tool="connected-papers">Connected Papers<span
+                class="badge badge-freemium">Freem.</span></div>
+          </div>
+        </div>
+        <!-- Disclaimer -->
+        <p style="font-size:8px;color:#475569;margin:4px 0 0;text-align:center;line-height:1.4">
+          <i class="fa-solid fa-circle-info" style="margin-right:2px;color:#64748b"></i>
+          Esta matriz clasifica herramientas por <strong style="color:#94a3b8">supervisión y modo de acceso</strong>, no
+          por el nivel de evidencia que hereda automáticamente cada respuesta.
+          Los <em>gold standards</em> MBE (UpToDate, Cochrane, GPC) aparecen en la leyenda de la pirámide.
+        </p>
+      </div>
+
+      <!-- ZONE 3: DETAIL PANEL -->
+      <div class="zone-detail" id="detailPanel">
+        <div class="detail-header">
+          <h3 id="detailTitle" style="font-size:14px;font-weight:700;color:#fff;margin:0"></h3>
+          <button id="closePanel"
+            style="background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:18px;padding:4px"
+            title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="detail-body" id="detailBody"></div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div
+      style="flex-shrink:0;padding:3px 1rem;background:#0f172a;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:8px;color:#334155">Modelo piramidal: Alper BS, Haynes RB. EBHC 5.0. Evid Based Med.
+        2016;21(4):123-5.</span>
+      <span style="font-size:8px;color:#334155">© Ernesto Barrera · 2025 · Interfaz educativa</span>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div class="modal-overlay" id="modalGrounding">
+    <div class="modal-box">
+      <div class="modal-top">
+        <h3 style="font-size:16px;font-weight:700;color:#fbbf24;margin:0">⚠️ Grounding ≠ Appraisal</h3><button
+          onclick="closeModal('modalGrounding')"
+          style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:20px">&times;</button>
+      </div>
+      <div class="modal-content" id="mcGrounding"></div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="modalGuia">
+    <div class="modal-box">
+      <div class="modal-top">
+        <h3 style="font-size:16px;font-weight:700;color:#818cf8;margin:0">📋 Guía Rápida de Evaluación Crítica</h3>
+        <button onclick="closeModal('modalGuia')"
+          style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:20px">&times;</button>
+      </div>
+      <div class="modal-content" id="mcGuia"></div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="modalParadigmas">
+    <div class="modal-box">
+      <div class="modal-top">
+        <h3 style="font-size:16px;font-weight:700;color:#34d399;margin:0">🔄 Dos Paradigmas Complementarios</h3><button
+          onclick="closeModal('modalParadigmas')"
+          style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:20px">&times;</button>
+      </div>
+      <div class="modal-content" id="mcParadigmas"></div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="modalConclusiones">
+    <div class="modal-box">
+      <div class="modal-top">
+        <h3 style="font-size:16px;font-weight:700;color:#f87171;margin:0">🎯 Conclusiones y Recomendaciones</h3><button
+          onclick="closeModal('modalConclusiones')"
+          style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:20px">&times;</button>
+      </div>
+      <div class="modal-content" id="mcConclusiones"></div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="modalLLM">
+    <div class="modal-box">
+      <div class="modal-top">
+        <h3 style="font-size:16px;font-weight:700;color:#a78bfa;margin:0">✨ Capa Transversal: LLMs en Medicina</h3>
+        <button onclick="closeModal('modalLLM')"
+          style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:20px">&times;</button>
+      </div>
+      <div class="modal-content" id="mcLLM"></div>
+    </div>
+  </div>
+
+  <script>
+    const T = {
+      ebmeds: { name: "EBMeDS", desc: "Sistema de soporte a decisiones clínicas (CDSS) integrado en HCE para alertas y recomendaciones en tiempo real basadas en la evidencia.", feat: ["Alertas y recordatorios basados en evidencia", "Personalización según características del paciente", "Reduce la sobrecarga de información", "Integración directa con sistemas de HCE"], price: "Licencia empresarial", best: "Hospitales y sistemas de salud con HCE integradas", limit: "Requiere integración técnica compleja y licencia costosa", url: "https://www.ebmeds.org/" },
+      "openevidence-clinical": { name: "OpenEvidence — Decisiones Clínicas", desc: "Plataforma de IA diseñada para responder preguntas clínicas complejas en el punto de atención, sintetizando información de fuentes de alta calidad.", feat: ["Conformidad con HIPAA", "Cita directamente de NEJM, JAMA y guías", 'Función "DeepConsult" para análisis profundos', "Respuestas rápidas para casos específicos"], price: "Gratuito para clínicos", best: "Médicos en consulta que necesitan respuestas basadas en evidencia rápida", limit: "La síntesis es algorítmica, sin evaluación humana explícita. Acceder a Cochrane no convierte la respuesta en una revisión Cochrane.", url: "https://www.openevidence.com/" },
+      "openevidence-guidelines": { name: "OpenEvidence (Guías Clínicas)", desc: "Plataforma IA que consulta directamente las guías de práctica clínica más actualizadas de sociedades científicas (NICE, AHA, etc.).", feat: ["Acceso directo a recomendaciones de guías", "Sintetiza la información relevante para el caso", "Reduce búsqueda en documentos extensos", "Actualización continua de guías"], price: "Gratuito para uso clínico", best: "Consulta rápida de recomendaciones de guías clínicas", limit: "Limitado a guías, no incluye estudios primarios. Si difieren entre guías, posible sesgo integrativo.", url: "https://www.openevidence.com/" },
+      "glass-ai": { name: "Glass AI", desc: "IA para razonamiento diagnóstico. Genera diagnósticos diferenciales y planes de tratamiento apoyados en literatura médica.", feat: ["Genera diagnósticos diferenciales", "Justificaciones con enlaces a evidencia", 'Diseñado como "borrador" para razonamiento clínico', "Integra datos de la HCE"], price: "Freemium", best: "Médicos y estudiantes desarrollando razonamiento diagnóstico", limit: "No reemplaza el juicio clínico, requiere verificación", url: "https://glass.health/" },
+      perplexity: { name: "Perplexity AI", desc: "Buscador impulsado por IA con recuperación de Internet (RAG) en tiempo real. Genera respuestas con citas rastreables, pero no distingue calidad metodológica.", feat: ["Búsqueda indexada en tiempo real", "Citas inline para trazabilidad (Grounding)", "Modo Pro (Co-Pilot) para refinar búsqueda", "Acceso a modelos múltiples (GPT-4, Claude)"], price: "Freemium", best: "Aproximaciones rápidas y dudas no críticas en salud. Buen primer filtro exploratorio.", limit: "No distingue calidad metodológica (ensayo clínico vs opinión). Sufre de 'Falso Sumario': parece un summary pero no lo es.", url: "https://www.perplexity.ai/" },
+      tripdatabase: { name: "Trip Pro con IA", desc: "Combina su motor de búsqueda de evidencia de alta calidad con IA generativa. Respuestas resumidas y referenciadas basadas en la mejor evidencia.", feat: ["Búsqueda inteligente en la cima de la pirámide", "Respuestas IA con enlaces a las fuentes", "Filtros PICO para búsqueda tradicional"], price: "Freemium (IA en plan Pro)", best: "Clínicos que quieren respuestas fiables sin renunciar al acceso a evidencia de máxima calidad.", limit: "Funciones de IA potentes requieren suscripción Pro.", url: "https://www.tripdatabase.com/" },
+      "claude-pro": { name: "Claude (Anthropic)", desc: "LLM de contexto ultra-largo que permite analizar PDFs clínicos completos para lectura y síntesis profunda. Sin acceso a fuentes externas por sí solo.", feat: ["Ventana de contexto de 200k+ tokens", "Artifacts para diagramación iterativa", "Menor propensión a alucinaciones que otros LLMs basales"], price: "Freemium", best: "Análisis semántico profundo de múltiples ensayos clínicos en bruto.", limit: "No realiza búsquedas especializadas fuera del documento dado. La calidad depende del input.", url: "https://claude.ai/" },
+      "clinical-reasoning": { name: "ChatGPT / GPT-4 (OpenAI)", desc: "LLM generalista de propósito amplio. Útil como sparring partner intelectual para razonamiento clínico, pero sin acceso estructurado a bases médicas verificadas.", feat: ["Razonamiento paso a paso (CoT)", "Redacción, resumen, adaptación de borradores clínicos", "Generación de diagnósticos diferenciales", "Modo con plugins puede añadir RAG web"], price: "Freemium", best: "Estructurar pensamiento, generar hipótesis, burocracia clínica.", limit: "El razonamiento puede parecer lógico pero ser médicamente incorrecto. Supervisión imprescindible.", url: "https://chat.openai.com/" },
+      chatpdf: { name: "ChatPDF / SciSpace", desc: 'Herramientas que permiten "chatear" con documentos PDF para interrogar artículos científicos. SciSpace añade explicaciones de métodos y tablas.', feat: ["Asistente virtual para cada PDF", "Resume rápidamente el contenido", "Explicación de conceptos y tablas", "Integración con Zotero (SciSpace)"], price: "Freemium", best: "Lectura activa de papers técnicos. Primera aproximación a un estudio individual.", limit: "Mejor para papers individuales. La síntesis no tiene valor de revisión sistemática.", url: "https://www.chatpdf.com/" },
+      scite: { name: "Scite.ai", desc: "Mapeador direccional de citas: indica si una cita apoya, contrasta o simplemente menciona un hallazgo científico.", feat: ['"Smart Citations" para ver contexto de cada cita', "Identifica artículos con fuerte apoyo o controversia", "Reference Check para validar bibliografías", "Extracción de datos PICO"], price: "Freemium", best: "Evaluar la robustez de hallazgos. Saber si un estudio clásico fue refutado.", limit: "El corpus cerrado limita estudios no integrados.", url: "https://scite.ai/" },
+      asreview: { name: "ASReview", desc: "Software open source de Active Learning para priorizar artículos relevantes durante el cribado. Reduce drásticamente el tiempo de revisión.", feat: ["El revisor entrena al modelo", "Presenta artículos más probables primero", "Reduce tiempo de cribado hasta 95%", "Gratuito, transparente y validado"], price: "Open Source", best: "Investigadores con grandes volúmenes de literatura", limit: "Requiere conocimientos técnicos para instalación", url: "https://asreview.ai/" },
+      rayyan: { name: "Rayyan", desc: "Aplicación web para cribado de títulos y resúmenes en revisiones sistemáticas colaborativas.", feat: ["Cribado ciego por múltiples revisores", "IA sugiere estudios relevantes", "Detección automática de duplicados", "Colaboración en tiempo real"], price: "Freemium", best: "Equipos realizando revisiones sistemáticas", limit: "Solo fase de cribado, no síntesis", url: "https://www.rayyan.ai/" },
+      "google-scholar": { name: "Google Scholar", desc: "Motor de búsqueda académico gratuito de Google. Cobertura masiva pero sin filtro de calidad metodológica.", feat: ["Cobertura masiva de literatura académica", "Alertas de citas y perfiles de autor", "Enlaza a texto completo cuando disponible", "Integración con gestores bibliográficos"], price: "Gratuito", best: "Búsqueda exploratoria inicial amplia, rastreo de citas.", limit: "No distingue calidad metodológica. Sin filtros PICO ni clasificación por nivel de evidencia.", url: "https://scholar.google.com/" },
+      "pubmed-ai": { name: "PubMed.ai", desc: "Interfaz mejorada con IA sobre PubMed/MEDLINE del NIH/NLM. Añade búsqueda semántica y resúmenes inteligentes.", feat: ["Acceso a toda la base MEDLINE/PubMed", "Búsqueda semántica mejorada con IA", "Resúmenes generados automáticamente", "Filtros por tipo de estudio y fecha"], price: "Gratuito", best: "Búsquedas biomédicas con ventaja de procesamiento semántico.", limit: "Las funciones IA son complementarias; la base sigue siendo PubMed con sus limitaciones.", url: "https://pubmed.ai/" },
+      consensus: { name: "Consensus", desc: "Motor de búsqueda IA que extrae y sintetiza hallazgos directamente de la investigación científica peer-reviewed.", feat: ["Resultados basados en estudios revisados por pares", '"Consensus Meter" para nivel de acuerdo', "Cada afirmación vinculada a su fuente", "Corpus de 200M+ documentos"], price: "Freemium", best: "Visión general rápida y fiable de la evidencia sobre un tema.", limit: "Las síntesis son generales. Trata papers sin filtro metodológico fino.", url: "https://consensus.app/" },
+      elicit: { name: "Elicit", desc: "Asistente de investigación que automatiza extracción PICO de PDFs. Encuentra artículos y extrae datos en tablas personalizables.", feat: ["Indexa 125M+ artículos", "Extrae datos en columnas (PICO, etc.)", "Temas y conceptos más allá de palabras clave", "Síntesis automática de hallazgos"], price: "Freemium", best: "Fase inicial de revisiones sistemáticas y extracción.", limit: "La extracción requiere verificación manual.", url: "https://elicit.com/" },
+      researchrabbit: { name: "ResearchRabbit", desc: 'Descubrimiento visual: redes de conocimiento interactivas entre artículos y autores. "Spotify de la investigación".', feat: ["Mapas interactivos de colecciones", "Alertas de nueva literatura", '"Similar Work" y rastreo de referencias', "Integración con Zotero"], price: "Gratuito", best: "Explorar campos nuevos, snowballing bibliográfico.", limit: "No ofrece síntesis de contenido, solo mapeo.", url: "https://www.researchrabbit.ai/" },
+      "connected-papers": { name: "Connected Papers", desc: "Grafo visual de papers relacionados basándose en co-citación. Visión rápida de un campo de investigación.", feat: ["Grafos visuales instantáneos", "Identifica trabajos seminales y derivados", "Visualiza clusters de investigación", "Exportación a gestores de referencias"], price: "Freemium", best: "Investigadores explorando un nuevo campo.", limit: "Se basa en un paper semilla, puede sesgar.", url: "https://www.connectedpapers.com/" },
+      "prompt-engineering": { name: "Ingeniería de Prompts Médicos", desc: "Técnicas estructuradas para maximizar la precisión del LLM en contextos clínicos.", feat: ["Chain-of-Thought: +40% precisión diagnóstica", "Few-Shot: 2-3 ejemplos antes de tu pregunta", "Role Assignment: 'Actúa como [especialista]'", "Structured Output: formatos SOAP, PICO, tablas"], price: "Técnica conceptual", best: "Trabajo diario en consulta", limit: "Un prompt perfecto no garantiza respuesta correcta", url: "" },
+      "verification-framework": { name: "Marco de Verificación Clínica", desc: "Sistema estructurado para validar información de LLMs antes de cualquier aplicación clínica.", feat: ["Cross-Check: Pregunta lo mismo de 3 formas", "Source Request: Exige citas con DOI", "Reverse Fact-Check: Introduce errores", "Red Flags: DOIs malformados, dosis redondeadas"], price: "Metodología gratuita", best: "Toda información que afecte decisiones clínicas", limit: "Consume tiempo pero es absolutamente necesario", url: "" },
+      "hallucination-detection": { name: "Detección de Alucinaciones Médicas", desc: "Estrategias para identificar información médica falsa generada con alta confianza.", feat: ["Test de Inconsistencia entre consultas", "Especificidad Sospechosa sin fuente", "Análisis de Números: dosis redondeadas = red flag", "Verificación manual de citas"], price: "Metodología gratuita", best: "Dosis, contraindicaciones, interacciones", limit: "Requiere vigilancia constante y conocimiento base", url: "" },
+      "epistemological-limits": { name: "Límites Epistemológicos de los LLMs", desc: "El LLM comprime tokens co-ocurrentes. NO 'sabe' qué es una neumonía, solo que Disnea y Fiebre están topológicamente cerca de ella.", feat: ["No comprenden causalidad, solo correlación textual", "Sin embodiment: no entienden dolor", "Temporalidad colapsada: mezclan épocas", "Sesgo de publicación: sobrerrepresentan lo publicado"], price: "Conocimiento crítico", best: "Entender cuándo NO usar LLMs", limit: "Un LLM que describe un infarto no lo 'comprende'. Nunca para diagnósticos definitivos sin revisión.", url: "" },
+      "rag-medical": { name: "RAG Médico Transversal", desc: "Técnica que ancla respuestas del LLM en bases de datos médicas verificadas. Recupera información, luego genera síntesis contextualizada.", feat: ["Reduce alucinaciones >70%", "Citas verificables a fuentes primarias", "Actualización continua con nueva literatura", "Implementado en: Perplexity Pro, sistemas hospitalarios"], price: "Variable", best: "Preguntas que requieren evidencia verificable", limit: "Tan bueno como sus fuentes; trazabilidad ≠ validación", url: "" },
+      "deep-research": { name: "Deep Research con Agentes IA", desc: "Sistemas que realizan investigación autónoma: 10-100+ búsquedas iterativas, miles de papers, síntesis comprehensivas.", feat: ["Búsqueda iterativa con refinamiento automático", "Miles de documentos en minutos", "Informes con citas completas", "En: Perplexity Pro, Elicit, Consensus Premium"], price: "Variable", best: "Revisiones de literatura, horizon scanning", limit: "10-30 min; no apto para decisiones urgentes", url: "" },
+      "multimodal-clinical": { name: "IA Multimodal en Clínica", desc: "LLMs que procesan texto + imágenes médicas + datos estructurados. GPT-4V, Gemini Pro Vision, Med-PaLM M.", feat: ["Análisis de radiografías, ECGs, derma", "Correlación imagen-historia clínica", "Interpretación de laboratorio en imagen", "Detección multimodal"], price: "Variable", best: "Segunda opinión rápida, educación, triage telemedicina", limit: "No certificado para diagnóstico", url: "" },
+      "scopus-ai": { name: "Scopus AI", desc: "IA generativa integrada en Scopus. Resúmenes rápidos, mapas conceptuales y expertos.", feat: ["Resúmenes de millones de abstracts", "Conexiones entre conceptos", "Investigadores influyentes", "Base curada Elsevier"], price: "Institucional", best: "Bibliotecarios e investigadores con acceso institucional", limit: "Costoso, basado en abstracts", url: "https://www.elsevier.com/products/scopus/scopus-ai" },
+      "dimensions-ai": { name: "Dimensions AI", desc: "Plataforma IA para publicaciones, becas, patentes y ensayos clínicos con análisis de tendencias.", feat: ["Análisis multimodal investigación", "Asistente IA para resúmenes", "Integración con Papers", "Búsqueda en ensayos y patentes"], price: "Institucional", best: "Análisis bibliométrico y horizon scanning", limit: "Costoso, no para point-of-care", url: "https://www.dimensions.ai/" },
+      litsense: { name: "LitSense", desc: "Motor de búsqueda de frases para literatura biomédica. Combina términos con embeddings neuronales.", feat: ["500M+ frases de PubMed y PMC", "Búsqueda semántica (sent2vec)", "Resalta entidades biomédicas", "Filtra por sección y fecha"], price: "Gratuito", best: "Fact-checking molecular: oraciones concretas en artículos", limit: "Recupera frases, no genera síntesis.", url: "https://www.ncbi.nlm.nih.gov/research/litsense/" },
+      gemini: { name: "Gemini (Google DeepMind)", desc: "LLM multimodal de Google. Procesa texto, imágenes y vídeo. Ventana de contexto de hasta 1M tokens (Gemini 1.5 Pro). Integrado en el ecosistema Google.", feat: ["Contexto de hasta 1M tokens (el mayor del mercado)", "Capacidad multimodal nativa (texto + imagen + vídeo)", "Deep Research: investigación autónoma iterativa", "Integración con Google Search, Scholar y Workspace"], price: "Freemium", best: "Análisis de documentos extensos, síntesis multimodal, investigación exploratoria.", limit: "LLM generalista: no accede a bases médicas verificadas por sí solo. Mismas limitaciones epistemológicas que ChatGPT.", url: "https://gemini.google.com/" },
+      notebooklm: { name: "NotebookLM (Google)", desc: "Herramienta RAG de Google que permite subir fuentes (PDFs, webs, vídeos) y obtener respuestas exclusivamente ancladas a esas fuentes. Genera podcasts automáticos y guías de estudio.", feat: ["RAG estricto: SOLO responde desde tus fuentes subidas", "Cero alucinaciones fuera de contexto (grounded by design)", "Genera Audio Overviews (podcasts) automáticos", "Citas inline con enlace al fragmento exacto de la fuente"], price: "Gratuito", best: "Síntesis de múltiples papers/guías con trazabilidad perfecta. Ideal para revisiones de literatura.", limit: "Solo trabaja con las fuentes que tú subas. No busca en internet ni en bases externas. La calidad depende del input.", url: "https://notebooklm.google.com/" }
+    };
+    const L = { "openevidence-clinical": [1, 2, 3], "openevidence-guidelines": [3], "consensus": [1], "perplexity": [1, 2], "tripdatabase": [1, 2, 3, 4, 5], "scopus-ai": [1, 2], "dimensions-ai": [1, 2, 3], "chatpdf": [1, 2], "claude-pro": [1, 2], "elicit": [1], "asreview": [1, 2], "rayyan": [1, 2], "researchrabbit": [1], "litsense": [1], "connected-papers": [1], "scite": [1, 2], "ebmeds": [5], "glass-ai": [1, 2, 3], "google-scholar": [1], "pubmed-ai": [1], "clinical-reasoning": [], "gemini": [], "notebooklm": [1, 2] };
+    const levels = document.querySelectorAll('.pyramid-level');
+    const body = document.getElementById('appBody');
+    const dTitle = document.getElementById('detailTitle');
+    const dBody = document.getElementById('detailBody');
+    let activeChip = null;
+    function renderDetail(id) {
+      const t = T[id]; if (!t) return '';
+      return `<p style="color:#94a3b8;font-size:13px;line-height:1.7;margin:0 0 1rem">${t.desc}</p>
+  <div style="margin-bottom:1rem"><h4 style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin:0 0 .5rem">✨ Características</h4>
+  <ul style="margin:0;padding-left:1rem">${t.feat.map(f => `<li style="color:#cbd5e1;font-size:12px;margin:.25rem 0"><span style="color:#34d399;margin-right:4px">✓</span>${f}</li>`).join('')}</ul></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1rem">
+  <div style="background:rgba(59,130,246,.08);padding:.5rem;border-radius:8px;border:1px solid rgba(59,130,246,.15)"><span style="font-size:9px;font-weight:700;color:#60a5fa;text-transform:uppercase">Mejor para</span><p style="font-size:12px;color:#cbd5e1;margin:.25rem 0 0">${t.best}</p></div>
+  <div style="background:rgba(245,158,11,.08);padding:.5rem;border-radius:8px;border:1px solid rgba(245,158,11,.15)"><span style="font-size:9px;font-weight:700;color:#fbbf24;text-transform:uppercase">Precauciones</span><p style="font-size:12px;color:#cbd5e1;margin:.25rem 0 0">${t.limit}</p></div></div>
+  <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+  <span style="font-size:11px;padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#94a3b8">${t.price}</span>
+  ${t.url ? `<a href="${t.url}" target="_blank" rel="noopener noreferrer" style="font-size:11px;padding:3px 10px;border-radius:99px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:#60a5fa;text-decoration:none;font-weight:600">Abrir ↗</a>` : ''}</div>`;
+    }
+    function lightPyramid(toolId) {
+      const hits = L[toolId] || [];
+      if (!hits.length) { levels.forEach(l => { l.classList.remove('lit', 'dim') }); return; }
+      levels.forEach(l => { l.classList.add('dim'); l.classList.remove('lit') });
+      hits.forEach(n => { const el = document.getElementById('lv' + n); if (el) { el.classList.remove('dim'); el.classList.add('lit') } });
+    }
+    function resetPyramid() { levels.forEach(l => { l.classList.remove('lit', 'dim') }) }
+    document.querySelectorAll('.tc[data-tool]').forEach(chip => {
+      chip.addEventListener('mouseenter', () => lightPyramid(chip.dataset.tool));
+      chip.addEventListener('mouseleave', resetPyramid);
+      chip.addEventListener('click', e => {
+        e.stopPropagation(); const id = chip.dataset.tool; const t = T[id]; if (!t) return;
+        if (activeChip) activeChip.classList.remove('active');
+        chip.classList.add('active'); activeChip = chip;
+        dTitle.textContent = t.name; dBody.innerHTML = renderDetail(id);
+        body.classList.add('panel-open');
       });
-    </script>
-    <script src="./assets/js/include.js"></script>
-  </body>
+    });
+    document.getElementById('closePanel').addEventListener('click', () => {
+      body.classList.remove('panel-open');
+      if (activeChip) { activeChip.classList.remove('active'); activeChip = null; }
+    });
+    document.getElementById('llmStripe').addEventListener('click', () => openModal('modalLLM'));
+    function openModal(id) { const m = document.getElementById(id); m.style.display = 'flex'; requestAnimationFrame(() => m.classList.add('show')) }
+    function closeModal(id) { const m = document.getElementById(id); m.classList.remove('show'); setTimeout(() => m.style.display = 'none', 300) }
+    document.querySelectorAll('.modal-overlay').forEach(m => { m.addEventListener('click', e => { if (e.target === m) closeModal(m.id) }) });
+    document.getElementById('mcGrounding').innerHTML = `
+<h4>Tres cosas distintas que conviene separar</h4>
+<table><thead><tr><th>#</th><th>Concepto</th><th>Ejemplo</th></tr></thead><tbody>
+<tr><td>1</td><td><strong>Nivel del recurso fuente</strong></td><td>Revisión Cochrane, guía clínica, estudio original</td></tr>
+<tr><td>2</td><td><strong>Modo de acceso / procesamiento</strong></td><td>RAG, buscador semántico, LLM, chat, extracción automática</td></tr>
+<tr><td>3</td><td><strong>Calidad de la respuesta final</strong></td><td>Fiel/no fiel, completa/incompleta, con/sin revisión experta</td></tr></tbody></table>
+<p style="margin:1rem 0;padding:.75rem;border-radius:8px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2)"><strong style="color:#fbbf24">⚖️ El error típico:</strong> confundir una buena trazabilidad (sé de dónde salió) con una validación metodológica (sé cuánto pesa científicamente esa síntesis).</p>
+<h4>Grounding ≠ Appraisal</h4>
+<p>Un sistema RAG clínico (OpenEvidence, Perplexity Pro) recupera fragmentos indexados, los inyecta en el LLM, y genera una respuesta sintética. Esto aporta excelente <strong style="color:#34d399">grounding</strong> (anclaje a fuentes, trazabilidad), pero <strong style="color:#f87171">NO aporta appraisal</strong> (evaluación crítica sistemática).</p>
+<ul><li>Puede recuperar un ensayo del NEJM y un estudio observacional débil, resumirlos juntos sin ponderar la brecha.</li>
+<li><strong>Citar fuentes exhaustivamente no es evaluar fuentes exhaustivamente.</strong></li>
+<li>Una IA puede apoyarse en recursos de nivel alto sin producir una salida de nivel alto.</li></ul>
+<h4>Lo que distingue un Sumario MBE real (UpToDate, DynaMed)</h4>
+<ul><li><strong>Supervisión editorial con peer review:</strong> Equipos de expertos clínicos</li>
+<li><strong>Actualización sistemática:</strong> Protocolos de vigilancia epidemiológica proactiva</li>
+<li><strong>Evaluación GRADE integrada:</strong> Asignación humana del nivel de certeza</li>
+<li><strong>Auditorías de cobertura y calidad</strong></li></ul>
+<p style="padding:.75rem;border-radius:8px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);margin-top:1rem"><strong style="color:#60a5fa">🔎 Nota de lectura:</strong> Esta herramienta puede mostrar fuentes de alto nivel, pero su respuesta no equivale automáticamente a una síntesis revisada por pares ni hereda el nivel de evidencia del recurso citado. <em>Úsalo como apoyo de acceso y orientación; el peso de la recomendación depende del recurso original y de su evaluación crítica.</em></p>`;
+    document.getElementById('mcGuia').innerHTML = `
+<h4>Fase 1: Fundamentos y Propósito</h4>
+<ul><li><strong>🔤 Interpretación:</strong> ¿Qué problema clínico resuelve? ¿El equipo es creíble?</li>
+<li><strong>🧮 Modelización:</strong> ¿Qué arquitectura IA utiliza? ¿Cuál es el tamaño del modelo?</li></ul>
+<h4>Fase 2: Validez Técnica</h4>
+<ul><li><strong>🔤:</strong> ¿Datos de entrenamiento representativos? ¿Validación externa? ¿Análisis de sesgos?</li>
+<li><strong>🧮:</strong> ¿Embeddings, transformers o CNNs? ¿Es explicable o caja negra?</li></ul>
+<h4>Fase 3: Resultados Clínicos</h4>
+<ul><li><strong>🔤:</strong> ¿Hay ECA que demuestren mejora en resultados clínicos?</li>
+<li><strong>🧮:</strong> ¿Métricas de performance (AUC, F1)? ¿Calibración de incertidumbre?</li></ul>
+<h4>Fase 4: Uso Responsable</h4>
+<ul><li><strong>🔤:</strong> ¿Exige supervisión profesional? <em style="color:#64748b;font-size:12px">(Sesgo de automatización)</em></li>
+<li><strong>🧮:</strong> ¿Permite ajuste de hiperparámetros? ¿Acceso a representaciones intermedias?</li></ul>
+<h4>Fase 5: Sostenibilidad</h4>
+<ul><li><strong>🔤:</strong> ¿Plan de actualización? ¿Monitorización de precisión? <em style="color:#64748b;font-size:12px">(Concept drift)</em></li>
+<li><strong>🧮:</strong> ¿Continuous learning? ¿Cómo maneja la degradación?</li></ul>`;
+    document.getElementById('mcParadigmas').innerHTML = `
+<table><thead><tr><th>Dimensión</th><th>🔤 MBE (Interpretación)</th><th>🧮 IA (Modelización)</th></tr></thead><tbody>
+<tr><td><strong>Unidad básica</strong></td><td>Signo clínico</td><td>Vector latente (embedding)</td></tr>
+<tr><td><strong>Relaciones</strong></td><td>Analogía, inferencia semántica</td><td>Proximidad geométrica, clustering</td></tr>
+<tr><td><strong>Validación</strong></td><td>Jerarquía de evidencia, lógica</td><td>Performance predictiva</td></tr>
+<tr><td><strong>Transparencia</strong></td><td style="color:#34d399">Alta ✓</td><td style="color:#fbbf24">Baja (requiere XAI) ⚠️</td></tr>
+<tr><td><strong>Velocidad</strong></td><td style="color:#fbbf24">Lenta</td><td style="color:#34d399">Instantánea ⚡</td></tr>
+<tr><td><strong>Riesgos</strong></td><td>Sesgo humano, carga cognitiva</td><td>Caja negra, sesgo algorítmico</td></tr></tbody></table>
+<p style="margin-top:1rem"><strong>💡</strong> No son paradigmas opuestos sino complementarios. La IA acelera el procesamiento; el juicio clínico contextualiza los resultados.</p>`;
+    document.getElementById('mcConclusiones').innerHTML = `
+<h4>Para Clínicos</h4>
+<ul><li>Usa <strong>OpenEvidence</strong> o <strong>Trip Pro</strong> para preguntas clínicas rápidas.</li>
+<li>Verifica siempre las fuentes primarias antes de aplicar la información.</li>
+<li>Documenta qué herramienta usaste para mayor transparencia.</li></ul>
+<h4>Para Investigadores</h4>
+<ul><li>Combina: <strong>Elicit</strong> para extracción + <strong>Scite</strong> para validación + <strong>ResearchRabbit</strong> para mapeo.</li>
+<li>Declara el uso de IA en la sección de métodos.</li></ul>
+<h4>⚠️ Estado del Ecosistema (2025)</h4>
+<ul><li><strong>Velocidad de cambio acelerada:</strong> El ecosistema evoluciona mensualmente.</li>
+<li><strong>Validación heterogénea:</strong> No todas han pasado por validación clínica rigurosa.</li>
+<li><strong>Sesgo de selección:</strong> Priorizan interfaces en inglés.</li></ul>
+<p style="padding:.75rem;border-radius:8px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);margin-top:1rem"><strong style="color:#fbbf24">🔑</strong> Estas herramientas aumentan, no reemplazan, tu juicio profesional. El escepticismo algorítmico informado es la habilidad más importante.</p>
+<p style="font-size:12px;color:#64748b;margin-top:1rem">Modelo piramidal: <em>Alper BS, Haynes RB. EBHC pyramid 5.0. Evid Based Med. 2016;21(4):123-5.</em></p>`;
+    document.getElementById('mcLLM').innerHTML = `
+<p>Los LLMs generalistas (ChatGPT, Claude, Gemini, DeepSeek, Copilot) son herramientas de <strong>aumento cognitivo</strong>, no fuentes de evidencia.</p>
+<div style="padding:.75rem;border-radius:8px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);margin:1rem 0">
+<p style="margin:0;font-size:12px;color:#a78bfa">🤖 <strong>IA-perspectiva:</strong> Modelos autorregresivos (>100B parámetros) entrenados mediante next-token prediction. No acceden a bases médicas verificadas. Su "conocimiento" es compresión estadística de co-ocurrencias textuales.</p></div>
+<h4>Principios de Uso</h4>
+<ul><li><strong>Hipótesis y estructura:</strong> Excelentes para diagnósticos diferenciales y organizar pensamiento.</li>
+<li><strong>Verificación obligatoria:</strong> Toda información crítica debe validarse con fuentes primarias.</li>
+<li><strong>Augmentación, no sustitución:</strong> Úsalos para pensar mejor, no para pensar menos.</li></ul>
+<h4>Conceptos clave</h4>
+<ul><li><strong>Ingeniería de Prompts:</strong> Chain-of-Thought, Few-Shot, Role Assignment</li>
+<li><strong>Marco de Verificación:</strong> Cross-Check, Source Request, Reverse Fact-Check</li>
+<li><strong>RAG Médico:</strong> Reduce alucinaciones >70%, citas verificables</li>
+<li><strong>Detección de Alucinaciones:</strong> Test de inconsistencia, números sospechosos</li>
+<li><strong>Límites Epistemológicos:</strong> No comprenden causalidad, sin embodiment</li></ul>`;
+    if (typeof includeHTML === 'function') { includeHTML().catch(e => console.error(e)) }
+  </script>
+  <include src="footer.html"></include>
+  <script src="./assets/js/include.js"></script>
+</body>
+
 </html>
