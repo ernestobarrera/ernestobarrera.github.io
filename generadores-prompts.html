@@ -30,6 +30,13 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
     />
+    <style>
+      @media (min-width: 769px) {
+        .prompts-page .resources-grid.resources-grid-clinica {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
   </head>
 
   <body class="prompts-page">
@@ -111,7 +118,7 @@
       <section id="clinica" class="resources-section">
         <h2 class="section-title">👩‍⚕️ Práctica Clínica</h2>
         <div class="resources-list">
-          <div class="resources-grid">
+          <div class="resources-grid resources-grid-clinica">
             <div class="resource-item">
               <div class="bookmarklet-container">
                 <div class="bookmarklet-button">👨‍⚕️ MFyC</div>
@@ -131,6 +138,29 @@
                 href="https://ernestobarrera.github.io/ia/p/record-mfyc.html"
                 class="resource-link"
                 aria-label="Ir al generador de prompts para Medicina Familiar"
+                target="_blank"
+              ></a>
+            </div>
+            <div class="resource-item">
+              <div class="bookmarklet-container">
+                <div class="bookmarklet-button">🧒 Pediatría AP</div>
+                <p class="installation-note">Ir al generador</p>
+              </div>
+              <div class="resource-content">
+                <h3 class="resource-name">
+                  Pediatría AP
+                  <span class="beta-badge">BETA</span>
+                  <span class="tag">RECORD</span>
+                </h3>
+                <p class="resource-description">
+                  Consultas pediátricas de AP y comunicación con familias con
+                  wizard RECORD guiado.
+                </p>
+              </div>
+              <a
+                href="https://ernestobarrera.github.io/ia/p/record-pediatria-ap.html"
+                class="resource-link"
+                aria-label="Ir al generador de prompts para Pediatría de Atención Primaria"
                 target="_blank"
               ></a>
             </div>
