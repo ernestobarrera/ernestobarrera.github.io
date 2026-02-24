@@ -1,0 +1,3455 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>
+    Sistema de Gestión de Avisos y Urgencias en Equipos de Atención Primaria
+    v1.1
+  </title>
+  <style>
+    /* === ESTILOS V2.0 NATIVA (Sistema Operativo nativo) === */
+    :root {
+      --color-primary: #4a6fa5;
+      --color-primary-hover: #3d5a80;
+      --color-secondary: #6c757d;
+      --color-success: #28a745;
+      --color-warning: #ffc107;
+      --color-danger: #dc3545;
+      --color-light: #f8f9fa;
+      --color-dark: #343a40;
+      --color-bg: #f5f7fa;
+      --color-card-bg: #ffffff;
+      --border-radius: 6px;
+      --border-color: #cbd5e1;
+      --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--color-bg);
+      color: #334155;
+      line-height: 1.4;
+      padding: 16px;
+      font-size: 14px;
+      /* Letra base más compacta */
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background-color: var(--color-card-bg);
+      padding: 16px 24px;
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    header h1 {
+      color: var(--color-dark);
+      font-weight: 700;
+      font-size: 1.25rem;
+      margin-bottom: 2px;
+    }
+
+    header small {
+      color: var(--color-secondary);
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      color: var(--color-dark);
+      margin: 16px 0 12px 0;
+      font-weight: 600;
+    }
+
+    h3 {
+      font-size: 1rem;
+      color: var(--color-dark);
+      margin: 12px 0 8px 0;
+      font-weight: 600;
+    }
+
+    p {
+      margin-bottom: 8px;
+    }
+
+    small,
+    .help-text {
+      color: var(--color-secondary);
+      font-size: 0.8rem;
+    }
+
+    a {
+      color: var(--color-primary);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* Navegación Superior Compacta */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding: 6px 12px;
+      background-color: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+    }
+
+    nav>div>a {
+      padding: 6px 12px;
+      font-weight: 500;
+      color: #475569;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+    }
+
+    nav>div>a:hover {
+      background-color: #e2e8f0;
+      color: var(--color-dark);
+      text-decoration: none;
+    }
+
+    nav>div>a.active {
+      background-color: #ffffff;
+      color: var(--color-primary);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border: 1px solid #cbd5e1;
+      font-weight: 700;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    input,
+    select,
+    textarea {
+      padding: 6px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      background: #fff;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+
+    /* Pestañas (Tabs) Estilo macOS/Stripe - Exactamente como la referencia */
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #cbd5e1;
+      padding-left: 2px;
+    }
+
+    .tab-button {
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      background-color: transparent;
+      color: #64748b;
+      font-weight: 600;
+      border: 1px solid transparent;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      margin-bottom: -1px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .tab-button:hover:not(.active) {
+      background-color: #f1f5f9;
+      color: #334155;
+    }
+
+    .tab-button.active {
+      background-color: #ffffff;
+      color: var(--color-primary);
+      border: 1px solid #cbd5e1;
+      border-bottom: 1px solid #ffffff;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.2s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(2px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 500;
+      font-size: 0.85rem;
+      color: #475569;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+    }
+
+    /* Botones Nativos/Compactos */
+    button {
+      background-color: var(--color-primary);
+      color: white;
+      padding: 6px 12px;
+      font-weight: 500;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:hover {
+      background-color: var(--color-primary-hover);
+    }
+
+    button.secondary {
+      background-color: white;
+      border-color: #cbd5e1;
+      color: #334155;
+    }
+
+    button.secondary:hover {
+      background-color: #f1f5f9;
+    }
+
+    button.success {
+      background-color: var(--color-success);
+    }
+
+    button.danger {
+      background-color: var(--color-danger);
+    }
+
+    button.warning {
+      background-color: white;
+      border-color: var(--color-warning);
+      color: #b45309;
+    }
+
+    button.warning:hover {
+      background-color: #fef3c7;
+    }
+
+    button.info {
+      background-color: white;
+      border-color: #e2e8f0;
+      color: #0284c7;
+    }
+
+    button.info:hover {
+      background-color: #e0f2fe;
+      border-color: #bae6fd;
+    }
+
+    /* Tablas Ultra Compactas y Claras */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 0.8rem;
+    }
+
+    th,
+    td {
+      border: 1px solid #e2e8f0;
+      padding: 6px 8px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      background-color: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    tr:nth-child(even) {
+      background-color: #fbfbfc;
+    }
+
+    tr:hover {
+      background-color: #f1f5f9;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      margin-top: 8px;
+      max-height: 50vh;
+      overflow-y: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+    }
+
+    #tablaCalendario th,
+    #tablaCalendario td {
+      padding: 4px 6px;
+    }
+
+    #tablaCalendario .finde-festivo {
+      background-color: #f8fafc;
+      color: #94a3b8;
+      text-align: center;
+      font-style: italic;
+    }
+
+    .resultado {
+      background-color: white;
+      padding: 0;
+      border-radius: 4px;
+    }
+
+    .badge {
+      padding: 2px 6px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .badge-mañana {
+      background-color: #dbeafe;
+      color: #1e40af;
+    }
+
+    .badge-tarde {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge-mixto {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+
+    .highlight {
+      background-color: #fef3c7;
+      padding: 2px 4px;
+      border-radius: 2px;
+    }
+
+    /* Alerta Descubierto - Destacado V2 */
+    .alerta-descubierto {
+      background-color: #fee2e2 !important;
+      color: #b91c1c !important;
+      font-weight: 800 !important;
+      text-align: center !important;
+      border: 2px dashed #ef4444 !important;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-color);
+      color: var(--color-secondary);
+      font-size: 0.8rem;
+    }
+
+    /* Grid de cards stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .stat-card {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    .stat-card h4 {
+      margin: 0 0 4px 0;
+      color: #64748b;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--color-dark);
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .nav-right {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1 style="color: #1e293b; font-weight: 700;">Sistema de Gestión de Avisos y Urgencias v2.0</h1>
+        <small>Round-Robin | MVP Pre-Producción Optimizado</small>
+      </div>
+    </header>
+    <nav>
+      <div>
+        <a href="#" class="nav-link active" onclick="mostrarSeccion('configuracion', event)">Configuración</a>
+        <a href="#" class="nav-link" onclick="mostrarSeccion('calendario', event)">Calendario</a>
+        <a href="#" class="nav-link" onclick="mostrarSeccion('manual', event)">Manual de uso</a>
+      </div>
+      <div class="nav-right">
+        <div style="display: flex; gap: 5px; align-items: center">
+          <span style="font-size: 0.85em; color: #666">Config:</span>
+          <button onclick="exportarConfiguracion()" title="Exportar configuración (médicos, festivos, etc.)">
+            📄 Exportar
+          </button>
+          <button onclick="document.getElementById('importarInput').click()" title="Importar configuración">
+            📥 Importar
+          </button>
+        </div>
+        <div style="display: flex; gap: 5px; align-items: center">
+          <span style="font-size: 0.85em; color: #666">Histórico:</span>
+          <button onclick="exportarHistorico()" class="warning" title="Exportar histórico de guardias">
+            📊 Exportar
+          </button>
+          <button onclick="document.getElementById('importarHistoricoInput').click()" class="warning"
+            title="Importar histórico">
+            📈 Importar
+          </button>
+        </div>
+        <input type="file" id="importarHistoricoInput" accept=".json" style="display: none"
+          onchange="importarHistorico(event)" />
+        <input type="file" id="importarInput" accept=".json" style="display: none"
+          onchange="importarConfiguracion(event)" />
+        <select id="selectorIdioma">
+          <option value="es">ES</option>
+          <option value="ca">CA</option>
+          <option value="gl">GL</option>
+          <option value="eu">EU</option>
+          <option value="en">EN</option>
+        </select>
+        <button onclick="guardarEnMemoria()">Guardado</button>
+      </div>
+    </nav>
+    <!-- === SECCIÓN DE CONFIGURACIÓN === -->
+    <div id="configuracion" class="seccion">
+      <h2>Configuración del Sistema</h2>
+      <div class="tabs">
+        <button class="tab-button active" onclick="abrirTab(event, 'tabMedicos')">
+          Médicos
+        </button>
+        <button class="tab-button" onclick="abrirTab(event, 'tabJornada')">
+          Jornada y Exclusiones
+        </button>
+        <button class="tab-button" onclick="abrirTab(event, 'tabFestivos')">
+          Festivos
+        </button>
+        <button class="tab-button" onclick="abrirTab(event, 'tabAusencias')">
+          Ausencias
+        </button>
+        <button class="tab-button" onclick="abrirTab(event, 'tabExclPunt')">
+          Excl. Puntuales
+        </button>
+        <button class="tab-button" onclick="abrirTab(event, 'tabPlanTurnos')">
+          Plan. Turnos (Mixtos)
+        </button>
+        <button class="tab-button" onclick="abrirTab(event, 'tabParametros')">
+          Parámetros Avanzados
+        </button>
+      </div>
+      <!-- Tab Médicos -->
+      <div id="tabMedicos" class="tab-content active">
+        <div class="form-group">
+          <label for="nuevoMedicoNombre">Nombre del Médico:</label>
+          <input type="text" id="nuevoMedicoNombre" placeholder="Apellido, Nombre" />
+        </div>
+        <div class="form-group">
+          <label for="nuevoMedicoTurno">Turno:</label>
+          <select id="nuevoMedicoTurno">
+            <option value="MAÑANA">MAÑANA</option>
+            <option value="TARDE">TARDE</option>
+            <option value="MIXTO" selected>MIXTO</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="nuevoMedicoActivo" checked /> Activo
+          </label>
+        </div>
+        <button onclick="agregarMedico()">Agregar Médico</button>
+        <div class="form-group" style="
+              margin-top: 20px;
+              border-top: 1px solid #ddd;
+              padding-top: 20px;
+            ">
+          <label for="importacionMasiva">
+            <strong>Importación rápida</strong> (pegar desde Excel o texto con
+            formato):
+          </label>
+          <textarea id="importacionMasiva" placeholder="Formato: Nombre[TAB]Turno[TAB]Jornada%  o  Nombre[TAB]Categoría[TAB]Turno[TAB]Jornada%
+Ejemplo 1: GARCIA[TAB]MAÑANA[TAB]100
+Ejemplo 2: GARCIA[TAB]Medicina de Familia[TAB]TARDE"
+            style="width: 100%; height: 100px; font-family: monospace"></textarea>
+          <button onclick="procesarImportacionMasiva()">
+            Procesar Importación
+          </button>
+          <p class="help-text">
+            Copia las columnas desde Excel y pégalas aquí. Columnas: Nombre |
+            Turno (MAÑANA/TARDE/MIXTO) | Jornada% (opcional, por defecto 100)
+          </p>
+        </div>
+        <h3 style="margin-top: 20px">Lista de Médicos</h3>
+        <div class="table-container">
+          <table id="tablaMedicos">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Turno</th>
+                <th>Activo</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Tab Jornada y Exclusiones -->
+      <div id="tabJornada" class="tab-content">
+        <h3>Reducción de Jornada y Días Excluidos</h3>
+        <p class="help-text">
+          Define el porcentaje de jornada y los días de la semana que un
+          médico no puede trabajar.
+          <br /><strong>Efecto:</strong> Reduce el número objetivo de guardias
+          proporcionalmente al porcentaje de jornada. Los días excluidos
+          también reducen el objetivo y se consideran en la distribución
+          general.
+        </p>
+        <div class="form-group">
+          <label for="reduccionMedico">Seleccionar Médico:</label>
+          <select id="reduccionMedico"></select>
+        </div>
+        <div class="form-group">
+          <label for="reduccionPorcentaje">Porcentaje de Jornada (%):</label>
+          <input type="number" id="reduccionPorcentaje" min="0" max="100" value="100" />
+        </div>
+        <div class="form-group">
+          <label>Días Excluidos:</label><br />
+          <label><input type="checkbox" name="diasExcluidos" value="LUNES" />
+            Lunes</label>
+          <label><input type="checkbox" name="diasExcluidos" value="MARTES" />
+            Martes</label>
+          <label><input type="checkbox" name="diasExcluidos" value="MIERCOLES" />
+            Miércoles</label>
+          <label><input type="checkbox" name="diasExcluidos" value="JUEVES" />
+            Jueves</label>
+          <label><input type="checkbox" name="diasExcluidos" value="VIERNES" />
+            Viernes</label>
+        </div>
+        <button onclick="guardarReduccion()">Guardar Reducción</button>
+        <h3 style="margin-top: 20px">Configuraciones Guardadas</h3>
+        <div class="table-container">
+          <table id="tablaReducciones">
+            <thead>
+              <tr>
+                <th>Médico</th>
+                <th>Jornada (%)</th>
+                <th>Días Excluidos</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Tab Festivos -->
+      <div id="tabFestivos" class="tab-content">
+        <h3>Festivos</h3>
+        <p class="help-text">
+          Lista de días festivos que no serán laborables.
+          <br /><strong>Efecto:</strong> Ningún médico será asignado en estos
+          días.
+        </p>
+        <div class="form-group">
+          <label for="nuevoFestivo">Fecha del Festivo (YYYY-MM-DD):</label>
+          <input type="date" id="nuevoFestivo" />
+        </div>
+        <button onclick="agregarFestivo()">Agregar Festivo</button>
+        <h3 style="margin-top: 20px">Lista de Festivos</h3>
+        <div class="table-container">
+          <table id="tablaFestivos">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Tab Ausencias -->
+      <div id="tabAusencias" class="tab-content">
+        <h3>Ausencias (Vacaciones/Bajas)</h3>
+        <p class="help-text">
+          Periodos de tiempo donde un médico no está disponible.
+          <br /><strong>Efecto:</strong> Reduce el número objetivo de
+          guardias, ya que se considera que esos días no puede trabajar.
+        </p>
+        <div class="form-group">
+          <label for="ausenciaMedico">Seleccionar Médico:</label>
+          <select id="ausenciaMedico"></select>
+        </div>
+        <div class="form-group">
+          <label for="ausenciaInicio">Fecha Inicio (YYYY-MM-DD):</label>
+          <input type="date" id="ausenciaInicio" />
+        </div>
+        <div class="form-group">
+          <label for="ausenciaFin">Fecha Fin (YYYY-MM-DD):</label>
+          <input type="date" id="ausenciaFin" />
+        </div>
+        <button onclick="agregarAusencia()">Agregar Ausencia</button>
+        <h3 style="margin-top: 20px">Lista de Ausencias</h3>
+        <div class="table-container">
+          <table id="tablaAusencias">
+            <thead>
+              <tr>
+                <th>Médico</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Tab Exclusiones Puntuales -->
+      <div id="tabExclPunt" class="tab-content">
+        <h3>Exclusiones Puntuales</h3>
+        <p class="help-text">
+          Fechas específicas donde un médico no puede trabajar, pero su
+          objetivo no se reduce.
+          <br /><strong>Efecto:</strong> El médico no será asignado en esa
+          fecha específica. Otros médicos deberán cubrir ese día.
+        </p>
+        <div class="form-group">
+          <label for="exclPuntMedico">Seleccionar Médico:</label>
+          <select id="exclPuntMedico"></select>
+        </div>
+        <div class="form-group">
+          <label for="exclPuntFecha">Fecha (YYYY-MM-DD):</label>
+          <input type="date" id="exclPuntFecha" />
+        </div>
+        <button onclick="agregarExclusionPuntual()">Agregar Exclusión</button>
+        <h3 style="margin-top: 20px">Lista de Exclusiones Puntuales</h3>
+        <div class="table-container">
+          <table id="tablaExclPunt">
+            <thead>
+              <tr>
+                <th>Médico</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Tab Planificación de Turnos (Mixtos) -->
+      <div id="tabPlanTurnos" class="tab-content">
+        <h3>Planificación de Turnos (Médicos MIXTOS)</h3>
+        <p class="help-text">
+          Define la jornada semanal para los médicos con turno MIXTO.
+          <br /><strong>Efecto:</strong> Determina si el médico hará guardias
+          de mañana o de tarde en cada día laborable.
+        </p>
+        <div class="form-group">
+          <label for="planTurnoMedico">Seleccionar Médico MIXTO:</label>
+          <select id="planTurnoMedico"></select>
+        </div>
+        <table id="tablaPlanTurno">
+          <thead>
+            <tr>
+              <th>Día</th>
+              <th>Turno</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Lunes</td>
+              <td>
+                <select id="turnoL">
+                  <option value="MAÑANA">MAÑANA</option>
+                  <option value="TARDE" selected>TARDE</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>Martes</td>
+              <td>
+                <select id="turnoM">
+                  <option value="MAÑANA" selected>MAÑANA</option>
+                  <option value="TARDE">TARDE</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>Miércoles</td>
+              <td>
+                <select id="turnoX">
+                  <option value="MAÑANA">MAÑANA</option>
+                  <option value="TARDE" selected>TARDE</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>Jueves</td>
+              <td>
+                <select id="turnoJ">
+                  <option value="MAÑANA" selected>MAÑANA</option>
+                  <option value="TARDE">TARDE</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>Viernes</td>
+              <td>
+                <select id="turnoV">
+                  <option value="MAÑANA">MAÑANA</option>
+                  <option value="TARDE" selected>TARDE</option>
+                </select>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <button onclick="guardarPlanTurno()">Guardar Planificación</button>
+        <h3 style="margin-top: 20px">Planes Guardados</h3>
+        <div class="table-container">
+          <table id="tablaPlanesGuardados">
+            <thead>
+              <tr>
+                <th>Médico</th>
+                <th>L</th>
+                <th>M</th>
+                <th>X</th>
+                <th>J</th>
+                <th>V</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Tab Parámetros Avanzados -->
+      <div id="tabParametros" class="tab-content">
+        <h3>Parámetros Avanzados del Sistema</h3>
+        <p class="help-text">
+          Configuración avanzada del algoritmo de asignación y compensación
+          histórica.
+        </p>
+
+        <div class="form-group">
+          <label for="factorCompensacion">Factor de Compensación Histórica:</label>
+          <input type="range" id="factorCompensacion" min="0" max="100" value="50"
+            oninput="document.getElementById('valorFactor').textContent = this.value + '%'" />
+          <span id="valorFactor">50%</span>
+          <p class="help-text">
+            Determina qué porcentaje del desequilibrio histórico se compensa
+            cada mes. 0% = Sin compensación (sistema amnésico) 100% =
+            Compensación total (intenta equilibrar completamente cada mes)
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label for="ventanaHistorico">Ventana de Histórico (meses):</label>
+          <input type="number" id="ventanaHistorico" min="1" max="12" value="6" />
+          <p class="help-text">
+            Número de meses anteriores a considerar para el cálculo de
+            compensación.
+          </p>
+        </div>
+
+        <button onclick="guardarParametrosAvanzados()">
+          Guardar Parámetros
+        </button>
+        <h3 style="margin-top: 30px">Configuración del Algoritmo</h3>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="usarAleatoriedad" onchange="toggleAleatoriedad(this.checked)" />
+            Usar desempate aleatorio controlado
+          </label>
+          <p class="help-text">
+            Varía las asignaciones en caso de empate manteniendo la equidad.
+          </p>
+        </div>
+
+        <div id="opcionesAleatoriedad" style="display: none">
+          <div class="form-group">
+            <label for="semillaAleatoria">Semilla (dejar vacío para automática):</label>
+            <input type="number" id="semillaAleatoria" placeholder="Ej: 12345" />
+            <button onclick="generarSemillaAleatoria()">
+              Generar Nueva Semilla
+            </button>
+            <p class="help-text">
+              La misma semilla siempre produce el mismo resultado.
+            </p>
+          </div>
+        </div>
+        <div style="
+              margin-top: 30px;
+              padding: 15px;
+              background-color: #f0f8ff;
+              border-radius: 5px;
+            ">
+          <h4>📊 Resumen del Histórico</h4>
+          <div id="resumenHistorico" style="margin-top: 10px">
+            <!-- Se llena dinámicamente -->
+          </div>
+          <button onclick="mostrarDetalleHistorico()" class="info" style="margin-top: 10px">
+            Ver Detalle por Meses
+          </button>
+        </div>
+        <h3 style="margin-top: 30px">Histórico de Saldos</h3>
+        <div class="table-container">
+          <table id="tablaHistorico">
+            <thead>
+              <tr>
+                <th>Médico</th>
+                <th>Saldo Acumulado</th>
+                <th>Últimos 3 Meses</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyHistorico">
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- === SECCIÓN DEL CALENDARIO === -->
+    <div id="calendario" class="seccion" style="display: none">
+      <h2>Generación del Calendario de Guardias</h2>
+      <div class="form-group">
+        <label for="mes">Mes:</label>
+        <select id="mes">
+          <option value="1">Enero</option>
+          <option value="2">Febrero</option>
+          <option value="3" selected>Marzo</option>
+          <option value="4">Abril</option>
+          <option value="5">Mayo</option>
+          <option value="6">Junio</option>
+          <option value="7">Julio</option>
+          <option value="8">Agosto</option>
+          <option value="9">Septiembre</option>
+          <option value="10">Octubre</option>
+          <option value="11">Noviembre</option>
+          <option value="12">Diciembre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="anio">Año:</label>
+        <input type="number" id="anio" value="2026" min="2024" max="2030" />
+      </div>
+      <button onclick="generarGuardias()">Generar Guardias</button>
+      <div id="areaResultado" class="resultado" style="margin-top: 20px; display: none">
+        <h3>Calendario de Guardias</h3>
+        <button class="info" onclick="copiarCalendarioExcel(true)" style="margin-right: 10px;">
+          <span>📋</span> Copiar a Excel (Sólo Calendario)
+        </button>
+        <button class="info" onclick="copiarCalendarioExcel(false)">
+          <span>📊</span> Copiar a Excel (Calendario + Resumen)
+        </button>
+        <div style="margin-top: 10px;">
+          <button class="success" onclick="confirmarYGuardarHistorico()">
+            <span>💾</span> Guardar en Histórico
+          </button>
+        </div>
+        <div class="table-container">
+          <table id="tablaCalendario">
+            <thead>
+              <tr>
+                <th>Día</th>
+                <th>Fecha</th>
+                <th>Avisos Mañana</th>
+                <th>Urgencias Mañana</th>
+                <th>Avisos Tarde</th>
+                <th>Urgencias Tarde</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style="margin-top: 30px">Resumen de Asignación</h3>
+        <div class="table-container">
+          <table id="tablaResumen">
+            <thead>
+              <tr>
+                <th>Médico</th>
+                <th>Turno</th>
+                <th>Jornada</th>
+                <th>Objetivo</th>
+                <th>Asignadas</th>
+                <th>Dif.</th>
+                <th>AVI</th>
+                <th>URG</th>
+                <th>%AVI</th>
+                <th>L</th>
+                <th>V</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style="margin-top: 30px">Estadísticas y Análisis</h3>
+        <div id="estadisticasDetalladas">
+          <!-- Se llenará dinámicamente -->
+        </div>
+      </div>
+    </div>
+    <!-- === SECCIÓN MANUAL DE USO === -->
+    <div id="manual" class="seccion" style="display: none">
+      <h2>Manual de Uso del Sistema v2.0 (MVP)</h2>
+
+      <h3>1. Introducción</h3>
+
+      <div
+        style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #22c55e; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+        <h3 style="margin-top: 0; color: #166534; font-size: 0.95rem;">✓ Novedades en la Versión 2.0 (Respecto a v1.1)
+        </h3>
+        <ul style="margin-left: 20px; font-size: 0.85rem; color: #166534;">
+          <li style="margin-bottom: 6px;"><strong>Regla: Prevención de 3ª Guardia Semanal.</strong> El motor algorítmico
+            evalúa la semana ISO. Si un facultativo tiene 2 guardias esa misma semana, recibe una penalización
+            matemática
+            restrictiva, bloqueando una tercera guardia salvo crisis absoluta de personal.</li>
+          <li style="margin-bottom: 6px;"><strong>Diseño Nativo y Compacto.</strong> Reducción profunda del scroll
+            vertical, optimización de márgenes y alta legibilidad. <strong>NO incorpora ningún framework
+              externo.</strong>
+          </li>
+          <li style="margin-bottom: 6px;"><strong>Alertas de Riesgo Asistencial:</strong> Las franjas que se queden en
+            descubierto
+            (<code>---</code>)
+            se resaltarán en la tabla con un marco rojo crítico para alertar al Responsable.</li>
+          <li><strong>Exportación Inteligente a Excel:</strong> Un nuevo botón inyecta las tablas y estadísticas al
+            portapapeles, dotándolas de un formato limpio, alinea el grid y optimiza el pegado en hojas de cálculo.</li>
+        </ul>
+      </div>
+      <p>
+        Este documento es la guía de referencia para el
+        <strong>Sistema de Gestión de Avisos y Urgencias v2.0</strong>. El
+        objetivo de la aplicación es generar cuadrantes de guardias mensuales
+        de forma equitativa, distribuyendo la carga de trabajo entre los
+        profesionales.
+      </p>
+      <p>
+        La característica principal de esta versión es su
+        <strong>sistema de compensación histórica</strong>, que tiene en
+        cuenta la carga de trabajo de meses anteriores para garantizar un
+        equilibrio justo a largo plazo.
+      </p>
+
+      <h3>2. Paso 1: Configuración del Sistema</h3>
+      <p>
+        Antes de generar cualquier calendario, es imprescindible configurar
+        correctamente todos los parámetros del equipo. Esto se realiza a
+        través de las pestañas de la sección "Configuración".
+      </p>
+      <ul>
+        <li>
+          <strong>Médicos:</strong> Permite añadir, eliminar y gestionar la
+          lista de profesionales. Cada médico tiene un turno asignado (MAÑANA,
+          TARDE o MIXTO) y un estado (Activo/Inactivo).
+          <p class="help-text">
+            <strong>Nota:</strong> Se puede realizar una importación masiva de
+            profesionales pegando datos desde una hoja de cálculo en el campo
+            "Importación rápida". El formato es: `Nombre [TAB] Turno [TAB]
+            %Jornada`.
+          </p>
+        </li>
+        <li>
+          <strong>Jornada y Exclusiones:</strong> Permite definir reducciones
+          de jornada (en %) y exclusiones de días fijos de la semana (ej. no
+          trabajar los viernes) para un médico.
+          <p class="help-text">
+            <strong>Efecto en el cálculo:</strong> Ambos parámetros reducen el
+            número de guardias "Objetivo" que el sistema calcula para ese
+            médico, de forma proporcional a los días que deja de estar
+            disponible.
+          </p>
+        </li>
+        <li>
+          <strong>Festivos:</strong> Lista de fechas que se consideran no
+          laborables para todo el equipo.
+          <p class="help-text">
+            <strong>Efecto en el cálculo:</strong> En estas fechas no se
+            asignará ninguna guardia. El total de guardias a cubrir en el mes
+            se reduce.
+          </p>
+        </li>
+        <li>
+          <strong>Ausencias (Vacaciones/Bajas):</strong> Permite registrar
+          rangos de fechas en los que un médico no está disponible.
+          <p class="help-text">
+            <strong>Efecto en el cálculo:</strong> Funciona de forma similar a
+            "Jornada y Exclusiones", reduciendo el objetivo de guardias del
+            médico afectado.
+          </p>
+        </li>
+        <li>
+          <strong>Excl. Puntuales:</strong> Permite bloquear días específicos
+          para un médico por motivos personales.
+          <p class="help-text">
+            <strong>Diferencia clave con Ausencias:</strong> Una exclusión
+            puntual impide que al médico se le asigne una guardia ese día,
+            pero <strong>NO</strong> reduce su objetivo mensual. El sistema
+            intentará asignarle esa guardia en otro día disponible.
+          </p>
+        </li>
+        <li>
+          <strong>Plan. Turnos (Mixtos):</strong> Define el turno (Mañana o
+          Tarde) que un médico de turno MIXTO realizará cada día de la semana.
+          <p class="help-text">
+            <strong>Efecto en el cálculo:</strong> Un médico MIXTO solo será
+            candidato para las guardias de la franja horaria que tenga
+            asignada ese día de la semana.
+          </p>
+        </li>
+        <li>
+          <strong>Parámetros Avanzados:</strong> Permite ajustar el
+          comportamiento del sistema de compensación histórica. Para un uso
+          estándar, no es necesario modificar los valores por defecto.
+        </li>
+      </ul>
+
+      <h3>3. Paso 2: Generación del Calendario Mensual</h3>
+      <p>Este es el proceso principal que se realiza cada mes.</p>
+      <ol>
+        <li>Accede a la pestaña <strong>"Calendario"</strong>.</li>
+        <li>
+          Selecciona el <strong>Mes</strong> y el
+          <strong>Año</strong> deseados.
+        </li>
+        <li>Pulsa el botón <strong>"Generar Guardias"</strong>.</li>
+      </ol>
+      <p>
+        El sistema mostrará el calendario y la tabla de resumen con los
+        resultados.
+      </p>
+
+      <h3>4. Paso 3: Análisis y Guardado de Resultados</h3>
+      <p>Tras la generación, se presentan dos bloques de información:</p>
+      <ul>
+        <li>
+          <strong>Calendario de Guardias:</strong> La tabla principal que
+          muestra qué médico ha sido asignado a cada uno de los 4 puestos
+          diarios (Avisos/Urgencias de Mañana/Tarde).
+        </li>
+        <li>
+          <strong>Resumen de Asignación:</strong> Una tabla que desglosa por
+          médico el número de guardias objetivo, las finalmente asignadas, la
+          diferencia, y otros datos estadísticos.
+        </li>
+      </ul>
+      <h4>Acción Obligatoria: Guardar el Resultado en el Histórico</h4>
+      <p>
+        Una vez verificado y aprobado el calendario, es
+        <strong>IMPRESCINDIBLE</strong> realizar la siguiente acción para el
+        correcto funcionamiento del sistema de compensación:
+      </p>
+      <p style="text-align: center; margin: 15px 0">
+        <button class="success" style="pointer-events: none">
+          <span>💾</span> Guardar en Histórico
+        </button>
+      </p>
+      <p>
+        Esta acción registra la columna "Dif." (Diferencia) de cada médico en
+        una base de datos interna. Este dato es el que se utilizará en meses
+        futuros para aplicar la compensación.
+      </p>
+
+      <h3>5. Funcionalidad Clave: El Sistema de Compensación Histórica</h3>
+      <h4>Principio de Funcionamiento</h4>
+      <p>
+        El sistema calcula un <strong>"saldo"</strong> para cada médico, que
+        es la suma de las "Diferencias" de todos los meses guardados en el
+        histórico.
+      </p>
+      <ul>
+        <li>
+          Un <strong>saldo positivo</strong> (ej. `+3.5`) significa que el
+          médico ha realizado más guardias de las que le correspondían.
+        </li>
+        <li>
+          Un <strong>saldo negativo</strong> (ej. `-2.0`) significa que ha
+          realizado menos.
+        </li>
+      </ul>
+      <p>
+        Al calcular el "Objetivo" de un nuevo mes, el sistema primero calcula
+        un objetivo base (proporcional a la disponibilidad) y luego le aplica
+        un <strong>ajuste basado en el saldo</strong>. De esta forma, el
+        reparto tiende a un equilibrio de `0` a largo plazo.
+      </p>
+
+      <h3>6. Gestión de Datos: Importar y Exportar</h3>
+      <p>
+        La aplicación permite importar y exportar dos tipos de datos
+        distintos:
+      </p>
+      <h4>Exportar/Importar Configuración (Botones Azules 📄/📥)</h4>
+      <p>
+        Guarda y carga el estado de la sección de
+        <strong>Configuración</strong> (lista de médicos, festivos, ausencias,
+        etc.). Es útil para tener una copia de seguridad de la estructura del
+        equipo o para trasladarla a otro ordenador.
+      </p>
+
+      <h4>Exportar/Importar Histórico (Botones Amarillos 📊/📈)</h4>
+      <p>
+        Guarda y carga la base de datos del
+        <strong>histórico de saldos</strong>. Es fundamental para mantener una
+        copia de seguridad de los datos de compensación acumulados a lo largo
+        del tiempo.
+      </p>
+    </div>
+    <div id="toast" style="
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          background-color: var(--color-dark);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 5px;
+          box-shadow: var(--box-shadow);
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.3s, transform 0.3s;
+          transform: translateY(20px);
+          z-index: 1000;
+        ">
+      <span id="toast-message"></span>
+    </div>
+
+    <div id="modal-overlay" style="
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.3s;
+          z-index: 1000;
+        ">
+      <div id="modal-content" style="
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+          ">
+        <p id="modal-message" style="margin-bottom: 20px"></p>
+        <div style="display: flex; justify-content: center; gap: 10px">
+          <button id="modal-cancel" class="secondary">Cancelar</button>
+          <button id="modal-confirm" class="danger">Confirmar</button>
+        </div>
+      </div>
+    </div>
+    <div class="footer">
+      <p>Sistema v2.0 - Despliegue Optimizado</p>
+    </div>
+  </div>
+  <script>
+    // === MODELO DE DATOS Y ESTADO GLOBAL ===
+    const estado = {
+      medicos: [],
+      reducciones: [],
+      festivos: [],
+      ausencias: [],
+      exclusionesPuntuales: [],
+      planificacionesTurnos: [],
+      calendarioGenerado: [],
+      resumenAsignacion: {},
+      resumenAsignacion: {},
+
+      historico: {
+        meses: {},
+        saldoAcumulado: {},
+        factorCompensacion: 0.5,
+        ventanaHistorico: 6,
+      },
+      configuracionAlgoritmo: {
+        usarAleatoriedad: false,
+        semilla: null,
+        rotacionInicial: 0,
+      },
+    };
+    const MAX_DIFERENCIA_PERMITIDA = 2;
+    const MIN_PORCENTAJE_TIPO = 0.35;
+    const MAX_PORCENTAJE_TIPO = 0.65;
+    // CÓDIGO NUEVO A AÑADIR AQUÍ
+    let toastTimeout;
+    function mostrarToast(mensaje) {
+      const toast = document.getElementById("toast");
+      const toastMessage = document.getElementById("toast-message");
+
+      clearTimeout(toastTimeout);
+
+      toastMessage.textContent = mensaje;
+      toast.style.opacity = "1";
+      toast.style.visibility = "visible";
+      toast.style.transform = "translateY(0)";
+
+      toastTimeout = setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.visibility = "hidden";
+        toast.style.transform = "translateY(20px)";
+      }, 3000);
+    }
+
+    function mostrarConfirmacion(mensaje, onConfirm) {
+      const overlay = document.getElementById("modal-overlay");
+      const messageEl = document.getElementById("modal-message");
+      const confirmBtn = document.getElementById("modal-confirm");
+      const cancelBtn = document.getElementById("modal-cancel");
+
+      messageEl.textContent = mensaje;
+
+      const close = () => {
+        overlay.style.opacity = "0";
+        overlay.style.visibility = "hidden";
+      };
+
+      const confirmHandler = () => {
+        onConfirm();
+        close();
+      };
+
+      // Limpiar listeners antiguos para evitar ejecuciones múltiples
+      const newConfirmBtn = confirmBtn.cloneNode(true);
+      confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+      newConfirmBtn.addEventListener("click", confirmHandler);
+
+      const newCancelBtn = cancelBtn.cloneNode(true);
+      cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+      newCancelBtn.addEventListener("click", close);
+
+      overlay.style.opacity = "1";
+      overlay.style.visibility = "visible";
+    }
+    // === FUNCIONES DE GESTIÓN DE DATOS ===
+    function guardarEnMemoria() {
+      localStorage.setItem("sistemaGuardias_v16", JSON.stringify(estado));
+      mostrarToast("Configuración guardada en memoria del navegador.");
+    }
+    // === FUNCIONES DE GESTIÓN DE HISTÓRICO ===
+    function limpiarHistoricoAntiguo() {
+      const ventana = estado.historico.ventanaHistorico || 6;
+      const fechaActual = new Date();
+      const mesActual = fechaActual.getMonth();
+      const anioActual = fechaActual.getFullYear();
+
+      // Calcular fecha límite
+      let mesLimite = mesActual - ventana;
+      let anioLimite = anioActual;
+      while (mesLimite < 0) {
+        mesLimite += 12;
+        anioLimite--;
+      }
+
+      // Eliminar meses fuera de la ventana
+      for (const claveMes in estado.historico.meses) {
+        const [anio, mes] = claveMes.split("-").map(Number);
+        if (anio < anioLimite || (anio === anioLimite && mes < mesLimite)) {
+          delete estado.historico.meses[claveMes];
+        }
+      }
+
+      // Recalcular saldos acumulados solo con los meses en ventana
+      estado.historico.saldoAcumulado = {};
+      for (const claveMes in estado.historico.meses) {
+        const datosMes = estado.historico.meses[claveMes];
+        for (const medico in datosMes) {
+          if (!estado.historico.saldoAcumulado[medico]) {
+            estado.historico.saldoAcumulado[medico] = 0;
+          }
+          estado.historico.saldoAcumulado[medico] +=
+            datosMes[medico].diferencia;
+        }
+      }
+    }
+
+    function guardarHistoricoMes(mes, anio) {
+      const claveMes = `${anio}-${String(mes).padStart(2, "0")}`;
+
+      estado.historico.meses[claveMes] = {};
+
+      for (const medico in estado.resumenAsignacion.objetivos) {
+        const asignadas = estado.resumenAsignacion.asignaciones[medico] || 0;
+        const objetivo = estado.resumenAsignacion.objetivos[medico] || 0;
+        const diferencia = asignadas - objetivo;
+
+        estado.historico.meses[claveMes][medico] = {
+          asignadas,
+          objetivo,
+          diferencia,
+        };
+
+        if (!estado.historico.saldoAcumulado[medico]) {
+          estado.historico.saldoAcumulado[medico] = 0;
+        }
+        estado.historico.saldoAcumulado[medico] += diferencia;
+      }
+
+      limpiarHistoricoAntiguo();
+      guardarEnMemoria();
+      mostrarToast(`Histórico del mes ${mes}/${anio} guardado.`);
+    }
+    function cargarDeMemoria() {
+      const datosGuardados = localStorage.getItem("sistemaGuardias_v16");
+      if (datosGuardados) {
+        Object.assign(estado, JSON.parse(datosGuardados));
+        console.log("Estado cargado desde memoria:", estado);
+        actualizarTodasLasTablas();
+        poblarSelects();
+      }
+    }
+    function exportarConfiguracion() {
+      const datosAExportar = {
+        medicos: estado.medicos,
+        reducciones: estado.reducciones,
+        festivos: estado.festivos,
+        ausencias: estado.ausencias,
+        exclusionesPuntuales: estado.exclusionesPuntuales,
+        planificacionesTurnos: estado.planificacionesTurnos,
+      };
+      const blob = new Blob([JSON.stringify(datosAExportar, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "configuracion_guardias_v15.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    function exportarHistorico() {
+      const datosHistorico = {
+        version: "1.0",
+        fechaExportacion: new Date().toISOString(),
+        historico: {
+          meses: estado.historico?.meses || {},
+          saldoAcumulado: estado.historico?.saldoAcumulado || {},
+          factorCompensacion: estado.historico?.factorCompensacion || 0.5,
+          ventanaHistorico: estado.historico?.ventanaHistorico || 6,
+        },
+        // Incluir resumen de meses guardados para referencia
+        resumenMeses: Object.keys(estado.historico?.meses || {}).map(
+          (mes) => ({
+            mes: mes,
+            totalGuardias: Object.values(estado.historico.meses[mes]).reduce(
+              (sum, m) => sum + (m.asignadas || 0),
+              0
+            ),
+          })
+        ),
+      };
+
+      const blob = new Blob([JSON.stringify(datosHistorico, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+
+      // Nombre descriptivo con fecha
+      const fecha = new Date();
+      const nombreArchivo = `historico_guardias_${fecha.getFullYear()}_${String(
+        fecha.getMonth() + 1
+      ).padStart(2, "0")}.json`;
+      a.download = nombreArchivo;
+
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      mostrarToast(
+        `Histórico exportado: ${Object.keys(datosHistorico.historico.meses).length
+        } meses guardados`
+      );
+    }
+
+    function importarHistorico(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const datosImportados = JSON.parse(e.target.result);
+
+          // Validar estructura del histórico
+          if (
+            !datosImportados.historico ||
+            !datosImportados.historico.meses
+          ) {
+            throw new Error("El archivo no contiene un histórico válido.");
+          }
+
+          // Preguntar si fusionar o reemplazar
+          const mesesExistentes = Object.keys(
+            estado.historico?.meses || {}
+          ).length;
+          const mesesNuevos = Object.keys(
+            datosImportados.historico.meses
+          ).length;
+
+          let mensaje = `El archivo contiene ${mesesNuevos} mes(es) de histórico.`;
+          if (mesesExistentes > 0) {
+            mensaje += ` Ya tienes ${mesesExistentes} mes(es) guardados. ¿Quieres fusionar los datos (se mantendrán ambos) o reemplazar todo?`;
+
+            // Crear diálogo personalizado
+            const modalContent = document.getElementById("modal-content");
+            const originalContent = modalContent.innerHTML;
+
+            modalContent.innerHTML = `
+          <p>${mensaje}</p>
+          <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+            <button onclick="procesarImportacionHistorico(${JSON.stringify(
+              datosImportados
+            ).replace(
+              /"/g,
+              "&quot;"
+            )}, 'fusionar')" class="success">Fusionar</button>
+            <button onclick="procesarImportacionHistorico(${JSON.stringify(
+              datosImportados
+            ).replace(
+              /"/g,
+              "&quot;"
+            )}, 'reemplazar')" class="warning">Reemplazar</button>
+            <button onclick="document.getElementById('modal-overlay').style.display='none'" class="secondary">Cancelar</button>
+          </div>
+        `;
+
+            document.getElementById("modal-overlay").style.opacity = "1";
+            document.getElementById("modal-overlay").style.visibility =
+              "visible";
+          } else {
+            // No hay datos previos, importar directamente
+            procesarImportacionHistorico(datosImportados, "reemplazar");
+          }
+        } catch (error) {
+          console.error("Error al importar histórico:", error);
+          mostrarToast(
+            "Error al importar el archivo de histórico. Verifica que sea un archivo válido."
+          );
+        }
+      };
+      reader.readAsText(file);
+
+      // Limpiar el input para permitir reimportar el mismo archivo
+      event.target.value = "";
+    }
+
+    function procesarImportacionHistorico(datosImportados, modo) {
+      try {
+        if (modo === "fusionar") {
+          // Fusionar: mantener datos existentes y añadir/actualizar con los nuevos
+          if (!estado.historico) {
+            estado.historico = {
+              meses: {},
+              saldoAcumulado: {},
+              factorCompensacion: 0.5,
+              ventanaHistorico: 6,
+            };
+          }
+
+          // Fusionar meses (los nuevos sobrescriben los existentes si hay conflicto)
+          Object.assign(
+            estado.historico.meses,
+            datosImportados.historico.meses
+          );
+
+          // Recalcular saldos acumulados con todos los meses
+          estado.historico.saldoAcumulado = {};
+          for (const claveMes in estado.historico.meses) {
+            const datosMes = estado.historico.meses[claveMes];
+            for (const medico in datosMes) {
+              if (!estado.historico.saldoAcumulado[medico]) {
+                estado.historico.saldoAcumulado[medico] = 0;
+              }
+              estado.historico.saldoAcumulado[medico] +=
+                datosMes[medico].diferencia || 0;
+            }
+          }
+
+          mostrarToast(
+            `Histórico fusionado: ${Object.keys(estado.historico.meses).length
+            } meses totales`
+          );
+        } else {
+          // Reemplazar todo el histórico
+          estado.historico = datosImportados.historico;
+          mostrarToast(
+            `Histórico importado: ${Object.keys(datosImportados.historico.meses).length
+            } meses cargados`
+          );
+        }
+
+        // Actualizar interfaz
+        actualizarTablaHistorico();
+        guardarEnMemoria();
+
+        // Cerrar modal si está abierto
+        document.getElementById("modal-overlay").style.opacity = "0";
+        document.getElementById("modal-overlay").style.visibility = "hidden";
+      } catch (error) {
+        console.error("Error procesando histórico:", error);
+        mostrarToast("Error al procesar el histórico importado");
+      }
+    }
+    function importarConfiguracion(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const datosImportados = JSON.parse(e.target.result);
+          // Validar estructura básica
+          if (datosImportados.medicos && datosImportados.festivos) {
+            Object.assign(estado, datosImportados);
+            actualizarTodasLasTablas();
+            poblarSelects();
+            mostrarToast("Configuración importada correctamente.");
+          } else {
+            throw new Error("Formato de archivo no válido.");
+          }
+        } catch (error) {
+          console.error("Error al importar:", error);
+          mostrarToast(
+            "Error al importar el archivo. Verifique que sea un archivo JSON válido."
+          );
+        }
+      };
+      reader.readAsText(file);
+    }
+    // === FUNCIONES DE INTERFAZ DE USUARIO ===
+    function mostrarSeccion(nombreSeccion, evt = null) {
+      document.querySelectorAll(".seccion").forEach((sec) => (sec.style.display = "none"));
+
+      const secElem = document.getElementById(nombreSeccion);
+      if (secElem) secElem.style.display = "block";
+
+      if (evt && evt.currentTarget) {
+        document.querySelectorAll(".nav-link").forEach(link => link.classList.remove("active"));
+        evt.currentTarget.classList.add("active");
+      }
+    }
+
+    function abrirTab(evt, tabName) {
+      var i, tabcontent, tabbuttons;
+      tabcontent = document.getElementsByClassName("tab-content");
+      for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].className = tabcontent[i].className.replace(
+          " active",
+          ""
+        );
+      }
+      tabbuttons = document.getElementsByClassName("tab-button");
+      for (i = 0; i < tabbuttons.length; i++) {
+        tabbuttons[i].className = tabbuttons[i].className.replace(
+          " active",
+          ""
+        );
+      }
+      document.getElementById(tabName).className += " active";
+      evt.currentTarget.className += " active";
+    }
+    function poblarSelects() {
+      const medicosActivos = estado.medicos.filter((m) => m.activo);
+      const selectsMedicos = [
+        "reduccionMedico",
+        "ausenciaMedico",
+        "exclPuntMedico",
+        "planTurnoMedico",
+      ];
+      selectsMedicos.forEach((id) => {
+        const select = document.getElementById(id);
+        if (select) {
+          select.innerHTML = "";
+          let medicosParaSelect = medicosActivos;
+          if (id === "planTurnoMedico") {
+            medicosParaSelect = medicosActivos.filter(m => m.turno === "MIXTO");
+          }
+          medicosParaSelect.forEach((medico) => {
+            const option = document.createElement("option");
+            option.value = medico.nombre;
+            option.textContent = medico.nombre;
+            select.appendChild(option);
+          });
+        }
+      });
+    }
+    function actualizarTodasLasTablas() {
+      actualizarTablaMedicos();
+      actualizarTablaReducciones();
+      actualizarTablaFestivos();
+      actualizarTablaAusencias();
+      actualizarTablaExclPunt();
+      actualizarTablaPlanes();
+    }
+    // === FUNCIONES DE GESTIÓN DE MÉDICOS ===
+    function agregarMedico() {
+      const nombre = document
+        .getElementById("nuevoMedicoNombre")
+        .value.trim()
+        .toUpperCase();
+      const turno = document.getElementById("nuevoMedicoTurno").value;
+      const activo = document.getElementById("nuevoMedicoActivo").checked;
+      if (!nombre) {
+        mostrarToast("Por favor, introduce el nombre del médico.");
+        return;
+      }
+      if (estado.medicos.some((m) => m.nombre === nombre)) {
+        mostrarToast("Ya existe un médico con ese nombre.");
+        return;
+      }
+      estado.medicos.push({ nombre, turno, activo });
+      document.getElementById("nuevoMedicoNombre").value = "";
+      actualizarTablaMedicos();
+      poblarSelects(); // Actualizar selects que dependen de médicos
+    }
+    // === INICIO DEL CÓDIGO SIMPLIFICADO PARA PROCESAR IMPORTACIÓN MÁS FLEXIBLE ===
+    // === INICIO DEL CÓDIGO CORREGIDO Y ACTUALIZADO PARA PROCESAR IMPORTACIÓN MÁS FLEXIBLE ===
+    function procesarImportacionMasiva() {
+      const texto = document.getElementById("importacionMasiva").value;
+      // CORRECCIÓN: Dividir por salto de línea, no por espacios
+      const lineas = texto.split("\n").filter((l) => l.trim());
+      let importados = 0;
+      let actualizados = 0;
+      let errores = [];
+
+      lineas.forEach((linea, index) => {
+        const campos = linea.split("\t").map((c) => c.trim());
+
+        let nombre = "";
+        let turno = "";
+        let jornada = 100; // Valor por defecto
+
+        if (campos.length < 2) {
+          errores.push(
+            `Línea ${index + 1}: Formato incorrecto (faltan columnas)`
+          );
+          return; // Importante: `return` aquí evita procesar esta línea con error
+        }
+
+        // --- NUEVA: Lógica simplificada y corregida ---
+        // Caso 1: 2 campos -> Nombre, Turno (Formato original sin jornada)
+        if (campos.length === 2) {
+          nombre = campos[0];
+          turno = campos[1];
+        }
+        // Caso 2: 3 campos -> Nombre, [Categoría], Turno
+        // Asumimos que el turno es el último campo y el nombre es el primero
+        else if (campos.length === 3) {
+          turno = campos[2].toUpperCase(); // Último campo (índice 2)
+          nombre = campos[0]; // Primer campo (índice 0)
+          // El campo intermedio (índice 1) se ignora (es la categoría)
+        }
+        // Caso 3: 4 campos -> Nombre, [Categoría], Turno, Jornada
+        else if (campos.length === 4) {
+          turno = campos[2].toUpperCase(); // Turno en índice 2
+          const posibleJornada = parseInt(campos[3]); // Jornada en índice 3
+          if (!isNaN(posibleJornada)) {
+            jornada = posibleJornada;
+          } else {
+            // Si el 4to campo no es un número, asumimos que era parte de la categoría o error
+            // Tratamos como si fueran 3 campos: Nombre, [Categoría + Jornada erronea], Turno
+            turno = campos[2].toUpperCase();
+            nombre = campos[0];
+            // jornada = 100 por defecto
+          }
+          nombre = campos[0]; // Primer campo (índice 0)
+        }
+        // Otros casos (5 o más campos) -> No soportado por ahora, error
+        else {
+          errores.push(
+            `Línea ${index + 1}: Formato incorrecto (demasiadas columnas: ${campos.length
+            })`
+          );
+          return; // Importante: `return` aquí evita procesar esta línea con error
+        }
+        // --- FIN NUEVA LÓGICA ---
+
+        nombre = nombre.toUpperCase().trim(); // Asegurar formato final
+        turno = turno.toUpperCase().trim(); // Asegurar formato final
+
+        if (!nombre) {
+          errores.push(`Línea ${index + 1}: Nombre vacío`);
+          return; // Importante: `return` aquí evita procesar esta línea con error
+        }
+        if (!["MAÑANA", "TARDE", "MIXTO"].includes(turno)) {
+          errores.push(`Línea ${index + 1}: Turno inválido "${turno}"`);
+          return; // Importante: `return` aquí evita procesar esta línea con error
+        }
+
+        // Verificar si el médico ya existe
+        const medicoExistente = estado.medicos.find(
+          (m) => m.nombre === nombre
+        );
+        if (medicoExistente) {
+          // Actualizar médico existente
+          medicoExistente.turno = turno;
+          actualizados++;
+        } else {
+          // Añadir nuevo médico
+          estado.medicos.push({ nombre, turno, activo: true });
+          importados++;
+        }
+
+        // Si tiene jornada reducida, gestionarla
+        if (jornada < 100) {
+          // Eliminar reducción existente si la hay
+          estado.reducciones = estado.reducciones.filter(
+            (r) => r.medico !== nombre
+          );
+          // Añadir la nueva
+          estado.reducciones.push({
+            medico: nombre,
+            porcentaje: jornada,
+            diasExcluidos: "",
+          });
+        }
+      }); // Fin del forEach
+
+      actualizarTodasLasTablas();
+      poblarSelects(); // Actualizar selects que dependen de médicos
+      let mensaje = "";
+      if (importados > 0) mensaje += `✓ ${importados} médicos importados\n`;
+      if (actualizados > 0)
+        mensaje += `✓ ${actualizados} médicos actualizados\n`;
+      if (errores.length > 0)
+        mensaje += `✗ ${errores.length} errores:\n${errores
+          .slice(0, 3)
+          .join("\n")}`; // Mostrar hasta 3 primeros errores
+      mostrarToast(mensaje || "No se procesaron datos");
+      document.getElementById("importacionMasiva").value = ""; // Limpiar después
+
+      // Actualizar también la tabla de reducciones
+      actualizarTablaReducciones();
+    }
+    // === FIN DEL CÓDIGO CORREGIDO Y ACTUALIZADO ===
+    // === FIN DEL CÓDIGO SIMPLIFICADO ===
+    // CÓDIGO NUEVO (para reemplazar)
+    function eliminarMedico(nombre) {
+      mostrarConfirmacion(
+        `¿Estás seguro de que quieres eliminar al médico ${nombre}? Esto borrará también todas sus configuraciones asociadas.`,
+        () => {
+          estado.medicos = estado.medicos.filter((m) => m.nombre !== nombre);
+          // También eliminar configuraciones asociadas
+          estado.reducciones = estado.reducciones.filter(
+            (r) => r.medico !== nombre
+          );
+          estado.ausencias = estado.ausencias.filter(
+            (a) => a.medico !== nombre
+          );
+          estado.exclusionesPuntuales = estado.exclusionesPuntuales.filter(
+            (e) => e.medico !== nombre
+          );
+          estado.planificacionesTurnos = estado.planificacionesTurnos.filter(
+            (p) => p.medico !== nombre
+          );
+          actualizarTodasLasTablas();
+          poblarSelects();
+          mostrarToast(`Médico ${nombre} eliminado.`);
+        }
+      );
+    }
+    function actualizarTablaMedicos() {
+      const tbody = document.querySelector("#tablaMedicos tbody");
+      tbody.innerHTML = "";
+      estado.medicos.forEach((medico) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = medico.nombre;
+        const cellTurno = row.insertCell(1);
+        cellTurno.textContent = medico.turno;
+        cellTurno.innerHTML += ` <span class="badge badge-${medico.turno.toLowerCase()}">${medico.turno.charAt(
+          0
+        )}</span>`;
+        const cellActivo = row.insertCell(2);
+        cellActivo.innerHTML = medico.activo
+          ? '<span class="highlight">Sí</span>'
+          : "No";
+        const cellAcciones = row.insertCell(3);
+        const btnEliminar = document.createElement("button");
+        btnEliminar.textContent = "Eliminar";
+        btnEliminar.className = "danger";
+        btnEliminar.onclick = () => eliminarMedico(medico.nombre);
+        cellAcciones.appendChild(btnEliminar);
+      });
+    }
+    // === FUNCIONES DE GESTIÓN DE REDUCCIONES ===
+    function guardarReduccion() {
+      const medico = document.getElementById("reduccionMedico").value;
+      const porcentaje =
+        parseInt(document.getElementById("reduccionPorcentaje").value) || 100;
+      const checkboxes = document.querySelectorAll(
+        'input[name="diasExcluidos"]:checked'
+      );
+      const diasExcluidos = Array.from(checkboxes).map((cb) => cb.value);
+      if (!medico) {
+        mostrarToast("Por favor, selecciona un médico.");
+        return;
+      }
+      // Eliminar entrada existente si la hay
+      estado.reducciones = estado.reducciones.filter(
+        (r) => r.medico !== medico
+      );
+      // Agregar la nueva
+      estado.reducciones.push({
+        medico,
+        porcentaje,
+        diasExcluidos: diasExcluidos.join(", "),
+      });
+      // Limpiar formulario
+      document.getElementById("reduccionPorcentaje").value = "100";
+      checkboxes.forEach((cb) => (cb.checked = false));
+      actualizarTablaReducciones();
+    }
+    // CÓDIGO NUEVO (para reemplazar)
+    function eliminarReduccion(medico) {
+      mostrarConfirmacion(
+        `¿Seguro que quieres eliminar la reducción de jornada para ${medico}?`,
+        () => {
+          estado.reducciones = estado.reducciones.filter(
+            (r) => r.medico !== medico
+          );
+          actualizarTablaReducciones();
+          mostrarToast(`Reducción para ${medico} eliminada.`);
+        }
+      );
+    }
+    function actualizarTablaReducciones() {
+      const tbody = document.querySelector("#tablaReducciones tbody");
+      tbody.innerHTML = "";
+      estado.reducciones.forEach((item) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = item.medico;
+        row.insertCell(1).textContent = `${item.porcentaje}%`;
+        row.insertCell(2).textContent = item.diasExcluidos || "Ninguno";
+        const cellAcciones = row.insertCell(3);
+        const btnEliminar = document.createElement("button");
+        btnEliminar.textContent = "Eliminar";
+        btnEliminar.className = "danger";
+        btnEliminar.onclick = () => eliminarReduccion(item.medico);
+        cellAcciones.appendChild(btnEliminar);
+      });
+    }
+    // === FUNCIONES DE GESTIÓN DE FESTIVOS ===
+    function agregarFestivo() {
+      const fechaInput = document.getElementById("nuevoFestivo").value;
+      if (!fechaInput) {
+        mostrarToast("Por favor, selecciona una fecha.");
+        return;
+      }
+      const fecha = new Date(fechaInput);
+      const fechaStr = fecha.toISOString().split("T")[0];
+      if (estado.festivos.includes(fechaStr)) {
+        mostrarToast("Esa fecha ya está en la lista de festivos.");
+        return;
+      }
+      estado.festivos.push(fechaStr);
+      estado.festivos.sort(); // Mantener ordenado
+      document.getElementById("nuevoFestivo").value = "";
+      actualizarTablaFestivos();
+    }
+    function eliminarFestivo(fecha) {
+      mostrarConfirmacion(
+        `¿Seguro que quieres eliminar el festivo del ${fecha}?`,
+        () => {
+          estado.festivos = estado.festivos.filter((f) => f !== fecha);
+          actualizarTablaFestivos();
+          mostrarToast(`Festivo del ${fecha} eliminado.`);
+        }
+      );
+    }
+    function actualizarTablaFestivos() {
+      const tbody = document.querySelector("#tablaFestivos tbody");
+      tbody.innerHTML = "";
+      estado.festivos.forEach((fecha) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = fecha;
+        const cellAcciones = row.insertCell(1);
+        const btnEliminar = document.createElement("button");
+        btnEliminar.textContent = "Eliminar";
+        btnEliminar.className = "danger";
+        btnEliminar.onclick = () => eliminarFestivo(fecha);
+        cellAcciones.appendChild(btnEliminar);
+      });
+    }
+    function actualizarTablaFestivos() {
+      const tbody = document.querySelector("#tablaFestivos tbody");
+      tbody.innerHTML = "";
+      estado.festivos.forEach((fecha) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = formatearFecha(fecha); // <-- LÍNEA MODIFICADA
+        const cellAcciones = row.insertCell(1);
+        const btnEliminar = document.createElement("button");
+        btnEliminar.textContent = "Eliminar";
+        btnEliminar.className = "danger";
+        btnEliminar.onclick = () => eliminarFestivo(fecha);
+        cellAcciones.appendChild(btnEliminar);
+      });
+    }
+    // === FUNCIONES DE GESTIÓN DE AUSENCIAS ===
+    function agregarAusencia() {
+      const medico = document.getElementById("ausenciaMedico").value;
+      const inicio = document.getElementById("ausenciaInicio").value;
+      const fin = document.getElementById("ausenciaFin").value;
+      if (!medico || !inicio || !fin) {
+        mostrarToast("Por favor, completa todos los campos.");
+        return;
+      }
+      const inicioDate = new Date(inicio);
+      const finDate = new Date(fin);
+      if (inicioDate > finDate) {
+        mostrarToast(
+          "La fecha de inicio no puede ser posterior a la fecha de fin."
+        );
+        return;
+      }
+      estado.ausencias.push({
+        medico,
+        inicio,
+        fin,
+      });
+      // Limpiar formulario
+      document.getElementById("ausenciaInicio").value = "";
+      document.getElementById("ausenciaFin").value = "";
+      actualizarTablaAusencias();
+    }
+    function eliminarAusencia(index) {
+      const ausencia = estado.ausencias[index];
+      if (!ausencia) return;
+
+      mostrarConfirmacion(
+        `¿Seguro que quieres eliminar la ausencia de ${ausencia.medico} (${ausencia.inicio} a ${ausencia.fin})?`,
+        () => {
+          estado.ausencias.splice(index, 1);
+          actualizarTablaAusencias();
+          mostrarToast("Ausencia eliminada.");
+        }
+      );
+    }
+    function actualizarTablaAusencias() {
+      const tbody = document.querySelector("#tablaAusencias tbody");
+      tbody.innerHTML = "";
+      estado.ausencias.forEach((ausencia, index) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = ausencia.medico;
+        row.insertCell(1).textContent = formatearFecha(ausencia.inicio); // <-- LÍNEA MODIFICADA
+        row.insertCell(2).textContent = formatearFecha(ausencia.fin); // <-- LÍNEA MODIFICADA
+        const cellAcciones = row.insertCell(3);
+        const btnEliminar = document.createElement("button");
+        btnEliminar.textContent = "Eliminar";
+        btnEliminar.className = "danger";
+        btnEliminar.onclick = () => eliminarAusencia(index);
+        cellAcciones.appendChild(btnEliminar);
+      });
+    }
+    // === FUNCIONES DE GESTIÓN DE EXCLUSIONES PUNTUALES ===
+    function agregarExclusionPuntual() {
+      const medico = document.getElementById("exclPuntMedico").value;
+      const fecha = document.getElementById("exclPuntFecha").value;
+      if (!medico || !fecha) {
+        mostrarToast("Por favor, selecciona un médico y una fecha.");
+        return;
+      }
+      const fechaStr = new Date(fecha).toISOString().split("T")[0];
+      // Evitar duplicados
+      if (
+        estado.exclusionesPuntuales.some(
+          (e) => e.medico === medico && e.fecha === fechaStr
+        )
+      ) {
+        mostrarToast("Esa exclusión ya está registrada para ese médico.");
+        return;
+      }
+      estado.exclusionesPuntuales.push({
+        medico,
+        fecha: fechaStr,
+      });
+      document.getElementById("exclPuntFecha").value = "";
+      actualizarTablaExclPunt();
+    }
+    function eliminarExclusionPuntual(index) {
+      const exclusion = estado.exclusionesPuntuales[index];
+      if (!exclusion) return;
+
+      mostrarConfirmacion(
+        `¿Seguro que quieres eliminar la exclusión de ${exclusion.medico} para el día ${exclusion.fecha}?`,
+        () => {
+          estado.exclusionesPuntuales.splice(index, 1);
+          actualizarTablaExclPunt();
+          mostrarToast("Exclusión puntual eliminada.");
+        }
+      );
+    }
+    function actualizarTablaExclPunt() {
+      const tbody = document.querySelector("#tablaExclPunt tbody");
+      tbody.innerHTML = "";
+      estado.exclusionesPuntuales.forEach((excl, index) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = excl.medico;
+        row.insertCell(1).textContent = formatearFecha(excl.fecha); // <-- LÍNEA MODIFICADA
+        const cellAcciones = row.insertCell(2);
+        const btnEliminar = document.createElement("button");
+        btnEliminar.textContent = "Eliminar";
+        btnEliminar.className = "danger";
+        btnEliminar.onclick = () => eliminarExclusionPuntual(index);
+        cellAcciones.appendChild(btnEliminar);
+      });
+    }
+    // === FUNCIONES DE GESTIÓN DE PLANIFICACIÓN DE TURNOS ===
+    function guardarPlanTurno() {
+      const medico = document.getElementById("planTurnoMedico").value;
+      if (!medico) {
+        mostrarToast("Por favor, selecciona un médico.");
+        return;
+      }
+      const plan = {
+        medico,
+        L: document.getElementById("turnoL").value,
+        M: document.getElementById("turnoM").value,
+        X: document.getElementById("turnoX").value,
+        J: document.getElementById("turnoJ").value,
+        V: document.getElementById("turnoV").value,
+      };
+      // Eliminar plan existente si lo hay
+      estado.planificacionesTurnos = estado.planificacionesTurnos.filter(
+        (p) => p.medico !== medico
+      );
+      estado.planificacionesTurnos.push(plan);
+      actualizarTablaPlanes();
+    }
+    function eliminarPlanTurno(medico) {
+      mostrarConfirmacion(
+        `¿Seguro que quieres eliminar la planificación de turnos para ${medico}?`,
+        () => {
+          estado.planificacionesTurnos = estado.planificacionesTurnos.filter(
+            (p) => p.medico !== medico
+          );
+          actualizarTablaPlanes();
+          mostrarToast(`Planificación para ${medico} eliminada.`);
+        }
+      );
+    }
+    function actualizarTablaPlanes() {
+      const tbody = document.querySelector("#tablaPlanesGuardados tbody");
+      tbody.innerHTML = "";
+      estado.planificacionesTurnos.forEach((plan) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = plan.medico;
+        row.insertCell(1).textContent = plan.L.charAt(0);
+        row.insertCell(2).textContent = plan.M.charAt(0);
+        row.insertCell(3).textContent = plan.X.charAt(0);
+        row.insertCell(4).textContent = plan.J.charAt(0);
+        row.insertCell(5).textContent = plan.V.charAt(0);
+        const cellAcciones = row.insertCell(6);
+        const btnEliminar = document.createElement("button");
+        btnEliminar.textContent = "Eliminar";
+        btnEliminar.className = "danger";
+        btnEliminar.onclick = () => eliminarPlanTurno(plan.medico);
+        cellAcciones.appendChild(btnEliminar);
+      });
+    }
+    function guardarParametrosAvanzados() {
+      estado.historico.factorCompensacion =
+        parseInt(document.getElementById("factorCompensacion").value) / 100;
+      estado.historico.ventanaHistorico = parseInt(
+        document.getElementById("ventanaHistorico").value
+      );
+
+      guardarEnMemoria();
+      mostrarToast("Parámetros avanzados guardados.");
+      actualizarTablaHistorico();
+    }
+
+    function actualizarTablaHistorico() {
+      const tbody = document.getElementById("tbodyHistorico");
+      if (!tbody) return;
+
+      tbody.innerHTML = "";
+
+      const medicosActivos = estado.medicos.filter((m) => m.activo);
+      medicosActivos.forEach((medico) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = medico.nombre;
+
+        const saldo = estado.historico?.saldoAcumulado?.[medico.nombre] || 0;
+        const cellSaldo = row.insertCell(1);
+        cellSaldo.textContent = saldo.toFixed(1);
+        cellSaldo.style.fontWeight = "bold";
+
+        if (Math.abs(saldo) < 0.5) {
+          cellSaldo.style.backgroundColor = "#c8e6c9";
+        } else if (Math.abs(saldo) < 2) {
+          cellSaldo.style.backgroundColor = "#fff9c4";
+        } else {
+          cellSaldo.style.backgroundColor = "#ffcdd2";
+        }
+
+        // Mostrar últimos 3 meses
+        const ultimos3 = [];
+        const mesesOrdenados = Object.keys(estado.historico?.meses || {})
+          .sort()
+          .slice(-3);
+        mesesOrdenados.forEach((mes) => {
+          const datosMes = estado.historico.meses[mes]?.[medico.nombre];
+          if (datosMes) {
+            ultimos3.push(
+              `${mes}: ${datosMes.diferencia > 0 ? "+" : ""
+              }${datosMes.diferencia.toFixed(1)}`
+            );
+          }
+        });
+        row.insertCell(2).textContent = ultimos3.join(", ") || "Sin datos";
+      });
+    }
+    function actualizarResumenHistorico() {
+      const divResumen = document.getElementById("resumenHistorico");
+      if (!divResumen) return;
+
+      const mesesGuardados = Object.keys(estado.historico?.meses || {});
+
+      if (mesesGuardados.length === 0) {
+        divResumen.innerHTML = `
+      <p style="color: #666;">No hay meses guardados en el histórico.</p>
+      <p style="font-size: 0.85em; color: #999;">Genera calendarios y guárdalos para comenzar a acumular histórico.</p>
+    `;
+      } else {
+        const mesesOrdenados = mesesGuardados.sort();
+        const primerMes = mesesOrdenados[0];
+        const ultimoMes = mesesOrdenados[mesesOrdenados.length - 1];
+
+        divResumen.innerHTML = `
+      <p><strong>Meses en histórico:</strong> ${mesesGuardados.length}</p>
+      <p><strong>Periodo:</strong> ${primerMes} a ${ultimoMes}</p>
+      <p><strong>Total guardias registradas:</strong> <span id="totalGuardiasHistorico">calculando...</span></p>
+    `;
+
+        // Calcular total de guardias
+        let totalGuardias = 0;
+        for (const mes in estado.historico.meses) {
+          for (const medico in estado.historico.meses[mes]) {
+            totalGuardias +=
+              estado.historico.meses[mes][medico].asignadas || 0;
+          }
+        }
+        document.getElementById("totalGuardiasHistorico").textContent =
+          totalGuardias;
+      }
+    }
+
+    function mostrarDetalleHistorico() {
+      const meses = Object.keys(estado.historico?.meses || {}).sort();
+
+      if (meses.length === 0) {
+        mostrarToast("No hay histórico para mostrar");
+        return;
+      }
+
+      let htmlDetalle = "<h3>Detalle del Histórico por Mes</h3>";
+      htmlDetalle += '<table style="width: 100%; margin-top: 10px;">';
+      htmlDetalle +=
+        "<thead><tr><th>Mes</th><th>Total Guardias</th><th>Médicos</th><th>Acciones</th></tr></thead>";
+      htmlDetalle += "<tbody>";
+
+      meses.forEach((mes) => {
+        const datosMes = estado.historico.meses[mes];
+        const totalMes = Object.values(datosMes).reduce(
+          (sum, m) => sum + (m.asignadas || 0),
+          0
+        );
+        const numMedicos = Object.keys(datosMes).length;
+
+        htmlDetalle += `
+      <tr>
+        <td>${mes}</td>
+        <td>${totalMes}</td>
+        <td>${numMedicos}</td>
+        <td>
+          <button onclick="eliminarMesHistorico('${mes}')" class="danger" style="padding: 2px 6px; font-size: 0.85em;">
+            Eliminar
+          </button>
+        </td>
+      </tr>
+    `;
+      });
+
+      htmlDetalle += "</tbody></table>";
+
+      // Mostrar en un modal o área específica
+      const modalContent = document.getElementById("modal-content");
+      modalContent.innerHTML =
+        htmlDetalle +
+        `
+    <button onclick="document.getElementById('modal-overlay').style.opacity='0'; document.getElementById('modal-overlay').style.visibility='hidden';" 
+            class="secondary" style="margin-top: 15px;">
+      Cerrar
+    </button>
+  `;
+
+      document.getElementById("modal-overlay").style.opacity = "1";
+      document.getElementById("modal-overlay").style.visibility = "visible";
+    }
+
+    function eliminarMesHistorico(mes) {
+      mostrarConfirmacion(
+        `¿Eliminar el mes ${mes} del histórico? Esto recalculará todos los saldos acumulados.`,
+        () => {
+          delete estado.historico.meses[mes];
+
+          // Recalcular saldos
+          estado.historico.saldoAcumulado = {};
+          for (const claveMes in estado.historico.meses) {
+            const datosMes = estado.historico.meses[claveMes];
+            for (const medico in datosMes) {
+              if (!estado.historico.saldoAcumulado[medico]) {
+                estado.historico.saldoAcumulado[medico] = 0;
+              }
+              estado.historico.saldoAcumulado[medico] +=
+                datosMes[medico].diferencia || 0;
+            }
+          }
+
+          actualizarTablaHistorico();
+          actualizarResumenHistorico();
+          guardarEnMemoria();
+          mostrarToast(`Mes ${mes} eliminado del histórico`);
+          mostrarDetalleHistorico(); // Refrescar la vista si sigue abierta
+        }
+      );
+    }
+    function toggleAleatoriedad(activado) {
+      estado.configuracionAlgoritmo.usarAleatoriedad = activado;
+      document.getElementById("opcionesAleatoriedad").style.display = activado
+        ? "block"
+        : "none";
+      guardarEnMemoria();
+    }
+
+    function generarSemillaAleatoria() {
+      const semilla = Math.floor(Math.random() * 1000000);
+      document.getElementById("semillaAleatoria").value = semilla;
+      estado.configuracionAlgoritmo.semilla = semilla;
+      guardarEnMemoria();
+      mostrarToast(`Nueva semilla generada: ${semilla}`);
+    }
+
+    function cargarConfiguracionAlgoritmo() {
+      if (estado.configuracionAlgoritmo) {
+        document.getElementById("usarAleatoriedad").checked =
+          estado.configuracionAlgoritmo.usarAleatoriedad;
+        document.getElementById("semillaAleatoria").value =
+          estado.configuracionAlgoritmo.semilla || "";
+        document.getElementById("opcionesAleatoriedad").style.display = estado
+          .configuracionAlgoritmo.usarAleatoriedad
+          ? "block"
+          : "none";
+      }
+    }
+    // === FUNCIONES DE CÁLCULO Y GENERACIÓN ===
+
+    function formatearFecha(fechaStr) {
+      if (!fechaStr || !fechaStr.includes("-")) return fechaStr; // Si no es una fecha válida, la devuelve tal cual
+      const [anio, mes, dia] = fechaStr.split("-");
+      return `${dia}/${mes}/${anio}`;
+    }
+    function esLaborable(fecha) {
+      const diaSemana = fecha.getDay(); // 0 (Domingo) a 6 (Sábado)
+      if (diaSemana === 0 || diaSemana === 6) return false; // Fin de semana
+      const fechaStr = fecha.toISOString().split("T")[0];
+      if (estado.festivos.includes(fechaStr)) return false; // Festivo
+      return true;
+    }
+    function estaAusente(medicoNombre, fecha) {
+      return estado.ausencias.some(
+        (ausencia) =>
+          ausencia.medico === medicoNombre &&
+          new Date(ausencia.inicio) <= fecha &&
+          fecha <= new Date(ausencia.fin)
+      );
+    }
+    function tieneDiaExcluido(medicoNombre, fecha) {
+      const reduccion = estado.reducciones.find(
+        (r) => r.medico === medicoNombre
+      );
+      if (!reduccion || !reduccion.diasExcluidos) return false;
+      const diasExcluidos = reduccion.diasExcluidos
+        .split(",")
+        .map((d) => d.trim());
+      const nombresDias = [
+        "DOMINGO",
+        "LUNES",
+        "MARTES",
+        "MIERCOLES",
+        "JUEVES",
+        "VIERNES",
+        "SABADO",
+      ];
+      const nombreDia = nombresDias[fecha.getDay()];
+      // Manejo especial para miércoles con/sin tilde
+      if (nombreDia === "MIERCOLES") {
+        return (
+          diasExcluidos.includes("MIERCOLES") ||
+          diasExcluidos.includes("MIÉRCOLES")
+        );
+      }
+      return diasExcluidos.includes(nombreDia);
+    }
+    function tieneExclusionPuntual(medicoNombre, fecha) {
+      const fechaStr = fecha.toISOString().split("T")[0];
+      return estado.exclusionesPuntuales.some(
+        (excl) => excl.medico === medicoNombre && excl.fecha === fechaStr
+      );
+    }
+    function puedeTrabajar(medicoNombre, fecha) {
+      if (estaAusente(medicoNombre, fecha)) return false;
+      if (tieneDiaExcluido(medicoNombre, fecha)) return false;
+      if (tieneExclusionPuntual(medicoNombre, fecha)) return false;
+      return true;
+    }
+    // === CÓDIGO NUEVO A AÑADIR ===
+    function puedeTrabajarParaObjetivo(medicoNombre, fecha) {
+      // Esta función es idéntica a puedeTrabajar pero IGNORA las exclusiones puntuales
+      // para que no afecten al cálculo del objetivo.
+      if (estaAusente(medicoNombre, fecha)) return false;
+      if (tieneDiaExcluido(medicoNombre, fecha)) return false;
+      // No se comprueba tieneExclusionPuntual
+      return true;
+    }
+    function obtenerTurnoMixto(medicoNombre, fecha) {
+      const plan = estado.planificacionesTurnos.find(
+        (p) => p.medico === medicoNombre
+      );
+      if (plan) {
+        const nombresDias = [, "L", "M", "X", "J", "V"]; // Domingo no se usa
+        const diaISO = fecha.getDay(); // 0 (Domingo) a 6 (Sábado)
+        if (diaISO >= 1 && diaISO <= 5) {
+          const claveDia = nombresDias[diaISO];
+          return plan[claveDia] || "MAÑANA"; // Por defecto MAÑANA si no está definido
+        }
+      }
+
+      // Mostrar advertencia en formato Toast si un Mixto no tiene plan (solo 1 vez por médico)
+      if (!estado.advertenciasMixto) estado.advertenciasMixto = new Set();
+      if (!estado.advertenciasMixto.has(medicoNombre)) {
+        mostrarToast(`CUIDADO: Turno MIXTO de ${medicoNombre} sin definir. Se usó horario automático.`, 5000);
+        estado.advertenciasMixto.add(medicoNombre);
+      }
+      // Por defecto: 60% tarde, 40% mañana (3 tardes por semana)
+      const diaSemanaISO = fecha.getDay(); // 0 (Domingo) a 6 (Sábado)
+      if ([1, 3, 5].includes(diaSemanaISO)) {
+        // L, X, V
+        return "TARDE";
+      } else if ([2, 4].includes(diaSemanaISO)) {
+        // M, J
+        return "MAÑANA";
+      }
+      return "MAÑANA";
+    }
+    // CÓDIGO NUEVO (para reemplazar)
+    // CÓDIGO NUEVO Y CORREGIDO (para reemplazar)
+    // CÓDIGO NUEVO Y CORRECTO (para reemplazar)
+    function calcularObjetivos(mes, anio) {
+      const ultimoDia = new Date(anio, mes, 0).getDate();
+      const medicosActivos = estado.medicos.filter((m) => m.activo);
+      const objetivosBase = {};
+      const disponibilidadPonderada = {};
+      let totalDisponibilidadPonderada = 0;
+      let totalPuestosACubrir = 0;
+
+      // 1. Contar el total de puestos a cubrir en el mes
+      for (let dia = 1; dia <= ultimoDia; dia++) {
+        const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+        if (esLaborable(fecha)) {
+          totalPuestosACubrir += 4;
+        }
+      }
+
+      // 2. Calcular la disponibilidad PONDERADA por jornada para cada médico
+      for (const medico of medicosActivos) {
+        let slotsDisponibles = 0;
+        for (let dia = 1; dia <= ultimoDia; dia++) {
+          const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+          // Usamos la función específica para objetivos que ignora exclusiones puntuales
+          if (
+            esLaborable(fecha) &&
+            puedeTrabajarParaObjetivo(medico.nombre, fecha)
+          ) {
+            const turnoMixto =
+              medico.turno === "MIXTO"
+                ? obtenerTurnoMixto(medico.nombre, fecha)
+                : null;
+            if (medico.turno === "MAÑANA" || turnoMixto === "MAÑANA") {
+              slotsDisponibles += 2;
+            }
+            if (medico.turno === "TARDE" || turnoMixto === "TARDE") {
+              slotsDisponibles += 2;
+            }
+          }
+        }
+        const reduccion = estado.reducciones.find(
+          (r) => r.medico === medico.nombre
+        );
+        const porcentajeJornada = reduccion ? reduccion.porcentaje / 100 : 1;
+        disponibilidadPonderada[medico.nombre] =
+          slotsDisponibles * porcentajeJornada;
+        totalDisponibilidadPonderada +=
+          disponibilidadPonderada[medico.nombre];
+      }
+
+      // 3. Distribuir los puestos proporcionalmente
+      if (totalDisponibilidadPonderada > 0) {
+        medicosActivos.forEach((medico) => {
+          const proporcion =
+            disponibilidadPonderada[medico.nombre] /
+            totalDisponibilidadPonderada;
+          const objetivo = proporcion * totalPuestosACubrir;
+          objetivosBase[medico.nombre] = objetivo;
+        });
+      }
+
+      // 4. Aplicar compensación histórica
+      const objetivosAjustados = {};
+      for (const medico of medicosActivos) {
+        const nombre = medico.nombre;
+        const objetivoBase = objetivosBase[nombre] || 0;
+        const saldoAcumulado =
+          estado.historico?.saldoAcumulado?.[nombre] || 0;
+        const factorCompensacion =
+          estado.historico?.factorCompensacion || 0.5;
+        const ajusteHistorico = -saldoAcumulado * factorCompensacion;
+        const ajusteMaximo = objetivoBase * 0.3;
+        const ajusteLimitado = Math.max(
+          -ajusteMaximo,
+          Math.min(ajusteMaximo, ajusteHistorico)
+        );
+        objetivosAjustados[nombre] = Math.max(
+          0,
+          objetivoBase + ajusteLimitado
+        );
+      }
+
+      // 5. Normalizar para mantener el total
+      const totalOriginal = Object.values(objetivosBase).reduce(
+        (a, b) => a + b,
+        0
+      );
+      const totalAjustado = Object.values(objetivosAjustados).reduce(
+        (a, b) => a + b,
+        0
+      );
+      if (totalAjustado > 0) {
+        const factor = totalOriginal / totalAjustado;
+        for (const nombre in objetivosAjustados) {
+          objetivosAjustados[nombre] = parseFloat(
+            (objetivosAjustados[nombre] * factor).toFixed(2)
+          );
+        }
+      }
+      return objetivosAjustados;
+    }
+    // === FUNCIÓN DE ASIGNACIÓN MEJORADA (ROUND-ROBIN CON PONDERACIÓN) ===
+    // Generador de números pseudoaleatorios con semilla (Mulberry32)
+    function mulberry32(seed) {
+      return function () {
+        let t = (seed += 0x6d2b79f5);
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    // === LÓGICA DE SEMANAS (NUEVO V2) ===
+    function getWeekNumber(d) {
+      d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+      var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    }
+
+    function asignarPuesto(
+      puestoKey,
+      candidatos,
+      asignacionesLocales,
+      avisosLocales,
+      urgenciasLocales,
+      objetivosLocales,
+      lunesPorMedico,
+      viernesPorMedico,
+      tipoGuardia,
+      fecha,
+      ultimoTipoPorMedico, // NUEVO PARÁMETRO
+      guardiasPorSemana // NUEVO V2
+    ) {
+      if (candidatos.length === 0) return "---";
+
+      // Calcular puntuaciones para todos los candidatos
+      const candidatosConPuntuacion = candidatos.map((candidato) => {
+        let puntuacion = 0;
+
+        // 1. Factor principal: Menos asignadas
+        const asignadas = asignacionesLocales[candidato] || 0;
+        puntuacion += 100 - asignadas;
+
+        // 2. Factor secundario: Mayor déficit
+        const objetivo = objetivosLocales[candidato] || 0;
+        const deficit = objetivo - asignadas;
+        puntuacion += deficit * 10;
+
+        // 3A. NUEVO V2: Prevención de 3ª guardia semanal
+        const semana = getWeekNumber(fecha);
+        const guardiasEstaSemana = (guardiasPorSemana[candidato] && guardiasPorSemana[candidato][semana]) ? guardiasPorSemana[candidato][semana] : 0;
+        if (guardiasEstaSemana >= 2) {
+          puntuacion -= 1000; // Penalización MASIVA
+        }
+
+        // 3. NUEVO: Penalización fuerte por repetir tipo de guardia
+        const ultimoTipo = ultimoTipoPorMedico[candidato];
+        if (ultimoTipo === tipoGuardia && asignadas > 0) {
+          puntuacion -= 50; // Penalización muy fuerte por repetir tipo
+        } else if (ultimoTipo && ultimoTipo !== tipoGuardia) {
+          puntuacion += 20; // Bonificación por alternar
+        }
+
+        // 4. Factor terciario: Balance Avisos/Urgencias global
+        if (asignadas > 0) {
+          const porcAvisos = (avisosLocales[candidato] || 0) / asignadas;
+          if (tipoGuardia === "AVISOS" && porcAvisos > 0.55) {
+            puntuacion -= 10;
+          } else if (tipoGuardia === "URGENCIAS" && porcAvisos < 0.45) {
+            puntuacion -= 10;
+          }
+        }
+
+        // 5. Factor cuarto: Penalización L/V
+        const diaSemanaISO = fecha.getDay();
+        if (diaSemanaISO === 1) {
+          puntuacion -= (lunesPorMedico[candidato] || 0) * 3;
+        } else if (diaSemanaISO === 5) {
+          puntuacion -= (viernesPorMedico[candidato] || 0) * 3;
+        }
+
+        return { candidato, puntuacion };
+      });
+
+      // Ordenar por puntuación
+      candidatosConPuntuacion.sort((a, b) => b.puntuacion - a.puntuacion);
+
+      // Manejo de empates con aleatoriedad opcional
+      if (estado.configuracionAlgoritmo?.usarAleatoriedad) {
+        const mejorPuntuacion = candidatosConPuntuacion[0].puntuacion;
+        const empatados = candidatosConPuntuacion.filter(
+          (c) => Math.abs(c.puntuacion - mejorPuntuacion) < 0.01
+        );
+
+        if (empatados.length > 1) {
+          const semilla = estado.configuracionAlgoritmo.semilla || Date.now();
+          const rng = mulberry32(semilla + fecha.getTime());
+
+          for (let i = empatados.length - 1; i > 0; i--) {
+            const j = Math.floor(rng() * (i + 1));
+            [empatados[i], empatados[j]] = [empatados[j], empatados[i]];
+          }
+
+          return empatados[0].candidato;
+        }
+      }
+
+      return candidatosConPuntuacion[0]?.candidato || "---";
+    }
+    function generarGuardias() {
+      // Limpiar rastreador de advertencias mixto en cada nueva generación
+      estado.advertenciasMixto = new Set();
+
+      const mes = parseInt(document.getElementById("mes").value);
+      const anio = parseInt(document.getElementById("anio").value);
+      if (
+        isNaN(mes) ||
+        isNaN(anio) ||
+        mes < 1 ||
+        mes > 12 ||
+        anio < 2024 ||
+        anio > 2030
+      ) {
+        mostrarToast(
+          "Por favor, introduce un mes (1-12) y un año (2024-2030) válidos."
+        );
+        return;
+      }
+      // 1. Inicializar estructuras para el cálculo
+      const calendario = [];
+      const asignacionesPorMedico = {};
+      const guardiasPorSemana = {}; // NUEVO V2
+      const avisosPorMedico = {};
+      const urgenciasPorMedico = {};
+      const lunesPorMedico = {};
+      const viernesPorMedico = {};
+      estado.medicos
+        .filter((m) => m.activo)
+        .forEach((m) => {
+          asignacionesPorMedico[m.nombre] = 0;
+          avisosPorMedico[m.nombre] = 0;
+          urgenciasPorMedico[m.nombre] = 0;
+          lunesPorMedico[m.nombre] = 0;
+          viernesPorMedico[m.nombre] = 0;
+          guardiasPorSemana[m.nombre] = {}; // NUEVO V2
+        });
+      // 2. Calcular objetivos
+      const objetivos = calcularObjetivos(mes, anio);
+      console.log("Objetivos calculados:", objetivos);
+      // 3. Crear calendario
+      const ultimoDia = new Date(anio, mes, 0).getDate();
+      // NUEVO: Tracking del último tipo de guardia por médico
+      const ultimoTipoPorMedico = {};
+      for (let dia = 1; dia <= ultimoDia; dia++) {
+        const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+        const esLab = esLaborable(fecha);
+        const diaSemanaISO = fecha.getDay(); // 0 (Domingo) a 6 (Sábado)
+        if (esLab) {
+          calendario.push({
+            dia: dia,
+            fecha: fecha,
+            esLaborable: true,
+            avisos_manana: "---",
+            urgencias_manana: "---",
+            avisos_tarde: "---",
+            urgencias_tarde: "---",
+          });
+        } else {
+          calendario.push({
+            dia: dia,
+            fecha: fecha,
+            esLaborable: false,
+            tipo:
+              diaSemanaISO === 0 || diaSemanaISO === 6
+                ? "Fin de semana"
+                : "Festivo",
+          });
+        }
+      }
+
+      // 4. Asignación Round-Robin separada por tipo (LÓGICA CORREGIDA)
+      calendario.forEach((diaInfo) => {
+        if (!diaInfo.esLaborable) return;
+
+        const fecha = diaInfo.fecha;
+        const fechaStr = fecha.toISOString().split("T")[0];
+        let medicosAsignadosHoy = [];
+
+        const candidatosManana = estado.medicos
+          .filter(
+            (m) =>
+              m.activo &&
+              puedeTrabajar(m.nombre, fecha) &&
+              (m.turno === "MAÑANA" ||
+                (m.turno === "MIXTO" &&
+                  obtenerTurnoMixto(m.nombre, fecha) === "MAÑANA"))
+          )
+          .map((m) => m.nombre);
+        const candidatosTarde = estado.medicos
+          .filter(
+            (m) =>
+              m.activo &&
+              puedeTrabajar(m.nombre, fecha) &&
+              (m.turno === "TARDE" ||
+                (m.turno === "MIXTO" &&
+                  obtenerTurnoMixto(m.nombre, fecha) === "TARDE"))
+          )
+          .map((m) => m.nombre);
+
+        // --- Función auxiliar para procesar una asignación (CORREGIDA) ---
+        const procesarAsignacion = (medicoAsignado) => {
+          if (medicoAsignado !== "---") {
+            medicosAsignadosHoy.push(medicoAsignado);
+
+            // LA CORRECCIÓN ESTÁ AQUÍ: Usamos (contador || 0) + 1 para inicializar si no existe
+            asignacionesPorMedico[medicoAsignado] =
+              (asignacionesPorMedico[medicoAsignado] || 0) + 1;
+
+            const diaSemanaISO = fecha.getDay();
+            if (diaSemanaISO === 1)
+              lunesPorMedico[medicoAsignado] =
+                (lunesPorMedico[medicoAsignado] || 0) + 1;
+            if (diaSemanaISO === 5)
+              viernesPorMedico[medicoAsignado] =
+                (viernesPorMedico[medicoAsignado] || 0) + 1;
+
+            // V2: Control de guardiasPorSemana
+            const semana = getWeekNumber(fecha);
+            if (!guardiasPorSemana[medicoAsignado]) guardiasPorSemana[medicoAsignado] = {};
+            guardiasPorSemana[medicoAsignado][semana] = (guardiasPorSemana[medicoAsignado][semana] || 0) + 1;
+          }
+        };
+
+        let medico;
+
+        // Puesto 1: Avisos Mañana
+        medico = asignarPuesto(
+          `${fechaStr}|AM_AVISOS`,
+          candidatosManana.filter((c) => !medicosAsignadosHoy.includes(c)),
+          asignacionesPorMedico,
+          avisosPorMedico,
+          urgenciasPorMedico,
+          objetivos,
+          lunesPorMedico,
+          viernesPorMedico,
+          "AVISOS",
+          fecha,
+          ultimoTipoPorMedico, // NUEVO PARÁMETRO
+          guardiasPorSemana // NUEVO V2
+        );
+        if (medico !== "---") {
+          diaInfo.avisos_manana = medico;
+          avisosPorMedico[medico] = (avisosPorMedico[medico] || 0) + 1;
+          ultimoTipoPorMedico[medico] = "AVISOS"; // NUEVO: Registrar tipo
+          procesarAsignacion(medico);
+        }
+
+        // Puesto 2: Urgencias Mañana
+        medico = asignarPuesto(
+          `${fechaStr}|AM_URGENCIAS`,
+          candidatosManana.filter((c) => !medicosAsignadosHoy.includes(c)),
+          asignacionesPorMedico,
+          avisosPorMedico,
+          urgenciasPorMedico,
+          objetivos,
+          lunesPorMedico,
+          viernesPorMedico,
+          "URGENCIAS",
+          fecha,
+          ultimoTipoPorMedico, // NUEVO PARÁMETRO
+          guardiasPorSemana // NUEVO V2
+        );
+        if (medico !== "---") {
+          diaInfo.urgencias_manana = medico;
+          urgenciasPorMedico[medico] = (urgenciasPorMedico[medico] || 0) + 1;
+          ultimoTipoPorMedico[medico] = "URGENCIAS"; // NUEVO: Registrar tipo
+          procesarAsignacion(medico);
+        }
+
+        // Puesto 3: Avisos Tarde
+        medico = asignarPuesto(
+          `${fechaStr}|PM_AVISOS`,
+          candidatosTarde.filter((c) => !medicosAsignadosHoy.includes(c)),
+          asignacionesPorMedico,
+          avisosPorMedico,
+          urgenciasPorMedico,
+          objetivos,
+          lunesPorMedico,
+          viernesPorMedico,
+          "AVISOS",
+          fecha,
+          ultimoTipoPorMedico, // NUEVO PARÁMETRO
+          guardiasPorSemana // NUEVO V2
+        );
+        if (medico !== "---") {
+          diaInfo.avisos_tarde = medico;
+          avisosPorMedico[medico] = (avisosPorMedico[medico] || 0) + 1;
+          ultimoTipoPorMedico[medico] = "AVISOS"; // NUEVO: Registrar tipo
+          procesarAsignacion(medico);
+        }
+
+        // Puesto 4: Urgencias Tarde
+        medico = asignarPuesto(
+          `${fechaStr}|PM_URGENCIAS`,
+          candidatosTarde.filter((c) => !medicosAsignadosHoy.includes(c)),
+          asignacionesPorMedico,
+          avisosPorMedico,
+          urgenciasPorMedico,
+          objetivos,
+          lunesPorMedico,
+          viernesPorMedico,
+          "URGENCIAS",
+          fecha,
+          ultimoTipoPorMedico, // NUEVO PARÁMETRO
+          guardiasPorSemana // NUEVO V2: CORRECCIÓN DEL CRASH (estaba faltando este argumento)
+        );
+        if (medico !== "---") {
+          diaInfo.urgencias_tarde = medico;
+          urgenciasPorMedico[medico] = (urgenciasPorMedico[medico] || 0) + 1;
+          ultimoTipoPorMedico[medico] = "URGENCIAS"; // NUEVO: Registrar tipo
+          procesarAsignacion(medico);
+        }
+      });
+      // 5. Guardar resultados y mostrar
+      estado.calendarioGenerado = calendario;
+      estado.resumenAsignacion = {
+        asignaciones: asignacionesPorMedico,
+        avisos: avisosPorMedico,
+        urgencias: urgenciasPorMedico,
+        lunes: lunesPorMedico,
+        viernes: viernesPorMedico,
+        objetivos: objetivos,
+      };
+      mostrarResultados();
+    }
+    function confirmarYGuardarHistorico() {
+      const mes = parseInt(document.getElementById("mes").value);
+      const anio = parseInt(document.getElementById("anio").value);
+
+      mostrarConfirmacion(
+        `¿Guardar el calendario de ${mes}/${anio} en el histórico? Esto actualizará los saldos acumulados para la compensación futura.`,
+        () => {
+          guardarHistoricoMes(mes, anio);
+          actualizarTablaHistorico();
+        }
+      );
+    }
+    // === NUEVA FUNCIÓN: Copiar a Excel (Enriquecido y Modular) ===
+    function copiarCalendarioExcel(soloCalendario = false) {
+      const areaResultado = document.getElementById("areaResultado");
+      if (!areaResultado || areaResultado.style.display === "none") {
+        mostrarToast("No hay resultados para copiar.");
+        return;
+      }
+      try {
+        const tempDiv = document.createElement("div");
+        tempDiv.style.position = "absolute";
+        tempDiv.style.left = "-9999px";
+        document.body.appendChild(tempDiv);
+
+        const estiloTabla = 'border-collapse:collapse; font-family:"Segoe UI",Calibri,sans-serif; font-size:11pt; border:1px solid #d0d7e5; margin-bottom:20px;';
+        const estiloTH = 'background-color:#4a6fa5; color:white; border:1px solid #d0d7e5; padding:6px 12px; font-weight:bold; text-align:left; white-space:nowrap;';
+        const estiloTD = 'border:1px solid #d0d7e5; padding:6px 12px; white-space:nowrap; mso-number-format:"\\@";';
+        const estiloTDFinde = 'border:1px solid #d0d7e5; padding:6px 12px; white-space:nowrap; background-color:#f8f9fa; color:#6c757d; font-style:italic; text-align:center;';
+        const estiloAlerta = 'border:1px solid #d0d7e5; padding:6px 12px; white-space:nowrap; background-color:#fee2e2; color:#b91c1c; font-weight:bold; text-align:center;';
+
+        const aplicarEstilosExcel = (tablaClonada) => {
+          tablaClonada.setAttribute('style', estiloTabla);
+          const ths = tablaClonada.querySelectorAll('th');
+          ths.forEach(th => th.setAttribute('style', estiloTH));
+          const tds = tablaClonada.querySelectorAll('td');
+          tds.forEach(td => {
+            if (td.classList.contains('finde-festivo')) {
+              td.setAttribute('style', estiloTDFinde);
+            } else if (td.classList.contains('alerta-descubierto')) {
+              td.setAttribute('style', estiloAlerta);
+            } else {
+              td.setAttribute('style', estiloTD);
+              if (td.style.backgroundColor) {
+                td.setAttribute('style', td.getAttribute('style') + ' background-color:' + td.style.backgroundColor + ';');
+              }
+            }
+          });
+        };
+
+        const addTable = (id, titleText) => {
+          const tablaOrig = document.getElementById(id);
+          if (tablaOrig) {
+            const tablaClon = tablaOrig.cloneNode(true);
+            aplicarEstilosExcel(tablaClon);
+
+            // Crear el Thead title nativo para Excel
+            const thead = tablaClon.querySelector('thead');
+            if (thead && thead.rows.length > 0) {
+              const numCols = thead.rows[0].cells.length;
+              const trTitle = document.createElement('tr');
+
+              const thTitle1 = document.createElement('th');
+              thTitle1.textContent = titleText;
+              thTitle1.style.cssText = 'background-color:#1e3a8a; color:white; border:1px solid #d0d7e5; padding:8px 12px; font-weight:bold; font-size:12pt; text-align:left;';
+              trTitle.appendChild(thTitle1);
+
+              if (numCols > 1) {
+                const thTitle2 = document.createElement('th');
+                const mesCombo = document.getElementById("mes");
+                const mesTexto = mesCombo ? mesCombo.options[mesCombo.selectedIndex].text : "";
+                const anioValor = document.getElementById("anio") ? document.getElementById("anio").value : "";
+                thTitle2.textContent = `${mesTexto} ${anioValor}`;
+                thTitle2.style.cssText = 'background-color:#1e3a8a; color:white; border:1px solid #d0d7e5; padding:8px 12px; font-weight:bold; font-size:12pt; text-align:left;';
+                trTitle.appendChild(thTitle2);
+              }
+
+              if (numCols > 2) {
+                const thEmpty = document.createElement('th');
+                thEmpty.colSpan = numCols - 2;
+                thEmpty.style.cssText = 'background-color:#1e3a8a; border:1px solid #d0d7e5;';
+                trTitle.appendChild(thEmpty);
+              }
+
+              thead.insertBefore(trTitle, thead.firstChild);
+            }
+
+            tempDiv.appendChild(tablaClon);
+
+            // Añadir un espacio
+            const spacer = document.createElement('br');
+            tempDiv.appendChild(spacer);
+          }
+        };
+
+        addTable("tablaCalendario", "Guardias");
+
+        if (!soloCalendario) {
+          addTable("tablaResumen", "Resumen");
+
+          const statsInfo = document.getElementById("estadisticasDetalladas");
+          if (statsInfo) {
+            const tablaStatsWrapper = document.createElement('table');
+            tablaStatsWrapper.setAttribute('style', estiloTabla);
+            const theadStats = document.createElement('thead');
+            const trTitleStats = document.createElement('tr');
+            const thStats = document.createElement('th');
+            thStats.textContent = "Estadísticas y Análisis";
+            thStats.style.cssText = 'background-color:#1e3a8a; color:white; border:1px solid #d0d7e5; padding:8px 12px; font-weight:bold; font-size:12pt; text-align:left;';
+            trTitleStats.appendChild(thStats);
+            theadStats.appendChild(trTitleStats);
+            tablaStatsWrapper.appendChild(theadStats);
+
+            const tbodyStats = document.createElement('tbody');
+            const trData = document.createElement('tr');
+            const tdData = document.createElement('td');
+            tdData.style.cssText = 'padding:12px; font-family:"Segoe UI",Calibri,sans-serif; font-size:11pt; border:1px solid #d0d7e5;';
+
+            const statsClon = statsInfo.cloneNode(true);
+            tdData.appendChild(statsClon);
+            trData.appendChild(tdData);
+            tbodyStats.appendChild(trData);
+            tablaStatsWrapper.appendChild(tbodyStats);
+
+            tempDiv.appendChild(tablaStatsWrapper);
+          }
+        }
+
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(tempDiv);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        document.execCommand("copy");
+        selection.removeAllRanges();
+        document.body.removeChild(tempDiv);
+
+        mostrarToast("¡Tablas y estadísticas copiadas con diseño premium para Excel!");
+      } catch (err) {
+        console.error("Error al copiar: ", err);
+        mostrarToast("Fallo al copiar. Por favor, selecciona la tabla manualmente y presiona Ctrl+C.");
+      }
+    }
+
+    // === FUNCIÓN PARA MOSTRAR RESULTADOS Y ESTADÍSTICAS DETALLADAS ===
+    function mostrarResultados() {
+      document.getElementById("areaResultado").style.display = "block";
+      // --- Mostrar Calendario ---
+      const tbodyCalendario = document.querySelector(
+        "#tablaCalendario tbody"
+      );
+      tbodyCalendario.innerHTML = "";
+      estado.calendarioGenerado.forEach((diaInfo) => {
+        const row = tbodyCalendario.insertRow();
+        row.insertCell(0).textContent = diaInfo.dia;
+        row.insertCell(1).textContent = diaInfo.fecha.toLocaleDateString(
+          "es-ES",
+          {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          }
+        );
+        if (diaInfo.esLaborable) {
+          row.insertCell(2).textContent = diaInfo.avisos_manana;
+          row.insertCell(3).textContent = diaInfo.urgencias_manana;
+          row.insertCell(4).textContent = diaInfo.avisos_tarde;
+          row.insertCell(5).textContent = diaInfo.urgencias_tarde;
+        } else {
+          const cell = row.insertCell(2);
+          cell.colSpan = 4;
+          cell.textContent = diaInfo.tipo;
+          cell.className = "finde-festivo"; // Clase CSS para estilo
+          // cell.style.textAlign = "center";
+          // cell.style.backgroundColor =
+          //   diaInfo.tipo === "Fin de semana" ? "#e0e0e0" : "#ffe0cc";
+        }
+
+        // NUEVO V2: Alerta visual para vacíos (---)
+        if (diaInfo.esLaborable) {
+          for (let idx = 2; idx <= 5; idx++) {
+            if (row.cells[idx] && row.cells[idx].textContent === "---") {
+              row.cells[idx].className = "alerta-descubierto";
+              row.cells[idx].title = "Riesgo de Cobertura - Descubierto";
+            }
+          }
+        }
+      });
+      // --- Mostrar Resumen ---
+      const tbodyResumen = document.querySelector("#tablaResumen tbody");
+      tbodyResumen.innerHTML = "";
+      let maxAsignadas = -Infinity;
+      let minAsignadas = Infinity;
+      estado.medicos
+        .filter((m) => m.activo)
+        .forEach((medico) => {
+          const nombre = medico.nombre;
+          const asignadas =
+            estado.resumenAsignacion.asignaciones[nombre] || 0;
+          const avisos = estado.resumenAsignacion.avisos[nombre] || 0;
+          const urgencias = estado.resumenAsignacion.urgencias[nombre] || 0;
+          const lunes = estado.resumenAsignacion.lunes[nombre] || 0;
+          const viernes = estado.resumenAsignacion.viernes[nombre] || 0;
+          const objetivo = estado.resumenAsignacion.objetivos[nombre] || 0;
+          const diferencia = (asignadas - objetivo).toFixed(1);
+          const porcAvisos =
+            asignadas > 0 ? ((avisos / asignadas) * 100).toFixed(0) : "0";
+          const row = tbodyResumen.insertRow();
+          row.insertCell(0).textContent = nombre;
+          row.insertCell(1).textContent = medico.turno;
+          const cellJornada = row.insertCell(2);
+          const reduccion = estado.reducciones.find(
+            (r) => r.medico === nombre
+          );
+          const jornadaPorcentaje = reduccion ? reduccion.porcentaje : 100;
+          cellJornada.textContent = `${jornadaPorcentaje}%`;
+          if (jornadaPorcentaje < 100) cellJornada.style.fontWeight = "bold";
+          row.insertCell(3).textContent = objetivo.toFixed(1);
+          const cellAsignadas = row.insertCell(4);
+          cellAsignadas.textContent = asignadas;
+          cellAsignadas.style.fontWeight = "bold";
+          const cellDif = row.insertCell(5);
+          cellDif.textContent = diferencia;
+          const difAbs = Math.abs(parseFloat(diferencia));
+          if (difAbs <= 0.5) {
+            cellDif.style.backgroundColor = "#c8e6c9";
+          } else if (difAbs <= 1.5) {
+            cellDif.style.backgroundColor = "#fff9c4";
+          } else {
+            cellDif.style.backgroundColor = "#ffcdd2";
+          }
+          row.insertCell(6).textContent = avisos;
+          row.insertCell(7).textContent = urgencias;
+          const cellPorcAvisos = row.insertCell(8);
+          cellPorcAvisos.textContent = `${porcAvisos}%`;
+          const porcAvisosNum = parseInt(porcAvisos);
+          if (
+            porcAvisosNum >= MIN_PORCENTAJE_TIPO * 100 &&
+            porcAvisosNum <= MAX_PORCENTAJE_TIPO * 100
+          ) {
+            cellPorcAvisos.style.backgroundColor = "#c8e6c9";
+          } else {
+            cellPorcAvisos.style.backgroundColor = "#fff9c4";
+          }
+          row.insertCell(9).textContent = lunes;
+          row.insertCell(10).textContent = viernes;
+          if (asignadas > maxAsignadas) maxAsignadas = asignadas;
+          if (asignadas < minAsignadas) minAsignadas = asignadas;
+        });
+      // --- Mostrar Estadísticas y Análisis Detallados ---
+      const contenedorEstadisticas = document.getElementById(
+        "estadisticasDetalladas"
+      );
+      contenedorEstadisticas.innerHTML = ""; // Limpiar contenido previo
+
+      // Análisis de Equidad (como antes)
+      const diferenciaTotal = maxAsignadas - minAsignadas;
+      const analisisEquidad = document.createElement("p");
+      analisisEquidad.innerHTML = `La diferencia máxima de guardias entre médicos es de <strong>${diferenciaTotal}</strong>. `;
+      if (diferenciaTotal <= MAX_DIFERENCIA_PERMITIDA) {
+        analisisEquidad.innerHTML += `<span class="equidad-ok">✓ EQUIDAD LOGRADA</span>`;
+      } else {
+        analisisEquidad.innerHTML += `<span class="equidad-ko">⚠ Revisar distribución</span>`;
+      }
+      contenedorEstadisticas.appendChild(analisisEquidad);
+
+      // Nuevas estadísticas
+      const statsGrid = document.createElement("div");
+      statsGrid.className = "stats-grid";
+
+      // Tarjeta: Total de Guardias Asignadas
+      const totalGuardias = Object.values(
+        estado.resumenAsignacion.asignaciones
+      ).reduce((sum, val) => sum + val, 0);
+      const cardTotal = document.createElement("div");
+      cardTotal.className = "stat-card";
+      cardTotal.innerHTML = `
+            <h4>Total Guardias Asignadas</h4>
+            <div class="stat-value">${totalGuardias}</div>
+            <small>Puestos totales disponibles: ${totalGuardias}</small>
+        `;
+      statsGrid.appendChild(cardTotal);
+
+      // Tarjeta: Distribución Avisos/Urgencias
+      const totalAvisos = Object.values(
+        estado.resumenAsignacion.avisos
+      ).reduce((sum, val) => sum + val, 0);
+      const totalUrgencias = Object.values(
+        estado.resumenAsignacion.urgencias
+      ).reduce((sum, val) => sum + val, 0);
+      const cardTipo = document.createElement("div");
+      cardTipo.className = "stat-card";
+      cardTipo.innerHTML = `
+            <h4>Distribución por Tipo</h4>
+            <div>Avisos: <span class="stat-value">${totalAvisos}</span></div>
+            <div>Urgencias: <span class="stat-value">${totalUrgencias}</span></div>
+            <small>Porcentaje Avisos: ${totalGuardias > 0
+          ? ((totalAvisos / totalGuardias) * 100).toFixed(1)
+          : "0.0"
+        }%</small>
+        `;
+      statsGrid.appendChild(cardTipo);
+
+      // Tarjeta: Lunes y Viernes
+      const totalLunes = Object.values(estado.resumenAsignacion.lunes).reduce(
+        (sum, val) => sum + val,
+        0
+      );
+      const totalViernes = Object.values(
+        estado.resumenAsignacion.viernes
+      ).reduce((sum, val) => sum + val, 0);
+      const cardLV = document.createElement("div");
+      cardLV.className = "stat-card";
+      cardLV.innerHTML = `
+            <h4>Guardias Lunes/Viernes</h4>
+            <div>Lunes: <span class="stat-value">${totalLunes}</span></div>
+            <div>Viernes: <span class="stat-value">${totalViernes}</span></div>
+            <small>Total L+V: ${totalLunes + totalViernes}</small>
+        `;
+      statsGrid.appendChild(cardLV);
+
+      // Tarjeta: Médicos por Turno
+      const medicosPorTurno = { MAÑANA: 0, TARDE: 0, MIXTO: 0 };
+      estado.medicos
+        .filter((m) => m.activo)
+        .forEach((m) => medicosPorTurno[m.turno]++);
+      const cardTurnos = document.createElement("div");
+      cardTurnos.className = "stat-card";
+      cardTurnos.innerHTML = `
+            <h4>Médicos Activos por Turno</h4>
+            <div>Mañana: <span class="stat-value">${medicosPorTurno.MAÑANA}</span></div>
+            <div>Tarde: <span class="stat-value">${medicosPorTurno.TARDE}</span></div>
+            <div>Mixto: <span class="stat-value">${medicosPorTurno.MIXTO}</span></div>
+        `;
+      statsGrid.appendChild(cardTurnos);
+
+      contenedorEstadisticas.appendChild(statsGrid);
+    }
+
+    // === INICIALIZACIÓN ===
+    document.addEventListener("DOMContentLoaded", function () {
+      mostrarSeccion("configuracion", null);
+      cargarDeMemoria(); // Cargar datos guardados si existen
+      poblarSelects();
+      actualizarTodasLasTablas();
+      // Cargar parámetros avanzados si existen
+      if (estado.historico) {
+        document.getElementById("factorCompensacion").value =
+          (estado.historico.factorCompensacion || 0.5) * 100;
+        document.getElementById("valorFactor").textContent = `${(estado.historico.factorCompensacion || 0.5) * 100
+          }%`;
+        document.getElementById("ventanaHistorico").value =
+          estado.historico.ventanaHistorico || 6;
+
+        actualizarTablaHistorico();
+        actualizarResumenHistorico();
+      }
+      // === MEJORAS UX: SOPORTE PARA TECLA ENTER ===
+      // Formulario de Médicos
+      document
+        .getElementById("nuevoMedicoNombre")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            agregarMedico();
+          }
+        });
+
+      document
+        .getElementById("nuevoMedicoTurno")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            agregarMedico();
+          }
+        });
+
+      // Formulario de Festivos
+      document
+        .getElementById("nuevoFestivo")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            agregarFestivo();
+          }
+        });
+
+      // Formulario de Reducciones
+      document
+        .getElementById("reduccionPorcentaje")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            guardarReduccion();
+          }
+        });
+
+      // Formulario de Ausencias
+      document
+        .getElementById("ausenciaInicio")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            document.getElementById("ausenciaFin").focus();
+          }
+        });
+
+      document
+        .getElementById("ausenciaFin")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            agregarAusencia();
+          }
+        });
+
+      // Formulario de Exclusiones Puntuales
+      document
+        .getElementById("exclPuntFecha")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            agregarExclusionPuntual();
+          }
+        });
+
+      // Cargar configuración del algoritmo si existe
+      if (typeof cargarConfiguracionAlgoritmo === "function") {
+        cargarConfiguracionAlgoritmo();
+      }
+      // === MEJORAS UX: VALIDACIÓN VISUAL ===
+      const inputNombre = document.getElementById("nuevoMedicoNombre");
+      inputNombre.addEventListener("input", (e) => {
+        const valor = e.target.value.trim().toUpperCase();
+        const existe = estado.medicos.some((m) => m.nombre === valor);
+
+        if (existe && valor !== "") {
+          inputNombre.style.borderColor = "#dc3545";
+          inputNombre.style.backgroundColor = "#fff5f5";
+
+          if (
+            !inputNombre.nextElementSibling?.classList.contains("error-msg")
+          ) {
+            const errorMsg = document.createElement("small");
+            errorMsg.className = "error-msg";
+            errorMsg.style.color = "#dc3545";
+            errorMsg.textContent = "Este médico ya existe";
+            inputNombre.parentNode.appendChild(errorMsg);
+          }
+        } else {
+          inputNombre.style.borderColor = "";
+          inputNombre.style.backgroundColor = "";
+
+          const errorMsg = inputNombre.parentNode.querySelector(".error-msg");
+          if (errorMsg) errorMsg.remove();
+        }
+      });
+
+      // Validación de rangos de fechas
+      const validarRangoFechas = () => {
+        const inicio = document.getElementById("ausenciaInicio");
+        const fin = document.getElementById("ausenciaFin");
+
+        if (inicio.value && fin.value) {
+          if (new Date(inicio.value) > new Date(fin.value)) {
+            fin.style.borderColor = "#dc3545";
+            if (!fin.nextElementSibling?.classList.contains("error-msg")) {
+              const errorMsg = document.createElement("small");
+              errorMsg.className = "error-msg";
+              errorMsg.style.color = "#dc3545";
+              errorMsg.textContent =
+                "La fecha fin debe ser posterior al inicio";
+              fin.parentNode.appendChild(errorMsg);
+            }
+          } else {
+            fin.style.borderColor = "#28a745";
+            const errorMsg = fin.parentNode.querySelector(".error-msg");
+            if (errorMsg) errorMsg.remove();
+          }
+        }
+      };
+      // === MEJORAS UX: ATAJOS DE TECLADO ===
+      document.addEventListener("keydown", (e) => {
+        // Solo activar si no estamos en un campo de entrada
+        if (
+          document.activeElement.tagName === "INPUT" ||
+          document.activeElement.tagName === "TEXTAREA" ||
+          document.activeElement.tagName === "SELECT"
+        ) {
+          return;
+        }
+
+        // Alt + M: Ir a sección Médicos
+        if (e.altKey && e.key === "m") {
+          e.preventDefault();
+          mostrarSeccion("configuracion", null);
+          const primerTab = document.querySelector(".tab-button");
+          abrirTab({ currentTarget: primerTab }, "tabMedicos");
+        }
+
+        // Alt + C: Ir a Calendario
+        if (e.altKey && e.key === "c") {
+          e.preventDefault();
+          mostrarSeccion("calendario", null);
+        }
+
+        // Alt + G: Generar guardias (si estamos en calendario)
+        if (e.altKey && e.key === "g") {
+          e.preventDefault();
+          const seccionActual = document.querySelector(
+            '.seccion:not([style*="display: none"])'
+          );
+          if (seccionActual?.id === "calendario") {
+            generarGuardias();
+          }
+        }
+
+        // Alt + S: Guardar configuración
+        if (e.altKey && e.key === "s") {
+          e.preventDefault();
+          guardarEnMemoria();
+          mostrarToast("Configuración guardada (Alt+S)");
+        }
+
+        // Alt + H: Mostrar ayuda/manual
+        if (e.altKey && e.key === "h") {
+          e.preventDefault();
+          mostrarSeccion("manual", null);
+        }
+      });
+
+      // Añadir tooltips con los atajos
+      const tooltips = [
+        { selector: 'a[onclick*="configuracion"]', atajo: "Alt+M" },
+        { selector: 'a[onclick*="calendario"]', atajo: "Alt+C" },
+        { selector: 'a[onclick*="manual"]', atajo: "Alt+H" },
+        { selector: 'button[onclick="generarGuardias()"]', atajo: "Alt+G" },
+        { selector: 'button[onclick="guardarEnMemoria()"]', atajo: "Alt+S" },
+      ];
+
+      tooltips.forEach(({ selector, atajo }) => {
+        const elemento = document.querySelector(selector);
+        if (elemento) {
+          elemento.title = `${elemento.textContent} (${atajo})`;
+        }
+      });
+      document
+        .getElementById("ausenciaInicio")
+        .addEventListener("change", validarRangoFechas);
+      document
+        .getElementById("ausenciaFin")
+        .addEventListener("change", validarRangoFechas);
+    });
+  </script>
+</body>
+
+</html>
