@@ -125,6 +125,86 @@
         }
       }
 
+      /* Navigation bar by systems */
+      .system-nav-bar {
+        top: 64px;
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 8px 0;
+      }
+      .system-nav-scroll {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        padding: 2px 0;
+      }
+      .system-nav-scroll::-webkit-scrollbar { display: none; }
+      .nav-chip-wrapper {
+        position: relative;
+        flex-shrink: 0;
+      }
+      .nav-chip {
+        flex-shrink: 0;
+        padding: 6px 14px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #e2e8f0;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+        font-family: 'Inter', sans-serif;
+      }
+      .nav-chip:hover {
+        background: rgba(59, 130, 246, 0.3);
+        border-color: rgba(59, 130, 246, 0.5);
+        color: #fff;
+      }
+      .nav-chip.active {
+        background: rgba(59, 130, 246, 0.5);
+        border-color: #3b82f6;
+        color: #fff;
+      }
+      .nav-chip-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 4px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        padding: 4px;
+        z-index: 100;
+        min-width: 180px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      }
+      .nav-chip-dropdown.show { display: block; }
+      .nav-chip-dropdown button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 8px 12px;
+        color: #e2e8f0;
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        transition: background 0.15s;
+      }
+      .nav-chip-dropdown button:hover {
+        background: rgba(59, 130, 246, 0.3);
+      }
+
       .tooltip-advanced {
         position: absolute;
         background: rgba(17, 24, 39, 0.95);
@@ -362,6 +442,64 @@
         </div>
       </div>
     </header>
+
+    <!-- Índice de Navegación por Sistemas -->
+    <nav id="system-nav" class="system-nav-bar sticky z-40">
+      <div class="container mx-auto px-4">
+        <div class="system-nav-scroll">
+          <!-- Chips directos -->
+          <button class="nav-chip" onclick="navigateToSegment('ocular')">Ocular</button>
+
+          <!-- Cuello - Dropdown -->
+          <div class="nav-chip-wrapper">
+            <button class="nav-chip nav-chip-has-dropdown" onclick="toggleNavDropdown(this)">Cuello ▾</button>
+            <div class="nav-chip-dropdown">
+              <button onclick="navigateToSegment('neck')">Tiroides / Linfático</button>
+              <button onclick="navigateToSegment('neck_lateral')">Cuello Lateral</button>
+            </div>
+          </div>
+
+          <button class="nav-chip" onclick="navigateToSegment('cardiac')">Cardíaco</button>
+          <button class="nav-chip" onclick="navigateToSegment('lung')">Pulmonar</button>
+
+          <!-- Abdominal - Dropdown -->
+          <div class="nav-chip-wrapper">
+            <button class="nav-chip nav-chip-has-dropdown" onclick="toggleNavDropdown(this)">Abdominal ▾</button>
+            <div class="nav-chip-dropdown">
+              <button onclick="navigateToSegment('ruq')">Hígado / Vía Biliar</button>
+              <button onclick="navigateToSegment('luq')">Bazo</button>
+              <button onclick="navigateToSegment('epigastric')">Aorta / Epigastrio</button>
+              <button onclick="navigateToSegment('rlq')">FID (Apendicitis)</button>
+              <button onclick="navigateToSegment('llq')">FII (Diverticulitis)</button>
+            </div>
+          </div>
+
+          <!-- Urogenital - Dropdown -->
+          <div class="nav-chip-wrapper">
+            <button class="nav-chip nav-chip-has-dropdown" onclick="toggleNavDropdown(this)">Urogenital ▾</button>
+            <div class="nav-chip-dropdown">
+              <button onclick="navigateToSegment('suprapubic')">Vejiga / Ginecológico</button>
+              <button onclick="navigateToSegment('scrotal')">Testicular</button>
+            </div>
+          </div>
+
+          <button class="nav-chip" onclick="navigateToSegment('dvt')">Vascular</button>
+
+          <!-- MSK/Reuma - Dropdown -->
+          <div class="nav-chip-wrapper">
+            <button class="nav-chip nav-chip-has-dropdown" onclick="toggleNavDropdown(this)">MSK/Reuma ▾</button>
+            <div class="nav-chip-dropdown">
+              <button onclick="navigateToSegment('shoulder')">Hombro</button>
+              <button onclick="navigateToSegment('hand_wrist')">Mano / Muñeca</button>
+              <button onclick="navigateToSegment('foot')">Pie (Gota)</button>
+              <button onclick="navigateToSegment('temporal_artery')">A. Temporal (ACG)</button>
+            </div>
+          </div>
+
+          <button class="nav-chip" onclick="navigateToSegment('soft_tissue')">Partes Blandas</button>
+        </div>
+      </div>
+    </nav>
 
     <main class="container mx-auto p-4 md:p-8 relative z-10">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 grid-layout">
@@ -2452,6 +2590,46 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
         updateZoom();
       };
 
+      // Funciones de navegación por sistemas
+      window.navigateToSegment = function(segmentId) {
+        // Cerrar dropdowns abiertos
+        document.querySelectorAll('.nav-chip-dropdown.show').forEach(function(d) { d.classList.remove('show'); });
+        // Desactivar todos los segmentos SVG
+        document.querySelectorAll('.anatomy-segment').forEach(function(s) { s.classList.remove('active'); });
+        // Activar segmentos coincidentes
+        document.querySelectorAll('.anatomy-segment[data-segment="' + segmentId + '"]')
+          .forEach(function(s) { s.classList.add('active'); });
+        // Ocultar welcome
+        var welcome = document.getElementById('welcome-message');
+        if (welcome) welcome.style.display = 'none';
+        // Renderizar contenido
+        if (window.renderSegmentContent) window.renderSegmentContent(segmentId);
+        // Scroll suave al content-area
+        var contentEl = document.getElementById('content-area');
+        if (contentEl) {
+          setTimeout(function() {
+            contentEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 100);
+        }
+      };
+
+      window.toggleNavDropdown = function(btn) {
+        var wrapper = btn.parentElement;
+        var dropdown = wrapper.querySelector('.nav-chip-dropdown');
+        var isOpen = dropdown.classList.contains('show');
+        // Cerrar todos los dropdowns
+        document.querySelectorAll('.nav-chip-dropdown.show').forEach(function(d) { d.classList.remove('show'); });
+        // Toggle el actual
+        if (!isOpen) dropdown.classList.add('show');
+      };
+
+      // Cerrar dropdowns al hacer clic fuera
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.nav-chip-wrapper') && !e.target.closest('.nav-chip-dropdown')) {
+          document.querySelectorAll('.nav-chip-dropdown.show').forEach(function(d) { d.classList.remove('show'); });
+        }
+      });
+
       // Inicialización cuando el DOM esté listo
       document.addEventListener("DOMContentLoaded", function () {
         const contentArea = document.getElementById("content-area");
@@ -2565,6 +2743,9 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
             card.style.display = "block";
           });
         }
+
+        // Exponer renderSegmentContent para el índice de navegación
+        window.renderSegmentContent = renderSegmentContent;
 
         // Función para crear tarjetas de contenido
         function createContentCard(app, index, segmentId) {
