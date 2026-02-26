@@ -2606,11 +2606,13 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
         if (welcome) welcome.style.display = 'none';
         // Renderizar contenido
         if (window.renderSegmentContent) window.renderSegmentContent(segmentId);
-        // Scroll suave al content-area
+        // Scroll suave al content-area, compensando el header sticky
         var contentEl = document.getElementById('content-area');
         if (contentEl) {
           setTimeout(function() {
-            contentEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            var headerHeight = document.querySelector('header').offsetHeight || 130;
+            var targetTop = contentEl.getBoundingClientRect().top + window.pageYOffset - headerHeight - 16;
+            window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
           }, 100);
         }
       };
