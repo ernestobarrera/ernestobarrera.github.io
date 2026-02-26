@@ -703,6 +703,20 @@
                     data-tooltip="Pie (Gota)"
                   />
                   <text x="125" y="480" class="anatomy-label">Pie</text>
+
+                  <ellipse
+                    cx="228"
+                    cy="200"
+                    rx="14"
+                    ry="18"
+                    class="anatomy-segment"
+                    data-segment="soft_tissue"
+                    data-tooltip="Partes Blandas / Piel"
+                  />
+                  <text x="228" y="195" class="anatomy-label">
+                    <tspan x="245" dy="0">Partes</tspan>
+                    <tspan x="245" dy="11">Blandas</tspan>
+                  </text>
                 </g>
               </svg>
 
@@ -911,6 +925,32 @@
       citation:
         "Rioja Delgado EM, et al. Diagnóstico ecográfico de trombosis venosa profunda de extremidades inferiores. FMC. 2024;31(6):320-5.",
       url: "https://www.fmc.es/es-diagnostico-ecografico-de-trombosis-veno-articulo-S113420722400077X",
+    },
+
+    soft_tissue_hung_2020: {
+      id: "soft_tissue_hung_2020",
+      citation: "Hung EHY, et al. Accuracy of ultrasound in the characterization of superficial soft tissue tumors: a prospective study. Skeletal Radiol. 2020;49(6):883-892.",
+      url: "https://pubmed.ncbi.nlm.nih.gov/31900528/",
+    },
+    soft_tissue_guillin_2024: {
+      id: "soft_tissue_guillin_2024",
+      citation: "Guillin R, et al. Ultrasound Spot Diagnosis of Common Benign Subcutaneous Masses and Pseudomasses. Semin Musculoskelet Radiol. 2024;28(5):557-572.",
+      url: "https://pubmed.ncbi.nlm.nih.gov/39471729/",
+    },
+    soft_tissue_knaysi_2020: {
+      id: "soft_tissue_knaysi_2020",
+      citation: "Knaysi GP, et al. Point of Care Ultrasound Use by Associate Providers for Differentiating Abscess Versus Cellulitis. J Emerg Med. 2020;59(6):830-837.",
+      url: "https://pubmed.ncbi.nlm.nih.gov/33012596/",
+    },
+    soft_tissue_wang_2024: {
+      id: "soft_tissue_wang_2024",
+      citation: "Wang Y, et al. Role of high-frequency ultrasound in differentiating benign and malignant skin lesions: potential and limitations. Ultrasonography. 2024;43(1):46-56.",
+      url: "https://pubmed.ncbi.nlm.nih.gov/37746817/",
+    },
+    soft_tissue_kato_2025: {
+      id: "soft_tissue_kato_2025",
+      citation: "Kato H, et al. Lesion size plays a crucial role in determining internal echogenicity: a retrospective study of 55 cases of epidermal cysts. Eur J Dermatol. 2025;35(1):34-39.",
+      url: "https://pubmed.ncbi.nlm.nih.gov/39900558/",
     },
       };
 
@@ -1993,6 +2033,298 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
                 desc: "Exploración de la arteria temporal que muestra el característico halo hipoecoico.",
               },
             ],
+          },
+        },
+        // --- MÓDULO DE TEJIDOS BLANDOS ---
+        {
+          segment: "soft_tissue",
+          system: "Tejidos Blandos",
+          color: "orange",
+          title: "Lipoma",
+          refId: "soft_tissue_hung_2020",
+          content: {
+            technique: `<ul>
+      <li><strong>Sonda:</strong> Lineal de alta frecuencia (≥12 MHz). Usar almohadilla de interposición (standoff pad) o abundante gel para lesiones muy superficiales.</li>
+      <li><strong>Técnica:</strong> Exploración en dos planos ortogonales (longitudinal y transversal). Evaluar ecogenicidad comparándola con la grasa subcutánea adyacente. Aplicar compresión suave para valorar deformabilidad. Completar con Doppler color.</li>
+    </ul>`,
+            findings: `El lipoma típico presenta un patrón ecográfico muy reconocible:
+
+    <div class="mt-3 p-4 bg-orange-50 rounded-lg border border-orange-200">
+      <h4 class="text-base font-bold text-orange-700 mb-3 text-center">Patrón Ecográfico del Lipoma</h4>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <div class="bg-white p-3 rounded border border-orange-100">
+          <strong class="text-orange-700">Hallazgos Modo B</strong>
+          <ul class="text-xs mt-1 space-y-1">
+            <li>• <strong>Ecogenicidad:</strong> Isoecogénico o ligeramente hiperecogénico respecto a la grasa circundante</li>
+            <li>• <strong>Forma:</strong> Ovoide/elíptica, eje mayor paralelo a la piel</li>
+            <li>• <strong>Estrías internas:</strong> Líneas hiperecogénicas longitudinales (septos fibrosos) → aspecto <strong>"en pluma"</strong> patognomónico</li>
+            <li>• <strong>Bordes:</strong> Bien definidos pero cápsula sutil, se "funde" con la grasa adyacente</li>
+            <li>• <strong>Localización:</strong> Exclusivamente subcutáneo (no contacta con dermis)</li>
+          </ul>
+        </div>
+        <div class="bg-white p-3 rounded border border-orange-100">
+          <strong class="text-orange-700">Doppler y Elastografía</strong>
+          <ul class="text-xs mt-1 space-y-1">
+            <li>• <strong>Doppler color:</strong> Avascular o mínima vascularización periférica</li>
+            <li>• <strong>Compresión:</strong> Blando, se deforma fácilmente</li>
+            <li>• <strong>Elastografía:</strong> Blandura característica (9,2 kPa; strain ratio 0,83)</li>
+            <li>• <strong>Acústica:</strong> Sin refuerzo ni sombra posterior</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flex justify-center mt-4">
+        <svg width="260" height="110" viewBox="0 0 260 110">
+          <rect x="0" y="0" width="260" height="15" fill="#fde68a" stroke="#d97706" stroke-width="1"/>
+          <text x="130" y="11" text-anchor="middle" font-size="8" fill="#92400e">PIEL (dermis)</text>
+          <rect x="0" y="15" width="260" height="95" fill="#fef3c7"/>
+          <text x="20" y="30" font-size="7" fill="#92400e">TCS</text>
+          <ellipse cx="130" cy="55" rx="70" ry="28" fill="#fef9c3" stroke="#eab308" stroke-width="1.5" stroke-dasharray="3,2"/>
+          <line x1="70" y1="50" x2="190" y2="50" stroke="#eab308" stroke-width="0.8" opacity="0.6"/>
+          <line x1="75" y1="55" x2="185" y2="55" stroke="#eab308" stroke-width="0.8" opacity="0.6"/>
+          <line x1="78" y1="60" x2="182" y2="60" stroke="#eab308" stroke-width="0.8" opacity="0.6"/>
+          <line x1="85" y1="65" x2="175" y2="65" stroke="#eab308" stroke-width="0.8" opacity="0.5"/>
+          <text x="130" y="43" text-anchor="middle" font-size="8" fill="#92400e" font-weight="bold">LIPOMA</text>
+          <text x="130" y="75" text-anchor="middle" font-size="7" fill="#92400e">Estrías hiperecogénicas "en pluma"</text>
+          <text x="130" y="100" text-anchor="middle" font-size="9" fill="#b45309" font-weight="bold">No contacta con dermis · Avascular · Compresible</text>
+        </svg>
+      </div>
+    </div>`,
+            evidence: `<p>Los lipomas son los tumores benignos de partes blandas más frecuentes (prevalencia ~1%). La ecografía permite su diagnóstico con una <strong>precisión del 81-95%</strong> cuando el operador reconoce el patrón (Hung et al., 2020). La ausencia de vascularización interna en Doppler y la blandura en elastografía (9,2 kPa) refuerzan el diagnóstico.</p>`,
+            pearls: `<div class="pearls-section">
+      <h5>Variantes a Conocer</h5>
+      <p><strong>Angiolipoma:</strong> puede mostrar flujo Doppler interno. <strong>Lipoma intramuscular:</strong> se extiende bajo la fascia, más difícil de delimitar. <strong>Hibernoma:</strong> hipervascularización llamativa (grasa parda).</p>
+      <h5>Errores Comunes</h5>
+      <p>La interfase sutil del lipoma con la grasa adyacente puede hacer que se "pierda" ecográficamente. Compare siempre la ecogenicidad con el tejido circundante y busque las estrías internas.</p>
+      <h5>Impacto Clínico</h5>
+      <p>Un lipoma con patrón ecográfico típico tiene una probabilidad de malignidad prácticamente nula (VPN 99,9%). Permite tranquilizar al paciente sin necesidad de biopsia.</p>
+    </div>`,
+          },
+        },
+        {
+          segment: "soft_tissue",
+          system: "Tejidos Blandos",
+          color: "orange",
+          title: "Quiste Epidérmico de Inclusión",
+          refId: "soft_tissue_kato_2025",
+          content: {
+            technique: `<ul>
+      <li><strong>Sonda:</strong> Lineal de alta frecuencia (≥12 MHz).</li>
+      <li><strong>Técnica:</strong> Explorar en dos planos. Evaluar la relación de la masa con la dermis (¿hay un tracto de conexión?). Valorar el refuerzo acústico posterior. Aplicar Doppler color para confirmar avascularidad.</li>
+    </ul>`,
+            findings: `El quiste epidérmico tiene un patrón variable pero con signos clave:
+
+    <div class="mt-3 p-4 bg-orange-50 rounded-lg border border-orange-200">
+      <h4 class="text-base font-bold text-orange-700 mb-3 text-center">Quiste Epidérmico: Signos Diagnósticos</h4>
+
+      <div class="bg-white p-3 rounded border border-orange-100 mb-3">
+        <strong class="text-orange-700">Signos Patognomónicos</strong>
+        <ul class="text-xs mt-1 space-y-1">
+          <li>• <strong>Signo del punctum:</strong> Tracto hiperecogénico que conecta la lesión con la superficie cutánea (poro) — prácticamente diagnóstico</li>
+          <li>• <strong>Conexión dérmica:</strong> La lesión se origina en la dermis profunda / TCS superficial, a diferencia del lipoma que es exclusivamente subcutáneo</li>
+          <li>• <strong>Refuerzo acústico posterior:</strong> Presente en >80% de los casos, refleja el contenido parcialmente líquido de queratina</li>
+        </ul>
+      </div>
+
+      <div class="bg-white p-3 rounded border border-orange-100 mb-3">
+        <strong class="text-orange-700">La ecogenicidad varía con el TAMAÑO (Kato et al., 2025)</strong>
+        <div class="grid grid-cols-2 gap-2 mt-2 text-xs">
+          <div class="p-2 bg-blue-50 rounded text-center">
+            <p class="font-bold">Quiste PEQUEÑO</p>
+            <p>Predominantemente anecoico</p>
+            <p class="text-gray-500">(parece un quiste simple)</p>
+          </div>
+          <div class="p-2 bg-amber-50 rounded text-center">
+            <p class="font-bold">Quiste GRANDE</p>
+            <p>Heterogéneo con focos hiperecogénicos</p>
+            <p class="text-gray-500">(puede parecer un tumor sólido)</p>
+          </div>
+        </div>
+        <p class="text-xs mt-2 text-center text-red-600 font-semibold">Esta variabilidad es la principal causa de errores diagnósticos</p>
+      </div>
+
+      <div class="bg-white p-3 rounded border border-orange-100">
+        <strong class="text-orange-700">Doppler y Elastografía</strong>
+        <ul class="text-xs mt-1 space-y-1">
+          <li>• <strong>Doppler:</strong> Avascular si está intacto. Flujo periférico sugiere rotura/inflamación</li>
+          <li>• <strong>Elastografía:</strong> Rigidez elevada (23,7 kPa) — paradójicamente más duro que el lipoma</li>
+          <li>• <strong>Sin calcificaciones internas</strong> (a diferencia del pilomatricoma y quiste triclilémico)</li>
+        </ul>
+      </div>
+    </div>`,
+            evidence: `<p>Kato et al. (2025) demostraron en 55 quistes confirmados histológicamente que el <strong>tamaño es el factor determinante principal</strong> de la ecogenicidad interna. Ahn et al. (2022) describieron el "signo del submarino" como más frecuente en quistes del tronco. La rigidez en elastografía (23,7 kPa) es significativamente mayor que la del lipoma (9,2 kPa; p=0,049).</p>`,
+            pearls: `<div class="pearls-section">
+      <h5>Quiste Roto: La Trampa Diagnóstica</h5>
+      <p>Un quiste epidérmico roto puede perder todas sus características típicas: márgenes irregulares, ecogenicidad heterogénea, vascularización periférica. Puede mimetizar malignidad o absceso. La historia clínica (masa preexistente que cambió) es clave.</p>
+      <h5>Diferencial con Pilomatricoma</h5>
+      <p>El pilomatricoma (frecuente en niños) muestra calcificaciones internas y vascularización — ambas ausentes en el quiste epidérmico intacto.</p>
+      <h5>Impacto Clínico</h5>
+      <p>La presencia del signo del punctum permite un diagnóstico inmediato en consulta, tranquilizando al paciente y planificando la exéresis electiva si es necesaria.</p>
+    </div>`,
+          },
+        },
+        {
+          segment: "soft_tissue",
+          system: "Tejidos Blandos",
+          color: "red",
+          title: "Red Flags: Cuándo Derivar una Masa Subcutánea",
+          refId: "soft_tissue_wang_2024",
+          content: {
+            technique: `<ul>
+      <li><strong>Principio fundamental:</strong> La ecografía tiene un <strong>VPN del 99,9%</strong> para malignidad en masas superficiales (Hung et al., 2020). Si la lesión cumple criterios ecográficos de benignidad, la probabilidad de malignidad es prácticamente nula.</li>
+      <li><strong>Pero:</strong> El 44,4% de los sarcomas subcutáneos miden ≤5 cm (De Marchi et al., 2020). <strong>"Lo pequeño NO garantiza benigno."</strong></li>
+    </ul>`,
+            findings: `<div class="p-4 bg-red-50 rounded-lg border-2 border-red-300">
+      <h4 class="text-lg font-bold text-red-800 mb-4 text-center">Nemotecnia "MACHO" — Señales de Alarma</h4>
+
+      <div class="space-y-3">
+        <div class="flex items-start bg-white p-3 rounded-lg border border-red-200">
+          <div class="bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg mr-3 flex-shrink-0">M</div>
+          <div>
+            <h5 class="font-bold text-red-700">Márgenes irregulares</h5>
+            <p class="text-xs text-gray-600">Bordes mal definidos, invasivos o espiculados que no encajan con un patrón benigno reconocido</p>
+          </div>
+        </div>
+
+        <div class="flex items-start bg-white p-3 rounded-lg border border-red-200">
+          <div class="bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg mr-3 flex-shrink-0">A</div>
+          <div>
+            <h5 class="font-bold text-red-700">Arterialización (vascularización intralesional significativa)</h5>
+            <p class="text-xs text-gray-600">Flujo Doppler interno en una masa que debería ser avascular (ni un lipoma ni un quiste intacto tienen flujo)</p>
+          </div>
+        </div>
+
+        <div class="flex items-start bg-white p-3 rounded-lg border border-red-200">
+          <div class="bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg mr-3 flex-shrink-0">C</div>
+          <div>
+            <h5 class="font-bold text-red-700">Crecimiento rápido documentado</h5>
+            <p class="text-xs text-gray-600">Aumento de tamaño objetivable en semanas-meses, especialmente si es >5 cm</p>
+          </div>
+        </div>
+
+        <div class="flex items-start bg-white p-3 rounded-lg border border-red-200">
+          <div class="bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg mr-3 flex-shrink-0">H</div>
+          <div>
+            <h5 class="font-bold text-red-700">Heterogeneidad marcada con zonas no adiposas</h5>
+            <p class="text-xs text-gray-600">Componentes sólidos ecogénicamente distintos al patrón graso, focos hiperecogénicos puntiformes intranodulares</p>
+          </div>
+        </div>
+
+        <div class="flex items-start bg-white p-3 rounded-lg border border-red-200">
+          <div class="bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg mr-3 flex-shrink-0">O</div>
+          <div>
+            <h5 class="font-bold text-red-700">Originación profunda (subfascial)</h5>
+            <p class="text-xs text-gray-600">Masa que se extiende bajo la fascia muscular o se origina en el compartimento profundo</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 p-3 bg-white rounded border border-red-300 text-center">
+        <p class="text-sm font-bold text-red-800">Ante CUALQUIERA de estos signos → Derivar para RM + biopsia</p>
+        <p class="text-xs text-gray-600 mt-1">Ante la duda, derivar siempre. El coste de una derivación innecesaria es insignificante comparado con un sarcoma no diagnosticado.</p>
+      </div>
+    </div>`,
+            evidence: `<p>Wang et al. (2024) alcanzaron un AUC de 0,946 combinando criterios clínicos y ecográficos para diferenciar lesiones benignas de malignas en 1.422 lesiones. La sensibilidad de la ecografía para malignidad fue del 93,3% y la especificidad del 97,9%. La elastografía NO diferencia fiablemente lipoma de liposarcoma de bajo grado (Ooi et al., 2025; AUROC 0,57).</p>`,
+            pearls: `<div class="pearls-section">
+      <h5>Regla de Oro</h5>
+      <p>Si reconoces el patrón con confianza → aciertas en >95% de los casos. Si NO reconoces el patrón → el VPN del 99,9% NO aplica. Ante la duda, la actitud correcta es SIEMPRE derivar.</p>
+      <h5>Lipoma vs. Liposarcoma</h5>
+      <p>La diferenciación es el mayor desafío. Sospecha de liposarcoma: masa lipomatosa >5 cm, septos gruesos o nodulares, zonas sólidas no grasas, flujo Doppler interno. La elastografía NO ayuda en esta diferenciación específica.</p>
+      <h5>Secuencia de Aprendizaje Recomendada</h5>
+      <p>1) Absceso vs. celulitis → 2) Lipoma típico → 3) Quiste epidérmico → 4) Otras lesiones (pilomatricoma, quiste triclilémico) → 5) Red flags de malignidad.</p>
+    </div>`,
+          },
+        },
+        {
+          segment: "soft_tissue",
+          system: "Tejidos Blandos",
+          color: "orange",
+          title: "Diagnóstico Diferencial: Lipoma vs Quiste Epidérmico",
+          refId: "soft_tissue_guillin_2024",
+          content: {
+            technique: `<ul>
+      <li><strong>Protocolo mínimo recomendado:</strong> Modo B en dos planos con sonda lineal ≥12 MHz + Doppler color + compresión suave para evaluar deformabilidad + documentar: tamaño, localización relativa a dermis/fascia, ecogenicidad, bordes, refuerzo/sombra posterior.</li>
+    </ul>`,
+            findings: `<div class="overflow-x-auto border rounded-lg">
+      <table class="w-full text-sm text-left">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+          <tr>
+            <th class="py-3 px-4 w-1/4">Característica</th>
+            <th class="py-3 px-4 text-center text-yellow-700">Lipoma</th>
+            <th class="py-3 px-4 text-center text-blue-700">Quiste Epidérmico</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="bg-white border-b">
+            <td class="py-2 px-4 font-semibold">Ecogenicidad</td>
+            <td class="py-2 px-4 text-center">Isoecogénico a la grasa</td>
+            <td class="py-2 px-4 text-center">Variable (depende del tamaño)</td>
+          </tr>
+          <tr class="bg-gray-50 border-b">
+            <td class="py-2 px-4 font-semibold">Patrón interno</td>
+            <td class="py-2 px-4 text-center"><strong>Estrías "en pluma"</strong></td>
+            <td class="py-2 px-4 text-center">Heterogéneo, ± focos ecogénicos</td>
+          </tr>
+          <tr class="bg-white border-b">
+            <td class="py-2 px-4 font-semibold">Conexión dérmica</td>
+            <td class="py-2 px-4 text-center text-red-600 font-bold">NO</td>
+            <td class="py-2 px-4 text-center text-green-600 font-bold">SÍ (signo del punctum)</td>
+          </tr>
+          <tr class="bg-gray-50 border-b">
+            <td class="py-2 px-4 font-semibold">Refuerzo posterior</td>
+            <td class="py-2 px-4 text-center">Ausente</td>
+            <td class="py-2 px-4 text-center"><strong>Presente (>80%)</strong></td>
+          </tr>
+          <tr class="bg-white border-b">
+            <td class="py-2 px-4 font-semibold">Compresibilidad</td>
+            <td class="py-2 px-4 text-center"><strong>Blando, deformable</strong></td>
+            <td class="py-2 px-4 text-center">Relativamente incompresible</td>
+          </tr>
+          <tr class="bg-gray-50 border-b">
+            <td class="py-2 px-4 font-semibold">Doppler color</td>
+            <td class="py-2 px-4 text-center">Avascular</td>
+            <td class="py-2 px-4 text-center">Avascular (si intacto)</td>
+          </tr>
+          <tr class="bg-white border-b">
+            <td class="py-2 px-4 font-semibold">Elastografía (kPa)</td>
+            <td class="py-2 px-4 text-center"><strong>9,2 kPa</strong> (blando)</td>
+            <td class="py-2 px-4 text-center"><strong>23,7 kPa</strong> (rígido)</td>
+          </tr>
+          <tr class="bg-gray-50">
+            <td class="py-2 px-4 font-semibold">Calcificaciones</td>
+            <td class="py-2 px-4 text-center">Nunca</td>
+            <td class="py-2 px-4 text-center">Nunca</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+      <h5 class="text-sm font-bold text-indigo-700 mb-2 text-center">Gradiente de Rigidez Elastográfica (Yeoh et al., 2018)</h5>
+      <div class="flex items-center justify-center gap-2">
+        <div class="text-center">
+          <div class="bg-blue-200 text-blue-800 rounded-lg px-3 py-2 text-xs font-bold">Ganglión<br>5,8 kPa</div>
+          <p class="text-[10px] mt-1">Líquido</p>
+        </div>
+        <div class="text-gray-400">→</div>
+        <div class="text-center">
+          <div class="bg-yellow-200 text-yellow-800 rounded-lg px-3 py-2 text-xs font-bold">Lipoma<br>9,2 kPa</div>
+          <p class="text-[10px] mt-1">Grasa</p>
+        </div>
+        <div class="text-gray-400">→</div>
+        <div class="text-center">
+          <div class="bg-orange-200 text-orange-800 rounded-lg px-3 py-2 text-xs font-bold">Quiste Epid.<br>23,7 kPa</div>
+          <p class="text-[10px] mt-1">Queratina</p>
+        </div>
+      </div>
+    </div>`,
+            evidence: `<p>La combinación de ecografía modo B con información clínica alcanza un AUC de 0,946 para diferenciar lesiones benignas de malignas (Wang et al., 2024). La precisión específica para lipomas y quistes es del 92-100% con enfoque multimodal (Baloji et al., 2020). Cuando el ecografista reconoce el patrón con confianza, la precisión asciende al 95,5% (Hung et al., 2020).</p>`,
+            pearls: `<div class="pearls-section">
+      <h5>Resumen para la Consulta</h5>
+      <p><strong>Lipoma =</strong> grasa organizada (isoecogénico, estriado, compresible, avascular, no toca dermis).<br><strong>Quiste epidérmico =</strong> queratina encapsulada conectada a dermis (variable, refuerzo posterior, avascular intacto, signo del punctum).<br><strong>Lo que no encaje =</strong> merece atención adicional (ver ficha de Red Flags).</p>
+      <h5>Otras Entidades a Recordar</h5>
+      <p><strong>Quiste triclilémico:</strong> en cuero cabelludo, con calcificaciones internas (65%), heterogéneo, avascular.<br><strong>Pilomatricoma:</strong> en niños, cabeza/cuello, calcificaciones + vascularización interna.<br><strong>Esteatocistoma:</strong> homogéneo, sin refuerzo posterior, márgenes nítidos.</p>
+    </div>`,
           },
         },
       ];
