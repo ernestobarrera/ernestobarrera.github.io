@@ -991,6 +991,7 @@
         zoomLevel: 1,
         showLabels: false,
         apiReady: false,
+        apiLoading: false,
         pendingVideos: [],
       };
 
@@ -2502,6 +2503,16 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
         window.POCUSApp.pendingVideos = [];
       }
 
+      // Carga diferida de la API de YouTube
+      function loadYouTubeAPI() {
+        if (window.POCUSApp.apiReady || window.POCUSApp.apiLoading) return;
+        window.POCUSApp.apiLoading = true;
+        var tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        var firstScript = document.getElementsByTagName('script')[0];
+        firstScript.parentNode.insertBefore(tag, firstScript);
+      }
+
       // Función para cambiar pestañas
       window.switchTab = function (cardId, tabName, buttonElement) {
         const card = document.getElementById(cardId);
@@ -2530,8 +2541,9 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
           activeContent.classList.add("active");
         }
 
-        // Si estamos en la pestaña de vídeo
+        // Si estamos en la pestaña de vídeo, cargar la API de YouTube si no está cargada
         if (tabName === "video") {
+          loadYouTubeAPI();
           const list = card.querySelector(`#video-${cardId}`);
           if (!list) return;
 
@@ -2855,6 +2867,5 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
         });
       });
     </script>
-    <script src="https://www.youtube.com/iframe_api"></script>
   </body>
 </html>
