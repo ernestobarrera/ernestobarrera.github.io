@@ -102,6 +102,11 @@
         transform: translateY(-1px);
       }
 
+      .anatomy-segment.has-content {
+        fill: rgba(147, 197, 253, 0.35);
+        stroke-width: 1.5;
+      }
+
       .anatomy-segment.active {
         fill: url(#activeGradient);
         stroke: #1e40af;
@@ -2117,6 +2122,13 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
               ? "Ocultar Etiquetas"
               : "Mostrar Etiquetas";
           });
+
+        // Marcar segmentos SVG que tienen contenido
+        const segmentsWithContent = [...new Set(pocusData.map(d => d.segment))];
+        segmentsWithContent.forEach(seg => {
+          document.querySelectorAll(`.anatomy-segment[data-segment="${seg}"]`)
+            .forEach(el => el.classList.add('has-content'));
+        });
 
         // Event listeners para zoom
         document
