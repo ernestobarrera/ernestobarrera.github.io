@@ -78,11 +78,6 @@
 
       #anatomical-svg {
         filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.2));
-        transition: transform 0.3s ease;
-      }
-
-      #anatomical-svg:hover {
-        transform: scale(1.02);
       }
 
       .anatomy-segment {
@@ -118,17 +113,17 @@
       @keyframes pulse {
         0%,
         100% {
-          transform: scale(1);
+          opacity: 1;
         }
         50% {
-          transform: scale(1.03);
+          opacity: 0.7;
         }
       }
 
       /* Navigation bar by systems */
       .system-nav-bar {
-        top: 64px;
-        background: rgba(15, 23, 42, 0.85);
+        top: 76px;
+        background: rgba(15, 23, 42, 0.95);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -136,13 +131,10 @@
       }
       .system-nav-scroll {
         display: flex;
+        flex-wrap: wrap;
         gap: 6px;
-        overflow-x: auto;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
         padding: 2px 0;
       }
-      .system-nav-scroll::-webkit-scrollbar { display: none; }
       .nav-chip-wrapper {
         position: relative;
         flex-shrink: 0;
