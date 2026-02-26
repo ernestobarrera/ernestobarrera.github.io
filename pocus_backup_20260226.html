@@ -12,7 +12,7 @@
     <title>POCUS-Clínic: Atlas Anatómico Interactivo Avanzado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -489,6 +489,20 @@
                   />
                   <text x="70" y="208" class="anatomy-label">Mano</text>
 
+                  <rect
+                    x="100"
+                    y="55"
+                    width="20"
+                    height="8"
+                    rx="4"
+                    class="anatomy-segment"
+                    data-segment="temporal_artery"
+                    data-tooltip="Arteria Temporal (ACG)"
+                  />
+                  <text x="100" y="45" class="anatomy-label">A. Temporal</text>
+
+                
+
                 <!-- Zonas Interactivas Mejoradas -->
                 <g id="interactive-zones">
                   <circle
@@ -608,7 +622,7 @@
                     rx="5"
                     class="anatomy-segment"
                     data-segment="llq"
-                    data-tooltip="Fosa Ilíaca Izquierda (Diverticulitis)"
+                    data-tooltip="Fosa Ilíaca Izquierda"
                   />
                   <text x="172" y="280" class="anatomy-label">FII</text>
 
