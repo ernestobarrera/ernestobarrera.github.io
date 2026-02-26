@@ -122,11 +122,10 @@
 
       /* Navigation bar by systems */
       .system-nav-bar {
-        top: 76px;
         background: rgba(15, 23, 42, 0.95);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
         padding: 8px 0;
       }
       .system-nav-scroll {
@@ -433,12 +432,10 @@
           </div>
         </div>
       </div>
-    </header>
-
-    <!-- Índice de Navegación por Sistemas -->
-    <nav id="system-nav" class="system-nav-bar sticky z-40">
-      <div class="container mx-auto px-4">
-        <div class="system-nav-scroll">
+      <!-- Índice de Navegación por Sistemas -->
+      <nav id="system-nav" class="system-nav-bar">
+        <div class="container mx-auto px-4">
+          <div class="system-nav-scroll">
           <!-- Chips directos -->
           <button class="nav-chip" onclick="navigateToSegment('ocular')">Ocular</button>
 
@@ -489,14 +486,15 @@
           </div>
 
           <button class="nav-chip" onclick="navigateToSegment('soft_tissue')">Partes Blandas</button>
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
 
     <main class="container mx-auto p-4 md:p-8 relative z-10">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 grid-layout">
         <!-- Panel Izquierdo: Anatomía Interactiva Mejorada -->
-        <div class="lg:col-span-1 anatomy-container lg:sticky lg:top-24">
+        <div class="lg:col-span-1 anatomy-container lg:sticky" style="top: 130px;">
           <div class="glass-morphism rounded-2xl p-6 relative">
             <div class="flex justify-between items-center mb-6">
               <h2 class="text-xl font-bold text-white">
