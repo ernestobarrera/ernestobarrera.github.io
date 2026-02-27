@@ -210,6 +210,104 @@
       margin: 0;
     }
 
+    .metodologia {
+      background: linear-gradient(135deg, #0f1a24 0%, #12263b 100%);
+      border: 1px solid #2f6c95;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0 2rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .metodologia-icon {
+      color: #5dade2;
+      font-size: 1.35rem;
+      flex-shrink: 0;
+      margin-top: 0.2rem;
+    }
+
+    .metodologia-text {
+      color: #b8c8d6;
+      font-size: 0.92rem;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .legend-dot-info {
+      background-color: #3498db;
+    }
+
+    .legend-dot-warning {
+      background-color: #f39c12;
+    }
+
+    .legend-dot-success {
+      background-color: #27ae60;
+    }
+
+    .tip-text {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tip-icon {
+      color: #3498db;
+      font-size: 1.2rem;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1.3);
+        opacity: 1;
+        color: #f1e4ce;
+      }
+
+      50% {
+        transform: scale(1.5);
+        opacity: 0.8;
+        color: #f43906;
+      }
+
+      100% {
+        transform: scale(1.3);
+        opacity: 1;
+        color: #f1e4ce;
+      }
+    }
+
+    .pulse {
+      animation: pulse 2s ease-in-out infinite;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
     /* ========================================
          ANIMACIONES Y TRANSICIONES SUAVES
          ======================================== */
@@ -219,6 +317,12 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
       border-color: #5dade2;
+    }
+
+    .nodo:focus-visible,
+    .referencias:focus-visible {
+      outline: 3px solid #5dade2;
+      outline-offset: 2px;
     }
 
     .nodo.warning:hover {
@@ -368,6 +472,14 @@
       .disclaimer-text {
         font-size: 0.9rem;
       }
+
+      .metodologia {
+        padding: 0.85rem 1rem;
+      }
+
+      .metodologia-text {
+        font-size: 0.88rem;
+      }
     }
 
     /* Móviles pequeños (480px y menos) */
@@ -450,6 +562,22 @@
         line-height: 1.5;
       }
 
+      .metodologia {
+        flex-direction: column;
+        padding: 1rem;
+        gap: 0.5rem;
+      }
+
+      .metodologia-icon {
+        font-size: 1.25rem;
+        margin-top: 0;
+      }
+
+      .metodologia-text {
+        font-size: 0.84rem;
+        line-height: 1.5;
+      }
+
       /* Mejoras de toque para móvil */
       .nodo,
       .referencias {
@@ -525,247 +653,28 @@
         profesional sanitaria. No sustituye al asesoramiento legal
         profesional, sino que busca ayudar a entender mejor este complejo
         proceso tanto a profesionales como a pacientes. Elaborada desde la
-        experiencia clínica y apoyada en jurisprudencia indicada. El código de
-        colores indica:
-        <span style="
-              display: inline-flex;
-              align-items: center;
-              gap: 1rem;
-              margin-top: 0.5rem;
-              flex-wrap: wrap;
-            ">
-          <span style="display: inline-flex; align-items: center">
-            <span style="
-                  display: inline-block;
-                  width: 10px;
-                  height: 10px;
-                  border-radius: 50%;
-                  background-color: #3498db;
-                  margin-right: 6px;
-                "></span>
-            <span>Información general</span>
-          </span>
-          <span style="display: inline-flex; align-items: center">
-            <span style="
-                  display: inline-block;
-                  width: 10px;
-                  height: 10px;
-                  border-radius: 50%;
-                  background-color: #f39c12;
-                  margin-right: 6px;
-                "></span>
-            <span>Puntos críticos de atención</span>
-          </span>
-          <span style="display: inline-flex; align-items: center">
-            <span style="
-                  display: inline-block;
-                  width: 10px;
-                  height: 10px;
-                  border-radius: 50%;
-                  background-color: #27ae60;
-                  margin-right: 6px;
-                "></span>
-            <span>Factores atenuantes o eximentes</span>
-          </span>
-        </span>
+        experiencia clínica y apoyada en jurisprudencia indicada.
       </p>
-      <p class="tip-text" style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.5rem">
-        <i class="fas fa-hand-pointer pulse" style="color: #3498db; font-size: 1.2rem; margin-right: 0.5rem"></i>
+      <div class="legend-row" aria-label="Leyenda de colores del diagrama">
+        <span class="legend-item">
+          <span class="legend-dot legend-dot-info"></span>
+            <span>Información general</span>
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot legend-dot-warning"></span>
+            <span>Puntos críticos de atención</span>
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot legend-dot-success"></span>
+            <span>Factores atenuantes o eximentes</span>
+        </span>
+      </div>
+      <p class="tip-text">
+        <i class="fas fa-hand-pointer pulse tip-icon"></i>
         Pulsa sobre cada elemento para expandir su contenido y profundizar en
         los detalles.
       </p>
-
-      <style>
-        @keyframes pulse {
-          0% {
-            transform: scale(1.3);
-            opacity: 1;
-            color: #f1e4ce;
-          }
-
-          50% {
-            transform: scale(1.5);
-            opacity: 0.8;
-            color: #f43906;
-          }
-
-          100% {
-            transform: scale(1.3);
-            opacity: 1;
-            color: #f1e4ce;
-          }
-        }
-
-        .pulse {
-          animation: pulse 2s ease-in-out infinite;
-          display: inline-block;
-          vertical-align: middle;
-        }
-      </style>
     </section>
-
-    <!--       <div class="diagrama-contenedor">
-        <div class="nodo">
-          <div class="nodo-header">
-            <div class="nodo-icono">i</div>
-            <h3 class="nodo-titulo">
-              ¿El paciente tuvo una evolución desfavorable no esperada?
-            </h3>
-          </div>
-          <div class="nodo-contenido">
-            La práctica se evalúa en la situación y síntomas del momento en que
-            se realiza, considerando la obligación de aplicar todos los
-            <b>medios clínicamente indicados</b> disponibles para el diagnóstico
-            y tratamiento, de forma proporcional al contexto y probabilidad de
-            padecer una determinada patología (<b
-              >Obligación de medios y no de resultados</b
-            >).
-          </div>
-        </div>
-        <div class="conector"><i class="fas fa-arrow-down"></i></div>
-
-        <div class="nodo warning">
-          <div class="nodo-header">
-            <div class="nodo-icono">!</div>
-            <h3 class="nodo-titulo">
-              ¿Posible Error en el diagnóstico o tratamiento?
-            </h3>
-          </div>
-          <div class="nodo-contenido">
-            La respuesta del paciente al tratamiento prescrito es impredecible.
-            De ahí que el eventual fracaso de un tratamiento no se pueda imputar
-            sin más a una hipotética, y las más de las veces infundada, mala
-            praxis médica, sino a las simples circunstancias o alteraciones
-            biológicas de cada cual por la potísima razón de que
-            <b
-              >se actúa sobre un organismo vivo de reacciones y sensibilidades
-              imprevisibles</b
-            >, máxime si el coetáneo y racionalmente se actúa con otros
-            medicamentos o medios quirúrgicos o profesionales sobre el mismo
-            paciente (interacción)¹.
-          </div>
-        </div>
-        <div class="conector"><i class="fas fa-arrow-down"></i></div>
-
-        <div class="nodo warning">
-          <div class="nodo-header">
-            <div class="nodo-icono">!</div>
-            <h3 class="nodo-titulo">
-              ¿Incumplimiento de <i>lex artis ad hoc</i>?
-            </h3>
-          </div>
-          <div class="nodo-contenido">
-            Existe un <b>daño real</b> que el paciente no tiene la obligación de
-            soportar y supone una <b>pérdida de oportunidad</b> en la
-            probabilidad de obtener un resultado distinto y más favorable para
-            la salud y definitiva, para la vida si se hubiera actuado de
-            distinta forma. No incluye una <b>complicación previsible</b> como
-            materialización resultante de un riesgo permitido, o al menos
-            permisible, conocido o contingente y además típicamente inherente a
-            los cuidados dispensados debida y adecuadamente según la
-            <i>lex artis ad hoc</i>.
-          </div>
-        </div>
-        <div class="conector"><i class="fas fa-arrow-down"></i></div>
-
-        <div class="nodo">
-          <div class="nodo-header">
-            <div class="nodo-icono">i</div>
-            <h3 class="nodo-titulo">¿Daño antijurídico?</h3>
-          </div>
-          <div class="nodo-contenido">
-            Con carácter general la <b>carga de la prueba</b> de la realidad del
-            daño efectivamente causado debe ser soportada por la parte
-            supuestamente perjudicada por el mismo. Puede incluir el
-            <b>daño moral</b> valorado mediante una apreciación racional,
-            objetiva y contextualmente consistente con la pretendida atribución
-            de causalidad. No obstante, en algunos supuestos podría darse una
-            <b>inversión de la carga de la prueba</b> dependiendo, por ejemplo,
-            de la disponibilidad y facilidad probatoria o del caso de un daño
-            desproporcionado.
-          </div>
-        </div>
-        <div class="conector"><i class="fas fa-arrow-down"></i></div>
-
-        <div class="nodo">
-          <div class="nodo-header">
-            <div class="nodo-icono">i</div>
-            <h3 class="nodo-titulo">
-              ¿Hay relación de causalidad entre error y daño?
-            </h3>
-          </div>
-          <div class="nodo-contenido">
-            La <i>lex artis</i> sólo puede ser enjuiciada con los datos de los
-            que se dispone cuando las decisiones se adoptan. La imposibilidad de
-            predecir la posterior evolución del proceso impide que sea esta
-            evolución la pauta de valoración de la actuación profesional⁶.
-          </div>
-        </div>
-        <div class="conector"><i class="fas fa-arrow-down"></i></div>
-
-        <div class="nodo">
-          <div class="nodo-header">
-            <div class="nodo-icono">i</div>
-            <h3 class="nodo-titulo">
-              ¿La imputabilidad cumple la prohibición de regreso?
-            </h3>
-          </div>
-          <div class="nodo-contenido">
-            La causalidad debe ser probada y no puede quedar en meras hipótesis
-            o conjeturas. La carga de la prueba corresponde a quien reclama.
-          </div>
-        </div>
-        <div class="conector"><i class="fas fa-arrow-down"></i></div>
-
-        <div class="nodo">
-          <div class="nodo-header">
-            <div class="nodo-icono">i</div>
-            <h3 class="nodo-titulo">
-              Concurren condiciones que pueden asociar algún tipo de
-              responsabilidad u obligación reparadora
-            </h3>
-          </div>
-          <div class="nodo-contenido">
-            La valoración final debe considerar todos los elementos analizados
-            en el proceso de forma integral.
-          </div>
-        </div>
-
-        <div class="referencias">
-          <div class="referencias-header">
-            <i class="fas fa-book"></i>
-            <h4 style="margin: 0; font-size: 0.95rem">Referencias</h4>
-          </div>
-          <div class="referencias-contenido">
-            <ol class="referencias-lista">
-              <li>
-                Extraído de la STS de 1 de junio de 1994 dictada en el recurso
-                de casación nº 02005/1991
-              </li>
-              <li>
-                Sentencia del Tribunal Supremo de 19 de marzo de 2019 (recurso
-                de casación 2228/2014)
-              </li>
-              <li>
-                Sentencia del Tribunal Supremo de 23 de enero de 2012 (rec. num.
-                43/2010)
-              </li>
-              <li>
-                Extraído y adaptado de la publicación: La función mediadora del
-                Defensor del Paciente de la Comunidad de Madrid
-              </li>
-              <li>
-                Extraído y adaptado del Dictamen nº 143/19 de Responsabilidad
-                Patrimonial. Comisión Jurídica Asesora de la Comunidad de Madrid
-              </li>
-              <li>
-                SJ de Madrid, Sala de lo Contencioso administrativo, Sección 9ª,
-                de 12 de noviembre de 2009
-              </li>
-            </ol>
-          </div>
-        </div>
-      </div> -->
 
     <div class="diagrama-contenedor">
       <!-- Primer nodo -->
@@ -1140,23 +1049,68 @@
           reclamaciones concretas.
         </p>
       </div>
+
+      <div class="metodologia">
+        <i class="fas fa-robot metodologia-icon" aria-hidden="true"></i>
+        <p class="metodologia-text">
+          <strong>Transparencia metodológica:</strong> Este recurso se ha elaborado por el autor con ayuda de IA generativa
+          para organizar estructura, redacción y revisión formal. La selección de contenido jurídico-sanitario, su
+          contextualización y la validación final han sido realizadas y supervisadas por el autor.
+        </p>
+      </div>
     </div>
   </main>
 
   <include src="footer.html"></include>
 
   <script>
-    document.querySelectorAll(".nodo").forEach((nodo) => {
-      nodo.addEventListener("click", () => {
-        nodo.classList.toggle("activo");
+    const toggleExpandible = (elemento) => {
+      const activo = elemento.classList.toggle("activo");
+      elemento.setAttribute("aria-expanded", activo ? "true" : "false");
+    };
+
+    document.querySelectorAll(".nodo").forEach((nodo, index) => {
+      const contenido = nodo.querySelector(".nodo-contenido");
+      if (contenido) {
+        const contenidoId = contenido.id || `nodo-contenido-${index + 1}`;
+        contenido.id = contenidoId;
+        nodo.setAttribute("role", "button");
+        nodo.setAttribute("tabindex", "0");
+        nodo.setAttribute("aria-controls", contenidoId);
+        nodo.setAttribute("aria-expanded", "false");
+      }
+
+      nodo.addEventListener("click", () => toggleExpandible(nodo));
+      nodo.addEventListener("keydown", (evento) => {
+        if (evento.key === "Enter" || evento.key === " ") {
+          evento.preventDefault();
+          toggleExpandible(nodo);
+        }
       });
     });
 
-    document
-      .querySelector(".referencias")
-      .addEventListener("click", function () {
-        this.classList.toggle("activo");
+    const referencias = document.querySelector(".referencias");
+    if (referencias) {
+      const contenidoReferencias = referencias.querySelector(".referencias-contenido");
+      if (contenidoReferencias) {
+        const referenciasId = contenidoReferencias.id || "referencias-contenido";
+        contenidoReferencias.id = referenciasId;
+        referencias.setAttribute("role", "button");
+        referencias.setAttribute("tabindex", "0");
+        referencias.setAttribute("aria-controls", referenciasId);
+        referencias.setAttribute("aria-expanded", "false");
+      }
+
+      const toggleReferencias = () => toggleExpandible(referencias);
+
+      referencias.addEventListener("click", toggleReferencias);
+      referencias.addEventListener("keydown", (evento) => {
+        if (evento.key === "Enter" || evento.key === " ") {
+          evento.preventDefault();
+          toggleReferencias();
+        }
       });
+    }
   </script>
 
   <script src="/assets/js/include.js"></script>
