@@ -17,6 +17,15 @@
         link.classList.remove("active");
         const href = link.getAttribute("href");
 
+        // AÑADIR ESTE BLOQUE NUEVO:
+        // Detectar si estamos en el laboratorio
+        if (path.includes('/lab/') || path.includes('otros-proyectos')) {
+          if (link.id === 'otros-proyectos') {
+            link.classList.add("active");
+            return;
+          }
+        }
+
         if (path === "/" || path === "/index.html" || path.endsWith("/")) {
           if (link.id === "inicio") {
             link.classList.add("active");
@@ -157,6 +166,12 @@
       const getBasePath = () => {
         const path = window.location.pathname;
         console.log('Pathname actual:', path);
+
+        // NUEVO: Si estamos en /lab/
+        if (path.includes('/lab/')) {
+          return '../assets/components/';
+        }
+
         return path.includes('/pages/') ? '../assets/components/' : 'assets/components/';
       };
 
@@ -182,7 +197,9 @@
 
         try {
           console.log(`Iniciando fetch para ${file}`);
-          const response = await fetch(fullPath);
+          // Variable para evitar la caché persistente de Github Pages
+          const cacheBuster = '?v=' + Date.now();
+          const response = await fetch(fullPath + cacheBuster);
           console.log(`Respuesta de fetch para ${file}:`, response.status);
 
           if (response.ok) {
