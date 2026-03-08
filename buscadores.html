@@ -1,947 +1,847 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- SEO Meta Tags -->
-    <meta
-      name="description"
-      content="Bookmarklet para buscar simultáneamente en más de 50 buscadores especializados en Ciencias de la Salud"
-    />
-    <meta name="author" content="Ernesto Barrera" />
-    <link rel="icon" href="/assets/images/icon.webp" />
-    <title>Buscadores 2.0 | @ernestob</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Open Graph Meta Tags -->
-    <meta property="og:type" content="article" />
-    <meta
-      property="og:title"
-      content="Buscadores 2.0 - Herramientas para buscar información sanitaria | @ernestob"
-    />
-    <meta
-      property="og:site_name"
-      content="Recursos para la gestión de información 🔎🩺⚕"
-    />
-    <meta
-      property="og:url"
-      content="https://ernestobarrera.github.io/buscadores.html"
-    />
-    <meta
-      property="og:image"
-      content="https://ernestobarrera.github.io/assets/images/me.png"
-    />
+  <!-- SEO Meta Tags -->
+  <meta name="description"
+    content="Bookmarklet para buscar simultáneamente en más de 50 buscadores especializados en Ciencias de la Salud" />
+  <meta name="author" content="Ernesto Barrera" />
+  <link rel="icon" href="/assets/images/icon.webp" />
+  <title>Buscadores 2.0 | @ernestob</title>
 
-    <!-- Fonts -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Buscadores 2.0 - Herramientas para buscar información sanitaria | @ernestob" />
+  <meta property="og:site_name" content="Recursos para la gestión de información 🔎🩺⚕" />
+  <meta property="og:url" content="https://ernestobarrera.github.io/buscadores.html" />
+  <meta property="og:image" content="https://ernestobarrera.github.io/assets/images/me.png" />
 
-    <!-- CSS Base -->
-    <link rel="stylesheet" href="assets/css/main.css" />
-    <link rel="stylesheet" href="assets/css/header.css" />
-    <link rel="stylesheet" href="assets/css/components.css" />
-    <link rel="stylesheet" href="assets/css/footer.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
-    />
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
-    <style>
-      /* Variables y Reset */
-      :root {
-        --bg-primary: #1a1d29;
-        --bg-secondary: #232834;
-        --bg-card: #2a303c;
-        --accent: #ffa500;
-        --accent-hover: #ffb733;
-        --accent-subtle: rgba(255, 165, 0, 0.1);
-        --text-primary: #f1f5f9;
-        --text-secondary: #cbd5e1;
-        --text-muted: #94a3b8;
-        --border: rgba(255, 165, 0, 0.2);
-        --shadow: rgba(0, 0, 0, 0.4);
+  <!-- CSS Base -->
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <link rel="stylesheet" href="assets/css/header.css" />
+  <link rel="stylesheet" href="assets/css/components.css" />
+  <link rel="stylesheet" href="assets/css/footer.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" />
+
+  <style>
+    /* Variables y Reset */
+    :root {
+      --bg-primary: #1a1d29;
+      --bg-secondary: #232834;
+      --bg-card: #2a303c;
+      --accent: #ffa500;
+      --accent-hover: #ffb733;
+      --accent-subtle: rgba(255, 165, 0, 0.1);
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+      --border: rgba(255, 165, 0, 0.2);
+      --shadow: rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    /* Main Container */
+    .main-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 80px 1rem 1rem;
+    }
+
+    /* Hero Section Minimalista */
+    .hero-section {
+      border-radius: 8px;
+      padding: 0;
+      margin-bottom: 1rem;
+    }
+
+    .main-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .intro-text {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      background: var(--accent-subtle);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    /* Bookmarklet Installation Section */
+    .bookmarklet-section {
+      background: var(--bg-card);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .bookmarklet-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .bookmarklet-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg,
+          var(--accent) 0%,
+          var(--accent-hover) 100%);
+      color: #1a1d29;
+      padding: 0.9rem 2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 1.15rem;
+      box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);
+      transition: all 0.2s ease;
+      cursor: move;
+      white-space: nowrap;
+    }
+
+    .bookmarklet-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(255, 165, 0, 0.4);
+    }
+
+    .bookmarklet-info {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .bookmarklet-info h3 {
+      color: var(--accent);
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .bookmarklet-info p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin: 0.25rem 0;
+    }
+
+    .keyboard-hint {
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+      padding: 0.35rem 0.75rem;
+      border-radius: 4px;
+      display: inline-block;
+      margin-top: 0.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .keyboard-hint kbd {
+      background: var(--accent-subtle);
+      padding: 0.15rem 0.35rem;
+      border-radius: 3px;
+      font-family: monospace;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Navigation Tabs Compacto */
+    .nav-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 165, 0, 0.15);
+      padding-bottom: 0;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .nav-tab {
+      padding: 0.6rem 1.2rem;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.95rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-primary);
+      background: var(--accent-subtle);
+      border-radius: 4px 4px 0 0;
+    }
+
+    .nav-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: transparent;
+      font-weight: 600;
+    }
+
+    /* Content Grid Optimizado */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .content-section {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .content-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
       }
 
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+      to {
+        opacity: 1;
+        transform: translateY(0);
       }
+    }
 
-      body {
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
-        background: var(--bg-primary);
-        color: var(--text-primary);
-        line-height: 1.5;
+    .section-card {
+      background: var(--bg-card);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+      color: var(--accent);
+      font-size: 1.2rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Feature Grid Compacto */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .feature-card {
+      background: var(--bg-secondary);
+      padding: 0.9rem;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .feature-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px var(--shadow);
+      background: var(--bg-card);
+    }
+
+    .feature-card h4 {
+      color: var(--accent);
+      font-size: 1rem;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* Two Column Layout para mejor uso del espacio */
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+
+    @media (max-width: 768px) {
+      .two-column {
+        grid-template-columns: 1fr;
       }
+    }
 
-      /* Main Container */
+    /* Demo Section Optimizada */
+    .demo-container {
+      margin: 1rem 0;
+    }
+
+    .demo-image {
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: block;
+    }
+
+    /* Genially Container */
+    .genially-container {
+      width: 100%;
+      height: 500px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      margin: 1rem 0;
+    }
+
+    .genially-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Lists Compactas */
+    .compact-list {
+      margin: 0.5rem 0;
+      padding-left: 1.25rem;
+    }
+
+    .compact-list li {
+      margin: 0.4rem 0;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .compact-list strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    /* Tips Box Minimalista */
+    .tip-box {
+      background: var(--accent-subtle);
+      border-left: 3px solid var(--accent);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 0.9rem;
+      margin: 0.75rem 0;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .tip-box strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Footer Compacto */
+    .footer-section {
+      background: var(--bg-card);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      text-align: center;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin: 0.75rem 0;
+      flex-wrap: wrap;
+    }
+
+    .footer-link {
+      color: var(--accent);
+      text-decoration: none;
+      padding: 0.5rem 0.9rem;
+      background: var(--accent-subtle);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-weight: 500;
+    }
+
+    .footer-link:hover {
+      background: var(--accent);
+      color: var(--bg-primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 165, 0, 0.3);
+    }
+
+    .author-info {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .author-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+    }
+
+    /* Beta Badge Minimalista */
+    .beta-badge {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      background: var(--accent);
+      color: var(--bg-primary);
+      padding: 0.4rem 0.8rem;
+      border-radius: 15px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      box-shadow: 0 2px 10px rgba(255, 165, 0, 0.3);
+      z-index: 100;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
       .main-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 80px 1rem 1rem;
-      }
-
-      /* Hero Section Minimalista */
-      .hero-section {
-        border-radius: 8px;
-        padding: 0;
-        margin-bottom: 1rem;
-      }
-
-      .main-title {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin-bottom: 0.5rem;
-        color: var(--text-primary);
-      }
-
-      .intro-text {
-        font-size: 0.95rem;
-        line-height: 1.5;
-        background: var(--accent-subtle);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 0.9rem;
-        color: var(--text-secondary);
-        margin-bottom: 1rem;
-      }
-
-      /* Bookmarklet Installation Section */
-      .bookmarklet-section {
-        background: var(--bg-card);
-        border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        text-align: center;
-      }
-
-      .bookmarklet-wrapper {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
+        padding: 70px 0.5rem 0.5rem;
       }
 
       .bookmarklet-button {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: linear-gradient(
-          135deg,
-          var(--accent) 0%,
-          var(--accent-hover) 100%
-        );
-        color: #1a1d29;
-        padding: 0.9rem 2rem;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: 700;
-        font-size: 1.15rem;
-        box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);
-        transition: all 0.2s ease;
-        cursor: move;
-        white-space: nowrap;
-      }
-
-      .bookmarklet-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 25px rgba(255, 165, 0, 0.4);
-      }
-
-      .bookmarklet-info {
-        max-width: 600px;
-        margin: 0 auto;
-      }
-
-      .bookmarklet-info h3 {
-        color: var(--accent);
-        font-size: 1.1rem;
-        margin-bottom: 0.5rem;
-      }
-
-      .bookmarklet-info p {
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        margin: 0.25rem 0;
-      }
-
-      .keyboard-hint {
-        font-size: 0.85rem;
-        color: var(--text-primary);
-        background: var(--bg-secondary);
-        padding: 0.35rem 0.75rem;
-        border-radius: 4px;
-        display: inline-block;
-        margin-top: 0.5rem;
-        border: 1px solid var(--border);
-      }
-
-      .keyboard-hint kbd {
-        background: var(--accent-subtle);
-        padding: 0.15rem 0.35rem;
-        border-radius: 3px;
-        font-family: monospace;
-        color: var(--accent);
-        font-weight: 600;
-      }
-
-      /* Navigation Tabs Compacto */
-      .nav-tabs {
-        display: flex;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-        border-bottom: 1px solid rgba(255, 165, 0, 0.15);
-        padding-bottom: 0;
-        overflow-x: auto;
-        scrollbar-width: thin;
-      }
-
-      .nav-tab {
-        padding: 0.6rem 1.2rem;
-        background: transparent;
-        border: none;
-        border-bottom: 2px solid transparent;
-        color: var(--text-secondary);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 0.95rem;
-        font-weight: 500;
-        white-space: nowrap;
-      }
-
-      .nav-tab:hover {
-        color: var(--text-primary);
-        background: var(--accent-subtle);
-        border-radius: 4px 4px 0 0;
-      }
-
-      .nav-tab.active {
-        color: var(--accent);
-        border-bottom-color: var(--accent);
-        background: transparent;
-        font-weight: 600;
-      }
-
-      /* Content Grid Optimizado */
-      .content-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-
-      .content-section {
-        display: none;
-        animation: fadeIn 0.3s ease;
-      }
-
-      .content-section.active {
-        display: block;
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .section-card {
-        background: var(--bg-card);
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 0.75rem;
-      }
-
-      .section-title {
-        color: var(--accent);
-        font-size: 1.2rem;
-        margin-bottom: 0.75rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid var(--border);
-      }
-
-      /* Feature Grid Compacto */
-      .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 0.75rem;
-        margin-top: 0.75rem;
-      }
-
-      .feature-card {
-        background: var(--bg-secondary);
-        padding: 0.9rem;
-        border-radius: 6px;
-        border: 1px solid transparent;
-        transition: all 0.2s ease;
-      }
-
-      .feature-card:hover {
-        border-color: var(--accent);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px var(--shadow);
-        background: var(--bg-card);
-      }
-
-      .feature-card h4 {
-        color: var(--accent);
         font-size: 1rem;
-        margin-bottom: 0.4rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-weight: 600;
+        padding: 0.75rem 1.5rem;
       }
 
-      .feature-card p {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-        line-height: 1.5;
+      .features-grid {
+        grid-template-columns: 1fr;
       }
 
-      /* Two Column Layout para mejor uso del espacio */
-      .two-column {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        margin: 0.75rem 0;
+      .nav-tabs {
+        overflow-x: scroll;
       }
 
-      @media (max-width: 768px) {
-        .two-column {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      /* Demo Section Optimizada */
-      .demo-container {
-        margin: 1rem 0;
-      }
-
-      .demo-image {
-        width: 100%;
-        height: auto;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        display: block;
-      }
-
-      /* Genially Container */
       .genially-container {
-        width: 100%;
-        height: 500px;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid var(--border);
-        margin: 1rem 0;
+        height: 350px;
       }
+    }
 
-      .genially-container iframe {
-        width: 100%;
-        height: 100%;
-        border: none;
-      }
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
 
-      /* Lists Compactas */
-      .compact-list {
-        margin: 0.5rem 0;
-        padding-left: 1.25rem;
-      }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+      border-radius: 4px;
+    }
 
-      .compact-list li {
-        margin: 0.4rem 0;
-        font-size: 0.95rem;
-        color: var(--text-secondary);
-        line-height: 1.5;
-      }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 165, 0, 0.5);
+      border-radius: 4px;
+    }
 
-      .compact-list strong {
-        color: var(--text-primary);
-        font-weight: 600;
-      }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+    }
+  </style>
+</head>
 
-      /* Tips Box Minimalista */
-      .tip-box {
-        background: var(--accent-subtle);
-        border-left: 3px solid var(--accent);
-        border: 1px solid var(--border);
-        border-left: 3px solid var(--accent);
-        padding: 0.6rem 0.9rem;
-        margin: 0.75rem 0;
-        border-radius: 4px;
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-      }
+<body>
+  <!-- Include header -->
+  <include src="header.html"></include>
 
-      .tip-box strong {
-        color: var(--accent);
-        font-weight: 600;
-      }
+  <!-- Main Container -->
+  <main class="main-container">
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <h1 class="main-title">
+        <i class="fas fa-search"></i>
+        <span>Buscadores 2.0 - Multibúsqueda Sanitaria</span>
+      </h1>
+      <p class="intro-text">
+        Herramienta profesional que permite buscar simultáneamente en más de
+        50 motores de búsqueda especializados en Ciencias de la Salud. Incluye
+        bases de datos médicas, recursos farmacológicos, guías clínicas,
+        ensayos clínicos y literatura científica. Diseñado para agilizar la
+        búsqueda de evidencia científica en la práctica clínica e
+        investigación.
+      </p>
+    </section>
 
-      /* Footer Compacto */
-      .footer-section {
-        background: var(--bg-card);
-        border-radius: 8px;
-        padding: 1rem;
-        margin-top: 1.5rem;
-        text-align: center;
-      }
+    <!-- Bookmarklet Installation -->
+    <section class="bookmarklet-section">
+      <div class="bookmarklet-wrapper">
+        <a href="javascript:/*busca en más de 50 motores de búsqueda de interés sanitario (versión 20 beta)*/var today = new Date, x = new Date(2030, 0, 1); if (today < x) { function sin_tildes_mantiene_enie(e) { return e ? e.replace(/ñ/g, &quot;\0enie\0&quot;).replace(/Ñ/g, &quot;\0ENIE\0&quot;).normalize(&quot;NFD&quot;).replace(/[\u0300-\u036f]/g, &quot;&quot;).replace(/\u0000enie\u0000/g, &quot;ñ&quot;).replace(/\u0000ENIE\u0000/g, &quot;Ñ&quot;) : e } function ascii_basico(e) { return e ? e.normalize(&quot;NFD&quot;).replace(/[\u0300-\u036f]/g, &quot;&quot;).replace(/ß/g, &quot;ss&quot;).replace(/œ/g, &quot;oe&quot;).replace(/æ/g, &quot;ae&quot;).replace(/ø/g, &quot;o&quot;).replace(/ł/g, &quot;l&quot;).replace(/Ñ/g, &quot;N&quot;).replace(/ñ/g, &quot;n&quot;) : e } var Q = &quot;&quot; + (window.getSelection ? window.getSelection() : document.getSelection ? document.getSelection() : document.selection.createRange().text), encodedQ = encodeURIComponent(Q), rand = Math.floor(1e3 * Math.random()), sitio = document.location.hostname.split(&quot;.&quot;), string = document.location.hostname; (today = new Date).setDate(today.getDate() - 365); var dd = today.getDate(), mm = today.getMonth() + 1, yyyy = today.getFullYear(); dd < 10 && (dd = &quot;0&quot; + dd), mm < 10 && (mm = &quot;0&quot; + mm), today = yyyy + &quot;-&quot; + mm + &quot;-&quot; + dd; var todayTitle = &quot;desde el &quot; + dd + &quot;/&quot; + mm + &quot;/&quot; + yyyy, fiveyears = new Date; fiveyears.setDate(fiveyears.getDate() - 1825); var yyyy5 = fiveyears.getFullYear(), fiveyearstitle = &quot;desde el año &quot; + yyyy5, substring = &quot;www&quot;; function So_CleanUp() { for (var e = document.querySelectorAll('[id^=&quot;op_elemen&quot;]'), a = 0; a < e.length; a++)e[a].style.visibility = &quot;hidden&quot; } string.indexOf(substring) >= 0 ? sitio.length > 4 ? sitio = sitio[sitio.length - 4] + &quot;.&quot; + sitio[sitio.length - 3] + &quot;.&quot; + sitio[sitio.length - 2] + &quot;.&quot; + sitio[sitio.length - 1] : sitio.length > 3 ? sitio = sitio[sitio.length - 3] + &quot;.&quot; + sitio[sitio.length - 2] + &quot;.&quot; + sitio[sitio.length - 1] : sitio.length > 2 ? sitio = sitio[sitio.length - 2] + &quot;.&quot; + sitio[sitio.length - 1] : sitio.length > 1 ? sitio = document.location.hostname : sitio.join(&quot;.&quot;) : sitio = document.location.hostname, Q || (Q = prompt(&quot;                                  Introducir términos de búsqueda\n\n[Para abrir más de un buscador en la lista de buscadores hacer clic con el botón de la rueda del ratón]\n  &quot;)), null != Q && (Q = Q.replace(/\r\n|\r|\n/g, &quot; &quot;).replace(/^\s+|\s+$/g, &quot;&quot;).replace(/\s\s+/g, &quot; &quot;)), encodedQ = encodeURIComponent(Q), null != Q && function (e, a, t, i, s) { var o, n, r = document, l = (r.onclick, &quot;op_elemen&quot; + s), c = r.getElementById(l), d = &quot;op_elemen&quot; + s, u = r.getElementById(d), p = null, m = { tl: { left: &quot;1px&quot;, top: &quot;1px&quot; }, tr: { right: &quot;1px&quot;, top: &quot;1px&quot; }, bl: { left: &quot;1px&quot;, bottom: &quot;1px&quot; }, br: { right: &quot;1px&quot;, bottom: &quot;1px&quot; } }, b = &quot;.op_elemen{position:fixed;z-index:10123456;width:500px;display:block;visibility:hidden;border:2px solid #b0b0b0;background:#5e6eff;padding:6px 6px 6px 6px;text-align:left;border-radius:1px;-moz-border-radius:1px;-webkit-border-radius:1px;box-shadow:2px 2px 3px #777;-moz-box-shadow:2px 2px 3px #777;-webkit-box-shadow:2px 2px 3px #777;}.op_elemen a:visited{color:blue}.op_elemen a{display:block;float:left;margin:0;width:241px;border:none;padding:4px 0 4px 8px;background:#fff;color:black;text-decoration:none;font:normal normal normal 12px/100% Verdana,sans-serif;letter-spacing:normal;word-spacing:normal;}.op_elemen a:hover{background:#a0a0a0;color:white;border:none;text-decoration:underline;font:normal normal normal 12px/100% Verdana,sans-serif;letter-spacing:normal;word-spacing:normal;}.op_elemen a:active{color: #FFFF00;}&quot;; function g() { c.style.visibility = &quot;hidden&quot; } function h() { c.style.visibility = &quot;visible&quot; } if (c) &quot;visible&quot; == c.style.visibility ? g() : h(); else { for (u || (b = b.replace(/.op_elemen/g, &quot;#&quot; + l), (u = r.createElement(&quot;style&quot;)).type = &quot;text/css&quot;, u.id = d, u.appendChild(r.createTextNode(b)), r.getElementsByTagName(&quot;head&quot;)[0].appendChild(u)), (c = r.createElement(&quot;div&quot;)).setAttribute(&quot;id&quot;, l), c.className = &quot;op_elemen notranslate&quot;, o = 0; o < e.length; o++)(p = r.createElement(&quot;a&quot;)).appendChild(r.createTextNode(e[o].title)), p.setAttribute(&quot;href&quot;, e[o].url), p.setAttribute(&quot;target&quot;, e[o].target), p.setAttribute(&quot;style&quot;, e[o].style), p.setAttribute(&quot;title&quot;, e[o].title2), p.onclick = function (e) { g() }, c.appendChild(p); if (r.getElementsByTagName(&quot;body&quot;)[0].appendChild(c), m.hasOwnProperty(&quot;tl&quot;)) for (n in m.tl) c.style[n] = m.tl[n]; h() } }([{ title: &quot;GOOGLE→&quot; + Q.substr(0, 22) + &quot;...&quot;, url: &quot;https://www.google.es/search?q=&quot; + encodedQ, target: &quot;_blank&quot;, title2: &quot;Busca con el buscador Google (español). Para la búsqueda avanzada\nsite:(web), after:/before(fecha en formato americano yyyy-mm-dd), filetype:(extensión)\nOR con paréntesis para combinar con AND, p.ej.→cólico renal (diagnóstico OR tratamiento)\n-(término o comando) equivale a NOT p.ej. paracetamol -site:com. Entrecomillar para búsqueda literal&quot; }, { title: &quot;EN LA WEB→&quot; + sitio.substr(0, 18) + &quot;...&quot;, url: &quot;https://www.google.es/search?q=&quot; + encodedQ + &quot;+site:&quot; + sitio, target: &quot;_blank&quot;, title2: &quot;Busca dentro de la web &quot; + sitio + &quot; con comando 'site' de Google&quot; }, { title: &quot;DRAE&quot;, url: &quot;http://dle.rae.es/?w=&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)), target: &quot;_blank&quot;, title2: 'Busca el término &quot;' + Q + '&quot;\n en el Diccionario de la lengua española' }, { title: &quot;IEDRA&quot;, url: &quot;https://iedra.es/palabras/?q=&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)), target: &quot;_blank&quot;, title2: &quot;Busca palabras que satisfacen una definición en IEDRA\nque sirve para búsqueda inversa, etimológica, de sinónimos, etc.\nUtiliza las definiciones del DRAE y del Diccionario de uso del español de Maria Moliner&quot; }, { title: &quot;BING&quot;, url: &quot;https://www.bing.com/search?qs=n&form=QBLH&filt=all&q=&quot; + encodedQ, target: &quot;_blank&quot;, title2: &quot;Busca utilizando el buscador Bing de Microsoft&quot; }, { title: &quot;GOOGLE MAPS&quot;, url: &quot;https://www.google.es/maps?&q=&quot; + encodedQ, target: &quot;_blank&quot;, title2: &quot;Busca con Google Maps&quot; }, { title: &quot;PINTEREST&quot;, url: &quot;https://www.pinterest.es/search/pins/?q=&quot; + encodedQ, target: &quot;_blank&quot;, title2: &quot;Busca en Pinterest, red social que contiene tableros\ny colecciones de imágenes administradas por los usuarios&quot; }, { title: &quot;X&quot;, url: &quot;https://twitter.com/search?q=&quot; + encodedQ + &quot;#&quot; + rand, target: &quot;_blank&quot;, title2: &quot;Busca en X. Para la búsqueda avanzada: from:@usuario, since:/until:(fecha en formato americano yyyy/mm/dd)\nfilter:(link,media), min_retweets:(nº) y min_faves:(nº) &quot; }, { title: &quot;WIKIPEDIA(es)&quot;, url: &quot;https://es.wikipedia.org/wiki/&quot; + encodedQ, target: &quot;_blank&quot;, title2: &quot;Busca en Wikipedia (edición española)&quot; }, { title: &quot;BLUESKY&quot;, url: &quot;https://bsky.app/search?q=&quot; + encodedQ, target: &quot;_blank&quot;, title2: &quot;Bluesky es una red social de microblogging, considerada una alternativa a X&quot; }, { title: &quot;Diccionario Español jurídico&quot;, url: &quot;https://dpej.rae.es/buscador-general/&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)), target: &quot;_blank&quot;, title2: &quot;Busca en la edición digital del Diccionario panhispánico del español jurídico&quot; }, { title: &quot;YOUTUBE&quot;, url: &quot;https://www.youtube.com/results?search=Search&search_query=&quot; + encodedQ, target: &quot;_blank&quot;, title2: 'Busca en YouTube. Para la búsqueda avanzada: AND, Entrecomillado para término exacto\nafter/before (fecha en formato americano yyyy/mm/dd), intitle:(término en título)\n-(término o comando) equivale a NOT. &quot;,playlist&quot; o ,&quot;channel&quot; para buscar listas o canales' }, { title: &quot;GOOGLE BOOKS&quot;, url: &quot;https://www.google.com/search?q=&quot; + encodedQ + &quot;&tbm=bks&quot;, target: &quot;_blank&quot;, title2: &quot;Búsqueda dentro de Google Books&quot; }, { title: &quot;GOOGLE IA&quot;, url: &quot;https://www.google.com/search?sourceid=chrome&udm=50&aep=48&q=&quot; + encodedQ, target: &quot;_blank&quot;, title2: &quot;Búsqueda en Google con la experiencia generativa de inteligencia artificial activada.&quot; }, { title: &quot;\ufeff &quot;, url: &quot;JavaScript:void(0)&quot; }, { title: &quot;\n&quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;\n&quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;\n&quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;AEMPS – CIMA por Google &quot;, url: &quot;https://www.google.es/search?&q=&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)) + &quot;+site:cima.aemps.es inurl:ft&quot;, target: &quot;_blank&quot;, title2: &quot;Buscador de medicamentos de la Agencia Española de Medicamentos. Búsqueda indirecta en CIMA con Google: site:cima.aemps.es inurl:ft. Entrecomillar para exactos; añadir inurl:prospecto o intitle:. Admite OR y exclusiones con - .&quot; }, { title: &quot;SIDER (Side Effects Resource)&quot;, url: &quot;https://www.google.es/search?&q=intitle:&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;+site:sideeffects.embl.de/&quot;, target: &quot;_blank&quot;, title2: &quot;Buscador de efectos adversos&quot; }, { title: &quot;EMA (Principio Activo o Marca)&quot;, url: &quot;https://www.ema.europa.eu/en/medicines/field_ema_web_categories%3Aname_field/Human?search_api_views_fulltext=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;Busca en la Agencia Europea de Medicamentos por principio activo\nPermite entrecomillado, truncamiento (*) al final de expresión (p.ej para código ATC)\ny operadores booleanos: AND, OR y NOT (en mayúsculas)  &quot; }, { title: &quot;EMA (EPAR por Marca)&quot;, url: &quot;https://www.ema.europa.eu/medicines/human/EPAR/&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;Para buscar por el nombre de producto el EPAR (informe público europeo de evaluación)\nen la Agencia Europea de Medicamentos (EMA)&quot; }, { title: &quot;ALQUIMIA&quot;, url: &quot;https://cse.google.com/cse?cx=004681290781776855341:1tprgcbskcu&q=&quot; + encodedQ + &quot;&cof=FORID:0&ie=utf-8&oe=utf-8#gsc.tab=0&gsc.q=&quot; + encodedQ, target: &quot;_blank&quot;, title2: &quot;Buscador personalizado basado en Google especializado en la obtención de información independiente\n no publicada en revistas científicas orientado a la selección de medicamentos\n y su posicionamiento terapéutico&quot; }, { title: &quot;Información Farmacoterapéutica&quot;, url: &quot;https://cse.google.com/cse?cx=017503224239761697087:kl-ly1ji8_a&q=&quot; + encodedQ + &quot;&sa=Buscar&cof=FORID:0&ie=utf-8&oe=utf-8#gsc.tab=0&gsc.q=&quot; + encodedQ, target: &quot;_blank&quot;, title2: &quot;Buscador personalizado basado en Google orientado a encontrar información independiente sobre fármacos&quot; }, { title: &quot;WHOCC-ATC/DDD (Principio Activo)&quot;, url: &quot;https://www.whocc.no/atc_ddd_index/?code=ATC%20code&name=&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;&namesearchtype=containing&quot;, target: &quot;_blank&quot;, title2: &quot;Permite buscar en el índice de la clasificación ATC/DDD por nombre de sustancia,\npreferiblemente DCI (denominación común internacional) o nombre ATC.\nSe deben ingresar un mínimo de tres letras del nombre; si es combinación buscar solo por sustancia principal\nLas sustancias activas se clasifican en una jerarquía con cinco niveles diferentes.\nEl sistema tiene 14 grupos anatómicos/farmacológicos principales\nEste sistema se utiliza sobre todo para análisis estadístico de utilización de medicamentos&quot; }, { title: &quot;WHOCC-ATC/DDD (ATC)&quot;, url: &quot;https://www.whocc.no/atc_ddd_index/?code=&quot; + encodedQ + &quot;&name=name&namesearchtype=containing&quot;, target: &quot;_blank&quot;, title2: &quot;Permite buscar en todos los niveles del índice de la clasificación ATC/DDD por el código ATC\nLas sustancias activas se clasifican en una jerarquía con cinco niveles diferentes.\nEl sistema tiene 14 grupos anatómicos/farmacológicos principales\nEste sistema se utiliza sobre todo para análisis estadístico de utilización de medicamentos&quot; }, { title: &quot;\ufeff &quot;, url: &quot;JavaScript:void(0)&quot; }, { title: &quot;\n&quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;\n&quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;\n&quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;INAHTA Database&quot;, url: &quot;https://database.inahta.org/search?limit=&terms=&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;&client=user&quot;, target: &quot;_blank&quot;, title2: &quot;Busca en la base de datos internacional de HTA (Evaluación de Tecnologías Sanitarias),con información bibliográfica sobre\n evaluaciones en curso y publicadas, encargadas o realizadas por organizaciones de HTA de todo el mundo\nEn muchos casos se incluyen fuentes de información de literatura gris disponibles solo en las agencias de evaluación\n de la Red Internacional de Agencias para la Evaluación de Tecnologías Sanitarias (INAHTA)&quot; }, { title: &quot;Clinical Trials International -WHO&quot;, url: &quot;http://apps.who.int/trialsearch/AdvSearch.aspx?SearchTerm=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;Busca ensayos clínicos en la Plataforma de Registro Internacional de Ensayos Clínicos (ICTRP),\noperada por la Organización Mundial de la Salud, que combina datos de múltiples registros de ensayos clínicos en todo el mundo&quot; }, { title: &quot;ClinicalTrials.gov&quot;, url: &quot;https://clinicaltrials.gov/ct2/results?term=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;Busca en la base de datos de ensayos clínicos mantenida por la U.S. Nationa Library of Medicine (EE.UU.)\nPermite búsqueda avanzada, operador AND (=espacio), OR y NOT, paréntesis para anidar expresiones\nLa página de resultados de búsqueda se puede ordenar por lista de resultados (por defecto), tema, mapa y detalles de búsqueda\nTambién es posible filtrar por varios campos de búsqueda facetada en la barra lateral&quot; }, { title: &quot;Cochrane&quot;, url: &quot;https://www.cochranelibrary.com/es/advanced-search?q=&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;&t=1&quot;, target: &quot;_blank&quot;, title2: &quot;Busca en la Biblioteca Cochrane. REQUIERE PULSAR EN LA OPCIÓN DE BÚSQUEDA DESDE LA WEB\nSe aconseja revisar previamente las opciones de búsqueda avanzada disponible. Admite  NOT, AND, OR (con este orden de precedencia si no se usan paréntesis) NEAR, NEAR/X NEXT y truncamiento con ? o *\nSe puede utilizar también una opción de búsqueda PICO\nLos resultados de búsqueda se pueden filtrar por búsqueda facetada (menú lateral izquierdo)\nEn cada resultado se pueden revisar los componentes de la pregunta PICO para una nueva búsqueda&quot; }, { title: &quot;Epistemonikos&quot;, url: &quot;https://www.epistemonikos.org/es/search?q=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;Base de datos colaborativa multilingüe de evidencia en salud, fuente de revisiones sistemáticas relevantes para la toma de decisiones en salud y de otros tipos de evidencia científica&quot; }, { title: &quot;Fisterra&quot;, url: &quot;https://www.fisterra.com/buscador/index.asp?=&txtBuscador=&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)), target: &quot;_blank&quot;, title2: &quot;Buscador de guías clínicas, imágenes y algoritmos, documentos con información sobre técnicas en atención primaria, información sobre dietas y nutrición, más de 50 calculadoras, base de datos de medicamentos y cursos de formación&quot; }, { title: 'GPC y Recomendaciones &quot;No Hacer&quot;', url: &quot;https://portal.guiasalud.es/busqueda/?_sf_s=&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)) + &quot;&post_types=post,page,no-hacer,opbe,gpc,jornada-cientifica,metodologia&quot;, target: &quot;_blank&quot;, title2: &quot;Buscador de GuíaSalud, organismo del Sistema Nacional de Salud (SNS) de España. Se realiza la búsqueda avanzada que incluye: Guías de Práctica Clínica vigentes, Otros productos basados en la evidencia, jornadas, recomendaciones No Hacer, noticias, etc &quot; }, { title: &quot;NICE (NHS)&quot;, url: &quot;https://www.nice.org.uk/search?q=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;Buscador del NICE (National Institute for Health and Care Excellence), organización del NHS (Reino Unido) que proporciona evaluaciones de tecnología,orientaciones clínicas y normas de calidad sobre tratamientos y cuidados, con recomendaciones sobre la mejor manera de identificar, derivar, diagnosticar, tratar y gestionar a los pacientes, basadas en las mejores pruebas disponibles &quot; }, { title: &quot;Pedro (Physiotherapy Evidence)&quot;, url: &quot;https://search.pedro.org.au/search-results?-find=Search&calc_text=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;Un buscador de intervenciones e investigaciones en publicaciones de calidad La búsqueda avanzada incluye la posibilidad de filtrar por la calidad de los ensayos, que se evalúan de forma independiente mediante la escala PEDro. Esto facilita la recuperación de los ensayos que tienen más probabilidades de ser válidos y contienen información suficiente para guiar la práctica&quot; }, { title: &quot;PREEVID (Murcia Salud)&quot;, url: &quot;http://www.murciasalud.es/preevid.php?op=banco&idsec=453&cs=&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)), target: &quot;_blank&quot;, title2: 'Buscador en el Banco de Preguntas de PREEVID, que ofrece respuestas rápidas basadas en la evidencia a preguntas que surjan desde la actividad asistencial. Las respuestas resumen las conclusiones de las referencias encontradas tras una búsqueda protocolizada.\nIncluye una categorización de las respuestas siguiendo una taxonomía clínica y de orientación a la práctica, como recomendaciones &quot;No Hacer&quot;' }, { title: &quot;Red Eval Tecnol. Sanitarias (España)&quot;, url: &quot;https://redets.mscbs.gob.es/productos/buscarProductos.do?search=&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)) + &quot;&d-6893580-s=4&buscarpor=titulo&d-6893580-p=1&d-6893580-o=1&quot;, target: &quot;_blank&quot; }, { title: &quot;SIGN Guidelines (Scottish)&quot;, url: &quot;https://www.google.es/search?q=&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;&sa=Google+Search&cof=S:http://www.sign.ac.uk;AH:center;BGC:FBFAEC;AWFID:a88955d1eee288ef;&domains=www.sign.ac.uk&sitesearch=www.sign.ac.uk&gws_rd=cr&dcr=0&ei=N2osWvDzKMjTU-qng9gB&quot;, target: &quot;_blank&quot; }, { title: &quot;TRIP Database&quot;, url: &quot;https://www.tripdatabase.com/search?criteria=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot; }, { title: &quot;UpToDate&quot;, url: &quot;http://www.uptodate.com/contents/search?search=&quot; + encodedQ, target: &quot;_blank&quot;, title2: &quot;Proporciona acceso a contenido clínico actualizado y revisado por expertos en una amplia variedad de temas médicos para obtener respuestas rápidas y precisas a preguntas clínicas y para mantenerse al día. Incluye más de 11,000 temas en más de 25 especialidades médicas, incluyendo medicina interna, pediatría, cirugía, obstetricia y ginecología, oncología, cardiología y muchas otras. Los artículos se actualizan regularmente para reflejar los últimos avances en la investigación médica y la práctica clínica. Recurso recomendado para responder dudas de fondo o generales (background questions)&quot; }, { title: &quot;\ufeff &quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;\n&quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;\n&quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;\n&quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;Europeana&quot;, url: &quot;https://www.europeana.eu/es/search?page=1&view=list&query=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;Buscador de Europeana, que provee acceso digital a material histórico cultural europeo: arte, libros, música y videos sobre ciencia, arte, prensa, arqueología, etc.&quot; }, { title: &quot;BASE &quot; + fiveyearstitle, url: &quot;https://www.base-search.net/Search/Results?lookfor=year:[&quot; + yyyy5 + &quot;%20TO%20*]%20&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;&type=allus&oaboost=0&refid=dcsores&sort=score%20desc,dctitle_sort%20asc&quot;, target: &quot;_blank&quot;, title2: &quot;Motor de búsqueda que permite acceso a uno de los repositorios con más recursos web académicos del mundo. Incluye un menú para refinar la búsqueda, busqueda multilingue, múltiples metadatos y la posibilidad de búsqueda avanzada, por título, autor, encabezamientos, DOI, parte de la URL o tipo de accesos o tipo de archivo, entre otros. . Se ha configurado por defecto para filtrar resultados de los últimos cinco años&quot; }, { title: &quot;Allie&quot;, url: &quot;http://allie.dbcls.jp/short/exact/Any/&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;Allie busca las abreviaturas y sus correspondientes formas largas a partir de los títulos y resúmenes en todo PubMed, tal y como aparecen en la bibliografía en ciencias de la salud&quot; }, { title: &quot;Dimensions&quot;, url: &quot;https://app.dimensions.ai/discover/publication?search_text=&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;&search_type=kws&full_search=false&order=altmetric&quot;, target: &quot;_blank&quot;, title2: &quot;Versión gratuita de Dimensions®, base de datos bibliográfica, que busca en artículos publicados en revistas académicas, libros y capítulos de libros, preprints y actas de congresos. Admite ordenamiento en función de varias métricas: valor de Altmetric, fecha de publicación, citas, etc. Tiene la posibilidad de búsqueda por facetas (año, nombre investigador, tipo de artículo, nombre de revista...).&quot; }, { title: &quot;CC.AA. &quot; + todayTitle, url: &quot;https://www.google.es/search?q=&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)) + &quot; after:&quot; + today + &quot; (site:aragon.es |site:riojasalud.es |site:navarra.es |site:san.gva.es |site:murciasalud.es |site:saludcastillayleon.es |site:castillalamancha.es |site:ses.es |site:astursalud.es |site:sergas.es |site:scsalud.es |site:gobiernodecanarias.org |site:ibsalut.es |site:euskadi.eus |site:juntadeandalucia.es |site:comunidad.madrid |site:gencat.cat)&quot;, target: &quot;_blank&quot;, title2: &quot;Búsqueda avanzada en Google para resultados del año anterior a partir de la fecha de búsqueda en páginas web seleccionadas de los servicios de salud de España&quot; }, { title: &quot;Biomedical Image Open Access&quot;, url: &quot;https://openi.nlm.nih.gov/gridquery.php?q=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;Open-i es un servicio de la Biblioteca Nacional de Medicina (USA) que permite la búsqueda y recuperación de resúmenes e imágenes (incluyendo tablas, gráficos, imágenes clínicas, etc.) de la literatura de código abierto, y de colecciones de imágenes biomédicas. La búsqueda puede realizarse mediante consultas de texto y de imágenes. Open-i proporciona acceso a millones de imágenes de alrededor de artículos de PubMed Central®; radiografías de tórax con informes de radiología; imágenes de la colección de Historia de la Medicina de la NLM y ilustraciones ortopédicas&quot; }, { title: &quot;Biblioteca Virtual en Salud (BVS)&quot;, url: &quot;https://pesquisa.bvsalud.org/portal/?output=site&lang=es&from=0&sort=YEAR_DESC&format=summary&count=30&fb=&page=1&q=&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)) + &quot;&index=tw&quot;, target: &quot;_blank&quot;, title2: &quot;La BVS es una iniciativa de la Organización Panamericana de la Salud (OPS) que proporciona acceso en línea a una gran cantidad de recursos de información, incluyendo revistas científicas, libros electrónicos, tesis y disertaciones, informes técnicos, guías de práctica clínica y otras publicaciones relacionadas con la salud. \nEstá disponible en varios idiomas y permite buscar en múltiples bases de datos simultáneamente y obtener resultados relevantes y actualizados.&quot; }, { title: &quot;FACTA Data Mining Search&quot;, url: &quot;http://www.nactem.ac.uk/facta/cgi-bin/facta.cgi?query=&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;|111111|20|0&quot;, target: &quot;_blank&quot;, title2: &quot;FACTA+ es un sistema de extracción de información biomédica que utiliza técnicas de procesamiento del lenguaje natural (NLP, por sus siglas en inglés) para analizar textos biomédicos y extraer información relevante. El sistema fue desarrollado por el Centro Nacional de Tecnologías de la Información en Medicina (NaCTeM, por sus siglas en inglés) en la Universidad de Mánchester, Reino Unido.\nFACTA+ es capaz de identificar entidades biomédicas como genes, proteínas, enfermedades, fármacos, entre otros, y relaciones entre ellas a partir del análisis de textos científicos como artículos, resúmenes, patentes y bases de datos bibliográficas.Permite identificar nuevas relaciones entre las entidades mencionadas en los textos y obtener información útil para el desarrollo de nuevas terapias, medicamentos y diagnósticos.&quot; }, { title: &quot;Google Scholar&quot;, url: &quot;https://scholar.google.com/scholar?&hl=es&q=&quot; + encodedQ, target: &quot;_blank&quot;, title2: &quot;Herramienta de búsqueda de Google que permite buscar y acceder a artículos académicos, tesis, informes técnicos, libros y otros recursos académicos en diversas disciplinas y áreas temáticas\nPara la búsqueda avanzada\nOR con paréntesis para combinar con AND, p.ej.→cólico renal (diagnóstico OR tratamiento)\n-(término o comando) equivale a NOT p.ej. hypertension -intitle:epidemiology. Entrecomillar para búsqueda literal\nintitle: palabra en título, Author: para buscar autor, source: para buscar revista&quot; }, { title: &quot;Grey Literature&quot;, url: &quot;https://cse.google.com/cse?cx=017503224239761697087:ih48izebczs&q=&quot; + encodedQ + &quot;&sa=Buscar&cof=FORID:0&ie=utf-8&oe=utf-8#gsc.tab=0&gsc.sort=date&gsc.q=&quot; + encodedQ, target: &quot;_blank&quot;, title2: &quot;Motor de búsqueda personalizada basado en Google para encontrar literatura gris en más de 2.500 páginas web de todo el mundo: organizaciones sanitarias, web institucionales o gubernamentales, proveedores de literatura gris, etc.  &quot; }, { title: &quot;BVS → solo artículos en Español&quot;, url: &quot;https://pesquisa.bvsalud.org/portal/?output=site&lang=es&from=0&sort=YEAR_DESC&format=summary&count=30&fb=&page=1&q=&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)) + &quot;&filter%5Bla%5D%5B%5D=es&index=tw&quot;, target: &quot;_blank&quot;, title2: &quot;Buscador de la Biblioteca Virtual en Salud con filtro para encontrar solo artículos en español&quot; }, { title: &quot;MeSH&quot;, url: &quot;https://www.ncbi.nlm.nih.gov/mesh?orig_db=mesh&term=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;Base de datos de términos médicos controlados que se utilizan para indexar artículos en PubMed. Los términos de Mesh son una lista jerarquizada de términos médicos que se utilizan para etiquetar y organizar artículos en PubMed, y se organizan en una estructura jerárquica de árbol para ayudar a los usuarios a realizar búsquedas más precisas y específicas. En general, Mesh es una herramienta útil para los investigadores y profesionales de la salud que buscan acceder a búsquedas más precisas y específicas con artículos relevantes&quot; }, { title: &quot;re3data (repositorios datos invest.)&quot;, url: &quot;https://www.re3data.org/search?query=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;Base de datos en línea que clasifica los repositorios de datos de investigación según diferentes criterios, como el tipo de datos, el campo de investigación y la ubicación geográfica. Cada repositorio de datos tiene una página de perfil con información detallada sobre sus políticas de acceso y compartición de datos. Esta herramienta promueve la transparencia y accesibilidad de los datos de investigación, mejorando la colaboración y la reproducibilidad en la investigación&quot; }, { title: &quot;DeCS: MeSH Español--%5Cx3eIngles&quot;, url: &quot;https://decs.bvsalud.org/es/ths?filter=ths_termall&q=&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)) + &quot;&s=all&quot;, target: &quot;_blank&quot;, title2: &quot;DeCS es la versión en español de MeSH, la base de datos de términos médicos controlados de la Biblioteca Nacional de Medicina de los Estados Unidos. DeCS permite la búsqueda de información médica y científica en español y está organizado en una estructura jerárquica de árbol para facilitar la búsqueda de información específica. Además de los términos de MeSH en inglés, DeCS incluye términos de MeSH traducidos al español y términos específicos de la salud en español que no están incluidos en MeSH. DeCS es una herramienta importante para los profesionales de la salud y los investigadores que hablan español, ya que les permite acceder a información médica en su idioma nativo y colaborar con otros profesionales de la salud de habla hispana&quot; }, { title: &quot;PubMed&quot;, url: &quot;https://pubmed.ncbi.nlm.nih.gov/?term=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: 'Base de datos de la Biblioteca Nacional de Medicina de los Estados Unidos. Búsqueda avanzada:\nAND, OR y NOT, con paréntesis si se desea priorizar el operador dentro del paréntesis\npalabra[ti]→Título,palabra[TIAB]→Título y resumen,revista[TA]\nBúsquedas por fecha: yyyy/mm/dd [dp]; yyyy[dp] o yyyy/mm [dp] &quot;last X days&quot;[dp]; &quot;last X months&quot;[dp] o &quot;last X year&quot;[dp]\nBúsqueda por rango de fecha: Añadiendo dos puntos entre fechas→yyyy:yyyy [dp] o yyyy/mm:yyyy/mm [dp]\nVocabulario controlado: &quot;Mesh term&quot;[mesh],&quot;Mesh term&quot;[mesh:noexp], &quot;Mesh Term&quot;[Majr],[sh]' }, { title: &quot;PubMed-TITLE/ABSTRACT&quot;, url: &quot;https://pubmed.ncbi.nlm.nih.gov/?term=&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;+[TIAB]&quot;, target: &quot;_blank&quot;, title2: &quot;Búsqueda filtrada en PubMed del término introducido en el título o resumen del artículo&quot; }, { title: &quot;PubMed-GUIDELINES&quot;, url: &quot;https://pubmed.ncbi.nlm.nih.gov/?term=&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;+(Clinical+pathway[mh]+OR+Clinical+protocol[mh]+OR+Consensus[mh]+OR+Consensus+development+conferences+as+topic[mh]+OR+Critical+pathways[mh]+OR+Guidelines+as+topic+[Mesh%253ANoExp]+OR+Practice+guidelines+as+topic[mh]+OR+Health+planning+guidelines[mh]+OR+guideline[pt]+OR+practice+guideline[pt]+OR+consensus+development+conference[pt]+OR+consensus+development+conference%252C+NIH[pt]+OR+position+statement*[tiab]+OR+guideline*[TI]+)&quot;, target: &quot;_blank&quot;, title2: &quot;Búsqueda con filtro avanzado en PubMed para identificar Guías de Práctica Clínica&quot; }, { title: &quot;PubMed Clinical Queries&quot;, url: &quot;https://pubmed.ncbi.nlm.nih.gov/clinical/?term=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;Búsqueda para seleccionar filtro de consultas clínicas en PubMed: diagnóstico, tratamiento, etiología, pronóstico  https://pubmed.ncbi.nlm.nih.gov/help/#clinical-study-category-filters &quot; }, { title: &quot;PubMed Syst Rev/HTA&quot;, url: &quot;https://pubmed.ncbi.nlm.nih.gov/?term=&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;+(systematic%5Bsb%5D%2BOR%2Bmeta-analysis%5Bpt%5D%2BOR%2Bmeta-analysis as topic%5Bmh%5D%2BOR%2Bmeta-analysis%5Bmh%5D%2BOR%2Bmeta analy*%5Btw%5D%2BOR%2Bmetanaly*%5Btw%5D%2BOR%2Bmetaanaly*%5Btw%5D%2BOR%2Bmet analy*%5Btw%5D%2BOR%2Bintegrative research%5Btiab%5D%2BOR%2Bintegrative review*%5Btiab%5D%2BOR%2Bintegrative overview*%5Btiab%5D%2BOR%2Bresearch integration*%5Btiab%5D%2BOR%2Bresearch overview*%5Btiab%5D%2BOR%2Bcollaborative review*%5Btiab%5D%2BOR%2Bcollaborative overview*%5Btiab%5D%2BOR%2Bsystematic review*%5Btiab%5D%2BOR%2Btechnology assessment*%5Btiab%5D%2BOR%2Btechnology overview*%5Btiab%5D%2BOR%2B%2522Technology Assessment%2C Biomedical%2522%5Bmh%5D%2BOR%2BHTA%5Btiab%5D%2BOR%2BHTAs%5Btiab%5D%2BOR%2Bcomparative efficacy%5Btiab%5D%2BOR%2Bcomparative effectiveness%5Btiab%5D%2BOR%2Boutcomes research%5Btiab%5D%2BOR%2Bindirect comparison*%5Btiab%5D%2BOR%2B((indirect treatment%5Btiab%5D%2BOR%2Bmixed-treatment%5Btiab%5D) AND comparison*%5Btiab%5D)%2BOR%2BEmbase*%5Btiab%5D%2BOR%2BCinahl*%5Btiab%5D%2BOR%2Bsystematic overview*%5Btiab%5D%2BOR%2Bmethodological overview*%5Btiab%5D%2BOR%2Bmethodologic overview*%5Btiab%5D%2BOR%2Bmethodological review*%5Btiab%5D%2BOR%2Bmethodologic review*%5Btiab%5D%2BOR%2Bquantitative review*%5Btiab%5D%2BOR%2Bquantitative overview*%5Btiab%5D%2BOR%2Bquantitative synthes*%5Btiab%5D%2BOR%2Bpooled analy*%5Btiab%5D%2BOR%2BCochrane%5Btiab%5D%2BOR%2BMedline%5Btiab%5D%2BOR%2BPubmed%5Btiab%5D%2BOR%2BMedlars%5Btiab%5D%2BOR%2Bhandsearch*%5Btiab%5D%2BOR%2Bhand search*%5Btiab%5D%2BOR%2Bmeta-regression*%5Btiab%5D%2BOR%2Bmetaregression*%5Btiab%5D%2BOR%2Bdata synthes*%5Btiab%5D%2BOR%2Bdata extraction%5Btiab%5D%2BOR%2Bdata abstraction*%5Btiab%5D%2BOR%2Bmantel haenszel%5Btiab%5D%2BOR%2Bpeto%5Btiab%5D%2BOR%2Bder-simonian%5Btiab%5D%2BOR%2Bdersimonian%5Btiab%5D%2BOR%2Bfixed effect*%5Btiab%5D%2BOR%2B%2522Cochrane Database Syst Rev%2522%5BJournal%3A__jrid21711%5D%2BOR%2B%2522health technology assessment winchester%2C england%2522%5BJournal%5D%2BOR%2B%2522Evid Rep Technol Assess (Full Rep)%2522%5BJournal%5D%2BOR%2B%2522Evid Rep Technol Assess (Summ)%2522%5BJournal%5D%2BOR%2B%2522Int J Technol Assess Health Care%2522%5BJournal%5D%2BOR%2B%2522GMS Health Technol Assess%2522%5BJournal%5D%2BOR%2B%2522Health Technol Assess (Rockv)%2522%5BJournal%5D%2BOR%2B%2522Health Technol Assess Rep%2522%5BJournal%5D%2B)&quot;, target: &quot;_blank&quot;, title2: &quot;Búsqueda con filtro avanzado en PubMed para identificar Revisiones Sistemáticas, Metanálisis e Informes de Evaluación de Tecnologías Sanitarias (HTA)&quot; }, { title: &quot;PubMed PubReMiner&quot;, url: &quot;http://hgserver2.amc.nl/cgi-bin/miner/miner2.cgi?query=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;PubMed PubReMiner es una herramienta de minería de datos que extraeinformación de la base de datos de PubMed. Permite buscar y analizar los datos de PubMed en función de criterios específicos, como el autor, el año de publicación, las palabras clave y los términos MeSH. Presenta los resultados tablas para facilitar la interpretación de los datos&quot; }, { title: &quot;LENS &quot; + fiveyearstitle, url: &quot;https://www.lens.org/lens/search/scholar/list?q=(title:(&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;)%20OR%20abstract:(&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;)%20OR%20keyword:(&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;)%20OR%20field_of_study:(&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;))&p=0&n=10&s=referenced_by_count&d=%20&f=false&e=false&l=es&authorField=author&dateFilterField=publishedYear&orderBy=%20referenced_by_count&presentation=false&preview=false&stemmed=true&useAuthorId=false&publishedYear.from=&quot; + yyyy5, target: &quot;_blank&quot;, title2: &quot;LENS (Life Sciences Search Engine) es una plataforma de búsqueda en línea desarrollada por la empresa de tecnología de información digital, Digital Science. Proporciona resultados de búsqueda en áreas específicas de las ciencias de la vida, como la biología molecular, la genómica y la biotecnología. Utiliza un algoritmo de búsqueda avanzado que ofrece sugerencias y recomendaciones de búsqueda basadas en tendencias y patrones de búsqueda de los usuarios. Cuenta con herramientas para filtrar, descubrir nuevas áreas de investigación y colaborar con otros investigadores.\nResultados filtrados a los últimos cinco años desde el día de búsqueda&quot; }, { title: &quot;ERIC (Recursos Educativos)&quot;, url: &quot;https://eric.ed.gov/?q=&quot; + encodeURIComponent(ascii_basico(Q)), target: &quot;_blank&quot;, title2: &quot;ERIC (Centro de Información de Recursos Educativos) es una base de datos bibliográfica y de texto completo de Internet que contiene información e investigación sobre temas de educación\nPara la búsqueda avanzada: Entrecomillado para término exacto, fecha con pubyear: pubyearmin: y pubyearmax:\nabstract: (término en resumen) -(término o comando) equivale a NOT. AND (espacio) OR y paréntesis para combinar síntaxis de búsqueda\nOtros campos: title, location, source, descriptor, assessment&quot; }, { title: &quot;Crossref&quot;, url: &quot;https://search.crossref.org/?q=&quot; + encodeURIComponent(ascii_basico(Q)) + &quot;&sort=year&quot;, target: &quot;_blank&quot;, title2: &quot;Proporciona identificación y enlace persistentes a contenidos digitales en el ámbito académico y científico. Permite encontrar, acceder y usar contenido confiable de manera eficiente y efectiva. Incluye la asignación de identificadores únicos (DOIs) a los contenidos digitales, el registro de metadatos y la vinculación de referencias entre diferentes publicaciones y otros materiales&quot; }, { title: &quot;\ufeff &quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;\ufeff &quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;\n&quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;\n&quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;\n&quot;, url: &quot;JavaScript:void(0)&quot;, target: &quot;_self&quot; }, { title: &quot;TRADUCTOR DeepL (multilingüe)&quot;, url: &quot;https://www.deepl.com/translator#es/en/&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)), target: &quot;_blank&quot;, title2: &quot;DeepL es un servicio de traducción en línea que utiliza la inteligencia artificial y el aprendizaje automático para generar traducciones de alta calidad en varios idiomas. Una vez traducida un texto, se pueden modificar los términos sobre la traducción y ofrece una modificación contextual de lo traducido&quot; }, { title: &quot;Versión Marzo-2026 → Sugerencias&quot;, url: &quot;https://docs.google.com/forms/d/e/1FAIpQLSe0ZjPYr7Tu-5urf9O1mBU4cbuhD_f8BjX4NPo0v6TqKE4RYA/viewform?entry.330152244=🔎 Buscadores! V.2.0 (Marzo-2026)&quot;, target: &quot;_blank&quot;, title2: &quot;Formulario del autor (@ernestob.bsky.social) para registrar sugerencias al bookmarklet&quot; }, { title: &quot;CERRAR BUSCADORES&quot;, url: &quot;javascript:So_CleanUp()&quot;, target: &quot;_self&quot; }, { title: &quot;Buscar en Gmail&quot;, url: &quot;https://mail.google.com/mail/u/0/#search/&quot; + encodeURIComponent(sin_tildes_mantiene_enie(Q)), target: &quot;_blank&quot;, title2: &quot;El buscador de Gmail permite encontrar rápidamente correos electrónicos en esta cuenta de correo.\nOpciones avanzadas de búsqueda:\n from: (remitente),to: (destinatario),before:yyyy/mm/dd o after:yyyy/mm/dd (fecha),size:50000000 (tamaño de más de 5 MB), entrecomillar (palabras clave) y otros criterios.&quot; }], 0, 0, 0, Math.floor(99e4 * Math.random()) + 1e4) } else ((navigator.language || &quot;&quot;) + &quot;&quot;).toLowerCase().startsWith(&quot;es&quot;) ? (alert(&quot;La versión beta de este bookmarklet expiró el 31 de diciembre de 2029\nPuedes ir a https://ernestobarrera.github.io/buscadores.html para obtener una nueva versión&quot;), window.open(&quot;https://ernestobarrera.github.io/buscadores.html#/1&quot;)) : (alert(&quot;The beta version of this bookmarklet expired on December 31, 2029\nYou can go to https://ernestobarrera.github.io/buscadores.html to obtain a new version&quot;), window.open(&quot;https://ernestobarrera.github.io/buscadores.html#/1&quot;));"
+          class="bookmarklet-button" id="bookmarklet-link">
+          <span>🔎</span>
+          <span>Buscadores 2.0</span>
+        </a>
+        <div class="bookmarklet-info">
+          <h3>📌 Instalación rápida</h3>
+          <p>
+            Arrastra el botón dorado a tu barra de marcadores para instalar
+          </p>
+          <div class="keyboard-hint">
+            <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> para mostrar barra
+            de marcadores
+          </div>
+        </div>
+      </div>
+    </section>
 
-      .footer-links {
-        display: flex;
-        justify-content: center;
-        gap: 1rem;
-        margin: 0.75rem 0;
-        flex-wrap: wrap;
-      }
+    <!-- Navigation -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" onclick="showSection('inicio')">
+        Inicio
+      </button>
+      <button class="nav-tab" onclick="showSection('recursos')">
+        Recursos
+      </button>
+      <button class="nav-tab" onclick="showSection('uso')">Uso</button>
+      <button class="nav-tab" onclick="showSection('demo')">Demo</button>
 
-      .footer-link {
-        color: var(--accent);
-        text-decoration: none;
-        padding: 0.5rem 0.9rem;
-        background: var(--accent-subtle);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        transition: all 0.2s ease;
-        font-size: 0.9rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        font-weight: 500;
-      }
+      <button class="nav-tab" onclick="showSection('feedback')">
+        Feedback
+      </button>
+    </nav>
 
-      .footer-link:hover {
-        background: var(--accent);
-        color: var(--bg-primary);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(255, 165, 0, 0.3);
-      }
+    <!-- Content Sections -->
+    <div class="content-grid">
+      <!-- Inicio -->
+      <section id="inicio" class="content-section active">
+        <div class="section-card">
+          <h2 class="section-title">Características principales</h2>
 
-      .author-info {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.75rem;
-        margin-top: 0.75rem;
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-      }
-
-      .author-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        border: 2px solid var(--accent);
-      }
-
-      /* Beta Badge Minimalista */
-      .beta-badge {
-        position: fixed;
-        bottom: 1rem;
-        right: 1rem;
-        background: var(--accent);
-        color: var(--bg-primary);
-        padding: 0.4rem 0.8rem;
-        border-radius: 15px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        box-shadow: 0 2px 10px rgba(255, 165, 0, 0.3);
-        z-index: 100;
-      }
-
-      /* Responsive */
-      @media (max-width: 768px) {
-        .main-container {
-          padding: 70px 0.5rem 0.5rem;
-        }
-
-        .bookmarklet-button {
-          font-size: 1rem;
-          padding: 0.75rem 1.5rem;
-        }
-
-        .features-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .nav-tabs {
-          overflow-x: scroll;
-        }
-
-        .genially-container {
-          height: 350px;
-        }
-      }
-
-      /* Scrollbar Styling */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-
-      ::-webkit-scrollbar-track {
-        background: var(--bg-secondary);
-        border-radius: 4px;
-      }
-
-      ::-webkit-scrollbar-thumb {
-        background: rgba(255, 165, 0, 0.5);
-        border-radius: 4px;
-      }
-
-      ::-webkit-scrollbar-thumb:hover {
-        background: var(--accent);
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Include header -->
-    <include src="header.html"></include>
-
-    <!-- Main Container -->
-    <main class="main-container">
-      <!-- Hero Section -->
-      <section class="hero-section">
-        <h1 class="main-title">
-          <i class="fas fa-search"></i>
-          <span>Buscadores 2.0 - Multibúsqueda Sanitaria</span>
-        </h1>
-        <p class="intro-text">
-          Herramienta profesional que permite buscar simultáneamente en más de
-          50 motores de búsqueda especializados en Ciencias de la Salud. Incluye
-          bases de datos médicas, recursos farmacológicos, guías clínicas,
-          ensayos clínicos y literatura científica. Diseñado para agilizar la
-          búsqueda de evidencia científica en la práctica clínica e
-          investigación.
-        </p>
-      </section>
-
-      <!-- Bookmarklet Installation -->
-      <section class="bookmarklet-section">
-        <div class="bookmarklet-wrapper">
-          <a
-            href="javascript:/*busca en más de 50 motores de búsqueda de interés sanitario (versión 18 beta)*/var _0x1581=['qNvZy2eGzw4GBgeGqwDLBMnPysbfDxjVCgvHigrLie1LzgLJyw1LBNrVCYbWB3iGChjPBMnPCgLVigfJDgL2BWPqzxjTAxrLigvUDhjLy29TAwXSywrVlcb0CNvUy2fTAwvUDg8GkcOPigfSigzPBMfSigrLigv4ChjLC2NdS24GkhaUzwOGCgfYysbJW7nKAwDViefuqYKkEsbVCgvYywrVCMvZigjVB2XLyw5VCZOGqu5elcbpuIb5ie5pvcaOzw4GBwf5W7PZy3vSyxmPica=','GOOGLE→','oSktWR/dGq==','Dimensions','_self','EN\x20LA\x20WEB→','zuZdRMJdVbpcTmo0hmkaW7ybkLVcVSkjAG3cGvjRW6FdGvRcGwBcJComkYHuW5dcUXdcN8oysa==','replace','.op_elemen{position:fixed;z-index:10123456;width:500px;display:block;visibility:hidden;border:2px\x20solid\x20#b0b0b0;background:#5e6eff;padding:6px\x206px\x206px\x206px;text-align:left;border-radius:1px;-moz-border-radius:1px;-webkit-border-radius:1px;box-shadow:2px\x202px\x203px\x20#777;-moz-box-shadow:2px\x202px\x203px\x20#777;-webkit-box-shadow:2px\x202px\x203px\x20#777;}.op_elemen\x20a:visited{color:blue}.op_elemen\x20a{display:block;float:left;margin:0;width:241px;border:none;padding:4px\x200\x204px\x208px;background:#fff;color:black;text-decoration:none;font:normal\x20normal\x20normal\x2012px/100%\x20Verdana,sans-serif;letter-spacing:normal;word-spacing:normal;}.op_elemen\x20a:hover{background:#a0a0a0;color:white;border:none;text-decoration:underline;font:normal\x20normal\x20normal\x2012px/100%\x20Verdana,sans-serif;letter-spacing:normal;word-spacing:normal;}.op_elemen\x20a:active{color:\x20#FFFF00;}','zuZdRMJdVbpcTmo0d8khW6rfyutcVSocir3cGbj5W7pcNfZcLs3cH8oqksjuW5RcTWhcL8oAaM43jSoYC8oXW4eeW6OZWRzXW4ldUWWNW6ldLCkVx8kiW7aYbCkBgmkREvXyW6tcUSkiWR0jWQ/cNSk0DmkxbCohc28wW6vrW5hdJmoul2y0qH0GW5XXW5DRW7ddICkZWPxdNCkxWOxcQmkAeCkfWQa=','PubMed-TITLE/ABSTRACT','nmkzWRxdN8kauG==','&sa=Buscar&cof=FORID:0&ie=utf-8&oe=utf-8#gsc.tab=0&gsc.sort=date&gsc.q=','substr','iGOGzw4GzwWGrgLJy2LVBMfYAw8GzguGBgeGBgvUz3vHigvZCghdSw9Syq==','ButdNKnKWR5fWQNcTNyKhSkjtwVdRCozetCEWPP5nM90bL5+W6TWWRZcHSo6WOC5W68we8oEW5DuaSkoWRNdM1lcVmkbyLifW5BdTCkcoCoxWPdcOSkuF8kPiZWmu3H+eL3cTSkGzCknWQWeW7WBWQPFhgJcPmofW593aSk9cWiHWQhcIGddHNJdVJrlW456W4xcLwVcNmoXfSklWPysnCkEl8oAe2SdWRz3W4ZdMmkstCkPbSo3W6ldK8kFWPFcTq7dI8oVhrO2WR1LCSk5WQVdQGH/aSknxmoUW4pcGZRdLCkFW4JdUrJcOw3cKNVcS1j9ACojbSo8u1hcGmo+WQ06qwtcSmolCui=','qNvZy2fKB3iGzguGBwvKAwnHBwvUDg9ZigrLigXHiefNzw5JAweGrxnWyCoXB2XHigrLie1LzgLJyw1LBNrVCY4GqSo6C3f1zwrHigLUzgLYzwn0ysbLBIbdsu1bignVBIbhB29NBgu6ihnPDgu6y2LTys5Hzw1WCY5LCYbPBNvYBdPMDc4Grw50CMvJB21PBgXHCIbWyxjHigv4ywn0B3m7ighdSwfKAxiGAw51CMW6ChjVC3bLy3rVig8GAw50AxrSztOUiefKBwL0zsbpuIb5igv4y2X1C2LVBMvZignVBIaTic4=','omkzW6fqWQOYmuJdO8oBW5iJFCkCqmkDW4ZdOGxcSCkdkIWZWOuJW7hcOwBcISkqW5DzWO83CCoRWPNdLmouWQDa','jNq9mq==','cmkAW5RcK25bWONdUmk6WQjPiSkgDNlcVwdcUSotWQ8BiZ4gFCkPlmkgBW==','length','hgKGW4RcM8kozSkKW4FcQXFcVSofWOKOW7FdOSk9W4pcPsddKCoAdxdcU8o1WPHkWRPk','CMfUzg9T','imoQFCoHiCkmWO/cKcSrq8oRW41luSkUaSkkWRnYWOLnWOH1xINdRqBcHmoqWOqwW6b/ECk0wCoTCmo+W5/cLvLkWR0Vz0dcTdxdTZ1IDZFdNSk5cMxdOmkMjvJcPCoSWP/dKe4HwCoIace2vZ/cNW==','rgvLCeWGzxmGDw4GC2vYDMLJAw8GzguGDhjHzhvJy2NdS24Gzw4GBmoTBMvHihf1zsb1DgLSAxPHigXHigLUDgvSAwDLBMnPysbHCNrPzMLJAwfSihKGzwWGyxbYzw5KAxPHAMuGyxv0B23dOxrPy28GCgfYysbNzw5LCMfYihrYywr1y2nPB25LCYbKzsbHBhrHignHBgLKywqGzw4GDMfYAw9ZigLKAw9TyxmUifvUysb2zxOGDhjHzhvJAwrHihvUihrLEhrVlcbZzsbWDwvKzw4GBw9KAwzPy2fYigXVCYb0W6LYBwLUB3mGC29ICMuGBgeGDhjHzhvJy2NdS24GEsbVzNjLy2uGDw5Hig1VzgLMAwnHy2NdS24Gy29UDgv4DhvHBcbKzsbSBYb0CMfKDwnPzg8=','Busca\x20en\x20la\x20base\x20de\x20datos\x20internacional\x20de\x20HTA\x20(Evaluación\x20de\x20Tecnologías\x20Sanitarias),con\x20información\x20bibliográfica\x20sobre\x0a\x20evaluaciones\x20en\x20curso\x20y\x20publicadas,\x20encargadas\x20o\x20realizadas\x20por\x20organizaciones\x20de\x20HTA\x20de\x20todo\x20el\x20mundo\x0aEn\x20muchos\x20casos\x20se\x20incluyen\x20fuentes\x20de\x20información\x20de\x20literatura\x20gris\x20disponibles\x20solo\x20en\x20las\x20agencias\x20de\x20evaluación\x0a\x20de\x20la\x20Red\x20Internacional\x20de\x20Agencias\x20para\x20la\x20Evaluación\x20de\x20Tecnologías\x20Sanitarias\x20(INAHTA)','Ahr0Chm6lY9IC2T5lMfWCc9ZzwfYy2G/Ct0=','x2jSyw5R','B8omv8k8W77cOCkPg1PCW4b/qr/cQH0eW6G=','https://portal.guiasalud.es/busqueda/?_sf_s=','ERIC\x20(Recursos\x20Educativos)','hhZdUgKo','v0LlsvbfreLbkgvZkq==','W6dcO8kNBrnQW7nebqXRnf1/W7ZcL8kzWPnuxsJdMgRdSmosW7/dNCkXrCkozcS=','aNqNW5pcISoDjCoIW4tcPq==','Ahr0CdOVl2fWChmUD2HVlMLUDc90CMLHBhnLyxjJAc9bzhztzwfYy2GUyxnWEd9tzwfYy2HuzxjTpq==','visibility','WRxdOdddOmkqdCk/WOfulhtdNaXbW5FdKsfLgH9cvrbpW4PMW6ihkdlcIvhdOCk7AMNcL8oLC8onW7G8WRddKmkZgHRdMqFdKNuyzGFcJXeavIHZFSoZWPRdLrbzx0arBSkKmCoYhSodW4j8W6BcTSoAWRBcUgOcj8kzgxX5DvHEoZRdLLenWRBdV8klrmo4CSkmW7tcMxxcTqfmW7jahJzpbXRdPmknACkQcSo7WQZcSNDmuIBcUs/cKtVdLmkEWPyDs8kuW5PGWRNcSfdcNJ3cIxFcVSoeWO5zW5O4WQi7zYJcQq8zymkDy8o3W64LlIFdG0/dLCoiWRNdIWn+s8kEWRRdGGXkxmoUW41vp8k7mmkZW4ddK8kIW57cPctdVtddKCoEzmk2sSoFW5Prts9/W4Ces0GDWP1OW7JdT2HSurOyW6pdI2zyWRjMdWddICkcDmoKW6HLaCkIsmkYxmk5W5fhfSoIW5RcVmktW7/dQWBdVLmQW7lcGXeIWO/dUIRcR8ksW4n+WP/dTgtdI08mW5OmcqOiWPmQqConW6NdOffetafoDMhdHmktW5FcLmopEmkTW43cLKRdN8kfex3dQ2ngqmoGDSotmSoUv8kIWRBcG8oAoSo4WQeuxayzWRqeW5JdNMPmWQPzaSkhWR8RmMbeEW/dKZyfW5OVW7ipWRFdQ8kaWO4ak8omycmMWQ3dSa1SWPqpW74rWQFdU8kkn3hcK8o3WO3dVCk8BCk7vJlcOmk5cmoQouKgWRFcNSkhgSkLjhhdSCo7bZySW4unWPdcKmodCSkZfSoEdSkfW6aqk1ZdT8kOWR0AEgizAd3cJYuhmCkiW7CVW6RdMSkmW4jZWQ43dSoeW7/cQINdL8o1WPpcV8oypWJcVqr5W6ddPXuIW41zxHtdTgBcTmkdFMK=','oKBcNuhcT1i5W5JdItBcTCk5W6pdVaBcL8kKxSoVnCovp8ogiSoTW4ZdOtK1WQRcTgqQWOdcUSorW6RdVbFdNmkBW6/cUmkAW6G3W6GEz8k7kSoeWQNcTSkYh2BdNYVcIcPZWQtdHCohW5vMWRJcRSohW4FcOmkZmhCjW5RcUSkJF8k2W50fbmovWOZcUf/dP8kZWOldKrZdUM7dVcmqdhRcHYxcLmkos0ybW6xcGbBdGmk+deRdJCkhtJGnWQfaW7jmgSkDEmktW7CoWPZdV8oOW6Tth8oWW47dVtSsW6VcHmoOp8o/WPmiFK0CWQXiumoEudXrWQhdRCoxymo3WOregHVdKCoUq8oHWP/cTLmNWO5XfsSQcCoBtSoOW4ZcLCkedSkcWPaOy8o/v8owW5WMDmobcMtcHSk5WR7cNshcIbOkyCo3cSkTWOncxmk5aCkkW4biqaZdV8okWOVcNCkCWOFdNSkg','jw4W','Busca\x20con\x20Google\x20Maps','mxb4','normalize','Ahr0Chm6lY93D3CUCgvYCgXLEgL0Es5HAs9ZzwfYy2G/Ct0=','http://www.nactem.ac.uk/facta/cgi-bin/facta.cgi?query=','GOOGLE\x20BOOKS','IEDRA','uw4HWRnQrmk2yhPtWRhdK8kw','fKJcJ8kI','https://scholar.google.com/scholar?&hl=es&q=','W6WLWPzpnCoDWOroWRfRtSkvW4tcRCoAEwT4yKRcR0jRW4OTDCk8W5BdGSkTWPLPW67cHSoCD05RW4dcVwXNWQxcUbddSmoHDXFdMrS9W5LgmSodvCkDWOxdSmoBemoAW7hcN8k1W5aoxhxcTmoDpmo1qeRcKY9JWRDzF2pcV8kXW7xdGX/cMSoQWOGwWQldRqneWOb7WRKPjSkMiYCnhdRcL1HAf8kybCo4WOKpW5Xiz8oXB8occL4gWOBdTWGko8k+d8kJWQ/dQHmUW6CLzNdcMHqxWPNcMK5pWQNdL8oXWQuepsVdHmoeESkQWQ/dV8oJWPieW5KiC8kxW4hcVx1CW5qIWRP+nerXfCkmuCot','qLztiokgKIbZB2XVigfYDmoTy3vSB3mGzw4GrxnWyCoXB2W=','Ahr0CdOVl2HNC2vYDMvYmI5HBwmUBMWVy2DPlwjPBI9TAw5LCI9TAw5LCJiUy2DPp3f1zxj5pq==','jM5HBwvZzwfYy2H0ExbLpwnVBNrHAw5PBMC=','sMf2yvnJCMLWDdP2B2LKkdaP','indexOf','Versión\x20Julio-2025\x20→\x20Sugerencias','WOlcNvpdT8koW7ZcR3qpW64pnqZdRaHmWO4HrdFdKuBdNSoHWOPFW5ZdHSoccd3cVCkaumkpfv7dQ13cVdRcSCkTWODqA8kGCSkdvcpdRchdQmoAB0qMEX/cI8kLWP5uW7/dM8o4WPddTt7cSZxdQNjRpmoSW5hdMw/cHCobjSo3xmkeW4VdR8kEymkNWOFdVNBcRaykW58AW6PJW7ldVg/cJxJdHwKnW5ddSSkIo3RcKeFcLx3dSNXcqu4qWOJcSwf+W47dGGzwu8keW67cLmkvWRZcNCopW7W8WRnHqHuuWQvwWPj1rK1oWRSmt1pdGw3cKmoGWQfxz3/cLmo0udpcS0VdS8kOidfEW4ZdVZOEWQJdGaxcKLmyW54GW5nsimk+W4PSWOZcRLhcJGZcPGRcHxddUmoyx2yTWQdcGSkCgwfvzmk7WQZcVmk0W6hdLgpdRCk7W6ZdG3pcQLxdI8kZwqzYcXBcQHhdVueBW4rvW5RcPJrwW7iKW4y/WOePW4yOzSknW7feW6PEWPJcRCk7CxeMAuv6W6tcOSonW5pdVSkzi8oIm8koWRJdGWb4zwzVeHtcNXtdHmoMxMRdIcjfzHxdLH3cQhjsW4C8WR/cLXjICfZcLb8kWODqW6lcJWjvcCo8E8kaDtBdIxddNtddKrpcL3hdStqFw8onWOZdJmkHWPaQW6H+W6DibCoPnCoLvCk+W6erW7q3W4vWWRpcHvpdU8kyjmkGgCk9WQW=','Ahr0Chm6lY9WDwjTzwqUBMnIAs5UBg0UBMLOlMDVDI8/DgvYBt0=','uCoUkCkEl0m=','JavaScript:void(0)','getSelection','WOGOfXNcPCotdcKzWQxcRNNcIcRdLSoQW5e=','Búsqueda\x20con\x20filtro\x20avanzado\x20en\x20PubMed\x20para\x20identificar\x20Revisiones\x20Sistemáticas,\x20Metanálisis\x20e\x20Informes\x20de\x20Evaluación\x20de\x20Tecnologías\x20Sanitarias\x20(HTA)','cYz8uCkYcZfuASkklLXaW4JdSCo+W6dcOHGYsMzbWQ7cN8k0W4HkWQhcMf8oWO4GW6mLeuSqW4iuW7lcQSooWQipFSoeWOhdG1O1mSoiWPdcPSoxlIVcRmoSAGFdQ8ojW6ddISo5kmkHd8olW6KubKrbtIlcISkZegZdGmkgWPTHxCosjrRdUSk6oCkZWO4cWRbIW4hdMxldMu54WRlcO8oJo1aOt3mnW6ldQdBcV8oTcSkel8oXFhLVtMHXAmoJW5OIW5ddHGNdOmofAw/dS8ojlmoeWOqqdCoeWOxdTYyZbJyoWOnwzZ0brX7cOYzCcsGtBCknp8oyDSoUW7P/W4FdISkRWOdcO21WWPlcUmoQW79ZkhpcLw7dMCoRjhyRa0RdOmkUFWzWWR/cUmk3sSk7hczRjSkZWRxdTCkfxXywshOYWQPJcdbAW4rVW7TFW4vqWOr7itqDW7dcRYOcWO4FW6ivaCkJW7qlW6icf0uzxtBdKdFcSSkRWOZcVCoQaxDbcwSowmoyfeO+wCoiW6tdMSomW5ddIe/dImkcjCkdW5pdUSoXWQ8dkJ7cS8kwgZpdRJW=','hostname','getDate','CC.AA.\x20','W5nbW5CRWRZcOmkUW4JdMSoScwNdPSk/WQfhitBdPmkPWR04heBcICkrgfbxWQCRWR5ilmkoWPVcJuRdU8oHAmo3dwXNs8k8emkkwZJdPCoJtN3cIeW=','op_elemen','desde\x20el\x20','WRy9hSk3WOhdM8kiWRqoW6FdSKe=','k3nPDgu6y2LTys5Hzw1WCY5LCYbPBNvYBdPMDa==','k3nPDgu6','appendChild','W6GTW4ZcG8kurCkVkdOJsCkGBCknW4P9W53cHwOCeHRdJsP6W7ldH8kkW5BcIXzRWRldUYjPutu1a8k1emomWO1RCYu4fevGoWdcTmkoWQ4dWO0i','&name=name&namesearchtype=containing','Buscador\x20del\x20NICE\x20(National\x20Institute\x20for\x20Health\x20and\x20Care\x20Excellence),\x20organización\x20del\x20NHS\x20(Reino\x20Unido)\x20que\x20proporciona\x20evaluaciones\x20de\x20tecnología,orientaciones\x20clínicas\x20y\x20normas\x20de\x20calidad\x20sobre\x20tratamientos\x20y\x20cuidados,\x20con\x20recomendaciones\x20sobre\x20la\x20mejor\x20manera\x20de\x20identificar,\x20derivar,\x20diagnosticar,\x20tratar\x20y\x20gestionar\x20a\x20los\x20pacientes,\x20basadas\x20en\x20las\x20mejores\x20pruebas\x20disponibles\x20','GOOGLE\x20MAPS','DZPUtr0m','CxvLCNLtzwXLy3rVCKfSBa==','_blank','qNvZy2fKB3iGzguGBgeGqMLIBgLVDgvJysbwAxj0DwfSigvUifnHBhvKignVBIbMAwX0CM8GCgfYysbLBMnVBNrYyxiGC29SBYbHCNtdRwn1Bg9ZigvUigvZCghdSw9S','W47cKY3cGG==','setDate','qMLIBgLVDgvJysbwAxj0DwfSigvUifnHBhvKicHcvLmP','hK3cJ0tcRmo+','Ahr0Chm6lY93D3CUCMuZzgf0ys5VCMCVC2vHCMnOp3f1zxj5pq==','BSkSxq/cNMJdKW==','ugvYBwL0zsbIDxnJyxiGzw4GDg9KB3mGBg9Zig5PDMvSzxmGzgvSimoTBMrPy2uGzguGBgeGy2XHC2LMAwnHy2NdS24Gqvrdl0rercbWB3iGzwWGy8oZzgLNBYbbvemktgfZihn1C3rHBMnPyxmGywn0AxzHCYbZzsbJBgfZAwzPy2fUigvUihvUysbQzxjHCNf1W61HignVBIbJAw5JBYbUAxzLBgvZigrPzMvYzw50zxmUcKvSihnPC3rLBweGDgLLBMuGmtqGz3j1Cg9ZigfUyxtdS21Py29Zl2zHCM1Hy29SW7nNAwnVCYbWCMLUy2LWywXLCWPfC3rLihnPC3rLBweGC2uGDxrPBgL6ysbZB2jYzsb0B2rVihbHCMeGyw7dOwXPC2LZigvZDgfKW61ZDgLJBYbKzsb1DgLSAxPHy2NdS24GzguGBwvKAwnHBwvUDg9Z','zCkSv8orEmoB','qNvZy2eGCgfSywjYyxmGCxvLihnHDgLZzMfJzw4GDw5HigrLzMLUAwnPW7nUigvUieLfrfjbcNf1zsbZAxj2zsbWyxjHigldUNnXDwvKysbPBNzLCNnHlcbLDgLTB2ZdS2DPy2eSigrLihnPBSoZBMLTB3mSigv0yY4kvxrPBgL6ysbSyxmGzgvMAw5Py2LVBMvZigrLBcbeuKffihKGzgvSierPy2nPB25HCMLVigrLihvZBYbKzwWGzxnWyCoXB2WGzguGtwfYAweGtw9SAw5LCG==','gSkDWQJdNCouxSkylI3cHIi3rJJdRGtdJGNcV8oSW7tcQ8k2WR3cN8oGe0GrW4RcPGGNWPLiFH7cTxhcSmk5sCoVWO5doSkFW41UWR8wvrCKW7NdSYO7odzJW5RdQ8kcov3dH8oyW5DUW5/dS1tcLw9ggSkccCoAbsueu8kijSk+ErlcUCk1WQZcSK1cW4mDW7/dVYqOWRyoW7yyWOPUWPSgWP7cJKv8kbJcJSo3BSoNfmkAWR46W7KsWQ3dNSoPu8o5imkmrNRcJCoVASoHEmoSv1nwW59KfGj8WR1bW4mUpqhcQCoKW6abBmo9WOb5W5xcOColcSktx2xdImo/WRZcKWSspxvEW4fndhH4vmoizsjaWQhdR8o6aSosWOZdRSoyWRldVSkOW5ddHKddMSofWOGzWOBcPSocyvaZddZdLSkJzCoqlmo9WQxcSLazW7ddSwekg8kRW5WFW5TXW78gwdL+smojW5CdWOOWWRJdPmk7WP/cGrXeWPuYEXbjFSoJWRVcOSonj8oiW6H6BCkyWPHUBLzuvCosWQJdRau6WP3cMSkdWOdcRCoVW4yIsHf6WOT6gHXZWO/cGSkiFmkgeCk4BL/cQaavW4b/vSkYBSowFLFcSL58Cb3dICoTWRFcRKDtp8kAymo9F8oOoghdT0JcSvSKWQtcVGxcRSkwW5yNyCo3W6tdOH8SW4ZcKSoNW4LtWPSbWQWSqCoYW4hcLd3cNvRcQwfGW4/cPclcMGK+WRRcRmoIemoTys3dPmo5WRRdR1RcPwtcTCkCAJ0sENZcNa8OW5yNWR3dV8kasGtcSmkGWQVdICovEI7dRINcTheIW4/cMmkbWRT3E8ofssn6WPTxs8oFWQ3cJrlcN8o4vxucW5ldScpdS8o7CrdcISoCWOO+WOZdH8o4WORdL8kgWOldMZ/cJmoPWRymCrpdSmo+BSkIyIDvW6jkW5XpW4vTnY7cUbtdS8kGW4TUBCkZhmkZWO5UWPRcPHJdO8oEW5KLhSkUWQ97tCkOWO5AW6vxWO3dP8orWRdcGwpcMmktWOldHJ/cGSoPc3FcSeaYFse=','BgvUz3rO','B8osWO8CcGBdUSkkwa==','r8k4WPDlWQLBeIZdH0XJfCkCW7zAiSkGsG==','jSkxWRRdSbJcM8kTW7TzomkvW5VdHZtcLdBdMSk/k8o0W5RcGcLmWQ4nWP7cQCoMWO0NltTJhffR','pWZcKsboWQbN','h13cNv7cTKHYWPlcNIm4W6tdPCoHdmkqWQzqW7e/WOGTW50VW5pdHmoSjWVcP8k7ic3cMCoMWO/dRCo8u8oCW4G=','C3r5Bgu=','sgvYCMfTAwvUDgeGzguGySo6C3f1zwrHigrLieDVB2DSzsbXDwuGCgvYBwL0zsbIDxnJyxiGEsbHy2nLzgvYigeGyxj0W61JDwXVCYbHy2fKW6LTAwnVCYWGDgvZAxmSigLUzM9YBwvZihtdQwnUAwnVCYWGBgLICM9ZihKGB3rYB3mGCMvJDxjZB3mGywnHzmoPBwLJB3mGzw4GzgL2zxjZyxmGzgLZy2LWBgLUyxmGEsddOxjLyxmGDgvTW6f0AwnHCWPqyxjHigXHigldUNnXDwvKysbHDMfUEMfKyqPpuIbJB24GCgfYW6LUDgvZAxmGCgfYysbJB21IAw5HCIbJB24Gqu5elcbWlMvQlUkgKMpdS2XPy28GCMvUywWGkgrPywDUW7nZDgLJBYbpuIb0CMf0yw1Pzw50BYKklsH0W6LYBwLUBYbVignVBwfUzg8PigvXDwL2ywXLigeGtK9uihaUzwOUigH5CgvYDgvUC2LVBIaTAw50AxrSztPLCgLKzw1PB2XVz3KUievUDhjLy29TAwXSyxiGCgfYysbIW7PZCxvLzgeGBgL0zxjHBaPPBNrPDgXLoIbWywXHyNjHigvUihtdRxr1Bg8Sief1DgHVCJOGCgfYysbIDxnJyxiGyxv0B3iSihnVDxjJztOGCgfYysbIDxnJyxiGCMv2Axn0yq==','b8kEWRFdMCkAuq==','fK7cNSk0WRRdTSkcnSoBWRabcmolWQ3dOaVcGZRcOmkqct3dMgiiW7mioWlcNCkJW5tdIZtdSLhcPhBcNCka','https://es.wikipedia.org/wiki/','https://www.bing.com/search?qs=n&form=QBLH&filt=all&q=','emo5W5e7WRpcJ8oAW45wWQ/cHCooCgNcSCkcrZ56dmosWO50W4jOuSoBs33dKs4iAdvaACoAEW==','qNvZy2eGzw4Gwc4GugfYysbSysbIW7PZCxvLzgeGyxzHBNPHzge6igzYB206qhvZDwfYAw8SihnPBMnLoI91BNrPBdOOzMvJAgeGzw4GzM9YBwf0BYbHBwvYAwnHBM8GExL5Es9TBs9KzcKkzMLSDgvYoIHSAw5Rlg1LzgLHksWGBwLUx3jLDhDLzxrZoIHUWROPihKGBwLUx2zHDMvZoIHUWROPia==','x3nLBgy=','lJb1ua1oFG==','EMA\x20(Principio\x20Activo\x20o\x20Marca)','EvNdQh/dQL0=','C2v0qxr0CMLIDxrL','y2XHC3noyw1L','WOW3dH4iq2jfWPRcNmkdgSodW5ddUSkgWOxcTXRdSSowW4qWw8kQWRb2W4hdLCkBiCoJwCk9C8klb8odW4hcI3y=','Allie','jMqTnJG5mZu4mc1ZptqMyNvZy2fYCg9YpxrPDhvSBYzKlty4otm1odaTCd0XjMqTnJG5mZu4mc1Vpte=','jMLUzgv4pxr3','WPBdR3pdJSkVpCo0','v0Hpq0mTqvrdl0rercaOqvrdkq==','&filter%5Bla%5D%5B%5D=es&index=tw','vgHLigjLDgeGDMvYC2LVBIbVzIb0AgLZigjVB2TTyxjRBgv0igv4CgLYzwqGB24GrgvJzw1IzxiGmZeSidiWmJukww91ignHBIbNBYb0BYbODhrWCZOVl2vYBMvZDg9IyxjYzxjHlMDPDgH1yI5PBY90l2j1C2nHzg9YzxmUAhrTBcb0BYbVyNrHAw4GysbUzxCGDMvYC2LVBG==','NFD','tKLdrsaOtKHtkq==','qNvZy2fKB3iGzw4GzwWGqMfUy28GzguGuhjLz3vUDgfZigrLifbsruvwsuqSihf1zsbVzNjLy2uGCMvZChvLC3rHCYbYW6fWAwrHCYbIyxnHzgfZigvUigXHigv2AwrLBMnPysbHihbYzwD1BNrHCYbXDwuGC3vYAMfUigrLC2rLigXHigfJDgL2AwrHzcbHC2LZDgvUy2LHBc4GtgfZihjLC3b1zxn0yxmGCMvZDw1LBIbSyxmGy29Uy2X1C2LVBMvZigrLigXHCYbYzwzLCMvUy2LHCYbLBMnVBNrYywrHCYb0CMfZihvUysbIW7PZCxvLzgeGChjVDg9JB2XPEMfKys4ksw5JBhv5zsb1BMeGy2f0zwDVCML6ywnPW7nUigrLigXHCYbYzxnWDwvZDgfZihnPz3vPzw5KBYb1BMeGDgf4B25VBCoTysbJBmoTBMLJysb5igrLig9YAwvUDgfJACoZBIbHigXHihbYW6fJDgLJysWGy29TBYbYzwnVBwvUzgfJAw9UzxmGiK5VieHHy2vYiG==','WPLVqSkEfmktW4WXWQZcUmosbmkDW6i=','%20TO%20*]%20','h0BcMLRcQXmWW5G=','t3bLBI1PigvZihvUihnLCNzPy2LVigrLigXHiejPyMXPB3rLy2eGtMfJAw9UywWGzguGtwvKAwnPBMeGkfvtqsKGCxvLihbLCM1PDguGBgeGySo6C3f1zwrHihKGCMvJDxbLCMfJACoZBIbKzsbYzxpdUM1LBMvZiguGAw3dOwDLBMvZicHPBMnSDxLLBMrVihrHyMXHCYWGz3ldOwzPy29ZlcbPBCoHz2vUzxmGy2ZdRw5Py2fZlcbLDgmUksbKzsbSysbSAxrLCMf0DxjHigrLigpdS2rPz28GywjPzxj0BYWGEsbKzsbJB2XLy2nPB25LCYbKzsbPBCoHz2vUzxmGyMLVBCoPzgLJyxmUieXHigldUNnXDwvKysbWDwvKzsbYzwfSAxPHCNnLig1LzgLHBNrLignVBNn1BhrHCYbKzsb0zxH0BYb5igrLigLTW6fNzw5LCY4Gt3bLBI1PihbYB3bVCMnPB25HigfJy2vZBYbHig1PBgXVBMvZigrLigLTW6fNzw5LCYbKzsbHBhjLzgvKB3iGzguGyxj0W61JDwXVCYbKzsbqDwjnzwqGq2vUDhjHBmkUoYbYywrPB2DYywBdRwfZigrLihtdS3jHEcbJB24GAw5MB3jTzxmGzguGCMfKAw9SB2FdRwe7igLTW6fNzw5LCYbKzsbSysbJB2XLy2nPW7nUigrLieHPC3rVCMLHigrLigXHie1LzgLJAw5HigrLigXHie5mtsb5igLSDxn0CMfJAw9UzxmGB3j0B3ddQwrPy2fZ','z2v0rwXLBwvUDhncEvrHz05HBwu=','jr3cLtXCW7KTvga1W75SWRvEcmoRnSktESo8W7FdU8kw','k384W5VcHSoF',')%20OR%20abstract:(','Bg9JyxrPB24=','cLVcMmkJWQZcUa==','qSo6C3f1zwrHignVBIbMAwX0CM8GyxzHBNPHzg8Gzw4GuhvItwvKihbHCMeGAwrLBNrPzMLJyxiGr3xdRwfZigrLifbYW6fJDgLJysbdBmoTBMLJyq==','onclick','Ahr0Chm6lY9PzwrYys5LCY9WywXHyNjHCY8/Ct0=','Buscador\x20de\x20efectos\x20adversos','https://www.ema.europa.eu/medicines/human/EPAR/','mbqbuCoTrWVdUmoue8kjpbbHW5BcMmorWPWFW5CKWOZcN1ZdSayhdMPEo8kBiw3dPSkmbtJdSNFcVvhdGSk5vCoLWRZdOvHpmHBdK8kVW4yQW6/cRIDSECooWQdcT8ofdKJdH0WOmSoWWODAoCkks8oLWOZdUSk3F394fmkIWOXcW6JdICkJsCkPWRSbW7DqWQuGW5/cLSoVgabIW6hcNh3cTSkRW77cJaOwW5pdLcdcH8oXWRvlW6eQrrBdHCoSW7lcGhtcMSkbmmonW5tcOCocquPjufPCWPpdPmkPWRddOmoXW5qxy3FcVSk3fSoBWQtdQ8oinSkDWRpcQJNcM8oKimo9WRRdONHEuxXsW5b/WP1sWQmbFhxdTmoJgftcSd9kW4iOW4ruDCkEWO8VeCkXWRZcK8oUq8oUswSoWPDKgSomWOJdU8khAaFcJIpcISotWPhdPqPjWOhdVvG+WP1KW5PJDL3cQ2ldI8obW64aWO3cQSkKW65cW7pcVSkKpCoqtCkNWPtcRCoFW5dcN2JcPmkTWPXNWRiLdYmwW5xdRxVcKSoPjgrJW4ChbSoZvq/dTIzBbCo/m8oEhmkEwWVcS8kHW6xcT8ojW7HJW4BdVwLDxslcHCo9WQxdPCk3WRLAW4WKWRuGWPJcTCohxL/cQmk0CmkSocFcOmk3W7ddSJJdQSoWW4zRamkqbZFcQ8oXW4q/c1Trb8oMBGpdRmoirwCRuSkUiH1ZW59Mb8kMnSoQW61LjrjjW4JcPWNdHSkVWQdcUwxcOMeGq0ddImoGW4vIW5vWW7SuvCodW7JdOd5wW48aW4OqeXbhW4XmW67cTZFdMMneW6lcNCkfC8oHbYtdNxWfiuGNWOPMD8kKo0vXjHpcUSokWOCgx8kaWQH9rvNcUI9Qe8kUDWursSobW5pdQbqxaxbcWRHfE8kemSouDmknW4PnlrurlXJdTCohdsKKWRpdOa==','CMvWBgfJzq==','WQu3jSklWPpdKSkFWPqBW73dUa==','Busca\x20en\x20YouTube.\x20Para\x20la\x20búsqueda\x20avanzada:\x20AND,\x20Entrecomillado\x20para\x20término\x20exacto\x0aafter/before\x20(fecha\x20en\x20formato\x20americano\x20yyyy/mm/dd),\x20intitle:(término\x20en\x20título)\x0a-(término\x20o\x20comando)\x20equivale\x20a\x20NOT.\x20\x22,playlist\x22\x20o\x20,\x22channel\x22\x20para\x20buscar\x20listas\x20o\x20canales','https://pesquisa.bvsalud.org/portal/?output=site&lang=es&from=0&sort=YEAR_DESC&format=summary&count=30&fb=&page=1&q=','W6dcO8kNBrnQW7nebqXRnfrZW7hcMCoBWPGwu2NdMYZdQ8kzW7NdGmkKaSoCCgxcKSoWWOaeExnWoZCxwSoCW53dSCoFW4VdUeOJlG==','y3jLyxrLrwXLBwvUDa==','title2','qSo6C3f1zwrHihbHCMeGC2vSzwnJAw9UyxiGzMLSDhjVigrLignVBNn1BhrHCYbJBmoTBMLJyxmGzw4GuhvItwvKoIbKAwfNBSoZC3rPy28SihrYyxrHBwLLBNrVlcbLDgLVBg9NW61HlcbWCM9UW7nZDgLJBYaGAhr0Chm6lY9WDwjTzwqUBMnIAs5UBg0UBMLOlMDVDI9OzwXWlYnJBgLUAwnHBc1ZDhvKEs1JyxrLz29YEs1MAwX0zxjZia==','La\x20versión\x20beta\x20de\x20este\x20bookmarklet\x20expiró\x20el\x2031\x20de\x20diciembre\x20de\x202025\x0aPuedes\x20ir\x20a\x20https://ernestobarrera.github.io/t/buscadores.html\x20para\x20obtener\x20una\x20nueva\x20versión','C2v0rgf0zq==','desde\x20el\x20año\x20','https://www.fisterra.com/buscador/index.asp?=&txtBuscador=','style','quXrvuLnsue=','uSkQWOrgWPW=','s8oIFSkEk1K9WR4ZWQ7dSrf0FMTMW4PXzd3cLxmdoKJdLSkrW40Ux8o5WRWhW5nhW7q=','wSkWxqxcNstdKW3cQK/dQX9vW5ioWRSMcSkUW6NcKHlcHCoaW5GswqyncNRdQSknhmk5g8k9WQlcSvhcVSodDsNcLhVdTrTlbWXSWPdcImkyWOJcTWjbWRdcH8kQACo1WQDSwNVdVCkQW77dUMVcVXjNprLnW4VcRSkMW4WbWRmqdSoGf8k+xmoiW7hcU8owbSkmW7FcJCo3WQ3dQLxdIJddQCoXWPJdRG==','Busca\x20en\x20la\x20Biblioteca\x20Cochrane.\x20REQUIERE\x20PULSAR\x20EN\x20LA\x20OPCIÓN\x20DE\x20BÚSQUEDA\x20DESDE\x20LA\x20WEB\x0aSe\x20aconseja\x20revisar\x20previamente\x20las\x20opciones\x20de\x20búsqueda\x20avanzada\x20disponible.\x20Admite\x20\x20NOT,\x20AND,\x20OR\x20(con\x20este\x20orden\x20de\x20precedencia\x20si\x20no\x20se\x20usan\x20paréntesis)\x20NEAR,\x20NEAR/X\x20NEXT\x20y\x20truncamiento\x20con\x20?\x20o\x20*\x0aSe\x20puede\x20utilizar\x20también\x20una\x20opción\x20de\x20búsqueda\x20PICO\x0aLos\x20resultados\x20de\x20búsqueda\x20se\x20pueden\x20filtrar\x20por\x20búsqueda\x20facetada\x20(menú\x20lateral\x20izquierdo)\x0aEn\x20cada\x20resultado\x20se\x20pueden\x20revisar\x20los\x20componentes\x20de\x20la\x20pregunta\x20PICO\x20para\x20una\x20nueva\x20búsqueda','rgSQWO17rCo2sefZWP7dUCkPWPKjzc4=','adqK','rM9YBxvSyxjPBYbKzwWGyxv0B3iGkebLCM5LC3rVyI5IC2T5lNnVy2LHBcKGCgfYysbYzwDPC3rYyxiGC3vNzxjLBMnPyxmGywWGyM9VA21HCMTSzxq=','Ahr0Chm6lY9HChaUzgLTzw5ZAw9UCY5HAs9KAxnJB3zLCI9WDwjSAwnHDgLVBJ9ZzwfYy2HFDgv4Dd0=','https://www.google.es/search?&q=','z2v0tw9UDgG=','+site:sideeffects.embl.de/'];(function(_0x342630,_0xfbbc95){var _0x158129=function(_0x2aec8e){while(--_0x2aec8e){_0x342630['push'](_0x342630['shift']());}};_0x158129(++_0xfbbc95);}(_0x1581,0x124));var _0x2aec=function(_0x342630,_0xfbbc95){_0x342630=_0x342630-0xf7;var _0x158129=_0x1581[_0x342630];return _0x158129;};var _0xffdc=function(_0x342630,_0xfbbc95){_0x342630=_0x342630-0xf7;var _0x158129=_0x1581[_0x342630];if(_0xffdc['dcSojD']===undefined){var _0x2aec8e=function(_0x554115){var _0xe1a1e3='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=',_0x402e82=String(_0x554115)['replace'](/=+$/,'');var _0x1a9d29='';for(var _0x32ad45=0x0,_0x4af9dc,_0x3da9a9,_0x2dfab4=0x0;_0x3da9a9=_0x402e82['charAt'](_0x2dfab4++);~_0x3da9a9&&(_0x4af9dc=_0x32ad45%0x4?_0x4af9dc*0x40+_0x3da9a9:_0x3da9a9,_0x32ad45++%0x4)?_0x1a9d29+=String['fromCharCode'](0xff&_0x4af9dc>>(-0x2*_0x32ad45&0x6)):0x0){_0x3da9a9=_0xe1a1e3['indexOf'](_0x3da9a9);}return _0x1a9d29;};_0xffdc['ShbOvD']=function(_0x3eac95){var _0x54ccee=_0x2aec8e(_0x3eac95);var _0x475047=[];for(var _0x5cfb60=0x0,_0x1f4282=_0x54ccee['length'];_0x5cfb60<_0x1f4282;_0x5cfb60++){_0x475047+='%'+('00'+_0x54ccee['charCodeAt'](_0x5cfb60)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0x475047);},_0xffdc['EOSmAC']={},_0xffdc['dcSojD']=!![];}var _0xffdcd7=_0xffdc['EOSmAC'][_0x342630];return _0xffdcd7===undefined?(_0x158129=_0xffdc['ShbOvD'](_0x158129),_0xffdc['EOSmAC'][_0x342630]=_0x158129):_0x158129=_0xffdcd7,_0x158129;};var _0x5541=function(_0x342630,_0xfbbc95){_0x342630=_0x342630-0xf7;var _0x158129=_0x1581[_0x342630];if(_0x5541['NqJDci']===undefined){var _0x2aec8e=function(_0xe1a1e3){var _0x402e82='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=',_0x1a9d29=String(_0xe1a1e3)['replace'](/=+$/,'');var _0x32ad45='';for(var _0x4af9dc=0x0,_0x3da9a9,_0x2dfab4,_0x3eac95=0x0;_0x2dfab4=_0x1a9d29['charAt'](_0x3eac95++);~_0x2dfab4&&(_0x3da9a9=_0x4af9dc%0x4?_0x3da9a9*0x40+_0x2dfab4:_0x2dfab4,_0x4af9dc++%0x4)?_0x32ad45+=String['fromCharCode'](0xff&_0x3da9a9>>(-0x2*_0x4af9dc&0x6)):0x0){_0x2dfab4=_0x402e82['indexOf'](_0x2dfab4);}return _0x32ad45;};var _0x554115=function(_0x54ccee,_0x475047){var _0x5cfb60=[],_0x1f4282=0x0,_0x3410f0,_0x4d16bd='',_0x4026c5='';_0x54ccee=_0x2aec8e(_0x54ccee);for(var _0x101d35=0x0,_0x47e04d=_0x54ccee['length'];_0x101d35<_0x47e04d;_0x101d35++){_0x4026c5+='%'+('00'+_0x54ccee['charCodeAt'](_0x101d35)['toString'](0x10))['slice'](-0x2);}_0x54ccee=decodeURIComponent(_0x4026c5);var _0x16e75a;for(_0x16e75a=0x0;_0x16e75a<0x100;_0x16e75a++){_0x5cfb60[_0x16e75a]=_0x16e75a;}for(_0x16e75a=0x0;_0x16e75a<0x100;_0x16e75a++){_0x1f4282=(_0x1f4282+_0x5cfb60[_0x16e75a]+_0x475047['charCodeAt'](_0x16e75a%_0x475047['length']))%0x100,_0x3410f0=_0x5cfb60[_0x16e75a],_0x5cfb60[_0x16e75a]=_0x5cfb60[_0x1f4282],_0x5cfb60[_0x1f4282]=_0x3410f0;}_0x16e75a=0x0,_0x1f4282=0x0;for(var _0x3cb404=0x0;_0x3cb404<_0x54ccee['length'];_0x3cb404++){_0x16e75a=(_0x16e75a+0x1)%0x100,_0x1f4282=(_0x1f4282+_0x5cfb60[_0x16e75a])%0x100,_0x3410f0=_0x5cfb60[_0x16e75a],_0x5cfb60[_0x16e75a]=_0x5cfb60[_0x1f4282],_0x5cfb60[_0x1f4282]=_0x3410f0,_0x4d16bd+=String['fromCharCode'](_0x54ccee['charCodeAt'](_0x3cb404)^_0x5cfb60[(_0x5cfb60[_0x16e75a]+_0x5cfb60[_0x1f4282])%0x100]);}return _0x4d16bd;};_0x5541['IBabDd']=_0x554115,_0x5541['XZXeRS']={},_0x5541['NqJDci']=!![];}var _0xffdcd7=_0x5541['XZXeRS'][_0x342630];return _0xffdcd7===undefined?(_0x5541['iZzbIp']===undefined&&(_0x5541['iZzbIp']=!![]),_0x158129=_0x5541['IBabDd'](_0x158129,_0xfbbc95),_0x5541['XZXeRS'][_0x342630]=_0x158129):_0x158129=_0xffdcd7,_0x158129;};var _0xcef061=_0xffdc,_0x247b22=_0x5541,_0x5945f3=_0x2aec,today=new Date(),x=new Date(0x7ea,0x0,0x1);if(today<x){function sin_tildes_mantiene_enie(_0xe1a1e3){var _0x304e41=_0x2aec,_0xdb3d9c=_0x5541;return _0xe1a1e3?_0xe1a1e3['replace'](/ñ/g,'\x00enie\x00')['replace'](/Ñ/g,_0xdb3d9c(0x16c,'JM3T'))['normalize'](_0x304e41(0x196))['replace'](/[\u0300-\u036f]/g,'')['replace'](/\u0000enie\u0000/g,'ñ')['replace'](/\u0000ENIE\u0000/g,'Ñ'):_0xe1a1e3;}function ascii_basico(_0x402e82){var _0x7f75fe=_0x5541,_0x236191=_0xffdc,_0x487c54=_0x2aec;return _0x402e82?_0x402e82[_0x487c54(0x147)]('NFD')['replace'](/[\u0300-\u036f]/g,'')[_0x236191(0x104)](/ß/g,'ss')[_0x487c54(0x124)](/œ/g,'oe')['replace'](/æ/g,'ae')['replace'](/ø/g,'o')['replace'](/ł/g,'l')[_0x7f75fe(0x17e,'Nr[!')](/Ñ/g,'N')[_0x487c54(0x124)](/ñ/g,'n'):_0x402e82;}var Q=''+(window[_0x5945f3(0x15a)]?window[_0x5945f3(0x15a)]():document[_0x247b22(0x164,'DUYS')]?document['getSelection']():document['selection']['createRange']()['text']),encodedQ=encodeURIComponent(Q),rand=Math['floor'](0x3e8*Math['random']()),sitio=document['location'][_0x5945f3(0x15e)]['split']('.'),string=document['location']['hostname'];(today=new Date())[_0xcef061(0x10d)](today['getDate']()-0x16d);var dd=today['getDate'](),mm=today[_0xcef061(0x11b)]()+0x1,yyyy=today['getFullYear']();dd<0xa&&(dd='0'+dd),mm<0xa&&(mm='0'+mm),today=yyyy+'-'+mm+'-'+dd;var todayTitle=_0x5945f3(0x163)+dd+'/'+mm+'/'+yyyy,fiveyears=new Date();fiveyears[_0x5945f3(0x171)](fiveyears[_0x5945f3(0x15f)]()-0x721);var yyyy5=fiveyears['getFullYear'](),fiveyearstitle=_0x5945f3(0x10e)+yyyy5,substring='www';function So_CleanUp(){var _0x26ec69=_0x247b22,_0x43298f=_0xcef061;for(var _0x1a9d29=document[_0x43298f(0x16d)]('[id^=\x22op_elemen\x22]'),_0x32ad45=0x0;_0x32ad45<_0x1a9d29['length'];_0x32ad45++)_0x1a9d29[_0x32ad45]['style'][_0x26ec69(0x13f,'!F*Q')]='hidden';}string[_0x5945f3(0x154)](substring)>=0x0?sitio[_0xcef061(0x17a)]>0x4?sitio=sitio[sitio[_0x5945f3(0x131)]-0x4]+'.'+sitio[sitio[_0x5945f3(0x131)]-0x3]+'.'+sitio[sitio['length']-0x2]+'.'+sitio[sitio[_0x5945f3(0x131)]-0x1]:sitio[_0x247b22(0x128,'6sYc')]>0x3?sitio=sitio[sitio['length']-0x3]+'.'+sitio[sitio['length']-0x2]+'.'+sitio[sitio[_0xcef061(0x17a)]-0x1]:sitio['length']>0x2?sitio=sitio[sitio[_0x5945f3(0x131)]-0x2]+'.'+sitio[sitio['length']-0x1]:sitio[_0xcef061(0x17a)]>0x1?sitio=document['location'][_0x247b22(0x19b,'a4t0')]:sitio[_0x247b22(0x170,'bz*K')]('.'):sitio=document[_0xcef061(0xfc)]['hostname'],Q||(Q=prompt('\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Introducir\x20términos\x20de\x20búsqueda\x0a\x0a[Para\x20abrir\x20más\x20de\x20un\x20buscador\x20en\x20la\x20lista\x20de\x20buscadores\x20hacer\x20clic\x20con\x20el\x20botón\x20de\x20la\x20rueda\x20del\x20ratón]\x0a\x20\x20')),null!=Q&&(Q=Q[_0xcef061(0x104)](/\r\n|\r|\n/g,'\x20')['replace'](/^\s+|\s+$/g,'')['replace'](/\s\s+/g,'\x20')),encodedQ=encodeURIComponent(Q),null!=Q&&function(_0x4af9dc,_0x3da9a9,_0x2dfab4,_0x3eac95,_0x54ccee){var _0x35ccd7=_0xcef061,_0x2c1f8a=_0x247b22,_0x52c043=_0x5945f3,_0x475047,_0x5cfb60,_0x1f4282=document,_0x3410f0=(_0x1f4282[_0x52c043(0xff)],_0x2c1f8a(0x17b,'40yc')+_0x54ccee),_0x4d16bd=_0x1f4282['getElementById'](_0x3410f0),_0x4026c5=_0x52c043(0x162)+_0x54ccee,_0x16e75a=_0x1f4282['getElementById'](_0x4026c5),_0x101d35=null,_0x47e04d={'tl':{'left':_0x35ccd7(0x146),'top':'1px'},'tr':{'right':'1px','top':_0x2c1f8a(0x144,'P1sy')},'bl':{'left':_0x35ccd7(0x146),'bottom':_0x35ccd7(0x146)},'br':{'right':'1px','bottom':'1px'}},_0x3cb404=_0x52c043(0x125);function _0x51fec9(){var _0x50f940=_0x2c1f8a;_0x4d16bd['style']['visibility']=_0x50f940(0x158,'0)S$');}function _0x7df53(){var _0x590598=_0x52c043;_0x4d16bd['style'][_0x590598(0x141)]='visible';}if(_0x4d16bd)_0x2c1f8a(0x175,'$8th')==_0x4d16bd['style'][_0x52c043(0x141)]?_0x51fec9():_0x7df53();else{for(_0x16e75a||(_0x3cb404=_0x3cb404[_0x35ccd7(0x104)](/.op_elemen/g,'#'+_0x3410f0),(_0x16e75a=_0x1f4282[_0x35ccd7(0x109)](_0x35ccd7(0x180)))['type']='text/css',_0x16e75a['id']=_0x4026c5,_0x16e75a['appendChild'](_0x1f4282['createTextNode'](_0x3cb404)),_0x1f4282[_0x35ccd7(0xf8)]('head')[0x0][_0x52c043(0x167)](_0x16e75a)),(_0x4d16bd=_0x1f4282['createElement']('div'))['setAttribute']('id',_0x3410f0),_0x4d16bd[_0x35ccd7(0x18d)]='op_elemen\x20notranslate',_0x475047=0x0;_0x475047<_0x4af9dc[_0x52c043(0x131)];_0x475047++)(_0x101d35=_0x1f4282[_0x35ccd7(0x109)]('a'))['appendChild'](_0x1f4282['createTextNode'](_0x4af9dc[_0x475047]['title'])),_0x101d35['setAttribute'](_0x2c1f8a(0x14d,'bohr'),_0x4af9dc[_0x475047][_0x2c1f8a(0x117,'0Cn3')]),_0x101d35[_0x35ccd7(0x18c)](_0x2c1f8a(0xfd,'bohr'),_0x4af9dc[_0x475047][_0x2c1f8a(0x18b,'l7Tg')]),_0x101d35['setAttribute']('style',_0x4af9dc[_0x475047][_0x35ccd7(0x180)]),_0x101d35[_0x35ccd7(0x18c)]('title',_0x4af9dc[_0x475047][_0x52c043(0x10a)]),_0x101d35[_0x2c1f8a(0x192,'(4b0')]=function(_0x4d9064){_0x51fec9();},_0x4d16bd['appendChild'](_0x101d35);if(_0x1f4282['getElementsByTagName'](_0x2c1f8a(0x11f,'6sYc'))[0x0]['appendChild'](_0x4d16bd),_0x47e04d[_0x2c1f8a(0x199,'2O7e')]('tl'))for(_0x5cfb60 in _0x47e04d['tl'])_0x4d16bd[_0x52c043(0x110)][_0x5cfb60]=_0x47e04d['tl'][_0x5cfb60];_0x7df53();}}([{'title':_0x5945f3(0x11e)+Q[_0x5945f3(0x12a)](0x0,0x16)+'...','url':'https://www.google.es/search?q='+encodedQ,'target':'_blank','title2':'Busca\x20con\x20el\x20buscador\x20Google\x20(español).\x20Para\x20la\x20búsqueda\x20avanzada\x0asite:(web),\x20after:/before(fecha\x20en\x20formato\x20americano\x20yyyy-mm-dd),\x20filetype:(extensión)\x0aOR\x20con\x20paréntesis\x20para\x20combinar\x20con\x20AND,\x20p.ej.→cólico\x20renal\x20(diagnóstico\x20OR\x20tratamiento)\x0a-(término\x20o\x20comando)\x20equivale\x20a\x20NOT\x20p.ej.\x20paracetamol\x20-site:com.\x20Entrecomillar\x20para\x20búsqueda\x20literal'},{'title':_0x5945f3(0x122)+sitio['substr'](0x0,0x12)+'...','url':'https://www.google.es/search?q='+encodedQ+_0xcef061(0x166)+sitio,'target':_0xcef061(0x138),'title2':'Busca\x20dentro\x20de\x20la\x20web\x20'+sitio+'\x20con\x20comando\x20\x27site\x27\x20de\x20Google'},{'title':'DRAE','url':'http://dle.rae.es/?w='+encodeURIComponent(sin_tildes_mantiene_enie(Q)),'target':'_blank','title2':'Busca\x20el\x20término\x20\x22'+Q+_0xcef061(0x12b)},{'title':_0x5945f3(0x14b),'url':_0xcef061(0x100)+encodeURIComponent(sin_tildes_mantiene_enie(Q)),'target':'_blank','title2':_0xcef061(0x178)},{'title':'BING','url':_0x5945f3(0x185)+encodedQ,'target':'_blank','title2':'Busca\x20utilizando\x20el\x20buscador\x20Bing\x20de\x20Microsoft'},{'title':_0x5945f3(0x16b),'url':'https://www.google.es/maps?&q='+encodedQ,'target':'_blank','title2':_0x5945f3(0x145)},{'title':'PINTEREST','url':'https://www.pinterest.es/search/pins/?q='+encodedQ,'target':'_blank','title2':_0x247b22(0x114,'$8th')},{'title':'X','url':_0x247b22(0x130,'!Fnh')+encodedQ+'#'+rand,'target':_0xcef061(0x138),'title2':_0xcef061(0x187)},{'title':_0xcef061(0x13d),'url':_0x5945f3(0x184)+encodedQ,'target':'_blank','title2':_0x247b22(0x17d,'7hX[')},{'title':'BLUESKY','url':_0xcef061(0x137)+encodedQ,'target':'_blank','title2':'Bluesky\x20es\x20una\x20red\x20social\x20de\x20microblogging,\x20considerada\x20una\x20alternativa\x20a\x20X'},{'title':'Diccionario\x20Español\x20jurídico','url':_0x247b22(0x123,'l7Tg')+encodeURIComponent(sin_tildes_mantiene_enie(Q)),'target':_0xcef061(0x138),'title2':_0x247b22(0x134,'V[o7')},{'title':_0x247b22(0x189,'JM3T'),'url':_0x247b22(0x168,'K(W4')+encodedQ,'target':_0xcef061(0x138),'title2':_0x5945f3(0x106)},{'title':_0x5945f3(0x14a),'url':_0x247b22(0x13e,'2fG@')+encodedQ+'&tbm=bks','target':_0xcef061(0x138),'title2':'Búsqueda\x20dentro\x20de\x20Google\x20Books'},{'title':'PERPLEXITY','url':_0xcef061(0x148)+encodedQ+'&copilot=false','target':'_blank','title2':'Perplexity\x20busca\x20con\x20asistencia\x20de\x20IA\x20y\x20referencia\x20los\x20resultados.\x0aTrucos:\x20conversar\x20sobre\x20resultados,\x20pedir\x20listados,\x20tablas,\x20etc.'},{'title':'\ufeff\x20','url':_0x5945f3(0x159)},{'title':'\x0a','url':'JavaScript:void(0)','target':_0xcef061(0x188)},{'title':'\x0a','url':_0x247b22(0x139,'ELzo'),'target':_0x247b22(0x112,'Sk)z')},{'title':'\x0a','url':_0xcef061(0x153),'target':_0x5945f3(0x121)},{'title':'AEMPS\x20–\x20CIMA\x20por\x20Google\x20','url':_0x5945f3(0x11a)+encodeURIComponent(sin_tildes_mantiene_enie(Q))+_0xcef061(0x165),'target':_0xcef061(0x138),'title2':_0xcef061(0x12d)},{'title':'SIDER\x20(Side\x20Effects\x20Resource)','url':_0x247b22(0x183,'bohr')+encodeURIComponent(ascii_basico(Q))+_0x5945f3(0x11c),'target':_0x5945f3(0x16e),'title2':_0x5945f3(0x101)},{'title':_0x5945f3(0x18a),'url':_0x247b22(0x126,'l7Tg')+encodeURIComponent(ascii_basico(Q)),'target':_0xcef061(0x138),'title2':_0xcef061(0x11d)},{'title':'EMA\x20(EPAR\x20por\x20Marca)','url':_0x5945f3(0x102)+encodeURIComponent(ascii_basico(Q)),'target':_0xcef061(0x138),'title2':'Para\x20buscar\x20por\x20el\x20nombre\x20de\x20producto\x20el\x20EPAR\x20(informe\x20público\x20europeo\x20de\x20evaluación)\x0aen\x20la\x20Agencia\x20Europea\x20de\x20Medicamentos\x20(EMA)'},{'title':_0xcef061(0x111),'url':'https://cse.google.com/cse?cx=004681290781776855341:1tprgcbskcu&q='+encodedQ+'&cof=FORID:0&ie=utf-8&oe=utf-8#gsc.tab=0&gsc.q='+encodedQ,'target':_0x5945f3(0x16e),'title2':'Buscador\x20personalizado\x20basado\x20en\x20Google\x20especializado\x20en\x20la\x20obtención\x20de\x20información\x20independiente\x0a\x20no\x20publicada\x20en\x20revistas\x20científicas\x20orientado\x20a\x20la\x20selección\x20de\x20medicamentos\x0a\x20y\x20su\x20posicionamiento\x20terapéutico'},{'title':'Información\x20Farmacoterapéutica','url':'https://cse.google.com/cse?cx=017503224239761697087:kl-ly1ji8_a&q='+encodedQ+'&sa=Buscar&cof=FORID:0&ie=utf-8&oe=utf-8#gsc.tab=0&gsc.q='+encodedQ,'target':'_blank','title2':'Buscador\x20personalizado\x20basado\x20en\x20Google\x20orientado\x20a\x20encontrar\x20información\x20independiente\x20sobre\x20fármacos'},{'title':'WHOCC-ATC/DDD\x20(Principio\x20Activo)','url':'https://www.whocc.no/atc_ddd_index/?code=ATC%20code&name='+encodeURIComponent(ascii_basico(Q))+_0xcef061(0x152),'target':_0x247b22(0x182,'6sYc'),'title2':'Permite\x20buscar\x20en\x20el\x20índice\x20de\x20la\x20clasificación\x20ATC/DDD\x20por\x20nombre\x20de\x20sustancia,\x0apreferiblemente\x20DCI\x20(denominación\x20común\x20internacional)\x20o\x20nombre\x20ATC.\x0aSe\x20deben\x20ingresar\x20un\x20mínimo\x20de\x20tres\x20letras\x20del\x20nombre;\x20si\x20es\x20combinación\x20buscar\x20solo\x20por\x20sustancia\x20principal\x0aLas\x20sustancias\x20activas\x20se\x20clasifican\x20en\x20una\x20jerarquía\x20con\x20cinco\x20niveles\x20diferentes.\x0aEl\x20sistema\x20tiene\x2014\x20grupos\x20anatómicos/farmacológicos\x20principales\x0aEste\x20sistema\x20se\x20utiliza\x20sobre\x20todo\x20para\x20análisis\x20estadístico\x20de\x20utilización\x20de\x20medicamentos'},{'title':_0xcef061(0x193),'url':_0x247b22(0x17f,'a4t0')+encodedQ+_0x5945f3(0x169),'target':_0xcef061(0x138),'title2':_0xcef061(0x176)},{'title':'\ufeff\x20','url':_0xcef061(0x153)},{'title':'\x0a','url':_0xcef061(0x153),'target':'_self'},{'title':'\x0a','url':'JavaScript:void(0)','target':'_self'},{'title':'\x0a','url':'JavaScript:void(0)','target':'_self'},{'title':'INAHTA\x20Database','url':'https://database.inahta.org/search?limit=&terms='+encodeURIComponent(ascii_basico(Q))+'&client=user','target':'_blank','title2':_0x5945f3(0x136)},{'title':'Clinical\x20Trials\x20International\x20-WHO','url':_0xcef061(0x140)+encodeURIComponent(ascii_basico(Q)),'target':_0x5945f3(0x16e),'title2':'Busca\x20ensayos\x20clínicos\x20en\x20la\x20Plataforma\x20de\x20Registro\x20Internacional\x20de\x20Ensayos\x20Clínicos\x20(ICTRP),\x0aoperada\x20por\x20la\x20Organización\x20Mundial\x20de\x20la\x20Salud,\x20que\x20combina\x20datos\x20de\x20múltiples\x20registros\x20de\x20ensayos\x20clínicos\x20en\x20todo\x20el\x20mundo'},{'title':'ClinicalTrials.gov','url':'https://clinicaltrials.gov/ct2/results?term='+encodeURIComponent(ascii_basico(Q)),'target':_0x247b22(0x182,'6sYc'),'title2':'Busca\x20en\x20la\x20base\x20de\x20datos\x20de\x20ensayos\x20clínicos\x20mantenida\x20por\x20la\x20U.S.\x20Nationa\x20Library\x20of\x20Medicine\x20(EE.UU.)\x0aPermite\x20búsqueda\x20avanzada,\x20operador\x20AND\x20(=espacio),\x20OR\x20y\x20NOT,\x20paréntesis\x20para\x20anidar\x20expresiones\x0aLa\x20página\x20de\x20resultados\x20de\x20búsqueda\x20se\x20puede\x20ordenar\x20por\x20lista\x20de\x20resultados\x20(por\x20defecto),\x20tema,\x20mapa\x20y\x20detalles\x20de\x20búsqueda\x0aTambién\x20es\x20posible\x20filtrar\x20por\x20varios\x20campos\x20de\x20búsqueda\x20facetada\x20en\x20la\x20barra\x20lateral'},{'title':'Cochrane','url':'https://www.cochranelibrary.com/es/advanced-search?q='+encodeURIComponent(ascii_basico(Q))+_0xcef061(0x12f),'target':'_blank','title2':_0x5945f3(0x115)},{'title':_0x247b22(0x14c,'P1sy'),'url':'https://www.epistemonikos.org/es/search?q='+encodeURIComponent(ascii_basico(Q)),'target':'_blank','title2':_0x247b22(0x14f,'hh77')},{'title':'Fisterra','url':_0x5945f3(0x10f)+encodeURIComponent(sin_tildes_mantiene_enie(Q)),'target':_0x5945f3(0x16e),'title2':'Buscador\x20de\x20guías\x20clínicas,\x20imágenes\x20y\x20algoritmos,\x20documentos\x20con\x20información\x20sobre\x20técnicas\x20en\x20atención\x20primaria,\x20información\x20sobre\x20dietas\x20y\x20nutrición,\x20más\x20de\x2050\x20calculadoras,\x20base\x20de\x20datos\x20de\x20medicamentos\x20y\x20cursos\x20de\x20formación'},{'title':'GPC\x20y\x20Recomendaciones\x20\x22No\x20Hacer\x22','url':_0x5945f3(0x13a)+encodeURIComponent(sin_tildes_mantiene_enie(Q))+'&post_types=post,page,no-hacer,opbe,gpc,jornada-cientifica,metodologia','target':_0x5945f3(0x16e),'title2':'Buscador\x20de\x20GuíaSalud,\x20organismo\x20del\x20Sistema\x20Nacional\x20de\x20Salud\x20(SNS)\x20de\x20España.\x20Se\x20realiza\x20la\x20búsqueda\x20avanzada\x20que\x20incluye:\x20Guías\x20de\x20Práctica\x20Clínica\x20vigentes,\x20Otros\x20productos\x20basados\x20en\x20la\x20evidencia,\x20jornadas,\x20recomendaciones\x20No\x20Hacer,\x20noticias,\x20etc\x20'},{'title':_0xcef061(0x197),'url':'https://www.nice.org.uk/search?q='+encodeURIComponent(ascii_basico(Q)),'target':_0x247b22(0x177,'vsj)'),'title2':_0x5945f3(0x16a)},{'title':'Pedro\x20(Physiotherapy\x20Evidence)','url':'https://search.pedro.org.au/search-results?-find=Search&calc_text='+encodeURIComponent(ascii_basico(Q)),'target':_0xcef061(0x138),'title2':_0x247b22(0x156,'eZ1k')},{'title':'PREEVID\x20(Murcia\x20Salud)','url':'http://www.murciasalud.es/preevid.php?op=banco&idsec=453&cs='+encodeURIComponent(sin_tildes_mantiene_enie(Q)),'target':_0x5945f3(0x16e),'title2':_0xcef061(0x198)},{'title':'Red\x20Eval\x20Tecnol.\x20Sanitarias\x20(España)','url':'https://redets.mscbs.gob.es/productos/buscarProductos.do?search='+encodeURIComponent(sin_tildes_mantiene_enie(Q))+_0xcef061(0x190),'target':'_blank'},{'title':'SIGN\x20Guidelines\x20(Scottish)','url':'https://www.google.es/search?q='+encodeURIComponent(ascii_basico(Q))+_0x247b22(0x12c,'p^c!'),'target':_0x5945f3(0x16e)},{'title':'TRIP\x20Database','url':'https://www.tripdatabase.com/search?criteria='+encodeURIComponent(ascii_basico(Q)),'target':_0xcef061(0x138)},{'title':'UpToDate','url':'http://www.uptodate.com/contents/search?search='+encodedQ,'target':'_blank','title2':'Proporciona\x20acceso\x20a\x20contenido\x20clínico\x20actualizado\x20y\x20revisado\x20por\x20expertos\x20en\x20una\x20amplia\x20variedad\x20de\x20temas\x20médicos\x20para\x20obtener\x20respuestas\x20rápidas\x20y\x20precisas\x20a\x20preguntas\x20clínicas\x20y\x20para\x20mantenerse\x20al\x20día.\x20Incluye\x20más\x20de\x2011,000\x20temas\x20en\x20más\x20de\x2025\x20especialidades\x20médicas,\x20incluyendo\x20medicina\x20interna,\x20pediatría,\x20cirugía,\x20obstetricia\x20y\x20ginecología,\x20oncología,\x20cardiología\x20y\x20muchas\x20otras.\x20Los\x20artículos\x20se\x20actualizan\x20regularmente\x20para\x20reflejar\x20los\x20últimos\x20avances\x20en\x20la\x20investigación\x20médica\x20y\x20la\x20práctica\x20clínica.\x20Recurso\x20recomendado\x20para\x20responder\x20dudas\x20de\x20fondo\x20o\x20generales\x20(background\x20questions)'},{'title':'\ufeff\x20','url':'JavaScript:void(0)','target':'_self'},{'title':'\x0a','url':_0xcef061(0x153),'target':_0x247b22(0x13c,'z0CX')},{'title':'\x0a','url':'JavaScript:void(0)','target':'_self'},{'title':'\x0a','url':'JavaScript:void(0)','target':'_self'},{'title':'Europeana','url':'https://www.europeana.eu/es/search?page=1&view=list&query='+encodeURIComponent(ascii_basico(Q)),'target':_0xcef061(0x138),'title2':'Buscador\x20de\x20Europeana,\x20que\x20provee\x20acceso\x20digital\x20a\x20material\x20histórico\x20cultural\x20europeo:\x20arte,\x20libros,\x20música\x20y\x20videos\x20sobre\x20ciencia,\x20arte,\x20prensa,\x20arqueología,\x20etc.'},{'title':'BASE\x20'+fiveyearstitle,'url':_0x247b22(0x161,'Hl7i')+yyyy5+_0x5945f3(0x19a)+encodeURIComponent(ascii_basico(Q))+'&type=allus&oaboost=0&refid=dcsores&sort=score%20desc,dctitle_sort%20asc','target':'_blank','title2':'Motor\x20de\x20búsqueda\x20que\x20permite\x20acceso\x20a\x20uno\x20de\x20los\x20repositorios\x20con\x20más\x20recursos\x20web\x20académicos\x20del\x20mundo.\x20Incluye\x20un\x20menú\x20para\x20refinar\x20la\x20búsqueda,\x20busqueda\x20multilingue,\x20múltiples\x20metadatos\x20y\x20la\x20posibilidad\x20de\x20búsqueda\x20avanzada,\x20por\x20título,\x20autor,\x20encabezamientos,\x20DOI,\x20parte\x20de\x20la\x20URL\x20o\x20tipo\x20de\x20accesos\x20o\x20tipo\x20de\x20archivo,\x20entre\x20otros.\x20.\x20Se\x20ha\x20configurado\x20por\x20defecto\x20para\x20filtrar\x20resultados\x20de\x20los\x20últimos\x20cinco\x20años'},{'title':_0x5945f3(0x18f),'url':'http://allie.dbcls.jp/short/exact/Any/'+encodeURIComponent(ascii_basico(Q)),'target':'_blank','title2':'Allie\x20busca\x20las\x20abreviaturas\x20y\x20sus\x20correspondientes\x20formas\x20largas\x20a\x20partir\x20de\x20los\x20títulos\x20y\x20resúmenes\x20en\x20todo\x20PubMed,\x20tal\x20y\x20como\x20aparecen\x20en\x20la\x20bibliografía\x20en\x20ciencias\x20de\x20la\x20salud'},{'title':_0x5945f3(0x120),'url':_0xcef061(0x119)+encodeURIComponent(ascii_basico(Q))+'&search_type=kws&full_search=false&order=altmetric','target':'_blank','title2':'Versión\x20gratuita\x20de\x20Dimensions®,\x20base\x20de\x20datos\x20bibliográfica,\x20que\x20busca\x20en\x20artículos\x20publicados\x20en\x20revistas\x20académicas,\x20libros\x20y\x20capítulos\x20de\x20libros,\x20preprints\x20y\x20actas\x20de\x20congresos.\x20Admite\x20ordenamiento\x20en\x20función\x20de\x20varias\x20métricas:\x20valor\x20de\x20Altmetric,\x20fecha\x20de\x20publicación,\x20citas,\x20etc.\x20Tiene\x20la\x20posibilidad\x20de\x20búsqueda\x20por\x20facetas\x20(año,\x20nombre\x20investigador,\x20tipo\x20de\x20artículo,\x20nombre\x20de\x20revista...).'},{'title':_0x5945f3(0x160)+todayTitle,'url':_0x247b22(0x132,'!F*Q')+encodeURIComponent(sin_tildes_mantiene_enie(Q))+'\x20after:'+today+'\x20(site:aragon.es\x20|site:riojasalud.es\x20|site:navarra.es\x20|site:san.gva.es\x20|site:murciasalud.es\x20|site:saludcastillayleon.es\x20|site:castillalamancha.es\x20|site:ses.es\x20|site:astursalud.es\x20|site:sergas.es\x20|site:scsalud.es\x20|site:gobiernodecanarias.org\x20|site:ibsalut.es\x20|site:euskadi.eus\x20|site:juntadeandalucia.es\x20|site:comunidad.madrid\x20|site:gencat.cat)','target':'_blank','title2':'Búsqueda\x20avanzada\x20en\x20Google\x20para\x20resultados\x20del\x20año\x20anterior\x20a\x20partir\x20de\x20la\x20fecha\x20de\x20búsqueda\x20en\x20páginas\x20web\x20seleccionadas\x20de\x20los\x20servicios\x20de\x20salud\x20de\x20España'},{'title':'Biomedical\x20Image\x20Open\x20Access','url':_0x247b22(0x12e,'yjFX')+encodeURIComponent(ascii_basico(Q)),'target':_0xcef061(0x138),'title2':_0xcef061(0xf7)},{'title':_0xcef061(0x172),'url':_0x5945f3(0x107)+encodeURIComponent(sin_tildes_mantiene_enie(Q))+_0xcef061(0x191),'target':_0x5945f3(0x16e),'title2':_0x247b22(0x142,'(4b0')},{'title':'FACTA\x20Data\x20Mining\x20Search','url':_0x5945f3(0x149)+encodeURIComponent(ascii_basico(Q))+'|111111|20|0','target':_0xcef061(0x138),'title2':'FACTA+\x20es\x20un\x20sistema\x20de\x20extracción\x20de\x20información\x20biomédica\x20que\x20utiliza\x20técnicas\x20de\x20procesamiento\x20del\x20lenguaje\x20natural\x20(NLP,\x20por\x20sus\x20siglas\x20en\x20inglés)\x20para\x20analizar\x20textos\x20biomédicos\x20y\x20extraer\x20información\x20relevante.\x20El\x20sistema\x20fue\x20desarrollado\x20por\x20el\x20Centro\x20Nacional\x20de\x20Tecnologías\x20de\x20la\x20Información\x20en\x20Medicina\x20(NaCTeM,\x20por\x20sus\x20siglas\x20en\x20inglés)\x20en\x20la\x20Universidad\x20de\x20Mánchester,\x20Reino\x20Unido.\x0aFACTA+\x20es\x20capaz\x20de\x20identificar\x20entidades\x20biomédicas\x20como\x20genes,\x20proteínas,\x20enfermedades,\x20fármacos,\x20entre\x20otros,\x20y\x20relaciones\x20entre\x20ellas\x20a\x20partir\x20del\x20análisis\x20de\x20textos\x20científicos\x20como\x20artículos,\x20resúmenes,\x20patentes\x20y\x20bases\x20de\x20datos\x20bibliográficas.Permite\x20identificar\x20nuevas\x20relaciones\x20entre\x20las\x20entidades\x20mencionadas\x20en\x20los\x20textos\x20y\x20obtener\x20información\x20útil\x20para\x20el\x20desarrollo\x20de\x20nuevas\x20terapias,\x20medicamentos\x20y\x20diagnósticos.'},{'title':'Google\x20Scholar','url':_0x5945f3(0x14e)+encodedQ,'target':'_blank','title2':_0xcef061(0x181)},{'title':'Grey\x20Literature','url':'https://cse.google.com/cse?cx=017503224239761697087:ih48izebczs&q='+encodedQ+_0x5945f3(0x129)+encodedQ,'target':'_blank','title2':_0x247b22(0x143,'a4t0')},{'title':_0xcef061(0x150),'url':'https://pesquisa.bvsalud.org/portal/?output=site&lang=es&from=0&sort=YEAR_DESC&format=summary&count=30&fb=&page=1&q='+encodeURIComponent(sin_tildes_mantiene_enie(Q))+_0x5945f3(0x194),'target':_0xcef061(0x138),'title2':_0xcef061(0x16f)},{'title':'MeSH','url':_0x247b22(0x108,'2fG@')+encodeURIComponent(ascii_basico(Q)),'target':'_blank','title2':_0x247b22(0x179,'6sYc')},{'title':_0x247b22(0x113,'0)S$'),'url':_0xcef061(0x174)+encodeURIComponent(ascii_basico(Q)),'target':'_blank','title2':'Base\x20de\x20datos\x20en\x20línea\x20que\x20clasifica\x20los\x20repositorios\x20de\x20datos\x20de\x20investigación\x20según\x20diferentes\x20criterios,\x20como\x20el\x20tipo\x20de\x20datos,\x20el\x20campo\x20de\x20investigación\x20y\x20la\x20ubicación\x20geográfica.\x20Cada\x20repositorio\x20de\x20datos\x20tiene\x20una\x20página\x20de\x20perfil\x20con\x20información\x20detallada\x20sobre\x20sus\x20políticas\x20de\x20acceso\x20y\x20compartición\x20de\x20datos.\x20Esta\x20herramienta\x20promueve\x20la\x20transparencia\x20y\x20accesibilidad\x20de\x20los\x20datos\x20de\x20investigación,\x20mejorando\x20la\x20colaboración\x20y\x20la\x20reproducibilidad\x20en\x20la\x20investigación'},{'title':'DeCS:\x20MeSH\x20Español--%5Cx3eIngles','url':'https://decs.bvsalud.org/es/ths?filter=ths_termall&q='+encodeURIComponent(sin_tildes_mantiene_enie(Q))+'&s=all','target':'_blank','title2':'DeCS\x20es\x20la\x20versión\x20en\x20español\x20de\x20MeSH,\x20la\x20base\x20de\x20datos\x20de\x20términos\x20médicos\x20controlados\x20de\x20la\x20Biblioteca\x20Nacional\x20de\x20Medicina\x20de\x20los\x20Estados\x20Unidos.\x20DeCS\x20permite\x20la\x20búsqueda\x20de\x20información\x20médica\x20y\x20científica\x20en\x20español\x20y\x20está\x20organizado\x20en\x20una\x20estructura\x20jerárquica\x20de\x20árbol\x20para\x20facilitar\x20la\x20búsqueda\x20de\x20información\x20específica.\x20Además\x20de\x20los\x20términos\x20de\x20MeSH\x20en\x20inglés,\x20DeCS\x20incluye\x20términos\x20de\x20MeSH\x20traducidos\x20al\x20español\x20y\x20términos\x20específicos\x20de\x20la\x20salud\x20en\x20español\x20que\x20no\x20están\x20incluidos\x20en\x20MeSH.\x20DeCS\x20es\x20una\x20herramienta\x20importante\x20para\x20los\x20profesionales\x20de\x20la\x20salud\x20y\x20los\x20investigadores\x20que\x20hablan\x20español,\x20ya\x20que\x20les\x20permite\x20acceder\x20a\x20información\x20médica\x20en\x20su\x20idioma\x20nativo\x20y\x20colaborar\x20con\x20otros\x20profesionales\x20de\x20la\x20salud\x20de\x20habla\x20hispana'},{'title':'PubMed','url':'https://pubmed.ncbi.nlm.nih.gov/?term='+encodeURIComponent(ascii_basico(Q)),'target':_0x5945f3(0x16e),'title2':'Base\x20de\x20datos\x20de\x20la\x20Biblioteca\x20Nacional\x20de\x20Medicina\x20de\x20los\x20Estados\x20Unidos.\x20Búsqueda\x20avanzada:\x0aAND,\x20OR\x20y\x20NOT,\x20con\x20paréntesis\x20si\x20se\x20desea\x20priorizar\x20el\x20operador\x20dentro\x20del\x20paréntesis\x0apalabra[ti]→Título,palabra[TIAB]→Título\x20y\x20resumen,revista[TA]\x0aBúsquedas\x20por\x20fecha:\x20yyyy/mm/dd\x20[dp];\x20yyyy[dp]\x20o\x20yyyy/mm\x20[dp]\x20\x22last\x20X\x20days\x22[dp];\x20\x22last\x20X\x20months\x22[dp]\x20o\x20\x22last\x20X\x20year\x22[dp]\x0aBúsqueda\x20por\x20rango\x20de\x20fecha:\x20Añadiendo\x20dos\x20puntos\x20entre\x20fechas→yyyy:yyyy\x20[dp]\x20o\x20yyyy/mm:yyyy/mm\x20[dp]\x0aVocabulario\x20controlado:\x20\x22Mesh\x20term\x22[mesh],\x22Mesh\x20term\x22[mesh:noexp],\x20\x22Mesh\x20Term\x22[Majr],[sh]'},{'title':_0x5945f3(0x127),'url':_0xcef061(0x157)+encodeURIComponent(ascii_basico(Q))+'+[TIAB]','target':'_blank','title2':'Búsqueda\x20filtrada\x20en\x20PubMed\x20del\x20término\x20introducido\x20en\x20el\x20título\x20o\x20resumen\x20del\x20artículo'},{'title':_0x247b22(0x116,'P1sy'),'url':_0xcef061(0x157)+encodeURIComponent(ascii_basico(Q))+'+(Clinical+pathway[mh]+OR+Clinical+protocol[mh]+OR+Consensus[mh]+OR+Consensus+development+conferences+as+topic[mh]+OR+Critical+pathways[mh]+OR+Guidelines+as+topic+[Mesh%253ANoExp]+OR+Practice+guidelines+as+topic[mh]+OR+Health+planning+guidelines[mh]+OR+guideline[pt]+OR+practice+guideline[pt]+OR+consensus+development+conference[pt]+OR+consensus+development+conference%252C+NIH[pt]+OR+position+statement*[tiab]+OR+guideline*[TI]+)','target':_0x247b22(0xfa,'!F*Q'),'title2':_0xcef061(0xfe)},{'title':'PubMed\x20Clinical\x20Queries','url':'https://pubmed.ncbi.nlm.nih.gov/clinical/?term='+encodeURIComponent(ascii_basico(Q)),'target':'_blank','title2':_0xcef061(0x10b)},{'title':'PubMed\x20Syst\x20Rev/HTA','url':_0x247b22(0x186,'L6rj')+encodeURIComponent(ascii_basico(Q))+'+(systematic%5Bsb%5D%2BOR%2Bmeta-analysis%5Bpt%5D%2BOR%2Bmeta-analysis\x20as\x20topic%5Bmh%5D%2BOR%2Bmeta-analysis%5Bmh%5D%2BOR%2Bmeta\x20analy*%5Btw%5D%2BOR%2Bmetanaly*%5Btw%5D%2BOR%2Bmetaanaly*%5Btw%5D%2BOR%2Bmet\x20analy*%5Btw%5D%2BOR%2Bintegrative\x20research%5Btiab%5D%2BOR%2Bintegrative\x20review*%5Btiab%5D%2BOR%2Bintegrative\x20overview*%5Btiab%5D%2BOR%2Bresearch\x20integration*%5Btiab%5D%2BOR%2Bresearch\x20overview*%5Btiab%5D%2BOR%2Bcollaborative\x20review*%5Btiab%5D%2BOR%2Bcollaborative\x20overview*%5Btiab%5D%2BOR%2Bsystematic\x20review*%5Btiab%5D%2BOR%2Btechnology\x20assessment*%5Btiab%5D%2BOR%2Btechnology\x20overview*%5Btiab%5D%2BOR%2B%2522Technology\x20Assessment%2C\x20Biomedical%2522%5Bmh%5D%2BOR%2BHTA%5Btiab%5D%2BOR%2BHTAs%5Btiab%5D%2BOR%2Bcomparative\x20efficacy%5Btiab%5D%2BOR%2Bcomparative\x20effectiveness%5Btiab%5D%2BOR%2Boutcomes\x20research%5Btiab%5D%2BOR%2Bindirect\x20comparison*%5Btiab%5D%2BOR%2B((indirect\x20treatment%5Btiab%5D%2BOR%2Bmixed-treatment%5Btiab%5D)\x20AND\x20comparison*%5Btiab%5D)%2BOR%2BEmbase*%5Btiab%5D%2BOR%2BCinahl*%5Btiab%5D%2BOR%2Bsystematic\x20overview*%5Btiab%5D%2BOR%2Bmethodological\x20overview*%5Btiab%5D%2BOR%2Bmethodologic\x20overview*%5Btiab%5D%2BOR%2Bmethodological\x20review*%5Btiab%5D%2BOR%2Bmethodologic\x20review*%5Btiab%5D%2BOR%2Bquantitative\x20review*%5Btiab%5D%2BOR%2Bquantitative\x20overview*%5Btiab%5D%2BOR%2Bquantitative\x20synthes*%5Btiab%5D%2BOR%2Bpooled\x20analy*%5Btiab%5D%2BOR%2BCochrane%5Btiab%5D%2BOR%2BMedline%5Btiab%5D%2BOR%2BPubmed%5Btiab%5D%2BOR%2BMedlars%5Btiab%5D%2BOR%2Bhandsearch*%5Btiab%5D%2BOR%2Bhand\x20search*%5Btiab%5D%2BOR%2Bmeta-regression*%5Btiab%5D%2BOR%2Bmetaregression*%5Btiab%5D%2BOR%2Bdata\x20synthes*%5Btiab%5D%2BOR%2Bdata\x20extraction%5Btiab%5D%2BOR%2Bdata\x20abstraction*%5Btiab%5D%2BOR%2Bmantel\x20haenszel%5Btiab%5D%2BOR%2Bpeto%5Btiab%5D%2BOR%2Bder-simonian%5Btiab%5D%2BOR%2Bdersimonian%5Btiab%5D%2BOR%2Bfixed\x20effect*%5Btiab%5D%2BOR%2B%2522Cochrane\x20Database\x20Syst\x20Rev%2522%5BJournal%3A__jrid21711%5D%2BOR%2B%2522health\x20technology\x20assessment\x20winchester%2C\x20england%2522%5BJournal%5D%2BOR%2B%2522Evid\x20Rep\x20Technol\x20Assess\x20(Full\x20Rep)%2522%5BJournal%5D%2BOR%2B%2522Evid\x20Rep\x20Technol\x20Assess\x20(Summ)%2522%5BJournal%5D%2BOR%2B%2522Int\x20J\x20Technol\x20Assess\x20Health\x20Care%2522%5BJournal%5D%2BOR%2B%2522GMS\x20Health\x20Technol\x20Assess%2522%5BJournal%5D%2BOR%2B%2522Health\x20Technol\x20Assess\x20(Rockv)%2522%5BJournal%5D%2BOR%2B%2522Health\x20Technol\x20Assess\x20Rep%2522%5BJournal%5D%2B)','target':'_blank','title2':_0x5945f3(0x15c)},{'title':_0x247b22(0x15b,'pjP0'),'url':_0xcef061(0x151)+encodeURIComponent(ascii_basico(Q)),'target':'_blank','title2':'PubMed\x20PubReMiner\x20es\x20una\x20herramienta\x20de\x20minería\x20de\x20datos\x20que\x20extraeinformación\x20de\x20la\x20base\x20de\x20datos\x20de\x20PubMed.\x20Permite\x20buscar\x20y\x20analizar\x20los\x20datos\x20de\x20PubMed\x20en\x20función\x20de\x20criterios\x20específicos,\x20como\x20el\x20autor,\x20el\x20año\x20de\x20publicación,\x20las\x20palabras\x20clave\x20y\x20los\x20términos\x20MeSH.\x20Presenta\x20los\x20resultados\x20tablas\x20para\x20facilitar\x20la\x20interpretación\x20de\x20los\x20datos'},{'title':'LENS\x20'+fiveyearstitle,'url':'https://www.lens.org/lens/search/scholar/list?q=(title:('+encodeURIComponent(ascii_basico(Q))+_0x5945f3(0xfb)+encodeURIComponent(ascii_basico(Q))+')%20OR%20keyword:('+encodeURIComponent(ascii_basico(Q))+')%20OR%20field_of_study:('+encodeURIComponent(ascii_basico(Q))+'))&p=0&n=10&s=referenced_by_count&d=%20&f=false&e=false&l=es&authorField=author&dateFilterField=publishedYear&orderBy=%20referenced_by_count&presentation=false&preview=false&stemmed=true&useAuthorId=false&publishedYear.from='+yyyy5,'target':_0xcef061(0x138),'title2':'LENS\x20(Life\x20Sciences\x20Search\x20Engine)\x20es\x20una\x20plataforma\x20de\x20búsqueda\x20en\x20línea\x20desarrollada\x20por\x20la\x20empresa\x20de\x20tecnología\x20de\x20información\x20digital,\x20Digital\x20Science.\x20Proporciona\x20resultados\x20de\x20búsqueda\x20en\x20áreas\x20específicas\x20de\x20las\x20ciencias\x20de\x20la\x20vida,\x20como\x20la\x20biología\x20molecular,\x20la\x20genómica\x20y\x20la\x20biotecnología.\x20Utiliza\x20un\x20algoritmo\x20de\x20búsqueda\x20avanzado\x20que\x20ofrece\x20sugerencias\x20y\x20recomendaciones\x20de\x20búsqueda\x20basadas\x20en\x20tendencias\x20y\x20patrones\x20de\x20búsqueda\x20de\x20los\x20usuarios.\x20Cuenta\x20con\x20herramientas\x20para\x20filtrar,\x20descubrir\x20nuevas\x20áreas\x20de\x20investigación\x20y\x20colaborar\x20con\x20otros\x20investigadores.\x0aResultados\x20filtrados\x20a\x20los\x20últimos\x20cinco\x20años\x20desde\x20el\x20día\x20de\x20búsqueda'},{'title':_0x5945f3(0x13b),'url':_0x247b22(0xf9,'Nr[!')+encodeURIComponent(ascii_basico(Q)),'target':'_blank','title2':_0x247b22(0x103,'0Cn3')},{'title':'Crossref','url':'https://search.crossref.org/?q='+encodeURIComponent(ascii_basico(Q))+'&sort=year','target':_0xcef061(0x138),'title2':'Proporciona\x20identificación\x20y\x20enlace\x20persistentes\x20a\x20contenidos\x20digitales\x20en\x20el\x20ámbito\x20académico\x20y\x20científico.\x20Permite\x20encontrar,\x20acceder\x20y\x20usar\x20contenido\x20confiable\x20de\x20manera\x20eficiente\x20y\x20efectiva.\x20Incluye\x20la\x20asignación\x20de\x20identificadores\x20únicos\x20(DOIs)\x20a\x20los\x20contenidos\x20digitales,\x20el\x20registro\x20de\x20metadatos\x20y\x20la\x20vinculación\x20de\x20referencias\x20entre\x20diferentes\x20publicaciones\x20y\x20otros\x20materiales'},{'title':'\ufeff\x20','url':_0x247b22(0x17c,'Sk)z'),'target':_0xcef061(0x188)},{'title':'\ufeff\x20','url':_0x5945f3(0x159),'target':_0xcef061(0x188)},{'title':'\x0a','url':_0xcef061(0x153),'target':_0x5945f3(0x121)},{'title':'\x0a','url':_0x5945f3(0x159),'target':'_self'},{'title':'\x0a','url':'JavaScript:void(0)','target':'_self'},{'title':'TRADUCTOR\x20DeepL\x20(multilingüe)','url':'https://www.deepl.com/translator#es/en/'+encodeURIComponent(sin_tildes_mantiene_enie(Q)),'target':'_blank','title2':_0xcef061(0x135)},{'title':_0x5945f3(0x155),'url':'https://docs.google.com/forms/d/e/1FAIpQLSe0ZjPYr7Tu-5urf9O1mBU4cbuhD_f8BjX4NPo0v6TqKE4RYA/viewform?entry.330152244=🔎\x20Buscadores!\x20V.2.0','target':'_blank','title2':_0xcef061(0x118)},{'title':'CERRAR\x20BUSCADORES','url':'javascript:So_CleanUp()','target':'_self'},{'title':'Buscar\x20en\x20Gmail','url':_0x247b22(0x18e,'C#BB')+encodeURIComponent(sin_tildes_mantiene_enie(Q)),'target':_0x247b22(0x173,'t8Eb'),'title2':_0x247b22(0x15d,'dgG1')}],0x0,0x0,0x0,Math['floor'](0xf1b30*Math[_0xcef061(0x133)]())+0x2710);}else((navigator['language']||'')+'')[_0x247b22(0x105,'DUYS')]()['startsWith']('es')?(alert(_0x5945f3(0x10c)),window['open']('https://ernestobarrera.github.io/t/buscadores.html#/1')):(alert(_0xcef061(0x195)),window['open']('https://ernestobarrera.github.io/t/buscadores.html#/1'));
-              "
-            class="bookmarklet-button"
-            id="bookmarklet-link"
-          >
-            <span>🔎</span>
-            <span>Buscadores 2.0</span>
-          </a>
-          <div class="bookmarklet-info">
-            <h3>📌 Instalación rápida</h3>
-            <p>
-              Arrastra el botón dorado a tu barra de marcadores para instalar
-            </p>
-            <div class="keyboard-hint">
-              <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> para mostrar barra
-              de marcadores
+          <div class="features-grid">
+            <div class="feature-card">
+              <h4>⚡ Instalación instantánea</h4>
+              <p>
+                Sin descargas, extensiones ni configuración. Solo arrastra a
+                marcadores.
+              </p>
             </div>
+            <div class="feature-card">
+              <h4>🎯 50+ buscadores</h4>
+              <p>
+                PubMed, Cochrane, UpToDate, Google Scholar y docenas más en un
+                clic.
+              </p>
+            </div>
+            <div class="feature-card">
+              <h4>🔬 Especializado</h4>
+              <p>
+                Diseñado para profesionales sanitarios e investigadores
+                biomédicos.
+              </p>
+            </div>
+            <div class="feature-card">
+              <h4>📱 Multiplataforma</h4>
+              <p>
+                Funciona en Chrome, Edge, Firefox. Sincronizable con móviles.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h3 class="section-title">Cómo funciona</h3>
+          <ol class="compact-list">
+            <li>
+              <strong>Selecciona</strong> cualquier texto en una página web
+              (opcional)
+            </li>
+            <li>
+              <strong>Activa</strong> el bookmarklet desde tu barra de
+              marcadores
+            </li>
+            <li>
+              <strong>Busca</strong> en múltiples recursos con un solo clic
+            </li>
+            <li>
+              <strong>Abre</strong> resultados en nuevas pestañas
+              automáticamente
+            </li>
+          </ol>
+          <div class="tip-box">
+            <strong>💡 Tip:</strong> Usa el botón central del ratón para abrir
+            varios buscadores sin cerrar el menú
           </div>
         </div>
       </section>
 
-      <!-- Navigation -->
-      <nav class="nav-tabs">
-        <button class="nav-tab active" onclick="showSection('inicio')">
-          Inicio
-        </button>
-        <button class="nav-tab" onclick="showSection('recursos')">
-          Recursos
-        </button>
-        <button class="nav-tab" onclick="showSection('uso')">Uso</button>
-        <button class="nav-tab" onclick="showSection('caracteristicas')">
-          Características
-        </button>
-        <button class="nav-tab" onclick="showSection('demo')">Demo</button>
-        <button class="nav-tab" onclick="showSection('feedback')">
-          Feedback
-        </button>
-      </nav>
+      <!-- Recursos -->
+      <section id="recursos" class="content-section">
+        <div class="section-card">
+          <h2 class="section-title">Recursos disponibles</h2>
 
-      <!-- Content Sections -->
-      <div class="content-grid">
-        <!-- Inicio -->
-        <section id="inicio" class="content-section active">
-          <div class="section-card">
-            <h2 class="section-title">Características principales</h2>
-
-            <div class="features-grid">
-              <div class="feature-card">
-                <h4>⚡ Instalación instantánea</h4>
-                <p>
-                  Sin descargas, extensiones ni configuración. Solo arrastra a
-                  marcadores.
-                </p>
-              </div>
-              <div class="feature-card">
-                <h4>🎯 50+ buscadores</h4>
-                <p>
-                  PubMed, Cochrane, UpToDate, Google Scholar y docenas más en un
-                  clic.
-                </p>
-              </div>
-              <div class="feature-card">
-                <h4>🔬 Especializado</h4>
-                <p>
-                  Diseñado para profesionales sanitarios e investigadores
-                  biomédicos.
-                </p>
-              </div>
-              <div class="feature-card">
-                <h4>📱 Multiplataforma</h4>
-                <p>
-                  Funciona en Chrome, Edge, Firefox. Sincronizable con móviles.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="section-card">
-            <h3 class="section-title">Cómo funciona</h3>
-            <ol class="compact-list">
-              <li>
-                <strong>Selecciona</strong> cualquier texto en una página web
-                (opcional)
-              </li>
-              <li>
-                <strong>Activa</strong> el bookmarklet desde tu barra de
-                marcadores
-              </li>
-              <li>
-                <strong>Busca</strong> en múltiples recursos con un solo clic
-              </li>
-              <li>
-                <strong>Abre</strong> resultados en nuevas pestañas
-                automáticamente
-              </li>
-            </ol>
-            <div class="tip-box">
-              <strong>💡 Tip:</strong> Usa el botón central del ratón para abrir
-              varios buscadores sin cerrar el menú
-            </div>
-          </div>
-        </section>
-
-        <!-- Recursos -->
-        <section id="recursos" class="content-section">
-          <div class="section-card">
-            <h2 class="section-title">Recursos disponibles</h2>
-
-            <div class="two-column">
-              <div>
-                <h4
-                  style="
+          <div class="two-column">
+            <div>
+              <h4 style="
                     color: var(--accent);
                     margin-bottom: 0.5rem;
                     font-size: 1rem;
-                  "
-                >
-                  📚 Bases de datos
-                </h4>
-                <ul class="compact-list">
-                  <li>PubMed / PubMed Central</li>
-                  <li>Cochrane Library</li>
-                  <li>Google Scholar</li>
-                  <li>TRIP Database</li>
-                  <li>BVS / LILACS</li>
-                  <li>Epistemonikos</li>
-                </ul>
-              </div>
+                  ">
+                📚 Bases de datos
+              </h4>
+              <ul class="compact-list">
+                <li>PubMed / PubMed Central</li>
+                <li>Cochrane Library</li>
+                <li>Google Scholar</li>
+                <li>TRIP Database</li>
+                <li>BVS / LILACS</li>
+                <li>Epistemonikos</li>
+              </ul>
+            </div>
 
-              <div>
-                <h4
-                  style="
+            <div>
+              <h4 style="
                     color: var(--accent);
                     margin-bottom: 0.5rem;
                     font-size: 1rem;
-                  "
-                >
-                  💊 Farmacología
-                </h4>
-                <ul class="compact-list">
-                  <li>CIMA - AEMPS</li>
-                  <li>EMA (European Medicines)</li>
-                  <li>WHO ATC/DDD</li>
-                  <li>SIDER Effects</li>
-                  <li>Alquimia Farma</li>
-                </ul>
-              </div>
+                  ">
+                💊 Farmacología
+              </h4>
+              <ul class="compact-list">
+                <li>CIMA - AEMPS</li>
+                <li>EMA (European Medicines)</li>
+                <li>WHO ATC/DDD</li>
+                <li>SIDER Effects</li>
+                <li>Alquimia Farma</li>
+              </ul>
+            </div>
 
-              <div>
-                <h4
-                  style="
+            <div>
+              <h4 style="
                     color: var(--accent);
                     margin-bottom: 0.5rem;
                     font-size: 1rem;
-                  "
-                >
-                  📋 Guías clínicas
-                </h4>
-                <ul class="compact-list">
-                  <li>GuíaSalud</li>
-                  <li>NICE Guidelines</li>
-                  <li>SIGN Guidelines</li>
-                  <li>Fisterra</li>
-                  <li>UpToDate</li>
-                  <li>PREEVID</li>
-                </ul>
-              </div>
+                  ">
+                📋 Guías clínicas
+              </h4>
+              <ul class="compact-list">
+                <li>GuíaSalud</li>
+                <li>NICE Guidelines</li>
+                <li>SIGN Guidelines</li>
+                <li>Fisterra</li>
+                <li>UpToDate</li>
+                <li>PREEVID</li>
+              </ul>
+            </div>
 
-              <div>
-                <h4
-                  style="
+            <div>
+              <h4 style="
                     color: var(--accent);
                     margin-bottom: 0.5rem;
                     font-size: 1rem;
-                  "
-                >
-                  🔬 Ensayos clínicos
-                </h4>
-                <ul class="compact-list">
-                  <li>ClinicalTrials.gov</li>
-                  <li>WHO ICTRP</li>
-                  <li>EU Clinical Trials</li>
-                  <li>INAHTA Database</li>
-                </ul>
-              </div>
+                  ">
+                🔬 Ensayos clínicos
+              </h4>
+              <ul class="compact-list">
+                <li>ClinicalTrials.gov</li>
+                <li>WHO ICTRP</li>
+                <li>EU Clinical Trials</li>
+                <li>INAHTA Database</li>
+              </ul>
             </div>
           </div>
+        </div>
 
-          <div class="section-card">
-            <h3 class="section-title">Mapa interactivo de recursos</h3>
-            <div class="genially-container">
-              <iframe
-                src="https://view.genial.ly/5ba902b9304be1592031172c"
-                allowfullscreen="true"
-              ></iframe>
-            </div>
-            <div class="tip-box">
-              <strong>ℹ️</strong> Pulsa los botones de información en cada
-              categoría para ver detalles
+        <div class="section-card">
+          <h3 class="section-title">Mapa interactivo de recursos</h3>
+          <div class="genially-container">
+            <iframe src="https://view.genial.ly/5ba902b9304be1592031172c" allowfullscreen="true"></iframe>
+          </div>
+          <div class="tip-box">
+            <strong>ℹ️</strong> Pulsa los botones de información en cada
+            categoría para ver detalles
+          </div>
+        </div>
+      </section>
+
+      <!-- Uso -->
+      <section id="uso" class="content-section">
+        <div class="section-card">
+          <h2 class="section-title">Guía de uso</h2>
+
+          <h4 style="color: var(--accent); margin: 0.75rem 0">Uso básico</h4>
+          <ol class="compact-list">
+            <li>
+              <strong>Sin selección:</strong> Aparecerá un cuadro para
+              introducir términos
+            </li>
+            <li>
+              <strong>Con selección:</strong> Busca directamente el texto
+              seleccionado
+            </li>
+            <li>
+              <strong>Click normal:</strong> Abre el recurso y cierra el menú
+            </li>
+            <li>
+              <strong>Click con rueda:</strong> Abre sin cerrar (búsqueda
+              múltiple)
+            </li>
+          </ol>
+
+          <h4 style="color: var(--accent); margin: 0.75rem 0">
+            Funciones avanzadas
+          </h4>
+          <ul class="compact-list">
+            <li>
+              <strong>Enlaces visitados:</strong> Cambian de color para
+              tracking
+            </li>
+            <li>
+              <strong>Búsqueda contextual:</strong> Detecta idioma y adapta
+              recursos
+            </li>
+            <li>
+              <strong>Normalización:</strong> Gestiona tildes y caracteres
+              especiales
+            </li>
+            <li>
+              <strong>Filtros temporales:</strong> Algunos recursos incluyen
+              rangos de fecha
+            </li>
+          </ul>
+
+          <div class="tip-box">
+            <strong>⚡ Productividad:</strong> Combina con gestores de
+            pestañas como OneTab o Session Buddy para organizar búsquedas
+            complejas
+          </div>
+        </div>
+      </section>
+
+      <!-- Demo -->
+      <section id="demo" class="content-section">
+        <div class="section-card">
+          <h2 class="section-title">Demostración</h2>
+          <div class="demo-container">
+            <img src="https://ernestobarrera.github.io/assets/images/demo_bookmarklet_buscadores.gif"
+              alt="Demo del bookmarklet Buscadores 2.0" class="demo-image" />
+          </div>
+          <div class="tip-box">
+            La demo muestra una búsqueda del término "hipertensión" abriendo
+            múltiples recursos simultáneamente
+          </div>
+        </div>
+      </section>
+
+      <!-- Feedback -->
+      <section id="feedback" class="content-section">
+        <div class="section-card">
+          <h2 class="section-title">Colabora y mejora</h2>
+
+          <div class="footer-links">
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSe0ZjPYr7Tu-5urf9O1mBU4cbuhD_f8BjX4NPo0v6TqKE4RYA/viewform"
+              target="_blank" class="footer-link">
+              <i class="fas fa-bug"></i>
+              Reportar errores
+            </a>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSf-NAai0wUokNb8cVp2sYmqxW1PoLnEnNCQCnCLLHNEgrodpg/viewform"
+              target="_blank" class="footer-link">
+              <i class="fas fa-star"></i>
+              Valorar herramienta
+            </a>
+            <a href="https://github.com/ernestobarrera" target="_blank" class="footer-link">
+              <i class="fab fa-github"></i>
+              Ver código
+            </a>
+          </div>
+
+          <div class="author-info">
+            <img src="https://ernestobarrera.github.io/assets/images/avatar_cabecera.png" alt=""
+              class="author-avatar" />
+            <div>
+              <p>
+                Desarrollado por
+                <a href="https://bsky.app/profile/ernestob.bsky.social" target="_blank"
+                  style="color: var(--accent)">@ernestob</a>
+              </p>
+              <p style="font-size: 0.8rem">CC BY-SA 3.0 | 2026</p>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
+    </div>
+  </main>
 
-        <!-- Uso -->
-        <section id="uso" class="content-section">
-          <div class="section-card">
-            <h2 class="section-title">Guía de uso</h2>
+  <!-- Footer -->
+  <footer class="footer-section">
+    <p style="font-size: 0.85rem; color: var(--text-secondary)">
+      Parte del proyecto de herramientas sanitarias de
+      <a href="https://ernestobarrera.github.io" style="color: var(--accent)">ernestobarrera.github.io</a>
+    </p>
+  </footer>
 
-            <h4 style="color: var(--accent); margin: 0.75rem 0">Uso básico</h4>
-            <ol class="compact-list">
-              <li>
-                <strong>Sin selección:</strong> Aparecerá un cuadro para
-                introducir términos
-              </li>
-              <li>
-                <strong>Con selección:</strong> Busca directamente el texto
-                seleccionado
-              </li>
-              <li>
-                <strong>Click normal:</strong> Abre el recurso y cierra el menú
-              </li>
-              <li>
-                <strong>Click con rueda:</strong> Abre sin cerrar (búsqueda
-                múltiple)
-              </li>
-            </ol>
+  <!-- Beta Badge -->
+  <div class="beta-badge">Beta (hasta diciembre 2029)</div>
 
-            <h4 style="color: var(--accent); margin: 0.75rem 0">
-              Funciones avanzadas
-            </h4>
-            <ul class="compact-list">
-              <li>
-                <strong>Enlaces visitados:</strong> Cambian de color para
-                tracking
-              </li>
-              <li>
-                <strong>Búsqueda contextual:</strong> Detecta idioma y adapta
-                recursos
-              </li>
-              <li>
-                <strong>Normalización:</strong> Gestiona tildes y caracteres
-                especiales
-              </li>
-              <li>
-                <strong>Filtros temporales:</strong> Algunos recursos incluyen
-                rangos de fecha
-              </li>
-            </ul>
+  <!-- Include footer -->
+  <include src="footer.html"></include>
 
-            <div class="tip-box">
-              <strong>⚡ Productividad:</strong> Combina con gestores de
-              pestañas como OneTab o Session Buddy para organizar búsquedas
-              complejas
-            </div>
-          </div>
-        </section>
+  <!-- JavaScript -->
+  <script src="./assets/js/include.js"></script>
+  <script>
+    // Función para cambiar entre secciones
+    function showSection(sectionId) {
+      const sections = document.querySelectorAll(".content-section");
+      sections.forEach((section) => section.classList.remove("active"));
 
-        <!-- Características -->
-        <section id="caracteristicas" class="content-section">
-          <div class="section-card">
-            <h2 class="section-title">Especificaciones técnicas</h2>
+      const tabs = document.querySelectorAll(".nav-tab");
+      tabs.forEach((tab) => tab.classList.remove("active"));
 
-            <div class="two-column">
-              <div>
-                <h4 style="color: var(--accent); margin-bottom: 0.5rem">
-                  🛠️ Técnico
-                </h4>
-                <ul class="compact-list">
-                  <li>JavaScript puro, sin dependencias</li>
-                  <li>Compatible con todos los navegadores modernos</li>
-                  <li>Funciona en sitios con HTTPS y HTTP</li>
-                  <li>No requiere permisos especiales</li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 style="color: var(--accent); margin-bottom: 0.5rem">
-                  🔒 Privacidad
-                </h4>
-                <ul class="compact-list">
-                  <li>No almacena datos personales</li>
-                  <li>No usa cookies ni tracking</li>
-                  <li>Código abierto y auditable</li>
-                  <li>Ejecución 100% local</li>
-                </ul>
-              </div>
-            </div>
-
-            <h4 style="color: var(--accent); margin: 0.75rem 0">
-              📊 Ventajas sobre extensiones
-            </h4>
-            <ul class="compact-list">
-              <li>No ralentiza el navegador</li>
-              <li>Portable entre dispositivos</li>
-              <li>Sin actualizaciones automáticas no deseadas</li>
-              <li>Funciona en navegadores corporativos restringidos</li>
-            </ul>
-          </div>
-        </section>
-
-        <!-- Demo -->
-        <section id="demo" class="content-section">
-          <div class="section-card">
-            <h2 class="section-title">Demostración</h2>
-            <div class="demo-container">
-              <img
-                src="https://ernestobarrera.github.io/assets/images/demo_bookmarklet_buscadores.gif"
-                alt="Demo del bookmarklet Buscadores 2.0"
-                class="demo-image"
-              />
-            </div>
-            <div class="tip-box">
-              La demo muestra una búsqueda del término "hipertensión" abriendo
-              múltiples recursos simultáneamente
-            </div>
-          </div>
-        </section>
-
-        <!-- Feedback -->
-        <section id="feedback" class="content-section">
-          <div class="section-card">
-            <h2 class="section-title">Colabora y mejora</h2>
-
-            <div class="footer-links">
-              <a
-                href="https://docs.google.com/forms/d/e/1FAIpQLSe0ZjPYr7Tu-5urf9O1mBU4cbuhD_f8BjX4NPo0v6TqKE4RYA/viewform"
-                target="_blank"
-                class="footer-link"
-              >
-                <i class="fas fa-bug"></i>
-                Reportar errores
-              </a>
-              <a
-                href="https://docs.google.com/forms/d/e/1FAIpQLSf-NAai0wUokNb8cVp2sYmqxW1PoLnEnNCQCnCLLHNEgrodpg/viewform"
-                target="_blank"
-                class="footer-link"
-              >
-                <i class="fas fa-star"></i>
-                Valorar herramienta
-              </a>
-              <a
-                href="https://github.com/ernestobarrera"
-                target="_blank"
-                class="footer-link"
-              >
-                <i class="fab fa-github"></i>
-                Ver código
-              </a>
-            </div>
-
-            <div class="author-info">
-              <img
-                src="https://ernestobarrera.github.io/assets/images/avatar_cabecera.png"
-                alt="Avatar"
-                class="author-avatar"
-              />
-              <div>
-                <p>
-                  Desarrollado por
-                  <a
-                    href="https://bsky.app/profile/ernestob.bsky.social"
-                    target="_blank"
-                    style="color: var(--accent)"
-                    >@ernestob</a
-                  >
-                </p>
-                <p style="font-size: 0.8rem">CC BY-SA 3.0 | 2024</p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="footer-section">
-      <p style="font-size: 0.85rem; color: var(--text-secondary)">
-        Parte del proyecto de herramientas sanitarias de
-        <a href="https://ernestobarrera.github.io" style="color: var(--accent)"
-          >ernestobarrera.github.io</a
-        >
-      </p>
-    </footer>
-
-    <!-- Beta Badge -->
-    <div class="beta-badge">Beta (hasta enero 2026)</div>
-
-    <!-- Include footer -->
-    <include src="footer.html"></include>
-
-    <!-- JavaScript -->
-    <script src="./assets/js/include.js"></script>
-    <script>
-      // Función para cambiar entre secciones
-      function showSection(sectionId) {
-        const sections = document.querySelectorAll(".content-section");
-        sections.forEach((section) => section.classList.remove("active"));
-
-        const tabs = document.querySelectorAll(".nav-tab");
-        tabs.forEach((tab) => tab.classList.remove("active"));
-
-        const activeSection = document.getElementById(sectionId);
-        if (activeSection) {
-          activeSection.classList.add("active");
-        }
-
-        event.currentTarget.classList.add("active");
+      const activeSection = document.getElementById(sectionId);
+      if (activeSection) {
+        activeSection.classList.add("active");
       }
 
-      // Bookmarklet configurado directamente en el HTML
-    </script>
-  </body>
+      event.currentTarget.classList.add("active");
+    }
+
+    // Bookmarklet configurado directamente en el HTML
+  </script>
+</body>
+
 </html>
