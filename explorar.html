@@ -1,0 +1,2017 @@
+<!--
+=====================
+  explorar.html
+  Índice Interactivo del Sitio
+  
+  Basado en patrones de app_edu (Vibe Coding Educativo)
+  Adaptado a la estética del sitio
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="Tu escritorio clínico personalizado: explora recursos del sitio, guarda favoritos y añade tus propios enlaces" />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <title>Mi Escritorio Clínico | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Explorar Recursos | @ernestob" />
+    <meta property="og:site_name" content="Recursos para la gestión de información sanitaria" />
+    <meta property="og:url" content="https://ernestobarrera.github.io/explorar.html" />
+    <meta property="og:image" content="https://ernestobarrera.github.io/assets/images/me.png" />
+
+    <!-- Fuentes -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+
+    <!-- CSS Base del sitio -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" />
+
+    <!-- Estilos específicos de explorar.html -->
+    <style>
+        /* Layout principal con sidebar */
+        .explorar-layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        /* Sidebar */
+        .explorar-sidebar {
+            position: sticky;
+            top: calc(var(--header-height) + 1rem);
+            max-height: calc(100vh - var(--header-height) - 2rem);
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .sidebar-section {
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+        }
+
+        .filter-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.6rem;
+            background: transparent;
+            border: none;
+            border-radius: 0.375rem;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            width: 100%;
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .filter-btn.active {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--accent-color);
+            font-weight: 500;
+        }
+
+        .filter-btn .count {
+            margin-left: auto;
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        .add-btn {
+            background: rgba(236, 72, 153, 0.25);
+            border: none;
+            border-radius: 0.25rem;
+            color: #ec4899;
+            width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .add-btn:hover {
+            background: rgba(236, 72, 153, 0.5);
+            transform: scale(1.1);
+        }
+
+        /* Área principal de contenido */
+        .explorar-content {
+            min-width: 0;
+        }
+
+        /* Barra de búsqueda y herramientas */
+        .explorar-toolbar {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Botones de acción */
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--hover-color);
+            border-color: var(--accent-color);
+        }
+
+        .action-btn.active {
+            background: rgba(251, 191, 36, 0.15);
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        /* Contador de resultados */
+        .results-info {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .results-info strong {
+            color: var(--accent-color);
+        }
+
+        /* Grid de recursos */
+        .recursos-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        /* Card de recurso */
+        .recurso-card {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            background: var(--card-bg);
+            border-radius: 0.5rem;
+            border-left: 3px solid var(--accent-color);
+            transition: all 0.2s ease;
+            position: relative;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .recurso-card:hover {
+            background: var(--hover-color);
+            transform: translateX(3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .recurso-card[data-tipo="calculadora"] {
+            border-left-color: #10b981;
+        }
+
+        .recurso-card[data-tipo="guia"] {
+            border-left-color: #3b82f6;
+        }
+
+        .recurso-card[data-tipo="demo"] {
+            border-left-color: #8b5cf6;
+        }
+
+        .recurso-card[data-tipo="herramienta"] {
+            border-left-color: var(--accent-color);
+        }
+
+        .recurso-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 0;
+        }
+
+        .recurso-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .recurso-titulo {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .recurso-badges {
+            display: flex;
+            gap: 0.375rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .badge-tipo {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--accent-color);
+        }
+
+        .badge-dominio {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+        }
+
+        .recurso-descripcion {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .recurso-acciones {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .fav-btn {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .fav-btn:hover,
+        .fav-btn.active {
+            color: #ef4444;
+            transform: scale(1.1);
+        }
+
+        .recurso-arrow {
+            color: var(--accent-color);
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+
+        .recurso-card:hover .recurso-arrow {
+            opacity: 1;
+            transform: translateX(3px);
+        }
+
+        /* Filtros activos (pills) */
+        .active-filters {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .filter-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            background: rgba(251, 191, 36, 0.15);
+            border: 1px solid var(--accent-color);
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            color: var(--accent-color);
+        }
+
+        .filter-pill button {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 0;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        /* Estado vacío */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Sección Mis Enlaces */
+        .mis-enlaces-section {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .mis-enlaces-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .mis-enlaces-title {
+            font-size: 1rem;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .add-enlace-btn {
+            padding: 0.4rem 0.75rem;
+            background: rgba(251, 191, 36, 0.15);
+            border: 1px solid var(--accent-color);
+            border-radius: 0.375rem;
+            color: var(--accent-color);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .add-enlace-btn:hover {
+            background: rgba(251, 191, 36, 0.25);
+        }
+
+        .enlace-externo {
+            border-left-color: #ec4899 !important;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.25rem;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .delete-btn:hover {
+            color: #ef4444;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal h3 {
+            margin: 0 0 1rem 0;
+            color: var(--accent-color);
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            background: var(--secondary-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.375rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+            margin-top: 1rem;
+        }
+
+        .modal-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: none;
+        }
+
+        .modal-btn-primary {
+            background: var(--accent-color);
+            color: #000;
+        }
+
+        .modal-btn-secondary {
+            background: var(--hover-color);
+            color: var(--text-primary);
+        }
+
+        /* Config buttons */
+        .config-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .config-btn {
+            flex: 1;
+            padding: 0.5rem;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.375rem;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .config-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .config-btn i {
+            margin-right: 0.25rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .explorar-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .explorar-sidebar {
+                position: static;
+                max-height: none;
+                display: flex;
+                gap: 1rem;
+                overflow-x: auto;
+                padding-bottom: 0.5rem;
+            }
+
+            .sidebar-section {
+                flex-shrink: 0;
+                margin-bottom: 0;
+            }
+
+            .filter-group {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .filter-btn {
+                padding: 0.5rem 0.75rem;
+                white-space: nowrap;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .explorar-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .action-btn {
+                justify-content: center;
+            }
+
+            .recurso-card {
+                grid-template-columns: 1fr;
+            }
+
+            .recurso-acciones {
+                margin-top: 0.5rem;
+                padding-top: 0.5rem;
+                border-top: 1px solid rgba(255, 255, 255, 0.05);
+            }
+        }
+    </style>
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag("js", new Date());
+        gtag("config", "G-YFKR6RB1ZC");
+    </script>
+</head>
+
+<body>
+    <script src="./assets/js/include.js"></script>
+    <include src="header.html"></include>
+
+    <main class="main-container">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <h1 class="main-title">
+                <span class="icon">🧭</span>
+                <span>Mi Escritorio Clínico</span>
+            </h1>
+            <p class="intro-text">
+                Tu punto de partida personalizado. Explora los recursos del sitio, guarda tus favoritos
+                y añade tus propios enlaces externos para tener todo a mano.
+            </p>
+        </section>
+
+        <!-- Layout principal -->
+        <div class="explorar-layout">
+            <!-- Sidebar con filtros -->
+            <aside class="explorar-sidebar">
+                <!-- MI ARCHIVADOR - Sección personal prominente -->
+                <div class="sidebar-section archivador-section">
+                    <div class="sidebar-title" style="color: #ec4899;">
+                        <i class="fas fa-bookmark"></i> Mi Archivador
+                        <button class="add-btn" onclick="openAddEnlaceModal();" title="Añadir enlace"
+                            style="margin-left: auto;">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="filter-group" id="archivador-filters">
+                        <button class="filter-btn" data-filter="categoria" data-value="mis-enlaces">
+                            <i class="fas fa-folder" style="color: #ec4899;"></i>
+                            <span>Todos mis enlaces</span>
+                            <span class="count" id="count-mis-enlaces">0</span>
+                        </button>
+                        <!-- Categorías personalizadas (dinámicas) -->
+                        <div id="custom-categorias"></div>
+                    </div>
+                    <!-- Dominios personalizados (dinámicos) -->
+                    <div id="custom-dominios" style="margin-top: 0.25rem;"></div>
+                </div>
+
+                <!-- Separador visual -->
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 0.5rem 0;"></div>
+
+                <!-- RECURSOS DEL SITIO -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title"
+                        style="font-size: 0.7rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Recursos del sitio
+                    </div>
+                    <div class="filter-group" id="categoria-filters">
+                        <button class="filter-btn active" data-filter="categoria" data-value="todos">
+                            <i class="fas fa-th-large"></i>
+                            <span>Todos</span>
+                            <span class="count" id="count-todos">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="categoria" data-value="herramientas">
+                            <i class="fas fa-tools"></i>
+                            <span>Herramientas</span>
+                            <span class="count" id="count-herramientas">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="categoria" data-value="ia-salud">
+                            <i class="fas fa-robot"></i>
+                            <span>IA en Salud</span>
+                            <span class="count" id="count-ia-salud">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="categoria" data-value="biblioteca">
+                            <i class="fas fa-book-medical"></i>
+                            <span>Biblioteca</span>
+                            <span class="count" id="count-biblioteca">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="categoria" data-value="formacion">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span>Formación</span>
+                            <span class="count" id="count-formacion">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="categoria" data-value="productividad">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Productividad</span>
+                            <span class="count" id="count-productividad">0</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Tipo de Recurso</div>
+                    <div class="filter-group" id="tipo-filters">
+                        <button class="filter-btn" data-filter="tipo" data-value="calculadora">
+                            <i class="fas fa-calculator"></i>
+                            <span>Calculadoras</span>
+                            <span class="count" id="count-tipo-calculadora">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="tipo" data-value="guia">
+                            <i class="fas fa-book"></i>
+                            <span>Guías</span>
+                            <span class="count" id="count-tipo-guia">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="tipo" data-value="demo">
+                            <i class="fas fa-play-circle"></i>
+                            <span>Demos</span>
+                            <span class="count" id="count-tipo-demo">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="tipo" data-value="herramienta">
+                            <i class="fas fa-wrench"></i>
+                            <span>Herramientas</span>
+                            <span class="count" id="count-tipo-herramienta">0</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Dominio Clínico</div>
+                    <div class="filter-group" id="dominio-filters">
+                        <button class="filter-btn" data-filter="dominio" data-value="cardiologia">
+                            <i class="fas fa-heartbeat"></i>
+                            <span>Cardiología</span>
+                            <span class="count" id="count-dominio-cardiologia">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="dominio" data-value="neumologia">
+                            <i class="fas fa-lungs"></i>
+                            <span>Neumología</span>
+                            <span class="count" id="count-dominio-neumologia">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="dominio" data-value="farmacologia">
+                            <i class="fas fa-pills"></i>
+                            <span>Farmacología</span>
+                            <span class="count" id="count-dominio-farmacologia">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="dominio" data-value="mbe">
+                            <i class="fas fa-search"></i>
+                            <span>MBE</span>
+                            <span class="count" id="count-dominio-mbe">0</span>
+                        </button>
+                        <button class="filter-btn" data-filter="dominio" data-value="ia">
+                            <i class="fas fa-brain"></i>
+                            <span>IA</span>
+                            <span class="count" id="count-dominio-ia">0</span>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Contenido principal -->
+            <div class="explorar-content">
+                <!-- Toolbar -->
+                <div class="explorar-toolbar">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Buscar recursos..." autocomplete="off" />
+                    </div>
+                    <button class="action-btn" id="favoritos-btn">
+                        <i class="fas fa-heart"></i>
+                        <span>Favoritos</span>
+                        <span class="count" id="favoritos-count">0</span>
+                    </button>
+                    <button class="action-btn" id="clear-filters-btn">
+                        <i class="fas fa-times"></i>
+                        <span>Limpiar</span>
+                    </button>
+                    <button class="action-btn" onclick="exportConfig()" title="Exportar configuración">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="action-btn" onclick="document.getElementById('import-file').click()"
+                        title="Importar configuración">
+                        <i class="fas fa-upload"></i>
+                    </button>
+                    <button class="action-btn" onclick="openSyncModal()" title="Sincronizar entre dispositivos"
+                        style="color: #60a5fa;">
+                        <i class="fas fa-cloud"></i>
+                    </button>
+                    <input type="file" id="import-file" accept=".csv,.json" style="display:none"
+                        onchange="importConfig(event)">
+                </div>
+
+                <!-- Filtros activos -->
+                <div class="active-filters" id="active-filters"></div>
+
+                <!-- Info de resultados -->
+                <div class="results-info" id="results-info">
+                    Mostrando <strong id="shown-count">0</strong> de <strong id="total-count">0</strong> recursos
+                </div>
+
+                <!-- Grid de recursos -->
+                <div class="recursos-grid" id="recursos-grid">
+                    <!-- Se llena dinámicamente -->
+                </div>
+
+                <!-- Estado vacío -->
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <i class="fas fa-search"></i>
+                    <p>No se encontraron recursos con los filtros actuales</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Añadir Enlace -->
+    <div class="modal-overlay" id="add-enlace-modal">
+        <div class="modal">
+            <h3><i class="fas fa-link"></i> Añadir Enlace Personal</h3>
+            <input type="text" class="modal-input" id="enlace-titulo" placeholder="Título (ej: UpToDate)">
+            <input type="url" class="modal-input" id="enlace-url" placeholder="URL (ej: https://uptodate.com)">
+            <input type="text" class="modal-input" id="enlace-descripcion" placeholder="Descripción (opcional)">
+
+            <!-- Clasificación -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <div>
+                    <select class="modal-input" id="enlace-categoria" style="margin-bottom: 0.25rem;"
+                        onchange="toggleCustomInput('categoria')">
+                        <option value="">-- Categoría --</option>
+                        <option value="herramientas">Herramientas</option>
+                        <option value="ia-salud">IA en Salud</option>
+                        <option value="biblioteca">Biblioteca</option>
+                        <option value="formacion">Formación</option>
+                        <option value="productividad">Productividad</option>
+                        <option value="laboratorio">Laboratorio</option>
+                        <option value="__custom__">+ Nueva categoría...</option>
+                    </select>
+                    <input type="text" class="modal-input" id="enlace-categoria-custom"
+                        placeholder="Nombre de categoría" style="display: none; margin-bottom: 0;">
+                </div>
+                <div>
+                    <select class="modal-input" id="enlace-tipo" style="margin-bottom: 0;">
+                        <option value="">-- Tipo --</option>
+                        <option value="herramienta">Herramienta</option>
+                        <option value="calculadora">Calculadora</option>
+                        <option value="guia">Guía</option>
+                        <option value="demo">Demo</option>
+                        <option value="referencia">Referencia</option>
+                        <option value="web">Sitio Web</option>
+                        <option value="app">Aplicación</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <select class="modal-input" id="enlace-dominio" style="margin-bottom: 0.25rem;"
+                    onchange="toggleCustomInput('dominio')">
+                    <option value="">-- Dominio Clínico (opcional) --</option>
+                    <option value="cardiologia">Cardiología</option>
+                    <option value="neumologia">Neumología</option>
+                    <option value="farmacologia">Farmacología</option>
+                    <option value="mbe">MBE</option>
+                    <option value="ia">IA</option>
+                    <option value="productividad">Productividad</option>
+                    <option value="formacion">Formación</option>
+                    <option value="general">General</option>
+                    <option value="__custom__">+ Nuevo dominio...</option>
+                </select>
+                <input type="text" class="modal-input" id="enlace-dominio-custom" placeholder="Nombre del dominio"
+                    style="display: none; margin-bottom: 0;">
+            </div>
+
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeAddEnlaceModal()">Cancelar</button>
+                <button class="modal-btn modal-btn-primary" onclick="saveEnlace()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Sincronización -->
+    <div class="modal-overlay" id="sync-modal">
+        <div class="modal" style="max-width: 500px;">
+            <h3><i class="fas fa-cloud" style="color: #60a5fa;"></i> Sincronizar entre dispositivos</h3>
+
+            <div
+                style="background: rgba(96, 165, 250, 0.1); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
+                <p style="font-size: 0.85rem; margin: 0; color: var(--text-secondary);">
+                    <strong style="color: #60a5fa;">¿Cómo funciona?</strong><br>
+                    Genera un enlace con toda tu configuración. Guarda ese enlace como favorito
+                    o compártelo para acceder a tus datos desde cualquier dispositivo.
+                </p>
+            </div>
+
+            <div id="sync-content">
+                <button class="modal-btn modal-btn-primary" onclick="generateSyncUrl()"
+                    style="width: 100%; margin-bottom: 1rem;">
+                    <i class="fas fa-link"></i> Generar enlace de sincronización
+                </button>
+            </div>
+
+            <div id="sync-result" style="display: none;">
+                <label style="font-size: 0.8rem; opacity: 0.7;">Tu enlace personalizado:</label>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <input type="text" class="modal-input" id="sync-url" readonly style="flex: 1; font-size: 0.75rem;">
+                    <button class="modal-btn modal-btn-primary" onclick="copySyncUrl()" style="white-space: nowrap;">
+                        <i class="fas fa-copy"></i> Copiar
+                    </button>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 0.5rem;">O escanea este QR:</p>
+                    <img id="sync-qr" src="" alt="QR Code"
+                        style="max-width: 180px; border-radius: 0.5rem; background: white; padding: 0.5rem;">
+                </div>
+
+                <div
+                    style="background: rgba(251, 191, 36, 0.1); border-radius: 0.5rem; padding: 0.75rem; font-size: 0.8rem;">
+                    <strong style="color: var(--accent-color);">💡 Consejo:</strong>
+                    Guarda este enlace como favorito en tu navegador para sincronizar automáticamente.
+                </div>
+            </div>
+
+            <div class="modal-buttons" style="margin-top: 1rem;">
+                <button class="modal-btn modal-btn-secondary" onclick="closeSyncModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación Elegante (reutilizable) -->
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal" style="max-width: 420px;">
+            <div id="confirm-icon" style="text-align: center; font-size: 2.5rem; margin-bottom: 1rem;">
+                <i class="fas fa-question-circle" style="color: #60a5fa;"></i>
+            </div>
+            <h3 id="confirm-title" style="text-align: center; margin-bottom: 0.5rem;">¿Estás seguro?</h3>
+            <p id="confirm-message"
+                style="text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                Esta acción no se puede deshacer.
+            </p>
+            <div id="confirm-buttons" class="modal-buttons" style="justify-content: center; gap: 0.75rem;">
+                <!-- Botones dinámicos -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <include src="footer.html"></include>
+
+    <!-- Datos y lógica -->
+    <script>
+        // Base de datos de recursos (sincronizable con header/JSON externo)
+        const RECURSOS_DATA = [
+            // === HERRAMIENTAS MÉTODOLÓGICAS Y MBE ===
+            { id: 4, titulo: "Calculadora Diagnóstica", url: "calculadora_diagnostica.html", categoria: "herramientas", tipo: "calculadora", dominio: "mbe", descripcion: "Sensibilidad, especificidad, valores predictivos y razones de verosimilitud" },
+            { id: 7, titulo: "Búsqueda Avanzada PubMed", url: "buscar-pubmed.html", categoria: "herramientas", tipo: "herramienta", dominio: "mbe", descripcion: "Constructor de estrategias de búsqueda con filtros estructurados" },
+            { id: 8, titulo: "Buscadores Médicos", url: "buscadores.html", categoria: "herramientas", tipo: "herramienta", dominio: "mbe", descripcion: "Colección de bookmarklets para búsquedas en bases de datos médicas" },
+            { id: 9, titulo: "Pirámide de Evidencia 5S", url: "piramide-evidencia.html", categoria: "herramientas", tipo: "guia", dominio: "mbe", descripcion: "Visualización interactiva de la pirámide de evidencia" },
+
+            // === IA EN SALUD ===
+            { id: 10, titulo: "Constructor de Prompts", url: "constructor-prompts.html", categoria: "ia-salud", tipo: "herramienta", dominio: "ia", descripcion: "Generador de prompts clínicos con técnicas avanzadas de ingeniería" },
+            { id: 11, titulo: "Demo LLM", url: "demo-llm.html", categoria: "ia-salud", tipo: "demo", dominio: "ia", descripcion: "Visualización del funcionamiento de modelos de lenguaje" },
+            { id: 12, titulo: "Método RECORD", url: "metodo-record.html", categoria: "ia-salud", tipo: "guia", dominio: "ia", descripcion: "Metodología para prompts clínicos estructurados" },
+            { id: 13, titulo: "Pirámide IA en Evidencia", url: "piramide-evidencia-ia.html", categoria: "ia-salud", tipo: "guia", dominio: "ia", descripcion: "Recursos de IA organizados por nivel de evidencia" },
+            { id: 14, titulo: "Generadores de Prompts", url: "generadores-prompts.html", categoria: "ia-salud", tipo: "herramienta", dominio: "ia", descripcion: "Herramientas para crear prompts clínicos" },
+            { id: 15, titulo: "GPTs para ChatGPT", url: "gpt.html", categoria: "ia-salud", tipo: "herramienta", dominio: "ia", descripcion: "Colección de GPTs personalizados para uso clínico" },
+
+            // === BIBLIOTECA ===
+            { id: 18, titulo: "Monitor PubMed", url: "monitor_pubmed.html", categoria: "biblioteca", tipo: "herramienta", dominio: "mbe", descripcion: "Estadísticas de publicaciones y tendencias en PubMed" },
+            { id: 19, titulo: "PubMed Trending", url: "pubmed-trending.html", categoria: "biblioteca", tipo: "herramienta", dominio: "mbe", descripcion: "Artículos más citados y tendencias actuales" },
+            { id: 35, titulo: "35 Artículos Clave", url: "t/articulos_sanitarios_clave.html", categoria: "biblioteca", tipo: "guia", dominio: "mbe", descripcion: "Treinta y cinco artículos que cambiaron cómo entendemos la salud." },
+
+            // === FORMACIÓN ===
+            { id: 20, titulo: "Presentaciones", url: "presentaciones.html", categoria: "formacion", tipo: "guia", dominio: "formacion", descripcion: "Presentaciones sobre IA en salud y gestión del conocimiento" },
+            { id: 21, titulo: "Tutoriales", url: "tutoriales.html", categoria: "formacion", tipo: "guia", dominio: "formacion", descripcion: "Guías paso a paso para herramientas digitales" },
+
+            // === PRODUCTIVIDAD ===
+            { id: 22, titulo: "Calculadora Productividad", url: "calculadora-productividad.html", categoria: "productividad", tipo: "calculadora", dominio: "productividad", descripcion: "Métricas de productividad en consulta con tour guiado" },
+            { id: 25, titulo: "Complementos Navegador", url: "complementos-navegador.html", categoria: "productividad", tipo: "guia", dominio: "productividad", descripcion: "Extensiones recomendadas para profesionales sanitarios" }
+        ];
+
+        // Estado de la aplicación
+        let state = {
+            recursos: RECURSOS_DATA,
+            filteredRecursos: [],
+            favoritos: JSON.parse(localStorage.getItem('explorar-favoritos') || '[]'),
+            activeFilters: {
+                categoria: 'todos',
+                tipo: null,
+                dominio: null
+            },
+            searchTerm: '',
+            showFavoritosOnly: false,
+            editingEnlaceId: null
+        };
+
+        // Elementos del DOM
+        const elements = {
+            grid: document.getElementById('recursos-grid'),
+            searchInput: document.getElementById('search-input'),
+            favoritosBtn: document.getElementById('favoritos-btn'),
+            favoritosCount: document.getElementById('favoritos-count'),
+            clearFiltersBtn: document.getElementById('clear-filters-btn'),
+            activeFilters: document.getElementById('active-filters'),
+            resultsInfo: document.getElementById('results-info'),
+            shownCount: document.getElementById('shown-count'),
+            totalCount: document.getElementById('total-count'),
+            emptyState: document.getElementById('empty-state')
+        };
+
+        // Inicialización
+        function init() {
+            updateCounts();
+            applyFilters();
+            bindEvents();
+            updateFavoritosCount();
+        }
+
+        // Actualizar contadores de categorías
+        function updateCounts() {
+            // Combinar recursos del sitio + enlaces personalizados
+            const misEnlaces = loadMisEnlaces();
+            const allResources = [...state.recursos, ...misEnlaces];
+
+            // Contar por categoría
+            const catCounts = {};
+            // Contar por tipo
+            const tipoCounts = {};
+            // Contar por dominio
+            const dominioCounts = {};
+
+            allResources.forEach(r => {
+                catCounts[r.categoria] = (catCounts[r.categoria] || 0) + 1;
+                if (r.tipo) tipoCounts[r.tipo] = (tipoCounts[r.tipo] || 0) + 1;
+                if (r.dominio) dominioCounts[r.dominio] = (dominioCounts[r.dominio] || 0) + 1;
+            });
+
+            // Actualizar contador total
+            const countTodos = document.getElementById('count-todos');
+            if (countTodos) countTodos.textContent = allResources.length;
+
+            // Contador específico de Mis Enlaces (todos los externos)
+            const misEnlacesCount = document.getElementById('count-mis-enlaces');
+            if (misEnlacesCount) {
+                misEnlacesCount.textContent = misEnlaces.length;
+            }
+
+            // Actualizar contadores de categorías
+            Object.keys(catCounts).forEach(cat => {
+                const el = document.getElementById(`count-${cat}`);
+                if (el) el.textContent = catCounts[cat];
+            });
+
+            // Actualizar contadores de tipos
+            Object.keys(tipoCounts).forEach(tipo => {
+                const el = document.getElementById(`count-tipo-${tipo}`);
+                if (el) el.textContent = tipoCounts[tipo];
+            });
+
+            // Actualizar contadores de dominios
+            Object.keys(dominioCounts).forEach(dominio => {
+                const el = document.getElementById(`count-dominio-${dominio}`);
+                if (el) el.textContent = dominioCounts[dominio];
+            });
+
+            // Añadir categorías y dominios custom al sidebar
+            renderCustomFilters(misEnlaces);
+        }
+
+        // Renderizar filtros personalizados en el sidebar
+        function renderCustomFilters(enlaces) {
+            // Categorías base del sitio (no añadir como custom)
+            const baseCategorias = ['herramientas', 'ia-salud', 'biblioteca', 'formacion', 'productividad', 'laboratorio', 'mis-enlaces', ''];
+            const baseDominios = ['cardiologia', 'neumologia', 'farmacologia', 'mbe', 'ia', 'productividad', 'formacion', 'general', ''];
+
+            // Obtener categorías y dominios únicos de enlaces personalizados
+            const customCategorias = [...new Set(enlaces.map(e => e.categoria).filter(c => c && !baseCategorias.includes(c)))];
+            const customDominios = [...new Set(enlaces.map(e => e.dominio).filter(d => d && !baseDominios.includes(d)))];
+
+            // Renderizar categorías custom
+            const catContainer = document.getElementById('custom-categorias');
+            if (catContainer) {
+                if (customCategorias.length > 0) {
+                    catContainer.innerHTML = customCategorias.map(cat => `
+                        <button class="filter-btn" data-filter="categoria" data-value="${cat}">
+                            <i class="fas fa-tag" style="color: #ec4899;"></i>
+                            <span>${formatLabel(cat)}</span>
+                            <span class="count">${enlaces.filter(e => e.categoria === cat).length}</span>
+                        </button>
+                    `).join('');
+                } else {
+                    catContainer.innerHTML = '';
+                }
+            }
+
+            // Renderizar dominios custom
+            const domContainer = document.getElementById('custom-dominios');
+            if (domContainer) {
+                if (customDominios.length > 0) {
+                    domContainer.innerHTML = customDominios.map(dom => `
+                        <button class="filter-btn" data-filter="dominio" data-value="${dom}">
+                            <i class="fas fa-tag" style="color: #ec4899;"></i>
+                            <span>${formatLabel(dom)}</span>
+                            <span class="count">${enlaces.filter(e => e.dominio === dom).length}</span>
+                        </button>
+                    `).join('');
+                } else {
+                    domContainer.innerHTML = '';
+                }
+            }
+        }
+
+        // Formatear slug a label legible
+        function formatLabel(slug) {
+            return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        }
+
+        // Aplicar filtros
+        function applyFilters() {
+            // Combinar recursos del sitio + enlaces personalizados
+            let filtered = [...state.recursos, ...loadMisEnlaces()];
+
+            // Filtro por categoría
+            if (state.activeFilters.categoria && state.activeFilters.categoria !== 'todos') {
+                if (state.activeFilters.categoria === 'mis-enlaces') {
+                    // Mostrar solo recursos externos (Mis Enlaces)
+                    filtered = filtered.filter(r => r.externo === true);
+                } else {
+                    filtered = filtered.filter(r => r.categoria === state.activeFilters.categoria);
+                }
+            }
+
+            // Filtro por tipo
+            if (state.activeFilters.tipo) {
+                filtered = filtered.filter(r => r.tipo === state.activeFilters.tipo);
+            }
+
+            // Filtro por dominio
+            if (state.activeFilters.dominio) {
+                filtered = filtered.filter(r => r.dominio === state.activeFilters.dominio);
+            }
+
+            // Filtro por búsqueda
+            if (state.searchTerm) {
+                const term = state.searchTerm.toLowerCase();
+                filtered = filtered.filter(r =>
+                    r.titulo.toLowerCase().includes(term) ||
+                    r.descripcion.toLowerCase().includes(term) ||
+                    r.dominio.toLowerCase().includes(term) ||
+                    r.tipo.toLowerCase().includes(term)
+                );
+            }
+
+            // Filtro por favoritos
+            if (state.showFavoritosOnly) {
+                filtered = filtered.filter(r => isFavorito(r.id));
+            }
+
+            state.filteredRecursos = filtered;
+            renderRecursos();
+            renderActiveFilters();
+            updateResultsInfo();
+        }
+
+        // Renderizar recursos
+        function renderRecursos() {
+            if (state.filteredRecursos.length === 0) {
+                elements.grid.innerHTML = '';
+                elements.emptyState.style.display = 'block';
+                return;
+            }
+
+            elements.emptyState.style.display = 'none';
+            elements.grid.innerHTML = state.filteredRecursos.map(r => {
+                const isExterno = r.externo === true;
+                const target = isExterno ? ' target="_blank" rel="noopener"' : '';
+                const externoClass = isExterno ? ' enlace-externo' : '';
+                const externoBadge = isExterno ? '<span class="badge" style="background: rgba(236,72,153,0.15); color: #ec4899;">externo</span>' : '';
+                const arrowIcon = isExterno ? 'fa-external-link-alt' : 'fa-arrow-right';
+
+                return `
+                    <a href="${r.url}" class="recurso-card${externoClass}" data-tipo="${r.tipo}" data-id="${r.id || ''}"${target}>
+                        <div class="recurso-info">
+                            <div class="recurso-header">
+                                <h3 class="recurso-titulo">${r.titulo}</h3>
+                                <div class="recurso-badges">
+                                    ${externoBadge}
+                                    <span class="badge badge-tipo">${r.tipo}</span>
+                                    <span class="badge badge-dominio">${r.dominio}</span>
+                                </div>
+                            </div>
+                            <p class="recurso-descripcion">${r.descripcion || r.url}</p>
+                        </div>
+                        <div class="recurso-acciones">
+                            <button class="fav-btn ${isFavorito(r.id) ? 'active' : ''}" 
+                                    data-id="${r.id}" 
+                                    onclick="event.preventDefault(); toggleFavorito('${r.id}');">
+                                <i class="fas fa-heart"></i>
+                            </button>
+                            ${isExterno ? `
+                                <button class="delete-btn" onclick="event.preventDefault(); editEnlace('${r.id}');" title="Editar">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button class="delete-btn" onclick="event.preventDefault(); deleteEnlace('${r.id}');" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : ''}
+                            <span class="recurso-arrow"><i class="fas ${arrowIcon}"></i></span>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        }
+
+        // Renderizar filtros activos
+        function renderActiveFilters() {
+            const pills = [];
+
+            if (state.activeFilters.tipo) {
+                pills.push(`
+            <div class="filter-pill">
+              <span>Tipo: ${state.activeFilters.tipo}</span>
+              <button onclick="clearFilter('tipo')">&times;</button>
+            </div>
+          `);
+            }
+
+            if (state.activeFilters.dominio) {
+                pills.push(`
+            <div class="filter-pill">
+              <span>Dominio: ${state.activeFilters.dominio}</span>
+              <button onclick="clearFilter('dominio')">&times;</button>
+            </div>
+          `);
+            }
+
+            if (state.searchTerm) {
+                pills.push(`
+            <div class="filter-pill">
+              <span>Búsqueda: "${state.searchTerm}"</span>
+              <button onclick="clearSearch()">&times;</button>
+            </div>
+          `);
+            }
+
+            if (state.showFavoritosOnly) {
+                pills.push(`
+            <div class="filter-pill">
+              <span>Solo favoritos</span>
+              <button onclick="toggleFavoritosOnly()">&times;</button>
+            </div>
+          `);
+            }
+
+            elements.activeFilters.innerHTML = pills.join('');
+        }
+
+        // Actualizar info de resultados
+        function updateResultsInfo() {
+            elements.shownCount.textContent = state.filteredRecursos.length;
+            // Total incluye recursos del sitio + mis enlaces
+            const allResources = [...state.recursos, ...loadMisEnlaces()];
+            elements.totalCount.textContent = allResources.length;
+        }
+
+        // Verificar si es favorito (soporta números y strings)
+        function isFavorito(id) {
+            return state.favoritos.includes(id) || state.favoritos.includes(String(id)) || state.favoritos.includes(Number(id));
+        }
+
+        // Toggle favorito
+        function toggleFavorito(id) {
+            const index = state.favoritos.indexOf(id);
+            if (index === -1) {
+                state.favoritos.push(id);
+            } else {
+                state.favoritos.splice(index, 1);
+            }
+            localStorage.setItem('explorar-favoritos', JSON.stringify(state.favoritos));
+            updateFavoritosCount();
+            if (state.showFavoritosOnly) {
+                applyFilters();
+            } else {
+                // Solo actualizar el botón sin re-render completo
+                const btn = document.querySelector(`.fav-btn[data-id="${id}"]`);
+                if (btn) btn.classList.toggle('active');
+            }
+        }
+
+        // Toggle mostrar solo favoritos
+        function toggleFavoritosOnly() {
+            state.showFavoritosOnly = !state.showFavoritosOnly;
+            elements.favoritosBtn.classList.toggle('active', state.showFavoritosOnly);
+            applyFilters();
+        }
+
+        // Actualizar contador de favoritos
+        function updateFavoritosCount() {
+            elements.favoritosCount.textContent = state.favoritos.length;
+        }
+
+        // Limpiar filtro específico
+        function clearFilter(filterType) {
+            state.activeFilters[filterType] = null;
+
+            // Actualizar botones
+            document.querySelectorAll(`.filter-btn[data-filter="${filterType}"]`).forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            applyFilters();
+        }
+
+        // Limpiar búsqueda
+        function clearSearch() {
+            state.searchTerm = '';
+            elements.searchInput.value = '';
+            applyFilters();
+        }
+
+        // Limpiar todos los filtros
+        function clearAllFilters() {
+            state.activeFilters = { categoria: 'todos', tipo: null, dominio: null };
+            state.searchTerm = '';
+            state.showFavoritosOnly = false;
+
+            elements.searchInput.value = '';
+            elements.favoritosBtn.classList.remove('active');
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector('.filter-btn[data-value="todos"]').classList.add('active');
+
+            applyFilters();
+        }
+
+        // Bind eventos
+        function bindEvents() {
+            // Delegación de eventos para filtros de sidebar (funciona con botones dinámicos)
+            const sidebar = document.querySelector('.explorar-sidebar');
+            sidebar.addEventListener('click', (e) => {
+                const btn = e.target.closest('.filter-btn');
+                if (!btn) return;
+
+                const filterType = btn.dataset.filter;
+                const value = btn.dataset.value;
+                if (!filterType || !value) return;
+
+                if (filterType === 'categoria') {
+                    // Solo una categoría activa
+                    document.querySelectorAll(`[data-filter="categoria"]`).forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.activeFilters.categoria = value;
+                } else {
+                    // Toggle para tipo y dominio
+                    if (btn.classList.contains('active')) {
+                        btn.classList.remove('active');
+                        state.activeFilters[filterType] = null;
+                    } else {
+                        document.querySelectorAll(`[data-filter="${filterType}"]`).forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        state.activeFilters[filterType] = value;
+                    }
+                }
+
+                applyFilters();
+            });
+
+            // Búsqueda
+            let searchTimeout;
+            elements.searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    state.searchTerm = e.target.value.trim();
+                    applyFilters();
+                }, 200);
+            });
+
+            // Favoritos
+            elements.favoritosBtn.addEventListener('click', toggleFavoritosOnly);
+
+            // Limpiar filtros
+            elements.clearFiltersBtn.addEventListener('click', clearAllFilters);
+        }
+
+        // Iniciar
+        document.addEventListener('DOMContentLoaded', init);
+
+        // ============================================
+        // MIS ENLACES PERSONALIZADOS
+        // ============================================
+
+        // Cargar enlaces personalizados
+        function loadMisEnlaces() {
+            return JSON.parse(localStorage.getItem('explorar-mis-enlaces') || '[]');
+        }
+
+        // Guardar enlaces personalizados
+        function saveMisEnlaces(enlaces) {
+            localStorage.setItem('explorar-mis-enlaces', JSON.stringify(enlaces));
+        }
+
+        // Abrir modal
+        function openAddEnlaceModal() {
+            document.getElementById('add-enlace-modal').classList.add('show');
+            document.getElementById('enlace-titulo').focus();
+        }
+
+        // Toggle para mostrar input de categoría/dominio custom
+        function toggleCustomInput(field) {
+            const select = document.getElementById(`enlace-${field}`);
+            const customInput = document.getElementById(`enlace-${field}-custom`);
+            if (select.value === '__custom__') {
+                customInput.style.display = 'block';
+                customInput.focus();
+            } else {
+                customInput.style.display = 'none';
+                customInput.value = '';
+            }
+        }
+
+        // Cerrar modal
+        function closeAddEnlaceModal() {
+            document.getElementById('add-enlace-modal').classList.remove('show');
+            document.getElementById('enlace-titulo').value = '';
+            document.getElementById('enlace-url').value = '';
+            document.getElementById('enlace-descripcion').value = '';
+            document.getElementById('enlace-categoria').value = '';
+            document.getElementById('enlace-categoria-custom').value = '';
+            document.getElementById('enlace-categoria-custom').style.display = 'none';
+            document.getElementById('enlace-tipo').value = '';
+            document.getElementById('enlace-dominio').value = '';
+            document.getElementById('enlace-dominio-custom').value = '';
+            document.getElementById('enlace-dominio-custom').style.display = 'none';
+            state.editingEnlaceId = null; // Reset modo edición
+        }
+
+        // Guardar enlace
+        function saveEnlace() {
+            const titulo = document.getElementById('enlace-titulo').value.trim();
+            const url = document.getElementById('enlace-url').value.trim();
+            const descripcion = document.getElementById('enlace-descripcion').value.trim();
+
+            // Obtener categoría (custom o del dropdown)
+            let categoriaSelect = document.getElementById('enlace-categoria').value;
+            let categoria = categoriaSelect === '__custom__'
+                ? document.getElementById('enlace-categoria-custom').value.trim().toLowerCase().replace(/\s+/g, '-')
+                : categoriaSelect;
+
+            const tipo = document.getElementById('enlace-tipo').value;
+
+            // Obtener dominio (custom o del dropdown)
+            let dominioSelect = document.getElementById('enlace-dominio').value;
+            let dominio = dominioSelect === '__custom__'
+                ? document.getElementById('enlace-dominio-custom').value.trim().toLowerCase().replace(/\s+/g, '-')
+                : dominioSelect;
+
+            if (!titulo || !url) {
+                alert('Por favor, introduce título y URL');
+                return;
+            }
+
+            const enlaces = loadMisEnlaces();
+
+            // Si estamos editando, actualizar; si no, crear nuevo
+            if (state.editingEnlaceId) {
+                const idx = enlaces.findIndex(e => e.id === state.editingEnlaceId);
+                if (idx !== -1) {
+                    enlaces[idx] = {
+                        ...enlaces[idx],
+                        titulo,
+                        url,
+                        descripcion,
+                        categoria: categoria || 'mis-enlaces',
+                        tipo: tipo || 'referencia',
+                        dominio: dominio || 'general'
+                    };
+                }
+                state.editingEnlaceId = null;
+            } else {
+                enlaces.push({
+                    titulo,
+                    url,
+                    descripcion,
+                    categoria: categoria || 'mis-enlaces',
+                    tipo: tipo || 'referencia',
+                    dominio: dominio || 'general',
+                    externo: true,
+                    id: 'ext-' + Date.now()
+                });
+            }
+
+            saveMisEnlaces(enlaces);
+            updateCounts();
+            applyFilters(); // Re-renderizar grid principal
+            closeAddEnlaceModal();
+        }
+
+        // Eliminar enlace por ID
+        async function deleteEnlace(id) {
+            const action = await showConfirm({
+                icon: 'fas fa-trash-alt',
+                iconColor: '#ef4444',
+                title: '¿Eliminar este enlace?',
+                message: 'Esta acción no se puede deshacer.',
+                buttons: [
+                    { label: 'Cancelar', value: 'cancel' },
+                    { label: 'Eliminar', value: 'delete', primary: true, danger: true }
+                ]
+            });
+
+            if (action !== 'delete') return;
+
+            const enlaces = loadMisEnlaces();
+            const idx = enlaces.findIndex(e => e.id === id);
+            if (idx !== -1) {
+                enlaces.splice(idx, 1);
+                saveMisEnlaces(enlaces);
+                updateCounts();
+                applyFilters();
+            }
+        }
+
+        // Editar enlace
+        function editEnlace(id) {
+            const enlaces = loadMisEnlaces();
+            const enlace = enlaces.find(e => e.id === id);
+            if (!enlace) return;
+
+            state.editingEnlaceId = id;
+
+            document.getElementById('enlace-titulo').value = enlace.titulo || '';
+            document.getElementById('enlace-url').value = enlace.url || '';
+            document.getElementById('enlace-descripcion').value = enlace.descripcion || '';
+
+            // Manejar categoría (puede ser custom)
+            const catSelect = document.getElementById('enlace-categoria');
+            const catCustom = document.getElementById('enlace-categoria-custom');
+            if (enlace.categoria && !Array.from(catSelect.options).some(opt => opt.value === enlace.categoria && opt.value !== '__custom__')) {
+                // Es una categoría custom
+                catSelect.value = '__custom__';
+                catCustom.value = enlace.categoria;
+                catCustom.style.display = 'block';
+            } else {
+                catSelect.value = enlace.categoria || '';
+                catCustom.value = '';
+                catCustom.style.display = 'none';
+            }
+
+            document.getElementById('enlace-tipo').value = enlace.tipo || '';
+
+            // Manejar dominio (puede ser custom)
+            const domSelect = document.getElementById('enlace-dominio');
+            const domCustom = document.getElementById('enlace-dominio-custom');
+            if (enlace.dominio && !Array.from(domSelect.options).some(opt => opt.value === enlace.dominio && opt.value !== '__custom__')) {
+                // Es un dominio custom
+                domSelect.value = '__custom__';
+                domCustom.value = enlace.dominio;
+                domCustom.style.display = 'block';
+            } else {
+                domSelect.value = enlace.dominio || '';
+                domCustom.value = '';
+                domCustom.style.display = 'none';
+            }
+
+            document.getElementById('add-enlace-modal').classList.add('show');
+        }
+
+        // ============================================
+        // EXPORT / IMPORT CONFIGURACIÓN
+        // ============================================
+
+        function exportConfig() {
+            const enlaces = loadMisEnlaces();
+            const favoritos = state.favoritos;
+
+            // Obtener nombres de recursos favoritos del sitio
+            const favoritosDelSitio = state.recursos
+                .filter(r => favoritos.includes(r.id))
+                .map(r => ({ titulo: r.titulo, url: r.url }));
+
+            // Crear CSV con cabeceras explicativas
+            const csvRows = [
+                '# Configuración Explorar Recursos - @ernestob',
+                '# Exportado: ' + new Date().toISOString(),
+                '# Formato CSV compatible con Excel, Google Sheets',
+                '',
+                '# === FAVORITOS DEL SITIO ===',
+                '# (Recursos propios del sitio marcados como favoritos)',
+                'tipo,titulo,url',
+                ...favoritosDelSitio.map(f => `"favorito","${f.titulo.replace(/"/g, '""')}","${f.url.replace(/"/g, '""')}"`),
+                '',
+                '# === MIS ENLACES PERSONALIZADOS ===',
+                '# (Enlaces externos que puedes importar en otro navegador)',
+                'tipo,titulo,url,descripcion,categoria,tipo_recurso,dominio',
+                ...enlaces.map(e => [
+                    '"enlace"',
+                    `"${(e.titulo || '').replace(/"/g, '""')}"`,
+                    `"${(e.url || '').replace(/"/g, '""')}"`,
+                    `"${(e.descripcion || '').replace(/"/g, '""')}"`,
+                    `"${(e.categoria || 'mis-enlaces').replace(/"/g, '""')}"`,
+                    `"${(e.tipo || 'referencia').replace(/"/g, '""')}"`,
+                    `"${(e.dominio || 'general').replace(/"/g, '""')}"`
+                ].join(','))
+            ];
+
+            const csvContent = csvRows.join('\n');
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' }); // BOM para Excel
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const fecha = new Date().toISOString().split('T')[0];
+            a.download = `explorar-config_${fecha}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importConfig(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+
+                try {
+                    // Intentar primero como JSON (retrocompatibilidad)
+                    if (content.trim().startsWith('{')) {
+                        const config = JSON.parse(content);
+                        if (config.favoritos) {
+                            state.favoritos = config.favoritos;
+                            localStorage.setItem('explorar-favoritos', JSON.stringify(config.favoritos));
+                            updateFavoritosCount();
+                        }
+                        if (config.misEnlaces) {
+                            saveMisEnlaces(config.misEnlaces);
+                        }
+                        applyFilters();
+                        updateCounts();
+                        alert('Configuración JSON importada correctamente');
+                        return;
+                    }
+
+                    // Parsear como CSV
+                    const lines = content.split('\n')
+                        .map(l => l.trim())
+                        .filter(l => l && !l.startsWith('#'));
+
+                    if (lines.length < 2) {
+                        alert('El archivo CSV está vacío o no tiene datos válidos');
+                        return;
+                    }
+
+                    // Parsear cabeceras
+                    const headers = parseCSVLine(lines[0]);
+                    const enlaces = [];
+
+                    for (let i = 1; i < lines.length; i++) {
+                        const values = parseCSVLine(lines[i]);
+                        if (values.length >= 2) { // Mínimo título y URL
+                            const enlace = {
+                                titulo: values[headers.indexOf('titulo')] || values[0],
+                                url: values[headers.indexOf('url')] || values[1],
+                                descripcion: values[headers.indexOf('descripcion')] || values[2] || '',
+                                categoria: values[headers.indexOf('categoria')] || values[3] || 'mis-enlaces',
+                                tipo: values[headers.indexOf('tipo')] || values[4] || 'referencia',
+                                dominio: values[headers.indexOf('dominio')] || values[5] || 'general',
+                                externo: true,
+                                id: 'ext-' + Date.now() + '-' + i
+                            };
+                            enlaces.push(enlace);
+                        }
+                    }
+
+                    if (enlaces.length === 0) {
+                        alert('No se encontraron enlaces válidos en el archivo');
+                        return;
+                    }
+
+                    // Preguntar si reemplazar o añadir
+                    const existentes = loadMisEnlaces();
+                    if (existentes.length > 0) {
+                        if (confirm(`Tienes ${existentes.length} enlaces. ¿Reemplazar todos? (Cancelar para añadir a los existentes)`)) {
+                            saveMisEnlaces(enlaces);
+                        } else {
+                            saveMisEnlaces([...existentes, ...enlaces]);
+                        }
+                    } else {
+                        saveMisEnlaces(enlaces);
+                    }
+
+                    applyFilters();
+                    updateCounts();
+                    alert(`Importados ${enlaces.length} enlaces correctamente`);
+
+                } catch (err) {
+                    console.error('Error importando:', err);
+                    alert('Error al importar: formato de archivo no válido');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // Parsear línea CSV respetando comillas
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        // ============================================
+        // MODAL DE CONFIRMACIÓN ELEGANTE
+        // ============================================
+
+        // Mostrar modal de confirmación con opciones personalizadas
+        function showConfirm({ icon, iconColor, title, message, buttons }) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirm-modal');
+                const iconEl = document.getElementById('confirm-icon');
+                const titleEl = document.getElementById('confirm-title');
+                const messageEl = document.getElementById('confirm-message');
+                const buttonsEl = document.getElementById('confirm-buttons');
+
+                iconEl.innerHTML = `<i class="${icon}" style="color: ${iconColor};"></i>`;
+                titleEl.textContent = title;
+                messageEl.innerHTML = message;
+
+                buttonsEl.innerHTML = buttons.map(btn => `
+                    <button class="modal-btn ${btn.primary ? 'modal-btn-primary' : 'modal-btn-secondary'}" 
+                            data-value="${btn.value}" 
+                            style="${btn.danger ? 'background: #ef4444;' : ''}">
+                        ${btn.icon ? `<i class="${btn.icon}"></i> ` : ''}${btn.label}
+                    </button>
+                `).join('');
+
+                buttonsEl.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        modal.classList.remove('show');
+                        resolve(btn.dataset.value);
+                    });
+                });
+
+                modal.classList.add('show');
+            });
+        }
+
+        // Mostrar alerta simple (reemplaza alert())
+        function showAlert(title, message, type = 'info') {
+            const icons = {
+                info: { icon: 'fas fa-info-circle', color: '#60a5fa' },
+                success: { icon: 'fas fa-check-circle', color: '#10b981' },
+                warning: { icon: 'fas fa-exclamation-triangle', color: '#f59e0b' },
+                error: { icon: 'fas fa-times-circle', color: '#ef4444' }
+            };
+            const { icon, color } = icons[type] || icons.info;
+
+            return showConfirm({
+                icon, iconColor: color,
+                title, message,
+                buttons: [{ label: 'Entendido', value: 'ok', primary: true }]
+            });
+        }
+
+        // ============================================
+        // SINCRONIZACIÓN ENTRE DISPOSITIVOS
+        // ============================================
+
+        // Abrir modal de sincronización
+        function openSyncModal() {
+            document.getElementById('sync-modal').classList.add('show');
+            document.getElementById('sync-result').style.display = 'none';
+            document.getElementById('sync-content').style.display = 'block';
+        }
+
+        // Cerrar modal de sincronización
+        function closeSyncModal() {
+            document.getElementById('sync-modal').classList.remove('show');
+        }
+
+        // Generar URL con configuración comprimida (usa gzip nativo si disponible)
+        async function generateSyncUrl() {
+            const config = {
+                favoritos: state.favoritos,
+                misEnlaces: loadMisEnlaces(),
+                version: 2, // versión 2 = con compresión
+                timestamp: Date.now()
+            };
+
+            try {
+                const jsonStr = JSON.stringify(config);
+                let encoded;
+
+                // Intentar compresión nativa (navegadores modernos)
+                if (typeof CompressionStream !== 'undefined') {
+                    const blob = new Blob([jsonStr]);
+                    const compressedStream = blob.stream().pipeThrough(new CompressionStream('gzip'));
+                    const compressedBlob = await new Response(compressedStream).blob();
+                    const arrayBuffer = await compressedBlob.arrayBuffer();
+                    const bytes = new Uint8Array(arrayBuffer);
+                    // Convertir bytes a base64 URL-safe
+                    encoded = 'z' + btoa(String.fromCharCode(...bytes))
+                        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+                } else {
+                    // Fallback: base64 sin compresión
+                    encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+                }
+
+                // Generar URL
+                const baseUrl = window.location.origin + window.location.pathname;
+                const syncUrl = `${baseUrl}#sync=${encoded}`;
+
+                // Mostrar info de compresión
+                const originalSize = jsonStr.length;
+                const compressedSize = encoded.length;
+                const ratio = Math.round((1 - compressedSize / originalSize) * 100);
+                console.log(`Compresión: ${originalSize} → ${compressedSize} bytes (${ratio}% reducción)`);
+
+                // Mostrar resultado
+                document.getElementById('sync-url').value = syncUrl;
+                document.getElementById('sync-content').style.display = 'none';
+                document.getElementById('sync-result').style.display = 'block';
+
+                // Generar QR usando API gratuita
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(syncUrl)}`;
+                document.getElementById('sync-qr').src = qrUrl;
+
+            } catch (error) {
+                console.error('Error de compresión:', error);
+                alert('Error al generar el enlace: ' + error.message);
+            }
+        }
+
+        // Copiar URL al portapapeles
+        function copySyncUrl() {
+            const urlInput = document.getElementById('sync-url');
+            urlInput.select();
+            navigator.clipboard.writeText(urlInput.value).then(() => {
+                // Feedback visual
+                const btn = event.target.closest('button');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> ¡Copiado!';
+                btn.style.background = 'var(--success-color)';
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.style.background = '';
+                }, 2000);
+            }).catch(() => {
+                // Fallback para navegadores antiguos
+                document.execCommand('copy');
+                alert('Enlace copiado');
+            });
+        }
+
+        // Detectar y restaurar configuración desde URL al cargar
+        async function checkSyncUrl() {
+            const hash = window.location.hash;
+            if (!hash.startsWith('#sync=')) return false;
+
+            try {
+                const encoded = hash.substring(6); // Quitar '#sync='
+                let config;
+
+                // Detectar si está comprimido (empieza con 'z')
+                if (encoded.startsWith('z') && typeof DecompressionStream !== 'undefined') {
+                    // Descomprimir gzip
+                    const base64 = encoded.substring(1)
+                        .replace(/-/g, '+').replace(/_/g, '/');
+                    const binaryStr = atob(base64);
+                    const bytes = new Uint8Array(binaryStr.length);
+                    for (let i = 0; i < binaryStr.length; i++) {
+                        bytes[i] = binaryStr.charCodeAt(i);
+                    }
+
+                    const blob = new Blob([bytes]);
+                    const decompressedStream = blob.stream().pipeThrough(new DecompressionStream('gzip'));
+                    const decompressedBlob = await new Response(decompressedStream).blob();
+                    const jsonStr = await decompressedBlob.text();
+                    config = JSON.parse(jsonStr);
+                } else {
+                    // Fallback: base64 sin compresión
+                    const jsonStr = decodeURIComponent(escape(atob(encoded.startsWith('z') ? encoded.substring(1) : encoded)));
+                    config = JSON.parse(jsonStr);
+                }
+
+                // Validar estructura
+                if (!config.version) {
+                    console.warn('Configuración de sincronización inválida');
+                    return false;
+                }
+
+                // Datos actuales del usuario
+                const enlacesActuales = loadMisEnlaces();
+                const favoritosActuales = state.favoritos;
+
+                // Datos nuevos de sincronización
+                const numEnlacesNuevos = config.misEnlaces?.length || 0;
+                const numFavoritosNuevos = config.favoritos?.length || 0;
+
+                // Mostrar modal elegante con opciones
+                const action = await showConfirm({
+                    icon: 'fas fa-cloud-download-alt',
+                    iconColor: '#60a5fa',
+                    title: 'Configuración detectada',
+                    message: `
+                        <div style="text-align: left; background: rgba(255,255,255,0.05); padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 0.5rem;">
+                            <strong>Datos a importar:</strong><br>
+                            📁 ${numEnlacesNuevos} enlaces personales<br>
+                            ❤️ ${numFavoritosNuevos} favoritos
+                        </div>
+                        <div style="text-align: left; background: rgba(255,255,255,0.05); padding: 0.75rem; border-radius: 0.5rem;">
+                            <strong>Tus datos actuales:</strong><br>
+                            📁 ${enlacesActuales.length} enlaces<br>
+                            ❤️ ${favoritosActuales.length} favoritos
+                        </div>
+                    `,
+                    buttons: [
+                        { label: 'Cancelar', value: 'cancel' },
+                        { label: 'Combinar', value: 'merge', icon: 'fas fa-code-merge' },
+                        { label: 'Reemplazar', value: 'replace', primary: true, icon: 'fas fa-sync-alt', danger: true }
+                    ]
+                });
+
+                if (action === 'cancel') {
+                    history.replaceState(null, '', window.location.pathname);
+                    return false;
+                }
+
+                // Procesar según la acción elegida
+                if (action === 'replace') {
+                    // Reemplazar todo
+                    if (config.favoritos) {
+                        state.favoritos = config.favoritos;
+                        localStorage.setItem('explorar-favoritos', JSON.stringify(config.favoritos));
+                    }
+                    if (config.misEnlaces) {
+                        saveMisEnlaces(config.misEnlaces);
+                    }
+                } else if (action === 'merge') {
+                    // Combinar: añadir nuevos sin duplicar
+                    if (config.favoritos) {
+                        const mergedFavoritos = [...new Set([...favoritosActuales, ...config.favoritos])];
+                        state.favoritos = mergedFavoritos;
+                        localStorage.setItem('explorar-favoritos', JSON.stringify(mergedFavoritos));
+                    }
+                    if (config.misEnlaces) {
+                        // Combinar enlaces evitando duplicados por URL
+                        const urlsExistentes = new Set(enlacesActuales.map(e => e.url));
+                        const enlacesNuevos = config.misEnlaces.filter(e => !urlsExistentes.has(e.url));
+                        const mergedEnlaces = [...enlacesActuales, ...enlacesNuevos.map((e, i) => ({
+                            ...e,
+                            id: 'ext-' + Date.now() + '-' + i // Nuevo ID
+                        }))];
+                        saveMisEnlaces(mergedEnlaces);
+                    }
+                }
+
+                // Limpiar hash de la URL sin recargar
+                history.replaceState(null, '', window.location.pathname);
+
+                // Actualizar UI
+                updateCounts();
+                updateFavoritosCount();
+                applyFilters();
+
+                const mensaje = action === 'merge'
+                    ? 'Datos combinados correctamente'
+                    : 'Configuración importada correctamente';
+                await showAlert('✅ ' + mensaje, 'Tus datos han sido actualizados.', 'success');
+
+                return true;
+
+            } catch (error) {
+                console.error('Error al parsear configuración de sincronización:', error);
+                history.replaceState(null, '', window.location.pathname);
+                await showAlert('Error de sincronización', 'No se pudo procesar la configuración.', 'error');
+            }
+
+            return false;
+        }
+
+        // Ejecutar checkSyncUrl cuando el DOM esté listo y al cambiar el hash
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => checkSyncUrl(), 200);
+            });
+        } else {
+            // DOM ya cargado
+            setTimeout(() => checkSyncUrl(), 200);
+        }
+
+        // También escuchar cambios de hash (navegación sin reload)
+        window.addEventListener('hashchange', () => {
+            if (window.location.hash.startsWith('#sync=')) {
+                checkSyncUrl();
+            }
+        });
+    </script>
+</body>
+
+</html>
