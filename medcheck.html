@@ -28,7 +28,7 @@
     <link rel="apple-touch-icon" href="assets/icons/medcheck-icon-192.png">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="assets/css/cima-app.css" />
+    <link rel="stylesheet" href="assets/css/cima-app.css?v=20260310c" />
 </head>
 
 <body>
@@ -73,10 +73,16 @@
                     </button>
                 </div>
 
-                <button class="context-clear" id="clear-context" title="Limpiar contexto para nuevo paciente">
-                    <i class="fas fa-eraser"></i>
-                    <span>Limpiar</span>
-                </button>
+                <div class="context-actions">
+                    <button class="context-action context-action-bookmarklet" id="open-bookmarklet-modal" title="Instalar el bookmarklet de MedCheck">
+                        <i class="fas fa-bookmark"></i>
+                        <span>Bookmarklet</span>
+                    </button>
+                    <button class="context-clear" id="clear-context" title="Limpiar contexto para nuevo paciente">
+                        <i class="fas fa-eraser"></i>
+                        <span>Limpiar</span>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -153,6 +159,16 @@
         </div>
     </div>
 
+    <!-- Bookmarklet Install Modal -->
+    <div id="bookmarklet-modal" class="modal-overlay modal-overlay-centered hidden" aria-hidden="true">
+        <div class="modal-content bookmarklet-modal-content">
+            <button class="modal-close" id="close-bookmarklet-modal" aria-label="Cerrar instalacion del bookmarklet">
+                <i class="fas fa-times"></i>
+            </button>
+            <div id="bookmarklet-modal-body"></div>
+        </div>
+    </div>
+
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
 
@@ -192,7 +208,7 @@
 
     <!-- Scripts -->
     <script src="assets/js/cima-api.js?v=20260102i"></script>
-    <script src="assets/js/cima-app.js?v=20260102i"></script>
+    <script src="assets/js/cima-app.js?v=20260310c"></script>
 
     <!-- Service Worker Registration -->
     <script>
@@ -207,3 +223,5 @@
 </body>
 
 </html>
+
+
