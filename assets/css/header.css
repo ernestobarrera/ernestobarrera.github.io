@@ -13,7 +13,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   height: var(--header-height);
   /* ... esto trata de ocultar la transición del header entre páginas ... */
-  transition: all 1s ease-in-out; /* o incluso más largo como 0.8s */
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .nav-container {
@@ -31,7 +31,7 @@
   gap: 1rem;
   text-decoration: none;
   color: var(--text-primary);
-  font-family: "Inter", sans-serif;
+  font-family: inherit;
   font-weight: 500;
 }
 
@@ -265,7 +265,7 @@
   .nav-menu {
     position: fixed;
     right: -100%;
-    top: 70px;
+    top: var(--header-height);
     flex-direction: column;
     background: rgba(10, 15, 26, 0.98);
     backdrop-filter: blur(10px);
@@ -368,5 +368,14 @@
   .dropdown-menu a.active {
     padding-left: calc(3rem - 3px);
     background: rgba(255, 215, 0, 0.1);
+  }
+}
+
+/* Desactivar hover CSS en dispositivos táctiles (evita "bocadillos" al hacer tap) */
+@media (hover: none) {
+  .dropdown:hover .dropdown-menu {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
   }
 }

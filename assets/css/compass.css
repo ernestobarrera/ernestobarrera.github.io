@@ -1140,6 +1140,13 @@ body::before {
 .btn-primary-sm:hover { filter: brightness(1.1); transform: translateY(-1px) }
 
 /* ══ RESPONSIVE ══════════════════════════════════ */
+
+/* Contrarrestar la reducción de font-size de main.css en móvil.
+   Compass usa tamaños en rem muy pequeños diseñados para 16px de base. */
+@media(max-width:768px) {
+  html { font-size: 15px }
+}
+
 @media(max-width:600px) {
   .stp-label { display: none }
   .mobile-step-indicator { display: block }
@@ -1149,6 +1156,11 @@ body::before {
   .nav-hint { order: 3; width: 100%; text-align: center }
   .intro-title { font-size: 2.4rem }
   .quick-btns { flex-direction: column; align-items: center }
+
+  /* Evitar desbordamiento del stepper en pantallas muy pequeñas */
+  .stp { padding: 5px 8px; min-width: 0 }
+  .pct-badge { display: none }
+  .logo { margin-right: 12px }
 }
 
 /* ══ PRINT ════════════════════════════════════════ */

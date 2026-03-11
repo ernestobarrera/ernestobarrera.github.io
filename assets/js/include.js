@@ -83,7 +83,7 @@
     }
     function initDropdowns() {
       const dropdowns = document.querySelectorAll('.dropdown');
-      const isMobile = window.innerWidth <= 768;
+      const isMobile = () => window.innerWidth <= 768;
 
       dropdowns.forEach(dropdown => {
         const toggle = dropdown.querySelector('.dropdown-toggle');
@@ -96,7 +96,7 @@
             e.stopPropagation();
 
             // Cerrar otros dropdowns abiertos en móvil
-            if (isMobile) {
+            if (isMobile()) {
               dropdowns.forEach(otherDropdown => {
                 if (otherDropdown !== dropdown) {
                   otherDropdown.querySelector('.dropdown-menu')?.classList.remove('show');
@@ -131,9 +131,11 @@
       });
 
       // Manejar cambios de tamaño de ventana
+      let prevMobile = isMobile();
       window.addEventListener('resize', () => {
-        const isNowMobile = window.innerWidth <= 768;
-        if (isNowMobile !== isMobile) {
+        const isNowMobile = isMobile();
+        if (isNowMobile !== prevMobile) {
+          prevMobile = isNowMobile;
           dropdowns.forEach(dropdown => {
             dropdown.querySelector('.dropdown-menu')?.classList.remove('show');
             dropdown.classList.remove('active');
