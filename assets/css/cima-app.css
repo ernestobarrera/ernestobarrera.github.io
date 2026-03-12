@@ -1971,17 +1971,6 @@ body {
         padding: 0.6rem;
     }
 
-    /* Botones de tarjetas en columna para móviles pequeños */
-    .result-card-actions {
-        flex-direction: column;
-        gap: var(--space-xs);
-    }
-
-    .result-card-actions .btn {
-        width: 100%;
-        justify-content: center;
-    }
-
     /* Tarjetas más compactas en móvil */
     .result-card {
         padding: var(--space-xs);
@@ -2454,11 +2443,19 @@ body {
     gap: var(--space-xs);
 }
 
-/* Card Actions */
+/* Card Actions - 2x2 quick-jump grid */
 .result-card-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: var(--space-xs);
     margin-top: auto;
+}
+
+.result-card-actions .btn {
+    justify-content: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .w-full {
@@ -4547,15 +4544,9 @@ code {
         font-size: 0.7rem;
     }
 
-    /* Card action buttons - stack vertically on very small screens */
+    /* Card action buttons - single column on very small screens */
     .result-card-actions {
-        flex-direction: column;
-        gap: var(--space-xs);
-    }
-
-    .result-card-actions .btn {
-        width: 100%;
-        justify-content: center;
+        grid-template-columns: 1fr;
     }
 
     /* Footer status bar */
