@@ -1149,7 +1149,10 @@ body::before {
 }
 
 @media(max-width:600px) {
-  .stp-label { display: none }
+  /* Ocultar la barra COMPASS en móvil — el indicador de paso ya da contexto */
+  .compass-bar { display: none }
+  /* El progress bar pasa a pegarse justo bajo el header */
+  .gpbar { top: var(--header-h) }
   .mobile-step-indicator { display: block }
   .rings-grid { grid-template-columns: 1fr 1fr }
   .bif-opts { grid-template-columns: 1fr }
@@ -1157,11 +1160,6 @@ body::before {
   .nav-hint { order: 3; width: 100%; text-align: center }
   .intro-title { font-size: 2.4rem }
   .quick-btns { flex-direction: column; align-items: center }
-
-  /* Evitar desbordamiento del stepper en pantallas muy pequeñas */
-  .stp { padding: 5px 8px; min-width: 0 }
-  .pct-badge { display: none }
-  .logo { margin-right: 12px }
 }
 
 /* ══ PRINT ════════════════════════════════════════ */
