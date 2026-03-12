@@ -1326,7 +1326,7 @@ class MedCheckApp {
         ` : '';
 
         return `
-            <div class="result-card" data-nregistro="${med.nregistro}">
+            <div class="result-card" data-nregistro="${med.nregistro}" title="Ver información general">
                 <div class="result-card-main">
                     <div class="med-icon-wrapper">
                         <i class="fas fa-${medIcon}"></i>
@@ -1348,16 +1348,22 @@ class MedCheckApp {
                     ${contextAlerts.join('')}
                     ${badges.join('')}
                 </div>` : ''}
-                
+
                 <div class="result-card-lab">
                     <i class="fas fa-building"></i> ${med.labtitular || 'Laboratorio desconocido'}
                 </div>
 
                 <div class="result-card-actions">
-                    <button class="btn btn-sm btn-secondary w-full" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}')">
-                        <i class="fas fa-info-circle"></i> Ficha
+                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')" title="Ficha Técnica (PDF oficial)">
+                        <i class="fas fa-file-medical"></i> Ficha Técnica
                     </button>
-                    <button class="btn btn-sm btn-primary-outline w-full" onclick="event.stopPropagation(); app.goToSafetyWithMed('${med.nombre}')">
+                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'posology')" title="Posología y dosificación">
+                        <i class="fas fa-pills"></i> Posología
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'interactions')" title="Interacciones medicamentosas">
+                        <i class="fas fa-random"></i> Interacciones
+                    </button>
+                    <button class="btn btn-sm btn-primary-outline" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')" title="Seguridad: embarazo, lactancia, conducción...">
                         <i class="fas fa-shield-alt"></i> Seguridad
                     </button>
                 </div>
@@ -2122,10 +2128,16 @@ class MedCheckApp {
                 </div>
 
                 <div class="result-card-actions">
-                    <button class="btn btn-sm btn-secondary w-full" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}')">
-                        <i class="fas fa-info-circle"></i> Ficha
+                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')" title="Ficha Técnica (PDF oficial)">
+                        <i class="fas fa-file-medical"></i> Ficha Técnica
                     </button>
-                    <button class="btn btn-sm btn-primary-outline w-full" onclick="event.stopPropagation(); app.goToSafetyWithMed('${med.nombre}')">
+                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'posology')" title="Posología y dosificación">
+                        <i class="fas fa-pills"></i> Posología
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'interactions')" title="Interacciones medicamentosas">
+                        <i class="fas fa-random"></i> Interacciones
+                    </button>
+                    <button class="btn btn-sm btn-primary-outline" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')" title="Seguridad: embarazo, lactancia, conducción...">
                         <i class="fas fa-shield-alt"></i> Seguridad
                     </button>
                 </div>
