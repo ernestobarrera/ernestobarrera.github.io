@@ -3529,26 +3529,95 @@ class MedCheckApp {
 
             if (!data || data.length === 0) {
                 this.content.innerHTML = `
-    <div class="empty-state">
+                    <div class="empty-state">
                         <i class="fas fa-check-circle" style="color: var(--success);"></i>
                         <h3>Sin problemas de suministro</h3>
                         <p>Actualmente no hay problemas de suministro activos</p>
                     </div>
-    `;
+                `;
                 return;
             }
 
+            const now = new Date();
+            const withAlternatives = data.filter(item =>
+                item.observ && /principio activo/i.test(item.observ));
+            const noEndDate = data.filter(item => !item.ffin);
+            const endingSoon = data.filter(item => {
+                if (!item.ffin) return false;
+                const days = Math.ceil((new Date(item.ffin) - now) / (1000 * 60 * 60 * 24));
+                return days >= 0 && days <= 30;
+            });
+            const foreignOption = data.filter(item =>
+                item.observ && /extranjero/i.test(item.observ));
+
             this.content.innerHTML = `
-    < h3 style="margin-bottom: 1rem;">
-        <i class="fas fa-boxes text-danger"></i> 
-                    Problemas de Suministro Activos
-    <span class="badge badge-danger"> ${data.length}</span>
-                </h3 >
-    <div id="supply-list">
-        ${data.slice(0, 50).map(item => this.renderSupplyCard(item)).join('')}
-    </div>
-                ${data.length > 50 ? `<p class="text-muted mt-md">Mostrando 50 de ${data.length} problemas</p>` : ''}
-`;
+                <div class="supply-header">
+                    <h3 class="supply-title">
+                        <i class="fas fa-boxes"></i>
+                        Problemas de Suministro Activos
+                        <span class="badge badge-danger">${data.length}</span>
+                    </h3>
+                </div>
+
+                <div class="supply-stats-bar">
+                    <div class="supply-stat supply-stat-danger" onclick="app.setSupplyFilter('all', document.querySelector('.supply-filter-tag[data-filter=all]'))" style="cursor:pointer">
+                        <span class="supply-stat-value">${data.length}</span>
+                        <span class="supply-stat-label">Total activos</span>
+                    </div>
+                    <div class="supply-stat supply-stat-warning" onclick="app.setSupplyFilter('no-end', document.querySelector('.supply-filter-tag[data-filter=no-end]'))" style="cursor:pointer">
+                        <span class="supply-stat-value">${noEndDate.length}</span>
+                        <span class="supply-stat-label">Sin fecha fin</span>
+                    </div>
+                    <div class="supply-stat supply-stat-success" onclick="app.setSupplyFilter('alternatives', document.querySelector('.supply-filter-tag[data-filter=alternatives]'))" style="cursor:pointer">
+                        <span class="supply-stat-value">${withAlternatives.length}</span>
+                        <span class="supply-stat-label">Con alternativas</span>
+                    </div>
+                    <div class="supply-stat supply-stat-info" onclick="app.setSupplyFilter('ending-soon', document.querySelector('.supply-filter-tag[data-filter=ending-soon]'))" style="cursor:pointer">
+                        <span class="supply-stat-value">${endingSoon.length}</span>
+                        <span class="supply-stat-label">Resolviendo pronto</span>
+                    </div>
+                </div>
+
+                <div class="supply-controls">
+                    <div class="supply-search-wrap">
+                        <i class="fas fa-search supply-search-icon"></i>
+                        <input
+                            type="text"
+                            id="supply-search"
+                            class="supply-search-input"
+                            placeholder="Filtrar por medicamento u observaciones..."
+                            oninput="app.filterSupplyList(this.value)"
+                        >
+                    </div>
+                    <div class="supply-sort-wrap">
+                        <select id="supply-sort" class="supply-sort-select" onchange="app.sortSupplyList(this.value)">
+                            <option value="fini-desc">Más recientes primero</option>
+                            <option value="ffin-asc">Próximos a resolverse</option>
+                            <option value="nombre-asc">Orden alfabético</option>
+                            <option value="urgency">Por urgencia</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="supply-filter-tags" class="supply-filter-tags">
+                    <button class="supply-filter-tag active" data-filter="all" onclick="app.setSupplyFilter('all', this)">Todos</button>
+                    <button class="supply-filter-tag" data-filter="alternatives" onclick="app.setSupplyFilter('alternatives', this)">Con alternativas</button>
+                    <button class="supply-filter-tag" data-filter="no-end" onclick="app.setSupplyFilter('no-end', this)">Sin fecha fin</button>
+                    <button class="supply-filter-tag" data-filter="ending-soon" onclick="app.setSupplyFilter('ending-soon', this)">Resolviendo pronto</button>
+                    ${foreignOption.length > 0 ? `<button class="supply-filter-tag" data-filter="foreign" onclick="app.setSupplyFilter('foreign', this)">Med. extranjero</button>` : ''}
+                </div>
+
+                <div id="supply-list">
+                    ${data.map(item => this.renderSupplyCard(item)).join('')}
+                </div>
+
+                <div class="supply-count-bar">
+                    Mostrando <span id="supply-visible-count">${data.length}</span> de ${data.length} problemas
+                </div>
+            `;
+
+            this._supplyData = data;
+            this._supplyFilter = 'all';
 
         } catch (error) {
             this.handleSearchError(this.content, error);
@@ -3556,18 +3625,199 @@ class MedCheckApp {
     }
 
     renderSupplyCard(item) {
-        const fini = item.fini ? new Date(item.fini).toLocaleDateString('es-ES') : '-';
-        const ffin = item.ffin ? new Date(item.ffin).toLocaleDateString('es-ES') : 'Sin fecha fin';
+        const now = new Date();
+        const fini = item.fini ? new Date(item.fini) : null;
+        const ffin = item.ffin ? new Date(item.ffin) : null;
+
+        const finiStr = fini ? fini.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+        const ffinStr = ffin ? ffin.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
+
+        const daysActive = fini ? Math.floor((now - fini) / (1000 * 60 * 60 * 24)) : null;
+        const daysRemaining = ffin ? Math.ceil((ffin - now) / (1000 * 60 * 60 * 24)) : null;
+
+        const observ = item.observ || '';
+        const hasAlternatives = /principio activo/i.test(observ);
+        const hasForeignOption = /extranjero/i.test(observ);
+        const hasNoAlternatives = /sin alternativas/i.test(observ);
+
+        let cardClass = 'supply-card';
+        let urgencyBadge = '';
+        if (hasNoAlternatives) {
+            cardClass += ' supply-card--critical';
+            urgencyBadge = `<span class="supply-urgency-badge supply-urgency-critical"><i class="fas fa-exclamation-circle"></i> Sin alternativas</span>`;
+        } else if (!ffin) {
+            cardClass += ' supply-card--no-end';
+            urgencyBadge = `<span class="supply-urgency-badge supply-urgency-warning"><i class="fas fa-hourglass-half"></i> Sin fecha fin</span>`;
+        } else if (daysRemaining !== null && daysRemaining <= 0) {
+            cardClass += ' supply-card--resolved';
+            urgencyBadge = `<span class="supply-urgency-badge supply-urgency-resolved"><i class="fas fa-check-circle"></i> Finalizando</span>`;
+        } else if (daysRemaining !== null && daysRemaining <= 30) {
+            cardClass += ' supply-card--ending';
+            urgencyBadge = `<span class="supply-urgency-badge supply-urgency-ending"><i class="fas fa-calendar-check"></i> ${daysRemaining}d para resolverse</span>`;
+        } else if (hasAlternatives) {
+            urgencyBadge = `<span class="supply-urgency-badge supply-urgency-info"><i class="fas fa-exchange-alt"></i> Hay alternativas</span>`;
+        }
+
+        let durationText = '';
+        if (daysActive !== null && daysActive >= 0) {
+            durationText = daysActive === 0 ? 'Hoy' : daysActive === 1 ? '1 día activo' : `${daysActive} días activo`;
+        }
+
+        const safeName = item.nombre.replace(/'/g, "\\'");
+        const cn = item.cn || '';
+        let actionBtn = '';
+        if (hasAlternatives) {
+            actionBtn = `<button class="supply-action-btn" onclick="app.showSupplyAlternativesByCNOrName('${cn}', '${safeName}')">
+                <i class="fas fa-exchange-alt"></i> Ver alternativas disponibles
+            </button>`;
+        } else if (hasForeignOption) {
+            actionBtn = `<span class="supply-foreign-note"><i class="fas fa-globe-europe"></i> Disponible como medicamento extranjero</span>`;
+        }
+
+        const filterAttrs = [
+            hasAlternatives ? 'data-has-alternatives="1"' : '',
+            !ffin ? 'data-no-end="1"' : '',
+            (daysRemaining !== null && daysRemaining >= 0 && daysRemaining <= 30) ? 'data-ending-soon="1"' : '',
+            hasForeignOption ? 'data-foreign="1"' : '',
+        ].filter(Boolean).join(' ');
 
         return `
-    <div class="supply-card">
+            <div class="${cardClass}" ${filterAttrs} data-nombre="${item.nombre.toLowerCase()}">
                 <div class="supply-card-header">
-                    <span class="supply-card-name">${item.nombre}</span>
-                    <span class="supply-card-dates">${fini} → ${ffin}</span>
+                    <div class="supply-card-main">
+                        <span class="supply-card-name">${item.nombre}</span>
+                        ${urgencyBadge}
+                    </div>
+                    <div class="supply-card-dates-block">
+                        <span class="supply-date-item" title="Inicio del problema">
+                            <i class="fas fa-calendar-alt supply-date-icon"></i> ${finiStr}
+                        </span>
+                        <span class="supply-date-sep">→</span>
+                        <span class="supply-date-item ${!ffin ? 'supply-date-indefinite' : ''}" title="Fecha fin estimada">
+                            ${ffinStr || '<span class="supply-no-end-label">Indefinido</span>'}
+                        </span>
+                        ${durationText ? `<span class="supply-duration">${durationText}</span>` : ''}
+                    </div>
                 </div>
-                <p class="supply-card-obs">${item.observ || 'Sin observaciones'}</p>
+                ${observ ? `<p class="supply-card-obs">${observ}</p>` : ''}
+                ${actionBtn ? `<div class="supply-card-actions">${actionBtn}</div>` : ''}
             </div>
-    `;
+        `;
+    }
+
+    filterSupplyList(searchText) {
+        if (!this._supplyData) return;
+        const items = document.querySelectorAll('#supply-list .supply-card');
+        const text = searchText.toLowerCase().trim();
+        let visible = 0;
+        items.forEach(card => {
+            const nombre = card.dataset.nombre || '';
+            const obs = card.querySelector('.supply-card-obs')?.textContent.toLowerCase() || '';
+            const matchesText = !text || nombre.includes(text) || obs.includes(text);
+            const matchesFilter = this._supplyMatchesFilter(card);
+            const show = matchesText && matchesFilter;
+            card.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const countEl = document.getElementById('supply-visible-count');
+        if (countEl) countEl.textContent = visible;
+    }
+
+    _supplyMatchesFilter(card) {
+        const filter = this._supplyFilter || 'all';
+        if (filter === 'all') return true;
+        if (filter === 'alternatives') return card.dataset.hasAlternatives === '1';
+        if (filter === 'no-end') return card.dataset.noEnd === '1';
+        if (filter === 'ending-soon') return card.dataset.endingSoon === '1';
+        if (filter === 'foreign') return card.dataset.foreign === '1';
+        return true;
+    }
+
+    setSupplyFilter(filter, btn) {
+        this._supplyFilter = filter;
+        document.querySelectorAll('.supply-filter-tag').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        this.filterSupplyList(document.getElementById('supply-search')?.value || '');
+    }
+
+    sortSupplyList(sortBy) {
+        if (!this._supplyData) return;
+        const list = document.getElementById('supply-list');
+        if (!list) return;
+        const cards = Array.from(list.querySelectorAll('.supply-card'));
+        cards.sort((a, b) => {
+            const itemA = this._supplyData.find(i => i.nombre.toLowerCase() === a.dataset.nombre);
+            const itemB = this._supplyData.find(i => i.nombre.toLowerCase() === b.dataset.nombre);
+            if (!itemA || !itemB) return 0;
+            if (sortBy === 'fini-desc') {
+                return (new Date(itemB.fini || 0)) - (new Date(itemA.fini || 0));
+            } else if (sortBy === 'ffin-asc') {
+                if (!itemA.ffin && !itemB.ffin) return 0;
+                if (!itemA.ffin) return 1;
+                if (!itemB.ffin) return -1;
+                return new Date(itemA.ffin) - new Date(itemB.ffin);
+            } else if (sortBy === 'nombre-asc') {
+                return itemA.nombre.localeCompare(itemB.nombre, 'es');
+            } else if (sortBy === 'urgency') {
+                return this._supplyUrgencyScore(itemB) - this._supplyUrgencyScore(itemA);
+            }
+            return 0;
+        });
+        cards.forEach(card => list.appendChild(card));
+    }
+
+    _supplyUrgencyScore(item) {
+        const observ = item.observ || '';
+        if (/sin alternativas/i.test(observ)) return 4;
+        if (!item.ffin) return 3;
+        const now = new Date();
+        const daysRemaining = Math.ceil((new Date(item.ffin) - now) / (1000 * 60 * 60 * 24));
+        if (daysRemaining <= 30) return 2;
+        return 1;
+    }
+
+    async showSupplyAlternativesByCNOrName(cn, nombre) {
+        this.modal.classList.remove('hidden');
+        this.modalBody.innerHTML = `
+            <div class="modal-header">
+                <h2 class="modal-title"><i class="fas fa-exchange-alt"></i> Alternativas de Suministro</h2>
+                <p class="modal-subtitle">Buscando: ${nombre}</p>
+            </div>
+            <div class="alternatives-loading">
+                <div class="loading-spinner"></div>
+                <p class="text-muted">Obteniendo información del medicamento...</p>
+            </div>
+        `;
+        try {
+            let nregistro = null;
+            if (cn) {
+                const med = await this.api.getMedicamentoByCN(cn);
+                if (med && med.nregistro) nregistro = med.nregistro;
+            }
+            if (!nregistro) {
+                const searchName = nombre.split(' ').slice(0, 3).join(' ');
+                const results = await this.api.searchMedicamentos({ nombre: searchName, comerc: 1 });
+                if (results.resultados && results.resultados.length > 0) {
+                    nregistro = results.resultados[0].nregistro;
+                }
+            }
+            if (nregistro) {
+                await this.showSupplyAlternativesByNregistro(nregistro, nombre);
+            } else {
+                this.modalBody.innerHTML = `
+                    <div class="modal-header">
+                        <h2 class="modal-title"><i class="fas fa-exchange-alt"></i> Alternativas de Suministro</h2>
+                    </div>
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>Medicamento no encontrado</h3>
+                        <p class="text-muted">No se pudieron obtener alternativas para: ${nombre}</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            this.modalBody.innerHTML = `<p class="text-muted">Error al buscar alternativas.</p>`;
+        }
     }
 
     // ============================================
