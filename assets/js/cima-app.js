@@ -2113,6 +2113,9 @@ class MedCheckApp {
         if (formaFarm.toLowerCase().includes('colirio') || formaFarm.toLowerCase().includes('ocular')) medIcon = 'eye-dropper';
         if (formaFarm.toLowerCase().includes('inhal')) medIcon = 'wind';
 
+        this._medRenderCache.set(med.nregistro, med);
+        const isFav = this.isFavorite(med.nregistro);
+
         return `
             <div class="result-card" data-nregistro="${med.nregistro}">
                 <div class="result-card-main">
@@ -2122,6 +2125,11 @@ class MedCheckApp {
                     <div class="med-info-content">
                         <div class="result-card-header">
                             <span class="result-card-title">${med.nombre}</span>
+                            <button class="fav-star-btn ${isFav ? 'active' : ''}"
+                                onclick="event.stopPropagation(); app.toggleFavoriteById('${med.nregistro}', this); app.updateFavoritesBadge();"
+                                title="${isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}">
+                                <i class="fas fa-star"></i>
+                            </button>
                         </div>
                         <div class="med-details-inline">
                             ${pActivo ? `<span class="med-detail-tag"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
