@@ -98,6 +98,7 @@ class MedCheckApp {
         this.setupBookmarkletModal();
         this.checkAPIStatus();
         this.updateATCVersion();
+        this.updateFavoritesBadge();
 
         // If legal already accepted, process URL params now
         if (this.hasAcceptedLegalDisclaimer()) {
@@ -230,6 +231,7 @@ class MedCheckApp {
                 case 'equivalences': this.renderEquivalences(); break;
                 case 'supply': await this.renderSupply(); break;
                 case 'alerts': await this.renderAlerts(); break;
+                case 'profile': this.renderProfileView(); break;
                 default: this.content.innerHTML = '<p>Vista no encontrada</p>';
             }
         } catch (error) {
@@ -1325,6 +1327,7 @@ class MedCheckApp {
             </div>
         ` : '';
 
+        const isFav = this.isFavorite(med.nregistro);
         return `
             <div class="result-card" data-nregistro="${med.nregistro}" title="Ver información general">
                 <div class="result-card-main">
@@ -1334,6 +1337,11 @@ class MedCheckApp {
                     <div class="med-info-content">
                         <div class="result-card-header">
                             <span class="result-card-title">${med.nombre}</span>
+                            <button class="fav-star-btn ${isFav ? 'active' : ''}"
+                                onclick="event.stopPropagation(); app.toggleFavorite(${JSON.stringify(med).replace(/"/g, '&quot;')}); this.classList.toggle('active'); app.updateFavoritesBadge();"
+                                title="${isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}">
+                                <i class="fa${isFav ? 's' : 'r'} fa-star"></i>
+                            </button>
                         </div>
                         <div class="med-details-inline">
                             ${pActivo ? `<span class="med-detail-tag"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
@@ -3760,6 +3768,8 @@ class MedCheckApp {
             this.currentMed = med;
             // Save as selected medication for banner persistence
             this.setSelectedMedication(med);
+            // Increment view count if this is a favorite
+            this.incrementFavoriteViewCount(nregistro);
 
             // Update URL with medication nregistro
             if (!this.isPopstateNavigation) {
@@ -6068,6 +6078,803 @@ class MedCheckApp {
         if (this._lightboxEscHandler) {
             document.removeEventListener('keydown', this._lightboxEscHandler);
         }
+    }
+
+    // ============================================
+    // FAVORITES — CRUD + PERSISTENCE
+    // ============================================
+
+    FAVORITES_KEY = 'medcheck_favorites_v1';
+
+    getFavorites() {
+        try {
+            return JSON.parse(localStorage.getItem(this.FAVORITES_KEY) || '[]');
+        } catch {
+            return [];
+        }
+    }
+
+    _saveFavorites(favs) {
+        try {
+            localStorage.setItem(this.FAVORITES_KEY, JSON.stringify(favs));
+        } catch (e) {
+            console.warn('Could not save favorites', e);
+        }
+    }
+
+    isFavorite(nregistro) {
+        return this.getFavorites().some(f => f.nregistro === nregistro);
+    }
+
+    addFavorite(med) {
+        const favs = this.getFavorites();
+        if (favs.some(f => f.nregistro === med.nregistro)) return;
+
+        // Extract ATC info
+        const atcCodigo = med.atcs?.[0]?.codigo || med.atcCodigo || '';
+        const atcNivel1 = atcCodigo[0] || '';
+        const atcNivel2 = atcCodigo.length >= 3 ? atcCodigo.substring(0, 3) : atcCodigo;
+        const atcNombre = med.atcs?.[0]?.nombre || med.atcNombre || '';
+
+        // Extract principio activo
+        let principioActivo = '';
+        if (med.pactivos) {
+            principioActivo = med.pactivos;
+        } else if (med.vtm?.nombre) {
+            principioActivo = med.vtm.nombre;
+        } else if (med.principiosActivos?.length > 0) {
+            principioActivo = med.principiosActivos.map(pa => pa.nombre).join(', ');
+        }
+
+        const fav = {
+            nregistro: med.nregistro,
+            nombre: med.nombre,
+            principioActivo,
+            dosis: med.dosis || '',
+            formaFarmaceutica: med.formaFarmaceutica?.nombre || '',
+            via: med.viasAdministracion?.[0]?.nombre || '',
+            atcCodigo,
+            atcNivel1,
+            atcNivel2,
+            atcNombre,
+            generico: !!med.generico,
+            receta: !!med.receta,
+            triangulo: !!med.triangulo,
+            psum: !!med.psum,
+            notas: !!med.notas,
+            conduc: !!med.conduc,
+            addedAt: new Date().toISOString(),
+            viewCount: 0,
+            lastViewedAt: null
+        };
+
+        favs.unshift(fav);
+        this._saveFavorites(favs);
+    }
+
+    removeFavorite(nregistro) {
+        const favs = this.getFavorites().filter(f => f.nregistro !== nregistro);
+        this._saveFavorites(favs);
+    }
+
+    toggleFavorite(med) {
+        if (this.isFavorite(med.nregistro)) {
+            this.removeFavorite(med.nregistro);
+            this.showToast(`${med.nombre} eliminado de favoritos`, 'info');
+        } else {
+            this.addFavorite(med);
+            this.showToast(`${med.nombre} guardado en favoritos`, 'success');
+        }
+    }
+
+    incrementFavoriteViewCount(nregistro) {
+        const favs = this.getFavorites();
+        const fav = favs.find(f => f.nregistro === nregistro);
+        if (!fav) return;
+        fav.viewCount = (fav.viewCount || 0) + 1;
+        fav.lastViewedAt = new Date().toISOString();
+        this._saveFavorites(favs);
+    }
+
+    updateFavoritesBadge() {
+        const badge = document.getElementById('favorites-badge');
+        if (!badge) return;
+        const count = this.getFavorites().length;
+        badge.textContent = count;
+        badge.classList.toggle('hidden', count === 0);
+    }
+
+    // ============================================
+    // PROFILE VIEW — Main render
+    // ============================================
+
+    renderProfileView() {
+        const favs = this.getFavorites();
+        this.updateFavoritesBadge();
+
+        this.content.innerHTML = `
+            <div class="profile-view">
+                <div class="profile-subnav">
+                    <button class="profile-subnav-btn active" data-section="favorites">
+                        <i class="fas fa-star"></i> Favoritos
+                        <span class="subnav-count">${favs.length}</span>
+                    </button>
+                    <button class="profile-subnav-btn" data-section="analytics">
+                        <i class="fas fa-chart-bar"></i> Analítica
+                    </button>
+                    <button class="profile-subnav-btn" data-section="export">
+                        <i class="fas fa-file-export"></i> Exportar
+                    </button>
+                </div>
+                <div class="profile-section-content" id="profile-section-content">
+                    ${this._renderFavoritesSection(favs)}
+                </div>
+            </div>
+        `;
+
+        // Sub-navigation
+        this.content.querySelectorAll('.profile-subnav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.content.querySelectorAll('.profile-subnav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const section = btn.dataset.section;
+                const container = document.getElementById('profile-section-content');
+                if (section === 'favorites') container.innerHTML = this._renderFavoritesSection(this.getFavorites());
+                if (section === 'analytics') container.innerHTML = this._renderAnalyticsSection(this.getFavorites());
+                if (section === 'export') container.innerHTML = this._renderExportSection();
+                if (section === 'analytics') this._initDonutChart();
+                if (section === 'export') this._initExportSection();
+            });
+        });
+    }
+
+    // ============================================
+    // PROFILE — Favorites section
+    // ============================================
+
+    _renderFavoritesSection(favs) {
+        if (favs.length === 0) {
+            return `
+                <div class="profile-empty">
+                    <i class="fas fa-star"></i>
+                    <h3>Sin favoritos aún</h3>
+                    <p>Guarda medicamentos con <i class="fas fa-star"></i> desde los resultados de búsqueda para acceder rápidamente a ellos aquí.</p>
+                    <button class="btn btn-primary" onclick="app.loadView('search')">
+                        <i class="fas fa-search"></i> Buscar medicamentos
+                    </button>
+                </div>
+            `;
+        }
+
+        // Group by ATC L1
+        const grouped = {};
+        const noATC = [];
+
+        favs.forEach(fav => {
+            if (!fav.atcNivel1) {
+                noATC.push(fav);
+            } else {
+                if (!grouped[fav.atcNivel1]) grouped[fav.atcNivel1] = {};
+                const l2 = fav.atcNivel2 || fav.atcNivel1;
+                if (!grouped[fav.atcNivel1][l2]) grouped[fav.atcNivel1][l2] = [];
+                grouped[fav.atcNivel1][l2].push(fav);
+            }
+        });
+
+        // Sort L1 groups by total count desc
+        const sortedL1 = Object.keys(grouped).sort(
+            (a, b) => Object.values(grouped[b]).flat().length - Object.values(grouped[a]).flat().length
+        );
+
+        let html = `
+            <div class="favorites-search-bar">
+                <div class="search-input-wrapper" style="max-width:360px">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="fav-search-input" placeholder="Buscar en mis favoritos..." class="search-input" oninput="app._filterFavorites(this.value)">
+                </div>
+            </div>
+            <div id="favorites-list">
+        `;
+
+        sortedL1.forEach((l1, idx) => {
+            const atcInfo = this.ATC_CLINICAL_INFO[l1] || { class: l1, icon: 'pills', color: '#94a3b8', tip: '' };
+            const totalL1 = Object.values(grouped[l1]).flat().length;
+            const isFirst = idx === 0;
+
+            html += `
+                <div class="fav-atc-group ${isFirst ? '' : 'collapsed'}" data-l1="${l1}">
+                    <div class="fav-atc-group-header" onclick="this.parentElement.classList.toggle('collapsed')" style="border-color:${atcInfo.color}40; background:${atcInfo.color}10">
+                        <div class="fav-atc-group-title">
+                            <span class="fav-atc-icon" style="color:${atcInfo.color}"><i class="fas fa-${atcInfo.icon}"></i></span>
+                            <span class="fav-atc-letter" style="color:${atcInfo.color}">${l1}</span>
+                            <span class="fav-atc-name">${atcInfo.class}</span>
+                        </div>
+                        <div class="fav-atc-meta">
+                            <span class="fav-atc-count">${totalL1}</span>
+                            <i class="fas fa-chevron-down fav-atc-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="fav-atc-group-body">
+            `;
+
+            // Sort L2 subgroups by count desc
+            const sortedL2 = Object.keys(grouped[l1]).sort(
+                (a, b) => grouped[l1][b].length - grouped[l1][a].length
+            );
+
+            sortedL2.forEach(l2 => {
+                const l2Items = grouped[l1][l2];
+                const l2Name = l2Items[0]?.atcNombre || l2;
+                const showL2Header = sortedL2.length > 1 || l2 !== l1;
+
+                if (showL2Header) {
+                    html += `
+                        <div class="fav-l2-group">
+                            <div class="fav-l2-header">
+                                <span class="fav-l2-code" style="color:${atcInfo.color}">${l2}</span>
+                                <span class="fav-l2-name">${l2Name}</span>
+                                <span class="fav-l2-count">${l2Items.length}</span>
+                            </div>
+                            <div class="fav-cards-grid">
+                                ${l2Items.map(fav => this._renderFavCard(fav, atcInfo)).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="fav-cards-grid">
+                            ${l2Items.map(fav => this._renderFavCard(fav, atcInfo)).join('')}
+                        </div>
+                    `;
+                }
+            });
+
+            html += `</div></div>`;
+        });
+
+        // No ATC group
+        if (noATC.length > 0) {
+            html += `
+                <div class="fav-atc-group collapsed" data-l1="none">
+                    <div class="fav-atc-group-header" onclick="this.parentElement.classList.toggle('collapsed')" style="border-color:#94a3b840; background:#94a3b810">
+                        <div class="fav-atc-group-title">
+                            <span class="fav-atc-icon" style="color:#94a3b8"><i class="fas fa-question-circle"></i></span>
+                            <span class="fav-atc-name">Sin clasificar</span>
+                        </div>
+                        <div class="fav-atc-meta">
+                            <span class="fav-atc-count">${noATC.length}</span>
+                            <i class="fas fa-chevron-down fav-atc-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="fav-atc-group-body">
+                        <div class="fav-cards-grid">
+                            ${noATC.map(fav => this._renderFavCard(fav, { color: '#94a3b8', icon: 'pills' })).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        html += `</div>`; // close favorites-list
+        return html;
+    }
+
+    _renderFavCard(fav, atcInfo) {
+        const accentColor = atcInfo?.color || '#94a3b8';
+        const viewsText = fav.viewCount > 0 ? `<span class="fav-card-views" title="Veces consultado"><i class="fas fa-eye"></i> ${fav.viewCount}</span>` : '';
+        const badgesTags = [];
+        if (fav.generico) badgesTags.push('<span class="badge badge-success badge-xs">Gen.</span>');
+        if (fav.triangulo) badgesTags.push('<span class="badge badge-danger badge-xs" title="Triángulo negro">▲</span>');
+        if (fav.psum) badgesTags.push('<span class="badge badge-danger badge-xs">Sin stock</span>');
+        if (fav.notas) badgesTags.push('<span class="badge badge-warning badge-xs">AEMPS</span>');
+
+        return `
+            <div class="fav-card" data-nregistro="${fav.nregistro}" data-name="${fav.nombre.toLowerCase()}" data-pa="${(fav.principioActivo || '').toLowerCase()}"
+                 style="border-left-color:${accentColor}" onclick="app.openMedDetails('${fav.nregistro}', 'info')">
+                <div class="fav-card-header">
+                    <span class="fav-card-name">${fav.nombre}</span>
+                    <button class="fav-star-btn active" onclick="event.stopPropagation(); app.removeFavorite('${fav.nregistro}'); app.updateFavoritesBadge(); app.renderProfileView();" title="Quitar de favoritos">
+                        <i class="fas fa-star"></i>
+                    </button>
+                </div>
+                ${fav.principioActivo ? `<div class="fav-card-pa"><i class="fas fa-flask"></i> ${fav.principioActivo}${fav.dosis ? ' · ' + fav.dosis : ''}</div>` : ''}
+                <div class="fav-card-footer">
+                    <div class="fav-card-badges">${badgesTags.join('')}</div>
+                    ${viewsText}
+                </div>
+            </div>
+        `;
+    }
+
+    _filterFavorites(query) {
+        const q = query.toLowerCase().trim();
+        document.querySelectorAll('.fav-card').forEach(card => {
+            const name = card.dataset.name || '';
+            const pa = card.dataset.pa || '';
+            const match = !q || name.includes(q) || pa.includes(q);
+            card.style.display = match ? '' : 'none';
+        });
+        // Show/hide L2 headers and L1 groups based on visible cards
+        document.querySelectorAll('.fav-l2-group').forEach(group => {
+            const visible = group.querySelectorAll('.fav-card:not([style*="display: none"])').length;
+            group.style.display = visible > 0 ? '' : 'none';
+        });
+        document.querySelectorAll('.fav-atc-group').forEach(group => {
+            const visible = group.querySelectorAll('.fav-card:not([style*="display: none"])').length;
+            group.style.display = visible > 0 ? '' : 'none';
+        });
+    }
+
+    // ============================================
+    // PROFILE — Analytics section
+    // ============================================
+
+    _analyzeFavorites(favs) {
+        const total = favs.length;
+        if (total === 0) return null;
+
+        const generics = favs.filter(f => f.generico).length;
+        const withReceta = favs.filter(f => f.receta).length;
+        const triangulos = favs.filter(f => f.triangulo);
+        const sinStock = favs.filter(f => f.psum);
+        const conAemps = favs.filter(f => f.notas);
+
+        // ATC L1 distribution
+        const atcDist = {};
+        favs.forEach(f => {
+            if (f.atcNivel1) {
+                atcDist[f.atcNivel1] = (atcDist[f.atcNivel1] || 0) + 1;
+            }
+        });
+
+        // Unique ATC L2 groups
+        const uniqueL2 = new Set(favs.map(f => f.atcNivel2).filter(Boolean));
+        const uniquePA = new Set(favs.map(f => f.principioActivo).filter(Boolean));
+
+        // Duplicate ATC L3 detection
+        const atcL3Groups = {};
+        favs.forEach(f => {
+            const l3 = f.atcCodigo?.substring(0, 4);
+            if (l3) {
+                if (!atcL3Groups[l3]) atcL3Groups[l3] = [];
+                atcL3Groups[l3].push(f);
+            }
+        });
+        const duplicates = Object.values(atcL3Groups).filter(g => g.length > 1);
+
+        // Top viewed
+        const topViewed = [...favs]
+            .filter(f => f.viewCount > 0)
+            .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+            .slice(0, 5);
+
+        // Indication coverage (using CLINICAL_DICTIONARY)
+        const coverage = this._computeIndicationCoverage(favs);
+
+        return {
+            total, generics, withReceta, triangulos, sinStock, conAemps,
+            atcDist, uniqueL2: uniqueL2.size, uniquePA: uniquePA.size,
+            duplicates, topViewed, coverage,
+            genericRate: Math.round(generics / total * 100),
+            prescRate: Math.round(withReceta / total * 100),
+            diversityLabel: uniqueL2.size / 14 >= 0.4 ? 'Perfil generalista' : 'Perfil especializado'
+        };
+    }
+
+    _computeIndicationCoverage(favs) {
+        const favAtcs = favs.map(f => f.atcCodigo || f.atcNivel2 || f.atcNivel1).filter(Boolean);
+
+        const covered = [];
+        const uncovered = [];
+
+        const dict = CimaAPI.CLINICAL_DICTIONARY || {};
+        for (const [indication, data] of Object.entries(dict)) {
+            // Skip abbreviations (single-word entries that are already in covered by their parent)
+            if (indication.length <= 5 && indication === indication.toUpperCase()) continue;
+
+            const atcList = Array.isArray(data.atc) ? data.atc : [data.atc];
+            const hasCoverage = atcList.some(atcGroup =>
+                favAtcs.some(favAtc => favAtc && favAtc.startsWith(atcGroup))
+            );
+
+            const entry = { indication: data.label || indication, atcList };
+            if (hasCoverage) covered.push(entry);
+            else uncovered.push(entry);
+        }
+
+        return { covered, uncovered };
+    }
+
+    _renderAnalyticsSection(favs) {
+        const stats = this._analyzeFavorites(favs);
+
+        if (!stats) {
+            return `
+                <div class="profile-empty">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>Sin datos para analizar</h3>
+                    <p>Guarda medicamentos en favoritos para ver tu perfil de prescripción.</p>
+                </div>
+            `;
+        }
+
+        const { total, generics, withReceta, triangulos, sinStock, conAemps, atcDist,
+                uniqueL2, uniquePA, duplicates, topViewed, coverage,
+                genericRate, prescRate, diversityLabel } = stats;
+
+        // Metric card helper
+        const metricCard = (icon, label, value, subtitle, status) => {
+            const statusClass = status === 'good' ? 'metric-good' : status === 'warn' ? 'metric-warn' : status === 'alert' ? 'metric-alert' : '';
+            return `
+                <div class="metric-card ${statusClass}">
+                    <div class="metric-icon"><i class="fas fa-${icon}"></i></div>
+                    <div class="metric-body">
+                        <div class="metric-value">${value}</div>
+                        <div class="metric-label">${label}</div>
+                        ${subtitle ? `<div class="metric-subtitle">${subtitle}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        };
+
+        // Automatic alerts
+        const alerts = [];
+        if (duplicates.length > 0) {
+            duplicates.forEach(group => {
+                const atcInfo = this.ATC_CLINICAL_INFO[group[0].atcNivel1] || {};
+                alerts.push(`<div class="analytics-alert alert-dup">
+                    <i class="fas fa-copy"></i>
+                    <span>Posible duplicidad terapéutica (${group[0].atcCodigo?.substring(0,4)}):
+                    <strong>${group.map(g => g.nombre).join(' + ')}</strong></span>
+                </div>`);
+            });
+        }
+        if (triangulos.length > 0) {
+            alerts.push(`<div class="analytics-alert alert-warn">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>▲ Triángulo negro — requieren monitorización activa: <strong>${triangulos.map(t => t.nombre).join(', ')}</strong></span>
+            </div>`);
+        }
+        if (sinStock.length > 0) {
+            alerts.push(`<div class="analytics-alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Problemas de suministro: <strong>${sinStock.map(s => s.nombre).join(', ')}</strong></span>
+            </div>`);
+        }
+        if (conAemps.length > 0) {
+            alerts.push(`<div class="analytics-alert alert-warn">
+                <i class="fas fa-bell"></i>
+                <span>Alertas AEMPS activas en: <strong>${conAemps.map(a => a.nombre).join(', ')}</strong></span>
+            </div>`);
+        }
+
+        // Coverage section
+        const coveredHtml = coverage.covered.slice(0, 10).map(c =>
+            `<div class="coverage-item covered"><i class="fas fa-check-circle"></i> <span>${c.indication}</span></div>`
+        ).join('');
+        const uncoveredHtml = coverage.uncovered.slice(0, 12).map(c =>
+            `<div class="coverage-item uncovered"><i class="fas fa-times-circle"></i> <span>${c.indication}</span></div>`
+        ).join('');
+
+        // Top viewed section
+        const topViewedHtml = topViewed.length > 0 ? topViewed.map((f, i) =>
+            `<div class="top-viewed-item">
+                <span class="top-viewed-rank">${i + 1}</span>
+                <span class="top-viewed-name">${f.nombre}</span>
+                <span class="top-viewed-count"><i class="fas fa-eye"></i> ${f.viewCount}</span>
+            </div>`
+        ).join('') : '<p class="text-muted text-sm">Consulta medicamentos favoritos para ver tus más usados.</p>';
+
+        return `
+            <div class="analytics-section">
+
+                <div class="analytics-summary">
+                    <span><strong>${total}</strong> medicamentos</span>
+                    <span>·</span>
+                    <span><strong>${uniquePA}</strong> principios activos únicos</span>
+                    <span>·</span>
+                    <span><strong>${uniqueL2}</strong> grupos ATC</span>
+                    <span>·</span>
+                    <span class="diversity-label">${diversityLabel}</span>
+                </div>
+
+                <div class="analytics-grid-2col">
+                    <!-- Donut chart -->
+                    <div class="analytics-card">
+                        <h4 class="analytics-card-title"><i class="fas fa-chart-pie"></i> Distribución terapéutica</h4>
+                        <div class="donut-container" id="donut-container">
+                            <!-- SVG injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Metrics grid -->
+                    <div class="analytics-card">
+                        <h4 class="analytics-card-title"><i class="fas fa-clipboard-check"></i> Calidad de prescripción</h4>
+                        <div class="metrics-grid">
+                            ${metricCard('pills', 'Tasa genericidad', genericRate + '%',
+                                `${generics}/${total} genéricos`,
+                                genericRate >= 50 ? 'good' : genericRate >= 30 ? 'warn' : 'alert')}
+                            ${metricCard('file-prescription', 'Con receta', prescRate + '%',
+                                `${withReceta}/${total}`, '')}
+                            ${metricCard('exclamation-triangle', 'Triángulo negro', triangulos.length,
+                                'Vigilancia especial',
+                                triangulos.length === 0 ? 'good' : 'warn')}
+                            ${metricCard('bell', 'Alertas AEMPS', conAemps.length,
+                                'Notas de seguridad',
+                                conAemps.length === 0 ? 'good' : 'warn')}
+                            ${metricCard('exclamation-circle', 'Sin suministro', sinStock.length,
+                                'Problemas stock',
+                                sinStock.length === 0 ? 'good' : 'alert')}
+                            ${metricCard('th-large', 'Grupos ATC', uniqueL2 + '/14',
+                                diversityLabel,
+                                uniqueL2 >= 6 ? 'good' : 'warn')}
+                        </div>
+                    </div>
+                </div>
+
+                ${alerts.length > 0 ? `
+                    <div class="analytics-card analytics-alerts">
+                        <h4 class="analytics-card-title"><i class="fas fa-shield-alt"></i> Alertas sobre tu colección</h4>
+                        ${alerts.join('')}
+                    </div>
+                ` : ''}
+
+                <div class="analytics-grid-2col">
+                    <!-- Indication coverage -->
+                    <div class="analytics-card">
+                        <h4 class="analytics-card-title"><i class="fas fa-map-marked-alt"></i> Cobertura de indicaciones</h4>
+                        ${coverage.covered.length > 0 ? `
+                            <div class="coverage-section">
+                                <div class="coverage-subtitle covered-subtitle"><i class="fas fa-check"></i> Cubiertas (${coverage.covered.length})</div>
+                                <div class="coverage-grid">${coveredHtml}</div>
+                            </div>
+                        ` : ''}
+                        ${coverage.uncovered.length > 0 ? `
+                            <div class="coverage-section mt-sm">
+                                <div class="coverage-subtitle uncovered-subtitle"><i class="fas fa-times"></i> Sin cobertura en favoritos (${coverage.uncovered.length})</div>
+                                <div class="coverage-grid">${uncoveredHtml}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Top viewed -->
+                    <div class="analytics-card">
+                        <h4 class="analytics-card-title"><i class="fas fa-fire"></i> Más consultados</h4>
+                        <div class="top-viewed-list">
+                            ${topViewedHtml}
+                        </div>
+                        <div class="mt-sm">
+                            <button class="btn btn-sm btn-secondary" onclick="app._runInteractionAnalysis()" id="btn-analyze-interactions">
+                                <i class="fas fa-random"></i> Analizar interacciones de mi colección
+                            </button>
+                        </div>
+                        <div id="interaction-analysis-result" class="mt-sm"></div>
+                    </div>
+                </div>
+
+            </div>
+        `;
+    }
+
+    _initDonutChart() {
+        const container = document.getElementById('donut-container');
+        if (!container) return;
+        const favs = this.getFavorites();
+        const stats = this._analyzeFavorites(favs);
+        if (!stats) return;
+
+        const { atcDist } = stats;
+        const entries = Object.entries(atcDist).sort((a, b) => b[1] - a[1]);
+        const total = Object.values(atcDist).reduce((a, b) => a + b, 0);
+        if (total === 0) return;
+
+        const cx = 80, cy = 80, r = 60, innerR = 35;
+        let currentAngle = -Math.PI / 2;
+        let pathsHtml = '';
+        let legendHtml = '';
+
+        entries.forEach(([l1, count], i) => {
+            const atcInfo = this.ATC_CLINICAL_INFO[l1] || { color: '#94a3b8', class: l1 };
+            const angle = (count / total) * 2 * Math.PI;
+            const largeArc = angle > Math.PI ? 1 : 0;
+            const x1 = cx + r * Math.cos(currentAngle);
+            const y1 = cy + r * Math.sin(currentAngle);
+            const x2 = cx + r * Math.cos(currentAngle + angle);
+            const y2 = cy + r * Math.sin(currentAngle + angle);
+            const ix1 = cx + innerR * Math.cos(currentAngle);
+            const iy1 = cy + innerR * Math.sin(currentAngle);
+            const ix2 = cx + innerR * Math.cos(currentAngle + angle);
+            const iy2 = cy + innerR * Math.sin(currentAngle + angle);
+
+            pathsHtml += `<path d="M${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${largeArc},1 ${x2.toFixed(2)},${y2.toFixed(2)} L${ix2.toFixed(2)},${iy2.toFixed(2)} A${innerR},${innerR} 0 ${largeArc},0 ${ix1.toFixed(2)},${iy1.toFixed(2)} Z"
+                fill="${atcInfo.color}" opacity="0.85" class="donut-segment"
+                data-label="${atcInfo.class}: ${count} (${Math.round(count/total*100)}%)"
+                onmouseover="document.getElementById('donut-tooltip').textContent=this.dataset.label; this.setAttribute('opacity','1')"
+                onmouseout="document.getElementById('donut-tooltip').textContent=''; this.setAttribute('opacity','0.85')"/>`;
+
+            legendHtml += `<div class="donut-legend-item">
+                <span class="donut-legend-dot" style="background:${atcInfo.color}"></span>
+                <span class="donut-legend-text">${l1} ${atcInfo.class}</span>
+                <span class="donut-legend-count">${count} (${Math.round(count/total*100)}%)</span>
+            </div>`;
+
+            currentAngle += angle;
+        });
+
+        container.innerHTML = `
+            <div class="donut-wrapper">
+                <svg viewBox="0 0 160 160" width="160" height="160">
+                    ${pathsHtml}
+                    <circle cx="${cx}" cy="${cy}" r="${innerR - 2}" fill="#1e293b"/>
+                    <text x="${cx}" y="${cy - 4}" text-anchor="middle" class="donut-center-num" fill="#f1f5f9" font-size="16" font-weight="700">${total}</text>
+                    <text x="${cx}" y="${cy + 12}" text-anchor="middle" fill="#94a3b8" font-size="7">favoritos</text>
+                </svg>
+                <div class="donut-legend">${legendHtml}</div>
+            </div>
+            <div id="donut-tooltip" class="donut-tooltip"></div>
+        `;
+    }
+
+    async _runInteractionAnalysis() {
+        const btn = document.getElementById('btn-analyze-interactions');
+        const resultDiv = document.getElementById('interaction-analysis-result');
+        if (!btn || !resultDiv) return;
+
+        const favs = this.getFavorites();
+        if (favs.length < 2) {
+            resultDiv.innerHTML = '<p class="text-muted text-sm">Necesitas al menos 2 medicamentos en favoritos.</p>';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loading-spinner-sm"></div> Analizando...';
+        resultDiv.innerHTML = '';
+
+        try {
+            const nregistros = favs.map(f => f.nregistro);
+            const report = await this.api.analyzeInteractions(nregistros);
+
+            if (!report || report.length === 0) {
+                resultDiv.innerHTML = '<p class="text-muted text-sm"><i class="fas fa-check-circle" style="color:#10b981"></i> No se detectaron interacciones destacadas en tu colección.</p>';
+            } else {
+                const items = report.slice(0, 8).map(item => `
+                    <div class="analytics-alert alert-warn">
+                        <i class="fas fa-random"></i>
+                        <span>${item}</span>
+                    </div>
+                `).join('');
+                resultDiv.innerHTML = `<div class="mt-sm">${items}</div>`;
+            }
+        } catch (e) {
+            resultDiv.innerHTML = '<p class="text-muted text-sm">Error al analizar interacciones.</p>';
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-random"></i> Analizar interacciones de mi colección';
+        }
+    }
+
+    // ============================================
+    // PROFILE — Export section
+    // ============================================
+
+    _renderExportSection() {
+        const favs = this.getFavorites();
+        return `
+            <div class="export-section">
+                <div class="export-card">
+                    <h4><i class="fas fa-file-download"></i> Exportar favoritos</h4>
+                    <p class="text-muted">Descarga tu lista de medicamentos favoritos como archivo JSON para copia de seguridad o migración entre dispositivos.</p>
+                    <button class="btn btn-primary" onclick="app._exportFavorites()" ${favs.length === 0 ? 'disabled' : ''}>
+                        <i class="fas fa-download"></i> Descargar JSON (${favs.length} medicamentos)
+                    </button>
+                </div>
+
+                <div class="export-card">
+                    <h4><i class="fas fa-copy"></i> Copiar como lista</h4>
+                    <p class="text-muted">Copia todos los favoritos al portapapeles en formato de texto clínico.</p>
+                    <button class="btn btn-secondary" onclick="app._copyFavoritesAsList()" ${favs.length === 0 ? 'disabled' : ''}>
+                        <i class="fas fa-clipboard"></i> Copiar lista
+                    </button>
+                    <div id="copy-preview" class="copy-preview hidden"></div>
+                </div>
+
+                <div class="export-card">
+                    <h4><i class="fas fa-file-upload"></i> Importar favoritos</h4>
+                    <p class="text-muted">Restaura favoritos desde un archivo JSON previamente exportado. Los favoritos actuales se mantendrán (merge).</p>
+                    <label class="btn btn-secondary" style="cursor:pointer">
+                        <i class="fas fa-folder-open"></i> Seleccionar archivo JSON
+                        <input type="file" accept=".json" style="display:none" onchange="app._importFavorites(this)">
+                    </label>
+                    <div id="import-result" class="mt-sm"></div>
+                </div>
+
+                ${favs.length > 0 ? `
+                <div class="export-card export-card-danger">
+                    <h4><i class="fas fa-trash-alt"></i> Eliminar todos los favoritos</h4>
+                    <p class="text-muted">Esta acción no se puede deshacer. Exporta primero si quieres conservar la lista.</p>
+                    <button class="btn btn-danger" onclick="app._clearAllFavorites()">
+                        <i class="fas fa-trash-alt"></i> Eliminar todos (${favs.length})
+                    </button>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    _initExportSection() {
+        // Nothing to init — all handlers are inline
+    }
+
+    _exportFavorites() {
+        const favs = this.getFavorites();
+        if (favs.length === 0) return;
+        const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
+        const blob = new Blob([JSON.stringify(favs, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `medcheck-favoritos-${date}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.showToast('Favoritos exportados', 'success');
+    }
+
+    _copyFavoritesAsList() {
+        const favs = this.getFavorites();
+        const text = favs.map((f, i) => {
+            const pa = f.principioActivo ? ` (${f.principioActivo}${f.dosis ? ' ' + f.dosis : ''})` : '';
+            const cn = f.nregistro ? ` — Nreg: ${f.nregistro}` : '';
+            return `${i + 1}. ${f.nombre}${pa}${cn}`;
+        }).join('\n');
+
+        navigator.clipboard.writeText(text).then(() => {
+            this.showToast('Lista copiada al portapapeles', 'success');
+            const preview = document.getElementById('copy-preview');
+            if (preview) {
+                preview.textContent = text.substring(0, 300) + (text.length > 300 ? '...' : '');
+                preview.classList.remove('hidden');
+            }
+        }).catch(() => {
+            this.showToast('Error al copiar', 'error');
+        });
+    }
+
+    _importFavorites(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (!Array.isArray(imported)) throw new Error('Formato inválido');
+
+                const existing = this.getFavorites();
+                const existingIds = new Set(existing.map(f => f.nregistro));
+                const newItems = imported.filter(f => f.nregistro && !existingIds.has(f.nregistro));
+                const merged = [...existing, ...newItems];
+                this._saveFavorites(merged);
+                this.updateFavoritesBadge();
+
+                const resultDiv = document.getElementById('import-result');
+                if (resultDiv) {
+                    resultDiv.innerHTML = `<p class="text-success"><i class="fas fa-check-circle"></i> Importados ${newItems.length} nuevos favoritos (${imported.length - newItems.length} ya existían).</p>`;
+                }
+                this.showToast(`${newItems.length} favoritos importados`, 'success');
+            } catch (err) {
+                const resultDiv = document.getElementById('import-result');
+                if (resultDiv) resultDiv.innerHTML = `<p class="text-danger"><i class="fas fa-times-circle"></i> Error: archivo JSON inválido.</p>`;
+                this.showToast('Archivo inválido', 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    _clearAllFavorites() {
+        if (!confirm('¿Eliminar todos los favoritos? Esta acción no se puede deshacer.')) return;
+        this._saveFavorites([]);
+        this.updateFavoritesBadge();
+        this.renderProfileView();
+        this.showToast('Todos los favoritos eliminados', 'info');
     }
 }
 
