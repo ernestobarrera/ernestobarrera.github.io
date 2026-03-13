@@ -63,6 +63,9 @@ class MedCheckApp {
         // Autocomplete debounce timer
         this.autocompleteTimer = null;
 
+        // Cache for med objects rendered in cards (avoids passing JSON through onclick attributes)
+        this._medRenderCache = new Map();
+
         // ATC Clinical Info Dictionary - practical information per class
         this.ATC_CLINICAL_INFO = {
             'A': { class: 'Digestivo', icon: 'utensils', color: '#10b981', tip: 'Tomar con comida si causa molestias GI' },
@@ -1327,6 +1330,8 @@ class MedCheckApp {
             </div>
         ` : '';
 
+        // Cache med object so onclick can look it up by nregistro (avoids JSON in HTML attributes)
+        this._medRenderCache.set(med.nregistro, med);
         const isFav = this.isFavorite(med.nregistro);
         return `
             <div class="result-card" data-nregistro="${med.nregistro}" title="Ver información general">
@@ -1338,9 +1343,9 @@ class MedCheckApp {
                         <div class="result-card-header">
                             <span class="result-card-title">${med.nombre}</span>
                             <button class="fav-star-btn ${isFav ? 'active' : ''}"
-                                onclick="event.stopPropagation(); app.toggleFavorite(${JSON.stringify(med).replace(/"/g, '&quot;')}); this.classList.toggle('active'); app.updateFavoritesBadge();"
+                                onclick="event.stopPropagation(); app.toggleFavoriteById('${med.nregistro}', this); app.updateFavoritesBadge();"
                                 title="${isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}">
-                                <i class="fa${isFav ? 's' : 'r'} fa-star"></i>
+                                <i class="fas fa-star"></i>
                             </button>
                         </div>
                         <div class="med-details-inline">
@@ -6165,6 +6170,13 @@ class MedCheckApp {
             this.addFavorite(med);
             this.showToast(`${med.nombre} guardado en favoritos`, 'success');
         }
+    }
+
+    toggleFavoriteById(nregistro, btnEl) {
+        const med = this._medRenderCache.get(nregistro);
+        if (!med) return;
+        this.toggleFavorite(med);
+        if (btnEl) btnEl.classList.toggle('active', this.isFavorite(nregistro));
     }
 
     incrementFavoriteViewCount(nregistro) {
