@@ -5200,13 +5200,6 @@ code {
    FAVORITES — Star button on result cards
    ============================================ */
 
-.result-card-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.5rem;
-}
-
 .fav-star-btn {
     background: none;
     border: none;
