@@ -5200,6 +5200,13 @@ code {
    FAVORITES — Star button on result cards
    ============================================ */
 
+/* Fix: result-card-title has display:-webkit-box which expands to full width.
+   flex:1 + min-width:0 ensures it shares space with the star button. */
+.result-card-header .result-card-title {
+    flex: 1;
+    min-width: 0;
+}
+
 .fav-star-btn {
     background: none;
     border: none;
