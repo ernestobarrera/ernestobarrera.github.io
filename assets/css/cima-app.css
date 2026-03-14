@@ -2413,11 +2413,10 @@ body {
     line-height: 1.35;
 }
 
-/* Force API content to expand naturally - override any inline styles */
-.section-text,
+/* Force API content children to expand naturally - override any inline styles */
+/* NOTE: Do NOT apply overflow:visible to .section-text itself - it needs overflow-y:auto */
 .section-text * {
     max-height: none !important;
-    overflow: visible !important;
     height: auto !important;
 }
 
@@ -4336,19 +4335,26 @@ body {
     overflow-wrap: break-word;
 }
 
-/* Override any inherited dark/muted colors from API HTML */
+/* Override API HTML colors and text-align:justify inline styles */
 .section-text,
 .section-text * {
     color: var(--text-primary) !important;
+    text-align: left !important;
 }
 
-/* Keep highlights with their specific colors */
+/* Keep highlights with their specific colors - no extra margins that break text flow */
 .section-text mark.posology-food {
     color: #fbbf24 !important;
+    margin: 0 !important;
+    display: inline !important;
+    vertical-align: baseline;
 }
 
 .section-text mark.posology-timing {
     color: #60a5fa !important;
+    margin: 0 !important;
+    display: inline !important;
+    vertical-align: baseline;
 }
 
 .section-text p {
@@ -4365,19 +4371,34 @@ body {
     margin-bottom: var(--space-xs);
 }
 
-/* Tables inside section text - prevent overflow */
+/* Tables inside section text - wrapped by JS in .table-scroll-wrapper */
+.section-text .table-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: var(--space-sm) 0 !important;
+    border-radius: var(--radius-sm);
+}
+
 .section-text table {
     width: 100%;
-    max-width: 100%;
-    table-layout: fixed;
+    min-width: 320px;
+    table-layout: auto;
     font-size: 0.8rem;
+    border-collapse: collapse;
 }
 
 .section-text td,
 .section-text th {
     word-wrap: break-word;
     overflow-wrap: break-word;
-    padding: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    text-align: left !important;
+}
+
+.section-text th {
+    background: rgba(255, 255, 255, 0.06);
+    font-weight: 600;
 }
 
 /* Posology legend */
