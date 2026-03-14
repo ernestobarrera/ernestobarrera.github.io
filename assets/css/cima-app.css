@@ -4328,9 +4328,6 @@ body {
     background: rgba(255, 255, 255, 0.02);
     padding: var(--space-md);
     border-radius: var(--radius-md);
-    max-height: 450px;
-    overflow-y: auto;
-    overflow-x: hidden;
     word-wrap: break-word;
     overflow-wrap: break-word;
 }
@@ -4363,12 +4360,15 @@ body {
 
 .section-text ul,
 .section-text ol {
-    margin: var(--space-sm) 0;
-    padding-left: var(--space-lg);
+    margin: var(--space-sm) 0 !important;
+    padding-left: 1.5rem !important;
 }
 
 .section-text li {
-    margin-bottom: var(--space-xs);
+    margin-bottom: var(--space-xs) !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    text-indent: 0 !important;
 }
 
 /* Tables inside section text - wrapped by JS in .table-scroll-wrapper */

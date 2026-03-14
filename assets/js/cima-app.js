@@ -4433,11 +4433,15 @@ class MedCheckApp {
                 /\b(cada\s+\d+\s*días?)\b/gi,
                 /(≥\s*\d+\s*horas?)/gi,
 
-                // Duration patterns
+                // Duration patterns - ranges first (e.g. "28-35 días", "4-8 semanas")
+                // MUST precede single-number patterns to capture full range as one unit
                 /\b(durante\s+\d+[\s-]*(?:a\s+\d+\s*)?(?:días?|semanas?|meses?))\b/gi,
+                /\b(\d+\s*[-–]\s*\d+\s*semanas?)\b/gi,
+                /\b(\d+\s*[-–]\s*\d+\s*meses?)\b/gi,
+                /\b(\d+\s*[-–]\s*\d+\s*días?)\b/gi,
                 /\b(\d+\s*(?:a\s+\d+\s*)?semanas?)\b/gi,
                 /\b(\d+\s*(?:a\s+\d+\s*)?meses?)\b/gi,
-                /\b(\d+\s*días?)\b/gi,
+                /\b(\d+\s*(?:a\s+\d+\s*)?días?)\b/gi,
 
                 // Dose units - handle combination doses like "10/80 mg" or "10/ 80 mg"
                 // Match full combination first, then single doses
@@ -4447,7 +4451,8 @@ class MedCheckApp {
                 /\b(\d+\s*(?:comprimidos?|cápsulas?|sobres?|gotas?|ampollas?|parches?))\b/gi,
 
                 // Per day patterns
-                /(\/\s*día)/gi,
+                // NOTE: /(\/\s*día)/gi removed - fragments text (e.g. "mg/kg /día")
+                // "al día" and "por día" already cover meaningful clinical expressions
                 /\b(al\s+día)\b/gi,
                 /\b(por\s+día)\b/gi,
 
