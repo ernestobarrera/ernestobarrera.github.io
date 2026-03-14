@@ -84,6 +84,63 @@
   transform: translateY(-2px);
 }
 
+/* =========================================
+   Ko-fi floating action button (FAB)
+   position: fixed — visible en todas las páginas
+   ========================================= */
+
+.kofi-fab {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 990;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  background-color: var(--card-bg);
+  color: var(--text-secondary);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 2rem;
+  padding: 0.55rem;
+  text-decoration: none;
+  overflow: hidden;
+  max-width: 2.4rem; /* estado colapsado: solo icono */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  transition:
+    max-width 0.35s ease,
+    gap 0.35s ease,
+    padding 0.35s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.kofi-fab:hover {
+  max-width: 14rem; /* expandido: icono + texto */
+  gap: 0.45rem;
+  padding: 0.55rem 0.9rem;
+  color: var(--accent-color);
+  border-color: rgba(251, 191, 36, 0.8);
+  box-shadow: 0 4px 14px rgba(251, 191, 36, 0.18);
+}
+
+.kofi-fab-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.kofi-fab-text {
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+/* En home-page el footer es sticky bottom:0, elevamos el FAB para no solapar */
+.home-page .kofi-fab {
+  bottom: 3.5rem;
+}
+
 /* Media Queries */
 @media (max-width: 768px) {
   .footer-content {
@@ -102,5 +159,21 @@
 
   .footer-social {
     justify-content: center;
+  }
+
+  /* Móvil: FAB solo muestra icono, sin expansión */
+  .kofi-fab {
+    bottom: 1rem;
+    right: 1rem;
+  }
+
+  .kofi-fab:hover {
+    max-width: 2.4rem;
+    gap: 0;
+    padding: 0.55rem;
+  }
+
+  .home-page .kofi-fab {
+    bottom: 4rem; /* footer móvil es algo más alto en columna */
   }
 }
