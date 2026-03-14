@@ -4574,6 +4574,16 @@ class MedCheckApp {
             // Apply highlighting in order: timing first (more specific), then food
             highlightTextNodes(textContainer, timingPatterns, 'posology-timing');
             highlightTextNodes(textContainer, foodPatterns, 'posology-food');
+
+            // Wrap tables in scrollable containers to prevent horizontal overflow
+            textContainer.querySelectorAll('table').forEach(table => {
+                if (!table.closest('.table-scroll-wrapper')) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'table-scroll-wrapper';
+                    table.parentNode.insertBefore(wrapper, table);
+                    wrapper.appendChild(table);
+                }
+            });
         } catch (error) {
             console.error('Error loading section 4.2:', error);
             container.innerHTML = `
