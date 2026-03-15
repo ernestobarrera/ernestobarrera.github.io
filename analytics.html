@@ -442,20 +442,39 @@ function renderActivityChart(dias) {
     return { labels, values };
 }
 
-function renderTopTerms(terms, maxVal) {
+function renderTopTerms(terms) {
     if (!terms.length) return '<div class="empty-state"><i class="fas fa-search"></i><p>Sin datos de búsqueda</p></div>';
-    const rows = terms.map(t => `
+
+    // Agrupar por término: sumar consultas, recopilar vistas distintas
+    const grouped = new Map();
+    for (const t of terms) {
+        if (!grouped.has(t.termino)) {
+            grouped.set(t.termino, { termino: t.termino, tipo_busqueda: t.tipo_busqueda, consultas: 0, vistas: new Set() });
+        }
+        const g = grouped.get(t.termino);
+        g.consultas += t.consultas;
+        if (t.vista) g.vistas.add(t.vista);
+    }
+    const list = [...grouped.values()].sort((a, b) => b.consultas - a.consultas);
+    const maxVal = list[0]?.consultas || 1;
+
+    const rows = list.map(t => {
+        const vistaBadges = t.vistas.size
+            ? [...t.vistas].map(v => `<span class="badge badge-atc">${v}</span>`).join(' ')
+            : '<span style="color:var(--text-muted);font-size:.8rem">—</span>';
+        return `
         <tr>
             <td class="term-name">${escapeHtml(t.termino)}</td>
             <td>${typeBadge(t.tipo_busqueda)}</td>
-            <td>${t.vista ? `<span class="badge badge-atc">${t.vista}</span>` : '<span style="color:var(--text-muted);font-size:.8rem">—</span>'}</td>
+            <td>${vistaBadges}</td>
             <td>
                 <div class="bar-wrap">
                     <div class="bar-track"><div class="bar-fill" style="width:${Math.round(t.consultas/maxVal*100)}%"></div></div>
                     <span class="bar-count">${t.consultas}</span>
                 </div>
             </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
     return `
     <table class="analytics-table">
         <thead>
@@ -572,7 +591,6 @@ function mountCharts(data) {
 // ─── main render ─────────────────────────────────────────────────────────────
 
 function renderDashboard(data) {
-    const maxVal = data.top_terminos[0]?.consultas || 1;
     const hasVistaData = data.top_terminos.some(t => t.vista !== null);
     const hasVistas    = data.por_vista?.length > 0;
 
@@ -602,7 +620,7 @@ function renderDashboard(data) {
 
         <div class="table-card">
             <div class="chart-card-title"><i class="fas fa-list-ol"></i> Top términos buscados</div>
-            ${renderTopTerms(data.top_terminos, maxVal)}
+            ${renderTopTerms(data.top_terminos)}
         </div>
 
         <div class="chart-card">
