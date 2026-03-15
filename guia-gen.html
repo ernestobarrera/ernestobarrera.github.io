@@ -9,26 +9,81 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Guía Clínica Generacional</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Guía clínica interactiva para entender las necesidades de salud de cada generación: desde la Generación Silenciosa hasta la Generación Alpha. Basada en evidencia científica."
+    />
+    <meta name="author" content="Ernesto Barrera" />
+    <link rel="icon" href="/assets/images/icon.webp" />
+    <title>Guía Clínica Generacional | @ernestob</title>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Guía Clínica Generacional | @ernestob"
+    />
+    <meta
+      property="og:description"
+      content="Herramienta interactiva basada en evidencia para adaptar la comunicación y el manejo clínico según la generación del paciente."
+    />
+    <meta
+      property="og:site_name"
+      content="Recursos para la gestión de información sanitaria"
+    />
+    <meta
+      property="og:url"
+      content="https://ernestobarrera.github.io/guia-gen.html"
+    />
+    <meta
+      property="og:image"
+      content="https://ernestobarrera.github.io/assets/images/me.png"
+    />
+
+    <!-- Fonts -->
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <style>
-      body {
-        font-family: "Inter", sans-serif;
-        background-color: #f8fafc;
+
+    <!-- CSS del sitio (header, footer) -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/header.css" />
+    <link rel="stylesheet" href="assets/css/footer.css" />
+
+    <!-- CSS externo -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+    />
+
+    <!-- Tailwind (solo para contenido de la guía) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
       }
-      .highlight {
-        transform: scale(1.03);
-        box-shadow: 0 8px 20px -5px rgba(30, 64, 175, 0.25);
-        border-color: #3b82f6;
-        border-style: dashed;
-        background-color: #eff6ff;
+      gtag("js", new Date());
+      gtag("config", "G-YFKR6RB1ZC");
+    </script>
+
+    <style>
+      /* Override del tema oscuro del sitio para el contenido de esta página */
+      body {
+        font-family: "Inter", sans-serif !important;
+        background-color: #f8fafc !important;
+        color: #1e293b !important;
       }
       .generation-card {
         transition: all 0.3s ease-in-out;
@@ -36,6 +91,17 @@
         border-color: transparent;
         display: flex;
         flex-direction: column;
+      }
+      .generation-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.12);
+      }
+      .highlight {
+        transform: scale(1.02) !important;
+        box-shadow: 0 8px 20px -5px rgba(30, 64, 175, 0.25) !important;
+        border-color: #3b82f6 !important;
+        border-style: dashed !important;
+        background-color: #eff6ff !important;
       }
       .card-content {
         flex-grow: 1;
@@ -84,31 +150,73 @@
       input[type="number"] {
         -moz-appearance: textfield;
       }
+      /* Estilos de impresión */
+      @media print {
+        .navbar,
+        .footer,
+        .kofi-fab,
+        .toast,
+        #identify-btn,
+        #birth-year,
+        .cta-banner {
+          display: none !important;
+        }
+        body {
+          background: white !important;
+        }
+        .guia-content {
+          margin-top: 0 !important;
+        }
+        .generation-card {
+          break-inside: avoid;
+          box-shadow: none !important;
+          border: 1px solid #e5e7eb !important;
+        }
+        .accordion-content {
+          max-height: none !important;
+          padding-top: 0.5rem !important;
+          padding-bottom: 0.5rem !important;
+        }
+        #infographic-container {
+          grid-template-columns: repeat(2, 1fr) !important;
+        }
+      }
     </style>
   </head>
-  <body class="text-gray-800">
+  <body>
+    <script src="./assets/js/include.js"></script>
+    <include src="header.html"></include>
+
     <!-- Contenedor principal -->
-    <div class="container mx-auto px-4 py-6">
+    <div
+      class="guia-content container mx-auto px-4 py-6"
+      style="margin-top: calc(var(--header-height, 60px) + 1rem)"
+    >
       <!-- Cabecera -->
       <header class="text-center mb-8">
-        <h1 class="text-3xl md:text-4xl font-bold text-gray-900">
+        <h1
+          class="text-3xl md:text-4xl font-bold"
+          style="color: #111827 !important"
+        >
           Guía Clínica Generacional
         </h1>
+        <p class="text-base text-gray-600 mt-2 max-w-2xl mx-auto">
+          Herramienta de soporte clínico para adaptar la comunicación, el manejo
+          y la prevención según la generación del paciente. Basada en literatura
+          científica reciente.
+        </p>
         <div
-          class="flex justify-center items-center flex-wrap gap-x-4 gap-y-2 mt-3 text-gray-600"
+          class="flex justify-center items-center flex-wrap gap-x-4 gap-y-2 mt-4"
         >
-          <p class="text-base">
-            Herramienta de soporte para entender las necesidades de salud de
-            cada generación.
-          </p>
-          <div class="relative flex items-center w-full max-w-[200px]">
+          <div class="relative flex items-center w-full max-w-[280px]">
             <input
               type="number"
               id="birth-year"
-              placeholder="Año..."
-              class="w-full pl-4 pr-24 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+              placeholder="Ej: 1985"
+              class="w-full pl-4 pr-28 py-2.5 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
               min="1928"
-              max="2025"
+              max="2026"
+              aria-label="Año de nacimiento del paciente"
             />
             <button
               id="identify-btn"
@@ -117,31 +225,53 @@
               Identificar
             </button>
           </div>
+          <button
+            id="reset-btn"
+            class="text-xs text-gray-500 hover:text-gray-700 underline transition-colors hidden"
+          >
+            Limpiar selección
+          </button>
         </div>
       </header>
 
       <!-- Contenedor de la infografía con grid responsivo -->
       <main
         id="infographic-container"
-        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
       >
         <!-- Las tarjetas se insertarán aquí dinámicamente -->
       </main>
 
-      <footer class="text-center mt-12 text-xs text-gray-500">
+      <!-- CTA Banner -->
+      <div
+        class="cta-banner mt-10 mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 text-center"
+      >
+        <p class="text-sm text-gray-700 mb-3">
+          Explora más herramientas clínicas y de gestión del conocimiento en
+          salud.
+        </p>
+        <a
+          href="herramientas.html"
+          class="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-blue-700 transition-colors"
+        >
+          <i class="fas fa-tools"></i>
+          Ver todas las herramientas
+        </a>
+      </div>
+
+      <footer class="text-center mt-6 mb-4 text-xs text-gray-500">
         <p>
           Contenido verificado y enriquecido a partir de informes sectoriales y
           literatura científica reciente.
         </p>
-        <p>
-          &copy; 2024 Guía Clínica Generacional. Herramienta de soporte, no
-          sustituye el juicio clínico.
-        </p>
+        <p>Herramienta de soporte, no sustituye el juicio clínico.</p>
       </footer>
     </div>
 
     <!-- Elemento para la notificación Toast -->
     <div id="toast" class="toast"></div>
+
+    <include src="footer.html"></include>
 
     <script>
       // --- ICONOS SVG EMBEBIDOS ---
@@ -166,7 +296,7 @@
           maxYear: 1945,
           icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>`,
           description:
-            "Tradicionales y resilientes. Muestran baja adopción tecnológica y una visión particular sobre el envejecimiento.",
+            "Tradicionales y resilientes. Muestran baja adopción tecnológica y una visión particular sobre el envejecimiento. La comunicación cara a cara y el respeto a su experiencia vital son esenciales.",
           keyIndicators: [
             { label: "Uso de Telemedicina", value: "Muy bajo" },
             { label: "Adherencia a vacunación", value: "Alta" },
@@ -174,7 +304,7 @@
           ],
           risks: [
             "<strong>Brecha digital severa:</strong> Principal barrera para el acceso a la salud digital.",
-            "<strong>Edadismo (Ageism):</strong> Pueden minimizar su impacto personal, ocultando necesidades.",
+            "<strong>Edadismo (<em>Ageism</em>):</strong> Pueden minimizar su impacto personal, ocultando necesidades.",
             "<strong>Baja búsqueda de información online:</strong> Dependencia de canales tradicionales.",
             "<strong>Función cognitiva:</strong> Peor que los Boomers en promedio.",
           ],
@@ -182,7 +312,6 @@
             "Priorizar canales tradicionales (cara a cara, teléfono).",
             "Lenguaje claro y directo, sin jerga tecnológica.",
             "Explorar percepciones sobre el edadismo para abrir diálogos.",
-            "Comunicación respetuosa, reconociendo su experiencia vital.",
           ],
           pearls: [
             "<strong>No asumir analfabetismo digital, pero sí baja afinidad.</strong>",
@@ -225,7 +354,7 @@
           maxYear: 1964,
           icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>`,
           description:
-            "Enfrentan la cronicidad y la brecha digital. Valoran la relación de confianza y la continuidad asistencial.",
+            "Enfrentan la cronicidad y la brecha digital. Valoran la relación de confianza y la continuidad asistencial. Pueden minimizar síntomas por autopercepción de \"fortaleza\".",
           keyIndicators: [
             { label: "Cronicidad", value: "Alta prevalencia (HTA, dolor)" },
             {
@@ -286,7 +415,7 @@
           maxYear: 1980,
           icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>`,
           description:
-            'La "generación sándwich", pragmática y sobrecargada. Buscan eficiencia y evidencia. Son el "puente digital".',
+            'La "generación sándwich", pragmática y sobrecargada. Cuidan de hijos y padres simultáneamente. Buscan eficiencia y evidencia. Son el "puente digital" entre generaciones.',
           keyIndicators: [
             { label: "Estrés y Burnout", value: "Elevado por doble carga" },
             {
@@ -296,10 +425,10 @@
             { label: "Fatiga por teletrabajo", value: "Mayor agotamiento" },
           ],
           risks: [
-            "<strong>Estrés crónico y Burnout</strong>, con riesgo de ansiedad y depresión.",
+            "<strong>Estrés crónico y burnout</strong>, con riesgo de ansiedad y depresión.",
             "<strong>Aparición de enfermedades metabólicas</strong> (DM2, HTA).",
             "<strong>Mayor riesgo de cáncer de inicio temprano.</strong>",
-            "<strong>Impacto de exposiciones infantiles</strong> en salud mental.",
+            "<strong>Impacto de exposiciones infantiles</strong> (plomo) en salud mental.",
           ],
           communication: [
             "Ser eficiente, valorar su tiempo (telemedicina, portal).",
@@ -307,7 +436,7 @@
             "Reconocer su carga de cuidados como punto de partida.",
           ],
           pearls: [
-            '<strong>Enfoque preventivo:</strong> "Ventana de oportunidad".',
+            '<strong>Enfoque preventivo:</strong> "Ventana de oportunidad" para prevenir cronicidad.',
             '<strong>Preguntar por la carga de cuidados:</strong> "¿Cómo afecta a su salud?".',
             "<strong>Ofrecer flexibilidad:</strong> Modelo híbrido (presencial/digital).",
             '<strong>Ser un "curador" de información:</strong> Proveer fuentes fiables.',
@@ -335,7 +464,7 @@
               name: "Intergenerational views on humanoid nurse robots",
               url: "https://doi.org/10.1177/09697330251339416",
               doi: "10.1177/09697330251339416",
-              comment: "Escepticismo hacia ciertas tecnologías.",
+              comment: "Escepticismo hacia ciertas tecnologías sanitarias.",
             },
           ],
         },
@@ -347,7 +476,7 @@
           maxYear: 1996,
           icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>`,
           description:
-            "Nativos digitales con visión holística del bienestar, pero con alta carga de ansiedad. Esperan inmediatez y colaboración.",
+            "Nativos digitales con visión holística del bienestar, pero con alta carga de ansiedad. Esperan inmediatez, colaboración y personalización en la atención sanitaria.",
           keyIndicators: [
             { label: "Salud Mental", value: "Altas tasas de ansiedad" },
             {
@@ -360,10 +489,10 @@
             },
           ],
           risks: [
-            "<strong>Crisis de salud mental:</strong> Ansiedad, depresión, burnout.",
+            "<strong>Crisis de salud mental:</strong> Ansiedad, depresión, burnout laboral.",
             "<strong>Cáncer de inicio temprano:</strong> Riesgo incrementado.",
             "<strong>Desinformación y automedicación</strong> por fuentes online.",
-            "<strong>Conductas de riesgo:</strong> Vapeo, dietas no tradicionales.",
+            "<strong>Conductas de riesgo:</strong> Vapeo, dietas no convencionales.",
           ],
           communication: [
             'Enfoque colaborativo, no paternalista: "¿Qué has pensado?".',
@@ -393,7 +522,8 @@
               name: "Impacts of conflicting nutrition information",
               url: "https://doi.org/10.1002/hpja.726",
               doi: "10.1002/hpja.726",
-              comment: "Fenómeno de 'infoxicación' nutricional.",
+              comment:
+                "Fenómeno de infoxicación (<em>information overload</em>) nutricional.",
             },
           ],
         },
@@ -405,16 +535,19 @@
           maxYear: 2012,
           icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
           description:
-            "Hiperconectados y visuales. Normalizan hablar de salud mental, pero reportan los peores indicadores. Valoran la autenticidad.",
+            'Hiperconectados y visuales. Normalizan hablar de salud mental, pero reportan los peores indicadores. Valoran la autenticidad y rechazan la comunicación "de autoridad".',
           keyIndicators: [
             { label: "Ansiedad", value: "La más prevalente" },
             { label: "Info. de Salud", value: "Vía TikTok, Instagram" },
-            { label: "Eco-ansiedad", value: "Factor de estrés emergente" },
+            {
+              label: "Eco-ansiedad",
+              value: "Factor de estrés emergente",
+            },
           ],
           risks: [
             "<strong>Crisis de salud mental severa:</strong> Ansiedad, depresión, autolesiones.",
-            '<strong>"Brain Rot":</strong> Deterioro cognitivo por contenido digital de baja calidad.',
-            '<strong>Vapeo:</strong> Alta prevalencia, percibido como "depression sticks".',
+            '<strong>Deterioro cognitivo digital (<em>Brain Rot</em>):</strong> Por contenido de baja calidad.',
+            '<strong>Vapeo:</strong> Alta prevalencia, percibido como <em>"depression sticks"</em>.',
             "<strong>Desinformación viral</strong> y vulnerabilidad a pseudociencias.",
           ],
           communication: [
@@ -426,7 +559,7 @@
             "<strong>Validar siempre sus sentimientos</strong>, la percepción es su realidad.",
             "<strong>Fomentar la alfabetización mediática</strong> para evaluar fuentes.",
             '<strong>Preguntar sobre el entorno digital:</strong> "¿Cómo te sientes con lo que ves?".',
-            "<strong>Aprovechar su apertura a la tecnología</strong> (ej. RV para educación).",
+            "<strong>Aprovechar su apertura a la tecnología</strong> (ej. realidad virtual para educación).",
           ],
           sources: [
             {
@@ -445,7 +578,8 @@
               name: "Vape Cessation Advertising Campaigns",
               url: "https://doi.org/10.1080/10410236.2025.2519121",
               doi: "10.1080/10410236.2025.2519121",
-              comment: "Concepto de 'depression sticks' para el vapeo.",
+              comment:
+                "Concepto de <em>'depression sticks'</em> para el vapeo.",
             },
             {
               name: "Reproductive Health Experiences Shared on TikTok",
@@ -463,10 +597,13 @@
           maxYear: 2025,
           icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>`,
           description:
-            'Nativos de la IA y la tecnología wearable. Su salud será proactiva, predictiva y totalmente digitalizada ("Phygital").',
+            'Nativos de la IA y la tecnología wearable. Su salud será proactiva, predictiva y totalmente digitalizada. El concepto "phygital" (físico + digital) define su entorno.',
           keyIndicators: [
             { label: "Modelo de Salud", value: "Predictivo y personalizado" },
-            { label: "Concepto Clave", value: '"Ingeniería del Bienestar"' },
+            {
+              label: "Concepto Clave",
+              value: "Ingeniería del Bienestar",
+            },
             { label: "Entorno Familiar", value: "Factor protector clave" },
           ],
           risks: [
@@ -484,14 +621,15 @@
             '<strong>"Higiene Digital" como salud pública:</strong> Recomendar límites de pantalla.',
             "<strong>Evaluar el entorno familiar</strong> como predictor de bienestar.",
             '<strong>Anticipar la medicina del futuro:</strong> de "¿qué te pasa?" a "¿qué dicen tus datos?".',
-            "<strong>Empoderar a los padres</strong> con recursos digitales.",
+            "<strong>Empoderar a los padres</strong> con recursos digitales fiables.",
           ],
           sources: [
             {
               name: "Family Strengths for Generation Alpha",
               url: "https://doi.org/10.3390/bs14100921",
               doi: "10.3390/bs14100921",
-              comment: "Importancia del entorno familiar como protector.",
+              comment:
+                "Importancia del entorno familiar como protector.",
             },
             {
               name: "Nurses' care experiences with generation alpha",
@@ -513,6 +651,7 @@
       document.addEventListener("DOMContentLoaded", () => {
         const container = document.getElementById("infographic-container");
         const identifyBtn = document.getElementById("identify-btn");
+        const resetBtn = document.getElementById("reset-btn");
         const yearInput = document.getElementById("birth-year");
         const toastEl = document.getElementById("toast");
 
@@ -532,7 +671,7 @@
           }, 2000);
         }
 
-        function createAccordionSection(title, content) {
+        function createAccordionSection(title, content, openByDefault) {
           if (!content || content.length === 0) return "";
           const listItems = content
             .map((item) => {
@@ -552,15 +691,17 @@
             })
             .join("");
 
+          const openClass = openByDefault ? " open" : "";
+
           return `
               <div class="border-t border-gray-200 mt-2 pt-2">
-                  <button class="accordion-button w-full flex justify-between items-center text-left py-1 hover:bg-gray-100 rounded-md">
+                  <button class="accordion-button${openClass} w-full flex justify-between items-center text-left py-1 hover:bg-gray-100 rounded-md">
                       <span class="font-medium text-xs text-gray-800 flex items-center">${
                         sectionIcons[title] || ""
                       } ${title}</span>
                       <svg class="h-5 w-5 text-gray-400 chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                   </button>
-                  <div class="accordion-content px-1 pl-5">
+                  <div class="accordion-content${openClass} px-1 pl-5">
                       <ul class="space-y-2">${listItems}</ul>
                   </div>
               </div>
@@ -592,20 +733,28 @@
                       <div class="border-t border-gray-200">
                         ${createAccordionSection(
                           "Indicadores Clave",
-                          gen.keyIndicators
+                          gen.keyIndicators,
+                          true
                         )}
-                        ${createAccordionSection("Riesgos Clave", gen.risks)}
+                        ${createAccordionSection(
+                          "Riesgos Clave",
+                          gen.risks,
+                          false
+                        )}
                         ${createAccordionSection(
                           "Estrategias de Comunicación",
-                          gen.communication
+                          gen.communication,
+                          false
                         )}
                         ${createAccordionSection(
                           "Perlas de Manejo Clínico",
-                          gen.pearls
+                          gen.pearls,
+                          false
                         )}
                         ${createAccordionSection(
                           "Fuentes Principales",
-                          gen.sources
+                          gen.sources,
+                          false
                         )}
                       </div>
                   </div>
@@ -627,11 +776,12 @@
         function clearState() {
           document.querySelectorAll(".generation-card").forEach((card) => {
             card.classList.remove("highlight");
-            card.style.position = "static"; // Reset position
+            card.style.position = "static";
             const existingLabel = card.querySelector("#result-label");
             if (existingLabel) existingLabel.remove();
           });
           yearInput.classList.remove("border-red-500");
+          resetBtn.classList.add("hidden");
         }
 
         function identifyGeneration() {
@@ -657,6 +807,7 @@
             );
             if (cardToHighlight) {
               cardToHighlight.classList.add("highlight");
+              resetBtn.classList.remove("hidden");
 
               const label = document.createElement("div");
               label.id = "result-label";
@@ -670,11 +821,21 @@
               label.style.top = "-14px";
               label.style.left = "50%";
               label.style.transform = "translateX(-50%)";
+
+              cardToHighlight.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
             }
           }
         }
 
         identifyBtn.addEventListener("click", identifyGeneration);
+
+        resetBtn.addEventListener("click", () => {
+          yearInput.value = "";
+          clearState();
+        });
 
         yearInput.addEventListener("keyup", (event) => {
           clearState();
@@ -693,21 +854,33 @@
           if (e.target.closest(".copy-doi-btn")) {
             const button = e.target.closest(".copy-doi-btn");
             const doiToCopy = button.dataset.doi;
-            const textArea = document.createElement("textarea");
-            textArea.value = doiToCopy;
-            textArea.style.position = "fixed";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-              document.execCommand("copy");
-              showToast("DOI copiado al portapapeles");
-            } catch (err) {
-              showToast("Error al copiar");
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard
+                .writeText(doiToCopy)
+                .then(() => showToast("DOI copiado al portapapeles"))
+                .catch(() => fallbackCopy(doiToCopy));
+            } else {
+              fallbackCopy(doiToCopy);
             }
-            document.body.removeChild(textArea);
           }
         });
+
+        function fallbackCopy(text) {
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+          textArea.style.position = "fixed";
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          try {
+            document.execCommand("copy");
+            showToast("DOI copiado al portapapeles");
+          } catch (err) {
+            showToast("Error al copiar");
+          }
+          document.body.removeChild(textArea);
+        }
 
         renderCards();
       });
