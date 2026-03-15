@@ -139,7 +139,7 @@ class CimaAPI {
      * Búsqueda de medicamentos con múltiples criterios
      * @param {Object} params - Parámetros de búsqueda
      */
-    async searchMedicamentos(params) {
+    async searchMedicamentos(params, options = {}) {
         const queryParams = new URLSearchParams();
 
         Object.entries(params).forEach(([key, value]) => {
@@ -148,7 +148,7 @@ class CimaAPI {
             }
         });
 
-        return this._request(`/medicamentos?${queryParams.toString()}`);
+        return this._request(`/medicamentos?${queryParams.toString()}`, options);
     }
 
     /**
@@ -156,7 +156,7 @@ class CimaAPI {
      * @param {string} query - Término de búsqueda
      * @param {Object} filters - Filtros adicionales
      */
-    async smartSearch(query, filters = {}) {
+    async smartSearch(query, filters = {}, options = {}) {
         const trimmed = query.trim();
         const params = { ...filters };
 
@@ -177,7 +177,7 @@ class CimaAPI {
             params.comerc = 1;
         }
 
-        return this.searchMedicamentos(params);
+        return this.searchMedicamentos(params, options);
     }
 
     /**

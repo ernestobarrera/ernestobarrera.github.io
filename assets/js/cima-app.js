@@ -871,15 +871,16 @@ class MedCheckApp {
                 // 1. Búsqueda por nombre comercial (query exacto)
                 // 2. Búsqueda por principio activo (practiv1 - query completo)
                 // 3. Búsqueda por cada palabra individual (incluyendo sinónimos)
+                const acOpts = { headers: { 'X-MC-Autocomplete': '1' } };
                 const searches = [
-                    this.api.searchMedicamentos({ nombre: query, comerc: 1, pagina: 1 }),
-                    this.api.searchMedicamentos({ practiv1: query, comerc: 1, pagina: 1 })
+                    this.api.searchMedicamentos({ nombre: query, comerc: 1, pagina: 1 }, acOpts),
+                    this.api.searchMedicamentos({ practiv1: query, comerc: 1, pagina: 1 }, acOpts)
                 ];
 
                 // Buscar por cada palabra expandida (incluyendo sinónimos)
                 // Siempre buscar por palabras individuales para mejor cobertura
                 for (const word of expandedWords) {
-                    searches.push(this.api.searchMedicamentos({ practiv1: word, comerc: 1, pagina: 1 }));
+                    searches.push(this.api.searchMedicamentos({ practiv1: word, comerc: 1, pagina: 1 }, acOpts));
                 }
 
                 const results = await Promise.allSettled(searches);
@@ -2559,7 +2560,7 @@ class MedCheckApp {
         }
 
         try {
-            const results = await this.api.smartSearch(query, { comerc: 1 });
+            const results = await this.api.smartSearch(query, { comerc: 1 }, { headers: { 'X-MC-Autocomplete': '1' } });
             if (!results.resultados || results.resultados.length === 0) {
                 dropdown.classList.add('hidden');
                 return;
@@ -3149,7 +3150,7 @@ class MedCheckApp {
         clearTimeout(this.equivAutocompleteTimer);
         this.equivAutocompleteTimer = setTimeout(async () => {
             try {
-                const results = await this.api.smartSearch(query, { comerc: 1, pagina: 1 });
+                const results = await this.api.smartSearch(query, { comerc: 1, pagina: 1 }, { headers: { 'X-MC-Autocomplete': '1' } });
                 if (!results.resultados?.length) {
                     dropdown.classList.add('hidden');
                     return;
