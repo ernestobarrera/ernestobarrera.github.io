@@ -40,6 +40,10 @@ class MedCheckApp {
         this.currentView = 'search';
         this.currentMed = null;
 
+        // Analytics globals — leídos por cima-api.js en cada petición al Worker
+        window._mcCurrentView    = 'buscar';
+        window._mcActiveContexts = null;
+
         // URL Router state - prevents URL update during popstate navigation
         this.isPopstateNavigation = false;
 
@@ -217,6 +221,7 @@ class MedCheckApp {
 
     async loadView(viewName, updateURL = true) {
         this.currentView = viewName;
+        window._mcCurrentView = MedCheckApp._VIEW_ANALYTICS_MAP[viewName] || viewName;
         this.content.innerHTML = '<div class="loading-spinner"></div>';
 
         // Update URL unless this is a popstate navigation or explicitly disabled
@@ -253,6 +258,7 @@ class MedCheckApp {
                 const context = toggle.dataset.context;
                 this.patientContext[context] = !this.patientContext[context];
                 toggle.classList.toggle('active', this.patientContext[context]);
+                this._updateAnalyticsContext();
                 // Refresh current view to update context alerts on cards
                 this.refreshCurrentResults();
             });
@@ -283,8 +289,21 @@ class MedCheckApp {
             toggle.classList.remove('active');
         });
 
+        this._updateAnalyticsContext();
         this.showToast('Contexto limpiado', 'success');
         this.refreshCurrentResults();
+    }
+
+    /**
+     * Actualiza los globals de analítica con la vista y contexto activos.
+     * Leídos por cima-api.js al construir cada petición al Worker.
+     */
+    _updateAnalyticsContext() {
+        const active = Object.entries(this.patientContext)
+            .filter(([, v]) => v)
+            .map(([k]) => MedCheckApp._CONTEXT_ANALYTICS_MAP[k] || k)
+            .join(',');
+        window._mcActiveContexts = active || null;
     }
 
     /**
@@ -7162,6 +7181,28 @@ class MedCheckApp {
         this.showToast('Todos los favoritos eliminados', 'info');
     }
 }
+
+// Mapas de traducción para analítica — clave interna → valor enviado al Worker
+MedCheckApp._VIEW_ANALYTICS_MAP = {
+    search:       'buscar',
+    indications:  'indicaciones',
+    safety:       'seguridad',
+    interactions: 'interacciones',
+    adverse:      'reacciones',
+    equivalences: 'equivalencias',
+    supply:       'suministro',
+    alerts:       'alertas',
+    profile:      'perfil',
+};
+
+MedCheckApp._CONTEXT_ANALYTICS_MAP = {
+    pregnancy: 'embarazo',
+    lactation: 'lactancia',
+    elderly:   'elderly',
+    driving:   'driving',
+    renal:     'renal',
+    hepatic:   'hepatic',
+};
 
 // Initialize app on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
