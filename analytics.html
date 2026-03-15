@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedCheck · Analytics</title>
+    <meta name="robots" content="noindex, nofollow">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/cima-app.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+    <style>
+        /* =============================================
+           ANALYTICS — estilos específicos
+           ============================================= */
+        body { background: var(--bg-dark); color: var(--text-primary); font-family: 'Inter', sans-serif; }
+
+        .analytics-layout {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem 4rem;
+        }
+
+        /* HEADER */
+        .analytics-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border-default);
+        }
+        .analytics-brand {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .analytics-brand i { color: var(--primary); }
+        .analytics-brand .brand-sub {
+            font-size: .75rem;
+            font-weight: 500;
+            color: var(--primary);
+            background: var(--primary-light);
+            padding: .15rem .5rem;
+            border-radius: 4px;
+            margin-left: .2rem;
+        }
+        .back-link {
+            font-size: .85rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            transition: color .15s;
+        }
+        .back-link:hover { color: var(--primary); }
+
+        /* PERIOD SELECTOR */
+        .period-bar {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            margin-bottom: 1.75rem;
+            flex-wrap: wrap;
+        }
+        .period-label {
+            font-size: .8rem;
+            color: var(--text-muted);
+            margin-right: .25rem;
+        }
+        .period-btn {
+            padding: .35rem .9rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-default);
+            background: var(--bg-surface);
+            color: var(--text-secondary);
+            font-size: .85rem;
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .period-btn:hover { border-color: var(--border-hover); color: var(--text-primary); }
+        .period-btn.active {
+            background: var(--primary-light);
+            border-color: var(--border-active);
+            color: var(--primary);
+            font-weight: 500;
+        }
+        .refresh-btn {
+            margin-left: auto;
+            padding: .35rem .9rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-default);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: .85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            transition: all .15s;
+        }
+        .refresh-btn:hover { color: var(--primary); border-color: var(--border-active); }
+        .refresh-btn.loading i { animation: spin .8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* SUMMARY CARDS */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.75rem;
+        }
+        .stat-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: .3rem;
+        }
+        .stat-card .stat-label {
+            font-size: .75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+        }
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.1;
+            color: var(--text-primary);
+        }
+        .stat-card .stat-note {
+            font-size: .75rem;
+            color: var(--text-muted);
+        }
+        .stat-card.accent-primary .stat-value { color: var(--primary); }
+        .stat-card.accent-success .stat-value { color: #34d399; }
+        .stat-card.accent-warn .stat-value { color: #fbbf24; }
+
+        /* CHARTS GRID */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        @media (max-width: 700px) { .charts-grid { grid-template-columns: 1fr; } }
+
+        /* CHART CARDS */
+        .chart-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+        }
+        .chart-card-title {
+            font-size: .8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+        .chart-card-title i { color: var(--primary); }
+        .chart-wrap { position: relative; }
+
+        /* TABLE CARD */
+        .table-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .875rem;
+        }
+        .analytics-table th {
+            text-align: left;
+            padding: .6rem .75rem;
+            font-size: .7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-default);
+        }
+        .analytics-table td {
+            padding: .65rem .75rem;
+            border-bottom: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            vertical-align: middle;
+        }
+        .analytics-table tr:last-child td { border-bottom: none; }
+        .analytics-table tr:hover td { background: var(--bg-surface-hover); }
+        .analytics-table .term-name {
+            font-family: monospace;
+            font-size: .9rem;
+            color: var(--text-primary);
+        }
+        .analytics-table .badge {
+            display: inline-block;
+            padding: .1rem .45rem;
+            border-radius: 4px;
+            font-size: .7rem;
+            font-weight: 500;
+        }
+        .badge-nombre { background: rgba(14,165,233,.15); color: #38bdf8; }
+        .badge-nregistro { background: rgba(168,85,247,.15); color: #c084fc; }
+        .badge-atc { background: rgba(52,211,153,.15); color: #34d399; }
+        .badge-indicacion { background: rgba(251,191,36,.15); color: #fbbf24; }
+
+        /* BAR INLINE */
+        .bar-wrap { display: flex; align-items: center; gap: .6rem; }
+        .bar-track {
+            flex: 1;
+            height: 6px;
+            background: var(--bg-elevated, #263445);
+            border-radius: 99px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 99px;
+        }
+        .bar-count { min-width: 1.8rem; text-align: right; font-weight: 600; color: var(--text-primary); }
+
+        /* ENDPOINT LIST */
+        .endpoint-list { list-style: none; padding: 0; margin: 0; }
+        .endpoint-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: .65rem 0;
+            border-bottom: 1px solid var(--border-default);
+            font-size: .875rem;
+        }
+        .endpoint-item:last-child { border-bottom: none; }
+        .endpoint-path {
+            font-family: monospace;
+            color: var(--text-primary);
+            font-size: .85rem;
+        }
+        .endpoint-count {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-muted);
+            font-size: .875rem;
+        }
+        .empty-state i { font-size: 1.75rem; display: block; margin-bottom: .75rem; opacity: .4; }
+        .empty-state p { margin: 0; }
+        .empty-state .note {
+            margin-top: .5rem;
+            font-size: .8rem;
+            color: var(--primary);
+            opacity: .8;
+        }
+
+        /* INFO BANNER */
+        .info-banner {
+            background: rgba(14,165,233,.08);
+            border: 1px solid rgba(14,165,233,.25);
+            border-radius: 8px;
+            padding: .75rem 1rem;
+            font-size: .8rem;
+            color: var(--primary);
+            display: flex;
+            align-items: flex-start;
+            gap: .6rem;
+            margin-bottom: 1.5rem;
+        }
+        .info-banner i { margin-top: .05rem; flex-shrink: 0; }
+
+        /* LOADING / ERROR */
+        .state-loading, .state-error {
+            text-align: center;
+            padding: 4rem 1rem;
+            color: var(--text-muted);
+        }
+        .state-loading i, .state-error i {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 1rem;
+        }
+        .state-loading i { color: var(--primary); animation: spin .8s linear infinite; }
+        .state-error i { color: #f87171; }
+        .state-error p { color: var(--text-secondary); }
+
+        /* UPDATE TIMESTAMP */
+        .update-ts {
+            text-align: right;
+            font-size: .75rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="analytics-layout">
+
+    <!-- HEADER -->
+    <header class="analytics-header">
+        <div class="analytics-brand">
+            <i class="fas fa-chart-bar"></i>
+            MedCheck
+            <span class="brand-sub">ANALYTICS</span>
+        </div>
+        <a href="medcheck.html" class="back-link">
+            <i class="fas fa-arrow-left"></i> Volver a MedCheck
+        </a>
+    </header>
+
+    <!-- PERIOD SELECTOR -->
+    <div class="period-bar">
+        <span class="period-label"><i class="fas fa-calendar-alt"></i> Periodo:</span>
+        <button class="period-btn" data-dias="7">7 días</button>
+        <button class="period-btn active" data-dias="30">30 días</button>
+        <button class="period-btn" data-dias="90">90 días</button>
+        <button class="refresh-btn" id="refresh-btn">
+            <i class="fas fa-sync-alt"></i> Actualizar
+        </button>
+    </div>
+
+    <!-- MAIN CONTENT (se rellena con JS) -->
+    <div id="analytics-root">
+        <div class="state-loading">
+            <i class="fas fa-spinner"></i>
+            <p>Cargando datos…</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const WORKER = 'https://medcheck-proxy.medtools.workers.dev';
+
+let activeDias = 30;
+let activityChart = null;
+let vistasChart    = null;
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
+function fmtDate(iso) {
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}`;
+}
+
+function typeBadge(tipo) {
+    const map = {
+        nombre:     ['badge-nombre',    'nombre'],
+        nregistro:  ['badge-nregistro', 'nº reg.'],
+        atc:        ['badge-atc',       'ATC'],
+        indicacion: ['badge-indicacion','indicación'],
+    };
+    const [cls, label] = map[tipo] || ['badge-nombre', tipo];
+    return `<span class="badge ${cls}">${label}</span>`;
+}
+
+// ─── fetch ────────────────────────────────────────────────────────────────────
+
+async function fetchAnalytics(dias) {
+    const res = await fetch(`${WORKER}/analytics?dias=${dias}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
+
+// ─── render ───────────────────────────────────────────────────────────────────
+
+function renderSummary(r) {
+    const pct = r.total_consultas > 0
+        ? Math.round(r.sin_resultado / r.total_consultas * 100)
+        : 0;
+    return `
+    <div class="summary-grid">
+        <div class="stat-card accent-primary">
+            <span class="stat-label"><i class="fas fa-search"></i> Total consultas</span>
+            <span class="stat-value">${r.total_consultas}</span>
+            <span class="stat-note">en ${activeDias} días</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label"><i class="fas fa-font"></i> Términos distintos</span>
+            <span class="stat-value">${r.terminos_distintos}</span>
+            <span class="stat-note">medicamentos únicos buscados</span>
+        </div>
+        <div class="stat-card accent-success">
+            <span class="stat-label"><i class="fas fa-check-circle"></i> Con resultado</span>
+            <span class="stat-value">${r.con_resultado}</span>
+            <span class="stat-note">consultas con respuesta</span>
+        </div>
+        <div class="stat-card accent-warn">
+            <span class="stat-label"><i class="fas fa-exclamation-circle"></i> Sin resultado</span>
+            <span class="stat-value">${r.sin_resultado}</span>
+            <span class="stat-note">${pct}% del total</span>
+        </div>
+    </div>`;
+}
+
+function renderActivityChart(dias) {
+    // Rellenar días sin consultas con 0
+    const end   = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - activeDias + 1);
+
+    const map = {};
+    dias.forEach(d => { map[d.dia] = d.consultas; });
+
+    const labels = [], values = [];
+    const cur = new Date(start);
+    while (cur <= end) {
+        const key = cur.toISOString().slice(0, 10);
+        labels.push(fmtDate(key));
+        values.push(map[key] ?? 0);
+        cur.setDate(cur.getDate() + 1);
+    }
+
+    return { labels, values };
+}
+
+function renderTopTerms(terms, maxVal) {
+    if (!terms.length) return '<div class="empty-state"><i class="fas fa-search"></i><p>Sin datos de búsqueda</p></div>';
+    const rows = terms.map(t => `
+        <tr>
+            <td class="term-name">${escapeHtml(t.termino)}</td>
+            <td>${typeBadge(t.tipo_busqueda)}</td>
+            <td>${t.vista ? `<span class="badge badge-atc">${t.vista}</span>` : '<span style="color:var(--text-muted);font-size:.8rem">—</span>'}</td>
+            <td>
+                <div class="bar-wrap">
+                    <div class="bar-track"><div class="bar-fill" style="width:${Math.round(t.consultas/maxVal*100)}%"></div></div>
+                    <span class="bar-count">${t.consultas}</span>
+                </div>
+            </td>
+        </tr>`).join('');
+    return `
+    <table class="analytics-table">
+        <thead>
+            <tr>
+                <th>Término</th>
+                <th>Tipo</th>
+                <th>Vista</th>
+                <th>Consultas</th>
+            </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderEndpoints(list) {
+    if (!list.length) return '<div class="empty-state"><p>Sin datos</p></div>';
+    const total = list.reduce((s, e) => s + e.consultas, 0);
+    const items = list.map(e => `
+        <li class="endpoint-item">
+            <span class="endpoint-path">${escapeHtml(e.endpoint)}</span>
+            <span class="endpoint-count">${e.consultas} <small style="color:var(--text-muted);font-weight:400">(${Math.round(e.consultas/total*100)}%)</small></span>
+        </li>`).join('');
+    return `<ul class="endpoint-list">${items}</ul>`;
+}
+
+function renderVistas(list) {
+    if (!list.length) {
+        return `
+        <div class="empty-state">
+            <i class="fas fa-chart-pie"></i>
+            <p>Sin datos de vista todavía</p>
+            <p class="note"><i class="fas fa-info-circle"></i> A partir de hoy las consultas incluyen la pestaña activa</p>
+        </div>`;
+    }
+    return `<div class="chart-wrap" style="height:220px"><canvas id="vistas-chart"></canvas></div>`;
+}
+
+function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── mount charts ─────────────────────────────────────────────────────────────
+
+function mountCharts(data) {
+    // Actividad diaria
+    const { labels, values } = renderActivityChart(data.actividad_diaria);
+    const actCtx = document.getElementById('activity-chart')?.getContext('2d');
+    if (actCtx) {
+        if (activityChart) activityChart.destroy();
+        activityChart = new Chart(actCtx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Consultas',
+                    data: values,
+                    backgroundColor: 'rgba(14,165,233,.6)',
+                    borderColor: '#0ea5e9',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        ticks: { color: '#64748b', font: { size: 11 }, maxRotation: 45 },
+                        grid: { color: 'rgba(255,255,255,.04)' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#64748b', font: { size: 11 }, stepSize: 1 },
+                        grid: { color: 'rgba(255,255,255,.06)' }
+                    }
+                }
+            }
+        });
+    }
+
+    // Por vista (solo si hay datos)
+    if (data.por_vista?.length) {
+        const vCtx = document.getElementById('vistas-chart')?.getContext('2d');
+        if (vCtx) {
+            if (vistasChart) vistasChart.destroy();
+            const COLORS = ['#0ea5e9','#34d399','#f472b6','#fbbf24','#a78bfa','#fb923c','#22d3ee','#4ade80'];
+            vistasChart = new Chart(vCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.por_vista.map(v => v.vista),
+                    datasets: [{
+                        data: data.por_vista.map(v => v.consultas),
+                        backgroundColor: COLORS.slice(0, data.por_vista.length),
+                        borderColor: '#1e293b',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#94a3b8', font: { size: 11 }, padding: 12 }
+                        }
+                    }
+                }
+            });
+        }
+    }
+}
+
+// ─── main render ─────────────────────────────────────────────────────────────
+
+function renderDashboard(data) {
+    const maxVal = data.top_terminos[0]?.consultas || 1;
+    const hasVistaData = data.top_terminos.some(t => t.vista !== null);
+    const hasVistas    = data.por_vista?.length > 0;
+
+    const html = `
+        ${hasVistaData ? '' : `
+        <div class="info-banner">
+            <i class="fas fa-info-circle"></i>
+            <span>Los datos de <strong>vista clínica</strong> se registran a partir de hoy. Las consultas anteriores muestran vista <em>—</em>.</span>
+        </div>`}
+
+        <div class="update-ts" id="update-ts"></div>
+
+        ${renderSummary(data.resumen)}
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-card-title"><i class="fas fa-chart-bar"></i> Actividad diaria</div>
+                <div class="chart-wrap" style="height:220px">
+                    <canvas id="activity-chart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-title"><i class="fas fa-server"></i> Por endpoint</div>
+                ${renderEndpoints(data.por_endpoint)}
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="chart-card-title"><i class="fas fa-list-ol"></i> Top términos buscados</div>
+            ${renderTopTerms(data.top_terminos, maxVal)}
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-th-large"></i> Distribución por pestaña clínica</div>
+            ${renderVistas(data.por_vista)}
+        </div>
+    `;
+
+    document.getElementById('analytics-root').innerHTML = html;
+
+    // timestamp
+    const ts = document.getElementById('update-ts');
+    if (ts) ts.textContent = `Actualizado: ${new Date().toLocaleTimeString('es-ES')}`;
+
+    // mount charts after DOM is ready
+    requestAnimationFrame(() => mountCharts(data));
+}
+
+// ─── load ─────────────────────────────────────────────────────────────────────
+
+async function load() {
+    const root = document.getElementById('analytics-root');
+    const btn  = document.getElementById('refresh-btn');
+
+    root.innerHTML = '<div class="state-loading"><i class="fas fa-spinner"></i><p>Cargando datos…</p></div>';
+    btn.classList.add('loading');
+
+    try {
+        const data = await fetchAnalytics(activeDias);
+        renderDashboard(data);
+    } catch (err) {
+        root.innerHTML = `
+            <div class="state-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p><strong>Error al cargar los datos</strong></p>
+                <p style="font-size:.85rem;margin-top:.5rem">${escapeHtml(err.message)}</p>
+            </div>`;
+    } finally {
+        btn.classList.remove('loading');
+    }
+}
+
+// ─── event listeners ──────────────────────────────────────────────────────────
+
+document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeDias = parseInt(btn.dataset.dias);
+        load();
+    });
+});
+
+document.getElementById('refresh-btn').addEventListener('click', load);
+
+// ─── init ─────────────────────────────────────────────────────────────────────
+load();
+</script>
+</body>
+</html>
