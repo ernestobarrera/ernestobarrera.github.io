@@ -47,6 +47,11 @@ export default {
         if (path === '/analytics') {
             return handleAnalytics(request, env);
         }
+        // Tracking explícito desde la aplicación: registra la intención del usuario
+        // con la query ORIGINAL y el nº real de resultados (incluyendo expansiones y fallbacks)
+        if (path === '/track') {
+            return handleTrack(request, env, ctx);
+        }
         // Leer metadatos enviados por el cliente y validarlos
         // NO se reenvían a CIMA — son solo para el registro interno
         const vista    = sanitizarVista(request.headers.get('X-MC-View'));
@@ -159,6 +164,51 @@ async function registrarEvento(db, path, searchParams, responseData, statusCode,
         ).run();
     } catch (error) {
         console.error('[analytics] Error registrando evento:', error.message);
+    }
+}
+// ─────────────────────────────────────────────
+// ENDPOINT DE TRACKING EXPLÍCITO
+// Recibe la intención de búsqueda desde el frontend con la query original
+// y el nº real de resultados (resuelto después de expansiones y fallbacks).
+// GET /track?termino=glargina&tipo=nombre&resultados=12&vista=buscar
+// ─────────────────────────────────────────────
+async function handleTrack(request, env, ctx) {
+    const headers = getCORSHeaders(request);
+    if (!env.DB) return new Response('{}', { headers });
+    try {
+        const url      = new URL(request.url);
+        const termino  = url.searchParams.get('termino')?.toLowerCase().trim() || null;
+        const tipo     = url.searchParams.get('tipo') || 'nombre';
+        const resultados = parseInt(url.searchParams.get('resultados') ?? '-1', 10);
+        const vista    = sanitizarVista(
+            url.searchParams.get('vista') || request.headers.get('X-MC-View')
+        );
+        const contexto = sanitizarContexto(
+            url.searchParams.get('contexto') || request.headers.get('X-MC-Context')
+        );
+        // Descartar términos nulos o muy cortos (igual que el proxy normal)
+        if (!termino || termino.length < 2) return new Response('{}', { headers });
+
+        ctx.waitUntil(
+            env.DB.prepare(`
+                INSERT INTO eventos
+                    (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(
+                Date.now(),
+                '/medicamentos',
+                tipo,
+                termino,
+                resultados >= 0 ? resultados : null,
+                200,
+                vista,
+                contexto,
+            ).run()
+        );
+        return new Response('{}', { headers });
+    } catch (e) {
+        console.error('[track] Error:', e.message);
+        return new Response('{}', { headers });
     }
 }
 // ─────────────────────────────────────────────

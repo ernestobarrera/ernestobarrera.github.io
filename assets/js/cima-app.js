@@ -674,6 +674,7 @@ class MedCheckApp {
             }
 
             if (!rawData.resultados || rawData.resultados.length === 0) {
+                this._trackSearch(query, searchType, 0);
                 this.lastSearchResults = null;
                 resultsContainer.innerHTML = `
                     <div class="empty-state">
@@ -712,6 +713,12 @@ class MedCheckApp {
             }
 
             this.displaySearchResults(this.lastSearchResults);
+
+            // Tracking explícito: registra la intención de búsqueda con la query
+            // original del usuario y el nº real de resultados.
+            // Necesario porque las llamadas de CIMA con noTrack (expansiones, synonyms)
+            // nunca llegan al worker como eventos registrables.
+            this._trackSearch(query, searchType, rawData.resultados?.length ?? 0);
 
             // Avisar si los resultados son de medicamentos no comercializados
             if (retiradosAviso) {
@@ -849,6 +856,35 @@ class MedCheckApp {
             resultados: allResults,
             totalFilas: allResults.length
         };
+    }
+
+    /**
+     * Registra una búsqueda en analytics via el endpoint /track del worker.
+     * Se llama desde performSearch con la query ORIGINAL del usuario y el
+     * nº real de resultados (resuelto tras expansiones, synonyms y fallbacks).
+     * Fire-and-forget: no bloquea ni propaga errores.
+     */
+    _trackSearch(query, tipo, numResultados) {
+        if (!query || query.length < 2) return;
+        try {
+            const base     = this.api.cloudflareProxy;
+            const vista    = window._mcCurrentView || 'buscar';
+            const contexto = window._mcActiveContexts || '';
+            const tipoNorm = /^\d{6,7}$/.test(query.trim()) ? 'codigo_nacional' : tipo === 'cn' ? 'codigo_nacional' : 'nombre';
+            const params   = new URLSearchParams({
+                termino:    query.trim().toLowerCase(),
+                tipo:       tipoNorm,
+                resultados: numResultados,
+                vista,
+                ...(contexto ? { contexto } : {}),
+            });
+            fetch(`${base}/track?${params}`, {
+                headers: {
+                    'X-MC-View':    vista,
+                    ...(contexto ? { 'X-MC-Context': contexto } : {}),
+                },
+            }).catch(() => {});
+        } catch (_) {}
     }
 
     /**
