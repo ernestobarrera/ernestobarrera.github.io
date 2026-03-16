@@ -214,8 +214,8 @@ class CimaAPI {
                 // 1. Intentar practiv1 (medicamento principal con este PA)
                 results = await this.searchMedicamentos({ practiv1: trimmed, ...baseFilters });
 
-                // 2. También buscar en practiv2 (asociaciones donde el PA es el segundo ingrediente)
-                const results2 = await this.searchMedicamentos({ practiv2: trimmed, ...baseFilters });
+                // 2. También buscar en practiv2 (asociaciones); petición secundaria, sin analítica
+                const results2 = await this.searchMedicamentos({ practiv2: trimmed, ...baseFilters }, { headers: { 'X-MC-Autocomplete': '1' } });
                 if (results2.resultados && results2.resultados.length > 0) {
                     // Merge results, avoiding duplicates by nregistro
                     const existingIds = new Set((results.resultados || []).map(m => m.nregistro));
