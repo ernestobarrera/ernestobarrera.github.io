@@ -747,17 +747,20 @@ class MedCheckApp {
         const reversedSynonymQuery = [...transformedWords].reverse().join(' ');
 
         // FASE 1: Búsquedas por query completo (original + variantes con sinónimos)
+        // Solo la búsqueda por nombre se registra en analítica; el resto son peticiones
+        // secundarias de apoyo marcadas con X-MC-Autocomplete para no inflar conteos.
+        const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
         const primarySearches = [
             this.api.searchMedicamentos({ nombre: query, ...filters }),
-            this.api.searchMedicamentos({ practiv1: query, ...filters })
+            this.api.searchMedicamentos({ practiv1: query, ...filters }, noTrack)
         ];
 
         // Añadir búsquedas con sinónimos si son diferentes del original
         if (synonymQuery !== normalizedQuery) {
-            primarySearches.push(this.api.searchMedicamentos({ practiv1: synonymQuery, ...filters }));
+            primarySearches.push(this.api.searchMedicamentos({ practiv1: synonymQuery, ...filters }, noTrack));
             // También probar orden invertido (HIERRO SULFATO vs SULFATO HIERRO)
             if (reversedSynonymQuery !== synonymQuery) {
-                primarySearches.push(this.api.searchMedicamentos({ practiv1: reversedSynonymQuery, ...filters }));
+                primarySearches.push(this.api.searchMedicamentos({ practiv1: reversedSynonymQuery, ...filters }, noTrack));
             }
         }
 
@@ -795,7 +798,7 @@ class MedCheckApp {
 
         const fallbackSearches = [];
         for (const word of expandedWords) {
-            fallbackSearches.push(this.api.searchMedicamentos({ practiv1: word, ...filters }));
+            fallbackSearches.push(this.api.searchMedicamentos({ practiv1: word, ...filters }, noTrack));
         }
 
         const fallbackResults = await Promise.allSettled(fallbackSearches);
