@@ -852,16 +852,28 @@ class MedCheckApp {
         this.autocompleteTimer = setTimeout(async () => {
             if (currentAbortController.signal.aborted) return;
             try {
-                // Diccionario de sinónimos para términos comunes en español
-                // Permite encontrar "HIERRO SULFATO" cuando se busca "sulfato ferroso"
+                // Diccionario de expansiones: mapea un término parcial al PA completo
+                // Necesario cuando el término buscado es la segunda palabra del PA
+                // (ej. "glargina" → CIMA lo tiene como "insulina glargina")
                 const synonyms = {
+                    // Sales y formas iónicas
                     'ferroso': 'hierro',
                     'ferrico': 'hierro',
                     'potasico': 'potasio',
                     'sodico': 'sodio',
                     'calcico': 'calcio',
                     'magnésico': 'magnesio',
-                    'magnesico': 'magnesio'
+                    'magnesico': 'magnesio',
+                    // Insulinas: el PA en CIMA siempre empieza por "insulina"
+                    'glargina': 'insulina glargina',
+                    'lispro': 'insulina lispro',
+                    'aspart': 'insulina aspart',
+                    'detemir': 'insulina detemir',
+                    'degludec': 'insulina degludec',
+                    'glulisina': 'insulina glulisina',
+                    'nph': 'insulina nph',
+                    'bifasica': 'insulina bifasica',
+                    'bifásica': 'insulina bifasica',
                 };
 
                 // Normalizar query y expandir sinónimos
@@ -886,10 +898,12 @@ class MedCheckApp {
                     this.api.searchMedicamentos({ practiv1: query, comerc: 1, pagina: 1 }, acOpts)
                 ];
 
-                // Buscar por cada palabra expandida (incluyendo sinónimos)
-                // Siempre buscar por palabras individuales para mejor cobertura
+                // Buscar por cada palabra/expansión individual
+                // Saltar si la palabra ya es igual al query completo (tier 2 ya la cubre)
                 for (const word of expandedWords) {
-                    searches.push(this.api.searchMedicamentos({ practiv1: word, comerc: 1, pagina: 1 }, acOpts));
+                    if (word !== normalizedQuery) {
+                        searches.push(this.api.searchMedicamentos({ practiv1: word, comerc: 1, pagina: 1 }, acOpts));
+                    }
                 }
 
                 const results = await Promise.allSettled(searches);
