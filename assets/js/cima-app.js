@@ -842,9 +842,15 @@ class MedCheckApp {
             return;
         }
 
-        // Debounce: wait 200ms after last keystroke
+        // Debounce: wait 350ms after last keystroke + cancel in-flight requests
         clearTimeout(this.autocompleteTimer);
+        if (this.autocompleteAbortController) {
+            this.autocompleteAbortController.abort();
+        }
+        this.autocompleteAbortController = new AbortController();
+        const currentAbortController = this.autocompleteAbortController;
         this.autocompleteTimer = setTimeout(async () => {
+            if (currentAbortController.signal.aborted) return;
             try {
                 // Diccionario de sinónimos para términos comunes en español
                 // Permite encontrar "HIERRO SULFATO" cuando se busca "sulfato ferroso"
@@ -887,6 +893,9 @@ class MedCheckApp {
                 }
 
                 const results = await Promise.allSettled(searches);
+
+                // Si llegó una tecla nueva mientras esperábamos, descartar estos resultados
+                if (currentAbortController.signal.aborted) return;
 
                 // Combinar y deduplicar resultados (por nregistro)
                 const seen = new Set();
@@ -965,9 +974,9 @@ class MedCheckApp {
                     });
                 });
             } catch (e) {
-                console.warn('Autocomplete error:', e);
+                if (e.name !== 'AbortError') console.warn('Autocomplete error:', e);
             }
-        }, 200);
+        }, 350);
     }
 
 
@@ -2539,7 +2548,10 @@ class MedCheckApp {
 
 
         searchInput.addEventListener('input', () => {
-            this.showInteractionAutocomplete(searchInput.value);
+            clearTimeout(this.interactionAutocompleteTimer);
+            this.interactionAutocompleteTimer = setTimeout(() => {
+                this.showInteractionAutocomplete(searchInput.value);
+            }, 350);
         });
 
         searchInput.addEventListener('blur', () => {
