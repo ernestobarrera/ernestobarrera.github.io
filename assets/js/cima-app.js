@@ -663,6 +663,16 @@ class MedCheckApp {
                 rawData = await this._performSmartSearch(query, filters);
             }
 
+            // Si no hay resultados y el filtro comerc estaba activo, reintentar sin él
+            // Cubre medicamentos retirados del mercado (ej: Robaxisal, fármacos descatalogados)
+            let retiradosAviso = false;
+            if ((!rawData.resultados || rawData.resultados.length === 0) && this.lastSearchFilters.comerc) {
+                rawData = await this._performSmartSearch(query, {});
+                if (rawData.resultados && rawData.resultados.length > 0) {
+                    retiradosAviso = true;
+                }
+            }
+
             if (!rawData.resultados || rawData.resultados.length === 0) {
                 this.lastSearchResults = null;
                 resultsContainer.innerHTML = `
@@ -703,6 +713,14 @@ class MedCheckApp {
 
             this.displaySearchResults(this.lastSearchResults);
 
+            // Avisar si los resultados son de medicamentos no comercializados
+            if (retiradosAviso) {
+                this.showToast(
+                    `"${query}" no tiene presentaciones comercializadas actualmente. Mostrando registros históricos.`,
+                    'warning'
+                );
+            }
+
             // Update URL with search parameters
             if (!this.isPopstateNavigation) {
                 const urlParams = {
@@ -725,15 +743,29 @@ class MedCheckApp {
      * Estrategia: Primero buscar query completo (+ versión con sinónimos), luego expandir solo si necesario
      */
     async _performSmartSearch(query, filters = {}) {
-        // Diccionario de sinónimos
+        // Diccionario de expansiones: mapea un término parcial al PA completo
+        // Necesario porque la API de CIMA hace matching por PREFIJO: "glargina" no
+        // encuentra "insulina glargina" porque el PA empieza por "insulina".
+        // Mantener sincronizado con el mismo diccionario en showSearchAutocomplete.
         const synonyms = {
+            // Sales y formas iónicas
             'ferroso': 'hierro',
             'ferrico': 'hierro',
             'potasico': 'potasio',
             'sodico': 'sodio',
             'calcico': 'calcio',
             'magnésico': 'magnesio',
-            'magnesico': 'magnesio'
+            'magnesico': 'magnesio',
+            // Insulinas: el PA en CIMA siempre empieza por "insulina"
+            'glargina': 'insulina glargina',
+            'lispro': 'insulina lispro',
+            'aspart': 'insulina aspart',
+            'detemir': 'insulina detemir',
+            'degludec': 'insulina degludec',
+            'glulisina': 'insulina glulisina',
+            'nph': 'insulina nph',
+            'bifasica': 'insulina bifasica',
+            'bifásica': 'insulina bifasica',
         };
 
         // Normalizar query
@@ -946,6 +978,27 @@ class MedCheckApp {
                         .sort((a, b) => b._matchScore - a._matchScore);  // Solo ordenar, NO filtrar
                 }
 
+                // Fallback para medicamentos no comercializados (ej: retirados del mercado)
+                // Si comerc=1 no devuelve nada, reintentar sin filtro y marcar como retirados
+                if (!allResults.length) {
+                    if (currentAbortController.signal.aborted) return;
+                    const noComercOpts = { headers: { 'X-MC-Autocomplete': '1' } };
+                    const fallbackResults = await Promise.allSettled([
+                        this.api.searchMedicamentos({ nombre: query, pagina: 1 }, noComercOpts),
+                        this.api.searchMedicamentos({ practiv1: query, pagina: 1 }, noComercOpts)
+                    ]);
+                    if (currentAbortController.signal.aborted) return;
+                    for (const result of fallbackResults) {
+                        if (result.status !== 'fulfilled') continue;
+                        for (const med of (result.value?.resultados || [])) {
+                            if (!seen.has(med.nregistro)) {
+                                seen.add(med.nregistro);
+                                allResults.push({ ...med, _retirado: true });
+                            }
+                        }
+                    }
+                }
+
                 if (!allResults.length) {
                     dropdown.classList.add('hidden');
                     return;
@@ -961,16 +1014,22 @@ class MedCheckApp {
                         ? '<span class="autocomplete-combo-badge"><i class="fas fa-layer-group"></i> Comb</span>'
                         : '';
 
+                    // Badge de retirado para medicamentos no comercializados
+                    const retiradoBadge = med._retirado
+                        ? '<span class="autocomplete-retirado-badge">No comercializado</span>'
+                        : '';
+
                     // Formatear principios activos
                     const formattedPactivos = pactivos
                         ? `<span class="autocomplete-pactivos">${pactivos}</span>`
                         : (med.labtitular ? `<span class="autocomplete-lab">${med.labtitular}</span>` : '');
 
                     return `
-                        <button class="autocomplete-item ${isCombination ? 'has-combination' : ''}" data-nregistro="${med.nregistro}">
+                        <button class="autocomplete-item ${isCombination ? 'has-combination' : ''} ${med._retirado ? 'is-retirado' : ''}" data-nregistro="${med.nregistro}">
                             <div class="autocomplete-main">
                                 ${combinationBadge}
                                 <span class="autocomplete-term">${med.nombre}</span>
+                                ${retiradoBadge}
                             </div>
                             ${formattedPactivos}
                             ${atcInfo ? `<span class="autocomplete-atc" style="background: ${atcInfo.color}22; color: ${atcInfo.color};">${atcInfo.class}</span>` : ''}
