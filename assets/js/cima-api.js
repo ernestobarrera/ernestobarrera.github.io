@@ -83,8 +83,12 @@ class CimaAPI {
     async _request(endpoint, options = {}, useCache = true) {
         const cacheKey = `${options.method || 'GET'}:${endpoint}`;
 
-        // Intentar cache primero
-        if (useCache && this._hasValidCache(cacheKey)) {
+        // Las peticiones primarias (sin X-MC-Autocomplete) siempre van a red
+        // para que el Worker registre la analítica. Las secundarias usan caché.
+        const isTracked = !options.headers?.['X-MC-Autocomplete'];
+        const canUseCache = useCache && !isTracked;
+
+        if (canUseCache && this._hasValidCache(cacheKey)) {
             console.log('📦 Cache hit:', endpoint);
             return this.cache.get(cacheKey).data;
         }
