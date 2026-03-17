@@ -667,7 +667,8 @@ class MedCheckApp {
             // Cubre medicamentos retirados del mercado (ej: Robaxisal, fármacos descatalogados)
             let retiradosAviso = false;
             if ((!rawData.resultados || rawData.resultados.length === 0) && this.lastSearchFilters.comerc) {
-                rawData = await this._performSmartSearch(query, {});
+                // Retry sin filtro comerc — marcado como secundario para no duplicar analítica
+                rawData = await this._performSmartSearch(query, {}, { trackPrimary: false });
                 if (rawData.resultados && rawData.resultados.length > 0) {
                     retiradosAviso = true;
                 }
@@ -742,7 +743,7 @@ class MedCheckApp {
      * Búsqueda inteligente combinada con filtrado de relevancia
      * Estrategia: Primero buscar query completo (+ versión con sinónimos), luego expandir solo si necesario
      */
-    async _performSmartSearch(query, filters = {}) {
+    async _performSmartSearch(query, filters = {}, { trackPrimary = true } = {}) {
         // Diccionario de expansiones: mapea un término parcial al PA completo
         // Necesario porque la API de CIMA hace matching por PREFIJO: "glargina" no
         // encuentra "insulina glargina" porque el PA empieza por "insulina".
@@ -783,7 +784,7 @@ class MedCheckApp {
         // secundarias de apoyo marcadas con X-MC-Autocomplete para no inflar conteos.
         const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
         const primarySearches = [
-            this.api.searchMedicamentos({ nombre: query, ...filters }),
+            this.api.searchMedicamentos({ nombre: query, ...filters }, trackPrimary ? {} : noTrack),
             this.api.searchMedicamentos({ practiv1: query, ...filters }, noTrack)
         ];
 
@@ -2357,10 +2358,11 @@ class MedCheckApp {
 
             // Renderizamos un contenedor vacío para ir llenándolo o todo de una vez
             // Para mejor UX, esperamos a todos (parallel)
+            const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
             const analysisPromises = topMeds.map(async med => {
                 try {
-                    // Obtener detalles completos (para asegurar nregistro correcto y otros datos)
-                    const details = await this.api.getMedicamento(med.nregistro);
+                    // Obtener detalles completos — follow-up, no registrar en analítica
+                    const details = await this.api.getMedicamento(med.nregistro, noTrack);
 
                     // Análisis profundo usando la API
                     const safetyReport = await this.api.analyzeSafety(med.nregistro, this.patientContext);
@@ -2956,7 +2958,7 @@ class MedCheckApp {
         }
 
         try {
-            const results = await this.api.smartSearch(query, { comerc: 1 });
+            const results = await this.api.smartSearch(query, { comerc: 1 }, { headers: { 'X-MC-Autocomplete': '1' } });
             if (!results.resultados || results.resultados.length === 0) {
                 dropdown.classList.add('hidden');
                 return;
@@ -3331,7 +3333,9 @@ class MedCheckApp {
             console.log(`🔍 Mejor coincidencia para "${query}": ${bestMatch.nombre} (score: ${bestScore})`);
 
             const firstMed = bestMatch;
-            const details = await this.api.getMedicamento(firstMed.nregistro);
+            // Follow-up: obtener detalles para extraer PA — no registrar en analítica
+            const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
+            const details = await this.api.getMedicamento(firstMed.nregistro, noTrack);
 
             // Extraer todos los principios activos (solo nombres, sin dosis)
             let principiosActivos = [];
@@ -3376,7 +3380,8 @@ class MedCheckApp {
             console.log(`🔍 Buscando equivalentes con:`, searchParams);
 
             // Buscar todos los medicamentos con esos principios activos y mismo número de PA
-            const equivData = await this.api.searchMedicamentos(searchParams);
+            // Petición derivada de la búsqueda inicial — no registrar como búsqueda aparte
+            const equivData = await this.api.searchMedicamentos(searchParams, noTrack);
 
             if (!equivData.resultados || equivData.resultados.length === 0) {
                 const displayPactivos = principiosActivos.join(' + ');
@@ -3897,14 +3902,17 @@ class MedCheckApp {
             </div>
         `;
         try {
+            const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
             let nregistro = null;
             if (cn) {
-                const med = await this.api.getMedicamentoByCN(cn);
+                // Lookup por CN — follow-up interno, no registrar
+                const med = await this.api.getMedicamentoByCN(cn, noTrack);
                 if (med && med.nregistro) nregistro = med.nregistro;
             }
             if (!nregistro) {
                 const searchName = nombre.split(' ').slice(0, 3).join(' ');
-                const results = await this.api.searchMedicamentos({ nombre: searchName, comerc: 1 });
+                // Búsqueda auxiliar para resolver nregistro — no registrar
+                const results = await this.api.searchMedicamentos({ nombre: searchName, comerc: 1 }, noTrack);
                 if (results.resultados && results.resultados.length > 0) {
                     nregistro = results.resultados[0].nregistro;
                 }
@@ -4128,8 +4136,10 @@ class MedCheckApp {
 
         try {
             // Cargar datos del medicamento y análisis de seguridad en paralelo
+            // getMedicamento aquí es drill-down de una búsqueda ya registrada — no duplicar
+            const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
             const [med, safetyReport] = await Promise.all([
-                this.api.getMedicamento(nregistro),
+                this.api.getMedicamento(nregistro, noTrack),
                 this.api.analyzeSafety(nregistro, this.patientContext).catch(err => {
                     console.error('Error analyzing safety in modal:', err);
                     return { checks: [] }; // Fallback
@@ -5003,8 +5013,9 @@ class MedCheckApp {
         `;
 
         try {
-            // Get the medication details to obtain the active ingredient
-            const medDetails = await this.api.getMedicamento(nregistro);
+            const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
+            // Get the medication details to obtain the active ingredient — follow-up, no registrar
+            const medDetails = await this.api.getMedicamento(nregistro, noTrack);
 
             // Check if this is a combination medication (multiple active ingredients)
             const principiosActivos = medDetails?.principiosActivos || [];
@@ -5058,7 +5069,8 @@ class MedCheckApp {
                 console.log(`🔍 Buscando monocomponente: practiv1=${pactivos}`);
             }
 
-            const results = await this.api.searchMedicamentos(searchParams);
+            // Búsqueda de alternativas — follow-up derivado, no registrar
+            const results = await this.api.searchMedicamentos(searchParams, noTrack);
 
             if (!results.resultados || results.resultados.length === 0) {
                 this.modalBody.innerHTML = `

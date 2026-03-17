@@ -228,9 +228,10 @@ class CimaAPI {
                 }
 
                 // 3. Si aún vacío, fallback a búsqueda por nombre (más flexible)
+                // Marcado como secundario para no duplicar la entrada de analítica
                 if (!results.resultados || results.resultados.length === 0) {
                     console.log('🔄 Fallback: practiv vacío, intentando nombre...');
-                    results = await this.searchMedicamentos({ nombre: trimmed, ...baseFilters });
+                    results = await this.searchMedicamentos({ nombre: trimmed, ...baseFilters }, { headers: { 'X-MC-Autocomplete': '1' } });
                 }
                 break;
         }
@@ -242,16 +243,16 @@ class CimaAPI {
      * Obtener detalles completos de un medicamento por nregistro
      * @param {string} nregistro 
      */
-    async getMedicamento(nregistro) {
-        return this._request(`/medicamento?nregistro=${nregistro}`);
+    async getMedicamento(nregistro, options = {}) {
+        return this._request(`/medicamento?nregistro=${nregistro}`, options);
     }
 
     /**
      * Obtener medicamento por Código Nacional
      * @param {string} cn 
      */
-    async getMedicamentoByCN(cn) {
-        return this._request(`/medicamento?cn=${cn}`);
+    async getMedicamentoByCN(cn, options = {}) {
+        return this._request(`/medicamento?cn=${cn}`, options);
     }
 
     // ============================================
@@ -679,7 +680,7 @@ class CimaAPI {
                     const batch = needsVerification.slice(i, i + batchSize);
                     const batchPromises = batch.map(async (med) => {
                         try {
-                            const fullMed = await this.getMedicamento(med.nregistro);
+                            const fullMed = await this.getMedicamento(med.nregistro, { headers: { 'X-MC-Autocomplete': '1' } });
                             if (fullMed && fullMed.atcs && Array.isArray(fullMed.atcs) && fullMed.atcs.length > 0) {
                                 const matches = fullMed.atcs.some(atc =>
                                     atc.codigo && atc.codigo.toUpperCase().startsWith(upperCode)
