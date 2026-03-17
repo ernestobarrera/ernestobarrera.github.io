@@ -2,7 +2,7 @@
 // Network-first strategy for active development + PWA support
 
 // Auto-versioning: includes date for cache-busting on deploy
-const VERSION = '20260102';
+const VERSION = '20260317';
 const CACHE_NAME = `medcheck-${VERSION}`;
 
 const STATIC_ASSETS = [
@@ -57,8 +57,9 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Skip CIMA API calls - always fresh, never cache
-    if (url.origin.includes('cima.aemps.es') || url.hostname.includes('corsproxy')) {
+    // Skip API calls - always fresh, never cache
+    // Includes CIMA direct, CORS proxy, and our Cloudflare Worker (analytics must reach it)
+    if (url.origin.includes('cima.aemps.es') || url.hostname.includes('corsproxy') || url.hostname.includes('workers.dev')) {
         return;
     }
 
