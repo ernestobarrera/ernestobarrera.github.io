@@ -71,6 +71,7 @@ Alper y Haynes*.pdf
 .agent/
 .github/
 _staged_backup.patch
+PENDING_REVIEW.md
 
 # =====================================================
 # PROTECCIÓN: Archivos temporales, debug y copias
