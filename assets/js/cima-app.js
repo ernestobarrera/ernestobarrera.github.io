@@ -88,6 +88,11 @@ class MedCheckApp {
             'V': { class: 'Varios', icon: 'flask', color: '#94a3b8', tip: '' }
         };
 
+        // Guide state
+        this.GUIDE_SEEN_KEY = 'medcheck_guide_seen';
+        this.guideActive = false;
+        this.guideStep = 0;
+
         this.init();
     }
 
@@ -103,6 +108,7 @@ class MedCheckApp {
         this.setupPatientContext();
         this.setupModal();
         this.setupBookmarkletModal();
+        this.setupGuide();
         this.checkAPIStatus();
         this.updateATCVersion();
         this.updateFavoritesBadge();
@@ -144,6 +150,10 @@ class MedCheckApp {
             document.body.style.overflow = '';
             // Process URL params after legal acceptance
             this.processURLParams();
+            // Launch guide on first visit after legal acceptance
+            if (!this.hasSeenGuide()) {
+                setTimeout(() => this.startGuide(), 600);
+            }
         });
     }
 
@@ -7280,6 +7290,306 @@ class MedCheckApp {
         this.updateFavoritesBadge();
         this.renderProfileView();
         this.showToast('Todos los favoritos eliminados', 'info');
+    }
+
+    // =========================================================
+    //  Interactive Guide / Onboarding Tour
+    // =========================================================
+
+    _guideSteps() {
+        return [
+            {
+                target: null, // centered welcome
+                title: 'Bienvenido a MedCheck',
+                icon: 'fa-pills',
+                body: `
+                    <p>Tu herramienta clínica de medicamentos con <span class="guide-highlight">datos en tiempo real</span> de la AEMPS.</p>
+                    <p>En unos segundos conocerás todo lo que necesitas para sacarle el máximo partido.</p>
+                `,
+            },
+            {
+                target: '.app-nav',
+                title: 'Navegación por secciones',
+                icon: 'fa-compass',
+                body: `
+                    <p>9 módulos especializados a un clic:</p>
+                    <ul class="guide-features">
+                        <li><i class="fas fa-search"></i> Buscar</li>
+                        <li><i class="fas fa-stethoscope"></i> Indicaciones</li>
+                        <li><i class="fas fa-shield-alt"></i> Seguridad</li>
+                        <li><i class="fas fa-random"></i> Interacciones</li>
+                        <li><i class="fas fa-exclamation-triangle"></i> Reacciones</li>
+                        <li><i class="fas fa-exchange-alt"></i> Equivalencias</li>
+                        <li><i class="fas fa-boxes"></i> Suministro</li>
+                        <li><i class="fas fa-bell"></i> Alertas</li>
+                        <li><i class="fas fa-star"></i> Mi Perfil</li>
+                    </ul>
+                `,
+                position: 'bottom',
+            },
+            {
+                target: '#app-content',
+                title: 'Búsqueda inteligente',
+                icon: 'fa-search',
+                body: `
+                    <p>Busca por <span class="guide-highlight">nombre comercial</span>, <span class="guide-highlight">principio activo</span> o <span class="guide-highlight">código nacional</span>.</p>
+                    <p>El autocompletado muestra resultados al instante con código de colores ATC para identificar la categoría terapéutica.</p>
+                `,
+                position: 'bottom',
+            },
+            {
+                target: '.context-toggles',
+                title: 'Contexto del paciente',
+                icon: 'fa-user-injured',
+                body: `
+                    <p>Activa los <span class="guide-highlight">filtros de contexto</span> antes de consultar un medicamento:</p>
+                    <ul class="guide-features">
+                        <li><i class="fas fa-baby"></i> Embarazo</li>
+                        <li><i class="fas fa-baby-carriage"></i> Lactancia</li>
+                        <li><i class="fas fa-user-clock"></i> Edad &gt;65</li>
+                        <li><i class="fas fa-car"></i> Conducción</li>
+                        <li><i class="fas fa-droplet"></i> I. Renal</li>
+                        <li><i class="fas fa-disease"></i> I. Hepática</li>
+                    </ul>
+                    <p>Las alertas de seguridad se adaptan automáticamente al perfil activo.</p>
+                `,
+                position: 'bottom',
+            },
+            {
+                target: '#open-bookmarklet-modal',
+                title: 'Bookmarklet: acceso rápido',
+                icon: 'fa-bookmark',
+                body: `
+                    <p>Instala el <span class="guide-highlight">bookmarklet</span> en tu barra de marcadores para buscar desde <strong>cualquier página web</strong>.</p>
+                    <p>Selecciona un fármaco en tu HCE, pulsa el marcador y MedCheck se abre con la búsqueda pre-cargada en una nueva pestaña.</p>
+                `,
+                position: 'bottom',
+            },
+            {
+                target: null, // centered
+                title: 'Modelo de datos',
+                icon: 'fa-database',
+                body: `
+                    <p>MedCheck consulta la <span class="guide-highlight">API pública de la AEMPS (CIMA)</span> en tiempo real. No almacena base de datos local de medicamentos.</p>
+                    <p>Esto significa que siempre trabajas con <span class="guide-highlight">información actualizada</span>: fichas técnicas, alertas, problemas de suministro y cambios de registro.</p>
+                    <p>Tus <span class="guide-highlight">favoritos y preferencias</span> se guardan solo en tu navegador (localStorage).</p>
+                `,
+            },
+            {
+                target: null, // centered final
+                title: '¡Todo listo!',
+                icon: 'fa-rocket',
+                body: `
+                    <p>Ya conoces las claves de MedCheck. Empieza buscando un medicamento o explora las secciones.</p>
+                    <p>Puedes relanzar esta guía cuando quieras pulsando <span class="guide-key"><i class="fas fa-question" style="font-size:0.7rem"></i></span> en la cabecera.</p>
+                `,
+            },
+        ];
+    }
+
+    setupGuide() {
+        const btn = document.getElementById('start-guide-btn');
+        if (btn) {
+            btn.addEventListener('click', () => this.startGuide());
+        }
+    }
+
+    hasSeenGuide() {
+        try {
+            return localStorage.getItem(this.GUIDE_SEEN_KEY) === 'true';
+        } catch { return false; }
+    }
+
+    _markGuideSeen() {
+        try { localStorage.setItem(this.GUIDE_SEEN_KEY, 'true'); } catch {}
+    }
+
+    startGuide() {
+        if (this.guideActive) return;
+        this.guideActive = true;
+        this.guideStep = 0;
+        this._renderGuideStep();
+        this._guideKeyHandler = (e) => {
+            if (!this.guideActive) return;
+            if (e.key === 'Escape') { this.endGuide(); }
+            else if (e.key === 'ArrowRight' || e.key === 'Enter') { this.nextGuideStep(); }
+            else if (e.key === 'ArrowLeft') { this.prevGuideStep(); }
+        };
+        document.addEventListener('keydown', this._guideKeyHandler);
+    }
+
+    endGuide() {
+        this.guideActive = false;
+        this._markGuideSeen();
+        const overlay = document.getElementById('guide-overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+            setTimeout(() => { overlay.innerHTML = ''; }, 400);
+        }
+        // Remove spotlight class from any element
+        document.querySelectorAll('.guide-spotlight-target').forEach(el => {
+            el.classList.remove('guide-spotlight-target');
+        });
+        if (this._guideKeyHandler) {
+            document.removeEventListener('keydown', this._guideKeyHandler);
+            this._guideKeyHandler = null;
+        }
+    }
+
+    nextGuideStep() {
+        const steps = this._guideSteps();
+        if (this.guideStep < steps.length - 1) {
+            this.guideStep++;
+            this._renderGuideStep();
+        } else {
+            this.endGuide();
+        }
+    }
+
+    prevGuideStep() {
+        if (this.guideStep > 0) {
+            this.guideStep--;
+            this._renderGuideStep();
+        }
+    }
+
+    _renderGuideStep() {
+        const steps = this._guideSteps();
+        const step = steps[this.guideStep];
+        const overlay = document.getElementById('guide-overlay');
+        if (!overlay) return;
+
+        // Remove previous spotlight
+        document.querySelectorAll('.guide-spotlight-target').forEach(el => {
+            el.classList.remove('guide-spotlight-target');
+        });
+
+        const isCentered = !step.target;
+        let targetRect = null;
+
+        if (!isCentered) {
+            const targetEl = document.querySelector(step.target);
+            if (targetEl) {
+                targetRect = targetEl.getBoundingClientRect();
+                targetEl.classList.add('guide-spotlight-target');
+            }
+        }
+
+        // Build progress dots
+        const dots = steps.map((_, i) => {
+            const cls = i === this.guideStep ? 'active' : (i < this.guideStep ? 'visited' : '');
+            return `<span class="guide-dot ${cls}"></span>`;
+        }).join('');
+
+        const isFirst = this.guideStep === 0;
+        const isLast = this.guideStep === steps.length - 1;
+
+        // Build SVG backdrop with spotlight cutout
+        let backdropSVG = '';
+        if (targetRect) {
+            const pad = 8;
+            const rx = targetRect.x - pad;
+            const ry = targetRect.y - pad;
+            const rw = targetRect.width + pad * 2;
+            const rh = targetRect.height + pad * 2;
+            backdropSVG = `
+                <svg class="guide-backdrop" width="100%" height="100%">
+                    <defs>
+                        <mask id="guide-mask">
+                            <rect width="100%" height="100%" fill="white"/>
+                            <rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="12" fill="black"/>
+                        </mask>
+                    </defs>
+                    <rect width="100%" height="100%" fill="rgba(0,0,0,0.65)" mask="url(#guide-mask)"/>
+                    <rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="12"
+                          fill="none" stroke="rgba(14,165,233,0.35)" stroke-width="2"/>
+                </svg>
+            `;
+        } else {
+            backdropSVG = `
+                <svg class="guide-backdrop" width="100%" height="100%">
+                    <rect width="100%" height="100%" fill="rgba(0,0,0,0.7)"/>
+                </svg>
+            `;
+        }
+
+        overlay.innerHTML = `
+            ${backdropSVG}
+            <div class="guide-card ${isCentered ? 'centered' : ''}" id="guide-card">
+                <div class="guide-header">
+                    <div class="guide-step-label">
+                        <i class="fas ${step.icon}"></i>
+                        ${this.guideStep + 1} / ${steps.length}
+                    </div>
+                    <h3 class="guide-title">${step.title}</h3>
+                </div>
+                <div class="guide-body">${step.body}</div>
+                <div class="guide-footer">
+                    <div class="guide-progress">${dots}</div>
+                    <div class="guide-actions">
+                        ${!isLast ? `<button class="guide-btn guide-btn-skip" id="guide-skip">Saltar</button>` : ''}
+                        ${!isFirst ? `<button class="guide-btn guide-btn-ghost" id="guide-prev"><i class="fas fa-arrow-left"></i></button>` : ''}
+                        <button class="guide-btn guide-btn-primary" id="guide-next">
+                            ${isLast ? 'Empezar' : 'Siguiente'} ${!isLast ? '<i class="fas fa-arrow-right"></i>' : '<i class="fas fa-check"></i>'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Position the card relative to target
+        const card = document.getElementById('guide-card');
+        if (card && targetRect && !isCentered) {
+            requestAnimationFrame(() => {
+                const cardRect = card.getBoundingClientRect();
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+
+                let top, left;
+                const gap = 16;
+
+                // Prefer positioning below the target
+                if (step.position === 'bottom' || !step.position) {
+                    top = targetRect.bottom + gap;
+                    left = targetRect.left + (targetRect.width / 2) - (cardRect.width / 2);
+                } else {
+                    top = targetRect.top - cardRect.height - gap;
+                    left = targetRect.left + (targetRect.width / 2) - (cardRect.width / 2);
+                }
+
+                // Clamp to viewport
+                left = Math.max(12, Math.min(left, vw - cardRect.width - 12));
+                top = Math.max(12, Math.min(top, vh - cardRect.height - 12));
+
+                // If below overflows, try above
+                if (top + cardRect.height > vh - 12) {
+                    top = targetRect.top - cardRect.height - gap;
+                    top = Math.max(12, top);
+                }
+
+                card.style.left = `${left}px`;
+                card.style.top = `${top}px`;
+
+                // Animate in
+                requestAnimationFrame(() => card.classList.add('visible'));
+            });
+        } else if (card && isCentered) {
+            requestAnimationFrame(() => card.classList.add('visible'));
+        }
+
+        // Activate overlay
+        overlay.classList.add('active');
+
+        // Wire up buttons
+        document.getElementById('guide-next')?.addEventListener('click', () => this.nextGuideStep());
+        document.getElementById('guide-prev')?.addEventListener('click', () => this.prevGuideStep());
+        document.getElementById('guide-skip')?.addEventListener('click', () => this.endGuide());
+
+        // Click on backdrop (SVG) closes guide
+        overlay.querySelector('.guide-backdrop')?.addEventListener('click', (e) => {
+            if (e.target.closest('.guide-card')) return;
+            this.endGuide();
+        });
     }
 }
 
