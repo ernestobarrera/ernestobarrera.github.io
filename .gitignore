@@ -49,11 +49,41 @@ $RECYCLE.BIN/
 # Archivos personales de desarrollo, no publicar
 documentos/
 
-# Nomenclátor AEMPS (archivos grandes, no subir)
-docs/cima/prescripcion.zip
-docs/cima/prescripcion/
-docs/cima/Presentaciones.xls
-docs/cima/Presentaciones.xls.csv
-docs/cima/*.txt
-docs/cima/MEDCHECK-CHECKPOINT.md
+# Nomenclátor AEMPS y datos pesados (no subir)
+docs/medcheck/data/
 
+# =====================================================
+# PROTECCIÓN: Documentos privados, PDFs con copyright
+# =====================================================
+docs/reunion/
+docs/RCP/references/*.pdf
+docs/Razonamiento_clinico/*.docx
+docs/Razonamiento_clinico/*.docx.txt
+docs/lajmi-et-al-2026-*.pdf
+docs/medcheck/api/*.pdf
+docs/medcheck/api/*.txt
+docs/medcheck/api/desc_Tecnica_Nomenclator.pdf
+Alper y Haynes*.pdf
+
+# =====================================================
+# PROTECCIÓN: Agente local y configs de desarrollo
+# =====================================================
+.agent/
+.github/
+_staged_backup.patch
+
+# =====================================================
+# PROTECCIÓN: Archivos temporales, debug y copias
+# =====================================================
+tatus -sb
+temp_*.json
+temp_*.html
+calendar-debug.js
+build_v2*.js
+fix_v*.js
+test-dosis*.js
+*copy.html
+*copy.js
+* old.html
+*_old.html
+criteria_data.json
