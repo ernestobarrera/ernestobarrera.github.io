@@ -1,0 +1,1314 @@
+<!--
+=====================
+  fwce.html
+  FWC-E: Feeling Word Checklist - versión España
+  Autoevaluación emocional del profesional sanitario
+=====================
+-->
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FWC-E | Autoevaluación emocional del profesional</title>
+  <link rel="icon" href="/assets/images/icon.webp" />
+  <link rel="stylesheet" href="/assets/css/main.css" />
+  <link rel="stylesheet" href="/assets/css/header.css" />
+  <link rel="stylesheet" href="/assets/css/footer.css" />
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="FWC-E | Autoevaluación emocional del profesional sanitario" />
+  <meta property="og:description"
+    content="Herramienta de autorreflexión profesional basada en el Feeling Word Checklist — versión España (Berasain, 2019). Un acto de responsabilidad y cuidado por parte del clínico." />
+  <meta property="og:url" content="https://ernestobarrera.github.io/fwce.html" />
+  <meta property="og:image" content="https://ernestobarrera.github.io/assets/images/me.png" />
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-YFKR6RB1ZC"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-YFKR6RB1ZC');
+  </script>
+
+  <style>
+    /* =============================================
+       FWC-E — Estilos específicos
+       ============================================= */
+
+    .fwce-container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 1rem 2rem;
+    }
+
+    /* --- Badge profesional --- */
+    .pro-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(59, 130, 246, 0.12);
+      color: #93c5fd;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.7rem;
+      border-radius: 20px;
+      letter-spacing: 0.3px;
+      margin-bottom: 0.75rem;
+    }
+
+    .pro-badge i { font-size: 0.7rem; }
+
+    /* --- Hero --- */
+    .fwce-hero {
+      margin-bottom: 1.5rem;
+    }
+
+    .fwce-hero .main-title {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .fwce-hero .main-title i {
+      color: var(--accent-color);
+    }
+
+    .fwce-hero .subtitle {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    /* --- Sección "Para qué sirve" desplegable --- */
+    .context-toggles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .context-toggle {
+      background: none;
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      color: var(--accent-color);
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+
+    .context-toggle:hover,
+    .context-toggle.active {
+      background: rgba(251, 191, 36, 0.1);
+      border-color: var(--accent-color);
+    }
+
+    .context-panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.3s ease;
+      opacity: 0;
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 0 1.25rem;
+      margin-top: 0;
+      font-size: 0.88rem;
+      line-height: 1.7;
+      color: var(--text-secondary);
+    }
+
+    .context-panel.open {
+      max-height: 2000px;
+      opacity: 1;
+      padding: 1.25rem;
+      margin-top: 0.75rem;
+    }
+
+    .context-panel h4 {
+      color: var(--accent-color);
+      margin: 1rem 0 0.5rem;
+      font-size: 1rem;
+    }
+
+    .context-panel h4:first-child {
+      margin-top: 0;
+    }
+
+    .context-panel p {
+      margin-bottom: 0.6rem;
+    }
+
+    .context-panel ul {
+      padding-left: 1.2rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .context-panel li {
+      margin-bottom: 0.3rem;
+    }
+
+    .context-panel .ref-note {
+      font-size: 0.78rem;
+      color: rgba(203, 213, 225, 0.6);
+      margin-top: 0.15rem;
+    }
+
+    .context-panel .references-list {
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .context-panel .references-list h4 {
+      margin-bottom: 0.4rem;
+    }
+
+    .context-panel .references-list ol {
+      padding-left: 1.4rem;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: rgba(203, 213, 225, 0.7);
+    }
+
+    .context-panel .references-list li {
+      margin-bottom: 0.25rem;
+    }
+
+    /* --- Instrucciones --- */
+    .fwce-instructions {
+      background: rgba(59, 130, 246, 0.08);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+      line-height: 1.6;
+      border-left: 3px solid var(--accent-color);
+    }
+
+    .fwce-instructions strong {
+      color: var(--text-primary);
+    }
+
+    /* --- Barra de progreso --- */
+    .progress-section {
+      margin-bottom: 1.25rem;
+      position: sticky;
+      top: var(--header-height);
+      z-index: 50;
+      background: var(--secondary-bg);
+      padding: 0.6rem 0;
+    }
+
+    .progress-bar-track {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-color), #f59e0b);
+      border-radius: 3px;
+      transition: width 0.35s ease;
+    }
+
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      margin-top: 0.3rem;
+    }
+
+    .progress-text .count {
+      color: var(--accent-color);
+      font-weight: 600;
+    }
+
+    /* --- Cuestionario --- */
+    .fwce-form {
+      margin-bottom: 1.5rem;
+    }
+
+    .fwce-item {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      transition: all 0.25s ease;
+      border-left: 3px solid transparent;
+    }
+
+    .fwce-item:hover {
+      background: rgba(30, 41, 59, 0.85);
+    }
+
+    .fwce-item.answered {
+      border-left-color: var(--accent-color);
+      opacity: 0.85;
+    }
+
+    .fwce-item.answered:hover {
+      opacity: 1;
+    }
+
+    .item-number {
+      color: var(--accent-color);
+      font-weight: 700;
+      font-size: 0.82rem;
+      min-width: 1.6rem;
+      text-align: center;
+    }
+
+    .item-label {
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-weight: 500;
+      min-width: 115px;
+      flex-shrink: 0;
+    }
+
+    .item-options {
+      display: flex;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
+    .item-options label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+      cursor: pointer;
+      padding: 0.3rem 0.45rem;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      min-width: 56px;
+    }
+
+    .item-options label:hover {
+      background: rgba(251, 191, 36, 0.06);
+      border-color: rgba(251, 191, 36, 0.15);
+    }
+
+    .item-options input[type="radio"] {
+      accent-color: var(--accent-color);
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+    }
+
+    .item-options input[type="radio"]:checked + .option-text {
+      color: var(--accent-color);
+      font-weight: 600;
+    }
+
+    .option-text {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      text-align: center;
+      line-height: 1.15;
+    }
+
+    /* --- Acciones --- */
+    .fwce-actions {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .btn-calculate {
+      background: var(--accent-color);
+      color: var(--primary-bg);
+      border: none;
+      padding: 0.75rem 2.5rem;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-calculate:hover:not(:disabled) {
+      background: #e6ac00;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(251, 191, 36, 0.3);
+    }
+
+    .btn-calculate:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-reset {
+      background: none;
+      border: 1px solid rgba(203, 213, 225, 0.3);
+      color: var(--text-secondary);
+      padding: 0.5rem 1.5rem;
+      font-size: 0.9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: 0.75rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-reset:hover {
+      border-color: var(--text-primary);
+      color: var(--text-primary);
+    }
+
+    .items-pending {
+      color: var(--text-secondary);
+      font-size: 0.82rem;
+      margin-top: 0.6rem;
+    }
+
+    /* --- Resultados --- */
+    .fwce-results {
+      display: none;
+      animation: fadeUp 0.5s ease;
+    }
+
+    .fwce-results.visible {
+      display: block;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .results-header {
+      color: var(--accent-color);
+      font-size: 1.3rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--accent-color);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* --- Tarjetas de factores --- */
+    .factor-cards {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.6rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .factor-card {
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 1rem 0.75rem;
+      text-align: center;
+      border-top: 3px solid transparent;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .factor-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .factor-card.dominant {
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
+    }
+
+    .factor-icon {
+      font-size: 1.4rem;
+      margin-bottom: 0.4rem;
+      opacity: 0.9;
+    }
+
+    .factor-name {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.3rem;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      font-weight: 600;
+    }
+
+    .factor-score {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .factor-max {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .factor-bar {
+      height: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .factor-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .dominant-badge {
+      position: absolute;
+      top: -8px;
+      right: -6px;
+      background: var(--accent-color);
+      color: var(--primary-bg);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* --- Gráfico radar --- */
+    .chart-container {
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .chart-container canvas {
+      max-height: 360px;
+    }
+
+    /* --- Interpretación --- */
+    .interpretation-card {
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 1.25rem 1.25rem 1.25rem 1.5rem;
+      margin-bottom: 0.75rem;
+      border-left: 4px solid var(--accent-color);
+      transition: all 0.2s ease;
+    }
+
+    .interpretation-card:hover {
+      background: rgba(30, 41, 59, 0.9);
+    }
+
+    .interpretation-card h4 {
+      color: var(--accent-color);
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .interpretation-card p,
+    .interpretation-card li {
+      color: var(--text-secondary);
+      font-size: 0.88rem;
+      line-height: 1.65;
+    }
+
+    .interpretation-card ul {
+      padding-left: 1.2rem;
+      margin-top: 0.4rem;
+    }
+
+    .interpretation-card li {
+      margin-bottom: 0.3rem;
+    }
+
+    .intensity-badge {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 0.3rem;
+    }
+
+    .intensity-baja    { background: rgba(34,197,94,0.15);  color: #86efac; }
+    .intensity-moderada { background: rgba(251,191,36,0.15); color: #fcd34d; }
+    .intensity-alta     { background: rgba(249,115,22,0.15); color: #fdba74; }
+    .intensity-muy-alta { background: rgba(239,68,68,0.15);  color: #fca5a5; }
+
+    /* --- Créditos y referencias --- */
+    .fwce-credits {
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-top: 1.5rem;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    .fwce-credits strong {
+      color: var(--text-primary);
+    }
+
+    .fwce-credits a {
+      color: var(--accent-color);
+      text-decoration: none;
+    }
+
+    .fwce-credits a:hover {
+      text-decoration: underline;
+    }
+
+    .disclaimer-box {
+      background: rgba(59, 130, 246, 0.08);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin-top: 0.75rem;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 900px) {
+      .factor-cards {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .fwce-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+        padding: 0.75rem;
+      }
+
+      .item-options {
+        justify-content: space-between;
+        width: 100%;
+      }
+
+      .item-options label {
+        flex: 1;
+        min-width: 52px;
+      }
+
+      .factor-cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .progress-section {
+        padding: 0.5rem 0;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .factor-cards {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .item-options label {
+        min-width: 46px;
+        padding: 0.25rem;
+      }
+
+      .option-text {
+        font-size: 0.63rem;
+      }
+
+      .context-toggles {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <script src="./assets/js/include.js"></script>
+  <include src="header.html"></include>
+
+  <main class="main-container">
+    <div class="fwce-container">
+
+      <!-- Badge profesional -->
+      <div class="pro-badge">
+        <i class="fas fa-user-md"></i> Herramienta de autorreflexión para profesionales sanitarios
+      </div>
+
+      <!-- Hero -->
+      <section class="fwce-hero">
+        <h1 class="main-title">
+          <i class="fas fa-brain"></i> FWC-E
+        </h1>
+        <p class="subtitle">
+          <strong>Feeling Word Checklist — versión España.</strong>
+          Cuestionario validado de 19 ítems que permite al profesional sanitario explorar
+          sus propias reacciones emocionales tras la consulta. Reconocer estos sentimientos
+          es un acto de responsabilidad y cuidado que protege la calidad de la relación
+          asistencial y el bienestar de ambas partes.
+        </p>
+
+        <!-- Botones de contexto -->
+        <div class="context-toggles">
+          <button class="context-toggle" onclick="togglePanel('contextPanel', this)">
+            <i class="fas fa-heart-pulse"></i> ¿Por qué es importante?
+          </button>
+          <button class="context-toggle" onclick="togglePanel('instrumentPanel', this)">
+            <i class="fas fa-microscope"></i> Base científica
+          </button>
+          <button class="context-toggle" onclick="togglePanel('factorsPanel', this)">
+            <i class="fas fa-layer-group"></i> Las 5 dimensiones
+          </button>
+        </div>
+
+        <!-- Panel 1: Contexto clínico -->
+        <div id="contextPanel" class="context-panel">
+          <h4>La relación asistencial y la emoción del profesional</h4>
+          <p>
+            La relación que se establece entre una persona que busca ayuda y un profesional de la salud
+            es el pilar fundamental de cualquier proceso de recuperación. En este encuentro clínico,
+            el médico o terapeuta no es un observador completamente neutral, sino un ser humano que
+            interactúa y, como tal, experimenta reacciones emocionales y cognitivas —tanto conscientes
+            como inconscientes— desde el primer momento. A este conjunto de respuestas naturales se le
+            denomina <strong>contratransferencia</strong>, un concepto que abarca desde las tensiones
+            internas del propio profesional hasta sus manifestaciones y efectos en la relación
+            asistencial <span class="ref-note">(Hayes, 2006)</span>.
+          </p>
+
+          <h4>Una fuente de información, no un obstáculo</h4>
+          <p>
+            Históricamente, las emociones del profesional se consideraban un obstáculo que debía
+            eliminarse. Sin embargo, la ciencia clínica moderna ha transformado esta visión
+            radicalmente: hoy, todos los sentimientos del clínico se reconocen como una valiosa
+            fuente de información sobre la dinámica de la relación asistencial.
+          </p>
+          <p>
+            El encuentro con el sufrimiento humano y la complejidad de ciertas situaciones clínicas
+            pueden evocar en el profesional desde un profundo deseo de protección hasta sensaciones
+            de sobrecarga o impotencia. <strong>Reconocer y analizar estas emociones permite al
+            profesional comprender mejor lo que sucede en la consulta</strong>. Además, cuando es
+            consciente de su propio estado emocional, evita que sus tensiones, fatigas o frustraciones
+            interfieran negativamente, protegiendo así la alianza terapéutica y garantizando una
+            asistencia lo más objetiva, segura y empática posible.
+          </p>
+        </div>
+
+        <!-- Panel 2: Base científica -->
+        <div id="instrumentPanel" class="context-panel">
+          <h4>El instrumento: Feeling Word Checklist</h4>
+          <p>
+            Para medir, reflexionar y dar sentido a estas reacciones emocionales de manera
+            estructurada, se han desarrollado instrumentos específicos como el <em>Feeling Word
+            Checklist</em> (FWC), creado originalmente por Whyte, Constantopoulos y Bevans en 1982.
+            A lo largo de los años, la herramienta evolucionó para ser más precisa: en 2003,
+            Røssberg y colaboradores implementaron un sistema de puntuación gradual
+            (escala Likert de 0 a 4) que permite al profesional valorar la intensidad exacta
+            de cada emoción. Posteriormente, se consolidó en versiones clínicas breves y fiables
+            gracias a las validaciones de Ulberg et al. (2013) y Lindqvist et al. (2016).
+          </p>
+          <p>
+            La versión que utiliza esta herramienta es el <strong>FWC-E</strong> (Feeling Word
+            Checklist — versión para España), fruto del riguroso trabajo de traducción, adaptación
+            cultural y validación estadística realizado por Berasain (2019) en su Trabajo Fin de
+            Máster en la Universidad Pública de Navarra. Tras pruebas exhaustivas en consultas
+            de Atención Primaria y Salud Mental, la escala quedó consolidada en 19 sentimientos
+            que el profesional evalúa en sí mismo tras una consulta.
+          </p>
+
+          <div class="references-list">
+            <h4>Referencias</h4>
+            <ol>
+              <li>Hayes JA. Toward more (and better) countertransference research. <em>Psychotherapy</em>. 2006;43(1):16-31.</li>
+              <li>Whyte C, Constantopoulos C, Bevans H. Types of countertransference reactions identified by Q-analysis. <em>Br J Med Psychol</em>. 1982;2:187-201.</li>
+              <li>Røssberg JI, Hoffart A, Friis S. Psychiatric staff members' emotional reactions toward patients. A psychometric evaluation of an extended version of the Feeling Word Checklist (FWC-58). <em>Nord J Psychiatry</em>. 2003;57(1):45-53.</li>
+              <li>Ulberg R, Falkenberg AA, Nærdal TB, et al. Countertransference feelings when treating teenagers: a psychometric evaluation of the FWC-24. <em>Am J Psychother</em>. 2013;67(4):347-58.</li>
+              <li>Lindqvist K, Falkenström F, Sandell R, et al. Multilevel Exploratory Factor Analysis of the Feeling Word Checklist-24. <em>Assessment</em>. 2016.</li>
+              <li>Berasain Erro I. Traducción, adaptación cultural y validación al español de la escala "Feeling Word Checklist – 24" [Trabajo Fin de Máster]. Pamplona: Universidad Pública de Navarra; 2019.</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Panel 3: Dimensiones -->
+        <div id="factorsPanel" class="context-panel">
+          <h4>Las cinco dimensiones del FWC-E</h4>
+          <p>
+            El FWC-E agrupa los sentimientos del profesional en cinco factores o dimensiones
+            principales (Berasain, 2019). Es importante entender que estas dimensiones
+            <strong>no juzgan ni evalúan a la persona atendida</strong>, sino que categorizan
+            el estado interior del profesional ante el reto de ayudar:
+          </p>
+          <ul>
+            <li><strong>Involucrado:</strong> Agrupa sentimientos de satisfacción, felicidad y
+              sensación de utilidad cuando el profesional se percibe en una posición de ayuda
+              segura y eficaz.</li>
+            <li><strong>Parental:</strong> Refleja emociones de calidez, afecto y receptividad,
+              marcando un deseo genuino de acoger, cuidar y proteger a la persona atendida.</li>
+            <li><strong>Abrumado:</strong> Representa sensaciones de vulnerabilidad o impotencia
+              que surgen en el profesional al sentir que los recursos se quedan cortos ante la
+              dificultad clínica o el sufrimiento del otro.</li>
+            <li><strong>Desinteresado:</strong> Mide los momentos humanos de desconexión, fatiga
+              mental o aburrimiento temporal del clínico derivados de la sobrecarga en la
+              consulta.</li>
+            <li><strong>Rechazante:</strong> Incluye reacciones de tensión, nerviosismo o malestar
+              que el profesional puede experimentar ante situaciones que le generan sensación de
+              pérdida de control o inadecuación.</li>
+          </ul>
+          <p>
+            Al hacer conscientes estos sentimientos, el profesional asume la responsabilidad del
+            impacto emocional que conlleva el cuidado de la salud, fomentando una práctica clínica
+            basada en el autoconocimiento, la humildad y el respeto absoluto hacia la dignidad
+            y el bienestar de las personas atendidas.
+          </p>
+        </div>
+      </section>
+
+      <!-- Instrucciones -->
+      <div class="fwce-instructions">
+        <strong>Instrucciones:</strong> Tras una consulta reciente, valore cada una de las
+        siguientes emociones según la intensidad con la que las ha experimentado usted
+        durante la atención. No existen respuestas correctas ni incorrectas: se trata de un
+        ejercicio de autoobservación honesta.
+      </div>
+
+      <!-- Barra de progreso -->
+      <div class="progress-section" id="progressSection" role="progressbar"
+           aria-valuenow="0" aria-valuemin="0" aria-valuemax="19"
+           aria-label="Progreso del cuestionario">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+        <div class="progress-text">
+          <span><span class="count" id="progressCount">0</span> de 19 ítems</span>
+          <span id="progressPct">0%</span>
+        </div>
+      </div>
+
+      <!-- Cuestionario -->
+      <form id="fwceForm" class="fwce-form" onsubmit="return false">
+        <!-- Los ítems se generan por JavaScript -->
+      </form>
+
+      <!-- Acciones -->
+      <div class="fwce-actions">
+        <button type="button" class="btn-calculate" id="btnCalculate" onclick="calculate()" disabled>
+          Obtener perfil emocional
+        </button>
+        <button type="button" class="btn-reset" onclick="resetForm()">
+          <i class="fas fa-redo"></i> Reiniciar
+        </button>
+        <div class="items-pending" id="pendingMsg">Complete los 19 ítems para obtener su perfil</div>
+      </div>
+
+      <!-- Resultados -->
+      <section id="results" class="fwce-results">
+        <h2 class="results-header">
+          <i class="fas fa-chart-pie"></i> Su perfil emocional
+        </h2>
+
+        <!-- Tarjetas de factores -->
+        <div class="factor-cards" id="factorCards"></div>
+
+        <!-- Radar chart -->
+        <div class="chart-container">
+          <canvas id="radarChart"></canvas>
+        </div>
+
+        <!-- Interpretación -->
+        <div id="interpretation"></div>
+
+        <!-- Créditos -->
+        <div class="fwce-credits">
+          <strong>Instrumento:</strong> Feeling Word Checklist — versión España (FWC-E)<br>
+          <strong>Adaptación y validación:</strong> Berasain Erro, I. (2019).
+          <em>Traducción, adaptación cultural y validación al español de la escala
+          "Feeling Word Checklist – 24".</em> TFM, Universidad Pública de Navarra.<br>
+          <strong>Instrumento original:</strong> Whyte, C.R., Constantopoulos, C., &amp; Bevans, H.G. (1982).
+          Types of countertransference identified by Q-analysis.
+          <em>British Journal of Medical Psychology</em>, 55, 187–201.<br>
+          <strong>Implementación digital:</strong>
+          <a href="https://twitter.com/ernestob" target="_blank" rel="noopener">@ernestob</a>
+
+          <div class="disclaimer-box">
+            Esta herramienta tiene fines exclusivamente formativos y de autorreflexión profesional.
+            No sustituye la supervisión clínica. Los datos no se almacenan ni se transmiten:
+            todo el procesamiento ocurre localmente en su navegador.
+            Los pesos de corrección proceden de la Tabla 7 del TFM de Berasain (2019).
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <include src="footer.html"></include>
+
+  <script>
+    // =============================================
+    //  FWC-E — Datos del instrumento (Tabla 7, Berasain 2019)
+    // =============================================
+
+    const LIKERT_LABELS = ['Nada', 'Un poco', 'Moderada\u00admente', 'Bastante', 'Muy/mucho'];
+
+    const ITEMS = [
+      // Factor 1: Rechazante (índice 0)
+      { id: 'hostil',      label: 'Hostil',       factor: 0, weights: [0, 0.501, 1.003, 1.504, 2.005] },
+      { id: 'nervioso',    label: 'Nervioso/a',   factor: 0, weights: [0, 0.464, 0.929, 1.393, 1.857] },
+      { id: 'tenso',       label: 'Tenso/a',      factor: 0, weights: [0, 0.434, 0.869, 1.303, 1.738] },
+      { id: 'paralizado',  label: 'Paralizado/a', factor: 0, weights: [0, 0.425, 0.849, 1.274, 1.699] },
+      { id: 'agobiado',    label: 'Agobiado/a',   factor: 0, weights: [0, 0.365, 0.731, 1.096, 1.462] },
+      { id: 'cauteloso',   label: 'Cauteloso/a',  factor: 0, weights: [0, 0.310, 0.620, 0.929, 1.239] },
+      // Factor 2: Involucrado (índice 1)
+      { id: 'feliz',       label: 'Feliz',        factor: 1, weights: [0, 0.592, 1.183, 1.775, 2.367] },
+      { id: 'satisfecho',  label: 'Satisfecho/a', factor: 1, weights: [0, 0.550, 1.100, 1.651, 2.201] },
+      { id: 'libre',       label: 'Libre',        factor: 1, weights: [0, 0.485, 0.970, 1.454, 1.939] },
+      { id: 'activo',      label: 'Activo/a',     factor: 1, weights: [0, 0.439, 0.878, 1.318, 1.757] },
+      { id: 'ilusionado',  label: 'Ilusionado/a', factor: 1, weights: [0, 0.434, 0.868, 1.303, 1.737] },
+      // Factor 3: Abrumado (índice 2)
+      { id: 'vulnerable',  label: 'Vulnerable',   factor: 2, weights: [0, 0.884, 1.768, 2.653, 3.537] },
+      { id: 'avergonzado', label: 'Avergonzado/a',factor: 2, weights: [0, 0.844, 1.688, 2.531, 3.375] },
+      { id: 'impotente',   label: 'Impotente',    factor: 2, weights: [0, 0.772, 1.544, 2.316, 3.088] },
+      // Factor 4: Parental (índice 3)
+      { id: 'conmovido',   label: 'Conmovido/a',  factor: 3, weights: [0, 0.925, 1.850, 2.775, 3.699] },
+      { id: 'afectuoso',   label: 'Afectuoso/a',  factor: 3, weights: [0, 0.880, 1.761, 2.641, 3.522] },
+      { id: 'receptivo',   label: 'Receptivo/a',  factor: 3, weights: [0, 0.695, 1.389, 2.084, 2.779] },
+      // Factor 5: Desinteresado (índice 4)
+      { id: 'indiferente', label: 'Indiferente',  factor: 4, weights: [0, 1.589, 3.179, 4.768, 6.357] },
+      { id: 'aburrido',    label: 'Aburrido/a',   factor: 4, weights: [0, 0.911, 1.821, 2.732, 3.643] }
+    ];
+
+    const FACTORS = [
+      {
+        name: 'Rechazante',
+        icon: '<i class="fas fa-shield-halved"></i>',
+        color: '#f87171',
+        description: 'Reacciones de tensión, nerviosismo o malestar que surgen cuando el profesional siente pérdida de control o inadecuación ante una situación clínica compleja.',
+        clinicalHint: 'Este tipo de respuesta emocional es frecuente y humana. Explorar qué aspectos concretos de la situación generan esta tensión puede ayudar a diferenciar entre una reacción transitoria y un patrón que requiere supervisión.',
+        selfCare: 'Considere técnicas de regulación emocional entre consultas (respiración consciente, breve pausa reflexiva). Si el malestar es persistente, un espacio de supervisión o grupo Balint puede ser muy útil.'
+      },
+      {
+        name: 'Involucrado',
+        icon: '<i class="fas fa-handshake"></i>',
+        color: '#4ade80',
+        description: 'Sentimientos de satisfacción, conexión y utilidad: el profesional se percibe en una posición de ayuda segura y eficaz.',
+        clinicalHint: 'Un nivel moderado-alto refleja una buena alianza asistencial. Puntuaciones muy elevadas invitan a reflexionar sobre los límites del rol profesional, no como defecto, sino como ejercicio de autocuidado.',
+        selfCare: 'Mantenga la satisfacción como motor, pero protéjala: el exceso de implicación emocional puede derivar en agotamiento si no se cuidan los límites.'
+      },
+      {
+        name: 'Abrumado',
+        icon: '<i class="fas fa-water"></i>',
+        color: '#c084fc',
+        description: 'Sensaciones de vulnerabilidad o impotencia que surgen cuando el profesional percibe que los recursos se quedan cortos ante la dificultad clínica o el sufrimiento que presencia.',
+        clinicalHint: 'Sentirse abrumado es una señal de compromiso con el caso, no de debilidad. Indica que la situación ha traspasado las defensas habituales y merece atención: buscar apoyo entre pares es un acto de fortaleza profesional.',
+        selfCare: 'Priorice espacios de descarga emocional: supervisión formal, conversación con un compañero de confianza, o actividades restauradoras fuera del entorno clínico.'
+      },
+      {
+        name: 'Parental',
+        icon: '<i class="fas fa-hand-holding-heart"></i>',
+        color: '#60a5fa',
+        description: 'Emociones de calidez, afecto y receptividad: un deseo genuino de acoger, cuidar y proteger a la persona atendida.',
+        clinicalHint: 'Refleja una disposición empática profunda, especialmente frecuente en atención a personas vulnerables. Cuando es muy intensa, conviene reflexionar sobre si se está facilitando la autonomía o asumiendo una responsabilidad que corresponde al otro.',
+        selfCare: 'Canalice este afecto de forma que fortalezca la relación asistencial sin generar dependencia ni desgaste propio.'
+      },
+      {
+        name: 'Desinteresado',
+        icon: '<i class="fas fa-moon"></i>',
+        color: '#fb923c',
+        description: 'Momentos humanos de desconexión, fatiga mental o distancia emocional temporal derivados de la sobrecarga en la consulta.',
+        clinicalHint: 'Es importante diferenciar si esta emoción es selectiva (asociada a una situación concreta) o generalizada (presente con frecuencia). En el segundo caso, puede ser una señal temprana de fatiga profesional que merece atención prioritaria.',
+        selfCare: 'Si reconoce un patrón de desconexión frecuente, valore su carga asistencial y sus recursos de recuperación. Un profesional que se cuida atiende mejor.'
+      }
+    ];
+
+    // =============================================
+    //  Renderizado del formulario
+    // =============================================
+
+    // Orden mezclado para reducir sesgo de agrupación por factor
+    const DISPLAY_ORDER = [0, 6, 11, 14, 17, 1, 7, 12, 15, 18, 2, 8, 13, 16, 3, 9, 4, 10, 5];
+
+    function renderForm() {
+      const form = document.getElementById('fwceForm');
+      let html = '';
+
+      DISPLAY_ORDER.forEach((idx, displayNum) => {
+        const item = ITEMS[idx];
+        html += `
+          <div class="fwce-item" id="item-${item.id}" data-item-id="${item.id}">
+            <span class="item-number">${displayNum + 1}</span>
+            <span class="item-label">${item.label}</span>
+            <div class="item-options">
+              ${LIKERT_LABELS.map((lbl, v) => `
+                <label>
+                  <input type="radio" name="${item.id}" value="${v}"
+                         onchange="onItemChange('${item.id}')">
+                  <span class="option-text">${lbl}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>`;
+      });
+
+      form.innerHTML = html;
+    }
+
+    function onItemChange(itemId) {
+      // Marcar ítem como respondido
+      const itemEl = document.querySelector(`[data-item-id="${itemId}"]`);
+      if (itemEl) itemEl.classList.add('answered');
+
+      // Actualizar progreso
+      const answered = document.querySelectorAll('.fwce-item.answered').length;
+      const remaining = 19 - answered;
+      const pct = Math.round((answered / 19) * 100);
+
+      // Barra de progreso
+      const progressSection = document.getElementById('progressSection');
+      progressSection.setAttribute('aria-valuenow', answered);
+      document.getElementById('progressBar').style.width = pct + '%';
+      document.getElementById('progressCount').textContent = answered;
+      document.getElementById('progressPct').textContent = pct + '%';
+
+      // Botón y mensaje
+      const btn = document.getElementById('btnCalculate');
+      const msg = document.getElementById('pendingMsg');
+
+      if (remaining === 0) {
+        btn.disabled = false;
+        msg.innerHTML = '<i class="fas fa-check-circle" style="color:#4ade80"></i> Todos los ítems completados';
+        msg.style.color = '#4ade80';
+      } else {
+        btn.disabled = true;
+        msg.innerHTML = `${remaining} ítem${remaining > 1 ? 'es' : ''} restante${remaining > 1 ? 's' : ''}`;
+        msg.style.color = '';
+      }
+    }
+
+    // =============================================
+    //  Cálculo de puntuaciones
+    // =============================================
+
+    function calculate() {
+      const scores = [0, 0, 0, 0, 0];
+
+      ITEMS.forEach(item => {
+        const selected = document.querySelector(`input[name="${item.id}"]:checked`);
+        if (!selected) return;
+        scores[item.factor] += item.weights[parseInt(selected.value)];
+      });
+
+      const rounded = scores.map(s => Math.round(s * 100) / 100);
+      displayResults(rounded);
+
+      setTimeout(() => {
+        document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    }
+
+    // =============================================
+    //  Visualización de resultados
+    // =============================================
+
+    let radarChartInstance = null;
+
+    function displayResults(scores) {
+      const resultsEl = document.getElementById('results');
+      resultsEl.classList.remove('visible');
+      // Forzar reflow para re-trigger animación
+      void resultsEl.offsetWidth;
+      resultsEl.classList.add('visible');
+
+      const maxScore = Math.max(...scores);
+      const dominantIdx = scores.indexOf(maxScore);
+
+      // Tarjetas de factores
+      const cardsEl = document.getElementById('factorCards');
+      cardsEl.innerHTML = scores.map((score, i) => {
+        const pct = (score / 10) * 100;
+        const isDominant = i === dominantIdx && maxScore > 0;
+        return `
+          <div class="factor-card${isDominant ? ' dominant' : ''}"
+               style="border-top-color: ${FACTORS[i].color}">
+            ${isDominant ? '<span class="dominant-badge">principal</span>' : ''}
+            <div class="factor-icon" style="color: ${FACTORS[i].color}">${FACTORS[i].icon}</div>
+            <div class="factor-name">${FACTORS[i].name}</div>
+            <div class="factor-score">${score.toFixed(1)}</div>
+            <div class="factor-max">/ 10</div>
+            <div class="factor-bar">
+              <div class="factor-bar-fill" style="width:${pct}%; background:${FACTORS[i].color}"></div>
+            </div>
+          </div>`;
+      }).join('');
+
+      renderRadar(scores);
+      renderInterpretation(scores, dominantIdx);
+    }
+
+    function renderRadar(scores) {
+      const ctx = document.getElementById('radarChart').getContext('2d');
+
+      if (radarChartInstance) radarChartInstance.destroy();
+
+      radarChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: FACTORS.map(f => f.name),
+          datasets: [{
+            label: 'Puntuación',
+            data: scores,
+            backgroundColor: 'rgba(251, 191, 36, 0.12)',
+            borderColor: '#fbbf24',
+            borderWidth: 2,
+            pointBackgroundColor: FACTORS.map(f => f.color),
+            pointBorderColor: '#1e293b',
+            pointBorderWidth: 2,
+            pointRadius: 6,
+            pointHoverRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          animation: { duration: 800, easing: 'easeOutQuart' },
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 10,
+              ticks: {
+                stepSize: 2,
+                color: '#64748b',
+                backdropColor: 'transparent',
+                font: { size: 10 }
+              },
+              grid: { color: 'rgba(148, 163, 184, 0.12)' },
+              angleLines: { color: 'rgba(148, 163, 184, 0.12)' },
+              pointLabels: {
+                color: FACTORS.map(f => f.color),
+                font: { size: 12, weight: '600' }
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1e293b',
+              titleColor: '#fbbf24',
+              bodyColor: '#f8fafc',
+              borderColor: 'rgba(251,191,36,0.3)',
+              borderWidth: 1,
+              callbacks: {
+                label: (ctx) => ` ${ctx.raw.toFixed(2)} / 10`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderInterpretation(scores, dominantIdx) {
+      const el = document.getElementById('interpretation');
+      const dominant = FACTORS[dominantIdx];
+      const maxScore = scores[dominantIdx];
+
+      // Intensidad
+      let intensity, intensityClass;
+      if (maxScore <= 2)    { intensity = 'baja';     intensityClass = 'intensity-baja'; }
+      else if (maxScore <= 5) { intensity = 'moderada'; intensityClass = 'intensity-moderada'; }
+      else if (maxScore <= 7.5) { intensity = 'alta';    intensityClass = 'intensity-alta'; }
+      else                    { intensity = 'muy alta'; intensityClass = 'intensity-muy-alta'; }
+
+      // Segundo factor
+      const sorted = scores.map((s, i) => ({ s, i })).sort((a, b) => b.s - a.s);
+      const secondIdx = sorted[1].i;
+      const secondScore = sorted[1].s;
+
+      let html = `
+        <div class="interpretation-card" style="border-left-color: ${dominant.color}">
+          <h4>
+            ${dominant.icon}
+            Dimensión principal: ${dominant.name}
+            <span class="intensity-badge ${intensityClass}">${maxScore.toFixed(1)}/10 · ${intensity}</span>
+          </h4>
+          <p>${dominant.description}</p>
+          <p style="margin-top:0.5rem"><strong>Lectura clínica:</strong> ${dominant.clinicalHint}</p>
+          <p style="margin-top:0.4rem; font-style:italic; opacity:0.85">
+            <i class="fas fa-seedling" style="color:${dominant.color}"></i>
+            <strong>Autocuidado:</strong> ${dominant.selfCare}
+          </p>
+        </div>`;
+
+      if (secondScore > 2.0) {
+        const second = FACTORS[secondIdx];
+        html += `
+          <div class="interpretation-card" style="border-left-color: ${second.color}">
+            <h4>
+              ${second.icon}
+              Dimensión secundaria: ${second.name}
+              <span class="intensity-badge ${getIntensityClass(secondScore)}">${secondScore.toFixed(1)}/10</span>
+            </h4>
+            <p>${second.description}</p>
+            <p style="margin-top:0.5rem"><strong>Lectura clínica:</strong> ${second.clinicalHint}</p>
+          </div>`;
+      }
+
+      const combo = getCombinationInsight(dominantIdx, secondIdx, secondScore);
+      if (combo) {
+        html += `
+          <div class="interpretation-card">
+            <h4><i class="fas fa-puzzle-piece"></i> Lectura combinada</h4>
+            <p>${combo}</p>
+          </div>`;
+      }
+
+      html += `
+        <div class="interpretation-card">
+          <h4><i class="fas fa-compass"></i> Preguntas para la reflexión</h4>
+          <ul>
+            ${getReflectionPrompts(dominantIdx, intensity).map(r => `<li>${r}</li>`).join('')}
+          </ul>
+        </div>`;
+
+      el.innerHTML = html;
+    }
+
+    function getIntensityClass(score) {
+      if (score <= 2) return 'intensity-baja';
+      if (score <= 5) return 'intensity-moderada';
+      if (score <= 7.5) return 'intensity-alta';
+      return 'intensity-muy-alta';
+    }
+
+    function getCombinationInsight(domIdx, secIdx, secScore) {
+      if (secScore < 2.0) return null;
+
+      const key = [domIdx, secIdx].sort().join('-');
+      const insights = {
+        '0-4': 'La coexistencia de tensión y desconexión emocional puede reflejar un mecanismo de protección ante una situación asistencial percibida como desbordante. Es una señal para buscar apoyo y revisar la carga emocional acumulada.',
+        '0-2': 'Cuando el malestar se combina con impotencia, el profesional puede estar enfrentando una situación que excede sus recursos habituales. Reconocer este patrón es el primer paso para pedir ayuda, no un signo de incompetencia.',
+        '1-3': 'La combinación de implicación y afecto protector es frecuente en relaciones asistenciales sólidas, especialmente en Atención Primaria. Conviene vigilar que la satisfacción no difumine los límites del rol profesional.',
+        '2-3': 'Sentirse a la vez conmovido y desbordado es habitual ante situaciones de sufrimiento crónico o complejidad social. Refleja una alta sensibilidad del profesional que necesita ser sostenida con apoyo entre pares.',
+        '0-1': 'Experimentar simultáneamente tensión y satisfacción puede indicar que la relación asistencial es significativa pero emocionalmente exigente. Explorar esta ambivalencia en supervisión puede resultar muy clarificador.',
+        '2-4': 'La coexistencia de impotencia y desconexión puede ser una señal temprana de fatiga por compasión. Priorice su autocuidado: un profesional agotado no puede cuidar bien.'
+      };
+
+      return insights[key] || null;
+    }
+
+    function getReflectionPrompts(dominantIdx, intensity) {
+      const base = [
+        '¿Reconoce este patrón emocional en otras situaciones asistenciales o es específico de esta?',
+        '¿Ha variado su estado emocional a lo largo del seguimiento de este caso?'
+      ];
+
+      const specific = {
+        0: [
+          '¿Puede identificar qué elementos concretos de la consulta le generan esta tensión?',
+          '¿De qué manera influye este estado emocional en sus decisiones clínicas?'
+        ],
+        1: [
+          '¿Mantiene límites profesionales que protejan tanto a la persona atendida como a usted mismo?',
+          '¿Esta satisfacción se sostiene en el tiempo o depende de los resultados inmediatos?'
+        ],
+        2: [
+          '¿Dispone de un espacio de supervisión o apoyo entre pares para estas situaciones?',
+          '¿Está asumiendo responsabilidad sobre aspectos que escapan a su capacidad de intervención?'
+        ],
+        3: [
+          '¿Está facilitando la autonomía de la persona atendida o asumiendo un rol más allá del asistencial?',
+          '¿Hay algo en esta situación que conecte con experiencias personales propias?'
+        ],
+        4: [
+          '¿Esta desconexión es puntual o la nota también en otras consultas?',
+          '¿Su carga asistencial actual le permite una recuperación emocional adecuada entre jornadas?'
+        ]
+      };
+
+      const prompts = [...base, ...specific[dominantIdx]];
+
+      if (intensity === 'alta' || intensity === 'muy alta') {
+        prompts.push('Dado el nivel de intensidad, considere compartir esta reflexión en un grupo Balint, con un supervisor o con un compañero de confianza.');
+      }
+
+      return prompts;
+    }
+
+    // =============================================
+    //  Paneles desplegables
+    // =============================================
+
+    function togglePanel(panelId, btn) {
+      const panel = document.getElementById(panelId);
+      const wasOpen = panel.classList.contains('open');
+
+      // Cerrar todos
+      document.querySelectorAll('.context-panel').forEach(p => p.classList.remove('open'));
+      document.querySelectorAll('.context-toggle').forEach(b => b.classList.remove('active'));
+
+      // Abrir el seleccionado si no estaba abierto
+      if (!wasOpen) {
+        panel.classList.add('open');
+        btn.classList.add('active');
+      }
+    }
+
+    // =============================================
+    //  Reset
+    // =============================================
+
+    function resetForm() {
+      document.getElementById('fwceForm').reset();
+      document.querySelectorAll('.fwce-item').forEach(el => el.classList.remove('answered'));
+      document.getElementById('results').classList.remove('visible');
+      document.getElementById('btnCalculate').disabled = true;
+      document.getElementById('pendingMsg').innerHTML = 'Complete los 19 ítems para obtener su perfil';
+      document.getElementById('pendingMsg').style.color = '';
+      document.getElementById('progressBar').style.width = '0%';
+      document.getElementById('progressCount').textContent = '0';
+      document.getElementById('progressPct').textContent = '0%';
+
+      if (radarChartInstance) {
+        radarChartInstance.destroy();
+        radarChartInstance = null;
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // =============================================
+    //  Init
+    // =============================================
+    renderForm();
+  </script>
+</body>
+
+</html>
