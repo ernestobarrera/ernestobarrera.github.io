@@ -28,7 +28,7 @@
     <link rel="apple-touch-icon" href="assets/icons/medcheck-icon-192.png">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="assets/css/cima-app.css?v=20260314c" />
+    <link rel="stylesheet" href="assets/css/cima-app.css?v=20260318a" />
 </head>
 
 <body>
@@ -39,6 +39,9 @@
                 <i class="fas fa-pills"></i>
                 <span class="brand-name">MedCheck</span>
                 <span class="brand-tag">BETA</span>
+                <button class="header-help-btn" id="start-guide-btn" title="Guia interactiva">
+                    <i class="fas fa-question"></i>
+                </button>
             </div>
             <!-- Patient Context Bar -->
             <div class="patient-context" id="patient-context">
@@ -174,6 +177,9 @@
         </div>
     </div>
 
+    <!-- Interactive Guide Overlay -->
+    <div id="guide-overlay" class="guide-overlay"></div>
+
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
 
@@ -212,8 +218,8 @@
     </div>
 
     <!-- Scripts -->
-    <script src="assets/js/cima-api.js?v=20260317a"></script>
-    <script src="assets/js/cima-app.js?v=20260317a"></script>
+    <script src="assets/js/cima-api.js?v=20260318a"></script>
+    <script src="assets/js/cima-app.js?v=20260318a"></script>
 
     <!-- Service Worker Registration -->
     <script>
