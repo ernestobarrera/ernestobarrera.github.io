@@ -132,31 +132,38 @@ async function registrarEvento(db, path, searchParams, responseData, statusCode,
         const { tipo, termino } = extraerTermino(searchParams);
         const esBusquedaLista = path === '/medicamentos';
         let numResultados = null;
+        let atcCode = null;
         try {
             const parsed = JSON.parse(responseData);
             if (typeof parsed.totalFilas === 'number')  numResultados = parsed.totalFilas;
             else if (Array.isArray(parsed.resultados))  numResultados = parsed.resultados.length;
             else if (Array.isArray(parsed))             numResultados = parsed.length;
+            // Extraer código ATC de la respuesta CIMA
+            if (parsed.resultados?.length > 0 && parsed.resultados[0].atcs?.length > 0) {
+                atcCode = parsed.resultados[0].atcs[0].codigo || null;
+            } else if (parsed.atcs?.length > 0) {
+                atcCode = parsed.atcs[0].codigo || null;
+            }
         } catch (_) {}
         if (esBusquedaLista) {
             if (statusCode !== 200)                            return;
             if (termino && termino.length < 4)                 return;
             if (numResultados !== null && numResultados === 0) return;
         }
-        await db.prepare(`
-            INSERT INTO eventos
-                (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).bind(
-            Date.now(),
-            path,
-            tipo,
-            termino,
-            numResultados,
-            statusCode,
-            vista,
-            contexto,
-        ).run();
+        // Intentar con columna atc_code; fallback si no existe (pendiente migración D1)
+        try {
+            await db.prepare(`
+                INSERT INTO eventos
+                    (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto, atc_code)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto, atcCode).run();
+        } catch (_) {
+            await db.prepare(`
+                INSERT INTO eventos
+                    (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto).run();
+        }
     } catch (error) {
         console.error('[analytics] Error registrando evento:', error.message);
     }
@@ -266,6 +273,29 @@ async function handleAnalytics(request, env) {
                 LIMIT 100
             `).bind(desde).all(),
         ]);
+        // Análisis ATC (requiere columna atc_code — graceful fallback si no existe)
+        let atcData = { por_atc_nivel1: [], por_atc_nivel2: [], top_atc: [] };
+        try {
+            const [atcN1, atcN2, atcTop] = await Promise.all([
+                env.DB.prepare(`
+                    SELECT SUBSTR(atc_code, 1, 1) AS nivel1, COUNT(*) AS consultas
+                    FROM eventos WHERE ts > ? AND atc_code IS NOT NULL AND status_code = 200
+                    GROUP BY nivel1 ORDER BY consultas DESC
+                `).bind(desde).all(),
+                env.DB.prepare(`
+                    SELECT SUBSTR(atc_code, 1, 3) AS nivel2, COUNT(*) AS consultas
+                    FROM eventos WHERE ts > ? AND atc_code IS NOT NULL AND status_code = 200
+                    GROUP BY nivel2 ORDER BY consultas DESC LIMIT 20
+                `).bind(desde).all(),
+                env.DB.prepare(`
+                    SELECT atc_code, COUNT(*) AS consultas
+                    FROM eventos WHERE ts > ? AND atc_code IS NOT NULL AND status_code = 200
+                    GROUP BY atc_code ORDER BY consultas DESC LIMIT 20
+                `).bind(desde).all(),
+            ]);
+            atcData = { por_atc_nivel1: atcN1.results, por_atc_nivel2: atcN2.results, top_atc: atcTop.results };
+        } catch (_) { /* columna atc_code aún no creada */ }
+
         return new Response(JSON.stringify({
             periodo_dias:     dias,
             resumen,
@@ -278,6 +308,7 @@ async function handleAnalytics(request, env) {
             por_dia_semana:    porDiaSemana.results,
             por_tipo_busqueda: porTipoBusqueda.results,
             top_por_vista:     topPorVista.results,
+            ...atcData,
         }), {
             headers: { ...getCORSHeaders(request), 'Content-Type': 'application/json' },
         });

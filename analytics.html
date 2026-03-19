@@ -680,6 +680,46 @@ const SEARCH_TYPES = {
 
 const WEEKDAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
+const ATC_LEVEL1 = {
+    'A': { name: 'Digestivo y Metabolismo', icon: 'utensils', color: '#10b981' },
+    'B': { name: 'Sangre', icon: 'tint', color: '#ef4444' },
+    'C': { name: 'Cardiovascular', icon: 'heartbeat', color: '#f59e0b' },
+    'D': { name: 'Dermatología', icon: 'hand-paper', color: '#8b5cf6' },
+    'G': { name: 'Genitourinario', icon: 'venus-mars', color: '#ec4899' },
+    'H': { name: 'Hormonas sistémicas', icon: 'adjust', color: '#6366f1' },
+    'J': { name: 'Antiinfecciosos', icon: 'virus', color: '#14b8a6' },
+    'L': { name: 'Antineoplásicos', icon: 'radiation', color: '#f43f5e' },
+    'M': { name: 'Musculoesquelético', icon: 'bone', color: '#0ea5e9' },
+    'N': { name: 'Sistema Nervioso', icon: 'brain', color: '#a855f7' },
+    'P': { name: 'Antiparasitarios', icon: 'bug', color: '#22c55e' },
+    'R': { name: 'Respiratorio', icon: 'lungs', color: '#38bdf8' },
+    'S': { name: 'Órganos Sentidos', icon: 'eye', color: '#fbbf24' },
+    'V': { name: 'Varios', icon: 'flask', color: '#94a3b8' },
+};
+
+const ATC_LEVEL2 = {
+    'A02': 'Antiácidos/antiulcerosos', 'A03': 'Antiespasmódicos', 'A06': 'Laxantes',
+    'A07': 'Antidiarreicos', 'A10': 'Antidiabéticos', 'A11': 'Vitaminas', 'A12': 'Minerales',
+    'B01': 'Antitrombóticos', 'B02': 'Antihemorrágicos', 'B03': 'Antianémicos', 'B05': 'Sustitutos sangre',
+    'C01': 'Terapia cardíaca', 'C02': 'Antihipertensivos', 'C03': 'Diuréticos',
+    'C07': 'Betabloqueantes', 'C08': 'Calcioantagonistas', 'C09': 'IECA/ARA-II', 'C10': 'Hipolipemiantes',
+    'D01': 'Antifúngicos tópicos', 'D04': 'Antipruriginosos', 'D05': 'Antipsoriásicos',
+    'D06': 'Antibióticos tópicos', 'D07': 'Corticoides tópicos', 'D10': 'Antiacneicos', 'D11': 'Otros dermatológicos',
+    'G01': 'Antiinfecciosos ginecológicos', 'G03': 'Hormonas sexuales', 'G04': 'Urológicos',
+    'H01': 'Hormonas hipofisarias', 'H02': 'Corticosteroides sistémicos', 'H03': 'Terapia tiroidea',
+    'J01': 'Antibacterianos', 'J02': 'Antimicóticos sistémicos', 'J04': 'Antimicobacterianos',
+    'J05': 'Antivirales', 'J07': 'Vacunas',
+    'L01': 'Antineoplásicos', 'L02': 'Terapia endocrina', 'L04': 'Inmunosupresores',
+    'M01': 'AINE', 'M02': 'Tópicos dolor', 'M03': 'Relajantes musculares',
+    'M04': 'Antigotosos', 'M05': 'Osteoporosis',
+    'N01': 'Anestésicos', 'N02': 'Analgésicos', 'N03': 'Antiepilépticos', 'N04': 'Antiparkinsonianos',
+    'N05': 'Psicolépticos (ansiolíticos/hipnóticos/antipsicóticos)', 'N06': 'Antidepresivos/TDAH/antidemencia', 'N07': 'Otros SNC',
+    'P01': 'Antiprotozoarios', 'P02': 'Antihelmínticos', 'P03': 'Ectoparasiticidas',
+    'R01': 'Preparados nasales', 'R02': 'Preparados faríngeos', 'R03': 'Antiasmáticos/EPOC',
+    'R05': 'Antitusivos/mucolíticos', 'R06': 'Antihistamínicos',
+    'S01': 'Oftalmológicos', 'S02': 'Otológicos',
+};
+
 // ─── STATE ──────────────────────────────────────────────────────────────────────
 let activeDias = 30;
 let currentData = null;
@@ -1037,6 +1077,95 @@ function renderExport() {
     </div>`;
 }
 
+// ─── RENDER: ATC Analysis ───────────────────────────────────────────────────────
+function renderATC(data) {
+    const hasN1 = data.por_atc_nivel1?.length > 0;
+    const hasN2 = data.por_atc_nivel2?.length > 0;
+    const hasTop = data.top_atc?.length > 0;
+
+    if (!hasN1 && !hasN2 && !hasTop) {
+        return `
+        <div class="chart-card" id="sec-atc">
+            <div class="chart-card-title"><i class="fas fa-pills"></i> Análisis por grupo terapéutico ATC</div>
+            <div class="empty-state">
+                <i class="fas fa-pills"></i>
+                <p>Datos ATC no disponibles todavía</p>
+                <p class="note"><i class="fas fa-info-circle"></i> Los códigos ATC se extraen automáticamente de las respuestas CIMA tras la migración D1</p>
+            </div>
+        </div>`;
+    }
+
+    // Level 2 table
+    let n2Html = '';
+    if (hasN2) {
+        const maxN2 = data.por_atc_nivel2[0]?.consultas || 1;
+        const rows = data.por_atc_nivel2.map(item => {
+            const label = ATC_LEVEL2[item.nivel2] || item.nivel2;
+            const l1 = item.nivel2[0];
+            const l1Info = ATC_LEVEL1[l1] || {};
+            return `
+            <tr>
+                <td><span style="color:${l1Info.color || '#94a3b8'};font-weight:600;font-family:monospace">${escapeHtml(item.nivel2)}</span></td>
+                <td>${escapeHtml(label)}</td>
+                <td>
+                    <div class="bar-wrap">
+                        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(item.consultas/maxN2*100)}%;background:${l1Info.color || 'var(--primary)'}"></div></div>
+                        <span class="bar-count">${item.consultas}</span>
+                    </div>
+                </td>
+            </tr>`;
+        }).join('');
+        n2Html = `
+        <div style="margin-top:1.25rem">
+            <div class="chart-card-title" style="margin-bottom:.5rem"><i class="fas fa-layer-group"></i> Top subgrupos terapéuticos (Nivel 2)</div>
+            <table class="analytics-table">
+                <thead><tr><th>Código</th><th>Subgrupo terapéutico</th><th>Consultas</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+    }
+
+    // Top ATC codes table
+    let topHtml = '';
+    if (hasTop) {
+        const maxTop = data.top_atc[0]?.consultas || 1;
+        const rows = data.top_atc.slice(0, 15).map(item => {
+            const l1 = item.atc_code[0];
+            const l1Info = ATC_LEVEL1[l1] || {};
+            const l2Code = item.atc_code.substring(0, 3);
+            const l2Label = ATC_LEVEL2[l2Code] || '';
+            return `
+            <tr>
+                <td><span style="color:${l1Info.color || '#94a3b8'};font-weight:600;font-family:monospace">${escapeHtml(item.atc_code)}</span></td>
+                <td>${escapeHtml(l2Label)}</td>
+                <td>
+                    <div class="bar-wrap">
+                        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(item.consultas/maxTop*100)}%;background:${l1Info.color || 'var(--primary)'}"></div></div>
+                        <span class="bar-count">${item.consultas}</span>
+                    </div>
+                </td>
+            </tr>`;
+        }).join('');
+        topHtml = `
+        <div style="margin-top:1.25rem">
+            <div class="chart-card-title" style="margin-bottom:.5rem"><i class="fas fa-prescription-bottle-alt"></i> Top códigos ATC consultados (Nivel 5)</div>
+            <table class="analytics-table">
+                <thead><tr><th>Código ATC</th><th>Grupo</th><th>Consultas</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+    }
+
+    return `
+    <div class="chart-card" id="sec-atc">
+        <div class="chart-card-title"><i class="fas fa-pills"></i> Análisis por grupo terapéutico ATC</div>
+        <p class="chart-subtitle">Distribución de consultas por clasificación Anatómica, Terapéutica, Química (OMS). Los códigos ATC se extraen automáticamente de cada respuesta de la API CIMA.</p>
+        ${hasN1 ? '<div class="chart-wrap" style="height:400px"><canvas id="atc-chart"></canvas></div>' : ''}
+        ${n2Html}
+        ${topHtml}
+    </div>`;
+}
+
 // ─── RENDER: Endpoints ──────────────────────────────────────────────────────────
 function renderEndpoints(list) {
     if (!list || !list.length) return '';
@@ -1234,7 +1363,39 @@ function mountCharts(data) {
         }
     }
 
-    // 7. Weekday chart
+    // 7. ATC Level 1 chart
+    if (data.por_atc_nivel1?.length) {
+        const atcCtx = document.getElementById('atc-chart')?.getContext('2d');
+        if (atcCtx) {
+            const sorted = [...data.por_atc_nivel1].sort((a, b) => b.consultas - a.consultas);
+            charts.atc = new Chart(atcCtx, {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(a => {
+                        const info = ATC_LEVEL1[a.nivel1] || {};
+                        return `${a.nivel1} — ${info.name || 'Otro'}`;
+                    }),
+                    datasets: [{
+                        data: sorted.map(a => a.consultas),
+                        backgroundColor: sorted.map(a => ATC_LEVEL1[a.nivel1]?.color || '#94a3b8'),
+                        borderRadius: 4,
+                        barThickness: 24,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { ...TICK_STYLE, stepSize: 1 }, grid: GRID_LIGHT },
+                        y: { ticks: { ...TICK_STYLE, font: { size: 11 } }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+    }
+
+    // 8. Weekday chart
     if (data.por_dia_semana?.length) {
         const wCtx = document.getElementById('weekday-chart')?.getContext('2d');
         if (wCtx) {
@@ -1404,6 +1565,35 @@ function exportCSV() {
         lines.push('');
     }
 
+    // ATC Nivel 1
+    if (data.por_atc_nivel1?.length) {
+        lines.push('SECCION,DISTRIBUCIÓN ATC NIVEL 1');
+        lines.push('Código,Grupo anatómico,Consultas');
+        data.por_atc_nivel1.forEach(a => {
+            const info = ATC_LEVEL1[a.nivel1] || {};
+            lines.push(`${a.nivel1},${e(info.name || 'Otro')},${a.consultas}`);
+        });
+        lines.push('');
+    }
+
+    // ATC Nivel 2
+    if (data.por_atc_nivel2?.length) {
+        lines.push('SECCION,DISTRIBUCIÓN ATC NIVEL 2');
+        lines.push('Código,Subgrupo terapéutico,Consultas');
+        data.por_atc_nivel2.forEach(a => {
+            lines.push(`${a.nivel2},${e(ATC_LEVEL2[a.nivel2] || a.nivel2)},${a.consultas}`);
+        });
+        lines.push('');
+    }
+
+    // Top ATC codes
+    if (data.top_atc?.length) {
+        lines.push('SECCION,TOP CÓDIGOS ATC');
+        lines.push('Código ATC,Consultas');
+        data.top_atc.forEach(a => lines.push(`${a.atc_code},${a.consultas}`));
+        lines.push('');
+    }
+
     // Top por vista
     if (data.top_por_vista?.length) {
         lines.push('SECCION,TOP TÉRMINOS POR TIPO DE DUDA');
@@ -1455,6 +1645,7 @@ function renderDashboard(data) {
             <button class="snav-btn" data-section="sec-taxonomy"><i class="fas fa-th-list"></i> Dudas clínicas</button>
             <button class="snav-btn" data-section="sec-context"><i class="fas fa-user-injured"></i> Contextos</button>
             <button class="snav-btn" data-section="sec-terms"><i class="fas fa-list-ol"></i> Términos</button>
+            <button class="snav-btn" data-section="sec-atc"><i class="fas fa-pills"></i> ATC</button>
             <button class="snav-btn" data-section="sec-temporal"><i class="fas fa-clock"></i> Temporal</button>
             <button class="snav-btn" data-section="sec-benchmark"><i class="fas fa-balance-scale"></i> Comparativa</button>
             <button class="snav-btn" data-section="sec-export"><i class="fas fa-file-export"></i> Exportar</button>
@@ -1483,6 +1674,7 @@ function renderDashboard(data) {
         ${renderTaxonomy(data)}
         ${renderContexts(data)}
         ${renderTopTerms(data.top_terminos)}
+        ${renderATC(data)}
         ${renderTemporal(data)}
         ${renderBenchmark(data)}
         ${renderExport()}
