@@ -175,7 +175,7 @@ async function handleAnalytics(request, env) {
         const dias  = parseInt(url.searchParams.get('dias') || '30');
         const desde = Date.now() - (dias * 24 * 60 * 60 * 1000);
 
-        const [resumen, topTerminos, porVista, porEndpoint, porDia] = await Promise.all([
+        const [resumen, topTerminos, porVista, porEndpoint, porDia, porContexto, porHora, porDiaSemana, porTipoBusqueda, topPorVista] = await Promise.all([
             env.DB.prepare(`
                 SELECT
                     COUNT(*)                                                 AS total_consultas,
@@ -220,6 +220,51 @@ async function handleAnalytics(request, env) {
                 GROUP BY dia
                 ORDER BY dia ASC
             `).bind(desde).all(),
+
+            // Contextos clínicos activados
+            env.DB.prepare(`
+                SELECT
+                    SUM(CASE WHEN contexto LIKE '%embarazo%' THEN 1 ELSE 0 END) AS embarazo,
+                    SUM(CASE WHEN contexto LIKE '%lactancia%' THEN 1 ELSE 0 END) AS lactancia,
+                    SUM(CASE WHEN contexto LIKE '%elderly%' THEN 1 ELSE 0 END) AS elderly,
+                    SUM(CASE WHEN contexto LIKE '%driving%' THEN 1 ELSE 0 END) AS driving,
+                    SUM(CASE WHEN contexto LIKE '%renal%' THEN 1 ELSE 0 END) AS renal,
+                    SUM(CASE WHEN contexto LIKE '%hepatic%' THEN 1 ELSE 0 END) AS hepatic
+                FROM eventos WHERE ts > ?
+            `).bind(desde).first(),
+
+            // Distribución por hora del día
+            env.DB.prepare(`
+                SELECT CAST(strftime('%H', ts/1000, 'unixepoch') AS INTEGER) AS hora,
+                       COUNT(*) AS consultas
+                FROM eventos WHERE ts > ?
+                GROUP BY hora ORDER BY hora
+            `).bind(desde).all(),
+
+            // Distribución por día de la semana
+            env.DB.prepare(`
+                SELECT CAST(strftime('%w', ts/1000, 'unixepoch') AS INTEGER) AS dia_semana,
+                       COUNT(*) AS consultas
+                FROM eventos WHERE ts > ?
+                GROUP BY dia_semana ORDER BY dia_semana
+            `).bind(desde).all(),
+
+            // Por tipo de búsqueda
+            env.DB.prepare(`
+                SELECT tipo_busqueda, COUNT(*) AS consultas
+                FROM eventos WHERE ts > ? AND status_code = 200
+                GROUP BY tipo_busqueda ORDER BY consultas DESC
+            `).bind(desde).all(),
+
+            // Top términos desglosados por vista clínica
+            env.DB.prepare(`
+                SELECT vista, termino, COUNT(*) AS consultas
+                FROM eventos
+                WHERE ts > ? AND termino IS NOT NULL AND status_code = 200 AND vista IS NOT NULL
+                GROUP BY vista, termino
+                ORDER BY consultas DESC
+                LIMIT 100
+            `).bind(desde).all(),
         ]);
         return new Response(JSON.stringify({
             periodo_dias:     dias,
@@ -228,6 +273,11 @@ async function handleAnalytics(request, env) {
             por_vista:        porVista.results,
             por_endpoint:     porEndpoint.results,
             actividad_diaria: porDia.results,
+            por_contexto:      porContexto,
+            por_hora:          porHora.results,
+            por_dia_semana:    porDiaSemana.results,
+            por_tipo_busqueda: porTipoBusqueda.results,
+            top_por_vista:     topPorVista.results,
         }), {
             headers: { ...getCORSHeaders(request), 'Content-Type': 'application/json' },
         });

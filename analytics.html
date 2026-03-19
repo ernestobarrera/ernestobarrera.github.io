@@ -111,10 +111,47 @@
         .refresh-btn.loading i { animation: spin .8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* SECTION NAV */
+        .section-nav {
+            display: flex;
+            gap: .35rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+            padding-bottom: .25rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--bg-dark);
+            padding-top: .5rem;
+        }
+        .snav-btn {
+            padding: .4rem .75rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-default);
+            background: var(--bg-surface);
+            color: var(--text-muted);
+            font-size: .78rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all .15s;
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+        }
+        .snav-btn:hover { color: var(--text-primary); border-color: var(--border-hover); }
+        .snav-btn.active {
+            background: var(--primary-light);
+            border-color: var(--border-active);
+            color: var(--primary);
+        }
+
+        /* SCROLL OFFSET FOR SECTIONS */
+        [id^="sec-"] { scroll-margin-top: 3.5rem; }
+
         /* SUMMARY CARDS */
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 1rem;
             margin-bottom: 1.75rem;
         }
@@ -149,6 +186,7 @@
         .stat-card.accent-primary .stat-value { color: var(--primary); }
         .stat-card.accent-success .stat-value { color: #34d399; }
         .stat-card.accent-warn .stat-value { color: #fbbf24; }
+        .stat-card.accent-purple .stat-value { color: #a78bfa; }
 
         /* CHARTS GRID */
         .charts-grid {
@@ -157,7 +195,15 @@
             gap: 1rem;
             margin-bottom: 1rem;
         }
-        @media (max-width: 700px) { .charts-grid { grid-template-columns: 1fr; } }
+        .charts-grid-equal {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        @media (max-width: 700px) {
+            .charts-grid, .charts-grid-equal { grid-template-columns: 1fr; }
+        }
 
         /* CHART CARDS */
         .chart-card {
@@ -165,6 +211,7 @@
             border: 1px solid var(--border-default);
             border-radius: 10px;
             padding: 1.25rem 1.5rem;
+            margin-bottom: 1rem;
         }
         .chart-card-title {
             font-size: .8rem;
@@ -178,6 +225,12 @@
             gap: .5rem;
         }
         .chart-card-title i { color: var(--primary); }
+        .chart-subtitle {
+            font-size: .8rem;
+            color: var(--text-muted);
+            margin: -.5rem 0 1rem;
+            line-height: 1.4;
+        }
         .chart-wrap { position: relative; }
 
         /* TABLE CARD */
@@ -227,6 +280,8 @@
         .badge-nregistro { background: rgba(168,85,247,.15); color: #c084fc; }
         .badge-atc { background: rgba(52,211,153,.15); color: #34d399; }
         .badge-indicacion { background: rgba(251,191,36,.15); color: #fbbf24; }
+        .badge-pa { background: rgba(52,211,153,.15); color: #34d399; }
+        .badge-cn { background: rgba(251,191,36,.15); color: #fbbf24; }
 
         /* BAR INLINE */
         .bar-wrap { display: flex; align-items: center; gap: .6rem; }
@@ -318,6 +373,238 @@
             color: var(--text-muted);
             margin-bottom: 1rem;
         }
+
+        /* TAXONOMY REF TABLE */
+        .taxonomy-ref {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .78rem;
+            margin-top: 1rem;
+        }
+        .taxonomy-ref th {
+            text-align: left;
+            padding: .4rem .5rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-default);
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .taxonomy-ref td {
+            padding: .35rem .5rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255,255,255,.03);
+        }
+        .taxonomy-ref tr:last-child td { border-bottom: none; }
+        .taxonomy-ref .tax-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: .4rem;
+        }
+
+        /* DRILL-DOWN BY VISTA */
+        .drill-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: .75rem;
+            margin-top: 1rem;
+        }
+        .drill-card {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-default);
+            border-radius: 8px;
+            padding: .75rem 1rem;
+        }
+        .drill-card h4 {
+            font-size: .78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: .5rem;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+        }
+        .drill-card h4 i { font-size: .7rem; }
+        .drill-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .drill-list li {
+            font-size: .8rem;
+            color: var(--text-muted);
+            padding: .15rem 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .drill-list li span:last-child {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* BENCHMARK */
+        .benchmark-panel { padding: .5rem 0; }
+        .benchmark-your-data {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.25rem;
+        }
+        .benchmark-stat { display: flex; flex-direction: column; }
+        .benchmark-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1.1;
+        }
+        .benchmark-stat-label {
+            font-size: .75rem;
+            color: var(--text-muted);
+            margin-top: .15rem;
+        }
+        .benchmark-calc {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.25rem;
+            padding: 1rem;
+            background: var(--bg-dark);
+            border-radius: 8px;
+            border: 1px solid var(--border-default);
+        }
+        .benchmark-input-label {
+            font-size: .82rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+        }
+        .benchmark-input {
+            width: 100px;
+            padding: .4rem .6rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-default);
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            font-size: .9rem;
+            font-family: inherit;
+        }
+        .benchmark-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .benchmark-result {
+            text-align: center;
+            margin: 1rem 0;
+        }
+        .benchmark-rate-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+        .benchmark-rate-label {
+            font-size: .8rem;
+            color: var(--text-muted);
+            display: block;
+            margin-top: .25rem;
+        }
+        .benchmark-interpretation {
+            padding: .75rem 1rem;
+            border-radius: 8px;
+            font-size: .85rem;
+            line-height: 1.5;
+            margin: 1rem 0;
+            display: flex;
+            align-items: flex-start;
+            gap: .5rem;
+        }
+        .benchmark-interpretation i { margin-top: .15rem; flex-shrink: 0; }
+        .interp-low { background: rgba(251,191,36,.08); color: #fbbf24; border: 1px solid rgba(251,191,36,.2); }
+        .interp-normal { background: rgba(52,211,153,.08); color: #34d399; border: 1px solid rgba(52,211,153,.2); }
+        .interp-good { background: rgba(14,165,233,.08); color: #0ea5e9; border: 1px solid rgba(14,165,233,.2); }
+        .interp-high { background: rgba(168,85,247,.08); color: #c084fc; border: 1px solid rgba(168,85,247,.2); }
+        .benchmark-refs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1.25rem 0;
+        }
+        .benchmark-ref {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-default);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .benchmark-ref-title {
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: .25rem;
+        }
+        .benchmark-ref-detail {
+            font-size: .75rem;
+            color: var(--text-muted);
+        }
+        .benchmark-ref-rate {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: .5rem 0 .25rem;
+        }
+        .benchmark-ref-rate small {
+            font-size: .7rem;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+        .benchmark-ref-note {
+            font-size: .75rem;
+            color: var(--text-muted);
+        }
+        .benchmark-context {
+            margin-top: 1rem;
+            padding: .75rem 1rem;
+            background: rgba(14,165,233,.05);
+            border-radius: 8px;
+            font-size: .8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .benchmark-context p { margin: 0 0 .5rem; }
+        .benchmark-context p:last-child { margin-bottom: 0; }
+        .benchmark-context i { color: var(--primary); }
+        @media (max-width: 700px) {
+            .benchmark-refs { grid-template-columns: 1fr; }
+        }
+
+        /* EXPORT */
+        .export-actions {
+            display: flex;
+            gap: .75rem;
+            flex-wrap: wrap;
+        }
+        .export-btn {
+            padding: .6rem 1.2rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-default);
+            background: var(--bg-dark);
+            color: var(--text-secondary);
+            font-size: .85rem;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            transition: all .15s;
+        }
+        .export-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .export-btn i { font-size: 1rem; }
     </style>
 </head>
 <body>
@@ -358,50 +645,97 @@
 </div>
 
 <script>
+// ─── CONSTANTS ──────────────────────────────────────────────────────────────────
 const WORKER = 'https://medcheck-proxy.medtools.workers.dev';
 
+const TAXONOMY = {
+    buscar:        { label: 'Búsqueda / identificación',  ely: 'Orientación, composición, nombre del fármaco', icon: 'fa-search',              color: '#60a5fa', section: '—' },
+    indicaciones:  { label: 'Indicaciones / eficacia',     ely: 'Indicaciones, fármaco de elección',             icon: 'fa-stethoscope',         color: '#34d399', section: '4.1' },
+    seguridad:     { label: 'Seguridad / precauciones',    ely: 'Contraindicaciones y precauciones',             icon: 'fa-shield-alt',          color: '#fb923c', section: '4.3–4.4' },
+    interacciones: { label: 'Interacciones',               ely: 'Interacciones medicamentosas',                  icon: 'fa-random',              color: '#a78bfa', section: '4.5' },
+    reacciones:    { label: 'Efectos adversos / RAM',      ely: 'Reacciones adversas, causalidad inversa',       icon: 'fa-exclamation-triangle', color: '#f87171', section: '4.8' },
+    equivalencias: { label: 'Alternativas / composición',  ely: 'Composición, genéricos, alternativas',          icon: 'fa-exchange-alt',        color: '#22d3ee', section: '—' },
+    suministro:    { label: 'Disponibilidad',              ely: 'Disponibilidad del fármaco',                    icon: 'fa-boxes',               color: '#fbbf24', section: '—' },
+    alertas:       { label: 'Alertas de seguridad',        ely: 'Alertas regulatorias (AEMPS)',                  icon: 'fa-bell',                color: '#f472b6', section: '—' },
+    perfil:        { label: 'Gestión de perfil',           ely: '—',                                             icon: 'fa-star',                color: '#94a3b8', section: '—' },
+};
+
+const CONTEXTS = {
+    embarazo:  { label: 'Embarazo',           icon: 'fa-baby',           color: '#f472b6', section: '4.6' },
+    lactancia: { label: 'Lactancia',          icon: 'fa-baby-carriage',  color: '#c084fc', section: '4.6' },
+    elderly:   { label: 'Mayor 65 años',      icon: 'fa-user-clock',     color: '#fbbf24', section: '4.2/4.4/4.8' },
+    driving:   { label: 'Conducción',         icon: 'fa-car',            color: '#60a5fa', section: '4.7' },
+    renal:     { label: 'Insuf. renal',       icon: 'fa-droplet',        color: '#34d399', section: '4.2/4.4' },
+    hepatic:   { label: 'Insuf. hepática',    icon: 'fa-disease',        color: '#fb923c', section: '4.2/4.4' },
+};
+
+const SEARCH_TYPES = {
+    nombre:           { label: 'Nombre comercial',  color: '#38bdf8' },
+    principio_activo: { label: 'Principio activo',   color: '#34d399' },
+    atc:              { label: 'Código ATC',         color: '#a78bfa' },
+    nregistro:        { label: 'Nº registro',        color: '#c084fc' },
+    codigo_nacional:  { label: 'Código nacional',    color: '#fbbf24' },
+    otro:             { label: 'Otro',               color: '#94a3b8' },
+};
+
+const WEEKDAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+// ─── STATE ──────────────────────────────────────────────────────────────────────
 let activeDias = 30;
-let activityChart = null;
-let vistasChart    = null;
+let currentData = null;
+const charts = {};
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
-
+// ─── HELPERS ────────────────────────────────────────────────────────────────────
 function fmtDate(iso) {
     const [y, m, d] = iso.split('-');
     return `${d}/${m}`;
 }
 
+function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 function typeBadge(tipo) {
     const map = {
-        nombre:     ['badge-nombre',    'nombre'],
-        nregistro:  ['badge-nregistro', 'nº reg.'],
-        atc:        ['badge-atc',       'ATC'],
-        indicacion: ['badge-indicacion','indicación'],
+        nombre:           ['badge-nombre',    'nombre'],
+        principio_activo: ['badge-pa',        'P.A.'],
+        nregistro:        ['badge-nregistro', 'nº reg.'],
+        atc:              ['badge-atc',       'ATC'],
+        indicacion:       ['badge-indicacion','indicación'],
+        codigo_nacional:  ['badge-cn',        'C.N.'],
     };
     const [cls, label] = map[tipo] || ['badge-nombre', tipo];
     return `<span class="badge ${cls}">${label}</span>`;
 }
 
-// ─── fetch ────────────────────────────────────────────────────────────────────
+function escapeCSV(val) {
+    const s = String(val ?? '');
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s;
+}
 
+// Common chart scales
+const GRID_SUBTLE = { color: 'rgba(255,255,255,.04)' };
+const GRID_LIGHT  = { color: 'rgba(255,255,255,.06)' };
+const TICK_STYLE  = { color: '#64748b', font: { size: 11 } };
+
+// ─── FETCH ──────────────────────────────────────────────────────────────────────
 async function fetchAnalytics(dias) {
     const res = await fetch(`${WORKER}/analytics?dias=${dias}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
 }
 
-// ─── render ───────────────────────────────────────────────────────────────────
-
+// ─── RENDER: Summary ────────────────────────────────────────────────────────────
 function renderSummary(r) {
     const pct = r.total_consultas > 0
-        ? Math.round(r.sin_resultado / r.total_consultas * 100)
-        : 0;
+        ? Math.round(r.sin_resultado / r.total_consultas * 100) : 0;
+    const avgPerDay = (r.total_consultas / activeDias).toFixed(1);
     return `
-    <div class="summary-grid">
+    <div class="summary-grid" id="sec-resumen">
         <div class="stat-card accent-primary">
             <span class="stat-label"><i class="fas fa-search"></i> Total consultas</span>
             <span class="stat-value">${r.total_consultas}</span>
-            <span class="stat-note">en ${activeDias} días</span>
+            <span class="stat-note">en ${activeDias} días · ${avgPerDay}/día</span>
         </div>
         <div class="stat-card">
             <span class="stat-label"><i class="fas fa-font"></i> Términos distintos</span>
@@ -421,14 +755,14 @@ function renderSummary(r) {
     </div>`;
 }
 
-function renderActivityChart(dias) {
-    // Rellenar días sin consultas con 0
+// ─── RENDER: Activity Chart Data ────────────────────────────────────────────────
+function prepareActivityData(dias) {
     const end   = new Date();
     const start = new Date();
     start.setDate(start.getDate() - activeDias + 1);
 
     const map = {};
-    dias.forEach(d => { map[d.dia] = d.consultas; });
+    (dias || []).forEach(d => { map[d.dia] = d.consultas; });
 
     const labels = [], values = [];
     const cur = new Date(start);
@@ -438,93 +772,297 @@ function renderActivityChart(dias) {
         values.push(map[key] ?? 0);
         cur.setDate(cur.getDate() + 1);
     }
-
     return { labels, values };
 }
 
-function renderTopTerms(terms) {
-    if (!terms.length) return '<div class="empty-state"><i class="fas fa-search"></i><p>Sin datos de búsqueda</p></div>';
+// ─── RENDER: Clinical Taxonomy ──────────────────────────────────────────────────
+function renderTaxonomy(data) {
+    const hasData = data.por_vista?.length > 0;
 
-    // Agrupar por término: sumar consultas, recopilar vistas distintas
+    // Taxonomy reference table
+    const refRows = Object.entries(TAXONOMY)
+        .filter(([k]) => k !== 'perfil')
+        .map(([key, t]) => `
+            <tr>
+                <td><span class="tax-dot" style="background:${t.color}"></span>${t.label}</td>
+                <td>${t.ely}</td>
+                <td>${t.section}</td>
+            </tr>`).join('');
+
+    // Drill-down by vista (top terms per category)
+    let drillHtml = '';
+    if (data.top_por_vista?.length) {
+        const byVista = {};
+        data.top_por_vista.forEach(t => {
+            if (!byVista[t.vista]) byVista[t.vista] = [];
+            if (byVista[t.vista].length < 5) byVista[t.vista].push(t);
+        });
+
+        const drillCards = Object.entries(byVista)
+            .filter(([vista]) => TAXONOMY[vista] && vista !== 'perfil' && vista !== 'buscar')
+            .map(([vista, terms]) => {
+                const tax = TAXONOMY[vista];
+                const items = terms.map(t =>
+                    `<li><span>${escapeHtml(t.termino)}</span><span>${t.consultas}</span></li>`
+                ).join('');
+                return `
+                <div class="drill-card">
+                    <h4><i class="fas ${tax.icon}" style="color:${tax.color}"></i> ${tax.label}</h4>
+                    <ul class="drill-list">${items}</ul>
+                </div>`;
+            }).join('');
+
+        if (drillCards) {
+            drillHtml = `
+            <div style="margin-top:1.25rem">
+                <div class="chart-card-title" style="margin-bottom:.5rem"><i class="fas fa-microscope"></i> Top términos por tipo de duda</div>
+                <div class="drill-grid">${drillCards}</div>
+            </div>`;
+        }
+    }
+
+    return `
+    <div class="chart-card" id="sec-taxonomy">
+        <div class="chart-card-title"><i class="fas fa-th-list"></i> Tipo de duda clínica</div>
+        <p class="chart-subtitle">Clasificación inspirada en la taxonomía de Ely et al. (BMJ 2000) y la ontología OntoFIS (Romá-Ferri 2009). Cada pestaña de MedCheck equivale a un tipo de duda clínica farmacológica.</p>
+        ${hasData
+            ? '<div class="chart-wrap" style="height:320px"><canvas id="taxonomy-chart"></canvas></div>'
+            : '<div class="empty-state"><i class="fas fa-th-list"></i><p>Sin datos de vista clínica todavía</p><p class="note"><i class="fas fa-info-circle"></i> Las consultas incluyen la pestaña activa a partir de la actualización reciente</p></div>'
+        }
+        <details style="margin-top:1rem">
+            <summary style="font-size:.78rem;color:var(--text-muted);cursor:pointer">
+                <i class="fas fa-book"></i> Tabla de correspondencias Ely/OntoFIS
+            </summary>
+            <table class="taxonomy-ref">
+                <thead><tr><th>Categoría MedCheck</th><th>Equivalencia Ely / OntoFIS</th><th>Sección FT</th></tr></thead>
+                <tbody>${refRows}</tbody>
+            </table>
+        </details>
+        ${drillHtml}
+    </div>`;
+}
+
+// ─── RENDER: Context Analysis ───────────────────────────────────────────────────
+function renderContexts(data) {
+    const ctx = data.por_contexto;
+    if (!ctx) {
+        return `
+        <div class="chart-card" id="sec-context">
+            <div class="chart-card-title"><i class="fas fa-user-injured"></i> Contextos clínicos activados</div>
+            <div class="empty-state">
+                <i class="fas fa-user-injured"></i>
+                <p>Datos de contexto no disponibles</p>
+                <p class="note">Actualiza el Worker para habilitar este análisis</p>
+            </div>
+        </div>`;
+    }
+
+    const total = Object.entries(CONTEXTS).reduce((s, [k]) => s + (ctx[k] || 0), 0);
+    const hasAny = total > 0;
+
+    return `
+    <div class="charts-grid-equal" id="sec-context">
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-user-injured"></i> Contextos clínicos activados</div>
+            <p class="chart-subtitle">Perfil de riesgo del paciente evaluado durante las consultas. Cada contexto activa la revisión de secciones específicas de la ficha técnica.</p>
+            ${hasAny
+                ? '<div class="chart-wrap" style="height:250px"><canvas id="context-chart"></canvas></div>'
+                : '<div class="empty-state"><i class="fas fa-user-injured"></i><p>Sin activación de contextos clínicos en el periodo</p></div>'
+            }
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-th-large"></i> Distribución por pestaña</div>
+            ${data.por_vista?.length
+                ? '<div class="chart-wrap" style="height:250px"><canvas id="vistas-chart"></canvas></div>'
+                : '<div class="empty-state"><i class="fas fa-chart-pie"></i><p>Sin datos de vista</p></div>'
+            }
+        </div>
+    </div>`;
+}
+
+// ─── RENDER: Top Terms ──────────────────────────────────────────────────────────
+function renderTopTerms(terms) {
+    if (!terms || !terms.length) return `
+    <div class="table-card" id="sec-terms">
+        <div class="chart-card-title"><i class="fas fa-list-ol"></i> Top términos buscados</div>
+        <div class="empty-state"><i class="fas fa-search"></i><p>Sin datos de búsqueda</p></div>
+    </div>`;
+
     const grouped = new Map();
     for (const t of terms) {
         if (!grouped.has(t.termino)) {
-            grouped.set(t.termino, { termino: t.termino, tipo_busqueda: t.tipo_busqueda, consultas: 0, vistas: new Set() });
+            grouped.set(t.termino, { termino: t.termino, tipo_busqueda: t.tipo_busqueda, consultas: 0 });
         }
         const g = grouped.get(t.termino);
         g.consultas += t.consultas;
-        if (t.vista) g.vistas.add(t.vista);
     }
     const list = [...grouped.values()].sort((a, b) => b.consultas - a.consultas);
     const maxVal = list[0]?.consultas || 1;
 
-    const rows = list.map(t => {
-        const vistaBadges = t.vistas.size
-            ? [...t.vistas].map(v => `<span class="badge badge-atc">${v}</span>`).join(' ')
-            : '<span style="color:var(--text-muted);font-size:.8rem">—</span>';
-        return `
+    const rows = list.map(t => `
         <tr>
             <td class="term-name">${escapeHtml(t.termino)}</td>
             <td>${typeBadge(t.tipo_busqueda)}</td>
-            <td>${vistaBadges}</td>
             <td>
                 <div class="bar-wrap">
                     <div class="bar-track"><div class="bar-fill" style="width:${Math.round(t.consultas/maxVal*100)}%"></div></div>
                     <span class="bar-count">${t.consultas}</span>
                 </div>
             </td>
-        </tr>`;
-    }).join('');
+        </tr>`).join('');
+
     return `
-    <table class="analytics-table">
-        <thead>
-            <tr>
-                <th>Término</th>
-                <th>Tipo</th>
-                <th>Vista</th>
-                <th>Consultas</th>
-            </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-    </table>`;
+    <div class="table-card" id="sec-terms">
+        <div class="chart-card-title"><i class="fas fa-list-ol"></i> Top términos buscados</div>
+        <table class="analytics-table">
+            <thead><tr><th>Término</th><th>Tipo</th><th>Consultas</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>`;
 }
 
+// ─── RENDER: Temporal Patterns ──────────────────────────────────────────────────
+function renderTemporal(data) {
+    const hasHour = data.por_hora?.length > 0;
+    const hasWeekday = data.por_dia_semana?.length > 0;
+
+    if (!hasHour && !hasWeekday) {
+        return `
+        <div class="chart-card" id="sec-temporal">
+            <div class="chart-card-title"><i class="fas fa-clock"></i> Patrones temporales</div>
+            <div class="empty-state">
+                <i class="fas fa-clock"></i>
+                <p>Datos temporales no disponibles</p>
+                <p class="note">Actualiza el Worker para habilitar este análisis</p>
+            </div>
+        </div>`;
+    }
+
+    return `
+    <div class="charts-grid-equal" id="sec-temporal">
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-clock"></i> Distribución por hora del día</div>
+            <p class="chart-subtitle">Las horas de consulta habituales revelan cuándo surge la incertidumbre clínica (horas de consulta presencial vs. gestión administrativa).</p>
+            ${hasHour
+                ? '<div class="chart-wrap" style="height:220px"><canvas id="hour-chart"></canvas></div>'
+                : '<div class="empty-state"><p>Sin datos horarios</p></div>'
+            }
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-calendar-week"></i> Distribución por día de la semana</div>
+            <p class="chart-subtitle">Los días laborables concentran la actividad clínica; los picos fuera de horario pueden indicar preparación de consultas.</p>
+            ${hasWeekday
+                ? '<div class="chart-wrap" style="height:220px"><canvas id="weekday-chart"></canvas></div>'
+                : '<div class="empty-state"><p>Sin datos semanales</p></div>'
+            }
+        </div>
+    </div>`;
+}
+
+// ─── RENDER: Benchmark ──────────────────────────────────────────────────────────
+function renderBenchmark(data) {
+    const avgPerDay = (data.resumen.total_consultas / activeDias).toFixed(1);
+    const savedPatients = localStorage.getItem('mc_benchmark_patients') || '';
+
+    return `
+    <div class="chart-card" id="sec-benchmark">
+        <div class="chart-card-title"><i class="fas fa-balance-scale"></i> Comparativa con estudios de referencia</div>
+        <p class="chart-subtitle">Compara tu patrón de consultas con los datos de los estudios de referencia sobre dudas clínicas en Atención Primaria.</p>
+
+        <div class="benchmark-panel">
+            <div class="benchmark-your-data">
+                <div class="benchmark-stat">
+                    <span class="benchmark-stat-value">${data.resumen.total_consultas}</span>
+                    <span class="benchmark-stat-label">consultas en ${activeDias} días</span>
+                </div>
+                <div class="benchmark-stat">
+                    <span class="benchmark-stat-value">${avgPerDay}</span>
+                    <span class="benchmark-stat-label">consultas/día</span>
+                </div>
+                <div class="benchmark-stat">
+                    <span class="benchmark-stat-value">${data.resumen.terminos_distintos}</span>
+                    <span class="benchmark-stat-label">fármacos distintos</span>
+                </div>
+            </div>
+
+            <div class="benchmark-calc">
+                <label class="benchmark-input-label">
+                    <i class="fas fa-user-friends"></i> Pacientes atendidos en el periodo:
+                </label>
+                <input type="number" class="benchmark-input" id="benchmark-patients"
+                       value="${escapeHtml(savedPatients)}" min="1" placeholder="ej. 600">
+                <button class="period-btn" id="benchmark-calc-btn">Calcular tasa</button>
+            </div>
+
+            <div id="benchmark-result"></div>
+
+            <div class="benchmark-refs">
+                <div class="benchmark-ref">
+                    <div class="benchmark-ref-title">Louro 2009</div>
+                    <div class="benchmark-ref-detail">81 MAP · Galicia · Observador presencial</div>
+                    <div class="benchmark-ref-rate">1,7 <small>dudas/10 pac</small></div>
+                    <div class="benchmark-ref-note">IC95%: 1,59–1,82 · 92% dudas clínicas</div>
+                    <div class="benchmark-ref-note">Farmacología: 6,9% del total</div>
+                    <div class="benchmark-ref-note" style="margin-top:.3rem;color:#f87171">16,2% sin buscar solución · 81,5% nunca usaba internet</div>
+                </div>
+                <div class="benchmark-ref">
+                    <div class="benchmark-ref-title">ENIGMA 2006</div>
+                    <div class="benchmark-ref-detail">112 MAP · Madrid · Videograbación</div>
+                    <div class="benchmark-ref-rate">1,8 <small>dudas/10 pac</small></div>
+                    <div class="benchmark-ref-note">3.511 pacientes · 635 preguntas</div>
+                    <div class="benchmark-ref-note">Farmacología: 10% · Recursos electrónicos: 3,4%</div>
+                    <div class="benchmark-ref-note" style="margin-top:.3rem;color:#f87171">61% de las dudas buscables NO se buscaron</div>
+                </div>
+            </div>
+
+            <div class="benchmark-context">
+                <p><i class="fas fa-info-circle"></i> <strong>Nota metodológica:</strong> Louro y ENIGMA miden <em>todas</em> las dudas clínicas (diagnósticas, terapéuticas, administrativas). MedCheck captura específicamente <strong>dudas farmacológicas</strong>. Según ENIGMA, la farmacología representa ~10% del total; según Louro, orientación/composición = 6,9%.</p>
+                <p><i class="fas fa-lightbulb"></i> <strong>Valor clave:</strong> En ambos estudios, más del 60% de las dudas susceptibles de búsqueda <strong>no se buscaron</strong>. MedCheck reduce esta brecha al integrar la consulta farmacológica en el flujo de trabajo clínico.</p>
+                <p><i class="fas fa-graduation-cap"></i> <strong>Para docencia:</strong> Si una categoría de duda concentra un porcentaje alto de tus consultas, identifica un área de necesidad formativa específica.</p>
+            </div>
+        </div>
+    </div>`;
+}
+
+// ─── RENDER: Export ──────────────────────────────────────────────────────────────
+function renderExport() {
+    return `
+    <div class="chart-card" id="sec-export">
+        <div class="chart-card-title"><i class="fas fa-file-export"></i> Exportar datos</div>
+        <p class="chart-subtitle">Exporta los datos agregados del periodo seleccionado para análisis externo (hoja de cálculo, R, Python, etc.).</p>
+        <div class="export-actions">
+            <button class="export-btn" id="export-csv"><i class="fas fa-file-csv"></i> Descargar CSV</button>
+            <button class="export-btn" id="export-json"><i class="fas fa-file-code"></i> Descargar JSON completo</button>
+        </div>
+    </div>`;
+}
+
+// ─── RENDER: Endpoints ──────────────────────────────────────────────────────────
 function renderEndpoints(list) {
-    if (!list.length) return '<div class="empty-state"><p>Sin datos</p></div>';
+    if (!list || !list.length) return '';
     const total = list.reduce((s, e) => s + e.consultas, 0);
     const items = list.map(e => `
         <li class="endpoint-item">
             <span class="endpoint-path">${escapeHtml(e.endpoint)}</span>
             <span class="endpoint-count">${e.consultas} <small style="color:var(--text-muted);font-weight:400">(${Math.round(e.consultas/total*100)}%)</small></span>
         </li>`).join('');
-    return `<ul class="endpoint-list">${items}</ul>`;
+    return `
+    <details class="chart-card" style="cursor:pointer">
+        <summary class="chart-card-title" style="margin-bottom:0"><i class="fas fa-server"></i> Endpoints API (técnico)</summary>
+        <ul class="endpoint-list" style="margin-top:1rem">${items}</ul>
+    </details>`;
 }
 
-function renderVistas(list) {
-    if (!list.length) {
-        return `
-        <div class="empty-state">
-            <i class="fas fa-chart-pie"></i>
-            <p>Sin datos de vista todavía</p>
-            <p class="note"><i class="fas fa-info-circle"></i> A partir de hoy las consultas incluyen la pestaña activa</p>
-        </div>`;
-    }
-    return `<div class="chart-wrap" style="height:220px"><canvas id="vistas-chart"></canvas></div>`;
-}
-
-function escapeHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ─── mount charts ─────────────────────────────────────────────────────────────
-
+// ─── MOUNT CHARTS ───────────────────────────────────────────────────────────────
 function mountCharts(data) {
-    // Actividad diaria
-    const { labels, values } = renderActivityChart(data.actividad_diaria);
+    // Destroy existing
+    Object.values(charts).forEach(c => c?.destroy());
+
+    // 1. Activity chart (daily bar)
     const actCtx = document.getElementById('activity-chart')?.getContext('2d');
     if (actCtx) {
-        if (activityChart) activityChart.destroy();
-        activityChart = new Chart(actCtx, {
+        const { labels, values } = prepareActivityData(data.actividad_diaria);
+        charts.activity = new Chart(actCtx, {
             type: 'bar',
             data: {
                 labels,
@@ -538,49 +1076,191 @@ function mountCharts(data) {
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
+                responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: {
-                        ticks: { color: '#64748b', font: { size: 11 }, maxRotation: 45 },
-                        grid: { color: 'rgba(255,255,255,.04)' }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        ticks: { color: '#64748b', font: { size: 11 }, stepSize: 1 },
-                        grid: { color: 'rgba(255,255,255,.06)' }
-                    }
+                    x: { ticks: { ...TICK_STYLE, maxRotation: 45 }, grid: GRID_SUBTLE },
+                    y: { beginAtZero: true, ticks: { ...TICK_STYLE, stepSize: 1 }, grid: GRID_LIGHT }
                 }
             }
         });
     }
 
-    // Por vista (solo si hay datos)
-    if (data.por_vista?.length) {
-        const vCtx = document.getElementById('vistas-chart')?.getContext('2d');
-        if (vCtx) {
-            if (vistasChart) vistasChart.destroy();
-            const COLORS = ['#0ea5e9','#34d399','#f472b6','#fbbf24','#a78bfa','#fb923c','#22d3ee','#4ade80'];
-            vistasChart = new Chart(vCtx, {
+    // 2. Search type doughnut
+    if (data.por_tipo_busqueda?.length) {
+        const stCtx = document.getElementById('searchtype-chart')?.getContext('2d');
+        if (stCtx) {
+            charts.searchType = new Chart(stCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: data.por_vista.map(v => v.vista),
+                    labels: data.por_tipo_busqueda.map(t => SEARCH_TYPES[t.tipo_busqueda]?.label || t.tipo_busqueda),
                     datasets: [{
-                        data: data.por_vista.map(v => v.consultas),
-                        backgroundColor: COLORS.slice(0, data.por_vista.length),
+                        data: data.por_tipo_busqueda.map(t => t.consultas),
+                        backgroundColor: data.por_tipo_busqueda.map(t => SEARCH_TYPES[t.tipo_busqueda]?.color || '#94a3b8'),
                         borderColor: '#1e293b',
                         borderWidth: 2,
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: { color: '#94a3b8', font: { size: 11 }, padding: 12 }
+                        legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } }
+                    }
+                }
+            });
+        }
+    }
+
+    // 3. Clinical taxonomy (horizontal bar)
+    if (data.por_vista?.length) {
+        const taxCtx = document.getElementById('taxonomy-chart')?.getContext('2d');
+        if (taxCtx) {
+            const sorted = [...data.por_vista]
+                .filter(v => v.vista !== 'perfil')
+                .sort((a, b) => b.consultas - a.consultas);
+            charts.taxonomy = new Chart(taxCtx, {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(v => TAXONOMY[v.vista]?.label || v.vista),
+                    datasets: [{
+                        data: sorted.map(v => v.consultas),
+                        backgroundColor: sorted.map(v => TAXONOMY[v.vista]?.color || '#94a3b8'),
+                        borderRadius: 4,
+                        barThickness: 28,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { ...TICK_STYLE, stepSize: 1 }, grid: GRID_LIGHT },
+                        y: { ticks: { ...TICK_STYLE, font: { size: 12 } }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+    }
+
+    // 4. Context chart (horizontal bar)
+    if (data.por_contexto) {
+        const ctxCanvas = document.getElementById('context-chart')?.getContext('2d');
+        if (ctxCanvas) {
+            const contextData = Object.entries(CONTEXTS)
+                .map(([key, info]) => ({ label: `${info.label} (${info.section})`, count: data.por_contexto[key] || 0, color: info.color }))
+                .sort((a, b) => b.count - a.count);
+
+            if (contextData.some(c => c.count > 0)) {
+                charts.context = new Chart(ctxCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: contextData.map(c => c.label),
+                        datasets: [{
+                            data: contextData.map(c => c.count),
+                            backgroundColor: contextData.map(c => c.color),
+                            borderRadius: 4,
+                            barThickness: 24,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { beginAtZero: true, ticks: { ...TICK_STYLE, stepSize: 1 }, grid: GRID_LIGHT },
+                            y: { ticks: TICK_STYLE, grid: { display: false } }
                         }
+                    }
+                });
+            }
+        }
+    }
+
+    // 5. Vistas doughnut (in context section)
+    if (data.por_vista?.length) {
+        const vCtx = document.getElementById('vistas-chart')?.getContext('2d');
+        if (vCtx) {
+            const COLORS = ['#0ea5e9','#34d399','#f472b6','#fbbf24','#a78bfa','#fb923c','#22d3ee','#4ade80','#f87171'];
+            charts.vistas = new Chart(vCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.por_vista.map(v => v.vista),
+                    datasets: [{
+                        data: data.por_vista.map(v => v.consultas),
+                        backgroundColor: data.por_vista.map((v, i) => TAXONOMY[v.vista]?.color || COLORS[i % COLORS.length]),
+                        borderColor: '#1e293b',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } }
+                    }
+                }
+            });
+        }
+    }
+
+    // 6. Hourly chart
+    if (data.por_hora?.length) {
+        const hCtx = document.getElementById('hour-chart')?.getContext('2d');
+        if (hCtx) {
+            const hourMap = {};
+            data.por_hora.forEach(h => { hourMap[h.hora] = h.consultas; });
+            const hours = Array.from({length: 24}, (_, i) => i);
+
+            charts.hour = new Chart(hCtx, {
+                type: 'bar',
+                data: {
+                    labels: hours.map(h => `${h}h`),
+                    datasets: [{
+                        data: hours.map(h => hourMap[h] || 0),
+                        backgroundColor: hours.map(h =>
+                            h >= 8 && h <= 15 ? 'rgba(14,165,233,.6)' : 'rgba(14,165,233,.15)'
+                        ),
+                        borderRadius: 3,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { ...TICK_STYLE, maxRotation: 0 }, grid: GRID_SUBTLE },
+                        y: { beginAtZero: true, ticks: { ...TICK_STYLE, stepSize: 1 }, grid: GRID_LIGHT }
+                    }
+                }
+            });
+        }
+    }
+
+    // 7. Weekday chart
+    if (data.por_dia_semana?.length) {
+        const wCtx = document.getElementById('weekday-chart')?.getContext('2d');
+        if (wCtx) {
+            const dayMap = {};
+            data.por_dia_semana.forEach(d => { dayMap[d.dia_semana] = d.consultas; });
+            // Monday-first order
+            const days = [1, 2, 3, 4, 5, 6, 0];
+
+            charts.weekday = new Chart(wCtx, {
+                type: 'bar',
+                data: {
+                    labels: days.map(d => WEEKDAYS[d]),
+                    datasets: [{
+                        data: days.map(d => dayMap[d] || 0),
+                        backgroundColor: days.map(d =>
+                            d >= 1 && d <= 5 ? 'rgba(52,211,153,.6)' : 'rgba(52,211,153,.2)'
+                        ),
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: TICK_STYLE, grid: GRID_SUBTLE },
+                        y: { beginAtZero: true, ticks: { ...TICK_STYLE, stepSize: 1 }, grid: GRID_LIGHT }
                     }
                 }
             });
@@ -588,18 +1268,197 @@ function mountCharts(data) {
     }
 }
 
-// ─── main render ─────────────────────────────────────────────────────────────
+// ─── BENCHMARK LOGIC ────────────────────────────────────────────────────────────
+function initBenchmark(data) {
+    const btn = document.getElementById('benchmark-calc-btn');
+    const input = document.getElementById('benchmark-patients');
+    if (!btn || !input) return;
 
+    const calculate = () => {
+        const patients = parseInt(input.value);
+        if (!patients || patients < 1) return;
+
+        localStorage.setItem('mc_benchmark_patients', patients);
+
+        const rate = (data.resumen.total_consultas / patients) * 10;
+        const louroTotal = 1.7;
+        const enigmaTotal = 1.8;
+        const pharmaLouro  = louroTotal * 0.069;  // 0.117
+        const pharmaEnigma = enigmaTotal * 0.10;  // 0.18
+
+        let interpretation, interpClass;
+        if (rate < pharmaLouro) {
+            interpretation = `Tu tasa (<strong>${rate.toFixed(2)}</strong> consultas farmacológicas/10 pacientes) es inferior al componente farmacológico estimado de Louro (${pharmaLouro.toFixed(2)}). Esto puede indicar un uso puntual de la herramienta o que resuelves muchas dudas por otros canales (interconsulta, colega, vademécum).`;
+            interpClass = 'interp-low';
+        } else if (rate <= pharmaEnigma * 2) {
+            interpretation = `Tu tasa (<strong>${rate.toFixed(2)}</strong>) es consistente con el componente farmacológico estimado de los estudios (${pharmaLouro.toFixed(2)}–${pharmaEnigma.toFixed(2)}/10 pac). Estás resolviendo un volumen de dudas comparable a la frecuencia natural observada.`;
+            interpClass = 'interp-normal';
+        } else if (rate <= louroTotal) {
+            interpretation = `Tu tasa (<strong>${rate.toFixed(2)}</strong>) supera el componente farmacológico puro (${pharmaEnigma.toFixed(2)}) pero es inferior a la tasa total de dudas clínicas (${louroTotal}/10). Sugiere un uso activo — MedCheck está capturando dudas que posiblemente antes no se buscaban.`;
+            interpClass = 'interp-good';
+        } else {
+            interpretation = `Tu tasa (<strong>${rate.toFixed(2)}</strong>) supera la tasa total de dudas clínicas de Louro (${louroTotal}/10 pac). MedCheck parece haberse integrado como herramienta de consulta habitual, posiblemente reduciendo el 61% de dudas no buscadas que documentaba ENIGMA.`;
+            interpClass = 'interp-high';
+        }
+
+        const resultDiv = document.getElementById('benchmark-result');
+        if (resultDiv) {
+            resultDiv.innerHTML = `
+                <div class="benchmark-result">
+                    <span class="benchmark-rate-value" style="color:var(--primary)">${rate.toFixed(2)}</span>
+                    <span class="benchmark-rate-label">consultas farmacológicas / 10 pacientes</span>
+                </div>
+                <div class="benchmark-interpretation ${interpClass}">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>${interpretation}</span>
+                </div>
+            `;
+        }
+    };
+
+    btn.addEventListener('click', calculate);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+
+    // Auto-calculate if saved value exists
+    if (input.value) calculate();
+}
+
+// ─── EXPORT FUNCTIONS ───────────────────────────────────────────────────────────
+function exportCSV() {
+    if (!currentData) return;
+    const data = currentData;
+    const lines = [];
+    const e = escapeCSV;
+
+    lines.push('# MedCheck Analytics — Informe de consultas farmacológicas');
+    lines.push(`# Periodo: ${activeDias} días`);
+    lines.push(`# Generado: ${new Date().toISOString()}`);
+    lines.push('');
+
+    // Resumen
+    lines.push('SECCION,RESUMEN');
+    lines.push('Métrica,Valor');
+    lines.push(`Total consultas,${data.resumen.total_consultas}`);
+    lines.push(`Términos distintos,${data.resumen.terminos_distintos}`);
+    lines.push(`Con resultado,${data.resumen.con_resultado}`);
+    lines.push(`Sin resultado,${data.resumen.sin_resultado}`);
+    lines.push('');
+
+    // Actividad diaria
+    lines.push('SECCION,ACTIVIDAD DIARIA');
+    lines.push('Fecha,Consultas');
+    (data.actividad_diaria || []).forEach(d => lines.push(`${d.dia},${d.consultas}`));
+    lines.push('');
+
+    // Top términos
+    lines.push('SECCION,TOP TÉRMINOS');
+    lines.push('Término,Tipo búsqueda,Consultas');
+    (data.top_terminos || []).forEach(t =>
+        lines.push(`${e(t.termino)},${e(t.tipo_busqueda)},${t.consultas}`)
+    );
+    lines.push('');
+
+    // Por tipo de duda (vista)
+    lines.push('SECCION,TIPO DE DUDA CLÍNICA');
+    lines.push('Vista,Categoría Ely/OntoFIS,Sección FT,Consultas');
+    (data.por_vista || []).forEach(v => {
+        const tax = TAXONOMY[v.vista] || {};
+        lines.push(`${e(v.vista)},${e(tax.ely || '—')},${e(tax.section || '—')},${v.consultas}`);
+    });
+    lines.push('');
+
+    // Por contexto clínico
+    if (data.por_contexto) {
+        lines.push('SECCION,CONTEXTOS CLÍNICOS');
+        lines.push('Contexto,Sección FT,Consultas con contexto activo');
+        Object.entries(CONTEXTS).forEach(([key, info]) => {
+            lines.push(`${e(info.label)},${e(info.section)},${data.por_contexto[key] || 0}`);
+        });
+        lines.push('');
+    }
+
+    // Por hora
+    if (data.por_hora?.length) {
+        lines.push('SECCION,DISTRIBUCIÓN HORARIA');
+        lines.push('Hora,Consultas');
+        data.por_hora.forEach(h => lines.push(`${h.hora},${h.consultas}`));
+        lines.push('');
+    }
+
+    // Por día de semana
+    if (data.por_dia_semana?.length) {
+        lines.push('SECCION,DISTRIBUCIÓN SEMANAL');
+        lines.push('Día,Consultas');
+        data.por_dia_semana.forEach(d => lines.push(`${WEEKDAYS[d.dia_semana]},${d.consultas}`));
+        lines.push('');
+    }
+
+    // Por tipo de búsqueda
+    if (data.por_tipo_busqueda?.length) {
+        lines.push('SECCION,MODALIDAD DE BÚSQUEDA');
+        lines.push('Tipo,Consultas');
+        data.por_tipo_busqueda.forEach(t => {
+            const label = SEARCH_TYPES[t.tipo_busqueda]?.label || t.tipo_busqueda;
+            lines.push(`${e(label)},${t.consultas}`);
+        });
+        lines.push('');
+    }
+
+    // Top por vista
+    if (data.top_por_vista?.length) {
+        lines.push('SECCION,TOP TÉRMINOS POR TIPO DE DUDA');
+        lines.push('Vista,Término,Consultas');
+        data.top_por_vista.forEach(t =>
+            lines.push(`${e(t.vista)},${e(t.termino)},${t.consultas}`)
+        );
+    }
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `medcheck-analytics-${activeDias}d-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportJSON() {
+    if (!currentData) return;
+    const blob = new Blob([JSON.stringify(currentData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `medcheck-analytics-${activeDias}d-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ─── SECTION NAV ────────────────────────────────────────────────────────────────
+function initSectionNav() {
+    document.querySelectorAll('.snav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.snav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const target = document.getElementById(btn.dataset.section);
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+}
+
+// ─── MAIN RENDER ────────────────────────────────────────────────────────────────
 function renderDashboard(data) {
-    const hasVistaData = data.top_terminos.some(t => t.vista !== null);
-    const hasVistas    = data.por_vista?.length > 0;
+    currentData = data;
 
     const html = `
-        ${hasVistaData ? '' : `
-        <div class="info-banner">
-            <i class="fas fa-info-circle"></i>
-            <span>Los datos de <strong>vista clínica</strong> se registran a partir de hoy. Las consultas anteriores muestran vista <em>—</em>.</span>
-        </div>`}
+        <nav class="section-nav" id="section-nav">
+            <button class="snav-btn active" data-section="sec-resumen"><i class="fas fa-tachometer-alt"></i> Resumen</button>
+            <button class="snav-btn" data-section="sec-taxonomy"><i class="fas fa-th-list"></i> Dudas clínicas</button>
+            <button class="snav-btn" data-section="sec-context"><i class="fas fa-user-injured"></i> Contextos</button>
+            <button class="snav-btn" data-section="sec-terms"><i class="fas fa-list-ol"></i> Términos</button>
+            <button class="snav-btn" data-section="sec-temporal"><i class="fas fa-clock"></i> Temporal</button>
+            <button class="snav-btn" data-section="sec-benchmark"><i class="fas fa-balance-scale"></i> Comparativa</button>
+            <button class="snav-btn" data-section="sec-export"><i class="fas fa-file-export"></i> Exportar</button>
+        </nav>
 
         <div class="update-ts" id="update-ts"></div>
 
@@ -613,34 +1472,42 @@ function renderDashboard(data) {
                 </div>
             </div>
             <div class="chart-card">
-                <div class="chart-card-title"><i class="fas fa-server"></i> Por endpoint</div>
-                ${renderEndpoints(data.por_endpoint)}
+                <div class="chart-card-title"><i class="fas fa-chart-pie"></i> Modalidad de búsqueda</div>
+                ${data.por_tipo_busqueda?.length
+                    ? '<div class="chart-wrap" style="height:220px"><canvas id="searchtype-chart"></canvas></div>'
+                    : '<div class="empty-state"><i class="fas fa-chart-pie"></i><p>Sin datos de tipo de búsqueda</p></div>'
+                }
             </div>
         </div>
 
-        <div class="table-card">
-            <div class="chart-card-title"><i class="fas fa-list-ol"></i> Top términos buscados</div>
-            ${renderTopTerms(data.top_terminos)}
-        </div>
-
-        <div class="chart-card">
-            <div class="chart-card-title"><i class="fas fa-th-large"></i> Distribución por pestaña clínica</div>
-            ${renderVistas(data.por_vista)}
-        </div>
+        ${renderTaxonomy(data)}
+        ${renderContexts(data)}
+        ${renderTopTerms(data.top_terminos)}
+        ${renderTemporal(data)}
+        ${renderBenchmark(data)}
+        ${renderExport()}
+        ${renderEndpoints(data.por_endpoint)}
     `;
 
     document.getElementById('analytics-root').innerHTML = html;
 
-    // timestamp
+    // Timestamp
     const ts = document.getElementById('update-ts');
     if (ts) ts.textContent = `Actualizado: ${new Date().toLocaleTimeString('es-ES')}`;
 
-    // mount charts after DOM is ready
+    // Mount charts after DOM is ready
     requestAnimationFrame(() => mountCharts(data));
+
+    // Init interactive elements
+    initSectionNav();
+    initBenchmark(data);
+
+    // Export buttons
+    document.getElementById('export-csv')?.addEventListener('click', exportCSV);
+    document.getElementById('export-json')?.addEventListener('click', exportJSON);
 }
 
-// ─── load ─────────────────────────────────────────────────────────────────────
-
+// ─── LOAD ───────────────────────────────────────────────────────────────────────
 async function load() {
     const root = document.getElementById('analytics-root');
     const btn  = document.getElementById('refresh-btn');
@@ -663,8 +1530,7 @@ async function load() {
     }
 }
 
-// ─── event listeners ──────────────────────────────────────────────────────────
-
+// ─── EVENT LISTENERS ────────────────────────────────────────────────────────────
 document.querySelectorAll('.period-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
@@ -676,7 +1542,7 @@ document.querySelectorAll('.period-btn').forEach(btn => {
 
 document.getElementById('refresh-btn').addEventListener('click', load);
 
-// ─── init ─────────────────────────────────────────────────────────────────────
+// ─── INIT ───────────────────────────────────────────────────────────────────────
 load();
 </script>
 </body>
