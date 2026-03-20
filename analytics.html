@@ -605,6 +605,123 @@
             color: var(--primary);
         }
         .export-btn i { font-size: 1rem; }
+
+        /* TAB SYSTEM */
+        .tab-bar {
+            display: flex;
+            gap: .25rem;
+            margin-bottom: 1.75rem;
+            border-bottom: 2px solid var(--border-default);
+            padding-bottom: 0;
+            overflow-x: auto;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--bg-dark);
+            padding-top: .5rem;
+        }
+        .tab-btn {
+            padding: .65rem 1.1rem;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: .82rem;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all .15s;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+        }
+        .tab-btn:hover {
+            color: var(--text-primary);
+            border-bottom-color: var(--border-hover);
+        }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .tab-panel {
+            display: none;
+            animation: fadeIn .2s ease;
+        }
+        .tab-panel.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @media (max-width: 600px) {
+            .tab-btn { padding: .5rem .7rem; font-size: .75rem; }
+        }
+
+        /* LAGUNAS */
+        .laguna-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: .5rem .75rem;
+            border-bottom: 1px solid var(--border-default);
+            font-size: .85rem;
+        }
+        .laguna-row:last-child { border-bottom: none; }
+        .laguna-term {
+            font-family: monospace;
+            color: #f87171;
+        }
+        .laguna-count {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: .8rem;
+        }
+
+        /* RECURRENCE */
+        .recurrence-badge {
+            display: inline-block;
+            padding: .1rem .4rem;
+            border-radius: 4px;
+            font-size: .7rem;
+            font-weight: 500;
+            background: rgba(168,85,247,.15);
+            color: #c084fc;
+        }
+
+        /* SUCCESS RATE */
+        .rate-good { color: #34d399; }
+        .rate-ok { color: #fbbf24; }
+        .rate-bad { color: #f87171; }
+
+        /* KPI MINI */
+        .kpi-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .kpi-mini {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: 8px;
+            padding: .75rem 1rem;
+            flex: 1;
+            min-width: 140px;
+        }
+        .kpi-mini .kpi-label {
+            font-size: .7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .kpi-mini .kpi-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1.2;
+        }
+        .kpi-mini .kpi-note {
+            font-size: .72rem;
+            color: var(--text-muted);
+        }
     </style>
 </head>
 <body>
@@ -1166,6 +1283,140 @@ function renderATC(data) {
     </div>`;
 }
 
+// ─── RENDER V2: Mis Lagunas (searches with no results) ──────────────────────────
+function renderMisLagunas(data) {
+    const terms = data.sin_resultado_terms;
+    if (!terms || !terms.length) {
+        return `
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-search-minus"></i> Búsquedas sin resultado</div>
+            <div class="empty-state">
+                <i class="fas fa-check-circle" style="color:#34d399"></i>
+                <p>Todas las búsquedas devolvieron resultados en este periodo</p>
+                <p class="note">Buen indicador de cobertura de la herramienta</p>
+            </div>
+        </div>`;
+    }
+
+    const rows = terms.map(t => `
+        <div class="laguna-row">
+            <span>
+                <span class="laguna-term">${escapeHtml(t.termino)}</span>
+                ${typeBadge(t.tipo_busqueda)}
+            </span>
+            <span class="laguna-count">${t.intentos} intento${t.intentos > 1 ? 's' : ''}</span>
+        </div>`).join('');
+
+    return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-search-minus"></i> Búsquedas sin resultado — "Mis lagunas"</div>
+        <p class="chart-subtitle">Términos que no devolvieron resultados en CIMA. Puede indicar errores ortográficos, medicamentos no autorizados en España, o necesidades no cubiertas.</p>
+        ${rows}
+    </div>`;
+}
+
+// ─── RENDER V2: Context × Drug cross-analysis ──────────────────────────────────
+function renderContextoCruce(data) {
+    const ctxTerms = data.contexto_terminos;
+    if (!ctxTerms || Object.keys(ctxTerms).length === 0) {
+        return `
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-project-diagram"></i> Fármacos por contexto clínico</div>
+            <div class="empty-state">
+                <i class="fas fa-project-diagram"></i>
+                <p>Sin datos de cruce contexto-fármaco todavía</p>
+                <p class="note">Activa contextos clínicos (embarazo, renal…) al buscar en MedCheck</p>
+            </div>
+        </div>`;
+    }
+
+    const cards = Object.entries(ctxTerms).map(([ctx, terms]) => {
+        const info = CONTEXTS[ctx] || { label: ctx, icon: 'fa-tag', color: '#94a3b8' };
+        const items = terms.slice(0, 7).map(t =>
+            `<li><span>${escapeHtml(t.termino)}</span><span>${t.consultas}</span></li>`
+        ).join('');
+        return `
+        <div class="drill-card">
+            <h4><i class="fas ${info.icon}" style="color:${info.color}"></i> ${info.label}</h4>
+            <ul class="drill-list">${items}</ul>
+        </div>`;
+    }).join('');
+
+    return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-project-diagram"></i> Top fármacos por contexto clínico</div>
+        <p class="chart-subtitle">Qué medicamentos se consultan cuando hay un perfil de riesgo activado. Revela la casuística de pacientes complejos (embarazo, insuficiencia renal, polimedicados mayores…).</p>
+        <div class="drill-grid">${cards}</div>
+    </div>`;
+}
+
+// ─── RENDER V2: Recurrence ──────────────────────────────────────────────────────
+function renderRecurrencia(data) {
+    const recur = data.recurrentes;
+    if (!recur || !recur.length) {
+        return `
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Fármacos recurrentes</div>
+            <div class="empty-state">
+                <i class="fas fa-redo-alt"></i>
+                <p>No hay fármacos con ≥3 consultas en el periodo</p>
+            </div>
+        </div>`;
+    }
+
+    const maxVal = recur[0]?.consultas || 1;
+    const rows = recur.map(t => `
+        <tr>
+            <td class="term-name">${escapeHtml(t.termino)}</td>
+            <td><span class="recurrence-badge">${t.dias_distintos} día${t.dias_distintos > 1 ? 's' : ''}</span></td>
+            <td>
+                <div class="bar-wrap">
+                    <div class="bar-track"><div class="bar-fill" style="width:${Math.round(t.consultas/maxVal*100)}%;background:#a78bfa"></div></div>
+                    <span class="bar-count">${t.consultas}</span>
+                </div>
+            </td>
+        </tr>`).join('');
+
+    return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Fármacos recurrentes (≥3 consultas)</div>
+        <p class="chart-subtitle">Medicamentos consultados repetidamente. La recurrencia sugiere incertidumbre persistente o complejidad posológica. La columna "días" indica si la consulta se distribuye en el tiempo o se concentra.</p>
+        <table class="analytics-table">
+            <thead><tr><th>Fármaco</th><th>Distribución</th><th>Consultas</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>`;
+}
+
+// ─── RENDER V2: Success Rate by search type ─────────────────────────────────────
+function renderTasaExito(data) {
+    const rates = data.tasa_exito;
+    if (!rates || !rates.length) return '';
+
+    const rows = rates.map(t => {
+        const label = SEARCH_TYPES[t.tipo_busqueda]?.label || t.tipo_busqueda;
+        const rate = t.tasa_exito ?? 0;
+        const cls = rate >= 90 ? 'rate-good' : rate >= 70 ? 'rate-ok' : 'rate-bad';
+        return `
+        <tr>
+            <td>${typeBadge(t.tipo_busqueda)} ${escapeHtml(label)}</td>
+            <td style="text-align:center">${t.total}</td>
+            <td style="text-align:center">${t.con_resultado}</td>
+            <td style="text-align:right"><span class="${cls}" style="font-weight:700">${rate}%</span></td>
+        </tr>`;
+    }).join('');
+
+    return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-bullseye"></i> Tasa de éxito por modalidad</div>
+        <p class="chart-subtitle">Porcentaje de búsquedas que devuelven al menos un resultado, desglosado por tipo. Una tasa baja puede indicar problemas de cobertura o errores en la estrategia de búsqueda.</p>
+        <table class="analytics-table">
+            <thead><tr><th>Modalidad</th><th style="text-align:center">Total</th><th style="text-align:center">Con resultado</th><th style="text-align:right">Tasa éxito</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>`;
+}
+
 // ─── RENDER: Endpoints ──────────────────────────────────────────────────────────
 function renderEndpoints(list) {
     if (!list || !list.length) return '';
@@ -1427,6 +1678,38 @@ function mountCharts(data) {
             });
         }
     }
+
+    // 9. Success rate chart (horizontal bar)
+    if (data.tasa_exito?.length) {
+        const teCtx = document.getElementById('tasaexito-chart')?.getContext('2d');
+        if (teCtx) {
+            const sorted = [...data.tasa_exito].sort((a, b) => b.total - a.total);
+            charts.tasaExito = new Chart(teCtx, {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(t => SEARCH_TYPES[t.tipo_busqueda]?.label || t.tipo_busqueda),
+                    datasets: [{
+                        data: sorted.map(t => t.tasa_exito ?? 0),
+                        backgroundColor: sorted.map(t => {
+                            const r = t.tasa_exito ?? 0;
+                            return r >= 90 ? '#34d399' : r >= 70 ? '#fbbf24' : '#f87171';
+                        }),
+                        borderRadius: 4,
+                        barThickness: 24,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, max: 100, ticks: { ...TICK_STYLE, callback: v => v + '%' }, grid: GRID_LIGHT },
+                        y: { ticks: TICK_STYLE, grid: { display: false } }
+                    }
+                }
+            });
+        }
+    }
 }
 
 // ─── BENCHMARK LOGIC ────────────────────────────────────────────────────────────
@@ -1623,14 +1906,19 @@ function exportJSON() {
     URL.revokeObjectURL(url);
 }
 
-// ─── SECTION NAV ────────────────────────────────────────────────────────────────
-function initSectionNav() {
-    document.querySelectorAll('.snav-btn').forEach(btn => {
+// ─── TAB SYSTEM ─────────────────────────────────────────────────────────────────
+function initTabs(data) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.snav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
             btn.classList.add('active');
-            const target = document.getElementById(btn.dataset.section);
-            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const panel = document.getElementById(btn.dataset.tab);
+            if (panel) {
+                panel.classList.add('active');
+                // Remount charts when switching tab (canvas needs visible container)
+                requestAnimationFrame(() => mountCharts(data));
+            }
         });
     });
 }
@@ -1639,46 +1927,98 @@ function initSectionNav() {
 function renderDashboard(data) {
     currentData = data;
 
+    // KPIs extras V2
+    const pctExito = data.resumen.total_consultas > 0
+        ? Math.round(data.resumen.con_resultado / data.resumen.total_consultas * 100) : 0;
+    const diversidad = data.resumen.total_consultas > 0
+        ? Math.round(data.resumen.terminos_distintos / data.resumen.total_consultas * 100) : 0;
+
     const html = `
-        <nav class="section-nav" id="section-nav">
-            <button class="snav-btn active" data-section="sec-resumen"><i class="fas fa-tachometer-alt"></i> Resumen</button>
-            <button class="snav-btn" data-section="sec-taxonomy"><i class="fas fa-th-list"></i> Dudas clínicas</button>
-            <button class="snav-btn" data-section="sec-context"><i class="fas fa-user-injured"></i> Contextos</button>
-            <button class="snav-btn" data-section="sec-terms"><i class="fas fa-list-ol"></i> Términos</button>
-            <button class="snav-btn" data-section="sec-atc"><i class="fas fa-pills"></i> ATC</button>
-            <button class="snav-btn" data-section="sec-temporal"><i class="fas fa-clock"></i> Temporal</button>
-            <button class="snav-btn" data-section="sec-benchmark"><i class="fas fa-balance-scale"></i> Comparativa</button>
-            <button class="snav-btn" data-section="sec-export"><i class="fas fa-file-export"></i> Exportar</button>
+        <nav class="tab-bar" id="tab-bar">
+            <button class="tab-btn active" data-tab="tab-resumen"><i class="fas fa-tachometer-alt"></i> Resumen</button>
+            <button class="tab-btn" data-tab="tab-farmacos"><i class="fas fa-pills"></i> Fármacos</button>
+            <button class="tab-btn" data-tab="tab-clinica"><i class="fas fa-stethoscope"></i> Clínica</button>
+            <button class="tab-btn" data-tab="tab-patrones"><i class="fas fa-chart-line"></i> Patrones</button>
+            <button class="tab-btn" data-tab="tab-datos"><i class="fas fa-database"></i> Datos</button>
         </nav>
 
         <div class="update-ts" id="update-ts"></div>
 
-        ${renderSummary(data.resumen)}
+        <!-- ═══════ TAB: RESUMEN ═══════ -->
+        <div class="tab-panel active" id="tab-resumen">
+            ${renderSummary(data.resumen)}
 
-        <div class="charts-grid">
+            <div class="kpi-row">
+                <div class="kpi-mini">
+                    <div class="kpi-label"><i class="fas fa-bullseye"></i> Tasa de resolución</div>
+                    <div class="kpi-value">${pctExito}%</div>
+                    <div class="kpi-note">consultas con resultado</div>
+                </div>
+                <div class="kpi-mini">
+                    <div class="kpi-label"><i class="fas fa-fingerprint"></i> Diversidad</div>
+                    <div class="kpi-value">${diversidad}%</div>
+                    <div class="kpi-note">ratio fármacos únicos / consultas</div>
+                </div>
+                <div class="kpi-mini">
+                    <div class="kpi-label"><i class="fas fa-redo-alt"></i> Recurrentes</div>
+                    <div class="kpi-value">${data.recurrentes?.length || 0}</div>
+                    <div class="kpi-note">fármacos con ≥3 consultas</div>
+                </div>
+            </div>
+
             <div class="chart-card">
                 <div class="chart-card-title"><i class="fas fa-chart-bar"></i> Actividad diaria</div>
                 <div class="chart-wrap" style="height:220px">
                     <canvas id="activity-chart"></canvas>
                 </div>
             </div>
-            <div class="chart-card">
-                <div class="chart-card-title"><i class="fas fa-chart-pie"></i> Modalidad de búsqueda</div>
-                ${data.por_tipo_busqueda?.length
-                    ? '<div class="chart-wrap" style="height:220px"><canvas id="searchtype-chart"></canvas></div>'
-                    : '<div class="empty-state"><i class="fas fa-chart-pie"></i><p>Sin datos de tipo de búsqueda</p></div>'
-                }
-            </div>
+
+            ${renderBenchmark(data)}
         </div>
 
-        ${renderTaxonomy(data)}
-        ${renderContexts(data)}
-        ${renderTopTerms(data.top_terminos)}
-        ${renderATC(data)}
-        ${renderTemporal(data)}
-        ${renderBenchmark(data)}
-        ${renderExport()}
-        ${renderEndpoints(data.por_endpoint)}
+        <!-- ═══════ TAB: FÁRMACOS ═══════ -->
+        <div class="tab-panel" id="tab-farmacos">
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-card-title"><i class="fas fa-chart-pie"></i> Modalidad de búsqueda</div>
+                    ${data.por_tipo_busqueda?.length
+                        ? '<div class="chart-wrap" style="height:220px"><canvas id="searchtype-chart"></canvas></div>'
+                        : '<div class="empty-state"><i class="fas fa-chart-pie"></i><p>Sin datos de tipo de búsqueda</p></div>'
+                    }
+                </div>
+                <div class="chart-card">
+                    <div class="chart-card-title"><i class="fas fa-bullseye"></i> Tasa de éxito</div>
+                    ${data.tasa_exito?.length
+                        ? '<div class="chart-wrap" style="height:220px"><canvas id="tasaexito-chart"></canvas></div>'
+                        : '<div class="empty-state"><p>Sin datos</p></div>'
+                    }
+                </div>
+            </div>
+
+            ${renderTopTerms(data.top_terminos)}
+            ${renderRecurrencia(data)}
+            ${renderATC(data)}
+            ${renderTasaExito(data)}
+            ${renderMisLagunas(data)}
+        </div>
+
+        <!-- ═══════ TAB: CLÍNICA ═══════ -->
+        <div class="tab-panel" id="tab-clinica">
+            ${renderTaxonomy(data)}
+            ${renderContexts(data)}
+            ${renderContextoCruce(data)}
+        </div>
+
+        <!-- ═══════ TAB: PATRONES ═══════ -->
+        <div class="tab-panel" id="tab-patrones">
+            ${renderTemporal(data)}
+        </div>
+
+        <!-- ═══════ TAB: DATOS ═══════ -->
+        <div class="tab-panel" id="tab-datos">
+            ${renderExport()}
+            ${renderEndpoints(data.por_endpoint)}
+        </div>
     `;
 
     document.getElementById('analytics-root').innerHTML = html;
@@ -1691,7 +2031,7 @@ function renderDashboard(data) {
     requestAnimationFrame(() => mountCharts(data));
 
     // Init interactive elements
-    initSectionNav();
+    initTabs(data);
     initBenchmark(data);
 
     // Export buttons

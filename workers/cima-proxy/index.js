@@ -298,6 +298,69 @@ async function handleAnalytics(request, env) {
             atcData = { por_atc_nivel1: atcN1.results, por_atc_nivel2: atcN2.results, top_atc: atcTop.results };
         } catch (_) { /* columna atc_code aún no creada */ }
 
+        // ─── Queries V2: lagunas, contexto×fármaco, recurrencia, tasa éxito, vista×ATC ───
+        const [sinResultadoTerms, recurrentes, tasaExito] = await Promise.all([
+            // Búsquedas sin resultado ("Mis lagunas")
+            env.DB.prepare(`
+                SELECT termino, tipo_busqueda, COUNT(*) AS intentos
+                FROM eventos
+                WHERE ts > ? AND num_resultados = 0 AND termino IS NOT NULL AND status_code = 200
+                GROUP BY termino, tipo_busqueda
+                ORDER BY intentos DESC LIMIT 20
+            `).bind(desde).all(),
+
+            // Fármacos recurrentes (≥3 consultas)
+            env.DB.prepare(`
+                SELECT termino, COUNT(*) AS consultas,
+                       COUNT(DISTINCT date(ts/1000,'unixepoch')) AS dias_distintos
+                FROM eventos
+                WHERE ts > ? AND termino IS NOT NULL AND status_code = 200
+                GROUP BY termino HAVING consultas >= 3
+                ORDER BY consultas DESC LIMIT 20
+            `).bind(desde).all(),
+
+            // Tasa de éxito por tipo de búsqueda
+            env.DB.prepare(`
+                SELECT tipo_busqueda,
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN num_resultados > 0 THEN 1 ELSE 0 END) AS con_resultado,
+                    ROUND(100.0 * SUM(CASE WHEN num_resultados > 0 THEN 1 ELSE 0 END) / COUNT(*), 1) AS tasa_exito
+                FROM eventos WHERE ts > ? AND status_code = 200
+                GROUP BY tipo_busqueda ORDER BY total DESC
+            `).bind(desde).all(),
+        ]);
+
+        // Top fármacos por cada contexto clínico
+        const contextKeys = ['embarazo', 'lactancia', 'elderly', 'driving', 'renal', 'hepatic'];
+        const contextoTerminosRaw = await Promise.all(
+            contextKeys.map(ctx =>
+                env.DB.prepare(`
+                    SELECT termino, COUNT(*) AS consultas
+                    FROM eventos
+                    WHERE ts > ? AND contexto LIKE ? AND termino IS NOT NULL AND status_code = 200
+                    GROUP BY termino ORDER BY consultas DESC LIMIT 10
+                `).bind(desde, `%${ctx}%`).all()
+            )
+        );
+        const contexto_terminos = {};
+        contextKeys.forEach((ctx, i) => {
+            if (contextoTerminosRaw[i].results?.length > 0) {
+                contexto_terminos[ctx] = contextoTerminosRaw[i].results;
+            }
+        });
+
+        // Cruce vista × ATC nivel 1 (para heatmap — graceful fallback)
+        let vistaAtc = [];
+        try {
+            const vaResult = await env.DB.prepare(`
+                SELECT vista, SUBSTR(atc_code, 1, 1) AS atc_n1, COUNT(*) AS consultas
+                FROM eventos
+                WHERE ts > ? AND vista IS NOT NULL AND atc_code IS NOT NULL AND status_code = 200
+                GROUP BY vista, atc_n1 ORDER BY consultas DESC
+            `).bind(desde).all();
+            vistaAtc = vaResult.results;
+        } catch (_) { /* atc_code aún no existe */ }
+
         return new Response(JSON.stringify({
             periodo_dias:     dias,
             resumen,
@@ -311,6 +374,12 @@ async function handleAnalytics(request, env) {
             por_tipo_busqueda: porTipoBusqueda.results,
             top_por_vista:     topPorVista.results,
             ...atcData,
+            // V2
+            sin_resultado_terms: sinResultadoTerms.results,
+            recurrentes:         recurrentes.results,
+            tasa_exito:          tasaExito.results,
+            contexto_terminos,
+            vista_atc:           vistaAtc,
         }), {
             headers: { ...getCORSHeaders(request), 'Content-Type': 'application/json' },
         });
