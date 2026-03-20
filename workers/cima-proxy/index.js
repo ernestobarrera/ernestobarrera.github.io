@@ -139,10 +139,12 @@ async function registrarEvento(db, path, searchParams, responseData, statusCode,
             else if (Array.isArray(parsed.resultados))  numResultados = parsed.resultados.length;
             else if (Array.isArray(parsed))             numResultados = parsed.length;
             // Extraer código ATC de la respuesta CIMA
-            if (parsed.resultados?.length > 0 && parsed.resultados[0].atcs?.length > 0) {
-                atcCode = parsed.resultados[0].atcs[0].codigo || null;
-            } else if (parsed.atcs?.length > 0) {
+            // /medicamento  → parsed.atcs[].codigo (detalle individual)
+            // /medicamentos → parsed.resultados[].atcs[].codigo (lista)
+            if (parsed.atcs?.length > 0) {
                 atcCode = parsed.atcs[0].codigo || null;
+            } else if (parsed.resultados?.length > 0 && parsed.resultados[0].atcs?.length > 0) {
+                atcCode = parsed.resultados[0].atcs[0].codigo || null;
             }
         } catch (_) {}
         if (esBusquedaLista) {
