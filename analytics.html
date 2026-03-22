@@ -786,6 +786,18 @@ const CONTEXTS = {
     hepatic:   { label: 'Insuf. hepática',    icon: 'fa-disease',        color: '#fb923c', section: '4.2/4.4' },
 };
 
+// Ontología de secciones de Ficha Técnica (CIMA/ICH) — para analítica de modal
+const FT_SECTIONS = {
+    '4.1': { label: 'Indicaciones terapéuticas',           ely: 'Indicaciones, fármaco de elección',          color: '#34d399', icon: 'fa-stethoscope'         },
+    '4.2': { label: 'Posología y administración',          ely: 'Dosificación, régimen, forma administración', color: '#60a5fa', icon: 'fa-clock'               },
+    '4.3': { label: 'Contraindicaciones',                  ely: 'Contraindicaciones absolutas',               color: '#f87171', icon: 'fa-ban'                 },
+    '4.4': { label: 'Advertencias y precauciones',         ely: 'Precauciones de uso, poblaciones especiales', color: '#fb923c', icon: 'fa-exclamation-triangle'},
+    '4.5': { label: 'Interacciones medicamentosas',        ely: 'Interacciones fármaco-fármaco',              color: '#a78bfa', icon: 'fa-random'              },
+    '4.6': { label: 'Fertilidad, embarazo y lactancia',   ely: 'Seguridad en gestación y lactancia',          color: '#f472b6', icon: 'fa-baby'                },
+    '4.7': { label: 'Efectos sobre la conducción',        ely: 'Seguridad vial, actividad laboral',           color: '#fbbf24', icon: 'fa-car'                 },
+    '4.8': { label: 'Reacciones adversas',                ely: 'RAM, causalidad inversa',                     color: '#f87171', icon: 'fa-exclamation-circle'  },
+};
+
 const SEARCH_TYPES = {
     nombre:           { label: 'Nombre comercial',  color: '#38bdf8' },
     principio_activo: { label: 'Principio activo',   color: '#34d399' },
@@ -996,6 +1008,64 @@ function renderTaxonomy(data) {
             </table>
         </details>
         ${drillHtml}
+    </div>`;
+}
+
+// ─── RENDER: Secciones FT consultadas (modal de detalle) ────────────────────────
+function renderSeccionesFT(data) {
+    const secciones = data.por_seccion_ft;
+    if (!secciones || !secciones.length) return `
+    <div class="chart-card" id="sec-secciones-ft">
+        <div class="chart-card-title"><i class="fas fa-book-open"></i> Secciones de Ficha Técnica consultadas</div>
+        <p class="chart-subtitle">Requiere columna <code>seccion</code> en D1 y despliegue del Worker actualizado.</p>
+        <div class="empty-state"><i class="fas fa-layer-group"></i><p>Sin datos de secciones aún</p></div>
+    </div>`;
+
+    const total = secciones.reduce((s, r) => s + r.consultas, 0);
+    const maxVal = secciones[0]?.consultas || 1;
+
+    // Top fármacos por sección (para el drill-down)
+    const topBySec = {};
+    (data.top_por_seccion || []).forEach(r => {
+        if (!topBySec[r.seccion]) topBySec[r.seccion] = [];
+        if (topBySec[r.seccion].length < 4) topBySec[r.seccion].push(r);
+    });
+
+    const rows = secciones.map(r => {
+        const info = FT_SECTIONS[r.seccion] || { label: `Sección ${r.seccion}`, color: '#94a3b8', icon: 'fa-file-alt', ely: '—' };
+        const pct = Math.round(r.consultas / total * 100);
+        const topItems = (topBySec[r.seccion] || []).map(t => `<span class="tag-pill">${escapeHtml(t.termino)}</span>`).join('');
+        return `
+        <tr>
+            <td><i class="fas ${info.icon}" style="color:${info.color};width:1.2rem"></i> <strong>${r.seccion}</strong></td>
+            <td>${escapeHtml(info.label)}</td>
+            <td><div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(r.consultas/maxVal*100)}%;background:${info.color}"></div></div></td>
+            <td style="text-align:right"><strong>${r.consultas}</strong> <span class="text-muted">(${pct}%)</span></td>
+            <td style="text-align:right;color:var(--text-muted)">${r.farmacos_distintos}</td>
+            <td style="font-size:.75rem">${topItems || '<span class="text-muted">—</span>'}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+    <div class="chart-card" id="sec-secciones-ft">
+        <div class="chart-card-title"><i class="fas fa-book-open"></i> Secciones de Ficha Técnica consultadas</div>
+        <p class="chart-subtitle">Distribución de consultas por sección de la FT — refleja directamente los tipos de duda clínica (taxonomía Ely/ENIGMA). Sólo eventos del modal de detalle.</p>
+        <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">
+            <div class="kpi-mini" style="flex:0 0 auto">
+                <div class="kpi-label"><i class="fas fa-mouse-pointer"></i> Consultas de sección</div>
+                <div class="kpi-value">${total}</div>
+            </div>
+            <div class="chart-wrap" style="height:200px;flex:1;min-width:200px"><canvas id="seccion-ft-chart"></canvas></div>
+        </div>
+        <div style="overflow-x:auto">
+        <table class="data-table">
+            <thead><tr>
+                <th>Sección</th><th>Contenido</th><th style="min-width:120px">Frecuencia</th>
+                <th style="text-align:right">Consultas</th><th style="text-align:right">Fármacos únicos</th><th>Top fármacos</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+        </div>
     </div>`;
 }
 
@@ -1646,7 +1716,32 @@ function mountCharts(data) {
         }
     }
 
-    // 8. Weekday chart
+    // 8. Secciones FT chart (doughnut)
+    if (data.por_seccion_ft?.length) {
+        const secCtx = document.getElementById('seccion-ft-chart')?.getContext('2d');
+        if (secCtx) {
+            charts.seccionFt = new Chart(secCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.por_seccion_ft.map(r => `${r.seccion} ${FT_SECTIONS[r.seccion]?.label || ''}`),
+                    datasets: [{
+                        data: data.por_seccion_ft.map(r => r.consultas),
+                        backgroundColor: data.por_seccion_ft.map(r => FT_SECTIONS[r.seccion]?.color || '#94a3b8'),
+                        borderColor: '#1e293b',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 10 } }
+                    }
+                }
+            });
+        }
+    }
+
+    // 9. Weekday chart
     if (data.por_dia_semana?.length) {
         const wCtx = document.getElementById('weekday-chart')?.getContext('2d');
         if (wCtx) {
@@ -2005,6 +2100,7 @@ function renderDashboard(data) {
         <!-- ═══════ TAB: CLÍNICA ═══════ -->
         <div class="tab-panel" id="tab-clinica">
             ${renderTaxonomy(data)}
+            ${renderSeccionesFT(data)}
             ${renderContexts(data)}
             ${renderContextoCruce(data)}
         </div>

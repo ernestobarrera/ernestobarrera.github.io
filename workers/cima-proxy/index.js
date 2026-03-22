@@ -133,48 +133,69 @@ function extraerTermino(searchParams) {
 }
 async function registrarEvento(db, path, searchParams, responseData, statusCode, vista, contexto) {
     try {
-        const { tipo, termino } = extraerTermino(searchParams);
+        const esDocSegmentado = path.startsWith('/docSegmentado');
+        let tipo, termino, seccion = null, atcCode = null;
+
+        if (esDocSegmentado) {
+            // Evento de consulta de sección FT desde el modal de detalle
+            tipo    = 'seccion_ft';
+            termino = searchParams.get('nregistro') || null;
+            seccion = searchParams.get('seccion')   || null;
+        } else {
+            ({ tipo, termino } = extraerTermino(searchParams));
+            atcCode = (tipo === 'atc' && termino) ? termino.toUpperCase() : null;
+        }
+
         const esBusquedaLista = path === '/medicamentos';
         let numResultados = null;
-        // Si la búsqueda es por ATC, el término ya es el código ATC
-        let atcCode = (tipo === 'atc' && termino) ? termino.toUpperCase() : null;
-        try {
-            const parsed = JSON.parse(responseData);
-            if (typeof parsed.totalFilas === 'number')  numResultados = parsed.totalFilas;
-            else if (Array.isArray(parsed.resultados))  numResultados = parsed.resultados.length;
-            else if (Array.isArray(parsed))             numResultados = parsed.length;
-            // Extraer código ATC de la respuesta CIMA
-            // /medicamento  → parsed.atcs[].codigo (detalle individual)
-            // /medicamentos → buscar en los primeros resultados hasta encontrar ATC
-            if (parsed.atcs?.length > 0) {
-                atcCode = atcCode || parsed.atcs[0].codigo || null;
-            } else if (parsed.resultados?.length > 0) {
-                for (const med of parsed.resultados.slice(0, 5)) {
-                    if (med.atcs?.length > 0) {
-                        atcCode = atcCode || med.atcs[0].codigo || null;
-                        break;
+
+        if (!esDocSegmentado) {
+            try {
+                const parsed = JSON.parse(responseData);
+                if (typeof parsed.totalFilas === 'number')  numResultados = parsed.totalFilas;
+                else if (Array.isArray(parsed.resultados))  numResultados = parsed.resultados.length;
+                else if (Array.isArray(parsed))             numResultados = parsed.length;
+                // Extraer código ATC de la respuesta CIMA
+                if (parsed.atcs?.length > 0) {
+                    atcCode = atcCode || parsed.atcs[0].codigo || null;
+                } else if (parsed.resultados?.length > 0) {
+                    for (const med of parsed.resultados.slice(0, 5)) {
+                        if (med.atcs?.length > 0) {
+                            atcCode = atcCode || med.atcs[0].codigo || null;
+                            break;
+                        }
                     }
                 }
-            }
-        } catch (_) {}
+            } catch (_) {}
+        }
+
         if (esBusquedaLista) {
             if (statusCode !== 200)                            return;
             if (termino && termino.length < 4)                 return;
             if (numResultados !== null && numResultados === 0) return;
         }
-        // Intentar con columna atc_code; fallback si no existe (pendiente migración D1)
+
+        // INSERT con graceful fallback para columnas pendientes de migración D1
         try {
             await db.prepare(`
                 INSERT INTO eventos
-                    (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto, atc_code)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto, atcCode).run();
+                    (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto, atc_code, seccion)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto, atcCode, seccion).run();
         } catch (_) {
-            await db.prepare(`
-                INSERT INTO eventos
-                    (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto).run();
+            try {
+                await db.prepare(`
+                    INSERT INTO eventos
+                        (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto, atc_code)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto, atcCode).run();
+            } catch (_2) {
+                await db.prepare(`
+                    INSERT INTO eventos
+                        (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto).run();
+            }
         }
     } catch (error) {
         console.error('[analytics] Error registrando evento:', error.message);
@@ -216,10 +237,11 @@ async function handleAnalytics(request, env) {
                 LIMIT 20
             `).bind(desde).all(),
 
+            // Vistas de navegación principal — excluye secciones FT del modal
             env.DB.prepare(`
                 SELECT vista, COUNT(*) AS consultas
                 FROM eventos
-                WHERE ts > ? AND vista IS NOT NULL
+                WHERE ts > ? AND vista IS NOT NULL AND tipo_busqueda != 'seccion_ft'
                 GROUP BY vista
                 ORDER BY consultas DESC
             `).bind(desde).all(),
@@ -371,6 +393,33 @@ async function handleAnalytics(request, env) {
             vistaAtc = vaResult.results;
         } catch (_) { /* atc_code aún no existe */ }
 
+        // Secciones FT consultadas en el modal (requiere columna seccion — graceful fallback)
+        let seccionData = { por_seccion_ft: [], top_por_seccion: [] };
+        try {
+            const [porSeccion, topSeccion] = await Promise.all([
+                // Distribución de secciones consultadas (Ely taxonomy directa)
+                env.DB.prepare(`
+                    SELECT seccion,
+                           COUNT(*) AS consultas,
+                           COUNT(DISTINCT termino) AS farmacos_distintos
+                    FROM eventos
+                    WHERE ts > ? AND tipo_busqueda = 'seccion_ft' AND seccion IS NOT NULL
+                    GROUP BY seccion ORDER BY consultas DESC
+                `).bind(desde).all(),
+                // Top fármacos (nregistro) por sección consultada
+                env.DB.prepare(`
+                    SELECT seccion, termino, COUNT(*) AS consultas
+                    FROM eventos
+                    WHERE ts > ? AND tipo_busqueda = 'seccion_ft' AND seccion IS NOT NULL AND termino IS NOT NULL
+                    GROUP BY seccion, termino ORDER BY consultas DESC LIMIT 60
+                `).bind(desde).all(),
+            ]);
+            seccionData = {
+                por_seccion_ft:  porSeccion.results,
+                top_por_seccion: topSeccion.results,
+            };
+        } catch (_) { /* columna seccion aún no creada */ }
+
         return new Response(JSON.stringify({
             periodo_dias:     dias,
             resumen,
@@ -390,6 +439,8 @@ async function handleAnalytics(request, env) {
             tasa_exito:          tasaExito.results,
             contexto_terminos,
             vista_atc:           vistaAtc,
+            // V3: secciones FT consultadas en modal (columna seccion)
+            ...seccionData,
         }), {
             headers: { ...getCORSHeaders(request), 'Content-Type': 'application/json' },
         });
