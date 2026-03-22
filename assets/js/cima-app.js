@@ -4171,10 +4171,14 @@ class MedCheckApp {
             const isInfoActive = initialTab === 'info';
             const isDocsActive = initialTab === 'docs';
             const isPosologyActive = initialTab === 'posology';
+            const isIndicationsActive = initialTab === 'indications';
             const isInteractionsActive = initialTab === 'interactions';
             const isAdverseActive = initialTab === 'adverse';
             const isSafetyActive = initialTab === 'safety';
             const isAlertsActive = initialTab === 'alerts';
+
+            // Track modal tab in analytics
+            window._mcCurrentView = `modal-${initialTab}`;
 
             // Check if medication has AEMPS alerts (notas or materiales)
             const hasAempsAlerts = med.notas || med.materialesInf;
@@ -4221,11 +4225,12 @@ class MedCheckApp {
 
                 <div class="modal-tabs">
                     <button class="modal-tab ${isInfoActive ? 'active' : ''}" data-tab="info">Información</button>
-                    <button class="modal-tab ${isDocsActive ? 'active' : ''}" data-tab="docs">Documentos</button>
+                    <button class="modal-tab ${isIndicationsActive ? 'active' : ''}" data-tab="indications">Indicaciones</button>
                     <button class="modal-tab ${isPosologyActive ? 'active' : ''}" data-tab="posology">Posología</button>
                     <button class="modal-tab ${isInteractionsActive ? 'active' : ''}" data-tab="interactions">Interacciones</button>
                     <button class="modal-tab ${isAdverseActive ? 'active' : ''}" data-tab="adverse">Reacciones</button>
                     <button class="modal-tab ${isSafetyActive ? 'active' : ''}" data-tab="safety">Seguridad</button>
+                    <button class="modal-tab ${isDocsActive ? 'active' : ''}" data-tab="docs">Documentos</button>
                     ${hasAempsAlerts ? `<button class="modal-tab alert-pulse ${isAlertsActive ? 'active' : ''}" data-tab="alerts"><i class="fas fa-exclamation-triangle"></i> Alertas AEMPS</button>` : ''}
                 </div>
 
@@ -4233,12 +4238,16 @@ class MedCheckApp {
                     ${this.renderInfoTab(med)}
                 </div>
 
-                <div id="tab-docs" class="tab-content ${isDocsActive ? 'active' : ''}">
-                    ${this.renderDocsTab(med)}
+                <div id="tab-indications" class="tab-content ${isIndicationsActive ? 'active' : ''}">
+                    ${this.renderModalIndicationsTab(med)}
                 </div>
 
                 <div id="tab-posology" class="tab-content ${isPosologyActive ? 'active' : ''}">
                     ${this.renderModalPosologyTab(med)}
+                </div>
+
+                <div id="tab-docs" class="tab-content ${isDocsActive ? 'active' : ''}">
+                    ${this.renderDocsTab(med)}
                 </div>
 
                 <div id="tab-interactions" class="tab-content ${isInteractionsActive ? 'active' : ''}">
@@ -4274,6 +4283,8 @@ class MedCheckApp {
                     this.modalBody.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     tab.classList.add('active');
                     document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+                    // Actualizar vista para analytics — próxima petición llevará este header
+                    window._mcCurrentView = `modal-${tab.dataset.tab}`;
                 });
             });
 
@@ -4481,12 +4492,78 @@ class MedCheckApp {
     }
 
     /**
+     * Copia el texto de una sección del modal al portapapeles
+     */
+    async copyTabContent(containerId, medNombre, seccionLabel) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        const text = `${medNombre} — ${seccionLabel}\n\n${el.innerText || el.textContent}`;
+        try {
+            await navigator.clipboard.writeText(text);
+            this.showToast('Copiado al portapapeles', 'success');
+        } catch (_) {
+            this.showToast('No se pudo copiar', 'error');
+        }
+    }
+
+    /**
+     * Renders the Indications tab (section 4.1) in the modal
+     */
+    renderModalIndicationsTab(med) {
+        setTimeout(() => this.loadIndicationsContent(med.nregistro, med.nombre), 100);
+        return `
+    <div id="indications-tab-content" class="section-viewer-content">
+                <div class="loading-spinner"></div>
+                <p class="text-muted text-center">Cargando sección 4.1...</p>
+            </div>
+    `;
+    }
+
+    /**
+     * Loads section 4.1 (Therapeutic indications) asynchronously
+     */
+    async loadIndicationsContent(nregistro, medNombre) {
+        const container = document.getElementById('indications-tab-content');
+        if (!container) return;
+
+        try {
+            let content = await this.api.getDocSeccion(nregistro, '4.1');
+
+            if (!content || content.length < 20) {
+                container.innerHTML = `
+    <div class="empty-state">
+                        <i class="fas fa-info-circle"></i>
+                        <p>Sección 4.1 no disponible para este medicamento</p>
+                    </div>
+    `;
+                return;
+            }
+
+            content = content.normalize('NFC');
+
+            container.innerHTML = `
+    <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+        <h4 style="margin:0;"><i class="fas fa-stethoscope"></i> Sección 4.1: Indicaciones terapéuticas</h4>
+        <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('indications-section-text', '${medNombre.replace(/'/g, "\\'")}', 'Indicaciones terapéuticas')" title="Copiar texto">
+            <i class="fas fa-copy"></i>
+        </button>
+    </div>
+    <div id="indications-section-text" class="section-text">
+        ${content}
+    </div>
+`;
+        } catch (err) {
+            container.innerHTML = `<div class="empty-state"><p class="text-danger">Error cargando indicaciones: ${err.message}</p></div>`;
+        }
+    }
+
+    /**
      * Renders the Posology tab content in the modal
      * Shows section 4.2 (Dosage and Administration) from technical sheet
      */
     renderModalPosologyTab(med) {
         // Return placeholder that loads content asynchronously
-        setTimeout(() => this.loadPosologyContent(med.nregistro), 100);
+        setTimeout(() => this.loadPosologyContent(med.nregistro, med.nombre), 100);
 
         return `
     <div id="posology-tab-content" class="section-viewer-content">
@@ -4499,7 +4576,7 @@ class MedCheckApp {
     /**
      * Loads section 4.2 content asynchronously with food-related keyword highlighting
      */
-    async loadPosologyContent(nregistro) {
+    async loadPosologyContent(nregistro, medNombre) {
         const container = document.getElementById('posology-tab-content');
         if (!container) return;
 
@@ -4521,8 +4598,11 @@ class MedCheckApp {
 
             // First, render the HTML without highlighting
             container.innerHTML = `
-    <div class="section-header">
-        <h4><i class="fas fa-clock"></i> Sección 4.2: Posología y forma de administración</h4>
+    <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+        <h4 style="margin:0;"><i class="fas fa-clock"></i> Sección 4.2: Posología y forma de administración</h4>
+        <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('posology-section-text', '${(medNombre || '').replace(/'/g, "\\'")}', 'Posología')" title="Copiar texto">
+            <i class="fas fa-copy"></i>
+        </button>
     </div>
     <div class="posology-legend">
         <span class="legend-item"><mark class="posology-food">Alimentos</mark></span>

@@ -17,11 +17,15 @@ const ENDPOINTS_A_REGISTRAR = [
     '/materiales',
     '/buscarEnFichaTecnica',
     '/maestras',
+    '/docSegmentado',
 ];
 // Valores permitidos para vista — nunca texto libre del cliente
 const VISTAS_VALIDAS = new Set([
     'buscar', 'indicaciones', 'seguridad', 'interacciones',
-    'reacciones', 'equivalencias', 'suministro', 'alertas', 'perfil'
+    'reacciones', 'equivalencias', 'suministro', 'alertas', 'perfil',
+    // Pestañas del modal de detalle de medicamento
+    'modal-info', 'modal-indications', 'modal-posology', 'modal-interactions',
+    'modal-adverse', 'modal-safety', 'modal-docs', 'modal-alerts',
 ]);
 // Valores permitidos para contexto clínico
 const CONTEXTOS_VALIDOS = new Set([
