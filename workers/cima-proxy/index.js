@@ -132,7 +132,8 @@ async function registrarEvento(db, path, searchParams, responseData, statusCode,
         const { tipo, termino } = extraerTermino(searchParams);
         const esBusquedaLista = path === '/medicamentos';
         let numResultados = null;
-        let atcCode = null;
+        // Si la búsqueda es por ATC, el término ya es el código ATC
+        let atcCode = (tipo === 'atc' && termino) ? termino.toUpperCase() : null;
         try {
             const parsed = JSON.parse(responseData);
             if (typeof parsed.totalFilas === 'number')  numResultados = parsed.totalFilas;
@@ -140,11 +141,16 @@ async function registrarEvento(db, path, searchParams, responseData, statusCode,
             else if (Array.isArray(parsed))             numResultados = parsed.length;
             // Extraer código ATC de la respuesta CIMA
             // /medicamento  → parsed.atcs[].codigo (detalle individual)
-            // /medicamentos → parsed.resultados[].atcs[].codigo (lista)
+            // /medicamentos → buscar en los primeros resultados hasta encontrar ATC
             if (parsed.atcs?.length > 0) {
-                atcCode = parsed.atcs[0].codigo || null;
-            } else if (parsed.resultados?.length > 0 && parsed.resultados[0].atcs?.length > 0) {
-                atcCode = parsed.resultados[0].atcs[0].codigo || null;
+                atcCode = atcCode || parsed.atcs[0].codigo || null;
+            } else if (parsed.resultados?.length > 0) {
+                for (const med of parsed.resultados.slice(0, 5)) {
+                    if (med.atcs?.length > 0) {
+                        atcCode = atcCode || med.atcs[0].codigo || null;
+                        break;
+                    }
+                }
             }
         } catch (_) {}
         if (esBusquedaLista) {
