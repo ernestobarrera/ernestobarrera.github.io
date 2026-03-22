@@ -4,6 +4,27 @@ Historial de cambios por sesión de desarrollo.
 
 ---
 
+## [Sesión 16] - 2026-03-22
+
+### Añadido
+- **Pestaña Indicaciones** (sección 4.1 FT) en modal de detalle de medicamento
+  — carga asíncrona, sin bloquear apertura. Cubre ~15% de dudas según ENIGMA.
+- **Botón copiar** en pestañas Posología e Indicaciones — copia texto plano al portapapeles
+  con nombre del medicamento como cabecera (útil para HCE/WhatsApp clínico)
+- **Analytics de pestañas modales**: `window._mcCurrentView = 'modal-{tab}'` al cambiar pestaña;
+  las peticiones a `/docSegmentado` ahora se registran en D1 con vista `modal-posology`, `modal-indications`, etc.
+
+### Cambiado
+- Orden de pestañas en modal: Información → Indicaciones → Posología → Interacciones → Reacciones → Seguridad → **Documentos** → Alertas AEMPS
+  (Documentos pasa al final — consulta secundaria; Indicaciones sube al 2º lugar)
+- Worker: `/docSegmentado` añadido a `ENDPOINTS_A_REGISTRAR`
+- Worker: nuevas vistas `modal-*` añadidas a `VISTAS_VALIDAS`
+
+### Pendiente de despliegue
+- **Worker**: copiar `workers/cima-proxy/index.js` → Cloudflare Dashboard → cima-proxy → Deploy
+
+---
+
 ## [Sesión 15] - 2026-01-04
 
 ### Corregido

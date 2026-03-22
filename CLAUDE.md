@@ -53,7 +53,7 @@ Herramienta clínica web para médicos de familia. Verifica seguridad, equivalen
 ## Sesiones de desarrollo
 
 El proyecto se desarrolla por sesiones numeradas. Cada sesión tiene entradas en CHANGELOG.md.
-Sesión más reciente: **Sesión 15** (2026-01-04) — layout móvil de tarjetas.
+Sesión más reciente: **Sesión 16** (2026-03-22) — pestaña Indicaciones, botón copiar, analytics modal.
 
 ## Despliegue del Worker
 
