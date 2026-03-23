@@ -2005,7 +2005,7 @@ body {
     line-height: 1.6;
 }
 .atc-nav-link:hover {
-    color: var(--primary-light, #60a5fa);
+    color: #7dd3fc;
 }
 
 /* NOTE: .app-status styles moved to Footer section (line ~1948) */
