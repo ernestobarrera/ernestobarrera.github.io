@@ -4299,7 +4299,9 @@ class MedCheckApp {
             : '-';
 
         const atcs = med.atcs
-            ? med.atcs.map(a => `${a.codigo} - ${a.nombre} `).join('<br>')
+            ? med.atcs.map(a =>
+                `<button class="atc-nav-link" onclick="app.navigateToATCFromModal('${a.codigo}', '${a.nombre.replace(/'/g, "\\'")}')" title="Ver medicamentos con ${a.nombre}">${a.codigo} - ${a.nombre}</button>`
+              ).join('<br>')
             : '-';
 
         const formaFarm = med.formaFarmaceutica?.nombre || '-';
@@ -4376,6 +4378,13 @@ class MedCheckApp {
 `;
     }
 
+
+    navigateToATCFromModal(atcCode, atcName) {
+        this.closeModal();
+        this.loadView('indications').then(() => {
+            this.searchByATCCode(atcCode, atcName, [{ code: atcCode, name: atcName }]);
+        });
+    }
 
     renderDocsTab(med) {
         if (!med.docs || med.docs.length === 0) {

@@ -1990,6 +1990,24 @@ body {
     font-weight: 500;
 }
 
+.atc-nav-link {
+    display: block;
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-align: right;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    line-height: 1.6;
+}
+.atc-nav-link:hover {
+    color: var(--primary-light, #60a5fa);
+}
+
 /* NOTE: .app-status styles moved to Footer section (line ~1948) */
 
 /* ============================================
