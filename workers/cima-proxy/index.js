@@ -414,13 +414,15 @@ async function handleAnalytics(request, env) {
         } catch (_) { /* atc_code aún no existe */ }
 
         // Distribución por fuente — bookmarklet vs app (requiere columna source — graceful fallback)
+        // COALESCE(source, 'app') trata el historial sin columna source como acceso directo
         let porFuente = null;
         try {
             const fResult = await env.DB.prepare(`
-                SELECT source, COUNT(*) AS consultas
+                SELECT COALESCE(source, 'app') AS source, COUNT(*) AS consultas
                 FROM eventos
-                WHERE ts > ? AND source IS NOT NULL AND tipo_busqueda != 'seccion_ft'
-                GROUP BY source ORDER BY consultas DESC
+                WHERE ts > ? AND tipo_busqueda != 'seccion_ft'
+                GROUP BY COALESCE(source, 'app')
+                ORDER BY consultas DESC
             `).bind(desde).all();
             if (fResult.results?.length > 0) {
                 porFuente = {};
