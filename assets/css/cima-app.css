@@ -1272,6 +1272,16 @@ body {
     font-style: italic;
 }
 
+.atc-clinical-chip--clickable {
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.atc-clinical-chip--clickable:hover {
+    filter: brightness(0.88);
+    transform: translateY(-1px);
+}
+
 /* ============================================
    Safety Analysis Component
    ============================================ */
@@ -2713,6 +2723,16 @@ body {
 .med-detail-tag.atc {
     color: var(--primary);
     background: var(--primary-light);
+}
+
+.med-detail-tag--clickable {
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.med-detail-tag--clickable:hover {
+    background: var(--primary-light);
+    color: var(--primary);
 }
 
 .med-detail-item {

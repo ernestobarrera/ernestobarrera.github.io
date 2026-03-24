@@ -1441,8 +1441,9 @@ class MedCheckApp {
 
         // Get ATC clinical info
         const atcInfo = this.getATCClinicalInfo(med);
+        const atcCode = med.atcs?.[0]?.codigo || null;
         const atcChip = atcInfo ? `
-            <div class="atc-clinical-chip" style="background: ${atcInfo.color}15; border-color: ${atcInfo.color}40;" title="${atcInfo.tip}">
+            <div class="atc-clinical-chip atc-clinical-chip--clickable" style="background: ${atcInfo.color}15; border-color: ${atcInfo.color}40;" title="${atcCode ? 'Ver medicamentos con ATC ' + atcCode : atcInfo.tip}"${atcCode ? ` onclick="event.stopPropagation(); app.navigateToATCFromModal('${atcCode}', '${atcInfo.class.replace(/'/g, "\\'")}');"` : ''}>
                 <i class="fas fa-${atcInfo.icon}" style="color: ${atcInfo.color};"></i>
                 <span style="color: ${atcInfo.color};">${atcInfo.class}</span>
                 ${atcInfo.tip ? `<span class="atc-tip">· ${atcInfo.tip}</span>` : ''}
@@ -1468,7 +1469,7 @@ class MedCheckApp {
                             </button>
                         </div>
                         <div class="med-details-inline">
-                            ${pActivo ? `<span class="med-detail-tag"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
+                            ${pActivo ? `<span class="med-detail-tag med-detail-tag--clickable" onclick="event.stopPropagation(); app.searchByPA('${pActivo.replace(/'/g, "\\'")}');" title="Buscar otros medicamentos con ${pActivo}"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
                             ${dosis ? `<span class="med-detail-tag">${dosis}</span>` : ''}
                         </div>
                         ${atcChip}
@@ -2251,7 +2252,7 @@ class MedCheckApp {
                             </button>
                         </div>
                         <div class="med-details-inline">
-                            ${pActivo ? `<span class="med-detail-tag"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
+                            ${pActivo ? `<span class="med-detail-tag med-detail-tag--clickable" onclick="event.stopPropagation(); app.searchByPA('${pActivo.replace(/'/g, "\\'")}');" title="Buscar otros medicamentos con ${pActivo}"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
                             ${dosis ? `<span class="med-detail-tag">${dosis}</span>` : ''}
                         </div>
                     </div>
@@ -2262,7 +2263,7 @@ class MedCheckApp {
                     ${contextAlerts.join('')}
                     ${badges.join('')}
                 </div>` : ''}
-                
+
                 <div class="result-card-lab">
                     <i class="fas fa-building"></i> ${med.labtitular || 'Laboratorio desconocido'}
                 </div>
@@ -3623,6 +3624,20 @@ class MedCheckApp {
         setTimeout(() => {
             document.getElementById('equiv-input').value = query;
             this.performEquivSearch();
+        }, 100);
+    }
+
+    searchByPA(pa) {
+        this.closeModal();
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector('[data-view="search"]').classList.add('active');
+        this.renderSearchView();
+        setTimeout(() => {
+            const input = document.getElementById('search-input');
+            if (input) {
+                input.value = pa;
+                this.performSearch();
+            }
         }, 100);
     }
 
