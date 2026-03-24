@@ -5648,8 +5648,8 @@ class MedCheckApp {
     async checkAPIStatus() {
         const indicator = document.getElementById('api-status');
         try {
-            // Simple test request
-            await this.api._request('/medicamentos?nombre=test&pagina=1', {}, false);
+            // Simple test request — X-MC-Autocomplete:1 evita que se loggee en analytics
+            await this.api._request('/medicamentos?nombre=test&pagina=1', { headers: { 'X-MC-Autocomplete': '1' } }, false);
             indicator.classList.remove('offline');
             indicator.classList.add('online');
         } catch {
