@@ -691,6 +691,107 @@
         .rate-ok { color: #fbbf24; }
         .rate-bad { color: #f87171; }
 
+        /* INSIGHTS STRIP */
+        .insights-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+            gap: .75rem;
+            margin-bottom: 1.5rem;
+        }
+        .insight-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: flex-start;
+            gap: .75rem;
+        }
+        .insight-icon {
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .insight-label {
+            font-size: .7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        .insight-value {
+            font-size: .95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.3;
+            margin-top: .1rem;
+        }
+        .insight-note {
+            font-size: .72rem;
+            color: var(--text-muted);
+            margin-top: .1rem;
+        }
+
+        /* EDUCATIONAL PANEL */
+        .edu-panel {
+            background: rgba(14,165,233,.05);
+            border: 1px solid rgba(14,165,233,.15);
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .edu-panel summary {
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            list-style: none;
+        }
+        .edu-panel summary::after {
+            content: '▾';
+            margin-left: auto;
+            font-size: .8rem;
+            color: var(--text-muted);
+        }
+        .edu-panel[open] summary::after { content: '▴'; }
+        .edu-panel summary::-webkit-details-marker { display: none; }
+        .edu-refs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: .875rem 0;
+        }
+        @media (max-width: 600px) { .edu-refs-grid { grid-template-columns: 1fr; } }
+        .edu-ref {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: 8px;
+            padding: .875rem 1rem;
+        }
+        .edu-ref-title { font-size: .82rem; font-weight: 600; color: var(--text-primary); }
+        .edu-ref-detail { font-size: .72rem; color: var(--text-muted); margin-top: .1rem; }
+        .edu-ref-rate { font-size: 1.4rem; font-weight: 700; color: var(--primary); margin: .4rem 0 .2rem; }
+        .edu-ref-notes { font-size: .72rem; color: var(--text-muted); line-height: 1.5; }
+        .edu-insight {
+            display: flex;
+            gap: .5rem;
+            padding: .6rem .875rem;
+            background: var(--bg-surface);
+            border-radius: 6px;
+            font-size: .8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-top: .5rem;
+        }
+        .edu-insight i { color: var(--primary); flex-shrink: 0; margin-top: .15rem; }
+
         /* KPI MINI */
         .kpi-row {
             display: flex;
@@ -924,6 +1025,98 @@ function renderSummary(r) {
     </div>`;
 }
 
+// ─── RENDER: Quick Insights Strip ───────────────────────────────────────────────
+function renderInsights(data) {
+    const items = [];
+
+    // Top tipo de duda clínica
+    if (data.por_vista?.length) {
+        const top = [...data.por_vista]
+            .filter(v => v.vista !== 'perfil')
+            .sort((a, b) => b.consultas - a.consultas)[0];
+        if (top) {
+            const tax = TAXONOMY[top.vista] || {};
+            items.push({
+                label: 'Duda clínica más frecuente',
+                value: tax.label || top.vista,
+                note: `${top.consultas} consultas`,
+                icon: tax.icon || 'fa-stethoscope',
+                color: tax.color || 'var(--primary)',
+                bg: (tax.color || '#0ea5e9') + '22',
+            });
+        }
+    }
+
+    // Top fármaco
+    if (data.top_terminos?.length) {
+        const top = data.top_terminos[0];
+        const grouped = new Map();
+        for (const t of data.top_terminos) {
+            grouped.set(t.termino, (grouped.get(t.termino) || 0) + t.consultas);
+        }
+        const sorted = [...grouped.entries()].sort((a, b) => b[1] - a[1]);
+        if (sorted.length) {
+            items.push({
+                label: 'Fármaco más consultado',
+                value: sorted[0][0],
+                note: `${sorted[0][1]} consulta${sorted[0][1] !== 1 ? 's' : ''}`,
+                icon: 'fa-pills',
+                color: '#a78bfa',
+                bg: 'rgba(167,139,250,.15)',
+            });
+        }
+    }
+
+    // Top grupo ATC
+    if (data.por_atc_nivel1?.length) {
+        const top = [...data.por_atc_nivel1].sort((a, b) => b.consultas - a.consultas)[0];
+        const info = ATC_LEVEL1[top.nivel1] || {};
+        items.push({
+            label: 'Grupo terapéutico principal',
+            value: info.name || top.nivel1,
+            note: `ATC ${top.nivel1} · ${top.consultas} consultas`,
+            icon: 'fa-layer-group',
+            color: info.color || '#34d399',
+            bg: (info.color || '#34d399') + '22',
+        });
+    }
+
+    // Top contexto clínico
+    if (data.por_contexto) {
+        const topCtx = Object.entries(CONTEXTS)
+            .map(([k, v]) => ({ key: k, info: v, count: data.por_contexto[k] || 0 }))
+            .filter(c => c.count > 0)
+            .sort((a, b) => b.count - a.count)[0];
+        if (topCtx) {
+            items.push({
+                label: 'Contexto clínico más activado',
+                value: topCtx.info.label,
+                note: `${topCtx.count} consultas con contexto activo`,
+                icon: topCtx.info.icon || 'fa-user-injured',
+                color: topCtx.info.color || '#fbbf24',
+                bg: (topCtx.info.color || '#fbbf24') + '22',
+            });
+        }
+    }
+
+    if (!items.length) return '';
+
+    const cards = items.map(ins => `
+        <div class="insight-card">
+            <div class="insight-icon" style="background:${ins.bg};color:${ins.color}">
+                <i class="fas ${ins.icon}"></i>
+            </div>
+            <div>
+                <div class="insight-label">${ins.label}</div>
+                <div class="insight-value">${escapeHtml(ins.value)}</div>
+                <div class="insight-note">${ins.note}</div>
+            </div>
+        </div>`).join('');
+
+    return `
+    <div class="insights-strip">${cards}</div>`;
+}
+
 // ─── RENDER: Activity Chart Data ────────────────────────────────────────────────
 function prepareActivityData(dias) {
     const end   = new Date();
@@ -992,8 +1185,8 @@ function renderTaxonomy(data) {
 
     return `
     <div class="chart-card" id="sec-taxonomy">
-        <div class="chart-card-title"><i class="fas fa-th-list"></i> Tipo de duda clínica</div>
-        <p class="chart-subtitle">Clasificación inspirada en la taxonomía de Ely et al. (BMJ 2000) y la ontología OntoFIS (Romá-Ferri 2009). Cada pestaña de MedCheck equivale a un tipo de duda clínica farmacológica.</p>
+        <div class="chart-card-title"><i class="fas fa-th-list"></i> Distribución por tipo de duda clínica</div>
+        <p class="chart-subtitle">Qué tipo de pregunta farmacológica se plantea con más frecuencia — clasificación inspirada en la taxonomía de Ely et al. (BMJ 2000) y la ontología OntoFIS (Romá-Ferri 2009). Cada módulo principal de MedCheck equivale a un tipo de duda clínica farmacológica distinto.</p>
         ${hasData
             ? '<div class="chart-wrap" style="height:320px"><canvas id="taxonomy-chart"></canvas></div>'
             : '<div class="empty-state"><i class="fas fa-th-list"></i><p>Sin datos de vista clínica todavía</p><p class="note"><i class="fas fa-info-circle"></i> Las consultas incluyen la pestaña activa a partir de la actualización reciente</p></div>'
@@ -1048,8 +1241,8 @@ function renderSeccionesFT(data) {
 
     return `
     <div class="chart-card" id="sec-secciones-ft">
-        <div class="chart-card-title"><i class="fas fa-book-open"></i> Secciones de Ficha Técnica consultadas</div>
-        <p class="chart-subtitle">Distribución de consultas por sección de la FT — refleja directamente los tipos de duda clínica (taxonomía Ely/ENIGMA). Sólo eventos del modal de detalle.</p>
+        <div class="chart-card-title"><i class="fas fa-book-open"></i> Lectura en profundidad de la Ficha Técnica</div>
+        <p class="chart-subtitle">Cuando el clínico abre el modal de detalle de un fármaco, ¿qué sección de la Ficha Técnica lee? Esto va más allá del tipo de consulta inicial — refleja la <strong>profundidad de la duda</strong>: qué apartado del perfil del medicamento necesita revisión completa.</p>
         <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">
             <div class="kpi-mini" style="flex:0 0 auto">
                 <div class="kpi-label"><i class="fas fa-mouse-pointer"></i> Consultas de sección</div>
@@ -1088,22 +1281,13 @@ function renderContexts(data) {
     const hasAny = total > 0;
 
     return `
-    <div class="charts-grid-equal" id="sec-context">
-        <div class="chart-card">
-            <div class="chart-card-title"><i class="fas fa-user-injured"></i> Contextos clínicos activados</div>
-            <p class="chart-subtitle">Perfil de riesgo del paciente evaluado durante las consultas. Cada contexto activa la revisión de secciones específicas de la ficha técnica.</p>
-            ${hasAny
-                ? '<div class="chart-wrap" style="height:250px"><canvas id="context-chart"></canvas></div>'
-                : '<div class="empty-state"><i class="fas fa-user-injured"></i><p>Sin activación de contextos clínicos en el periodo</p></div>'
-            }
-        </div>
-        <div class="chart-card">
-            <div class="chart-card-title"><i class="fas fa-th-large"></i> Distribución por pestaña</div>
-            ${data.por_vista?.length
-                ? '<div class="chart-wrap" style="height:250px"><canvas id="vistas-chart"></canvas></div>'
-                : '<div class="empty-state"><i class="fas fa-chart-pie"></i><p>Sin datos de vista</p></div>'
-            }
-        </div>
+    <div class="chart-card" id="sec-context">
+        <div class="chart-card-title"><i class="fas fa-user-injured"></i> Contextos clínicos activados</div>
+        <p class="chart-subtitle">Perfil de riesgo del paciente durante las consultas: cada contexto activado (embarazo, insuficiencia renal, mayores, conducción…) dirige la revisión hacia secciones específicas de la ficha técnica y amplía el alcance del análisis de seguridad.</p>
+        ${hasAny
+            ? '<div class="chart-wrap" style="height:280px"><canvas id="context-chart"></canvas></div>'
+            : '<div class="empty-state"><i class="fas fa-user-injured"></i><p>Sin activación de contextos clínicos en el periodo</p><p class="note">Usa los toggles de perfil del paciente en MedCheck para registrar contextos clínicos</p></div>'
+        }
     </div>`;
 }
 
@@ -1186,69 +1370,52 @@ function renderTemporal(data) {
     </div>`;
 }
 
-// ─── RENDER: Benchmark ──────────────────────────────────────────────────────────
-function renderBenchmark(data) {
-    const avgPerDay = (data.resumen.total_consultas / activeDias).toFixed(1);
-    const savedPatients = localStorage.getItem('mc_benchmark_patients') || '';
-
+// ─── RENDER: Contexto investigador ──────────────────────────────────────────────
+function renderBenchmark() {
     return `
-    <div class="chart-card" id="sec-benchmark">
-        <div class="chart-card-title"><i class="fas fa-balance-scale"></i> Comparativa con estudios de referencia</div>
-        <p class="chart-subtitle">Compara tu patrón de consultas con los datos de los estudios de referencia sobre dudas clínicas en Atención Primaria.</p>
+    <details class="edu-panel" id="sec-benchmark">
+        <summary><i class="fas fa-graduation-cap"></i> Contexto investigador — Estudios de referencia en Atención Primaria española</summary>
 
-        <div class="benchmark-panel">
-            <div class="benchmark-your-data">
-                <div class="benchmark-stat">
-                    <span class="benchmark-stat-value">${data.resumen.total_consultas}</span>
-                    <span class="benchmark-stat-label">consultas en ${activeDias} días</span>
-                </div>
-                <div class="benchmark-stat">
-                    <span class="benchmark-stat-value">${avgPerDay}</span>
-                    <span class="benchmark-stat-label">consultas/día</span>
-                </div>
-                <div class="benchmark-stat">
-                    <span class="benchmark-stat-value">${data.resumen.terminos_distintos}</span>
-                    <span class="benchmark-stat-label">fármacos distintos</span>
-                </div>
-            </div>
+        <p style="font-size:.82rem;color:var(--text-secondary);margin:.875rem 0 .5rem;line-height:1.5">
+            Dos estudios epidemiológicos sobre dudas clínicas en medicina de familia española permiten contextualizar la demanda farmacológica que refleja MedCheck:
+        </p>
 
-            <div class="benchmark-calc">
-                <label class="benchmark-input-label">
-                    <i class="fas fa-user-friends"></i> Pacientes atendidos en el periodo:
-                </label>
-                <input type="number" class="benchmark-input" id="benchmark-patients"
-                       value="${escapeHtml(savedPatients)}" min="1" placeholder="ej. 600">
-                <button class="period-btn" id="benchmark-calc-btn">Calcular tasa</button>
-            </div>
-
-            <div id="benchmark-result"></div>
-
-            <div class="benchmark-refs">
-                <div class="benchmark-ref">
-                    <div class="benchmark-ref-title">Louro 2009</div>
-                    <div class="benchmark-ref-detail">81 MAP · Galicia · Observador presencial</div>
-                    <div class="benchmark-ref-rate">1,7 <small>dudas/10 pac</small></div>
-                    <div class="benchmark-ref-note">IC95%: 1,59–1,82 · 92% dudas clínicas</div>
-                    <div class="benchmark-ref-note">Farmacología: 6,9% del total</div>
-                    <div class="benchmark-ref-note" style="margin-top:.3rem;color:#f87171">16,2% sin buscar solución · 81,5% nunca usaba internet</div>
-                </div>
-                <div class="benchmark-ref">
-                    <div class="benchmark-ref-title">ENIGMA 2006</div>
-                    <div class="benchmark-ref-detail">112 MAP · Madrid · Videograbación</div>
-                    <div class="benchmark-ref-rate">1,8 <small>dudas/10 pac</small></div>
-                    <div class="benchmark-ref-note">3.511 pacientes · 635 preguntas</div>
-                    <div class="benchmark-ref-note">Farmacología: 10% · Recursos electrónicos: 3,4%</div>
-                    <div class="benchmark-ref-note" style="margin-top:.3rem;color:#f87171">61% de las dudas buscables NO se buscaron</div>
+        <div class="edu-refs-grid">
+            <div class="edu-ref">
+                <div class="edu-ref-title">Louro 2009</div>
+                <div class="edu-ref-detail">81 MAP · Galicia · Observador presencial</div>
+                <div class="edu-ref-rate">1,7 <small style="font-size:.7rem;font-weight:400;color:var(--text-muted)">dudas / 10 pac</small></div>
+                <div class="edu-ref-notes">
+                    IC95%: 1,59–1,82 · 92% de origen clínico<br>
+                    <strong>Farmacología: 6,9%</strong> del total de dudas<br>
+                    <span style="color:#f87171">16,2% sin buscar solución · 81,5% nunca usó internet</span>
                 </div>
             </div>
-
-            <div class="benchmark-context">
-                <p><i class="fas fa-info-circle"></i> <strong>Nota metodológica:</strong> Louro y ENIGMA miden <em>todas</em> las dudas clínicas (diagnósticas, terapéuticas, administrativas). MedCheck captura específicamente <strong>dudas farmacológicas</strong>. Según ENIGMA, la farmacología representa ~10% del total; según Louro, orientación/composición = 6,9%.</p>
-                <p><i class="fas fa-lightbulb"></i> <strong>Valor clave:</strong> En ambos estudios, más del 60% de las dudas susceptibles de búsqueda <strong>no se buscaron</strong>. MedCheck reduce esta brecha al integrar la consulta farmacológica en el flujo de trabajo clínico.</p>
-                <p><i class="fas fa-graduation-cap"></i> <strong>Para docencia:</strong> Si una categoría de duda concentra un porcentaje alto de tus consultas, identifica un área de necesidad formativa específica.</p>
+            <div class="edu-ref">
+                <div class="edu-ref-title">ENIGMA 2006</div>
+                <div class="edu-ref-detail">112 MAP · Madrid · Videograbación</div>
+                <div class="edu-ref-rate">1,8 <small style="font-size:.7rem;font-weight:400;color:var(--text-muted)">dudas / 10 pac</small></div>
+                <div class="edu-ref-notes">
+                    3.511 pacientes · 635 preguntas registradas<br>
+                    <strong>Farmacología: 10%</strong> · Recursos electrónicos: 3,4%<br>
+                    <span style="color:#f87171">61% de las dudas buscables NO se buscaron</span>
+                </div>
             </div>
         </div>
-    </div>`;
+
+        <div class="edu-insight">
+            <i class="fas fa-info-circle"></i>
+            <span><strong>Nota metodológica:</strong> Louro y ENIGMA miden <em>todas</em> las dudas clínicas (diagnósticas, terapéuticas, administrativas). MedCheck registra específicamente <strong>consultas farmacológicas</strong> (~10% del total según ENIGMA). Los datos de analytics son <strong>agregados de todos los usuarios</strong> de la herramienta, no de una práctica individual.</span>
+        </div>
+        <div class="edu-insight">
+            <i class="fas fa-lightbulb"></i>
+            <span><strong>Valor clave:</strong> En ambos estudios, más del 60% de las dudas susceptibles de búsqueda <strong>no se buscaron</strong>. El volumen y distribución de consultas en MedCheck refleja la demanda farmacológica activa — el tipo de incertidumbre que antes quedaba sin resolver en la consulta.</span>
+        </div>
+        <div class="edu-insight">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <span><strong>Para docencia y planificación:</strong> Las categorías con mayor concentración de consultas identifican <strong>áreas de incertidumbre clínica sistemática</strong>. Son señales directas de necesidad formativa o de necesidad de protocolos de apoyo en esa área terapéutica.</span>
+        </div>
+    </details>`;
 }
 
 // ─── RENDER: Export ──────────────────────────────────────────────────────────────
@@ -1343,27 +1510,36 @@ function renderATC(data) {
         </div>`;
     }
 
+    // Wrap level-5 table in details for collapsing
+    const topHtmlWrapped = topHtml ? `
+        <details style="margin-top:.5rem">
+            <summary style="font-size:.78rem;color:var(--text-muted);cursor:pointer;padding:.5rem 0">
+                <i class="fas fa-prescription-bottle-alt"></i> Ver top códigos ATC nivel 5 (detalle molecular)
+            </summary>
+            ${topHtml}
+        </details>` : '';
+
     return `
     <div class="chart-card" id="sec-atc">
-        <div class="chart-card-title"><i class="fas fa-pills"></i> Análisis por grupo terapéutico ATC</div>
-        <p class="chart-subtitle">Distribución de consultas por clasificación Anatómica, Terapéutica, Química (OMS). Los códigos ATC se extraen automáticamente de cada respuesta de la API CIMA.</p>
+        <div class="chart-card-title"><i class="fas fa-layer-group"></i> Grupos terapéuticos consultados (Clasificación ATC)</div>
+        <p class="chart-subtitle">Qué áreas terapéuticas generan más incertidumbre clínica. La clasificación ATC (Anatómica, Terapéutica, Química — OMS) agrupa los fármacos por sistema orgánico y mecanismo. Permite identificar especialidades y patologías con mayor demanda de consulta farmacológica.</p>
         ${hasN1 ? '<div class="chart-wrap" style="height:400px"><canvas id="atc-chart"></canvas></div>' : ''}
         ${n2Html}
-        ${topHtml}
+        ${topHtmlWrapped}
     </div>`;
 }
 
-// ─── RENDER V2: Mis Lagunas (searches with no results) ──────────────────────────
+// ─── RENDER V2: Brechas de cobertura (searches with no results) ─────────────────
 function renderMisLagunas(data) {
     const terms = data.sin_resultado_terms;
     if (!terms || !terms.length) {
         return `
         <div class="chart-card">
-            <div class="chart-card-title"><i class="fas fa-search-minus"></i> Búsquedas sin resultado</div>
+            <div class="chart-card-title"><i class="fas fa-search-minus"></i> Brechas de cobertura CIMA</div>
             <div class="empty-state">
                 <i class="fas fa-check-circle" style="color:#34d399"></i>
                 <p>Todas las búsquedas devolvieron resultados en este periodo</p>
-                <p class="note">Buen indicador de cobertura de la herramienta</p>
+                <p class="note">Indica buena cobertura de los fármacos buscados en el catálogo CIMA/AEMPS</p>
             </div>
         </div>`;
     }
@@ -1379,8 +1555,8 @@ function renderMisLagunas(data) {
 
     return `
     <div class="chart-card">
-        <div class="chart-card-title"><i class="fas fa-search-minus"></i> Búsquedas sin resultado — "Mis lagunas"</div>
-        <p class="chart-subtitle">Términos que no devolvieron resultados en CIMA. Puede indicar errores ortográficos, medicamentos no autorizados en España, o necesidades no cubiertas.</p>
+        <div class="chart-card-title"><i class="fas fa-search-minus"></i> Brechas de cobertura CIMA</div>
+        <p class="chart-subtitle">Términos buscados que no devolvieron resultados en el catálogo CIMA/AEMPS. Pueden reflejar errores tipográficos, fármacos no autorizados en España, nombres extranjeros o necesidades de cobertura no cubiertas por la herramienta.</p>
         ${rows}
     </div>`;
 }
@@ -2022,7 +2198,6 @@ function initTabs(data) {
 function renderDashboard(data) {
     currentData = data;
 
-    // KPIs extras V2
     const pctExito = data.resumen.total_consultas > 0
         ? Math.round(data.resumen.con_resultado / data.resumen.total_consultas * 100) : 0;
     const diversidad = data.resumen.total_consultas > 0
@@ -2030,16 +2205,16 @@ function renderDashboard(data) {
 
     const html = `
         <nav class="tab-bar" id="tab-bar">
-            <button class="tab-btn active" data-tab="tab-resumen"><i class="fas fa-tachometer-alt"></i> Resumen</button>
-            <button class="tab-btn" data-tab="tab-farmacos"><i class="fas fa-pills"></i> Fármacos</button>
-            <button class="tab-btn" data-tab="tab-clinica"><i class="fas fa-stethoscope"></i> Clínica</button>
-            <button class="tab-btn" data-tab="tab-patrones"><i class="fas fa-chart-line"></i> Patrones</button>
-            <button class="tab-btn" data-tab="tab-datos"><i class="fas fa-database"></i> Datos</button>
+            <button class="tab-btn active" data-tab="tab-resumen"><i class="fas fa-tachometer-alt"></i> Visión General</button>
+            <button class="tab-btn" data-tab="tab-clinica"><i class="fas fa-stethoscope"></i> Dudas Clínicas</button>
+            <button class="tab-btn" data-tab="tab-farmacos"><i class="fas fa-pills"></i> Fármacos y ATC</button>
+            <button class="tab-btn" data-tab="tab-contextos"><i class="fas fa-user-injured"></i> Contextos</button>
+            <button class="tab-btn" data-tab="tab-patrones"><i class="fas fa-chart-line"></i> Patrones y Datos</button>
         </nav>
 
         <div class="update-ts" id="update-ts"></div>
 
-        <!-- ═══════ TAB: RESUMEN ═══════ -->
+        <!-- ═══════ TAB: VISIÓN GENERAL ═══════ -->
         <div class="tab-panel active" id="tab-resumen">
             ${renderSummary(data.resumen)}
 
@@ -2047,7 +2222,7 @@ function renderDashboard(data) {
                 <div class="kpi-mini">
                     <div class="kpi-label"><i class="fas fa-bullseye"></i> Tasa de resolución</div>
                     <div class="kpi-value">${pctExito}%</div>
-                    <div class="kpi-note">consultas con resultado</div>
+                    <div class="kpi-note">consultas con resultado en CIMA</div>
                 </div>
                 <div class="kpi-mini">
                     <div class="kpi-label"><i class="fas fa-fingerprint"></i> Diversidad</div>
@@ -2061,28 +2236,43 @@ function renderDashboard(data) {
                 </div>
             </div>
 
+            ${renderInsights(data)}
+
             <div class="chart-card">
                 <div class="chart-card-title"><i class="fas fa-chart-bar"></i> Actividad diaria</div>
+                <p class="chart-subtitle">Volumen de consultas por día en el periodo seleccionado. Los picos pueden correlacionar con guardias, rotaciones o formación.</p>
                 <div class="chart-wrap" style="height:220px">
                     <canvas id="activity-chart"></canvas>
                 </div>
             </div>
 
-            ${renderBenchmark(data)}
+            ${renderBenchmark()}
         </div>
 
-        <!-- ═══════ TAB: FÁRMACOS ═══════ -->
+        <!-- ═══════ TAB: DUDAS CLÍNICAS ═══════ -->
+        <div class="tab-panel" id="tab-clinica">
+            <div class="info-banner">
+                <i class="fas fa-info-circle"></i>
+                <span>Este panel analiza <strong>qué tipo de pregunta clínica</strong> motiva la consulta (módulo principal usado) y, cuando se abre una ficha de medicamento, <strong>qué sección de la Ficha Técnica</strong> se consulta en detalle. Son dos niveles distintos de análisis de la duda farmacológica.</span>
+            </div>
+            ${renderTaxonomy(data)}
+            ${renderSeccionesFT(data)}
+        </div>
+
+        <!-- ═══════ TAB: FÁRMACOS Y ATC ═══════ -->
         <div class="tab-panel" id="tab-farmacos">
             <div class="charts-grid">
                 <div class="chart-card">
                     <div class="chart-card-title"><i class="fas fa-chart-pie"></i> Modalidad de búsqueda</div>
+                    <p class="chart-subtitle">Cómo se identifica el fármaco: nombre comercial, principio activo, ATC, código nacional o registro.</p>
                     ${data.por_tipo_busqueda?.length
                         ? '<div class="chart-wrap" style="height:220px"><canvas id="searchtype-chart"></canvas></div>'
-                        : '<div class="empty-state"><i class="fas fa-chart-pie"></i><p>Sin datos de tipo de búsqueda</p></div>'
+                        : '<div class="empty-state"><i class="fas fa-chart-pie"></i><p>Sin datos de modalidad</p></div>'
                     }
                 </div>
                 <div class="chart-card">
-                    <div class="chart-card-title"><i class="fas fa-bullseye"></i> Tasa de éxito</div>
+                    <div class="chart-card-title"><i class="fas fa-bullseye"></i> Tasa de resolución por modalidad</div>
+                    <p class="chart-subtitle">Porcentaje de búsquedas con al menos un resultado según el identificador usado. Indica la eficacia de cada vía de búsqueda.</p>
                     ${data.tasa_exito?.length
                         ? '<div class="chart-wrap" style="height:220px"><canvas id="tasaexito-chart"></canvas></div>'
                         : '<div class="empty-state"><p>Sin datos</p></div>'
@@ -2093,25 +2283,22 @@ function renderDashboard(data) {
             ${renderTopTerms(data.top_terminos)}
             ${renderRecurrencia(data)}
             ${renderATC(data)}
-            ${renderTasaExito(data)}
             ${renderMisLagunas(data)}
         </div>
 
-        <!-- ═══════ TAB: CLÍNICA ═══════ -->
-        <div class="tab-panel" id="tab-clinica">
-            ${renderTaxonomy(data)}
-            ${renderSeccionesFT(data)}
+        <!-- ═══════ TAB: CONTEXTOS CLÍNICOS ═══════ -->
+        <div class="tab-panel" id="tab-contextos">
+            <div class="info-banner">
+                <i class="fas fa-info-circle"></i>
+                <span>Los <strong>contextos clínicos</strong> se activan manualmente antes de buscar un fármaco cuando hay un perfil de riesgo presente (embarazo, insuficiencia renal, paciente mayor…). Permiten analizar qué fármacos generan incertidumbre en <strong>pacientes complejos o vulnerables</strong>.</span>
+            </div>
             ${renderContexts(data)}
             ${renderContextoCruce(data)}
         </div>
 
-        <!-- ═══════ TAB: PATRONES ═══════ -->
+        <!-- ═══════ TAB: PATRONES Y DATOS ═══════ -->
         <div class="tab-panel" id="tab-patrones">
             ${renderTemporal(data)}
-        </div>
-
-        <!-- ═══════ TAB: DATOS ═══════ -->
-        <div class="tab-panel" id="tab-datos">
             ${renderExport()}
             ${renderEndpoints(data.por_endpoint)}
         </div>
@@ -2128,7 +2315,6 @@ function renderDashboard(data) {
 
     // Init interactive elements
     initTabs(data);
-    initBenchmark(data);
 
     // Export buttons
     document.getElementById('export-csv')?.addEventListener('click', exportCSV);
