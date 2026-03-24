@@ -1443,7 +1443,7 @@ class MedCheckApp {
         const atcInfo = this.getATCClinicalInfo(med);
         const atcCode = med.atcs?.[0]?.codigo || null;
         const atcChip = atcInfo ? `
-            <div class="atc-clinical-chip atc-clinical-chip--clickable" style="background: ${atcInfo.color}15; border-color: ${atcInfo.color}40;" title="${atcCode ? 'Ver medicamentos con ATC ' + atcCode : atcInfo.tip}"${atcCode ? ` onclick="event.stopPropagation(); app.navigateToATCFromModal('${atcCode}', '${atcInfo.class.replace(/'/g, "\\'")}');"` : ''}>
+            <div class="atc-clinical-chip${atcCode ? ' atc-clinical-chip--clickable' : ''}" style="background: ${atcInfo.color}15; border-color: ${atcInfo.color}40;" title="${atcCode ? 'Ver medicamentos con ATC ' + atcCode : atcInfo.tip}"${atcCode ? ` data-atc-code="${atcCode}" data-atc-name="${atcInfo.class.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); app.navigateToATCFromModal(this.dataset.atcCode, this.dataset.atcName);"` : ''}>
                 <i class="fas fa-${atcInfo.icon}" style="color: ${atcInfo.color};"></i>
                 <span style="color: ${atcInfo.color};">${atcInfo.class}</span>
                 ${atcInfo.tip ? `<span class="atc-tip">· ${atcInfo.tip}</span>` : ''}
@@ -1469,7 +1469,7 @@ class MedCheckApp {
                             </button>
                         </div>
                         <div class="med-details-inline">
-                            ${pActivo ? `<span class="med-detail-tag med-detail-tag--clickable" onclick="event.stopPropagation(); app.searchByPA('${pActivo.replace(/'/g, "\\'")}');" title="Buscar otros medicamentos con ${pActivo}"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
+                            ${pActivo ? `<span class="med-detail-tag med-detail-tag--clickable" data-pa="${pActivo.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); app.searchByPA(this.dataset.pa);" title="Buscar otros medicamentos con ${pActivo.replace(/"/g, '&quot;')}"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
                             ${dosis ? `<span class="med-detail-tag">${dosis}</span>` : ''}
                         </div>
                         ${atcChip}
@@ -2252,7 +2252,7 @@ class MedCheckApp {
                             </button>
                         </div>
                         <div class="med-details-inline">
-                            ${pActivo ? `<span class="med-detail-tag med-detail-tag--clickable" onclick="event.stopPropagation(); app.searchByPA('${pActivo.replace(/'/g, "\\'")}');" title="Buscar otros medicamentos con ${pActivo}"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
+                            ${pActivo ? `<span class="med-detail-tag med-detail-tag--clickable" data-pa="${pActivo.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); app.searchByPA(this.dataset.pa);" title="Buscar otros medicamentos con ${pActivo.replace(/"/g, '&quot;')}"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
                             ${dosis ? `<span class="med-detail-tag">${dosis}</span>` : ''}
                         </div>
                     </div>
@@ -3631,14 +3631,13 @@ class MedCheckApp {
         this.closeModal();
         document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
         document.querySelector('[data-view="search"]').classList.add('active');
-        this.renderSearchView();
-        setTimeout(() => {
+        this.loadView('search', false).then(() => {
             const input = document.getElementById('search-input');
             if (input) {
                 input.value = pa;
                 this.performSearch();
             }
-        }, 100);
+        });
     }
 
     goToSafetyWithMed(medName) {
