@@ -498,7 +498,7 @@ function getCORSHeaders(request) {
     return {
         'Access-Control-Allow-Origin':  allowedOrigin,
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Accept, X-MC-View, X-MC-Context, X-MC-Autocomplete',
+        'Access-Control-Allow-Headers': 'Content-Type, Accept, X-MC-View, X-MC-Context, X-MC-Autocomplete, X-MC-Source',
         'Access-Control-Max-Age':       '86400',
     };
 }
