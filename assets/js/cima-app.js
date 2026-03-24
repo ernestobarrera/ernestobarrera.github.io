@@ -7450,6 +7450,20 @@ class MedCheckApp {
                 position: 'bottom',
             },
             {
+                target: '#app-content',
+                title: 'Tarjetas interactivas',
+                icon: 'fa-hand-pointer',
+                body: `
+                    <p>En cada tarjeta de resultado puedes navegar directamente:</p>
+                    <ul class="guide-features">
+                        <li><i class="fas fa-flask"></i> <strong>Principio activo</strong> — pulsa la etiqueta para buscar todos los fármacos con ese PA</li>
+                        <li><i class="fas fa-tag"></i> <strong>Chip ATC</strong> — pulsa la categoría terapéutica para explorar el grupo ATC en Indicaciones</li>
+                    </ul>
+                    <p>Así puedes saltar entre medicamentos, equivalentes y grupos sin escribir nada nuevo.</p>
+                `,
+                position: 'bottom',
+            },
+            {
                 target: '.context-toggles',
                 title: 'Contexto del paciente',
                 icon: 'fa-user-injured',
