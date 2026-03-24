@@ -691,6 +691,23 @@
         .rate-ok { color: #fbbf24; }
         .rate-bad { color: #f87171; }
 
+        /* TAG PILL — para top fármacos en secciones FT */
+        .tag-pill {
+            display: inline-block;
+            padding: .15rem .45rem;
+            border-radius: 4px;
+            background: var(--bg-dark, #0f172a);
+            border: 1px solid var(--border-default);
+            font-size: .72rem;
+            color: var(--text-secondary);
+            margin: .1rem .1rem 0 0;
+            cursor: default;
+            transition: color .15s;
+        }
+        [data-nregistro] { font-style: italic; }
+        [data-nr-done] { font-style: normal; }
+        .text-muted { color: var(--text-muted); }
+
         /* INSIGHTS STRIP */
         .insights-strip {
             display: grid;
@@ -901,12 +918,17 @@ const FT_SECTIONS = {
 
 const SEARCH_TYPES = {
     nombre:           { label: 'Nombre comercial',  color: '#38bdf8' },
-    principio_activo: { label: 'Principio activo',   color: '#34d399' },
+    principio_activo: { label: 'Principio activo',  color: '#34d399' },
     atc:              { label: 'Código ATC',         color: '#a78bfa' },
     nregistro:        { label: 'Nº registro',        color: '#c084fc' },
     codigo_nacional:  { label: 'Código nacional',    color: '#fbbf24' },
     otro:             { label: 'Otro',               color: '#94a3b8' },
+    // Tipo interno: lectura de sección FT en modal — no es una modalidad de búsqueda
+    seccion_ft:       { label: 'Lectura sección FT', color: '#475569' },
 };
+
+// Términos no clínicos — se señalan visualmente en top términos
+const NON_CLINICAL = new Set(['test', 'prueba', 'asdf', 'qwerty', 'aaa', 'bbb', 'xxx', 'foo', 'bar', 'testing', 'abc', '123', '0000']);
 
 const WEEKDAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
@@ -955,6 +977,57 @@ let activeDias = 30;
 let currentData = null;
 const charts = {};
 
+// ─── PRE-PROCESSING ──────────────────────────────────────────────────────────────
+// seccion_ft no es una modalidad de búsqueda — es un evento interno de lectura FT.
+// Se filtra de los gráficos de modalidad y tasa de éxito para evitar distorsión.
+// Se analiza por separado en la pestaña Dudas Clínicas.
+function preprocessData(data) {
+    // Guardar versión raw para exportación
+    data._raw_tipo_busqueda = data.por_tipo_busqueda;
+    data._raw_tasa_exito    = data.tasa_exito;
+
+    // Filtrar seccion_ft de modalidad de búsqueda y tasa de resolución
+    data.por_tipo_busqueda = (data.por_tipo_busqueda || []).filter(t => t.tipo_busqueda !== 'seccion_ft');
+    data.tasa_exito        = (data.tasa_exito        || []).filter(t => t.tipo_busqueda !== 'seccion_ft');
+
+    // Calcular lecturas FT del raw para nota informativa
+    data._lecturas_ft_count = (data._raw_tipo_busqueda || [])
+        .filter(t => t.tipo_busqueda === 'seccion_ft')
+        .reduce((s, t) => s + t.consultas, 0);
+
+    return data;
+}
+
+// ─── RESOLUCIÓN ASÍNCRONA DE NREGISTROS ─────────────────────────────────────────
+// Los eventos seccion_ft almacenan el nregistro CIMA como termino (no el nombre del fármaco).
+// Esta función los resuelve asíncronamente a nombres comerciales tras el render inicial.
+const _nrCache = {};
+async function resolveNregistro(nr) {
+    if (_nrCache[nr] !== undefined) return _nrCache[nr];
+    try {
+        const res = await fetch(`${WORKER}/medicamento?nregistro=${encodeURIComponent(nr)}`, {
+            headers: { 'X-MC-Autocomplete': '1' }  // No registrar en analytics
+        });
+        if (!res.ok) return (_nrCache[nr] = null);
+        const d = await res.json();
+        return (_nrCache[nr] = d.nombre || null);
+    } catch { return (_nrCache[nr] = null); }
+}
+
+async function enrichNregistroElements() {
+    const els = [...document.querySelectorAll('[data-nregistro]:not([data-nr-done])')];
+    if (!els.length) return;
+    const nrs = [...new Set(els.map(e => e.dataset.nregistro))];
+    await Promise.all(nrs.map(async nr => {
+        const name = await resolveNregistro(nr);
+        document.querySelectorAll(`[data-nregistro="${CSS.escape(nr)}"]`).forEach(el => {
+            el.setAttribute('data-nr-done', '1');
+            el.title = `Nregistro: ${nr}`;
+            if (name) el.textContent = name;
+        });
+    }));
+}
+
 // ─── HELPERS ────────────────────────────────────────────────────────────────────
 function fmtDate(iso) {
     const [y, m, d] = iso.split('-');
@@ -997,30 +1070,41 @@ async function fetchAnalytics(dias) {
 
 // ─── RENDER: Summary ────────────────────────────────────────────────────────────
 function renderSummary(r) {
-    const pct = r.total_consultas > 0
-        ? Math.round(r.sin_resultado / r.total_consultas * 100) : 0;
-    const avgPerDay = (r.total_consultas / activeDias).toFixed(1);
+    // Usar busquedas_directas si disponible (excluye lecturas FT modal)
+    // Si no está en el response (worker antiguo), usar total_consultas como fallback
+    const busquedas = r.busquedas_directas ?? r.total_consultas;
+    const farmacos  = r.farmacos_distintos_reales ?? r.terminos_distintos;
+    const lecturasFt = r.lecturas_ft ?? null;
+
+    const pct = busquedas > 0 ? Math.round(r.sin_resultado / busquedas * 100) : 0;
+    const avgPerDay = (busquedas / activeDias).toFixed(1);
+
+    const ftNote = lecturasFt !== null
+        ? `<span class="stat-note">+ ${lecturasFt} lecturas de FT (modal)</span>`
+        : '';
+
     return `
     <div class="summary-grid" id="sec-resumen">
         <div class="stat-card accent-primary">
-            <span class="stat-label"><i class="fas fa-search"></i> Total consultas</span>
-            <span class="stat-value">${r.total_consultas}</span>
+            <span class="stat-label"><i class="fas fa-search"></i> Búsquedas directas</span>
+            <span class="stat-value">${busquedas}</span>
             <span class="stat-note">en ${activeDias} días · ${avgPerDay}/día</span>
+            ${ftNote}
         </div>
         <div class="stat-card">
-            <span class="stat-label"><i class="fas fa-font"></i> Términos distintos</span>
-            <span class="stat-value">${r.terminos_distintos}</span>
-            <span class="stat-note">medicamentos únicos buscados</span>
+            <span class="stat-label"><i class="fas fa-pills"></i> Fármacos distintos</span>
+            <span class="stat-value">${farmacos}</span>
+            <span class="stat-note">medicamentos únicos consultados</span>
         </div>
         <div class="stat-card accent-success">
             <span class="stat-label"><i class="fas fa-check-circle"></i> Con resultado</span>
             <span class="stat-value">${r.con_resultado}</span>
-            <span class="stat-note">consultas con respuesta</span>
+            <span class="stat-note">búsquedas con respuesta CIMA</span>
         </div>
         <div class="stat-card accent-warn">
             <span class="stat-label"><i class="fas fa-exclamation-circle"></i> Sin resultado</span>
             <span class="stat-value">${r.sin_resultado}</span>
-            <span class="stat-note">${pct}% del total</span>
+            <span class="stat-note">${pct}% · brecha de cobertura</span>
         </div>
     </div>`;
 }
@@ -1227,7 +1311,13 @@ function renderSeccionesFT(data) {
     const rows = secciones.map(r => {
         const info = FT_SECTIONS[r.seccion] || { label: `Sección ${r.seccion}`, color: '#94a3b8', icon: 'fa-file-alt', ely: '—' };
         const pct = Math.round(r.consultas / total * 100);
-        const topItems = (topBySec[r.seccion] || []).map(t => `<span class="tag-pill">${escapeHtml(t.termino)}</span>`).join('');
+        const topItems = (topBySec[r.seccion] || []).map(t => {
+            // termino en seccion_ft es un nregistro numérico — se resuelve a nombre asíncronamente
+            const isNr = /^\d+(-\d+)?$/.test(t.termino);
+            return isNr
+                ? `<span class="tag-pill" data-nregistro="${escapeHtml(t.termino)}" title="Resolviendo nombre...">${escapeHtml(t.termino)}</span>`
+                : `<span class="tag-pill">${escapeHtml(t.termino)}</span>`;
+        }).join('');
         return `
         <tr>
             <td><i class="fas ${info.icon}" style="color:${info.color};width:1.2rem"></i> <strong>${r.seccion}</strong></td>
@@ -1299,8 +1389,10 @@ function renderTopTerms(terms) {
         <div class="empty-state"><i class="fas fa-search"></i><p>Sin datos de búsqueda</p></div>
     </div>`;
 
+    // seccion_ft filtrado en worker desde v4 — doble filtro por si worker antiguo
+    const realTerms = terms.filter(t => t.tipo_busqueda !== 'seccion_ft');
     const grouped = new Map();
-    for (const t of terms) {
+    for (const t of realTerms) {
         if (!grouped.has(t.termino)) {
             grouped.set(t.termino, { termino: t.termino, tipo_busqueda: t.tipo_busqueda, consultas: 0 });
         }
@@ -1310,9 +1402,14 @@ function renderTopTerms(terms) {
     const list = [...grouped.values()].sort((a, b) => b.consultas - a.consultas);
     const maxVal = list[0]?.consultas || 1;
 
-    const rows = list.map(t => `
-        <tr>
-            <td class="term-name">${escapeHtml(t.termino)}</td>
+    const rows = list.map(t => {
+        const isNonClinical = NON_CLINICAL.has((t.termino || '').toLowerCase());
+        const ncBadge = isNonClinical
+            ? ' <span class="badge" style="background:rgba(251,191,36,.12);color:#fbbf24;font-size:.65rem;vertical-align:middle" title="Término no clínico detectado — posiblemente prueba o uso de bookmarklet">⚠ no clínico</span>'
+            : '';
+        return `
+        <tr style="${isNonClinical ? 'opacity:.7' : ''}">
+            <td class="term-name">${escapeHtml(t.termino)}${ncBadge}</td>
             <td>${typeBadge(t.tipo_busqueda)}</td>
             <td>
                 <div class="bar-wrap">
@@ -1320,7 +1417,8 @@ function renderTopTerms(terms) {
                     <span class="bar-count">${t.consultas}</span>
                 </div>
             </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
 
     return `
     <div class="table-card" id="sec-terms">
@@ -1416,6 +1514,50 @@ function renderBenchmark() {
             <span><strong>Para docencia y planificación:</strong> Las categorías con mayor concentración de consultas identifican <strong>áreas de incertidumbre clínica sistemática</strong>. Son señales directas de necesidad formativa o de necesidad de protocolos de apoyo en esa área terapéutica.</span>
         </div>
     </details>`;
+}
+
+// ─── RENDER: Fuente de consultas (bookmarklet vs app) ────────────────────────────
+function renderFuente(data) {
+    const fuente = data.por_fuente;
+    const bm = fuente?.bookmarklet || 0;
+    const app = fuente?.app || 0;
+    const total = bm + app;
+
+    if (!fuente || total === 0) {
+        return `
+        <div class="info-banner" style="margin-bottom:0;margin-top:.5rem">
+            <i class="fas fa-bookmark"></i>
+            <span><strong>Tracking de bookmarklet:</strong> Pendiente de migración D1 (<code>ALTER TABLE eventos ADD COLUMN source TEXT</code>). Una vez ejecutada, se diferenciará el tráfico del bookmarklet del acceso directo. El Worker ya está actualizado para registrar la fuente.</span>
+        </div>`;
+    }
+
+    const bmPct = total > 0 ? Math.round(bm / total * 100) : 0;
+    return `
+    <div class="chart-card" style="margin-top:.75rem">
+        <div class="chart-card-title"><i class="fas fa-bookmark"></i> Origen de las consultas</div>
+        <p class="chart-subtitle">Distribución entre acceso directo a MedCheck y consultas iniciadas desde el bookmarklet (texto seleccionado en cualquier página).</p>
+        <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap">
+            <div class="kpi-mini" style="min-width:120px">
+                <div class="kpi-label"><i class="fas fa-desktop"></i> App directa</div>
+                <div class="kpi-value" style="color:#60a5fa">${app}</div>
+                <div class="kpi-note">${total > 0 ? Math.round(app/total*100) : 0}% del total</div>
+            </div>
+            <div class="kpi-mini" style="min-width:120px">
+                <div class="kpi-label"><i class="fas fa-bookmark"></i> Bookmarklet</div>
+                <div class="kpi-value" style="color:#34d399">${bm}</div>
+                <div class="kpi-note">${bmPct}% del total</div>
+            </div>
+            <div style="flex:1;min-width:200px">
+                <div style="height:10px;background:var(--bg-elevated,#263445);border-radius:99px;overflow:hidden;display:flex">
+                    <div style="width:${100-bmPct}%;background:#60a5fa;border-radius:99px 0 0 99px"></div>
+                    <div style="width:${bmPct}%;background:#34d399;border-radius:0 99px 99px 0"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text-muted);margin-top:.25rem">
+                    <span>App directa</span><span>Bookmarklet</span>
+                </div>
+            </div>
+        </div>
+    </div>`;
 }
 
 // ─── RENDER: Export ──────────────────────────────────────────────────────────────
@@ -1610,10 +1752,28 @@ function renderRecurrencia(data) {
         </div>`;
     }
 
-    const maxVal = recur[0]?.consultas || 1;
-    const rows = recur.map(t => `
-        <tr>
-            <td class="term-name">${escapeHtml(t.termino)}</td>
+    // Doble filtro (el worker ya filtra seccion_ft desde v4, pero mantenemos client-side por si worker antiguo)
+    const clinicalRecur = recur.filter(t => !/^\d+(-\d+)?$/.test((t.termino || '').trim()));
+    if (!clinicalRecur.length) {
+        return `
+        <div class="chart-card">
+            <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Fármacos recurrentes (≥3 consultas)</div>
+            <div class="empty-state">
+                <i class="fas fa-redo-alt"></i>
+                <p>No hay fármacos con ≥3 consultas en el periodo</p>
+            </div>
+        </div>`;
+    }
+
+    const maxVal = clinicalRecur[0]?.consultas || 1;
+    const rows = clinicalRecur.map(t => {
+        const isNonClinical = NON_CLINICAL.has((t.termino || '').toLowerCase());
+        const ncBadge = isNonClinical
+            ? ' <span class="badge" style="background:rgba(251,191,36,.12);color:#fbbf24;font-size:.65rem" title="Término no clínico">⚠</span>'
+            : '';
+        return `
+        <tr style="${isNonClinical ? 'opacity:.7' : ''}">
+            <td class="term-name">${escapeHtml(t.termino)}${ncBadge}</td>
             <td><span class="recurrence-badge">${t.dias_distintos} día${t.dias_distintos > 1 ? 's' : ''}</span></td>
             <td>
                 <div class="bar-wrap">
@@ -1621,7 +1781,8 @@ function renderRecurrencia(data) {
                     <span class="bar-count">${t.consultas}</span>
                 </div>
             </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
 
     return `
     <div class="chart-card">
@@ -2196,12 +2357,18 @@ function initTabs(data) {
 
 // ─── MAIN RENDER ────────────────────────────────────────────────────────────────
 function renderDashboard(data) {
+    // Limpiar y enriquecer datos antes de renderizar
+    data = preprocessData(data);
     currentData = data;
 
-    const pctExito = data.resumen.total_consultas > 0
-        ? Math.round(data.resumen.con_resultado / data.resumen.total_consultas * 100) : 0;
-    const diversidad = data.resumen.total_consultas > 0
-        ? Math.round(data.resumen.terminos_distintos / data.resumen.total_consultas * 100) : 0;
+    // Usar métricas de búsquedas directas (excluye lecturas FT modal) para KPIs
+    const busquedas = data.resumen.busquedas_directas ?? data.resumen.total_consultas;
+    const farmacos  = data.resumen.farmacos_distintos_reales ?? data.resumen.terminos_distintos;
+
+    const pctExito = busquedas > 0
+        ? Math.round(data.resumen.con_resultado / busquedas * 100) : 0;
+    const diversidad = busquedas > 0
+        ? Math.round(farmacos / busquedas * 100) : 0;
 
     const html = `
         <nav class="tab-bar" id="tab-bar">
@@ -2280,6 +2447,7 @@ function renderDashboard(data) {
                 </div>
             </div>
 
+            ${renderFuente(data)}
             ${renderTopTerms(data.top_terminos)}
             ${renderRecurrencia(data)}
             ${renderATC(data)}
@@ -2319,6 +2487,9 @@ function renderDashboard(data) {
     // Export buttons
     document.getElementById('export-csv')?.addEventListener('click', exportCSV);
     document.getElementById('export-json')?.addEventListener('click', exportJSON);
+
+    // Resolver nregistros a nombres de fármaco de forma asíncrona (300ms delay para no bloquear render)
+    setTimeout(() => enrichNregistroElements(), 300);
 }
 
 // ─── LOAD ───────────────────────────────────────────────────────────────────────

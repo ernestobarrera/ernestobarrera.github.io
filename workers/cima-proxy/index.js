@@ -31,6 +31,8 @@ const VISTAS_VALIDAS = new Set([
 const CONTEXTOS_VALIDOS = new Set([
     'embarazo', 'lactancia', 'elderly', 'driving', 'renal', 'hepatic'
 ]);
+// Valores permitidos para fuente de la consulta
+const FUENTES_VALIDAS = new Set(['app', 'bookmarklet']);
 // ─────────────────────────────────────────────
 // ENTRADA PRINCIPAL
 // ─────────────────────────────────────────────
@@ -55,6 +57,7 @@ export default {
         // NO se reenvían a CIMA — son solo para el registro interno
         const vista    = sanitizarVista(request.headers.get('X-MC-View'));
         const contexto = sanitizarContexto(request.headers.get('X-MC-Context'));
+        const fuente   = sanitizarFuente(request.headers.get('X-MC-Source'));
         // X-MC-Autocomplete: '1' → petición secundaria/paralela, no registrar
         const esAutocomplete = request.headers.get('X-MC-Autocomplete') === '1';
 
@@ -73,7 +76,7 @@ export default {
 
             if (env.DB && debeRegistrar(path) && !esAutocomplete) {
                 ctx.waitUntil(
-                    registrarEvento(env.DB, path, url.searchParams, data, response.status, vista, contexto)
+                    registrarEvento(env.DB, path, url.searchParams, data, response.status, vista, contexto, fuente)
                 );
             }
             return new Response(data, {
@@ -109,6 +112,11 @@ function sanitizarContexto(raw) {
         .filter(c => CONTEXTOS_VALIDOS.has(c));
     return validos.length > 0 ? validos.join(',') : null;
 }
+function sanitizarFuente(raw) {
+    if (!raw) return null;
+    const v = raw.trim().toLowerCase();
+    return FUENTES_VALIDAS.has(v) ? v : null;
+}
 // ─────────────────────────────────────────────
 // FUNCIONES DE LOGGING
 // ─────────────────────────────────────────────
@@ -131,7 +139,7 @@ function extraerTermino(searchParams) {
     if (nregistro) return { tipo: 'nregistro', termino: nregistro.trim() };
     return { tipo: 'otro', termino: null };
 }
-async function registrarEvento(db, path, searchParams, responseData, statusCode, vista, contexto) {
+async function registrarEvento(db, path, searchParams, responseData, statusCode, vista, contexto, fuente = null) {
     try {
         const esDocSegmentado = path.startsWith('/docSegmentado');
         let tipo, termino, seccion = null, atcCode = null;
@@ -179,22 +187,30 @@ async function registrarEvento(db, path, searchParams, responseData, statusCode,
         try {
             await db.prepare(`
                 INSERT INTO eventos
-                    (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto, atc_code, seccion)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto, atcCode, seccion).run();
+                    (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto, atc_code, seccion, source)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto, atcCode, seccion, fuente).run();
         } catch (_) {
             try {
                 await db.prepare(`
                     INSERT INTO eventos
-                        (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto, atc_code)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto, atcCode).run();
+                        (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto, atc_code, seccion)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto, atcCode, seccion).run();
             } catch (_2) {
-                await db.prepare(`
-                    INSERT INTO eventos
-                        (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto).run();
+                try {
+                    await db.prepare(`
+                        INSERT INTO eventos
+                            (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto, atc_code)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto, atcCode).run();
+                } catch (_3) {
+                    await db.prepare(`
+                        INSERT INTO eventos
+                            (ts, endpoint, tipo_busqueda, termino, num_resultados, status_code, vista, contexto)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    `).bind(Date.now(), path, tipo, termino, numResultados, statusCode, vista, contexto).run();
+                }
             }
         }
     } catch (error) {
@@ -218,20 +234,23 @@ async function handleAnalytics(request, env) {
         const [resumen, topTerminos, porVista, porEndpoint, porDia, porContexto, porHora, porDiaSemana, porTipoBusqueda, topPorVista] = await Promise.all([
             env.DB.prepare(`
                 SELECT
-                    COUNT(*)                                                 AS total_consultas,
-                    COUNT(DISTINCT termino)                                  AS terminos_distintos,
-                    SUM(CASE WHEN num_resultados = 0 THEN 1 ELSE 0 END)     AS sin_resultado,
-                    SUM(CASE WHEN num_resultados > 0 THEN 1 ELSE 0 END)     AS con_resultado
+                    COUNT(*)                                                                         AS total_consultas,
+                    COUNT(DISTINCT termino)                                                          AS terminos_distintos,
+                    SUM(CASE WHEN num_resultados = 0 THEN 1 ELSE 0 END)                             AS sin_resultado,
+                    SUM(CASE WHEN num_resultados > 0 THEN 1 ELSE 0 END)                             AS con_resultado,
+                    SUM(CASE WHEN tipo_busqueda != 'seccion_ft' THEN 1 ELSE 0 END)                  AS busquedas_directas,
+                    COUNT(DISTINCT CASE WHEN tipo_busqueda != 'seccion_ft' THEN termino END)         AS farmacos_distintos_reales,
+                    SUM(CASE WHEN tipo_busqueda = 'seccion_ft' THEN 1 ELSE 0 END)                   AS lecturas_ft
                 FROM eventos
                 WHERE ts > ? AND status_code = 200
             `).bind(desde).first(),
 
-            // FIX: GROUP BY termino + tipo_busqueda (elimina vista para no fragmentar,
-            // e incluye tipo en el grupo para evitar valor arbitrario en SQLite)
+            // Top términos de búsqueda directa — excluye seccion_ft (nregistros, no nombres de fármaco)
             env.DB.prepare(`
                 SELECT termino, tipo_busqueda, COUNT(*) AS consultas
                 FROM eventos
                 WHERE ts > ? AND termino IS NOT NULL AND status_code = 200
+                      AND tipo_busqueda != 'seccion_ft'
                 GROUP BY termino, tipo_busqueda
                 ORDER BY consultas DESC
                 LIMIT 20
@@ -341,12 +360,13 @@ async function handleAnalytics(request, env) {
                 ORDER BY intentos DESC LIMIT 20
             `).bind(desde).all(),
 
-            // Fármacos recurrentes (≥3 consultas)
+            // Fármacos recurrentes (≥3 consultas) — excluye seccion_ft (nregistros) y sólo búsquedas directas
             env.DB.prepare(`
                 SELECT termino, COUNT(*) AS consultas,
                        COUNT(DISTINCT date(ts/1000,'unixepoch')) AS dias_distintos
                 FROM eventos
                 WHERE ts > ? AND termino IS NOT NULL AND status_code = 200
+                      AND tipo_busqueda != 'seccion_ft'
                 GROUP BY termino HAVING consultas >= 3
                 ORDER BY consultas DESC LIMIT 20
             `).bind(desde).all(),
@@ -392,6 +412,21 @@ async function handleAnalytics(request, env) {
             `).bind(desde).all();
             vistaAtc = vaResult.results;
         } catch (_) { /* atc_code aún no existe */ }
+
+        // Distribución por fuente — bookmarklet vs app (requiere columna source — graceful fallback)
+        let porFuente = null;
+        try {
+            const fResult = await env.DB.prepare(`
+                SELECT source, COUNT(*) AS consultas
+                FROM eventos
+                WHERE ts > ? AND source IS NOT NULL AND tipo_busqueda != 'seccion_ft'
+                GROUP BY source ORDER BY consultas DESC
+            `).bind(desde).all();
+            if (fResult.results?.length > 0) {
+                porFuente = {};
+                fResult.results.forEach(r => { porFuente[r.source] = r.consultas; });
+            }
+        } catch (_) { /* columna source aún no creada — pendiente de migración D1 */ }
 
         // Secciones FT consultadas en el modal (requiere columna seccion — graceful fallback)
         let seccionData = { por_seccion_ft: [], top_por_seccion: [] };
@@ -439,6 +474,7 @@ async function handleAnalytics(request, env) {
             tasa_exito:          tasaExito.results,
             contexto_terminos,
             vista_atc:           vistaAtc,
+            por_fuente:          porFuente,
             // V3: secciones FT consultadas en modal (columna seccion)
             ...seccionData,
         }), {
