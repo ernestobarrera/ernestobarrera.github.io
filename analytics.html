@@ -1538,7 +1538,7 @@ function renderFuente(data) {
         <p class="chart-subtitle">Distribución entre acceso directo a MedCheck y consultas iniciadas desde el bookmarklet (texto seleccionado en cualquier página).</p>
         <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap">
             <div class="kpi-mini" style="min-width:120px">
-                <div class="kpi-label"><i class="fas fa-desktop"></i> App directa</div>
+                <div class="kpi-label"><i class="fas fa-desktop"></i> Acceso directo</div>
                 <div class="kpi-value" style="color:#60a5fa">${app}</div>
                 <div class="kpi-note">${total > 0 ? Math.round(app/total*100) : 0}% del total</div>
             </div>
@@ -1553,7 +1553,7 @@ function renderFuente(data) {
                     <div style="width:${bmPct}%;background:#34d399;border-radius:0 99px 99px 0"></div>
                 </div>
                 <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text-muted);margin-top:.25rem">
-                    <span>App directa</span><span>Bookmarklet</span>
+                    <span>Acceso directo</span><span>Bookmarklet</span>
                 </div>
             </div>
         </div>

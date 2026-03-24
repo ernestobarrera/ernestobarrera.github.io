@@ -43,9 +43,9 @@ class MedCheckApp {
         // Analytics globals — leídos por cima-api.js en cada petición al Worker
         window._mcCurrentView    = 'buscar';
         window._mcActiveContexts = null;
-        // Fuente de apertura: 'bookmarklet' si la app se abrió desde el bookmarklet
+        // Fuente de apertura: 'bookmarklet' si la app se abrió desde el bookmarklet, 'app' si acceso directo
         const _urlSrc = new URLSearchParams(window.location.search).get('source');
-        window._mcSource = _urlSrc === 'bookmarklet' ? 'bookmarklet' : null;
+        window._mcSource = _urlSrc === 'bookmarklet' ? 'bookmarklet' : 'app';
 
         // URL Router state - prevents URL update during popstate navigation
         this.isPopstateNavigation = false;
