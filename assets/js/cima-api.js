@@ -103,6 +103,7 @@ class CimaAPI {
                     'Content-Type': 'application/json',
                     ...(window._mcCurrentView    ? { 'X-MC-View':    window._mcCurrentView }    : {}),
                     ...(window._mcActiveContexts ? { 'X-MC-Context': window._mcActiveContexts } : {}),
+                    ...(window._mcSource         ? { 'X-MC-Source':  window._mcSource }         : {}),
                     ...options.headers
                 }
             });
