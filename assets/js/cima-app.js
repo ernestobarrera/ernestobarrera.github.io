@@ -6447,6 +6447,12 @@ class MedCheckApp {
 
             // Perform the search
             this.performSearch();
+            // Reset source immediately after launching the initial bookmarklet search.
+            // All fetch() calls inside performSearch() capture headers synchronously before
+            // any await, so the bookmarklet tag is already captured and it's safe to reset.
+            // Without this reset, every subsequent manual search in the same tab would be
+            // incorrectly attributed to the bookmarklet.
+            window._mcSource = 'app';
             return;
         }
 
