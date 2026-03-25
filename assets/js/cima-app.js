@@ -6193,6 +6193,23 @@ class MedCheckApp {
             });
         }
 
+        // Apply faceted filters (form, lab, doses) — same logic as displaySearchResults
+        if (this.filterState?.form) {
+            filteredResults = filteredResults.filter(med =>
+                (med.formaFarmaceutica?.nombre || 'Sin forma') === this.filterState.form
+            );
+        }
+        if (this.filterState?.lab) {
+            filteredResults = filteredResults.filter(med =>
+                (med.labtitular || 'Sin laboratorio') === this.filterState.lab
+            );
+        }
+        if (this.filterState?.doses?.size > 0) {
+            filteredResults = filteredResults.filter(med =>
+                med.dosis && this.filterState.doses.has(this.normalizeDosis(med.dosis))
+            );
+        }
+
         // Group results
         const groups = this.groupResultsByField(filteredResults, this.groupingState.groupBy);
 
@@ -6211,7 +6228,7 @@ class MedCheckApp {
             <div class="results-header" style="margin-bottom:0.5rem;">
                 ${breadcrumbHtml}
             </div>
-            ${this.renderResultsControlBar(filteredResults.length)}
+            ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data)}
             ${this.renderRouteFilterChips(routes)}
             <div id="grouped-results">
                 ${this.renderGroupedResults(groups, searchQuery)}
@@ -6256,6 +6273,48 @@ class MedCheckApp {
                 } else if (e.target.value === 'nameDesc') {
                     data.resultados.sort((a, b) => b.nombre.localeCompare(a.nombre));
                 }
+                this.displayGroupedIndicationResults(data, searchQuery);
+            });
+        }
+
+        // Form filter dropdown
+        const formFilter = document.getElementById('form-filter');
+        if (formFilter) {
+            formFilter.addEventListener('change', (e) => {
+                this.filterState.form = e.target.value || null;
+                this.displayGroupedIndicationResults(data, searchQuery);
+            });
+        }
+
+        // Lab filter dropdown
+        const labFilter = document.getElementById('lab-filter');
+        if (labFilter) {
+            labFilter.addEventListener('change', (e) => {
+                this.filterState.lab = e.target.value || null;
+                this.displayGroupedIndicationResults(data, searchQuery);
+            });
+        }
+
+        // Dose chips (multi-select)
+        document.querySelectorAll('.filter-chip[data-dose]').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const dose = chip.dataset.dose;
+                if (!this.filterState.doses) this.filterState.doses = new Set();
+                if (this.filterState.doses.has(dose)) {
+                    this.filterState.doses.delete(dose);
+                } else {
+                    this.filterState.doses.add(dose);
+                }
+                this.displayGroupedIndicationResults(data, searchQuery);
+            });
+        });
+
+        // Clear filters button
+        const clearBtn = document.getElementById('clear-filters-btn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                this.filterState = { form: null, lab: null, doses: new Set() };
+                this.groupingState.routeFilters.clear();
                 this.displayGroupedIndicationResults(data, searchQuery);
             });
         }
