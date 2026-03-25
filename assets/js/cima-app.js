@@ -5869,17 +5869,22 @@ class MedCheckApp {
     /**
      * Renders the results control bar with faceted filters
      */
-    renderResultsControlBar(totalResults, filteredData = null, originalData = null) {
+    renderResultsControlBar(totalResults, filteredData = null, originalData = null, options = {}) {
+        const { showDoses = true, showEFG = false } = options;
+
         // Extract unique values - use original data for all filters (so they remain visible)
         const sourceForFilters = originalData?.resultados || filteredData?.resultados || [];
 
         const forms = this._extractUniqueForms(sourceForFilters);
         const labs = this._extractUniqueLabs(sourceForFilters);
-        const doses = this._extractUniqueDoses(sourceForFilters);
+        const doses = showDoses ? this._extractUniqueDoses(sourceForFilters) : [];
+
+        // EFG count (only computed when needed)
+        const efgCount = showEFG ? sourceForFilters.filter(m => m.generico).length : 0;
 
         // Initialize filter state if needed
         if (!this.filterState) {
-            this.filterState = { form: null, lab: null, doses: new Set() };
+            this.filterState = { form: null, lab: null, doses: new Set(), efgOnly: false };
         }
 
         // Build form dropdown options (top 10)
@@ -5903,7 +5908,8 @@ class MedCheckApp {
         const activeFilters = (this.filterState.form ? 1 : 0) +
             (this.filterState.lab ? 1 : 0) +
             (this.filterState.doses?.size || 0) +
-            (this.groupingState.routeFilters?.size || 0);
+            (this.groupingState.routeFilters?.size || 0) +
+            (this.filterState.efgOnly ? 1 : 0);
 
         return `
             <div class="results-control-bar">
@@ -5935,6 +5941,13 @@ class MedCheckApp {
                             ${labOptions}
                         </select>
                         ` : ''}
+                    </div>
+                    ` : ''}
+                    ${showEFG && efgCount > 0 ? `
+                    <div class="control-section">
+                        <label class="efg-toggle ${this.filterState.efgOnly ? 'active' : ''}" id="efg-toggle" title="Mostrar solo genéricos (${efgCount} disponibles)">
+                            <i class="fas fa-capsules"></i> Solo EFG <span class="chip-count">${efgCount}</span>
+                        </label>
                     </div>
                     ` : ''}
                     <div class="control-section results-info">
@@ -6193,7 +6206,7 @@ class MedCheckApp {
             });
         }
 
-        // Apply faceted filters (form, lab, doses) — same logic as displaySearchResults
+        // Apply faceted filters (form, lab, efg) — doses not used in Indicaciones
         if (this.filterState?.form) {
             filteredResults = filteredResults.filter(med =>
                 (med.formaFarmaceutica?.nombre || 'Sin forma') === this.filterState.form
@@ -6204,10 +6217,8 @@ class MedCheckApp {
                 (med.labtitular || 'Sin laboratorio') === this.filterState.lab
             );
         }
-        if (this.filterState?.doses?.size > 0) {
-            filteredResults = filteredResults.filter(med =>
-                med.dosis && this.filterState.doses.has(this.normalizeDosis(med.dosis))
-            );
+        if (this.filterState?.efgOnly) {
+            filteredResults = filteredResults.filter(med => med.generico);
         }
 
         // Group results
@@ -6228,7 +6239,7 @@ class MedCheckApp {
             <div class="results-header" style="margin-bottom:0.5rem;">
                 ${breadcrumbHtml}
             </div>
-            ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data)}
+            ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data, { showDoses: false, showEFG: true })}
             ${this.renderRouteFilterChips(routes)}
             <div id="grouped-results">
                 ${this.renderGroupedResults(groups, searchQuery)}
@@ -6309,11 +6320,20 @@ class MedCheckApp {
             });
         });
 
+        // EFG toggle
+        const efgToggle = document.getElementById('efg-toggle');
+        if (efgToggle) {
+            efgToggle.addEventListener('click', () => {
+                this.filterState.efgOnly = !this.filterState.efgOnly;
+                this.displayGroupedIndicationResults(data, searchQuery);
+            });
+        }
+
         // Clear filters button
         const clearBtn = document.getElementById('clear-filters-btn');
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
-                this.filterState = { form: null, lab: null, doses: new Set() };
+                this.filterState = { form: null, lab: null, doses: new Set(), efgOnly: false };
                 this.groupingState.routeFilters.clear();
                 this.displayGroupedIndicationResults(data, searchQuery);
             });
