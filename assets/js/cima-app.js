@@ -1257,6 +1257,8 @@ class MedCheckApp {
         // Add click handlers for cards
         resultsContainer.querySelectorAll('.result-card').forEach(card => {
             card.addEventListener('click', (e) => {
+                const tabTarget = e.target.closest('[data-open-tab]');
+                if (tabTarget) { this.openMedDetails(card.dataset.nregistro, tabTarget.dataset.openTab); return; }
                 if (e.target.closest('.badge-clickable, .fav-star-btn, .med-detail-tag--clickable, .atc-clinical-chip--clickable, .btn')) return;
                 this.openMedDetails(card.dataset.nregistro);
             });
@@ -1390,7 +1392,7 @@ class MedCheckApp {
         if (med.estupiTemp) badges.push('<span class="badge badge-dark" title="Estupefaciente - Receta especial">⚠ Estupef.</span>');
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
         // Notas de seguridad oficiales de la AEMPS
-        if (med.notas) badges.push(`<span class="badge badge-warning badge-clickable" title="Ver alertas de seguridad de la AEMPS" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'alerts')"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>`);
+        if (med.notas) badges.push(`<span class="badge badge-warning badge-clickable" data-open-tab="alerts" title="Ver alertas de seguridad de la AEMPS"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>`);
         if (med.materialesInf) badges.push('<span class="badge badge-info" title="Materiales informativos de seguridad disponibles"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
 
         // Alertas según contexto del paciente
@@ -2143,6 +2145,8 @@ class MedCheckApp {
         grid.querySelectorAll('.result-card:not([data-clickbound])').forEach(card => {
             card.setAttribute('data-clickbound', 'true');
             card.addEventListener('click', (e) => {
+                const tabTarget = e.target.closest('[data-open-tab]');
+                if (tabTarget) { this.openMedDetails(card.dataset.nregistro, tabTarget.dataset.openTab); return; }
                 if (e.target.closest('.badge-clickable, .fav-star-btn, .med-detail-tag--clickable, .atc-clinical-chip--clickable, .btn')) return;
                 this.openMedDetails(card.dataset.nregistro);
             });
@@ -6257,6 +6261,8 @@ class MedCheckApp {
         // Add click handlers for cards
         resultsContainer.querySelectorAll('.result-card').forEach(card => {
             card.addEventListener('click', (e) => {
+                const tabTarget = e.target.closest('[data-open-tab]');
+                if (tabTarget) { this.openMedDetails(card.dataset.nregistro, tabTarget.dataset.openTab); return; }
                 if (e.target.closest('.badge-clickable, .fav-star-btn, .med-detail-tag--clickable, .atc-clinical-chip--clickable, .btn')) return;
                 this.openMedDetails(card.dataset.nregistro);
             });
