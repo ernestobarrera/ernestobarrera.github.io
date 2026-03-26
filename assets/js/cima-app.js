@@ -4198,7 +4198,9 @@ class MedCheckApp {
             window._mcCurrentView = `modal-${initialTab}`;
 
             // Check if medication has AEMPS alerts (notas or materiales)
-            const hasAempsAlerts = med.notas || med.materialesInf;
+            // The detail endpoint may not return these flags — fall back to search result cache
+            const cachedMed = this._medRenderCache.get(nregistro);
+            const hasAempsAlerts = med.notas || med.materialesInf || cachedMed?.notas || cachedMed?.materialesInf;
 
             // Get medication images for thumbnail and lightbox
             const medFotos = med.fotos || [];
