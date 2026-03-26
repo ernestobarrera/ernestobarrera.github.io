@@ -1392,7 +1392,7 @@ class MedCheckApp {
         if (med.estupiTemp) badges.push('<span class="badge badge-dark" title="Estupefaciente - Receta especial">⚠ Estupef.</span>');
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
         // Notas de seguridad oficiales de la AEMPS
-        if (med.notas) badges.push(`<span class="badge badge-warning badge-clickable" data-open-tab="alerts" title="Ver alertas de seguridad de la AEMPS"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>`);
+        if (med.notas) badges.push(`<span class="badge badge-warning badge-clickable" title="Ver alertas de seguridad de la AEMPS" onclick="event.stopPropagation(); app.openMedDetails(this.closest('.result-card').dataset.nregistro, 'alerts')"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>`);
         if (med.materialesInf) badges.push('<span class="badge badge-info" title="Materiales informativos de seguridad disponibles"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
 
         // Alertas según contexto del paciente
@@ -4205,8 +4205,10 @@ class MedCheckApp {
 
             // Check if medication has AEMPS alerts (notas or materiales)
             // The detail endpoint may not return these flags — fall back to search result cache
-            const cachedMed = this._medRenderCache.get(nregistro);
-            const hasAempsAlerts = med.notas || med.materialesInf || cachedMed?.notas || cachedMed?.materialesInf;
+            // nregistro may be string (dataset) while cache key may be number (API) — check both
+            const cachedMed = this._medRenderCache.get(nregistro) ?? this._medRenderCache.get(+nregistro);
+            // If caller explicitly requested alerts tab, trust that alerts exist (badge only shows when notas=true)
+            const hasAempsAlerts = initialTab === 'alerts' || med.notas || med.materialesInf || cachedMed?.notas || cachedMed?.materialesInf;
 
             // Get medication images for thumbnail and lightbox
             const medFotos = med.fotos || [];
