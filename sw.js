@@ -2,7 +2,7 @@
 // Network-first strategy for active development + PWA support
 
 // Auto-versioning: includes date for cache-busting on deploy
-const VERSION = '20260317';
+const VERSION = '20260326';
 const CACHE_NAME = `medcheck-${VERSION}`;
 
 const STATIC_ASSETS = [
