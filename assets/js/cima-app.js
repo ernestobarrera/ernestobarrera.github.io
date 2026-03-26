@@ -1256,7 +1256,8 @@ class MedCheckApp {
 
         // Add click handlers for cards
         resultsContainer.querySelectorAll('.result-card').forEach(card => {
-            card.addEventListener('click', () => {
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.badge-clickable, .fav-star-btn, .med-detail-tag--clickable, .atc-clinical-chip--clickable, .btn')) return;
                 this.openMedDetails(card.dataset.nregistro);
             });
         });
@@ -2141,7 +2142,8 @@ class MedCheckApp {
         // Update newly added cards with click handlers
         grid.querySelectorAll('.result-card:not([data-clickbound])').forEach(card => {
             card.setAttribute('data-clickbound', 'true');
-            card.addEventListener('click', () => {
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.badge-clickable, .fav-star-btn, .med-detail-tag--clickable, .atc-clinical-chip--clickable, .btn')) return;
                 this.openMedDetails(card.dataset.nregistro);
             });
         });
@@ -6254,7 +6256,8 @@ class MedCheckApp {
 
         // Add click handlers for cards
         resultsContainer.querySelectorAll('.result-card').forEach(card => {
-            card.addEventListener('click', () => {
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.badge-clickable, .fav-star-btn, .med-detail-tag--clickable, .atc-clinical-chip--clickable, .btn')) return;
                 this.openMedDetails(card.dataset.nregistro);
             });
         });
