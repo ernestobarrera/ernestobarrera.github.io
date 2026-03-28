@@ -2359,13 +2359,6 @@ class CimaAPI {
         return this._request(`/registroCambios?fecha=${fecha}`, {}, false);
     }
 
-    /**
-     * Obtener materiales informativos
-     * @param {string} nregistro 
-     */
-    async getMateriales(nregistro) {
-        return this._request(`/materiales?nregistro=${nregistro}`);
-    }
 
     // ============================================
     // MAESTROS / CATÁLOGOS
