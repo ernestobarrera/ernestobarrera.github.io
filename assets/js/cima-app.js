@@ -252,6 +252,7 @@ class MedCheckApp {
                 case 'equivalences': this.renderEquivalences(); break;
                 case 'supply': await this.renderSupply(); break;
                 case 'alerts': await this.renderAlerts(); break;
+                case 'materials': await this.renderMaterials(); break;
                 case 'profile': this.renderProfileView(); break;
                 default: this.content.innerHTML = '<p>Vista no encontrada</p>';
             }
@@ -3973,6 +3974,145 @@ class MedCheckApp {
     // ALERTS VIEW
     // ============================================
 
+    // ============================================
+    // VISTA MATERIALES INFORMATIVOS
+    // ============================================
+
+    async renderMaterials() {
+        this.content.innerHTML = '<div class="loading-spinner"></div>';
+
+        // Carga catálogo completo (~276 items) y cachea en instancia
+        if (!this._materialesCatalogo) {
+            this._materialesCatalogo = await this.api.getMaterialesCatalogo();
+        }
+
+        this._materialesFiltroTipo = this._materialesFiltroTipo || 'todos';
+        this._materialesBusqueda = this._materialesBusqueda || '';
+
+        this._renderMaterialesView();
+    }
+
+    _renderMaterialesView() {
+        const catalogo = this._materialesCatalogo || [];
+        const busqueda = (this._materialesBusqueda || '').toLowerCase();
+        const filtro = this._materialesFiltroTipo || 'todos';
+
+        // Filtrar
+        const filtrados = catalogo.filter(item => {
+            const textoMatch = !busqueda ||
+                item.medicamento?.toLowerCase().includes(busqueda) ||
+                item.principiosActivos?.toLowerCase().includes(busqueda);
+
+            const tipoMatch = filtro === 'todos' ||
+                (filtro === 'paciente' && item.listaDocsPaciente?.length > 0) ||
+                (filtro === 'profesional' && item.listaDocsProfesional?.length > 0) ||
+                (filtro === 'video' && [
+                    ...(item.listaDocsPaciente || []),
+                    ...(item.listaDocsProfesional || [])
+                ].some(d => d.video));
+
+            return textoMatch && tipoMatch;
+        });
+
+        const totalStr = filtrados.length === catalogo.length
+            ? `${catalogo.length} medicamentos con materiales`
+            : `${filtrados.length} de ${catalogo.length} resultados`;
+
+        const filtrosBtns = ['todos', 'paciente', 'profesional', 'video'].map(f => {
+            const labels = { todos: 'Todos', paciente: 'Para paciente', profesional: 'Para profesional', video: 'Vídeos' };
+            const icons  = { todos: 'list', paciente: 'user-circle', profesional: 'stethoscope', video: 'play-circle' };
+            const active = filtro === f ? 'btn-primary' : 'btn-secondary';
+            return `<button class="btn btn-sm ${active}" onclick="app._setMaterialesFiltro('${f}')">
+                <i class="fas fa-${icons[f]}"></i> ${labels[f]}
+            </button>`;
+        }).join('');
+
+        const tarjetas = filtrados.map(item => {
+            const docsP = (item.listaDocsProfesional || []).map(d => `
+                <a href="${d.url}" target="_blank" rel="noopener" class="material-doc-link">
+                    <i class="fas fa-${d.video ? 'play-circle' : 'file-pdf'}"></i>
+                    ${d.nombre}
+                </a>`).join('');
+            const docsPac = (item.listaDocsPaciente || []).map(d => `
+                <a href="${d.url}" target="_blank" rel="noopener" class="material-doc-link">
+                    <i class="fas fa-${d.video ? 'play-circle' : 'file-pdf'}"></i>
+                    ${d.nombre}
+                </a>`).join('');
+
+            const badges = [
+                item.listaDocsProfesional?.length > 0 ? '<span class="badge badge-info" style="font-size:0.65rem">Profesional</span>' : '',
+                item.listaDocsPaciente?.length > 0    ? '<span class="badge badge-neutral" style="font-size:0.65rem">Paciente</span>' : '',
+                [...(item.listaDocsPaciente||[]), ...(item.listaDocsProfesional||[])].some(d=>d.video)
+                    ? '<span class="badge badge-purple" style="font-size:0.65rem"><i class="fas fa-play-circle"></i> Vídeo</span>' : ''
+            ].join('');
+
+            return `
+                <div class="result-card" style="cursor:default">
+                    <div class="result-card-header">
+                        <div>
+                            <h4 class="result-card-name" style="font-size:0.9rem">${item.medicamento}</h4>
+                            <p class="text-muted" style="font-size:0.75rem;margin:0.15rem 0 0.4rem">${item.principiosActivos || ''}</p>
+                            <div style="display:flex;gap:0.3rem;flex-wrap:wrap">${badges}</div>
+                        </div>
+                    </div>
+                    ${docsP ? `<div class="material-docs-group">
+                        <p class="material-group-label"><i class="fas fa-stethoscope"></i> Profesional</p>
+                        ${docsP}</div>` : ''}
+                    ${docsPac ? `<div class="material-docs-group">
+                        <p class="material-group-label"><i class="fas fa-user-circle"></i> Paciente</p>
+                        ${docsPac}</div>` : ''}
+                </div>`;
+        }).join('');
+
+        this.content.innerHTML = `
+            <div class="search-box" style="margin-bottom:0.75rem">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+                    <h3 style="margin:0;color:var(--primary)">
+                        <i class="fas fa-file-medical-alt"></i> Materiales Informativos
+                    </h3>
+                    <span class="text-muted" style="font-size:0.8rem">${totalStr}</span>
+                </div>
+                <div class="search-input-wrapper" style="margin-bottom:0.75rem">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="mat-busqueda" class="search-input"
+                           placeholder="Buscar por medicamento o principio activo..."
+                           value="${this._materialesBusqueda || ''}">
+                    ${this._materialesBusqueda ? `<button class="search-clear-btn" onclick="app._clearMaterialesBusqueda()"><i class="fas fa-times"></i></button>` : ''}
+                </div>
+                <div style="display:flex;gap:0.4rem;flex-wrap:wrap">${filtrosBtns}</div>
+            </div>
+            <div class="results-grid">${tarjetas || `
+                <div class="empty-state">
+                    <i class="fas fa-file-medical-alt"></i>
+                    <p>No hay resultados para "${busqueda}"</p>
+                </div>`}
+            </div>`;
+
+        // Búsqueda en tiempo real
+        const input = document.getElementById('mat-busqueda');
+        if (input) {
+            input.addEventListener('input', () => {
+                this._materialesBusqueda = input.value;
+                this._renderMaterialesView();
+            });
+            // Focus al final del texto si hay búsqueda previa
+            if (this._materialesBusqueda) {
+                input.setSelectionRange(input.value.length, input.value.length);
+                input.focus();
+            }
+        }
+    }
+
+    _setMaterialesFiltro(tipo) {
+        this._materialesFiltroTipo = tipo;
+        this._renderMaterialesView();
+    }
+
+    _clearMaterialesBusqueda() {
+        this._materialesBusqueda = '';
+        this._renderMaterialesView();
+    }
+
     async renderAlerts() {
         this.content.innerHTML = '<div class="loading-spinner"></div>';
 
@@ -5042,26 +5182,34 @@ ${materialesPlaceholder}
         }
 
         try {
-            const materiales = await this.api.getMateriales(nregistro);
-            console.log('[loadMateriales] nregistro:', nregistro, '| resultado:', materiales);
+            const { profesional, paciente } = await this.api.getMateriales(nregistro);
+            const total = profesional.length + paciente.length;
 
-            if (!materiales || materiales.length === 0) {
-                container.innerHTML = '<p class="text-muted" style="padding:0.5rem 0">No hay materiales disponibles</p>';
+            if (total === 0) {
+                container.innerHTML = '';
                 return;
             }
 
+            const renderGroup = (docs, label, icon) => docs.length === 0 ? '' : `
+                <div style="margin-bottom:0.75rem">
+                    <p class="text-muted" style="font-size:0.75rem;margin-bottom:0.4rem">
+                        <i class="fas fa-${icon}"></i> ${label}
+                    </p>
+                    <div class="alerts-list">
+                        ${docs.map(mat => this.renderMaterialCard(mat)).join('')}
+                    </div>
+                </div>`;
+
             container.dataset.loaded = 'true';
             container.innerHTML = `
-                <div class="alerts-section" style="margin-top: 1rem;">
+                <div class="alerts-section" style="margin-top:1rem">
                     <h4 class="alerts-section-title">
                         <i class="fas fa-file-medical-alt text-info"></i>
-                        Materiales Informativos (${materiales.length})
+                        Materiales Informativos (${total})
                     </h4>
-                    <div class="alerts-list">
-                        ${materiales.map(mat => this.renderMaterialCard(mat)).join('')}
-                    </div>
-                </div>
-            `;
+                    ${renderGroup(profesional, 'Para profesionales', 'stethoscope')}
+                    ${renderGroup(paciente, 'Para pacientes', 'user-circle')}
+                </div>`;
         } catch (error) {
             container.innerHTML = '';
         }
@@ -7840,6 +7988,7 @@ MedCheckApp._VIEW_ANALYTICS_MAP = {
     equivalences: 'equivalencias',
     supply:       'suministro',
     alerts:       'alertas',
+    materials:    'materiales',
     profile:      'perfil',
 };
 

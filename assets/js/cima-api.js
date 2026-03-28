@@ -291,13 +291,30 @@ class CimaAPI {
     async getMateriales(nregistro) {
         try {
             const response = await this._request(`/materiales/${nregistro}`);
-            console.log('[getMateriales] response raw:', response);
-            if (!response) return [];
-            // API returns { listaDocsProfesional: [...] }, not a plain array
-            const docs = response.listaDocsProfesional || response.listaDocsPaciente || [];
-            return Array.isArray(docs) ? docs : [docs];
+            if (!response) return { profesional: [], paciente: [] };
+            return {
+                profesional: response.listaDocsProfesional || [],
+                paciente: response.listaDocsPaciente || []
+            };
         } catch (error) {
             console.warn(`No hay materiales informativos para ${nregistro}`, error);
+            return { profesional: [], paciente: [] };
+        }
+    }
+
+    /**
+     * Obtiene el catálogo completo de medicamentos con materiales informativos
+     * Endpoint dedicado que devuelve los ~276 medicamentos con docs de seguridad
+     * @returns {Promise<Array>} Array con todos los medicamentos y sus materiales
+     */
+    async getMaterialesCatalogo() {
+        try {
+            // Un solo call con pageSize grande para traer todo el catálogo
+            const response = await this._request(`/materiales?pagina=1&pageSize=300`);
+            if (!response || !response.resultados) return [];
+            return response.resultados;
+        } catch (error) {
+            console.warn('Error cargando catálogo de materiales', error);
             return [];
         }
     }
