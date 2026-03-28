@@ -291,12 +291,13 @@ class CimaAPI {
     async getMateriales(nregistro) {
         try {
             const response = await this._request(`/materiales/${nregistro}`);
+            console.log('[getMateriales] response raw:', response);
             if (!response) return [];
             // API returns { listaDocsProfesional: [...] }, not a plain array
             const docs = response.listaDocsProfesional || response.listaDocsPaciente || [];
             return Array.isArray(docs) ? docs : [docs];
         } catch (error) {
-            console.warn(`No hay materiales informativos para ${nregistro}`);
+            console.warn(`No hay materiales informativos para ${nregistro}`, error);
             return [];
         }
     }

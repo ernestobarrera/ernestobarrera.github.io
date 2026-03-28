@@ -5043,9 +5043,10 @@ ${materialesPlaceholder}
 
         try {
             const materiales = await this.api.getMateriales(nregistro);
+            console.log('[loadMateriales] nregistro:', nregistro, '| resultado:', materiales);
 
             if (!materiales || materiales.length === 0) {
-                container.innerHTML = '';
+                container.innerHTML = '<p class="text-muted" style="padding:0.5rem 0">No hay materiales disponibles</p>';
                 return;
             }
 
