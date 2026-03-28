@@ -1393,7 +1393,7 @@ class MedCheckApp {
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
         // Notas de seguridad oficiales de la AEMPS
         if (med.notas) badges.push(`<span class="badge badge-warning badge-clickable" title="Ver alertas de seguridad de la AEMPS" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'alerts')"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>`);
-        if (med.materialesInf) badges.push('<span class="badge badge-info" title="Materiales informativos de seguridad disponibles"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
+        if (med.materialesInf) badges.push(`<span class="badge badge-info badge-clickable" title="Ver materiales informativos (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
 
         // Alertas según contexto del paciente
         const contextAlerts = [];
@@ -2183,7 +2183,7 @@ class MedCheckApp {
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
         // Notas de seguridad AEMPS
         if (med.notas) badges.push(`<span class="badge badge-warning badge-clickable" title="Ver alertas de seguridad de la AEMPS" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'alerts')"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>`);
-        if (med.materialesInf) badges.push('<span class="badge badge-info" title="Materiales informativos"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
+        if (med.materialesInf) badges.push(`<span class="badge badge-info badge-clickable" title="Ver materiales informativos (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
 
         // Alertas según contexto del paciente - AÑADIDO
         const contextAlerts = [];
@@ -4208,7 +4208,8 @@ class MedCheckApp {
             // nregistro may be string (dataset) while cache key may be number (API) — check both
             const cachedMed = this._medRenderCache.get(nregistro) ?? this._medRenderCache.get(+nregistro);
             // If caller explicitly requested alerts tab, trust that alerts exist (badge only shows when notas=true)
-            const hasAempsAlerts = initialTab === 'alerts' || med.notas || med.materialesInf || cachedMed?.notas || cachedMed?.materialesInf;
+            const hasAempsAlerts = initialTab === 'alerts' || med.notas || cachedMed?.notas;
+            const hasMateriales = med.materialesInf || cachedMed?.materialesInf;
 
             // Get medication images for thumbnail and lightbox
             const medFotos = med.fotos || [];
@@ -4301,6 +4302,10 @@ class MedCheckApp {
             // Load AEMPS alerts asynchronously if present
             if (hasAempsAlerts) {
                 this.loadAempsAlerts(med.nregistro);
+            }
+            // Load materiales informativos into Docs tab asynchronously
+            if (hasMateriales) {
+                this.loadMateriales(med.nregistro);
             }
 
             // Tab switching
@@ -4414,8 +4419,12 @@ class MedCheckApp {
     }
 
     renderDocsTab(med) {
+        const materialesPlaceholder = med.materialesInf
+            ? `<div id="docs-materiales"><p class="text-muted" style="padding:0.75rem 0"><i class="fas fa-spinner fa-spin"></i> Cargando materiales...</p></div>`
+            : '';
+
         if (!med.docs || med.docs.length === 0) {
-            return '<p class="text-muted">No hay documentos disponibles</p>';
+            return materialesPlaceholder || '<p class="text-muted">No hay documentos disponibles</p>';
         }
 
         const docTypes = {
@@ -4471,6 +4480,7 @@ class MedCheckApp {
         }).join('')
             }
         </div>
+${materialesPlaceholder}
 `;
     }
 
@@ -4956,8 +4966,8 @@ class MedCheckApp {
     }
 
     /**
-     * Loads AEMPS safety alerts (notas + materiales) asynchronously
-     * Called when the medication has notas or materialesInf flags
+     * Loads AEMPS safety alerts (notas) asynchronously
+     * Called when the medication has notas flag
      * @param {string} nregistro - Medication registration number
      */
     async loadAempsAlerts(nregistro) {
@@ -4965,11 +4975,7 @@ class MedCheckApp {
         if (!container) return;
 
         try {
-            // Load both notas and materiales in parallel
-            const [notas, materiales] = await Promise.all([
-                this.api.getNotas(nregistro),
-                this.api.getMateriales(nregistro)
-            ]);
+            const notas = await this.api.getNotas(nregistro);
 
             let html = '';
 
@@ -4986,24 +4992,6 @@ class MedCheckApp {
                         </p>
                         <div class="alerts-list">
                             ${notas.map(nota => this.renderNotaCard(nota)).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Render Materiales Informativos
-            if (materiales && materiales.length > 0) {
-                html += `
-                    <div class="alerts-section">
-                        <h4 class="alerts-section-title">
-                            <i class="fas fa-file-medical-alt text-info"></i>
-                            Materiales Informativos de Seguridad (${materiales.length})
-                        </h4>
-                        <p class="alerts-description text-muted">
-                            Documentos adicionales de seguridad: guías para profesionales, tarjetas de alerta, información para pacientes.
-                        </p>
-                        <div class="alerts-list">
-                            ${materiales.map(mat => this.renderMaterialCard(mat)).join('')}
                         </div>
                     </div>
                 `;
@@ -5030,6 +5018,39 @@ class MedCheckApp {
                     <p class="text-muted text-sm">${error.message}</p>
                 </div>
             `;
+        }
+    }
+
+    /**
+     * Loads materiales informativos into the Docs tab asynchronously
+     * Called when the medication has materialesInf flag
+     * @param {string} nregistro - Medication registration number
+     */
+    async loadMateriales(nregistro) {
+        const container = document.getElementById('docs-materiales');
+        if (!container) return;
+
+        try {
+            const materiales = await this.api.getMateriales(nregistro);
+
+            if (!materiales || materiales.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="alerts-section" style="margin-top: 1rem;">
+                    <h4 class="alerts-section-title">
+                        <i class="fas fa-file-medical-alt text-info"></i>
+                        Materiales Informativos (${materiales.length})
+                    </h4>
+                    <div class="alerts-list">
+                        ${materiales.map(mat => this.renderMaterialCard(mat)).join('')}
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            container.innerHTML = '';
         }
     }
 
@@ -5077,26 +5098,12 @@ class MedCheckApp {
      * Renders a single Material Informativo card
      */
     renderMaterialCard(mat) {
-        // Determine icon based on material type
-        let icon = 'file-pdf';
-        let typeLabel = 'Documento';
-
-        if (mat.tipoDoc) {
-            const tipo = mat.tipoDoc.toLowerCase();
-            if (tipo.includes('video')) {
-                icon = 'video';
-                typeLabel = 'Vídeo';
-            } else if (tipo.includes('guía') || tipo.includes('guia')) {
-                icon = 'book-medical';
-                typeLabel = 'Guía';
-            } else if (tipo.includes('tarjeta')) {
-                icon = 'id-card';
-                typeLabel = 'Tarjeta de alerta';
-            } else if (tipo.includes('paciente')) {
-                icon = 'user-circle';
-                typeLabel = 'Para pacientes';
-            }
-        }
+        // API returns mat.video (boolean), not mat.tipoDoc
+        const isVideo = !!mat.video;
+        const icon = isVideo ? 'play-circle' : 'file-pdf';
+        const typeLabel = isVideo ? 'Vídeo' : 'Documento';
+        const actionLabel = isVideo ? 'Ver vídeo' : 'Abrir';
+        const actionIcon = isVideo ? 'play-circle' : 'external-link-alt';
 
         return `
             <div class="alert-card alert-card-info">
@@ -5104,13 +5111,12 @@ class MedCheckApp {
                     <span class="alert-card-type"><i class="fas fa-${icon}"></i> ${typeLabel}</span>
                 </div>
                 <div class="alert-card-body">
-                    <p class="alert-card-title">${mat.nombre || mat.descripcion || 'Material informativo'}</p>
-                    ${mat.descripcion && mat.nombre ? `<p class="alert-card-desc">${mat.descripcion}</p>` : ''}
+                    <p class="alert-card-title">${mat.nombre || 'Material informativo'}</p>
                 </div>
                 ${mat.url ? `
                     <div class="alert-card-actions">
-                        <a href="${mat.url}" target="_blank" class="btn btn-sm btn-info">
-                            <i class="fas fa-download"></i> Descargar
+                        <a href="${mat.url}" target="_blank" rel="noopener" class="btn btn-sm btn-info">
+                            <i class="fas fa-${actionIcon}"></i> ${actionLabel}
                         </a>
                     </div>
                 ` : ''}
