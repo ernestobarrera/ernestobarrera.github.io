@@ -4015,15 +4015,19 @@ class MedCheckApp {
         });
 
         const totalStr = filtrados.length === catalogo.length
-            ? `${catalogo.length} medicamentos con materiales`
-            : `${filtrados.length} de ${catalogo.length} resultados`;
+            ? `${catalogo.length} medicamentos`
+            : `${filtrados.length} / ${catalogo.length}`;
 
-        const filtrosBtns = ['todos', 'paciente', 'profesional', 'video'].map(f => {
-            const labels = { todos: 'Todos', paciente: 'Para paciente', profesional: 'Para profesional', video: 'Vídeos' };
-            const icons  = { todos: 'list', paciente: 'user-circle', profesional: 'stethoscope', video: 'play-circle' };
-            const active = filtro === f ? 'btn-primary' : 'btn-secondary';
-            return `<button class="btn btn-sm ${active}" onclick="app._setMaterialesFiltro('${f}')">
-                <i class="fas fa-${icons[f]}"></i> ${labels[f]}
+        const chipDefs = [
+            { f: 'todos',        label: 'Todos',        icon: 'list',         extra: '' },
+            { f: 'paciente',     label: 'Paciente',     icon: 'user-circle',  extra: 'chip-paciente' },
+            { f: 'profesional',  label: 'Profesional',  icon: 'stethoscope',  extra: 'chip-profesional' },
+            { f: 'video',        label: 'Vídeos',       icon: 'play-circle',  extra: 'chip-video' },
+        ];
+        const filtroChips = chipDefs.map(({ f, label, icon, extra }) => {
+            const active = filtro === f ? 'active' : '';
+            return `<button class="mat-filtro-chip ${active} ${extra}" onclick="app._setMaterialesFiltro('${f}')">
+                <i class="fas fa-${icon}"></i> ${label}
             </button>`;
         }).join('');
 
@@ -4039,22 +4043,24 @@ class MedCheckApp {
                     ${d.nombre}
                 </a>`).join('');
 
+            const hasVideo = [...(item.listaDocsPaciente||[]), ...(item.listaDocsProfesional||[])].some(d => d.video);
             const badges = [
-                item.listaDocsProfesional?.length > 0 ? '<span class="badge badge-info" style="font-size:0.65rem">Profesional</span>' : '',
-                item.listaDocsPaciente?.length > 0    ? '<span class="badge badge-neutral" style="font-size:0.65rem">Paciente</span>' : '',
-                [...(item.listaDocsPaciente||[]), ...(item.listaDocsProfesional||[])].some(d=>d.video)
-                    ? '<span class="badge badge-purple" style="font-size:0.65rem"><i class="fas fa-play-circle"></i> Vídeo</span>' : ''
+                item.listaDocsProfesional?.length > 0 ? '<span class="badge badge-info" style="font-size:0.62rem">Prof.</span>' : '',
+                item.listaDocsPaciente?.length > 0    ? '<span class="badge badge-neutral" style="font-size:0.62rem">Pac.</span>' : '',
+                hasVideo ? '<span class="badge badge-purple" style="font-size:0.62rem"><i class="fas fa-play-circle"></i></span>' : ''
             ].join('');
 
+            // ATC: se cargará en lazy via IntersectionObserver
+            const cachedAtc = this._atcCache?.[item.nregistro];
+            const atcBadge = cachedAtc
+                ? `<span class="mat-atc-badge">${cachedAtc}</span>`
+                : `<span class="mat-atc-badge mat-atc-pending" data-nreg="${item.nregistro}">ATC…</span>`;
+
             return `
-                <div class="result-card" style="cursor:default">
-                    <div class="result-card-header">
-                        <div>
-                            <h4 class="result-card-name" style="font-size:0.9rem">${item.medicamento}</h4>
-                            <p class="text-muted" style="font-size:0.75rem;margin:0.15rem 0 0.4rem">${item.principiosActivos || ''}</p>
-                            <div style="display:flex;gap:0.3rem;flex-wrap:wrap">${badges}</div>
-                        </div>
-                    </div>
+                <div class="mat-card" data-nregistro="${item.nregistro}">
+                    <div class="mat-card-meta">${badges}${atcBadge}</div>
+                    <p class="mat-card-name" onclick="app.openMedDetails('${item.nregistro}')" title="Ver ficha completa">${item.medicamento}</p>
+                    <p class="mat-card-pa">${item.principiosActivos || ''}</p>
                     ${docsP ? `<div class="material-docs-group">
                         <p class="material-group-label"><i class="fas fa-stethoscope"></i> Profesional</p>
                         ${docsP}</div>` : ''}
@@ -4065,23 +4071,21 @@ class MedCheckApp {
         }).join('');
 
         this.content.innerHTML = `
-            <div class="search-box" style="margin-bottom:0.75rem">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
-                    <h3 style="margin:0;color:var(--primary)">
-                        <i class="fas fa-file-medical-alt"></i> Materiales Informativos
-                    </h3>
-                    <span class="text-muted" style="font-size:0.8rem">${totalStr}</span>
+            <div class="search-box" style="margin-bottom:0.5rem">
+                <div class="materiales-header">
+                    <h3><i class="fas fa-file-medical-alt"></i> Materiales Informativos</h3>
+                    <div class="mat-filtro-chips">${filtroChips}</div>
+                    <span class="materiales-count">${totalStr}</span>
                 </div>
-                <div class="search-input-wrapper" style="margin-bottom:0.75rem">
+                <div class="search-input-wrapper">
                     <i class="fas fa-search"></i>
                     <input type="text" id="mat-busqueda" class="search-input"
                            placeholder="Buscar por medicamento o principio activo..."
                            value="${this._materialesBusqueda || ''}">
                     ${this._materialesBusqueda ? `<button class="search-clear-btn" onclick="app._clearMaterialesBusqueda()"><i class="fas fa-times"></i></button>` : ''}
                 </div>
-                <div style="display:flex;gap:0.4rem;flex-wrap:wrap">${filtrosBtns}</div>
             </div>
-            <div class="results-grid">${tarjetas || `
+            <div class="materiales-grid">${tarjetas || `
                 <div class="empty-state">
                     <i class="fas fa-file-medical-alt"></i>
                     <p>No hay resultados para "${busqueda}"</p>
@@ -4095,12 +4099,52 @@ class MedCheckApp {
                 this._materialesBusqueda = input.value;
                 this._renderMaterialesView();
             });
-            // Focus al final del texto si hay búsqueda previa
             if (this._materialesBusqueda) {
                 input.setSelectionRange(input.value.length, input.value.length);
                 input.focus();
             }
         }
+
+        // Lazy-load ATC via IntersectionObserver
+        this._initAtcLazyLoad();
+    }
+
+    _initAtcLazyLoad() {
+        if (!('IntersectionObserver' in window)) return;
+        if (!this._atcCache) this._atcCache = {};
+
+        const pendingEls = this.content.querySelectorAll('.mat-atc-pending');
+        if (!pendingEls.length) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const el = entry.target;
+                const nreg = el.dataset.nreg;
+                if (!nreg || el.dataset.loading) return;
+                el.dataset.loading = '1';
+                observer.unobserve(el);
+
+                this.api.getMedicamento(nreg, { headers: { 'X-MC-Autocomplete': '1' } })
+                    .then(med => {
+                        const atcText = med?.atcs?.[0]?.codigo
+                            ? `${med.atcs[0].codigo}`
+                            : '—';
+                        this._atcCache[nreg] = atcText;
+                        // Actualizar todos los badges pendientes con este nreg (puede haber varios si se re-renderizó)
+                        this.content.querySelectorAll(`.mat-atc-pending[data-nreg="${nreg}"]`).forEach(e => {
+                            e.textContent = atcText;
+                            e.classList.remove('mat-atc-pending');
+                        });
+                    })
+                    .catch(() => {
+                        el.textContent = '—';
+                        el.classList.remove('mat-atc-pending');
+                    });
+            });
+        }, { rootMargin: '150px' });
+
+        pendingEls.forEach(el => observer.observe(el));
     }
 
     _setMaterialesFiltro(tipo) {
