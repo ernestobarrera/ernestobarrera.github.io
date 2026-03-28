@@ -4154,7 +4154,9 @@ class MedCheckApp {
         const grupos = {};
         filtrados.forEach(item => {
             const atcData = this._atcCache?.[item.nregistro];
-            const letra = atcData?.codigo?.[0]?.toUpperCase() || '?';
+            const letra = (atcData?.codigo && atcData.codigo[0])
+                ? atcData.codigo[0].toUpperCase()
+                : '?';
             if (!grupos[letra]) grupos[letra] = [];
             grupos[letra].push(item);
         });
@@ -4206,7 +4208,8 @@ class MedCheckApp {
         if (!this._atcCache) this._atcCache = {};
         const catalogo = this._materialesCatalogo || [];
         const pendientes = catalogo.filter(item => !(item.nregistro in this._atcCache));
-        const BATCH = 8;
+        const BATCH = 5;
+        const DELAY_MS = 300;
         let cargados = catalogo.length - pendientes.length;
         const total = catalogo.length;
 
@@ -4214,13 +4217,16 @@ class MedCheckApp {
             const lote = pendientes.slice(i, i + BATCH);
             await Promise.all(lote.map(async item => {
                 try {
-                    const med = await this.api.getMedicamento(item.nregistro);
+                    const med = await this.api.getMedicamento(
+                        item.nregistro,
+                        { headers: { 'X-MC-Autocomplete': '1' } }
+                    );
                     const atc = med?.atcs?.[0];
                     this._atcCache[item.nregistro] = atc
                         ? { codigo: atc.codigo, nombre: atc.nombre }
-                        : null;
+                        : { codigo: null, nombre: null };
                 } catch {
-                    this._atcCache[item.nregistro] = null;
+                    this._atcCache[item.nregistro] = { codigo: null, nombre: null };
                 }
             }));
             cargados += lote.length;
@@ -4228,6 +4234,11 @@ class MedCheckApp {
             // Actualizar texto de progreso sin re-renderizar toda la vista
             const el = document.getElementById('mat-atc-progress');
             if (el) el.textContent = `Cargando ATC (${cargados}/${total})…`;
+
+            // Pausa entre lotes para no saturar el proxy
+            if (i + BATCH < pendientes.length) {
+                await new Promise(r => setTimeout(r, DELAY_MS));
+            }
         }
     }
 
