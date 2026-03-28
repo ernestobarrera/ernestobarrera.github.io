@@ -5027,8 +5027,15 @@ ${materialesPlaceholder}
      * @param {string} nregistro - Medication registration number
      */
     async loadMateriales(nregistro) {
-        const container = document.getElementById('docs-materiales');
-        if (!container) return;
+        let container = document.getElementById('docs-materiales');
+        if (!container) {
+            // Detail endpoint doesn't include materialesInf flag, so placeholder may not exist
+            const docsTab = document.getElementById('tab-docs');
+            if (!docsTab) return;
+            container = document.createElement('div');
+            container.id = 'docs-materiales';
+            docsTab.appendChild(container);
+        }
 
         try {
             const materiales = await this.api.getMateriales(nregistro);
