@@ -4303,8 +4303,8 @@ class MedCheckApp {
             if (hasAempsAlerts) {
                 this.loadAempsAlerts(med.nregistro);
             }
-            // Load materiales informativos into Docs tab asynchronously
-            if (hasMateriales) {
+            // Load materiales if opening directly on docs tab
+            if (initialTab === 'docs' || hasMateriales) {
                 this.loadMateriales(med.nregistro);
             }
 
@@ -4317,6 +4317,10 @@ class MedCheckApp {
                     document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
                     // Actualizar vista para analytics — próxima petición llevará este header
                     window._mcCurrentView = `modal-${tab.dataset.tab}`;
+                    // Load materiales when switching to docs tab (lazy)
+                    if (tab.dataset.tab === 'docs' && !document.getElementById('docs-materiales')?.dataset.loaded) {
+                        this.loadMateriales(med.nregistro);
+                    }
                 });
             });
 
@@ -5045,6 +5049,7 @@ ${materialesPlaceholder}
                 return;
             }
 
+            container.dataset.loaded = 'true';
             container.innerHTML = `
                 <div class="alerts-section" style="margin-top: 1rem;">
                     <h4 class="alerts-section-title">
