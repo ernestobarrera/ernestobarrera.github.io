@@ -3992,10 +3992,32 @@ class MedCheckApp {
         this._renderMaterialesView();
     }
 
+    // Nombres de categorías ATC nivel 1
+    static get ATC_CATEGORIAS() {
+        return {
+            A: 'Tracto alimentario y metabolismo',
+            B: 'Sangre y órganos hematopoyéticos',
+            C: 'Sistema cardiovascular',
+            D: 'Dermatológicos',
+            G: 'Sistema genitourinario y hormonas sexuales',
+            H: 'Preparados hormonales sistémicos',
+            J: 'Antiinfecciosos para uso sistémico',
+            L: 'Agentes antineoplásicos e inmunomoduladores',
+            M: 'Sistema musculoesquelético',
+            N: 'Sistema nervioso',
+            P: 'Antiparasitarios',
+            R: 'Sistema respiratorio',
+            S: 'Órganos de los sentidos',
+            V: 'Varios',
+        };
+    }
+
     _renderMaterialesView() {
         const catalogo = this._materialesCatalogo || [];
         const busqueda = (this._materialesBusqueda || '').toLowerCase();
         const filtro = this._materialesFiltroTipo || 'todos';
+        const agrupar = !!this._materialesAgruparATC;
+        const cargando = !!this._atcCargando;
 
         // Filtrar
         const filtrados = catalogo.filter(item => {
@@ -4019,10 +4041,10 @@ class MedCheckApp {
             : `${filtrados.length} / ${catalogo.length}`;
 
         const chipDefs = [
-            { f: 'todos',        label: 'Todos',        icon: 'list',         extra: '' },
-            { f: 'paciente',     label: 'Paciente',     icon: 'user-circle',  extra: 'chip-paciente' },
-            { f: 'profesional',  label: 'Profesional',  icon: 'stethoscope',  extra: 'chip-profesional' },
-            { f: 'video',        label: 'Vídeos',       icon: 'play-circle',  extra: 'chip-video' },
+            { f: 'todos',        label: 'Todos',       icon: 'list',         extra: '' },
+            { f: 'paciente',     label: 'Paciente',    icon: 'user-circle',  extra: 'chip-paciente' },
+            { f: 'profesional',  label: 'Profesional', icon: 'stethoscope',  extra: 'chip-profesional' },
+            { f: 'video',        label: 'Vídeos',      icon: 'play-circle',  extra: 'chip-video' },
         ];
         const filtroChips = chipDefs.map(({ f, label, icon, extra }) => {
             const active = filtro === f ? 'active' : '';
@@ -4031,50 +4053,25 @@ class MedCheckApp {
             </button>`;
         }).join('');
 
-        const tarjetas = filtrados.map(item => {
-            const docsP = (item.listaDocsProfesional || []).map(d => `
-                <a href="${d.url}" target="_blank" rel="noopener" class="material-doc-link">
-                    <i class="fas fa-${d.video ? 'play-circle' : 'file-pdf'}"></i>
-                    ${d.nombre}
-                </a>`).join('');
-            const docsPac = (item.listaDocsPaciente || []).map(d => `
-                <a href="${d.url}" target="_blank" rel="noopener" class="material-doc-link">
-                    <i class="fas fa-${d.video ? 'play-circle' : 'file-pdf'}"></i>
-                    ${d.nombre}
-                </a>`).join('');
+        // Botón ATC — estado: inactivo / cargando / activo
+        let atcChipLabel, atcChipClass;
+        if (cargando) {
+            atcChipLabel = `<i class="fas fa-spinner fa-spin"></i> <span id="mat-atc-progress">Cargando ATC…</span>`;
+            atcChipClass = 'mat-filtro-chip chip-atc loading';
+        } else if (agrupar) {
+            atcChipLabel = `<i class="fas fa-layer-group"></i> Por ATC`;
+            atcChipClass = 'mat-filtro-chip chip-atc active';
+        } else {
+            atcChipLabel = `<i class="fas fa-layer-group"></i> Por ATC`;
+            atcChipClass = 'mat-filtro-chip chip-atc';
+        }
+        const atcBtn = `<button class="${atcChipClass}" onclick="app._toggleAtcAgrupacion()" ${cargando ? 'disabled' : ''}>${atcChipLabel}</button>`;
 
-            const hasVideo = [...(item.listaDocsPaciente||[]), ...(item.listaDocsProfesional||[])].some(d => d.video);
-            const badges = [
-                item.listaDocsProfesional?.length > 0 ? '<span class="badge badge-info" style="font-size:0.62rem">Prof.</span>' : '',
-                item.listaDocsPaciente?.length > 0    ? '<span class="badge badge-neutral" style="font-size:0.62rem">Pac.</span>' : '',
-                hasVideo ? '<span class="badge badge-purple" style="font-size:0.62rem"><i class="fas fa-play-circle"></i></span>' : ''
-            ].join('');
-
-            // ATC: se cargará en lazy via IntersectionObserver
-            const cachedAtc = this._atcCache?.[item.nregistro];
-            const atcBadge = cachedAtc
-                ? `<span class="mat-atc-badge">${cachedAtc}</span>`
-                : `<span class="mat-atc-badge mat-atc-pending" data-nreg="${item.nregistro}">ATC…</span>`;
-
-            return `
-                <div class="mat-card" data-nregistro="${item.nregistro}">
-                    <div class="mat-card-meta">${badges}${atcBadge}</div>
-                    <p class="mat-card-name" onclick="app.openMedDetails('${item.nregistro}')" title="Ver ficha completa">${item.medicamento}</p>
-                    <p class="mat-card-pa">${item.principiosActivos || ''}</p>
-                    ${docsP ? `<div class="material-docs-group">
-                        <p class="material-group-label"><i class="fas fa-stethoscope"></i> Profesional</p>
-                        ${docsP}</div>` : ''}
-                    ${docsPac ? `<div class="material-docs-group">
-                        <p class="material-group-label"><i class="fas fa-user-circle"></i> Paciente</p>
-                        ${docsPac}</div>` : ''}
-                </div>`;
-        }).join('');
-
-        this.content.innerHTML = `
+        const headerHTML = `
             <div class="search-box" style="margin-bottom:0.5rem">
                 <div class="materiales-header">
                     <h3><i class="fas fa-file-medical-alt"></i> Materiales Informativos</h3>
-                    <div class="mat-filtro-chips">${filtroChips}</div>
+                    <div class="mat-filtro-chips">${filtroChips}${atcBtn}</div>
                     <span class="materiales-count">${totalStr}</span>
                 </div>
                 <div class="search-input-wrapper">
@@ -4084,13 +4081,18 @@ class MedCheckApp {
                            value="${this._materialesBusqueda || ''}">
                     ${this._materialesBusqueda ? `<button class="search-clear-btn" onclick="app._clearMaterialesBusqueda()"><i class="fas fa-times"></i></button>` : ''}
                 </div>
-            </div>
-            <div class="materiales-grid">${tarjetas || `
+            </div>`;
+
+        const bodyHTML = agrupar && this._atcCargaCompleta
+            ? this._renderMaterialesAgrupados(filtrados)
+            : `<div class="materiales-grid">${filtrados.map(item => this._renderMatCard(item)).join('') || `
                 <div class="empty-state">
                     <i class="fas fa-file-medical-alt"></i>
                     <p>No hay resultados para "${busqueda}"</p>
                 </div>`}
             </div>`;
+
+        this.content.innerHTML = headerHTML + bodyHTML;
 
         // Búsqueda en tiempo real
         const input = document.getElementById('mat-busqueda');
@@ -4104,47 +4106,129 @@ class MedCheckApp {
                 input.focus();
             }
         }
-
-        // Lazy-load ATC via IntersectionObserver
-        this._initAtcLazyLoad();
     }
 
-    _initAtcLazyLoad() {
-        if (!('IntersectionObserver' in window)) return;
+    _renderMatCard(item) {
+        const docsP = (item.listaDocsProfesional || []).map(d => `
+            <a href="${d.url}" target="_blank" rel="noopener" class="material-doc-link">
+                <i class="fas fa-${d.video ? 'play-circle' : 'file-pdf'}"></i>
+                ${d.nombre}
+            </a>`).join('');
+        const docsPac = (item.listaDocsPaciente || []).map(d => `
+            <a href="${d.url}" target="_blank" rel="noopener" class="material-doc-link">
+                <i class="fas fa-${d.video ? 'play-circle' : 'file-pdf'}"></i>
+                ${d.nombre}
+            </a>`).join('');
+
+        const hasVideo = [...(item.listaDocsPaciente||[]), ...(item.listaDocsProfesional||[])].some(d => d.video);
+        const badges = [
+            item.listaDocsProfesional?.length > 0 ? '<span class="badge badge-info" style="font-size:0.62rem">Prof.</span>' : '',
+            item.listaDocsPaciente?.length > 0    ? '<span class="badge badge-neutral" style="font-size:0.62rem">Pac.</span>' : '',
+            hasVideo ? '<span class="badge badge-purple" style="font-size:0.62rem"><i class="fas fa-play-circle"></i></span>' : ''
+        ].filter(Boolean).join('');
+
+        // Mostrar código ATC si está en caché (solo cuando se ha cargado)
+        const atcData = this._atcCache?.[item.nregistro];
+        const atcBadge = atcData?.codigo
+            ? `<span class="mat-atc-badge" title="${atcData.nombre || ''}">${atcData.codigo}</span>`
+            : '';
+
+        return `
+            <div class="mat-card" data-nregistro="${item.nregistro}">
+                <div class="mat-card-meta">${badges}${atcBadge}</div>
+                <p class="mat-card-name" onclick="app.openMedDetails('${item.nregistro}')" title="Ver ficha completa">${item.medicamento}</p>
+                <p class="mat-card-pa">${item.principiosActivos || ''}</p>
+                ${docsP ? `<div class="material-docs-group">
+                    <p class="material-group-label"><i class="fas fa-stethoscope"></i> Profesional</p>
+                    ${docsP}</div>` : ''}
+                ${docsPac ? `<div class="material-docs-group">
+                    <p class="material-group-label"><i class="fas fa-user-circle"></i> Paciente</p>
+                    ${docsPac}</div>` : ''}
+            </div>`;
+    }
+
+    _renderMaterialesAgrupados(filtrados) {
+        const CATS = MedCheckApp.ATC_CATEGORIAS;
+
+        // Agrupar por letra ATC nivel 1
+        const grupos = {};
+        filtrados.forEach(item => {
+            const atcData = this._atcCache?.[item.nregistro];
+            const letra = atcData?.codigo?.[0]?.toUpperCase() || '?';
+            if (!grupos[letra]) grupos[letra] = [];
+            grupos[letra].push(item);
+        });
+
+        // Ordenar letras: primero las conocidas en orden, luego '?'
+        const ordenLetras = [...Object.keys(CATS), '?'];
+        const letrasPresentes = ordenLetras.filter(l => grupos[l]);
+
+        if (!letrasPresentes.length) {
+            return `<div class="empty-state"><i class="fas fa-layer-group"></i><p>Sin resultados</p></div>`;
+        }
+
+        return letrasPresentes.map(letra => {
+            const items = grupos[letra];
+            const nombre = CATS[letra] || 'Sin clasificar';
+            const tarjetas = items.map(item => this._renderMatCard(item)).join('');
+            return `
+                <div class="mat-atc-grupo">
+                    <div class="mat-atc-grupo-header">
+                        <span class="mat-atc-grupo-letra">${letra}</span>
+                        <span class="mat-atc-grupo-nombre">${nombre}</span>
+                        <span class="mat-atc-grupo-count">${items.length}</span>
+                    </div>
+                    <div class="materiales-grid">${tarjetas}</div>
+                </div>`;
+        }).join('');
+    }
+
+    async _toggleAtcAgrupacion() {
+        if (this._atcCargando) return;
+
+        this._materialesAgruparATC = !this._materialesAgruparATC;
+
+        if (this._materialesAgruparATC && !this._atcCargaCompleta) {
+            // Primera vez: cargar en lotes y mostrar progreso
+            this._atcCargando = true;
+            this._renderMaterialesView(); // muestra spinner en botón
+
+            await this._cargarAtcsBatch();
+
+            this._atcCargando = false;
+            this._atcCargaCompleta = true;
+        }
+
+        this._renderMaterialesView();
+    }
+
+    async _cargarAtcsBatch() {
         if (!this._atcCache) this._atcCache = {};
+        const catalogo = this._materialesCatalogo || [];
+        const pendientes = catalogo.filter(item => !(item.nregistro in this._atcCache));
+        const BATCH = 8;
+        let cargados = catalogo.length - pendientes.length;
+        const total = catalogo.length;
 
-        const pendingEls = this.content.querySelectorAll('.mat-atc-pending');
-        if (!pendingEls.length) return;
+        for (let i = 0; i < pendientes.length; i += BATCH) {
+            const lote = pendientes.slice(i, i + BATCH);
+            await Promise.all(lote.map(async item => {
+                try {
+                    const med = await this.api.getMedicamento(item.nregistro);
+                    const atc = med?.atcs?.[0];
+                    this._atcCache[item.nregistro] = atc
+                        ? { codigo: atc.codigo, nombre: atc.nombre }
+                        : null;
+                } catch {
+                    this._atcCache[item.nregistro] = null;
+                }
+            }));
+            cargados += lote.length;
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (!entry.isIntersecting) return;
-                const el = entry.target;
-                const nreg = el.dataset.nreg;
-                if (!nreg || el.dataset.loading) return;
-                el.dataset.loading = '1';
-                observer.unobserve(el);
-
-                this.api.getMedicamento(nreg, { headers: { 'X-MC-Autocomplete': '1' } })
-                    .then(med => {
-                        const atcText = med?.atcs?.[0]?.codigo
-                            ? `${med.atcs[0].codigo}`
-                            : '—';
-                        this._atcCache[nreg] = atcText;
-                        // Actualizar todos los badges pendientes con este nreg (puede haber varios si se re-renderizó)
-                        this.content.querySelectorAll(`.mat-atc-pending[data-nreg="${nreg}"]`).forEach(e => {
-                            e.textContent = atcText;
-                            e.classList.remove('mat-atc-pending');
-                        });
-                    })
-                    .catch(() => {
-                        el.textContent = '—';
-                        el.classList.remove('mat-atc-pending');
-                    });
-            });
-        }, { rootMargin: '150px' });
-
-        pendingEls.forEach(el => observer.observe(el));
+            // Actualizar texto de progreso sin re-renderizar toda la vista
+            const el = document.getElementById('mat-atc-progress');
+            if (el) el.textContent = `Cargando ATC (${cargados}/${total})…`;
+        }
     }
 
     _setMaterialesFiltro(tipo) {

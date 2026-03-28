@@ -6704,6 +6704,58 @@ code {
     color: #8b5cf6;
 }
 
+.mat-filtro-chip.chip-atc.active {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.mat-filtro-chip.chip-atc.loading {
+    opacity: 0.7;
+    cursor: default;
+    border-color: var(--border-hover);
+    color: var(--text-muted);
+}
+
+/* Sección ATC */
+.mat-atc-grupo {
+    margin-bottom: 1.25rem;
+}
+
+.mat-atc-grupo-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 0.5rem;
+    background: var(--bg-surface-hover);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid #f59e0b;
+}
+
+.mat-atc-grupo-letra {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f59e0b;
+    font-family: monospace;
+    min-width: 1.1rem;
+}
+
+.mat-atc-grupo-nombre {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.mat-atc-grupo-count {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    background: var(--bg-surface);
+    border-radius: 99px;
+    padding: 0.05rem 0.45rem;
+}
+
 /* Tarjeta compacta */
 .mat-card {
     background: var(--bg-surface);
