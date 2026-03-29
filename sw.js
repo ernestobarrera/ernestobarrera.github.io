@@ -5,26 +5,12 @@
 const VERSION = '20260329b';
 const CACHE_NAME = `medcheck-${VERSION}`;
 
-const STATIC_ASSETS = [
-    '/medcheck.html',
-    '/assets/css/cima-app.css',
-    '/assets/js/cima-api.js',
-    '/assets/js/cima-app.js',
-    '/assets/icons/medcheck-icon-192.png',
-    '/assets/icons/medcheck-icon-512.png'
-];
-
-// Install event - cache static assets
+// Install event — sin precache: NETWORK-FIRST ya cachea dinámicamente.
+// Precachear sin query string (?v=...) crearía entradas que nunca coinciden
+// con las URLs versionadas que pide el HTML.
 self.addEventListener('install', (event) => {
     console.log('[SW] Installing version:', VERSION);
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('[SW] Caching static assets');
-                return cache.addAll(STATIC_ASSETS);
-            })
-            .then(() => self.skipWaiting()) // Activate immediately
-    );
+    event.waitUntil(self.skipWaiting());
 });
 
 // Activate event - clean ALL old caches aggressively
@@ -79,7 +65,7 @@ self.addEventListener('fetch', (event) => {
             .catch(() => {
                 // Network failed - try cache (offline mode)
                 console.log('[SW] Network failed, trying cache for:', request.url);
-                return caches.match(request).then((cached) => {
+                return caches.match(request, { ignoreSearch: true }).then((cached) => {
                     if (cached) {
                         console.log('[SW] Serving from cache:', request.url);
                         return cached;
