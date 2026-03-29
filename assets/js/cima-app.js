@@ -3981,9 +3981,20 @@ class MedCheckApp {
     async renderMaterials() {
         this.content.innerHTML = '<div class="loading-spinner"></div>';
 
-        // Carga catálogo completo (~276 items) y cachea en instancia
-        if (!this._materialesCatalogo) {
-            this._materialesCatalogo = await this.api.getMaterialesCatalogo();
+        // Carga catálogo de materiales y mapa nregistro+ATC en paralelo
+        if (!this._materialesCatalogo || !this._materialesCatalogMap) {
+            const [catalogoRaw, catalogMap] = await Promise.all([
+                this.api.getMaterialesCatalogo(),
+                fetch('/assets/data/materiales-catalog.json')
+                    .then(r => r.ok ? r.json() : {})
+                    .catch(() => ({})),
+            ]);
+            this._materialesCatalogMap = catalogMap; // nombre → {nregistro, atcCodigo, atcNombre}
+            // Enriquecer cada item del catálogo con nregistro y ATC del JSON estático
+            this._materialesCatalogo = catalogoRaw.map(item => {
+                const meta = catalogMap[item.medicamento] || {};
+                return { ...item, nregistro: meta.nregistro || null, atcCodigo: meta.atcCodigo || null, atcNombre: meta.atcNombre || null };
+            });
         }
 
         this._materialesFiltroTipo = this._materialesFiltroTipo || 'todos';
@@ -4017,7 +4028,6 @@ class MedCheckApp {
         const busqueda = (this._materialesBusqueda || '').toLowerCase();
         const filtro = this._materialesFiltroTipo || 'todos';
         const agrupar = !!this._materialesAgruparATC;
-        const cargando = !!this._atcCargando;
 
         // Filtrar
         const filtrados = catalogo.filter(item => {
@@ -4053,19 +4063,10 @@ class MedCheckApp {
             </button>`;
         }).join('');
 
-        // Botón ATC — estado: inactivo / cargando / activo
-        let atcChipLabel, atcChipClass;
-        if (cargando) {
-            atcChipLabel = `<i class="fas fa-spinner fa-spin"></i> <span id="mat-atc-progress">Cargando ATC…</span>`;
-            atcChipClass = 'mat-filtro-chip chip-atc loading';
-        } else if (agrupar) {
-            atcChipLabel = `<i class="fas fa-layer-group"></i> Por ATC`;
-            atcChipClass = 'mat-filtro-chip chip-atc active';
-        } else {
-            atcChipLabel = `<i class="fas fa-layer-group"></i> Por ATC`;
-            atcChipClass = 'mat-filtro-chip chip-atc';
-        }
-        const atcBtn = `<button class="${atcChipClass}" onclick="app._toggleAtcAgrupacion()" ${cargando ? 'disabled' : ''}>${atcChipLabel}</button>`;
+        const atcActive = agrupar ? 'active' : '';
+        const atcBtn = `<button class="mat-filtro-chip chip-atc ${atcActive}" onclick="app._toggleAtcAgrupacion()">
+            <i class="fas fa-layer-group"></i> Por ATC
+        </button>`;
 
         const headerHTML = `
             <div class="search-box" style="margin-bottom:0.5rem">
@@ -4083,7 +4084,7 @@ class MedCheckApp {
                 </div>
             </div>`;
 
-        const bodyHTML = agrupar && this._atcCargaCompleta
+        const bodyHTML = agrupar
             ? this._renderMaterialesAgrupados(filtrados)
             : `<div class="materiales-grid">${filtrados.map(item => this._renderMatCard(item)).join('') || `
                 <div class="empty-state">
@@ -4127,16 +4128,20 @@ class MedCheckApp {
             hasVideo ? '<span class="badge badge-purple" style="font-size:0.62rem"><i class="fas fa-play-circle"></i></span>' : ''
         ].filter(Boolean).join('');
 
-        // Mostrar código ATC si está en caché (solo cuando se ha cargado)
-        const atcData = this._atcCache?.[item.nregistro];
-        const atcBadge = atcData?.codigo
-            ? `<span class="mat-atc-badge" title="${atcData.nombre || ''}">${atcData.codigo}</span>`
+        // ATC ya está enriquecido en el item desde el JSON estático
+        const atcBadge = item.atcCodigo
+            ? `<span class="mat-atc-badge" title="${item.atcNombre || ''}">${item.atcCodigo}</span>`
             : '';
 
+        // Solo mostrar enlace al modal si tenemos nregistro
+        const nameEl = item.nregistro
+            ? `<p class="mat-card-name" onclick="app.openMedDetails('${item.nregistro}')" title="Ver ficha completa">${item.medicamento}</p>`
+            : `<p class="mat-card-name" style="cursor:default">${item.medicamento}</p>`;
+
         return `
-            <div class="mat-card" data-nregistro="${item.nregistro}">
+            <div class="mat-card" data-nregistro="${item.nregistro || ''}">
                 <div class="mat-card-meta">${badges}${atcBadge}</div>
-                <p class="mat-card-name" onclick="app.openMedDetails('${item.nregistro}')" title="Ver ficha completa">${item.medicamento}</p>
+                ${nameEl}
                 <p class="mat-card-pa">${item.principiosActivos || ''}</p>
                 ${docsP ? `<div class="material-docs-group">
                     <p class="material-group-label"><i class="fas fa-stethoscope"></i> Profesional</p>
@@ -4150,18 +4155,14 @@ class MedCheckApp {
     _renderMaterialesAgrupados(filtrados) {
         const CATS = MedCheckApp.ATC_CATEGORIAS;
 
-        // Agrupar por letra ATC nivel 1
+        // Agrupar por letra ATC nivel 1 (ya disponible en item.atcCodigo)
         const grupos = {};
         filtrados.forEach(item => {
-            const atcData = this._atcCache?.[item.nregistro];
-            const letra = (atcData?.codigo && atcData.codigo[0])
-                ? atcData.codigo[0].toUpperCase()
-                : '?';
+            const letra = item.atcCodigo?.[0]?.toUpperCase() || '?';
             if (!grupos[letra]) grupos[letra] = [];
             grupos[letra].push(item);
         });
 
-        // Ordenar letras: primero las conocidas en orden, luego '?'
         const ordenLetras = [...Object.keys(CATS), '?'];
         const letrasPresentes = ordenLetras.filter(l => grupos[l]);
 
@@ -4172,7 +4173,6 @@ class MedCheckApp {
         return letrasPresentes.map(letra => {
             const items = grupos[letra];
             const nombre = CATS[letra] || 'Sin clasificar';
-            const tarjetas = items.map(item => this._renderMatCard(item)).join('');
             return `
                 <div class="mat-atc-grupo">
                     <div class="mat-atc-grupo-header">
@@ -4180,66 +4180,14 @@ class MedCheckApp {
                         <span class="mat-atc-grupo-nombre">${nombre}</span>
                         <span class="mat-atc-grupo-count">${items.length}</span>
                     </div>
-                    <div class="materiales-grid">${tarjetas}</div>
+                    <div class="materiales-grid">${items.map(item => this._renderMatCard(item)).join('')}</div>
                 </div>`;
         }).join('');
     }
 
-    async _toggleAtcAgrupacion() {
-        if (this._atcCargando) return;
-
+    _toggleAtcAgrupacion() {
         this._materialesAgruparATC = !this._materialesAgruparATC;
-
-        if (this._materialesAgruparATC && !this._atcCargaCompleta) {
-            // Primera vez: cargar en lotes y mostrar progreso
-            this._atcCargando = true;
-            this._renderMaterialesView(); // muestra spinner en botón
-
-            await this._cargarAtcsBatch();
-
-            this._atcCargando = false;
-            this._atcCargaCompleta = true;
-        }
-
         this._renderMaterialesView();
-    }
-
-    async _cargarAtcsBatch() {
-        if (!this._atcCache) this._atcCache = {};
-        const catalogo = this._materialesCatalogo || [];
-        const pendientes = catalogo.filter(item => !(item.nregistro in this._atcCache));
-        const BATCH = 5;
-        const DELAY_MS = 300;
-        let cargados = catalogo.length - pendientes.length;
-        const total = catalogo.length;
-
-        for (let i = 0; i < pendientes.length; i += BATCH) {
-            const lote = pendientes.slice(i, i + BATCH);
-            await Promise.all(lote.map(async item => {
-                try {
-                    const med = await this.api.getMedicamento(
-                        item.nregistro,
-                        { headers: { 'X-MC-Autocomplete': '1' } }
-                    );
-                    const atc = med?.atcs?.[0];
-                    this._atcCache[item.nregistro] = atc
-                        ? { codigo: atc.codigo, nombre: atc.nombre }
-                        : { codigo: null, nombre: null };
-                } catch {
-                    this._atcCache[item.nregistro] = { codigo: null, nombre: null };
-                }
-            }));
-            cargados += lote.length;
-
-            // Actualizar texto de progreso sin re-renderizar toda la vista
-            const el = document.getElementById('mat-atc-progress');
-            if (el) el.textContent = `Cargando ATC (${cargados}/${total})…`;
-
-            // Pausa entre lotes para no saturar el proxy
-            if (i + BATCH < pendientes.length) {
-                await new Promise(r => setTimeout(r, DELAY_MS));
-            }
-        }
     }
 
     _setMaterialesFiltro(tipo) {
