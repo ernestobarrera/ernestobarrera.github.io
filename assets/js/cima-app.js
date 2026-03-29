@@ -4175,12 +4175,15 @@ class MedCheckApp {
             const nombre = CATS[letra] || 'Sin clasificar';
             return `
                 <div class="mat-atc-grupo">
-                    <div class="mat-atc-grupo-header">
+                    <div class="mat-atc-grupo-header" onclick="this.closest('.mat-atc-grupo').classList.toggle('collapsed')">
                         <span class="mat-atc-grupo-letra">${letra}</span>
                         <span class="mat-atc-grupo-nombre">${nombre}</span>
                         <span class="mat-atc-grupo-count">${items.length}</span>
+                        <i class="fas fa-chevron-down mat-atc-grupo-chevron"></i>
                     </div>
-                    <div class="materiales-grid">${items.map(item => this._renderMatCard(item)).join('')}</div>
+                    <div class="mat-atc-grupo-body">
+                        <div class="materiales-grid">${items.map(item => this._renderMatCard(item)).join('')}</div>
+                    </div>
                 </div>`;
         }).join('');
     }

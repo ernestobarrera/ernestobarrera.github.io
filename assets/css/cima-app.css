@@ -6719,7 +6719,7 @@ code {
 
 /* Sección ATC */
 .mat-atc-grupo {
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.75rem;
 }
 
 .mat-atc-grupo-header {
@@ -6731,6 +6731,13 @@ code {
     background: var(--bg-surface-hover);
     border-radius: var(--radius-sm);
     border-left: 3px solid #f59e0b;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+.mat-atc-grupo-header:hover {
+    background: var(--bg-surface-active, rgba(255,255,255,0.06));
 }
 
 .mat-atc-grupo-letra {
@@ -6754,6 +6761,27 @@ code {
     background: var(--bg-surface);
     border-radius: 99px;
     padding: 0.05rem 0.45rem;
+}
+
+.mat-atc-grupo-chevron {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+}
+
+.mat-atc-grupo.collapsed .mat-atc-grupo-chevron {
+    transform: rotate(-90deg);
+}
+
+.mat-atc-grupo-body {
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+    max-height: 9000px; /* valor alto para expandido */
+}
+
+.mat-atc-grupo.collapsed .mat-atc-grupo-body {
+    max-height: 0;
+    margin-bottom: 0;
 }
 
 /* Tarjeta compacta */
