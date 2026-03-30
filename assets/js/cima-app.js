@@ -30,7 +30,7 @@ class MedCheckApp {
         // Search State Persistence
         this.lastSearchQuery = '';
         this.lastSearchResults = null;
-        this.lastSearchFilters = { comerc: true, generic: false };
+        this.lastSearchFilters = { comerc: true, generic: false, receta: false };
 
         // Indication Search State Persistence
         this.lastIndicationQuery = '';
@@ -508,6 +508,7 @@ class MedCheckApp {
         // Restore previous filter state
         const comercChecked = this.lastSearchFilters.comerc ? 'checked' : '';
         const genericChecked = this.lastSearchFilters.generic ? 'checked' : '';
+        const recetaChecked = this.lastSearchFilters.receta ? 'checked' : '';
         const showBrandsChecked = this.lastSearchFilters.showBrands ? 'checked' : '';
 
         this.content.innerHTML = `
@@ -530,6 +531,10 @@ class MedCheckApp {
                         <label class="search-option" title="Solo genéricos">
                             <input type="checkbox" id="filter-generic" ${genericChecked}>
                             <span>Genérico</span>
+                        </label>
+                        <label class="search-option" title="Solo con prescripción">
+                            <input type="checkbox" id="filter-receta" ${recetaChecked}>
+                            <span>Receta</span>
                         </label>
                     </div>
                     <button id="search-btn" class="search-btn">Buscar</button>
@@ -657,6 +662,7 @@ class MedCheckApp {
         this.lastSearchFilters = {
             comerc: document.getElementById('filter-comerc').checked,
             generic: document.getElementById('filter-generic').checked,
+            receta: document.getElementById('filter-receta').checked,
             showBrands: document.getElementById('filter-show-brands')?.checked || false
         };
 
@@ -710,6 +716,12 @@ class MedCheckApp {
                 totalFilas = displayResults.length;
             }
 
+            // Filtrar por receta en cliente si está activo
+            if (this.lastSearchFilters.receta) {
+                displayResults = displayResults.filter(med => med.receta === true);
+                totalFilas = displayResults.length;
+            }
+
             // Save results for persistence (stores the view state)
             this.lastSearchResults = {
                 ...rawData,
@@ -746,6 +758,7 @@ class MedCheckApp {
                 };
                 if (this.lastSearchFilters.comerc) urlParams.comerc = '1';
                 if (this.lastSearchFilters.generic) urlParams.generic = '1';
+                if (this.lastSearchFilters.receta) urlParams.receta = '1';
                 this.updateURL(urlParams);
             }
 
