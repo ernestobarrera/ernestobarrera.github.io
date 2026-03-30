@@ -6637,6 +6637,9 @@ ${materialesPlaceholder}
         // Apply both chip filters for display
         let filteredResults = applyPAFilter(applyRouteFilter(baseResults));
 
+        // Group results
+        const groups = this.groupResultsByField(filteredResults, this.groupingState.groupBy);
+
         // Build breadcrumb
         const matchInfoInline = data.matchedIndication
             ? `<span class="match-label">${data.matchedIndication.label}</span>
