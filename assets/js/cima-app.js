@@ -622,6 +622,9 @@ class MedCheckApp {
         filterGeneric.addEventListener('change', () => {
             if (this.lastSearchQuery) this.performSearch();
         });
+        document.getElementById('filter-receta')?.addEventListener('change', () => {
+            if (this.lastSearchQuery) this.performSearch();
+        });
         filterShowBrands?.addEventListener('change', () => {
             if (this.lastSearchQuery) this.performSearch();
         });
