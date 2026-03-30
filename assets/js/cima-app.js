@@ -1230,6 +1230,8 @@ class MedCheckApp {
                     medPAs = new Set(med.pactivos.split(/\s*[+/;]\s*/).map(p =>
                         p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
                     ).filter(Boolean));
+                } else if (med.vtm?.nombre) {
+                    medPAs = new Set([med.vtm.nombre]);
                 } else { medPAs = new Set(); }
                 for (const filterPA of this.groupingState.activeIngredientFilters) {
                     if (!medPAs.has(filterPA)) return false;
@@ -6174,6 +6176,8 @@ ${materialesPlaceholder}
                 nombres = med.pactivos.split(/\s*[+/;]\s*/).map(p =>
                     p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
                 ).filter(Boolean);
+            } else if (med.vtm?.nombre) {
+                nombres = [med.vtm.nombre];
             }
             nombres.forEach(n => { if (n) paCounts.set(n, (paCounts.get(n) || 0) + 1); });
         });
@@ -6584,6 +6588,8 @@ ${materialesPlaceholder}
                     medPAs = new Set(med.pactivos.split(/\s*[+/;]\s*/).map(p =>
                         p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
                     ).filter(Boolean));
+                } else if (med.vtm?.nombre) {
+                    medPAs = new Set([med.vtm.nombre]);
                 } else { medPAs = new Set(); }
                 for (const filterPA of this.groupingState.activeIngredientFilters) {
                     if (!medPAs.has(filterPA)) return false;
