@@ -1227,7 +1227,7 @@ class MedCheckApp {
                 if (med.principiosActivos?.length > 0) {
                     medPAs = new Set(med.principiosActivos.map(pa => pa.nombre).filter(Boolean));
                 } else if (med.pactivos) {
-                    medPAs = new Set(med.pactivos.split(',').map(p =>
+                    medPAs = new Set(med.pactivos.split(/\s*[+/;]\s*/).map(p =>
                         p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
                     ).filter(Boolean));
                 } else { medPAs = new Set(); }
@@ -6054,7 +6054,7 @@ ${materialesPlaceholder}
             switch (field) {
                 case 'activeIngredient':
                     if (med.pactivos) {
-                        key = med.pactivos.split(',')[0].trim().toUpperCase();
+                        key = med.pactivos.split(/\s*[+/;]\s*/)[0].trim().toUpperCase();
                     } else if (med.principiosActivos?.[0]?.nombre) {
                         key = med.principiosActivos[0].nombre.toUpperCase();
                     } else if (med.vtm?.nombre) {
@@ -6171,7 +6171,7 @@ ${materialesPlaceholder}
             if (med.principiosActivos?.length > 0) {
                 nombres = med.principiosActivos.map(pa => pa.nombre).filter(Boolean);
             } else if (med.pactivos) {
-                nombres = med.pactivos.split(',').map(p =>
+                nombres = med.pactivos.split(/\s*[+/;]\s*/).map(p =>
                     p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
                 ).filter(Boolean);
             }
@@ -6581,7 +6581,7 @@ ${materialesPlaceholder}
                 if (med.principiosActivos?.length > 0) {
                     medPAs = new Set(med.principiosActivos.map(pa => pa.nombre).filter(Boolean));
                 } else if (med.pactivos) {
-                    medPAs = new Set(med.pactivos.split(',').map(p =>
+                    medPAs = new Set(med.pactivos.split(/\s*[+/;]\s*/).map(p =>
                         p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
                     ).filter(Boolean));
                 } else { medPAs = new Set(); }
