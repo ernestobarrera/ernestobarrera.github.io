@@ -6,6 +6,19 @@
 Esta obra está bajo una
 [licencia de Creative Commons Reconocimiento-NoComercial-CompartirIgual 4.0 Internacional][cc-by-nc-sa].
 
+---
+
+## MedCheck
+
+Herramienta clínica de consulta de medicamentos integrada con la API CIMA de la AEMPS.
+Disponible en: https://ernestobarrera.github.io/medcheck.html
+
+**© 2024-2026 Ernesto Barrera Chacón. Todos los derechos reservados.**
+
+Se permite el uso de la aplicación en su URL pública. Queda prohibida la copia,
+modificación o redistribución del código fuente sin autorización escrita del autor.
+Los datos de medicamentos proceden de AEMPS/CIMA y son de dominio público.
+
 
 
 

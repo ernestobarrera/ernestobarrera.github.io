@@ -3373,6 +3373,19 @@ body {
     text-align: right;
 }
 
+.status-copyright {
+    font-size: 0.62rem;
+    opacity: 0.45;
+    border-left: 1px solid currentColor;
+    padding-left: var(--space-sm);
+    margin-left: var(--space-xs);
+    white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+    .status-copyright { display: none; }
+}
+
 .status-indicator {
     display: flex;
     align-items: center;

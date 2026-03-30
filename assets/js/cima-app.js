@@ -1,6 +1,12 @@
-/**
- * MedCheck - Clinical Medication Tool
- * Main Application Controller
+/*!
+ * MedCheck — Herramienta clínica de medicamentos
+ * © 2024-2026 Ernesto Barrera Chacón. Todos los derechos reservados.
+ *
+ * Se permite el uso de la aplicación en su URL original.
+ * Queda prohibida la copia, modificación o redistribución del código
+ * fuente sin autorización escrita del autor.
+ *
+ * Datos de medicamentos: AEMPS/CIMA (dominio público)
  */
 
 class MedCheckApp {
