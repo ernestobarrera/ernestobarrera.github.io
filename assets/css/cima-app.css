@@ -4263,9 +4263,29 @@ body {
     color: var(--danger);
 }
 
+.pa-filter-hint {
+    margin-left: auto;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    opacity: 0.7;
+    align-self: center;
+    white-space: nowrap;
+}
+.pa-filter-hint kbd {
+    display: inline-block;
+    padding: 0 4px;
+    font-size: 0.65rem;
+    font-family: inherit;
+    background: rgba(99,102,241,0.1);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 3px;
+    color: var(--info);
+}
+
 @media (max-width: 640px) {
     .pa-filter-chips { gap: var(--space-xs); padding-top: var(--space-xs); }
     .pa-filter-label { display: none; }
+    .pa-filter-hint { display: none; }
 }
 
 /* ============================================

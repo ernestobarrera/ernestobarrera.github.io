@@ -1248,9 +1248,9 @@ class MedCheckApp {
                     medPAs = new Set([med.vtm.nombre]);
                 } else { medPAs = new Set(); }
                 for (const filterPA of this.groupingState.activeIngredientFilters) {
-                    if (!medPAs.has(filterPA)) return false;
+                    if (medPAs.has(filterPA)) return true;
                 }
-                return true;
+                return false;
             });
         };
 
@@ -6414,7 +6414,7 @@ ${materialesPlaceholder}
     }
 
     /**
-     * Renders PA filter chips (AND semantics, multi-select)
+     * Renders PA filter chips (OR semantics, multi-select)
      */
     renderPAFilterChips(paList) {
         if (paList.length <= 1) return '';
@@ -6422,7 +6422,7 @@ ${materialesPlaceholder}
         const chipsHtml = paList.map(pa => {
             const isActive = this.groupingState.activeIngredientFilters.has(pa.name);
             return `
-                <button class="pa-chip ${isActive ? 'active' : ''}" data-pa="${pa.name}" title="Ctrl+click para multi-selección AND">
+                <button class="pa-chip ${isActive ? 'active' : ''}" data-pa="${pa.name}" title="Ctrl+click para añadir más PA (OR)">
                     ${pa.name}
                     <span class="route-count">${pa.count}</span>
                 </button>
@@ -6435,14 +6435,19 @@ ${materialesPlaceholder}
             : '';
 
         const label = filterCount > 1
-            ? `<span class="pa-filter-label">PA activos (AND):</span>`
+            ? `<span class="pa-filter-label">PA activos (OR):</span>`
             : `<span class="pa-filter-label">Principio activo:</span>`;
+
+        const hint = filterCount === 0
+            ? `<span class="pa-filter-hint"><kbd>Ctrl</kbd>+clic para seleccionar varios (OR)</span>`
+            : '';
 
         return `
             <div class="route-filter-chips pa-filter-chips">
                 ${label}
                 ${chipsHtml}
                 ${clearBtn}
+                ${hint}
             </div>
         `;
     }
@@ -6608,9 +6613,9 @@ ${materialesPlaceholder}
                     medPAs = new Set([med.vtm.nombre]);
                 } else { medPAs = new Set(); }
                 for (const filterPA of this.groupingState.activeIngredientFilters) {
-                    if (!medPAs.has(filterPA)) return false;
+                    if (medPAs.has(filterPA)) return true;
                 }
-                return true;
+                return false;
             });
         };
 
