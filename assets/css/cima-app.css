@@ -4163,6 +4163,77 @@ body {
     color: var(--danger);
 }
 
+/* PA Filter Chips */
+.pa-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 2rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface-raised);
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.pa-chip:hover {
+    background: var(--accent-light, rgba(99, 102, 241, 0.08));
+    border-color: var(--accent, #6366f1);
+    color: var(--accent, #6366f1);
+}
+
+.pa-chip.active {
+    background: var(--accent, #6366f1);
+    border-color: var(--accent, #6366f1);
+    color: #fff;
+}
+
+.pa-chip.active .route-count {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.pa-chip-clear {
+    background: transparent;
+    border: 1px dashed var(--border-default);
+    color: var(--text-muted);
+}
+
+.pa-chip-clear:hover {
+    background: var(--danger-light);
+    border-color: var(--danger);
+    border-style: solid;
+    color: var(--danger);
+}
+
+.pa-filter-chips {
+    border-top: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.06));
+    padding-top: var(--space-sm);
+    margin-top: calc(var(--space-sm) * -1);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    align-items: center;
+}
+
+.pa-filter-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    align-self: center;
+    white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+    .pa-filter-chips { gap: var(--space-xs); padding-top: var(--space-xs); }
+    .pa-filter-label { display: none; }
+}
+
 /* ============================================
    Clinical Grouping Pro - Collapsible Groups
    ============================================ */

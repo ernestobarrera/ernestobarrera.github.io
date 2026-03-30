@@ -722,6 +722,7 @@ class MedCheckApp {
             this.filterState = { form: null, lab: null, doses: new Set() };
             if (this.groupingState?.routeFilters) {
                 this.groupingState.routeFilters.clear();
+                this.groupingState.activeIngredientFilters?.clear();
                 this.groupingState.collapsedGroups.clear();
                 this.groupingState.expandedGroups.clear();
             }
@@ -1219,6 +1220,24 @@ class MedCheckApp {
             });
         }
 
+        // Apply PA filter (AND semantics: med must contain ALL selected PAs)
+        if (this.groupingState.activeIngredientFilters?.size > 0) {
+            filteredResults = filteredResults.filter(med => {
+                let medPAs;
+                if (med.principiosActivos?.length > 0) {
+                    medPAs = new Set(med.principiosActivos.map(pa => pa.nombre).filter(Boolean));
+                } else if (med.pactivos) {
+                    medPAs = new Set(med.pactivos.split(',').map(p =>
+                        p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
+                    ).filter(Boolean));
+                } else { medPAs = new Set(); }
+                for (const filterPA of this.groupingState.activeIngredientFilters) {
+                    if (!medPAs.has(filterPA)) return false;
+                }
+                return true;
+            });
+        }
+
         // Apply faceted filters (form, lab, doses)
         if (this.filterState?.form) {
             filteredResults = filteredResults.filter(med =>
@@ -1240,12 +1259,14 @@ class MedCheckApp {
         // Group results
         const groups = this.groupResultsByField(filteredResults, this.groupingState.groupBy);
 
-        // Extract routes for filter chips
+        // Extract routes and PAs for filter chips (from original results, not filtered)
         const routes = this.extractUniqueRoutes(data.resultados);
+        const paList = this.extractUniquePrincipiosActivos(data.resultados);
 
         resultsContainer.innerHTML = `
             ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data)}
             ${this.renderRouteFilterChips(routes)}
+            ${this.renderPAFilterChips(paList)}
             <div id="grouped-results">
                 ${this.renderGroupedResults(groups, this.lastSearchQuery)}
             </div>
@@ -1351,6 +1372,7 @@ class MedCheckApp {
             clearBtn.addEventListener('click', () => {
                 this.filterState = { form: null, lab: null, doses: new Set() };
                 this.groupingState.routeFilters.clear();
+                this.groupingState.activeIngredientFilters.clear();
                 this.displaySearchResults(data);
             });
         }
@@ -1373,6 +1395,26 @@ class MedCheckApp {
                     this.groupingState.routeFilters.add(route);
                 }
 
+                this.displaySearchResults(data);
+            });
+        });
+
+        // PA filter chips (AND semantics, Ctrl+click for multi-select)
+        document.querySelectorAll('.pa-chip[data-pa]').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                const pa = chip.dataset.pa;
+                if (!pa) {
+                    this.groupingState.activeIngredientFilters.clear();
+                } else if (e.ctrlKey || e.metaKey) {
+                    if (this.groupingState.activeIngredientFilters.has(pa)) {
+                        this.groupingState.activeIngredientFilters.delete(pa);
+                    } else {
+                        this.groupingState.activeIngredientFilters.add(pa);
+                    }
+                } else {
+                    this.groupingState.activeIngredientFilters.clear();
+                    this.groupingState.activeIngredientFilters.add(pa);
+                }
                 this.displaySearchResults(data);
             });
         });
@@ -5950,9 +5992,10 @@ ${materialesPlaceholder}
         this.groupingState = {
             groupBy: 'activeIngredient', // activeIngredient | route | form | none
             sortBy: 'nameAsc',           // nameAsc | nameDesc | doseAsc | doseDesc
-            routeFilters: new Set(),     // Set of selected route names (empty = show all)
-            collapsedGroups: new Set(),  // Set of collapsed group IDs
-            expandedGroups: new Set()    // Set of expanded group IDs (for "Ver más")
+            routeFilters: new Set(),              // Set of selected route names (empty = show all)
+            activeIngredientFilters: new Set(),   // Set of selected PA names (AND semantics)
+            collapsedGroups: new Set(),           // Set of collapsed group IDs
+            expandedGroups: new Set()             // Set of expanded group IDs (for "Ver más")
         };
     }
 
@@ -6118,6 +6161,29 @@ ${materialesPlaceholder}
     }
 
     /**
+     * Extracts unique principios activos from results for filter chips
+     */
+    extractUniquePrincipiosActivos(results) {
+        const paCounts = new Map();
+
+        results.forEach(med => {
+            let nombres = [];
+            if (med.principiosActivos?.length > 0) {
+                nombres = med.principiosActivos.map(pa => pa.nombre).filter(Boolean);
+            } else if (med.pactivos) {
+                nombres = med.pactivos.split(',').map(p =>
+                    p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
+                ).filter(Boolean);
+            }
+            nombres.forEach(n => { if (n) paCounts.set(n, (paCounts.get(n) || 0) + 1); });
+        });
+
+        return Array.from(paCounts.entries())
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
+    }
+
+    /**
      * Gets icon class for a route
      */
     getRouteIcon(route) {
@@ -6176,6 +6242,7 @@ ${materialesPlaceholder}
             (this.filterState.lab ? 1 : 0) +
             (this.filterState.doses?.size || 0) +
             (this.groupingState.routeFilters?.size || 0) +
+            (this.groupingState.activeIngredientFilters?.size || 0) +
             (this.filterState.efgOnly ? 1 : 0);
 
         return `
@@ -6317,6 +6384,40 @@ ${materialesPlaceholder}
 
         return `
             <div class="route-filter-chips">
+                ${chipsHtml}
+                ${clearBtn}
+            </div>
+        `;
+    }
+
+    /**
+     * Renders PA filter chips (AND semantics, multi-select)
+     */
+    renderPAFilterChips(paList) {
+        if (paList.length <= 1) return '';
+
+        const chipsHtml = paList.map(pa => {
+            const isActive = this.groupingState.activeIngredientFilters.has(pa.name);
+            return `
+                <button class="pa-chip ${isActive ? 'active' : ''}" data-pa="${pa.name}" title="Ctrl+click para multi-selección AND">
+                    ${pa.name}
+                    <span class="route-count">${pa.count}</span>
+                </button>
+            `;
+        }).join('');
+
+        const filterCount = this.groupingState.activeIngredientFilters.size;
+        const clearBtn = filterCount > 0
+            ? `<button class="pa-chip pa-chip-clear" data-pa=""><i class="fas fa-times"></i> Limpiar${filterCount > 1 ? ` (${filterCount})` : ''}</button>`
+            : '';
+
+        const label = filterCount > 1
+            ? `<span class="pa-filter-label">PA activos (AND):</span>`
+            : `<span class="pa-filter-label">Principio activo:</span>`;
+
+        return `
+            <div class="route-filter-chips pa-filter-chips">
+                ${label}
                 ${chipsHtml}
                 ${clearBtn}
             </div>
@@ -6473,6 +6574,24 @@ ${materialesPlaceholder}
             });
         }
 
+        // Apply PA filter (AND semantics: med must contain ALL selected PAs)
+        if (this.groupingState.activeIngredientFilters?.size > 0) {
+            filteredResults = filteredResults.filter(med => {
+                let medPAs;
+                if (med.principiosActivos?.length > 0) {
+                    medPAs = new Set(med.principiosActivos.map(pa => pa.nombre).filter(Boolean));
+                } else if (med.pactivos) {
+                    medPAs = new Set(med.pactivos.split(',').map(p =>
+                        p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
+                    ).filter(Boolean));
+                } else { medPAs = new Set(); }
+                for (const filterPA of this.groupingState.activeIngredientFilters) {
+                    if (!medPAs.has(filterPA)) return false;
+                }
+                return true;
+            });
+        }
+
         // Apply faceted filters (form, lab, efg) — doses not used in Indicaciones
         if (this.filterState?.form) {
             filteredResults = filteredResults.filter(med =>
@@ -6491,8 +6610,9 @@ ${materialesPlaceholder}
         // Group results
         const groups = this.groupResultsByField(filteredResults, this.groupingState.groupBy);
 
-        // Extract routes for filter chips (from original results, not filtered)
+        // Extract routes and PAs for filter chips (from original results, not filtered)
         const routes = this.extractUniqueRoutes(data.resultados);
+        const paList = this.extractUniquePrincipiosActivos(data.resultados);
 
         // Build breadcrumb
         const matchInfoInline = data.matchedIndication
@@ -6508,6 +6628,7 @@ ${materialesPlaceholder}
             </div>
             ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data, { showDoses: false, showEFG: true })}
             ${this.renderRouteFilterChips(routes)}
+            ${this.renderPAFilterChips(paList)}
             <div id="grouped-results">
                 ${this.renderGroupedResults(groups, searchQuery)}
             </div>
@@ -6605,6 +6726,7 @@ ${materialesPlaceholder}
             clearBtn.addEventListener('click', () => {
                 this.filterState = { form: null, lab: null, doses: new Set(), efgOnly: false };
                 this.groupingState.routeFilters.clear();
+                this.groupingState.activeIngredientFilters.clear();
                 this.displayGroupedIndicationResults(data, searchQuery);
             });
         }
@@ -6630,6 +6752,26 @@ ${materialesPlaceholder}
                     this.groupingState.routeFilters.add(route);
                 }
 
+                this.displayGroupedIndicationResults(data, searchQuery);
+            });
+        });
+
+        // PA filter chips (AND semantics, Ctrl+click for multi-select)
+        document.querySelectorAll('.pa-chip[data-pa]').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                const pa = chip.dataset.pa;
+                if (!pa) {
+                    this.groupingState.activeIngredientFilters.clear();
+                } else if (e.ctrlKey || e.metaKey) {
+                    if (this.groupingState.activeIngredientFilters.has(pa)) {
+                        this.groupingState.activeIngredientFilters.delete(pa);
+                    } else {
+                        this.groupingState.activeIngredientFilters.add(pa);
+                    }
+                } else {
+                    this.groupingState.activeIngredientFilters.clear();
+                    this.groupingState.activeIngredientFilters.add(pa);
+                }
                 this.displayGroupedIndicationResults(data, searchQuery);
             });
         });
