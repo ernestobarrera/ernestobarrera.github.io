@@ -88,3 +88,4 @@ test-dosis*.js
 * old.html
 *_old.html
 criteria_data.json
+workers/
