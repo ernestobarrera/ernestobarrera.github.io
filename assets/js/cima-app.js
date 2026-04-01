@@ -4570,7 +4570,7 @@ class MedCheckApp {
                     : `<div class="med-thumbnail-placeholder"><i class="fas fa-pills"></i></div>`
                 }
                         <div class="med-header-info">
-                            <h2 class="modal-title">${med.nombre}</h2>
+                            <h2 class="modal-title">${med.nombre}${med.nosustituible && med.nosustituible.id === 2 ? ' <span class="badge badge-nti" title="Índice Terapéutico Estrecho — No sustituible"><i class="fas fa-exclamation-triangle"></i> NTI</span>' : ''}</h2>
                             <p class="modal-subtitle">${med.labtitular}</p>
                         </div>
                     </div>
@@ -4671,6 +4671,7 @@ class MedCheckApp {
 
         // Alertas especiales
         const alerts = [];
+        if (med.nosustituible && med.nosustituible.id === 2) alerts.push('<span class="badge badge-nti" title="Estrecho margen terapéutico — No sustituible"><i class="fas fa-exclamation-triangle"></i> NTI — Estrecho margen terapéutico</span>');
         if (med.triangulo) alerts.push('<span class="badge badge-danger" title="Triángulo negro">▲ Vigilancia adicional</span>');
         if (med.psum) alerts.push('<span class="badge badge-danger"><i class="fas fa-boxes"></i> Problema suministro</span>');
         if (med.conduc) alerts.push('<span class="badge badge-warning"><i class="fas fa-car"></i> Afecta conducción</span>');
