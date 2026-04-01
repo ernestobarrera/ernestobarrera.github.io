@@ -3488,14 +3488,26 @@ class MedCheckApp {
             // Con npactiv ya filtramos en la API, los resultados son exactos
             const resultsToShow = equivData.resultados;
 
-            this.renderEquivResults(resultsToShow, principiosActivos.join(' + '), false, numPrincipiosOriginal);
+            // A.3: Comprobar NTI (Índice Terapéutico Estrecho) — campo nosustituible de CIMA
+            let ntiFlag = false;
+            try {
+                const ntiCheck = await this.api.getMedicamento(firstMed.nregistro, noTrack);
+                if (ntiCheck && ntiCheck.nosustituible && ntiCheck.nosustituible.id === 2) {
+                    ntiFlag = true;
+                    console.log('⚠️ NTI detectado: Estrecho margen terapéutico');
+                }
+            } catch (e) {
+                console.warn('No se pudo verificar NTI:', e);
+            }
+
+            this.renderEquivResults(resultsToShow, principiosActivos.join(' + '), false, numPrincipiosOriginal, ntiFlag);
 
         } catch (error) {
             this.handleSearchError(resultsContainer, error);
         }
     }
 
-    renderEquivResults(results, principioActivo, isFiltered = false, numPa = 0) {
+    renderEquivResults(results, principioActivo, isFiltered = false, numPa = 0, ntiFlag = false) {
         const container = document.getElementById('equiv-results');
 
         if (!results || !Array.isArray(results) || results.length === 0) {
@@ -3509,9 +3521,10 @@ class MedCheckApp {
             return;
         }
 
-        // Guardar resultados para filtrado
+        // Guardar resultados y estado NTI para filtrado
         this.equivAllResults = results;
         this.equivPrincipioActivo = principioActivo;
+        this.equivNtiFlag = ntiFlag;
 
         // Extraer opciones únicas para filtros (con normalización de dosis)
         const dosisMap = new Map(); // normalized → [original values]
@@ -3578,10 +3591,22 @@ class MedCheckApp {
             </div>
         `;
 
+        // Banner NTI si aplica
+        const ntiBanner = ntiFlag ? `
+            <div class="nti-banner">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <strong>Estrecho margen terapéutico (NTI)</strong>
+                    <span>La sustitución por genérico requiere <strong>monitorización estrecha</strong>. Pequeñas variaciones de dosis pueden causar efectos tóxicos o sub-terapéuticos.</span>
+                </div>
+            </div>
+        ` : '';
+
         container.innerHTML = `
             <div class="equiv-summary">
                 <p class="text-muted mb-sm">
                     <i class="fas fa-flask"></i> Principio activo: <strong class="text-primary">${principioActivo}</strong>
+                    ${ntiFlag ? '<span class="badge badge-nti" title="Índice Terapéutico Estrecho"><i class="fas fa-exclamation-triangle"></i> NTI</span>' : ''}
                 </p>
                 <p class="text-muted mb-md">
                     <strong>${results.length}</strong> presentaciones encontradas 
@@ -3589,6 +3614,7 @@ class MedCheckApp {
                     ${marcas.length} marcas)
                 </p>
             </div>
+            ${ntiBanner}
             ${filtersHtml}
             <div id="equiv-filtered-results"></div>
         `;

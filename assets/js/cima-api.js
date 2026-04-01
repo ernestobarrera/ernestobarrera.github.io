@@ -1075,12 +1075,42 @@ class CimaAPI {
             label: 'Antianginosos',
             synonyms: ['angor', 'angina de pecho']
         },
+        'trombosis': {
+            atc: ['B01A'],
+            label: 'Antitrombóticos',
+            synonyms: ['tromboembolismo', 'tvp', 'embolia pulmonar', 'tep', 'anticoagulación']
+        },
+        'dislipemia': {
+            atc: ['C10'],
+            label: 'Hipolipemiantes',
+            synonyms: ['colesterol', 'hipercolesterolemia', 'hiperlipidemia', 'triglicéridos']
+        },
 
         // ===== SÍNDROMES METABÓLICOS (multi-ATC) =====
         'diabetes': {
             atc: ['A10A', 'A10B'],
             label: 'Antidiabéticos (insulinas + orales)',
             synonyms: ['dm', 'azúcar alta']
+        },
+        'hipotiroidismo': {
+            atc: ['H03A'],
+            label: 'Hormonas tiroideas',
+            synonyms: ['tiroides', 'levotiroxina', 'eutirox']
+        },
+        'hipertiroidismo': {
+            atc: ['H03B'],
+            label: 'Antitiroideos',
+            synonyms: ['tirotoxicosis', 'graves', 'carbimazol']
+        },
+        'gota': {
+            atc: ['M04'],
+            label: 'Antigotosos',
+            synonyms: ['hiperuricemia', 'ácido úrico', 'acido urico', 'alopurinol', 'colchicina']
+        },
+        'osteoporosis': {
+            atc: ['M05B'],
+            label: 'Antiosteoporóticos',
+            synonyms: ['bisfosfonatos', 'densidad ósea', 'densidad osea', 'fracturas osteoporóticas']
         },
 
         // ===== DOLOR (multi-ATC) =====
@@ -1098,12 +1128,86 @@ class CimaAPI {
             atc: ['N02A', 'N03', 'N06A'],
             label: 'Dolor crónico (opioides, antiepil, antidep)'
         },
+        'migraña': {
+            atc: ['N02C'],
+            label: 'Antimigrañosos',
+            synonyms: ['jaqueca', 'cefalea migrañosa', 'triptanes', 'sumatriptan']
+        },
 
         // ===== PSIQUIATRÍA (multi-ATC) =====
         'depresión': {
             atc: ['N06AA', 'N06AB', 'N06AX'],
             label: 'Antidepresivos (tricíclicos, ISRS, otros)',
             synonyms: ['tristeza', 'antidepresivo']
+        },
+        'ansiedad': {
+            atc: ['N05B', 'N06AB'],
+            label: 'Ansiolíticos e ISRS',
+            synonyms: ['trastorno de ansiedad', 'tag', 'ansiedad generalizada', 'crisis de pánico']
+        },
+        'insomnio': {
+            atc: ['N05C'],
+            label: 'Hipnóticos y sedantes',
+            synonyms: ['trastorno del sueño', 'conciliar el sueño', 'zolpidem', 'lormetazepam']
+        },
+        'esquizofrenia': {
+            atc: ['N05A'],
+            label: 'Antipsicóticos',
+            synonyms: ['psicosis', 'trastorno psicótico', 'brote psicótico']
+        },
+        'tdah': {
+            atc: ['N06BA'],
+            label: 'Psicoestimulantes (TDAH)',
+            synonyms: ['déficit de atención', 'deficit de atencion', 'hiperactividad', 'metilfenidato']
+        },
+        'trastorno bipolar': {
+            atc: ['N03', 'N05A'],
+            label: 'Estabilizadores + Antipsicóticos',
+            synonyms: ['bipolar', 'litio', 'ácido valproico']
+        },
+
+        // ===== NEUROLOGÍA =====
+        'epilepsia': {
+            atc: ['N03'],
+            label: 'Antiepilépticos',
+            synonyms: ['convulsiones', 'crisis epiléptica', 'fenitoína', 'levetiracetam']
+        },
+        'parkinson': {
+            atc: ['N04'],
+            label: 'Antiparkinsonianos',
+            synonyms: ['enfermedad de parkinson', 'levodopa', 'temblor parkinsoniano']
+        },
+        'alzheimer': {
+            atc: ['N06D'],
+            label: 'Antidemencia',
+            synonyms: ['demencia', 'deterioro cognitivo', 'donepezilo', 'memantina']
+        },
+
+        // ===== GASTROENTEROLOGÍA =====
+        'reflujo': {
+            atc: ['A02B'],
+            label: 'Antiulcerosos',
+            synonyms: ['erge', 'rge', 'acidez', 'pirosis', 'hernia hiato']
+        },
+        'estreñimiento': {
+            atc: ['A06'],
+            label: 'Laxantes',
+            synonyms: ['constipación', 'laxante']
+        },
+        'diarrea': {
+            atc: ['A07'],
+            label: 'Antidiarreicos',
+            synonyms: ['loperamida', 'gastroenteritis']
+        },
+        'náuseas': {
+            atc: ['A04', 'A03FA'],
+            label: 'Antieméticos y procinéticos',
+            synonyms: ['vómitos', 'vomitos', 'antiemético', 'metoclopramida', 'domperidona', 'ondansetron']
+        },
+        'enfermedad inflamatoria intestinal': {
+            atc: ['A07E'],
+            label: 'Aminosalicilatos y corticoides intestinales',
+            synonyms: ['eii', 'crohn', 'colitis ulcerosa', 'mesalazina']
         },
 
         // ===== INFECCIONES (multi-ATC) =====
@@ -1117,6 +1221,21 @@ class CimaAPI {
             label: 'Antibióticos (respiratorio)',
             synonyms: ['bronquitis', 'neumonía']
         },
+        'faringitis': {
+            atc: ['J01C'],
+            label: 'Penicilinas',
+            synonyms: ['amigdalitis', 'faringoamigdalitis', 'anginas']
+        },
+        'otitis': {
+            atc: ['J01', 'S02'],
+            label: 'Antibióticos sistémicos y óticos',
+            synonyms: ['otitis media', 'otitis externa', 'dolor de oído']
+        },
+        'candidiasis': {
+            atc: ['J02', 'G01A', 'D01'],
+            label: 'Antifúngicos',
+            synonyms: ['hongos', 'candida', 'micosis', 'fluconazol']
+        },
 
         // ===== RESPIRATORIO (multi-ATC) =====
         'asma': {
@@ -1129,12 +1248,88 @@ class CimaAPI {
             label: 'EPOC',
             synonyms: ['broncodilatadores', 'enfisema']
         },
+        'rinitis alérgica': {
+            atc: ['R06', 'R01A'],
+            label: 'Antihistamínicos y corticoides nasales',
+            synonyms: ['alergia', 'rinitis', 'estornudos', 'cetirizina', 'loratadina']
+        },
+        'tos': {
+            atc: ['R05'],
+            label: 'Antitusivos y mucolíticos',
+            synonyms: ['tos seca', 'tos productiva', 'expectorante', 'mucolítico']
+        },
+
+        // ===== DERMATOLOGÍA =====
+        'acné': {
+            atc: ['D10'],
+            label: 'Antiacneicos',
+            synonyms: ['acne', 'espinillas', 'tretinoína', 'isotretinoína']
+        },
+        'dermatitis atópica': {
+            atc: ['D07', 'D11AH'],
+            label: 'Corticoides tópicos e inmunomoduladores',
+            synonyms: ['eccema', 'eczema', 'dermatitis', 'piel atópica']
+        },
+        'psoriasis': {
+            atc: ['D05', 'L04'],
+            label: 'Antipsoríasicos tópicos y sistémicos',
+            synonyms: ['placas psoriásicas', 'metotrexato']
+        },
+        'urticaria': {
+            atc: ['R06'],
+            label: 'Antihistamínicos',
+            synonyms: ['habones', 'picazón', 'prurito']
+        },
 
         // ===== REUMATOLOGÍA (multi-ATC) =====
         'artritis reumatoide': {
             atc: ['M01A', 'L04'],
             label: 'AR (AINE + inmunomod)',
             synonyms: ['ar', 'reumatoide']
+        },
+        'artrosis': {
+            atc: ['M01A', 'N02'],
+            label: 'AINE y analgésicos',
+            synonyms: ['osteoartritis', 'desgaste articular', 'gonartrosis', 'coxartrosis']
+        },
+        'fibromialgia': {
+            atc: ['N06A', 'N03', 'M03'],
+            label: 'Antidepresivos, antiepilépticos y relajantes',
+            synonyms: ['dolor musculoesquelético difuso', 'puntos gatillo']
+        },
+
+        // ===== UROLOGÍA / GINECOLOGÍA =====
+        'incontinencia urinaria': {
+            atc: ['G04BD'],
+            label: 'Antimuscarínicos urinarios',
+            synonyms: ['vejiga hiperactiva', 'urgencia miccional', 'solifenacina', 'mirabegron']
+        },
+        'disfunción eréctil': {
+            atc: ['G04BE'],
+            label: 'Inhibidores de PDE5',
+            synonyms: ['impotencia', 'sildenafilo', 'tadalafilo']
+        },
+        'menopausia': {
+            atc: ['G03C', 'G03F'],
+            label: 'THS (Terapia Hormonal Sustitutiva)',
+            synonyms: ['climaterio', 'sofocos', 'terapia hormonal']
+        },
+        'anticoncepción': {
+            atc: ['G03A'],
+            label: 'Anticonceptivos hormonales',
+            synonyms: ['anticonceptivos', 'píldora', 'planificación familiar']
+        },
+
+        // ===== OFTALMOLOGÍA =====
+        'glaucoma': {
+            atc: ['S01E'],
+            label: 'Antiglaucomatosos',
+            synonyms: ['presión intraocular', 'timolol', 'latanoprost']
+        },
+        'conjuntivitis': {
+            atc: ['S01A'],
+            label: 'Antiinfecciosos oculares',
+            synonyms: ['ojo rojo', 'infección ocular']
         },
 
         // ===== ABREVIATURAS Y SINÓNIMOS ESPAÑOLES =====
@@ -1148,7 +1343,11 @@ class CimaAPI {
         'glp1': { atc: 'A10BJ', label: 'Agonistas GLP-1', synonyms: ['semaglutida', 'ozempic', 'liraglutida'] },
         'dpp4': { atc: 'A10BH', label: 'iDPP4', synonyms: ['idpp4', 'gliptinas', 'sitagliptina'] },
         'acod': { atc: 'B01AF', label: 'ACOD', synonyms: ['naco', 'rivaroxaban', 'apixaban', 'dabigatran'] },
-        'hbp': { atc: 'G04C', label: 'HBP', synonyms: ['próstata', 'prostatismo'] }
+        'hbp': { atc: 'G04C', label: 'HBP', synonyms: ['próstata', 'prostatismo'] },
+        'corticoides': { atc: 'H02', label: 'Corticosteroides sistémicos', synonyms: ['prednisona', 'dexametasona', 'metilprednisolona'] },
+        'benzodiacepinas': { atc: 'N05BA', label: 'Benzodiacepinas', synonyms: ['diazepam', 'lorazepam', 'alprazolam', 'benzo'] },
+        'hierro': { atc: 'B03A', label: 'Ferroterapia', synonyms: ['anemia ferropénica', 'ferropenia', 'sulfato ferroso'] },
+        'vitamina d': { atc: 'A11CC', label: 'Vitamina D', synonyms: ['colecalciferol', 'calcifediol', 'déficit vitamina d'] }
     };
 
     /**
@@ -1860,36 +2059,61 @@ class CimaAPI {
         ];
 
         // Mapeo de contexto a secciones y palabras clave para énfasis
+        // MEJORADO 2026-04-01: keywords expandidos por contexto clínico
         const contextMapping = {
             pregnancy: {
                 section: '4.6',
                 label: 'Embarazo',
-                keywords: ['embarazo', 'gestación', 'embarazada', 'teratógeno', 'malformacion']
+                keywords: ['embarazo', 'gestación', 'gestacion', 'embarazada', 'teratógeno',
+                    'teratogeno', 'malformacion', 'malformación', 'feto', 'fetal',
+                    'potencial fértil', 'potencial fertil', 'mujer en edad fértil',
+                    'mujer en edad fertil', 'anticoncepción', 'anticoncepcion',
+                    'categoría d', 'categoría x', 'categoria d', 'categoria x',
+                    'primer trimestre', 'tercer trimestre', 'prenatal']
             },
             lactation: {
                 section: '4.6',
                 label: 'Lactancia',
-                keywords: ['lactancia', 'lactante', 'leche materna', 'amamant']
+                keywords: ['lactancia', 'lactante', 'leche materna', 'amamant',
+                    'periodo de lactancia', 'neonato', 'recién nacido', 'recien nacido',
+                    'excreta en leche', 'secreta en leche', 'pasa a la leche']
             },
             elderly: {
                 section: '4.4',
                 label: 'Paciente mayor',
-                keywords: ['anciano', 'edad avanzada', 'pacientes de edad', 'mayores de 65', 'poblacion de edad avanzada']
+                keywords: ['anciano', 'edad avanzada', 'pacientes de edad', 'mayores de 65',
+                    'poblacion de edad avanzada', 'población de edad avanzada',
+                    'pacientes geriátricos', 'pacientes geriatricos', 'tercera edad',
+                    'personas mayores', 'edad avanzada', 'deterioro cognitivo',
+                    'caídas', 'caidas', 'fragilidad', 'polifarmacia']
             },
             hepatic: {
                 section: '4.4',
                 label: 'Insuficiencia hepática',
-                keywords: ['insuficiencia hepática', 'hepatopatía', 'cirrosis', 'hepático', 'función hepática']
+                keywords: ['insuficiencia hepática', 'insuficiencia hepatica', 'hepatopatía',
+                    'hepatopatia', 'cirrosis', 'hepático', 'hepatico', 'función hepática',
+                    'funcion hepatica', 'hepatotóxico', 'hepatotoxico', 'hepatotoxicidad',
+                    'transaminasas', 'child-pugh', 'child pugh', 'alt ', 'ast ',
+                    'metabolismo hepático', 'metabolismo hepatico', 'daño hepático',
+                    'dano hepatico', 'ictericia', 'bilirrubina']
             },
             renal: {
                 section: '4.4',
                 label: 'Insuficiencia renal',
-                keywords: ['insuficiencia renal', 'aclaramiento', 'filtrado glomerular', 'ClCr', 'función renal', 'creatinina']
+                keywords: ['insuficiencia renal', 'aclaramiento', 'filtrado glomerular',
+                    'ClCr', 'función renal', 'funcion renal', 'creatinina',
+                    'nefrotóxi', 'nefrotoxi', 'hemodiálisis', 'hemodialisis', 'diálisis',
+                    'dialisis', 'cockcroft', 'ckd-epi', 'estadio renal', 'tfge', 'tfg',
+                    'clearance', 'depuración de creatinina', 'depuracion de creatinina',
+                    'ajuste renal', 'deterioro renal', 'daño renal', 'dano renal']
             },
             driving: {
                 section: '4.7',
                 label: 'Conducción',
-                keywords: ['conducción', 'maquinaria', 'conducir', 'capacidad para conducir']
+                keywords: ['conducción', 'conduccion', 'maquinaria', 'conducir',
+                    'capacidad para conducir', 'somnolencia', 'mareo', 'vértigo',
+                    'vertigo', 'capacidad de reacción', 'capacidad de reaccion',
+                    'sedación', 'sedacion', 'visión borrosa', 'vision borrosa']
             }
         };
 
@@ -2255,6 +2479,24 @@ class CimaAPI {
             .trim();
         const lowerContent = plainText.toLowerCase();
 
+        // MEJORADO 2026-04-01: Patrones de negación para reducir falsos positivos
+        // Si un keyword match aparece dentro de una frase negada, degradar a 'review'
+        const NEGATION_PATTERNS = [
+            /no\s+(es\s+)?necesari[oa]\s+ajust/i,
+            /no\s+se\s+(ha\s+)?observad/i,
+            /no\s+requiere\s+ajuste/i,
+            /sin\s+ajuste\s+(de\s+)?dosis/i,
+            /no\s+se\s+recomienda\s+ajust/i,
+            /no\s+se\s+dispone\s+de\s+datos/i,
+            /no\s+se\s+han\s+(notificad|comunicad|descrit)/i,
+            /no\s+se\s+ha\s+establecido/i,
+            /puede\s+utilizarse\s+sin\s+ajuste/i,
+            /no\s+es\s+necesari[oa]\s+(una\s+)?reduc/i,
+            /no\s+se\s+consider[ae]\s+necesari/i,
+            /no\s+afecta/i,
+            /no\s+tiene\s+influencia/i
+        ];
+
         // Buscar palabras clave
         for (const keyword of keywords) {
             const index = lowerContent.indexOf(keyword.toLowerCase());
@@ -2264,7 +2506,24 @@ class CimaAPI {
                 const end = Math.min(plainText.length, index + keyword.length + 100);
                 const excerpt = '...' + plainText.substring(start, end).trim() + '...';
 
-                // Determinar si es contraindicación (usando el texto original para contexto amplio si fuera necesario, pero el plainText vale)
+                // Extraer la frase que contiene el match (ventana de ~120 chars alrededor)
+                const sentenceStart = Math.max(0, index - 80);
+                const sentenceEnd = Math.min(lowerContent.length, index + keyword.length + 80);
+                const sentenceContext = lowerContent.substring(sentenceStart, sentenceEnd);
+
+                // Comprobar si el match está negado
+                const isNegated = NEGATION_PATTERNS.some(pattern => pattern.test(sentenceContext));
+
+                if (isNegated) {
+                    // Match negado: degradar a 'review' en vez de warning/danger
+                    return {
+                        status: 'review',
+                        message: 'Mencionado sin contraindicación aparente — revisar texto',
+                        excerpt
+                    };
+                }
+
+                // Determinar si es contraindicación
                 const isContraindicated = lowerContent.includes('contraindica') ||
                     lowerContent.includes('no debe') ||
                     lowerContent.includes('está contraindicado');

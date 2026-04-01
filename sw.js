@@ -2,7 +2,7 @@
 // Network-first strategy for active development + PWA support
 
 // Auto-versioning: includes date for cache-busting on deploy
-const VERSION = '20260329b';
+const VERSION = '20260401a';
 const CACHE_NAME = `medcheck-${VERSION}`;
 
 // Install event — sin precache: NETWORK-FIRST ya cachea dinámicamente.
