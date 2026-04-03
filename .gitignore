@@ -52,6 +52,9 @@ documentos/
 # Nomenclátor AEMPS y datos pesados (no subir)
 docs/medcheck/data/
 
+# Documentación técnica local (canónica en OneDrive/GITHUB/ernestobarreragithubio-documentos/)
+docs/MEDCHECK_API.md
+
 # =====================================================
 # PROTECCIÓN: Documentos privados, PDFs con copyright
 # =====================================================
