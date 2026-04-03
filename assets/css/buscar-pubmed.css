@@ -50,6 +50,35 @@ body {
   margin-bottom: 0.5rem;
 }
 
+.kofi-hero-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: rgba(251, 191, 36, 0.07);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  border-radius: 6px;
+  padding: 0.45rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.kofi-hero-text {
+  font-size: 0.88rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.kofi-hero-text i {
+  color: #fbbf24;
+  margin-right: 0.3rem;
+}
+
+@media (max-width: 600px) {
+  .kofi-hero-banner {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
 .search-box {
   background: var(--card-bg, #2a3b4d);
   padding: 1rem;
