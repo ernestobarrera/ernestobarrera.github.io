@@ -1,15 +1,37 @@
-## MedCheck
+# Herramientas clínicas y utilidades
 
-Herramienta clínica desarrollada por el autor para consulta de información de medicamentos a partir de fuentes de AEMPS/CIMA.
+Repositorio que agrupa distintas herramientas y prototipos relacionados con práctica clínica,
+búsqueda bibliográfica y apoyo a la toma de decisiones.
 
-### Uso y reutilización
+## Licencia y condiciones de uso
 
-El código fuente de este repositorio, incluyendo `medcheck.html`, `buscar-pubmed.html` y los archivos relacionados, es de uso reservado.
+Salvo indicación expresa en archivos concretos, el contenido de este repositorio puede
+consultarse libremente. La reutilización debe respetar la autoría y el contexto original.
 
-**© 2024-2026 Ernesto Barrera.**
+### Archivos con uso restringido
 
-La publicación de este repositorio no implica autorización para copiar, redistribuir, modificar, reutilizar de forma sustancial ni desplegar el código por terceros sin autorización previa y por escrito del autor.
+Los siguientes archivos tienen condiciones específicas y **no se autoriza su reutilización
+ni redistribución sin permiso expreso del autor**:
 
-La información mostrada por la aplicación puede proceder de fuentes públicas de la AEMPS/CIMA y está sujeta, en su caso, a sus propias condiciones de uso y actualización.
+- `medcheck.html`
+- `buscar-pubmed.html`
 
-Este proyecto es independiente y no constituye un producto oficial de la AEMPS ni de CIMA.
+Estos archivos se publican únicamente para su uso funcional en las versiones desplegadas
+por el autor, con fines de validación. La publicación en este repositorio no implica autorización para:
+
+- copiar el código
+- redistribuirlo
+- modificarlo
+- desplegar instancias propias
+- crear herramientas derivadas sustancialmente equivalentes
+
+**© 2024-2026 Ernesto Barrera**
+
+## Fuentes de datos
+
+Algunas herramientas utilizan información procedente de fuentes públicas, incluyendo
+AEMPS/CIMA. Dicha información puede estar sujeta a sus propias condiciones de uso y
+actualización.
+
+Este repositorio contiene proyectos independientes y no constituye software oficial de
+ninguna institución.
