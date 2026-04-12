@@ -537,15 +537,15 @@ class MedCheckApp {
                         </label>
                         <label class="search-option" title="Solo genéricos">
                             <input type="checkbox" id="filter-generic" ${genericChecked}>
-                            <span>Genérico</span>
+                            <span>Genérico <span id="cnt-generic" class="chip-count" style="font-size:0.7rem;opacity:0.7;"></span></span>
                         </label>
                         <label class="search-option" title="Solo con prescripción">
                             <input type="checkbox" id="filter-receta" ${recetaChecked}>
-                            <span>Receta</span>
+                            <span>Receta <span id="cnt-receta" class="chip-count" style="font-size:0.7rem;opacity:0.7;"></span></span>
                         </label>
                         <label class="search-option" title="Solo biosimilares">
                             <input type="checkbox" id="filter-biosimilar" ${biosimilarChecked}>
-                            <span>Biosimilar</span>
+                            <span>Biosimilar <span id="cnt-biosimilar" class="chip-count" style="font-size:0.7rem;opacity:0.7;"></span></span>
                         </label>
                     </div>
                     <button id="search-btn" class="search-btn">Buscar</button>
@@ -727,6 +727,12 @@ class MedCheckApp {
             // Crear una copia para trabajar
             let displayResults = [...rawData.resultados];
             let totalFilas = rawData.totalFilas;
+
+            // Update filter counts from raw results (before client-side filters)
+            const _setCount = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n > 0 ? n : ''; };
+            _setCount('cnt-generic', rawData.resultados.filter(m => m.generico).length);
+            _setCount('cnt-receta', rawData.resultados.filter(m => m.receta).length);
+            _setCount('cnt-biosimilar', rawData.resultados.filter(m => m.biosimilar).length);
 
             // Filtrar genéricos en cliente si está activo
             if (this.lastSearchFilters.generic) {
