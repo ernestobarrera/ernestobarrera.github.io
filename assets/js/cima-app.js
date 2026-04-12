@@ -6533,15 +6533,18 @@ ${materialesPlaceholder}
                     </div>
                     ` : ''}
                     ${showEFG && (efgCount > 0 || recetaCount > 0 || biosimilarCount > 0) ? `
-                    <div class="control-section">
-                        ${efgCount > 0 ? `<label class="efg-toggle ${this.filterState.efgOnly ? 'active' : ''}" id="efg-toggle" title="Mostrar solo genéricos (${efgCount} disponibles)">
-                            <i class="fas fa-capsules"></i> EFG <span class="chip-count">${efgCount}</span>
+                    <div class="control-section" style="gap:var(--space-md);">
+                        ${efgCount > 0 ? `<label class="search-option" title="Solo genéricos">
+                            <input type="checkbox" id="efg-filter" ${this.filterState.efgOnly ? 'checked' : ''}>
+                            <span>Genérico <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${efgCount}</span></span>
                         </label>` : ''}
-                        ${recetaCount > 0 ? `<label class="efg-toggle ${this.filterState.recetaOnly ? 'active' : ''}" id="receta-toggle" title="Mostrar solo con receta (${recetaCount} disponibles)">
-                            <i class="fas fa-file-prescription"></i> Receta <span class="chip-count">${recetaCount}</span>
+                        ${recetaCount > 0 ? `<label class="search-option" title="Solo con receta">
+                            <input type="checkbox" id="receta-filter" ${this.filterState.recetaOnly ? 'checked' : ''}>
+                            <span>Receta <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${recetaCount}</span></span>
                         </label>` : ''}
-                        ${biosimilarCount > 0 ? `<label class="efg-toggle ${this.filterState.biosimilarOnly ? 'active' : ''}" id="biosimilar-toggle" title="Mostrar solo biosimilares (${biosimilarCount} disponibles)">
-                            <i class="fas fa-dna"></i> Biosimilar <span class="chip-count">${biosimilarCount}</span>
+                        ${biosimilarCount > 0 ? `<label class="search-option" title="Solo biosimilares">
+                            <input type="checkbox" id="biosimilar-filter" ${this.filterState.biosimilarOnly ? 'checked' : ''}>
+                            <span>Biosimilar <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${biosimilarCount}</span></span>
                         </label>` : ''}
                     </div>
                     ` : ''}
@@ -6987,27 +6990,18 @@ ${materialesPlaceholder}
         });
 
         // EFG toggle
-        const efgToggle = document.getElementById('efg-toggle');
-        if (efgToggle) {
-            efgToggle.addEventListener('click', () => {
-                this.filterState.efgOnly = !this.filterState.efgOnly;
-                this.displayGroupedIndicationResults(data, searchQuery);
-            });
-        }
-        const recetaToggle = document.getElementById('receta-toggle');
-        if (recetaToggle) {
-            recetaToggle.addEventListener('click', () => {
-                this.filterState.recetaOnly = !this.filterState.recetaOnly;
-                this.displayGroupedIndicationResults(data, searchQuery);
-            });
-        }
-        const biosimilarToggle = document.getElementById('biosimilar-toggle');
-        if (biosimilarToggle) {
-            biosimilarToggle.addEventListener('click', () => {
-                this.filterState.biosimilarOnly = !this.filterState.biosimilarOnly;
-                this.displayGroupedIndicationResults(data, searchQuery);
-            });
-        }
+        document.getElementById('efg-filter')?.addEventListener('change', (e) => {
+            this.filterState.efgOnly = e.target.checked;
+            this.displayGroupedIndicationResults(data, searchQuery);
+        });
+        document.getElementById('receta-filter')?.addEventListener('change', (e) => {
+            this.filterState.recetaOnly = e.target.checked;
+            this.displayGroupedIndicationResults(data, searchQuery);
+        });
+        document.getElementById('biosimilar-filter')?.addEventListener('change', (e) => {
+            this.filterState.biosimilarOnly = e.target.checked;
+            this.displayGroupedIndicationResults(data, searchQuery);
+        });
 
         // Clear filters button
         const clearBtn = document.getElementById('clear-filters-btn');
