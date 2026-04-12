@@ -36,7 +36,7 @@ class MedCheckApp {
         // Search State Persistence
         this.lastSearchQuery = '';
         this.lastSearchResults = null;
-        this.lastSearchFilters = { comerc: true, generic: false, receta: false };
+        this.lastSearchFilters = { comerc: true, generic: false, receta: false, biosimilar: false };
 
         // Indication Search State Persistence
         this.lastIndicationQuery = '';
@@ -515,6 +515,7 @@ class MedCheckApp {
         const comercChecked = this.lastSearchFilters.comerc ? 'checked' : '';
         const genericChecked = this.lastSearchFilters.generic ? 'checked' : '';
         const recetaChecked = this.lastSearchFilters.receta ? 'checked' : '';
+        const biosimilarChecked = this.lastSearchFilters.biosimilar ? 'checked' : '';
         const showBrandsChecked = this.lastSearchFilters.showBrands ? 'checked' : '';
 
         this.content.innerHTML = `
@@ -541,6 +542,10 @@ class MedCheckApp {
                         <label class="search-option" title="Solo con prescripción">
                             <input type="checkbox" id="filter-receta" ${recetaChecked}>
                             <span>Receta</span>
+                        </label>
+                        <label class="search-option" title="Solo biosimilares">
+                            <input type="checkbox" id="filter-biosimilar" ${biosimilarChecked}>
+                            <span>Biosimilar</span>
                         </label>
                     </div>
                     <button id="search-btn" class="search-btn">Buscar</button>
@@ -631,6 +636,9 @@ class MedCheckApp {
         document.getElementById('filter-receta')?.addEventListener('change', () => {
             if (this.lastSearchQuery) this.performSearch();
         });
+        document.getElementById('filter-biosimilar')?.addEventListener('change', () => {
+            if (this.lastSearchQuery) this.performSearch();
+        });
         filterShowBrands?.addEventListener('change', () => {
             if (this.lastSearchQuery) this.performSearch();
         });
@@ -672,6 +680,7 @@ class MedCheckApp {
             comerc: document.getElementById('filter-comerc').checked,
             generic: document.getElementById('filter-generic').checked,
             receta: document.getElementById('filter-receta').checked,
+            biosimilar: document.getElementById('filter-biosimilar')?.checked || false,
             showBrands: document.getElementById('filter-show-brands')?.checked || false
         };
 
@@ -728,6 +737,12 @@ class MedCheckApp {
             // Filtrar por receta en cliente si está activo
             if (this.lastSearchFilters.receta) {
                 displayResults = displayResults.filter(med => med.receta === true);
+                totalFilas = displayResults.length;
+            }
+
+            // Filtrar biosimilares en cliente si está activo
+            if (this.lastSearchFilters.biosimilar) {
+                displayResults = displayResults.filter(med => med.biosimilar === true);
                 totalFilas = displayResults.length;
             }
 
@@ -4558,6 +4573,9 @@ class MedCheckApp {
             // The detail endpoint may not return these flags — fall back to search result cache
             // nregistro may be string (dataset) while cache key may be number (API) — check both
             const cachedMed = this._medRenderCache.get(nregistro) ?? this._medRenderCache.get(+nregistro);
+            // Enrich med with flags the detail endpoint may not return
+            if (cachedMed?.notas && !med.notas) med.notas = cachedMed.notas;
+            if (cachedMed?.materialesInf && !med.materialesInf) med.materialesInf = cachedMed.materialesInf;
             // If caller explicitly requested alerts tab, trust that alerts exist (badge only shows when notas=true)
             const hasAempsAlerts = initialTab === 'alerts' || med.notas || cachedMed?.notas;
             const hasMateriales = med.materialesInf || cachedMed?.materialesInf;
@@ -4581,6 +4599,19 @@ class MedCheckApp {
                        <i class="fas fa-search-plus"></i> ${imageCount}
                    </span>`
                 : '';
+
+            // Dot indicator on Documentos tab if FT updated within last year
+            let ftRecentDot = '';
+            if (med.docs) {
+                const ftDoc = med.docs.find(d => d.tipo === 1);
+                if (ftDoc?.fecha) {
+                    const oneYearAgo = new Date();
+                    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                    if (new Date(ftDoc.fecha) > oneYearAgo) {
+                        ftRecentDot = ' <span style="display:inline-block;width:6px;height:6px;background:var(--primary);border-radius:50%;vertical-align:middle;margin-left:3px;" title="Ficha Técnica actualizada en el último año"></span>';
+                    }
+                }
+            }
 
             this.modalBody.innerHTML = `
     <div class="modal-header">
@@ -4609,7 +4640,7 @@ class MedCheckApp {
                     <button class="modal-tab ${isInteractionsActive ? 'active' : ''}" data-tab="interactions">Interacciones</button>
                     <button class="modal-tab ${isAdverseActive ? 'active' : ''}" data-tab="adverse">Reacciones</button>
                     <button class="modal-tab ${isSafetyActive ? 'active' : ''}" data-tab="safety">Seguridad</button>
-                    <button class="modal-tab ${isDocsActive ? 'active' : ''}" data-tab="docs">Documentos</button>
+                    <button class="modal-tab ${isDocsActive ? 'active' : ''}" data-tab="docs">Documentos${ftRecentDot}</button>
                     ${hasAempsAlerts ? `<button class="modal-tab alert-pulse ${isAlertsActive ? 'active' : ''}" data-tab="alerts"><i class="fas fa-exclamation-triangle"></i> Alertas AEMPS</button>` : ''}
                 </div>
 
@@ -4701,6 +4732,7 @@ class MedCheckApp {
         if (med.triangulo) alerts.push('<span class="badge badge-danger" title="Triángulo negro">▲ Vigilancia adicional</span>');
         if (med.psum) alerts.push('<span class="badge badge-danger"><i class="fas fa-boxes"></i> Problema suministro</span>');
         if (med.conduc) alerts.push('<span class="badge badge-warning"><i class="fas fa-car"></i> Afecta conducción</span>');
+        if (med.materialesInf) alerts.push('<span class="badge badge-info badge-clickable" title="Hay materiales informativos — ver pestaña Documentos" onclick="document.querySelector(\'.modal-tab[data-tab=\\\"docs\\\"]\')?.click()"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
 
         const alertsHtml = alerts.length > 0
             ? `<div class="mb-md" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"> ${alerts.join('')}</div> `
@@ -4893,8 +4925,30 @@ class MedCheckApp {
             ? `<div id="docs-materiales"><p class="text-muted" style="padding:0.75rem 0"><i class="fas fa-spinner fa-spin"></i> Cargando materiales...</p></div>`
             : '';
 
+        // Fecha de actualización de la Ficha Técnica con cálculo relativo
+        let ftFechaDocsHtml = '';
+        if (med.docs && med.docs.length > 0) {
+            const ftDoc = med.docs.find(d => d.tipo === 1);
+            if (ftDoc?.fecha) {
+                const ftDate = new Date(ftDoc.fecha);
+                const ftStr = ftDate.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+                const diffDays = Math.floor((Date.now() - ftDate) / 86400000);
+                let relStr;
+                if (diffDays < 30) {
+                    relStr = `hace ${diffDays} día${diffDays !== 1 ? 's' : ''}`;
+                } else if (diffDays < 365) {
+                    const m = Math.floor(diffDays / 30.44);
+                    relStr = `hace ${m} mes${m !== 1 ? 'es' : ''}`;
+                } else {
+                    const y = Math.floor(diffDays / 365.25);
+                    relStr = `hace ${y} año${y !== 1 ? 's' : ''}`;
+                }
+                ftFechaDocsHtml = `<p class="text-muted" style="font-size:0.8rem;padding:0.5rem 0 0.75rem;margin:0;"><i class="fas fa-calendar-alt" style="margin-right:0.35rem;"></i>Ficha Técnica actualizada el <strong>${ftStr}</strong> <span style="opacity:0.75;">(${relStr})</span></p>`;
+            }
+        }
+
         if (!med.docs || med.docs.length === 0) {
-            return materialesPlaceholder || '<p class="text-muted">No hay documentos disponibles</p>';
+            return (ftFechaDocsHtml || '') + (materialesPlaceholder || '<p class="text-muted">No hay documentos disponibles</p>');
         }
 
         const docTypes = {
@@ -4908,6 +4962,7 @@ class MedCheckApp {
         const medNameForSearch = encodeURIComponent(med.nombre.split(' ')[0]);
 
         return `
+${ftFechaDocsHtml}
 <div class="detail-list">
     ${med.docs.map(doc => {
             const type = docTypes[doc.tipo] || { name: 'Documento', icon: 'file' };
