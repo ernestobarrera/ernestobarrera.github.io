@@ -1447,18 +1447,47 @@ class MedCheckApp {
         });
     }
 
-    renderMedCard(med) {
-        // Badges de estado
+    /**
+     * Genera badges de tipología de producto centralizados
+     * Usa campos reales de la API CIMA: biosimilar, nosustituible, ema, cpresc, generico
+     * @param {Object} med - Objeto medicamento de la API
+     * @returns {Array<string>} Array de badges HTML
+     */
+    _renderProductTypeBadges(med) {
         const badges = [];
         if (med.generico) badges.push('<span class="badge badge-success">Genérico</span>');
+        // Biosimilar vs Biológico original: campos API distintos
+        // biosimilar === true → copia biosimilar (Imraldi, Hyrimoz...)
+        // nosustituible.id === 1 && !biosimilar → biológico original (Humira, Enbrel...)
+        if (med.biosimilar) {
+            badges.push('<span class="badge badge-biosimilar" title="Medicamento biosimilar — No sustituible automáticamente"><i class="fas fa-dna"></i> Biosimilar</span>');
+        } else if (med.nosustituible && med.nosustituible.id === 1) {
+            badges.push('<span class="badge badge-purple" title="Medicamento biológico original — No sustituible automáticamente"><i class="fas fa-microscope"></i> Biológico</span>');
+        }
+        // Registro centralizado EMA
+        if (med.ema) badges.push('<span class="badge badge-ema" title="Autorizado por procedimiento centralizado de la EMA"><i class="fas fa-globe-europe"></i> EMA</span>');
+        // Condiciones de prescripción (cpresc)
+        if (med.cpresc) {
+            const cp = med.cpresc.toLowerCase();
+            if (cp.includes('uso hospitalario')) {
+                badges.push('<span class="badge badge-hospital" title="Uso Hospitalario — Solo dispensable en farmacia hospitalaria"><i class="fas fa-hospital"></i> H</span>');
+            } else if (cp.includes('diagnóstico hospitalario') || cp.includes('diagnostico hospitalario')) {
+                badges.push('<span class="badge badge-hospital" title="Diagnóstico Hospitalario — Prescripción iniciada en hospital"><i class="fas fa-hospital-alt"></i> DH</span>');
+            }
+        }
+        if (med.huerfano) badges.push('<span class="badge badge-info" title="Medicamento huérfano — indicación rara"><i class="fas fa-star"></i> Huérfano</span>');
+        return badges;
+    }
+
+    renderMedCard(med) {
+        // Badges de estado — tipología de producto centralizada
+        const badges = [...this._renderProductTypeBadges(med)];
         if (med.receta) badges.push('<span class="badge badge-info">Receta</span>');
         if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro - Vigilancia adicional">▲ Vigilancia</span>');
         if (med.psum) {
             // Always make badge clickable using nregistro (ATC might not be available in search results)
             badges.push(`<span class="badge badge-danger badge-clickable" title="Sin stock - Click para ver alternativas" onclick="event.stopPropagation(); app.showSupplyAlternativesByNregistro('${med.nregistro}', '${med.nombre.replace(/'/g, "\\'")}')"><i class="fas fa-exclamation-triangle"></i> Sin stock</span>`);
         }
-        if (med.huerfano) badges.push('<span class="badge badge-info">Huérfano</span>');
-        if (med.bioSimil) badges.push('<span class="badge badge-purple" title="Medicamento biológico/biosimilar">Biológico</span>');
         if (med.estupiTemp) badges.push('<span class="badge badge-dark" title="Estupefaciente - Receta especial">⚠ Estupef.</span>');
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
         // Notas de seguridad oficiales de la AEMPS
@@ -2237,9 +2266,8 @@ class MedCheckApp {
     }
 
     renderIndicationMedCard(med, searchQuery) {
-        // Similar to renderMedCard but with indication highlight
-        const badges = [];
-        if (med.generico) badges.push('<span class="badge badge-success">Genérico</span>');
+        // Badges de estado — tipología de producto centralizada
+        const badges = [...this._renderProductTypeBadges(med)];
         if (med.receta) badges.push('<span class="badge badge-info">Receta</span>');
         if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro">▲ Vigilancia</span>');
         // Badge psum clickable para ver alternativas
@@ -2247,8 +2275,6 @@ class MedCheckApp {
             // Always make badge clickable using nregistro
             badges.push(`<span class="badge badge-danger badge-clickable" title="Sin stock - Click para ver alternativas" onclick="event.stopPropagation(); app.showSupplyAlternativesByNregistro('${med.nregistro}', '${med.nombre.replace(/'/g, "\\'")}')"><i class="fas fa-exclamation-triangle"></i> Sin stock</span>`);
         }
-        if (med.huerfano) badges.push('<span class="badge badge-info">Huérfano</span>');
-        if (med.bioSimil) badges.push('<span class="badge badge-purple" title="Medicamento biológico/biosimilar">Biológico</span>');
         if (med.estupiTemp) badges.push('<span class="badge badge-dark" title="Estupefaciente - Receta especial">⚠ Estupef.</span>');
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
         // Notas de seguridad AEMPS
@@ -4669,18 +4695,123 @@ class MedCheckApp {
         const viaAdmin = med.viasAdministracion?.map(v => v.nombre).join(', ') || '-';
         const numPresentaciones = med.presentaciones?.length || 0;
 
-        // Alertas especiales
-        const alerts = [];
+        // Alertas especiales — tipología de producto centralizada + alertas clínicas
+        const alerts = [...this._renderProductTypeBadges(med)];
         if (med.nosustituible && med.nosustituible.id === 2) alerts.push('<span class="badge badge-nti" title="Estrecho margen terapéutico — No sustituible"><i class="fas fa-exclamation-triangle"></i> NTI — Estrecho margen terapéutico</span>');
         if (med.triangulo) alerts.push('<span class="badge badge-danger" title="Triángulo negro">▲ Vigilancia adicional</span>');
         if (med.psum) alerts.push('<span class="badge badge-danger"><i class="fas fa-boxes"></i> Problema suministro</span>');
         if (med.conduc) alerts.push('<span class="badge badge-warning"><i class="fas fa-car"></i> Afecta conducción</span>');
-        if (med.huerfano) alerts.push('<span class="badge badge-info"><i class="fas fa-star"></i> Huérfano</span>');
-        if (med.biosimilar) alerts.push('<span class="badge badge-info">Biosimilar</span>');
 
         const alertsHtml = alerts.length > 0
             ? `<div class="mb-md" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"> ${alerts.join('')}</div> `
             : '';
+
+        // Condiciones de prescripción (campo cpresc de la API)
+        const cprescHtml = med.cpresc
+            ? `<div class="detail-item">
+                    <span class="detail-label">Prescripción</span>
+                    <span class="detail-value">${med.cpresc}</span>
+               </div>`
+            : '';
+
+        // Laboratorio comercializador (si distinto del titular)
+        const labComercHtml = (med.labcomercializador && med.labcomercializador !== med.labtitular)
+            ? `<div class="detail-item">
+                    <span class="detail-label">Comercializador</span>
+                    <span class="detail-value">${med.labcomercializador}</span>
+               </div>`
+            : '';
+
+        // Fecha última actualización de la Ficha Técnica
+        let ftFechaHtml = '';
+        if (med.docs && med.docs.length > 0) {
+            const ft = med.docs.find(d => d.tipo === 1);
+            if (ft && ft.fecha) {
+                const ftDate = new Date(ft.fecha);
+                const ftStr = ftDate.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
+                ftFechaHtml = `<div class="detail-item">
+                    <span class="detail-label">FT actualizada</span>
+                    <span class="detail-value">${ftStr}</span>
+                </div>`;
+            }
+        }
+
+        // Excipientes de declaración obligatoria (EDO)
+        let excipientesHtml = '';
+        if (med.excipientes && med.excipientes.length > 0) {
+            // Mapa de excipientes clínicamente relevantes (alérgenos / precauciones)
+            const ALLERGEN_KEYWORDS = {
+                'lactosa': { icon: 'fa-cheese', label: 'Lactosa', color: '#f59e0b' },
+                'gluten': { icon: 'fa-bread-slice', label: 'Gluten', color: '#ef4444' },
+                'trigo': { icon: 'fa-bread-slice', label: 'Almidón de trigo', color: '#ef4444' },
+                'aspartamo': { icon: 'fa-exclamation', label: 'Aspartamo (fenilalanina)', color: '#f97316' },
+                'sacarosa': { icon: 'fa-cube', label: 'Sacarosa', color: '#eab308' },
+                'etanol': { icon: 'fa-wine-bottle', label: 'Etanol', color: '#dc2626' },
+                'alcohol': { icon: 'fa-wine-bottle', label: 'Alcohol', color: '#dc2626' },
+                'soja': { icon: 'fa-seedling', label: 'Soja (lecitina)', color: '#f97316' },
+                'cacahuete': { icon: 'fa-seedling', label: 'Cacahuete', color: '#ef4444' },
+                'tartrazina': { icon: 'fa-palette', label: 'Tartrazina (E102)', color: '#f59e0b' },
+                'rojo allura': { icon: 'fa-palette', label: 'Rojo Allura (E129)', color: '#f59e0b' },
+                'parahidroxibenzoato': { icon: 'fa-flask', label: 'Parabenos', color: '#f59e0b' },
+                'sulfito': { icon: 'fa-lungs', label: 'Sulfitos', color: '#ef4444' },
+                'benzoato': { icon: 'fa-flask', label: 'Benzoato sódico', color: '#f59e0b' },
+                'laurilsulfato': { icon: 'fa-flask', label: 'Laurilsulfato sódico', color: '#94a3b8' }
+            };
+
+            const flaggedExcipients = [];
+            const otherExcipients = [];
+
+            for (const exc of med.excipientes) {
+                const name = (exc.nombre || '').toLowerCase();
+                let matched = false;
+                for (const [keyword, meta] of Object.entries(ALLERGEN_KEYWORDS)) {
+                    if (name.includes(keyword)) {
+                        flaggedExcipients.push({
+                            ...meta,
+                            fullName: exc.nombre,
+                            cantidad: exc.cantidad ? `${exc.cantidad} ${exc.unidad || ''}`.trim() : ''
+                        });
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) {
+                    otherExcipients.push(exc);
+                }
+            }
+
+            if (flaggedExcipients.length > 0) {
+                const flaggedChips = flaggedExcipients.map(e =>
+                    `<span class="badge-excipient" style="--exc-color: ${e.color}" title="${e.fullName}${e.cantidad ? ' — ' + e.cantidad : ''}">
+                        <i class="fas ${e.icon}"></i> ${e.label}
+                    </span>`
+                ).join('');
+
+                excipientesHtml = `
+                <div class="detail-section-header mt-md">
+                    <i class="fas fa-flask"></i> Excipientes de Declaración Obligatoria
+                </div>
+                <div class="excipientes-flagged">
+                    ${flaggedChips}
+                </div>
+                ${otherExcipients.length > 0 ? `
+                <details class="excipientes-otros">
+                    <summary>Ver todos los excipientes (${med.excipientes.length})</summary>
+                    <div class="excipientes-list">
+                        ${med.excipientes.map(e => `<span class="excipient-item">${e.nombre}${e.cantidad ? ' <small>' + e.cantidad + ' ' + (e.unidad || '') + '</small>' : ''}</span>`).join(', ')}
+                    </div>
+                </details>` : ''}
+                `;
+            } else if (med.excipientes.length > 0) {
+                excipientesHtml = `
+                <details class="excipientes-otros mt-md">
+                    <summary><i class="fas fa-flask"></i> Excipientes EDO (${med.excipientes.length})</summary>
+                    <div class="excipientes-list">
+                        ${med.excipientes.map(e => `<span class="excipient-item">${e.nombre}${e.cantidad ? ' <small>' + e.cantidad + ' ' + (e.unidad || '') + '</small>' : ''}</span>`).join(', ')}
+                    </div>
+                </details>`;
+            }
+        }
 
         return `
             ${alertsHtml}
@@ -4709,6 +4840,7 @@ class MedCheckApp {
                     <span class="detail-label">Vía administración</span>
                     <span class="detail-value">${viaAdmin}</span>
                 </div>
+                ${cprescHtml}
                 <div class="detail-item">
                     <span class="detail-label">Estado</span>
                     <span class="detail-value">
@@ -4720,6 +4852,11 @@ class MedCheckApp {
                     <span class="detail-value">${med.receta ? 'Sí' : 'No'}</span>
                 </div>
                 <div class="detail-item">
+                    <span class="detail-label">Laboratorio</span>
+                    <span class="detail-value">${med.labtitular || '-'}</span>
+                </div>
+                ${labComercHtml}
+                <div class="detail-item">
                     <span class="detail-label">Presentaciones</span>
                     <span class="detail-value">${numPresentaciones} disponible${numPresentaciones !== 1 ? 's' : ''}</span>
                 </div>
@@ -4727,7 +4864,10 @@ class MedCheckApp {
                     <span class="detail-label">ATC</span>
                     <span class="detail-value" style="text-align: right; font-size: 0.8rem;">${atcs}</span>
                 </div>
+                ${ftFechaHtml}
             </div>
+
+            ${excipientesHtml}
             
             <div class="mt-lg" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                 <button class="btn btn-primary" onclick="app.searchEquivalences('${med.nombre.replace(/'/g, "\\'")}')">

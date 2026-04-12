@@ -939,6 +939,94 @@ body {
     color: #b8860b;
 }
 
+/* Biosimilar — teal/turquesa, distinguible de biológico (púrpura) */
+.badge-biosimilar {
+    background: rgba(20, 184, 166, 0.15);
+    color: #14b8a6;
+}
+
+/* EMA — azul europeo */
+.badge-ema {
+    background: rgba(59, 130, 246, 0.12);
+    color: #60a5fa;
+    font-size: 0.6rem;
+}
+
+/* Hospital (DH / H) — azul oscuro médico */
+.badge-hospital {
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+}
+
+/* ============================================
+   Excipientes de Declaración Obligatoria
+   ============================================ */
+.detail-section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding: var(--space-sm) 0;
+    border-top: 1px solid var(--border-default);
+}
+
+.detail-section-header i {
+    color: var(--text-muted);
+}
+
+.excipientes-flagged {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    padding: var(--space-xs) 0;
+}
+
+.badge-excipient {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: color-mix(in srgb, var(--exc-color) 15%, transparent);
+    color: var(--exc-color);
+    border: 1px solid color-mix(in srgb, var(--exc-color) 30%, transparent);
+}
+
+.badge-excipient i {
+    font-size: 0.65rem;
+}
+
+.excipientes-otros {
+    margin-top: var(--space-xs);
+}
+
+.excipientes-otros summary {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: var(--space-xs) 0;
+}
+
+.excipientes-otros summary:hover {
+    color: var(--text-secondary);
+}
+
+.excipientes-list {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    padding: var(--space-sm) 0;
+}
+
+.excipientes-list small {
+    color: var(--text-muted);
+    font-size: 0.65rem;
+}
+
 /* ============================================
    Compact Interaction Layout
    ============================================ */
