@@ -41,7 +41,6 @@ class MedCheckApp {
         // Indication Search State Persistence
         this.lastIndicationQuery = '';
         this.lastIndicationResults = null;
-        this.lastIndicationFilters = { comerc: true, generic: false, receta: false, biosimilar: false };
 
         // Current state
         this.currentView = 'search';
@@ -1673,24 +1672,6 @@ class MedCheckApp {
                         <button id="indication-btn" class="search-btn">Buscar</button>
                         <div id="autocomplete-results" class="autocomplete-dropdown hidden"></div>
                     </div>
-                    <div class="search-options">
-                        <label class="search-option" title="Solo comercializados">
-                            <input type="checkbox" id="ind-filter-comerc" ${this.lastIndicationFilters.comerc ? 'checked' : ''}>
-                            <span>Comercializado</span>
-                        </label>
-                        <label class="search-option" title="Solo genéricos">
-                            <input type="checkbox" id="ind-filter-generic" ${this.lastIndicationFilters.generic ? 'checked' : ''}>
-                            <span>Genérico</span>
-                        </label>
-                        <label class="search-option" title="Solo con prescripción">
-                            <input type="checkbox" id="ind-filter-receta" ${this.lastIndicationFilters.receta ? 'checked' : ''}>
-                            <span>Receta</span>
-                        </label>
-                        <label class="search-option" title="Solo biosimilares">
-                            <input type="checkbox" id="ind-filter-biosimilar" ${this.lastIndicationFilters.biosimilar ? 'checked' : ''}>
-                            <span>Biosimilar</span>
-                        </label>
-                    </div>
                     <div class="indication-chips-inline">
                         ${chipsHtml}
                     </div>
@@ -1721,13 +1702,6 @@ class MedCheckApp {
             setTimeout(() => {
                 document.getElementById('autocomplete-results')?.classList.add('hidden');
             }, 200);
-        });
-
-        // Indication filter checkboxes — re-run search immediately if there are results
-        ['ind-filter-comerc', 'ind-filter-generic', 'ind-filter-receta', 'ind-filter-biosimilar'].forEach(id => {
-            document.getElementById(id)?.addEventListener('change', () => {
-                if (this.lastIndicationQuery) this.performIndicationSearch();
-            });
         });
 
         // Chip click handlers
@@ -2192,14 +2166,8 @@ class MedCheckApp {
         this.lastATCCode = null;
         this.lastATCBreadcrumb = [];
 
-        // Save query and filter state for persistence
+        // Save query for persistence
         this.lastIndicationQuery = query;
-        this.lastIndicationFilters = {
-            comerc: document.getElementById('ind-filter-comerc')?.checked ?? true,
-            generic: document.getElementById('ind-filter-generic')?.checked || false,
-            receta: document.getElementById('ind-filter-receta')?.checked || false,
-            biosimilar: document.getElementById('ind-filter-biosimilar')?.checked || false
-        };
 
         const resultsContainer = document.getElementById('indication-results');
         resultsContainer.innerHTML = `
@@ -2210,7 +2178,7 @@ class MedCheckApp {
         `;
 
         try {
-            const data = await this.api.searchByIndication(query, { comercializados: this.lastIndicationFilters.comerc });
+            const data = await this.api.searchByIndication(query, { comercializados: true });
 
             if (data.noMatch) {
                 // No dictionary match found
@@ -2243,25 +2211,12 @@ class MedCheckApp {
                 return;
             }
 
-            // Apply client-side filters
-            let displayResults = data.resultados;
-            if (this.lastIndicationFilters.generic) {
-                displayResults = displayResults.filter(med => med.generico === true);
-            }
-            if (this.lastIndicationFilters.receta) {
-                displayResults = displayResults.filter(med => med.receta === true);
-            }
-            if (this.lastIndicationFilters.biosimilar) {
-                displayResults = displayResults.filter(med => med.biosimilar === true);
-            }
-            const filteredData = { ...data, resultados: displayResults, totalFilas: displayResults.length };
-
             // Save for persistence
             this.groupingState.collapsedGroups.clear();
             this.groupingState.expandedGroups.clear();
-            this.lastIndicationResults = filteredData;
+            this.lastIndicationResults = data;
 
-            this.displayIndicationResults(filteredData, query);
+            this.displayIndicationResults(data, query);
 
         } catch (error) {
             console.error('Indication search error:', error);
@@ -6510,10 +6465,12 @@ ${materialesPlaceholder}
 
         // EFG count (only computed when needed)
         const efgCount = showEFG ? sourceForFilters.filter(m => m.generico).length : 0;
+        const recetaCount = showEFG ? sourceForFilters.filter(m => m.receta).length : 0;
+        const biosimilarCount = showEFG ? sourceForFilters.filter(m => m.biosimilar).length : 0;
 
         // Initialize filter state if needed
         if (!this.filterState) {
-            this.filterState = { form: null, lab: null, doses: new Set(), efgOnly: false };
+            this.filterState = { form: null, lab: null, doses: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false };
         }
 
         // Build form dropdown options (top 10)
@@ -6539,7 +6496,9 @@ ${materialesPlaceholder}
             (this.filterState.doses?.size || 0) +
             (this.groupingState.routeFilters?.size || 0) +
             (this.groupingState.activeIngredientFilters?.size || 0) +
-            (this.filterState.efgOnly ? 1 : 0);
+            (this.filterState.efgOnly ? 1 : 0) +
+            (this.filterState.recetaOnly ? 1 : 0) +
+            (this.filterState.biosimilarOnly ? 1 : 0);
 
         return `
             <div class="results-control-bar">
@@ -6573,11 +6532,17 @@ ${materialesPlaceholder}
                         ` : ''}
                     </div>
                     ` : ''}
-                    ${showEFG && efgCount > 0 ? `
+                    ${showEFG && (efgCount > 0 || recetaCount > 0 || biosimilarCount > 0) ? `
                     <div class="control-section">
-                        <label class="efg-toggle ${this.filterState.efgOnly ? 'active' : ''}" id="efg-toggle" title="Mostrar solo genéricos (${efgCount} disponibles)">
-                            <i class="fas fa-capsules"></i> Solo EFG <span class="chip-count">${efgCount}</span>
-                        </label>
+                        ${efgCount > 0 ? `<label class="efg-toggle ${this.filterState.efgOnly ? 'active' : ''}" id="efg-toggle" title="Mostrar solo genéricos (${efgCount} disponibles)">
+                            <i class="fas fa-capsules"></i> EFG <span class="chip-count">${efgCount}</span>
+                        </label>` : ''}
+                        ${recetaCount > 0 ? `<label class="efg-toggle ${this.filterState.recetaOnly ? 'active' : ''}" id="receta-toggle" title="Mostrar solo con receta (${recetaCount} disponibles)">
+                            <i class="fas fa-file-prescription"></i> Receta <span class="chip-count">${recetaCount}</span>
+                        </label>` : ''}
+                        ${biosimilarCount > 0 ? `<label class="efg-toggle ${this.filterState.biosimilarOnly ? 'active' : ''}" id="biosimilar-toggle" title="Mostrar solo biosimilares (${biosimilarCount} disponibles)">
+                            <i class="fas fa-dna"></i> Biosimilar <span class="chip-count">${biosimilarCount}</span>
+                        </label>` : ''}
                     </div>
                     ` : ''}
                     <div class="control-section results-info">
@@ -6907,6 +6872,12 @@ ${materialesPlaceholder}
         if (this.filterState?.efgOnly) {
             baseResults = baseResults.filter(med => med.generico);
         }
+        if (this.filterState?.recetaOnly) {
+            baseResults = baseResults.filter(med => med.receta);
+        }
+        if (this.filterState?.biosimilarOnly) {
+            baseResults = baseResults.filter(med => med.biosimilar);
+        }
 
         // Extract chips from cross-filtered subsets for correct faceted counts
         const routes = this.extractUniqueRoutes(applyPAFilter(baseResults));
@@ -7023,12 +6994,26 @@ ${materialesPlaceholder}
                 this.displayGroupedIndicationResults(data, searchQuery);
             });
         }
+        const recetaToggle = document.getElementById('receta-toggle');
+        if (recetaToggle) {
+            recetaToggle.addEventListener('click', () => {
+                this.filterState.recetaOnly = !this.filterState.recetaOnly;
+                this.displayGroupedIndicationResults(data, searchQuery);
+            });
+        }
+        const biosimilarToggle = document.getElementById('biosimilar-toggle');
+        if (biosimilarToggle) {
+            biosimilarToggle.addEventListener('click', () => {
+                this.filterState.biosimilarOnly = !this.filterState.biosimilarOnly;
+                this.displayGroupedIndicationResults(data, searchQuery);
+            });
+        }
 
         // Clear filters button
         const clearBtn = document.getElementById('clear-filters-btn');
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
-                this.filterState = { form: null, lab: null, doses: new Set(), efgOnly: false };
+                this.filterState = { form: null, lab: null, doses: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false };
                 this.groupingState.routeFilters.clear();
                 this.groupingState.activeIngredientFilters.clear();
                 this.displayGroupedIndicationResults(data, searchQuery);
