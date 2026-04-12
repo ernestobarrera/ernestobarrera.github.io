@@ -41,6 +41,7 @@ class MedCheckApp {
         // Indication Search State Persistence
         this.lastIndicationQuery = '';
         this.lastIndicationResults = null;
+        this.lastIndicationFilters = { comerc: true, generic: false, receta: false, biosimilar: false };
 
         // Current state
         this.currentView = 'search';
@@ -1665,12 +1666,30 @@ class MedCheckApp {
                     </h3>
                     <div class="search-input-wrapper">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="indication-input" class="search-input" 
+                        <input type="text" id="indication-input" class="search-input"
                                placeholder="Ej: hipertensión, diabetes..."
                                value="${this.lastIndicationQuery}"
                                autocomplete="off">
                         <button id="indication-btn" class="search-btn">Buscar</button>
                         <div id="autocomplete-results" class="autocomplete-dropdown hidden"></div>
+                    </div>
+                    <div class="search-options">
+                        <label class="search-option" title="Solo comercializados">
+                            <input type="checkbox" id="ind-filter-comerc" ${this.lastIndicationFilters.comerc ? 'checked' : ''}>
+                            <span>Comercializado</span>
+                        </label>
+                        <label class="search-option" title="Solo genéricos">
+                            <input type="checkbox" id="ind-filter-generic" ${this.lastIndicationFilters.generic ? 'checked' : ''}>
+                            <span>Genérico</span>
+                        </label>
+                        <label class="search-option" title="Solo con prescripción">
+                            <input type="checkbox" id="ind-filter-receta" ${this.lastIndicationFilters.receta ? 'checked' : ''}>
+                            <span>Receta</span>
+                        </label>
+                        <label class="search-option" title="Solo biosimilares">
+                            <input type="checkbox" id="ind-filter-biosimilar" ${this.lastIndicationFilters.biosimilar ? 'checked' : ''}>
+                            <span>Biosimilar</span>
+                        </label>
                     </div>
                     <div class="indication-chips-inline">
                         ${chipsHtml}
@@ -1702,6 +1721,13 @@ class MedCheckApp {
             setTimeout(() => {
                 document.getElementById('autocomplete-results')?.classList.add('hidden');
             }, 200);
+        });
+
+        // Indication filter checkboxes — re-run search immediately if there are results
+        ['ind-filter-comerc', 'ind-filter-generic', 'ind-filter-receta', 'ind-filter-biosimilar'].forEach(id => {
+            document.getElementById(id)?.addEventListener('change', () => {
+                if (this.lastIndicationQuery) this.performIndicationSearch();
+            });
         });
 
         // Chip click handlers
@@ -2166,8 +2192,14 @@ class MedCheckApp {
         this.lastATCCode = null;
         this.lastATCBreadcrumb = [];
 
-        // Save query for persistence
+        // Save query and filter state for persistence
         this.lastIndicationQuery = query;
+        this.lastIndicationFilters = {
+            comerc: document.getElementById('ind-filter-comerc')?.checked ?? true,
+            generic: document.getElementById('ind-filter-generic')?.checked || false,
+            receta: document.getElementById('ind-filter-receta')?.checked || false,
+            biosimilar: document.getElementById('ind-filter-biosimilar')?.checked || false
+        };
 
         const resultsContainer = document.getElementById('indication-results');
         resultsContainer.innerHTML = `
@@ -2178,7 +2210,7 @@ class MedCheckApp {
         `;
 
         try {
-            const data = await this.api.searchByIndication(query, { comercializados: true });
+            const data = await this.api.searchByIndication(query, { comercializados: this.lastIndicationFilters.comerc });
 
             if (data.noMatch) {
                 // No dictionary match found
@@ -2211,12 +2243,25 @@ class MedCheckApp {
                 return;
             }
 
+            // Apply client-side filters
+            let displayResults = data.resultados;
+            if (this.lastIndicationFilters.generic) {
+                displayResults = displayResults.filter(med => med.generico === true);
+            }
+            if (this.lastIndicationFilters.receta) {
+                displayResults = displayResults.filter(med => med.receta === true);
+            }
+            if (this.lastIndicationFilters.biosimilar) {
+                displayResults = displayResults.filter(med => med.biosimilar === true);
+            }
+            const filteredData = { ...data, resultados: displayResults, totalFilas: displayResults.length };
+
             // Save for persistence
             this.groupingState.collapsedGroups.clear();
             this.groupingState.expandedGroups.clear();
-            this.lastIndicationResults = data;
+            this.lastIndicationResults = filteredData;
 
-            this.displayIndicationResults(data, query);
+            this.displayIndicationResults(filteredData, query);
 
         } catch (error) {
             console.error('Indication search error:', error);
