@@ -1506,7 +1506,6 @@ class MedCheckApp {
     renderMedCard(med) {
         // Badges de estado — tipología de producto centralizada
         const badges = [...this._renderProductTypeBadges(med)];
-        if (!med.comerc) badges.push('<span class="badge badge-secondary" title="Medicamento no comercializado actualmente">No comerc.</span>');
         if (med.receta) badges.push('<span class="badge badge-info">Receta</span>');
         if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro - Vigilancia adicional">▲ Vigilancia</span>');
         if (med.psum) {
@@ -1588,7 +1587,7 @@ class MedCheckApp {
                     </div>
                     <div class="med-info-content">
                         <div class="result-card-header">
-                            <span class="result-card-title">${med.nombre}</span>
+                            <span class="result-card-title"${!med.comerc ? ' style="color:#9ca3af;"' : ''}>${med.nombre}</span>
                             <button class="fav-star-btn ${isFav ? 'active' : ''}"
                                 onclick="event.stopPropagation(); app.toggleFavoriteById('${med.nregistro}', this); app.updateFavoritesBadge();"
                                 title="${isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}">
@@ -2371,7 +2370,7 @@ class MedCheckApp {
                     </div>
                     <div class="med-info-content">
                         <div class="result-card-header">
-                            <span class="result-card-title">${med.nombre}</span>
+                            <span class="result-card-title"${!med.comerc ? ' style="color:#9ca3af;"' : ''}>${med.nombre}</span>
                             <button class="fav-star-btn ${isFav ? 'active' : ''}"
                                 onclick="event.stopPropagation(); app.toggleFavoriteById('${med.nregistro}', this); app.updateFavoritesBadge();"
                                 title="${isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}">
