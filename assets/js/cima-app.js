@@ -533,7 +533,7 @@ class MedCheckApp {
                     <div class="search-options">
                         <label class="search-option" title="Solo comercializados">
                             <input type="checkbox" id="filter-comerc" ${comercChecked}>
-                            <span>Comercializado</span>
+                            <span>Comercializado <span id="cnt-comerc" class="chip-count" style="font-size:0.7rem;opacity:0.7;"></span></span>
                         </label>
                         <label class="search-option" title="Solo genéricos">
                             <input type="checkbox" id="filter-generic" ${genericChecked}>
@@ -733,6 +733,9 @@ class MedCheckApp {
             _setCount('cnt-generic', rawData.resultados.filter(m => m.generico).length);
             _setCount('cnt-receta', rawData.resultados.filter(m => m.receta).length);
             _setCount('cnt-biosimilar', rawData.resultados.filter(m => m.biosimilar).length);
+            // Contador comerc: solo significativo cuando el filtro está desactivado
+            // (si está activo, todos los resultados ya son comercializados → ocultar)
+            _setCount('cnt-comerc', this.lastSearchFilters.comerc ? 0 : rawData.resultados.filter(m => m.comerc).length);
 
             // Filtrar genéricos en cliente si está activo
             if (this.lastSearchFilters.generic) {
@@ -1503,6 +1506,7 @@ class MedCheckApp {
     renderMedCard(med) {
         // Badges de estado — tipología de producto centralizada
         const badges = [...this._renderProductTypeBadges(med)];
+        if (!med.comerc) badges.push('<span class="badge badge-secondary" title="Medicamento no comercializado actualmente">No comerc.</span>');
         if (med.receta) badges.push('<span class="badge badge-info">Receta</span>');
         if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro - Vigilancia adicional">▲ Vigilancia</span>');
         if (med.psum) {
