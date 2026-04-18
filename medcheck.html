@@ -229,10 +229,46 @@
     <!-- Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
+            const MEDCHECK_SW_PATH = '/sw.js';
+            const MEDCHECK_SW_SCOPE = '/medcheck.html';
+            const ROOT_SCOPE = `${window.location.origin}/`;
+
+            async function cleanupLegacyMedCheckPwa() {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                const legacyRegistration = registrations.find((registration) => {
+                    const worker = registration.active || registration.waiting || registration.installing;
+                    if (!worker) return false;
+                    return registration.scope === ROOT_SCOPE && new URL(worker.scriptURL).pathname === MEDCHECK_SW_PATH;
+                });
+
+                if (!legacyRegistration) return;
+
+                console.log('[PWA] Removing legacy MedCheck registration with root scope');
+                await legacyRegistration.unregister();
+
+                if (!('caches' in window)) return;
+
+                const cacheNames = await caches.keys();
+                await Promise.all(
+                    cacheNames
+                        .filter((name) => name.startsWith('medcheck-'))
+                        .map((name) => {
+                            console.log('[PWA] Deleting legacy cache:', name);
+                            return caches.delete(name);
+                        })
+                );
+            }
+
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then((reg) => console.log('[PWA] Service Worker registered:', reg.scope))
-                    .catch((err) => console.log('[PWA] Service Worker registration failed:', err));
+                (async () => {
+                    try {
+                        await cleanupLegacyMedCheckPwa();
+                        const reg = await navigator.serviceWorker.register(MEDCHECK_SW_PATH, { scope: MEDCHECK_SW_SCOPE });
+                        console.log('[PWA] Service Worker registered:', reg.scope);
+                    } catch (err) {
+                        console.log('[PWA] Service Worker registration failed:', err);
+                    }
+                })();
             });
         }
     </script>

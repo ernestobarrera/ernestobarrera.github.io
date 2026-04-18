@@ -3,6 +3,7 @@
     "short_name": "MedCheck",
     "description": "Herramienta clínica de medicamentos para médicos de familia. Verificación de seguridad, equivalencias y alertas.",
     "start_url": "/medcheck.html",
+    "scope": "/medcheck.html",
     "display": "standalone",
     "background_color": "#0f172a",
     "theme_color": "#0ea5e9",
