@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PAUSA — IA clínica reflexiva · Ernesto Barrera</title>
+<meta name="description" content="PAUSA: herramienta breve de autoevaluación para profesionales sanitarios que trabajan con inteligencia artificial. Metacognición, evidencia y marco regulatorio UE.">
+<link rel="icon" href="/assets/images/icon.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/intro.js/minified/introjs.min.css">
+<link rel="stylesheet" href="assets/css/main.css">
+<link rel="stylesheet" href="assets/css/header.css">
+<link rel="stylesheet" href="assets/css/footer.css">
+<link rel="stylesheet" href="assets/css/pausa.css?v=20260418b">
+</head>
+<body class="pausa-page">
+<script src="assets/js/include.js"></script>
+<include src="header.html"></include>
+
+<div class="pausa-app">
+  <header class="topbar">
+    <a class="brand" href="#" onclick="event.preventDefault();S.view='hub';render();scrollViewportTo(0)">
+      <span class="brand-mark">PAUSA</span>
+      <span class="brand-tag">Autoevaluación IA clínica</span>
+    </a>
+    <nav class="topbar-center" id="topbar-center"></nav>
+    <div class="topbar-right">
+      <button class="guide-trigger" id="guide-trigger" type="button" onclick="startGuide(true)" aria-label="Abrir guía interactiva de PAUSA">
+        <span class="guide-trigger-mark" aria-hidden="true">?</span>
+        <span class="guide-trigger-label">Guía</span>
+      </button>
+      <span class="progress-inline" id="progress-inline"></span>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="nav-col" id="nav-col"></aside>
+    <section class="main-col" id="main-col"></section>
+    <aside class="calib-col" id="calib-col"></aside>
+    <section class="pausa-tool-note" aria-label="Nota metodológica de PAUSA">
+      <p><strong>PAUSA</strong> sintetiza evidencia y marco regulatorio europeo para una autoevaluación formativa del uso de IA en sanidad; no sustituye el juicio clínico ni el asesoramiento jurídico.</p>
+    </section>
+  </main>
+
+  <aside class="glossary-panel" id="glossary-panel" role="dialog" aria-label="Glosario del entorno IA"></aside>
+  <div class="glossary-backdrop" onclick="closeGlossary()"></div>
+</div>
+
+<include src="footer.html"></include>
+<script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
+<script src="assets/js/pausa-data.js?v=20260418b"></script>
+<script src="assets/js/pausa-app.js?v=20260418b"></script>
+</body>
+</html>
