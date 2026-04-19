@@ -27,6 +27,14 @@
     </a>
     <nav class="topbar-center" id="topbar-center"></nav>
     <div class="topbar-right">
+      <div class="lang-switcher-pausa" role="group" aria-label="Language / Idioma">
+        <button type="button" data-lang-btn="es" class="lang-btn-pausa active" aria-pressed="true" title="Español">
+          <span class="flag-p flag-es-p" aria-hidden="true"></span><span class="lang-code-p">ES</span>
+        </button>
+        <button type="button" data-lang-btn="en" class="lang-btn-pausa" aria-pressed="false" title="English">
+          <span class="flag-p flag-en-p" aria-hidden="true"></span><span class="lang-code-p">EN</span>
+        </button>
+      </div>
       <button class="guide-trigger" id="guide-trigger" type="button" onclick="startGuide(true)" aria-label="Abrir guía interactiva de PAUSA">
         <span class="guide-trigger-mark" aria-hidden="true">?</span>
         <span class="guide-trigger-label">Guía</span>
@@ -51,6 +59,7 @@
 <include src="footer.html"></include>
 <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
 <script src="assets/js/pausa-data.js?v=20260418b"></script>
-<script src="assets/js/pausa-app.js?v=20260418b"></script>
+<script src="assets/js/pausa-data-en.js?v=20260419"></script>
+<script src="assets/js/pausa-app.js?v=20260419"></script>
 </body>
 </html>
