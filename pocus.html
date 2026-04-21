@@ -390,7 +390,26 @@
         width: 100%;
         height: 100%;
         border: none;
-        border-radius: 0.5rem; /* Opcional: para que tenga bordes redondeados */
+        border-radius: 0.5rem;
+      }
+
+      .video-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #f3f4f6;
+        border-radius: 0.5rem;
+        color: #9ca3af;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+      }
+
+      .video-placeholder span:first-child {
+        font-size: 2rem;
+        opacity: 0.4;
       }
     </style>
   </head>
@@ -1950,7 +1969,7 @@
             findings: `Un DIU correctamente colocado se ve como una <strong>línea o una "T" hiperecogénica brillante</strong>, con sombra acústica posterior, localizada en el fondo de la cavidad endometrial. Si los hilos no son visibles en la exploración ginecológica, el POCUS puede confirmar rápidamente si el DIU está en su sitio, si ha sido expulsado o si ha perforado el miometrio.`,
             evidence: `<p>El POCUS es el método de primera línea, rápido y no invasivo para confirmar la posición de un DIU cuando los hilos no son visibles.</p>`,
             pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>El aire en la cavidad endometrial puede simular un DIU. Mueva la sonda para confirmar que la estructura es lineal y consistente con la forma del DIU.</p><h5>Impacto Clínico</h5><p>Evita la necesidad de radiografías y proporciona una respuesta inmediata a la paciente, permitiendo tomar decisiones sobre anticoncepción en la misma consulta.</p></div>`,
-            video: "9IG__pg1pQ8",
+            videos: [{ id: "9IG__pg1pQ8", intro: "Localización de DIU" }],
           },
         },
         {
@@ -2457,6 +2476,17 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
           },
         },
       ];
+      function mostrarErrorVideo(event) {
+        try {
+          const iframe = event.target.getIframe();
+          const wrapper = iframe ? iframe.closest('.responsive-iframe-container') : null;
+          if (wrapper) {
+            wrapper.style.paddingTop = '0';
+            wrapper.innerHTML = '<p class="text-center text-gray-400 py-8 text-sm italic">Vídeo no disponible</p>';
+          }
+        } catch(e) {}
+      }
+
       // Fuerza subtítulos automáticos en español cuando el player esté listo
       function activarSubtitulosEs(event) {
         try {
@@ -2485,7 +2515,7 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
                 cc_load_policy: 1,
                 hl: "es",
               },
-              events: { onReady: activarSubtitulosEs },
+              events: { onReady: activarSubtitulosEs, onError: mostrarErrorVideo },
             });
           }
         });
@@ -2508,14 +2538,12 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
         const card = document.getElementById(cardId);
         if (!card) return;
 
-        // Pausar video si existe
-        if (window.POCUSApp.videoPlayers[cardId]) {
-          try {
-            window.POCUSApp.videoPlayers[cardId].pauseVideo();
-          } catch (e) {
-            console.log("No se pudo pausar el video");
+        // Pausar todos los players de esta tarjeta
+        Object.keys(window.POCUSApp.videoPlayers).forEach(function(key) {
+          if (key.startsWith('player-' + cardId + '-')) {
+            try { window.POCUSApp.videoPlayers[key].pauseVideo(); } catch(e) {}
           }
-        }
+        });
 
         // Actualizar pestañas activas
         card
@@ -2552,7 +2580,7 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
                   cc_load_policy: 1,
                   hl: "es",
                 },
-                events: { onReady: activarSubtitulosEs },
+                events: { onReady: activarSubtitulosEs, onError: mostrarErrorVideo },
               });
             };
 
@@ -2762,8 +2790,8 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
           let videoTabContent = "";
 
           if (app.content.videos && app.content.videos.length) {
-            videoTabButton = `<button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md"
-                        onclick="switchTab('${cardId}', 'video', this)">Vídeo</button>`;
+            videoTabButton = `<button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md flex-shrink-0"
+                        onclick="switchTab('${cardId}', 'video', this)">▶ Vídeo</button>`;
 
             const figures = app.content.videos
               .map(
@@ -2774,7 +2802,10 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
         </figcaption>
         <p class="text-sm text-gray-600 mb-2">${v.desc || ""}</p>
         <div class="responsive-iframe-container">
-          <div id="player-${cardId}-${idx}"></div>
+          <div id="player-${cardId}-${idx}" class="video-placeholder">
+            <span>▶</span>
+            <span>${v.intro || 'Cargando vídeo...'}</span>
+          </div>
         </div>
       </figure>`
               )
@@ -2799,11 +2830,11 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
                                       <p class="text-md font-semibold text-${app.color}-600">${app.system}</p>
                                   </div>
                                   <div class="p-5">
-                                      <div class="flex border-b border-gray-200 mb-4 flex-wrap">
-                                          <button class="tab-button active py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'findings', this)">Hallazgos Clave</button>
-                                          <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'technique', this)">Técnica</button>
-                                          <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'evidence', this)">Evidencia</button>
-                                          <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md" onclick="switchTab('${cardId}', 'pearls', this)">Perlas Clínicas</button>
+                                      <div class="flex border-b border-gray-200 mb-4 overflow-x-auto gap-1 pb-1" style="scrollbar-width:none;">
+                                          <button class="tab-button active py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md flex-shrink-0" onclick="switchTab('${cardId}', 'findings', this)">Hallazgos Clave</button>
+                                          <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md flex-shrink-0" onclick="switchTab('${cardId}', 'technique', this)">Técnica</button>
+                                          <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md flex-shrink-0" onclick="switchTab('${cardId}', 'evidence', this)">Evidencia</button>
+                                          <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md flex-shrink-0" onclick="switchTab('${cardId}', 'pearls', this)">Perlas Clínicas</button>
                                           ${videoTabButton}
                                       </div>
                                       <div>
