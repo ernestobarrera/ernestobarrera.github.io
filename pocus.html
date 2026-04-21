@@ -471,6 +471,9 @@
         padding-top: 8px;
         margin-top: 2px;
       }
+      .rp-form-row[hidden] {
+        display: none !important;
+      }
 
       /* Checkbox de confirmación (izquierda de cada fila de medida) */
       .rp-check {
@@ -594,6 +597,115 @@
         background: white;
       }
       .rp-conclusion-ta:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.15); }
+
+      .rp-helper-note {
+        font-size: 0.78rem;
+        line-height: 1.45;
+        color: #475569;
+      }
+      .rp-conclusion-tools {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .rp-secondary-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 36px;
+        padding: 8px 12px;
+        border: 1px solid #c7d2fe;
+        border-radius: 8px;
+        background: #eef2ff;
+        color: #4338ca;
+        font-size: 0.78rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .rp-secondary-btn:hover {
+        background: #e0e7ff;
+        border-color: #a5b4fc;
+      }
+      .rp-auto-panel {
+        background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+        border: 1px solid #dbeafe;
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .rp-auto-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 8px;
+      }
+      .rp-auto-card {
+        background: rgba(255,255,255,0.88);
+        border: 1px solid #dbeafe;
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      .rp-auto-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: #64748b;
+        margin-bottom: 6px;
+      }
+      .rp-auto-value {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        font-size: 0.96rem;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .rp-auto-text {
+        font-size: 0.82rem;
+        line-height: 1.55;
+        color: #334155;
+      }
+      .rp-chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .rp-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 9px;
+        border-radius: 9999px;
+        font-size: 0.73rem;
+        font-weight: 700;
+      }
+      .rp-chip.normal {
+        background: #dcfce7;
+        color: #15803d;
+      }
+      .rp-chip.warn {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .rp-chip.alert {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+      .rp-points-pill {
+        margin-left: auto;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
 
       /* VISTA PREVIA generada */
       .rp-preview-wrap { position: relative; }
@@ -1305,6 +1417,7 @@
         apiReady: false,
         apiLoading: false,
         pendingVideos: [],
+        reportInsights: {},
       };
 
       // Base de datos de referencias
@@ -1350,6 +1463,12 @@
           citation:
             "Pomero F, et al. Point-of-care ultrasound for diagnosis of deep vein thrombosis in the emergency department: a systematic review and meta-analysis. Ann Emerg Med. 2022;S0196-0644(22)00216-9.",
           url: "https://pubmed.ncbi.nlm.nih.gov/35659850/",
+        },
+        cervical_nodes_ahuja_2008: {
+          id: "cervical_nodes_ahuja_2008",
+          citation:
+            "Ahuja AT, et al. Ultrasound of malignant cervical lymph nodes. Cancer Imaging. 2008;8(1):48-56.",
+          url: "https://pubmed.ncbi.nlm.nih.gov/18390388/",
         },
         abscess_subramaniam_2016: {
           id: "abscess_subramaniam_2016",
@@ -1615,12 +1734,13 @@ CONCLUSIÓN / RECOMENDACIÓN:
   },
 },
         {
-  segment: "neck_lateral",
-  system: "Linfático",
-  color: "lime",
-  title: "Adenopatías Cervicales",
-  content: {
-    technique: `<ul>
+          segment: "neck_lateral",
+          system: "Linfático",
+          color: "lime",
+          title: "Adenopatías Cervicales",
+          refId: "cervical_nodes_ahuja_2008",
+          content: {
+            technique: `<ul>
         <li><strong>Sonda:</strong> Lineal de alta frecuencia (7.5-10 MHz) para ganglios superficiales. Sonda convexa (3.5-5 MHz) para los más profundos.</li>
         <li><strong>Posicionamiento del paciente:</strong>
             <ul>
@@ -1629,9 +1749,9 @@ CONCLUSIÓN / RECOMENDACIÓN:
                 <li class="ml-4"><strong>Ingle:</strong> Paciente en decúbito supino, con la pierna del lado a explorar en ligera flexión y abducción (posición de "rana").</li>
             </ul>
         </li>
-        <li><strong>Técnica de exploración:</strong> Realizar siempre cortes longitudinales y transversales de la adenopatía. Comparar la ecogenicidad con los músculos adyacentes y evaluar la vascularización con Doppler color.</li>
+        <li><strong>Técnica de exploración:</strong> Realizar siempre cortes longitudinales y transversales del mismo ganglio diana. Medir eje largo, eje corto y grosor cortical en el plano de máxima definición. Comparar la ecogenicidad con los músculos adyacentes y valorar Doppler color sin comprimir en exceso.</li>
     </ul>`,
-    findings: `
+            findings: `
     <h3 class="text-lg font-bold text-gray-800 mb-3 text-center">Guía Visual para la Evaluación de Adenopatías</h3>
     <div class="overflow-x-auto border rounded-lg">
         <table class="w-full text-sm text-left">
@@ -1683,7 +1803,7 @@ CONCLUSIÓN / RECOMENDACIÓN:
                     <td class="py-3 px-4">
                         <ul class="list-disc list-inside space-y-1">
                             <li>Hilio graso: <strong>Ausente</strong> o desplazado</li>
-                            <li>Ecoestructura: <strong>Heterogénea</strong></li>
+                            <li>Ecoestructura: <strong>Heterogénea</strong> o con necrosis</li>
                             <li>Bordes: <strong>Irregulares</strong>, espiculados</li>
                         </ul>
                     </td>
@@ -1701,109 +1821,181 @@ CONCLUSIÓN / RECOMENDACIÓN:
       <div class="flex justify-center items-start gap-6">
         <div class="text-center">
           <svg width="120" height="140" viewBox="0 0 120 140">
-            <!-- Ganglio normal ovalado -->
             <ellipse cx="60" cy="50" rx="35" ry="20" fill="#e0f2fe" stroke="#3b82f6" stroke-width="2"/>
-            <!-- Hilio graso central -->
             <ellipse cx="60" cy="50" rx="12" ry="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
-            <!-- Flujo vascular hiliar -->
             <path d="M 60 42 L 60 58" stroke="#ef4444" stroke-width="2"/>
             <path d="M 55 50 L 65 50" stroke="#ef4444" stroke-width="1"/>
-            
             <text x="60" y="85" text-anchor="middle" font-size="11" font-weight="bold" fill="#3b82f6">BENIGNO</text>
             <text x="60" y="98" text-anchor="middle" font-size="9" fill="#666">L/C > 2</text>
-            <text x="60" y="110" text-anchor="middle" font-size="9" fill="#666">Eje corto < 10mm</text>
+            <text x="60" y="110" text-anchor="middle" font-size="9" fill="#666">Eje corto < 10 mm</text>
             <text x="60" y="122" text-anchor="middle" font-size="9" fill="#666">Hilio central</text>
             <text x="60" y="134" text-anchor="middle" font-size="9" fill="#ef4444">Flujo hiliar</text>
           </svg>
         </div>
-        
         <div class="text-center">
           <svg width="120" height="140" viewBox="0 0 120 140">
-            <!-- Ganglio patológico redondeado -->
             <circle cx="60" cy="50" r="30" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
-            <!-- Textura heterogénea -->
             <circle cx="50" cy="45" r="8" fill="#9ca3af" opacity="0.5"/>
             <circle cx="70" cy="55" r="6" fill="#6b7280" opacity="0.5"/>
-            <!-- Flujo periférico caótico -->
             <path d="M 35 35 Q 30 50 35 65" stroke="#ef4444" stroke-width="2"/>
             <path d="M 85 35 Q 90 50 85 65" stroke="#ef4444" stroke-width="2"/>
             <path d="M 45 30 Q 60 25 75 30" stroke="#ef4444" stroke-width="1"/>
             <path d="M 45 70 Q 60 75 75 70" stroke="#ef4444" stroke-width="1"/>
-            
             <text x="60" y="85" text-anchor="middle" font-size="11" font-weight="bold" fill="#dc2626">SOSPECHOSO</text>
             <text x="60" y="98" text-anchor="middle" font-size="9" fill="#666">L/C < 2</text>
-            <text x="60" y="110" text-anchor="middle" font-size="9" fill="#666">Eje corto > 10mm</text>
+            <text x="60" y="110" text-anchor="middle" font-size="9" fill="#666">Eje corto > 10 mm</text>
             <text x="60" y="122" text-anchor="middle" font-size="9" fill="#666">Hilio ausente</text>
             <text x="60" y="134" text-anchor="middle" font-size="9" fill="#ef4444">Flujo periférico</text>
           </svg>
         </div>
       </div>
-      
       <div class="mt-3 p-2 bg-amber-50 border border-amber-200 rounded">
         <p class="text-xs font-semibold text-amber-800 text-center">
-          ⚠️ Recuerda: La morfología es más importante que el tamaño
+          ⚠️ Recuerda: la morfología pesa más que el tamaño aislado.
         </p>
       </div>
     </div>
     `,
-    evidence: `<p>El POCUS puede diferenciar con buena precisión entre adenopatías reactivas y sospechosas, guiando la necesidad de seguimiento o biopsia.</p>`,
-    pearls: `<div class="pearls-section"><h5>Clave Diferencial</h5><p>La morfología es más importante que el tamaño. Un ganglio pequeño y redondo es más sospechoso que uno grande y ovalado.</p><h5>Impacto Clínico</h5><p>Permite tomar decisiones informadas sobre si una adenopatía requiere una actitud expectante (probable origen reactivo) o una investigación más profunda (sospecha de malignidad o infección específica como tuberculosis).</p></div>`,
-    videos: [
-      {
-        id: "fAMZ2M8PSok",
-        intro:
-          "Utilidad de la ecografía en la evaluación de los nódulos cervicales",
-        desc: "descripción de la anatomía cervical, exploración ecográfica y evaluación de nódulos",
-      },
-    ],
-    reportChecklist: [
-      'Indicación anotada (adenopatía palpable, seguimiento)',
-      'Cortes longitudinal y transversal realizados',
-      'Eje corto y relación L/C medidos',
-      'Hilio graso evaluado (presente / ausente)',
-      'Doppler color valorado'
-    ],
-    reportFields: [
-      {
-        id: 'eje_corto', label: 'Eje corto', type: 'number', unit: 'mm', step: 0.5, min: 0, max: 60,
-        thresholds: [
-          { min: 0,    max: 9.9, cls: 'badge-normal', label: 'Normal (<10 mm)' },
-          { min: 10,   max: 999, cls: 'badge-alert',  label: 'Aumentado (≥10 mm) → valorar' }
-        ]
-      },
-      {
-        id: 'ratio_lc', label: 'Relación L/C', type: 'number', unit: '', step: 0.1, min: 0, max: 10,
-        thresholds: [
-          { min: 2.0, max: 999, cls: 'badge-normal', label: 'Benigno (>2)' },
-          { min: 1.5, max: 1.99, cls: 'badge-warn',  label: 'Limítrofe (1.5–2)' },
-          { min: 0,   max: 1.49, cls: 'badge-alert',  label: 'Sospechoso (<2)' }
-        ]
-      },
-      { id: 'hilio', label: 'Hilio graso', type: 'boolean', yesIsAlert: false,
-        yesLabel: 'Presente — reactivo', noLabel: 'Ausente — sospechoso',
-        yesInterpretation: 'Reactivo probable', noInterpretation: 'Sospecha de patología' }
-    ],
-    reportTemplate: `POCUS ADENOPATÍAS CERVICALES
+            evidence: `<p>En adenopatías cervicales, la forma redondeada, el aumento del eje corto, el engrosamiento cortical, la pérdida del hilio y la vascularización periférica o mixta aumentan la sospecha. Un ganglio ovalado con hilio conservado y flujo hiliar es más compatible con reactividad que un ganglio simplemente grande.</p>`,
+            pearls: `<div class="pearls-section"><h5>Clave Diferencial</h5><p>El informe debe describir el mismo ganglio diana en dos planos y no limitarse al tamaño. La relación L/C y la corteza son más útiles si se integran con hilio y Doppler.</p><h5>Impacto Clínico</h5><p>Permite discriminar mejor entre un patrón predominantemente reactivo, uno indeterminado y uno sospechoso que merezca estudio etiológico o confirmación histológica.</p></div>`,
+            videos: [
+              {
+                id: "fAMZ2M8PSok",
+                intro:
+                  "Utilidad de la ecografía en la evaluación de los nódulos cervicales",
+                desc: "descripción de la anatomía cervical, exploración ecográfica y evaluación de nódulos",
+              },
+            ],
+            reportChecklist: [
+              "Lado y estación cervical documentados",
+              "Cortes longitudinal y transversal del mismo ganglio diana",
+              "Ejes largo y corto medidos",
+              "Corteza, hilio y Doppler integrados en la impresión"
+            ],
+            reportFields: [
+              {
+                id: "lado",
+                label: "Lado",
+                type: "select",
+                options: [
+                  { value: "derecho", label: "Derecho", cls: "badge-normal", badge: "Derecho" },
+                  { value: "izquierdo", label: "Izquierdo", cls: "badge-normal", badge: "Izquierdo" },
+                  { value: "bilateral", label: "Bilateral", cls: "badge-warn", badge: "Bilateral" }
+                ]
+              },
+              {
+                id: "nivel",
+                label: "Nivel / estación",
+                type: "select",
+                options: [
+                  { value: "ii", label: "Nivel II", cls: "badge-normal", badge: "Nivel II" },
+                  { value: "iii", label: "Nivel III", cls: "badge-normal", badge: "Nivel III" },
+                  { value: "iv", label: "Nivel IV", cls: "badge-normal", badge: "Nivel IV" },
+                  { value: "v", label: "Nivel V", cls: "badge-normal", badge: "Nivel V" },
+                  { value: "supraclavicular", label: "Supraclavicular", cls: "badge-alert", badge: "Supraclavicular" },
+                  { value: "otro", label: "Otra estación", cls: "badge-warn", badge: "Otra estación" }
+                ]
+              },
+              {
+                id: "eje_largo",
+                label: "Eje largo",
+                type: "number",
+                unit: "mm",
+                step: 0.5,
+                min: 0,
+                max: 80,
+                thresholds: [
+                  { min: 0.1, max: 999, cls: "badge-normal", label: "Medido" }
+                ]
+              },
+              {
+                id: "eje_corto",
+                label: "Eje corto",
+                type: "number",
+                unit: "mm",
+                step: 0.5,
+                min: 0,
+                max: 60,
+                thresholds: [
+                  { min: 0, max: 9.9, cls: "badge-normal", label: "Favorable (<10 mm)" },
+                  { min: 10, max: 999, cls: "badge-alert", label: "Aumentado (>=10 mm)" }
+                ]
+              },
+              {
+                id: "corteza",
+                label: "Corteza",
+                type: "number",
+                unit: "mm",
+                step: 0.1,
+                min: 0,
+                max: 20,
+                thresholds: [
+                  { min: 0, max: 2.9, cls: "badge-normal", label: "Fina (<3 mm)" },
+                  { min: 3, max: 4, cls: "badge-warn", label: "Engrosada leve" },
+                  { min: 4.1, max: 999, cls: "badge-alert", label: "Muy engrosada" }
+                ]
+              },
+              {
+                id: "hilio",
+                label: "Hilio graso",
+                type: "boolean",
+                yesIsAlert: false,
+                yesLabel: "Presente",
+                noLabel: "Ausente",
+                yesInterpretation: "Rasgo de reactividad",
+                noInterpretation: "Rasgo sospechoso"
+              },
+              {
+                id: "doppler",
+                label: "Doppler",
+                type: "select",
+                options: [
+                  { value: "hiliar", label: "Patrón hiliar / central", cls: "badge-normal", badge: "Flujo hiliar" },
+                  { value: "mixto", label: "Patrón mixto", cls: "badge-warn", badge: "Flujo mixto" },
+                  { value: "periferico", label: "Patrón periférico / caótico", cls: "badge-alert", badge: "Flujo periférico" },
+                  { value: "no_valorable", label: "No valorable", cls: "badge-warn", badge: "No valorable" }
+                ]
+              },
+              {
+                id: "ecoestructura",
+                label: "Ecoestructura",
+                type: "select",
+                options: [
+                  { value: "homogenea", label: "Homogénea", cls: "badge-normal", badge: "Homogénea" },
+                  { value: "heterogenea", label: "Heterogénea", cls: "badge-alert", badge: "Heterogénea" },
+                  { value: "necrosis", label: "Cambios necróticos / quísticos", cls: "badge-alert", badge: "Necrosis / quiste" }
+                ]
+              },
+              {
+                id: "bordes",
+                label: "Bordes",
+                type: "select",
+                options: [
+                  { value: "lisos", label: "Lisos / definidos", cls: "badge-normal", badge: "Lisos" },
+                  { value: "irregulares", label: "Irregulares", cls: "badge-alert", badge: "Irregulares" }
+                ]
+              }
+            ],
+            reportTemplate: `POCUS ADENOPATÍAS CERVICALES
 Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
 
 INDICACIÓN:
 [Adenopatía palpable / seguimiento / cribado]
 
 TÉCNICA:
-Sonda lineal alta frecuencia. Decúbito supino con leve hiperextensión cervical.
-Calidad imagen: Óptima / Subóptima
+Sonda lineal alta frecuencia. Cortes longitudinal y transversal del ganglio diana.
 
 HALLAZGOS:
-Eje corto: [[eje_corto]]
-Relación L/C: [[ratio_lc]]
-Hilio graso: [[hilio]]
-Ecoestructura: Homogénea / Heterogénea    Bordes: Lisos / Irregulares
-Doppler: Patrón hiliar / Periférico / Caótico
+Lado / nivel: [[lado]] / [[nivel]]
+Ganglio diana: [[eje_largo]] x [[eje_corto]]
+Corteza: [[corteza]]
+Hilio: [[hilio]]    Doppler: [[doppler]]
+Ecoestructura: [[ecoestructura]]    Bordes: [[bordes]]
 
 CONCLUSIÓN / RECOMENDACIÓN:
-[Hallazgos compatibles con ganglio reactivo / sospechoso. Plan: observación / biopsia]`,
-  },
-},
+[Perfil reactivo / indeterminado / sospechoso con correlación clínica]`,
+          },
+        },
         {
           segment: "cardiac",
           system: "Cardiovascular",
@@ -2552,47 +2744,112 @@ findings: `
         </div>
     </div>
 `,
-evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compresión venosa completa</strong>, considerado el signo más fiable con una <strong>sensibilidad del 93-100% y una especificidad del 97-100%</strong>. Los protocolos abreviados que exploran la vena femoral común y la poplítea son eficaces, ya que el 98% de las TVP afectan al menos a una de estas dos localizaciones.</p>`,
-            pearls: `<p>Una técnica simple y rápida que puede evitar la necesidad de dímero-D o ecografía formal en muchos pacientes de baja probabilidad.</p>`,
+ evidence: `<p>El criterio ecográfico más robusto sigue siendo la <strong>no compresibilidad completa</strong> de la vena. Los protocolos abreviados son útiles para TVP proximal, pero un estudio negativo de 2 puntos debe interpretarse junto con la probabilidad clínica porque puede no excluir por sí solo trombosis femoral aislada o distal.</p>`,
+            pearls: `<p>Un POCUS negativo es más sólido cuando el protocolo se completa y la probabilidad clínica es baja. Si Wells es alto o la exploración es incompleta, conviene dejarlo explícito en el informe y escalar a ecografía reglada o seriada.</p>`,
             reportChecklist: [
-              'Indicación anotada (sospecha TVP, Wells calculado)',
-              'Vena femoral común (VFC) explorada',
-              'Unión safeno-femoral evaluada',
-              'Vena Poplítea (VP) evaluada',
-              'Compresibilidad documentada bilateral'
+              "Motivo y extremidad sintomática documentados",
+              "Wells integrado en la interpretación",
+              "Protocolo 2 puntos o extendido seleccionado",
+              "Todos los puntos obligatorios comprimidos y documentados",
+              "Si negativo con alta sospecha, límite del estudio reflejado"
             ],
             reportFields: [
-              { id: 'comp_vfc_d', label: 'VFC compresible D', type: 'boolean', yesIsAlert: false,
-                yesLabel: 'Sí — normal', noLabel: 'NO — sospecha TVP',
-                yesInterpretation: 'Compresible — descarta TVP proximal', noInterpretation: 'NO compresible — TVP PROBABLE' },
-              { id: 'comp_vfc_i', label: 'VFC compresible I', type: 'boolean', yesIsAlert: false,
-                yesLabel: 'Sí — normal', noLabel: 'NO — sospecha TVP',
-                yesInterpretation: 'Compresible', noInterpretation: 'NO compresible — TVP PROBABLE' },
-              { id: 'comp_popl_d', label: 'V. Poplítea compresible D', type: 'boolean', yesIsAlert: false,
-                yesLabel: 'Sí — normal', noLabel: 'NO — sospecha TVP',
-                yesInterpretation: 'Compresible', noInterpretation: 'NO compresible — TVP PROBABLE' },
-              { id: 'comp_popl_i', label: 'V. Poplítea compresible I', type: 'boolean', yesIsAlert: false,
-                yesLabel: 'Sí — normal', noLabel: 'NO — sospecha TVP',
-                yesInterpretation: 'Compresible', noInterpretation: 'NO compresible — TVP PROBABLE' }
+              {
+                id: "lado",
+                label: "Extremidad",
+                type: "select",
+                options: [
+                  { value: "derecha", label: "Derecha", cls: "badge-normal", badge: "Derecha" },
+                  { value: "izquierda", label: "Izquierda", cls: "badge-normal", badge: "Izquierda" }
+                ]
+              },
+              {
+                id: "protocolo",
+                label: "Protocolo",
+                type: "select",
+                options: [
+                  { value: "2p", label: "2 puntos (VFC + poplítea)", cls: "badge-warn", badge: "2 puntos" },
+                  { value: "extendido", label: "Extendido femoropoplíteo", cls: "badge-normal", badge: "Extendido" }
+                ]
+              },
+              {
+                id: "comp_vfc",
+                label: "V. femoral común",
+                type: "select",
+                options: [
+                  { value: "yes", label: "Compresible por completo", cls: "badge-normal", badge: "Compresible" },
+                  { value: "partial", label: "Colapso parcial", cls: "badge-alert", badge: "Colapso parcial" },
+                  { value: "no", label: "No compresible", cls: "badge-alert", badge: "No compresible" },
+                  { value: "not_tested", label: "No evaluado", cls: "badge-warn", badge: "No evaluado" }
+                ]
+              },
+              {
+                id: "comp_usf",
+                label: "Unión safeno-femoral",
+                type: "select",
+                visibleWhen: { fieldId: "protocolo", equals: "extendido" },
+                options: [
+                  { value: "yes", label: "Compresible por completo", cls: "badge-normal", badge: "Compresible" },
+                  { value: "partial", label: "Colapso parcial", cls: "badge-alert", badge: "Colapso parcial" },
+                  { value: "no", label: "No compresible", cls: "badge-alert", badge: "No compresible" },
+                  { value: "not_tested", label: "No evaluado", cls: "badge-warn", badge: "No evaluado" }
+                ]
+              },
+              {
+                id: "comp_femoral",
+                label: "V. femoral",
+                type: "select",
+                visibleWhen: { fieldId: "protocolo", equals: "extendido" },
+                options: [
+                  { value: "yes", label: "Compresible por completo", cls: "badge-normal", badge: "Compresible" },
+                  { value: "partial", label: "Colapso parcial", cls: "badge-alert", badge: "Colapso parcial" },
+                  { value: "no", label: "No compresible", cls: "badge-alert", badge: "No compresible" },
+                  { value: "not_tested", label: "No evaluado", cls: "badge-warn", badge: "No evaluado" }
+                ]
+              },
+              {
+                id: "comp_profunda",
+                label: "Confluencia femoral profunda",
+                type: "select",
+                visibleWhen: { fieldId: "protocolo", equals: "extendido" },
+                options: [
+                  { value: "yes", label: "Compresible por completo", cls: "badge-normal", badge: "Compresible" },
+                  { value: "partial", label: "Colapso parcial", cls: "badge-alert", badge: "Colapso parcial" },
+                  { value: "no", label: "No compresible", cls: "badge-alert", badge: "No compresible" },
+                  { value: "not_tested", label: "No evaluado", cls: "badge-warn", badge: "No evaluado" }
+                ]
+              },
+              {
+                id: "comp_popl",
+                label: "V. poplítea",
+                type: "select",
+                options: [
+                  { value: "yes", label: "Compresible por completo", cls: "badge-normal", badge: "Compresible" },
+                  { value: "partial", label: "Colapso parcial", cls: "badge-alert", badge: "Colapso parcial" },
+                  { value: "no", label: "No compresible", cls: "badge-alert", badge: "No compresible" },
+                  { value: "not_tested", label: "No evaluado", cls: "badge-warn", badge: "No evaluado" }
+                ]
+              }
             ],
             reportTemplate: `POCUS TVP (COMPRESIBILIDAD VENOSA)
 Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
 
 INDICACIÓN:
-[Sospecha TVP. Score Wells: __ puntos (≥2 → alta probabilidad)]
+[Sospecha TVP. Score Wells: __ puntos]
 
 TÉCNICA:
-Sonda lineal. Protocolo 2-puntos: VFC + V. Poplítea bilateral.
-Calidad imagen: Óptima / Subóptima
+Sonda lineal. Compresión seriada en corte transversal. Protocolo: [[protocolo]]
 
 HALLAZGOS:
-VFC compresible D: [[comp_vfc_d]]
-VFC compresible I: [[comp_vfc_i]]
-V. Poplítea compresible D: [[comp_popl_d]]
-V. Poplítea compresible I: [[comp_popl_i]]
+Extremidad: [[lado]]
+VFC: [[comp_vfc]]
+USF: [[comp_usf]]
+Vena femoral: [[comp_femoral]]
+Confluencia profunda: [[comp_profunda]]
+V. Poplítea: [[comp_popl]]
 
 CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
-[Hallazgos compatibles con / sin TVP. Plan: anticoagulación / derivación / alta]`,
+[Con / sin signos de TVP proximal en los segmentos explorados. Si persiste alta sospecha y estudio abreviado negativo, valorar ecografía reglada / seriada]`,
           },
         },
         {
@@ -3127,14 +3384,517 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
         return (pocusData.filter(d => d.segment === seg))[idx] || null;
       }
 
-      // Construye el texto del informe leyendo los valores del formulario
-      function assembleReport(cardId) {
+      function getFieldConfig(cardId, fieldId) {
         const app = getAppFromCardId(cardId);
+        return (app?.content?.reportFields || []).find(field => field.id === fieldId) || null;
+      }
+
+      function getReportStateKey(cardId) {
+        return `pocus_report_state_${cardId}`;
+      }
+
+      function clearBadge(badgeId) {
+        const badge = document.getElementById(badgeId);
+        if (!badge) return;
+        badge.className = 'measure-badge badge-empty';
+        badge.textContent = '– –';
+      }
+
+      function formatNumberEs(value, digits = 1) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
+        return Number(value).toLocaleString('es-ES', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: digits,
+        });
+      }
+
+      function getNumberValue(cardId, fieldId) {
+        const el = document.getElementById(`mf-${cardId}-${fieldId}`);
+        if (!el || el.value === '') return null;
+        const value = parseFloat(el.value);
+        return Number.isFinite(value) ? value : null;
+      }
+
+      function getBooleanValue(cardId, fieldId) {
+        const checked = document.querySelector(`input[name="mf-${cardId}-${fieldId}"]:checked`);
+        if (!checked) return null;
+        return checked.value === 'yes';
+      }
+
+      function getSelectValue(cardId, fieldId) {
+        const el = document.getElementById(`mf-${cardId}-${fieldId}`);
+        return el ? el.value : '';
+      }
+
+      function getSelectOption(cardId, fieldId) {
+        const field = getFieldConfig(cardId, fieldId);
+        const value = getSelectValue(cardId, fieldId);
+        if (!field || !value) return null;
+        return (field.options || []).find(option => String(option.value) === String(value)) || null;
+      }
+
+      function getSelectLabel(cardId, fieldId) {
+        const option = getSelectOption(cardId, fieldId);
+        return option ? option.label : '';
+      }
+
+      function getCompressionMeta(cardId, fieldId) {
+        const option = getSelectOption(cardId, fieldId);
+        const value = option?.value || '';
+        return {
+          value,
+          label: option?.label || 'No evaluado',
+          badge: option?.badge || option?.label || 'No evaluado',
+          abnormal: value === 'partial' || value === 'no',
+          evaluated: Boolean(value) && value !== 'not_tested',
+          notTested: value === 'not_tested',
+        };
+      }
+
+      const DVT_WELLS_ITEMS = [
+        { id: 'cancer', label: 'Cáncer activo', points: 1 },
+        { id: 'paresis', label: 'Parálisis, paresia o inmovilización de la pierna', points: 1 },
+        { id: 'bedrest', label: 'Encamamiento >3 días o cirugía mayor reciente', points: 1 },
+        { id: 'tenderness', label: 'Dolor localizado en trayecto venoso profundo', points: 1 },
+        { id: 'entire_leg', label: 'Pierna entera hinchada', points: 1 },
+        { id: 'calf_diff', label: 'Perímetro gemelar >3 cm respecto a la contralateral', points: 1 },
+        { id: 'pitting', label: 'Edema con fóvea en la pierna sintomática', points: 1 },
+        { id: 'collaterals', label: 'Circulación venosa colateral superficial no varicosa', points: 1 },
+        { id: 'prev_dvt', label: 'TVP previa documentada', points: 1 },
+        { id: 'alt_dx', label: 'Diagnóstico alternativo al menos tan probable', points: -2 },
+      ];
+
+      function computeWellsScore(cardId) {
+        let score = 0;
+        const items = [];
+        DVT_WELLS_ITEMS.forEach(item => {
+          const el = document.getElementById(`wells-${cardId}-${item.id}`);
+          if (el?.checked) {
+            score += item.points;
+            items.push(item.label);
+          }
+        });
+
+        return {
+          score,
+          items,
+          likely: score >= 2,
+          label: score >= 2 ? 'TVP probable (>=2)' : 'TVP improbable (<2)',
+          cls: score >= 2 ? 'badge-alert' : 'badge-normal',
+        };
+      }
+
+      function buildReportAssistantHtml(app, cardId) {
+        if (!app) return '';
+        if (app.segment === 'neck_lateral') {
+          return `
+            <div class="rp-auto-panel">
+              <div class="rp-section-title">Síntesis automática</div>
+              <div class="rp-helper-note">La relación L/C se calcula sola a partir de los ejes y el sistema integra corteza, hilio y Doppler para orientarte mientras exploras.</div>
+              <div class="rp-auto-grid">
+                <div class="rp-auto-card">
+                  <div class="rp-auto-label">Relación L/C</div>
+                  <div class="rp-auto-value">
+                    <span id="neck-ratio-${cardId}">—</span>
+                    <span class="measure-badge badge-empty" id="neck-ratio-badge-${cardId}">Sin cálculo</span>
+                  </div>
+                </div>
+                <div class="rp-auto-card">
+                  <div class="rp-auto-label">Morfología</div>
+                  <div class="rp-auto-value" id="neck-shape-${cardId}">Pendiente</div>
+                </div>
+                <div class="rp-auto-card">
+                  <div class="rp-auto-label">Perfil global</div>
+                  <div class="rp-auto-value">
+                    <span id="neck-profile-${cardId}">Pendiente</span>
+                    <span class="measure-badge badge-empty" id="neck-profile-badge-${cardId}">Sin integrar</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rp-chip-list" id="neck-flags-${cardId}"></div>
+              <div class="rp-auto-text" id="neck-suggestion-${cardId}">Completa ejes, corteza, hilio y Doppler para generar una impresión automática sólida.</div>
+              <div>
+                <button type="button" class="rp-secondary-btn" onclick="useSuggestedConclusion('${cardId}')">Usar sugerencia automática</button>
+              </div>
+            </div>`;
+        }
+
+        if (app.segment === 'dvt') {
+          const wellsHtml = DVT_WELLS_ITEMS.map(item => `
+            <label class="rp-check-label">
+              <input type="checkbox" id="wells-${cardId}-${item.id}" onchange="assembleAndSave('${cardId}')">
+              ${item.label}
+              <span class="rp-points-pill">${item.points > 0 ? '+' : ''}${item.points}</span>
+            </label>`).join('');
+
+          return `
+            <div class="rp-form-section">
+              <div class="rp-section-title">Wells automatizado</div>
+              <div class="rp-helper-note">Marca solo los criterios presentes. El sistema suma la puntuación y la integra con la compresibilidad del protocolo elegido.</div>
+              ${wellsHtml}
+            </div>
+            <div class="rp-auto-panel">
+              <div class="rp-section-title">Síntesis automática</div>
+              <div class="rp-auto-grid">
+                <div class="rp-auto-card">
+                  <div class="rp-auto-label">Wells</div>
+                  <div class="rp-auto-value">
+                    <span id="dvt-wells-score-${cardId}">0</span>
+                    <span class="measure-badge badge-empty" id="dvt-wells-badge-${cardId}">Pendiente</span>
+                  </div>
+                </div>
+                <div class="rp-auto-card">
+                  <div class="rp-auto-label">Cobertura del protocolo</div>
+                  <div class="rp-auto-value">
+                    <span id="dvt-coverage-${cardId}">Pendiente</span>
+                    <span class="measure-badge badge-empty" id="dvt-coverage-badge-${cardId}">Sin protocolo</span>
+                  </div>
+                </div>
+                <div class="rp-auto-card">
+                  <div class="rp-auto-label">Segmentos anormales</div>
+                  <div class="rp-auto-value" id="dvt-positive-${cardId}">Ninguno</div>
+                </div>
+                <div class="rp-auto-card">
+                  <div class="rp-auto-label">Impresión automática</div>
+                  <div class="rp-auto-value">
+                    <span id="dvt-profile-${cardId}">Pendiente</span>
+                    <span class="measure-badge badge-empty" id="dvt-profile-badge-${cardId}">Sin integrar</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rp-auto-text" id="dvt-suggestion-${cardId}">Selecciona extremidad, protocolo y puntos de compresión para construir la impresión.</div>
+              <div>
+                <button type="button" class="rp-secondary-btn" onclick="useSuggestedConclusion('${cardId}')">Usar sugerencia automática</button>
+              </div>
+            </div>`;
+        }
+
+        return '';
+      }
+
+      function computeNeckLateralInsights(cardId) {
+        const side = getSelectLabel(cardId, 'lado');
+        const station = getSelectLabel(cardId, 'nivel');
+        const longAxis = getNumberValue(cardId, 'eje_largo');
+        const shortAxis = getNumberValue(cardId, 'eje_corto');
+        const cortex = getNumberValue(cardId, 'corteza');
+        const hilum = getBooleanValue(cardId, 'hilio');
+        const doppler = getSelectValue(cardId, 'doppler');
+        const dopplerLabel = getSelectLabel(cardId, 'doppler');
+        const eco = getSelectValue(cardId, 'ecoestructura');
+        const ecoLabel = getSelectLabel(cardId, 'ecoestructura');
+        const borders = getSelectValue(cardId, 'bordes');
+        const bordersLabel = getSelectLabel(cardId, 'bordes');
+        const ratio = longAxis && shortAxis ? longAxis / shortAxis : null;
+
+        const redFlags = [];
+        const greenFlags = [];
+        let score = 0;
+
+        if (ratio !== null) {
+          if (ratio < 1.5) {
+            score += 2;
+            redFlags.push('L/C < 1,5');
+          } else if (ratio < 2) {
+            score += 1;
+            redFlags.push('L/C < 2');
+          } else {
+            greenFlags.push('L/C >= 2');
+          }
+        }
+
+        if (shortAxis !== null) {
+          if (shortAxis >= 10) {
+            score += 1;
+            redFlags.push('eje corto >= 10 mm');
+          } else {
+            greenFlags.push('eje corto < 10 mm');
+          }
+        }
+
+        if (cortex !== null) {
+          if (cortex > 4) {
+            score += 2;
+            redFlags.push('corteza > 4 mm');
+          } else if (cortex > 3) {
+            score += 1;
+            redFlags.push('corteza > 3 mm');
+          } else {
+            greenFlags.push('corteza fina');
+          }
+        }
+
+        if (hilum === false) {
+          score += 2;
+          redFlags.push('hilio ausente');
+        } else if (hilum === true) {
+          greenFlags.push('hilio conservado');
+        }
+
+        if (doppler === 'periferico') {
+          score += 2;
+          redFlags.push('Doppler periférico');
+        } else if (doppler === 'mixto') {
+          score += 1;
+          redFlags.push('Doppler mixto');
+        } else if (doppler === 'hiliar') {
+          greenFlags.push('Doppler hiliar');
+        }
+
+        if (eco === 'heterogenea') {
+          score += 1;
+          redFlags.push('heterogeneidad');
+        } else if (eco === 'necrosis') {
+          score += 2;
+          redFlags.push('necrosis / quistificación');
+        } else if (eco === 'homogenea') {
+          greenFlags.push('estructura homogénea');
+        }
+
+        if (borders === 'irregulares') {
+          score += 1;
+          redFlags.push('bordes irregulares');
+        } else if (borders === 'lisos') {
+          greenFlags.push('bordes lisos');
+        }
+
+        const hasCoreData = longAxis !== null && shortAxis !== null && cortex !== null && hilum !== null && Boolean(doppler);
+        const shape = ratio === null ? 'Sin calcular' : ratio >= 2 ? 'Ovalada' : ratio >= 1.5 ? 'Subredondeada' : 'Redondeada';
+        const ratioBadge = ratio === null
+          ? { cls: 'badge-empty', label: 'Sin cálculo' }
+          : ratio >= 2
+            ? { cls: 'badge-normal', label: 'Favorable' }
+            : ratio >= 1.5
+              ? { cls: 'badge-warn', label: 'Límite' }
+              : { cls: 'badge-alert', label: 'Redondeada' };
+
+        let profile = 'Datos insuficientes';
+        let profileCls = 'badge-empty';
+        let suggestion = 'Completa ejes, corteza, hilio y Doppler para emitir una impresión morfológica sólida.';
+
+        if (hasCoreData) {
+          if (score <= 1 && ratio !== null && ratio >= 2 && shortAxis < 10 && cortex <= 3 && hilum === true && doppler === 'hiliar') {
+            profile = 'Reactivo probable';
+            profileCls = 'badge-normal';
+            suggestion = `Ganglio cervical lateral${side ? ` ${side.toLowerCase()}` : ''}${station ? ` ${station.toLowerCase()}` : ''} de ${formatNumberEs(longAxis, 1)} x ${formatNumberEs(shortAxis, 1)} mm (L/C ${formatNumberEs(ratio, 2)}), corteza ${formatNumberEs(cortex, 1)} mm, hilio conservado y Doppler ${dopplerLabel.toLowerCase()}.${ecoLabel ? ` Ecoestructura ${ecoLabel.toLowerCase()}.` : ''} Perfil ecográfico predominantemente reactivo. Correlacionar con clínica y seguimiento solo si persiste o crece.`;
+          } else if (score >= 4 || (hilum === false && (doppler === 'periferico' || eco === 'necrosis'))) {
+            profile = 'Morfología sospechosa';
+            profileCls = 'badge-alert';
+            suggestion = `Ganglio cervical lateral${side ? ` ${side.toLowerCase()}` : ''}${station ? ` ${station.toLowerCase()}` : ''} de ${formatNumberEs(longAxis, 1)} x ${formatNumberEs(shortAxis, 1)} mm (L/C ${formatNumberEs(ratio, 2)}), corteza ${formatNumberEs(cortex, 1)} mm, ${hilum ? 'hilio conservado' : 'hilio ausente'}, Doppler ${dopplerLabel.toLowerCase()}${ecoLabel ? ` y ecoestructura ${ecoLabel.toLowerCase()}` : ''}${bordersLabel ? ` con bordes ${bordersLabel.toLowerCase()}` : ''}. Perfil ecográfico sospechoso por rasgos morfológicos de alarma; valorar estudio etiológico dirigido y derivación según contexto clínico.`;
+          } else {
+            profile = 'Indeterminado';
+            profileCls = 'badge-warn';
+            suggestion = `Ganglio cervical lateral${side ? ` ${side.toLowerCase()}` : ''}${station ? ` ${station.toLowerCase()}` : ''} de ${formatNumberEs(longAxis, 1)} x ${formatNumberEs(shortAxis, 1)} mm (L/C ${formatNumberEs(ratio, 2)}), corteza ${formatNumberEs(cortex, 1)} mm, ${hilum ? 'hilio conservado' : 'hilio ausente'} y Doppler ${dopplerLabel.toLowerCase()}${ecoLabel ? `, ecoestructura ${ecoLabel.toLowerCase()}` : ''}${bordersLabel ? `, bordes ${bordersLabel.toLowerCase()}` : ''}. Perfil ecográfico indeterminado; correlacionar con clínica y valorar control ecográfico, estudio dirigido o derivación según persistencia.`;
+          }
+        }
+
+        return {
+          side,
+          station,
+          longAxis,
+          shortAxis,
+          cortex,
+          hilum,
+          dopplerLabel,
+          ecoLabel,
+          bordersLabel,
+          ratio,
+          ratioBadge,
+          shape,
+          profile,
+          profileCls,
+          redFlags,
+          greenFlags,
+          suggestion,
+        };
+      }
+
+      function computeDvtInsights(cardId) {
+        const side = getSelectLabel(cardId, 'lado');
+        const protocol = getSelectValue(cardId, 'protocolo');
+        const protocolLabel = getSelectLabel(cardId, 'protocolo');
+        const wells = computeWellsScore(cardId);
+
+        const segments = [
+          { id: 'comp_vfc', label: 'vena femoral común', required: true },
+          { id: 'comp_usf', label: 'unión safeno-femoral', required: protocol === 'extendido' },
+          { id: 'comp_femoral', label: 'vena femoral', required: protocol === 'extendido' },
+          { id: 'comp_profunda', label: 'confluencia femoral profunda', required: protocol === 'extendido' },
+          { id: 'comp_popl', label: 'vena poplítea', required: true },
+        ];
+
+        const positiveSegments = [];
+        const missingSegments = [];
+        const findings = [];
+        let requiredCount = 0;
+
+        segments.forEach(segment => {
+          if (!segment.required) return;
+          requiredCount += 1;
+          const meta = getCompressionMeta(cardId, segment.id);
+          findings.push(`${segment.label}: ${meta.label}`);
+          if (!meta.evaluated) {
+            missingSegments.push(segment.label);
+          }
+          if (meta.abnormal) {
+            positiveSegments.push(segment.label);
+          }
+        });
+
+        const coverageComplete = Boolean(protocol) && missingSegments.length === 0;
+        const coverageLabel = !protocol
+          ? 'Selecciona protocolo'
+          : coverageComplete
+            ? `${requiredCount}/${requiredCount} puntos completos`
+            : `${requiredCount - missingSegments.length}/${requiredCount} puntos completos`;
+        const coverageCls = !protocol ? 'badge-empty' : coverageComplete ? 'badge-normal' : 'badge-warn';
+
+        let profile = 'Datos insuficientes';
+        let profileCls = 'badge-empty';
+        let suggestion = 'Selecciona extremidad, protocolo y puntos de compresión para construir la impresión.';
+
+        if (side && protocol) {
+          if (!coverageComplete) {
+            profile = 'Estudio incompleto';
+            profileCls = 'badge-warn';
+            suggestion = `Estudio compresivo no concluyente en la extremidad ${side.toLowerCase()}: faltan puntos obligatorios del protocolo ${protocolLabel.toLowerCase()} (${missingSegments.join(', ')}). Completa la exploración o deriva a ecografía reglada.`;
+          } else if (positiveSegments.length > 0) {
+            profile = 'TVP probable';
+            profileCls = 'badge-alert';
+            suggestion = `Hallazgos ecográficos compatibles con TVP proximal en la extremidad ${side.toLowerCase()} por ausencia de compresibilidad completa en ${positiveSegments.join(', ')}. Requiere integración clínica y activación del circuito asistencial correspondiente.`;
+          } else if (wells.likely) {
+            profile = 'Negativo con alta sospecha';
+            profileCls = 'badge-warn';
+            suggestion = `Sin signos ecográficos de TVP proximal en los segmentos explorados de la extremidad ${side.toLowerCase()}, con protocolo ${protocolLabel.toLowerCase()} completo. Wells ${wells.score} (${wells.label}). Un estudio negativo${protocol === '2p' ? ' abreviado' : ''} no excluye por sí solo trombosis femoral aislada o distal si la sospecha persiste; valorar ecografía reglada o seriada.`;
+          } else {
+            profile = 'Sin TVP proximal en puntos explorados';
+            profileCls = 'badge-normal';
+            suggestion = `Sin signos ecográficos de TVP proximal en la extremidad ${side.toLowerCase()} con protocolo ${protocolLabel.toLowerCase()} completo. Wells ${wells.score} (${wells.label}). Integrar con clínica y dímero-D según contexto.`;
+          }
+        }
+
+        return {
+          side,
+          protocol,
+          protocolLabel,
+          wells,
+          findings,
+          positiveSegments,
+          missingSegments,
+          coverageLabel,
+          coverageCls,
+          coverageComplete,
+          profile,
+          profileCls,
+          suggestion,
+        };
+      }
+
+      function updateNeckAssistant(cardId, insights) {
+        const ratioEl = document.getElementById(`neck-ratio-${cardId}`);
+        const ratioBadge = document.getElementById(`neck-ratio-badge-${cardId}`);
+        const shapeEl = document.getElementById(`neck-shape-${cardId}`);
+        const profileEl = document.getElementById(`neck-profile-${cardId}`);
+        const profileBadge = document.getElementById(`neck-profile-badge-${cardId}`);
+        const flagsEl = document.getElementById(`neck-flags-${cardId}`);
+        const suggestionEl = document.getElementById(`neck-suggestion-${cardId}`);
+
+        if (ratioEl) ratioEl.textContent = insights.ratio === null ? '—' : formatNumberEs(insights.ratio, 2);
+        if (ratioBadge) {
+          ratioBadge.className = `measure-badge ${insights.ratioBadge.cls}`;
+          ratioBadge.textContent = insights.ratioBadge.label;
+        }
+        if (shapeEl) shapeEl.textContent = insights.shape;
+        if (profileEl) profileEl.textContent = insights.profile;
+        if (profileBadge) {
+          profileBadge.className = `measure-badge ${insights.profileCls}`;
+          profileBadge.textContent = insights.profile;
+        }
+        if (flagsEl) {
+          const chips = (insights.redFlags.length ? insights.redFlags.map(flag => `<span class="rp-chip alert">${flag}</span>`) : insights.greenFlags.map(flag => `<span class="rp-chip normal">${flag}</span>`)).join('');
+          flagsEl.innerHTML = chips || '<span class="rp-chip warn">Faltan datos clave</span>';
+        }
+        if (suggestionEl) suggestionEl.textContent = insights.suggestion;
+      }
+
+      function updateDvtAssistant(cardId, insights) {
+        const wellsScore = document.getElementById(`dvt-wells-score-${cardId}`);
+        const wellsBadge = document.getElementById(`dvt-wells-badge-${cardId}`);
+        const coverage = document.getElementById(`dvt-coverage-${cardId}`);
+        const coverageBadge = document.getElementById(`dvt-coverage-badge-${cardId}`);
+        const positive = document.getElementById(`dvt-positive-${cardId}`);
+        const profile = document.getElementById(`dvt-profile-${cardId}`);
+        const profileBadge = document.getElementById(`dvt-profile-badge-${cardId}`);
+        const suggestion = document.getElementById(`dvt-suggestion-${cardId}`);
+
+        if (wellsScore) wellsScore.textContent = insights.wells.score;
+        if (wellsBadge) {
+          wellsBadge.className = `measure-badge ${insights.wells.cls}`;
+          wellsBadge.textContent = insights.wells.label;
+        }
+        if (coverage) coverage.textContent = insights.coverageLabel;
+        if (coverageBadge) {
+          coverageBadge.className = `measure-badge ${insights.coverageCls}`;
+          coverageBadge.textContent = insights.coverageComplete ? 'Completo' : insights.protocol ? 'Incompleto' : 'Pendiente';
+        }
+        if (positive) positive.textContent = insights.positiveSegments.length ? insights.positiveSegments.join(', ') : 'Ninguno';
+        if (profile) profile.textContent = insights.profile;
+        if (profileBadge) {
+          profileBadge.className = `measure-badge ${insights.profileCls}`;
+          profileBadge.textContent = insights.profile;
+        }
+        if (suggestion) suggestion.textContent = insights.suggestion;
+      }
+
+      function updateReportAssistant(cardId) {
+        const app = getAppFromCardId(cardId);
+        if (!app) return null;
+
+        let insights = null;
+        if (app.segment === 'neck_lateral') {
+          insights = computeNeckLateralInsights(cardId);
+          updateNeckAssistant(cardId, insights);
+        } else if (app.segment === 'dvt') {
+          insights = computeDvtInsights(cardId);
+          updateDvtAssistant(cardId, insights);
+        }
+
+        if (insights) {
+          window.POCUSApp.reportInsights[cardId] = insights;
+        }
+        return insights;
+      }
+
+      function applyAutoConclusionIfNeeded(cardId) {
+        const conclusionEl = document.getElementById(`rp-conclusion-${cardId}`);
+        const insights = window.POCUSApp.reportInsights[cardId];
+        if (!conclusionEl || !insights?.suggestion) return;
+        if (conclusionEl.dataset.manual === 'true' && conclusionEl.value.trim()) return;
+        conclusionEl.dataset.manual = 'false';
+        conclusionEl.value = insights.suggestion;
+      }
+
+      window.useSuggestedConclusion = function(cardId) {
+        const conclusionEl = document.getElementById(`rp-conclusion-${cardId}`);
+        const insights = window.POCUSApp.reportInsights[cardId];
+        if (!conclusionEl || !insights?.suggestion) return;
+        conclusionEl.value = insights.suggestion;
+        conclusionEl.dataset.manual = 'true';
+        assembleAndSave(cardId);
+      };
+
+      window.handleConclusionInput = function(cardId) {
+        const conclusionEl = document.getElementById(`rp-conclusion-${cardId}`);
+        if (conclusionEl) conclusionEl.dataset.manual = 'true';
+        assembleAndSave(cardId);
+      };
+
+      function assembleDefaultReport(cardId, app) {
         const today = new Date().toLocaleDateString('es-ES');
         const title = app ? app.title : 'POCUS';
-        let lines = [`POCUS — ${title}`, `Fecha: ${today}`, ''];
+        const lines = [`POCUS — ${title}`, `Fecha: ${today}`, ''];
+        const fields = app?.content?.reportFields || [];
 
-        const fields = app && app.content.reportFields ? app.content.reportFields : [];
         if (fields.length) {
           lines.push('HALLAZGOS:');
           fields.forEach(field => {
@@ -3142,24 +3902,24 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
             let valText = '—';
             if (field.type === 'number') {
               const input = document.getElementById(fid);
-              const badge = document.getElementById(fid + '-badge');
+              const badge = document.getElementById(`${fid}-badge`);
               if (input && input.value !== '') {
-                valText = `${input.value}${field.unit ? ' ' + field.unit : ''}`;
+                valText = `${input.value}${field.unit ? ` ${field.unit}` : ''}`;
                 if (badge && !badge.className.includes('badge-empty')) valText += ` (${badge.textContent})`;
               }
             } else if (field.type === 'boolean') {
               const checked = document.querySelector(`input[name="${fid}"]:checked`);
-              const badge = document.getElementById(fid + '-badge');
+              const badge = document.getElementById(`${fid}-badge`);
               if (checked) {
                 valText = checked.value === 'yes' ? 'Sí' : 'No';
                 if (badge && !badge.className.includes('badge-empty')) valText += ` (${badge.textContent})`;
               }
             } else if (field.type === 'select') {
               const sel = document.getElementById(fid);
-              const badge = document.getElementById(fid + '-badge');
+              const badge = document.getElementById(`${fid}-badge`);
               if (sel && sel.value) {
                 valText = sel.options[sel.selectedIndex].text;
-                if (badge && !badge.className.includes('badge-empty')) valText += ` → ${badge.textContent}`;
+                if (badge && !badge.className.includes('badge-empty')) valText += ` -> ${badge.textContent}`;
               }
             }
             lines.push(`${field.label}: ${valText}`);
@@ -3167,29 +3927,219 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
           lines.push('');
         }
 
-        const conclusionEl = document.getElementById('rp-conclusion-' + cardId);
+        const conclusionEl = document.getElementById(`rp-conclusion-${cardId}`);
         const conclusion = conclusionEl ? conclusionEl.value.trim() : '';
-        if (conclusion) { lines.push('CONCLUSIÓN:'); lines.push(conclusion); }
+        if (conclusion) {
+          lines.push('CONCLUSIÓN:');
+          lines.push(conclusion);
+        }
 
         return lines.join('\n');
       }
 
+      function assembleNeckLateralReport(cardId, app) {
+        const insights = window.POCUSApp.reportInsights[cardId] || computeNeckLateralInsights(cardId);
+        const conclusionEl = document.getElementById(`rp-conclusion-${cardId}`);
+        const conclusion = conclusionEl?.value.trim() || insights.suggestion;
+        const lines = [
+          'POCUS ADENOPATÍAS CERVICALES',
+          `Fecha: ${new Date().toLocaleDateString('es-ES')}`,
+          '',
+          'INDICACIÓN:',
+          '[Adenopatía palpable / seguimiento / correlación clínica]',
+          '',
+          'TÉCNICA:',
+          'Sonda lineal de alta frecuencia. Cortes longitudinal y transversal del mismo ganglio diana.',
+          '',
+          'HALLAZGOS:',
+        ];
+
+        if (insights.side) lines.push(`Lado: ${insights.side}`);
+        if (insights.station) lines.push(`Nivel / estación: ${insights.station}`);
+        if (insights.longAxis !== null || insights.shortAxis !== null) {
+          lines.push(`Ganglio diana: ${formatNumberEs(insights.longAxis, 1)} x ${formatNumberEs(insights.shortAxis, 1)} mm${insights.ratio !== null ? ` (L/C ${formatNumberEs(insights.ratio, 2)})` : ''}`);
+        }
+        if (insights.cortex !== null) lines.push(`Corteza: ${formatNumberEs(insights.cortex, 1)} mm`);
+        if (insights.hilum !== null) lines.push(`Hilio graso: ${insights.hilum ? 'Presente' : 'Ausente'}`);
+        if (insights.dopplerLabel) lines.push(`Doppler: ${insights.dopplerLabel}`);
+        if (insights.ecoLabel) lines.push(`Ecoestructura: ${insights.ecoLabel}`);
+        if (insights.bordersLabel) lines.push(`Bordes: ${insights.bordersLabel}`);
+        if (insights.redFlags.length) lines.push(`Rasgos de alarma: ${insights.redFlags.join(', ')}`);
+        if (!insights.redFlags.length && insights.greenFlags.length) lines.push(`Rasgos favorables: ${insights.greenFlags.join(', ')}`);
+        lines.push('');
+        lines.push('IMPRESIÓN:');
+        lines.push(conclusion);
+        return lines.join('\n');
+      }
+
+      function assembleDvtReport(cardId) {
+        const insights = window.POCUSApp.reportInsights[cardId] || computeDvtInsights(cardId);
+        const conclusionEl = document.getElementById(`rp-conclusion-${cardId}`);
+        const conclusion = conclusionEl?.value.trim() || insights.suggestion;
+        const lines = [
+          'POCUS TVP (COMPRESIBILIDAD VENOSA)',
+          `Fecha: ${new Date().toLocaleDateString('es-ES')}`,
+          '',
+          'INDICACIÓN:',
+          `[Sospecha de TVP en extremidad ${insights.side || '_____'}]`,
+          `Wells: ${insights.wells.score} puntos (${insights.wells.label})`,
+          '',
+          'TÉCNICA:',
+          `Sonda lineal. Compresión seriada en corte transversal. Protocolo: ${insights.protocolLabel || 'pendiente'}.`,
+          '',
+          'HALLAZGOS:',
+          ...insights.findings.map(line => line.charAt(0).toUpperCase() + line.slice(1)),
+          `Cobertura: ${insights.coverageLabel}`,
+          `Segmentos anormales: ${insights.positiveSegments.length ? insights.positiveSegments.join(', ') : 'ninguno en los puntos explorados'}`,
+          '',
+          'IMPRESIÓN:',
+          conclusion,
+        ];
+        return lines.join('\n');
+      }
+
+      function assembleReport(cardId) {
+        const app = getAppFromCardId(cardId);
+        if (!app) return '';
+        if (app.segment === 'neck_lateral') return assembleNeckLateralReport(cardId, app);
+        if (app.segment === 'dvt') return assembleDvtReport(cardId, app);
+        return assembleDefaultReport(cardId, app);
+      }
+
+      function saveReportState(cardId) {
+        const root = document.getElementById(`report-${cardId}`);
+        if (!root) return;
+
+        const state = { fields: {}, radios: {}, checks: {}, meta: {} };
+        root.querySelectorAll('input, select, textarea').forEach(el => {
+          if (el.id === `rptxt-${cardId}`) return;
+          if (el.type === 'radio') {
+            if (el.checked) state.radios[el.name] = el.value;
+            return;
+          }
+          if (el.type === 'checkbox') {
+            if (el.id) state.checks[el.id] = el.checked;
+            return;
+          }
+          if (el.id) state.fields[el.id] = el.value;
+        });
+
+        const conclusionEl = document.getElementById(`rp-conclusion-${cardId}`);
+        state.meta.conclusionManual = conclusionEl?.dataset.manual === 'true';
+        sessionStorage.setItem(getReportStateKey(cardId), JSON.stringify(state));
+        if (conclusionEl) sessionStorage.setItem(`pocus_conclusion_${cardId}`, conclusionEl.value);
+      }
+
+      function restoreReportState(cardId) {
+        const raw = sessionStorage.getItem(getReportStateKey(cardId));
+        const legacyConclusion = sessionStorage.getItem(`pocus_conclusion_${cardId}`) || '';
+        const conclusionEl = document.getElementById(`rp-conclusion-${cardId}`);
+
+        if (!raw) {
+          if (conclusionEl && legacyConclusion) {
+            conclusionEl.value = legacyConclusion;
+            conclusionEl.dataset.manual = 'true';
+          }
+          return;
+        }
+
+        try {
+          const state = JSON.parse(raw);
+          Object.entries(state.fields || {}).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value;
+          });
+          Object.entries(state.checks || {}).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) el.checked = Boolean(value);
+          });
+          Object.entries(state.radios || {}).forEach(([name, value]) => {
+            const el = document.querySelector(`input[name="${name}"][value="${value}"]`);
+            if (el) el.checked = true;
+          });
+
+          if (conclusionEl) {
+            conclusionEl.dataset.manual = state.meta?.conclusionManual ? 'true' : 'false';
+          }
+        } catch (error) {
+          if (conclusionEl && legacyConclusion) {
+            conclusionEl.value = legacyConclusion;
+            conclusionEl.dataset.manual = 'true';
+          }
+        }
+
+        document.querySelectorAll(`[data-chk-card="${cardId}"]`).forEach(el => {
+          el.closest('.rp-check-label')?.classList.toggle('done', el.checked);
+        });
+      }
+
+      function updateConditionalRows(cardId) {
+        const rows = document.querySelectorAll(`#report-${cardId} .rp-form-row[data-visible-when-field]`);
+        rows.forEach(row => {
+          const controllingField = row.dataset.visibleWhenField;
+          const expectedValue = row.dataset.visibleWhenValue;
+          const currentValue = getSelectValue(cardId, controllingField);
+          row.hidden = currentValue !== expectedValue;
+        });
+      }
+
+      function refreshReportFieldBadges(cardId) {
+        const app = getAppFromCardId(cardId);
+        if (!app) return;
+        (app.content.reportFields || []).forEach(field => {
+          const fid = `mf-${cardId}-${field.id}`;
+          if (field.type === 'number') {
+            const input = document.getElementById(fid);
+            if (input?.value !== '') {
+              evalMeasure(cardId, field.id);
+            } else {
+              clearBadge(`${fid}-badge`);
+            }
+          } else if (field.type === 'boolean') {
+            const checked = document.querySelector(`input[name="${fid}"]:checked`);
+            if (checked) {
+              evalBoolean(cardId, field.id, checked.value);
+            } else {
+              clearBadge(`${fid}-badge`);
+            }
+          } else if (field.type === 'select') {
+            const select = document.getElementById(fid);
+            if (select?.value) {
+              evalSelect(cardId, field.id, select.value);
+            } else {
+              clearBadge(`${fid}-badge`);
+            }
+          }
+        });
+      }
+
+      function initializeReportCard(cardId) {
+        restoreReportState(cardId);
+        updateConditionalRows(cardId);
+        refreshReportFieldBadges(cardId);
+        assembleAndSave(cardId);
+      }
+
       // Actualiza la vista previa y guarda en sessionStorage
       window.assembleAndSave = function(cardId) {
+        updateConditionalRows(cardId);
+        updateReportAssistant(cardId);
+        applyAutoConclusionIfNeeded(cardId);
         const text = assembleReport(cardId);
-        const preview = document.getElementById('rptxt-' + cardId);
+        const preview = document.getElementById(`rptxt-${cardId}`);
         if (preview) preview.value = text;
-        // guardar conclusión
-        const conclusionEl = document.getElementById('rp-conclusion-' + cardId);
-        if (conclusionEl) sessionStorage.setItem('pocus_conclusion_' + cardId, conclusionEl.value);
+        saveReportState(cardId);
       };
 
       // Construye HTML de una fila de medida (form row con badge)
       function buildMeasureRowHtml(field, cardId) {
         const fid = `mf-${cardId}-${field.id}`;
         const fieldJson = JSON.stringify(field).replace(/'/g, '&#39;');
+        const visibleAttrs = field.visibleWhen
+          ? ` data-visible-when-field="${field.visibleWhen.fieldId}" data-visible-when-value="${field.visibleWhen.equals}"`
+          : '';
         if (field.type === 'number') {
-          return `<div class="rp-form-row">
+          return `<div class="rp-form-row${field.rowClass ? ` ${field.rowClass}` : ''}" data-field-row="${field.id}"${visibleAttrs}>
             <label class="rp-label" for="${fid}">${field.label}</label>
             <input type="number" class="rp-num-input" id="${fid}"
               min="${field.min ?? 0}" max="${field.max ?? 999}" step="${field.step ?? 0.1}"
@@ -3201,7 +4151,7 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
           </div>`;
         }
         if (field.type === 'boolean') {
-          return `<div class="rp-form-row">
+          return `<div class="rp-form-row${field.rowClass ? ` ${field.rowClass}` : ''}" data-field-row="${field.id}"${visibleAttrs}>
             <span class="rp-label">${field.label}:</span>
             <div class="rp-radios">
               <label class="rp-radio-label">
@@ -3217,8 +4167,8 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
           </div>`;
         }
         if (field.type === 'select') {
-          const opts = field.options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
-          return `<div class="rp-form-row">
+          const opts = field.options.map(option => `<option value="${option.value}">${option.label}</option>`).join('');
+          return `<div class="rp-form-row${field.rowClass ? ` ${field.rowClass}` : ''}" data-field-row="${field.id}"${visibleAttrs}>
             <label class="rp-label" for="${fid}">${field.label}:</label>
             <select class="rp-select" id="${fid}"
               data-field='${fieldJson}'
@@ -3235,52 +4185,76 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
       window.evalMeasure = function(cardId, fieldId) {
         const fid = `mf-${cardId}-${fieldId}`;
         const input = document.getElementById(fid);
-        const badge = document.getElementById(fid + '-badge');
+        const badge = document.getElementById(`${fid}-badge`);
         if (!input || !badge) return;
         let field;
-        try { field = JSON.parse(input.dataset.field.replace(/&#39;/g,"'")); } catch(e) { return; }
-        const val = parseFloat(input.value);
-        if (isNaN(val)) { badge.className = 'measure-badge badge-empty'; badge.textContent = '– –'; return; }
-        let cls = 'badge-empty', txt = '– –';
-        for (const t of (field.thresholds || [])) {
-          if (val >= (t.min ?? -Infinity) && val <= (t.max ?? Infinity)) { cls = t.cls; txt = t.label; break; }
+        try {
+          field = JSON.parse(input.dataset.field.replace(/&#39;/g,"'"));
+        } catch (error) {
+          return;
         }
-        badge.className = 'measure-badge ' + cls;
+        const value = parseFloat(input.value);
+        if (Number.isNaN(value)) {
+          clearBadge(`${fid}-badge`);
+          return;
+        }
+        let cls = 'badge-empty';
+        let txt = 'Medido';
+        for (const threshold of (field.thresholds || [])) {
+          if (value >= (threshold.min ?? -Infinity) && value <= (threshold.max ?? Infinity)) {
+            cls = threshold.cls;
+            txt = threshold.label;
+            break;
+          }
+        }
+        badge.className = `measure-badge ${cls}`;
         badge.textContent = txt;
       };
 
       // Evalúa campo booleano → badge
       window.evalBoolean = function(cardId, fieldId, value) {
         const fid = `mf-${cardId}-${fieldId}`;
-        const badge = document.getElementById(fid + '-badge');
+        const badge = document.getElementById(`${fid}-badge`);
         if (!badge) return;
-        const app = getAppFromCardId(cardId);
-        if (!app) return;
-        const field = (app.content.reportFields || []).find(f => f.id === fieldId);
+        const field = getFieldConfig(cardId, fieldId);
         if (!field) return;
         const isYes = value === 'yes';
-        badge.className = 'measure-badge ' + (isYes ? (field.yesIsAlert ? 'badge-alert' : 'badge-normal') : (field.yesIsAlert ? 'badge-normal' : 'badge-alert'));
+        badge.className = 'measure-badge ' + (isYes
+          ? (field.yesIsAlert ? 'badge-alert' : 'badge-normal')
+          : (field.yesIsAlert ? 'badge-normal' : 'badge-alert'));
         badge.textContent = isYes ? (field.yesLabel || 'Sí') : (field.noLabel || 'No');
       };
 
       // Evalúa campo select → badge
       window.evalSelect = function(cardId, fieldId, value) {
-        if (!value) return;
         const fid = `mf-${cardId}-${fieldId}`;
-        const badge = document.getElementById(fid + '-badge');
+        const badge = document.getElementById(`${fid}-badge`);
         const el = document.getElementById(fid);
         if (!badge || !el) return;
+        if (!value) {
+          clearBadge(`${fid}-badge`);
+          return;
+        }
         let field;
-        try { field = JSON.parse(el.dataset.field.replace(/&#39;/g,"'")); } catch(e) { return; }
-        const opt = (field.options || []).find(o => String(o.value) === String(value));
-        if (!opt) return;
-        badge.className = 'measure-badge ' + (opt.cls || 'badge-empty');
-        badge.textContent = opt.badge || opt.label;
+        try {
+          field = JSON.parse(el.dataset.field.replace(/&#39;/g,"'"));
+        } catch (error) {
+          return;
+        }
+        const option = (field.options || []).find(opt => String(opt.value) === String(value));
+        if (!option) {
+          clearBadge(`${fid}-badge`);
+          return;
+        }
+        badge.className = `measure-badge ${option.cls || 'badge-empty'}`;
+        badge.textContent = option.badge || option.label;
       };
 
       // Toggle checklist puro (sin input)
       window.toggleChecklistItem = function(el) {
         el.closest('.rp-check-label')?.classList.toggle('done', el.checked);
+        const cardId = el.dataset.chkCard;
+        if (cardId) saveReportState(cardId);
       };
 
       // Toggle vista previa
@@ -3337,26 +4311,42 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
       // Limpiar formulario y sessionStorage
       window.resetReport = function(cardId) {
         if (!confirm('¿Limpiar todos los campos del informe?')) return;
-        // Campos numéricos y select
-        document.querySelectorAll(`[id^="mf-${cardId}-"]`).forEach(el => {
-          if (el.tagName === 'INPUT' && el.type === 'number') el.value = '';
-          if (el.tagName === 'SELECT') el.value = '';
-          if (el.id.endsWith('-badge')) { el.className = 'measure-badge badge-empty'; el.textContent = '– –'; }
+        const root = document.getElementById(`report-${cardId}`);
+        if (!root) return;
+
+        root.querySelectorAll('input, select, textarea').forEach(el => {
+          if (el.id === `rptxt-${cardId}`) return;
+          if (el.type === 'radio' || el.type === 'checkbox') {
+            el.checked = false;
+          } else {
+            el.value = '';
+          }
         });
-        // Radios
-        document.querySelectorAll(`input[name^="mf-${cardId}-"]`).forEach(el => { el.checked = false; });
-        // Checklist
+
         document.querySelectorAll(`[data-chk-card="${cardId}"]`).forEach(el => {
-          el.checked = false;
           el.closest('.rp-check-label')?.classList.remove('done');
         });
-        // Conclusión
-        const conclusionEl = document.getElementById('rp-conclusion-' + cardId);
-        if (conclusionEl) conclusionEl.value = '';
-        // Preview
-        const preview = document.getElementById('rptxt-' + cardId);
+
+        root.querySelectorAll('.measure-badge').forEach(badge => {
+          badge.className = 'measure-badge badge-empty';
+          badge.textContent = '– –';
+        });
+
+        const conclusionEl = document.getElementById(`rp-conclusion-${cardId}`);
+        if (conclusionEl) {
+          conclusionEl.value = '';
+          conclusionEl.dataset.manual = 'false';
+        }
+
+        const preview = document.getElementById(`rptxt-${cardId}`);
         if (preview) preview.value = '';
-        sessionStorage.removeItem('pocus_conclusion_' + cardId);
+
+        delete window.POCUSApp.reportInsights[cardId];
+        sessionStorage.removeItem(getReportStateKey(cardId));
+        sessionStorage.removeItem(`pocus_conclusion_${cardId}`);
+        updateConditionalRows(cardId);
+        refreshReportFieldBadges(cardId);
+        assembleAndSave(cardId);
       };
 
       // Funciones de zoom
@@ -3532,6 +4522,7 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
             if (app.refId) usedRefs.add(app.refId);
             const card = createContentCard(app, index, segmentId);
             contentArea.appendChild(card);
+            initializeReportCard(card.id);
           });
 
           renderReferences(usedRefs);
@@ -3598,14 +4589,16 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
           ];
 
           // Filas de checklist puro (sin input de medida)
-          const checklistHtml = reportChecklist.map(item => `
+          const checklistHtml = reportChecklist.map((item, idx) => `
             <label class="rp-check-label">
-              <input type="checkbox" class="rp-check" data-chk-card="${cardId}"
+              <input type="checkbox" class="rp-check" id="chk-${cardId}-${idx}" data-chk-card="${cardId}"
                 onchange="toggleChecklistItem(this)"> ${item}
             </label>`).join('');
 
           // Filas de medida (form row con badge)
           const measuresHtml = reportFields.map(f => buildMeasureRowHtml(f, cardId)).join('');
+          const reportAssistantHtml = buildReportAssistantHtml(app, cardId);
+          const hasAutoAssistant = Boolean(reportAssistantHtml);
 
           const reportTabButton = `<button class="tab-button py-2 px-4 -mb-px bg-indigo-100 text-indigo-700 font-semibold rounded-t-md flex-shrink-0"
             onclick="switchTab('${cardId}', 'report', this)">📋 Informe</button>`;
@@ -3624,12 +4617,19 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
                   ${measuresHtml}
                 </div>
 
+                ${reportAssistantHtml}
+
                 <!-- Conclusión -->
                 <div>
-                  <div class="rp-section-title">💬 Conclusión / Impresión diagnóstica</div>
+                  <div class="rp-conclusion-tools">
+                    <div class="rp-section-title">💬 Conclusión / Impresión diagnóstica</div>
+                    ${hasAutoAssistant ? `<button type="button" class="rp-secondary-btn" onclick="useSuggestedConclusion('${cardId}')">Usar sugerencia</button>` : ''}
+                  </div>
+                  <div class="rp-helper-note">${hasAutoAssistant ? 'Si no editas manualmente la conclusión, la web la mantendrá alineada con la síntesis automática.' : 'Escribe aquí la impresión diagnóstica y el plan.'}</div>
                   <textarea id="rp-conclusion-${cardId}" class="rp-conclusion-ta"
                     placeholder="Escribe aquí la impresión diagnóstica y el plan..."
-                    oninput="assembleAndSave('${cardId}')"
+                    oninput="handleConclusionInput('${cardId}')"
+                    data-manual="${savedConclusion ? 'true' : 'false'}"
                     spellcheck="true"
                   >${savedConclusion}</textarea>
                 </div>
