@@ -413,13 +413,258 @@
       }
 
       /* ======================================================
-         PANEL INFORME POCUS
+         PANEL INFORME POCUS  —  mobile-first
       ====================================================== */
-      .report-panel {
+      .report-panel { display:flex; flex-direction:column; gap:12px; }
+
+      /* Título de sección */
+      .rp-section-title {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: #64748b;
+        margin-bottom: 4px;
+      }
+
+      /* SEMAFOROS */
+      .measure-badge {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 9999px;
+        transition: all 0.2s;
+        white-space: nowrap;
+        min-width: 72px;
+        justify-content: center;
+      }
+      .badge-normal { background:#dcfce7; color:#15803d; }
+      .badge-warn   { background:#fef9c3; color:#854d0e; }
+      .badge-alert  { background:#fee2e2; color:#b91c1c; }
+      .badge-empty  { background:#f1f5f9; color:#94a3b8; }
+
+      /* FILAS DE FORMULARIO —
+         card-form-section: contenedor de todas las filas */
+      .rp-form-section {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 10px 12px;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 6px;
       }
+
+      /* Cada fila: checkbox + label + [input] + badge */
+      .rp-form-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;     /* touch target */
+        flex-wrap: wrap;
+        padding: 2px 0;
+      }
+      .rp-form-row.row-divider {
+        border-top: 1px solid #e2e8f0;
+        padding-top: 8px;
+        margin-top: 2px;
+      }
+
+      /* Checkbox de confirmación (izquierda de cada fila de medida) */
+      .rp-check {
+        accent-color: #3b82f6;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      /* Etiqueta */
+      .rp-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #1e40af;
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+
+      /* Input numérico — mínimo 44px de alto, 16px evita zoom en iOS */
+      .rp-num-input {
+        width: 72px;
+        height: 38px;
+        padding: 0 8px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 7px;
+        font-size: 1rem;     /* 16px: evita auto-zoom en iOS */
+        font-family: 'Inter', sans-serif;
+        text-align: center;
+        outline: none;
+        transition: border-color 0.2s;
+        flex-shrink: 0;
+        -moz-appearance: textfield;
+      }
+      .rp-num-input::-webkit-outer-spin-button,
+      .rp-num-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+      .rp-num-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+      }
+
+      /* Unidad */
+      .rp-unit { font-size: 0.75rem; color: #64748b; flex-shrink: 0; }
+
+      /* Radios booleanos */
+      .rp-radios {
+        display: flex;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+      .rp-radio-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.82rem;
+        cursor: pointer;
+        min-height: 44px;
+        padding: 0 2px;
+      }
+      .rp-radio-label input[type=radio] {
+        accent-color: #3b82f6;
+        width: 17px;
+        height: 17px;
+      }
+
+      /* Select */
+      .rp-select {
+        height: 38px;
+        padding: 0 8px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 7px;
+        font-size: 0.85rem;
+        font-family: 'Inter', sans-serif;
+        outline: none;
+        background: white;
+        transition: border-color 0.2s;
+        flex: 1 1 auto;
+        min-width: 120px;
+        max-width: 100%;
+      }
+      .rp-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+
+      /* Filas sólo checklist (sin input) */
+      .rp-check-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.82rem;
+        color: #374151;
+        cursor: pointer;
+        min-height: 36px;
+        transition: color 0.2s;
+        user-select: none;
+      }
+      .rp-check-label input[type=checkbox] {
+        accent-color: #3b82f6;
+        width: 17px;
+        height: 17px;
+        flex-shrink: 0;
+      }
+      .rp-check-label.done {
+        color: #16a34a;
+        text-decoration: line-through;
+        opacity: 0.7;
+      }
+
+      /* CONCLUSIÓN  --- textarea pequeño */
+      .rp-conclusion-ta {
+        width: 100%;
+        min-height: 80px;
+        padding: 10px 12px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.88rem;
+        font-family: 'Inter', sans-serif;
+        line-height: 1.5;
+        color: #1e293b;
+        resize: vertical;
+        outline: none;
+        transition: border-color 0.2s;
+        background: white;
+      }
+      .rp-conclusion-ta:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.15); }
+
+      /* VISTA PREVIA generada */
+      .rp-preview-wrap { position: relative; }
+      .rp-preview-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: #6366f1;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px 0;
+        user-select: none;
+      }
+      .rp-preview-ta {
+        width: 100%;
+        min-height: 160px;
+        padding: 12px;
+        border: 1.5px dashed #c7d2fe;
+        border-radius: 8px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.78rem;
+        line-height: 1.7;
+        color: #334155;
+        resize: vertical;
+        outline: none;
+        background: #f8f9ff;
+        transition: border-color 0.2s;
+      }
+      .rp-preview-ta:focus { border-color: #818cf8; }
+
+      /* Botones de acción */
+      .report-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .btn-rp {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 10px 14px;
+        min-height: 44px;
+        border: none;
+        border-radius: 9px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        transition: all 0.2s;
+        white-space: nowrap;
+        flex: 1 1 auto;
+        justify-content: center;
+      }
+      @media (min-width: 480px) { .btn-rp { flex: 0 1 auto; } }
+      .btn-rp:hover { filter: brightness(1.08); transform: translateY(-1px); }
+      .btn-rp:active { transform: translateY(0); }
+      .btn-rp-copy  { background: #1e40af; color: #fff; }
+      .btn-rp-wa    { background: #25D366; color: #fff; }
+      .btn-rp-email { background: #6366f1; color: #fff; }
+      .btn-rp-reset { background: #e2e8f0; color: #475569; }
+      .btn-rp-copy.copied { background: #16a34a; }
+      .report-copy-feedback {
+        font-size: 0.75rem; color: #16a34a; font-weight: 600;
+        display: none; align-items: center; gap: 4px; align-self: center;
+      }
+      .report-copy-feedback.show { display: flex; }
 
       /* Cabecera del panel */
       .report-panel-header {
@@ -3045,65 +3290,113 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
       };
 
       // ============================================================
-      // REPORT PANEL — utilidades
+      // REPORT PANEL v2 — generación automática desde formulario
       // ============================================================
 
-      // Plantilla genérica si pocusData no define reportTemplate
-      function buildDefaultReportTemplate(title) {
-        const today = new Date().toLocaleDateString('es-ES');
-        return `POCUS — ${title}
-Fecha: ${today}    Explorador: ____________________
-
-INDICACIÓN:
-[Motivo clínico de la exploración]
-
-TÉCNICA:
-Sonda: ____________    Calidad imagen: Óptima / Subóptima
-
-HALLAZGOS:
-[Describir hallazgos principales]
-
-CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
-[Impresión final y recomendación]`;
+      // helper: obtiene el app (pocusData entry) desde el cardId
+      function getAppFromCardId(cardId) {
+        const parts = cardId.replace('card-','').split('-');
+        const idx = parseInt(parts.pop());
+        const seg = parts.join('-');
+        return (pocusData.filter(d => d.segment === seg))[idx] || null;
       }
 
-      // Construye HTML de una fila de medida (campo numérico o booleano)
+      // Construye el texto del informe leyendo los valores del formulario
+      function assembleReport(cardId) {
+        const app = getAppFromCardId(cardId);
+        const today = new Date().toLocaleDateString('es-ES');
+        const title = app ? app.title : 'POCUS';
+        let lines = [`POCUS — ${title}`, `Fecha: ${today}`, ''];
+
+        const fields = app && app.content.reportFields ? app.content.reportFields : [];
+        if (fields.length) {
+          lines.push('HALLAZGOS:');
+          fields.forEach(field => {
+            const fid = `mf-${cardId}-${field.id}`;
+            let valText = '—';
+            if (field.type === 'number') {
+              const input = document.getElementById(fid);
+              const badge = document.getElementById(fid + '-badge');
+              if (input && input.value !== '') {
+                valText = `${input.value}${field.unit ? ' ' + field.unit : ''}`;
+                if (badge && !badge.className.includes('badge-empty')) valText += ` (${badge.textContent})`;
+              }
+            } else if (field.type === 'boolean') {
+              const checked = document.querySelector(`input[name="${fid}"]:checked`);
+              const badge = document.getElementById(fid + '-badge');
+              if (checked) {
+                valText = checked.value === 'yes' ? 'Sí' : 'No';
+                if (badge && !badge.className.includes('badge-empty')) valText += ` (${badge.textContent})`;
+              }
+            } else if (field.type === 'select') {
+              const sel = document.getElementById(fid);
+              const badge = document.getElementById(fid + '-badge');
+              if (sel && sel.value) {
+                valText = sel.options[sel.selectedIndex].text;
+                if (badge && !badge.className.includes('badge-empty')) valText += ` → ${badge.textContent}`;
+              }
+            }
+            lines.push(`${field.label}: ${valText}`);
+          });
+          lines.push('');
+        }
+
+        const conclusionEl = document.getElementById('rp-conclusion-' + cardId);
+        const conclusion = conclusionEl ? conclusionEl.value.trim() : '';
+        if (conclusion) { lines.push('CONCLUSIÓN:'); lines.push(conclusion); }
+
+        return lines.join('\n');
+      }
+
+      // Actualiza la vista previa y guarda en sessionStorage
+      window.assembleAndSave = function(cardId) {
+        const text = assembleReport(cardId);
+        const preview = document.getElementById('rptxt-' + cardId);
+        if (preview) preview.value = text;
+        // guardar conclusión
+        const conclusionEl = document.getElementById('rp-conclusion-' + cardId);
+        if (conclusionEl) sessionStorage.setItem('pocus_conclusion_' + cardId, conclusionEl.value);
+      };
+
+      // Construye HTML de una fila de medida (form row con badge)
       function buildMeasureRowHtml(field, cardId) {
         const fid = `mf-${cardId}-${field.id}`;
+        const fieldJson = JSON.stringify(field).replace(/'/g, '&#39;');
         if (field.type === 'number') {
-          return `
-          <div class="measure-row">
-            <span class="measure-label">${field.label}:</span>
-            <input type="number" class="measure-input" id="${fid}"
+          return `<div class="rp-form-row">
+            <label class="rp-label" for="${fid}">${field.label}</label>
+            <input type="number" class="rp-num-input" id="${fid}"
               min="${field.min ?? 0}" max="${field.max ?? 999}" step="${field.step ?? 0.1}"
-              placeholder="—" oninput="evalMeasure('${cardId}', '${field.id}')"
-              data-field='${JSON.stringify(field).replace(/'/g,"&#39;")}'>
-            <span class="measure-unit">${field.unit || ''}</span>
+              inputmode="decimal" placeholder="—"
+              data-field='${fieldJson}'
+              oninput="evalMeasure('${cardId}','${field.id}');assembleAndSave('${cardId}')">
+            <span class="rp-unit">${field.unit || ''}</span>
             <span class="measure-badge badge-empty" id="${fid}-badge">– –</span>
           </div>`;
         }
         if (field.type === 'boolean') {
-          return `
-          <div class="measure-row">
-            <span class="measure-label">${field.label}:</span>
-            <div class="measure-radios">
-              <label><input type="radio" name="${fid}" value="no"
-                onchange="evalBoolean('${cardId}','${field.id}','no')"> No</label>
-              <label><input type="radio" name="${fid}" value="yes"
-                onchange="evalBoolean('${cardId}','${field.id}','yes')"> Sí</label>
+          return `<div class="rp-form-row">
+            <span class="rp-label">${field.label}:</span>
+            <div class="rp-radios">
+              <label class="rp-radio-label">
+                <input type="radio" name="${fid}" value="no"
+                  onchange="evalBoolean('${cardId}','${field.id}','no');assembleAndSave('${cardId}')"> No
+              </label>
+              <label class="rp-radio-label">
+                <input type="radio" name="${fid}" value="yes"
+                  onchange="evalBoolean('${cardId}','${field.id}','yes');assembleAndSave('${cardId}')"> Sí
+              </label>
             </div>
             <span class="measure-badge badge-empty" id="${fid}-badge">– –</span>
           </div>`;
         }
         if (field.type === 'select') {
-          const opts = field.options.map(o =>
-            `<option value="${o.value}">${o.label}</option>`).join('');
-          return `
-          <div class="measure-row">
-            <span class="measure-label">${field.label}:</span>
-            <select class="measure-select" id="${fid}"
-              onchange="evalSelect('${cardId}','${field.id}',this.value)"
-              data-field='${JSON.stringify(field).replace(/'/g,"&#39;")}'>
+          const opts = field.options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+          return `<div class="rp-form-row">
+            <label class="rp-label" for="${fid}">${field.label}:</label>
+            <select class="rp-select" id="${fid}"
+              data-field='${fieldJson}'
+              onchange="evalSelect('${cardId}','${field.id}',this.value);assembleAndSave('${cardId}')">
               <option value="">Seleccionar…</option>${opts}
             </select>
             <span class="measure-badge badge-empty" id="${fid}-badge">– –</span>
@@ -3112,164 +3405,132 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
         return '';
       }
 
-      // Evalúa un campo numérico y actualiza el badge + textarea
+      // Evalúa campo numérico → badge
       window.evalMeasure = function(cardId, fieldId) {
         const fid = `mf-${cardId}-${fieldId}`;
         const input = document.getElementById(fid);
         const badge = document.getElementById(fid + '-badge');
         if (!input || !badge) return;
-        const raw = input.dataset.field;
         let field;
-        try { field = JSON.parse(raw.replace(/&#39;/g,"'")); } catch(e) { return; }
+        try { field = JSON.parse(input.dataset.field.replace(/&#39;/g,"'")); } catch(e) { return; }
         const val = parseFloat(input.value);
         if (isNaN(val)) { badge.className = 'measure-badge badge-empty'; badge.textContent = '– –'; return; }
-        let cls = 'badge-empty', txt = '';
-        const thresholds = field.thresholds || [];
-        for (const t of thresholds) {
-          if (val >= (t.min ?? -Infinity) && val <= (t.max ?? Infinity)) {
-            cls = t.cls; txt = t.label; break;
-          }
+        let cls = 'badge-empty', txt = '– –';
+        for (const t of (field.thresholds || [])) {
+          if (val >= (t.min ?? -Infinity) && val <= (t.max ?? Infinity)) { cls = t.cls; txt = t.label; break; }
         }
         badge.className = 'measure-badge ' + cls;
         badge.textContent = txt;
-        injectMeasureIntoTextarea(cardId, fieldId, val + ' ' + (field.unit || ''), txt);
-        saveReportText(cardId);
       };
 
-      // Evalúa un campo booleano
+      // Evalúa campo booleano → badge
       window.evalBoolean = function(cardId, fieldId, value) {
         const fid = `mf-${cardId}-${fieldId}`;
         const badge = document.getElementById(fid + '-badge');
         if (!badge) return;
-        const allFields = getCurrentCardFields(cardId);
-        const field = allFields.find(f => f.id === fieldId);
+        const app = getAppFromCardId(cardId);
+        if (!app) return;
+        const field = (app.content.reportFields || []).find(f => f.id === fieldId);
         if (!field) return;
         const isYes = value === 'yes';
-        const yesClass = field.yesIsAlert ? 'badge-alert' : 'badge-normal';
-        const noClass  = field.yesIsAlert ? 'badge-normal' : 'badge-alert';
-        badge.className = 'measure-badge ' + (isYes ? yesClass : noClass);
-        badge.textContent = isYes ? (field.yesLabel || 'Sí — presente') : (field.noLabel || 'No — ausente');
-        const interpText = isYes ? (field.yesInterpretation || 'PRESENTE') : (field.noInterpretation || 'AUSENTE');
-        injectMeasureIntoTextarea(cardId, fieldId, isYes ? 'Sí' : 'No', interpText);
-        saveReportText(cardId);
+        badge.className = 'measure-badge ' + (isYes ? (field.yesIsAlert ? 'badge-alert' : 'badge-normal') : (field.yesIsAlert ? 'badge-normal' : 'badge-alert'));
+        badge.textContent = isYes ? (field.yesLabel || 'Sí') : (field.noLabel || 'No');
       };
 
-      // Evalúa un campo select
+      // Evalúa campo select → badge
       window.evalSelect = function(cardId, fieldId, value) {
         if (!value) return;
         const fid = `mf-${cardId}-${fieldId}`;
         const badge = document.getElementById(fid + '-badge');
-        if (!badge) return;
         const el = document.getElementById(fid);
-        const raw = el ? el.dataset.field : null;
+        if (!badge || !el) return;
         let field;
-        try { field = JSON.parse(raw.replace(/&#39;/g,"'")); } catch(e) { return; }
+        try { field = JSON.parse(el.dataset.field.replace(/&#39;/g,"'")); } catch(e) { return; }
         const opt = (field.options || []).find(o => String(o.value) === String(value));
         if (!opt) return;
         badge.className = 'measure-badge ' + (opt.cls || 'badge-empty');
         badge.textContent = opt.badge || opt.label;
-        injectMeasureIntoTextarea(cardId, fieldId, opt.label, opt.interpretation || '');
-        saveReportText(cardId);
       };
 
-      // helper: obtener reportFields del pocusData para una card activa
-      function getCurrentCardFields(cardId) {
-        const parts = cardId.replace('card-','').split('-');
-        const idx = parseInt(parts.pop());
-        const seg = parts.join('-');
-        const app = (pocusData.filter(d => d.segment === seg))[idx];
-        return (app && app.content.reportFields) ? app.content.reportFields : [];
-      }
-
-      // Inyecta/actualiza una línea de medida en el textarea (marcador [[id]])
-      function injectMeasureIntoTextarea(cardId, fieldId, rawValue, interpretation) {
-        const ta = document.getElementById('rptxt-' + cardId);
-        if (!ta) return;
-        const marker = `[[${fieldId}]]`;
-        const line = `${rawValue}${interpretation ? ' → ' + interpretation : ''}`;
-        if (ta.value.includes(marker)) {
-          ta.value = ta.value.replace(new RegExp(`\\[\\[${fieldId}\\]\\][^\\n]*`), marker + line);
-        }
-        ta.classList.add('has-changes');
-      }
-
-      // Checklist toggle
-      window.toggleChecklistItem = function(cardId, idx) {
-        const lbl = document.getElementById(`chk-label-${cardId}-${idx}`);
-        if (lbl) lbl.classList.toggle('checked-item');
+      // Toggle checklist puro (sin input)
+      window.toggleChecklistItem = function(el) {
+        el.closest('.rp-check-label')?.classList.toggle('done', el.checked);
       };
 
-      // Persistencia sessionStorage
-      window.saveReportText = function(cardId) {
-        const ta = document.getElementById('rptxt-' + cardId);
-        if (!ta) return;
-        ta.classList.add('has-changes');
-        sessionStorage.setItem('pocus_report_' + cardId, ta.value);
+      // Toggle vista previa
+      window.togglePreview = function(cardId) {
+        const wrap = document.getElementById('rp-preview-' + cardId);
+        const btn  = document.getElementById('rp-preview-btn-' + cardId);
+        if (!wrap) return;
+        const hidden = wrap.hidden;
+        wrap.hidden = !hidden;
+        if (btn) btn.textContent = hidden ? '▲ Ocultar informe' : '▼ Ver informe generado';
+        if (!hidden) return;
+        // Actualizar antes de mostrar
+        assembleAndSave(cardId);
       };
 
-      // Copiar al portapapeles
+      // Copiar al portapapeles (usa assembleReport para texto fresco)
       window.copyReport = function(cardId) {
-        const ta = document.getElementById('rptxt-' + cardId);
-        if (!ta) return;
-        navigator.clipboard.writeText(ta.value).then(() => {
+        const text = assembleReport(cardId);
+        const copy = () => {
           const btn = document.getElementById('btnCopy-' + cardId);
           const fb  = document.getElementById('rpfb-' + cardId);
-          if (btn) { btn.classList.add('copied'); btn.textContent = '✓ Copiado'; }
+          if (btn) { btn.classList.add('copied'); btn.innerHTML = '✓ Copiado'; }
           if (fb)  fb.classList.add('show');
           setTimeout(() => {
-            if (btn) { btn.classList.remove('copied'); btn.textContent = '📋 Copiar'; }
+            if (btn) { btn.classList.remove('copied'); btn.innerHTML = '📋 Copiar'; }
             if (fb)  fb.classList.remove('show');
           }, 2500);
-        }).catch(() => {
-          // fallback para iOS Safari / contextos sin HTTPS
-          const range = document.createRange();
-          range.selectNode(ta);
-          window.getSelection().removeAllRanges();
-          window.getSelection().addRange(range);
-          document.execCommand('copy');
-          window.getSelection().removeAllRanges();
+        };
+        navigator.clipboard.writeText(text).then(copy).catch(() => {
+          const ta = document.getElementById('rptxt-' + cardId);
+          if (ta) {
+            ta.value = text;
+            const range = document.createRange();
+            range.selectNode(ta);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+            copy();
+          }
         });
       };
 
-      // Compartir por WhatsApp
+      // Compartir WhatsApp
       window.shareReportWhatsApp = function(cardId) {
-        const ta = document.getElementById('rptxt-' + cardId);
-        if (!ta) return;
-        const text = encodeURIComponent(ta.value);
-        window.open('https://api.whatsapp.com/send?text=' + text, '_blank');
+        window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(assembleReport(cardId)), '_blank');
       };
 
-      // Compartir por correo
+      // Compartir correo
       window.shareReportEmail = function(cardId, subject) {
-        const ta = document.getElementById('rptxt-' + cardId);
-        if (!ta) return;
-        const body = encodeURIComponent(ta.value);
-        const subj = encodeURIComponent('POCUS — ' + subject);
-        window.location.href = `mailto:?subject=${subj}&body=${body}`;
+        window.location.href = `mailto:?subject=${encodeURIComponent('POCUS — ' + subject)}&body=${encodeURIComponent(assembleReport(cardId))}`;
       };
 
-      // Restablecer plantilla original
+      // Limpiar formulario y sessionStorage
       window.resetReport = function(cardId) {
-        if (!confirm('¿Restablecer el informe a la plantilla original? Se perderán los cambios.')) return;
-        const parts = cardId.replace('card-','').split('-');
-        const idx = parseInt(parts.pop());
-        const seg = parts.join('-');
-        const app = (pocusData.filter(d => d.segment === seg))[idx];
-        const template = (app && app.content.reportTemplate)
-          ? app.content.reportTemplate
-          : buildDefaultReportTemplate(app ? app.title : '');
-        const ta = document.getElementById('rptxt-' + cardId);
-        if (ta) { ta.value = template; ta.classList.remove('has-changes'); }
-        sessionStorage.removeItem('pocus_report_' + cardId);
-        // Limpiar campos de medida visualmente
+        if (!confirm('¿Limpiar todos los campos del informe?')) return;
+        // Campos numéricos y select
         document.querySelectorAll(`[id^="mf-${cardId}-"]`).forEach(el => {
-          if (el.tagName === 'INPUT' || el.tagName === 'SELECT') el.value = '';
+          if (el.tagName === 'INPUT' && el.type === 'number') el.value = '';
+          if (el.tagName === 'SELECT') el.value = '';
           if (el.id.endsWith('-badge')) { el.className = 'measure-badge badge-empty'; el.textContent = '– –'; }
         });
+        // Radios
         document.querySelectorAll(`input[name^="mf-${cardId}-"]`).forEach(el => { el.checked = false; });
-        // Limpiar checklist
-        document.querySelectorAll(`[id^="chk-${cardId}-"]`).forEach(el => { el.checked = false; });
-        document.querySelectorAll(`[id^="chk-label-${cardId}-"]`).forEach(el => el.classList.remove('checked-item'));
+        // Checklist
+        document.querySelectorAll(`[data-chk-card="${cardId}"]`).forEach(el => {
+          el.checked = false;
+          el.closest('.rp-check-label')?.classList.remove('done');
+        });
+        // Conclusión
+        const conclusionEl = document.getElementById('rp-conclusion-' + cardId);
+        if (conclusionEl) conclusionEl.value = '';
+        // Preview
+        const preview = document.getElementById('rptxt-' + cardId);
+        if (preview) preview.value = '';
+        sessionStorage.removeItem('pocus_conclusion_' + cardId);
       };
 
       // Funciones de zoom
@@ -3503,69 +3764,77 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
             evidenceHtml += `<a href="#ref-${app.refId}" class="reference-link block mt-2">Ver referencia</a>`;
           }
 
-          // ---- PESTAÑA INFORME ----
+          // ---- PESTAÑA INFORME v2 ----
           const reportFields = app.content.reportFields || [];
-          const reportTemplate = app.content.reportTemplate || buildDefaultReportTemplate(app.title);
           const reportChecklist = app.content.reportChecklist || [
-            'Indicación clínica registrada',
             'Técnica y sonda documentadas',
-            'Calidad de imagen adecuada',
-            'Hallazgos principales anotados',
-            'Conclusión / impresión diagnóstica'
+            'Calidad de imagen adecuada'
           ];
 
-          const checklistHtml = reportChecklist.map((item, i) => `
-            <label class="report-checklist-item" id="chk-label-${cardId}-${i}">
-              <input type="checkbox" id="chk-${cardId}-${i}"
-                onchange="toggleChecklistItem('${cardId}', ${i})"> ${item}
+          // Filas de checklist puro (sin input de medida)
+          const checklistHtml = reportChecklist.map(item => `
+            <label class="rp-check-label">
+              <input type="checkbox" class="rp-check" data-chk-card="${cardId}"
+                onchange="toggleChecklistItem(this)"> ${item}
             </label>`).join('');
 
-          const measuresHtml = reportFields.length ? `
-            <div class="report-measures">
-              <div class="report-measures-title">📐 Medidas con apoyo a la decisión</div>
-              ${reportFields.map(f => buildMeasureRowHtml(f, cardId)).join('')}
-            </div>` : '';
+          // Filas de medida (form row con badge)
+          const measuresHtml = reportFields.map(f => buildMeasureRowHtml(f, cardId)).join('');
 
           const reportTabButton = `<button class="tab-button py-2 px-4 -mb-px bg-indigo-100 text-indigo-700 font-semibold rounded-t-md flex-shrink-0"
             onclick="switchTab('${cardId}', 'report', this)">📋 Informe</button>`;
 
+          // Restaurar conclusión de sessionStorage al render
+          const savedConclusion = sessionStorage.getItem('pocus_conclusion_' + cardId) || '';
+
           const reportTabContent = `
             <div id="report-${cardId}" class="tab-content">
               <div class="report-panel">
-                <div class="report-checklist">
-                  <div class="report-checklist-title">✅ Checklist de exploración</div>
+
+                <!-- Checklist de técnica + medidas -->
+                <div class="rp-form-section">
+                  <div class="rp-section-title">✅ Checklist de técnica y hallazgos</div>
                   ${checklistHtml}
+                  ${measuresHtml}
                 </div>
-                ${measuresHtml}
-                <div class="report-textarea-wrap">
-                  <div class="report-textarea-title">📝 Texto del informe (editable — se guarda automáticamente)</div>
-                  <textarea
-                    id="rptxt-${cardId}"
-                    class="report-textarea"
+
+                <!-- Conclusión -->
+                <div>
+                  <div class="rp-section-title">💬 Conclusión / Impresión diagnóstica</div>
+                  <textarea id="rp-conclusion-${cardId}" class="rp-conclusion-ta"
+                    placeholder="Escribe aquí la impresión diagnóstica y el plan..."
+                    oninput="assembleAndSave('${cardId}')"
                     spellcheck="true"
-                    placeholder="Edita el informe aquí..."
-                    oninput="saveReportText('${cardId}')"
-                  >${reportTemplate}</textarea>
+                  >${savedConclusion}</textarea>
                 </div>
+
+                <!-- Vista previa colapsable -->
+                <div class="rp-preview-wrap">
+                  <button class="rp-preview-toggle" id="rp-preview-btn-${cardId}"
+                    onclick="togglePreview('${cardId}')">
+                    ▼ Ver informe generado
+                  </button>
+                  <div id="rp-preview-${cardId}" hidden>
+                    <textarea id="rptxt-${cardId}" class="rp-preview-ta"
+                      readonly spellcheck="false"
+                      onclick="this.removeAttribute('readonly')"
+                      placeholder="Pulsa 'Ver informe generado' para crear el texto"></textarea>
+                  </div>
+                </div>
+
+                <!-- Acciones -->
                 <div class="report-actions">
                   <button class="btn-rp btn-rp-copy" id="btnCopy-${cardId}"
-                    onclick="copyReport('${cardId}')">
-                    📋 Copiar
-                  </button>
+                    onclick="copyReport('${cardId}')">📋 Copiar</button>
                   <button class="btn-rp btn-rp-wa"
-                    onclick="shareReportWhatsApp('${cardId}')">
-                    📱 WhatsApp
-                  </button>
+                    onclick="shareReportWhatsApp('${cardId}')">📱 WhatsApp</button>
                   <button class="btn-rp btn-rp-email"
-                    onclick="shareReportEmail('${cardId}', '${app.title.replace(/'/g, "\\'") }')">
-                    ✉️ Correo
-                  </button>
+                    onclick="shareReportEmail('${cardId}', '${app.title.replace(/'/g,"\\'")}')">✉️ Correo</button>
                   <button class="btn-rp btn-rp-reset"
-                    onclick="resetReport('${cardId}')">
-                    🔄 Restablecer
-                  </button>
-                  <span class="report-copy-feedback" id="rpfb-${cardId}">✓ Copiado al portapapeles</span>
+                    onclick="resetReport('${cardId}')">🗑️ Limpiar</button>
+                  <span class="report-copy-feedback" id="rpfb-${cardId}">✓ Copiado</span>
                 </div>
+
               </div>
             </div>`;
 
@@ -3592,13 +3861,6 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
                                           ${reportTabContent}
                                       </div>
                                   </div>`;
-
-          // Restaurar textarea desde sessionStorage
-          const stored = sessionStorage.getItem('pocus_report_' + cardId);
-          if (stored !== null) {
-            const ta = card.querySelector('#rptxt-' + cardId);
-            if (ta) { ta.value = stored; ta.classList.add('has-changes'); }
-          }
 
           return card;
         }
