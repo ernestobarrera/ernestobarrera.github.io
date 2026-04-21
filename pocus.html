@@ -411,6 +411,238 @@
         font-size: 2rem;
         opacity: 0.4;
       }
+
+      /* ======================================================
+         PANEL INFORME POCUS
+      ====================================================== */
+      .report-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      /* Cabecera del panel */
+      .report-panel-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 10px 14px;
+      }
+
+      /* Checklist */
+      .report-checklist {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+      .report-checklist-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #64748b;
+        margin-bottom: 4px;
+      }
+      .report-checklist-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.82rem;
+        color: #374151;
+        cursor: pointer;
+        padding: 3px 0;
+        transition: color 0.2s;
+      }
+      .report-checklist-item input[type="checkbox"] {
+        accent-color: #3b82f6;
+        width: 15px;
+        height: 15px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .report-checklist-item.checked-item {
+        color: #16a34a;
+        text-decoration: line-through;
+        opacity: 0.75;
+      }
+
+      /* Bloque de medidas estructuradas */
+      .report-measures {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+      .report-measures-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #0369a1;
+        margin-bottom: 10px;
+      }
+      .measure-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+      }
+      .measure-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #1e40af;
+        min-width: 120px;
+        flex-shrink: 0;
+      }
+      .measure-input {
+        width: 80px;
+        padding: 4px 8px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-family: 'Inter', sans-serif;
+        transition: border-color 0.2s;
+        outline: none;
+      }
+      .measure-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+      }
+      .measure-unit {
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+      .measure-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        transition: all 0.25s;
+        min-width: 70px;
+        justify-content: center;
+      }
+      .badge-normal  { background: #dcfce7; color: #15803d; }
+      .badge-warn    { background: #fef9c3; color: #854d0e; }
+      .badge-alert   { background: #fee2e2; color: #b91c1c; }
+      .badge-empty   { background: #f1f5f9; color: #94a3b8; }
+      /* Radios para campos booleanos */
+      .measure-radios {
+        display: flex;
+        gap: 10px;
+        font-size: 0.8rem;
+        color: #374151;
+      }
+      .measure-radios label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+      }
+      .measure-radio-badge-no   { background: #dcfce7; color: #15803d; padding: 2px 10px; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; }
+      .measure-radio-badge-yes  { background: #fee2e2; color: #b91c1c; padding: 2px 10px; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; }
+      .measure-radio-badge-none { background: #f1f5f9; color: #94a3b8; padding: 2px 10px; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; }
+      /* Select para TI-RADS y similares */
+      .measure-select {
+        padding: 4px 8px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-family: 'Inter', sans-serif;
+        outline: none;
+        transition: border-color 0.2s;
+        background: white;
+      }
+      .measure-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+
+      /* Textarea informe */
+      .report-textarea-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .report-textarea-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #64748b;
+      }
+      .report-textarea {
+        width: 100%;
+        min-height: 200px;
+        padding: 12px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 8px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.8rem;
+        line-height: 1.7;
+        color: #1e293b;
+        resize: vertical;
+        transition: border-color 0.2s;
+        outline: none;
+        background: #fff;
+      }
+      .report-textarea:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+      }
+      .report-textarea.has-changes {
+        border-color: #f59e0b;
+        background: #fffbeb;
+      }
+
+      /* Fila de botones de acción */
+      .report-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .btn-rp {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 8px 14px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+      .btn-rp:hover { filter: brightness(1.1); transform: translateY(-1px); }
+      .btn-rp:active { transform: translateY(0); }
+      .btn-rp-copy    { background: #1e40af; color: #fff; }
+      .btn-rp-wa      { background: #25D366; color: #fff; }
+      .btn-rp-email   { background: #6366f1; color: #fff; }
+      .btn-rp-reset   { background: #e2e8f0; color: #475569; }
+      .btn-rp-copy.copied { background: #16a34a; }
+
+      /* Notification inline (portapapeles) */
+      .report-copy-feedback {
+        font-size: 0.75rem;
+        color: #16a34a;
+        font-weight: 600;
+        display: none;
+        align-items: center;
+        gap: 4px;
+      }
+      .report-copy-feedback.show { display: flex; }
     </style>
   </head>
   <body>
@@ -1127,6 +1359,53 @@
                 desc: "Guía detallada sobre la técnica y anatomía para la evaluación ecográfica del ojo.",
               },
             ],
+            reportChecklist: [
+              'Indicación anotada (pérdida visual, cefalea, trauma ocular)',
+              'Gel abundante sobre párpado cerrado, sin presión sobre globo',
+              'Planos sagital y transversal evaluados',
+              'DVNO medido 3 mm posterior al globo',
+              'Conclusión / gestión documentada'
+            ],
+            reportFields: [
+              {
+                id: 'dvno_od', label: 'DVNO OD', type: 'number', unit: 'mm', step: 0.1, min: 0, max: 12,
+                thresholds: [
+                  { min: 0,   max: 5.0, cls: 'badge-normal', label: 'Normal (≤5 mm)' },
+                  { min: 5.1, max: 5.4, cls: 'badge-warn',   label: 'Limítrofe (5–5.5)' },
+                  { min: 5.5, max: 999, cls: 'badge-alert',  label: 'ALTERADO (≮ HIC)' }
+                ]
+              },
+              {
+                id: 'dvno_oi', label: 'DVNO OI', type: 'number', unit: 'mm', step: 0.1, min: 0, max: 12,
+                thresholds: [
+                  { min: 0,   max: 5.0, cls: 'badge-normal', label: 'Normal (≤5 mm)' },
+                  { min: 5.1, max: 5.4, cls: 'badge-warn',   label: 'Limítrofe (5–5.5)' },
+                  { min: 5.5, max: 999, cls: 'badge-alert',  label: 'ALTERADO (≮ HIC)' }
+                ]
+              },
+              { id: 'desprendimiento', label: 'Desprendimiento retina', type: 'boolean', yesIsAlert: true,
+                yesLabel: 'PRESENTE — URGENTE', noLabel: 'Ausente', yesInterpretation: 'Emergencia oftalmólógica', noInterpretation: 'Sin hallazgos' },
+              { id: 'hemorragia_vitrea', label: 'Hemorragia vítrea', type: 'boolean', yesIsAlert: true,
+                yesLabel: 'PRESENTE', noLabel: 'Ausente', yesInterpretation: 'Derivación urgente', noInterpretation: 'Sin hallazgos' }
+            ],
+            reportTemplate: `POCUS OCULAR
+Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
+
+INDICACIÓN:
+[Motivo clínico: pérdida visual aguda / cefalea intensa / trauma ocular]
+
+TÉCNICA:
+Sonda lineal. Gel abundante sobre párpado cerrado, sin presión sobre globo.
+Calidad imagen: Óptima / Subóptima
+
+HALLAZGOS:
+DVNO OD: [[dvno_od]]    DVNO OI: [[dvno_oi]]
+Desprendimiento de retina: [[desprendimiento]]
+Hemorragia vítrea: [[hemorragia_vitrea]]
+Otros hallazgos: [texto libre]
+
+CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
+[Impresión final y plan: derivación / control / manejo]`,
           },
         },
         {
@@ -1217,6 +1496,51 @@
         desc: "Evaluación ecográfica de patologías tiroideas difusas como Graves y Hashimoto, y la diferenciación de pseudonódulos",
       },
     ],
+    reportChecklist: [
+      'Indicación anotada (nódulo palpable, hallazgo incidental, síntomas)',
+      'Ambos lóbulos y el istmo explorados',
+      'Nódulo(s) medidos en 3 dimensiones',
+      'Características TI-RADS evaluadas (composición, ecogenicidad, forma, márgenes, focos)',
+      'Recomendación: PAAF / Seguimiento / Alta documentada'
+    ],
+    reportFields: [
+      {
+        id: 'nodulo_diam', label: 'Diámetro máximo nódulo', type: 'number', unit: 'mm', step: 0.5, min: 0, max: 100,
+        thresholds: [
+          { min: 0,    max: 9.9,  cls: 'badge-normal', label: '<1 cm' },
+          { min: 10,   max: 14.9, cls: 'badge-warn',   label: '1–1.5 cm (umbral PAAF TR4)' },
+          { min: 15,   max: 999,  cls: 'badge-alert',  label: '≥15 mm (PAAF según TI-RADS)' }
+        ]
+      },
+      {
+        id: 'tirads', label: 'Categoría TI-RADS', type: 'select',
+        options: [
+          { value: 'TR1', label: 'TR1 (0 pts) — Benigno', cls: 'badge-normal', badge: 'TR1 — Benigno',       interpretation: 'No PAAF. Sin seguimiento.' },
+          { value: 'TR2', label: 'TR2 (2 pts) — No sospechoso', cls: 'badge-normal', badge: 'TR2 — No sosp.',  interpretation: 'No PAAF. Sin seguimiento.' },
+          { value: 'TR3', label: 'TR3 (3 pts) — Levem. sospechoso', cls: 'badge-warn',   badge: 'TR3 — Leve', interpretation: 'PAAF si ≥25 mm. Seguimiento si ≥15 mm.' },
+          { value: 'TR4', label: 'TR4 (4–6 pts) — Moder. sospechoso', cls: 'badge-warn',   badge: 'TR4 — Moder.', interpretation: 'PAAF si ≥15 mm. Seguimiento si ≥10 mm.' },
+          { value: 'TR5', label: 'TR5 (≧7 pts) — Altam. sospechoso', cls: 'badge-alert',  badge: 'TR5 — ALTO', interpretation: 'PAAF si ≥10 mm. Seguimiento si ≥5 mm.' }
+        ]
+      }
+    ],
+    reportTemplate: `POCUS TIROIDEO
+Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
+
+INDICACIÓN:
+[Nódulo palpable / hallazgo incidental / screening]
+
+TÉCNICA:
+Sonda lineal. Paciente en sup ino con hiperextensión cervical.
+Calidad imagen: Óptima / Subóptima
+
+HALLAZGOS:
+Lóbulo D: __ x __ mm    Lóbulo I: __ x __ mm    Istmo: __ mm
+Nódulo diámetro máximo: [[nodulo_diam]]
+Características: composición [  ]  ecogenicidad [  ]  forma [  ]  márgenes [  ]  focos [  ]
+Categoría TI-RADS: [[tirads]]
+
+CONCLUSIÓN / RECOMENDACIÓN:
+[Descripción del nódulo y plan: PAAF / seguimiento / alta]`,
   },
 },
         {
@@ -1361,6 +1685,52 @@
         desc: "descripción de la anatomía cervical, exploración ecográfica y evaluación de nódulos",
       },
     ],
+    reportChecklist: [
+      'Indicación anotada (adenopatía palpable, seguimiento)',
+      'Cortes longitudinal y transversal realizados',
+      'Eje corto y relación L/C medidos',
+      'Hilio graso evaluado (presente / ausente)',
+      'Doppler color valorado'
+    ],
+    reportFields: [
+      {
+        id: 'eje_corto', label: 'Eje corto', type: 'number', unit: 'mm', step: 0.5, min: 0, max: 60,
+        thresholds: [
+          { min: 0,    max: 9.9, cls: 'badge-normal', label: 'Normal (<10 mm)' },
+          { min: 10,   max: 999, cls: 'badge-alert',  label: 'Aumentado (≥10 mm) → valorar' }
+        ]
+      },
+      {
+        id: 'ratio_lc', label: 'Relación L/C', type: 'number', unit: '', step: 0.1, min: 0, max: 10,
+        thresholds: [
+          { min: 2.0, max: 999, cls: 'badge-normal', label: 'Benigno (>2)' },
+          { min: 1.5, max: 1.99, cls: 'badge-warn',  label: 'Limítrofe (1.5–2)' },
+          { min: 0,   max: 1.49, cls: 'badge-alert',  label: 'Sospechoso (<2)' }
+        ]
+      },
+      { id: 'hilio', label: 'Hilio graso', type: 'boolean', yesIsAlert: false,
+        yesLabel: 'Presente — reactivo', noLabel: 'Ausente — sospechoso',
+        yesInterpretation: 'Reactivo probable', noInterpretation: 'Sospecha de patología' }
+    ],
+    reportTemplate: `POCUS ADENOPATÍAS CERVICALES
+Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
+
+INDICACIÓN:
+[Adenopatía palpable / seguimiento / cribado]
+
+TÉCNICA:
+Sonda lineal alta frecuencia. Decúbito supino con leve hiperextensión cervical.
+Calidad imagen: Óptima / Subóptima
+
+HALLAZGOS:
+Eje corto: [[eje_corto]]
+Relación L/C: [[ratio_lc]]
+Hilio graso: [[hilio]]
+Ecoestructura: Homogénea / Heterogénea    Bordes: Lisos / Irregulares
+Doppler: Patrón hiliar / Periférico / Caótico
+
+CONCLUSIÓN / RECOMENDACIÓN:
+[Hallazgos compatibles con ganglio reactivo / sospechoso. Plan: observación / biopsia]`,
   },
 },
         {
@@ -1374,6 +1744,48 @@
             evidence: `<p>Identifica rápidamente causas de shock y parada cardíaca. Guía la fluidoterapia y el uso de inotrópicos.</p>`,
             pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Confundir un derrame pleural izquierdo con un derrame pericárdico. El pericardio se ve anterior a la aorta descendente en la vista PSLA, mientras que el derrame pleural es posterior.</p><h5>Impacto Clínico</h5><p>La vista subcostal suele ser la más fácil de obtener en pacientes críticos o con EPOC. Es la vista de elección para detectar derrame pericárdico.</p></div>`,
             videos: [{ id: "vr8KteyhVkI", intro: "FoCUS" }],
+            reportChecklist: [
+              'Indicación anotada (disnea, shock, parada)',
+              'Vista PSLA obtenida',
+              'Vista Apical 4C evaluada',
+              'Vista Subcostal valorada',
+              'Conclusión y plan documentados'
+            ],
+            reportFields: [
+              {
+                id: 'funcion_vi', label: 'Función VI (cualit.)', type: 'select',
+                options: [
+                  { value: 'hiperd', label: 'Hiperdinámico', cls: 'badge-warn', badge: 'Hiperdinámico', interpretation: 'Valorar hipovolemia / sepsis' },
+                  { value: 'normal', label: 'Normal', cls: 'badge-normal', badge: 'Normal', interpretation: 'Función conservada' },
+                  { value: 'depr_leve', label: 'Depresión leve', cls: 'badge-warn', badge: 'Depresión leve', interpretation: 'FEVI estimada 40–54%' },
+                  { value: 'depr_grave', label: 'Depresión grave', cls: 'badge-alert', badge: 'Depresión grave', interpretation: 'FEVI estimada <40%' }
+                ]
+              },
+              { id: 'derrame_peric', label: 'Derrame pericárdico', type: 'boolean', yesIsAlert: true,
+                yesLabel: 'PRESENTE', noLabel: 'Ausente',
+                yesInterpretation: 'Descartar taponamiento (colapso cavidades derechas)', noInterpretation: 'Sin derrame' },
+              { id: 'vd_mayor_vi', label: 'VD ≥ VI (A4C)', type: 'boolean', yesIsAlert: true,
+                yesLabel: 'Sí — sobrecarga VD', noLabel: 'No',
+                yesInterpretation: 'Sospecha TEP masivo / HTP aguda', noInterpretation: 'Sin sobrecarga VD' }
+            ],
+            reportTemplate: `POCUS CARDÍACO (FoCUS)
+Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
+
+INDICACIÓN:
+[Disnea aguda / shock / parada cardiorrespiratoria / cause of hypotension]
+
+TÉCNICA:
+Sonda sectorial / convexa. Vistas PSLA, PSSA, Apical 4C y Subcostal 4C.
+Calidad imagen: Óptima / Subóptima
+
+HALLAZGOS:
+Función VI: [[funcion_vi]]
+Derrame pericárdico: [[derrame_peric]]
+VD ≥ VI en A4C: [[vd_mayor_vi]]
+Otros: [texto libre]
+
+CONCLUSIÓN / RECOMENDACIÓN:
+[Impresión final y plan terapéutico]`,
           },
         },
         {
@@ -2071,6 +2483,45 @@ findings: `
 `,
 evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compresión venosa completa</strong>, considerado el signo más fiable con una <strong>sensibilidad del 93-100% y una especificidad del 97-100%</strong>. Los protocolos abreviados que exploran la vena femoral común y la poplítea son eficaces, ya que el 98% de las TVP afectan al menos a una de estas dos localizaciones.</p>`,
             pearls: `<p>Una técnica simple y rápida que puede evitar la necesidad de dímero-D o ecografía formal en muchos pacientes de baja probabilidad.</p>`,
+            reportChecklist: [
+              'Indicación anotada (sospecha TVP, Wells calculado)',
+              'Vena femoral común (VFC) explorada',
+              'Unión safeno-femoral evaluada',
+              'Vena Poplítea (VP) evaluada',
+              'Compresibilidad documentada bilateral'
+            ],
+            reportFields: [
+              { id: 'comp_vfc_d', label: 'VFC compresible D', type: 'boolean', yesIsAlert: false,
+                yesLabel: 'Sí — normal', noLabel: 'NO — sospecha TVP',
+                yesInterpretation: 'Compresible — descarta TVP proximal', noInterpretation: 'NO compresible — TVP PROBABLE' },
+              { id: 'comp_vfc_i', label: 'VFC compresible I', type: 'boolean', yesIsAlert: false,
+                yesLabel: 'Sí — normal', noLabel: 'NO — sospecha TVP',
+                yesInterpretation: 'Compresible', noInterpretation: 'NO compresible — TVP PROBABLE' },
+              { id: 'comp_popl_d', label: 'V. Poplítea compresible D', type: 'boolean', yesIsAlert: false,
+                yesLabel: 'Sí — normal', noLabel: 'NO — sospecha TVP',
+                yesInterpretation: 'Compresible', noInterpretation: 'NO compresible — TVP PROBABLE' },
+              { id: 'comp_popl_i', label: 'V. Poplítea compresible I', type: 'boolean', yesIsAlert: false,
+                yesLabel: 'Sí — normal', noLabel: 'NO — sospecha TVP',
+                yesInterpretation: 'Compresible', noInterpretation: 'NO compresible — TVP PROBABLE' }
+            ],
+            reportTemplate: `POCUS TVP (COMPRESIBILIDAD VENOSA)
+Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
+
+INDICACIÓN:
+[Sospecha TVP. Score Wells: __ puntos (≥2 → alta probabilidad)]
+
+TÉCNICA:
+Sonda lineal. Protocolo 2-puntos: VFC + V. Poplítea bilateral.
+Calidad imagen: Óptima / Subóptima
+
+HALLAZGOS:
+VFC compresible D: [[comp_vfc_d]]
+VFC compresible I: [[comp_vfc_i]]
+V. Poplítea compresible D: [[comp_popl_d]]
+V. Poplítea compresible I: [[comp_popl_i]]
+
+CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
+[Hallazgos compatibles con / sin TVP. Plan: anticoagulación / derivación / alta]`,
           },
         },
         {
@@ -2593,6 +3044,234 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
         }
       };
 
+      // ============================================================
+      // REPORT PANEL — utilidades
+      // ============================================================
+
+      // Plantilla genérica si pocusData no define reportTemplate
+      function buildDefaultReportTemplate(title) {
+        const today = new Date().toLocaleDateString('es-ES');
+        return `POCUS — ${title}
+Fecha: ${today}    Explorador: ____________________
+
+INDICACIÓN:
+[Motivo clínico de la exploración]
+
+TÉCNICA:
+Sonda: ____________    Calidad imagen: Óptima / Subóptima
+
+HALLAZGOS:
+[Describir hallazgos principales]
+
+CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
+[Impresión final y recomendación]`;
+      }
+
+      // Construye HTML de una fila de medida (campo numérico o booleano)
+      function buildMeasureRowHtml(field, cardId) {
+        const fid = `mf-${cardId}-${field.id}`;
+        if (field.type === 'number') {
+          return `
+          <div class="measure-row">
+            <span class="measure-label">${field.label}:</span>
+            <input type="number" class="measure-input" id="${fid}"
+              min="${field.min ?? 0}" max="${field.max ?? 999}" step="${field.step ?? 0.1}"
+              placeholder="—" oninput="evalMeasure('${cardId}', '${field.id}')"
+              data-field='${JSON.stringify(field).replace(/'/g,"&#39;")}'>
+            <span class="measure-unit">${field.unit || ''}</span>
+            <span class="measure-badge badge-empty" id="${fid}-badge">– –</span>
+          </div>`;
+        }
+        if (field.type === 'boolean') {
+          return `
+          <div class="measure-row">
+            <span class="measure-label">${field.label}:</span>
+            <div class="measure-radios">
+              <label><input type="radio" name="${fid}" value="no"
+                onchange="evalBoolean('${cardId}','${field.id}','no')"> No</label>
+              <label><input type="radio" name="${fid}" value="yes"
+                onchange="evalBoolean('${cardId}','${field.id}','yes')"> Sí</label>
+            </div>
+            <span class="measure-badge badge-empty" id="${fid}-badge">– –</span>
+          </div>`;
+        }
+        if (field.type === 'select') {
+          const opts = field.options.map(o =>
+            `<option value="${o.value}">${o.label}</option>`).join('');
+          return `
+          <div class="measure-row">
+            <span class="measure-label">${field.label}:</span>
+            <select class="measure-select" id="${fid}"
+              onchange="evalSelect('${cardId}','${field.id}',this.value)"
+              data-field='${JSON.stringify(field).replace(/'/g,"&#39;")}'>
+              <option value="">Seleccionar…</option>${opts}
+            </select>
+            <span class="measure-badge badge-empty" id="${fid}-badge">– –</span>
+          </div>`;
+        }
+        return '';
+      }
+
+      // Evalúa un campo numérico y actualiza el badge + textarea
+      window.evalMeasure = function(cardId, fieldId) {
+        const fid = `mf-${cardId}-${fieldId}`;
+        const input = document.getElementById(fid);
+        const badge = document.getElementById(fid + '-badge');
+        if (!input || !badge) return;
+        const raw = input.dataset.field;
+        let field;
+        try { field = JSON.parse(raw.replace(/&#39;/g,"'")); } catch(e) { return; }
+        const val = parseFloat(input.value);
+        if (isNaN(val)) { badge.className = 'measure-badge badge-empty'; badge.textContent = '– –'; return; }
+        let cls = 'badge-empty', txt = '';
+        const thresholds = field.thresholds || [];
+        for (const t of thresholds) {
+          if (val >= (t.min ?? -Infinity) && val <= (t.max ?? Infinity)) {
+            cls = t.cls; txt = t.label; break;
+          }
+        }
+        badge.className = 'measure-badge ' + cls;
+        badge.textContent = txt;
+        injectMeasureIntoTextarea(cardId, fieldId, val + ' ' + (field.unit || ''), txt);
+        saveReportText(cardId);
+      };
+
+      // Evalúa un campo booleano
+      window.evalBoolean = function(cardId, fieldId, value) {
+        const fid = `mf-${cardId}-${fieldId}`;
+        const badge = document.getElementById(fid + '-badge');
+        if (!badge) return;
+        const allFields = getCurrentCardFields(cardId);
+        const field = allFields.find(f => f.id === fieldId);
+        if (!field) return;
+        const isYes = value === 'yes';
+        const yesClass = field.yesIsAlert ? 'badge-alert' : 'badge-normal';
+        const noClass  = field.yesIsAlert ? 'badge-normal' : 'badge-alert';
+        badge.className = 'measure-badge ' + (isYes ? yesClass : noClass);
+        badge.textContent = isYes ? (field.yesLabel || 'Sí — presente') : (field.noLabel || 'No — ausente');
+        const interpText = isYes ? (field.yesInterpretation || 'PRESENTE') : (field.noInterpretation || 'AUSENTE');
+        injectMeasureIntoTextarea(cardId, fieldId, isYes ? 'Sí' : 'No', interpText);
+        saveReportText(cardId);
+      };
+
+      // Evalúa un campo select
+      window.evalSelect = function(cardId, fieldId, value) {
+        if (!value) return;
+        const fid = `mf-${cardId}-${fieldId}`;
+        const badge = document.getElementById(fid + '-badge');
+        if (!badge) return;
+        const el = document.getElementById(fid);
+        const raw = el ? el.dataset.field : null;
+        let field;
+        try { field = JSON.parse(raw.replace(/&#39;/g,"'")); } catch(e) { return; }
+        const opt = (field.options || []).find(o => String(o.value) === String(value));
+        if (!opt) return;
+        badge.className = 'measure-badge ' + (opt.cls || 'badge-empty');
+        badge.textContent = opt.badge || opt.label;
+        injectMeasureIntoTextarea(cardId, fieldId, opt.label, opt.interpretation || '');
+        saveReportText(cardId);
+      };
+
+      // helper: obtener reportFields del pocusData para una card activa
+      function getCurrentCardFields(cardId) {
+        const parts = cardId.replace('card-','').split('-');
+        const idx = parseInt(parts.pop());
+        const seg = parts.join('-');
+        const app = (pocusData.filter(d => d.segment === seg))[idx];
+        return (app && app.content.reportFields) ? app.content.reportFields : [];
+      }
+
+      // Inyecta/actualiza una línea de medida en el textarea (marcador [[id]])
+      function injectMeasureIntoTextarea(cardId, fieldId, rawValue, interpretation) {
+        const ta = document.getElementById('rptxt-' + cardId);
+        if (!ta) return;
+        const marker = `[[${fieldId}]]`;
+        const line = `${rawValue}${interpretation ? ' → ' + interpretation : ''}`;
+        if (ta.value.includes(marker)) {
+          ta.value = ta.value.replace(new RegExp(`\\[\\[${fieldId}\\]\\][^\\n]*`), marker + line);
+        }
+        ta.classList.add('has-changes');
+      }
+
+      // Checklist toggle
+      window.toggleChecklistItem = function(cardId, idx) {
+        const lbl = document.getElementById(`chk-label-${cardId}-${idx}`);
+        if (lbl) lbl.classList.toggle('checked-item');
+      };
+
+      // Persistencia sessionStorage
+      window.saveReportText = function(cardId) {
+        const ta = document.getElementById('rptxt-' + cardId);
+        if (!ta) return;
+        ta.classList.add('has-changes');
+        sessionStorage.setItem('pocus_report_' + cardId, ta.value);
+      };
+
+      // Copiar al portapapeles
+      window.copyReport = function(cardId) {
+        const ta = document.getElementById('rptxt-' + cardId);
+        if (!ta) return;
+        navigator.clipboard.writeText(ta.value).then(() => {
+          const btn = document.getElementById('btnCopy-' + cardId);
+          const fb  = document.getElementById('rpfb-' + cardId);
+          if (btn) { btn.classList.add('copied'); btn.textContent = '✓ Copiado'; }
+          if (fb)  fb.classList.add('show');
+          setTimeout(() => {
+            if (btn) { btn.classList.remove('copied'); btn.textContent = '📋 Copiar'; }
+            if (fb)  fb.classList.remove('show');
+          }, 2500);
+        }).catch(() => {
+          // fallback para iOS Safari / contextos sin HTTPS
+          const range = document.createRange();
+          range.selectNode(ta);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(range);
+          document.execCommand('copy');
+          window.getSelection().removeAllRanges();
+        });
+      };
+
+      // Compartir por WhatsApp
+      window.shareReportWhatsApp = function(cardId) {
+        const ta = document.getElementById('rptxt-' + cardId);
+        if (!ta) return;
+        const text = encodeURIComponent(ta.value);
+        window.open('https://api.whatsapp.com/send?text=' + text, '_blank');
+      };
+
+      // Compartir por correo
+      window.shareReportEmail = function(cardId, subject) {
+        const ta = document.getElementById('rptxt-' + cardId);
+        if (!ta) return;
+        const body = encodeURIComponent(ta.value);
+        const subj = encodeURIComponent('POCUS — ' + subject);
+        window.location.href = `mailto:?subject=${subj}&body=${body}`;
+      };
+
+      // Restablecer plantilla original
+      window.resetReport = function(cardId) {
+        if (!confirm('¿Restablecer el informe a la plantilla original? Se perderán los cambios.')) return;
+        const parts = cardId.replace('card-','').split('-');
+        const idx = parseInt(parts.pop());
+        const seg = parts.join('-');
+        const app = (pocusData.filter(d => d.segment === seg))[idx];
+        const template = (app && app.content.reportTemplate)
+          ? app.content.reportTemplate
+          : buildDefaultReportTemplate(app ? app.title : '');
+        const ta = document.getElementById('rptxt-' + cardId);
+        if (ta) { ta.value = template; ta.classList.remove('has-changes'); }
+        sessionStorage.removeItem('pocus_report_' + cardId);
+        // Limpiar campos de medida visualmente
+        document.querySelectorAll(`[id^="mf-${cardId}-"]`).forEach(el => {
+          if (el.tagName === 'INPUT' || el.tagName === 'SELECT') el.value = '';
+          if (el.id.endsWith('-badge')) { el.className = 'measure-badge badge-empty'; el.textContent = '– –'; }
+        });
+        document.querySelectorAll(`input[name^="mf-${cardId}-"]`).forEach(el => { el.checked = false; });
+        // Limpiar checklist
+        document.querySelectorAll(`[id^="chk-${cardId}-"]`).forEach(el => { el.checked = false; });
+        document.querySelectorAll(`[id^="chk-label-${cardId}-"]`).forEach(el => el.classList.remove('checked-item'));
+      };
+
       // Funciones de zoom
       window.updateZoom = function () {
         const svg = document.getElementById("anatomical-svg");
@@ -2824,6 +3503,72 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
             evidenceHtml += `<a href="#ref-${app.refId}" class="reference-link block mt-2">Ver referencia</a>`;
           }
 
+          // ---- PESTAÑA INFORME ----
+          const reportFields = app.content.reportFields || [];
+          const reportTemplate = app.content.reportTemplate || buildDefaultReportTemplate(app.title);
+          const reportChecklist = app.content.reportChecklist || [
+            'Indicación clínica registrada',
+            'Técnica y sonda documentadas',
+            'Calidad de imagen adecuada',
+            'Hallazgos principales anotados',
+            'Conclusión / impresión diagnóstica'
+          ];
+
+          const checklistHtml = reportChecklist.map((item, i) => `
+            <label class="report-checklist-item" id="chk-label-${cardId}-${i}">
+              <input type="checkbox" id="chk-${cardId}-${i}"
+                onchange="toggleChecklistItem('${cardId}', ${i})"> ${item}
+            </label>`).join('');
+
+          const measuresHtml = reportFields.length ? `
+            <div class="report-measures">
+              <div class="report-measures-title">📐 Medidas con apoyo a la decisión</div>
+              ${reportFields.map(f => buildMeasureRowHtml(f, cardId)).join('')}
+            </div>` : '';
+
+          const reportTabButton = `<button class="tab-button py-2 px-4 -mb-px bg-indigo-100 text-indigo-700 font-semibold rounded-t-md flex-shrink-0"
+            onclick="switchTab('${cardId}', 'report', this)">📋 Informe</button>`;
+
+          const reportTabContent = `
+            <div id="report-${cardId}" class="tab-content">
+              <div class="report-panel">
+                <div class="report-checklist">
+                  <div class="report-checklist-title">✅ Checklist de exploración</div>
+                  ${checklistHtml}
+                </div>
+                ${measuresHtml}
+                <div class="report-textarea-wrap">
+                  <div class="report-textarea-title">📝 Texto del informe (editable — se guarda automáticamente)</div>
+                  <textarea
+                    id="rptxt-${cardId}"
+                    class="report-textarea"
+                    spellcheck="true"
+                    placeholder="Edita el informe aquí..."
+                    oninput="saveReportText('${cardId}')"
+                  >${reportTemplate}</textarea>
+                </div>
+                <div class="report-actions">
+                  <button class="btn-rp btn-rp-copy" id="btnCopy-${cardId}"
+                    onclick="copyReport('${cardId}')">
+                    📋 Copiar
+                  </button>
+                  <button class="btn-rp btn-rp-wa"
+                    onclick="shareReportWhatsApp('${cardId}')">
+                    📱 WhatsApp
+                  </button>
+                  <button class="btn-rp btn-rp-email"
+                    onclick="shareReportEmail('${cardId}', '${app.title.replace(/'/g, "\\'") }')">
+                    ✉️ Correo
+                  </button>
+                  <button class="btn-rp btn-rp-reset"
+                    onclick="resetReport('${cardId}')">
+                    🔄 Restablecer
+                  </button>
+                  <span class="report-copy-feedback" id="rpfb-${cardId}">✓ Copiado al portapapeles</span>
+                </div>
+              </div>
+            </div>`;
+
           card.innerHTML = `
                                   <div class="p-5 border-b-2 border-gray-100">
                                       <h3 class="text-2xl font-extrabold text-gray-800">${app.title}</h3>
@@ -2836,6 +3581,7 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
                                           <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md flex-shrink-0" onclick="switchTab('${cardId}', 'evidence', this)">Evidencia</button>
                                           <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md flex-shrink-0" onclick="switchTab('${cardId}', 'pearls', this)">Perlas Clínicas</button>
                                           ${videoTabButton}
+                                          ${reportTabButton}
                                       </div>
                                       <div>
                                           <div id="technique-${cardId}" class="tab-content prose prose-sm max-w-none">${app.content.technique}</div>
@@ -2843,8 +3589,17 @@ evidence: `<p>El criterio diagnóstico principal es la <strong>ausencia de compr
                                           <div id="evidence-${cardId}" class="tab-content prose prose-sm max-w-none"><div class="evidence">${evidenceHtml}</div></div>
                                           <div id="pearls-${cardId}" class="tab-content prose prose-sm max-w-none"><div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 rounded-r-lg">${app.content.pearls}</div></div>
                                           ${videoTabContent}
+                                          ${reportTabContent}
                                       </div>
                                   </div>`;
+
+          // Restaurar textarea desde sessionStorage
+          const stored = sessionStorage.getItem('pocus_report_' + cardId);
+          if (stored !== null) {
+            const ta = card.querySelector('#rptxt-' + cardId);
+            if (ta) { ta.value = stored; ta.classList.add('has-changes'); }
+          }
+
           return card;
         }
 
