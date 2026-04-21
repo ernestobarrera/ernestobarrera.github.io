@@ -666,228 +666,54 @@
       }
       .report-copy-feedback.show { display: flex; }
 
-      /* Cabecera del panel */
-      .report-panel-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #475569;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        padding: 10px 14px;
+
+      /* ======================================================
+         RESPONSIVE — mobile-first
+      ====================================================== */
+
+      /* --- Pestañas del card: se envuelven en 2 filas en móvil --- */
+      @media (max-width: 640px) {
+        /* Las pestañas pasan de scroll horizontal a wrap en 2 líneas */
+        .tab-bar-scroll {
+          flex-wrap: wrap !important;
+          overflow-x: visible !important;
+          gap: 4px !important;
+          padding-bottom: 4px !important;
+        }
+        /* Cada pestaña: más compacta en móvil */
+        .tab-bar-scroll .tab-button {
+          font-size: 0.72rem !important;
+          padding: 5px 10px !important;
+        }
+
+        /* Panel anatómico: oculto en móvil por defecto */
+        .anatomy-container {
+          display: none;
+        }
+
+        /* Layout: una sola columna en móvil (el grid de Tailwind ya lo hace
+           pero el anatomy-container necesita estar hidden para no ocupar espacio) */
+
+        /* Panel informe: inputs a full width en pantallas muy pequeñas */
+        .rp-form-row {
+          gap: 6px;
+        }
+        .rp-num-input {
+          width: 64px;
+        }
+        .rp-label {
+          font-size: 0.78rem;
+        }
       }
 
-      /* Checklist */
-      .report-checklist {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        padding: 12px 14px;
-      }
-      .report-checklist-title {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: #64748b;
-        margin-bottom: 4px;
-      }
-      .report-checklist-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.82rem;
-        color: #374151;
-        cursor: pointer;
-        padding: 3px 0;
-        transition: color 0.2s;
-      }
-      .report-checklist-item input[type="checkbox"] {
-        accent-color: #3b82f6;
-        width: 15px;
-        height: 15px;
-        cursor: pointer;
-        flex-shrink: 0;
-      }
-      .report-checklist-item.checked-item {
-        color: #16a34a;
-        text-decoration: line-through;
-        opacity: 0.75;
+      /* --- Tablet: mostrar panel anatómico de forma colapsada --- */
+      @media (max-width: 1024px) and (min-width: 641px) {
+        .anatomy-container {
+          max-height: 240px;
+          overflow: hidden;
+        }
       }
 
-      /* Bloque de medidas estructuradas */
-      .report-measures {
-        background: #f0f9ff;
-        border: 1px solid #bae6fd;
-        border-radius: 10px;
-        padding: 12px 14px;
-      }
-      .report-measures-title {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: #0369a1;
-        margin-bottom: 10px;
-      }
-      .measure-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 8px;
-        flex-wrap: wrap;
-      }
-      .measure-label {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #1e40af;
-        min-width: 120px;
-        flex-shrink: 0;
-      }
-      .measure-input {
-        width: 80px;
-        padding: 4px 8px;
-        border: 1.5px solid #cbd5e1;
-        border-radius: 6px;
-        font-size: 0.82rem;
-        font-family: 'Inter', sans-serif;
-        transition: border-color 0.2s;
-        outline: none;
-      }
-      .measure-input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
-      }
-      .measure-unit {
-        font-size: 0.75rem;
-        color: #64748b;
-      }
-      .measure-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        padding: 2px 8px;
-        border-radius: 9999px;
-        transition: all 0.25s;
-        min-width: 70px;
-        justify-content: center;
-      }
-      .badge-normal  { background: #dcfce7; color: #15803d; }
-      .badge-warn    { background: #fef9c3; color: #854d0e; }
-      .badge-alert   { background: #fee2e2; color: #b91c1c; }
-      .badge-empty   { background: #f1f5f9; color: #94a3b8; }
-      /* Radios para campos booleanos */
-      .measure-radios {
-        display: flex;
-        gap: 10px;
-        font-size: 0.8rem;
-        color: #374151;
-      }
-      .measure-radios label {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        cursor: pointer;
-      }
-      .measure-radio-badge-no   { background: #dcfce7; color: #15803d; padding: 2px 10px; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; }
-      .measure-radio-badge-yes  { background: #fee2e2; color: #b91c1c; padding: 2px 10px; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; }
-      .measure-radio-badge-none { background: #f1f5f9; color: #94a3b8; padding: 2px 10px; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; }
-      /* Select para TI-RADS y similares */
-      .measure-select {
-        padding: 4px 8px;
-        border: 1.5px solid #cbd5e1;
-        border-radius: 6px;
-        font-size: 0.82rem;
-        font-family: 'Inter', sans-serif;
-        outline: none;
-        transition: border-color 0.2s;
-        background: white;
-      }
-      .measure-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
-
-      /* Textarea informe */
-      .report-textarea-wrap {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .report-textarea-title {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: #64748b;
-      }
-      .report-textarea {
-        width: 100%;
-        min-height: 200px;
-        padding: 12px;
-        border: 1.5px solid #cbd5e1;
-        border-radius: 8px;
-        font-family: 'Consolas', 'Monaco', monospace;
-        font-size: 0.8rem;
-        line-height: 1.7;
-        color: #1e293b;
-        resize: vertical;
-        transition: border-color 0.2s;
-        outline: none;
-        background: #fff;
-      }
-      .report-textarea:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
-      }
-      .report-textarea.has-changes {
-        border-color: #f59e0b;
-        background: #fffbeb;
-      }
-
-      /* Fila de botones de acción */
-      .report-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-      .btn-rp {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 8px 14px;
-        border: none;
-        border-radius: 8px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        cursor: pointer;
-        font-family: 'Inter', sans-serif;
-        transition: all 0.2s;
-        white-space: nowrap;
-      }
-      .btn-rp:hover { filter: brightness(1.1); transform: translateY(-1px); }
-      .btn-rp:active { transform: translateY(0); }
-      .btn-rp-copy    { background: #1e40af; color: #fff; }
-      .btn-rp-wa      { background: #25D366; color: #fff; }
-      .btn-rp-email   { background: #6366f1; color: #fff; }
-      .btn-rp-reset   { background: #e2e8f0; color: #475569; }
-      .btn-rp-copy.copied { background: #16a34a; }
-
-      /* Notification inline (portapapeles) */
-      .report-copy-feedback {
-        font-size: 0.75rem;
-        color: #16a34a;
-        font-weight: 600;
-        display: none;
-        align-items: center;
-        gap: 4px;
-      }
-      .report-copy-feedback.show { display: flex; }
     </style>
   </head>
   <body>
@@ -3844,7 +3670,7 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
                                       <p class="text-md font-semibold text-${app.color}-600">${app.system}</p>
                                   </div>
                                   <div class="p-5">
-                                      <div class="flex border-b border-gray-200 mb-4 overflow-x-auto gap-1 pb-1" style="scrollbar-width:none;">
+                                      <div class="flex border-b border-gray-200 mb-4 overflow-x-auto gap-1 pb-1 tab-bar-scroll" style="scrollbar-width:none;">
                                           <button class="tab-button active py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md flex-shrink-0" onclick="switchTab('${cardId}', 'findings', this)">Hallazgos Clave</button>
                                           <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md flex-shrink-0" onclick="switchTab('${cardId}', 'technique', this)">Técnica</button>
                                           <button class="tab-button py-2 px-4 -mb-px bg-gray-200 text-gray-700 font-semibold rounded-t-md flex-shrink-0" onclick="switchTab('${cardId}', 'evidence', this)">Evidencia</button>
