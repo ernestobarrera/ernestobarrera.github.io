@@ -3408,6 +3408,14 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
         });
       }
 
+      function formatFixedEs(value, digits = 1) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
+        return Number(value).toLocaleString('es-ES', {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        });
+      }
+
       function getNumberValue(cardId, fieldId) {
         const el = document.getElementById(`mf-${cardId}-${fieldId}`);
         if (!el || el.value === '') return null;
@@ -3451,6 +3459,14 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
         };
       }
 
+      function joinWithY(items) {
+        const filtered = items.filter(Boolean);
+        if (filtered.length === 0) return '';
+        if (filtered.length === 1) return filtered[0];
+        if (filtered.length === 2) return `${filtered[0]} y ${filtered[1]}`;
+        return `${filtered.slice(0, -1).join(', ')} y ${filtered[filtered.length - 1]}`;
+      }
+
       const DVT_WELLS_ITEMS = [
         { id: 'cancer', label: 'Cáncer activo', points: 1 },
         { id: 'paresis', label: 'Parálisis, paresia o inmovilización de la pierna', points: 1 },
@@ -3490,7 +3506,7 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
           return `
             <div class="rp-auto-panel">
               <div class="rp-section-title">Síntesis automática</div>
-              <div class="rp-helper-note">La relación L/C se calcula sola a partir de los ejes y el sistema integra corteza, hilio y Doppler para orientarte mientras exploras.</div>
+              <div class="rp-helper-note">La relación L/C se calcula sola a partir de los ejes y el sistema integra corteza, hilio y Doppler para proponerte un texto breve listo para la HCE.</div>
               <div class="rp-auto-grid">
                 <div class="rp-auto-card">
                   <div class="rp-auto-label">Relación L/C</div>
@@ -3512,7 +3528,7 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
                 </div>
               </div>
               <div class="rp-chip-list" id="neck-flags-${cardId}"></div>
-              <div class="rp-auto-text" id="neck-suggestion-${cardId}">Completa ejes, corteza, hilio y Doppler para generar una impresión automática sólida.</div>
+              <div class="rp-auto-text" id="neck-suggestion-${cardId}">Completa ejes, corteza, hilio y Doppler para generar un texto breve automático.</div>
               <div>
                 <button type="button" class="rp-secondary-btn" onclick="useSuggestedConclusion('${cardId}')">Usar sugerencia automática</button>
               </div>
@@ -3530,7 +3546,7 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
           return `
             <div class="rp-form-section">
               <div class="rp-section-title">Wells automatizado</div>
-              <div class="rp-helper-note">Marca solo los criterios presentes. El sistema suma la puntuación y la integra con la compresibilidad del protocolo elegido.</div>
+              <div class="rp-helper-note">Marca solo los criterios presentes. El sistema suma Wells y lo integra con la compresibilidad para proponerte un texto breve para la HCE.</div>
               ${wellsHtml}
             </div>
             <div class="rp-auto-panel">
@@ -3562,7 +3578,7 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
                   </div>
                 </div>
               </div>
-              <div class="rp-auto-text" id="dvt-suggestion-${cardId}">Selecciona extremidad, protocolo y puntos de compresión para construir la impresión.</div>
+              <div class="rp-auto-text" id="dvt-suggestion-${cardId}">Selecciona extremidad, protocolo y puntos de compresión para generar un texto breve automático.</div>
               <div>
                 <button type="button" class="rp-secondary-btn" onclick="useSuggestedConclusion('${cardId}')">Usar sugerencia automática</button>
               </div>
@@ -3670,21 +3686,39 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
 
         let profile = 'Datos insuficientes';
         let profileCls = 'badge-empty';
-        let suggestion = 'Completa ejes, corteza, hilio y Doppler para emitir una impresión morfológica sólida.';
+        let suggestion = 'Completa ejes, corteza, hilio y Doppler para generar un texto breve para la HCE.';
 
         if (hasCoreData) {
+          const ratioText = ratio >= 2 ? 'L/C >= 2' : ratio >= 1.5 ? `L/C ${formatFixedEs(ratio, 2)}` : 'L/C < 1,5';
+          const shortAxisText = shortAxis < 10 ? 'eje corto < 10 mm' : `eje corto ${formatFixedEs(shortAxis, 1)} mm`;
+          const cortexText = cortex < 3
+            ? `corteza fina de grosor ${formatFixedEs(cortex, 1)} mm`
+            : `corteza engrosada de ${formatFixedEs(cortex, 1)} mm`;
+          const hilumText = hilum ? 'hilio conservado' : 'hilio ausente';
+          const borderText = borders === 'lisos' ? 'bordes lisos' : borders === 'irregulares' ? 'bordes irregulares' : '';
+          const dopplerText = dopplerLabel ? `Doppler ${dopplerLabel.toLowerCase()}` : '';
+          const echoText = ecoLabel ? `Ecoestructura ${ecoLabel.toLowerCase()}.` : '';
+          const detailParts = [
+            ratioText,
+            shortAxisText,
+            cortexText,
+            borderText,
+            hilumText,
+            dopplerText,
+          ].filter(Boolean);
+
           if (score <= 1 && ratio !== null && ratio >= 2 && shortAxis < 10 && cortex <= 3 && hilum === true && doppler === 'hiliar') {
             profile = 'Reactivo probable';
             profileCls = 'badge-normal';
-            suggestion = `Ganglio cervical lateral${side ? ` ${side.toLowerCase()}` : ''}${station ? ` ${station.toLowerCase()}` : ''} de ${formatNumberEs(longAxis, 1)} x ${formatNumberEs(shortAxis, 1)} mm (L/C ${formatNumberEs(ratio, 2)}), corteza ${formatNumberEs(cortex, 1)} mm, hilio conservado y Doppler ${dopplerLabel.toLowerCase()}.${ecoLabel ? ` Ecoestructura ${ecoLabel.toLowerCase()}.` : ''} Perfil ecográfico predominantemente reactivo. Correlacionar con clínica y seguimiento solo si persiste o crece.`;
+            suggestion = `Ganglio cervical lateral${side ? ` ${side.toLowerCase()}` : ''}${station ? ` ${station.toLowerCase()}` : ''} de ${formatFixedEs(longAxis, 1)} x ${formatFixedEs(shortAxis, 1)} mm, ${joinWithY(detailParts)}. ${echoText} Perfil ecográfico predominantemente reactivo.`;
           } else if (score >= 4 || (hilum === false && (doppler === 'periferico' || eco === 'necrosis'))) {
             profile = 'Morfología sospechosa';
             profileCls = 'badge-alert';
-            suggestion = `Ganglio cervical lateral${side ? ` ${side.toLowerCase()}` : ''}${station ? ` ${station.toLowerCase()}` : ''} de ${formatNumberEs(longAxis, 1)} x ${formatNumberEs(shortAxis, 1)} mm (L/C ${formatNumberEs(ratio, 2)}), corteza ${formatNumberEs(cortex, 1)} mm, ${hilum ? 'hilio conservado' : 'hilio ausente'}, Doppler ${dopplerLabel.toLowerCase()}${ecoLabel ? ` y ecoestructura ${ecoLabel.toLowerCase()}` : ''}${bordersLabel ? ` con bordes ${bordersLabel.toLowerCase()}` : ''}. Perfil ecográfico sospechoso por rasgos morfológicos de alarma; valorar estudio etiológico dirigido y derivación según contexto clínico.`;
+            suggestion = `Ganglio cervical lateral${side ? ` ${side.toLowerCase()}` : ''}${station ? ` ${station.toLowerCase()}` : ''} de ${formatFixedEs(longAxis, 1)} x ${formatFixedEs(shortAxis, 1)} mm, ${joinWithY(detailParts)}. ${echoText} Perfil ecográfico sospechoso. Valorar estudio etiológico o derivación según contexto clínico.`;
           } else {
             profile = 'Indeterminado';
             profileCls = 'badge-warn';
-            suggestion = `Ganglio cervical lateral${side ? ` ${side.toLowerCase()}` : ''}${station ? ` ${station.toLowerCase()}` : ''} de ${formatNumberEs(longAxis, 1)} x ${formatNumberEs(shortAxis, 1)} mm (L/C ${formatNumberEs(ratio, 2)}), corteza ${formatNumberEs(cortex, 1)} mm, ${hilum ? 'hilio conservado' : 'hilio ausente'} y Doppler ${dopplerLabel.toLowerCase()}${ecoLabel ? `, ecoestructura ${ecoLabel.toLowerCase()}` : ''}${bordersLabel ? `, bordes ${bordersLabel.toLowerCase()}` : ''}. Perfil ecográfico indeterminado; correlacionar con clínica y valorar control ecográfico, estudio dirigido o derivación según persistencia.`;
+            suggestion = `Ganglio cervical lateral${side ? ` ${side.toLowerCase()}` : ''}${station ? ` ${station.toLowerCase()}` : ''} de ${formatFixedEs(longAxis, 1)} x ${formatFixedEs(shortAxis, 1)} mm, ${joinWithY(detailParts)}. ${echoText} Perfil ecográfico indeterminado. Correlacionar con clínica y valorar control o estudio dirigido según evolución.`;
           }
         }
 
@@ -3751,25 +3785,32 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
 
         let profile = 'Datos insuficientes';
         let profileCls = 'badge-empty';
-        let suggestion = 'Selecciona extremidad, protocolo y puntos de compresión para construir la impresión.';
+        let suggestion = 'Selecciona extremidad, protocolo y puntos de compresión para generar un texto breve para la HCE.';
 
         if (side && protocol) {
+          const normalSegments = segments
+            .filter(segment => segment.required)
+            .map(segment => ({ ...segment, meta: getCompressionMeta(cardId, segment.id) }))
+            .filter(segment => segment.meta.value === 'yes')
+            .map(segment => segment.label);
+
           if (!coverageComplete) {
             profile = 'Estudio incompleto';
             profileCls = 'badge-warn';
-            suggestion = `Estudio compresivo no concluyente en la extremidad ${side.toLowerCase()}: faltan puntos obligatorios del protocolo ${protocolLabel.toLowerCase()} (${missingSegments.join(', ')}). Completa la exploración o deriva a ecografía reglada.`;
+            suggestion = `POCUS TVP en extremidad ${side.toLowerCase()} con protocolo ${protocolLabel.toLowerCase()} incompleto. Wells ${wells.score} (${wells.label}). Faltan por documentar ${joinWithY(missingSegments)}. Estudio no concluyente; completar exploración o valorar ecografía reglada.`;
           } else if (positiveSegments.length > 0) {
             profile = 'TVP probable';
             profileCls = 'badge-alert';
-            suggestion = `Hallazgos ecográficos compatibles con TVP proximal en la extremidad ${side.toLowerCase()} por ausencia de compresibilidad completa en ${positiveSegments.join(', ')}. Requiere integración clínica y activación del circuito asistencial correspondiente.`;
+            const normalText = normalSegments.length ? ` Resto de segmentos explorados compresibles: ${joinWithY(normalSegments)}.` : '';
+            suggestion = `POCUS TVP en extremidad ${side.toLowerCase()} con protocolo ${protocolLabel.toLowerCase()}. Wells ${wells.score} (${wells.label}). Hallazgos compatibles con TVP proximal por ausencia de compresibilidad completa en ${joinWithY(positiveSegments)}.${normalText}`;
           } else if (wells.likely) {
             profile = 'Negativo con alta sospecha';
             profileCls = 'badge-warn';
-            suggestion = `Sin signos ecográficos de TVP proximal en los segmentos explorados de la extremidad ${side.toLowerCase()}, con protocolo ${protocolLabel.toLowerCase()} completo. Wells ${wells.score} (${wells.label}). Un estudio negativo${protocol === '2p' ? ' abreviado' : ''} no excluye por sí solo trombosis femoral aislada o distal si la sospecha persiste; valorar ecografía reglada o seriada.`;
+            suggestion = `POCUS TVP en extremidad ${side.toLowerCase()} con protocolo ${protocolLabel.toLowerCase()} completo. ${joinWithY(normalSegments)} compresibles. Wells ${wells.score} (${wells.label}). Sin signos de TVP proximal en los segmentos explorados, pero con probabilidad clínica alta; valorar ecografía reglada o seriada si persiste la sospecha.`;
           } else {
             profile = 'Sin TVP proximal en puntos explorados';
             profileCls = 'badge-normal';
-            suggestion = `Sin signos ecográficos de TVP proximal en la extremidad ${side.toLowerCase()} con protocolo ${protocolLabel.toLowerCase()} completo. Wells ${wells.score} (${wells.label}). Integrar con clínica y dímero-D según contexto.`;
+            suggestion = `POCUS TVP en extremidad ${side.toLowerCase()} con protocolo ${protocolLabel.toLowerCase()} completo. ${joinWithY(normalSegments)} compresibles. Wells ${wells.score} (${wells.label}). Sin signos ecográficos de TVP proximal en los segmentos explorados.`;
           }
         }
 
@@ -3890,112 +3931,45 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
       };
 
       function assembleDefaultReport(cardId, app) {
-        const today = new Date().toLocaleDateString('es-ES');
-        const title = app ? app.title : 'POCUS';
-        const lines = [`POCUS — ${title}`, `Fecha: ${today}`, ''];
-        const fields = app?.content?.reportFields || [];
-
-        if (fields.length) {
-          lines.push('HALLAZGOS:');
-          fields.forEach(field => {
-            const fid = `mf-${cardId}-${field.id}`;
-            let valText = '—';
-            if (field.type === 'number') {
-              const input = document.getElementById(fid);
-              const badge = document.getElementById(`${fid}-badge`);
-              if (input && input.value !== '') {
-                valText = `${input.value}${field.unit ? ` ${field.unit}` : ''}`;
-                if (badge && !badge.className.includes('badge-empty')) valText += ` (${badge.textContent})`;
-              }
-            } else if (field.type === 'boolean') {
-              const checked = document.querySelector(`input[name="${fid}"]:checked`);
-              const badge = document.getElementById(`${fid}-badge`);
-              if (checked) {
-                valText = checked.value === 'yes' ? 'Sí' : 'No';
-                if (badge && !badge.className.includes('badge-empty')) valText += ` (${badge.textContent})`;
-              }
-            } else if (field.type === 'select') {
-              const sel = document.getElementById(fid);
-              const badge = document.getElementById(`${fid}-badge`);
-              if (sel && sel.value) {
-                valText = sel.options[sel.selectedIndex].text;
-                if (badge && !badge.className.includes('badge-empty')) valText += ` -> ${badge.textContent}`;
-              }
-            }
-            lines.push(`${field.label}: ${valText}`);
-          });
-          lines.push('');
-        }
-
         const conclusionEl = document.getElementById(`rp-conclusion-${cardId}`);
-        const conclusion = conclusionEl ? conclusionEl.value.trim() : '';
-        if (conclusion) {
-          lines.push('CONCLUSIÓN:');
-          lines.push(conclusion);
-        }
+        const manualText = conclusionEl ? conclusionEl.value.trim() : '';
+        if (manualText) return manualText;
 
-        return lines.join('\n');
+        const title = app ? app.title : 'POCUS';
+        const fields = app?.content?.reportFields || [];
+        const parts = [];
+
+        fields.forEach(field => {
+          const fid = `mf-${cardId}-${field.id}`;
+          let valText = '';
+          if (field.type === 'number') {
+            const input = document.getElementById(fid);
+            if (input && input.value !== '') {
+              valText = `${input.value}${field.unit ? ` ${field.unit}` : ''}`;
+            }
+          } else if (field.type === 'boolean') {
+            const checked = document.querySelector(`input[name="${fid}"]:checked`);
+            if (checked) valText = checked.value === 'yes' ? 'Sí' : 'No';
+          } else if (field.type === 'select') {
+            const sel = document.getElementById(fid);
+            if (sel && sel.value) valText = sel.options[sel.selectedIndex].text;
+          }
+          if (valText) parts.push(`${field.label}: ${valText}`);
+        });
+
+        return parts.length ? `${title}: ${parts.join(', ')}.` : '';
       }
 
       function assembleNeckLateralReport(cardId, app) {
         const insights = window.POCUSApp.reportInsights[cardId] || computeNeckLateralInsights(cardId);
         const conclusionEl = document.getElementById(`rp-conclusion-${cardId}`);
-        const conclusion = conclusionEl?.value.trim() || insights.suggestion;
-        const lines = [
-          'POCUS ADENOPATÍAS CERVICALES',
-          `Fecha: ${new Date().toLocaleDateString('es-ES')}`,
-          '',
-          'INDICACIÓN:',
-          '[Adenopatía palpable / seguimiento / correlación clínica]',
-          '',
-          'TÉCNICA:',
-          'Sonda lineal de alta frecuencia. Cortes longitudinal y transversal del mismo ganglio diana.',
-          '',
-          'HALLAZGOS:',
-        ];
-
-        if (insights.side) lines.push(`Lado: ${insights.side}`);
-        if (insights.station) lines.push(`Nivel / estación: ${insights.station}`);
-        if (insights.longAxis !== null || insights.shortAxis !== null) {
-          lines.push(`Ganglio diana: ${formatNumberEs(insights.longAxis, 1)} x ${formatNumberEs(insights.shortAxis, 1)} mm${insights.ratio !== null ? ` (L/C ${formatNumberEs(insights.ratio, 2)})` : ''}`);
-        }
-        if (insights.cortex !== null) lines.push(`Corteza: ${formatNumberEs(insights.cortex, 1)} mm`);
-        if (insights.hilum !== null) lines.push(`Hilio graso: ${insights.hilum ? 'Presente' : 'Ausente'}`);
-        if (insights.dopplerLabel) lines.push(`Doppler: ${insights.dopplerLabel}`);
-        if (insights.ecoLabel) lines.push(`Ecoestructura: ${insights.ecoLabel}`);
-        if (insights.bordersLabel) lines.push(`Bordes: ${insights.bordersLabel}`);
-        if (insights.redFlags.length) lines.push(`Rasgos de alarma: ${insights.redFlags.join(', ')}`);
-        if (!insights.redFlags.length && insights.greenFlags.length) lines.push(`Rasgos favorables: ${insights.greenFlags.join(', ')}`);
-        lines.push('');
-        lines.push('IMPRESIÓN:');
-        lines.push(conclusion);
-        return lines.join('\n');
+        return conclusionEl?.value.trim() || insights.suggestion || '';
       }
 
       function assembleDvtReport(cardId) {
         const insights = window.POCUSApp.reportInsights[cardId] || computeDvtInsights(cardId);
         const conclusionEl = document.getElementById(`rp-conclusion-${cardId}`);
-        const conclusion = conclusionEl?.value.trim() || insights.suggestion;
-        const lines = [
-          'POCUS TVP (COMPRESIBILIDAD VENOSA)',
-          `Fecha: ${new Date().toLocaleDateString('es-ES')}`,
-          '',
-          'INDICACIÓN:',
-          `[Sospecha de TVP en extremidad ${insights.side || '_____'}]`,
-          `Wells: ${insights.wells.score} puntos (${insights.wells.label})`,
-          '',
-          'TÉCNICA:',
-          `Sonda lineal. Compresión seriada en corte transversal. Protocolo: ${insights.protocolLabel || 'pendiente'}.`,
-          '',
-          'HALLAZGOS:',
-          ...insights.findings.map(line => line.charAt(0).toUpperCase() + line.slice(1)),
-          `Cobertura: ${insights.coverageLabel}`,
-          `Segmentos anormales: ${insights.positiveSegments.length ? insights.positiveSegments.join(', ') : 'ninguno en los puntos explorados'}`,
-          '',
-          'IMPRESIÓN:',
-          conclusion,
-        ];
-        return lines.join('\n');
+        return conclusionEl?.value.trim() || insights.suggestion || '';
       }
 
       function assembleReport(cardId) {
@@ -4264,7 +4238,7 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
         if (!wrap) return;
         const hidden = wrap.hidden;
         wrap.hidden = !hidden;
-        if (btn) btn.textContent = hidden ? '▲ Ocultar informe' : '▼ Ver informe generado';
+        if (btn) btn.textContent = hidden ? '▲ Ocultar texto final' : '▼ Ver texto final';
         if (!hidden) return;
         // Actualizar antes de mostrar
         assembleAndSave(cardId);
@@ -4622,12 +4596,12 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
                 <!-- Conclusión -->
                 <div>
                   <div class="rp-conclusion-tools">
-                    <div class="rp-section-title">💬 Conclusión / Impresión diagnóstica</div>
+                    <div class="rp-section-title">💬 Texto final para HCE</div>
                     ${hasAutoAssistant ? `<button type="button" class="rp-secondary-btn" onclick="useSuggestedConclusion('${cardId}')">Usar sugerencia</button>` : ''}
                   </div>
-                  <div class="rp-helper-note">${hasAutoAssistant ? 'Si no editas manualmente la conclusión, la web la mantendrá alineada con la síntesis automática.' : 'Escribe aquí la impresión diagnóstica y el plan.'}</div>
+                  <div class="rp-helper-note">${hasAutoAssistant ? 'El texto que ves aquí es exactamente el que se copiará al portapapeles.' : 'Escribe aquí el texto breve que quieres llevar a la HCE.'}</div>
                   <textarea id="rp-conclusion-${cardId}" class="rp-conclusion-ta"
-                    placeholder="Escribe aquí la impresión diagnóstica y el plan..."
+                    placeholder="Escribe aquí el texto final breve para la HCE..."
                     oninput="handleConclusionInput('${cardId}')"
                     data-manual="${savedConclusion ? 'true' : 'false'}"
                     spellcheck="true"
@@ -4638,13 +4612,13 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
                 <div class="rp-preview-wrap">
                   <button class="rp-preview-toggle" id="rp-preview-btn-${cardId}"
                     onclick="togglePreview('${cardId}')">
-                    ▼ Ver informe generado
+                    ▼ Ver texto final
                   </button>
                   <div id="rp-preview-${cardId}" hidden>
                     <textarea id="rptxt-${cardId}" class="rp-preview-ta"
                       readonly spellcheck="false"
                       onclick="this.removeAttribute('readonly')"
-                      placeholder="Pulsa 'Ver informe generado' para crear el texto"></textarea>
+                      placeholder="Pulsa 'Ver informe generado' para previsualizar el texto final"></textarea>
                   </div>
                 </div>
 
