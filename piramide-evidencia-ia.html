@@ -104,11 +104,12 @@
 
     .matrix-grid {
       display: grid;
-      grid-template-columns: 90px 1fr 1fr;
+      grid-template-columns: 90px minmax(170px, 1fr) minmax(210px, 1.08fr) minmax(220px, 1.08fr);
       grid-template-rows: 44px repeat(3, 1fr);
       gap: 0;
       flex: 1;
       min-height: 0;
+      min-width: 920px;
       border-radius: 12px;
       overflow: hidden;
       border: 1px solid rgba(255, 255, 255, .1);
@@ -204,6 +205,13 @@
       box-shadow: 0 2px 8px rgba(59, 130, 246, .3)
     }
 
+    .tc:focus-visible,
+    .action-btn:focus-visible,
+    #closePanel:focus-visible {
+      outline: 2px solid #93c5fd;
+      outline-offset: 2px
+    }
+
     .tc .badge {
       font-size: 8px;
       padding: 1px 5px;
@@ -231,6 +239,21 @@
     .badge-institutional {
       background: #7f1d1d;
       color: #fca5a5
+    }
+
+    .badge-paid {
+      background: #312e81;
+      color: #c4b5fd
+    }
+
+    .badge-beta {
+      background: #3b0764;
+      color: #e9d5ff
+    }
+
+    .badge-risk {
+      background: #4c1d1d;
+      color: #fecaca
     }
 
     /* DETAIL PANEL */
@@ -494,7 +517,8 @@
 
     @media(max-width:640px) {
       .matrix-grid {
-        grid-template-columns: 60px 1fr 1fr
+        grid-template-columns: 60px repeat(3, minmax(150px, 1fr));
+        min-width: 760px
       }
 
       .tc {
@@ -521,6 +545,9 @@
           <span
             style="font-size:9px;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,.1);color:#fbbf24;font-weight:700;border:1px solid rgba(245,158,11,.2)">🔎
             Fuente trazable · ≠ evidencia preevaluada</span>
+          <span
+            style="font-size:9px;padding:2px 8px;border-radius:99px;background:rgba(20,184,166,.1);color:#5eead4;font-weight:700;border:1px solid rgba(20,184,166,.2)">Rev.
+            30 abr 2026</span>
         </div>
         <!-- Row 2: Key insight -->
         <p style="font-size:11px;color:#94a3b8;margin:3px 0 0;line-height:1.5"><strong style="color:#fbbf24">La
@@ -642,7 +669,7 @@
                   HCE Inteligente</span>
                 <span><span
                     style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#ea580c;margin-right:3px;vertical-align:middle"></span>N4:
-                  UpToDate · DynaMed</span>
+                  Síntesis clínicas curadas</span>
                 <span><span
                     style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;margin-right:3px;vertical-align:middle"></span>N3:
                   Guías Práctica Clínica</span>
@@ -658,22 +685,25 @@
         </div>
       </div>
 
-      <!-- ZONE 2: MATRIX (2 columnas: Fundacional | RAG) -->
+      <!-- ZONE 2: MATRIX (Fundacional | RAG | Curación experta) -->
       <div class="zone-matrix">
         <div style="text-align:center;margin-bottom:4px">
           <span
             style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">Herramientas
-            IA — Clasificadas por tipo de supervisión</span>
+            y fuentes — clasificadas por acceso y gobernanza</span>
         </div>
         <div class="matrix-grid" id="matrixGrid">
           <!-- Header row -->
           <div class="matrix-header"></div>
           <div class="matrix-header" style="background:rgba(239,68,68,.06)"><span
-              style="font-size:10px;font-weight:700;color:#f87171;letter-spacing:.5px">FUNDACIONAL</span><span
-              style="font-size:7px;color:#ef4444">LLM puro · Supervisión imprescindible</span></div>
+              style="font-size:10px;font-weight:700;color:#f87171;letter-spacing:.5px">GENERALISTA /
+              ABIERTO</span><span style="font-size:7px;color:#ef4444">LLM fundacional · buscador abierto con IA</span></div>
           <div class="matrix-header" style="background:rgba(245,158,11,.06)"><span
               style="font-size:10px;font-weight:700;color:#fbbf24;letter-spacing:.5px">RAG / SUPERVISIÓN
               ALGORÍTMICA</span><span style="font-size:7px;color:#d97706">Recupera de fuentes · Trazable</span></div>
+          <div class="matrix-header" style="background:rgba(16,185,129,.06)"><span
+              style="font-size:10px;font-weight:700;color:#34d399;letter-spacing:.5px">CURACIÓN EXPERTA /
+              INSTITUCIONAL</span><span style="font-size:7px;color:#059669">Contenido revisado · Preevaluado</span></div>
 
           <!-- Row 1: Point-of-Care -->
           <div class="matrix-row-label"><i class="fa-solid fa-stethoscope"
@@ -685,13 +715,20 @@
               son herramientas point-of-care. Úsalos como apoyo cognitivo con verificación obligatoria.</p>
           </div>
           <div class="matrix-cell" style="background:rgba(245,158,11,.03)">
-            <div class="cell-label">Motores RAG clínicos · Búsqueda con IA</div>
-            <div class="tc" data-tool="openevidence-clinical">OpenEvidence<span class="badge badge-free">Free</span>
+            <div class="cell-label">Motores RAG clínicos · Acceso reversible</div>
+            <div class="tc" data-tool="openevidence-clinical">OpenEvidence<span class="badge badge-risk">UE?</span>
             </div>
+            <div class="tc" data-tool="vera-health">Vera Health<span class="badge badge-free">Free</span></div>
+            <div class="tc" data-tool="heidi-evidence">Heidi Evidence<span class="badge badge-free">Free</span></div>
             <div class="tc" data-tool="glass-ai">Glass AI<span class="badge badge-freemium">Freem.</span></div>
-            <div class="tc" data-tool="perplexity">Perplexity AI<span class="badge badge-freemium">Freem.</span></div>
-            <div class="tc" data-tool="tripdatabase">Trip Database Pro<span class="badge badge-freemium">Freem.</span>
-            </div>
+          </div>
+          <div class="matrix-cell" style="background:rgba(16,185,129,.03)">
+            <div class="cell-label">CDS con curación experta · IA sobre bases revisadas</div>
+            <div class="tc" data-tool="uptodate-expert-ai">UpToDate Expert AI<span class="badge badge-paid">Pago</span></div>
+            <div class="tc" data-tool="dyna-ai">Dyna AI<span class="badge badge-institutional">Inst.</span></div>
+            <div class="tc" data-tool="clinicalkey-ai">ClinicalKey AI<span class="badge badge-institutional">Inst.</span></div>
+            <div class="tc" data-tool="amboss-ai">AMBOSS AI Mode<span class="badge badge-paid">Pago</span></div>
+            <div class="tc" data-tool="bmj-best-practice">BMJ Best Practice<span class="badge badge-paid">Pago</span></div>
           </div>
 
           <!-- Row 2: Lectura / Síntesis -->
@@ -715,6 +752,14 @@
             <div class="tc" data-tool="asreview">ASReview<span class="badge badge-oss">Open S.</span></div>
             <div class="tc" data-tool="rayyan">Rayyan<span class="badge badge-freemium">Freem.</span></div>
           </div>
+          <div class="matrix-cell" style="background:rgba(16,185,129,.03)">
+            <div class="cell-label">Síntesis humana · Control metodológico</div>
+            <div class="tc" data-tool="preevid">Preevid<span class="badge badge-free">Free</span></div>
+            <div class="tc" data-tool="guiasalud">GuíaSalud<span class="badge badge-free">Free</span></div>
+            <div class="tc" data-tool="cochrane">Cochrane Library<span class="badge badge-freemium">Freem.</span></div>
+            <div class="tc" data-tool="epistemonikos">Epistemonikos / L-OVE<span class="badge badge-freemium">Freem.</span></div>
+            <div class="tc" data-tool="nice-cks">NICE CKS<span class="badge badge-free">Free</span></div>
+          </div>
 
           <!-- Row 3: Búsqueda / Mapeo -->
           <div class="matrix-row-label"><i class="fa-solid fa-magnifying-glass"
@@ -727,6 +772,7 @@
             <div class="tc" data-tool="google-scholar">Google Scholar<span class="badge badge-free">Free</span></div>
             <div class="tc" data-tool="pubmed-ai">PubMed.ai<span class="badge badge-free">Free</span></div>
             <div class="tc" data-tool="google-ai-mode">Google AI Mode<span class="badge badge-freemium">Freem.</span></div>
+            <div class="tc" data-tool="perplexity">Perplexity AI<span class="badge badge-freemium">Freem.</span></div>
           </div>
           <div class="matrix-cell" style="background:rgba(245,158,11,.03)">
             <div class="cell-label">Buscadores GenIA · Grafos · Cribado</div>
@@ -736,13 +782,21 @@
             <div class="tc" data-tool="connected-papers">Connected Papers<span
                 class="badge badge-freemium">Freem.</span></div>
           </div>
+          <div class="matrix-cell" style="background:rgba(16,185,129,.03)">
+            <div class="cell-label">Búsqueda primaria · Normativa y seguridad</div>
+            <div class="tc" data-tool="pubmed-clinical-queries">PubMed Clinical Queries<span class="badge badge-free">Free</span></div>
+            <div class="tc" data-tool="tripdatabase">Trip Database<span class="badge badge-freemium">Freem.</span></div>
+            <div class="tc" data-tool="litsense">LitSense<span class="badge badge-free">Free</span></div>
+            <div class="tc" data-tool="aemps-cima">AEMPS / CIMA<span class="badge badge-free">Free</span></div>
+            <div class="tc" data-tool="ema-safety">EMA / PRAC<span class="badge badge-free">Free</span></div>
+          </div>
         </div>
         <!-- Disclaimer -->
         <p style="font-size:8px;color:#475569;margin:4px 0 0;text-align:center;line-height:1.4">
           <i class="fa-solid fa-circle-info" style="margin-right:2px;color:#64748b"></i>
-          Esta matriz clasifica herramientas por <strong style="color:#94a3b8">supervisión y modo de acceso</strong>, no
-          por el nivel de evidencia que hereda automáticamente cada respuesta.
-          Los <em>gold standards</em> MBE (UpToDate, Cochrane, GPC) aparecen en la leyenda de la pirámide.
+          Esta matriz clasifica herramientas por <strong style="color:#94a3b8">modo de acceso, gobernanza y estabilidad</strong>, no
+          por el nivel de evidencia que hereda automáticamente cada respuesta. La tercera columna no convierte una salida IA
+          en N4: indica mayor curación experta o fuente preevaluada que debe consultarse en origen.
         </p>
       </div>
 
@@ -763,7 +817,7 @@
       style="flex-shrink:0;padding:3px 1rem;background:#0f172a;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between">
       <span style="font-size:8px;color:#334155">Modelo piramidal: Alper BS, Haynes RB. EBHC 5.0. Evid Based Med.
         2016;21(4):123-5.</span>
-      <span style="font-size:8px;color:#334155">© Ernesto Barrera · 2025 · Interfaz educativa</span>
+      <span style="font-size:8px;color:#334155">© Ernesto Barrera · 2026 · Interfaz educativa</span>
     </div>
   </div>
 
@@ -822,11 +876,18 @@
   <script>
     const T = {
       ebmeds: { name: "EBMeDS", desc: "Sistema de soporte a decisiones clínicas (CDSS) integrado en HCE para alertas y recomendaciones en tiempo real basadas en la evidencia.", feat: ["Alertas y recordatorios basados en evidencia", "Personalización según características del paciente", "Reduce la sobrecarga de información", "Integración directa con sistemas de HCE"], price: "Licencia empresarial", best: "Hospitales y sistemas de salud con HCE integradas", limit: "Requiere integración técnica compleja y licencia costosa", url: "https://www.ebmeds.org/" },
-      "openevidence-clinical": { name: "OpenEvidence — Decisiones Clínicas", desc: "Plataforma de IA diseñada para responder preguntas clínicas complejas en el punto de atención, sintetizando información de fuentes de alta calidad.", feat: ["Conformidad con HIPAA", "Cita directamente de NEJM, JAMA y guías", 'Función "DeepConsult" para análisis profundos', "Respuestas rápidas para casos específicos"], price: "Gratuito para clínicos", best: "Médicos en consulta que necesitan respuestas basadas en evidencia rápida", limit: "La síntesis es algorítmica, sin evaluación humana explícita. Acceder a Cochrane no convierte la respuesta en una revisión Cochrane.", url: "https://www.openevidence.com/" },
-      "openevidence-guidelines": { name: "OpenEvidence (Guías Clínicas)", desc: "Plataforma IA que consulta directamente las guías de práctica clínica más actualizadas de sociedades científicas (NICE, AHA, etc.).", feat: ["Acceso directo a recomendaciones de guías", "Sintetiza la información relevante para el caso", "Reduce búsqueda en documentos extensos", "Actualización continua de guías"], price: "Gratuito para uso clínico", best: "Consulta rápida de recomendaciones de guías clínicas", limit: "Limitado a guías, no incluye estudios primarios. Si difieren entre guías, posible sesgo integrativo.", url: "https://www.openevidence.com/" },
+      "openevidence-clinical": { name: "OpenEvidence — Decisiones Clínicas (UE/UK incierto)", desc: "Plataforma de IA clínica para preguntas complejas en el punto de atención. En abril de 2026 su acceso desde España/UE ha dejado de ser fiable, con retirada de UE/UK comunicada por fuentes secundarias y sin nota oficial abierta localizada.", feat: ["Síntesis con citas a literatura y guías", "Uso amplio en EE. UU.", 'Función "DeepConsult" para análisis profundos', "Ejemplo de herramienta RAG clínica con acceso regionalmente frágil"], price: "Gratis para clínicos; acceso UE/UK no fiable", best: "Comparación conceptual dentro de los RAG clínicos, sin convertirlo en referencia de categoría.", limit: "No basar flujos docentes o asistenciales en herramientas cuyo acceso puede cambiar sin aviso. La síntesis es algorítmica: acceder a Cochrane no convierte la respuesta en una revisión Cochrane.", url: "https://www.openevidence.com/" },
+      "openevidence-guidelines": { name: "OpenEvidence (Guías Clínicas)", desc: "Plataforma IA que consulta directamente guías de práctica clínica de sociedades científicas. Útil como ejemplo de acceso conversacional a guías, no como jerarquía metodológica propia.", feat: ["Acceso directo a recomendaciones de guías", "Sintetiza la información relevante para el caso", "Reduce búsqueda en documentos extensos", "Ejemplo de trazabilidad sin evaluación crítica experta propia"], price: "Acceso UE/UK no fiable", best: "Consulta rápida si está disponible, con verificación en la guía original.", limit: "Si difieren las guías, la integración algorítmica puede ocultar conflictos. Verificar siempre en la guía original.", url: "https://www.openevidence.com/" },
+      "vera-health": { name: "Vera Health", desc: "Buscador clínico con IA que declara recuperar primero evidencia médica y generar después una respuesta con citas auditables.", feat: ["Busca en papers, guías y care pathways", "Citas vinculadas a la fuente original", "Alianza con ACEP para integrar políticas clínicas", "Declara ser gratis para clínicos y trainees"], price: "Gratuito para clínicos; monetización futura no clara", best: "Segunda opinión rápida con citas, especialmente si la pregunta es clínica y necesita orientación inicial.", limit: "Startup joven y modelo de negocio poco explicitado. Útil como capa rápida, no como infraestructura única ni reemplazo de guía, síntesis clínica curada o fuente primaria.", url: "https://www.verahealth.ai/" },
+      "heidi-evidence": { name: "Heidi Evidence", desc: "Módulo de respuestas clínicas con citas dentro del ecosistema Heidi. Declara respuestas gratuitas, sin anuncios y ancladas a fuentes clínicas.", feat: ["Respuestas clínicas con fuentes abribles", "Fuentes configurables según plan y región", "Disponible fuera de sesión en UE/UK", "Modelo más explícito que otras startups: free + planes Evidence/Clinician/Practice"], price: "Gratis con límites/funciones premium según plan", best: "Consulta clínica rápida fuera de una sesión asistencial y verificación de guías o criterios.", limit: "En UE/UK no está disponible dentro de la sesión clínica; las fuentes y límites varían por región y plan. Verificar siempre las citas.", url: "https://www.heidihealth.com/evidence" },
       "glass-ai": { name: "Glass AI", desc: "IA para razonamiento diagnóstico. Genera diagnósticos diferenciales y planes de tratamiento apoyados en literatura médica.", feat: ["Genera diagnósticos diferenciales", "Justificaciones con enlaces a evidencia", 'Diseñado como "borrador" para razonamiento clínico', "Integra datos de la HCE"], price: "Freemium", best: "Médicos y estudiantes desarrollando razonamiento diagnóstico", limit: "No reemplaza el juicio clínico, requiere verificación", url: "https://glass.health/" },
-      perplexity: { name: "Perplexity AI", desc: "Buscador impulsado por IA con recuperación de Internet (RAG) en tiempo real. Genera respuestas con citas rastreables, pero no distingue calidad metodológica.", feat: ["Búsqueda indexada en tiempo real", "Citas inline para trazabilidad (Grounding)", "Modo Pro (Co-Pilot) para refinar búsqueda", "Acceso a modelos múltiples (GPT-4, Claude)"], price: "Freemium", best: "Aproximaciones rápidas y dudas no críticas en salud. Buen primer filtro exploratorio.", limit: "No distingue calidad metodológica (ensayo clínico vs opinión). Sufre de 'Falso Sumario': parece un summary pero no lo es.", url: "https://www.perplexity.ai/" },
+      perplexity: { name: "Perplexity AI", desc: "Buscador impulsado por IA con recuperación de Internet (RAG) en tiempo real. Genera respuestas con citas rastreables, pero no distingue calidad metodológica.", feat: ["Búsqueda indexada en tiempo real", "Citas inline para trazabilidad (Grounding)", "Modo Pro (Co-Pilot) para refinar búsqueda", "Acceso a modelos múltiples (GPT-4, Claude)"], price: "Freemium", best: "Aproximaciones rápidas y dudas no críticas en salud. Buen primer filtro exploratorio.", limit: "No distingue calidad metodológica (ensayo clínico vs opinión). Puede producir una 'falsa síntesis curada': parece una respuesta preevaluada, pero no lo es.", url: "https://www.perplexity.ai/" },
       tripdatabase: { name: "Trip Pro con IA", desc: "Combina su motor de búsqueda de evidencia de alta calidad con IA generativa. Respuestas resumidas y referenciadas basadas en la mejor evidencia.", feat: ["Búsqueda inteligente en la cima de la pirámide", "Respuestas IA con enlaces a las fuentes", "Filtros PICO para búsqueda tradicional"], price: "Freemium (IA en plan Pro)", best: "Clínicos que quieren respuestas fiables sin renunciar al acceso a evidencia de máxima calidad.", limit: "Funciones de IA potentes requieren suscripción Pro.", url: "https://www.tripdatabase.com/" },
+      "uptodate-expert-ai": { name: "UpToDate Expert AI", desc: "Capa GenAI de UpToDate basada exclusivamente en contenido experto y revisado de UpToDate.", feat: ["Respuestas trazables a temas UpToDate", "Contenido revisado por expertos", "Razonamiento y supuestos visibles", "Disponible para Pro Plus/trainees en EE. UU. y Canadá, y cuentas Enterprise seleccionadas"], price: "Pago / Enterprise; no contar con acceso individual en España", best: "Cuando existe acceso institucional: punto de atención con gobernanza de contenido fuerte.", limit: "Fuera de países y cuentas habilitadas puede estar restringido o en modo de evaluación. La salida GenAI debe revisarse, aunque proceda de una base curada sólida.", url: "https://www.wolterskluwer.com/en/solutions/uptodate/ai-clinical-decision-support" },
+      "dyna-ai": { name: "Dyna AI", desc: "Interfaz RAG dentro de DynaMed, DynaMedex y Dynamic Health, apoyada en contenido experto, curado y actualizado por EBSCO Clinical Decisions.", feat: ["RAG sobre DynaMed/DynaMedex/Dynamic Health", "Enlaces directos a la evidencia subyacente", "Registro de preguntas, respuestas, referencias y timestamps", "Gobernanza de contenidos y diseño clínico"], price: "Institucional; no disponible de forma general en la UE", best: "Instituciones con licencia DynaMed/DynaMedex que buscan IA con base curada conocida.", limit: "EBSCO indica que Dyna AI Mode no está disponible en la UE en su lanzamiento 2026; no sirve como alternativa práctica si el acceso regional no existe.", url: "https://more.ebsco.com/Dyna-AI.html" },
+      "clinicalkey-ai": { name: "ClinicalKey AI", desc: "Espacio de trabajo clínico de Elsevier que combina búsqueda conversacional con una base de conocimiento clínica con texto completo y contenido copyright-cleared.", feat: ["RAG complejo sobre contenido Elsevier y fuentes clínicas", "Citas y validación de grounding", "Guías de sociedades, libros, revistas y drug information", "Reading Assistant dentro de artículos"], price: "Comercial / institucional", best: "Entornos con licencia Elsevier que necesitan respuestas clínicas trazables y acceso a textos completos.", limit: "Muy dependiente de licencia y cobertura institucional. Trazabilidad alta no equivale por sí sola a recomendación graduada.", url: "https://www.elsevier.com/products/clinicalkey/clinicalkey-ai" },
+      "amboss-ai": { name: "AMBOSS AI Mode", desc: "Modo de búsqueda clínica con IA dentro de AMBOSS, basado en la base AMBOSS, guías seleccionadas y drug information.", feat: ["Fuentes clínicas curadas", "Citas inline detalladas", "Señala recomendaciones discrepantes", "Responde en el idioma de la pregunta"], price: "Pago / trial; funciones variables por región", best: "Clínicos o docentes que ya usan AMBOSS y quieren una capa conversacional sobre contenido curado.", limit: "Base muy orientada a guías EE. UU. y funciones variables por país. No reemplaza guías españolas ni protocolos locales.", url: "https://www.amboss.com/int/clinical-ai-mode" },
+      "bmj-best-practice": { name: "BMJ Best Practice", desc: "Herramienta point-of-care con revisión experta, guías paso a paso, actualización frecuente y enfoque muy práctico para clínica.", feat: ["Diagnóstico, tratamiento y seguimiento", "Gestor de comorbilidades", "Contenido revisado por expertos", "Aplicación útil para atención primaria"], price: "Suscripción personal o institucional", best: "Consulta clínica rápida cuando se prioriza una síntesis clínica curada sobre una respuesta generativa.", limit: "No es una IA conversacional; requiere acceso. Contexto UK/internacional que puede necesitar adaptación local.", url: "https://bestpractice.bmj.com/" },
       "claude-pro": { name: "Claude (Anthropic)", desc: "LLM de contexto ultra-largo que permite analizar PDFs clínicos completos para lectura y síntesis profunda. Sin acceso a fuentes externas por sí solo.", feat: ["Ventana de contexto de 200k+ tokens", "Artifacts para diagramación iterativa", "Menor propensión a alucinaciones que otros LLMs basales"], price: "Freemium", best: "Análisis semántico profundo de múltiples ensayos clínicos en bruto.", limit: "No realiza búsquedas especializadas fuera del documento dado. La calidad depende del input.", url: "https://claude.ai/" },
       "clinical-reasoning": { name: "ChatGPT / GPT-4 (OpenAI)", desc: "LLM generalista de propósito amplio. Útil como sparring partner intelectual para razonamiento clínico, pero sin acceso estructurado a bases médicas verificadas.", feat: ["Razonamiento paso a paso (CoT)", "Redacción, resumen, adaptación de borradores clínicos", "Generación de diagnósticos diferenciales", "Modo con plugins puede añadir RAG web"], price: "Freemium", best: "Estructurar pensamiento, generar hipótesis, burocracia clínica.", limit: "El razonamiento puede parecer lógico pero ser médicamente incorrecto. Supervisión imprescindible.", url: "https://chat.openai.com/" },
       chatpdf: { name: "ChatPDF / SciSpace", desc: 'Herramientas que permiten "chatear" con documentos PDF para interrogar artículos científicos. SciSpace añade explicaciones de métodos y tablas.', feat: ["Asistente virtual para cada PDF", "Resume rápidamente el contenido", "Explicación de conceptos y tablas", "Integración con Zotero (SciSpace)"], price: "Freemium", best: "Lectura activa de papers técnicos. Primera aproximación a un estudio individual.", limit: "Mejor para papers individuales. La síntesis no tiene valor de revisión sistemática.", url: "https://www.chatpdf.com/" },
@@ -836,6 +897,14 @@
       "google-scholar": { name: "Google Scholar", desc: "Motor de búsqueda académico gratuito de Google. Cobertura masiva pero sin filtro de calidad metodológica.", feat: ["Cobertura masiva de literatura académica", "Alertas de citas y perfiles de autor", "Enlaza a texto completo cuando disponible", "Integración con gestores bibliográficos"], price: "Gratuito", best: "Búsqueda exploratoria inicial amplia, rastreo de citas.", limit: "No distingue calidad metodológica. Sin filtros PICO ni clasificación por nivel de evidencia.", url: "https://scholar.google.com/" },
       "pubmed-ai": { name: "PubMed.ai", desc: "Interfaz mejorada con IA sobre PubMed/MEDLINE del NIH/NLM. Añade búsqueda semántica y resúmenes inteligentes.", feat: ["Acceso a toda la base MEDLINE/PubMed", "Búsqueda semántica mejorada con IA", "Resúmenes generados automáticamente", "Filtros por tipo de estudio y fecha"], price: "Gratuito", best: "Búsquedas biomédicas con ventaja de procesamiento semántico.", limit: "Las funciones IA son complementarias; la base sigue siendo PubMed con sus limitaciones.", url: "https://pubmed.ai/" },
       "google-ai-mode": { name: "Google AI Mode", desc: "Modo conversacional de Google Search para respuestas IA con seguimiento. Es distinto de AI Overviews: el bloque automático de síntesis que puede aparecer arriba en la página de resultados.", feat: ["Expande AI Overviews con razonamiento avanzado e interacción conversacional", "Query fan-out: divide la pregunta en subtemas y lanza búsquedas simultáneas", "Enlaces web para explorar las fuentes usadas", "Entrada multimodal según disponibilidad: texto, voz, imagen y PDF"], price: "Freemium", best: "Exploración inicial de temas generales, orientación rápida y generación de hipótesis de búsqueda.", limit: "AI Mode y AI Overviews sintetizan web general, no recuperación de fuentes biomédicas verificadas. Los enlaces permiten rastrear, pero no certifican calidad metodológica; contrastar en PubMed, Cochrane o guías antes de uso clínico.", url: "https://www.google.com/ai" },
+      "pubmed-clinical-queries": { name: "PubMed Clinical Queries", desc: "Filtros clínicos preconfigurados de PubMed para recuperar estudios de terapia, diagnóstico, etiología y pronóstico.", feat: ["Fuente pública NIH/NLM", "Filtros clínicos reproducibles", "Acceso directo a MEDLINE/PubMed", "Buen control frente a respuestas IA"], price: "Gratuito", best: "Verificación primaria cuando una respuesta IA cita estudios o cuando la pregunta es reciente, controvertida o farmacoterapéutica.", limit: "No sintetiza por ti: exige formular pregunta, leer abstracts/textos y valorar diseño y aplicabilidad.", url: "https://pubmed.ncbi.nlm.nih.gov/clinical/" },
+      preevid: { name: "Preevid", desc: "Servicio de preguntas clínicas basadas en la evidencia, especialmente valioso para atención primaria española.", feat: ["Búsqueda protocolizada", "Respuesta redactada con fuentes", "Clasifica documentos por graduación de evidencia", "Contexto clínico muy cercano al SNS"], price: "Gratuito", best: "Dudas clínicas concretas en AP cuando quieres una respuesta ya contextualizada y transparente.", limit: "No siempre cubre preguntas muy nuevas o muy específicas; revisar fecha y fuentes citadas.", url: "https://www.murciasalud.es/preevid" },
+      guiasalud: { name: "GuíaSalud", desc: "Portal del Sistema Nacional de Salud para guías de práctica clínica, recomendaciones y materiales de ayuda a la decisión.", feat: ["Marco institucional SNS", "Guías y recomendaciones 'no hacer'", "Metodología GPC", "Aplicabilidad española"], price: "Gratuito", best: "Recomendaciones clínicas con contexto español y respaldo institucional.", limit: "No reemplaza la búsqueda primaria si la guía está desactualizada o la pregunta no está cubierta.", url: "https://portal.guiasalud.es/" },
+      cochrane: { name: "Cochrane Library", desc: "Revisiones sistemáticas de alta calidad metodológica y síntesis preevaluadas.", feat: ["Revisiones sistemáticas", "Metodología explícita", "Actualizaciones y protocolos", "Control frente a síntesis generativas"], price: "Freemium / acceso institucional según país", best: "Efectividad de intervenciones, prevención, cribado y decisiones donde importa la certeza de la evidencia.", limit: "No siempre da respuesta point-of-care inmediata; revisar fecha, población y aplicabilidad local.", url: "https://www.cochranelibrary.com/" },
+      epistemonikos: { name: "Epistemonikos / L-OVE", desc: "Base de revisiones sistemáticas y matrices de evidencia con enfoque multilingüe.", feat: ["Mapas de evidencia", "Identifica revisiones y estudios primarios", "Útil para preguntas PICO", "Buen puente entre búsqueda y síntesis"], price: "Freemium", best: "Comprobar si ya existe una revisión sistemática y mapear evidencia disponible.", limit: "La interfaz ayuda a localizar evidencia, pero la interpretación crítica sigue siendo humana.", url: "https://www.epistemonikos.org/" },
+      "nice-cks": { name: "NICE CKS", desc: "Resúmenes prácticos de NICE para atención primaria, con recomendaciones organizadas por escenario clínico.", feat: ["Enfoque AP", "Consejos prácticos", "Actualización por equipo experto", "Acceso abierto"], price: "Gratuito", best: "Consulta rápida cuando GuíaSalud/Preevid no cubren una pregunta o se busca una referencia AP estructurada.", limit: "Contexto Reino Unido: adaptar a epidemiología, cartera de servicios, fármacos y circuitos locales.", url: "https://cks.nice.org.uk/" },
+      "aemps-cima": { name: "AEMPS / CIMA", desc: "Fuente oficial española de fichas técnicas y prospectos de medicamentos autorizados.", feat: ["Ficha técnica oficial", "Prospecto y datos regulatorios", "Base normativa española", "Control imprescindible para seguridad farmacológica"], price: "Gratuito", best: "Dosis autorizadas, contraindicaciones, embarazo, lactancia, interacciones descritas y estado de autorización en España.", limit: "No es una síntesis MBE ni una IA. En interacciones complejas puede requerir boletines, EMA/PRAC, Lexidrug/Stockley o revisión especializada.", url: "https://cima.aemps.es/cima/publico/home.html" },
+      "ema-safety": { name: "EMA / PRAC", desc: "Información europea de farmacovigilancia y recomendaciones del Pharmacovigilance Risk Assessment Committee.", feat: ["Señales de seguridad", "Revisiones regulatorias europeas", "Recomendaciones PRAC", "Contexto UE para medicamentos"], price: "Gratuito", best: "Alertas de seguridad, cambios regulatorios y dudas farmacológicas con impacto europeo.", limit: "No reemplaza ficha técnica española ni protocolo local; puede requerir interpretación clínica y temporal.", url: "https://www.ema.europa.eu/en/human-regulatory-overview/pharmacovigilance/pharmacovigilance-risk-assessment-committee-prac" },
       consensus: { name: "Consensus", desc: "Motor de búsqueda IA que extrae y sintetiza hallazgos directamente de la investigación científica peer-reviewed.", feat: ["Resultados basados en estudios revisados por pares", '"Consensus Meter" para nivel de acuerdo', "Cada afirmación vinculada a su fuente", "Corpus de 200M+ documentos"], price: "Freemium", best: "Visión general rápida y fiable de la evidencia sobre un tema.", limit: "Las síntesis son generales. Trata papers sin filtro metodológico fino.", url: "https://consensus.app/" },
       elicit: { name: "Elicit", desc: "Asistente de investigación que automatiza extracción PICO de PDFs. Encuentra artículos y extrae datos en tablas personalizables.", feat: ["Indexa 125M+ artículos", "Extrae datos en columnas (PICO, etc.)", "Temas y conceptos más allá de palabras clave", "Síntesis automática de hallazgos"], price: "Freemium", best: "Fase inicial de revisiones sistemáticas y extracción.", limit: "La extracción requiere verificación manual.", url: "https://elicit.com/" },
       researchrabbit: { name: "ResearchRabbit", desc: 'Descubrimiento visual: redes de conocimiento interactivas entre artículos y autores. "Spotify de la investigación".', feat: ["Mapas interactivos de colecciones", "Alertas de nueva literatura", '"Similar Work" y rastreo de referencias', "Integración con Zotero"], price: "Gratuito", best: "Explorar campos nuevos, snowballing bibliográfico.", limit: "No ofrece síntesis de contenido, solo mapeo.", url: "https://www.researchrabbit.ai/" },
@@ -851,9 +920,49 @@
       "dimensions-ai": { name: "Dimensions AI", desc: "Plataforma IA para publicaciones, becas, patentes y ensayos clínicos con análisis de tendencias.", feat: ["Análisis multimodal investigación", "Asistente IA para resúmenes", "Integración con Papers", "Búsqueda en ensayos y patentes"], price: "Institucional", best: "Análisis bibliométrico y horizon scanning", limit: "Costoso, no para point-of-care", url: "https://www.dimensions.ai/" },
       litsense: { name: "LitSense", desc: "Motor de búsqueda de frases para literatura biomédica. Combina términos con embeddings neuronales.", feat: ["500M+ frases de PubMed y PMC", "Búsqueda semántica (sent2vec)", "Resalta entidades biomédicas", "Filtra por sección y fecha"], price: "Gratuito", best: "Fact-checking molecular: oraciones concretas en artículos", limit: "Recupera frases, no genera síntesis.", url: "https://www.ncbi.nlm.nih.gov/research/litsense/" },
       gemini: { name: "Gemini (Google DeepMind)", desc: "LLM multimodal de Google. Procesa texto, imágenes y vídeo. Ventana de contexto de hasta 1M tokens (Gemini 1.5 Pro). Integrado en el ecosistema Google.", feat: ["Contexto de hasta 1M tokens (el mayor del mercado)", "Capacidad multimodal nativa (texto + imagen + vídeo)", "Deep Research: investigación autónoma iterativa", "Integración con Google Search, Scholar y Workspace"], price: "Freemium", best: "Análisis de documentos extensos, síntesis multimodal, investigación exploratoria.", limit: "LLM generalista: no accede a bases médicas verificadas por sí solo. Mismas limitaciones epistemológicas que ChatGPT.", url: "https://gemini.google.com/" },
-      notebooklm: { name: "NotebookLM (Google)", desc: "Herramienta RAG de Google que permite subir fuentes (PDFs, webs, vídeos) y obtener respuestas exclusivamente ancladas a esas fuentes. Genera podcasts automáticos y guías de estudio.", feat: ["RAG estricto: SOLO responde desde tus fuentes subidas", "Cero alucinaciones fuera de contexto (grounded by design)", "Genera Audio Overviews (podcasts) automáticos", "Citas inline con enlace al fragmento exacto de la fuente"], price: "Gratuito", best: "Síntesis de múltiples papers/guías con trazabilidad perfecta. Ideal para revisiones de literatura.", limit: "Solo trabaja con las fuentes que tú subas. No busca en internet ni en bases externas. La calidad depende del input.", url: "https://notebooklm.google.com/" }
+      notebooklm: { name: "NotebookLM (Google) — lector de fuentes", desc: "Entorno RAG de Google para subir documentos, webs o vídeos y conversar con ese corpus. No es una fuente de evidencia: es una interfaz para interrogar fuentes que tú seleccionas.", feat: ["Responde desde fuentes aportadas por el usuario", "Citas inline con enlace al fragmento exacto", "Genera Audio Overviews y guías de estudio", "Útil para guías, protocolos locales y lotes concretos de artículos"], price: "Gratuito", best: "Convertir una guía, protocolo o selección de papers en un espacio consultable con trazabilidad interna.", limit: "No busca, no selecciona y no valida por sí mismo. La calidad epistemológica depende por completo de las fuentes que subas y de si están actualizadas.", url: "https://notebooklm.google.com/" }
     };
-    const L = { "openevidence-clinical": [1, 2, 3], "openevidence-guidelines": [3], "consensus": [1], "perplexity": [1, 2], "tripdatabase": [1, 2, 3, 4, 5], "scopus-ai": [1, 2], "dimensions-ai": [1, 2, 3], "chatpdf": [1, 2], "claude-pro": [1, 2], "elicit": [1], "asreview": [1, 2], "rayyan": [1, 2], "researchrabbit": [1], "litsense": [1], "connected-papers": [1], "scite": [1, 2], "ebmeds": [5], "glass-ai": [1, 2, 3], "google-scholar": [1], "pubmed-ai": [1], "google-ai-mode": [], "clinical-reasoning": [], "gemini": [], "notebooklm": [1, 2] };
+    const L = {
+      "openevidence-clinical": [1, 2, 3],
+      "openevidence-guidelines": [3],
+      "vera-health": [1, 2, 3],
+      "heidi-evidence": [1, 2, 3, 4],
+      "uptodate-expert-ai": [4],
+      "dyna-ai": [4],
+      "clinicalkey-ai": [1, 2, 3, 4],
+      "amboss-ai": [3, 4],
+      "bmj-best-practice": [4],
+      preevid: [2, 3, 4],
+      guiasalud: [3],
+      cochrane: [2],
+      epistemonikos: [2],
+      "nice-cks": [3, 4],
+      "pubmed-clinical-queries": [1, 2],
+      "aemps-cima": [3],
+      "ema-safety": [3],
+      consensus: [1],
+      perplexity: [1, 2],
+      tripdatabase: [1, 2, 3, 4, 5],
+      "scopus-ai": [1, 2],
+      "dimensions-ai": [1, 2, 3],
+      chatpdf: [1, 2],
+      "claude-pro": [1, 2],
+      elicit: [1],
+      asreview: [1, 2],
+      rayyan: [1, 2],
+      researchrabbit: [1],
+      litsense: [1],
+      "connected-papers": [1],
+      scite: [1, 2],
+      ebmeds: [5],
+      "glass-ai": [1, 2, 3],
+      "google-scholar": [1],
+      "pubmed-ai": [1],
+      "google-ai-mode": [],
+      "clinical-reasoning": [],
+      gemini: [],
+      notebooklm: [1, 2]
+    };
     const levels = document.querySelectorAll('.pyramid-level');
     const body = document.getElementById('appBody');
     const dTitle = document.getElementById('detailTitle');
@@ -878,25 +987,61 @@
       hits.forEach(n => { const el = document.getElementById('lv' + n); if (el) { el.classList.remove('dim'); el.classList.add('lit') } });
     }
     function resetPyramid() { levels.forEach(l => { l.classList.remove('lit', 'dim') }) }
+    function closeDetailPanel() {
+      body.classList.remove('panel-open');
+      if (activeChip) {
+        activeChip.classList.remove('active');
+        activeChip.setAttribute('aria-expanded', 'false');
+        activeChip = null;
+      }
+    }
+    function openDetailPanel(chip, tool) {
+      if (activeChip) {
+        activeChip.classList.remove('active');
+        activeChip.setAttribute('aria-expanded', 'false');
+      }
+      chip.classList.add('active');
+      chip.setAttribute('aria-expanded', 'true');
+      activeChip = chip;
+      dTitle.textContent = tool.name;
+      dBody.innerHTML = renderDetail(chip.dataset.tool);
+      body.classList.add('panel-open');
+    }
     document.querySelectorAll('.tc[data-tool]').forEach(chip => {
+      chip.setAttribute('role', 'button');
+      chip.setAttribute('tabindex', '0');
+      chip.setAttribute('aria-expanded', 'false');
       chip.addEventListener('mouseenter', () => lightPyramid(chip.dataset.tool));
       chip.addEventListener('mouseleave', resetPyramid);
       chip.addEventListener('click', e => {
         e.stopPropagation(); const id = chip.dataset.tool; const t = T[id]; if (!t) return;
-        if (activeChip) activeChip.classList.remove('active');
-        chip.classList.add('active'); activeChip = chip;
-        dTitle.textContent = t.name; dBody.innerHTML = renderDetail(id);
-        body.classList.add('panel-open');
+        if (activeChip === chip && body.classList.contains('panel-open')) {
+          closeDetailPanel();
+          return;
+        }
+        openDetailPanel(chip, t);
+      });
+      chip.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          chip.click();
+        }
       });
     });
-    document.getElementById('closePanel').addEventListener('click', () => {
-      body.classList.remove('panel-open');
-      if (activeChip) { activeChip.classList.remove('active'); activeChip = null; }
-    });
+    document.getElementById('closePanel').addEventListener('click', closeDetailPanel);
     document.getElementById('llmStripe').addEventListener('click', () => openModal('modalLLM'));
-    function openModal(id) { const m = document.getElementById(id); m.style.display = 'flex'; requestAnimationFrame(() => m.classList.add('show')) }
-    function closeModal(id) { const m = document.getElementById(id); m.classList.remove('show'); setTimeout(() => m.style.display = 'none', 300) }
+    function openModal(id) { const m = document.getElementById(id); if (!m) return; m.style.display = 'flex'; requestAnimationFrame(() => m.classList.add('show')) }
+    function closeModal(id) { const m = document.getElementById(id); if (!m) return; m.classList.remove('show'); setTimeout(() => m.style.display = 'none', 300) }
     document.querySelectorAll('.modal-overlay').forEach(m => { m.addEventListener('click', e => { if (e.target === m) closeModal(m.id) }) });
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      const openModalEl = document.querySelector('.modal-overlay.show');
+      if (openModalEl) {
+        closeModal(openModalEl.id);
+        return;
+      }
+      if (body.classList.contains('panel-open')) closeDetailPanel();
+    });
     document.getElementById('mcGrounding').innerHTML = `
 <h4>Tres cosas distintas que conviene separar</h4>
 <table><thead><tr><th>#</th><th>Concepto</th><th>Ejemplo</th></tr></thead><tbody>
@@ -904,13 +1049,18 @@
 <tr><td>2</td><td><strong>Modo de acceso / procesamiento</strong></td><td>RAG, buscador semántico, LLM, chat, extracción automática</td></tr>
 <tr><td>3</td><td><strong>Calidad de la respuesta final</strong></td><td>Fiel/no fiel, completa/incompleta, con/sin revisión experta</td></tr></tbody></table>
 <p style="margin:1rem 0;padding:.75rem;border-radius:8px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2)"><strong style="color:#fbbf24">⚖️ El error típico:</strong> confundir una buena trazabilidad (sé de dónde salió) con una validación metodológica (sé cuánto pesa científicamente esa síntesis).</p>
+<h4>Nota terminológica: Summary, sumario y editorial</h4>
+<p>En la pirámide 5S, <em>Summaries</em> se entiende mejor en español clínico como <strong>síntesis clínicas curadas</strong>, no como "sumarios" en sentido de resumen breve o listado. Y "editorial" conviene usarlo con cuidado: aquí significa <strong>curación por equipo experto y proceso de revisión</strong>, no un artículo editorial de opinión.</p>
 <h4>Grounding ≠ Appraisal</h4>
-<p>Un sistema RAG clínico (OpenEvidence, Perplexity Pro) recupera fragmentos indexados, los inyecta en el LLM, y genera una respuesta sintética. Esto aporta excelente <strong style="color:#34d399">grounding</strong> (anclaje a fuentes, trazabilidad), pero <strong style="color:#f87171">NO aporta appraisal</strong> (evaluación crítica sistemática).</p>
+<p>Un sistema RAG clínico recupera fragmentos indexados, los inyecta en el LLM, y genera una respuesta sintética. Esto aporta excelente <strong style="color:#34d399">grounding</strong> (anclaje a fuentes, trazabilidad), pero <strong style="color:#f87171">NO aporta appraisal</strong> (evaluación crítica sistemática).</p>
 <ul><li>Puede recuperar un ensayo del NEJM y un estudio observacional débil, resumirlos juntos sin ponderar la brecha.</li>
 <li><strong>Citar fuentes exhaustivamente no es evaluar fuentes exhaustivamente.</strong></li>
 <li>Una IA puede apoyarse en recursos de nivel alto sin producir una salida de nivel alto.</li></ul>
-<h4>Lo que distingue un Sumario MBE real (UpToDate, DynaMed)</h4>
-<ul><li><strong>Supervisión editorial con peer review:</strong> Equipos de expertos clínicos</li>
+<h4>Disponibilidad no es jerarquía</h4>
+<p>La estabilidad de acceso, el modelo de negocio, la jurisdicción y el encaje regulatorio forman parte de la fiabilidad práctica de una herramienta, pero no determinan su nivel de evidencia. Una herramienta puede ser cómoda, gratuita o muy popular sin convertirse en fuente preevaluada.</p>
+<p style="padding:.75rem;border-radius:8px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.15);margin-top:1rem"><strong style="color:#34d399">Regla útil:</strong> construir una pila redundante: síntesis clínica curada + IA con citas + verificación primaria o normativa.</p>
+<h4>Lo que distingue una síntesis clínica curada (Summary 5S)</h4>
+<ul><li><strong>Supervisión experta con peer review:</strong> Equipos de expertos clínicos</li>
 <li><strong>Actualización sistemática:</strong> Protocolos de vigilancia epidemiológica proactiva</li>
 <li><strong>Evaluación GRADE integrada:</strong> Asignación humana del nivel de certeza</li>
 <li><strong>Auditorías de cobertura y calidad</strong></li></ul>
@@ -942,17 +1092,25 @@
 <p style="margin-top:1rem"><strong>💡</strong> No son paradigmas opuestos sino complementarios. La IA acelera el procesamiento; el juicio clínico contextualiza los resultados.</p>`;
     document.getElementById('mcConclusiones').innerHTML = `
 <h4>Para Clínicos</h4>
-<ul><li>Usa <strong>OpenEvidence</strong> o <strong>Trip Pro</strong> para preguntas clínicas rápidas.</li>
-<li>Verifica siempre las fuentes primarias antes de aplicar la información.</li>
-<li>Documenta qué herramienta usaste para mayor transparencia.</li></ul>
+<ul><li>No conviertas ninguna IA con citas en pilar único de una categoría.</li>
+<li>Usa una pila redundante: síntesis clínica curada + IA con citas + fuente primaria o normativa.</li>
+<li>Documenta qué herramienta usaste y qué fuente original verificaste.</li></ul>
+<h4>Pila práctica en España</h4>
+<table><thead><tr><th>Capa</th><th>Recursos</th><th>Función</th></tr></thead><tbody>
+<tr><td><strong>Base estable</strong></td><td>UpToDate/BMJ si hay acceso, GuíaSalud, Preevid, Cochrane, NICE CKS</td><td>Síntesis y recomendaciones preevaluadas</td></tr>
+<tr><td><strong>IA con citas</strong></td><td>Vera, Heidi Evidence, AMBOSS AI Mode, ClinicalKey AI, Perplexity</td><td>Orientación rápida y generación de mapa</td></tr>
+<tr><td><strong>Verificación</strong></td><td>PubMed Clinical Queries, Epistemonikos, AEMPS/CIMA, EMA/PRAC</td><td>Confirmar estudios, normativa y seguridad</td></tr>
+<tr><td><strong>Trabajo documental</strong></td><td>NotebookLM, Claude/ChatGPT/Gemini con PDFs concretos</td><td>Interrogar fuentes que tú controlas, no crear una fuente nueva</td></tr>
+</tbody></table>
 <h4>Para Investigadores</h4>
 <ul><li>Combina: <strong>Elicit</strong> para extracción + <strong>Scite</strong> para validación + <strong>ResearchRabbit</strong> para mapeo.</li>
 <li>Declara el uso de IA en la sección de métodos.</li></ul>
-<h4>⚠️ Estado del Ecosistema (2025)</h4>
+<h4>⚠️ Estado del Ecosistema (2026)</h4>
 <ul><li><strong>Velocidad de cambio acelerada:</strong> El ecosistema evoluciona mensualmente.</li>
 <li><strong>Validación heterogénea:</strong> No todas han pasado por validación clínica rigurosa.</li>
-<li><strong>Sesgo de selección:</strong> Priorizan interfaces en inglés.</li></ul>
-<p style="padding:.75rem;border-radius:8px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);margin-top:1rem"><strong style="color:#fbbf24">🔑</strong> Estas herramientas aumentan, no reemplazan, tu juicio profesional. El escepticismo algorítmico informado es la habilidad más importante.</p>
+<li><strong>Fragilidad regulatoria y comercial:</strong> el acceso puede cambiar por país, precio, plan o interpretación AI Act/MDR.</li>
+<li><strong>Sesgo de selección:</strong> muchas herramientas priorizan inglés, guías EE. UU. o licencias institucionales.</li></ul>
+<p style="padding:.75rem;border-radius:8px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);margin-top:1rem"><strong style="color:#fbbf24">🔑</strong> Estas herramientas aumentan, no reemplazan, tu juicio profesional. El escepticismo algorítmico informado incluye preguntar: ¿qué fuente usa?, ¿quién la ha evaluado?, ¿qué jurisdicción regula su uso?, ¿podré seguir accediendo mañana?</p>
 <p style="font-size:12px;color:#64748b;margin-top:1rem">Modelo piramidal: <em>Alper BS, Haynes RB. EBHC pyramid 5.0. Evid Based Med. 2016;21(4):123-5.</em></p>`;
     document.getElementById('mcLLM').innerHTML = `
 <p>Los LLMs generalistas (ChatGPT, Claude, Gemini, DeepSeek, Copilot) son herramientas de <strong>aumento cognitivo</strong>, no fuentes de evidencia.</p>
