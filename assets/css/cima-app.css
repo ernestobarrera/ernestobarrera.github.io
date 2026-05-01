@@ -7182,14 +7182,11 @@ code {
 }
 
 .qt-tab-btn {
-    border-color: #d97706;
-    color: #fbbf24;
+    color: #ca8a04;
 }
 .qt-tab-btn:hover,
 .qt-tab-btn.active {
-    background: rgba(251, 191, 36, 0.12);
-    border-color: #f59e0b;
-    color: #fde68a;
+    color: #e8a825;
 }
 
 .qt-tab-wrapper {
