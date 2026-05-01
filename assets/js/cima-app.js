@@ -4588,6 +4588,7 @@ class MedCheckApp {
             // If caller explicitly requested alerts tab, trust that alerts exist (badge only shows when notas=true)
             const hasAempsAlerts = initialTab === 'alerts' || med.notas || cachedMed?.notas;
             const hasMateriales = med.materialesInf || cachedMed?.materialesInf;
+            const isQTActive = initialTab === 'qt';
 
             // Get medication images for thumbnail and lightbox
             const medFotos = med.fotos || [];
@@ -4688,6 +4689,13 @@ class MedCheckApp {
                         <p class="text-muted">Cargando alertas...</p>
                     </div>
                 </div>` : ''}
+
+                <div id="tab-qt" class="tab-content qt-tab-hidden ${isQTActive ? 'active' : ''}">
+                    <div id="qt-detection-content" class="loading-placeholder">
+                        <div class="loading-spinner"></div>
+                        <p class="text-muted">Analizando ficha técnica...</p>
+                    </div>
+                </div>
 `;
 
             // Load AEMPS alerts asynchronously if present
@@ -4698,6 +4706,8 @@ class MedCheckApp {
             if (initialTab === 'docs' || hasMateriales) {
                 this.loadMateriales(med.nregistro);
             }
+            // Detect QT information in section 4.4 silently — injects tab only if found
+            this.loadQTDetection(med.nregistro, med.nombre);
 
             // Tab switching
             this.modalBody.querySelectorAll('.modal-tab').forEach(tab => {
@@ -5552,6 +5562,234 @@ ${materialesPlaceholder}
                     <p class="text-muted text-sm">${error.message}</p>
                 </div>
             `;
+        }
+    }
+
+    // Resaltado seguro sobre nodos de texto del DOM (evita romper HTML al aplicar regex sobre cadena cruda)
+    _highlightTextNodes(container, patterns, className) {
+        const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+        const textNodes = [];
+        let node;
+        while (node = walker.nextNode()) {
+            if (node.parentNode.tagName === 'MARK') continue;
+            if (node.textContent.trim().length > 0) textNodes.push(node);
+        }
+        textNodes.forEach(textNode => {
+            const text = textNode.textContent;
+            const matches = [];
+            patterns.forEach(pattern => {
+                pattern.lastIndex = 0;
+                let m;
+                while ((m = pattern.exec(text)) !== null) {
+                    matches.push({ start: m.index, end: m.index + m[0].length, text: m[0] });
+                }
+            });
+            if (!matches.length) return;
+            matches.sort((a, b) => a.start - b.start);
+            const filtered = [];
+            let lastEnd = -1;
+            matches.forEach(m => { if (m.start >= lastEnd) { filtered.push(m); lastEnd = m.end; } });
+            const fragment = document.createDocumentFragment();
+            let lastIndex = 0;
+            filtered.forEach(match => {
+                if (match.start > lastIndex) fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.start)));
+                const mark = document.createElement('mark');
+                mark.className = className;
+                mark.textContent = match.text;
+                fragment.appendChild(mark);
+                lastIndex = match.end;
+            });
+            if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+            textNode.parentNode.replaceChild(fragment, textNode);
+        });
+    }
+
+    /**
+     * Detecta información sobre intervalo QT en secciones 4.4 y 4.5 de la FT.
+     * Si el fármaco está en AZCERT/CredibleMeds, el tab aparece siempre.
+     * Si hay texto QT en la FT, se muestra resaltado con TreeWalker.
+     */
+    async loadQTDetection(nregistro, medNombre) {
+        try {
+            const med = this.currentMed;
+            const activePrinciple = (med?.principiosActivos?.[0]?.nombre || '').toLowerCase()
+                .normalize('NFD').replace(/[̀-ͯ]/g, '');
+            const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+            const cls = CimaAPI.QT_RISK_CLASSIFICATION;
+
+            // Clasificación previa: ¿está este fármaco en la lista AZCERT/CredibleMeds?
+            const isClassified =
+                cls.known.some(d => activePrinciple.includes(normalize(d))) ||
+                cls.conditional.some(d => activePrinciple.includes(normalize(d))) ||
+                cls.possible.some(d => activePrinciple.includes(normalize(d))) ||
+                cls.special_lqts.some(d => activePrinciple.includes(normalize(d)));
+
+            // Buscar en 4.4 (advertencias) y 4.5 (interacciones) en paralelo
+            const [res44, res45] = await Promise.allSettled([
+                this.api.getDocSeccion(nregistro, '4.4'),
+                this.api.getDocSeccion(nregistro, '4.5')
+            ]);
+            const html44 = res44.status === 'fulfilled' ? (res44.value || '') : '';
+            const html45 = res45.status === 'fulfilled' ? (res45.value || '') : '';
+
+            const combinedPlain = [html44, html45]
+                .map(h => h.replace(/<[^>]*>/g, ' ')).join(' ');
+
+            const qtRegex = new RegExp(CimaAPI.QT_DETECTION_REGEX.source, 'gi');
+            const hasQTText = qtRegex.test(combinedPlain);
+
+            // Tab aparece si: fármaco clasificado en AZCERT o texto FT menciona QT
+            if (!isClassified && !hasQTText) return;
+
+            // Para mostrar: preferir 4.4; si vacía, usar 4.5 solo si tiene texto QT
+            let displayHtml = html44.length >= 30 ? html44 : '';
+            if (!displayHtml && html45.length >= 30) {
+                const qt45Regex = new RegExp(CimaAPI.QT_DETECTION_REGEX.source, 'gi');
+                if (qt45Regex.test(html45.replace(/<[^>]*>/g, ' '))) displayHtml = html45;
+            }
+
+            const matchRegex = new RegExp(CimaAPI.QT_DETECTION_REGEX.source, 'gi');
+            const matchCount = (displayHtml.replace(/<[^>]*>/g, ' ').match(matchRegex) || []).length;
+
+            this.injectQTTab(nregistro, medNombre, displayHtml, matchCount);
+        } catch (e) {
+            // Detección silenciosa — no mostrar errores al usuario
+        }
+    }
+
+    injectQTTab(nregistro, medNombre, displayHtml, matchCount) {
+        // Resolver clasificación de riesgo por principio activo (fuente: AZCERT/CredibleMeds)
+        const med = this.currentMed;
+        const activePrinciple = (med?.principiosActivos?.[0]?.nombre || '').toLowerCase()
+            .normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+        const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        const cls = CimaAPI.QT_RISK_CLASSIFICATION;
+
+        let riskLevel = null;
+        let riskLabel = '';
+        let riskClass = '';
+        let riskNote = '';
+
+        if (cls.known.some(d => activePrinciple.includes(normalize(d)))) {
+            riskLevel = 'known';
+            riskLabel = 'Riesgo conocido de TdP';
+            riskClass = 'qt-risk-known';
+        } else if (cls.conditional.some(d => activePrinciple.includes(normalize(d)))) {
+            riskLevel = 'conditional';
+            riskLabel = 'Riesgo condicionado';
+            riskClass = 'qt-risk-conditional';
+        } else if (cls.possible.some(d => activePrinciple.includes(normalize(d)))) {
+            riskLevel = 'possible';
+            riskLabel = 'Riesgo posible';
+            riskClass = 'qt-risk-possible';
+        } else if (cls.special_lqts.some(d => activePrinciple.includes(normalize(d)))) {
+            riskLevel = 'special';
+            riskLabel = 'Riesgo específico en SQTL congénito';
+            riskClass = 'qt-risk-special';
+            riskNote = 'Este fármaco no prolonga el QT en población general, pero debe evitarse en pacientes con síndrome de QT largo congénito diagnosticado o sospechado.';
+        }
+
+        // Resaltar términos QT y ECG — solo si hay texto FT disponible
+        const ftHtml = (displayHtml || '').trim();
+        const hasFTText = ftHtml.length > 0;
+
+        const riskBadgeHtml = riskLevel ? `
+            <div class="qt-risk-badge ${riskClass}">
+                <i class="fas fa-heartbeat"></i>
+                <strong>${riskLabel}</strong>
+                <span style="font-size:0.75rem;opacity:0.7;">(AZCERT/CredibleMeds)</span>
+            </div>
+            ${riskNote ? `<p class="qt-risk-note">${riskNote}</p>` : ''}` : '';
+
+        // Factores potenciadores — evidencia alta (CredibleMeds/AZCERT) + Boletín GV 2023
+        const riskFactorsHtml = `
+            <p class="qt-factors-note">
+                <strong>Factores que potencian el riesgo:</strong>
+                hipopotasemia (&lt;3,5 mEq/L), hipomagnesemia (&lt;1,7 mg/dL), hipocalcemia,
+                bradicardia o bloqueo AV, sexo femenino, hipotiroidismo, edad ≥65 años,
+                insuficiencia renal (FG &lt;30 mL/min), hepatopatía grave,
+                combinación con otros fármacos alargadores del QT,
+                síndrome de QT largo congénito.
+                <span style="font-size:0.75em;opacity:0.65;">(CredibleMeds/AZCERT; Boletín FT GV 2023, Tabla 5)</span>
+            </p>`;
+
+        const ftSectionHtml = hasFTText ? `
+                <div class="qt-highlight-legend">
+                    <span class="legend-item"><mark class="qt-highlight">Intervalo QT / TdP</mark></span>
+                    <span class="legend-item"><mark class="ecg-highlight">ECG / Electrocardiograma</mark></span>
+                </div>
+                <div id="qt-section-text" class="section-text qt-section-text">
+                    ${ftHtml}
+                </div>` : `
+                <p class="qt-factors-note" style="margin-top:0.5rem;">
+                    <i class="fas fa-info-circle" style="opacity:0.5;"></i>
+                    La ficha técnica no incluye texto específico sobre QT en las secciones 4.4 y 4.5.
+                    La clasificación de riesgo procede de AZCERT/CredibleMeds.
+                </p>`;
+
+        const tabContent = `
+            <div class="qt-tab-wrapper">
+                <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+                    <h4 style="margin:0;"><i class="fas fa-heartbeat"></i> Intervalo QT</h4>
+                    ${hasFTText ? `<button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('qt-section-text', '${(medNombre || '').replace(/'/g, "\\'")}', 'Intervalo QT')" title="Copiar texto"><i class="fas fa-copy"></i></button>` : ''}
+                </div>
+                ${riskBadgeHtml}
+                ${ftSectionHtml}
+                ${riskFactorsHtml}
+                <p class="qt-footnote">Clasificación de riesgo: AZCERT/CredibleMeds. Texto FT: CIMA/AEMPS. Consulte siempre la FT completa antes de prescribir.</p>
+            </div>`;
+
+        // Inyectar contenido en el tab placeholder
+        const qtTabContent = document.getElementById('tab-qt');
+        const qtDetectionContent = document.getElementById('qt-detection-content');
+        if (!qtTabContent || !qtDetectionContent) return;
+
+        qtDetectionContent.innerHTML = tabContent;
+        qtTabContent.classList.remove('qt-tab-hidden');
+
+        // Aplicar highlighting sobre DOM con TreeWalker — evita romper HTML al hacer replace sobre cadena
+        if (hasFTText) {
+            const qtTextContainer = document.getElementById('qt-section-text');
+            if (qtTextContainer) {
+                // Patrones QT amplios — se usan solo para resaltado, no para decidir si mostrar el tab
+                const qtHighlightPatterns = [
+                    /\bQTc?\b/gi,
+                    /torsade(?:s)?(?:\s+de\s+pointes)?/gi,
+                    /torsad[ae]s?\b/gi,
+                    /arritmia[s]?\s+ventricular/gi,
+                    /fibrilaci[oó]n\s+ventricular/gi,
+                    /muerte\s+s[uú]bita/gi,
+                ];
+                const ecgHighlightPatterns = [
+                    /\bECG\b|\bEKG\b/gi,
+                    /electrocardiograma/gi,
+                    /electrocardiograf[íi]a/gi,
+                    /electrocardiogr[áa]fico/gi,
+                ];
+                // QT primero, luego ECG (los marks de QT quedan excluidos del segundo pase por la lógica de TreeWalker)
+                this._highlightTextNodes(qtTextContainer, qtHighlightPatterns, 'qt-highlight');
+                this._highlightTextNodes(qtTextContainer, ecgHighlightPatterns, 'ecg-highlight');
+            }
+        }
+
+        // Inyectar botón de tab en la barra de tabs
+        const tabsBar = document.querySelector('.modal-tabs');
+        if (tabsBar && !tabsBar.querySelector('[data-tab="qt"]')) {
+            const qtBtn = document.createElement('button');
+            qtBtn.className = 'modal-tab qt-tab-btn';
+            qtBtn.dataset.tab = 'qt';
+            qtBtn.innerHTML = '<i class="fas fa-heartbeat"></i> QT';
+            tabsBar.appendChild(qtBtn);
+
+            // Registrar listener de click (reutiliza el mismo patrón del modal)
+            qtBtn.addEventListener('click', () => {
+                document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                qtBtn.classList.add('active');
+                qtTabContent.classList.add('active');
+                window._mcCurrentView = 'modal-qt';
+            });
         }
     }
 

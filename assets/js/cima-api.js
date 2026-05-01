@@ -2037,11 +2037,56 @@ class CimaAPI {
         return '';
     }
 
+    // Clasificación de riesgo QT basada en AZCERT/CredibleMeds y Boletín Farmacoterapéutico GV 2023
+    // KR = Known Risk (riesgo conocido de TdP), CR = Conditional Risk, PR = Possible Risk
+    // SR = Special Risk: peligrosos solo en SQTL congénito, no prolongan QT en población general
+    static QT_RISK_CLASSIFICATION = {
+        known: [
+            'azitromicina', 'citalopram', 'ciprofloxacino', 'claritromicina',
+            'domperidona', 'donepezilo', 'dronedarona', 'eritromicina',
+            'escitalopram', 'flecainida', 'fluconazol', 'haloperidol',
+            'hidroxicloroquina', 'ivabradina', 'levofloxacino', 'levosulpirida',
+            'metadona', 'moxifloxacino', 'ondansetron', 'ondansetrón',
+            'roxitromicina', 'sertindol', 'sotalol', 'sulpirida'
+        ],
+        conditional: [
+            'amitriptilina', 'anfotericina b', 'atazanavir', 'cimetidina',
+            'clomipramina', 'diltiazem', 'difenhidramina', 'doxepina',
+            'esomeprazol', 'famotidina', 'fluoxetina', 'fluvoxamina',
+            'furosemida', 'galantamina', 'hidroxizina', 'indapamida',
+            'itraconazol', 'ketoconazol', 'lansoprazol', 'loperamida',
+            'metoclopramida', 'metolazona', 'metronidazol', 'nelfinavir',
+            'olanzapina', 'omeprazol', 'pantoprazol', 'paroxetina',
+            'piperacilina', 'posaconazol', 'propafenona', 'quetiapina',
+            'quinina', 'ranolazina', 'risperidona', 'sertralina',
+            'solifenacina', 'tacrolimus', 'torsemida', 'trazodona',
+            'voriconazol', 'ziprasidona'
+        ],
+        possible: [
+            'aripiprazol', 'atomoxetina', 'buprenorfina', 'clozapina',
+            'litio', 'mirtazapina', 'moclobemida', 'nortriptilina',
+            'paliperidona', 'tramadol', 'vardenafilo', 'venlafaxina'
+        ],
+        // SR: riesgo específico en SQTL congénito — no prolongan QT en población general
+        special_lqts: [
+            'salbutamol', 'salmeterol', 'formoterol', 'indacaterol',
+            'olodaterol', 'arformoterol', 'terbutalina', 'fenoterol',
+            'metilefenidato', 'lisdexanfetamina', 'adrenalina', 'epinefrina',
+            'noradrenalina', 'norepinefrina', 'dopamina', 'dobutamina'
+        ]
+    };
+
+    // Regex para detectar menciones de QT en texto de ficha técnica
+    static QT_DETECTION_REGEX = /intervalo\s+QT|prolongaci[oó]n\s+(?:del\s+)?(?:intervalo\s+)?QT|QTc?\s+prolong|torsade(?:s\s+de\s+pointes)?|torsad[ae]s?|arritmia[s]?\s+ventricular|fibrilaci[oó]n\s+ventricular.*(?:medicamento|f[aá]rmaco)|muerte\s+s[uú]bita.*(?:medicamento|f[aá]rmaco)/gi;
+
+    // Regex para detectar menciones de ECG/electrocardiograma en ficha técnica
+    static ECG_DETECTION_REGEX = /\bECG\b|\bEKG\b|electrocardiograma|electrocardiograf[íi]a|electrocardiogr[áa]fico/gi;
+
     /**
      * Análisis de seguridad: busca menciones en secciones clave
-     * @param {string} nregistro 
+     * @param {string} nregistro
      * @param {Object} patientContext - Contexto del paciente
-     * 
+     *
      * MODIFICADO: Ahora siempre muestra las secciones clave (4.4, 4.6, 4.7)
      * independientemente del contexto activo
      */

@@ -4724,6 +4724,22 @@ body {
     vertical-align: baseline;
 }
 
+.section-text mark.qt-highlight {
+    color: #fbbf24 !important;
+    background: rgba(251, 191, 36, 0.25) !important;
+    margin: 0 !important;
+    display: inline !important;
+    vertical-align: baseline;
+}
+
+.section-text mark.ecg-highlight {
+    color: #60a5fa !important;
+    background: rgba(96, 165, 250, 0.2) !important;
+    margin: 0 !important;
+    display: inline !important;
+    vertical-align: baseline;
+}
+
 .section-text p {
     margin-bottom: var(--space-sm);
 }
@@ -7155,4 +7171,123 @@ code {
     .materiales-count {
         margin-left: 0;
     }
+}
+
+/* ============================================
+   QT Interval Feature
+   ============================================ */
+
+.qt-tab-hidden {
+    display: none !important;
+}
+
+.qt-tab-btn {
+    border-color: #d97706;
+    color: #fbbf24;
+}
+.qt-tab-btn:hover,
+.qt-tab-btn.active {
+    background: rgba(251, 191, 36, 0.12);
+    border-color: #f59e0b;
+    color: #fde68a;
+}
+
+.qt-tab-wrapper {
+    padding: 0.5rem 0;
+}
+
+/* Highlight marks — colored text on subtle tinted background, consistent with dark theme */
+mark.qt-highlight {
+    background: rgba(251, 191, 36, 0.25);
+    color: #fbbf24 !important;
+    border-radius: 2px;
+    padding: 0 2px;
+    font-weight: 500;
+}
+
+mark.ecg-highlight {
+    background: rgba(96, 165, 250, 0.2);
+    color: #60a5fa !important;
+    border-radius: 2px;
+    padding: 0 2px;
+    font-weight: 500;
+}
+
+/* Legend matches posology-legend pattern */
+.qt-highlight-legend {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--bg-surface);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+}
+.qt-highlight-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    color: var(--text-secondary);
+}
+
+/* Risk badge — border-left strip, dark-theme text colors, no solid colored background */
+.qt-risk-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-left: 3px solid;
+    padding: 0.35rem 0.75rem;
+    margin: 0.5rem 0;
+    font-size: 0.88rem;
+}
+.qt-risk-known {
+    border-color: #f87171;
+    color: #fca5a5;
+}
+.qt-risk-conditional {
+    border-color: #fbbf24;
+    color: #fde68a;
+}
+.qt-risk-possible {
+    border-color: #a3e635;
+    color: #bef264;
+}
+.qt-risk-special {
+    border-color: #60a5fa;
+    color: #93c5fd;
+}
+
+.qt-risk-note {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin: 0.2rem 0 0.5rem 1.25rem;
+    line-height: 1.5;
+}
+
+/* Text content — inherits dark modal background, no white box, no scroll limit */
+.qt-section-text {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    margin: 0.5rem 0;
+}
+
+/* Factors note — plain text, no box */
+.qt-factors-note {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin: 0.75rem 0 0.25rem;
+    line-height: 1.5;
+}
+.qt-factors-note strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Combined footnote */
+.qt-footnote {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    font-style: italic;
 }
