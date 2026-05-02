@@ -5789,8 +5789,20 @@ ${materialesPlaceholder}
                 qtBtn.classList.add('active');
                 qtTabContent.classList.add('active');
                 window._mcCurrentView = 'modal-qt';
+                if (qtTabContent.dataset.analyticsTracked !== '1') {
+                    qtTabContent.dataset.analyticsTracked = '1';
+                    this.trackQTTabView(nregistro);
+                }
             });
         }
+    }
+
+    trackQTTabView(nregistro) {
+        if (!nregistro) return;
+        window._mcCurrentView = 'modal-qt';
+        this.api.getMedicamento(nregistro).catch(err => {
+            console.warn('No se pudo registrar la vista QT en analytics:', err);
+        });
     }
 
     /**
