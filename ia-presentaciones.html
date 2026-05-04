@@ -5,8 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="description"
-    content="Mapa comparativo actualizado de herramientas de IA para crear presentaciones: PowerPoint, Google Slides, NotebookLM, Canva, Gamma, Claude, add-ins y flujos tecnicos." />
-  <title>IA para presentaciones: mapa comparativo 2026 | @ernestob</title>
+    content="Guía práctica para elegir herramientas de IA para presentaciones según entregable, fuentes, diseño, gobernanza y automatización." />
+  <title>IA para presentaciones: guía práctica 2026 | @ernestob</title>
   <link rel="icon" href="/assets/images/icon.webp" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,10 +16,12 @@
   <link rel="stylesheet" href="assets/css/header.css" />
   <link rel="stylesheet" href="assets/css/components.css" />
   <link rel="stylesheet" href="assets/css/footer.css" />
+  <link rel="stylesheet" href="https://unpkg.com/intro.js/minified/introjs.min.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <style>
     :root {
-      --header-h: 60px;
+      --header-h: var(--header-height, 60px);
+      --guide-scroll-offset: calc(var(--header-h) + 132px);
       --bg: #f4f7fb;
       --surface: #ffffff;
       --surface-2: #eef3f8;
@@ -42,6 +44,7 @@
 
     html {
       scroll-behavior: smooth;
+      scroll-padding-top: var(--guide-scroll-offset);
     }
 
     body {
@@ -82,20 +85,16 @@
     }
 
     .intro {
-      display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(330px, .8fr);
-      gap: 28px;
-      padding: 26px 0 22px;
-      align-items: start;
+      padding: 14px 0 0;
     }
 
     .eyebrow {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      margin: 0 0 10px;
+      margin: 0 0 6px;
       color: var(--blue);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
       letter-spacing: .08em;
       text-transform: uppercase;
@@ -105,17 +104,17 @@
       max-width: 920px;
       margin: 0;
       color: #101829;
-      font-size: clamp(30px, 4.2vw, 58px);
-      line-height: 1.03;
+      font-size: clamp(18px, 1.8vw, 26px);
+      line-height: 1.2;
       letter-spacing: 0;
     }
 
     .lead {
       max-width: 900px;
-      margin: 14px 0 0;
+      margin: 6px 0 0;
       color: var(--muted);
-      font-size: 16px;
-      line-height: 1.65;
+      font-size: 13px;
+      line-height: 1.5;
     }
 
     .lead strong {
@@ -126,21 +125,21 @@
     .meta-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 16px;
+      gap: 6px;
+      margin-top: 10px;
     }
 
     .pill {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      min-height: 28px;
-      padding: 5px 10px;
+      gap: 6px;
+      min-height: 24px;
+      padding: 3px 9px;
       border: 1px solid var(--line);
       border-radius: 999px;
       background: #fff;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 650;
       white-space: nowrap;
     }
@@ -163,39 +162,6 @@
       background: rgba(166, 91, 0, .07);
     }
 
-    .decision-strip {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .principle {
-      min-height: 104px;
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-    }
-
-    .principle i {
-      color: var(--teal);
-      font-size: 18px;
-    }
-
-    .principle h2 {
-      margin: 10px 0 5px;
-      color: var(--ink);
-      font-size: 14px;
-      letter-spacing: 0;
-    }
-
-    .principle p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
     .controls {
       position: sticky;
       top: var(--header-h);
@@ -206,11 +172,89 @@
     }
 
     .controls-inner {
-      display: grid;
-      grid-template-columns: minmax(260px, 390px) 1fr;
-      gap: 14px;
-      padding: 12px 0;
+      display: flex;
       align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      flex-wrap: wrap;
+    }
+
+    .controls-label {
+      flex: none;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .jump-links {
+      display: flex;
+      gap: 6px;
+      margin-left: auto;
+      flex-wrap: wrap;
+    }
+
+    .jump-links a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 5px 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .jump-links a:hover {
+      border-color: rgba(36, 92, 158, .35);
+      color: var(--blue);
+      background: rgba(36, 92, 158, .06);
+    }
+
+    .controls-search {
+      flex: none;
+      width: 240px;
+    }
+
+    .guide-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 32px;
+      padding: 5px 9px;
+      border: 1px solid rgba(36, 92, 158, .28);
+      border-radius: 8px;
+      background: rgba(36, 92, 158, .06);
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .guide-trigger:hover,
+    .guide-trigger:focus-visible {
+      border-color: rgba(36, 92, 158, .5);
+      background: rgba(36, 92, 158, .1);
+      outline: none;
+    }
+
+    .guide-trigger-mark {
+      display: grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 11px;
+      line-height: 1;
     }
 
     .search-box {
@@ -280,6 +324,15 @@
       align-items: start;
     }
 
+    #routeSection,
+    #toolsTitle,
+    #matrixTitle,
+    #sourcesTitle,
+    #toolGrid,
+    .side-column {
+      scroll-margin-top: var(--guide-scroll-offset);
+    }
+
     .main-column {
       display: grid;
       gap: 18px;
@@ -288,9 +341,9 @@
 
     .side-column {
       display: grid;
-      gap: 14px;
+      gap: 8px;
       position: sticky;
-      top: calc(var(--header-h) + 74px);
+      top: calc(var(--header-h) + 66px);
     }
 
     .section-head {
@@ -322,15 +375,31 @@
       font-weight: 750;
     }
 
+    .route-eyebrow {
+      margin: 0 0 8px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--blue);
+    }
+
     .route {
       display: grid;
       grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
       gap: 14px;
       padding: 16px;
       border: 1px solid var(--line);
+      border-left: 4px solid var(--blue);
       border-radius: 8px;
-      background: #fff;
+      background: #f8fafc;
       box-shadow: var(--shadow);
+    }
+
+    .route-main {
+      display: grid;
+      align-content: start;
+      gap: 10px;
     }
 
     .route h2 {
@@ -352,6 +421,34 @@
       color: var(--muted);
       font-size: 14px;
       line-height: 1.55;
+    }
+
+    .route-decision {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .route-note {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .route-note strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .route-note span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     .route ol {
@@ -387,18 +484,45 @@
       font-size: 12px;
     }
 
+    .route-picks {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .route-picks a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 8px;
+      border: 1px solid rgba(36, 92, 158, .24);
+      border-radius: 999px;
+      background: rgba(36, 92, 158, .06);
+      color: var(--blue);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .route-picks a:hover {
+      border-color: rgba(36, 92, 158, .44);
+      background: rgba(36, 92, 158, .1);
+    }
+
     .tool-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
+      gap: 10px;
     }
 
     .tool-card {
       display: grid;
       grid-template-rows: auto auto 1fr auto;
-      gap: 12px;
-      min-height: 346px;
-      padding: 14px;
+      gap: 8px;
+      padding: 12px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
@@ -407,6 +531,7 @@
 
     .tool-card.recommended {
       border-color: rgba(36, 92, 158, .38);
+      border-top: 3px solid var(--blue);
       box-shadow: 0 12px 28px rgba(36, 92, 158, .12);
     }
 
@@ -424,16 +549,16 @@
     .tool-title h3 {
       margin: 0;
       color: var(--ink);
-      font-size: 16px;
+      font-size: 14px;
       line-height: 1.2;
       letter-spacing: 0;
     }
 
     .tool-title span {
       display: block;
-      margin-top: 4px;
+      margin-top: 2px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 650;
     }
 
@@ -441,30 +566,30 @@
       display: grid;
       place-items: center;
       flex: none;
-      width: 38px;
-      height: 38px;
-      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
       background: var(--surface-2);
       color: var(--blue);
-      font-size: 17px;
+      font-size: 15px;
     }
 
     .tool-tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 4px;
     }
 
     .tag {
       display: inline-flex;
       align-items: center;
-      min-height: 22px;
-      padding: 3px 7px;
+      min-height: 20px;
+      padding: 2px 6px;
       border: 1px solid var(--line);
       border-radius: 999px;
       background: #f8fafc;
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 750;
     }
 
@@ -494,44 +619,53 @@
 
     .tool-body {
       display: grid;
-      gap: 10px;
+      gap: 5px;
       align-content: start;
     }
 
     .tool-copy {
       margin: 0;
       color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
+      font-size: 12px;
+      line-height: 1.4;
     }
 
     .tool-copy strong {
       color: var(--ink);
     }
 
+    .tool-price {
+      margin: 0;
+      color: #8a95a8;
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
     .score-grid {
-      display: grid;
-      gap: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 10px;
+      padding-top: 6px;
+      border-top: 1px solid var(--line);
     }
 
     .score-row {
-      display: grid;
-      grid-template-columns: 78px 1fr;
-      gap: 10px;
+      display: flex;
       align-items: center;
+      gap: 4px;
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 750;
     }
 
     .dots {
       display: flex;
-      gap: 4px;
+      gap: 3px;
     }
 
     .dot {
-      width: 16px;
-      height: 6px;
+      width: 13px;
+      height: 5px;
       border-radius: 999px;
       background: #d5dde8;
     }
@@ -556,8 +690,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      padding-top: 10px;
+      gap: 8px;
+      padding-top: 8px;
       border-top: 1px solid var(--line);
     }
 
@@ -584,7 +718,7 @@
     }
 
     .side-panel {
-      padding: 14px;
+      padding: 10px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
@@ -592,28 +726,28 @@
     }
 
     .side-panel h2 {
-      margin: 0 0 10px;
+      margin: 0 0 6px;
       color: var(--ink);
-      font-size: 15px;
+      font-size: 13px;
       letter-spacing: 0;
     }
 
     .side-panel p {
-      margin: 0 0 10px;
+      margin: 0 0 6px;
       color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
+      font-size: 11px;
+      line-height: 1.45;
     }
 
     .filter-group {
       display: grid;
-      gap: 8px;
-      margin-top: 10px;
+      gap: 4px;
+      margin-top: 6px;
     }
 
     .filter-label {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 800;
       letter-spacing: .06em;
       text-transform: uppercase;
@@ -621,16 +755,17 @@
 
     .select-row {
       display: grid;
-      gap: 8px;
+      gap: 6px;
     }
 
     select {
-      min-height: 38px;
-      padding: 8px 10px;
+      min-height: 30px;
+      padding: 4px 8px;
       border: 1px solid var(--line-strong);
-      border-radius: 8px;
+      border-radius: 6px;
       background: #fff;
       color: var(--ink);
+      font-size: 12px;
       outline: none;
     }
 
@@ -641,22 +776,36 @@
 
     .checklist {
       display: grid;
-      gap: 8px;
-      margin-top: 12px;
+      gap: 5px;
+      margin-top: 6px;
     }
 
     .check {
       display: grid;
-      grid-template-columns: 20px 1fr;
-      gap: 8px;
+      grid-template-columns: 16px 1fr;
+      gap: 6px;
       color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
+      font-size: 11px;
+      line-height: 1.4;
     }
 
     .check i {
       color: var(--teal);
-      margin-top: 2px;
+      margin-top: 1px;
+      font-size: 10px;
+    }
+
+    .step-num {
+      display: grid;
+      place-items: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: rgba(36, 92, 158, .1);
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
     }
 
     .matrix {
@@ -736,11 +885,87 @@
       text-align: center;
     }
 
-    @media (max-width: 1180px) {
-      .intro {
-        grid-template-columns: 1fr;
-      }
+    .introjs-tooltip {
+      min-width: min(360px, calc(100vw - 36px));
+      max-width: 420px;
+      border: 1px solid #e3c866;
+      border-radius: 6px;
+      background: #fff6bd;
+      color: #2b2613;
+      box-shadow: 0 18px 45px rgba(23, 32, 51, .18), 0 2px 0 rgba(142, 104, 0, .12);
+      transform: rotate(-.25deg);
+    }
 
+    .introjs-tooltip::before {
+      content: "";
+      position: absolute;
+      top: -11px;
+      left: 30px;
+      width: 76px;
+      height: 19px;
+      border: 1px solid rgba(205, 175, 96, .42);
+      border-radius: 2px;
+      background: rgba(255, 255, 255, .54);
+      box-shadow: 0 1px 2px rgba(23, 32, 51, .08);
+      transform: rotate(-2deg);
+      pointer-events: none;
+    }
+
+    .introjs-tooltip-title {
+      color: #1f210d;
+      font-size: 17px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .introjs-tooltiptext {
+      color: #4e4727;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .introjs-button {
+      border-radius: 7px;
+      border-color: #d4b84f;
+      background: #fffbea;
+      color: #2b2613;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 750;
+      text-shadow: none;
+      box-shadow: none;
+    }
+
+    .introjs-nextbutton,
+    .introjs-donebutton {
+      border-color: #7e6120;
+      background: #7e6120;
+      color: #fff7d1;
+    }
+
+    .introjs-prevbutton:hover,
+    .introjs-nextbutton:hover,
+    .introjs-donebutton:hover {
+      border-color: #5f4817;
+      background: #5f4817;
+      color: #fff;
+    }
+
+    .introjs-skipbutton {
+      color: #6b5b2d;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .introjs-tooltipbuttons {
+      border-top-color: rgba(126, 97, 32, .18);
+    }
+
+    .introjs-helperLayer {
+      box-shadow: rgba(23, 32, 51, .28) 0 0 0 9999px, rgba(126, 97, 32, .22) 0 0 0 2px !important;
+    }
+
+    @media (max-width: 1180px) {
       .content-grid {
         grid-template-columns: 1fr;
       }
@@ -761,12 +986,10 @@
         width: min(100% - 20px, 1500px);
       }
 
-      .intro {
-        padding-top: 20px;
+      .route-decision {
+        grid-template-columns: 1fr;
       }
 
-      .decision-strip,
-      .controls-inner,
       .route,
       .tool-grid,
       .side-column,
@@ -776,6 +999,28 @@
 
       .controls {
         position: static;
+      }
+
+      .controls-inner {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .jump-links {
+        margin-left: 0;
+      }
+
+      .jump-links a {
+        flex: 1 1 120px;
+        justify-content: center;
+      }
+
+      .guide-trigger {
+        justify-content: center;
+      }
+
+      .controls-search {
+        width: 100%;
       }
 
       .section-head {
@@ -800,58 +1045,39 @@
 
   <main class="page-shell">
     <section class="page-band">
-      <div class="wrap intro">
-        <div>
-          <p class="eyebrow"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Mapa 2026 de IA para
-            presentaciones</p>
-          <h1>Elegir herramienta no empieza por la IA, empieza por el tipo de presentación.</h1>
+      <div class="wrap">
+        <div class="intro">
+          <p class="eyebrow"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Guía práctica · Actualizado mayo 2026</p>
+          <h1>IA para presentaciones: elige según tu caso</h1>
           <p class="lead">
-            Una presentación clínica puede necesitar <strong>síntesis desde fuentes</strong>, <strong>PPTX
-              editable</strong>, <strong>diseño visual</strong>, <strong>plantilla corporativa</strong> o
-            <strong>producción automatizada</strong>. Esta página separa esas capas para elegir con criterio y sin
-            vender humo.
+            ¿Necesitas <strong>PPTX editable</strong>, <strong>síntesis desde fuentes</strong>, <strong>diseño rápido</strong>, <strong>control corporativo</strong> o <strong>automatización</strong>? Selecciona el escenario y compara.
           </p>
           <div class="meta-row" aria-label="Metadatos">
-            <span class="pill blue"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i> Revisado: 30 abr
-              2026</span>
             <span class="pill teal"><i class="fa-solid fa-link" aria-hidden="true"></i> Fuentes oficiales</span>
-            <span class="pill amber"><i class="fa-solid fa-user-doctor" aria-hidden="true"></i> Lente clínico y
-              corporativo</span>
+            <span class="pill amber"><i class="fa-solid fa-user-doctor" aria-hidden="true"></i> Lente clínico y corporativo</span>
           </div>
-        </div>
-
-        <div class="decision-strip" aria-label="Principios de lectura">
-          <article class="principle">
-            <i class="fa-solid fa-file-powerpoint" aria-hidden="true"></i>
-            <h2>Formato final</h2>
-            <p>No es igual un PPTX editable que un PDF bonito, una web interactiva o diapositivas como imagen.</p>
-          </article>
-          <article class="principle">
-            <i class="fa-solid fa-book-medical" aria-hidden="true"></i>
-            <h2>Fuente y síntesis</h2>
-            <p>Desde documentos largos, la calidad depende de las fuentes cargadas y de la revisión humana posterior.</p>
-          </article>
-          <article class="principle">
-            <i class="fa-solid fa-building-shield" aria-hidden="true"></i>
-            <h2>Gobernanza</h2>
-            <p>En empresa importan tenant, permisos, add-ins, retención de datos, licencias y revisión de seguridad.</p>
-          </article>
-          <article class="principle">
-            <i class="fa-solid fa-gears" aria-hidden="true"></i>
-            <h2>Escalabilidad</h2>
-            <p>Cuando el deck se repite, conviene pensar en plantillas, APIs, Markdown o generación programática.</p>
-          </article>
         </div>
       </div>
     </section>
 
     <section class="controls" aria-label="Controles de comparacion">
       <div class="wrap controls-inner">
-        <label class="search-box">
-          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-          <input id="searchInput" type="search" placeholder="Buscar por herramienta, salida, licencia o uso" />
-        </label>
+        <span class="controls-label" aria-hidden="true">Situación:</span>
         <div class="scenario-tabs" id="scenarioTabs" aria-label="Escenarios"></div>
+        <nav class="jump-links" aria-label="Navegacion de la comparativa">
+          <a href="#routeSection">Itinerario</a>
+          <a href="#toolsTitle">Opciones</a>
+          <a href="#matrixTitle">Tabla</a>
+          <a href="#sourcesTitle">Fuentes</a>
+        </nav>
+        <button class="guide-trigger" id="guideTrigger" type="button" aria-label="Abrir guía interactiva de la comparativa">
+          <span class="guide-trigger-mark" aria-hidden="true">?</span>
+          <span>Guía</span>
+        </button>
+        <label class="search-box controls-search">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          <input id="searchInput" type="search" placeholder="Buscar herramienta, salida o uso" />
+        </label>
       </div>
     </section>
 
@@ -862,9 +1088,8 @@
         <section aria-labelledby="toolsTitle">
           <div class="section-head">
             <div>
-              <h2 id="toolsTitle">Recursos comparados</h2>
-              <p>La prioridad cambia según el escenario activo. Las etiquetas de precio y acceso son orientativas y
-                pueden cambiar por país, tenant o plan.</p>
+              <h2 id="toolsTitle">Opciones para este escenario</h2>
+              <p>Las opciones con mayor encaje operativo aparecen primero con borde azul. Precios orientativos.</p>
             </div>
             <span class="count" id="resultCount"></span>
           </div>
@@ -874,8 +1099,8 @@
         <section aria-labelledby="matrixTitle">
           <div class="section-head">
             <div>
-              <h2 id="matrixTitle">Comparativa rápida</h2>
-              <p>Resumen operativo para decidir sin mezclar guion, diseño, edición y automatización.</p>
+              <h2 id="matrixTitle">Tabla comparativa</h2>
+              <p>Comparación en paralelo. Útil para resolver empates entre opciones similares.</p>
             </div>
           </div>
           <div class="matrix">
@@ -907,8 +1132,17 @@
 
       <aside class="side-column" aria-label="Filtros y criterio clinico">
         <section class="side-panel">
+          <h2>Secuencia de navegación</h2>
+          <p>Úsala como guía de lectura, no como ranking de compra.</p>
+          <div class="checklist">
+            <div class="check"><span class="step-num">1</span><span>Elige la situación que más se parezca a tu caso.</span></div>
+            <div class="check"><span class="step-num">2</span><span>Lee el itinerario y descarta riesgos de formato, datos o fuentes.</span></div>
+            <div class="check"><span class="step-num">3</span><span>Contrasta opciones y verifica exportación, permisos y revisión humana.</span></div>
+          </div>
+        </section>
+
+        <section class="side-panel">
           <h2>Filtros</h2>
-          <p>Reducen la lista sin cambiar el escenario activo.</p>
           <div class="filter-group">
             <label class="filter-label" for="familyFilter">Familia</label>
             <select id="familyFilter">
@@ -931,29 +1165,18 @@
 
         <section class="side-panel">
           <h2>Criterio clínico</h2>
-          <p>Para docencia sanitaria y entornos asistenciales, la herramienta no sustituye la trazabilidad de fuentes ni
-            la revisión profesional.</p>
+          <p>Para docencia sanitaria y entornos asistenciales:</p>
           <div class="checklist">
-            <div class="check"><i class="fa-solid fa-check" aria-hidden="true"></i><span>No subir datos identificables
-                de pacientes a herramientas no aprobadas por la organización.</span></div>
-            <div class="check"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Separar síntesis documental,
-                argumento docente, diseño y revisión final.</span></div>
-            <div class="check"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Guardar fuentes y prompts si la
-                presentación tiene impacto formativo o institucional.</span></div>
-            <div class="check"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Comprobar exportación real antes
-                de prometer PPTX editable.</span></div>
+            <div class="check"><i class="fa-solid fa-check" aria-hidden="true"></i><span>No subir datos de pacientes a herramientas no aprobadas por la organización.</span></div>
+            <div class="check"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Separar síntesis, argumento docente, diseño y revisión final.</span></div>
+            <div class="check"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Guardar fuentes e instrucciones usadas si la presentación tiene impacto formativo o institucional.</span></div>
           </div>
         </section>
 
         <section class="side-panel">
           <h2>Aviso editorial</h2>
           <p>
-            Comparativa orientativa, no patrocinada y no equivalente a recomendación de compra. Los precios, límites,
-            planes y permisos pueden cambiar por país, organización y fecha.
-          </p>
-          <p>
-            Antes de desplegar una herramienta en un entorno asistencial o corporativo, comprobar política de datos,
-            licencias, exportación real y aprobación interna.
+            Comparativa orientativa, no patrocinada. Precios, planes y permisos pueden cambiar. En entornos asistenciales o corporativos, verificar política de datos y aprobación interna antes de usar una herramienta de forma estable.
           </p>
         </section>
 
@@ -962,6 +1185,7 @@
   </main>
 
   <include src="footer.html"></include>
+  <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
   <script src="./assets/js/include.js"></script>
   <script>
     const SOURCES = {
@@ -970,15 +1194,15 @@
         url: "https://support.microsoft.com/en-us/topic/how-copilot-chat-works-with-and-without-a-microsoft-365-copilot-license-5810b659-fbe0-48ee-9fe6-d731fe86cdeb"
       },
       googleSlides: {
-        title: "Google Help: colaborar con Gemini en Google Slides",
+        title: "Ayuda de Google: colaborar con Gemini en Google Slides",
         url: "https://support.google.com/docs/answer/14355071?hl=en"
       },
       notebooklmDecks: {
-        title: "NotebookLM Help: generar, revisar y descargar slide decks",
+        title: "Ayuda de NotebookLM: generar, revisar y descargar presentaciones",
         url: "https://support.google.com/notebooklm/answer/16757456?hl=en"
       },
       claudePpt: {
-        title: "Claude Help: Claude for PowerPoint",
+        title: "Ayuda de Claude: Claude for PowerPoint",
         url: "https://support.claude.com/en/articles/13521390-use-claude-for-powerpoint"
       },
       claudePricing: {
@@ -986,55 +1210,55 @@
         url: "https://claude.com/pricing"
       },
       canvaPresentations: {
-        title: "Canva: AI Presentation Maker",
+        title: "Canva: generador de presentaciones con IA",
         url: "https://www.canva.com/create/ai-presentations/"
       },
       canvaConnector: {
-        title: "Canva: AI Connector y MCP",
+        title: "Canva: conector de IA y MCP",
         url: "https://www.canva.com/ai-connector/"
       },
       gammaPricing: {
-        title: "Gamma: pricing y creditos",
+        title: "Gamma: precios y créditos",
         url: "https://www.gamma-app.ai/pricing"
       },
       gammaExport: {
-        title: "Gamma Help: exportar a PDF, PNG, PowerPoint y Google Slides",
+        title: "Ayuda de Gamma: exportar a PDF, PNG, PowerPoint y Google Slides",
         url: "https://help.gamma.app/en/articles/8022861-what-s-the-easiest-way-to-export-my-gamma"
       },
       plusPricing: {
-        title: "Plus AI: pricing y PowerPoint/Google Slides",
+        title: "Plus AI: precios y PowerPoint/Google Slides",
         url: "https://plusai.com/pricing"
       },
       slidesaiPricing: {
-        title: "SlidesAI: pricing",
+        title: "SlidesAI: precios",
         url: "https://www.slidesai.io/pricing"
       },
       beautifulPricing: {
-        title: "Beautiful.ai: pricing, IA y exportacion editable",
+        title: "Beautiful.ai: precios, IA y exportación editable",
         url: "https://www.beautiful.ai/pricing"
       },
       alaiPricing: {
-        title: "Alai: pricing y creditos",
+        title: "Alai: precios y créditos",
         url: "https://getalai.com/pricing"
       },
       pitchPricing: {
-        title: "Pitch Help: planes y creditos IA",
+        title: "Ayuda de Pitch: planes y créditos IA",
         url: "https://help.pitch.com/en/articles/13621309-pitch-plans-and-pricing"
       },
       preziCredits: {
-        title: "Prezi Support: creditos de Prezi AI",
+        title: "Soporte de Prezi: créditos de Prezi AI",
         url: "https://support.prezi.com/hc/en-us/articles/35653601291543-How-do-Prezi-AI-credits-work"
       },
       vismeAi: {
-        title: "Visme: presentaciones IA, exportacion y creditos",
+        title: "Visme: presentaciones IA, exportación y créditos",
         url: "https://www.visme.co/es/presentaciones-ia/"
       },
       decktopusPricing: {
-        title: "Decktopus: pricing",
+        title: "Decktopus: precios",
         url: "https://www.decktopus.com/pricing"
       },
       presentationsAiPricing: {
-        title: "Presentations.AI: pricing",
+        title: "Presentations.AI: precios",
         url: "https://www.presentations.ai/pricing"
       },
       reveal: {
@@ -1057,15 +1281,20 @@
 
     const SCENARIOS = {
       f3: {
-        label: "Microsoft basico",
+        label: "Microsoft básico",
         icon: "fa-comments",
-        title: "Microsoft 365 basico, sin IA integrada en PowerPoint",
-        summary: "Para quien tiene Microsoft 365 y PowerPoint, pero no una licencia adicional de Copilot dentro de Office. El chat de IA sirve para preparar la presentacion; el montaje final sigue siendo manual.",
+        title: "Microsoft 365 básico, sin IA integrada en PowerPoint",
+        summary: "Tienes M365 con PowerPoint pero sin licencia adicional de Copilot en Office. El chat sirve para guion, notas e índice; el montaje final en PowerPoint es manual.",
+        decision: {
+          first: "Comprobar si el chat disponible cubre guion, índice, notas y revisión textual; el montaje queda después en PowerPoint.",
+          avoid: "No prometas generación automática dentro de PowerPoint si no has comprobado la licencia y la configuración Copilot de la organización.",
+          verify: "Valida que puedes usar datos de trabajo, subir archivos y conservar trazabilidad de fuentes."
+        },
         steps: [
-          "Convertir documentos o ideas en guion, indice, mensajes clave y notas del ponente con el chat de IA disponible.",
-          "Revisar contenido clinico y fuentes fuera del chat si hay recomendaciones sanitarias.",
+          "Convertir documentos o ideas en guion, índice, mensajes clave y notas del ponente con el chat de IA disponible.",
+          "Revisar contenido clínico y fuentes fuera del chat si hay recomendaciones sanitarias.",
           "Maquetar manualmente en PowerPoint web con plantilla corporativa.",
-          "Escalar a Microsoft 365 Copilot si el volumen justifica pagar por integracion en PowerPoint."
+          "Valorar Microsoft 365 Copilot si el volumen justifica pagar por integración en PowerPoint."
         ],
         recommended: ["copilot-chat", "microsoft-copilot", "plus-ai"]
       },
@@ -1073,37 +1302,52 @@
         label: "PPTX editable",
         icon: "fa-file-powerpoint",
         title: "Cuando el entregable real es PowerPoint editable",
-        summary: "Priorizar integraciones dentro de PowerPoint o exportadores que respeten texto, graficos y plantilla.",
+        summary: "Priorizar integraciones dentro de PowerPoint o exportadores que respeten texto, gráficos y plantilla.",
+        decision: {
+          first: "Primer filtro: cercanía a PowerPoint real, editabilidad y respeto de la plantilla.",
+          avoid: "Evita decidir por capturas bonitas si el texto, gráficos o layouts no quedan editables.",
+          verify: "Prueba con una plantilla corporativa real y revisa el archivo en PowerPoint, no solo en vista previa."
+        },
         steps: [
-          "Comprobar si el tenant permite Microsoft 365 Copilot o add-ins aprobados.",
-          "Probar con una plantilla corporativa real, no con un deck vacio.",
-          "Verificar que diagramas, graficos y texto siguen siendo editables tras exportar.",
-          "Cerrar con revision humana de estilo, licencias de imagen y notas."
+          "Comprobar si la organización permite Microsoft 365 Copilot o complementos aprobados.",
+          "Probar con una plantilla corporativa real, no con una presentación vacía.",
+          "Verificar que diagramas, gráficos y texto siguen siendo editables tras exportar.",
+          "Cerrar con revisión humana de estilo, licencias de imagen y notas."
         ],
         recommended: ["microsoft-copilot", "claude-powerpoint", "plus-ai", "gamma"]
       },
       fuentes: {
         label: "Desde documentos",
         icon: "fa-book-open-reader",
-        title: "Cuando partes de guias, articulos o informes largos",
-        summary: "Separar lectura y sintesis de la fase de diseño. NotebookLM y LLMs de contexto largo ayudan a entender fuentes, pero no son el editor final ideal.",
+        title: "Cuando partes de guías, artículos o informes largos",
+        summary: "Separar lectura y síntesis de la fase de diseño. NotebookLM y los modelos de contexto largo ayudan a entender fuentes, pero no son el editor final ideal.",
+        decision: {
+          first: "Primer filtro: capacidad para trabajar con fuentes y separar argumento, citas y diseño.",
+          avoid: "No conviertas directamente un PDF largo en diapositivas finales sin revisión clínica y narrativa.",
+          verify: "Comprueba que las recomendaciones, fechas y citas siguen en las fuentes originales."
+        },
         steps: [
           "Subir solo fuentes autorizadas y no sensibles.",
-          "Generar estructura, mensajes clave y primer deck desde las fuentes.",
+          "Generar estructura, mensajes clave y una primera presentación desde las fuentes.",
           "Exportar a PPTX, PDF o copiar a una herramienta visual.",
-          "Revisar citas, fechas, recomendaciones y aplicabilidad clinica."
+          "Revisar citas, fechas, recomendaciones y aplicabilidad clínica."
         ],
         recommended: ["notebooklm", "gamma", "claude-powerpoint", "canva"]
       },
       visual: {
-        label: "Bonito rapido",
+        label: "Visual rápido",
         icon: "fa-wand-magic-sparkles",
         title: "Cuando importa el acabado visual y la facilidad",
-        summary: "Canva, Gamma, Beautiful.ai, Alai o Visme reducen friccion visual, pero suelen requerir mas control del argumento.",
+        summary: "Canva, Gamma, Beautiful.ai, Alai o Visme reducen fricción visual, pero suelen requerir más control del argumento.",
+        decision: {
+          first: "Primer filtro: guion breve, audiencia clara y formato de exportación necesario.",
+          avoid: "No confundas buen aspecto con buena docencia: la herramienta no valida el contenido.",
+          verify: "Revisa jerarquía visual, licencias de imágenes, exportación y consistencia de marca."
+        },
         steps: [
           "Preparar antes un guion breve y una audiencia concreta.",
-          "Elegir herramienta visual segun exportacion necesaria.",
-          "Aplicar marca y revisar jerarquia visual slide a slide.",
+          "Elegir herramienta visual según la exportación necesaria.",
+          "Aplicar marca y revisar jerarquía visual diapositiva a diapositiva.",
           "No confundir belleza con rigor: validar contenido y fuentes."
         ],
         recommended: ["canva", "gamma", "beautiful-ai", "alai", "visme"]
@@ -1112,12 +1356,17 @@
         label: "Empresa",
         icon: "fa-building-shield",
         title: "Cuando IT, marca y permisos deciden",
-        summary: "La herramienta aceptable suele ser la que encaja en el tenant, permite controles administrativos y reduce fuga de datos.",
+        summary: "La herramienta aceptable suele ser la que encaja en el entorno corporativo, permite controles administrativos y reduce fuga de datos.",
+        decision: {
+          first: "Primer filtro: gobernanza dentro del entorno corporativo o controles Enterprise verificables.",
+          avoid: "Evita pilotos con datos reales si no hay revisión de permisos, retención, auditoría y DPA.",
+          verify: "Confirma SSO, SCIM, permisos, marca, logs y política de datos antes de escalar."
+        },
         steps: [
           "Revisar si los datos pueden salir del entorno corporativo.",
-          "Confirmar add-ins, conectores, DPA, SSO, SCIM y retencion.",
+          "Confirmar complementos, conectores, DPA, SSO, SCIM y retención.",
           "Pilotar con usuarios que hacen muchas presentaciones, no con toda la plantilla.",
-          "Medir ahorro real, calidad final y carga de revision."
+          "Medir ahorro real, calidad final y carga de revisión."
         ],
         recommended: ["microsoft-copilot", "google-gemini-slides", "canva-connector", "beautiful-ai", "plus-ai"]
       },
@@ -1125,12 +1374,17 @@
         label: "Automatizar",
         icon: "fa-gears",
         title: "Cuando necesitas producir muchas presentaciones",
-        summary: "Aqui la pregunta deja de ser que app usar y pasa a ser que pipeline puede generar, versionar y auditar decks.",
+        summary: "Aquí la pregunta deja de ser qué aplicación usar y pasa a ser qué flujo puede generar, versionar y auditar presentaciones.",
+        decision: {
+          first: "Primer filtro: datos, plantilla, reglas, generación y control visual.",
+          avoid: "Evita una herramienta manual si el problema real es repetición, trazabilidad o versionado.",
+          verify: "Comprueba que el resultado puede reproducirse, auditarse y corregirse sin rehacer todo a mano."
+        },
         steps: [
           "Definir plantilla, datos de entrada, reglas de estilo y validaciones.",
-          "Elegir PPTX programatico si el destino es Office, o web/Markdown si prima reproducibilidad.",
-          "Separar generacion de contenido de renderizado y QA visual.",
-          "Documentar prompts, versiones y fuentes para que el flujo sea mantenible."
+          "Elegir PPTX programático si el destino es Office, o web/Markdown si prima reproducibilidad.",
+          "Separar generación de contenido de generación visual y control de calidad.",
+          "Documentar instrucciones, versiones y fuentes para que el flujo sea mantenible."
         ],
         recommended: ["pptxgenjs", "marp", "slidev", "revealjs", "canva-connector"]
       }
@@ -1139,16 +1393,16 @@
     const TOOLS = [
       {
         id: "copilot-chat",
-        name: "Microsoft 365 basico + chat IA",
+        name: "Microsoft 365 básico + chat IA",
         family: "Institucional",
         output: "Guion y notas",
         access: "Incluido",
         icon: "fa-comments",
         tags: ["Microsoft 365", "Chat", "PowerPoint"],
         price: "Incluido en planes elegibles para chat",
-        best: "Preparar indice, resumen, notas del ponente, tono y revision textual antes de abrir PowerPoint.",
+        best: "Preparar índice, resumen, notas del ponente, tono y revisión textual antes de abrir PowerPoint.",
         caution: "El chat ayuda a pensar y redactar. Para crear o editar diapositivas dentro de PowerPoint suele hacer falta una licencia adicional.",
-        governance: "Alta si el tenant esta gobernado",
+        governance: "Alta si el entorno está gobernado",
         fit: ["f3", "corporativo"],
         scores: { editable: 1, sources: 2, design: 1, governance: 3 },
         sources: ["microsoftChat"]
@@ -1160,9 +1414,9 @@
         output: "PPTX editable",
         access: "Pago",
         icon: "fa-file-powerpoint",
-        tags: ["PowerPoint", "Tenant", "Work data"],
-        price: "Add-on sobre suscripcion Microsoft 365 elegible",
-        best: "Organizaciones Microsoft que necesitan PPTX, contexto laboral, permisos y adopcion administrada.",
+        tags: ["PowerPoint", "Entorno corporativo", "Datos laborales"],
+        price: "Complemento sobre suscripción Microsoft 365 elegible",
+        best: "Organizaciones Microsoft que necesitan PPTX, contexto laboral, permisos y adopción administrada.",
         caution: "El valor depende de licencia, etiquetado Copilot, disponibilidad en apps y calidad de plantillas.",
         governance: "Alta",
         fit: ["f3", "pptx", "corporativo"],
@@ -1176,11 +1430,11 @@
         output: "Google Slides",
         access: "Plan elegible",
         icon: "fa-brands fa-google",
-        tags: ["Slides", "Drive", "Imagenes"],
+        tags: ["Google Slides", "Drive", "Imágenes"],
         price: "Workspace o Google AI elegible",
-        best: "Equipos Google Workspace que quieren generar slides, texto e imagenes usando contexto de Drive.",
-        caution: "La salida vive mejor en Slides. La exportacion a PPTX puede requerir revision de formato.",
-        governance: "Alta si Workspace esta gobernado",
+        best: "Equipos Google Workspace que quieren generar diapositivas, texto e imágenes usando contexto de Drive.",
+        caution: "La salida vive mejor en Google Slides. La exportación a PPTX puede requerir revisión de formato.",
+        governance: "Alta si Workspace está gobernado",
         fit: ["pptx", "corporativo", "visual"],
         scores: { editable: 3, sources: 2, design: 2, governance: 3 },
         sources: ["googleSlides"]
@@ -1190,13 +1444,13 @@
         name: "NotebookLM",
         family: "Fuentes",
         output: "PPTX y PDF",
-        access: "Freemium",
+        access: "Gratis con límites",
         icon: "fa-book-open-reader",
         tags: ["Fuentes", "PPTX", "PDF"],
-        price: "Standard con limites; Plus, Pro, Ultra o Workspace para mas uso",
-        best: "Convertir guias, articulos, informes o protocolos en narrativa visual inicial desde fuentes controladas.",
-        caution: "Las revisiones regeneran decks y, segun la ayuda oficial, las fuentes no se tienen en cuenta durante la revision de slides.",
-        governance: "Media a alta segun cuenta",
+        price: "Estándar con límites; Plus, Pro, Ultra o Workspace para más uso",
+        best: "Convertir guías, artículos, informes o protocolos en narrativa visual inicial desde fuentes controladas.",
+        caution: "Las revisiones regeneran presentaciones y, según la ayuda oficial, las fuentes no se tienen en cuenta durante la revisión de diapositivas.",
+        governance: "Media a alta según cuenta",
         fit: ["fuentes", "visual"],
         scores: { editable: 2, sources: 3, design: 2, governance: 2 },
         sources: ["notebooklmDecks"]
@@ -1204,14 +1458,14 @@
       {
         id: "claude-powerpoint",
         name: "Claude for PowerPoint",
-        family: "Add-in",
+        family: "Complemento",
         output: "PPTX editable",
         access: "Pago",
         icon: "fa-brain",
-        tags: ["PowerPoint", "Add-in", "Plantillas"],
+        tags: ["PowerPoint", "Complemento", "Plantillas"],
         price: "Claude Pro, Max, Team o Enterprise",
-        best: "Usuarios que quieren coedicion dentro de PowerPoint, slides desde plantilla y diagramas o graficos editables.",
-        caution: "Es un add-in externo: revisar permisos, retencion, auditoria y uso con datos regulados antes de desplegar.",
+        best: "Usuarios que quieren coedición dentro de PowerPoint, diapositivas desde plantilla y diagramas o gráficos editables.",
+        caution: "Es un complemento externo: revisar permisos, retención, auditoría y uso con datos regulados antes de desplegar.",
         governance: "Media a alta",
         fit: ["pptx", "fuentes", "corporativo"],
         scores: { editable: 3, sources: 2, design: 2, governance: 2 },
@@ -1222,12 +1476,12 @@
         name: "Canva Magic Design",
         family: "Diseño web",
         output: "Canva, PPTX, PDF",
-        access: "Freemium",
+        access: "Gratis con límites",
         icon: "fa-palette",
         tags: ["Diseño", "PPTX", "Marca"],
-        price: "Gratis con limites; Pro, Teams y Enterprise amplian IA, marca y controles",
-        best: "Usuarios no tecnicos que necesitan material visual rapido, editable y presentable.",
-        caution: "Puede generar decks bonitos pero argumentalmente superficiales. Revisar contenido, licencias y exportacion.",
+        price: "Gratis con límites; Pro, Teams y Enterprise amplían IA, marca y controles",
+        best: "Usuarios no técnicos que necesitan material visual rápido, editable y presentable.",
+        caution: "Puede generar presentaciones vistosas pero argumentalmente superficiales. Revisar contenido, licencias y exportación.",
         governance: "Media a alta en Enterprise",
         fit: ["fuentes", "visual", "corporativo"],
         scores: { editable: 2, sources: 1, design: 3, governance: 2 },
@@ -1235,15 +1489,15 @@
       },
       {
         id: "canva-connector",
-        name: "Canva AI Connector",
+        name: "Conector IA de Canva",
         family: "Agentes y conectores",
         output: "Canva editable",
-        access: "Freemium",
+        access: "Gratis con límites",
         icon: "fa-plug",
         tags: ["MCP", "ChatGPT", "Claude", "Copilot"],
-        price: "Conecta todos los planes de Canva, con funciones limitadas por tier y asistente",
-        best: "Crear o editar disenos desde un chat IA y mantenerlos como archivos Canva editables.",
-        caution: "Resize requiere plan de pago y Autofill o Brand Templates son Enterprise. El asistente conectado puede requerir pago.",
+        price: "Conecta todos los planes de Canva, con funciones limitadas por plan y asistente",
+        best: "Crear o editar diseños desde un chat IA y mantenerlos como archivos Canva editables.",
+        caution: "Algunas funciones de redimensionado, autorrelleno o plantillas de marca requieren planes superiores. El asistente conectado puede requerir pago.",
         governance: "Variable",
         fit: ["corporativo", "automatizar", "visual"],
         scores: { editable: 2, sources: 2, design: 3, governance: 2 },
@@ -1254,12 +1508,12 @@
         name: "Gamma",
         family: "Diseño web",
         output: "Web, PPTX, PDF",
-        access: "Freemium",
+        access: "Gratis con límites",
         icon: "fa-bolt",
-        tags: ["Deck rapido", "PPTX", "Web"],
-        price: "Free con creditos; Plus, Pro y Ultra amplian cards, creditos y branding",
-        best: "Borradores visuales rapidos desde prompt o documento, con buena experiencia de enlace compartible.",
-        caution: "El PPTX exportado puede no ser el deck corporativo final. Revisar fuentes, tipografias y render.",
+        tags: ["Presentación rápida", "PPTX", "Web"],
+        price: "Gratis con créditos; Plus, Pro y Ultra amplían tarjetas, créditos y marca",
+        best: "Borradores visuales rápidos desde instrucción o documento, con buena experiencia de enlace compartible.",
+        caution: "El PPTX exportado puede no ser la presentación corporativa final. Revisar fuentes, tipografías y resultado visual.",
         governance: "Media",
         fit: ["pptx", "fuentes", "visual"],
         scores: { editable: 2, sources: 2, design: 3, governance: 2 },
@@ -1268,13 +1522,13 @@
       {
         id: "plus-ai",
         name: "Plus AI",
-        family: "Add-in",
-        output: "PowerPoint y Slides",
+        family: "Complemento",
+        output: "PowerPoint y Google Slides",
         access: "Pago",
         icon: "fa-puzzle-piece",
-        tags: ["Add-on", "PPTX", "Slides"],
-        price: "Trial 7 dias; Basic, Pro, Team y Enterprise",
-        best: "Equipos que no quieren salir de PowerPoint o Google Slides y necesitan IA sobre decks existentes.",
+        tags: ["Complemento", "PPTX", "Google Slides"],
+        price: "Prueba de 7 días; Basic, Pro, Team y Enterprise",
+        best: "Equipos que no quieren salir de PowerPoint o Google Slides y necesitan IA sobre presentaciones existentes.",
         caution: "Para plantillas corporativas avanzadas y bibliotecas propias, la parte Enterprise es la relevante.",
         governance: "Media a alta",
         fit: ["f3", "pptx", "corporativo"],
@@ -1284,14 +1538,14 @@
       {
         id: "slidesai",
         name: "SlidesAI",
-        family: "Add-in",
-        output: "Slides y PPT",
-        access: "Freemium",
+        family: "Complemento",
+        output: "Google Slides y PowerPoint",
+        access: "Gratis con límites",
         icon: "fa-table-columns",
-        tags: ["Simple", "Doc upload", "Creditos"],
-        price: "Basic 12 presentaciones al ano; Pro y Premium amplian limites",
+        tags: ["Simple", "Documentos", "Créditos"],
+        price: "Basic 12 presentaciones al año; Pro y Premium amplían límites",
         best: "Docentes, estudiantes o usuarios que quieren texto a presentacion con poca friccion.",
-        caution: "Menor control narrativo y visual que herramientas mas completas.",
+        caution: "Menor control narrativo y visual que herramientas más completas.",
         governance: "Variable",
         fit: ["visual", "pptx"],
         scores: { editable: 2, sources: 1, design: 2, governance: 1 },
@@ -1304,10 +1558,10 @@
         output: "PPTX y PDF",
         access: "Pago",
         icon: "fa-compass-drafting",
-        tags: ["Smart slides", "Marca", "Analytics"],
-        price: "Trial 14 dias; Pro, Team y Enterprise",
-        best: "Diseño automatico consistente, guardarrailes visuales y equipos que valoran marca y analitica.",
-        caution: "La logica Smart Slide reduce errores visuales, pero tambien limita control fino.",
+        tags: ["Diapositivas inteligentes", "Marca", "Analítica"],
+        price: "Prueba de 14 días; Pro, Team y Enterprise",
+        best: "Diseño automático consistente, guardarrailes visuales y equipos que valoran marca y analítica.",
+        caution: "La lógica de diapositivas inteligentes reduce errores visuales, pero también limita control fino.",
         governance: "Alta en Enterprise",
         fit: ["visual", "corporativo"],
         scores: { editable: 2, sources: 1, design: 3, governance: 3 },
@@ -1318,12 +1572,12 @@
         name: "Alai",
         family: "Diseño web",
         output: "PDF y PPT",
-        access: "Freemium",
+        access: "Gratis con límites",
         icon: "fa-pen-ruler",
-        tags: ["Creditos", "PPT", "Rapido"],
-        price: "Free con creditos; Plus, Pro y Ultra",
-        best: "Alternativa visual moderna para decks desde contenido, con modelo por creditos.",
-        caution: "Producto joven frente a opciones mas consolidadas. Validar exportacion y marca antes de adoptar.",
+        tags: ["Créditos", "PPT", "Rápido"],
+        price: "Gratis con créditos; Plus, Pro y Ultra",
+        best: "Alternativa visual moderna para presentaciones desde contenido, con modelo por créditos.",
+        caution: "Producto joven frente a opciones más consolidadas. Validar exportación y marca antes de usarlo de forma estable.",
         governance: "Variable",
         fit: ["visual"],
         scores: { editable: 2, sources: 1, design: 3, governance: 1 },
@@ -1332,14 +1586,14 @@
       {
         id: "pitch",
         name: "Pitch",
-        family: "Colaboracion",
+        family: "Colaboración",
         output: "Pitch web",
-        access: "Freemium",
+        access: "Gratis con límites",
         icon: "fa-people-group",
-        tags: ["Equipos", "Creditos IA", "Sales"],
-        price: "Free y planes Plus, Team, Business y Enterprise",
-        best: "Equipos que tratan la presentacion como activo colaborativo, comercial y compartible.",
-        caution: "Mas plataforma colaborativa que generador universal de PPTX.",
+        tags: ["Equipos", "Créditos IA", "Comercial"],
+        price: "Gratis y planes Plus, Team, Business y Enterprise",
+        best: "Equipos que tratan la presentación como activo colaborativo, comercial y compartible.",
+        caution: "Más plataforma colaborativa que generador universal de PPTX.",
         governance: "Media a alta",
         fit: ["corporativo", "visual"],
         scores: { editable: 2, sources: 1, design: 2, governance: 2 },
@@ -1349,12 +1603,12 @@
         id: "prezi",
         name: "Prezi AI",
         family: "Diseño web",
-        output: "Prezi dinamico",
-        access: "Freemium",
+        output: "Prezi dinámico",
+        access: "Gratis con límites",
         icon: "fa-route",
-        tags: ["No lineal", "AI credits", "Import"],
-        price: "Free con creditos; Plus y superiores incluyen IA ilimitada",
-        best: "Presentaciones dinamicas, no lineales, con importacion de documentos o PPT.",
+        tags: ["No lineal", "Créditos IA", "Importación"],
+        price: "Gratis con créditos; Plus y superiores incluyen IA ilimitada",
+        best: "Presentaciones dinámicas, no lineales, con importación de documentos o PPT.",
         caution: "Puede no encajar con cultura corporativa que exige PowerPoint lineal y editable.",
         governance: "Media",
         fit: ["visual"],
@@ -1364,14 +1618,14 @@
       {
         id: "visme",
         name: "Visme",
-        family: "Comunicacion visual",
+        family: "Comunicación visual",
         output: "PPTX, PDF, HTML5, MP4",
-        access: "Freemium",
+        access: "Gratis con límites",
         icon: "fa-chart-simple",
-        tags: ["Infografia", "Datos", "Interactivo"],
-        price: "Basic con creditos; Starter, Pro y Enterprise amplian uso",
-        best: "Presentaciones que se parecen a infografias, informes visuales, dashboards o piezas interactivas.",
-        caution: "Es potente, pero conviene validar que la exportacion elegida conserva interactividad o editabilidad necesaria.",
+        tags: ["Infografía", "Datos", "Interactivo"],
+        price: "Basic con créditos; Starter, Pro y Enterprise amplían uso",
+        best: "Presentaciones que se parecen a infografías, informes visuales, paneles de datos o piezas interactivas.",
+        caution: "Es potente, pero conviene validar que la exportación elegida conserva interactividad o editabilidad necesaria.",
         governance: "Media a alta",
         fit: ["visual", "fuentes", "corporativo"],
         scores: { editable: 2, sources: 1, design: 3, governance: 2 },
@@ -1384,10 +1638,10 @@
         output: "Web y PDF",
         access: "Pago",
         icon: "fa-display",
-        tags: ["Analytics", "Forms", "Microsite"],
+        tags: ["Analítica", "Formularios", "Micrositio"],
         price: "Pro, Business y Enterprise",
-        best: "Decks rapidos con formularios, analitica, enlaces y uso tipo microsite.",
-        caution: "No es la primera opcion si el requisito fuerte es PPTX corporativo editable.",
+        best: "Presentaciones rápidas con formularios, analítica, enlaces y uso tipo micrositio.",
+        caution: "No es la primera opción si el requisito fuerte es PPTX corporativo editable.",
         governance: "Media",
         fit: ["visual", "corporativo"],
         scores: { editable: 1, sources: 1, design: 2, governance: 2 },
@@ -1398,12 +1652,12 @@
         name: "Presentations.AI",
         family: "Diseño web",
         output: "Web y PDF",
-        access: "Freemium",
+        access: "Gratis con límites",
         icon: "fa-wand-sparkles",
-        tags: ["Beta", "Brand themes", "Analytics"],
-        price: "Starter, Pro, public beta y Enterprise segun pagina oficial",
-        best: "Explorar generacion rapida de decks con themes y colaboracion.",
-        caution: "La propia pagina usa lenguaje de beta y promociones: verificar limites y exportaciones antes de recomendar.",
+        tags: ["Beta", "Temas de marca", "Analítica"],
+        price: "Starter, Pro, beta pública y Enterprise según página oficial",
+        best: "Explorar generación rápida de presentaciones con temas visuales y colaboración.",
+        caution: "La propia página usa lenguaje de beta y promociones: verificar límites y exportaciones antes de considerarla.",
         governance: "Variable",
         fit: ["visual"],
         scores: { editable: 1, sources: 1, design: 2, governance: 1 },
@@ -1412,13 +1666,13 @@
       {
         id: "revealjs",
         name: "reveal.js",
-        family: "Tecnico",
+        family: "Técnico",
         output: "HTML y PDF",
-        access: "Open source",
+        access: "Código abierto",
         icon: "fa-code",
         tags: ["Web", "Interactivo", "Docencia"],
-        price: "Open source; coste tecnico y hosting",
-        best: "Docencia web, material reproducible, audio, codigo, navegacion, interactividad y publicacion en GitHub Pages.",
+        price: "Código abierto; coste técnico y alojamiento",
+        best: "Docencia web, material reproducible, audio, código, navegación, interactividad y publicación en GitHub Pages.",
         caution: "No es el camino natural para usuarios que quieren abrir y editar PowerPoint.",
         governance: "Propia",
         fit: ["automatizar"],
@@ -1428,14 +1682,14 @@
       {
         id: "slidev",
         name: "Slidev",
-        family: "Tecnico",
+        family: "Técnico",
         output: "PDF, PPTX, PNG, MD",
-        access: "Open source",
+        access: "Código abierto",
         icon: "fa-terminal",
-        tags: ["Markdown", "Vue", "Export"],
-        price: "Open source; requiere entorno tecnico",
-        best: "Presentaciones tecnicas con componentes, codigo, versionado y publicacion web.",
-        caution: "El PPTX se exporta como imagenes, por lo que el texto no queda seleccionable.",
+        tags: ["Markdown", "Vue", "Exportación"],
+        price: "Código abierto; requiere entorno técnico",
+        best: "Presentaciones técnicas con componentes, código, versionado y publicación web.",
+        caution: "El PPTX se exporta como imágenes, por lo que el texto no queda seleccionable.",
         governance: "Propia",
         fit: ["automatizar"],
         scores: { editable: 1, sources: 2, design: 3, governance: 3 },
@@ -1444,14 +1698,14 @@
       {
         id: "marp",
         name: "Marp",
-        family: "Tecnico",
+        family: "Técnico",
         output: "HTML, PDF, PowerPoint",
-        access: "Open source",
+        access: "Código abierto",
         icon: "fa-markdown",
         tags: ["Markdown", "VS Code", "PPTX"],
-        price: "Open source; coste tecnico bajo si ya se usa Markdown",
-        best: "Decks reproducibles y sobrios desde Markdown, con exportacion directa a formatos habituales.",
-        caution: "Menos adecuado para decks muy interactivos o con mucho control visual fino.",
+        price: "Código abierto; coste técnico bajo si ya se usa Markdown",
+        best: "Presentaciones reproducibles y sobrias desde Markdown, con exportación directa a formatos habituales.",
+        caution: "Menos adecuado para presentaciones muy interactivas o con mucho control visual fino.",
         governance: "Propia",
         fit: ["automatizar"],
         scores: { editable: 2, sources: 2, design: 2, governance: 3 },
@@ -1460,14 +1714,14 @@
       {
         id: "pptxgenjs",
         name: "PptxGenJS",
-        family: "Tecnico",
-        output: "PPTX programatico",
-        access: "Open source",
+        family: "Técnico",
+        output: "PPTX programático",
+        access: "Código abierto",
         icon: "fa-file-code",
         tags: ["JavaScript", "API", "PPTX"],
-        price: "Open source; coste de desarrollo",
-        best: "Informes, dashboards y presentaciones repetitivas que deben salir como PowerPoint real.",
-        caution: "No piensa la narrativa por si solo. Necesita datos, plantilla, QA y desarrollo.",
+        price: "Código abierto; coste de desarrollo",
+        best: "Informes, paneles de datos y presentaciones repetitivas que deben salir como PowerPoint real.",
+        caution: "No piensa la narrativa por sí solo. Necesita datos, plantilla, control de calidad y desarrollo.",
         governance: "Propia",
         fit: ["automatizar", "pptx"],
         scores: { editable: 3, sources: 2, design: 2, governance: 3 },
@@ -1482,6 +1736,8 @@
       output: "all",
       access: "all"
     };
+
+    const GUIDE_STORAGE_KEY = "ia-presentaciones-guide-v1";
 
     const labels = {
       editable: "Editable",
@@ -1515,11 +1771,26 @@
 
     function tagClass(value) {
       const v = normalizeText(value);
-      if (v.includes("open") || v.includes("incluido")) return "good";
-      if (v.includes("freemium") || v.includes("elegible")) return "warn";
+      if (v.includes("codigo abierto") || v.includes("incluido")) return "good";
+      if (v.includes("gratis") || v.includes("elegible")) return "warn";
       if (v.includes("pago") || v.includes("plan")) return "pay";
       if (v.includes("beta") || v.includes("variable")) return "risk";
       return "";
+    }
+
+    function nextStep(tool) {
+      const family = normalizeText(tool.family);
+      const output = normalizeText(tool.output);
+      if (family.includes("tecnico")) {
+        return "prototipa 5 diapositivas desde datos o Markdown y confirma que el resultado se puede reproducir sin retoque manual.";
+      }
+      if (output.includes("pptx") || output.includes("powerpoint") || output.includes("ppt")) {
+        return "exporta una presentación de 5 diapositivas y comprueba en PowerPoint que texto, gráficos y plantilla siguen siendo editables.";
+      }
+      if (family.includes("fuentes")) {
+        return "carga dos fuentes reales, genera el esquema y contrasta cada afirmación con el documento original.";
+      }
+      return "crea una muestra corta con tu marca y revisa contenido, permisos, exportación y aspecto en pantalla real.";
     }
 
     function sourceAnchor(id, compact = false) {
@@ -1531,12 +1802,17 @@
     }
 
     function scoreDots(tool) {
-      return Object.entries(labels).map(([key, label]) => {
+      const rows = Object.entries(labels).map(([key, label]) => {
         const score = Number(tool.scores[key] || 0);
         const color = scoreColors[key];
         const dots = [1, 2, 3].map(n => `<span class="dot ${n <= score ? `on ${color}` : ""}"></span>`).join("");
         return `<div class="score-row"><span>${label}</span><span class="dots" aria-label="${label}: ${score} de 3">${dots}</span></div>`;
       }).join("");
+      return rows;
+    }
+
+    function toolById(id) {
+      return TOOLS.find(tool => tool.id === id);
     }
 
     function populateSelect(id, values) {
@@ -1552,7 +1828,7 @@
     function renderScenarioTabs() {
       const tabs = document.getElementById("scenarioTabs");
       tabs.innerHTML = Object.entries(SCENARIOS).map(([id, scenario]) => `
-        <button class="scenario-tab" type="button" data-scenario="${id}" aria-pressed="${state.scenario === id}">
+        <button class="scenario-tab" type="button" data-scenario="${id}" aria-pressed="${state.scenario === id}" aria-controls="routeSection">
           <i class="fa-solid ${scenario.icon}" aria-hidden="true"></i>${scenario.label}
         </button>
       `).join("");
@@ -1567,11 +1843,24 @@
 
     function renderRoute() {
       const scenario = SCENARIOS[state.scenario];
+      const picks = scenario.recommended
+        .slice(0, 4)
+        .map(id => toolById(id))
+        .filter(Boolean)
+        .map(tool => `<li><a href="#tool-${tool.id}">${escapeHTML(tool.name)}</a></li>`)
+        .join("");
       document.getElementById("routeSection").innerHTML = `
+        <p class="route-eyebrow"><i class="fa-solid fa-map-pin" aria-hidden="true"></i> Itinerario de decisión para este caso</p>
         <div class="route">
-          <div>
+          <div class="route-main">
             <h2 id="routeTitle"><i class="fa-solid ${scenario.icon}" aria-hidden="true"></i>${escapeHTML(scenario.title)}</h2>
             <p>${escapeHTML(scenario.summary)}</p>
+            <div class="route-decision" aria-label="Criterios de decision del escenario">
+              <div class="route-note"><strong>Primer contraste</strong><span>${escapeHTML(scenario.decision.first)}</span></div>
+              <div class="route-note"><strong>Riesgo a descartar</strong><span>${escapeHTML(scenario.decision.avoid)}</span></div>
+              <div class="route-note"><strong>Prueba mínima</strong><span>${escapeHTML(scenario.decision.verify)}</span></div>
+            </div>
+            <ul class="route-picks" aria-label="Opciones para contrastar en este escenario">${picks}</ul>
           </div>
           <ol>
             ${scenario.steps.map(step => `<li>${escapeHTML(step)}</li>`).join("")}
@@ -1624,7 +1913,7 @@
       grid.innerHTML = tools.map(tool => {
         const recommended = scenario.recommended.includes(tool.id);
         return `
-          <article class="tool-card ${recommended ? "recommended" : ""}">
+          <article class="tool-card ${recommended ? "recommended" : ""}" id="tool-${tool.id}">
             <div class="tool-top">
               <div class="tool-title">
                 <h3>${escapeHTML(tool.name)}</h3>
@@ -1633,14 +1922,14 @@
               <div class="tool-icon"><i class="fa-solid ${tool.icon}" aria-hidden="true"></i></div>
             </div>
             <div class="tool-tags">
-              ${recommended ? `<span class="tag good">Encaja aqui</span>` : ""}
+              ${recommended ? `<span class="tag good">Mayor encaje</span>` : ""}
               <span class="tag ${tagClass(tool.access)}">${escapeHTML(tool.access)}</span>
               ${tool.tags.map(tag => `<span class="tag">${escapeHTML(tag)}</span>`).join("")}
             </div>
             <div class="tool-body">
-              <p class="tool-copy"><strong>Mejor para:</strong> ${escapeHTML(tool.best)}</p>
+              <p class="tool-copy"><strong>Para:</strong> ${escapeHTML(tool.best)}</p>
               <p class="tool-copy"><strong>Cuidado:</strong> ${escapeHTML(tool.caution)}</p>
-              <p class="tool-copy"><strong>Coste/acceso:</strong> ${escapeHTML(tool.price)}</p>
+              <p class="tool-price">${escapeHTML(tool.price)}</p>
               <div class="score-grid">${scoreDots(tool)}</div>
             </div>
             <div class="tool-foot">
@@ -1680,6 +1969,123 @@
       renderSources();
     }
 
+    function markGuideSeen() {
+      try {
+        localStorage.setItem(GUIDE_STORAGE_KEY, "1");
+      } catch (error) {
+        console.warn("No se pudo guardar el estado de la guía", error);
+      }
+    }
+
+    function hasSeenGuide() {
+      try {
+        return localStorage.getItem(GUIDE_STORAGE_KEY) === "1";
+      } catch (error) {
+        return true;
+      }
+    }
+
+    function guideElement(selector) {
+      return document.querySelector(selector);
+    }
+
+    function buildGuideSteps() {
+      const steps = [
+        {
+          title: "Cómo navegar esta guía",
+          intro: "La página no prescribe una herramienta. Te ayuda a ordenar el caso: situación, itinerario, opciones, filtros, tabla y fuentes."
+        }
+      ];
+
+      const scenarios = guideElement("#scenarioTabs");
+      if (scenarios) {
+        steps.push({
+          element: scenarios,
+          title: "1 · Elige la situación",
+          intro: "Empieza por la pestaña que más se parezca a tu necesidad real. Cambiar de situación reordena las opciones por encaje operativo."
+        });
+      }
+
+      const itinerary = guideElement("#routeSection");
+      if (itinerary) {
+        steps.push({
+          element: itinerary,
+          title: "2 · Lee el itinerario",
+          intro: "Este bloque marca la secuencia de comprobación: primer contraste, riesgo a descartar y prueba mínima antes de usar una herramienta de forma estable."
+        });
+      }
+
+      const options = guideElement("#toolGrid");
+      if (options) {
+        steps.push({
+          element: options,
+          title: "3 · Contrasta opciones",
+          intro: "Las tarjetas no son un ranking de compra. Resume para qué sirve cada recurso, dónde conviene tener cuidado y qué formato entrega."
+        });
+      }
+
+      const filters = guideElement(".side-column");
+      if (filters) {
+        steps.push({
+          element: filters,
+          title: "4 · Afina el caso",
+          intro: "Usa filtros y búsqueda para reducir ruido. En contexto clínico o corporativo, los permisos, los datos y la revisión humana pesan más que la estética."
+        });
+      }
+
+      const matrix = guideElement("#matrixTitle");
+      if (matrix) {
+        steps.push({
+          element: matrix,
+          title: "5 · Resuelve empates",
+          intro: "La tabla sirve para comparar en paralelo cuando dudas entre opciones similares. No hace falta empezar por aquí."
+        });
+      }
+
+      const sources = guideElement("#sourcesTitle");
+      if (sources) {
+        steps.push({
+          element: sources,
+          title: "6 · Comprueba las fuentes",
+          intro: "Los enlaces apuntan a documentación oficial sobre capacidades, exportación, límites o planes. Conviene revisarlos antes de adoptar una decisión."
+        });
+      }
+
+      const trigger = guideElement("#guideTrigger");
+      if (trigger) {
+        steps.push({
+          element: trigger,
+          title: "Guía relanzable",
+          intro: "Puedes volver a abrir esta secuencia desde el botón Guía siempre que quieras reorientarte o explicar la página a otra persona."
+        });
+      }
+
+      return steps;
+    }
+
+    function startGuide(force = false) {
+      if (typeof introJs !== "function") return;
+      if (!force && hasSeenGuide()) return;
+
+      const tour = introJs();
+      tour.setOptions({
+        steps: buildGuideSteps(),
+        nextLabel: "Siguiente",
+        prevLabel: "Anterior",
+        doneLabel: "Terminar",
+        skipLabel: "×",
+        showStepNumbers: false,
+        showBullets: true,
+        scrollToElement: true,
+        scrollPadding: 180,
+        disableInteraction: false,
+        exitOnOverlayClick: true
+      });
+      tour.oncomplete(markGuideSeen);
+      tour.onexit(markGuideSeen);
+      tour.start();
+    }
+
     function init() {
       populateSelect("familyFilter", [...new Set(TOOLS.map(tool => tool.family))].sort((a, b) => a.localeCompare(b, "es")));
       populateSelect("outputFilter", [...new Set(TOOLS.map(tool => tool.output))].sort((a, b) => a.localeCompare(b, "es")));
@@ -1713,7 +2119,10 @@
         renderSources();
       });
 
+      document.getElementById("guideTrigger").addEventListener("click", () => startGuide(true));
+
       render();
+      window.setTimeout(() => startGuide(false), 650);
     }
 
     if (typeof includeHTML === "function") {
