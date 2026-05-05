@@ -1558,6 +1558,7 @@ class MedCheckApp {
         }
         const dosis = med.dosis || '';
         const formaFarm = med.formaFarmaceutica?.nombre || '';
+        const presentationSummary = this._formatPresentationSummary(med);
 
         // Icono según forma farmacéutica (aproximación simple)
         let medIcon = 'pills';
@@ -1597,6 +1598,7 @@ class MedCheckApp {
                         <div class="med-details-inline">
                             ${pActivo ? `<span class="med-detail-tag med-detail-tag--clickable" data-pa="${pActivo.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); app.searchByPA(this.dataset.pa);" title="Buscar otros medicamentos con ${pActivo.replace(/"/g, '&quot;')}"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
                             ${dosis ? `<span class="med-detail-tag">${dosis}</span>` : ''}
+                            ${presentationSummary ? `<span class="med-detail-tag" title="Formatos de envase">${presentationSummary}</span>` : ''}
                         </div>
                         ${atcChip}
                     </div>
@@ -4730,6 +4732,107 @@ class MedCheckApp {
         }
     }
 
+    _escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[char]));
+    }
+
+    _escapeRegex(value) {
+        return String(value ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    _getPresentationFormat(medName, presentationName) {
+        if (!presentationName) return '-';
+
+        let format = String(presentationName).replace(/\s+/g, ' ').trim();
+        const normalizedMedName = String(medName || '').replace(/\s+/g, ' ').trim();
+
+        if (normalizedMedName) {
+            const medNamePattern = new RegExp(`^${this._escapeRegex(normalizedMedName)}\\s*,?\\s*`, 'i');
+            format = format.replace(medNamePattern, '').trim();
+        }
+
+        // CIMA suele separar el formato con coma: "NOMBRE , 28 comprimidos".
+        // Si el recorte exacto no encaja, conservamos la parte final tras la coma.
+        if (format === presentationName && format.includes(',')) {
+            format = format.split(',').pop().trim();
+        }
+
+        return format || presentationName;
+    }
+
+    _formatPresentationSummary(med) {
+        const presentations = Array.isArray(med.presentaciones) ? med.presentaciones : [];
+        if (presentations.length === 0) return '';
+
+        const commercialized = presentations.filter(p => p.comerc !== false);
+        const visibleCount = commercialized.length || presentations.length;
+
+        if (presentations.length === 1) {
+            return this._getPresentationFormat(med.nombre, presentations[0].nombre);
+        }
+
+        return `${visibleCount} formato${visibleCount !== 1 ? 's' : ''}`;
+    }
+
+    renderPresentationsDetailItem(med) {
+        const presentations = Array.isArray(med.presentaciones) ? med.presentaciones : [];
+        if (presentations.length === 0) {
+            return `
+                <div class="detail-item">
+                    <span class="detail-label">Presentaciones</span>
+                    <span class="detail-value">-</span>
+                </div>
+            `;
+        }
+
+        const commercializedCount = presentations.filter(p => p.comerc !== false).length;
+        const stockIssues = presentations.filter(p => p.psum).length;
+        const countText = commercializedCount === presentations.length
+            ? `${presentations.length} comercializada${presentations.length !== 1 ? 's' : ''}`
+            : `${commercializedCount} comercializada${commercializedCount !== 1 ? 's' : ''} de ${presentations.length}`;
+        const supplyText = stockIssues > 0 ? ` · ${stockIssues} suministro` : '';
+
+        const rows = presentations.map(presentation => {
+            const format = this._getPresentationFormat(med.nombre, presentation.nombre);
+            const statusClass = presentation.comerc === false ? 'muted' : 'success';
+            const statusText = presentation.comerc === false ? 'No comercializada' : 'Comercializada';
+
+            return `
+                <div class="presentation-row">
+                    <div class="presentation-main">
+                        <span class="presentation-format">${this._escapeHtml(format)}</span>
+                        <span class="presentation-cn">CN ${this._escapeHtml(presentation.cn || '-')}</span>
+                    </div>
+                    <div class="presentation-statuses">
+                        <span class="presentation-status presentation-status--${statusClass}">${statusText}</span>
+                        ${presentation.psum ? '<span class="presentation-status presentation-status--danger">Suministro</span>' : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="detail-item detail-item--stacked detail-item--presentations">
+                <div class="detail-item-main">
+                    <span class="detail-label">Presentaciones</span>
+                    <span class="detail-value">${countText}${supplyText}</span>
+                </div>
+                <details class="presentations-inline">
+                    <summary>Ver formatos por CN</summary>
+                    <div class="presentations-list">
+                        ${rows}
+                    </div>
+                </details>
+            </div>
+        `;
+    }
+
     renderInfoTab(med) {
         const pActivos = med.principiosActivos
             ? med.principiosActivos.map(pa => `${pa.nombre}${pa.cantidad ? ' ' + pa.cantidad : ''} `).join(', ')
@@ -4743,7 +4846,7 @@ class MedCheckApp {
 
         const formaFarm = med.formaFarmaceutica?.nombre || '-';
         const viaAdmin = med.viasAdministracion?.map(v => v.nombre).join(', ') || '-';
-        const numPresentaciones = med.presentaciones?.length || 0;
+        const presentationsHtml = this.renderPresentationsDetailItem(med);
 
         // Alertas especiales — tipología de producto centralizada + alertas clínicas
         const alerts = [...this._renderProductTypeBadges(med)];
@@ -4907,10 +5010,7 @@ class MedCheckApp {
                     <span class="detail-value">${med.labtitular || '-'}</span>
                 </div>
                 ${labComercHtml}
-                <div class="detail-item">
-                    <span class="detail-label">Presentaciones</span>
-                    <span class="detail-value">${numPresentaciones} disponible${numPresentaciones !== 1 ? 's' : ''}</span>
-                </div>
+                ${presentationsHtml}
                 <div class="detail-item">
                     <span class="detail-label">ATC</span>
                     <span class="detail-value" style="text-align: right; font-size: 0.8rem;">${atcs}</span>

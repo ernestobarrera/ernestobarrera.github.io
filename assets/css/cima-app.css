@@ -2150,6 +2150,96 @@ body {
     color: #7dd3fc;
 }
 
+/* Compact presentation formats inside the detail-list row */
+.detail-item--stacked {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.detail-item-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    width: 100%;
+}
+
+.presentations-inline {
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+    padding-top: var(--space-xs);
+}
+
+.presentations-inline summary {
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 500;
+    list-style-position: inside;
+    width: fit-content;
+}
+
+.presentations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: var(--space-xs);
+}
+
+.presentation-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.presentation-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.presentation-format {
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.presentation-cn {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+}
+
+.presentation-statuses {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+    flex: 0 0 auto;
+}
+
+.presentation-status {
+    border-radius: var(--radius-sm);
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0;
+    white-space: nowrap;
+}
+
+.presentation-status--success {
+    color: var(--success);
+}
+
+.presentation-status--muted {
+    color: var(--text-muted);
+}
+
+.presentation-status--danger {
+    color: var(--danger);
+}
+
 /* NOTE: .app-status styles moved to Footer section (line ~1948) */
 
 /* ============================================
@@ -5028,6 +5118,21 @@ code {
     .detail-value {
         font-size: 0.85rem;
         text-align: right;
+    }
+
+    .detail-item-main {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .presentation-row {
+        grid-template-columns: 1fr;
+        align-items: flex-start;
+    }
+
+    .presentation-statuses {
+        justify-content: flex-start;
     }
 
     /* Navigation tabs - horizontal scroll */
