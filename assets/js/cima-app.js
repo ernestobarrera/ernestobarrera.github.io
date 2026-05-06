@@ -1516,7 +1516,7 @@ class MedCheckApp {
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
         // Notas de seguridad oficiales de la AEMPS
         if (med.notas) badges.push(`<span class="badge badge-warning badge-clickable" title="Ver alertas de seguridad de la AEMPS" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'alerts')"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>`);
-        if (med.materialesInf) badges.push(`<span class="badge badge-info badge-clickable" title="Ver materiales informativos (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
+        if (med.materialesInf) badges.push(`<span class="badge badge-material badge-clickable" title="Ver materiales informativos de seguridad (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
 
         // Alertas según contexto del paciente
         const contextAlerts = [];
@@ -2305,7 +2305,7 @@ class MedCheckApp {
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
         // Notas de seguridad AEMPS
         if (med.notas) badges.push(`<span class="badge badge-warning badge-clickable" title="Ver alertas de seguridad de la AEMPS" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'alerts')"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>`);
-        if (med.materialesInf) badges.push(`<span class="badge badge-info badge-clickable" title="Ver materiales informativos (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
+        if (med.materialesInf) badges.push(`<span class="badge badge-material badge-clickable" title="Ver materiales informativos de seguridad (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
 
         // Alertas según contexto del paciente - AÑADIDO
         const contextAlerts = [];
@@ -4270,7 +4270,7 @@ class MedCheckApp {
 
         const hasVideo = [...(item.listaDocsPaciente||[]), ...(item.listaDocsProfesional||[])].some(d => d.video);
         const badges = [
-            item.listaDocsProfesional?.length > 0 ? '<span class="badge badge-info" style="font-size:0.62rem">Prof.</span>' : '',
+            item.listaDocsProfesional?.length > 0 ? '<span class="badge badge-material" style="font-size:0.62rem">Prof.</span>' : '',
             item.listaDocsPaciente?.length > 0    ? '<span class="badge badge-neutral" style="font-size:0.62rem">Pac.</span>' : '',
             hasVideo ? '<span class="badge badge-purple" style="font-size:0.62rem"><i class="fas fa-play-circle"></i></span>' : ''
         ].filter(Boolean).join('');
@@ -4652,7 +4652,7 @@ class MedCheckApp {
                     <button class="modal-tab ${isInteractionsActive ? 'active' : ''}" data-tab="interactions">Interacciones</button>
                     <button class="modal-tab ${isAdverseActive ? 'active' : ''}" data-tab="adverse">Reacciones</button>
                     <button class="modal-tab ${isSafetyActive ? 'active' : ''}" data-tab="safety">Seguridad</button>
-                    <button class="modal-tab ${isDocsActive ? 'active' : ''}" data-tab="docs">Documentos${ftRecentDot}</button>
+                    <button class="modal-tab ${isDocsActive ? 'active' : ''} ${hasMateriales ? 'modal-tab-materials' : ''}" data-tab="docs" ${hasMateriales ? 'title="Contiene materiales informativos de seguridad AEMPS"' : ''}>Documentos${hasMateriales ? ' <i class="fas fa-file-medical-alt"></i>' : ''}${ftRecentDot}</button>
                     ${hasAempsAlerts ? `<button class="modal-tab alert-pulse ${isAlertsActive ? 'active' : ''}" data-tab="alerts"><i class="fas fa-exclamation-triangle"></i> Alertas AEMPS</button>` : ''}
                 </div>
 
@@ -4854,7 +4854,7 @@ class MedCheckApp {
         if (med.triangulo) alerts.push('<span class="badge badge-danger" title="Triángulo negro">▲ Vigilancia adicional</span>');
         if (med.psum) alerts.push('<span class="badge badge-danger"><i class="fas fa-boxes"></i> Problema suministro</span>');
         if (med.conduc) alerts.push('<span class="badge badge-warning"><i class="fas fa-car"></i> Afecta conducción</span>');
-        if (med.materialesInf) alerts.push('<span class="badge badge-info badge-clickable" title="Hay materiales informativos — ver pestaña Documentos" onclick="document.querySelector(\'.modal-tab[data-tab=\\\"docs\\\"]\')?.click()"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
+        if (med.materialesInf) alerts.push('<span class="badge badge-material badge-clickable" title="Hay materiales informativos de seguridad — ver pestaña Documentos" onclick="document.querySelector(\'.modal-tab[data-tab=\\\"docs\\\"]\')?.click()"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
 
         const alertsHtml = alerts.length > 0
             ? `<div class="mb-md" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"> ${alerts.join('')}</div> `
@@ -5944,7 +5944,7 @@ ${materialesPlaceholder}
             container.innerHTML = `
                 <div class="alerts-section" style="margin-top:1rem">
                     <h4 class="alerts-section-title">
-                        <i class="fas fa-file-medical-alt text-info"></i>
+                        <i class="fas fa-file-medical-alt text-material"></i>
                         Materiales Informativos (${total})
                     </h4>
                     ${renderGroup(profesional, 'Para profesionales', 'stethoscope')}
@@ -6007,7 +6007,7 @@ ${materialesPlaceholder}
         const actionIcon = isVideo ? 'play-circle' : 'external-link-alt';
 
         return `
-            <div class="alert-card alert-card-info">
+            <div class="alert-card alert-card-material">
                 <div class="alert-card-header">
                     <span class="alert-card-type"><i class="fas fa-${icon}"></i> ${typeLabel}</span>
                 </div>
@@ -6016,7 +6016,7 @@ ${materialesPlaceholder}
                 </div>
                 ${mat.url ? `
                     <div class="alert-card-actions">
-                        <a href="${mat.url}" target="_blank" rel="noopener" class="btn btn-sm btn-info">
+                        <a href="${mat.url}" target="_blank" rel="noopener" class="btn btn-sm btn-material">
                             <i class="fas fa-${actionIcon}"></i> ${actionLabel}
                         </a>
                     </div>

@@ -21,6 +21,10 @@
     --danger-light: rgba(239, 68, 68, 0.15);
     --info: #6366f1;
     --info-light: rgba(99, 102, 241, 0.15);
+    --material: #06b6d4;
+    --material-light: rgba(6, 182, 212, 0.18);
+    --material-text: #67e8f9;
+    --material-border: rgba(103, 232, 249, 0.42);
 
     /* Background & Surface */
     --bg-dark: #0f172a;
@@ -917,6 +921,13 @@ body {
 .badge-info {
     background: var(--info-light);
     color: var(--info);
+}
+
+.badge-material {
+    background: var(--material-light);
+    border: 1px solid var(--material-border);
+    color: var(--material-text);
+    font-weight: 700;
 }
 
 .badge-neutral {
@@ -2083,6 +2094,21 @@ body {
 .modal-tab.active {
     color: var(--primary);
     border-bottom-color: var(--primary);
+}
+
+.modal-tab-materials {
+    color: var(--material-text);
+}
+
+.modal-tab-materials:not(.active) {
+    background: var(--material-light);
+    border-bottom-color: var(--material-border);
+    border-radius: var(--radius-sm);
+}
+
+.modal-tab-materials.active {
+    color: var(--material-text);
+    border-bottom-color: var(--material);
 }
 
 .tab-content {
@@ -5670,6 +5696,11 @@ code {
     border-left: 4px solid var(--info);
 }
 
+.alert-card-material {
+    border-left: 4px solid var(--material);
+    background: linear-gradient(90deg, rgba(6, 182, 212, 0.08), var(--bg-elevated) 38%);
+}
+
 .alert-card-header {
     display: flex;
     justify-content: space-between;
@@ -5736,6 +5767,19 @@ code {
 
 .alert-card-actions .btn-info:hover {
     background: #4f46e5;
+}
+
+.alert-card-actions .btn-material {
+    background: var(--material);
+    color: #06232a;
+}
+
+.alert-card-actions .btn-material:hover {
+    background: #0891b2;
+}
+
+.text-material {
+    color: var(--material-text) !important;
 }
 
 /* Loading placeholder for alerts */
