@@ -122,6 +122,14 @@ class MedCheckApp {
         this.updateATCVersion();
         this.updateFavoritesBadge();
 
+        // Indice de problemas de suministro indexado por CN.
+        // Fire-and-forget: enriquece cards y modal cuando esté disponible.
+        // Una sola petición por sesión, datos pequeños y cacheados en cima-api.
+        this._supplyIndex = null;
+        this.api.getSuministroIndex()
+            .then(idx => { this._supplyIndex = idx; })
+            .catch(() => { /* silencioso: degrada al comportamiento previo */ });
+
         // If legal already accepted, process URL params now
         if (this.hasAcceptedLegalDisclaimer()) {
             this.processURLParams();
@@ -1503,6 +1511,156 @@ class MedCheckApp {
         return badges;
     }
 
+    // ============================================
+    // Problemas de suministro: agregación y formato
+    // ============================================
+    // La AEMPS modela cada problema 1:1 contra una presentación (CN), no contra
+    // el medicamento (nregistro). Para vistas a nivel de medicamento (card,
+    // header del modal) agregamos con regla determinista: rango envolvente.
+    _aggregateShortage(med) {
+        if (!med || !med.psum) return null;
+        const idx = this._supplyIndex;
+        if (!idx || idx.size === 0) return null;
+        const presentations = Array.isArray(med.presentaciones) ? med.presentaciones : [];
+        const items = [];
+        const seen = new Set();
+        const pushItem = (entry) => {
+            if (!entry) return;
+            const key = entry.cn || `${entry.nombre || ''}-${entry.fini || ''}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            items.push(entry);
+        };
+        // 1) Lookup primario: por CN de cada presentación (modal con detalle).
+        for (const p of presentations) {
+            if (!p || !p.cn) continue;
+            pushItem(idx.get(String(p.cn)));
+        }
+        // 2) Fallback: por nregistro (cuando AEMPS lo publica en /psuministro).
+        if (items.length === 0 && idx.byNregistro && med.nregistro) {
+            const list = idx.byNregistro.get(String(med.nregistro));
+            if (list) for (const it of list) pushItem(it);
+        }
+        // 3) Fallback: por nombre normalizado (cards de búsqueda sin presentaciones).
+        if (items.length === 0 && idx.byName && idx.normalizeName) {
+            const key = idx.normalizeName(med.nombre);
+            const list = key ? idx.byName.get(key) : null;
+            if (list) for (const it of list) pushItem(it);
+        }
+        if (items.length === 0) return null;
+        const finis = items.map(i => i.fini).filter(Boolean).map(d => new Date(d).getTime());
+        const ffins = items.map(i => i.ffin).filter(Boolean).map(d => new Date(d).getTime());
+        const indefinite = items.some(i => !i.ffin);
+        const fini = finis.length ? new Date(Math.min(...finis)) : null;
+        // Envolvente: la fecha más tardía manda. Si hay alguna indefinida, no
+        // hay envolvente fiable: se trata como "sin fecha fin estimada".
+        const ffin = (indefinite || !ffins.length) ? null : new Date(Math.max(...ffins));
+        const daysRemaining = ffin ? Math.ceil((ffin - Date.now()) / 86400000) : null;
+        return {
+            items,
+            affected: items.length,
+            total: presentations.length || items.length,
+            fini,
+            ffin,
+            indefinite,
+            daysRemaining,
+        };
+    }
+
+    _formatShortageDateShort(d) {
+        if (!d) return null;
+        return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+    }
+
+    _formatShortageDateLong(d) {
+        if (!d) return null;
+        return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    // Resumen compacto para el badge agregado (card / header modal).
+    // Reglas:
+    //  - sin fecha fin estimada → "sin fecha fin"
+    //  - ≤30 días restantes → "Nd"  (criterio clínico de urgencia)
+    //  - >30 días → fecha corta "hasta DD mes"
+    _formatShortageBadgeText(agg) {
+        if (!agg) return '';
+        if (agg.indefinite || !agg.ffin) return 'sin fecha fin';
+        const d = agg.daysRemaining;
+        if (d !== null && d >= 0 && d <= 30) return `${d}d`;
+        return `hasta ${this._formatShortageDateShort(agg.ffin)}`;
+    }
+
+    // Tooltip detallado (sustituye al "Click para ver alternativas" plano)
+    _formatShortageTooltip(agg, suffix = '') {
+        if (!agg) return suffix;
+        const parts = [];
+        const finiStr = this._formatShortageDateLong(agg.fini);
+        const ffinStr = this._formatShortageDateLong(agg.ffin);
+        if (agg.indefinite || !ffinStr) {
+            parts.push(finiStr ? `Activo desde ${finiStr} · sin fecha fin estimada` : 'Sin fecha fin estimada');
+        } else if (finiStr) {
+            parts.push(`${finiStr} → ${ffinStr}`);
+            if (agg.daysRemaining !== null && agg.daysRemaining >= 0 && agg.daysRemaining <= 30) {
+                parts.push(`${agg.daysRemaining}d para resolverse`);
+            }
+        } else {
+            parts.push(`Hasta ${ffinStr}`);
+        }
+        if (agg.total > 1 && agg.affected) {
+            parts.push(`${agg.affected} de ${agg.total} formatos afectados`);
+        }
+        if (suffix) parts.push(suffix);
+        return parts.join(' · ');
+    }
+
+    // Texto largo y legible para un detail-item dedicado en el modal.
+    // Usa el mismo patrón visual que el resto de filas del modal.
+    _formatShortageRowText(agg) {
+        if (!agg) return '';
+        const fini = this._formatShortageDateLong(agg.fini);
+        const ffin = this._formatShortageDateLong(agg.ffin);
+        let main;
+        if (agg.indefinite || !ffin) {
+            main = fini ? `Desde ${fini} · sin fecha fin estimada` : 'Sin fecha fin estimada';
+        } else if (fini) {
+            main = `${fini} → ${ffin}`;
+        } else {
+            main = `Hasta ${ffin}`;
+        }
+        const tags = [];
+        if (!agg.indefinite && agg.daysRemaining !== null) {
+            if (agg.daysRemaining < 0) {
+                tags.push('finalizando');
+            } else if (agg.daysRemaining === 0) {
+                tags.push('finaliza hoy');
+            } else {
+                const word = agg.daysRemaining === 1 ? 'día' : 'días';
+                tags.push(`${agg.daysRemaining} ${word} para resolverse`);
+            }
+        }
+        if (agg.total > 1 && agg.affected) {
+            tags.push(`${agg.affected} de ${agg.total} formatos`);
+        }
+        return tags.length
+            ? `${main} <span class="text-muted" style="font-size:0.8rem;">· ${tags.join(' · ')}</span>`
+            : main;
+    }
+
+    // Texto 1:1 para una presentación concreta (sección presentaciones del modal)
+    _formatPresentationShortage(item) {
+        if (!item) return null;
+        const fini = item.fini ? new Date(item.fini) : null;
+        const ffin = item.ffin ? new Date(item.ffin) : null;
+        if (!ffin) {
+            const finiStr = this._formatShortageDateShort(fini);
+            return finiStr ? `desde ${finiStr} · sin fin` : 'sin fin estimado';
+        }
+        const finiStr = this._formatShortageDateShort(fini);
+        const ffinStr = this._formatShortageDateShort(ffin);
+        if (finiStr) return `${finiStr} → ${ffinStr}`;
+        return `hasta ${ffinStr}`;
+    }
+
     renderMedCard(med) {
         // Badges de estado — tipología de producto centralizada
         const badges = [...this._renderProductTypeBadges(med)];
@@ -1510,7 +1668,12 @@ class MedCheckApp {
         if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro - Vigilancia adicional">▲ Vigilancia</span>');
         if (med.psum) {
             // Always make badge clickable using nregistro (ATC might not be available in search results)
-            badges.push(`<span class="badge badge-danger badge-clickable" title="Sin stock - Click para ver alternativas" onclick="event.stopPropagation(); app.showSupplyAlternativesByNregistro('${med.nregistro}', '${med.nombre.replace(/'/g, "\\'")}')"><i class="fas fa-exclamation-triangle"></i> Sin stock</span>`);
+            const agg = this._aggregateShortage(med);
+            const shortText = this._formatShortageBadgeText(agg);
+            const tooltip = this._formatShortageTooltip(agg, 'Click para ver alternativas');
+            const labelSuffix = shortText ? ` · ${shortText}` : '';
+            const titleAttr = tooltip || 'Sin stock - Click para ver alternativas';
+            badges.push(`<span class="badge badge-danger badge-clickable" title="${titleAttr}" onclick="event.stopPropagation(); app.showSupplyAlternativesByNregistro('${med.nregistro}', '${med.nombre.replace(/'/g, "\\'")}')"><i class="fas fa-exclamation-triangle"></i> Sin stock${labelSuffix}</span>`);
         }
         if (med.estupiTemp) badges.push('<span class="badge badge-dark" title="Estupefaciente - Receta especial">⚠ Estupef.</span>');
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
@@ -2299,7 +2462,11 @@ class MedCheckApp {
         // Badge psum clickable para ver alternativas
         if (med.psum) {
             // Always make badge clickable using nregistro
-            badges.push(`<span class="badge badge-danger badge-clickable" title="Sin stock - Click para ver alternativas" onclick="event.stopPropagation(); app.showSupplyAlternativesByNregistro('${med.nregistro}', '${med.nombre.replace(/'/g, "\\'")}')"><i class="fas fa-exclamation-triangle"></i> Sin stock</span>`);
+            const aggInd = this._aggregateShortage(med);
+            const shortInd = this._formatShortageBadgeText(aggInd);
+            const tipInd = this._formatShortageTooltip(aggInd, 'Click para ver alternativas') || 'Sin stock - Click para ver alternativas';
+            const suffixInd = shortInd ? ` · ${shortInd}` : '';
+            badges.push(`<span class="badge badge-danger badge-clickable" title="${tipInd}" onclick="event.stopPropagation(); app.showSupplyAlternativesByNregistro('${med.nregistro}', '${med.nombre.replace(/'/g, "\\'")}')"><i class="fas fa-exclamation-triangle"></i> Sin stock${suffixInd}</span>`);
         }
         if (med.estupiTemp) badges.push('<span class="badge badge-dark" title="Estupefaciente - Receta especial">⚠ Estupef.</span>');
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
@@ -4553,7 +4720,12 @@ class MedCheckApp {
                 this.api.analyzeSafety(nregistro, this.patientContext).catch(err => {
                     console.error('Error analyzing safety in modal:', err);
                     return { checks: [] }; // Fallback
-                })
+                }),
+                // Garantiza que el índice de suministro esté listo para renderInfoTab
+                // y renderPresentationsDetailItem. Cacheado tras la primera llamada.
+                this.api.getSuministroIndex()
+                    .then(idx => { this._supplyIndex = idx; })
+                    .catch(() => {})
             ]);
 
             this.currentMed = med;
@@ -4803,6 +4975,30 @@ class MedCheckApp {
             const statusClass = presentation.comerc === false ? 'muted' : 'success';
             const statusText = presentation.comerc === false ? 'No comercializada' : 'Comercializada';
 
+            // Suministro 1:1 por CN: si está el índice, mostramos la ventana real.
+            let supplyBadge = '';
+            if (presentation.psum) {
+                const supplyItem = (this._supplyIndex && presentation.cn)
+                    ? this._supplyIndex.get(String(presentation.cn))
+                    : null;
+                const windowText = this._formatPresentationShortage(supplyItem);
+                const tip = supplyItem
+                    ? this._formatShortageTooltip({
+                        items: [supplyItem],
+                        affected: 1,
+                        total: 1,
+                        fini: supplyItem.fini ? new Date(supplyItem.fini) : null,
+                        ffin: supplyItem.ffin ? new Date(supplyItem.ffin) : null,
+                        indefinite: !supplyItem.ffin,
+                        daysRemaining: supplyItem.ffin
+                            ? Math.ceil((new Date(supplyItem.ffin) - Date.now()) / 86400000)
+                            : null,
+                    })
+                    : 'Problema de suministro activo';
+                const label = windowText ? `Suministro · ${windowText}` : 'Suministro';
+                supplyBadge = `<span class="presentation-status presentation-status--danger" title="${tip}">${label}</span>`;
+            }
+
             return `
                 <div class="presentation-row">
                     <div class="presentation-main">
@@ -4811,7 +5007,7 @@ class MedCheckApp {
                     </div>
                     <div class="presentation-statuses">
                         <span class="presentation-status presentation-status--${statusClass}">${statusText}</span>
-                        ${presentation.psum ? '<span class="presentation-status presentation-status--danger">Suministro</span>' : ''}
+                        ${supplyBadge}
                     </div>
                 </div>
             `;
@@ -4852,7 +5048,25 @@ class MedCheckApp {
         const alerts = [...this._renderProductTypeBadges(med)];
         if (med.nosustituible && med.nosustituible.id === 2) alerts.push('<span class="badge badge-nti" title="Estrecho margen terapéutico — No sustituible"><i class="fas fa-exclamation-triangle"></i> NTI — Estrecho margen terapéutico</span>');
         if (med.triangulo) alerts.push('<span class="badge badge-danger" title="Triángulo negro">▲ Vigilancia adicional</span>');
-        if (med.psum) alerts.push('<span class="badge badge-danger"><i class="fas fa-boxes"></i> Problema suministro</span>');
+        let shortageRowHtml = '';
+        if (med.psum) {
+            const aggInfo = this._aggregateShortage(med);
+            const shortInfo = this._formatShortageBadgeText(aggInfo);
+            const tooltipInfo = this._formatShortageTooltip(aggInfo) || 'Problema de suministro activo';
+            const suffixInfo = shortInfo ? ` · ${shortInfo}` : '';
+            alerts.push(`<span class="badge badge-danger" title="${tooltipInfo}"><i class="fas fa-boxes"></i> Problema suministro${suffixInfo}</span>`);
+            // Fila adicional con la ventana completa: misma estética que el
+            // resto del modal, sin badge naranja (ese tono pertenece a la
+            // vista Suministro). El badge superior da urgencia; esta fila
+            // da el dato exacto sin obligar a abrir tooltip.
+            const rowText = this._formatShortageRowText(aggInfo);
+            if (rowText) {
+                shortageRowHtml = `<div class="detail-item">
+                    <span class="detail-label">Suministro</span>
+                    <span class="detail-value" style="color: var(--danger);">${rowText}</span>
+                </div>`;
+            }
+        }
         if (med.conduc) alerts.push('<span class="badge badge-warning"><i class="fas fa-car"></i> Afecta conducción</span>');
         if (med.materialesInf) alerts.push('<span class="badge badge-material badge-clickable" title="Hay materiales informativos de seguridad — ver pestaña Documentos" onclick="document.querySelector(\'.modal-tab[data-tab=\\\"docs\\\"]\')?.click()"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
 
@@ -5001,6 +5215,7 @@ class MedCheckApp {
                         ${med.comerc ? '<span class="text-success">Comercializado</span>' : '<span class="text-muted">No comercializado</span>'}
                     </span>
                 </div>
+                ${shortageRowHtml}
                 <div class="detail-item">
                     <span class="detail-label">Receta</span>
                     <span class="detail-value">${med.receta ? 'Sí' : 'No'}</span>

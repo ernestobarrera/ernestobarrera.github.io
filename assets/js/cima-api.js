@@ -514,7 +514,7 @@ class CimaAPI {
         }
 
         const normalizedQuery = query.toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Quitar acentos
+            .normalize('NFD').replace(/[̀-ͯ]/g, ''); // Quitar acentos
 
         const matches = [];
 
@@ -2652,6 +2652,54 @@ class CimaAPI {
         } catch {
             return null;
         }
+    }
+
+    /**
+     * Indice de problemas de suministro activos.
+     * Devuelve un Map por CN (lookup principal) y dos índices secundarios:
+     *   - byNregistro: cuando el item trae nregistro (no garantizado por AEMPS).
+     *   - byName: por nombre comercial normalizado (sin acentos, sin formato
+     *     después de la última coma — útil para cruzar resultados de búsqueda
+     *     que no traen presentaciones[].cn).
+     * Una sola petición por sesión, cacheada.
+     * @returns {Promise<Map<string, object>>}
+     */
+    async getSuministroIndex() {
+        const cacheKey = 'suministro-index';
+        if (this._hasValidCache(cacheKey)) {
+            return this.cache.get(cacheKey).data;
+        }
+        const activos = await this.getSuministro();
+        const idx = new Map();
+        const byNregistro = new Map();
+        const byName = new Map();
+        const normalize = (name) => {
+            if (!name) return '';
+            let n = String(name).toLowerCase();
+            const comma = n.indexOf(',');
+            if (comma > 0) n = n.slice(0, comma);
+            n = n.normalize('NFD').replace(/[̀-ͯ]/g, '');
+            return n.replace(/\s+/g, ' ').trim();
+        };
+        for (const item of activos) {
+            if (!item) continue;
+            if (item.cn) idx.set(String(item.cn), item);
+            if (item.nregistro) {
+                const k = String(item.nregistro);
+                if (!byNregistro.has(k)) byNregistro.set(k, []);
+                byNregistro.get(k).push(item);
+            }
+            const nameKey = normalize(item.nombre);
+            if (nameKey) {
+                if (!byName.has(nameKey)) byName.set(nameKey, []);
+                byName.get(nameKey).push(item);
+            }
+        }
+        idx.byNregistro = byNregistro;
+        idx.byName = byName;
+        idx.normalizeName = normalize;
+        this._setCache(cacheKey, idx);
+        return idx;
     }
 
     // ============================================
