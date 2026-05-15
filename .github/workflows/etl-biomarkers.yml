@@ -52,9 +52,11 @@ jobs:
           python scripts/etl-biomarkers/build_biomarkers.py \
             --from-file prescripcion.zip \
             --out biomarkers.json
+          list_date=$(python -c "import json; print(json.load(open('biomarkers.json'))['meta']['list_prescription_date'] or 'unknown')")
           {
             echo "size_bytes=$(stat -c%s biomarkers.json)"
             echo "size_kb=$(awk "BEGIN{printf \"%.1f\", $(stat -c%s biomarkers.json)/1024}")"
+            echo "list_date=${list_date}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Resumen
@@ -76,7 +78,7 @@ jobs:
       - name: Subir artefacto (retención 7 días)
         uses: actions/upload-artifact@v4
         with:
-          name: biomarkers-${{ steps.head.outputs.last_modified || 'unknown' }}
+          name: biomarkers-${{ steps.build.outputs.list_date }}
           path: biomarkers.json
           retention-days: 7
           if-no-files-found: error
