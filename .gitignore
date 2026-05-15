@@ -72,7 +72,9 @@ Alper y Haynes*.pdf
 # PROTECCIÓN: Agente local y configs de desarrollo
 # =====================================================
 .agent/
-.github/
+# .github/: ignoramos todo el contenido salvo workflows (GitHub Actions)
+.github/*
+!.github/workflows/
 _staged_backup.patch
 PENDING_REVIEW.md
 

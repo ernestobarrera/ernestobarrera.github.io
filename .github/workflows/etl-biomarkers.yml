@@ -1,0 +1,101 @@
+name: ETL biomarcadores farmacogenómicos (AEMPS)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 06:17 UTC diario (08:17 madrileño en verano). Hora rara para evitar picos.
+    - cron: '17 6 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: etl-biomarkers
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: HEAD check del ZIP remoto
+        id: head
+        run: |
+          python scripts/etl-biomarkers/build_biomarkers.py --head-only | tee head.json
+          echo "etag=$(jq -r '.etag // empty' head.json)" >> "$GITHUB_OUTPUT"
+          echo "last_modified=$(jq -r '.last_modified // empty' head.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache del ZIP por ETag
+        id: zip-cache
+        uses: actions/cache@v4
+        with:
+          path: prescripcion.zip
+          key: prescripcion-${{ steps.head.outputs.etag }}
+
+      - name: Descargar ZIP si no hay cache
+        if: steps.zip-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSfL -o prescripcion.zip https://listadomedicamentos.aemps.gob.es/prescripcion.zip
+          ls -lh prescripcion.zip
+
+      - name: Construir JSON de biomarcadores
+        id: build
+        run: |
+          python scripts/etl-biomarkers/build_biomarkers.py \
+            --from-file prescripcion.zip \
+            --out biomarkers.json
+          {
+            echo "size_bytes=$(stat -c%s biomarkers.json)"
+            echo "size_kb=$(awk "BEGIN{printf \"%.1f\", $(stat -c%s biomarkers.json)/1024}")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Resumen
+        run: |
+          {
+            echo "## ETL biomarcadores"
+            echo ""
+            echo "- ETag remoto: \`${{ steps.head.outputs.etag }}\`"
+            echo "- Last-Modified: \`${{ steps.head.outputs.last_modified }}\`"
+            echo "- Cache hit: \`${{ steps.zip-cache.outputs.cache-hit }}\`"
+            echo "- JSON: \`${{ steps.build.outputs.size_kb }} KB\`"
+            echo ""
+            echo "### Cabecera meta"
+            echo '```json'
+            python -c "import json; d=json.load(open('biomarkers.json')); print(json.dumps(d['meta'], indent=2, ensure_ascii=False))"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Subir artefacto (retención 7 días)
+        uses: actions/upload-artifact@v4
+        with:
+          name: biomarkers-${{ steps.head.outputs.last_modified || 'unknown' }}
+          path: biomarkers.json
+          retention-days: 7
+          if-no-files-found: error
+
+      # ----------------------------------------------------------------------
+      # Paso de publicación a Cloudflare KV — DESHABILITADO en dry-run.
+      # Para activarlo:
+      #   1. Crear secrets en el repo: CF_API_TOKEN, CF_ACCOUNT_ID, CF_KV_NAMESPACE_ID
+      #   2. Quitar el `if: false` de abajo
+      # ----------------------------------------------------------------------
+      - name: Publicar a Cloudflare KV (deshabilitado)
+        if: false
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+        run: |
+          curl -sSf -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${CF_KV_NAMESPACE_ID}/values/biomarkers:full" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary @biomarkers.json

@@ -1,0 +1,9 @@
+[
+  { "drug": "ALOPURINOL",    "biomarcador": "HLA-B",   "genotipo_substr": "HLA-B*58:01",    "min_presentaciones": 1 },
+  { "drug": "CAPECITABINA",  "biomarcador": "DPYD",    "genotipo_substr": null,             "min_presentaciones": 1 },
+  { "drug": "FLUOROURACILO", "biomarcador": "DPYD",    "genotipo_substr": null,             "min_presentaciones": 1 },
+  { "drug": "IRINOTECAN",    "biomarcador": "UGT1A1",  "genotipo_substr": null,             "min_presentaciones": 1 },
+  { "drug": "ABACAVIR",      "biomarcador": "HLA-B",   "genotipo_substr": "HLA-B*57:01",    "min_presentaciones": 1 },
+  { "drug": "CLOPIDOGREL",   "biomarcador": "CYP2C19", "genotipo_substr": null,             "min_presentaciones": 1 },
+  { "drug": "CODEINA",       "biomarcador": "CYP2D6",  "genotipo_substr": null,             "min_presentaciones": 1, "atc_prefix": "R05DA04" }
+]
