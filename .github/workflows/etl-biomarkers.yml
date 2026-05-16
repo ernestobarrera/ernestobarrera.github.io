@@ -83,21 +83,32 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
-      # ----------------------------------------------------------------------
-      # Paso de publicación a Cloudflare KV — DESHABILITADO en dry-run.
-      # Para activarlo:
-      #   1. Crear secrets en el repo: CF_API_TOKEN, CF_ACCOUNT_ID, CF_KV_NAMESPACE_ID
-      #   2. Quitar el `if: false` de abajo
-      # ----------------------------------------------------------------------
-      - name: Publicar a Cloudflare KV (deshabilitado)
-        if: false
+      - name: Publicar a Cloudflare KV
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
         run: |
-          curl -sSf -X PUT \
-            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${CF_KV_NAMESPACE_ID}/values/biomarkers:full" \
+          # Clave `biomarkers:full` con el `:` URL-encoded como %3A
+          response=$(curl -sS -w "\n%{http_code}" -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${CF_KV_NAMESPACE_ID}/values/biomarkers%3Afull" \
             -H "Authorization: Bearer ${CF_API_TOKEN}" \
             -H "Content-Type: application/json" \
-            --data-binary @biomarkers.json
+            --data-binary @biomarkers.json)
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "HTTP ${status}"
+          echo "$body" | jq .
+          test "$status" = "200" || exit 1
+
+      - name: Verificar endpoint del Worker
+        run: |
+          echo "GET /pharmacogenomics/meta"
+          meta=$(curl -sSf "https://medcheck-proxy.medtools.workers.dev/pharmacogenomics/meta")
+          echo "$meta" | jq .
+          # Compara la fecha del Nomenclátor servida por el Worker con la del JSON recién generado
+          worker_date=$(echo "$meta" | jq -r '.list_prescription_date')
+          local_date=$(jq -r '.meta.list_prescription_date' biomarkers.json)
+          echo "Worker: $worker_date | Local: $local_date"
+          test "$worker_date" = "$local_date" || { echo "Worker no sirve la versión recién publicada (cache de isolate ~5 min, reintenta)"; exit 0; }
+          echo "✓ Worker sirviendo la versión recién publicada"
