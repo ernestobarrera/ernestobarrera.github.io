@@ -1519,7 +1519,7 @@ class MedCheckApp {
         if (med.huerfano) badges.push('<span class="badge badge-info" title="Medicamento huérfano — indicación rara"><i class="fas fa-star"></i> Huérfano</span>');
         // Farmacogenómica AEMPS: la ficha técnica menciona un biomarcador relevante
         if (this._pgxSet && med.nregistro && this._pgxSet.has(String(med.nregistro))) {
-            badges.push('<span class="badge badge-pgx" title="Biomarcador farmacogenómico en ficha técnica (AEMPS) — ver pestaña PGx"><i class="fas fa-dna"></i> PGx</span>');
+            badges.push(`<span class="badge badge-pgx badge-clickable" title="Ver pestaña PGx — biomarcador farmacogenómico (AEMPS)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'pgx')"><i class="fas fa-dna"></i> PGx</span>`);
         }
         return badges;
     }
@@ -4776,6 +4776,7 @@ class MedCheckApp {
             const hasAempsAlerts = initialTab === 'alerts' || med.notas || cachedMed?.notas;
             const hasMateriales = med.materialesInf || cachedMed?.materialesInf;
             const hasPgx = !!(this._pgxSet && med.nregistro && this._pgxSet.has(String(med.nregistro)));
+            const isPgxActive = initialTab === 'pgx' && hasPgx;
             const isQTActive = initialTab === 'qt';
 
             // Get medication images for thumbnail and lightbox
@@ -4840,7 +4841,7 @@ class MedCheckApp {
                     <button class="modal-tab ${isSafetyActive ? 'active' : ''}" data-tab="safety">Seguridad</button>
                     <button class="modal-tab ${isDocsActive ? 'active' : ''} ${hasMateriales ? 'modal-tab-materials' : ''}" data-tab="docs" ${hasMateriales ? 'title="Contiene materiales informativos de seguridad AEMPS"' : ''}>Documentos${hasMateriales ? ' <i class="fas fa-file-medical-alt"></i>' : ''}${ftRecentDot}</button>
                     ${hasAempsAlerts ? `<button class="modal-tab alert-pulse ${isAlertsActive ? 'active' : ''}" data-tab="alerts"><i class="fas fa-exclamation-triangle"></i> Alertas AEMPS</button>` : ''}
-                    ${hasPgx ? `<button class="modal-tab modal-tab-pgx" data-tab="pgx" title="Biomarcador farmacogenómico (AEMPS)"><i class="fas fa-dna"></i> PGx</button>` : ''}
+                    ${hasPgx ? `<button class="modal-tab modal-tab-pgx ${isPgxActive ? 'active' : ''}" data-tab="pgx" title="Biomarcador farmacogenómico (AEMPS)"><i class="fas fa-dna"></i> PGx</button>` : ''}
                 </div>
 
                 <div id="tab-info" class="tab-content ${isInfoActive ? 'active' : ''}">
@@ -4887,7 +4888,7 @@ class MedCheckApp {
                 </div>
 
                 ${hasPgx ? `
-                <div id="tab-pgx" class="tab-content">
+                <div id="tab-pgx" class="tab-content ${isPgxActive ? 'active' : ''}">
                     <div id="pgx-content" class="loading-placeholder">
                         <div class="loading-spinner"></div>
                         <p class="text-muted">Cargando biomarcadores AEMPS...</p>
@@ -4902,6 +4903,10 @@ class MedCheckApp {
             // Load materiales if opening directly on docs tab
             if (initialTab === 'docs' || hasMateriales) {
                 this.loadMateriales(med.nregistro);
+            }
+            // Load farmacogenómica si el modal se abre directamente en la pestaña PGx
+            if (isPgxActive) {
+                this.loadPharmacogenomics(med.nregistro);
             }
             // Detect QT information in section 4.4 silently — injects tab only if found
             this.loadQTDetection(med.nregistro, med.nombre);
