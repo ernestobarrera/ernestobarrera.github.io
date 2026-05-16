@@ -969,6 +969,96 @@ body {
     color: #818cf8;
 }
 
+/* Farmacogenómica (PGx) — magenta/violeta para diferenciarlo claramente del resto */
+.badge-pgx {
+    background: rgba(217, 70, 239, 0.15);
+    color: #d946ef;
+    border: 1px solid rgba(217, 70, 239, 0.4);
+}
+.badge-pgx i {
+    font-size: 0.65rem;
+}
+
+/* Pestaña PGx en el modal */
+.modal-tab-pgx {
+    color: #d946ef;
+}
+.modal-tab-pgx.active {
+    border-bottom-color: #d946ef;
+}
+
+/* Contenido de la pestaña PGx */
+.pgx-tab-header {
+    margin-bottom: var(--space-md);
+}
+.pgx-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+.pgx-card {
+    background: rgba(217, 70, 239, 0.04);
+    border: 1px solid rgba(217, 70, 239, 0.2);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+}
+.pgx-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-sm);
+}
+.pgx-biomarker {
+    font-weight: 700;
+    color: #d946ef;
+    font-size: 1.05rem;
+}
+.pgx-tag {
+    font-size: 0.7rem;
+    background: rgba(217, 70, 239, 0.12);
+    color: #c026d3;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+}
+.pgx-tag-sns {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+}
+.pgx-row {
+    display: flex;
+    gap: var(--space-sm);
+    margin: 0.25rem 0;
+    font-size: 0.85rem;
+}
+.pgx-label {
+    color: var(--text-muted);
+    min-width: 140px;
+    font-weight: 500;
+}
+.pgx-value {
+    flex: 1;
+}
+.pgx-description {
+    margin-top: var(--space-sm);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    border-left: 3px solid rgba(217, 70, 239, 0.4);
+    padding-left: var(--space-md);
+}
+.pgx-notes {
+    margin-top: var(--space-sm);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+.pgx-attribution {
+    margin-top: var(--space-md);
+    font-size: 0.75rem;
+    text-align: right;
+}
+
 /* ============================================
    Excipientes de Declaración Obligatoria
    ============================================ */

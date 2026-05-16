@@ -2748,6 +2748,50 @@ class CimaAPI {
     // CACHE HELPERS
     // ============================================
 
+    // ============================================
+    // FARMACOGENÓMICA (Nomenclátor AEMPS vía Worker + KV)
+    // ============================================
+    /**
+     * Índice ligero de nregistros con biomarcador farmacogenómico.
+     * Cacheado 24h en localStorage. Una sola request al cargar la app.
+     * Devuelve Set<string> de nregistros (lookup O(1) para pintar badges).
+     * Degrada silencioso si el endpoint falla.
+     */
+    async getPgxIndexLight() {
+        const KEY = 'medcheck_pgx_index_v1';
+        const TTL_MS = 24 * 3600 * 1000;
+        try {
+            const cached = JSON.parse(localStorage.getItem(KEY) || 'null');
+            if (cached && (Date.now() - cached.t) < TTL_MS && Array.isArray(cached.nregistros)) {
+                return { set: new Set(cached.nregistros), meta: cached.meta || null };
+            }
+        } catch (_) { /* ignorar parseo corrupto */ }
+        try {
+            const r = await fetch(`${this.cloudflareProxy}/pharmacogenomics/index-light`);
+            if (!r.ok) return null;
+            const data = await r.json();
+            const nregistros = Array.isArray(data.nregistros) ? data.nregistros : [];
+            const meta = data._meta || null;
+            try { localStorage.setItem(KEY, JSON.stringify({ t: Date.now(), nregistros, meta })); } catch (_) {}
+            return { set: new Set(nregistros), meta };
+        } catch (_) {
+            return null;
+        }
+    }
+    /**
+     * Detalle de biomarcadores de un medicamento concreto.
+     * Lazy: solo se llama cuando el usuario abre la pestaña PGx del modal.
+     * Devuelve { found: bool, biom: [...], n, atc, ... } o null si falla.
+     */
+    async getPgxByNregistro(nregistro) {
+        try {
+            const r = await fetch(`${this.cloudflareProxy}/pharmacogenomics/by-register/${nregistro}`);
+            if (!r.ok && r.status !== 404) return null;
+            return await r.json();
+        } catch (_) {
+            return null;
+        }
+    }
     _hasValidCache(key) {
         if (!this.cache.has(key)) return false;
         const entry = this.cache.get(key);

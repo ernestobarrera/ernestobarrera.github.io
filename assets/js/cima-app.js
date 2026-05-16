@@ -130,6 +130,15 @@ class MedCheckApp {
             .then(idx => { this._supplyIndex = idx; })
             .catch(() => { /* silencioso: degrada al comportamiento previo */ });
 
+        // Índice ligero de nregistros con biomarcador farmacogenómico (AEMPS).
+        // Una sola request por sesión, cacheada 24h en localStorage.
+        // Si falla, los badges PGx simplemente no aparecen — el resto funciona igual.
+        this._pgxSet = null;
+        this._pgxMeta = null;
+        this.api.getPgxIndexLight()
+            .then(res => { if (res) { this._pgxSet = res.set; this._pgxMeta = res.meta; } })
+            .catch(() => { /* silencioso */ });
+
         // If legal already accepted, process URL params now
         if (this.hasAcceptedLegalDisclaimer()) {
             this.processURLParams();
@@ -1508,6 +1517,10 @@ class MedCheckApp {
             }
         }
         if (med.huerfano) badges.push('<span class="badge badge-info" title="Medicamento huérfano — indicación rara"><i class="fas fa-star"></i> Huérfano</span>');
+        // Farmacogenómica AEMPS: la ficha técnica menciona un biomarcador relevante
+        if (this._pgxSet && med.nregistro && this._pgxSet.has(String(med.nregistro))) {
+            badges.push('<span class="badge badge-pgx" title="Biomarcador farmacogenómico en ficha técnica (AEMPS) — ver pestaña PGx"><i class="fas fa-dna"></i> PGx</span>');
+        }
         return badges;
     }
 
@@ -4762,6 +4775,7 @@ class MedCheckApp {
             // If caller explicitly requested alerts tab, trust that alerts exist (badge only shows when notas=true)
             const hasAempsAlerts = initialTab === 'alerts' || med.notas || cachedMed?.notas;
             const hasMateriales = med.materialesInf || cachedMed?.materialesInf;
+            const hasPgx = !!(this._pgxSet && med.nregistro && this._pgxSet.has(String(med.nregistro)));
             const isQTActive = initialTab === 'qt';
 
             // Get medication images for thumbnail and lightbox
@@ -4826,6 +4840,7 @@ class MedCheckApp {
                     <button class="modal-tab ${isSafetyActive ? 'active' : ''}" data-tab="safety">Seguridad</button>
                     <button class="modal-tab ${isDocsActive ? 'active' : ''} ${hasMateriales ? 'modal-tab-materials' : ''}" data-tab="docs" ${hasMateriales ? 'title="Contiene materiales informativos de seguridad AEMPS"' : ''}>Documentos${hasMateriales ? ' <i class="fas fa-file-medical-alt"></i>' : ''}${ftRecentDot}</button>
                     ${hasAempsAlerts ? `<button class="modal-tab alert-pulse ${isAlertsActive ? 'active' : ''}" data-tab="alerts"><i class="fas fa-exclamation-triangle"></i> Alertas AEMPS</button>` : ''}
+                    ${hasPgx ? `<button class="modal-tab modal-tab-pgx" data-tab="pgx" title="Biomarcador farmacogenómico (AEMPS)"><i class="fas fa-dna"></i> PGx</button>` : ''}
                 </div>
 
                 <div id="tab-info" class="tab-content ${isInfoActive ? 'active' : ''}">
@@ -4870,6 +4885,14 @@ class MedCheckApp {
                         <p class="text-muted">Analizando ficha técnica...</p>
                     </div>
                 </div>
+
+                ${hasPgx ? `
+                <div id="tab-pgx" class="tab-content">
+                    <div id="pgx-content" class="loading-placeholder">
+                        <div class="loading-spinner"></div>
+                        <p class="text-muted">Cargando biomarcadores AEMPS...</p>
+                    </div>
+                </div>` : ''}
 `;
 
             // Load AEMPS alerts asynchronously if present
@@ -4895,6 +4918,10 @@ class MedCheckApp {
                     // Load materiales when switching to docs tab (lazy)
                     if (tab.dataset.tab === 'docs' && !document.getElementById('docs-materiales')?.dataset.loaded) {
                         this.loadMateriales(med.nregistro);
+                    }
+                    // Load farmacogenómica when switching to PGx tab (lazy)
+                    if (tab.dataset.tab === 'pgx' && !document.getElementById('pgx-content')?.dataset.loaded) {
+                        this.loadPharmacogenomics(med.nregistro);
                     }
                 });
             });
@@ -5919,6 +5946,60 @@ ${materialesPlaceholder}
         });
     }
 
+    /**
+     * Carga lazy de la pestaña Farmacogenómica del modal.
+     * Fuente: Nomenclátor AEMPS vía Worker (KV). Refrescado diariamente por GitHub Action.
+     * Si falla la consulta, mensaje discreto — no rompe el modal.
+     */
+    async loadPharmacogenomics(nregistro) {
+        const container = document.getElementById('pgx-content');
+        if (!container) return;
+        try {
+            const data = await this.api.getPgxByNregistro(nregistro);
+            if (!data || data.found === false) {
+                container.innerHTML = `<p class="text-muted">Sin biomarcadores farmacogenómicos registrados en el Nomenclátor AEMPS para este medicamento.</p>`;
+                container.dataset.loaded = 'true';
+                return;
+            }
+            const biom = Array.isArray(data.biom) ? data.biom : [];
+            const meta = data._meta || {};
+            const cards = biom.map(b => {
+                const partes = [];
+                if (b.clase)        partes.push(`<span class="pgx-tag">${this._escapeHtml(b.clase)}</span>`);
+                if (b.cartera_sns)  partes.push(`<span class="pgx-tag pgx-tag-sns" title="Inclusión en cartera SNS para esta asociación fármaco-biomarcador">Cartera SNS: ${this._escapeHtml(b.cartera_sns)}</span>`);
+                return `
+                    <div class="pgx-card">
+                        <div class="pgx-card-header">
+                            <span class="pgx-biomarker"><i class="fas fa-dna"></i> ${this._escapeHtml(b.biomarcador || '—')}</span>
+                            ${partes.join(' ')}
+                        </div>
+                        ${b.genotipo     ? `<div class="pgx-row"><span class="pgx-label">Genotipo/Fenotipo</span><span class="pgx-value">${this._escapeHtml(b.genotipo)}</span></div>` : ''}
+                        ${b.secciones_ft ? `<div class="pgx-row"><span class="pgx-label">Sección FT</span><span class="pgx-value">${this._escapeHtml(b.secciones_ft)}</span></div>` : ''}
+                        ${b.descripcion  ? `<div class="pgx-description">${this._escapeHtml(b.descripcion)}</div>` : ''}
+                        ${b.notas        ? `<div class="pgx-notes"><strong>Notas:</strong> ${this._escapeHtml(b.notas)}</div>` : ''}
+                    </div>`;
+            }).join('');
+
+            const fecha = meta.list_prescription_date ? `Nomenclátor de ${meta.list_prescription_date}` : '';
+            container.innerHTML = `
+                <div class="pgx-tab-header">
+                    <p class="text-muted" style="margin: 0;">
+                        Información regulatoria de la AEMPS sobre biomarcadores asociados a este medicamento.
+                        No constituye recomendación clínica autónoma — decisión individualizada por el prescriptor.
+                    </p>
+                </div>
+                <div class="pgx-cards">${cards}</div>
+                <p class="pgx-attribution text-muted">
+                    Fuente: Agencia Española de Medicamentos y Productos Sanitarios (AEMPS) ·
+                    <a href="https://www.aemps.gob.es/medicamentos-de-uso-humano/base-de-datos-de-biomarcadores-farmacogenomicos/" target="_blank" rel="noopener">base de datos de biomarcadores</a>
+                    ${fecha ? ` · ${fecha}` : ''}
+                </p>`;
+            container.classList.remove('loading-placeholder');
+            container.dataset.loaded = 'true';
+        } catch (err) {
+            container.innerHTML = `<p class="text-muted">No se ha podido cargar la información farmacogenómica. Reintenta en unos minutos.</p>`;
+        }
+    }
     /**
      * Detecta información sobre intervalo QT en secciones 4.4 y 4.5 de la FT.
      * Si el fármaco está en AZCERT/CredibleMeds, el tab aparece siempre.
