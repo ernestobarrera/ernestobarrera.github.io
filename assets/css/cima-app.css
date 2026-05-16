@@ -1113,6 +1113,123 @@ body {
     margin-top: 0.25rem;
 }
 
+/* Enlace CPIC al pie de cada tarjeta PGx */
+.pgx-cpic {
+    margin-top: 0.75rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed rgba(217, 70, 239, 0.25);
+}
+.pgx-cpic-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #e879f9;
+    font-size: 0.8rem;
+    text-decoration: none;
+    padding: 0.25rem 0.6rem;
+    background: rgba(217, 70, 239, 0.08);
+    border: 1px solid rgba(217, 70, 239, 0.25);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+.pgx-cpic-link:hover {
+    background: rgba(217, 70, 239, 0.15);
+    color: #f5d0fe;
+}
+.pgx-cpic-link i.fa-external-link-alt {
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+.pgx-cpic-cited {
+    margin-left: 0.5rem;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: rgba(34, 197, 94, 0.18);
+    color: #4ade80;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+/* Bloque "Consultar con IA" */
+.pgx-ai-block {
+    margin-top: var(--space-md);
+}
+.pgx-ai-details {
+    background: rgba(99, 102, 241, 0.06);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm) var(--space-md);
+}
+.pgx-ai-details > summary {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #a5b4fc;
+    list-style: none;
+}
+.pgx-ai-details > summary::-webkit-details-marker { display: none; }
+.pgx-ai-details > summary > i.fa-robot { color: #818cf8; }
+.pgx-ai-details > summary > .pgx-ai-chev {
+    margin-left: auto;
+    font-size: 0.7rem;
+    transition: transform 0.2s ease;
+}
+.pgx-ai-details[open] > summary > .pgx-ai-chev { transform: rotate(180deg); }
+
+.pgx-ai-menu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+    padding-top: var(--space-sm);
+    border-top: 1px dashed rgba(99, 102, 241, 0.25);
+}
+.pgx-ai-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(99, 102, 241, 0.1);
+    color: #c7d2fe;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: var(--radius-sm);
+    padding: 0.4rem 0.8rem;
+    font-size: 0.83rem;
+    text-decoration: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all var(--transition-fast);
+}
+.pgx-ai-option:hover {
+    background: rgba(99, 102, 241, 0.2);
+    color: #e0e7ff;
+}
+.pgx-ai-option:disabled {
+    opacity: 0.7;
+    cursor: default;
+}
+.pgx-ai-warning {
+    margin: 0.75rem 0 0 0;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    font-style: italic;
+}
+
+/* Footer del tab PGx con explicación de CPIC */
+.pgx-tab-footer {
+    margin-top: var(--space-md);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+.pgx-tab-footer strong { color: var(--text-secondary); }
+.pgx-tab-footer em { color: #4ade80; font-style: normal; }
+
 /* Aviso cuando CIMA no expone el medicamento (204) */
 .modal-no-cima-notice {
     display: flex;

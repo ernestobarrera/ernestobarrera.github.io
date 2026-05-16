@@ -10,6 +10,16 @@
  */
 
 class MedCheckApp {
+    // Genes cubiertos por guidelines CPIC (Clinical Pharmacogenetics Implementation Consortium).
+    // Para estos biomarcadores se ofrece enlace canónico a la guideline correspondiente.
+    // Para el resto (típicamente oncológicos somáticos: EGFR, KRAS, BRAF, etc.) CPIC no aplica.
+    static PGX_CPIC_GENES = new Set([
+        'ABCG2', 'CACNA1S', 'CFTR', 'CYP2B6', 'CYP2C9', 'CYP2C19', 'CYP2D6',
+        'CYP3A4', 'CYP3A5', 'CYP4F2', 'DPYD', 'G6PD', 'HLA-A', 'HLA-B',
+        'IFNL3', 'NUDT15', 'RYR1', 'SLCO1B1', 'TPMT', 'UGT1A1', 'VKORC1',
+    ]);
+    static PGX_CPIC_BASE = 'https://www.clinpgx.org/cpic/guidelines?gene=';
+
     // Glosario breve de biomarcadores farmacogenómicos para tooltips
     // Solo incluye los más frecuentes/relevantes en AP — los demás muestran texto genérico.
     static PGX_BIOMARKER_TOOLTIPS = {
@@ -5262,19 +5272,10 @@ class MedCheckApp {
         const fecha = pgx?._meta?.list_prescription_date || null;
 
         let pgxHtml = '';
+        let aiBlock = '';
         if (pgx && pgx.found && Array.isArray(pgx.biom)) {
-            pgxHtml = pgx.biom.map(b => `
-                <div class="pgx-card">
-                    <div class="pgx-card-header">
-                        <span class="pgx-biomarker"><i class="fas fa-dna"></i> ${this._escapeHtml(b.biomarcador || '—')}</span>
-                        ${b.clase ? `<span class="pgx-tag">${this._escapeHtml(b.clase)}</span>` : ''}
-                        ${b.cartera_sns ? `<span class="pgx-tag pgx-tag-sns">Cartera SNS: ${this._escapeHtml(b.cartera_sns)}</span>` : ''}
-                    </div>
-                    ${b.genotipo     ? `<div class="pgx-row"><span class="pgx-label">Genotipo/Fenotipo</span><span class="pgx-value">${this._escapeHtml(b.genotipo)}</span></div>` : ''}
-                    ${b.secciones_ft ? `<div class="pgx-row"><span class="pgx-label">Sección FT</span><span class="pgx-value">${this._escapeHtml(b.secciones_ft)}</span></div>` : ''}
-                    ${b.descripcion  ? `<div class="pgx-description">${this._escapeHtml(b.descripcion)}</div>` : ''}
-                    ${b.notas        ? `<div class="pgx-notes"><strong>Notas:</strong> ${this._escapeHtml(b.notas)}</div>` : ''}
-                </div>`).join('');
+            pgxHtml = pgx.biom.map(b => this._renderPgxCard(b)).join('');
+            aiBlock = this._renderPgxAiBlock(pgx.n || `nregistro ${nregistro}`, pgx.atc, pgx.biom);
         }
 
         this.modalBody.innerHTML = `
@@ -5299,11 +5300,13 @@ class MedCheckApp {
                 <h3 style="color: #d946ef; margin-bottom: 0.5rem;"><i class="fas fa-dna"></i> Biomarcador farmacogenómico (AEMPS)</h3>
             </div>
             <div class="pgx-cards">${pgxHtml}</div>
+            ${aiBlock}
             <p class="pgx-attribution text-muted">
                 Fuente: AEMPS · <a href="https://www.aemps.gob.es/medicamentos-de-uso-humano/base-de-datos-de-biomarcadores-farmacogenomicos/" target="_blank" rel="noopener">base de datos de biomarcadores</a>
                 ${fecha ? ` · Datos al ${fecha}` : ''}
             </p>` : `<p class="text-muted" style="padding: 1rem;">Sin datos farmacogenómicos adicionales para este registro.</p>`}
         `;
+        this._wirePgxAiCopy(this.modalBody);
     }
 
     _escapeHtml(value) {
@@ -6338,24 +6341,11 @@ ${materialesPlaceholder}
             }
             const biom = Array.isArray(data.biom) ? data.biom : [];
             const meta = data._meta || {};
-            const cards = biom.map(b => {
-                const partes = [];
-                if (b.clase)        partes.push(`<span class="pgx-tag">${this._escapeHtml(b.clase)}</span>`);
-                if (b.cartera_sns)  partes.push(`<span class="pgx-tag pgx-tag-sns" title="Inclusión en cartera SNS para esta asociación fármaco-biomarcador">Cartera SNS: ${this._escapeHtml(b.cartera_sns)}</span>`);
-                return `
-                    <div class="pgx-card">
-                        <div class="pgx-card-header">
-                            <span class="pgx-biomarker"><i class="fas fa-dna"></i> ${this._escapeHtml(b.biomarcador || '—')}</span>
-                            ${partes.join(' ')}
-                        </div>
-                        ${b.genotipo     ? `<div class="pgx-row"><span class="pgx-label">Genotipo/Fenotipo</span><span class="pgx-value">${this._escapeHtml(b.genotipo)}</span></div>` : ''}
-                        ${b.secciones_ft ? `<div class="pgx-row"><span class="pgx-label">Sección FT</span><span class="pgx-value">${this._escapeHtml(b.secciones_ft)}</span></div>` : ''}
-                        ${b.descripcion  ? `<div class="pgx-description">${this._escapeHtml(b.descripcion)}</div>` : ''}
-                        ${b.notas        ? `<div class="pgx-notes"><strong>Notas:</strong> ${this._escapeHtml(b.notas)}</div>` : ''}
-                    </div>`;
-            }).join('');
+            const cards = biom.map(b => this._renderPgxCard(b)).join('');
 
-            const fecha = meta.list_prescription_date ? `Nomenclátor de ${meta.list_prescription_date}` : '';
+            const aiBlock = this._renderPgxAiBlock(data.n || this.currentMed?.nombre || `nregistro ${nregistro}`, data.atc, biom);
+
+            const fecha = meta.list_prescription_date ? `Datos al ${meta.list_prescription_date}` : '';
             container.innerHTML = `
                 <div class="pgx-tab-header">
                     <p class="text-muted" style="margin: 0;">
@@ -6364,16 +6354,144 @@ ${materialesPlaceholder}
                     </p>
                 </div>
                 <div class="pgx-cards">${cards}</div>
-                <p class="pgx-attribution text-muted">
-                    Fuente: Agencia Española de Medicamentos y Productos Sanitarios (AEMPS) ·
-                    <a href="https://www.aemps.gob.es/medicamentos-de-uso-humano/base-de-datos-de-biomarcadores-farmacogenomicos/" target="_blank" rel="noopener">base de datos de biomarcadores</a>
-                    ${fecha ? ` · ${fecha}` : ''}
-                </p>`;
+                ${aiBlock}
+                <footer class="pgx-tab-footer text-muted">
+                    <p style="margin: 0 0 0.5rem 0;">
+                        <strong>CPIC</strong> = Clinical Pharmacogenetics Implementation Consortium. Guías de implementación
+                        clínica basadas en evidencia (típicamente nivel 1A de PharmGKB), en inglés. La etiqueta
+                        <em>Citado por AEMPS</em> indica que la propia ficha técnica menciona CPIC.
+                    </p>
+                    <p class="pgx-attribution" style="margin: 0;">
+                        Fuente: AEMPS · <a href="https://www.aemps.gob.es/medicamentos-de-uso-humano/base-de-datos-de-biomarcadores-farmacogenomicos/" target="_blank" rel="noopener">base de datos de biomarcadores</a>
+                        ${fecha ? ` · ${fecha}` : ''}
+                    </p>
+                </footer>`;
             container.classList.remove('loading-placeholder');
             container.dataset.loaded = 'true';
+            this._wirePgxAiCopy(container);
         } catch (err) {
             container.innerHTML = `<p class="text-muted">No se ha podido cargar la información farmacogenómica. Reintenta en unos minutos.</p>`;
         }
+    }
+
+    /**
+     * Renderiza una tarjeta de biomarcador con enlace CPIC condicional al pie.
+     * El enlace solo aparece si el biomarcador está cubierto por una guideline CPIC.
+     * Si la propia descripción AEMPS menciona "CPIC", el enlace lleva un sello "Citado por AEMPS".
+     */
+    _renderPgxCard(b) {
+        const partes = [];
+        if (b.clase)        partes.push(`<span class="pgx-tag">${this._escapeHtml(b.clase)}</span>`);
+        if (b.cartera_sns)  partes.push(`<span class="pgx-tag pgx-tag-sns" title="Inclusión en cartera SNS para esta asociación fármaco-biomarcador">Cartera SNS: ${this._escapeHtml(b.cartera_sns)}</span>`);
+        const bm = b.biomarcador || '';
+        const tieneCpic = MedCheckApp.PGX_CPIC_GENES.has(bm);
+        const textoCompleto = `${b.descripcion || ''} ${b.notas || ''}`;
+        const citadoAemps = /\bCPIC\b/i.test(textoCompleto);
+        const cpicLink = tieneCpic ? `
+            <div class="pgx-cpic">
+                <a class="pgx-cpic-link" href="${MedCheckApp.PGX_CPIC_BASE}${encodeURIComponent(bm)}" target="_blank" rel="noopener" title="Guideline de implementación clínica para ${this._escapeHtml(bm)} (en inglés)">
+                    <i class="fas fa-external-link-alt"></i>
+                    Guía CPIC sobre ${this._escapeHtml(bm)}
+                    ${citadoAemps ? `<span class="pgx-cpic-cited" title="La descripción AEMPS menciona CPIC explícitamente">Citado por AEMPS</span>` : ''}
+                </a>
+            </div>` : '';
+        return `
+            <div class="pgx-card">
+                <div class="pgx-card-header">
+                    <span class="pgx-biomarker"><i class="fas fa-dna"></i> ${this._escapeHtml(bm || '—')}</span>
+                    ${partes.join(' ')}
+                </div>
+                ${b.genotipo     ? `<div class="pgx-row"><span class="pgx-label">Genotipo/Fenotipo</span><span class="pgx-value">${this._escapeHtml(b.genotipo)}</span></div>` : ''}
+                ${b.secciones_ft ? `<div class="pgx-row"><span class="pgx-label">Sección FT</span><span class="pgx-value">${this._escapeHtml(b.secciones_ft)}</span></div>` : ''}
+                ${b.descripcion  ? `<div class="pgx-description">${this._escapeHtml(b.descripcion)}</div>` : ''}
+                ${b.notas        ? `<div class="pgx-notes"><strong>Notas:</strong> ${this._escapeHtml(b.notas)}</div>` : ''}
+                ${cpicLink}
+            </div>`;
+    }
+
+    /**
+     * Bloque "Consultar con IA" — desplegable con ChatGPT, Perplexity y copiar prompt.
+     * El prompt incluye TODOS los biomarcadores del medicamento (no uno por biomarcador,
+     * para no saturar la UI cuando hay varias asociaciones). El usuario es responsable
+     * de verificar la respuesta de la IA contra fuentes primarias.
+     */
+    _renderPgxAiBlock(medName, medAtc, biomList) {
+        if (!biomList || biomList.length === 0) return '';
+        const prompt = this._buildPgxAiPrompt(medName, medAtc, biomList);
+        const encoded = encodeURIComponent(prompt);
+        const chatgptUrl = `https://chat.openai.com/?q=${encoded}`;
+        const perplexityUrl = `https://www.perplexity.ai/search?q=${encoded}`;
+        const promptB64 = btoa(unescape(encodeURIComponent(prompt))); // safe data attribute storage
+        return `
+            <div class="pgx-ai-block">
+                <details class="pgx-ai-details">
+                    <summary>
+                        <i class="fas fa-robot"></i>
+                        Consultar con IA sobre estos biomarcadores
+                        <i class="fas fa-chevron-down pgx-ai-chev"></i>
+                    </summary>
+                    <div class="pgx-ai-menu">
+                        <a class="pgx-ai-option" href="${chatgptUrl}" target="_blank" rel="noopener">
+                            <i class="fas fa-comments"></i> Abrir en ChatGPT
+                        </a>
+                        <a class="pgx-ai-option" href="${perplexityUrl}" target="_blank" rel="noopener">
+                            <i class="fas fa-search"></i> Abrir en Perplexity
+                        </a>
+                        <button class="pgx-ai-option pgx-ai-copy" type="button" data-prompt-b64="${promptB64}">
+                            <i class="fas fa-clipboard"></i> Copiar prompt
+                        </button>
+                    </div>
+                    <p class="pgx-ai-warning text-muted">
+                        Las respuestas de IA pueden contener errores. Verifique siempre con fuentes primarias (ficha técnica AEMPS, guidelines CPIC).
+                    </p>
+                </details>
+            </div>`;
+    }
+
+    _buildPgxAiPrompt(medName, medAtc, biomList) {
+        const TRUNC = 1200;
+        const bloques = biomList.map((b, i) => {
+            const desc = (b.descripcion || '').length > TRUNC ? (b.descripcion || '').slice(0, TRUNC) + '…' : (b.descripcion || '');
+            return [
+                `Biomarcador ${i + 1}: ${b.biomarcador || '—'}${b.clase ? ` (clase ${b.clase})` : ''}`,
+                b.genotipo     ? `  Genotipo/fenotipo: ${b.genotipo}` : null,
+                b.secciones_ft ? `  Secciones FT afectadas: ${b.secciones_ft}` : null,
+                desc           ? `  Texto regulatorio AEMPS: "${desc}"` : null,
+                b.notas        ? `  Notas AEMPS: ${b.notas}` : null,
+            ].filter(Boolean).join('\n');
+        }).join('\n\n');
+        return [
+            `Para el medicamento "${medName}"${medAtc ? ` (ATC ${medAtc})` : ''}, la ficha técnica autorizada por la AEMPS menciona los siguientes biomarcadores farmacogenómicos:`,
+            '',
+            bloques,
+            '',
+            'Como médico de familia / atención primaria, necesito una respuesta clínicamente accionable:',
+            '',
+            '1. Recomendaciones según CPIC (Clinical Pharmacogenetics Implementation Consortium), nivel de evidencia 1A si existe.',
+            '2. Acción concreta si el paciente presenta el genotipo/fenotipo descrito: ajustar dosis, suspender, alternativa terapéutica.',
+            '3. Cita la guideline CPIC concreta y su URL (clinpgx.org / cpicpgx.org).',
+            '4. Si se trata de un biomarcador oncológico somático y no aplica a AP, indícalo y termina.',
+            '',
+            'Responde en español, breve y clínico (estructura: situación → acción → alternativa). No inventes citas: si no estás seguro, dilo.',
+        ].join('\n');
+    }
+
+    _wirePgxAiCopy(root) {
+        if (!root) return;
+        root.querySelectorAll('.pgx-ai-copy').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                try {
+                    const prompt = decodeURIComponent(escape(atob(btn.dataset.promptB64 || '')));
+                    await navigator.clipboard.writeText(prompt);
+                    const original = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Copiado';
+                    btn.disabled = true;
+                    setTimeout(() => { btn.innerHTML = original; btn.disabled = false; }, 1500);
+                } catch (e) {
+                    btn.innerHTML = '<i class="fas fa-times"></i> Error';
+                }
+            });
+        });
     }
     /**
      * Detecta información sobre intervalo QT en secciones 4.4 y 4.5 de la FT.
