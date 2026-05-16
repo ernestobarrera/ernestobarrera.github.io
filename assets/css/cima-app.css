@@ -1058,6 +1058,60 @@ body {
     font-size: 0.75rem;
     text-align: right;
 }
+.pgx-attribution a,
+.pgx-view-footer a {
+    color: #e879f9;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.pgx-attribution a:hover,
+.pgx-view-footer a:hover {
+    color: #f5d0fe;
+}
+
+/* Glosario colapsable */
+.pgx-glossary {
+    margin-top: var(--space-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm) var(--space-md);
+}
+.pgx-glossary > summary {
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    list-style: none;
+}
+.pgx-glossary > summary::-webkit-details-marker { display: none; }
+.pgx-glossary > summary:hover { color: var(--text-primary); }
+.pgx-glossary[open] > summary > i { transform: rotate(180deg); }
+.pgx-glossary > summary > i { transition: transform 0.2s ease; font-size: 0.7rem; }
+.pgx-glossary-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: var(--space-sm);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+.pgx-glossary-body strong {
+    color: #d946ef;
+    font-weight: 600;
+}
+.pgx-glossary-note {
+    font-style: italic;
+    color: var(--text-muted);
+    border-top: 1px dashed var(--border-color);
+    padding-top: 0.5rem;
+    margin-top: 0.25rem;
+}
 
 /* ============================================
    Vista de exploración Farmacogenómica

@@ -10,6 +10,71 @@
  */
 
 class MedCheckApp {
+    // Glosario breve de biomarcadores farmacogenómicos para tooltips
+    // Solo incluye los más frecuentes/relevantes en AP — los demás muestran texto genérico.
+    static PGX_BIOMARKER_TOOLTIPS = {
+        'CYP2D6':   'Enzima del citocromo P450. Metaboliza codeína, tramadol, ISRS, antipsicóticos, betabloqueantes. Variantes → metabolizador lento, intermedio, normal, rápido o ultrarrápido.',
+        'CYP2C19':  'Enzima del citocromo P450. Metaboliza clopidogrel, IBP, ISRS. Metabolizadores lentos → menor activación de clopidogrel (riesgo trombótico).',
+        'CYP2C9':   'Enzima del citocromo P450. Relevante para warfarina, AINEs, fenitoína. Variantes → ajuste de dosis de anticoagulantes.',
+        'CYP3A4':   'Enzima del citocromo P450, la más promiscua. Metaboliza >50% de los fármacos. Variantes y muchas interacciones medicamentosas.',
+        'CYP2B6':   'Enzima del citocromo P450. Relevante para efavirenz, bupropión, metadona.',
+        'HLA-B':    'Antígeno leucocitario clase I. Alelos como HLA-B*58:01 (alopurinol) y HLA-B*57:01 (abacavir) asocian a reacciones cutáneas graves (DRESS, SSJ/NET).',
+        'HLA-A':    'Antígeno leucocitario clase I. HLA-A*31:01 asociado a hipersensibilidad a carbamazepina.',
+        'DPYD':     'Dihidropirimidina deshidrogenasa. Déficit → toxicidad grave (a veces mortal) con 5-fluorouracilo y capecitabina.',
+        'UGT1A1':   'Enzima glucuronidadora. Variantes (síndrome de Gilbert) → toxicidad con irinotecán.',
+        'TPMT':     'Tiopurina S-metiltransferasa. Déficit → mielotoxicidad grave con azatioprina y mercaptopurina.',
+        'NUDT15':   'Hidrolasa. Déficit → toxicidad con tiopurinas, especialmente en población asiática.',
+        'VKORC1':   'Diana de la warfarina. Variantes condicionan dosis de mantenimiento.',
+        'SLCO1B1':  'Transportador hepático. Variantes → mayor riesgo de miopatía con estatinas, especialmente simvastatina.',
+        'G6PD':     'Glucosa-6-fosfato deshidrogenasa. Déficit → riesgo de hemólisis con primaquina, rasburicasa, sulfas.',
+        'BRCA1':    'Gen supresor tumoral (germinal o somático). Mutaciones → cáncer hereditario de mama/ovario y respuesta a inhibidores PARP.',
+        'BRCA2':    'Gen supresor tumoral. Análogo a BRCA1.',
+        'EGFR':     'Receptor del factor de crecimiento epidérmico (somático). Mutaciones → respuesta a inhibidores de tirosina cinasa en cáncer de pulmón.',
+        'KRAS':     'Oncogén (somático). Mutaciones predicen no respuesta a anti-EGFR en cáncer colorrectal.',
+        'BRAF':     'Oncogén (somático). Mutación V600E → diana terapéutica en melanoma y cáncer colorrectal.',
+        'ALK':      'Reordenamientos cromosómicos (somáticos) → diana en cáncer de pulmón.',
+        'ROS1':     'Reordenamientos cromosómicos (somáticos) → diana en cáncer de pulmón.',
+        'ERBB2(HER2)': 'Receptor HER2 (somático). Sobreexpresión → trastuzumab y otras terapias dirigidas en cáncer de mama y gástrico.',
+        'PIK3CA':   'Oncogén (somático). Mutaciones → diana en cáncer de mama HR+/HER2-.',
+        'FLT3':     'Oncogén hematológico (somático). Mutaciones → diana en LMA.',
+        'PML':      'Reordenamiento PML-RARA → leucemia promielocítica aguda y respuesta a ATRA.',
+        'RARA':     'Análogo a PML — implicado en LPA.',
+        'BCR(CromosomaFiladelfia)': 'Translocación cromosómica → diana de imatinib en LMC y LLA Ph+.',
+        'ABL1 (Cromosoma Filadelfia)': 'Análogo a BCR — diana en LMC.',
+        'ABCG2':    'Transportador de eflujo. Variantes → toxicidad de allopurinol y rosuvastatina.',
+        'ESR1 (Receptorhormonal)':  'Receptor de estrógenos (tumoral). Predice respuesta a terapia hormonal en cáncer de mama.',
+        'ESR2 (Receptor hormonal)': 'Receptor de estrógenos beta — pronóstico/respuesta hormonal.',
+        'PGR (Receptor hormonal)':  'Receptor de progesterona (tumoral) — predice respuesta hormonal.',
+        'CD274(PD-L1)': 'Ligando de PD-1 (tumoral). Expresión → respuesta a inmunoterapia anti-PD-1/PD-L1.',
+        'CD19':     'Marcador de células B (tumoral). Diana de CAR-T y blinatumomab.',
+        'CD20':     'Marcador de células B. Diana de rituximab.',
+        'CFTR':     'Regulador transmembrana de la fibrosis quística. Mutaciones específicas → respuesta a ivacaftor/lumacaftor.',
+        'NTRK1':    'Reordenamientos (somáticos) → diana de larotrectinib/entrectinib.',
+        'NTRK2':    'Análogo a NTRK1.',
+        'NTRK3':    'Análogo a NTRK1.',
+        'KIT':      'Receptor tirosina cinasa (somático). Mutaciones → diana en GIST y mastocitosis.',
+        'PDGFRA':   'Receptor tirosina cinasa (somático). Análogo a KIT en GIST.',
+        'PDGFRB':   'Reordenamientos hematológicos.',
+        'FIP1L1':   'Fusión FIP1L1-PDGFRA → leucemia eosinofílica y respuesta a imatinib.',
+        'RET':      'Receptor tirosina cinasa (somático). Mutaciones → diana en cáncer de tiroides y pulmón.',
+        'MET':      'Receptor tirosina cinasa (somático). Amplificación/mutaciones → diana en cáncer de pulmón.',
+        'FGFR2':    'Receptor (somático). Fusiones → diana en colangiocarcinoma.',
+        'FGFR3':    'Receptor (somático). Mutaciones → diana en cáncer urotelial.',
+        'NRAS':     'Oncogén (somático). Mutaciones → resistencia a anti-EGFR en CCR.',
+        'IDH1':     'Mutaciones (somáticas) → diana en LMA y glioma.',
+        'dMMR/MSI-H': 'Inestabilidad de microsatélites/déficit de reparación → respuesta a inmunoterapia.',
+        'MT-RNR1':  'ARN ribosomal mitocondrial. Variantes → ototoxicidad con aminoglucósidos.',
+        'MT-ND1 MT-RNR1': 'Mitocondrial — ototoxicidad por aminoglucósidos.',
+        'CD33':     'Marcador mieloide. Diana de gemtuzumab.',
+        'FOLH1(PSMA)': 'Antígeno prostático específico de membrana. Diana de radioligandos.',
+        'SSTR1':    'Receptor de somatostatina. Diana de análogos (octreótida) y radioligandos en TNE.',
+        'SSTR2':    'Análogo a SSTR1 — diana principal de radioligandos en TNE (Lutathera).',
+        'SSTR3':    'Análogo a SSTR1.',
+        'SSTR4':    'Análogo a SSTR1.',
+        'SSTR5':    'Análogo a SSTR1.',
+        'anomalía citogenética de deleción 5q aislada': 'Síndrome 5q- → respuesta a lenalidomida.',
+    };
+
     constructor() {
         this.api = window.cimaAPI;
 
@@ -4034,16 +4099,22 @@ class MedCheckApp {
     _renderPgxView() {
         const meta = this._pgxAllMeta || {};
         const state = this._pgxViewState;
+        const biomTooltip = (name) => MedCheckApp.PGX_BIOMARKER_TOOLTIPS[name] || `Biomarcador farmacogenómico ${name}`;
         const biomChips = [...this._pgxBiomCounts.entries()]
             .sort((a, b) => b[1] - a[1])
             .map(([name, count]) => `
-                <button class="pgx-chip ${state.biomarcador === name ? 'active' : ''}" data-pgx-biom="${this._escapeHtml(name)}">
+                <button class="pgx-chip ${state.biomarcador === name ? 'active' : ''}" data-pgx-biom="${this._escapeHtml(name)}" title="${this._escapeHtml(biomTooltip(name))}">
                     ${this._escapeHtml(name)} <span class="pgx-chip-count">${count}</span>
                 </button>`).join('');
+        const claseTooltip = (name) => name === 'Germinal'
+            ? 'Variante hereditaria: información del paciente, presente en todas sus células. Relevante para metabolismo de fármacos y reacciones de hipersensibilidad.'
+            : name === 'Somático' || name === 'Somática'
+                ? 'Variante adquirida: información del tumor (no del paciente). Relevante para terapias dirigidas en oncología.'
+                : `Clase de biomarcador: ${name}`;
         const claseChips = [...this._pgxClaseCounts.entries()]
             .sort((a, b) => b[1] - a[1])
             .map(([name, count]) => `
-                <button class="pgx-chip ${state.clase === name ? 'active' : ''}" data-pgx-clase="${this._escapeHtml(name)}">
+                <button class="pgx-chip ${state.clase === name ? 'active' : ''}" data-pgx-clase="${this._escapeHtml(name)}" title="${this._escapeHtml(claseTooltip(name))}">
                     ${this._escapeHtml(name)} <span class="pgx-chip-count">${count}</span>
                 </button>`).join('');
         const activeFilters = state.biomarcador || state.clase;
@@ -4052,7 +4123,7 @@ class MedCheckApp {
                 <header class="pgx-view-header">
                     <h2><i class="fas fa-dna"></i> Farmacogenómica</h2>
                     <p class="text-muted pgx-view-intro">
-                        Medicamentos cuya ficha técnica menciona un biomarcador farmacogenómico relevante según el Nomenclátor de Prescripción AEMPS.
+                        Medicamentos cuya ficha técnica menciona un biomarcador farmacogenómico relevante según AEMPS.
                         Útil para identificar fármacos donde el genotipo del paciente puede modificar respuesta o seguridad — incluye cotidianos como
                         codeína, clopidogrel, ondansetrón o alopurinol.
                     </p>
@@ -4060,8 +4131,20 @@ class MedCheckApp {
                         <div class="pgx-stat"><strong>${meta.medicamentos_con_biomarcador || this._pgxAll.length}</strong> medicamentos</div>
                         <div class="pgx-stat"><strong>${this._pgxBiomCounts.size}</strong> biomarcadores distintos</div>
                         <div class="pgx-stat"><strong>${meta.presentaciones_con_biomarcador || 0}</strong> presentaciones</div>
-                        <div class="pgx-stat pgx-stat-meta">Nomenclátor de ${meta.list_prescription_date || '—'}</div>
+                        <div class="pgx-stat pgx-stat-meta" title="Fecha de publicación del Nomenclátor de Prescripción AEMPS del que se extraen los datos">Datos AEMPS al ${meta.list_prescription_date || '—'}</div>
                     </div>
+                    <details class="pgx-glossary">
+                        <summary>¿Qué significan estos términos? <i class="fas fa-chevron-down"></i></summary>
+                        <div class="pgx-glossary-body">
+                            <div><strong>Germinal</strong> — variante heredada del paciente, presente en todas sus células. Relevante para metabolismo de fármacos (CYP2D6, CYP2C19...) y reacciones de hipersensibilidad (HLA-B*58:01 con alopurinol, HLA-B*57:01 con abacavir).</div>
+                            <div><strong>Somático</strong> — variante adquirida en el tumor (no en el paciente). Relevante para terapias dirigidas en oncología (EGFR, KRAS, BRAF, HER2...).</div>
+                            <div><strong>CYP2D6, CYP2C19, CYP2C9, CYP3A4</strong> — enzimas que metabolizan fármacos. El paciente puede ser metabolizador <em>lento</em> (acumula fármaco), <em>normal</em>, <em>rápido</em> o <em>ultrarrápido</em> (no eficacia o toxicidad). Codeína, clopidogrel, ISRS, anticoagulantes orales, etc.</div>
+                            <div><strong>HLA-B*58:01 / HLA-B*57:01</strong> — alelos asociados a reacciones cutáneas graves (DRESS, SSJ/NET) con alopurinol y abacavir respectivamente.</div>
+                            <div><strong>DPYD, UGT1A1, TPMT, NUDT15</strong> — enzimas oncológicas: déficit → toxicidad grave (5FU/capecitabina, irinotecán, tiopurinas).</div>
+                            <div><strong>SLCO1B1, VKORC1</strong> — relevantes para estatinas (miopatía) y warfarina (dosificación).</div>
+                            <div class="pgx-glossary-note">Los biomarcadores oncológicos (EGFR, ALK, BRCA, etc.) figuran porque sus medicamentos están autorizados para usarse condicionados al perfil tumoral. No son relevantes para la prescripción habitual en AP.</div>
+                        </div>
+                    </details>
                 </header>
 
                 <div class="pgx-controls">
