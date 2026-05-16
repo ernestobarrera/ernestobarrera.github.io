@@ -1060,6 +1060,229 @@ body {
 }
 
 /* ============================================
+   Vista de exploración Farmacogenómica
+   ============================================ */
+.pgx-view {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.pgx-view-header {
+    margin-bottom: var(--space-lg);
+}
+.pgx-view-header h2 {
+    color: #d946ef;
+    margin-bottom: var(--space-sm);
+}
+.pgx-view-header h2 i {
+    margin-right: var(--space-sm);
+}
+.pgx-view-intro {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    max-width: 800px;
+    margin-bottom: var(--space-md);
+}
+.pgx-view-stats {
+    display: flex;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+    margin-top: var(--space-md);
+}
+.pgx-stat {
+    background: rgba(217, 70, 239, 0.08);
+    border: 1px solid rgba(217, 70, 239, 0.25);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+}
+.pgx-stat strong {
+    color: #d946ef;
+    font-size: 1.05rem;
+    margin-right: 0.35rem;
+}
+.pgx-stat-meta {
+    background: transparent;
+    border-color: var(--border-color);
+    color: var(--text-muted);
+}
+.pgx-stat-meta strong { color: var(--text-muted); }
+
+.pgx-controls {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+.pgx-search-input {
+    width: 100%;
+    padding: 0.65rem var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+.pgx-search-input:focus {
+    outline: none;
+    border-color: #d946ef;
+    box-shadow: 0 0 0 3px rgba(217, 70, 239, 0.15);
+}
+.pgx-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+.pgx-filter-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+.pgx-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+.pgx-chip {
+    background: rgba(217, 70, 239, 0.05);
+    border: 1px solid rgba(217, 70, 239, 0.25);
+    color: var(--text-primary);
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+.pgx-chip:hover {
+    background: rgba(217, 70, 239, 0.12);
+}
+.pgx-chip.active {
+    background: #d946ef;
+    color: #fff;
+    border-color: #d946ef;
+}
+.pgx-chip-count {
+    margin-left: 0.35rem;
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+.pgx-group-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+.pgx-group-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+.pgx-group-btn:hover { background: var(--bg-primary); }
+.pgx-group-btn.active {
+    background: rgba(217, 70, 239, 0.12);
+    color: #d946ef;
+    border-color: rgba(217, 70, 239, 0.4);
+}
+
+.pgx-result-group {
+    margin-bottom: var(--space-lg);
+}
+.pgx-result-group-title {
+    color: #d946ef;
+    font-size: 1.1rem;
+    margin-bottom: var(--space-sm);
+    padding-bottom: 0.35rem;
+    border-bottom: 2px solid rgba(217, 70, 239, 0.25);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+.pgx-result-group-count {
+    background: rgba(217, 70, 239, 0.12);
+    color: #d946ef;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+.pgx-result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-sm);
+}
+.pgx-result-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+.pgx-result-card:hover {
+    border-color: #d946ef;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(217, 70, 239, 0.15);
+}
+.pgx-result-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+    font-size: 0.92rem;
+}
+.pgx-result-atc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+}
+.pgx-result-bioms {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding-top: 0.4rem;
+    border-top: 1px dashed var(--border-color);
+}
+.pgx-result-biom-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+}
+.pgx-result-biom {
+    background: rgba(217, 70, 239, 0.12);
+    color: #d946ef;
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+.pgx-result-geno {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+.pgx-result-clase {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.pgx-view-footer {
+    margin-top: var(--space-lg);
+    text-align: center;
+    font-size: 0.75rem;
+}
+
+/* ============================================
    Excipientes de Declaración Obligatoria
    ============================================ */
 .detail-section-header {

@@ -273,6 +273,7 @@ class MedCheckApp {
                 case 'interactions': this.renderInteractions(); break;
                 case 'adverse': this.renderAdverseReactions(); break;
                 case 'equivalences': this.renderEquivalences(); break;
+                case 'pharmacogenomics': await this.renderPharmacogenomics(); break;
                 case 'supply': await this.renderSupply(); break;
                 case 'alerts': await this.renderAlerts(); break;
                 case 'materials': await this.renderMaterials(); break;
@@ -3988,6 +3989,231 @@ class MedCheckApp {
             document.getElementById('safety-input').value = medName;
             this.performSafetyCheck();
         }, 100);
+    }
+
+    // ============================================
+    // PHARMACOGENOMICS VIEW
+    // ============================================
+    /**
+     * Vista de exploración de medicamentos con biomarcador farmacogenómico.
+     * Estado de filtros se mantiene en this._pgxViewState durante la sesión.
+     */
+    async renderPharmacogenomics() {
+        this.content.innerHTML = '<div class="loading-spinner"></div>';
+        if (!this._pgxViewState) {
+            this._pgxViewState = { query: '', biomarcador: null, clase: null, groupBy: 'biomarcador' };
+        }
+        const data = await this.api.getPgxAll();
+        if (!data || !Array.isArray(data.items) || data.items.length === 0) {
+            this.content.innerHTML = `
+                <div class="view-container">
+                    <div class="empty-state">
+                        <i class="fas fa-dna" style="font-size: 3rem; color: var(--text-muted); opacity: 0.4;"></i>
+                        <h3>Datos farmacogenómicos no disponibles</h3>
+                        <p class="text-muted">No se ha podido cargar el índice del Nomenclátor AEMPS. Reintenta en unos minutos.</p>
+                    </div>
+                </div>`;
+            return;
+        }
+        this._pgxAll = data.items;
+        this._pgxAllMeta = data.meta || {};
+        // Construir índices de filtros
+        const biomCounts = new Map();
+        const claseCounts = new Map();
+        for (const m of data.items) {
+            for (const b of m.biom || []) {
+                if (b.biomarcador) biomCounts.set(b.biomarcador, (biomCounts.get(b.biomarcador) || 0) + 1);
+                if (b.clase) claseCounts.set(b.clase, (claseCounts.get(b.clase) || 0) + 1);
+            }
+        }
+        this._pgxBiomCounts = biomCounts;
+        this._pgxClaseCounts = claseCounts;
+        this._renderPgxView();
+    }
+
+    _renderPgxView() {
+        const meta = this._pgxAllMeta || {};
+        const state = this._pgxViewState;
+        const biomChips = [...this._pgxBiomCounts.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, count]) => `
+                <button class="pgx-chip ${state.biomarcador === name ? 'active' : ''}" data-pgx-biom="${this._escapeHtml(name)}">
+                    ${this._escapeHtml(name)} <span class="pgx-chip-count">${count}</span>
+                </button>`).join('');
+        const claseChips = [...this._pgxClaseCounts.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, count]) => `
+                <button class="pgx-chip ${state.clase === name ? 'active' : ''}" data-pgx-clase="${this._escapeHtml(name)}">
+                    ${this._escapeHtml(name)} <span class="pgx-chip-count">${count}</span>
+                </button>`).join('');
+        const activeFilters = state.biomarcador || state.clase;
+        this.content.innerHTML = `
+            <div class="view-container pgx-view">
+                <header class="pgx-view-header">
+                    <h2><i class="fas fa-dna"></i> Farmacogenómica</h2>
+                    <p class="text-muted pgx-view-intro">
+                        Medicamentos cuya ficha técnica menciona un biomarcador farmacogenómico relevante según el Nomenclátor de Prescripción AEMPS.
+                        Útil para identificar fármacos donde el genotipo del paciente puede modificar respuesta o seguridad — incluye cotidianos como
+                        codeína, clopidogrel, ondansetrón o alopurinol.
+                    </p>
+                    <div class="pgx-view-stats">
+                        <div class="pgx-stat"><strong>${meta.medicamentos_con_biomarcador || this._pgxAll.length}</strong> medicamentos</div>
+                        <div class="pgx-stat"><strong>${this._pgxBiomCounts.size}</strong> biomarcadores distintos</div>
+                        <div class="pgx-stat"><strong>${meta.presentaciones_con_biomarcador || 0}</strong> presentaciones</div>
+                        <div class="pgx-stat pgx-stat-meta">Nomenclátor de ${meta.list_prescription_date || '—'}</div>
+                    </div>
+                </header>
+
+                <div class="pgx-controls">
+                    <input type="search" id="pgx-search" class="pgx-search-input" placeholder="Buscar por nombre de medicamento o biomarcador..." value="${this._escapeHtml(state.query)}">
+
+                    <div class="pgx-filter-group">
+                        <label class="pgx-filter-label">Biomarcador</label>
+                        <div class="pgx-chips">${biomChips}</div>
+                    </div>
+                    <div class="pgx-filter-group">
+                        <label class="pgx-filter-label">Clase</label>
+                        <div class="pgx-chips">${claseChips}</div>
+                    </div>
+
+                    ${activeFilters || state.query ? `
+                    <button class="btn btn-sm btn-secondary" id="pgx-clear-filters">
+                        <i class="fas fa-times"></i> Limpiar filtros
+                    </button>` : ''}
+
+                    <div class="pgx-group-toggle">
+                        Agrupar por:
+                        <button class="pgx-group-btn ${state.groupBy === 'biomarcador' ? 'active' : ''}" data-group="biomarcador">Biomarcador</button>
+                        <button class="pgx-group-btn ${state.groupBy === 'atc' ? 'active' : ''}" data-group="atc">Grupo ATC</button>
+                        <button class="pgx-group-btn ${state.groupBy === 'none' ? 'active' : ''}" data-group="none">Sin agrupar</button>
+                    </div>
+                </div>
+
+                <div id="pgx-results"></div>
+
+                <footer class="pgx-view-footer text-muted">
+                    Fuente: Agencia Española de Medicamentos y Productos Sanitarios (AEMPS) ·
+                    <a href="https://www.aemps.gob.es/medicamentos-de-uso-humano/base-de-datos-de-biomarcadores-farmacogenomicos/" target="_blank" rel="noopener">base de datos de biomarcadores</a>
+                </footer>
+            </div>`;
+        this._renderPgxResults();
+        this._wirePgxControls();
+    }
+
+    _filterPgxItems() {
+        const s = this._pgxViewState;
+        const q = (s.query || '').trim().toLowerCase();
+        return this._pgxAll.filter(m => {
+            if (s.biomarcador && !(m.biom || []).some(b => b.biomarcador === s.biomarcador)) return false;
+            if (s.clase && !(m.biom || []).some(b => b.clase === s.clase)) return false;
+            if (q) {
+                const hayName = (m.n || '').toLowerCase().includes(q);
+                const hayBiom = (m.biom || []).some(b => (b.biomarcador || '').toLowerCase().includes(q));
+                const hayGeno = (m.biom || []).some(b => (b.genotipo || '').toLowerCase().includes(q));
+                if (!hayName && !hayBiom && !hayGeno) return false;
+            }
+            return true;
+        });
+    }
+
+    _renderPgxResults() {
+        const container = document.getElementById('pgx-results');
+        if (!container) return;
+        const items = this._filterPgxItems();
+        if (items.length === 0) {
+            container.innerHTML = `<p class="text-muted" style="text-align:center; padding: 2rem;">Sin resultados para los filtros actuales.</p>`;
+            return;
+        }
+        const renderCard = (m) => {
+            const biomTags = (m.biom || []).map(b => {
+                const partes = [`<span class="pgx-result-biom">${this._escapeHtml(b.biomarcador || '—')}</span>`];
+                if (b.genotipo) partes.push(`<span class="pgx-result-geno">${this._escapeHtml(b.genotipo)}</span>`);
+                if (b.clase) partes.push(`<span class="pgx-result-clase">${this._escapeHtml(b.clase)}</span>`);
+                return `<div class="pgx-result-biom-row">${partes.join(' ')}</div>`;
+            }).join('');
+            return `
+                <div class="pgx-result-card" data-pgx-nreg="${this._escapeHtml(m.nreg)}" role="button" tabindex="0">
+                    <div class="pgx-result-main">
+                        <div class="pgx-result-name">${this._escapeHtml(m.n)}</div>
+                        ${m.atc ? `<div class="pgx-result-atc">ATC: ${this._escapeHtml(m.atc)}</div>` : ''}
+                    </div>
+                    <div class="pgx-result-bioms">${biomTags}</div>
+                </div>`;
+        };
+        const state = this._pgxViewState;
+        let html = '';
+        if (state.groupBy === 'none' || items.length < 8) {
+            html = `<div class="pgx-result-grid">${items.map(renderCard).join('')}</div>`;
+        } else {
+            // Agrupar
+            const groups = new Map();
+            for (const m of items) {
+                let keys;
+                if (state.groupBy === 'biomarcador') {
+                    keys = (m.biom || []).map(b => b.biomarcador || '—');
+                } else { // atc
+                    keys = [m.atc ? m.atc.substring(0, 1) : '—']; // primer nivel ATC
+                }
+                for (const k of new Set(keys)) {
+                    if (!groups.has(k)) groups.set(k, []);
+                    groups.get(k).push(m);
+                }
+            }
+            const sortedGroups = [...groups.entries()].sort((a, b) => b[1].length - a[1].length);
+            html = sortedGroups.map(([key, list]) => `
+                <div class="pgx-result-group">
+                    <h3 class="pgx-result-group-title">${this._escapeHtml(key)} <span class="pgx-result-group-count">${list.length}</span></h3>
+                    <div class="pgx-result-grid">${list.map(renderCard).join('')}</div>
+                </div>`).join('');
+        }
+        container.innerHTML = html;
+        // Click → abrir modal en pestaña PGx
+        container.querySelectorAll('.pgx-result-card').forEach(card => {
+            const open = () => this.openMedDetails(card.dataset.pgxNreg, 'pgx');
+            card.addEventListener('click', open);
+            card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+        });
+    }
+
+    _wirePgxControls() {
+        const input = document.getElementById('pgx-search');
+        if (input) {
+            let t = null;
+            input.addEventListener('input', e => {
+                clearTimeout(t);
+                t = setTimeout(() => {
+                    this._pgxViewState.query = e.target.value;
+                    this._renderPgxResults();
+                }, 200);
+            });
+        }
+        this.content.querySelectorAll('[data-pgx-biom]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const v = btn.dataset.pgxBiom;
+                this._pgxViewState.biomarcador = this._pgxViewState.biomarcador === v ? null : v;
+                this._renderPgxView();
+            });
+        });
+        this.content.querySelectorAll('[data-pgx-clase]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const v = btn.dataset.pgxClase;
+                this._pgxViewState.clase = this._pgxViewState.clase === v ? null : v;
+                this._renderPgxView();
+            });
+        });
+        this.content.querySelectorAll('[data-group]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this._pgxViewState.groupBy = btn.dataset.group;
+                this._renderPgxView();
+            });
+        });
+        const clearBtn = document.getElementById('pgx-clear-filters');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                this._pgxViewState = { query: '', biomarcador: null, clase: null, groupBy: this._pgxViewState.groupBy };
+                this._renderPgxView();
+            });
+        }
     }
 
     // ============================================

@@ -2792,6 +2792,33 @@ class CimaAPI {
             return null;
         }
     }
+    /**
+     * Lista compacta de todos los medicamentos con biomarcador (sin descripción larga).
+     * Para la vista de navegación Farmacogenómica. ~50 KB gzip.
+     * Cache en localStorage 24h con la fecha del Nomenclátor como sello.
+     * Devuelve { items: [{nreg, n, atc, biom: [{biomarcador, genotipo, clase, secciones_ft, cartera_sns}]}], meta }
+     */
+    async getPgxAll() {
+        const KEY = 'medcheck_pgx_all_v1';
+        const TTL_MS = 24 * 3600 * 1000;
+        try {
+            const cached = JSON.parse(localStorage.getItem(KEY) || 'null');
+            if (cached && (Date.now() - cached.t) < TTL_MS && Array.isArray(cached.items)) {
+                return { items: cached.items, meta: cached.meta || null };
+            }
+        } catch (_) {}
+        try {
+            const r = await fetch(`${this.cloudflareProxy}/pharmacogenomics/all`);
+            if (!r.ok) return null;
+            const data = await r.json();
+            const items = Array.isArray(data.items) ? data.items : [];
+            const meta = data._meta || null;
+            try { localStorage.setItem(KEY, JSON.stringify({ t: Date.now(), items, meta })); } catch (_) {}
+            return { items, meta };
+        } catch (_) {
+            return null;
+        }
+    }
     _hasValidCache(key) {
         if (!this.cache.has(key)) return false;
         const entry = this.cache.get(key);
