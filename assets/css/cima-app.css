@@ -1113,6 +1113,32 @@ body {
     margin-top: 0.25rem;
 }
 
+/* Aviso cuando CIMA no expone el medicamento (204) */
+.modal-no-cima-notice {
+    display: flex;
+    gap: var(--space-md);
+    align-items: flex-start;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin: var(--space-md) 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+.modal-no-cima-notice i {
+    color: #f59e0b;
+    font-size: 1.1rem;
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+}
+.modal-no-cima-notice strong {
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
 /* ============================================
    Vista de exploración Farmacogenómica
    ============================================ */

@@ -113,12 +113,27 @@ class CimaAPI {
             }
 
             const contentType = response.headers.get('content-type');
+            // CIMA puede devolver 204 No Content (medicamento histórico no expuesto en CIMA REST,
+            // aunque siga en el Nomenclátor de Prescripción). Tratarlo como caso de negocio,
+            // no como crash del parser JSON.
+            if (response.status === 204) {
+                const err = new Error('CIMA no expone este medicamento en su catálogo activo (HTTP 204)');
+                err.code = 'NO_CONTENT';
+                err.status = 204;
+                throw err;
+            }
+            const rawText = await response.text();
+            if (!rawText) {
+                const err = new Error('CIMA devolvió respuesta vacía');
+                err.code = 'NO_CONTENT';
+                err.status = response.status;
+                throw err;
+            }
             let data;
-
             if (!options.forceText && contentType && contentType.includes('application/json')) {
-                data = await response.json();
+                data = JSON.parse(rawText);
             } else {
-                data = await response.text();
+                data = rawText;
             }
 
             // Guardar en cache

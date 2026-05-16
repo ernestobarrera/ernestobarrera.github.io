@@ -5241,8 +5241,69 @@ class MedCheckApp {
             });
 
         } catch (error) {
+            if (error.code === 'NO_CONTENT') {
+                await this._renderMissingFromCimaModal(nregistro);
+                return;
+            }
             this.modalBody.innerHTML = `<div class="error-state"> <p class="text-danger">Error: ${error.message}</p></div> `;
         }
+    }
+
+    /**
+     * Modal de degradación cuando CIMA no expone el medicamento (204),
+     * pero el Nomenclátor sí lo lista (típicamente con biomarcador PGx asociado).
+     * Muestra solo la información farmacogenómica + aviso explicativo.
+     */
+    async _renderMissingFromCimaModal(nregistro) {
+        const pgx = await this.api.getPgxByNregistro(nregistro).catch(() => null);
+        const tieneNombre = pgx && pgx.found && pgx.n;
+        const nombre = tieneNombre ? this._escapeHtml(pgx.n) : `nregistro ${this._escapeHtml(nregistro)}`;
+        const atc = pgx?.atc ? this._escapeHtml(pgx.atc) : null;
+        const fecha = pgx?._meta?.list_prescription_date || null;
+
+        let pgxHtml = '';
+        if (pgx && pgx.found && Array.isArray(pgx.biom)) {
+            pgxHtml = pgx.biom.map(b => `
+                <div class="pgx-card">
+                    <div class="pgx-card-header">
+                        <span class="pgx-biomarker"><i class="fas fa-dna"></i> ${this._escapeHtml(b.biomarcador || '—')}</span>
+                        ${b.clase ? `<span class="pgx-tag">${this._escapeHtml(b.clase)}</span>` : ''}
+                        ${b.cartera_sns ? `<span class="pgx-tag pgx-tag-sns">Cartera SNS: ${this._escapeHtml(b.cartera_sns)}</span>` : ''}
+                    </div>
+                    ${b.genotipo     ? `<div class="pgx-row"><span class="pgx-label">Genotipo/Fenotipo</span><span class="pgx-value">${this._escapeHtml(b.genotipo)}</span></div>` : ''}
+                    ${b.secciones_ft ? `<div class="pgx-row"><span class="pgx-label">Sección FT</span><span class="pgx-value">${this._escapeHtml(b.secciones_ft)}</span></div>` : ''}
+                    ${b.descripcion  ? `<div class="pgx-description">${this._escapeHtml(b.descripcion)}</div>` : ''}
+                    ${b.notas        ? `<div class="pgx-notes"><strong>Notas:</strong> ${this._escapeHtml(b.notas)}</div>` : ''}
+                </div>`).join('');
+        }
+
+        this.modalBody.innerHTML = `
+            <div class="modal-header">
+                <div class="med-header-info">
+                    <h2 class="modal-title">${nombre}</h2>
+                    ${atc ? `<p class="modal-subtitle">ATC: ${atc}</p>` : ''}
+                </div>
+            </div>
+            <div class="modal-no-cima-notice">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <strong>Este medicamento no figura en el catálogo CIMA activo</strong> (HTTP 204) pero permanece en el
+                    Nomenclátor de Prescripción AEMPS. Suele ser una presentación retirada del mercado o reorganizada
+                    bajo otro nregistro. La ficha técnica completa no está disponible en CIMA, pero su asociación
+                    farmacogenómica regulatoria sigue siendo válida y aplicable a otras presentaciones del mismo
+                    principio activo.
+                </div>
+            </div>
+            ${pgxHtml ? `
+            <div class="pgx-tab-header">
+                <h3 style="color: #d946ef; margin-bottom: 0.5rem;"><i class="fas fa-dna"></i> Biomarcador farmacogenómico (AEMPS)</h3>
+            </div>
+            <div class="pgx-cards">${pgxHtml}</div>
+            <p class="pgx-attribution text-muted">
+                Fuente: AEMPS · <a href="https://www.aemps.gob.es/medicamentos-de-uso-humano/base-de-datos-de-biomarcadores-farmacogenomicos/" target="_blank" rel="noopener">base de datos de biomarcadores</a>
+                ${fecha ? ` · Datos al ${fecha}` : ''}
+            </p>` : `<p class="text-muted" style="padding: 1rem;">Sin datos farmacogenómicos adicionales para este registro.</p>`}
+        `;
     }
 
     _escapeHtml(value) {
