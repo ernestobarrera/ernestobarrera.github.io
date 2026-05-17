@@ -6359,7 +6359,8 @@ ${materialesPlaceholder}
                     <p style="margin: 0 0 0.5rem 0;">
                         <strong>CPIC</strong> = Clinical Pharmacogenetics Implementation Consortium. Guías de implementación
                         clínica basadas en evidencia (típicamente nivel 1A de PharmGKB), en inglés. La etiqueta
-                        <em>Citado por AEMPS</em> indica que la propia ficha técnica menciona CPIC.
+                        <em>Citado por AEMPS</em> indica que la cita aparece en las <strong>notas del Nomenclátor de Prescripción</strong>
+                        de AEMPS — un fichero técnico paralelo, no la ficha técnica formal que ves en CIMA.
                     </p>
                     <p class="pgx-attribution" style="margin: 0;">
                         Fuente: AEMPS · <a href="https://www.aemps.gob.es/medicamentos-de-uso-humano/base-de-datos-de-biomarcadores-farmacogenomicos/" target="_blank" rel="noopener">base de datos de biomarcadores</a>
@@ -6392,7 +6393,7 @@ ${materialesPlaceholder}
                 <a class="pgx-cpic-link" href="${MedCheckApp.PGX_CPIC_BASE}${encodeURIComponent(bm)}" target="_blank" rel="noopener" title="Guideline de implementación clínica para ${this._escapeHtml(bm)} (en inglés)">
                     <i class="fas fa-external-link-alt"></i>
                     Guía CPIC sobre ${this._escapeHtml(bm)}
-                    ${citadoAemps ? `<span class="pgx-cpic-cited" title="La descripción AEMPS menciona CPIC explícitamente">Citado por AEMPS</span>` : ''}
+                    ${citadoAemps ? `<span class="pgx-cpic-cited" title="AEMPS cita CPIC explícitamente en las notas del Nomenclátor de Prescripción (no en la ficha técnica formal, sino en el fichero de biomarcadores que publica AEMPS por separado)">Citado por AEMPS</span>` : ''}
                 </a>
             </div>` : '';
         return `
@@ -6457,22 +6458,30 @@ ${materialesPlaceholder}
                 b.genotipo     ? `  Genotipo/fenotipo: ${b.genotipo}` : null,
                 b.secciones_ft ? `  Secciones FT afectadas: ${b.secciones_ft}` : null,
                 desc           ? `  Texto regulatorio AEMPS: "${desc}"` : null,
-                b.notas        ? `  Notas AEMPS: ${b.notas}` : null,
+                b.notas        ? `  Notas AEMPS (Nomenclátor de Prescripción): ${b.notas}` : null,
             ].filter(Boolean).join('\n');
         }).join('\n\n');
         return [
-            `Para el medicamento "${medName}"${medAtc ? ` (ATC ${medAtc})` : ''}, la ficha técnica autorizada por la AEMPS menciona los siguientes biomarcadores farmacogenómicos:`,
+            `Para el medicamento "${medName}"${medAtc ? ` (ATC ${medAtc})` : ''}, la información regulatoria de la AEMPS (ficha técnica y Nomenclátor de Prescripción) menciona los siguientes biomarcadores farmacogenómicos:`,
             '',
             bloques,
             '',
-            'Como médico de familia / atención primaria, necesito una respuesta clínicamente accionable:',
+            'Soy un profesional sanitario prescriptor (puede ser de atención primaria, oncología, farmacia hospitalaria, internista, anestesia u otra especialidad) consultando esta información en un punto de atención clínica.',
             '',
-            '1. Recomendaciones según CPIC (Clinical Pharmacogenetics Implementation Consortium), nivel de evidencia 1A si existe.',
-            '2. Acción concreta si el paciente presenta el genotipo/fenotipo descrito: ajustar dosis, suspender, alternativa terapéutica.',
-            '3. Cita la guideline CPIC concreta y su URL (clinpgx.org / cpicpgx.org).',
-            '4. Si se trata de un biomarcador oncológico somático y no aplica a AP, indícalo y termina.',
+            'Necesito una respuesta estructurada con el siguiente orden:',
             '',
-            'Responde en español, breve y clínico (estructura: situación → acción → alternativa). No inventes citas: si no estás seguro, dilo.',
+            '1. **Resumen interpretativo** (3–5 líneas, punto de partida): qué significa clínicamente esta asociación fármaco–biomarcador, a quién afecta (prevalencia poblacional aproximada si la conoces), magnitud del impacto (riesgo de toxicidad, pérdida de eficacia, etc.).',
+            '',
+            '2. **Acción concreta** si el paciente presenta el genotipo/fenotipo descrito, según CPIC (Clinical Pharmacogenetics Implementation Consortium) nivel de evidencia 1A cuando exista. Para cada subapartado da una recomendación específica:',
+            '   - Dosis: mantener / ajustar (¿cuánto?) / suspender',
+            '   - Alternativa terapéutica concreta (no «valorar alternativa»)',
+            '   - Pruebas previas a solicitar (genotipado, despistaje) si están indicadas',
+            '',
+            '3. **Contexto del prescriptor**: indica el perfil profesional al que aplica principalmente esta información (AP, oncología, hospital, etc.). Si se trata de un biomarcador oncológico somático y NO aplica a prescripción habitual fuera de oncología/anatomía patológica, dilo explícitamente y termina ahí.',
+            '',
+            '4. **Cita la guideline CPIC concreta** con URL (clinpgx.org / cpicpgx.org) o, en su defecto, PharmGKB. No inventes referencias: si no estás seguro de la URL, dilo y deja al usuario buscar.',
+            '',
+            'Responde en español clínico, conciso, sin redundancias. Estructura recomendada por subapartado: **situación → acción → alternativa**.',
         ].join('\n');
     }
 
