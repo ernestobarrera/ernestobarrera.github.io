@@ -9516,74 +9516,51 @@ ${materialesPlaceholder}
         if (!container || container.dataset.loaded) return;
         container.dataset.loaded = '1';
 
-        // Término de búsqueda: principio(s) activo(s) en minúsculas
         const pa = med.principiosActivos;
         const drugTerm = pa && pa.length > 0
             ? pa.map(p => p.nombre.toLowerCase()).join(' ')
             : med.nombre.toLowerCase();
 
         const enc = q => encodeURIComponent(q);
-        const pmBase = 'https://pubmed.ncbi.nlm.nih.gov/?term=';
 
-        const pubmedFilters = [
-            {
-                id: 'total',
-                label: 'Todas las citas',
-                desc: 'Resultado global sin filtro metodológico',
-                icon: 'fa-database',
-                query: drugTerm
-            },
-            {
-                id: 'sr',
-                label: 'RS / Meta-análisis',
-                desc: 'Revisiones sistemáticas, meta-análisis y evaluaciones de tecnologías sanitarias (CADTH)',
-                icon: 'fa-layer-group',
-                query: `${drugTerm} AND (systematic[sb] OR "meta-analysis"[pt] OR "systematic review"[pt])`
-            },
-            {
-                id: 'rct',
-                label: 'Ensayos clínicos',
-                desc: 'Ensayos clínicos aleatorizados y no aleatorizados indexados en PubMed',
-                icon: 'fa-flask',
-                query: `${drugTerm} AND (clinical trial[pt] OR randomized controlled trial[pt] OR controlled clinical trial[pt])`
-            },
-            {
-                id: 'ae',
-                label: 'Seguridad / RAM',
-                desc: 'Efectos adversos, tolerabilidad y seguridad (filtro Golder 2019)',
-                icon: 'fa-exclamation-triangle',
-                query: `${drugTerm} AND (ae[sh] OR safety[tiab] OR "adverse reaction*"[tiab] OR "side effect*"[tiab] OR tolerability[tiab] OR toxicity[tiab])`
-            },
-            {
-                id: 'gpc',
-                label: 'Guías de práctica clínica',
-                desc: 'Guías, protocolos y recomendaciones clínicas (CADTH)',
-                icon: 'fa-file-medical',
-                query: `${drugTerm} AND (guideline[pt] OR "practice guideline"[pt] OR "consensus statement"[pt])`
-            },
-            {
-                id: 'itc',
-                label: 'Comparaciones indirectas',
-                desc: 'Network meta-análisis, comparaciones indirectas y meta-análisis en red (CDA-AMC)',
-                icon: 'fa-random',
-                query: `${drugTerm} AND ("network meta-analysis"[mh] OR "indirect comparison"[tiab] OR "mixed treatment"[tiab] OR nma[tiab] OR "network meta-analys*"[tiab])`
-            },
+        // Filtros del repo pubmed-filters — se cargan como .txt desde GitHub Pages
+        const filterDefs = [
+            { id: 'metaanalysis',        cat: 'methodology', label: 'RS / Meta-análisis / HTA',      icon: 'fa-layer-group' },
+            { id: 'indirect_comparison', cat: 'methodology', label: 'Comparaciones indirectas',       icon: 'fa-random' },
+            { id: 'NNT_NNH',            cat: 'clinical',    label: 'NNT / NNH',                      icon: 'fa-calculator' },
+            { id: 'drugs_ae',           cat: 'clinical',    label: 'Efectos adversos Medicamentos',  icon: 'fa-exclamation-triangle' },
+            { id: 'gpc',               cat: 'methodology',  label: 'Guías de práctica clínica',      icon: 'fa-file-medical' },
+            { id: 'deprescription',    cat: 'clinical',     label: 'Deprescripción',                 icon: 'fa-pills' },
+            { id: 'pediatrics',        cat: 'scope',        label: 'Pediatría',                      icon: 'fa-child' },
+            { id: 'geriatrics_sensible', cat: 'scope',      label: 'Geriatría',                      icon: 'fa-user-clock' },
         ];
 
         container.innerHTML = `
             <div class="evidence-section">
                 <div class="evidence-section-header">
                     <i class="fas fa-book-medical"></i>
-                    <div>
+                    <div class="evidence-section-header-text">
                         <h4 class="evidence-section-title">Literatura científica · PubMed</h4>
                         <p class="evidence-section-subtitle">Término: <strong>${this._escapeHtml(drugTerm)}</strong></p>
                     </div>
+                    <label class="evidence-date-toggle" title="Filtrar todos los resultados a los últimos 5 años (1825 días)">
+                        <input type="checkbox" id="evidence-date-check" checked>
+                        <span>Últimos 5 años</span>
+                    </label>
                 </div>
                 <div class="evidence-filter-list">
-                    ${pubmedFilters.map(f => `
-                        <a class="evidence-filter-item" href="${pmBase}${enc(f.query)}" target="_blank" rel="noopener" title="${this._escapeHtml(f.desc)}">
+                    <a class="evidence-filter-item" id="evlink-total" href="#" target="_blank" rel="noopener">
+                        <span class="evidence-filter-icon"><i class="fas fa-database"></i></span>
+                        <span class="evidence-filter-label">Todas las citas</span>
+                        <span class="evidence-filter-spacer"></span>
+                        <span class="evidence-filter-count" id="evcount-total"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
+                        <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
+                    </a>
+                    ${filterDefs.map(f => `
+                        <a class="evidence-filter-item" id="evlink-${f.id}" href="#" target="_blank" rel="noopener">
                             <span class="evidence-filter-icon"><i class="fas ${f.icon}"></i></span>
                             <span class="evidence-filter-label">${f.label}</span>
+                            <span class="evidence-filter-info" id="evinfo-${f.id}"></span>
                             <span class="evidence-filter-count" id="evcount-${f.id}"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
                             <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
                         </a>
@@ -9591,16 +9568,16 @@ ${materialesPlaceholder}
                 </div>
                 <p class="evidence-note">
                     <i class="fas fa-info-circle"></i>
-                    Los contadores son aproximados (filtros simplificados para navegación rápida).
-                    Para búsquedas de precisión con filtros validados usa
-                    <a href="/buscar-pubmed.html" target="_blank">Buscar en PubMed</a>.
+                    Filtros validados del repositorio
+                    <a href="https://ernestobarrera.github.io/buscar-pubmed.html" target="_blank">pubmed-filters</a>.
+                    Pasa el cursor sobre <i class="fas fa-info-circle" style="color:var(--primary)"></i> para ver fuente y métricas del filtro.
                 </p>
             </div>
 
             <div class="evidence-section">
                 <div class="evidence-section-header">
                     <i class="fas fa-vials"></i>
-                    <div>
+                    <div class="evidence-section-header-text">
                         <h4 class="evidence-section-title">Registros de ensayos clínicos</h4>
                         <p class="evidence-section-subtitle">Estudios en curso y completados</p>
                     </div>
@@ -9622,42 +9599,146 @@ ${materialesPlaceholder}
             </div>
         `;
 
-        this._fetchEvidenceCounts(pubmedFilters);
+        // Carga inicial con fecha activada
+        this._loadEvidenceFiltersAndCount(drugTerm, filterDefs, true);
+
+        // Checkbox de fecha — recarga conteos sin re-renderizar el HTML
+        const checkbox = document.getElementById('evidence-date-check');
+        if (checkbox) {
+            checkbox.addEventListener('change', () => {
+                document.querySelectorAll('[id^="evcount-"]').forEach(el => {
+                    el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
+                });
+                this._loadEvidenceFiltersAndCount(drugTerm, filterDefs, checkbox.checked);
+            });
+        }
     }
 
-    async _fetchEvidenceCounts(filters) {
+    async _loadEvidenceFiltersAndCount(drugTerm, filterDefs, withDate) {
+        if (!this._evidenceFilterQueryCache) this._evidenceFilterQueryCache = new Map();
         if (!this._evidenceCountCache) this._evidenceCountCache = new Map();
 
-        const fetchOne = async (f) => {
-            if (this._evidenceCountCache.has(f.query)) {
-                return { id: f.id, count: this._evidenceCountCache.get(f.query) };
+        const DATE_SUFFIX = ' AND ("last 1825 days"[dp])';
+        const enc = q => encodeURIComponent(q);
+        const pmBase = 'https://pubmed.ncbi.nlm.nih.gov/?term=';
+        const cycleId = (this._evidenceCountCycle = (this._evidenceCountCycle || 0) + 1);
+
+        // Actualizar enlace "total" inmediatamente (sin filtro que cargar)
+        const totalQuery = drugTerm + (withDate ? DATE_SUFFIX : '');
+        const totalLink = document.getElementById('evlink-total');
+        if (totalLink) totalLink.href = pmBase + enc(totalQuery);
+
+        // Cargar ficheros de filtro del repo (con caché de sesión)
+        const loadFilter = async (f) => {
+            if (this._evidenceFilterQueryCache.has(f.id)) {
+                return this._evidenceFilterQueryCache.get(f.id);
             }
+            const url = `https://ernestobarrera.github.io/pubmed-filters/filters/${f.cat}/${f.id}.txt`;
             try {
-                const url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(f.query)}&rettype=count&retmode=json`;
                 const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-                if (!res.ok) throw new Error('ncbi-error');
-                const data = await res.json();
-                const count = parseInt(data.esearchresult.count, 10);
-                this._evidenceCountCache.set(f.query, count);
-                return { id: f.id, count };
+                if (!res.ok) throw new Error('fetch-error');
+                const txt = await res.text();
+                const [filterPart, metaPart] = txt.split('@@@FILTER_METADATA@@@');
+                const query = filterPart.split('\n')
+                    .filter(l => !l.trim().startsWith('#'))
+                    .join('\n').trim();
+                let tooltip = null;
+                if (metaPart) {
+                    try { tooltip = this._buildEvidenceTooltip(JSON.parse(metaPart.trim())); } catch {}
+                }
+                const result = { query, tooltip };
+                this._evidenceFilterQueryCache.set(f.id, result);
+                return result;
             } catch {
-                return { id: f.id, count: null };
+                const result = { query: null, tooltip: null };
+                this._evidenceFilterQueryCache.set(f.id, result);
+                return result;
             }
         };
 
-        // Lanzar en serie con pausa mínima para respetar límite NCBI (3 req/s sin API key)
-        for (const f of filters) {
-            fetchOne(f).then(({ id, count }) => {
-                const el = document.getElementById(`evcount-${id}`);
-                if (!el) return;
-                if (count === null) {
-                    el.innerHTML = '<span class="evidence-count-err" title="No se pudo obtener el conteo">–</span>';
-                } else {
-                    el.innerHTML = `<span class="evidence-count-badge">${count.toLocaleString('es-ES')}</span>`;
+        const loaded = await Promise.all(filterDefs.map(f => loadFilter(f)));
+
+        // Actualizar enlaces y tooltips (solo primera vez, no dependen de fecha)
+        filterDefs.forEach((f, i) => {
+            const { query, tooltip } = loaded[i];
+            const infoEl = document.getElementById(`evinfo-${f.id}`);
+            if (infoEl && tooltip && !infoEl.dataset.set) {
+                infoEl.innerHTML = `<i class="fas fa-info-circle evidence-info-icon" title="${this._escapeHtml(tooltip)}"></i>`;
+                infoEl.dataset.set = '1';
+            }
+            const linkEl = document.getElementById(`evlink-${f.id}`);
+            if (linkEl && query) {
+                linkEl.href = pmBase + enc(`${drugTerm} AND (${query})` + (withDate ? DATE_SUFFIX : ''));
+            }
+        });
+
+        // Preparar peticiones de conteo
+        const countRequests = [
+            { id: 'total', query: totalQuery },
+            ...filterDefs.map((f, i) => ({
+                id: f.id,
+                query: loaded[i].query
+                    ? `${drugTerm} AND (${loaded[i].query})` + (withDate ? DATE_SUFFIX : '')
+                    : null
+            }))
+        ];
+
+        // Lanzar en serie respetando límite NCBI (3 req/s sin API key)
+        for (const req of countRequests) {
+            if (this._evidenceCountCycle !== cycleId) break;
+
+            if (!req.query) {
+                const el = document.getElementById(`evcount-${req.id}`);
+                if (el) el.innerHTML = '<span class="evidence-count-err">–</span>';
+                continue;
+            }
+
+            // Caché hit — actualizar inmediatamente sin delay
+            if (this._evidenceCountCache.has(req.query)) {
+                const el = document.getElementById(`evcount-${req.id}`);
+                if (el) {
+                    const n = this._evidenceCountCache.get(req.query);
+                    el.innerHTML = `<span class="evidence-count-badge">${n.toLocaleString('es-ES')}</span>`;
                 }
-            });
+                continue;
+            }
+
+            // Petición a NCBI
+            (async (r, cycle) => {
+                try {
+                    const url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(r.query)}&rettype=count&retmode=json`;
+                    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+                    if (!res.ok) throw new Error('ncbi');
+                    const data = await res.json();
+                    const count = parseInt(data.esearchresult.count, 10);
+                    this._evidenceCountCache.set(r.query, count);
+                    if (this._evidenceCountCycle !== cycle) return;
+                    const el = document.getElementById(`evcount-${r.id}`);
+                    if (el) el.innerHTML = `<span class="evidence-count-badge">${count.toLocaleString('es-ES')}</span>`;
+                } catch {
+                    if (this._evidenceCountCycle !== cycle) return;
+                    const el = document.getElementById(`evcount-${r.id}`);
+                    if (el) el.innerHTML = '<span class="evidence-count-err" title="Error al obtener conteo">–</span>';
+                }
+            })(req, cycleId);
+
             await new Promise(r => setTimeout(r, 340));
         }
+    }
+
+    _buildEvidenceTooltip(meta) {
+        const parts = [];
+        const v = meta?.validation;
+        if (!v) return null;
+        const m = v.metrics;
+        if (m) {
+            if (m.sensitivity != null) parts.push(`Sensibilidad: ${m.sensitivity}%`);
+            if (m.specificity != null && m.specificity !== 'null') parts.push(`Especificidad: ${m.specificity}%`);
+            if (m.sensitive?.sensitivity != null) parts.push(`Sensibilidad (S): ${m.sensitive.sensitivity}%`);
+            if (m.sensitive?.specificity != null) parts.push(`Especificidad (S): ${m.sensitive.specificity}%`);
+        }
+        if (v.reference) parts.push(`Fuente: ${v.reference}`);
+        return parts.length ? parts.join(' · ') : null;
     }
 
     endGuide() {

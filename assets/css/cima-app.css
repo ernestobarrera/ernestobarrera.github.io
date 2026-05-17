@@ -7077,6 +7077,50 @@ code {
     text-decoration: underline;
 }
 
+.evidence-section-header-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.evidence-date-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.evidence-date-toggle input[type="checkbox"] {
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.evidence-filter-spacer {
+    flex: 1;
+}
+
+.evidence-filter-info {
+    flex-shrink: 0;
+    min-width: 1rem;
+    text-align: center;
+}
+
+.evidence-info-icon {
+    color: var(--primary);
+    font-size: 0.75rem;
+    cursor: help;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+}
+
+.evidence-info-icon:hover {
+    opacity: 1;
+}
+
 .fav-card-badges {
     display: flex;
     gap: 0.25rem;

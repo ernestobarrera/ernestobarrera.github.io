@@ -4,6 +4,91 @@ Historial de cambios por sesión de desarrollo.
 
 ---
 
+## [Sesión 17] - 2026-05-17
+
+### Añadido
+- **Capa de farmacogenómica (PGx) end-to-end** a partir del Nomenclátor de Prescripción de AEMPS
+  (`prescripcion.zip` → `Prescripcion.xml`), independiente de la API CIMA.
+- **ETL** en `scripts/etl-biomarkers/` (Python): descarga diaria con ETag/HEAD,
+  parseo regex de biomarcadores, JSON compacto y validación con 7 centinelas
+  (alopurinol/HLA-B*58:01, capecitabina/DPYD, fluorouracilo/DPYD, irinotecán/UGT1A1,
+  abacavir/HLA-B*57:01, clopidogrel/CYP2C19, codeína/CYP2D6 — ésta validada por ATC `R05DA04`,
+  no por nombre, porque las marcas comerciales (Toseina, Histaverin…) no contienen "CODEINA").
+- **GitHub Actions** `.github/workflows/etl-biomarkers.yml`: cron diario `17 6 * * *` +
+  `workflow_dispatch`. Publica a Cloudflare KV (clave única `biomarkers:full`) y sube artefacto
+  con nombre derivado de `list_prescription_date` (no del header `Last-Modified` que rompía
+  por dos puntos y comas).
+- **Worker** (`medcheck-worker/index.js`): nuevo namespace de endpoints `/pharmacogenomics/*`
+  (`/meta`, `/by-register/{nreg}`, `/by-cn/{cn}`, `/index-light`, `/all`).
+  Cache in-memory por isolate con TTL 5 min.
+- **Frontend MedCheck**:
+  - Badge **PGx** en tarjeta de resultado (lazy boot con `/index-light` cacheado 24h en localStorage,
+    para resolver el contradictorio "badge en card + lazy detalle solo en modal" sin pedir el dataset entero).
+  - Pestaña **Farmacogenómica** en el modal (carga diferida; ítem por ítem con CPIC link condicional
+    cuando el gen aparece en `PGX_CPIC_GENES` (21 genes), tooltip explicativo del biomarcador (60+ entradas),
+    sello "Citado por AEMPS" para subrayar la trazabilidad regulatoria).
+  - Vista global **"Farmacogenómica"** en navegación principal: stats, búsqueda, chips de filtro y agrupación.
+  - **Bloque "Consultar con IA"** dentro de la pestaña PGx del modal: prompt clínico estructurado
+    (5 secciones: resumen, tabla de escenarios, detalle por escenario, contexto prescriptor, URL específica).
+- **Degradación grácil para CIMA-204**: cuando un nregistro existe en Nomenclátor pero CIMA devuelve
+  204 No Content (caso real: Alopurinol Ratiopharm nreg 61361), el frontend detecta `err.code = 'NO_CONTENT'`
+  y muestra un modal alternativo con la info PGx disponible y aviso.
+
+### Decisiones tomadas (y por qué)
+- **Cita AEMPS = Nomenclátor de Prescripción**, no la FT (ficha técnica). La FT no expone biomarcadores
+  de forma estructurada; el Nomenclátor sí. Por eso el badge dice "Citado por AEMPS" en el sentido
+  regulatorio de "marcado para prescripción", no "mencionado en ficha".
+- **Una sola clave KV** (`biomarkers:full`) en lugar de una por medicamento. El dataset es pequeño
+  (~MB) y simplifica invalidación y endpoints.
+- **Lazy load del detalle PGx** en el modal: la pestaña sólo dispara la petición al hacerse clic,
+  aunque el badge se haya pintado en la card por el index light. Evita inflar la pantalla inicial.
+
+### Iteraciones del prompt de "Consultar con IA" (probadas — referencia para futuras mejoras)
+- v1: 3 botones (ChatGPT, Perplexity, Copiar prompt). **Descartado** por saturación visual.
+- v2: 2 botones detrás de `<details><summary>`. **Descartado** por click extra innecesario.
+- v3: 2 botones siempre visibles en grid 1fr 1fr (Perplexity primario + Copy secundario). **Adoptado.**
+- Prompt v1: dejaba que el modelo eligiera estructura. **Problema**: respuestas con circunloquios,
+  sin nombrar biomarcador explícitamente (caso quetiapina: "el citocromo implicado..." en lugar de "CYP3A4").
+  Corregido obligando a NOMBRAR biomarcador en la primera frase.
+- Prompt v2: pedía URL CPIC/PharmGKB con fallback estricto "si no la encuentras, dilo".
+  **Problema**: el modelo decía "no dispongo" incluso para asociaciones archi-conocidas (alopurinol/HLA-B*58:01).
+  Corregido relajando el fallback con lista explícita de asociaciones bien conocidas (commit `81d50c4`).
+- Prompt v3: añadidas 1-2 frases de intro al biomarcador, tabla resumen de escenarios,
+  tres escenarios completos (positivo / negativo / **desconocido + factores de riesgo**),
+  contexto multi-prescriptor. **Adoptado.**
+
+### Iteraciones descartadas (no reabrir sin nueva evidencia)
+- **Botón Copilot como segundo primario**: probado el 2026-05-17. Descartado por dos motivos:
+  1. **No funciona vía GET**: Copilot gratuito ignora `?q=...` en la URL, así que el botón no podría
+     inyectar el prompt automáticamente — el usuario tendría que copiar+pegar, duplicando el botón "Copiar prompt".
+  2. **Calidad inferior a Perplexity Pro**: respuesta sólida pero **sin citas inline reales**
+     (el único enlace fabricado era un `bing.com/search?q=...`, no una cita a la fuente original).
+     Perplexity Pro devuelve citas directas a `cima.aemps`, `botplusweb.farmaceuticos`, `pharmgkb.org`.
+  - **Patrón final estable**: `[Perplexity — citas a fuentes]` + `[Copiar prompt — para Claude, ChatGPT, Copilot…]`.
+  - Reabrir sólo si: Copilot habilita `?q=` en gratuito, **o** se aborda un patrón de "abrir en nueva pestaña
+    + pegar automático" (no factible hoy desde JS por sandbox del navegador).
+- **Mostrar financiación SNS** (origen de la sesión, antes del pivote a PGx): CIMA no expone el dato
+  de forma fiable; `inclusion_cartera_sns` aparece sólo en ~3.439/30.337 registros del Nomenclátor
+  y con valores inconsistentes. Pospuesto hasta tener fuente fiable.
+
+### Cambiado
+- `assets/js/cima-api.js`: `_request()` ahora detecta 204/empty body y lanza error con `code = 'NO_CONTENT'`
+  (patrón reutilizable para otros endpoints que puedan devolver 204).
+- `medcheck.html`: cache-bust final css `v=20260517b`, cima-api `v=20260516c`, cima-app `v=20260517f`.
+
+### Infraestructura
+- Cloudflare API Token creado con scopes mínimos: `Workers Scripts: Edit` + `Workers KV Storage: Edit`.
+  Usado para `wrangler deploy` con `$env:CLOUDFLARE_API_TOKEN` (evita OAuth localhost callback que
+  fallaba en Windows). El token vive sólo en variable de entorno, no en repo.
+- PowerShell execution policy ajustada a `RemoteSigned -Scope CurrentUser` para permitir `npm`/`wrangler`.
+
+### Pendiente
+- Extender "Consultar con IA" a otras pestañas del modal (Posología, Interacciones, Reacciones, Seguridad)
+  con prompts adaptados a cada vista — explícitamente diferido por el usuario.
+- Actualizar `PORTFOLIO.md` y la skill `ernestobarrera-site` con la nueva capa PGx — diferido.
+
+---
+
 ## [Sesión 16] - 2026-03-22
 
 ### Añadido
