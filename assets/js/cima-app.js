@@ -9620,14 +9620,30 @@ ${materialesPlaceholder}
                         <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
                     </a>
                     ${filterDefs.map(f => `
-                        <a class="evidence-filter-item" id="evlink-${f.id}" href="#" target="_blank" rel="noopener">
-                            <span class="evidence-filter-icon"><i class="fas ${f.icon}"></i></span>
-                            <span class="evidence-filter-label">${f.label}</span>
-                            <span class="evidence-filter-info" id="evinfo-${f.id}"></span>
-                            <span class="evidence-filter-count" id="evcount-${f.id}"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
-                            <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
-                        </a>
+                        <div class="evidence-filter-row" data-fid="${f.id}">
+                            <label class="evidence-filter-check" title="Combinar con otros filtros (AND / OR)">
+                                <input type="checkbox" class="evidence-filter-check-input" data-fid="${f.id}">
+                            </label>
+                            <a class="evidence-filter-item" id="evlink-${f.id}" href="#" target="_blank" rel="noopener">
+                                <span class="evidence-filter-icon"><i class="fas ${f.icon}"></i></span>
+                                <span class="evidence-filter-label">${f.label}</span>
+                                <span class="evidence-filter-info" id="evinfo-${f.id}"></span>
+                                <span class="evidence-filter-count" id="evcount-${f.id}"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
+                                <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
+                            </a>
+                        </div>
                     `).join('')}
+                </div>
+                <div class="evidence-combine-bar hidden" id="evidence-combine-bar" aria-live="polite">
+                    <span class="evidence-combine-count-text"><span id="evidence-combine-n">0</span> filtros</span>
+                    <div class="evidence-combine-mode" role="group" aria-label="Operador lógico de combinación">
+                        <button type="button" class="evidence-combine-pill active" data-mode="AND" title="Intersección (estrecha): cumple todos los filtros">AND</button>
+                        <button type="button" class="evidence-combine-pill" data-mode="OR" title="Unión (amplía): cumple al menos uno">OR</button>
+                    </div>
+                    <a class="evidence-combine-open" id="evidence-combine-link" href="#" target="_blank" rel="noopener" title="Abrir resultado combinado en PubMed">
+                        Combinar <span class="evidence-combine-result" id="evidence-combine-result"><i class="fas fa-circle-notch fa-spin"></i></span>
+                        <i class="fas fa-external-link-alt evidence-combine-ext"></i>
+                    </a>
                 </div>
                 <p class="evidence-note">
                     <i class="fas fa-info-circle"></i>
@@ -9662,6 +9678,13 @@ ${materialesPlaceholder}
             </div>
         `;
 
+        // Estado de combinación entre filtros — se resetea cada vez que se renderiza la pestaña
+        this._evSelectedFilters = new Set();
+        this._evCombineMode = 'AND';
+        this._evCombineCycle = 0;
+        this._evFilterDefs = filterDefs;
+        this._evFilterQueryById = this._evFilterQueryById || {};
+
         // Carga inicial con rango por defecto (5 años)
         this._loadEvidenceFiltersAndCount(drugTerm, filterDefs, EV_RANGES[EV_RANGE_DEFAULT].days);
 
@@ -9670,21 +9693,32 @@ ${materialesPlaceholder}
         const ticks = document.querySelectorAll('.evidence-date-tick');
         const input = document.getElementById('evidence-drug-input');
 
+        // Atributo data-days en el slider para que _updateEvidenceCombineBar lo lea sin closures
+        if (slider) slider.dataset.days = String(EV_RANGES[EV_RANGE_DEFAULT].days);
+
         // Debounce: 1200 ms tras la última interacción con el slider
         let evDateDebounce = null;
         const triggerDateReload = () => {
             if (evDateDebounce) clearTimeout(evDateDebounce);
             resetCounts();
+            // Indica que la barra de combinación se va a recalcular
+            const cr = document.getElementById('evidence-combine-result');
+            if (cr && !document.getElementById('evidence-combine-bar')?.classList.contains('hidden')) {
+                cr.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+            }
             evDateDebounce = setTimeout(() => {
                 evDateDebounce = null;
                 this._loadEvidenceFiltersAndCount(getCurrentTerm(), filterDefs, getCurrentDays());
+                this._updateEvidenceCombineBar();
             }, 1200);
         };
 
         const updateSliderUI = () => {
             if (!slider) return;
             const idx = parseInt(slider.value, 10);
-            if (dateLabel) dateLabel.textContent = EV_RANGES[idx]?.label ?? '';
+            const range = EV_RANGES[idx];
+            if (range) slider.dataset.days = String(range.days);
+            if (dateLabel) dateLabel.textContent = range?.label ?? '';
             ticks.forEach(t => t.classList.toggle('active', parseInt(t.dataset.idx, 10) === idx));
         };
 
@@ -9716,8 +9750,32 @@ ${materialesPlaceholder}
                 if (whoLink) whoLink.href = `https://trialsearch.who.int/?SearchTerm=${enc(t)}`;
                 resetCounts();
                 this._loadEvidenceFiltersAndCount(t, filterDefs, getCurrentDays());
+                this._updateEvidenceCombineBar();
             });
         }
+
+        // Checkboxes de combinación
+        container.querySelectorAll('.evidence-filter-check-input').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const fid = cb.dataset.fid;
+                if (cb.checked) this._evSelectedFilters.add(fid);
+                else this._evSelectedFilters.delete(fid);
+                // Marcar visualmente la fila
+                const row = cb.closest('.evidence-filter-row');
+                if (row) row.classList.toggle('selected', cb.checked);
+                this._updateEvidenceCombineBar();
+            });
+        });
+
+        // Toggle AND/OR
+        container.querySelectorAll('.evidence-combine-pill').forEach(p => {
+            p.addEventListener('click', () => {
+                this._evCombineMode = p.dataset.mode || 'AND';
+                container.querySelectorAll('.evidence-combine-pill').forEach(x =>
+                    x.classList.toggle('active', x.dataset.mode === this._evCombineMode));
+                this._updateEvidenceCombineBar();
+            });
+        });
     }
 
     async _loadEvidenceFiltersAndCount(drugTerm, filterDefs, dateDays) {
@@ -9793,31 +9851,12 @@ ${materialesPlaceholder}
             }))
         ];
 
-        // Helper: petición de conteo a NCBI con un retry ante rate limit.
-        // NCBI sin API key = 3 req/s. Puede responder 429 o 200 con
-        // esearchresult.ERROR cuando satura. Tratamos ambos casos.
-        const fetchCount = async (query, cycle) => {
-            const url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&rettype=count&retmode=json`;
-            const tryOnce = async () => {
-                const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-                if (res.status === 429) return { rateLimited: true };
-                if (!res.ok) throw new Error('ncbi');
-                const data = await res.json();
-                const errMsg = data?.esearchresult?.ERROR;
-                if (errMsg && /rate|limit|busy|too many/i.test(errMsg)) return { rateLimited: true };
-                if (errMsg) throw new Error('ncbi-error');
-                return { count: parseInt(data.esearchresult.count, 10) };
-            };
-
-            let result = await tryOnce();
-            if (result.rateLimited) {
-                await new Promise(r => setTimeout(r, 1200));
-                if (this._evidenceCountCycle !== cycle) return null;
-                result = await tryOnce();
-                if (result.rateLimited) throw new Error('rate-limit-persistent');
-            }
-            return result.count;
-        };
+        // Cachear queries de cada filtro por id para que la barra de combinación pueda leerlas
+        // sin re-fetch. _evFilterQueryById ya se inicializa en renderEvidenceTab.
+        this._evFilterQueryById = this._evFilterQueryById || {};
+        filterDefs.forEach((f, i) => {
+            if (loaded[i].query) this._evFilterQueryById[f.id] = loaded[i].query;
+        });
 
         // Lanzar en serie respetando límite NCBI (3 req/s sin API key).
         // 400 ms = 2.5 req/s con margen para jitter de red.
@@ -9843,7 +9882,7 @@ ${materialesPlaceholder}
             // Petición fire-and-forget con retry interno ante rate limit
             (async (r, cycle) => {
                 try {
-                    const count = await fetchCount(r.query, cycle);
+                    const count = await this._fetchPubmedCount(r.query, () => this._evidenceCountCycle === cycle);
                     if (count == null) return; // cancelado durante el retry
                     this._evidenceCountCache.set(r.query, count);
                     if (this._evidenceCountCycle !== cycle) return;
@@ -9857,6 +9896,104 @@ ${materialesPlaceholder}
             })(req, cycleId);
 
             await new Promise(r => setTimeout(r, 400));
+        }
+
+        // Refrescar la barra de combinación si hay ≥2 filtros seleccionados
+        // (se ejecuta sin esperar; el método debouncea internamente vía cycle).
+        this._updateEvidenceCombineBar();
+    }
+
+    // Helper compartido: petición de conteo a NCBI con un retry ante rate limit.
+    // isStillValid: callback que devuelve false si el ciclo se ha invalidado
+    // (cambio de término/fecha/selección durante el retry).
+    async _fetchPubmedCount(query, isStillValid = () => true) {
+        const url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&rettype=count&retmode=json`;
+        const tryOnce = async () => {
+            const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+            if (res.status === 429) return { rateLimited: true };
+            if (!res.ok) throw new Error('ncbi');
+            const data = await res.json();
+            const errMsg = data?.esearchresult?.ERROR;
+            if (errMsg && /rate|limit|busy|too many/i.test(errMsg)) return { rateLimited: true };
+            if (errMsg) throw new Error('ncbi-error');
+            return { count: parseInt(data.esearchresult.count, 10) };
+        };
+
+        let result = await tryOnce();
+        if (result.rateLimited) {
+            await new Promise(r => setTimeout(r, 1200));
+            if (!isStillValid()) return null;
+            result = await tryOnce();
+            if (result.rateLimited) throw new Error('rate-limit-persistent');
+        }
+        return result.count;
+    }
+
+    async _updateEvidenceCombineBar() {
+        const bar = document.getElementById('evidence-combine-bar');
+        if (!bar) return;
+
+        const sel = this._evSelectedFilters;
+        const n = sel?.size || 0;
+        const nEl = document.getElementById('evidence-combine-n');
+        if (nEl) nEl.textContent = String(n);
+
+        if (n < 2) {
+            bar.classList.add('hidden');
+            return;
+        }
+        bar.classList.remove('hidden');
+
+        const drugTerm = document.getElementById('evidence-drug-input')?.value.trim();
+        if (!drugTerm) return;
+
+        const slider = document.getElementById('evidence-date-slider');
+        const days = parseInt(slider?.dataset.days ?? '0', 10);
+        const dateSuffix = days ? ` AND ("last ${days} days"[dp])` : '';
+
+        const queries = Array.from(sel)
+            .map(fid => this._evFilterQueryById?.[fid])
+            .filter(Boolean);
+
+        // Si aún no están cacheadas todas las queries de filtros, esperar al siguiente render
+        if (queries.length < n) {
+            const resultEl = document.getElementById('evidence-combine-result');
+            if (resultEl) resultEl.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+            return;
+        }
+
+        const mode = this._evCombineMode || 'AND';
+        const combinedFilter = mode === 'AND'
+            ? queries.map(q => `(${q})`).join(' AND ')
+            : '(' + queries.map(q => `(${q})`).join(' OR ') + ')';
+        const finalQuery = `${drugTerm} AND ${combinedFilter}${dateSuffix}`;
+
+        const link = document.getElementById('evidence-combine-link');
+        if (link) link.href = 'https://pubmed.ncbi.nlm.nih.gov/?term=' + encodeURIComponent(finalQuery);
+
+        const resultEl = document.getElementById('evidence-combine-result');
+        if (resultEl) resultEl.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+
+        if (!this._evidenceCountCache) this._evidenceCountCache = new Map();
+        const cycle = ++this._evCombineCycle;
+
+        // Caché hit — actualizar inmediatamente
+        if (this._evidenceCountCache.has(finalQuery)) {
+            if (cycle !== this._evCombineCycle) return;
+            const count = this._evidenceCountCache.get(finalQuery);
+            if (resultEl) resultEl.textContent = count.toLocaleString('es-ES');
+            return;
+        }
+
+        try {
+            const count = await this._fetchPubmedCount(finalQuery, () => cycle === this._evCombineCycle);
+            if (count == null) return;
+            this._evidenceCountCache.set(finalQuery, count);
+            if (cycle !== this._evCombineCycle) return;
+            if (resultEl) resultEl.textContent = count.toLocaleString('es-ES');
+        } catch {
+            if (cycle !== this._evCombineCycle) return;
+            if (resultEl) resultEl.innerHTML = '<span class="evidence-count-err">–</span>';
         }
     }
 

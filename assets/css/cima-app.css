@@ -7170,6 +7170,134 @@ code {
     margin-top: 0.1rem;
 }
 
+/* ── Filas de filtro con checkbox de combinación ── */
+.evidence-filter-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.3rem;
+}
+
+.evidence-filter-row > .evidence-filter-item {
+    flex: 1;
+    min-width: 0;
+}
+
+.evidence-filter-check {
+    display: flex;
+    align-items: center;
+    padding: 0 0.3rem;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.15s;
+}
+
+.evidence-filter-check:hover {
+    opacity: 1;
+}
+
+.evidence-filter-check input[type="checkbox"] {
+    accent-color: var(--primary);
+    cursor: pointer;
+    margin: 0;
+    width: 14px;
+    height: 14px;
+}
+
+.evidence-filter-row:has(input:checked) .evidence-filter-check {
+    opacity: 1;
+}
+
+.evidence-filter-row.selected > .evidence-filter-item,
+.evidence-filter-row:has(input:checked) > .evidence-filter-item {
+    border-color: var(--primary);
+    background: rgba(14, 165, 233, 0.05);
+}
+
+/* ── Barra de combinación AND/OR ── */
+.evidence-combine-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.7rem;
+    margin-top: 0.55rem;
+    border-radius: 8px;
+    border: 1px solid var(--primary);
+    background: rgba(14, 165, 233, 0.06);
+    font-size: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.evidence-combine-bar.hidden {
+    display: none;
+}
+
+.evidence-combine-count-text {
+    font-weight: 500;
+    color: var(--text-primary);
+    flex-shrink: 0;
+}
+
+.evidence-combine-mode {
+    display: inline-flex;
+    background: var(--surface);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.evidence-combine-pill {
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 0.22rem 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    font-family: inherit;
+}
+
+.evidence-combine-pill:hover {
+    color: var(--primary);
+}
+
+.evidence-combine-pill.active {
+    background: var(--primary);
+    color: #fff;
+}
+
+.evidence-combine-open {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.evidence-combine-open:hover {
+    text-decoration: underline;
+}
+
+.evidence-combine-result {
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.15rem 0.45rem;
+    border-radius: 20px;
+    line-height: 1.4;
+    min-width: 1.8rem;
+    text-align: center;
+}
+
+.evidence-combine-ext {
+    font-size: 0.65rem;
+}
+
 .evidence-filter-spacer {
     flex: 1;
 }
