@@ -9554,10 +9554,28 @@ ${materialesPlaceholder}
 
         const enc = q => encodeURIComponent(q);
 
+        // Rangos temporales discretos. Índice 4 = 5 años (default).
+        // days=0 ⇒ sin filtro temporal (∞).
+        const EV_RANGES = [
+            { days: 30,   label: 'Último mes' },
+            { days: 180,  label: 'Últimos 6 meses' },
+            { days: 365,  label: 'Último año' },
+            { days: 730,  label: 'Últimos 2 años' },
+            { days: 1825, label: 'Últimos 5 años' },
+            { days: 3650, label: 'Últimos 10 años' },
+            { days: 0,    label: 'Sin filtro temporal' },
+        ];
+        const EV_RANGE_DEFAULT = 4;
+
         const resetCounts = () => document.querySelectorAll('[id^="evcount-"]').forEach(el => {
             el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
         });
         const getCurrentTerm = () => document.getElementById('evidence-drug-input')?.value.trim() || drugTerm;
+        const getCurrentDays = () => {
+            const s = document.getElementById('evidence-date-slider');
+            const idx = s ? parseInt(s.value, 10) : EV_RANGE_DEFAULT;
+            return EV_RANGES[idx]?.days ?? 1825;
+        };
 
         const filterDefs = [
             { id: 'metaanalysis',        cat: 'methodology', label: 'RS / Meta-análisis / HTA',      icon: 'fa-layer-group' },
@@ -9583,10 +9601,15 @@ ${materialesPlaceholder}
                                    title="Término auto-generado a partir de marca e INN (sin sufijos de sal). Edítalo para ajustar los resultados.">
                         </div>
                     </div>
-                    <label class="evidence-date-toggle" title="Filtrar todos los resultados a los últimos 5 años (1825 días)">
-                        <input type="checkbox" id="evidence-date-check" checked>
-                        <span>Últimos 5 años</span>
-                    </label>
+                    <div class="evidence-date-range" title="Rango temporal de búsqueda. Mueve el deslizador para ampliar o estrechar.">
+                        <input type="range" id="evidence-date-slider" class="evidence-date-slider"
+                               min="0" max="${EV_RANGES.length - 1}" step="1" value="${EV_RANGE_DEFAULT}"
+                               aria-label="Rango temporal de búsqueda">
+                        <div class="evidence-date-ticks" aria-hidden="true">
+                            ${EV_RANGES.map((r, i) => `<span class="evidence-date-tick${i === EV_RANGE_DEFAULT ? ' active' : ''}" data-idx="${i}">${r.days === 30 ? '1m' : r.days === 180 ? '6m' : r.days === 365 ? '1a' : r.days === 730 ? '2a' : r.days === 1825 ? '5a' : r.days === 3650 ? '10a' : '∞'}</span>`).join('')}
+                        </div>
+                        <span class="evidence-date-range-label" id="evidence-date-label">${EV_RANGES[EV_RANGE_DEFAULT].label}</span>
+                    </div>
                 </div>
                 <div class="evidence-filter-list">
                     <a class="evidence-filter-item" id="evlink-total" href="#" target="_blank" rel="noopener">
@@ -9639,19 +9662,48 @@ ${materialesPlaceholder}
             </div>
         `;
 
-        // Carga inicial con fecha activada
-        this._loadEvidenceFiltersAndCount(drugTerm, filterDefs, true);
+        // Carga inicial con rango por defecto (5 años)
+        this._loadEvidenceFiltersAndCount(drugTerm, filterDefs, EV_RANGES[EV_RANGE_DEFAULT].days);
 
-        const checkbox = document.getElementById('evidence-date-check');
+        const slider = document.getElementById('evidence-date-slider');
+        const dateLabel = document.getElementById('evidence-date-label');
+        const ticks = document.querySelectorAll('.evidence-date-tick');
         const input = document.getElementById('evidence-drug-input');
 
-        // Checkbox de fecha — recarga conteos sin re-renderizar
-        if (checkbox) {
-            checkbox.addEventListener('change', () => {
-                resetCounts();
-                this._loadEvidenceFiltersAndCount(getCurrentTerm(), filterDefs, checkbox.checked);
+        // Debounce: 1200 ms tras la última interacción con el slider
+        let evDateDebounce = null;
+        const triggerDateReload = () => {
+            if (evDateDebounce) clearTimeout(evDateDebounce);
+            resetCounts();
+            evDateDebounce = setTimeout(() => {
+                evDateDebounce = null;
+                this._loadEvidenceFiltersAndCount(getCurrentTerm(), filterDefs, getCurrentDays());
+            }, 1200);
+        };
+
+        const updateSliderUI = () => {
+            if (!slider) return;
+            const idx = parseInt(slider.value, 10);
+            if (dateLabel) dateLabel.textContent = EV_RANGES[idx]?.label ?? '';
+            ticks.forEach(t => t.classList.toggle('active', parseInt(t.dataset.idx, 10) === idx));
+        };
+
+        if (slider) {
+            slider.addEventListener('input', () => {
+                updateSliderUI();
+                triggerDateReload();
             });
         }
+
+        // Click en una marca = saltar a ese rango
+        ticks.forEach(t => {
+            t.addEventListener('click', () => {
+                if (!slider) return;
+                slider.value = t.dataset.idx;
+                updateSliderUI();
+                triggerDateReload();
+            });
+        });
 
         // Campo editable — actualiza todos los enlaces y recarga conteos
         if (input) {
@@ -9663,22 +9715,26 @@ ${materialesPlaceholder}
                 if (ctLink) ctLink.href = `https://clinicaltrials.gov/search?term=${enc(t)}&viewType=Table`;
                 if (whoLink) whoLink.href = `https://trialsearch.who.int/?SearchTerm=${enc(t)}`;
                 resetCounts();
-                this._loadEvidenceFiltersAndCount(t, filterDefs, checkbox?.checked ?? true);
+                this._loadEvidenceFiltersAndCount(t, filterDefs, getCurrentDays());
             });
         }
     }
 
-    async _loadEvidenceFiltersAndCount(drugTerm, filterDefs, withDate) {
+    async _loadEvidenceFiltersAndCount(drugTerm, filterDefs, dateDays) {
         if (!this._evidenceFilterQueryCache) this._evidenceFilterQueryCache = new Map();
         if (!this._evidenceCountCache) this._evidenceCountCache = new Map();
 
-        const DATE_SUFFIX = ' AND ("last 1825 days"[dp])';
+        // dateDays: número de días (30, 180, 365, 730, 1825, 3650) o 0/null/undefined = sin filtro temporal.
+        // Compat: si llega un booleano (renderizado inicial antiguo), traducir.
+        if (dateDays === true) dateDays = 1825;
+        else if (dateDays === false) dateDays = 0;
+        const DATE_SUFFIX = dateDays ? ` AND ("last ${dateDays} days"[dp])` : '';
         const enc = q => encodeURIComponent(q);
         const pmBase = 'https://pubmed.ncbi.nlm.nih.gov/?term=';
         const cycleId = (this._evidenceCountCycle = (this._evidenceCountCycle || 0) + 1);
 
         // Actualizar enlace "total" inmediatamente (sin filtro que cargar)
-        const totalQuery = drugTerm + (withDate ? DATE_SUFFIX : '');
+        const totalQuery = drugTerm + DATE_SUFFIX;
         const totalLink = document.getElementById('evlink-total');
         if (totalLink) totalLink.href = pmBase + enc(totalQuery);
 
@@ -9722,7 +9778,7 @@ ${materialesPlaceholder}
             }
             const linkEl = document.getElementById(`evlink-${f.id}`);
             if (linkEl && query) {
-                linkEl.href = pmBase + enc(`${drugTerm} AND (${query})` + (withDate ? DATE_SUFFIX : ''));
+                linkEl.href = pmBase + enc(`${drugTerm} AND (${query})` + DATE_SUFFIX);
             }
         });
 
@@ -9732,7 +9788,7 @@ ${materialesPlaceholder}
             ...filterDefs.map((f, i) => ({
                 id: f.id,
                 query: loaded[i].query
-                    ? `${drugTerm} AND (${loaded[i].query})` + (withDate ? DATE_SUFFIX : '')
+                    ? `${drugTerm} AND (${loaded[i].query})` + DATE_SUFFIX
                     : null
             }))
         ];
