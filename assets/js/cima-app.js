@@ -9602,6 +9602,7 @@ ${materialesPlaceholder}
                                    spellcheck="false"
                                    autocomplete="off"
                                    title="Término auto-generado a partir de marca e INN (sin sufijos de sal). Edítalo y pulsa Enter o haz clic fuera para recargar.">
+                            <i class="fas fa-pen evidence-drug-edit-hint" aria-hidden="true"></i>
                         </div>
                     </div>
                     <div class="evidence-date-range" title="Rango temporal de búsqueda. Mueve el deslizador para ampliar o estrechar.">

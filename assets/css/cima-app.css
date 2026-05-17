@@ -7088,22 +7088,30 @@ code {
     align-items: center;
     gap: 0.45rem;
     margin-top: 0.35rem;
-    padding: 0.32rem 0.55rem;
-    border: 1px solid var(--border);
+    padding: 0.38rem 0.6rem;
+    border: 1px solid var(--border-hover);
     border-radius: 6px;
-    background: var(--surface);
+    background: var(--bg-dark);
     transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
     cursor: text;
 }
 
 .evidence-drug-row:hover {
-    border-color: var(--text-secondary);
+    border-color: var(--primary);
+}
+
+.evidence-drug-row:hover .evidence-drug-edit-hint {
+    opacity: 0.75;
 }
 
 .evidence-drug-row:focus-within {
     border-color: var(--primary);
-    background: var(--bg, var(--surface));
-    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.18);
+    background: var(--bg-surface);
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.22);
+}
+
+.evidence-drug-row:focus-within .evidence-drug-edit-hint {
+    opacity: 0;
 }
 
 .evidence-drug-label {
@@ -7132,6 +7140,16 @@ code {
 .evidence-drug-input::placeholder {
     color: var(--text-secondary);
     opacity: 0.6;
+}
+
+/* Pista visual: lápiz a la derecha que indica editabilidad */
+.evidence-drug-edit-hint {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    opacity: 0.45;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
 }
 
 .evidence-date-range {
