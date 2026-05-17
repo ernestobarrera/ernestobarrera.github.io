@@ -6420,7 +6420,6 @@ ${materialesPlaceholder}
         if (!biomList || biomList.length === 0) return '';
         const prompt = this._buildPgxAiPrompt(medName, medAtc, biomList);
         const encoded = encodeURIComponent(prompt);
-        const chatgptUrl = `https://chat.openai.com/?q=${encoded}`;
         const perplexityUrl = `https://www.perplexity.ai/search?q=${encoded}`;
         const promptB64 = btoa(unescape(encodeURIComponent(prompt))); // safe data attribute storage
         return `
@@ -6432,14 +6431,14 @@ ${materialesPlaceholder}
                         <i class="fas fa-chevron-down pgx-ai-chev"></i>
                     </summary>
                     <div class="pgx-ai-menu">
-                        <a class="pgx-ai-option" href="${chatgptUrl}" target="_blank" rel="noopener">
-                            <i class="fas fa-comments"></i> Abrir en ChatGPT
+                        <a class="pgx-ai-option pgx-ai-option-primary" href="${perplexityUrl}" target="_blank" rel="noopener" title="Perplexity ofrece respuestas con citas a fuentes — recomendado para verificar información clínica">
+                            <i class="fas fa-search"></i>
+                            <span class="pgx-ai-option-main">Abrir en Perplexity</span>
+                            <span class="pgx-ai-option-sub">respuestas con citas a fuentes</span>
                         </a>
-                        <a class="pgx-ai-option" href="${perplexityUrl}" target="_blank" rel="noopener">
-                            <i class="fas fa-search"></i> Abrir en Perplexity
-                        </a>
-                        <button class="pgx-ai-option pgx-ai-copy" type="button" data-prompt-b64="${promptB64}">
-                            <i class="fas fa-clipboard"></i> Copiar prompt
+                        <button class="pgx-ai-option pgx-ai-option-secondary pgx-ai-copy" type="button" data-prompt-b64="${promptB64}" title="Copia el prompt al portapapeles para pegarlo en Claude, ChatGPT, Copilot, Gemini o cualquier otra IA">
+                            <i class="fas fa-clipboard"></i>
+                            <span>Copiar prompt para otra IA <small>(Claude, ChatGPT, Copilot…)</small></span>
                         </button>
                     </div>
                     <p class="pgx-ai-warning text-muted">

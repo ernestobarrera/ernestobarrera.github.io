@@ -1183,8 +1183,8 @@ body {
 
 .pgx-ai-menu {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-sm);
+    flex-direction: column;
+    gap: 0.6rem;
     margin-top: var(--space-sm);
     padding-top: var(--space-sm);
     border-top: 1px dashed rgba(99, 102, 241, 0.25);
@@ -1192,25 +1192,62 @@ body {
 .pgx-ai-option {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    background: rgba(99, 102, 241, 0.1);
+    gap: 0.6rem;
     color: #c7d2fe;
-    border: 1px solid rgba(99, 102, 241, 0.3);
     border-radius: var(--radius-sm);
-    padding: 0.4rem 0.8rem;
-    font-size: 0.83rem;
+    padding: 0.55rem 0.9rem;
+    font-size: 0.85rem;
     text-decoration: none;
     cursor: pointer;
     font-family: inherit;
     transition: all var(--transition-fast);
 }
-.pgx-ai-option:hover {
-    background: rgba(99, 102, 241, 0.2);
-    color: #e0e7ff;
-}
 .pgx-ai-option:disabled {
     opacity: 0.7;
     cursor: default;
+}
+
+/* CTA primario: Perplexity destacado con descriptor */
+.pgx-ai-option-primary {
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.5);
+    color: #e0e7ff;
+    flex-direction: row;
+    align-items: center;
+}
+.pgx-ai-option-primary:hover {
+    background: rgba(99, 102, 241, 0.28);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+.pgx-ai-option-primary > i.fa-search {
+    color: #818cf8;
+    font-size: 1rem;
+}
+.pgx-ai-option-main {
+    font-weight: 600;
+}
+.pgx-ai-option-sub {
+    margin-left: auto;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Secundario: Copy, más discreto */
+.pgx-ai-option-secondary {
+    background: transparent;
+    border: 1px dashed rgba(99, 102, 241, 0.25);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+.pgx-ai-option-secondary:hover {
+    background: rgba(99, 102, 241, 0.06);
+    border-style: solid;
+    color: var(--text-secondary);
+}
+.pgx-ai-option-secondary small {
+    opacity: 0.7;
 }
 .pgx-ai-warning {
     margin: 0.75rem 0 0 0;
