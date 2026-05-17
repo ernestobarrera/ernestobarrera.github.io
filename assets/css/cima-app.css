@@ -7033,6 +7033,31 @@ code {
     line-height: 1.4;
 }
 
+/* Cuando el conteo es 0 (no positivo): gris, para no inducir a leer "encontrado" */
+.evidence-count-badge--zero {
+    background: var(--bg-surface-hover);
+    color: var(--text-secondary);
+}
+
+/* Sparkline anual sólo en la fila "Todas las citas" */
+.evidence-sparkline {
+    flex-shrink: 0;
+    width: 92px;
+    height: 22px;
+    color: var(--text-secondary);
+    margin-right: 0.5rem;
+    display: block;
+}
+
+.evidence-sparkline rect {
+    cursor: help;
+    transition: opacity 0.15s;
+}
+
+.evidence-sparkline rect:hover {
+    opacity: 1 !important;
+}
+
 .evidence-filter-badge-ext {
     display: inline-block;
     background: var(--surface-alt, rgba(0,0,0,0.06));
@@ -7325,6 +7350,11 @@ code {
     line-height: 1.4;
     min-width: 1.8rem;
     text-align: center;
+}
+
+.evidence-combine-result--zero {
+    background: var(--bg-surface-hover);
+    color: var(--text-secondary);
 }
 
 .evidence-combine-ext {

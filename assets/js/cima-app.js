@@ -9616,10 +9616,11 @@ ${materialesPlaceholder}
                     </div>
                 </div>
                 <div class="evidence-filter-list">
-                    <a class="evidence-filter-item" id="evlink-total" href="#" target="_blank" rel="noopener">
+                    <a class="evidence-filter-item evidence-filter-item--total" id="evlink-total" href="#" target="_blank" rel="noopener">
                         <span class="evidence-filter-icon"><i class="fas fa-database"></i></span>
                         <span class="evidence-filter-label">Todas las citas</span>
                         <span class="evidence-filter-spacer"></span>
+                        <svg class="evidence-sparkline" id="evidence-sparkline" width="92" height="22" viewBox="0 0 92 22" preserveAspectRatio="none" aria-label="Evolución anual de publicaciones (últimos 10 años)"></svg>
                         <span class="evidence-filter-count" id="evcount-total"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
                         <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
                     </a>
@@ -9878,7 +9879,8 @@ ${materialesPlaceholder}
                 const el = document.getElementById(`evcount-${req.id}`);
                 if (el) {
                     const n = this._evidenceCountCache.get(req.query);
-                    el.innerHTML = `<span class="evidence-count-badge">${n.toLocaleString('es-ES')}</span>`;
+                    const cls = n === 0 ? 'evidence-count-badge evidence-count-badge--zero' : 'evidence-count-badge';
+                    el.innerHTML = `<span class="${cls}">${n.toLocaleString('es-ES')}</span>`;
                 }
                 continue;
             }
@@ -9891,7 +9893,10 @@ ${materialesPlaceholder}
                     this._evidenceCountCache.set(r.query, count);
                     if (this._evidenceCountCycle !== cycle) return;
                     const el = document.getElementById(`evcount-${r.id}`);
-                    if (el) el.innerHTML = `<span class="evidence-count-badge">${count.toLocaleString('es-ES')}</span>`;
+                    if (el) {
+                        const cls = count === 0 ? 'evidence-count-badge evidence-count-badge--zero' : 'evidence-count-badge';
+                        el.innerHTML = `<span class="${cls}">${count.toLocaleString('es-ES')}</span>`;
+                    }
                 } catch {
                     if (this._evidenceCountCycle !== cycle) return;
                     const el = document.getElementById(`evcount-${r.id}`);
@@ -9905,6 +9910,92 @@ ${materialesPlaceholder}
         // Refrescar la barra de combinación si hay ≥2 filtros seleccionados
         // (se ejecuta sin esperar; el método debouncea internamente vía cycle).
         this._updateEvidenceCombineBar();
+
+        // Sparkline temporal: sólo se recalcula si el término cambió (no en cambios de slider).
+        // No bloquea la UX principal: arranca tras el grid y respeta su propio rate-limit.
+        if (this._lastSparklineTerm !== drugTerm) {
+            this._lastSparklineTerm = drugTerm;
+            this._loadEvidenceSparkline(drugTerm);
+        }
+    }
+
+    // Carga 10 conteos anuales (últimos 10 años) para dibujar la sparkline
+    // en la fila "Todas las citas". Se ejecuta en background tras el grid principal.
+    // No comparte cache con el slider (las queries son `"YYYY"[dp]`, no `last X days`).
+    async _loadEvidenceSparkline(drugTerm) {
+        const svg = document.getElementById('evidence-sparkline');
+        if (!svg) return;
+
+        if (!this._evidenceCountCache) this._evidenceCountCache = new Map();
+        const cycleId = (this._evSparklineCycle = (this._evSparklineCycle || 0) + 1);
+
+        const currentYear = new Date().getFullYear();
+        const years = [];
+        for (let i = 9; i >= 0; i--) years.push(currentYear - i);
+
+        const counts = new Array(years.length).fill(null);
+        // Placeholder inicial: barras finas grises mientras carga
+        this._renderEvidenceSparkline(svg, years, counts);
+
+        // Pequeño retraso inicial para no competir con el grid recién lanzado
+        await new Promise(r => setTimeout(r, 600));
+        if (this._evSparklineCycle !== cycleId) return;
+
+        for (let i = 0; i < years.length; i++) {
+            if (this._evSparklineCycle !== cycleId) return;
+            const year = years[i];
+            const query = `${drugTerm} AND ("${year}"[dp])`;
+
+            if (this._evidenceCountCache.has(query)) {
+                counts[i] = this._evidenceCountCache.get(query);
+                this._renderEvidenceSparkline(svg, years, counts);
+                continue;
+            }
+
+            // Fire-and-forget: el siguiente await spacea el lanzamiento (400 ms = 2.5 req/s)
+            ((idx, q, cycle) => {
+                this._fetchPubmedCount(q, () => this._evSparklineCycle === cycle)
+                    .then(count => {
+                        if (count == null || this._evSparklineCycle !== cycle) return;
+                        this._evidenceCountCache.set(q, count);
+                        counts[idx] = count;
+                        this._renderEvidenceSparkline(svg, years, counts);
+                    })
+                    .catch(() => {
+                        if (this._evSparklineCycle !== cycle) return;
+                        counts[idx] = 0; // tratar fallo como 0 para no romper el render
+                        this._renderEvidenceSparkline(svg, years, counts);
+                    });
+            })(i, query, cycleId);
+
+            await new Promise(r => setTimeout(r, 400));
+        }
+    }
+
+    _renderEvidenceSparkline(svg, years, counts) {
+        const W = 92, H = 22;
+        const n = years.length;
+        const gap = 1;
+        const barW = (W - gap * (n - 1)) / n;
+        const valid = counts.filter(c => c != null && c >= 0);
+        const max = valid.length ? Math.max(...valid, 1) : 1;
+        const currentYear = new Date().getFullYear();
+
+        svg.innerHTML = years.map((year, i) => {
+            const x = i * (barW + gap);
+            const count = counts[i];
+            if (count == null) {
+                // Placeholder mientras carga: barra fina muy tenue
+                return `<rect x="${x}" y="${H - 1}" width="${barW}" height="1" fill="currentColor" opacity="0.15"/>`;
+            }
+            // Año en curso suele estar incompleto → barra rayada / más tenue
+            const isPartial = year === currentYear;
+            const h = count > 0 ? Math.max(1.5, (count / max) * (H - 2)) : 0.8;
+            const y = H - h;
+            const opacity = isPartial ? 0.45 : 0.85;
+            const title = `${year}${isPartial ? ' (parcial)' : ''}: ${count.toLocaleString('es-ES')} artículo${count === 1 ? '' : 's'}`;
+            return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barW.toFixed(2)}" height="${h.toFixed(2)}" fill="var(--primary)" opacity="${opacity}" rx="0.5"><title>${title}</title></rect>`;
+        }).join('');
     }
 
     // Helper compartido: petición de conteo a NCBI con un retry ante rate limit.
@@ -9990,11 +10081,16 @@ ${materialesPlaceholder}
         if (!this._evidenceCountCache) this._evidenceCountCache = new Map();
         const cycle = ++this._evCombineCycle;
 
+        const applyCount = (n) => {
+            if (!resultEl) return;
+            resultEl.textContent = n.toLocaleString('es-ES');
+            resultEl.classList.toggle('evidence-combine-result--zero', n === 0);
+        };
+
         // Caché hit — actualizar inmediatamente
         if (this._evidenceCountCache.has(finalQuery)) {
             if (cycle !== this._evCombineCycle) return;
-            const count = this._evidenceCountCache.get(finalQuery);
-            if (resultEl) resultEl.textContent = count.toLocaleString('es-ES');
+            applyCount(this._evidenceCountCache.get(finalQuery));
             return;
         }
 
@@ -10003,7 +10099,7 @@ ${materialesPlaceholder}
             if (count == null) return;
             this._evidenceCountCache.set(finalQuery, count);
             if (cycle !== this._evCombineCycle) return;
-            if (resultEl) resultEl.textContent = count.toLocaleString('es-ES');
+            applyCount(count);
         } catch {
             if (cycle !== this._evCombineCycle) return;
             if (resultEl) resultEl.innerHTML = '<span class="evidence-count-err">–</span>';
