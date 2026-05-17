@@ -9516,14 +9516,49 @@ ${materialesPlaceholder}
         if (!container || container.dataset.loaded) return;
         container.dataset.loaded = '1';
 
+        // Elimina sufijos de sal/hidratación/ion del final del INN para obtener el término base
+        // que PubMed mapea correctamente a MeSH/Supplementary Concept.
+        // Ej: "DABIGATRAN ETEXILATO MESILATO" → "dabigatran"
+        //     "ACETILSALICILICO ACIDO" → "acetilsalicilico" (inversión CIMA)
+        //     "CLAVULANATO POTASIO" → "clavulanato"
+        const SALT_TOKENS = new Set([
+            'etexilato','mesilato','besilato','tosilato','xinafoato',
+            'hidrocloruro','clorhidrato',
+            'fosfato','bisulfato','sulfato','maleato','fumarato',
+            'tartrato','succinato','acetato','embonato',
+            'trihidrato','hemihidrato','monohidrato',
+            'potasio','sodio','calcio','magnesio',
+            'acido'
+        ]);
+        const baseInn = (name) => {
+            const words = name.toLowerCase().trim().split(/\s+/);
+            while (words.length > 1 && SALT_TOKENS.has(words[words.length - 1])) words.pop();
+            return words.join(' ');
+        };
+
         const pa = med.principiosActivos;
-        const drugTerm = pa && pa.length > 0
-            ? pa.map(p => p.nombre.toLowerCase()).join(' ')
-            : med.nombre.toLowerCase();
+
+        // Construir término PubMed: (marca|inn_base) si difieren, solo inn si genérico.
+        // Pipe = OR en PubMed; PubMed mapea marca → Supplementary Concept automáticamente.
+        let drugTerm;
+        if (pa && pa.length > 0) {
+            const innBase = pa.map(p => baseInn(p.nombre)).join(' ');
+            const brand = med.nombre.split(/\s*\d/)[0].trim().toLowerCase();
+            const brandFirst = brand.split(/\s+/)[0];
+            const innFirstWords = pa.map(p => baseInn(p.nombre).split(/\s+/)[0]);
+            const isGeneric = innFirstWords.some(w => brandFirst === w || brand.startsWith(w + ' '));
+            drugTerm = isGeneric ? innBase : `(${brand}|${innBase})`;
+        } else {
+            drugTerm = med.nombre.split(/\s*\d/)[0].trim().toLowerCase();
+        }
 
         const enc = q => encodeURIComponent(q);
 
-        // Filtros del repo pubmed-filters — se cargan como .txt desde GitHub Pages
+        const resetCounts = () => document.querySelectorAll('[id^="evcount-"]').forEach(el => {
+            el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
+        });
+        const getCurrentTerm = () => document.getElementById('evidence-drug-input')?.value.trim() || drugTerm;
+
         const filterDefs = [
             { id: 'metaanalysis',        cat: 'methodology', label: 'RS / Meta-análisis / HTA',      icon: 'fa-layer-group' },
             { id: 'indirect_comparison', cat: 'methodology', label: 'Comparaciones indirectas',       icon: 'fa-random' },
@@ -9541,7 +9576,12 @@ ${materialesPlaceholder}
                     <i class="fas fa-book-medical"></i>
                     <div class="evidence-section-header-text">
                         <h4 class="evidence-section-title">Literatura científica · PubMed</h4>
-                        <p class="evidence-section-subtitle">Término: <strong>${this._escapeHtml(drugTerm)}</strong></p>
+                        <div class="evidence-drug-row">
+                            <label class="evidence-drug-label" for="evidence-drug-input" title="Término auto-generado. Edítalo si PubMed no lo reconoce bien."><i class="fas fa-search"></i></label>
+                            <input type="text" id="evidence-drug-input" class="evidence-drug-input"
+                                   value="${this._escapeHtml(drugTerm)}"
+                                   title="Término auto-generado a partir de marca e INN (sin sufijos de sal). Edítalo para ajustar los resultados.">
+                        </div>
                     </div>
                     <label class="evidence-date-toggle" title="Filtrar todos los resultados a los últimos 5 años (1825 días)">
                         <input type="checkbox" id="evidence-date-check" checked>
@@ -9570,7 +9610,7 @@ ${materialesPlaceholder}
                     <i class="fas fa-info-circle"></i>
                     Filtros validados del repositorio
                     <a href="https://ernestobarrera.github.io/buscar-pubmed.html" target="_blank">pubmed-filters</a>.
-                    Pasa el cursor sobre <i class="fas fa-info-circle" style="color:var(--primary)"></i> para ver fuente y métricas del filtro.
+                    Pasa el cursor sobre <i class="fas fa-info-circle" style="color:var(--primary)"></i> para ver fuente y métricas.
                 </p>
             </div>
 
@@ -9583,13 +9623,13 @@ ${materialesPlaceholder}
                     </div>
                 </div>
                 <div class="evidence-filter-list">
-                    <a class="evidence-filter-item" href="https://clinicaltrials.gov/search?term=${enc(drugTerm)}&viewType=Table" target="_blank" rel="noopener" title="Registro de ensayos de EEUU (FDA / NIH)">
+                    <a class="evidence-filter-item" id="evlink-ct" href="https://clinicaltrials.gov/search?term=${enc(drugTerm)}&viewType=Table" target="_blank" rel="noopener" title="Registro de ensayos de EEUU (FDA / NIH)">
                         <span class="evidence-filter-icon"><i class="fas fa-flag-usa"></i></span>
                         <span class="evidence-filter-label">ClinicalTrials.gov</span>
                         <span class="evidence-filter-count evidence-filter-count--static"><span class="evidence-filter-badge-ext">EEUU · FDA/NIH</span></span>
                         <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
                     </a>
-                    <a class="evidence-filter-item" href="https://trialsearch.who.int/?SearchTerm=${enc(drugTerm)}" target="_blank" rel="noopener" title="Registro Internacional de Ensayos Clínicos (OMS / ICTRP)">
+                    <a class="evidence-filter-item" id="evlink-who" href="https://trialsearch.who.int/?SearchTerm=${enc(drugTerm)}" target="_blank" rel="noopener" title="Registro Internacional de Ensayos Clínicos (OMS / ICTRP)">
                         <span class="evidence-filter-icon"><i class="fas fa-globe-europe"></i></span>
                         <span class="evidence-filter-label">WHO ICTRP</span>
                         <span class="evidence-filter-count evidence-filter-count--static"><span class="evidence-filter-badge-ext">OMS · Internacional</span></span>
@@ -9602,14 +9642,28 @@ ${materialesPlaceholder}
         // Carga inicial con fecha activada
         this._loadEvidenceFiltersAndCount(drugTerm, filterDefs, true);
 
-        // Checkbox de fecha — recarga conteos sin re-renderizar el HTML
         const checkbox = document.getElementById('evidence-date-check');
+        const input = document.getElementById('evidence-drug-input');
+
+        // Checkbox de fecha — recarga conteos sin re-renderizar
         if (checkbox) {
             checkbox.addEventListener('change', () => {
-                document.querySelectorAll('[id^="evcount-"]').forEach(el => {
-                    el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
-                });
-                this._loadEvidenceFiltersAndCount(drugTerm, filterDefs, checkbox.checked);
+                resetCounts();
+                this._loadEvidenceFiltersAndCount(getCurrentTerm(), filterDefs, checkbox.checked);
+            });
+        }
+
+        // Campo editable — actualiza todos los enlaces y recarga conteos
+        if (input) {
+            input.addEventListener('change', () => {
+                const t = getCurrentTerm();
+                if (!t) return;
+                const ctLink = document.getElementById('evlink-ct');
+                const whoLink = document.getElementById('evlink-who');
+                if (ctLink) ctLink.href = `https://clinicaltrials.gov/search?term=${enc(t)}&viewType=Table`;
+                if (whoLink) whoLink.href = `https://trialsearch.who.int/?SearchTerm=${enc(t)}`;
+                resetCounts();
+                this._loadEvidenceFiltersAndCount(t, filterDefs, checkbox?.checked ?? true);
             });
         }
     }

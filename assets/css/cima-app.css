@@ -7082,6 +7082,43 @@ code {
     min-width: 0;
 }
 
+.evidence-drug-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.25rem;
+}
+
+.evidence-drug-label {
+    color: var(--primary);
+    font-size: 0.72rem;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.evidence-drug-input {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.72rem;
+    font-family: monospace;
+    padding: 0.2rem 0.45rem;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--text-primary);
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.evidence-drug-input:hover {
+    border-color: var(--primary);
+}
+
+.evidence-drug-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: var(--bg);
+}
+
 .evidence-date-toggle {
     display: inline-flex;
     align-items: center;
