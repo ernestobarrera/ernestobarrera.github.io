@@ -9594,11 +9594,14 @@ ${materialesPlaceholder}
                     <i class="fas fa-book-medical"></i>
                     <div class="evidence-section-header-text">
                         <h4 class="evidence-section-title">Literatura científica · PubMed</h4>
-                        <div class="evidence-drug-row">
-                            <label class="evidence-drug-label" for="evidence-drug-input" title="Término auto-generado. Edítalo si PubMed no lo reconoce bien."><i class="fas fa-search"></i></label>
+                        <div class="evidence-drug-row" title="Edita para ajustar el término de búsqueda en PubMed">
+                            <label class="evidence-drug-label" for="evidence-drug-input"><i class="fas fa-search"></i></label>
                             <input type="text" id="evidence-drug-input" class="evidence-drug-input"
                                    value="${this._escapeHtml(drugTerm)}"
-                                   title="Término auto-generado a partir de marca e INN (sin sufijos de sal). Edítalo para ajustar los resultados.">
+                                   placeholder="término PubMed"
+                                   spellcheck="false"
+                                   autocomplete="off"
+                                   title="Término auto-generado a partir de marca e INN (sin sufijos de sal). Edítalo y pulsa Enter o haz clic fuera para recargar.">
                         </div>
                     </div>
                     <div class="evidence-date-range" title="Rango temporal de búsqueda. Mueve el deslizador para ampliar o estrechar.">
@@ -9904,12 +9907,21 @@ ${materialesPlaceholder}
     }
 
     // Helper compartido: petición de conteo a NCBI con un retry ante rate limit.
+    // Usa POST (NCBI lo recomienda para >200 chars/UIDs) — evita el límite ~8 KB de
+    // URL que rompía las queries combinadas con varios filtros largos.
+    // Content-Type application/x-www-form-urlencoded no dispara CORS preflight.
     // isStillValid: callback que devuelve false si el ciclo se ha invalidado
     // (cambio de término/fecha/selección durante el retry).
     async _fetchPubmedCount(query, isStillValid = () => true) {
-        const url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&rettype=count&retmode=json`;
+        const endpoint = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
+        const body = `db=pubmed&rettype=count&retmode=json&term=${encodeURIComponent(query)}`;
         const tryOnce = async () => {
-            const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body,
+                signal: AbortSignal.timeout(8000)
+            });
             if (res.status === 429) return { rateLimited: true };
             if (!res.ok) throw new Error('ncbi');
             const data = await res.json();
