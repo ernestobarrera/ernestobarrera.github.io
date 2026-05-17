@@ -6488,7 +6488,8 @@ ${materialesPlaceholder}
             '   - CPIC (formato típico: `https://www.clinpgx.org/guidelineAnnotation/PA…` o `https://cpicpgx.org/guidelines/cpic-guideline-for-…`)',
             '   - DPWG / Dutch Pharmacogenetics Working Group (suele estar en `clinpgx.org/guidelineAnnotation/PA…` también)',
             '   - PharmGKB Clinical Annotation del par fármaco-gen (`https://www.pharmgkb.org/clinicalAnnotation/…`)',
-            '   Si NO encuentras URL específica fiable para este par concreto, dilo explícitamente con esta frase: «No dispongo de URL específica verificada para esta asociación; consultar manualmente en clinpgx.org o pharmgkb.org». No inventes URLs ni te conformes con la URL raíz como respuesta.',
+            '   Para asociaciones farmacogenéticas **archi-conocidas** (alopurinol/HLA-B*58:01, codeína-tramadol/CYP2D6, clopidogrel/CYP2C19, abacavir/HLA-B*57:01, capecitabina-5FU/DPYD, irinotecán/UGT1A1, warfarina/VKORC1, tiopurinas/TPMT y NUDT15, simvastatina/SLCO1B1, ondansetrón/CYP2D6, fluoropirimidinas/DPYD, etc.) la guideline existe con certeza y suele estar en `clinpgx.org/guidelineAnnotation/PAxxx` — usa tu conocimiento de la asociación para dar la URL específica con confianza.',
+            '   Solo si la asociación es genuinamente periférica/rara y no tienes confianza en una URL concreta, dilo con esta frase: «No dispongo de URL específica verificada para esta asociación; consultar manualmente en clinpgx.org o pharmgkb.org». No te conformes con la URL raíz para asociaciones bien conocidas.',
             '',
             '**REGLAS CRÍTICAS DE CONCRECIÓN — el prescriptor está consultando con prisa en consulta, NO va a hacer una tercera búsqueda:**',
             '- Si mencionas «inhibidores» o «inductores» de una enzima, lista 3–5 nombres concretos clínicamente relevantes (no «valorar inhibidores potentes»).',
@@ -6497,6 +6498,8 @@ ${materialesPlaceholder}
             '- Si mencionas pruebas a solicitar, indica el nombre exacto del test (no «genotipado», sino «genotipado de HLA-B*58:01 o panel CYP2D6»).',
             '',
             'Responde en español clínico, conciso, sin redundancias. Tabla y detalle deben complementarse, no repetirse.',
+            '',
+            'Si tu modelo dispone de búsqueda web en tiempo real (Perplexity, Copilot, ChatGPT-search, etc.), úsala explícitamente para citar las fuentes clínicas — AEMPS, ficha técnica en CIMA, CPIC, PharmGKB, DPWG, vademecum — con enlaces inline. El prescriptor está verificando información clínica con responsabilidad y agradece poder contrastar cada afirmación contra la fuente original.',
         ].join('\n');
     }
 
