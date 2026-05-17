@@ -55,6 +55,10 @@ docs/medcheck/data/
 # Documentación técnica local (canónica en OneDrive/GITHUB/ernestobarreragithubio-documentos/)
 docs/MEDCHECK_API.md
 docs/medcheck/private/
+# CLAUDE.md del proyecto sitio: canónico en OneDrive/.../site-claude/CLAUDE.md (hardlinkeado)
+CLAUDE.md
+# Notas internas calculadora: canónicas en OneDrive/.../calculadora-productividad-docs/ (hardlinkeado)
+docs/calculadora_productividad/readme.md
 
 # =====================================================
 # PROTECCIÓN: Documentos privados, PDFs con copyright
