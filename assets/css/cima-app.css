@@ -1155,39 +1155,38 @@ body {
 /* Bloque "Consultar con IA" */
 .pgx-ai-block {
     margin-top: var(--space-md);
-}
-.pgx-ai-details {
     background: rgba(99, 102, 241, 0.06);
     border: 1px solid rgba(99, 102, 241, 0.25);
     border-radius: var(--radius-md);
     padding: var(--space-sm) var(--space-md);
 }
-.pgx-ai-details > summary {
-    cursor: pointer;
+.pgx-ai-header {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 500;
     color: #a5b4fc;
-    list-style: none;
+    margin-bottom: var(--space-sm);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px dashed rgba(99, 102, 241, 0.25);
 }
-.pgx-ai-details > summary::-webkit-details-marker { display: none; }
-.pgx-ai-details > summary > i.fa-robot { color: #818cf8; }
-.pgx-ai-details > summary > .pgx-ai-chev {
-    margin-left: auto;
-    font-size: 0.7rem;
-    transition: transform 0.2s ease;
-}
-.pgx-ai-details[open] > summary > .pgx-ai-chev { transform: rotate(180deg); }
+.pgx-ai-header > i.fa-robot { color: #818cf8; }
 
 .pgx-ai-menu {
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
-    margin-top: var(--space-sm);
-    padding-top: var(--space-sm);
-    border-top: 1px dashed rgba(99, 102, 241, 0.25);
+}
+.pgx-ai-menu-horizontal {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+}
+@media (max-width: 600px) {
+    .pgx-ai-menu-horizontal {
+        grid-template-columns: 1fr;
+    }
 }
 .pgx-ai-option {
     display: inline-flex;
@@ -1212,8 +1211,10 @@ body {
     background: rgba(99, 102, 241, 0.18);
     border: 1px solid rgba(99, 102, 241, 0.5);
     color: #e0e7ff;
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    padding: 0.7rem 0.9rem;
 }
 .pgx-ai-option-primary:hover {
     background: rgba(99, 102, 241, 0.28);
@@ -1223,12 +1224,13 @@ body {
 .pgx-ai-option-primary > i.fa-search {
     color: #818cf8;
     font-size: 1rem;
+    margin-bottom: 0.15rem;
 }
 .pgx-ai-option-main {
     font-weight: 600;
+    font-size: 0.9rem;
 }
 .pgx-ai-option-sub {
-    margin-left: auto;
     font-size: 0.72rem;
     color: var(--text-muted);
     font-style: italic;
@@ -1240,14 +1242,23 @@ body {
     border: 1px dashed rgba(99, 102, 241, 0.25);
     color: var(--text-muted);
     font-size: 0.78rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    padding: 0.7rem 0.9rem;
 }
 .pgx-ai-option-secondary:hover {
     background: rgba(99, 102, 241, 0.06);
     border-style: solid;
     color: var(--text-secondary);
 }
+.pgx-ai-option-secondary > i.fa-clipboard {
+    font-size: 1rem;
+    margin-bottom: 0.15rem;
+}
 .pgx-ai-option-secondary small {
     opacity: 0.7;
+    display: block;
 }
 .pgx-ai-warning {
     margin: 0.75rem 0 0 0;

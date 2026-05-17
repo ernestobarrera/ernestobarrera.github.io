@@ -6424,27 +6424,23 @@ ${materialesPlaceholder}
         const promptB64 = btoa(unescape(encodeURIComponent(prompt))); // safe data attribute storage
         return `
             <div class="pgx-ai-block">
-                <details class="pgx-ai-details">
-                    <summary>
-                        <i class="fas fa-robot"></i>
-                        Consultar con IA sobre estos biomarcadores
-                        <i class="fas fa-chevron-down pgx-ai-chev"></i>
-                    </summary>
-                    <div class="pgx-ai-menu">
-                        <a class="pgx-ai-option pgx-ai-option-primary" href="${perplexityUrl}" target="_blank" rel="noopener" title="Perplexity ofrece respuestas con citas a fuentes — recomendado para verificar información clínica">
-                            <i class="fas fa-search"></i>
-                            <span class="pgx-ai-option-main">Abrir en Perplexity</span>
-                            <span class="pgx-ai-option-sub">respuestas con citas a fuentes</span>
-                        </a>
-                        <button class="pgx-ai-option pgx-ai-option-secondary pgx-ai-copy" type="button" data-prompt-b64="${promptB64}" title="Copia el prompt al portapapeles para pegarlo en Claude, ChatGPT, Copilot, Gemini o cualquier otra IA">
-                            <i class="fas fa-clipboard"></i>
-                            <span>Copiar prompt para otra IA <small>(Claude, ChatGPT, Copilot…)</small></span>
-                        </button>
-                    </div>
-                    <p class="pgx-ai-warning text-muted">
-                        Las respuestas de IA pueden contener errores. Verifique siempre con fuentes primarias (ficha técnica AEMPS, guidelines CPIC).
-                    </p>
-                </details>
+                <div class="pgx-ai-header">
+                    <i class="fas fa-robot"></i> Consultar con IA sobre estos biomarcadores
+                </div>
+                <div class="pgx-ai-menu pgx-ai-menu-horizontal">
+                    <a class="pgx-ai-option pgx-ai-option-primary" href="${perplexityUrl}" target="_blank" rel="noopener" title="Perplexity ofrece respuestas con citas a fuentes — recomendado para verificar información clínica">
+                        <i class="fas fa-search"></i>
+                        <span class="pgx-ai-option-main">Abrir en Perplexity</span>
+                        <span class="pgx-ai-option-sub">respuestas con citas a fuentes</span>
+                    </a>
+                    <button class="pgx-ai-option pgx-ai-option-secondary pgx-ai-copy" type="button" data-prompt-b64="${promptB64}" title="Copia el prompt al portapapeles para pegarlo en Claude, ChatGPT, Copilot, Gemini o cualquier otra IA">
+                        <i class="fas fa-clipboard"></i>
+                        <span>Copiar prompt para otra IA <small>(Claude, ChatGPT, Copilot…)</small></span>
+                    </button>
+                </div>
+                <p class="pgx-ai-warning text-muted">
+                    Las respuestas de IA pueden contener errores. Verifique siempre con fuentes primarias (ficha técnica AEMPS, guidelines CPIC).
+                </p>
             </div>`;
     }
 
@@ -6469,12 +6465,12 @@ ${materialesPlaceholder}
             '',
             'Necesito una respuesta estructurada con el siguiente orden:',
             '',
-            '1. **Resumen interpretativo** (3–5 líneas, punto de partida): qué significa clínicamente esta asociación fármaco–biomarcador, a quién afecta (prevalencia poblacional aproximada si la conoces), magnitud del impacto (riesgo de toxicidad, pérdida de eficacia, etc.).',
+            '1. **Resumen interpretativo** (3–5 líneas, punto de partida): qué significa clínicamente esta asociación fármaco–biomarcador, a quién afecta (prevalencia poblacional aproximada si la conoces, desglosada por grupos étnicos o clínicos cuando sea relevante), magnitud del impacto (riesgo de toxicidad, pérdida de eficacia, etc.).',
             '',
-            '2. **Acción concreta** si el paciente presenta el genotipo/fenotipo descrito, según CPIC (Clinical Pharmacogenetics Implementation Consortium) nivel de evidencia 1A cuando exista. Para cada subapartado da una recomendación específica:',
-            '   - Dosis: mantener / ajustar (¿cuánto?) / suspender',
-            '   - Alternativa terapéutica concreta (no «valorar alternativa»)',
-            '   - Pruebas previas a solicitar (genotipado, despistaje) si están indicadas',
+            '2. **Acción concreta según estado genotípico del paciente**, cubriendo los TRES escenarios habituales (no solo el del paciente ya genotipado). Para cada uno: dosis (mantener / ajustar cuánto / suspender), alternativa terapéutica concreta (no «valorar alternativa»), pruebas previas si proceden:',
+            '   a) **Portador positivo conocido**: paciente con el genotipo/fenotipo descrito confirmado.',
+            '   b) **Portador negativo conocido** (variante salvaje / metabolizador normal): qué hacer y por qué se puede prescribir con seguridad.',
+            '   c) **Estado genotípico DESCONOCIDO — escenario más habitual en la práctica clínica**: qué hacer si el paciente pertenece a un grupo de riesgo previsto en la ficha técnica AEMPS (factor étnico, clínico, comorbilidad, tratamiento concomitante). Indica explícitamente cuál es el factor de riesgo aplicable a esta asociación concreta. ¿Cribar antes de iniciar? ¿Alternativa empírica por defecto en ese subgrupo? ¿Consentimiento informado? Si no hay factor de riesgo identificable, ¿puede iniciarse el tratamiento sin genotipado previo?',
             '',
             '3. **Contexto del prescriptor**: indica el perfil profesional al que aplica principalmente esta información (AP, oncología, hospital, etc.). Si se trata de un biomarcador oncológico somático y NO aplica a prescripción habitual fuera de oncología/anatomía patológica, dilo explícitamente y termina ahí.',
             '',
