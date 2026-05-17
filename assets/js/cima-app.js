@@ -5080,6 +5080,7 @@ class MedCheckApp {
             const isAdverseActive = initialTab === 'adverse';
             const isSafetyActive = initialTab === 'safety';
             const isAlertsActive = initialTab === 'alerts';
+            const isEvidenceActive = initialTab === 'evidence';
 
             // Track modal tab in analytics
             window._mcCurrentView = `modal-${initialTab}`;
@@ -5161,6 +5162,7 @@ class MedCheckApp {
                     <button class="modal-tab ${isDocsActive ? 'active' : ''} ${hasMateriales ? 'modal-tab-materials' : ''}" data-tab="docs" ${hasMateriales ? 'title="Contiene materiales informativos de seguridad AEMPS"' : ''}>Documentos${hasMateriales ? ' <i class="fas fa-file-medical-alt"></i>' : ''}${ftRecentDot}</button>
                     ${hasAempsAlerts ? `<button class="modal-tab alert-pulse ${isAlertsActive ? 'active' : ''}" data-tab="alerts"><i class="fas fa-exclamation-triangle"></i> Alertas AEMPS</button>` : ''}
                     ${hasPgx ? `<button class="modal-tab modal-tab-pgx ${isPgxActive ? 'active' : ''}" data-tab="pgx" title="Biomarcador farmacogenómico (AEMPS)"><i class="fas fa-dna"></i> PGx</button>` : ''}
+                    <button class="modal-tab modal-tab-evidence ${isEvidenceActive ? 'active' : ''}" data-tab="evidence" title="Evidencia científica: PubMed y registros de ensayos clínicos"><i class="fas fa-book-medical"></i> Evidencia</button>
                 </div>
 
                 <div id="tab-info" class="tab-content ${isInfoActive ? 'active' : ''}">
@@ -5213,6 +5215,12 @@ class MedCheckApp {
                         <p class="text-muted">Cargando biomarcadores AEMPS...</p>
                     </div>
                 </div>` : ''}
+
+                <div id="tab-evidence" class="tab-content ${isEvidenceActive ? 'active' : ''}">
+                    <div id="evidence-content">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
 `;
 
             // Load AEMPS alerts asynchronously if present
@@ -5226,6 +5234,10 @@ class MedCheckApp {
             // Load farmacogenómica si el modal se abre directamente en la pestaña PGx
             if (isPgxActive) {
                 this.loadPharmacogenomics(med.nregistro);
+            }
+            // Load evidencia si el modal se abre directamente en esa pestaña
+            if (isEvidenceActive) {
+                this.renderEvidenceTab(med);
             }
             // Detect QT information in section 4.4 silently — injects tab only if found
             this.loadQTDetection(med.nregistro, med.nombre);
@@ -5246,6 +5258,10 @@ class MedCheckApp {
                     // Load farmacogenómica when switching to PGx tab (lazy)
                     if (tab.dataset.tab === 'pgx' && !document.getElementById('pgx-content')?.dataset.loaded) {
                         this.loadPharmacogenomics(med.nregistro);
+                    }
+                    // Load evidencia when switching to evidence tab (lazy)
+                    if (tab.dataset.tab === 'evidence' && !document.getElementById('evidence-content')?.dataset.loaded) {
+                        this.renderEvidenceTab(med);
                     }
                 });
             });
@@ -9491,6 +9507,157 @@ ${materialesPlaceholder}
             else if (e.key === 'ArrowLeft') { this.prevGuideStep(); }
         };
         document.addEventListener('keydown', this._guideKeyHandler);
+    }
+
+    // ─── PESTAÑA EVIDENCIA ────────────────────────────────────────────────────
+
+    renderEvidenceTab(med) {
+        const container = document.getElementById('evidence-content');
+        if (!container || container.dataset.loaded) return;
+        container.dataset.loaded = '1';
+
+        // Término de búsqueda: principio(s) activo(s) en minúsculas
+        const pa = med.principiosActivos;
+        const drugTerm = pa && pa.length > 0
+            ? pa.map(p => p.nombre.toLowerCase()).join(' ')
+            : med.nombre.toLowerCase();
+
+        const enc = q => encodeURIComponent(q);
+        const pmBase = 'https://pubmed.ncbi.nlm.nih.gov/?term=';
+
+        const pubmedFilters = [
+            {
+                id: 'total',
+                label: 'Todas las citas',
+                desc: 'Resultado global sin filtro metodológico',
+                icon: 'fa-database',
+                query: drugTerm
+            },
+            {
+                id: 'sr',
+                label: 'RS / Meta-análisis',
+                desc: 'Revisiones sistemáticas, meta-análisis y evaluaciones de tecnologías sanitarias (CADTH)',
+                icon: 'fa-layer-group',
+                query: `${drugTerm} AND (systematic[sb] OR "meta-analysis"[pt] OR "systematic review"[pt])`
+            },
+            {
+                id: 'rct',
+                label: 'Ensayos clínicos',
+                desc: 'Ensayos clínicos aleatorizados y no aleatorizados indexados en PubMed',
+                icon: 'fa-flask',
+                query: `${drugTerm} AND (clinical trial[pt] OR randomized controlled trial[pt] OR controlled clinical trial[pt])`
+            },
+            {
+                id: 'ae',
+                label: 'Seguridad / RAM',
+                desc: 'Efectos adversos, tolerabilidad y seguridad (filtro Golder 2019)',
+                icon: 'fa-exclamation-triangle',
+                query: `${drugTerm} AND (ae[sh] OR safety[tiab] OR "adverse reaction*"[tiab] OR "side effect*"[tiab] OR tolerability[tiab] OR toxicity[tiab])`
+            },
+            {
+                id: 'gpc',
+                label: 'Guías de práctica clínica',
+                desc: 'Guías, protocolos y recomendaciones clínicas (CADTH)',
+                icon: 'fa-file-medical',
+                query: `${drugTerm} AND (guideline[pt] OR "practice guideline"[pt] OR "consensus statement"[pt])`
+            },
+            {
+                id: 'itc',
+                label: 'Comparaciones indirectas',
+                desc: 'Network meta-análisis, comparaciones indirectas y meta-análisis en red (CDA-AMC)',
+                icon: 'fa-random',
+                query: `${drugTerm} AND ("network meta-analysis"[mh] OR "indirect comparison"[tiab] OR "mixed treatment"[tiab] OR nma[tiab] OR "network meta-analys*"[tiab])`
+            },
+        ];
+
+        container.innerHTML = `
+            <div class="evidence-section">
+                <div class="evidence-section-header">
+                    <i class="fas fa-book-medical"></i>
+                    <div>
+                        <h4 class="evidence-section-title">Literatura científica · PubMed</h4>
+                        <p class="evidence-section-subtitle">Término: <strong>${this._escapeHtml(drugTerm)}</strong></p>
+                    </div>
+                </div>
+                <div class="evidence-filter-list">
+                    ${pubmedFilters.map(f => `
+                        <a class="evidence-filter-item" href="${pmBase}${enc(f.query)}" target="_blank" rel="noopener" title="${this._escapeHtml(f.desc)}">
+                            <span class="evidence-filter-icon"><i class="fas ${f.icon}"></i></span>
+                            <span class="evidence-filter-label">${f.label}</span>
+                            <span class="evidence-filter-count" id="evcount-${f.id}"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
+                            <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
+                        </a>
+                    `).join('')}
+                </div>
+                <p class="evidence-note">
+                    <i class="fas fa-info-circle"></i>
+                    Los contadores son aproximados (filtros simplificados para navegación rápida).
+                    Para búsquedas de precisión con filtros validados usa
+                    <a href="/buscar-pubmed.html" target="_blank">Buscar en PubMed</a>.
+                </p>
+            </div>
+
+            <div class="evidence-section">
+                <div class="evidence-section-header">
+                    <i class="fas fa-vials"></i>
+                    <div>
+                        <h4 class="evidence-section-title">Registros de ensayos clínicos</h4>
+                        <p class="evidence-section-subtitle">Estudios en curso y completados</p>
+                    </div>
+                </div>
+                <div class="evidence-filter-list">
+                    <a class="evidence-filter-item" href="https://clinicaltrials.gov/search?term=${enc(drugTerm)}&viewType=Table" target="_blank" rel="noopener" title="Registro de ensayos de EEUU (FDA / NIH)">
+                        <span class="evidence-filter-icon"><i class="fas fa-flag-usa"></i></span>
+                        <span class="evidence-filter-label">ClinicalTrials.gov</span>
+                        <span class="evidence-filter-count evidence-filter-count--static"><span class="evidence-filter-badge-ext">EEUU · FDA/NIH</span></span>
+                        <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
+                    </a>
+                    <a class="evidence-filter-item" href="https://trialsearch.who.int/?SearchTerm=${enc(drugTerm)}" target="_blank" rel="noopener" title="Registro Internacional de Ensayos Clínicos (OMS / ICTRP)">
+                        <span class="evidence-filter-icon"><i class="fas fa-globe-europe"></i></span>
+                        <span class="evidence-filter-label">WHO ICTRP</span>
+                        <span class="evidence-filter-count evidence-filter-count--static"><span class="evidence-filter-badge-ext">OMS · Internacional</span></span>
+                        <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
+                    </a>
+                </div>
+            </div>
+        `;
+
+        this._fetchEvidenceCounts(pubmedFilters);
+    }
+
+    async _fetchEvidenceCounts(filters) {
+        if (!this._evidenceCountCache) this._evidenceCountCache = new Map();
+
+        const fetchOne = async (f) => {
+            if (this._evidenceCountCache.has(f.query)) {
+                return { id: f.id, count: this._evidenceCountCache.get(f.query) };
+            }
+            try {
+                const url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(f.query)}&rettype=count&retmode=json`;
+                const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+                if (!res.ok) throw new Error('ncbi-error');
+                const data = await res.json();
+                const count = parseInt(data.esearchresult.count, 10);
+                this._evidenceCountCache.set(f.query, count);
+                return { id: f.id, count };
+            } catch {
+                return { id: f.id, count: null };
+            }
+        };
+
+        // Lanzar en serie con pausa mínima para respetar límite NCBI (3 req/s sin API key)
+        for (const f of filters) {
+            fetchOne(f).then(({ id, count }) => {
+                const el = document.getElementById(`evcount-${id}`);
+                if (!el) return;
+                if (count === null) {
+                    el.innerHTML = '<span class="evidence-count-err" title="No se pudo obtener el conteo">–</span>';
+                } else {
+                    el.innerHTML = `<span class="evidence-count-badge">${count.toLocaleString('es-ES')}</span>`;
+                }
+            });
+            await new Promise(r => setTimeout(r, 340));
+        }
     }
 
     endGuide() {
