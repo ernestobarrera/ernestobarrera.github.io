@@ -9737,7 +9737,34 @@ ${materialesPlaceholder}
             }))
         ];
 
-        // Lanzar en serie respetando límite NCBI (3 req/s sin API key)
+        // Helper: petición de conteo a NCBI con un retry ante rate limit.
+        // NCBI sin API key = 3 req/s. Puede responder 429 o 200 con
+        // esearchresult.ERROR cuando satura. Tratamos ambos casos.
+        const fetchCount = async (query, cycle) => {
+            const url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&rettype=count&retmode=json`;
+            const tryOnce = async () => {
+                const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+                if (res.status === 429) return { rateLimited: true };
+                if (!res.ok) throw new Error('ncbi');
+                const data = await res.json();
+                const errMsg = data?.esearchresult?.ERROR;
+                if (errMsg && /rate|limit|busy|too many/i.test(errMsg)) return { rateLimited: true };
+                if (errMsg) throw new Error('ncbi-error');
+                return { count: parseInt(data.esearchresult.count, 10) };
+            };
+
+            let result = await tryOnce();
+            if (result.rateLimited) {
+                await new Promise(r => setTimeout(r, 1200));
+                if (this._evidenceCountCycle !== cycle) return null;
+                result = await tryOnce();
+                if (result.rateLimited) throw new Error('rate-limit-persistent');
+            }
+            return result.count;
+        };
+
+        // Lanzar en serie respetando límite NCBI (3 req/s sin API key).
+        // 400 ms = 2.5 req/s con margen para jitter de red.
         for (const req of countRequests) {
             if (this._evidenceCountCycle !== cycleId) break;
 
@@ -9757,14 +9784,11 @@ ${materialesPlaceholder}
                 continue;
             }
 
-            // Petición a NCBI
+            // Petición fire-and-forget con retry interno ante rate limit
             (async (r, cycle) => {
                 try {
-                    const url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(r.query)}&rettype=count&retmode=json`;
-                    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-                    if (!res.ok) throw new Error('ncbi');
-                    const data = await res.json();
-                    const count = parseInt(data.esearchresult.count, 10);
+                    const count = await fetchCount(r.query, cycle);
+                    if (count == null) return; // cancelado durante el retry
                     this._evidenceCountCache.set(r.query, count);
                     if (this._evidenceCountCycle !== cycle) return;
                     const el = document.getElementById(`evcount-${r.id}`);
@@ -9776,7 +9800,7 @@ ${materialesPlaceholder}
                 }
             })(req, cycleId);
 
-            await new Promise(r => setTimeout(r, 340));
+            await new Promise(r => setTimeout(r, 400));
         }
     }
 
