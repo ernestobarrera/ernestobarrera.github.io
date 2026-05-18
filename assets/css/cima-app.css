@@ -7039,23 +7039,71 @@ code {
     color: var(--text-secondary);
 }
 
-/* Sparkline anual sólo en la fila "Todas las citas" */
-.evidence-sparkline {
-    flex-shrink: 0;
-    width: 92px;
-    height: 22px;
-    color: var(--text-secondary);
-    margin-right: 0.5rem;
-    display: block;
+/* Sparkline: fila propia bajo "Todas las citas" con eje X y máximo en cabecera */
+.evidence-sparkline-row {
+    padding: 0.45rem 0.7rem 0.4rem;
+    margin: 0.15rem 0 0.35rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.025);
+    border-left: 2px solid var(--border-hover);
 }
 
-.evidence-sparkline rect {
+.evidence-sparkline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.2rem;
+    line-height: 1.2;
+}
+
+.evidence-sparkline-title {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.evidence-sparkline-meta {
+    font-size: 0.62rem;
+    opacity: 0.85;
+    font-variant-numeric: tabular-nums;
+}
+
+.evidence-sparkline-svg {
+    display: block;
+    width: 100%;
+    height: 40px;
+    color: var(--text-secondary);
+    overflow: visible;
+}
+
+.evidence-sparkline-svg rect {
     cursor: help;
     transition: opacity 0.15s;
 }
 
-.evidence-sparkline rect:hover {
+.evidence-sparkline-svg rect:hover {
     opacity: 1 !important;
+}
+
+.evidence-sparkline-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.58rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+}
+
+.evidence-sparkline-axis-tick {
+    flex: 1;
+    text-align: center;
+    line-height: 1;
+}
+
+.evidence-sparkline-axis-tick--empty {
+    visibility: hidden;
 }
 
 .evidence-filter-badge-ext {

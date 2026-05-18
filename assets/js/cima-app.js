@@ -9620,10 +9620,17 @@ ${materialesPlaceholder}
                         <span class="evidence-filter-icon"><i class="fas fa-database"></i></span>
                         <span class="evidence-filter-label">Todas las citas</span>
                         <span class="evidence-filter-spacer"></span>
-                        <svg class="evidence-sparkline" id="evidence-sparkline" width="92" height="22" viewBox="0 0 92 22" preserveAspectRatio="none" aria-label="Evolución anual de publicaciones (últimos 10 años)"></svg>
                         <span class="evidence-filter-count" id="evcount-total"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
                         <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
                     </a>
+                    <div class="evidence-sparkline-row" id="evidence-sparkline-row" aria-label="Evolución de publicaciones por bienio en los últimos 20 años">
+                        <div class="evidence-sparkline-header">
+                            <span class="evidence-sparkline-title">Publicaciones por bienio (20 a)</span>
+                            <span class="evidence-sparkline-meta" id="evidence-sparkline-meta"></span>
+                        </div>
+                        <svg class="evidence-sparkline-svg" id="evidence-sparkline" viewBox="0 0 320 40" preserveAspectRatio="none"></svg>
+                        <div class="evidence-sparkline-axis" id="evidence-sparkline-axis"></div>
+                    </div>
                     ${filterDefs.map(f => `
                         <div class="evidence-filter-row" data-fid="${f.id}">
                             <label class="evidence-filter-check" title="Combinar con otros filtros (AND / OR)">
@@ -9919,52 +9926,66 @@ ${materialesPlaceholder}
         }
     }
 
-    // Carga 10 conteos anuales (últimos 10 años) para dibujar la sparkline
-    // en la fila "Todas las citas". Se ejecuta en background tras el grid principal.
-    // No comparte cache con el slider (las queries son `"YYYY"[dp]`, no `last X days`).
+    // Carga 10 conteos en bins de 2 años (últimos 20 años) para dibujar la sparkline
+    // en su propia fila bajo "Todas las citas". Se ejecuta en background tras el grid.
     async _loadEvidenceSparkline(drugTerm) {
         const svg = document.getElementById('evidence-sparkline');
-        if (!svg) return;
+        const axis = document.getElementById('evidence-sparkline-axis');
+        const meta = document.getElementById('evidence-sparkline-meta');
+        if (!svg || !axis) return;
 
         if (!this._evidenceCountCache) this._evidenceCountCache = new Map();
         const cycleId = (this._evSparklineCycle = (this._evSparklineCycle || 0) + 1);
 
+        const BIN_SIZE = 2;       // años por barra
+        const TOTAL_BINS = 10;    // 20 años de cobertura
         const currentYear = new Date().getFullYear();
-        const years = [];
-        for (let i = 9; i >= 0; i--) years.push(currentYear - i);
+        const bins = [];
+        for (let i = TOTAL_BINS - 1; i >= 0; i--) {
+            const endYear = currentYear - i * BIN_SIZE;
+            const startYear = endYear - BIN_SIZE + 1;
+            bins.push({ startYear, endYear });
+        }
 
-        const counts = new Array(years.length).fill(null);
-        // Placeholder inicial: barras finas grises mientras carga
-        this._renderEvidenceSparkline(svg, years, counts);
+        // Render del eje X una sola vez (5 etiquetas equiespaciadas)
+        const axisIdx = [0, Math.floor(TOTAL_BINS * 0.25), Math.floor(TOTAL_BINS * 0.5), Math.floor(TOTAL_BINS * 0.75), TOTAL_BINS - 1];
+        axis.innerHTML = bins.map((b, i) => {
+            if (axisIdx.includes(i)) {
+                return `<span class="evidence-sparkline-axis-tick">'${String(b.endYear).slice(-2)}</span>`;
+            }
+            return `<span class="evidence-sparkline-axis-tick evidence-sparkline-axis-tick--empty"></span>`;
+        }).join('');
+
+        const counts = new Array(bins.length).fill(null);
+        this._renderEvidenceSparkline(svg, meta, bins, counts);
 
         // Pequeño retraso inicial para no competir con el grid recién lanzado
         await new Promise(r => setTimeout(r, 600));
         if (this._evSparklineCycle !== cycleId) return;
 
-        for (let i = 0; i < years.length; i++) {
+        for (let i = 0; i < bins.length; i++) {
             if (this._evSparklineCycle !== cycleId) return;
-            const year = years[i];
-            const query = `${drugTerm} AND ("${year}"[dp])`;
+            const { startYear, endYear } = bins[i];
+            const query = `${drugTerm} AND ("${startYear}":"${endYear}"[dp])`;
 
             if (this._evidenceCountCache.has(query)) {
                 counts[i] = this._evidenceCountCache.get(query);
-                this._renderEvidenceSparkline(svg, years, counts);
+                this._renderEvidenceSparkline(svg, meta, bins, counts);
                 continue;
             }
 
-            // Fire-and-forget: el siguiente await spacea el lanzamiento (400 ms = 2.5 req/s)
             ((idx, q, cycle) => {
                 this._fetchPubmedCount(q, () => this._evSparklineCycle === cycle)
                     .then(count => {
                         if (count == null || this._evSparklineCycle !== cycle) return;
                         this._evidenceCountCache.set(q, count);
                         counts[idx] = count;
-                        this._renderEvidenceSparkline(svg, years, counts);
+                        this._renderEvidenceSparkline(svg, meta, bins, counts);
                     })
                     .catch(() => {
                         if (this._evSparklineCycle !== cycle) return;
-                        counts[idx] = 0; // tratar fallo como 0 para no romper el render
-                        this._renderEvidenceSparkline(svg, years, counts);
+                        counts[idx] = 0;
+                        this._renderEvidenceSparkline(svg, meta, bins, counts);
                     });
             })(i, query, cycleId);
 
@@ -9972,30 +9993,58 @@ ${materialesPlaceholder}
         }
     }
 
-    _renderEvidenceSparkline(svg, years, counts) {
-        const W = 92, H = 22;
-        const n = years.length;
-        const gap = 1;
+    _renderEvidenceSparkline(svg, meta, bins, counts) {
+        const W = 320, H = 40;
+        const TOP_PAD = 6;        // margen superior para etiqueta de pico
+        const n = bins.length;
+        const gap = 3;
         const barW = (W - gap * (n - 1)) / n;
         const valid = counts.filter(c => c != null && c >= 0);
         const max = valid.length ? Math.max(...valid, 1) : 1;
         const currentYear = new Date().getFullYear();
 
-        svg.innerHTML = years.map((year, i) => {
+        // Bin con el pico (para resaltar)
+        let peakIdx = -1;
+        if (valid.length === n) {
+            peakIdx = counts.indexOf(max);
+        }
+
+        const bars = bins.map((b, i) => {
             const x = i * (barW + gap);
             const count = counts[i];
             if (count == null) {
-                // Placeholder mientras carga: barra fina muy tenue
-                return `<rect x="${x}" y="${H - 1}" width="${barW}" height="1" fill="currentColor" opacity="0.15"/>`;
+                return `<rect x="${x.toFixed(2)}" y="${(H - 1).toFixed(2)}" width="${barW.toFixed(2)}" height="1" fill="currentColor" opacity="0.15"/>`;
             }
-            // Año en curso suele estar incompleto → barra rayada / más tenue
-            const isPartial = year === currentYear;
-            const h = count > 0 ? Math.max(1.5, (count / max) * (H - 2)) : 0.8;
+            const isPartial = b.endYear >= currentYear;
+            const h = count > 0 ? Math.max(2, (count / max) * (H - TOP_PAD - 2)) : 1;
             const y = H - h;
-            const opacity = isPartial ? 0.45 : 0.85;
-            const title = `${year}${isPartial ? ' (parcial)' : ''}: ${count.toLocaleString('es-ES')} artículo${count === 1 ? '' : 's'}`;
-            return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barW.toFixed(2)}" height="${h.toFixed(2)}" fill="var(--primary)" opacity="${opacity}" rx="0.5"><title>${title}</title></rect>`;
+            const opacity = isPartial ? 0.5 : (i === peakIdx ? 1 : 0.85);
+            const fill = i === peakIdx ? 'var(--primary)' : 'var(--primary)';
+            const title = `${b.startYear}–${b.endYear}${isPartial ? ' (parcial)' : ''}: ${count.toLocaleString('es-ES')} art.`;
+            return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barW.toFixed(2)}" height="${h.toFixed(2)}" fill="${fill}" opacity="${opacity}" rx="1"><title>${title}</title></rect>`;
         }).join('');
+
+        // Etiqueta del pico encima de su barra
+        let peakLabel = '';
+        if (peakIdx >= 0 && max > 0) {
+            const x = peakIdx * (barW + gap) + barW / 2;
+            const txt = max.toLocaleString('es-ES');
+            peakLabel = `<text x="${x.toFixed(2)}" y="4.5" text-anchor="middle" font-size="6" fill="var(--primary)" font-weight="600">${txt}</text>`;
+        }
+
+        svg.innerHTML = bars + peakLabel;
+
+        // Meta de cabecera: pico identificado + total cargado (informativo)
+        if (meta) {
+            if (valid.length === 0) {
+                meta.textContent = 'cargando…';
+            } else if (peakIdx >= 0) {
+                const peakBin = bins[peakIdx];
+                meta.textContent = `pico: ${peakBin.startYear}–${peakBin.endYear} (${max.toLocaleString('es-ES')})`;
+            } else {
+                meta.textContent = `${valid.length}/${n} bins`;
+            }
+        }
     }
 
     // Helper compartido: petición de conteo a NCBI con un retry ante rate limit.
