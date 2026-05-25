@@ -6654,14 +6654,21 @@ ${materialesPlaceholder}
         }
 
         try {
-            const results = await Promise.all(
-                cns.map(cn =>
+            // Fetch SNS + BIFIMED en paralelo para cada CN
+            const [snsResults, bifimedResults] = await Promise.all([
+                Promise.all(cns.map(cn =>
                     fetch(`${workerBase}/sns-catalog/by-cn/${cn}`, { signal: AbortSignal.timeout(8000) })
                         .then(r => r.json())
                         .catch(() => ({ found: false, cn }))
-                )
-            );
-            const found = results.filter(r => r.found);
+                )),
+                Promise.all(cns.map(cn =>
+                    fetch(`${workerBase}/bifimed/by-cn/${cn}`, { signal: AbortSignal.timeout(8000) })
+                        .then(r => r.json())
+                        .catch(() => ({ found: false, cn }))
+                )),
+            ]);
+
+            const found = snsResults.filter(r => r.found);
 
             if (!found.length) {
                 container.innerHTML = `
@@ -6673,8 +6680,7 @@ ${materialesPlaceholder}
                 return;
             }
 
-            // Encuentra la fecha de actualización del primer resultado
-            const downloadDate = found[0]?._meta?.download_date || '';
+            const downloadDateSns = found[0]?._meta?.download_date || '';
 
             const rows = found.map(item => {
                 const esBaja = (item.estado || '').toLowerCase().includes('baja');
@@ -6708,11 +6714,66 @@ ${materialesPlaceholder}
                     </div>`;
             }).join('');
 
+            // Indicaciones BIFIMED — dedup por texto de indicación
+            const allIndicaciones = [];
+            const seenInd = new Set();
+            for (const bf of bifimedResults) {
+                if (!bf.found || !Array.isArray(bf.indicaciones)) continue;
+                for (const ind of bf.indicaciones) {
+                    const key = ind.indicacion || '';
+                    if (!key || seenInd.has(key)) continue;
+                    seenInd.add(key);
+                    allIndicaciones.push(ind);
+                }
+            }
+
+            let bifimedSection = '';
+            if (allIndicaciones.length) {
+                const bifimedDate = bifimedResults.find(r => r._meta?.download_date)?._meta?.download_date || '';
+                const indRows = allIndicaciones.map(ind => {
+                    const sit = (ind.situacion || '').toLowerCase();
+                    const sitClass = sit.includes('resoluc') ? 'bifimed-ind-autorizada' :
+                                     sit.includes('no financ') ? 'bifimed-ind-no' : '';
+                    return `
+                        <tr class="${sitClass}">
+                            <td class="bifimed-ind-text">${esc(ind.indicacion)}</td>
+                            <td class="bifimed-ind-sit">${esc(ind.situacion || '—')}</td>
+                            ${ind.restriccion ? `<td class="bifimed-ind-rest">${esc(ind.restriccion)}</td>` : '<td>—</td>'}
+                        </tr>`;
+                }).join('');
+
+                bifimedSection = `
+                    <div class="bifimed-section">
+                        <div class="bifimed-section-header">
+                            <i class="fas fa-stethoscope"></i>
+                            <strong>Condiciones de financiación por indicación</strong>
+                            ${bifimedDate ? `<span class="fin-date">Datos: ${esc(bifimedDate)}</span>` : ''}
+                        </div>
+                        <div class="bifimed-table-wrap">
+                            <table class="bifimed-table">
+                                <thead>
+                                    <tr>
+                                        <th>Indicación autorizada</th>
+                                        <th>Situación expediente</th>
+                                        <th>Restricciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${indRows}</tbody>
+                            </table>
+                        </div>
+                        <div class="fin-disclaimer">
+                            <i class="fas fa-info-circle"></i>
+                            Fuente: BIFIMED — Ministerio de Sanidad.
+                            <a href="https://www.sanidad.gob.es/profesionales/medicamentos.do" target="_blank" rel="noopener">Consultar BIFIMED</a>
+                        </div>
+                    </div>`;
+            }
+
             container.innerHTML = `
                 <div class="fin-container">
                     <div class="fin-header">
                         <span class="fin-source"><i class="fas fa-landmark"></i> Nomenclátor de Facturación — Ministerio de Sanidad</span>
-                        ${downloadDate ? `<span class="fin-date">Datos: ${esc(downloadDate)}</span>` : ''}
+                        ${downloadDateSns ? `<span class="fin-date">Datos: ${esc(downloadDateSns)}</span>` : ''}
                     </div>
                     ${rows}
                     <div class="fin-disclaimer">
@@ -6720,7 +6781,8 @@ ${materialesPlaceholder}
                         Los precios son orientativos. Verifique siempre en el Nomenclátor oficial antes de prescribir.
                         <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do" target="_blank" rel="noopener">Fuente oficial</a>
                     </div>
-                </div>`;
+                </div>
+                ${bifimedSection}`;
 
         } catch (err) {
             container.innerHTML = `<p class="text-muted" style="padding:1rem"><i class="fas fa-exclamation-triangle"></i> Error al consultar el Nomenclátor SNS: ${esc(err.message)}</p>`;
