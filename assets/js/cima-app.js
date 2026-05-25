@@ -349,6 +349,7 @@ class MedCheckApp {
                 case 'supply': await this.renderSupply(); break;
                 case 'alerts': await this.renderAlerts(); break;
                 case 'materials': await this.renderMaterials(); break;
+                case 'sns-catalog': await this.renderSnsCatalog(); break;
                 case 'profile': this.renderProfileView(); break;
                 default: this.content.innerHTML = '<p>Vista no encontrada</p>';
             }
@@ -4969,6 +4970,203 @@ class MedCheckApp {
                 <div class="mt-sm" style="display:flex;gap:0.35rem;flex-wrap:wrap;">${cambiosHtml}</div>
             </div>
         `;
+    }
+
+    // ============================================
+    // NOMENCLÁTOR SNS
+    // ============================================
+
+    async renderSnsCatalog() {
+        const workerBase = this.api.cloudflareProxy;
+        if (!this._sns) this._sns = { query: '', tipo: 'all', includeBaja: false, meta: null, debounce: null };
+        const s = this._sns;
+        const esc = v => this._escapeHtml(v);
+
+        const statsHtml = s.meta ? (() => {
+            const alta = Object.entries(s.meta.by_estado || {})
+                .filter(([k]) => k.toLowerCase().includes('alta'))
+                .reduce((a, [, v]) => a + v, 0);
+            const efecto = Object.entries(s.meta.by_tipo || {})
+                .filter(([k]) => k.toLowerCase().includes('efecto'))
+                .reduce((a, [, v]) => a + v, 0);
+            return `<div class="sns-stats">
+                <span class="sns-stat">Total: <strong>${(s.meta.total_products || 0).toLocaleString('es')}</strong></span>
+                <span class="sns-stat">En alta: <strong>${alta.toLocaleString('es')}</strong></span>
+                <span class="sns-stat">Ef. y acces.: <strong>${efecto.toLocaleString('es')}</strong></span>
+                <span class="sns-stat" style="margin-left:auto; font-size:0.72rem">act. ${esc(s.meta.download_date || '')}</span>
+            </div>`;
+        })() : '';
+
+        this.content.innerHTML = `
+            <div class="sns-controls">
+                <div class="sns-search-row">
+                    <div class="sns-search-wrap">
+                        <i class="fas fa-search sns-search-icon"></i>
+                        <input type="search" id="sns-search" class="sns-search-input"
+                            placeholder="Buscar por producto, CN o laboratorio..."
+                            autocomplete="off" spellcheck="false" value="${esc(s.query)}">
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                    <div class="sns-filter-tags" id="sns-tipo-filters">
+                        <button class="sns-filter-tag ${s.tipo === 'all' ? 'active' : ''}" data-tipo="all">Todos</button>
+                        <button class="sns-filter-tag ${s.tipo === 'efecto' ? 'active-efecto' : ''}" data-tipo="efecto">
+                            <i class="fas fa-medkit" style="margin-right:0.3rem;font-size:.75em"></i>Ef. y accesorios
+                        </button>
+                        <button class="sns-filter-tag ${s.tipo === 'medicamento' ? 'active' : ''}" data-tipo="medicamento">
+                            <i class="fas fa-pills" style="margin-right:0.3rem;font-size:.75em"></i>Medicamentos
+                        </button>
+                        <button class="sns-filter-tag ${s.tipo === 'dietetico' ? 'active' : ''}" data-tipo="dietetico">
+                            <i class="fas fa-leaf" style="margin-right:0.3rem;font-size:.75em"></i>Dietéticos
+                        </button>
+                    </div>
+                    <label class="sns-toggle-baja" title="Incluir productos dados de baja">
+                        <input type="checkbox" id="sns-include-baja" ${s.includeBaja ? 'checked' : ''}>
+                        Incluir baja <i class="fas fa-eye-slash" style="font-size:.8em"></i>
+                    </label>
+                </div>
+            </div>
+            ${statsHtml}
+            <div class="sns-count-bar" id="sns-count-bar" style="display:none"></div>
+            <div id="sns-list-container">
+                <div class="sns-loading"><span class="sns-spinner"></span> Conectando con el catálogo SNS...</div>
+            </div>
+            <div class="sns-disclaimer">
+                <strong>Aviso:</strong> Datos del Nomenclátor de Facturación del Ministerio de Sanidad.
+                La aportación indica el <em>tipo</em>, no el importe exacto que pagará el paciente.
+                Fuente: <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do" target="_blank" rel="noopener">Ministerio de Sanidad</a>
+            </div>`;
+
+        const $search    = this.content.querySelector('#sns-search');
+        const $baja      = this.content.querySelector('#sns-include-baja');
+        const $filters   = this.content.querySelector('#sns-tipo-filters');
+        const $countBar  = this.content.querySelector('#sns-count-bar');
+        const $container = this.content.querySelector('#sns-list-container');
+
+        const doSearch = () => {
+            clearTimeout(s.debounce);
+            s.debounce = setTimeout(async () => {
+                $container.innerHTML = `<div class="sns-loading"><span class="sns-spinner"></span> Buscando...</div>`;
+                try {
+                    const params = new URLSearchParams({ q: s.query });
+                    if (s.tipo !== 'all') params.set('tipo', s.tipo);
+                    if (!s.includeBaja) params.set('solo_alta', '1');
+                    const res = await fetch(`${workerBase}/sns-catalog/search?${params}`, { signal: AbortSignal.timeout(10000) });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+                    const items = data.results || [];
+                    const total = data.total ?? items.length;
+                    $countBar.textContent = `Mostrando ${items.length.toLocaleString('es')}${total !== items.length ? ` de ${total.toLocaleString('es')}` : ''} productos`;
+                    $countBar.style.display = 'block';
+                    if (items.length === 0) {
+                        $container.innerHTML = `<div class="sns-empty">
+                            <i class="fas fa-box-open"></i>
+                            <div class="sns-empty-title">Sin resultados</div>
+                            <div class="sns-empty-sub">${s.query ? `No se encontró ningún producto que coincida con "${esc(s.query)}".` : 'No hay productos con los filtros actuales.'}</div>
+                        </div>`;
+                    } else {
+                        const list = document.createElement('div');
+                        list.className = 'sns-list';
+                        list.innerHTML = items.map(item => this._snsRenderCard(item)).join('');
+                        $container.innerHTML = '';
+                        $container.appendChild(list);
+                        list.addEventListener('click', e => {
+                            const el = e.target.closest('.sns-cn');
+                            if (!el) return;
+                            navigator.clipboard?.writeText(el.textContent.trim()).then(() => {
+                                el.title = '¡Copiado!';
+                                setTimeout(() => { el.title = 'Clic para copiar CN'; }, 1200);
+                            });
+                        });
+                    }
+                } catch (err) {
+                    $container.innerHTML = `<div class="sns-empty sns-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div class="sns-empty-title">Error al buscar</div>
+                        <div class="sns-empty-sub">${esc(err.message)}</div>
+                    </div>`;
+                }
+            }, 300);
+        };
+
+        $search.addEventListener('input', () => { s.query = $search.value.trim(); doSearch(); });
+        $baja.addEventListener('change', () => { s.includeBaja = $baja.checked; doSearch(); });
+        $filters.addEventListener('click', e => {
+            const btn = e.target.closest('.sns-filter-tag[data-tipo]');
+            if (!btn) return;
+            s.tipo = btn.dataset.tipo;
+            $filters.querySelectorAll('.sns-filter-tag').forEach(b => b.classList.remove('active', 'active-efecto'));
+            btn.classList.add(s.tipo === 'efecto' ? 'active-efecto' : 'active');
+            doSearch();
+        });
+
+        if (!s.meta) {
+            try {
+                const res = await fetch(`${workerBase}/sns-catalog/meta`, { signal: AbortSignal.timeout(8000) });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                s.meta = await res.json();
+            } catch (err) {
+                $container.innerHTML = `<div class="sns-empty sns-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div class="sns-empty-title">Catálogo no disponible</div>
+                    <div class="sns-empty-sub">${esc(err.message)}</div>
+                </div>`;
+                return;
+            }
+        }
+        doSearch();
+    }
+
+    _snsRenderCard(item) {
+        const esc = v => this._escapeHtml(v);
+        const esBaja = (item.estado || '').toLowerCase().includes('baja');
+        const generico = item.nombre_generico && item.nombre_generico !== item.producto
+            ? `<div class="sns-generico">${esc(item.nombre_generico)}</div>` : '';
+        const lab  = item.laboratorio ? `<div class="sns-lab"><i class="fas fa-industry"></i> ${esc(item.laboratorio)}</div>` : '';
+        const fecha = item.fecha_alta  ? `<div class="sns-fecha"><i class="fas fa-calendar-alt"></i> Alta: ${esc(item.fecha_alta)}</div>` : '';
+        return `
+            <div class="sns-card${esBaja ? ' baja' : ''}" data-cn="${esc(item.cn)}">
+                <div class="sns-card-main">
+                    <div class="sns-cn" title="Clic para copiar CN">${esc(item.cn)}</div>
+                    <div class="sns-producto">${esc(item.producto || '—')}</div>
+                    ${generico}${lab}${fecha}
+                </div>
+                <div class="sns-card-badges">
+                    ${this._snsBadgeEstado(item.estado)}
+                    ${this._snsBadgeTipo(item.tipo_farmaco)}
+                    ${this._snsBadgeAportacion(item.aportacion)}
+                </div>
+            </div>`;
+    }
+
+    _snsBadgeEstado(estado) {
+        const e = (estado || '').toLowerCase();
+        if (e.includes('alta')) return `<span class="badge badge-success"><i class="fas fa-check-circle"></i> Alta</span>`;
+        if (e.includes('baja')) return `<span class="badge badge-danger"><i class="fas fa-times-circle"></i> Baja</span>`;
+        return `<span class="badge badge-neutral">${this._escapeHtml(estado)}</span>`;
+    }
+
+    _snsBadgeTipo(tipo) {
+        const t = (tipo || '').toLowerCase();
+        if (t.includes('efecto') || t.includes('accesorio'))
+            return `<span class="badge badge-material"><i class="fas fa-medkit"></i> Ef./Acces.</span>`;
+        if (t.includes('medicamento'))
+            return `<span class="badge badge-info"><i class="fas fa-pills"></i> Med.</span>`;
+        if (t.includes('diet'))
+            return `<span class="badge badge-warning"><i class="fas fa-leaf"></i> Dietético</span>`;
+        return `<span class="badge badge-neutral">${this._escapeHtml(tipo || '—')}</span>`;
+    }
+
+    _snsBadgeAportacion(ap) {
+        if (!ap) return '';
+        const a = ap.toLowerCase();
+        if (a.includes('sin aportaci') || a.includes('exento') || a.includes('exenta'))
+            return `<span class="badge badge-success"><i class="fas fa-star"></i> ${this._escapeHtml(ap)}</span>`;
+        if (a.includes('reducida'))
+            return `<span class="badge badge-success">${this._escapeHtml(ap)}</span>`;
+        if (a.includes('normal'))
+            return `<span class="badge badge-info">${this._escapeHtml(ap)}</span>`;
+        return `<span class="badge badge-neutral">${this._escapeHtml(ap)}</span>`;
     }
 
     // ============================================
@@ -10525,6 +10723,7 @@ MedCheckApp._VIEW_ANALYTICS_MAP = {
     supply:       'suministro',
     alerts:       'alertas',
     materials:    'materiales',
+    'sns-catalog': 'nomenclator',
     profile:      'perfil',
 };
 
