@@ -6783,9 +6783,13 @@ ${materialesPlaceholder}
                     </div>`;
             }
 
-            // Sección SNS: tarjetas si hay datos, nota informativa si es uso hospitalario
-            const snsSection = found.length
-                ? `<div class="fin-container">
+            // Estado a nivel de medicamento desde BIFIMED (primer resultado con datos)
+            const bifimedDrugStatus = bifimedResults.find(r => r.found)?.situacion_financiacion || null;
+
+            // Sección SNS: tarjetas si hay datos; nota contextual según estado BIFIMED si no
+            let snsSection;
+            if (found.length) {
+                snsSection = `<div class="fin-container">
                     <div class="fin-header">
                         <span class="fin-source"><i class="fas fa-landmark"></i> Nomenclátor de Facturación — Ministerio de Sanidad</span>
                         ${downloadDateSns ? `<span class="fin-date">Datos: ${esc(downloadDateSns)}</span>` : ''}
@@ -6795,17 +6799,33 @@ ${materialesPlaceholder}
                         <i class="fas fa-info-circle"></i>
                         Los precios son orientativos. Verifique siempre en el Nomenclátor oficial antes de prescribir.
                     </div>
-                   </div>`
-                : allIndicaciones.length
-                    ? `<div class="fin-nota-hospitalario">
-                        <i class="fas fa-hospital"></i>
-                        Este medicamento no factura en farmacia de oficina — su financiación SNS se gestiona a través de farmacia hospitalaria.
-                       </div>`
+                   </div>`;
+            } else {
+                const st = (bifimedDrugStatus || '').toLowerCase();
+                let notaIcon, notaClass, notaTexto;
+                if (st.includes('excluido')) {
+                    notaIcon = 'fa-ban'; notaClass = 'fin-nota-excluido';
+                    notaTexto = 'Excluido de la financiación SNS — este medicamento fue retirado de la cobertura pública.';
+                } else if (st.includes('no financiado')) {
+                    notaIcon = 'fa-times-circle'; notaClass = 'fin-nota-denegado';
+                    notaTexto = 'No financiado por el SNS — existe una resolución formal denegatoria de financiación.';
+                } else if (st.includes('no incluido')) {
+                    notaIcon = 'fa-minus-circle'; notaClass = 'fin-nota-no-incluido';
+                    notaTexto = 'No incluido en la financiación SNS — el medicamento no fue incorporado a la cobertura pública.';
+                } else if (bifimedDrugStatus) {
+                    notaIcon = 'fa-hospital'; notaClass = 'fin-nota-hospitalario';
+                    notaTexto = 'Este medicamento no factura en farmacia de oficina — su financiación SNS se gestiona a través de farmacia hospitalaria.';
+                } else {
+                    notaIcon = null;
+                }
+                snsSection = notaIcon
+                    ? `<div class="fin-nota-estado ${notaClass}"><i class="fas ${notaIcon}"></i> ${notaTexto}</div>`
                     : `<div class="sns-empty" style="padding:1.5rem">
                         <i class="fas fa-receipt" style="font-size:2rem;color:var(--muted);display:block;margin-bottom:0.5rem"></i>
                         <div class="sns-empty-title">Sin datos de financiación SNS</div>
                         <div class="sns-empty-sub">Este medicamento no figura en el Nomenclátor de Facturación ni en BIFIMED.</div>
                        </div>`;
+            }
 
             container.innerHTML = `${snsSection}${bifimedSection}`;
 

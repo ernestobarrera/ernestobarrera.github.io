@@ -67,12 +67,13 @@ SEARCH_PARAMS_BASE = {
     "sinImportacionesParalelas": "1",
 }
 
-# financiado=1: "Sí"  /  financiado=2: "Sí para determinadas indicaciones/condiciones"
+# Todos los estados de financiación disponibles en BIFIMED
 DESCARGAS = [
-    {"nombre": "si", "financiado": "1",
-     "label": "Financiado: Sí"},
-    {"nombre": "si_determinadas", "financiado": "2",
-     "label": "Financiado: Sí para determinadas indicaciones/condiciones"},
+    {"nombre": "si",                      "financiado": "1", "label": "Financiado: Sí"},
+    {"nombre": "si_determinadas",         "financiado": "2", "label": "Financiado: Sí para determinadas indicaciones/condiciones"},
+    {"nombre": "no_incluido",             "financiado": "5", "label": "No incluido"},
+    {"nombre": "excluido",                "financiado": "6", "label": "Excluido"},
+    {"nombre": "no_financiado_resolucion","financiado": "7", "label": "No financiado por resolución"},
 ]
 
 

@@ -1,18 +1,18 @@
 [
   {
     "kind": "min_medicamentos",
-    "label": "Total filas MEDICAMENTOS (ambos Excel sin dedup) ≥ 20000",
-    "min_count": 20000
+    "label": "Total filas MEDICAMENTOS (5 Excel, sin dedup) ≥ 28000",
+    "min_count": 28000
   },
   {
     "kind": "min_indicaciones",
-    "label": "Total filas INDICACIONES CENTRALIZADOS (ambos Excel) ≥ 7500",
-    "min_count": 7500
+    "label": "Total filas INDICACIONES CENTRALIZADOS (5 Excel) ≥ 9500",
+    "min_count": 9500
   },
   {
     "kind": "min_total_cn",
-    "label": "CN únicos combinados ≥ 18000",
-    "min_count": 18000
+    "label": "CN únicos combinados ≥ 25000",
+    "min_count": 25000
   },
   {
     "kind": "cn_exists",
