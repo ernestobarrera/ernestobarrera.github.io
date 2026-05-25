@@ -9646,6 +9646,8 @@ ${materialesPlaceholder}
         }
 
         const enc = q => encodeURIComponent(q);
+        const reecTerm = q => this._buildReecSearchTerm(q);
+        const reecUrl = q => `https://reec.aemps.es/reec-services/busquedaestudios?xml=0&multiple=${enc(reecTerm(q))}`;
 
         // Rangos temporales discretos. Índice 4 = 5 años (default).
         // days=0 ⇒ sin filtro temporal (∞).
@@ -9660,7 +9662,7 @@ ${materialesPlaceholder}
         ];
         const EV_RANGE_DEFAULT = 4;
 
-        const resetCounts = () => document.querySelectorAll('[id^="evcount-"]').forEach(el => {
+        const resetCounts = () => document.querySelectorAll('[id^="evcount-"]:not(#evcount-reec)').forEach(el => {
             el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
         });
         const getCurrentTerm = () => document.getElementById('evidence-drug-input')?.value.trim() || drugTerm;
@@ -9767,6 +9769,12 @@ ${materialesPlaceholder}
                     </div>
                 </div>
                 <div class="evidence-filter-list">
+                    <a class="evidence-filter-item" id="evlink-reec" href="${reecUrl(drugTerm)}" target="_blank" rel="noopener" title="Registro Español de Estudios Clínicos (AEMPS)">
+                        <span class="evidence-filter-icon"><i class="fas fa-flag"></i></span>
+                        <span class="evidence-filter-label">REec · España</span>
+                        <span class="evidence-filter-count" id="evcount-reec"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
+                        <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
+                    </a>
                     <a class="evidence-filter-item" id="evlink-ct" href="https://clinicaltrials.gov/search?term=${enc(drugTerm)}&viewType=Table" target="_blank" rel="noopener" title="Registro de ensayos de EEUU (FDA / NIH)">
                         <span class="evidence-filter-icon"><i class="fas fa-flag-usa"></i></span>
                         <span class="evidence-filter-label">ClinicalTrials.gov</span>
@@ -9792,6 +9800,7 @@ ${materialesPlaceholder}
 
         // Carga inicial con rango por defecto (5 años)
         this._loadEvidenceFiltersAndCount(drugTerm, filterDefs, EV_RANGES[EV_RANGE_DEFAULT].days);
+        this._loadReecCount(drugTerm);
 
         const slider = document.getElementById('evidence-date-slider');
         const dateLabel = document.getElementById('evidence-date-label');
@@ -9849,11 +9858,16 @@ ${materialesPlaceholder}
             input.addEventListener('change', () => {
                 const t = getCurrentTerm();
                 if (!t) return;
+                const reecLink = document.getElementById('evlink-reec');
                 const ctLink = document.getElementById('evlink-ct');
                 const whoLink = document.getElementById('evlink-who');
+                if (reecLink) reecLink.href = reecUrl(t);
                 if (ctLink) ctLink.href = `https://clinicaltrials.gov/search?term=${enc(t)}&viewType=Table`;
                 if (whoLink) whoLink.href = `https://trialsearch.who.int/?SearchTerm=${enc(t)}`;
                 resetCounts();
+                const reecCount = document.getElementById('evcount-reec');
+                if (reecCount) reecCount.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
+                this._loadReecCount(t);
                 this._loadEvidenceFiltersAndCount(t, filterDefs, getCurrentDays());
                 this._updateEvidenceCombineBar();
             });
@@ -9881,6 +9895,67 @@ ${materialesPlaceholder}
                 this._updateEvidenceCombineBar();
             });
         });
+    }
+
+    _buildReecSearchTerm(term) {
+        const raw = String(term || '').trim();
+        if (!raw) return '';
+        const compact = raw.replace(/[()]/g, '');
+        const parts = compact.split('|').map(p => p.trim()).filter(Boolean);
+        // Si el término PubMed venía como (marca|INN), REec funciona mejor con el INN.
+        return parts.length > 1 ? parts[parts.length - 1] : compact;
+    }
+
+    _buildReecSearchUrl(term) {
+        return `https://reec.aemps.es/reec-services/busquedaestudios?xml=0&multiple=${encodeURIComponent(this._buildReecSearchTerm(term))}`;
+    }
+
+    async _loadReecCount(drugTerm) {
+        const el = document.getElementById('evcount-reec');
+        const link = document.getElementById('evlink-reec');
+        const query = this._buildReecSearchTerm(drugTerm);
+        if (link) link.href = this._buildReecSearchUrl(drugTerm);
+
+        const applyStaticFallback = () => {
+            if (el) el.innerHTML = '<span class="evidence-filter-badge-ext">España · AEMPS</span>';
+        };
+
+        if (!query || query.length < 2) {
+            applyStaticFallback();
+            return;
+        }
+
+        if (!this._reecCountCache) this._reecCountCache = new Map();
+        const cycleId = (this._reecCountCycle = (this._reecCountCycle || 0) + 1);
+
+        if (this._reecCountCache.has(query)) {
+            const count = this._reecCountCache.get(query);
+            if (el) {
+                const cls = count === 0 ? 'evidence-count-badge evidence-count-badge--zero' : 'evidence-count-badge';
+                el.innerHTML = `<span class="${cls}" title="Estudios publicados en REec">${count.toLocaleString('es-ES')}</span>`;
+            }
+            return;
+        }
+
+        if (el) el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
+
+        try {
+            const data = await this.api.searchReecStudies(query);
+            if (this._reecCountCycle !== cycleId) return;
+            const count = Number.isFinite(data?.count) ? data.count : null;
+            if (count === null) {
+                applyStaticFallback();
+                return;
+            }
+            this._reecCountCache.set(query, count);
+            if (el) {
+                const cls = count === 0 ? 'evidence-count-badge evidence-count-badge--zero' : 'evidence-count-badge';
+                el.innerHTML = `<span class="${cls}" title="Estudios publicados en REec">${count.toLocaleString('es-ES')}</span>`;
+            }
+        } catch {
+            if (this._reecCountCycle !== cycleId) return;
+            applyStaticFallback();
+        }
     }
 
     async _loadEvidenceFiltersAndCount(drugTerm, filterDefs, dateDays) {
@@ -10466,4 +10541,3 @@ MedCheckApp._CONTEXT_ANALYTICS_MAP = {
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new MedCheckApp();
 });
-

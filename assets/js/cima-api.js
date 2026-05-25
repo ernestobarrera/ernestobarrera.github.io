@@ -2745,6 +2745,54 @@ class CimaAPI {
 
 
     // ============================================
+    // REEC - REGISTRO ESPAÑOL DE ESTUDIOS CLÍNICOS
+    // ============================================
+
+    /**
+     * Busca estudios publicados en REec por texto libre.
+     * Pasa por el Worker para evitar CORS y normalizar conteo/listado mínimo.
+     * @param {string} query - Término de búsqueda (principio activo, indicación, intervención...)
+     * @param {Object} options - Filtros REec opcionales: estado, resultados, enfermedadrara, bni...
+     */
+    async searchReecStudies(query, options = {}) {
+        const term = String(query || '').replace(/\s+/g, ' ').trim();
+        if (term.length < 2 || !this.cloudflareProxy) return null;
+
+        const queryParams = new URLSearchParams({ q: term });
+        ['estado', 'resultados', 'enfermedadrara', 'bni', 'promotor', 'eudract', 'protocolo', 'fechadesde', 'fechahasta']
+            .forEach(key => {
+                const value = options[key];
+                if (value !== undefined && value !== null && value !== '') {
+                    queryParams.append(key, value);
+                }
+            });
+
+        const endpoint = `/reec/search?${queryParams.toString()}`;
+        const cacheKey = `reec:${endpoint}`;
+        if (this._hasValidCache(cacheKey)) {
+            return this.cache.get(cacheKey).data;
+        }
+
+        try {
+            const response = await fetch(`${this.cloudflareProxy}${endpoint}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    ...(window._mcCurrentView ? { 'X-MC-View': window._mcCurrentView } : {}),
+                    ...(window._mcSource ? { 'X-MC-Source': window._mcSource } : {})
+                }
+            });
+            if (!response.ok) throw new Error(`REec Error: ${response.status}`);
+            const data = await response.json();
+            this._setCache(cacheKey, data);
+            return data;
+        } catch (error) {
+            console.warn('⚠️ REec no disponible:', error.message);
+            return null;
+        }
+    }
+
+
+    // ============================================
     // MAESTROS / CATÁLOGOS
     // ============================================
 
