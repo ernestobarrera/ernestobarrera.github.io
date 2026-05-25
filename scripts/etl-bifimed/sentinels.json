@@ -1,0 +1,34 @@
+[
+  {
+    "kind": "min_medicamentos",
+    "label": "Total filas MEDICAMENTOS (ambos Excel sin dedup) ≥ 20000",
+    "min_count": 20000
+  },
+  {
+    "kind": "min_indicaciones",
+    "label": "Total filas INDICACIONES CENTRALIZADOS (ambos Excel) ≥ 7500",
+    "min_count": 7500
+  },
+  {
+    "kind": "min_total_cn",
+    "label": "CN únicos combinados ≥ 18000",
+    "min_count": 18000
+  },
+  {
+    "kind": "cn_exists",
+    "label": "CN 0603082 (Xarelto 10mg) existe",
+    "cn": "0603082"
+  },
+  {
+    "kind": "cn_has_indicaciones",
+    "label": "CN 0603082 (Xarelto 10mg) tiene ≥ 2 indicaciones",
+    "cn": "0603082",
+    "min_indicaciones": 2
+  },
+  {
+    "kind": "cn_has_indicaciones",
+    "label": "CN 0602517 (Januvia 100mg) tiene ≥ 5 indicaciones",
+    "cn": "0602517",
+    "min_indicaciones": 5
+  }
+]
