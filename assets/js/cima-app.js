@@ -6682,6 +6682,9 @@ ${materialesPlaceholder}
 
             const downloadDateSns = found[0]?._meta?.download_date || '';
 
+            // CN sin cero inicial para URL verDetalle del Nomenclátor
+            const cnToProd = cn => String(parseInt(cn, 10));
+
             const rows = found.map(item => {
                 const esBaja = (item.estado || '').toLowerCase().includes('baja');
                 const flags = [];
@@ -6697,10 +6700,12 @@ ${materialesPlaceholder}
                     ? `<div class="fin-price-ref">P. Referencia: ${Number(item.precio_referencia).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</div>`
                     : '';
 
+                const nomenclatorUrl = `https://www.sanidad.gob.es/profesionales/nomenclator.do?metodo=verDetalle&prod=${cnToProd(item.cn)}`;
+
                 return `
                     <div class="fin-card${esBaja ? ' fin-card-baja' : ''}">
                         <div class="fin-card-header">
-                            <span class="fin-cn" title="Código Nacional">${esc(item.cn)}</span>
+                            <a class="fin-cn" href="${nomenclatorUrl}" target="_blank" rel="noopener" title="Ver en Nomenclátor oficial">${esc(item.cn)}</a>
                             <span class="fin-producto">${esc(item.producto || '—')}</span>
                             ${this._snsBadgeEstado(item.estado)}
                         </div>
@@ -6727,40 +6732,53 @@ ${materialesPlaceholder}
                 }
             }
 
+            // Convierte resolucion+situacion a badge clínico legible
+            const bifimedBadge = ind => {
+                const res = (ind.resolucion || '').toLowerCase();
+                const sit = (ind.situacion || '').toLowerCase();
+                if (res.includes('con restricci')) return '<span class="bifimed-badge bifimed-badge-restricted"><i class="fas fa-exclamation-triangle"></i> Condicionada</span>';
+                if (res.includes('financiada'))   return '<span class="bifimed-badge bifimed-badge-yes"><i class="fas fa-check"></i> Financiada</span>';
+                if (res.includes('no incluida') || res.includes('no financiado')) return '<span class="bifimed-badge bifimed-badge-no"><i class="fas fa-times"></i> No financiada</span>';
+                if (sit.includes('en estudio'))   return '<span class="bifimed-badge bifimed-badge-pending"><i class="fas fa-clock"></i> En evaluación</span>';
+                if (sit.includes('sin petici'))   return '<span class="bifimed-badge bifimed-badge-none"><i class="fas fa-minus"></i> Sin solicitud</span>';
+                return '<span class="bifimed-badge bifimed-badge-none">—</span>';
+            };
+
             let bifimedSection = '';
             if (allIndicaciones.length) {
                 const bifimedDate = bifimedResults.find(r => r._meta?.download_date)?._meta?.download_date || '';
                 const indRows = allIndicaciones.map(ind => {
-                    const sit = (ind.situacion || '').toLowerCase();
-                    const sitClass = sit.includes('resoluc') ? 'bifimed-ind-autorizada' :
-                                     sit.includes('no financ') ? 'bifimed-ind-no' : '';
+                    const rest = ind.restriccion || '';
+                    const isLong = rest.length > 200;
+                    const restHtml = rest
+                        ? isLong
+                            ? `<div class="bifimed-rest-short">${esc(rest.slice(0, 200))}…
+                                <button class="bifimed-rest-toggle" onclick="this.parentElement.classList.toggle('expanded')">
+                                    <span class="show-more">Ver más</span><span class="show-less">Ver menos</span>
+                                </button>
+                                <div class="bifimed-rest-full">${esc(rest)}</div>
+                               </div>`
+                            : `<div class="bifimed-rest-short">${esc(rest)}</div>`
+                        : '';
+
                     return `
-                        <tr class="${sitClass}">
-                            <td class="bifimed-ind-text">${esc(ind.indicacion)}</td>
-                            <td class="bifimed-ind-sit">${esc(ind.situacion || '—')}</td>
-                            ${ind.restriccion ? `<td class="bifimed-ind-rest">${esc(ind.restriccion)}</td>` : '<td>—</td>'}
-                        </tr>`;
+                        <li class="bifimed-ind-item">
+                            <div class="bifimed-ind-head">
+                                ${bifimedBadge(ind)}
+                                <span class="bifimed-ind-text">${esc(ind.indicacion)}</span>
+                            </div>
+                            ${restHtml ? `<div class="bifimed-rest">${restHtml}</div>` : ''}
+                        </li>`;
                 }).join('');
 
                 bifimedSection = `
                     <div class="bifimed-section">
                         <div class="bifimed-section-header">
-                            <i class="fas fa-stethoscope"></i>
-                            <strong>Condiciones de financiación por indicación</strong>
+                            <i class="fas fa-file-contract"></i>
+                            <strong>Financiación por indicación</strong>
                             ${bifimedDate ? `<span class="fin-date">Datos: ${esc(bifimedDate)}</span>` : ''}
                         </div>
-                        <div class="bifimed-table-wrap">
-                            <table class="bifimed-table">
-                                <thead>
-                                    <tr>
-                                        <th>Indicación autorizada</th>
-                                        <th>Situación expediente</th>
-                                        <th>Restricciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>${indRows}</tbody>
-                            </table>
-                        </div>
+                        <ul class="bifimed-ind-list">${indRows}</ul>
                         <div class="fin-disclaimer">
                             <i class="fas fa-info-circle"></i>
                             Fuente: BIFIMED — Ministerio de Sanidad.
@@ -6779,7 +6797,6 @@ ${materialesPlaceholder}
                     <div class="fin-disclaimer">
                         <i class="fas fa-info-circle"></i>
                         Los precios son orientativos. Verifique siempre en el Nomenclátor oficial antes de prescribir.
-                        <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do" target="_blank" rel="noopener">Fuente oficial</a>
                     </div>
                 </div>
                 ${bifimedSection}`;

@@ -8775,7 +8775,7 @@ mark.ecg-highlight {
     .fin-row { gap: 0.5rem; }
 }
 
-/* BIFIMED — Condiciones de financiación por indicación */
+/* BIFIMED — Financiación por indicación */
 .bifimed-section {
     margin-top: 1.25rem;
     border-top: 1px solid var(--border-default);
@@ -8790,40 +8790,77 @@ mark.ecg-highlight {
     margin-bottom: 0.75rem;
 }
 .bifimed-section-header strong { color: var(--text-primary); }
-.bifimed-table-wrap {
-    overflow-x: auto;
-    border-radius: 6px;
+.bifimed-ind-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.bifimed-ind-item {
+    background: var(--surface-raised);
     border: 1px solid var(--border-default);
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
 }
-.bifimed-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.78rem;
+.bifimed-ind-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
 }
-.bifimed-table thead th {
-    background: var(--surface-sunken);
-    color: var(--text-muted);
-    font-weight: 500;
-    padding: 0.45rem 0.6rem;
-    text-align: left;
-    border-bottom: 1px solid var(--border-default);
-    white-space: nowrap;
-}
-.bifimed-table tbody tr {
-    border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.06));
-}
-.bifimed-table tbody tr:last-child { border-bottom: none; }
-.bifimed-table tbody td {
-    padding: 0.45rem 0.6rem;
-    vertical-align: top;
+.bifimed-ind-text {
+    font-size: 0.8rem;
     color: var(--text-secondary);
+    line-height: 1.4;
+    flex: 1;
 }
-.bifimed-ind-text { max-width: 340px; }
-.bifimed-ind-sit  { white-space: nowrap; }
-.bifimed-ind-rest { font-size: 0.72rem; color: var(--text-muted); }
-.bifimed-ind-autorizada td { color: var(--text-primary); }
-.bifimed-ind-no td { opacity: 0.55; }
-@media (max-width: 600px) {
-    .bifimed-table thead th:nth-child(3),
-    .bifimed-table tbody td:nth-child(3) { display: none; }
+/* Badges de financiación BIFIMED */
+.bifimed-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.18rem 0.5rem;
+    border-radius: 99px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
+.bifimed-badge-yes      { background: rgba(34,197,94,0.12); color: #16a34a; }
+.bifimed-badge-restricted { background: rgba(245,158,11,0.12); color: #b45309; }
+.bifimed-badge-no       { background: rgba(239,68,68,0.10); color: #dc2626; opacity: 0.8; }
+.bifimed-badge-pending  { background: rgba(99,102,241,0.10); color: #4f46e5; }
+.bifimed-badge-none     { background: var(--surface-sunken); color: var(--text-muted); }
+/* Restricciones plegables */
+.bifimed-rest {
+    margin-top: 0.4rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--border-subtle, rgba(0,0,0,0.06));
+}
+.bifimed-rest-short {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+.bifimed-rest-full { display: none; white-space: pre-wrap; }
+.bifimed-rest-short.expanded .bifimed-rest-full { display: block; }
+.bifimed-rest-short.expanded > :first-child { display: none; }
+.bifimed-rest-toggle {
+    background: none;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 0.72rem;
+    padding: 0 0.2rem;
+}
+.bifimed-rest-toggle .show-less { display: none; }
+.bifimed-rest-short.expanded .bifimed-rest-toggle .show-more { display: none; }
+.bifimed-rest-short.expanded .bifimed-rest-toggle .show-less { display: inline; }
+/* Enlace CN → Nomenclátor */
+a.fin-cn {
+    color: var(--primary);
+    text-decoration: none;
+}
+a.fin-cn:hover { text-decoration: underline; }
