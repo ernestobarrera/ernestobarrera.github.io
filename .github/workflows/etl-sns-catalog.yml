@@ -1,0 +1,110 @@
+name: ETL Nomenclátor SNS (Ministerio de Sanidad)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 07:23 UTC el día 2 de cada mes — el Ministerio actualiza el 1º, dejamos margen.
+    - cron: '23 7 2 * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: etl-sns-catalog
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias
+        run: pip install -r scripts/etl-sns-catalog/requirements.txt
+
+      - name: HEAD check del Excel remoto
+        id: head
+        run: |
+          python scripts/etl-sns-catalog/build_sns_catalog.py --head-only | tee head.json
+          echo "last_modified=$(jq -r '.last_modified // empty' head.json)" >> "$GITHUB_OUTPUT"
+          echo "content_length=$(jq -r '.content_length // empty' head.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Descargar Excel del Nomenclátor
+        run: |
+          curl -sSfL \
+            -A "Mozilla/5.0 (compatible; MedCheck-ETL/1.0)" \
+            -o nomenclator.xls \
+            "https://www.sanidad.gob.es/profesionales/nomenclator.do?metodo=nomenclatorExcel"
+          ls -lh nomenclator.xls
+
+      - name: Construir JSON del catálogo SNS
+        id: build
+        run: |
+          python scripts/etl-sns-catalog/build_sns_catalog.py \
+            --from-file nomenclator.xls \
+            --out sns_catalog.json
+          {
+            echo "size_kb=$(awk "BEGIN{printf \"%.0f\", $(stat -c%s sns_catalog.json)/1024}")"
+            echo "total=$(python -c "import json; d=json.load(open('sns_catalog.json')); print(d['meta']['total_products'])")"
+            echo "download_date=$(python -c "import json; d=json.load(open('sns_catalog.json')); print(d['meta']['download_date'])")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Resumen
+        run: |
+          {
+            echo "## ETL Nomenclátor SNS"
+            echo ""
+            echo "- Last-Modified remoto: \`${{ steps.head.outputs.last_modified }}\`"
+            echo "- Tamaño Excel: \`${{ steps.head.outputs.content_length }} bytes\`"
+            echo "- Total productos: \`${{ steps.build.outputs.total }}\`"
+            echo "- JSON: \`${{ steps.build.outputs.size_kb }} KB\`"
+            echo "- Fecha descarga: \`${{ steps.build.outputs.download_date }}\`"
+            echo ""
+            echo "### Meta"
+            echo '```json'
+            python -c "import json; d=json.load(open('sns_catalog.json')); print(json.dumps(d['meta'], indent=2, ensure_ascii=False))"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Subir artefacto (retención 14 días)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sns-catalog-${{ steps.build.outputs.download_date }}
+          path: sns_catalog.json
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Publicar a Cloudflare KV
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+        run: |
+          response=$(curl -sS -w "\n%{http_code}" -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${CF_KV_NAMESPACE_ID}/values/sns-catalog%3Afull" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary @sns_catalog.json)
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "HTTP ${status}"
+          echo "$body" | jq .
+          test "$status" = "200" || exit 1
+
+      # Descomentar cuando el Worker tenga el endpoint /sns-catalog/meta desplegado
+      # - name: Verificar endpoint del Worker
+      #   run: |
+      #     echo "GET /sns-catalog/meta"
+      #     meta=$(curl -sSf "https://medcheck-proxy.medtools.workers.dev/sns-catalog/meta")
+      #     echo "$meta" | jq .
+      #     worker_date=$(echo "$meta" | jq -r '.download_date')
+      #     local_date=$(jq -r '.meta.download_date' sns_catalog.json)
+      #     echo "Worker: $worker_date | Local: $local_date"
+      #     test "$worker_date" = "$local_date" || { echo "Desfase de fechas (cache de isolate ~5 min)"; exit 0; }

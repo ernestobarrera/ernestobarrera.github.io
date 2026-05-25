@@ -1,0 +1,29 @@
+[
+  {
+    "kind": "min_total",
+    "label": "minimo-total-productos",
+    "min_count": 10000,
+    "note": "El Nomenclátor histórico acumulado supera siempre los 10k productos"
+  },
+  {
+    "kind": "min_estado",
+    "label": "productos-en-alta",
+    "estado_substr": "alta",
+    "min_count": 5000,
+    "note": "Mínimo de productos activos esperados"
+  },
+  {
+    "kind": "min_tipo",
+    "label": "efectos-y-accesorios",
+    "tipo_substr": "efecto",
+    "min_count": 500,
+    "note": "Efectos y accesorios son el objetivo prioritario de fase 1"
+  },
+  {
+    "kind": "min_tipo",
+    "label": "medicamentos",
+    "tipo_substr": "medicamento",
+    "min_count": 3000,
+    "note": "Los medicamentos deben ser la categoría mayoritaria"
+  }
+]
