@@ -9647,7 +9647,7 @@ ${materialesPlaceholder}
 
         const enc = q => encodeURIComponent(q);
         const reecTerm = q => this._buildReecSearchTerm(q);
-        const reecUrl = q => `https://reec.aemps.es/reec-services/busquedaestudios?xml=0&multiple=${enc(reecTerm(q))}`;
+        const reecUrl = q => `https://reec.aemps.es/reec/list/search=${enc(reecTerm(q))}&filter=0`;
 
         // Rangos temporales discretos. Índice 4 = 5 años (default).
         // days=0 ⇒ sin filtro temporal (∞).
@@ -9907,7 +9907,7 @@ ${materialesPlaceholder}
     }
 
     _buildReecSearchUrl(term) {
-        return `https://reec.aemps.es/reec-services/busquedaestudios?xml=0&multiple=${encodeURIComponent(this._buildReecSearchTerm(term))}`;
+        return `https://reec.aemps.es/reec/list/search=${encodeURIComponent(this._buildReecSearchTerm(term))}&filter=0`;
     }
 
     async _loadReecCount(drugTerm) {
