@@ -110,7 +110,8 @@ def parse_xls(data: bytes, download_date: str) -> dict[str, Any]:
         "precio_ref":     _find_col(headers, ["precio de referencia"]),
         # Agrupación homogénea — presente en PS; permite identificarlos cuando tipo_farmaco está vacío
         "nombre_agrup":   _find_col(headers, ["nombre de la agrupación homogénea", "nombre agrupacion homogenea"]),
-        "cod_agrup":      _find_col(headers, ["código de la agrupación homogénea", "cod agrupacion homogenea"]),
+        # Keyword corto para tolerar erratas del XLS ("homegénea" en lugar de "homogénea")
+        "cod_agrup":      _find_col(headers, ["código de la agrupación", "cod agrupacion"]),
         # Flags clínicos (columnas adicionales descubiertas en el XLS real)
         "diag_hosp":      _find_col(headers, ["diagnóstico hospitalario", "diagnostico hospitalario"]),
         "larga_duracion": _find_col(headers, ["tratamiento de larga duración", "larga duracion"]),
@@ -161,11 +162,11 @@ def parse_xls(data: bytes, download_date: str) -> dict[str, Any]:
         tipo_raw = cell_str(r, col["tipo"])
         nombre_agrup = cell_str(r, col["nombre_agrup"])
 
-        # Productos sanitarios tienen tipo_farmaco vacío pero agrupación homogénea PS informada
-        if not tipo_raw and nombre_agrup:
+        # En este XLS solo los PS tienen tipo_farmaco vacío; medicamentos siempre lo informan
+        if not tipo_raw:
             tipo = "Efecto y accesorio"
         else:
-            tipo = tipo_raw or "desconocido"
+            tipo = tipo_raw
 
         stats_tipo[tipo] = stats_tipo.get(tipo, 0) + 1
         stats_estado[estado] = stats_estado.get(estado, 0) + 1
