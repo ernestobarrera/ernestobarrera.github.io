@@ -6670,19 +6670,9 @@ ${materialesPlaceholder}
 
             const found = snsResults.filter(r => r.found);
 
-            if (!found.length) {
-                container.innerHTML = `
-                    <div class="sns-empty" style="padding:1.5rem">
-                        <i class="fas fa-receipt" style="font-size:2rem;color:var(--muted);display:block;margin-bottom:0.5rem"></i>
-                        <div class="sns-empty-title">Sin datos en el Nomenclátor SNS</div>
-                        <div class="sns-empty-sub">Este medicamento no figura en el Nomenclátor de Facturación del Ministerio de Sanidad.</div>
-                    </div>`;
-                return;
-            }
-
             const downloadDateSns = found[0]?._meta?.download_date || '';
 
-            // CN sin cero inicial para URL verDetalle del Nomenclátor
+            // CN sin cero inicial — Nomenclátor usa ?prod=, BIFIMED usa ?cn=
             const cnToProd = cn => String(parseInt(cn, 10));
 
             const rows = found.map(item => {
@@ -6747,6 +6737,12 @@ ${materialesPlaceholder}
             let bifimedSection = '';
             if (allIndicaciones.length) {
                 const bifimedDate = bifimedResults.find(r => r._meta?.download_date)?._meta?.download_date || '';
+                // Enlace BIFIMED: usa ?cn= (distinto del Nomenclátor que usa ?prod=)
+                const bifimedCn = bifimedResults.find(r => r.found)?.cn;
+                const bifimedUrl = bifimedCn
+                    ? `https://www.sanidad.gob.es/profesionales/medicamentos.do?metodo=verDetalle&cn=${cnToProd(bifimedCn)}`
+                    : 'https://www.sanidad.gob.es/profesionales/medicamentos.do';
+
                 const indRows = allIndicaciones.map(ind => {
                     const rest = ind.restriccion || '';
                     const isLong = rest.length > 200;
@@ -6782,13 +6778,14 @@ ${materialesPlaceholder}
                         <div class="fin-disclaimer">
                             <i class="fas fa-info-circle"></i>
                             Fuente: BIFIMED — Ministerio de Sanidad.
-                            <a href="https://www.sanidad.gob.es/profesionales/medicamentos.do" target="_blank" rel="noopener">Consultar BIFIMED</a>
+                            <a href="${bifimedUrl}" target="_blank" rel="noopener">Ver ficha en BIFIMED</a>
                         </div>
                     </div>`;
             }
 
-            container.innerHTML = `
-                <div class="fin-container">
+            // Sección SNS: tarjetas si hay datos, nota informativa si es uso hospitalario
+            const snsSection = found.length
+                ? `<div class="fin-container">
                     <div class="fin-header">
                         <span class="fin-source"><i class="fas fa-landmark"></i> Nomenclátor de Facturación — Ministerio de Sanidad</span>
                         ${downloadDateSns ? `<span class="fin-date">Datos: ${esc(downloadDateSns)}</span>` : ''}
@@ -6798,8 +6795,19 @@ ${materialesPlaceholder}
                         <i class="fas fa-info-circle"></i>
                         Los precios son orientativos. Verifique siempre en el Nomenclátor oficial antes de prescribir.
                     </div>
-                </div>
-                ${bifimedSection}`;
+                   </div>`
+                : allIndicaciones.length
+                    ? `<div class="fin-nota-hospitalario">
+                        <i class="fas fa-hospital"></i>
+                        Este medicamento no factura en farmacia de oficina — su financiación SNS se gestiona a través de farmacia hospitalaria.
+                       </div>`
+                    : `<div class="sns-empty" style="padding:1.5rem">
+                        <i class="fas fa-receipt" style="font-size:2rem;color:var(--muted);display:block;margin-bottom:0.5rem"></i>
+                        <div class="sns-empty-title">Sin datos de financiación SNS</div>
+                        <div class="sns-empty-sub">Este medicamento no figura en el Nomenclátor de Facturación ni en BIFIMED.</div>
+                       </div>`;
+
+            container.innerHTML = `${snsSection}${bifimedSection}`;
 
         } catch (err) {
             container.innerHTML = `<p class="text-muted" style="padding:1rem"><i class="fas fa-exclamation-triangle"></i> Error al consultar el Nomenclátor SNS: ${esc(err.message)}</p>`;

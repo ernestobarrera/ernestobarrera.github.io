@@ -8858,6 +8858,19 @@ mark.ecg-highlight {
 .bifimed-rest-toggle .show-less { display: none; }
 .bifimed-rest-short.expanded .bifimed-rest-toggle .show-more { display: none; }
 .bifimed-rest-short.expanded .bifimed-rest-toggle .show-less { display: inline; }
+/* Nota medicamento hospitalario sin Nomenclátor de farmacia */
+.fin-nota-hospitalario {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.65rem 0.9rem;
+    margin-bottom: 0.75rem;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
 /* Enlace CN → Nomenclátor */
 a.fin-cn {
     color: var(--primary);
