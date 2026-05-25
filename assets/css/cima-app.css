@@ -8665,3 +8665,112 @@ mark.ecg-highlight {
     .sns-card { grid-template-columns: 1fr; }
     .sns-card-badges { flex-direction: row; flex-wrap: wrap; }
 }
+
+/* ============================================================
+   Pestaña Financiación SNS — modal del medicamento
+   ============================================================ */
+.modal-tab-financing { color: var(--text-muted); }
+.modal-tab-financing.active,
+.modal-tab-financing:hover { color: var(--primary); }
+
+.fin-container { padding: 0.75rem 1rem 1.5rem; }
+
+.fin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-default);
+    padding-bottom: 0.5rem;
+}
+.fin-source { font-weight: 500; }
+.fin-date { opacity: 0.7; }
+
+.fin-card {
+    background: var(--surface-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    margin-bottom: 0.625rem;
+}
+.fin-card-baja {
+    opacity: 0.6;
+    border-style: dashed;
+}
+
+.fin-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.35rem;
+}
+.fin-cn {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    background: var(--surface-sunken);
+    padding: 0.1rem 0.35rem;
+    border-radius: var(--radius-xs, 3px);
+    color: var(--text-muted);
+}
+.fin-producto {
+    font-weight: 500;
+    font-size: 0.88rem;
+    flex: 1;
+    min-width: 0;
+}
+.fin-generico {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+}
+.fin-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.35rem;
+}
+.fin-price {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--success, #22c55e);
+}
+.fin-price-ref {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+.fin-flags {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: 0.4rem;
+}
+.sns-flag {
+    font-size: 0.7rem;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-default);
+    border-radius: 99px;
+    padding: 0.1rem 0.45rem;
+    color: var(--text-muted);
+}
+.sns-flag-orphan { color: var(--warning, #f59e0b); border-color: var(--warning, #f59e0b); }
+
+.fin-disclaimer {
+    margin-top: 1rem;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.75rem;
+    line-height: 1.5;
+}
+.fin-disclaimer a { color: var(--primary); }
+
+@media (max-width: 600px) {
+    .fin-header { flex-direction: column; align-items: flex-start; }
+    .fin-row { gap: 0.5rem; }
+}

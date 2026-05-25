@@ -349,7 +349,6 @@ class MedCheckApp {
                 case 'supply': await this.renderSupply(); break;
                 case 'alerts': await this.renderAlerts(); break;
                 case 'materials': await this.renderMaterials(); break;
-                case 'sns-catalog': await this.renderSnsCatalog(); break;
                 case 'profile': this.renderProfileView(); break;
                 default: this.content.innerHTML = '<p>Vista no encontrada</p>';
             }
@@ -5362,6 +5361,9 @@ class MedCheckApp {
             const hasPgx = !!(this._pgxSet && med.nregistro && this._pgxSet.has(String(med.nregistro)));
             const isPgxActive = initialTab === 'pgx' && hasPgx;
             const isQTActive = initialTab === 'qt';
+            const isFinancingActive = initialTab === 'financing';
+            // Mostrar tab SNS si el medicamento tiene presentaciones con CN o siempre (se carga async)
+            const hasCns = Array.isArray(med.presentaciones) && med.presentaciones.some(p => p.cn);
 
             // Get medication images for thumbnail and lightbox
             const medFotos = med.fotos || [];
@@ -5427,6 +5429,7 @@ class MedCheckApp {
                     ${hasAempsAlerts ? `<button class="modal-tab alert-pulse ${isAlertsActive ? 'active' : ''}" data-tab="alerts"><i class="fas fa-exclamation-triangle"></i> Alertas AEMPS</button>` : ''}
                     ${hasPgx ? `<button class="modal-tab modal-tab-pgx ${isPgxActive ? 'active' : ''}" data-tab="pgx" title="Biomarcador farmacogenómico (AEMPS)"><i class="fas fa-dna"></i> PGx</button>` : ''}
                     <button class="modal-tab modal-tab-evidence ${isEvidenceActive ? 'active' : ''}" data-tab="evidence" title="Evidencia científica: PubMed y registros de ensayos clínicos"><i class="fas fa-book-medical"></i> Evidencia</button>
+                    ${hasCns ? `<button class="modal-tab modal-tab-financing ${isFinancingActive ? 'active' : ''}" data-tab="financing" title="Financiación SNS: aportación, estado, precio"><i class="fas fa-receipt"></i> Financiación</button>` : ''}
                 </div>
 
                 <div id="tab-info" class="tab-content ${isInfoActive ? 'active' : ''}">
@@ -5485,6 +5488,13 @@ class MedCheckApp {
                         <div class="loading-spinner"></div>
                     </div>
                 </div>
+
+                ${hasCns ? `
+                <div id="tab-financing" class="tab-content ${isFinancingActive ? 'active' : ''}">
+                    <div id="financing-content">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>` : ''}
 `;
 
             // Load AEMPS alerts asynchronously if present
@@ -5502,6 +5512,15 @@ class MedCheckApp {
             // Load evidencia si el modal se abre directamente en esa pestaña
             if (isEvidenceActive) {
                 this.renderEvidenceTab(med);
+            }
+            // Financiación SNS — carga lazy al activar tab, o inmediata si es el tab inicial
+            if (hasCns) {
+                if (isFinancingActive) {
+                    this.loadSnsFinancing(med);
+                } else {
+                    // Carga diferida cuando el usuario pulse la pestaña
+                    this._pendingSnsFinancing = med;
+                }
             }
             // Detect QT information in section 4.4 silently — injects tab only if found
             this.loadQTDetection(med.nregistro, med.nombre);
@@ -5531,6 +5550,10 @@ class MedCheckApp {
                     // Load evidencia when switching to evidence tab (lazy)
                     if (tab.dataset.tab === 'evidence' && !document.getElementById('evidence-content')?.dataset.loaded) {
                         this.renderEvidenceTab(med);
+                    }
+                    // Load financiación SNS when switching to financing tab (lazy)
+                    if (tab.dataset.tab === 'financing' && !document.getElementById('financing-content')?.dataset.loaded) {
+                        this.loadSnsFinancing(this._pendingSnsFinancing || med);
                     }
                 });
             });
@@ -6607,6 +6630,101 @@ ${materialesPlaceholder}
             if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
             textNode.parentNode.replaceChild(fragment, textNode);
         });
+    }
+
+    /**
+     * Carga lazy de la pestaña Financiación SNS del modal.
+     * Fuente: Nomenclátor de Facturación (Ministerio de Sanidad) vía Worker KV.
+     * Busca cada CN de las presentaciones del medicamento. Si falla, mensaje discreto.
+     */
+    async loadSnsFinancing(med) {
+        const container = document.getElementById('financing-content');
+        if (!container || container.dataset.loaded) return;
+        container.dataset.loaded = '1';
+        this._pendingSnsFinancing = null;
+
+        const esc = s => this._escapeHtml(String(s ?? ''));
+        const workerBase = this.api.cloudflareProxy;
+        const presentaciones = Array.isArray(med?.presentaciones) ? med.presentaciones : [];
+        const cns = [...new Set(presentaciones.map(p => p.cn).filter(Boolean))];
+
+        if (!cns.length) {
+            container.innerHTML = `<p class="text-muted" style="padding:1rem">No se encontraron Códigos Nacionales para este medicamento.</p>`;
+            return;
+        }
+
+        try {
+            const results = await Promise.all(
+                cns.map(cn =>
+                    fetch(`${workerBase}/sns-catalog/by-cn/${cn}`, { signal: AbortSignal.timeout(8000) })
+                        .then(r => r.json())
+                        .catch(() => ({ found: false, cn }))
+                )
+            );
+            const found = results.filter(r => r.found);
+
+            if (!found.length) {
+                container.innerHTML = `
+                    <div class="sns-empty" style="padding:1.5rem">
+                        <i class="fas fa-receipt" style="font-size:2rem;color:var(--muted);display:block;margin-bottom:0.5rem"></i>
+                        <div class="sns-empty-title">Sin datos en el Nomenclátor SNS</div>
+                        <div class="sns-empty-sub">Este medicamento no figura en el Nomenclátor de Facturación del Ministerio de Sanidad.</div>
+                    </div>`;
+                return;
+            }
+
+            // Encuentra la fecha de actualización del primer resultado
+            const downloadDate = found[0]?._meta?.download_date || '';
+
+            const rows = found.map(item => {
+                const esBaja = (item.estado || '').toLowerCase().includes('baja');
+                const flags = [];
+                if (item.diag_hospitalario) flags.push('<span class="sns-flag"><i class="fas fa-hospital"></i> Diag. Hospitalario</span>');
+                if (item.larga_duracion)    flags.push('<span class="sns-flag"><i class="fas fa-calendar-check"></i> Larga Duración</span>');
+                if (item.ctrl_especial)     flags.push('<span class="sns-flag"><i class="fas fa-lock"></i> Control Especial</span>');
+                if (item.huerfano)          flags.push('<span class="sns-flag sns-flag-orphan"><i class="fas fa-star"></i> Medicamento Huérfano</span>');
+
+                const pvp = item.pvp_iva != null
+                    ? `<div class="fin-price">PVP (IVA): <strong>${Number(item.pvp_iva).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</strong></div>`
+                    : '';
+                const pref = item.precio_referencia != null
+                    ? `<div class="fin-price-ref">P. Referencia: ${Number(item.precio_referencia).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</div>`
+                    : '';
+
+                return `
+                    <div class="fin-card${esBaja ? ' fin-card-baja' : ''}">
+                        <div class="fin-card-header">
+                            <span class="fin-cn" title="Código Nacional">${esc(item.cn)}</span>
+                            <span class="fin-producto">${esc(item.producto || '—')}</span>
+                            ${this._snsBadgeEstado(item.estado)}
+                        </div>
+                        ${item.nombre_generico ? `<div class="fin-generico">${esc(item.nombre_generico)}</div>` : ''}
+                        <div class="fin-row">
+                            ${this._snsBadgeAportacion(item.aportacion)}
+                            ${pvp}
+                            ${pref}
+                        </div>
+                        ${flags.length ? `<div class="fin-flags">${flags.join('')}</div>` : ''}
+                    </div>`;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="fin-container">
+                    <div class="fin-header">
+                        <span class="fin-source"><i class="fas fa-landmark"></i> Nomenclátor de Facturación — Ministerio de Sanidad</span>
+                        ${downloadDate ? `<span class="fin-date">Datos: ${esc(downloadDate)}</span>` : ''}
+                    </div>
+                    ${rows}
+                    <div class="fin-disclaimer">
+                        <i class="fas fa-info-circle"></i>
+                        Los precios son orientativos. Verifique siempre en el Nomenclátor oficial antes de prescribir.
+                        <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do" target="_blank" rel="noopener">Fuente oficial</a>
+                    </div>
+                </div>`;
+
+        } catch (err) {
+            container.innerHTML = `<p class="text-muted" style="padding:1rem"><i class="fas fa-exclamation-triangle"></i> Error al consultar el Nomenclátor SNS: ${esc(err.message)}</p>`;
+        }
     }
 
     /**
@@ -10723,7 +10841,6 @@ MedCheckApp._VIEW_ANALYTICS_MAP = {
     supply:       'suministro',
     alerts:       'alertas',
     materials:    'materiales',
-    'sns-catalog': 'nomenclator',
     profile:      'perfil',
 };
 
