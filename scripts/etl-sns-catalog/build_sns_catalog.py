@@ -97,18 +97,28 @@ def parse_xls(data: bytes, download_date: str) -> dict[str, Any]:
         "producto":    _find_col(headers, ["nombre del producto", "nombre producto"]),
         "tipo":        _find_col(headers, ["tipo de fármaco", "tipo farmaco", "tipo de farmaco"]),
         "generico":    _find_col(headers, ["nombre genérico", "nombre generico", "genérico efecto", "generico efecto"]),
-        "cod_lab":     _find_col(headers, ["código del laboratorio", "cod laboratorio", "cod. laboratorio"]),
-        "laboratorio": _find_col(headers, ["nombre del laboratorio", "nombre laboratorio", "laboratorio ofertante"]),
-        "estado":      _find_col(headers, ["estado"]),
-        "fecha_alta":  _find_col(headers, ["fecha de alta", "fecha alta"]),
-        "fecha_baja":  _find_col(headers, ["fecha de baja", "fecha baja"]),
-        "aportacion":  _find_col(headers, ["aportación del beneficiario", "aportacion del beneficiario",
-                                            "aportación beneficiario", "aportacion beneficiario"]),
-        "principio":   _find_col(headers, ["principio activo"]),
-        "pvp_iva":     _find_col(headers, ["precio de venta al público", "pvp iva", "pvp con iva", "venta al publico"]),
-        "precio_ref":  _find_col(headers, ["precio de referencia"]),
+        "cod_lab":        _find_col(headers, ["código del laboratorio", "cod laboratorio", "cod. laboratorio"]),
+        # "laboratorio ofertante" excluido: aparece en ambas columnas (código y nombre)
+        "laboratorio":    _find_col(headers, ["nombre del laboratorio", "nombre laboratorio"]),
+        "estado":         _find_col(headers, ["estado"]),
+        "fecha_alta":     _find_col(headers, ["fecha de alta", "fecha alta"]),
+        "fecha_baja":     _find_col(headers, ["fecha de baja", "fecha baja"]),
+        "aportacion":     _find_col(headers, ["aportación del beneficiario", "aportacion del beneficiario",
+                                               "aportación beneficiario", "aportacion beneficiario"]),
+        "principio":      _find_col(headers, ["principio activo"]),
+        "pvp_iva":        _find_col(headers, ["precio de venta al público", "pvp iva", "pvp con iva", "venta al publico"]),
+        "precio_ref":     _find_col(headers, ["precio de referencia"]),
+        # Agrupación homogénea — presente en PS; permite identificarlos cuando tipo_farmaco está vacío
+        "nombre_agrup":   _find_col(headers, ["nombre de la agrupación homogénea", "nombre agrupacion homogenea"]),
+        "cod_agrup":      _find_col(headers, ["código de la agrupación homogénea", "cod agrupacion homogenea"]),
+        # Flags clínicos (columnas adicionales descubiertas en el XLS real)
+        "diag_hosp":      _find_col(headers, ["diagnóstico hospitalario", "diagnostico hospitalario"]),
+        "larga_duracion": _find_col(headers, ["tratamiento de larga duración", "larga duracion"]),
+        "ctrl_especial":  _find_col(headers, ["especial control médico", "especial control medico"]),
+        "huerfano":       _find_col(headers, ["medicamento huérfano", "medicamento huerfano"]),
     }
-    missing = [k for k, v in col.items() if v < 0 and k not in ("cod_lab", "principio", "precio_ref")]
+    missing = [k for k, v in col.items() if v < 0 and k not in ("cod_lab", "principio", "precio_ref",
+               "nombre_agrup", "cod_agrup", "diag_hosp", "larga_duracion", "ctrl_especial", "huerfano")]
     if missing:
         print(f"[etl] ADVERTENCIA — columnas no encontradas: {missing}", file=sys.stderr)
     print(f"[etl] mapa de columnas: {col}", file=sys.stderr)
@@ -148,30 +158,54 @@ def parse_xls(data: bytes, download_date: str) -> dict[str, Any]:
         cn = cn_raw.zfill(7)
 
         estado = cell_str(r, col["estado"]) or "desconocido"
-        tipo = cell_str(r, col["tipo"]) or "desconocido"
+        tipo_raw = cell_str(r, col["tipo"])
+        nombre_agrup = cell_str(r, col["nombre_agrup"])
+
+        # Productos sanitarios tienen tipo_farmaco vacío pero agrupación homogénea PS informada
+        if not tipo_raw and nombre_agrup:
+            tipo = "Efecto y accesorio"
+        else:
+            tipo = tipo_raw or "desconocido"
 
         stats_tipo[tipo] = stats_tipo.get(tipo, 0) + 1
         stats_estado[estado] = stats_estado.get(estado, 0) + 1
 
+        def cell_bool(r: int, c: int) -> bool | None:
+            if c < 0:
+                return None
+            v = str(ws.cell_value(r, c)).strip().upper()
+            if v in ("1", "SI", "SÍ", "S", "TRUE", "YES"):
+                return True
+            if v in ("0", "NO", "N", "FALSE"):
+                return False
+            return None
+
         item: dict[str, Any] = {
-            "cn":              cn,
-            "producto":        cell_str(r, col["producto"]),
-            "tipo_farmaco":    tipo,
-            "nombre_generico": cell_str(r, col["generico"]),
-            "cod_laboratorio": cell_str(r, col["cod_lab"]),
-            "laboratorio":     cell_str(r, col["laboratorio"]),
-            "estado":          estado,
-            "fecha_alta":      cell_str(r, col["fecha_alta"]),
-            "fecha_baja":      cell_str(r, col["fecha_baja"]),
-            "aportacion":      cell_str(r, col["aportacion"]),
-            "principio_activo": cell_str(r, col["principio"]),
+            "cn":                cn,
+            "producto":          cell_str(r, col["producto"]),
+            "tipo_farmaco":      tipo,
+            "nombre_generico":   cell_str(r, col["generico"]),
+            "cod_laboratorio":   cell_str(r, col["cod_lab"]),
+            "laboratorio":       cell_str(r, col["laboratorio"]),
+            "estado":            estado,
+            "fecha_alta":        cell_str(r, col["fecha_alta"]),
+            "fecha_baja":        cell_str(r, col["fecha_baja"]),
+            "aportacion":        cell_str(r, col["aportacion"]),
+            "principio_activo":  cell_str(r, col["principio"]),
+            "nombre_agrupacion": nombre_agrup,
+            "cod_agrupacion":    cell_str(r, col["cod_agrup"]),
+            # Flags clínicos
+            "diag_hospitalario": cell_bool(r, col["diag_hosp"]),
+            "larga_duracion":    cell_bool(r, col["larga_duracion"]),
+            "ctrl_especial":     cell_bool(r, col["ctrl_especial"]),
+            "huerfano":          cell_bool(r, col["huerfano"]),
             # Prices: captured, not exposed in UI phase 1
-            "pvp_iva":         cell_decimal(r, col["pvp_iva"]),
+            "pvp_iva":           cell_decimal(r, col["pvp_iva"]),
             "precio_referencia": cell_decimal(r, col["precio_ref"]),
             # Derived — null until join against AEMPS Nomenclátor is implemented
-            "nregistro_cima":  None,
+            "nregistro_cima":    None,
         }
-        # Strip None to compact JSON; keep nulls only for fields that matter
+        # Strip None to compact JSON; keep nulls only for nregistro_cima
         item = {k: v for k, v in item.items() if v is not None or k in ("nregistro_cima",)}
 
         items.append(item)
