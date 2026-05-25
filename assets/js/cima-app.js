@@ -184,6 +184,7 @@ class MedCheckApp {
     async init() {
         // Setup URL router (popstate listener)
         this.setupURLRouter();
+        const isDemoMode = new URLSearchParams(window.location.search).get('demo') === 'true';
 
         // Legal Check First - URL params processed after acceptance
         this.checkLegalDisclaimer();
@@ -215,7 +216,7 @@ class MedCheckApp {
             .catch(() => { /* silencioso */ });
 
         // If legal already accepted, process URL params now
-        if (this.hasAcceptedLegalDisclaimer()) {
+        if (this.hasAcceptedLegalDisclaimer() || isDemoMode) {
             this.processURLParams();
         } else {
             // Default view while waiting for legal acceptance
@@ -239,10 +240,6 @@ class MedCheckApp {
             document.body.style.overflow = 'hidden'; // Prevent scrolling
         } else {
             modal.classList.add('hidden');
-            // If demo mode, also process URL params immediately
-            if (isDemoMode) {
-                this.processURLParams();
-            }
         }
 
         btn.addEventListener('click', () => {
@@ -4854,57 +4851,124 @@ class MedCheckApp {
 
         try {
             const data = await this.api.getRegistroCambios();
-
-            const alerts = [];
-            if (data.altas) alerts.push(...data.altas.map(a => ({ ...a, tipo: 'alta' })));
-            if (data.bajas) alerts.push(...data.bajas.map(a => ({ ...a, tipo: 'baja' })));
-            if (data.modificaciones) alerts.push(...data.modificaciones.map(a => ({ ...a, tipo: 'mod' })));
+            const alerts = this.normalizeRegistroCambios(data)
+                .sort((a, b) => this._parseCimaDate(b.fecha) - this._parseCimaDate(a.fecha));
 
             if (alerts.length === 0) {
                 this.content.innerHTML = `
-    <div class="empty-state">
+                    <div class="empty-state">
                         <i class="fas fa-bell-slash"></i>
                         <h3>Sin alertas recientes</h3>
                         <p>No hay cambios registrados en los últimos 7 días</p>
                     </div>
-    `;
+                `;
                 return;
             }
 
             this.content.innerHTML = `
-    < h3 style="margin-bottom: 1rem;">
-        <i class="fas fa-bell text-warning"></i> 
-                    Cambios y Alertas Recientes
-    <span class="badge badge-warning"> ${alerts.length}</span>
-                </h3 >
-    <div class="results-grid">
-        ${alerts.slice(0, 30).map(alert => this.renderAlertCard(alert)).join('')}
-    </div>
-`;
+                <div class="view-container">
+                    <div class="supply-header">
+                        <h3 class="supply-title">
+                            <i class="fas fa-bell text-warning"></i>
+                            Cambios recientes en CIMA
+                            <span class="badge badge-warning">${alerts.length}</span>
+                        </h3>
+                    </div>
+                    <p class="text-muted mb-md">
+                        Altas, bajas y modificaciones comunicadas por el registro de cambios de CIMA en los últimos 7 días.
+                    </p>
+                    <div class="results-grid">
+                        ${alerts.slice(0, 50).map(alert => this.renderAlertCard(alert)).join('')}
+                    </div>
+                </div>
+            `;
 
         } catch (error) {
             this.handleSearchError(this.content, error);
         }
     }
 
+    normalizeRegistroCambios(data) {
+        const alerts = [];
+        const addItems = (items, tipo) => {
+            if (!Array.isArray(items)) return;
+            alerts.push(...items.map(item => ({ ...item, tipo: item.tipo || tipo })));
+        };
+
+        if (Array.isArray(data)) {
+            addItems(data);
+        } else if (Array.isArray(data?.resultados)) {
+            addItems(data.resultados);
+        } else {
+            addItems(data?.altas, 'alta');
+            addItems(data?.bajas, 'baja');
+            addItems(data?.modificaciones, 'mod');
+        }
+
+        return alerts.map(alert => ({
+            ...alert,
+            tipo: alert.tipo || this._tipoCambioToKey(alert.tipoCambio)
+        }));
+    }
+
+    _tipoCambioToKey(tipoCambio) {
+        const code = Number(tipoCambio);
+        if (code === 1) return 'alta';
+        if (code === 2) return 'baja';
+        if (code === 3) return 'mod';
+        return 'cambio';
+    }
+
+    _parseCimaDate(value) {
+        if (!value) return 0;
+        if (typeof value === 'number') return value < 1000000000000 ? value * 1000 : value;
+        const raw = String(value).trim();
+        const match = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+        if (match) {
+            return new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1])).getTime();
+        }
+        const parsed = Date.parse(raw);
+        return Number.isNaN(parsed) ? 0 : parsed;
+    }
+
+    _formatCimaDate(value) {
+        const timestamp = this._parseCimaDate(value);
+        if (!timestamp) return '';
+        return new Date(timestamp).toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+    }
+
     renderAlertCard(alert) {
         const tipoLabels = {
             'alta': { label: 'Nueva autorización', class: 'success' },
             'baja': { label: 'Baja/Revocación', class: 'danger' },
-            'mod': { label: 'Modificación', class: 'warning' }
+            'mod': { label: 'Modificación', class: 'warning' },
+            'cambio': { label: 'Cambio', class: 'info' }
         };
 
         const tipo = tipoLabels[alert.tipo] || { label: 'Cambio', class: 'info' };
+        const title = this._escapeHtml(alert.nombre || alert.nregistro || 'Medicamento');
+        const fecha = this._formatCimaDate(alert.fecha);
+        const cambios = Array.isArray(alert.cambios) ? alert.cambios : [];
+        const cambiosHtml = cambios.length
+            ? cambios.map(c => `<span class="badge badge-info">${this._escapeHtml(c)}</span>`).join(' ')
+            : '<span class="text-muted text-sm">Sin detalle de campos modificados</span>';
+        const nregistro = alert.nregistro ? this._escapeHtml(alert.nregistro) : '';
 
         return `
-    <div class="result-card">
+            <div class="result-card ${alert.nregistro ? 'clickable' : ''}" ${alert.nregistro ? `onclick="app.openMedDetails('${nregistro}', 'docs')"` : ''}>
                 <div class="result-card-header">
                     <span class="badge badge-${tipo.class}">${tipo.label}</span>
+                    ${fecha ? `<span class="text-muted text-sm">${fecha}</span>` : ''}
                 </div>
-                <p class="result-card-title">${alert.nombre || alert.nregistro}</p>
-                <p class="result-card-lab text-sm">${alert.cambios ? alert.cambios.join(', ') : ''}</p>
+                <p class="result-card-title">${title}</p>
+                ${nregistro ? `<p class="result-card-lab text-sm">N. registro: ${nregistro}</p>` : ''}
+                <div class="mt-sm" style="display:flex;gap:0.35rem;flex-wrap:wrap;">${cambiosHtml}</div>
             </div>
-    `;
+        `;
     }
 
     // ============================================
@@ -5066,9 +5130,11 @@ class MedCheckApp {
             // Increment view count if this is a favorite
             this.incrementFavoriteViewCount(nregistro);
 
-            // Update URL with medication nregistro
+            // Update URL with medication nregistro and active modal tab
             if (!this.isPopstateNavigation) {
-                this.updateURL({ view: this.currentView, nregistro: nregistro });
+                const modalParams = { view: this.currentView, nregistro: nregistro };
+                if (initialTab && initialTab !== 'info') modalParams.tab = initialTab;
+                this.updateURL(modalParams);
             }
 
             // Determine which tab should be active
@@ -5251,6 +5317,11 @@ class MedCheckApp {
                     document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
                     // Actualizar vista para analytics — próxima petición llevará este header
                     window._mcCurrentView = `modal-${tab.dataset.tab}`;
+                    if (!this.isPopstateNavigation) {
+                        const modalParams = { view: this.currentView, nregistro: med.nregistro };
+                        if (tab.dataset.tab !== 'info') modalParams.tab = tab.dataset.tab;
+                        this.updateURL(modalParams);
+                    }
                     // Load materiales when switching to docs tab (lazy)
                     if (tab.dataset.tab === 'docs' && !document.getElementById('docs-materiales')?.dataset.loaded) {
                         this.loadMateriales(med.nregistro);
@@ -7345,6 +7416,9 @@ ${materialesPlaceholder}
     closeModal() {
         this.modal.classList.add('hidden');
         this.currentMed = null;
+        if (!this.isPopstateNavigation) {
+            this.updateURLWithCurrentState();
+        }
     }
 
 
@@ -8356,8 +8430,25 @@ ${materialesPlaceholder}
 
         // Get view from params (default to search)
         const view = params.view || 'search';
-        const validViews = ['search', 'indications', 'safety', 'interactions', 'adverse', 'equivalences', 'supply', 'alerts'];
+        const validViews = [
+            'search',
+            'indications',
+            'safety',
+            'interactions',
+            'adverse',
+            'equivalences',
+            'pharmacogenomics',
+            'supply',
+            'alerts',
+            'materials',
+            'profile'
+        ];
         const targetView = validViews.includes(view) ? view : 'search';
+
+        if (!params.nregistro && !this.modal.classList.contains('hidden')) {
+            this.modal.classList.add('hidden');
+            this.currentMed = null;
+        }
 
         // Update nav tab UI
         document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -8383,7 +8474,9 @@ ${materialesPlaceholder}
             // First load the base view without URL update
             await this.loadView(targetView, false);
             // Then open the medication detail
-            this.openMedDetails(params.nregistro);
+            const validModalTabs = ['info', 'indications', 'posology', 'interactions', 'adverse', 'safety', 'docs', 'alerts', 'qt', 'pgx', 'evidence'];
+            const modalTab = validModalTabs.includes(params.tab) ? params.tab : 'info';
+            this.openMedDetails(params.nregistro, modalTab);
             return;
         }
 
@@ -10353,6 +10446,7 @@ MedCheckApp._VIEW_ANALYTICS_MAP = {
     interactions: 'interacciones',
     adverse:      'reacciones',
     equivalences: 'equivalencias',
+    pharmacogenomics: 'farmacogenomica',
     supply:       'suministro',
     alerts:       'alertas',
     materials:    'materiales',
@@ -10372,10 +10466,4 @@ MedCheckApp._CONTEXT_ANALYTICS_MAP = {
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new MedCheckApp();
 });
-
-
-
-
-
-
 
