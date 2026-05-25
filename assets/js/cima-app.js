@@ -20,6 +20,20 @@ class MedCheckApp {
     ]);
     static PGX_CPIC_BASE = 'https://www.clinpgx.org/cpic/guidelines?gene=';
 
+    // Hashes SHA-256 de códigos de acceso válidos.
+    // Para añadir un código: await MedCheckApp._hashCode('NUEVO-CÓDIGO') en consola.
+    // Para revocar: eliminar el hash correspondiente y subir nueva versión.
+    static _ACCESS_HASHES = new Set([
+        '4f216deccb922820e9a887dde56f85f4804d6a073c206ce0e0359bc12cc90777', // MEDCHECK-2026-EB
+        '92ae8e8c39b4ac5efc207837a0ac3fbe272b635e8514118b4d03ec9cb6c84360', // PILOTO-A-2026
+        '65e247b6d35980132cfefc69263183b93b6c5d1a990837cca19ab61efb334d2e', // PILOTO-B-2026
+    ]);
+
+    static async _hashCode(code) {
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(code.trim()));
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
     // Glosario breve de biomarcadores farmacogenómicos para tooltips
     // Solo incluye los más frecuentes/relevantes en AP — los demás muestran texto genérico.
     static PGX_BIOMARKER_TOOLTIPS = {
@@ -182,6 +196,10 @@ class MedCheckApp {
 
 
     async init() {
+        // Access gate — must pass before anything else renders
+        const hasAccess = await this.checkAccessGate();
+        if (!hasAccess) return;
+
         // Setup URL router (popstate listener)
         this.setupURLRouter();
         const isDemoMode = new URLSearchParams(window.location.search).get('demo') === 'true';
@@ -301,6 +319,55 @@ class MedCheckApp {
                 this._legalAcceptedInMemory = true;
             }
         }
+    }
+
+    async checkAccessGate() {
+        const LS_KEY = 'mc_auth';
+
+        // Check if stored hash is still in the valid set (rotation-aware)
+        try {
+            const stored = localStorage.getItem(LS_KEY);
+            if (stored && MedCheckApp._ACCESS_HASHES.has(stored)) return true;
+            if (stored) localStorage.removeItem(LS_KEY); // revoked — clear stale entry
+        } catch (_) { /* storage blocked */ }
+
+        // Check URL param
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+
+        if (code) {
+            const hash = await MedCheckApp._hashCode(code);
+            if (MedCheckApp._ACCESS_HASHES.has(hash)) {
+                try { localStorage.setItem(LS_KEY, hash); } catch (_) { /* ignore */ }
+                // Remove code from URL without page reload
+                params.delete('code');
+                const cleanSearch = params.toString();
+                const cleanUrl = window.location.pathname + (cleanSearch ? '?' + cleanSearch : '');
+                history.replaceState({}, '', cleanUrl);
+                return true;
+            }
+        }
+
+        // No valid code — show locked screen
+        document.body.innerHTML = `
+<div style="
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:#0f172a;font-family:'Inter',system-ui,sans-serif;color:#94a3b8;
+    padding:2rem;box-sizing:border-box;">
+  <div style="max-width:440px;text-align:center;">
+    <div style="font-size:3rem;margin-bottom:1rem;">&#x1F512;</div>
+    <h1 style="color:#f1f5f9;font-size:1.4rem;margin:0 0 .75rem;">Acceso restringido</h1>
+    <p style="margin:0 0 1.5rem;line-height:1.6;">
+      MedCheck es una herramienta experimental en piloto cerrado.<br>
+      Accede con el enlace personalizado que te ha facilitado el autor.
+    </p>
+    <p style="font-size:.8rem;color:#475569;">
+      &#x26A0;&#xFE0F; Esta herramienta está en fase de pruebas (BETA).<br>
+      No es un producto sanitario. Uso personal y educativo.
+    </p>
+  </div>
+</div>`;
+        return false;
     }
 
     /**

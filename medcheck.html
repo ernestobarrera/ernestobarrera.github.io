@@ -194,33 +194,32 @@
 
     <!-- Legal Disclaimer Modal -->
     <div id="legal-modal" class="modal-overlay hidden" style="z-index: 9999; background: rgba(0,0,0,0.9);">
-        <div class="modal-content" style="max-width: 520px;">
+        <div class="modal-content" style="max-width: 560px;">
             <div class="modal-header" style="border-bottom: 2px solid var(--warning);">
                 <h2 class="modal-title" style="color: var(--warning);">
                     <i class="fas fa-exclamation-triangle"></i> AVISO IMPORTANTE
                 </h2>
             </div>
             <div class="modal-body p-lg">
-                <p class="mb-md"><strong>MedCheck es una herramienta experimental en fase de pruebas (BETA).</strong>
-                </p>
+                <p class="mb-md"><strong>MedCheck es una herramienta experimental en fase de pruebas (BETA), de uso personal y educativo.</strong></p>
+
+                <p class="mb-sm text-muted" style="font-size:.85rem;"><strong>Fuentes de datos utilizadas:</strong></p>
+                <ul style="list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem;font-size:.85rem;" class="text-muted">
+                    <li class="mb-sm"><strong>CIMA / AEMPS</strong> — Ficha técnica, prospecto, alertas, interacciones, reacciones adversas, suministro.</li>
+                    <li class="mb-sm"><strong>Nomenclátor de Facturación del SNS</strong> — Precios y condiciones de prescripción. Los precios mostrados son <strong>orientativos</strong> y no son válidos para facturación ni liquidación oficial.</li>
+                    <li><strong>BIFIMED</strong> (Ministerio de Sanidad) — Estado de financiación pública por indicación. Los datos proceden de la Base de Información de Financiación de Medicamentos y pueden no estar actualizados.</li>
+                </ul>
 
                 <ul style="list-style: disc; padding-left: 1.5rem; margin-bottom: 1.5rem;" class="text-muted">
-                    <li class="mb-sm">La información proviene de la <strong>API pública de la AEMPS</strong> pero podría
-                        contener
-                        errores de procesamiento o estar desactualizada.</li>
-                    <li class="mb-sm"><strong>NO introduzca datos reales de pacientes</strong> (Nombres, DNI, Historia
-                        Clínica). Esta versión utiliza un proxy público y no garantiza la privacidad de los datos
-                        transmitidos.</li>
-                    <li class="mb-sm">El <strong>criterio clínico del profesional prevalece siempre</strong> sobre esta
-                        herramienta.</li>
-                    <li class="mb-sm">Esta herramienta es de <strong>uso personal y educativo</strong>. No está afiliada
-                        ni respaldada por AEMPS.</li>
-                    <li>El autor no se hace responsable del uso incorrecto de esta información.
-                    </li>
+                    <li class="mb-sm">Cualquier fuente podría contener <strong>errores de procesamiento o estar desactualizada</strong>. Verifica siempre en la fuente oficial antes de actuar.</li>
+                    <li class="mb-sm"><strong>NO introduzca datos reales de pacientes</strong> (Nombres, DNI, Historia Clínica). Esta versión utiliza un proxy público y no garantiza la privacidad de los datos transmitidos.</li>
+                    <li class="mb-sm">El <strong>criterio clínico del profesional prevalece siempre</strong> sobre esta herramienta.</li>
+                    <li class="mb-sm">Esta herramienta <strong>no está afiliada ni respaldada</strong> por AEMPS, Ministerio de Sanidad ni ningún organismo oficial.</li>
+                    <li>El autor no se hace responsable del uso incorrecto de esta información.</li>
                 </ul>
 
                 <button id="accept-legal-btn" class="btn btn-primary w-full btn-lg">
-                    He leído y acepto verificar los datos
+                    He leído y acepto verificar los datos en la fuente oficial
                 </button>
             </div>
         </div>
@@ -228,7 +227,7 @@
 
     <!-- Scripts -->
     <script src="assets/js/cima-api.js?v=20260525a"></script>
-    <script src="assets/js/cima-app.js?v=20260525i"></script>
+    <script src="assets/js/cima-app.js?v=20260525j"></script>
 
     <!-- Service Worker Registration -->
     <script>
