@@ -6857,6 +6857,7 @@ ${materialesPlaceholder}
             // Sección SNS: tarjetas si hay datos; nota contextual según estado BIFIMED si no
             let snsSection;
             if (found.length) {
+                const nomenclatorUrlPrimary = `https://www.sanidad.gob.es/profesionales/nomenclator.do?metodo=verDetalle&prod=${cnToProd(found[0].cn)}`;
                 snsSection = `<div class="fin-container">
                     <div class="fin-header">
                         <span class="fin-source"><i class="fas fa-landmark"></i> Nomenclátor de Facturación — Ministerio de Sanidad</span>
@@ -6865,7 +6866,8 @@ ${materialesPlaceholder}
                     ${rows}
                     <div class="fin-disclaimer">
                         <i class="fas fa-info-circle"></i>
-                        Los precios son orientativos. Verifique siempre en el Nomenclátor oficial antes de prescribir.
+                        Los precios son orientativos. Fuente: Nomenclátor — Ministerio de Sanidad.
+                        <a href="${nomenclatorUrlPrimary}" target="_blank" rel="noopener">Ver ficha en Nomenclátor</a>
                     </div>
                    </div>`;
             } else {
