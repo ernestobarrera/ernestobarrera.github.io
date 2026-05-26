@@ -2064,6 +2064,12 @@ body {
     margin-bottom: 0.25rem;
 }
 
+.safety-status-badge {
+    white-space: normal;
+    line-height: 1.2;
+    text-transform: none;
+}
+
 .safety-check-detail {
     font-size: 0.85rem;
     color: var(--text-secondary);

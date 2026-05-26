@@ -139,7 +139,7 @@ class MedCheckApp {
         // Analytics globals — leídos por cima-api.js en cada petición al Worker
         window._mcCurrentView    = 'buscar';
         window._mcActiveContexts = null;
-        // Fuente de apertura: 'bookmarklet' si la app se abrió desde el bookmarklet, 'app' si acceso directo
+        // Fuente de apertura: 'bookmarklet' si la app se abrio desde el atajo seguro, 'app' si acceso directo
         const _urlSrc = new URLSearchParams(window.location.search).get('source');
         window._mcSource = _urlSrc === 'bookmarklet' ? 'bookmarklet' : 'app';
 
@@ -364,7 +364,7 @@ class MedCheckApp {
     </p>
     <p style="font-size:.8rem;color:#475569;">
       &#x26A0;&#xFE0F; Esta herramienta está en fase de pruebas (BETA).<br>
-      No es un producto sanitario. Uso personal y educativo.
+      Herramienta experimental de consulta informativa.<br>No sustituye el juicio clínico profesional.<br>Su uso directo en decisiones terapéuticas no está autorizado por sus fuentes oficiales ni por el desarrollador.
     </p>
   </div>
 </div>`;
@@ -2881,6 +2881,7 @@ class MedCheckApp {
             else if (check.status === 'warning') { icon = 'exclamation-triangle'; colorClass = 'text-warning'; }
             else if (check.status === 'safe') { icon = 'check-circle'; colorClass = 'text-success'; }
             else if (check.status === 'unknown') { icon = 'question-circle'; colorClass = 'text-secondary'; }
+            const statusMeta = this.getSafetyStatusMeta(check.status);
 
             // Lógica para mostrar evidencia o mensaje
             const evidenceHtml = check.excerpt
@@ -2902,6 +2903,7 @@ class MedCheckApp {
                     <div class="safety-check-content">
                         <div class="safety-check-header">
                             <span class="safety-check-title">${check.label}</span>
+                            <span class="badge ${statusMeta.badge} safety-status-badge">${statusMeta.label}</span>
                              ${viewSectionBtn}
                         </div>
                         <div class="safety-check-detail ${colorClass}">
@@ -5285,9 +5287,9 @@ class MedCheckApp {
         this.bookmarkletModalBody.innerHTML = `
             <div class="bookmarklet-sheet">
                 <div class="bookmarklet-hero">
-                    <span class="bookmarklet-kicker">Bookmarklet</span>
-                    <h2 class="bookmarklet-title">Instala MedCheck rapido</h2>
-                    <p class="bookmarklet-subtitle">Acceso directo compacto para buscar desde cualquier pagina sin perder la pestana en la que estas.</p>
+                    <span class="bookmarklet-kicker">Atajo seguro</span>
+                    <h2 class="bookmarklet-title">Atajo seguro MedCheck</h2>
+                    <p class="bookmarklet-subtitle">Abre MedCheck en una pestana nueva sin modificar la pagina clinica origen. Copia el farmaco y pegalo ya dentro de MedCheck.</p>
                 </div>
 
                 <div class="bookmarklet-grid">
@@ -5296,12 +5298,12 @@ class MedCheckApp {
                         <p class="bookmarklet-anchor-note">Arrastra este marcador a tu barra del navegador:</p>
                         <a class="bookmarklet-link" id="bookmarklet-install-link" draggable="true">
                             <i class="fas fa-bookmark"></i>
-                            <span>MedCheck rapido: buscar medicamento</span>
+                            <span>Abrir MedCheck seguro</span>
                         </a>
-                        <p class="bookmarklet-helper">Si lo prefieres, tambien puedes copiar el codigo completo y crear el marcador manualmente.</p>
+                        <p class="bookmarklet-helper">Tambien puedes copiar el codigo completo y crear el marcador manualmente. Este atajo no lee ni modifica la pagina origen.</p>
                         <div class="bookmarklet-actions">
                             <button type="button" class="btn btn-primary" id="copy-bookmarklet-btn">
-                                <i class="fas fa-copy"></i> Copiar bookmarklet
+                                <i class="fas fa-copy"></i> Copiar atajo
                             </button>
                             <button type="button" class="btn btn-secondary" id="close-bookmarklet-btn-secondary">
                                 Cerrar
@@ -5312,16 +5314,16 @@ class MedCheckApp {
                     <div class="bookmarklet-card">
                         <h3>Uso</h3>
                         <ol>
-                            <li>Selecciona un farmaco o un principio activo.</li>
-                            <li>Pulsa el marcador <strong>MedCheck rapido</strong>.</li>
-                            <li>El mini modal se cierra al lanzar la busqueda y abre MedCheck en una nueva pestana.</li>
+                            <li>Copia el farmaco, principio activo o CN si estas en una HCE.</li>
+                            <li>Pulsa el marcador <strong>Abrir MedCheck seguro</strong>.</li>
+                            <li>Pega y busca dentro de MedCheck. El atajo no inserta modales en la pagina origen.</li>
                         </ol>
                     </div>
 
                     <details class="bookmarklet-card bookmarklet-code-panel">
                         <summary class="bookmarklet-summary">Ver javascript completo</summary>
                         <textarea class="bookmarklet-code" id="bookmarklet-code" readonly></textarea>
-                        <p class="bookmarklet-note">Este codigo conserva la pagina de origen y solo muestra aviso si la nueva pestana falla de verdad.</p>
+                        <p class="bookmarklet-note">Este codigo solo abre MedCheck; no lee seleccion, URL ni contenido de la pagina origen.</p>
                     </details>
                 </div>
             </div>
@@ -5334,7 +5336,7 @@ class MedCheckApp {
 
         installLink?.setAttribute('href', bookmarkletCode);
         installLink?.setAttribute('title', 'Arrastra este marcador a tu barra de marcadores');
-        installLink?.setAttribute('aria-label', 'Marcador arrastrable MedCheck rapido buscar medicamento');
+        installLink?.setAttribute('aria-label', 'Marcador arrastrable Abrir MedCheck seguro');
 
         if (codeArea) {
             codeArea.value = bookmarkletCode;
@@ -5345,7 +5347,7 @@ class MedCheckApp {
 
             try {
                 await navigator.clipboard.writeText(code);
-                this.showToast('Bookmarklet copiado', 'success');
+                this.showToast('Atajo seguro copiado', 'success');
             } catch (error) {
                 codeArea?.focus();
                 codeArea?.select();
@@ -5365,8 +5367,20 @@ class MedCheckApp {
         document.body.style.overflow = '';
     }
 
+    getSafetyStatusMeta(status) {
+        const meta = {
+            danger: { label: 'Estado: alerta critica', badge: 'badge-danger' },
+            warning: { label: 'Estado: revisar', badge: 'badge-warning' },
+            review: { label: 'Estado: verificar fuente', badge: 'badge-info' },
+            safe: { label: 'Estado: sin hallazgo en este modulo', badge: 'badge-success' },
+            unknown: { label: 'Estado: no determinado', badge: 'badge-neutral' },
+            neutral: { label: 'Estado: informacion', badge: 'badge-neutral' }
+        };
+        return meta[status] || { label: 'Estado: informacion', badge: 'badge-info' };
+    }
     getBookmarkletCode() {
-        return "javascript:(()=>{const e='https://ernestobarrera.github.io/medcheck.html',t='medcheck-bm-root',o='medcheck-bm-style',c=document.getElementById(t);if(c)return void c.remove();const n=e=>String(e??'').replace(/\\s+/g,' ').trim(),r=()=>{const e=document.activeElement;return e&&'string'==typeof e.value&&'number'==typeof e.selectionStart&&'number'==typeof e.selectionEnd&&e.selectionEnd>e.selectionStart?n(e.value.slice(e.selectionStart,e.selectionEnd)):window.getSelection?n(window.getSelection().toString()):''};if(!document.getElementById(o)){const e=document.createElement('style');e.id=o,e.textContent=`#${t}{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(15,23,42,.55);backdrop-filter:blur(10px)}#${t},#${t} *{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif}#${t} .mc-card{width:min(560px,100%);background:linear-gradient(180deg,#0f172a 0%,#111827 100%);color:#e5eefb;border:1px solid rgba(148,163,184,.22);border-radius:24px;box-shadow:0 24px 80px rgba(2,6,23,.45);overflow:hidden}#${t} .mc-head{padding:22px 24px 12px;border-bottom:1px solid rgba(148,163,184,.14);background:radial-gradient(circle at top right,rgba(14,165,233,.18),transparent 34%),linear-gradient(180deg,rgba(30,41,59,.96),rgba(17,24,39,.96))}#${t} .mc-kicker{display:inline-flex;padding:4px 10px;border-radius:999px;background:rgba(14,165,233,.16);color:#7dd3fc;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}#${t} .mc-title{margin:10px 0 6px;font-size:24px;line-height:1.15;font-weight:800;color:#f8fafc}#${t} .mc-subtitle{margin:0;color:#94a3b8;font-size:14px;line-height:1.5}#${t} .mc-body{padding:20px 24px 24px}#${t} .mc-row{display:grid;grid-template-columns:146px 1fr;gap:10px;margin-bottom:12px}#${t} select,#${t} input[type=text]{width:100%;border:1px solid rgba(148,163,184,.2);border-radius:14px;background:rgba(15,23,42,.95);color:#f8fafc;padding:13px 14px;font-size:15px;outline:none}#${t} select:focus,#${t} input[type=text]:focus{border-color:rgba(56,189,248,.85);box-shadow:0 0 0 4px rgba(14,165,233,.14)}#${t} .mc-options{display:flex;flex-wrap:wrap;gap:10px 16px;margin:10px 0 8px}#${t} .mc-check{display:inline-flex;align-items:center;gap:8px;color:#cbd5e1;font-size:14px}#${t} .mc-check input{accent-color:#0ea5e9}#${t} .mc-hint{margin:10px 0 0;color:#94a3b8;font-size:13px;line-height:1.45}#${t} .mc-error{min-height:20px;margin-top:8px;color:#fca5a5;font-size:13px;font-weight:600}#${t} .mc-actions{display:flex;gap:10px;margin-top:16px}#${t} .mc-btn{appearance:none;border:0;border-radius:14px;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer}#${t} .mc-btn-primary{flex:1;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff}#${t} .mc-btn-secondary{background:rgba(51,65,85,.9);color:#e2e8f0}#${t} .mc-foot{margin-top:12px;color:#64748b;font-size:12px}@media (max-width:640px){#${t}{padding:14px}#${t} .mc-row{grid-template-columns:1fr}#${t} .mc-actions{flex-direction:column}}`,document.head.appendChild(e)}const a=r(),i=/^\\d{6,7}$/.test(a)?'cn':'smart',d=document.createElement('div');d.id=t,d.innerHTML='<div class=\"mc-card\" role=\"dialog\" aria-modal=\"true\" aria-label=\"Busqueda rapida MedCheck\"><div class=\"mc-head\"><div class=\"mc-kicker\">MedCheck</div><h2 class=\"mc-title\">Busqueda rapida clinica</h2><p class=\"mc-subtitle\">Selecciona un farmaco en cualquier pagina, ajusta la busqueda y abre MedCheck en una pestana nueva.</p></div><div class=\"mc-body\"><div class=\"mc-row\"><select data-role=\"type\" aria-label=\"Tipo de busqueda\"><option value=\"smart\">Inteligente</option><option value=\"pa\">Principio activo</option><option value=\"marca\">Marca</option><option value=\"cn\">Codigo nacional</option></select><input data-role=\"query\" type=\"text\" autocomplete=\"off\" spellcheck=\"false\" /></div><div class=\"mc-options\"><label class=\"mc-check\"><input data-role=\"comerc\" type=\"checkbox\" checked /><span>Solo comercializados</span></label><label class=\"mc-check\"><input data-role=\"generic\" type=\"checkbox\" /><span>Solo genericos</span></label></div><div class=\"mc-hint\" data-role=\"hint\"></div><div class=\"mc-error\" data-role=\"error\"></div><div class=\"mc-actions\"><button class=\"mc-btn mc-btn-primary\" data-action=\"search\">Abrir MedCheck</button><button class=\"mc-btn mc-btn-secondary\" data-action=\"clear\">Limpiar</button><button class=\"mc-btn mc-btn-secondary\" data-action=\"close\">Cancelar</button></div><div class=\"mc-foot\">Enter busca. Esc cierra. La pagina actual se conserva.</div></div></div>',document.body.appendChild(d);const l=e=>d.querySelector(e),s=l('[data-role=\"query\"]'),u=l('[data-role=\"type\"]'),p=l('[data-role=\"comerc\"]'),m=l('[data-role=\"generic\"]'),y=l('[data-role=\"hint\"]'),g=l('[data-role=\"error\"]'),h={smart:'Medicamento, principio activo o CN',pa:'Principio activo',marca:'Nombre comercial',cn:'Codigo nacional'},f=()=>{s.placeholder=h[u.value]||h.smart},v=()=>{document.removeEventListener('keydown',b),d.remove()},w=()=>{const t=n(s.value);if(t.length<2)return g.textContent='Escribe al menos 2 caracteres.',s.focus(),void s.select();g.textContent='';const o=new URL(e);o.searchParams.set('view','search'),o.searchParams.set('source','bookmarklet'),o.searchParams.set('q',t),o.searchParams.set('type',u.value||'smart'),p.checked&&o.searchParams.set('comerc','1'),m.checked&&o.searchParams.set('generic','1');const c=window.open('about:blank','_blank');if(!c){g.textContent='No se pudo abrir la nueva pestana. Permite ventanas emergentes para este sitio.';return}v();try{c.opener=null}catch(e){}c.location.href=o.toString()},b=e=>{'Escape'===e.key?v():'Enter'===e.key&&e.target!==p&&e.target!==m&&(e.preventDefault(),w())};d.addEventListener('click',e=>{e.target===d&&v(),e.target.closest('[data-action=\"close\"]')&&v(),e.target.closest('[data-action=\"clear\"]')&&(s.value='',g.textContent='',s.focus()),e.target.closest('[data-action=\"search\"]')&&w()}),u.addEventListener('change',f),document.addEventListener('keydown',b),s.value=a,u.value=i,y.textContent=a?'He precargado el texto seleccionado. Puedes ajustarlo antes de buscar.':'No hay texto seleccionado. Escribe un farmaco, principio activo o CN.',f(),setTimeout(()=>{s.focus(),s.select()},0)})();";
+        // Safe launcher: no DOM injection, no selection scraping, no reads from the source page.
+        return "javascript:(()=>{const u='https://ernestobarrera.github.io/medcheck.html?view=search&source=bookmarklet';const w=window.open(u,'_blank','noopener,noreferrer');if(w)try{w.opener=null}catch(e){}})();";
     }
     async openMedDetails(nregistro, initialTab = 'info') {
         this.modal.classList.remove('hidden');
@@ -6146,6 +6160,7 @@ ${materialesPlaceholder}
             else if (check.status === 'review') { icon = 'search'; colorClass = 'text-primary'; }
             else if (check.status === 'unknown') { icon = 'question-circle'; colorClass = 'text-muted'; }
             else if (check.status === 'safe') { icon = 'check-circle'; colorClass = 'text-success'; }
+            const statusMeta = this.getSafetyStatusMeta(check.status);
 
             const evidenceHtml = check.excerpt
                 ? `<div class="safety-evidence">"${check.excerpt}"</div>`
@@ -6165,6 +6180,7 @@ ${materialesPlaceholder}
                         <div class="safety-check-content">
                             <div class="safety-check-header">
                                 <span class="safety-check-title">${check.label}</span>
+                                <span class="badge ${statusMeta.badge} safety-status-badge">${statusMeta.label}</span>
                                 ${viewSectionBtn}
                             </div>
                             <div class="safety-check-detail ${colorClass}">${check.message}</div>
@@ -6794,12 +6810,12 @@ ${materialesPlaceholder}
             const bifimedBadge = ind => {
                 const res = (ind.resolucion || '').toLowerCase();
                 const sit = (ind.situacion || '').toLowerCase();
-                if (res.includes('con restricci')) return '<span class="bifimed-badge bifimed-badge-restricted"><i class="fas fa-exclamation-triangle"></i> Condicionada</span>';
-                if (res.includes('financiada'))   return '<span class="bifimed-badge bifimed-badge-yes"><i class="fas fa-check"></i> Financiada</span>';
-                if (res.includes('no incluida') || res.includes('no financiado')) return '<span class="bifimed-badge bifimed-badge-no"><i class="fas fa-times"></i> No financiada</span>';
-                if (sit.includes('en estudio'))   return '<span class="bifimed-badge bifimed-badge-pending"><i class="fas fa-clock"></i> En evaluación</span>';
-                if (sit.includes('sin petici'))   return '<span class="bifimed-badge bifimed-badge-none"><i class="fas fa-minus"></i> Sin solicitud</span>';
-                return '<span class="bifimed-badge bifimed-badge-none">—</span>';
+                if (res.includes('con restricci')) return '<span class="bifimed-badge bifimed-badge-restricted"><i class="fas fa-exclamation-triangle"></i> Estado: financiacion condicionada</span>';
+                if (res.includes('financiada'))   return '<span class="bifimed-badge bifimed-badge-yes"><i class="fas fa-check"></i> Estado: financiacion SNS</span>';
+                if (res.includes('no incluida') || res.includes('no financiado')) return '<span class="bifimed-badge bifimed-badge-no"><i class="fas fa-times"></i> Estado: no financiada</span>';
+                if (sit.includes('en estudio'))   return '<span class="bifimed-badge bifimed-badge-pending"><i class="fas fa-clock"></i> Estado: en evaluacion</span>';
+                if (sit.includes('sin petici'))   return '<span class="bifimed-badge bifimed-badge-none"><i class="fas fa-minus"></i> Estado: sin solicitud</span>';
+                return '<span class="bifimed-badge bifimed-badge-none">Estado: no determinado</span>';
             };
 
             let bifimedSection = '';
@@ -6845,7 +6861,7 @@ ${materialesPlaceholder}
                         <ul class="bifimed-ind-list">${indRows}</ul>
                         <div class="fin-disclaimer">
                             <i class="fas fa-info-circle"></i>
-                            Fuente: BIFIMED — Ministerio de Sanidad.
+                            La financiacion por indicacion no equivale a recomendacion clinica, indicacion terapeutica ni contraindicacion. Fuente: BIFIMED — Ministerio de Sanidad.
                             <a href="${bifimedUrl}" target="_blank" rel="noopener">Ver ficha en BIFIMED</a>
                         </div>
                     </div>`;
@@ -9012,11 +9028,11 @@ ${materialesPlaceholder}
 
             // Perform the search
             this.performSearch();
-            // Reset source immediately after launching the initial bookmarklet search.
+            // Reset source immediately after launching the initial shortcut search.
             // All fetch() calls inside performSearch() capture headers synchronously before
-            // any await, so the bookmarklet tag is already captured and it's safe to reset.
+            // any await, so the shortcut tag is already captured and it's safe to reset.
             // Without this reset, every subsequent manual search in the same tab would be
-            // incorrectly attributed to the bookmarklet.
+            // incorrectly attributed to the shortcut.
             window._mcSource = 'app';
             return;
         }
@@ -10034,11 +10050,11 @@ ${materialesPlaceholder}
             },
             {
                 target: '#open-bookmarklet-modal',
-                title: 'Bookmarklet: acceso rápido',
+                title: 'Atajo seguro: acceso rapido',
                 icon: 'fa-bookmark',
                 body: `
-                    <p>Instala el <span class="guide-highlight">bookmarklet</span> en tu barra de marcadores para buscar desde <strong>cualquier página web</strong>.</p>
-                    <p>Selecciona un fármaco en tu HCE, pulsa el marcador y MedCheck se abre con la búsqueda pre-cargada en una nueva pestaña.</p>
+                    <p>Instala el <span class="guide-highlight">atajo seguro</span> para abrir MedCheck sin modificar la pagina clinica origen.</p>
+                    <p>Copia el farmaco si estas en una HCE, pulsa el atajo y pega/busca dentro de MedCheck. El atajo no lee ni modifica la pagina origen.</p>
                 `,
                 position: 'bottom',
             },
