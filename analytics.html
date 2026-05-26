@@ -840,9 +840,85 @@
             font-size: .72rem;
             color: var(--text-muted);
         }
+
+        /* AUTH GATE */
+        #analytics-gate {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        #analytics-gate.hidden { display: none; }
+        .gate-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: 12px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 340px;
+            text-align: center;
+        }
+        .gate-card h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: .4rem;
+            color: var(--text-primary);
+        }
+        .gate-card p {
+            font-size: .85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+        .gate-input {
+            width: 100%;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-default);
+            border-radius: 6px;
+            padding: .6rem .9rem;
+            color: var(--text-primary);
+            font-size: .95rem;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        .gate-input:focus { outline: none; border-color: var(--primary); }
+        .gate-submit {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: .65rem;
+            font-size: .95rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .gate-submit:hover { opacity: .9; }
+        .gate-error {
+            font-size: .8rem;
+            color: #f87171;
+            margin-top: .6rem;
+            min-height: 1.2em;
+        }
     </style>
 </head>
 <body>
+
+<!-- ACCESS GATE -->
+<div id="analytics-gate">
+    <div class="gate-card">
+        <i class="fas fa-lock" style="font-size:1.5rem;color:var(--primary);margin-bottom:.75rem;display:block"></i>
+        <h2>MedCheck Analytics</h2>
+        <p>Acceso restringido al autor</p>
+        <input type="password" id="gate-input" class="gate-input" placeholder="Clave de acceso" autocomplete="off">
+        <button id="gate-btn" class="gate-submit">Acceder</button>
+        <div id="gate-error" class="gate-error"></div>
+    </div>
+</div>
 
 <div class="analytics-layout">
 
@@ -1064,7 +1140,15 @@ const TICK_STYLE  = { color: '#64748b', font: { size: 11 } };
 
 // ─── FETCH ──────────────────────────────────────────────────────────────────────
 async function fetchAnalytics(dias) {
-    const res = await fetch(`${WORKER}/analytics?dias=${dias}`);
+    const key = localStorage.getItem(GATE_LS_KEY) || '';
+    const res = await fetch(`${WORKER}/analytics?dias=${dias}`, {
+        headers: { 'X-MC-Analytics-Key': key },
+    });
+    if (res.status === 401) {
+        localStorage.removeItem(GATE_LS_KEY);
+        showGate('Clave incorrecta o expirada');
+        throw new Error('No autorizado');
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
 }
@@ -2528,8 +2612,40 @@ document.querySelectorAll('.period-btn').forEach(btn => {
 
 document.getElementById('refresh-btn').addEventListener('click', load);
 
+// ─── AUTH GATE ───────────────────────────────────────────────────────────────────
+const GATE_LS_KEY = 'mc_analytics_auth';
+
+function showGate(msg) {
+    document.getElementById('analytics-gate').classList.remove('hidden');
+    document.getElementById('gate-error').textContent = msg || '';
+    document.getElementById('gate-input').value = '';
+    document.getElementById('gate-input').focus();
+}
+
+function hideGate() {
+    document.getElementById('analytics-gate').classList.add('hidden');
+}
+
+async function handleGateSubmit() {
+    const key = document.getElementById('gate-input').value.trim();
+    if (!key) return;
+    localStorage.setItem(GATE_LS_KEY, key);
+    hideGate();
+    await load();
+}
+
+document.getElementById('gate-btn').addEventListener('click', handleGateSubmit);
+document.getElementById('gate-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleGateSubmit();
+});
+
 // ─── INIT ───────────────────────────────────────────────────────────────────────
-load();
+if (localStorage.getItem(GATE_LS_KEY)) {
+    hideGate();
+    load();
+} else {
+    showGate();
+}
 </script>
 </body>
 </html>
