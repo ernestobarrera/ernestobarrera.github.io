@@ -6739,14 +6739,19 @@ ${materialesPlaceholder}
 
         try {
             // Fetch SNS + BIFIMED en paralelo para cada CN
+            const analyticsHeaders = {
+                ...(window._mcCurrentView    ? { 'X-MC-View':    window._mcCurrentView }    : {}),
+                ...(window._mcActiveContexts ? { 'X-MC-Context': window._mcActiveContexts } : {}),
+                ...(window._mcSource         ? { 'X-MC-Source':  window._mcSource }         : {}),
+            };
             const [snsResults, bifimedResults] = await Promise.all([
                 Promise.all(cns.map(cn =>
-                    fetch(`${workerBase}/sns-catalog/by-cn/${cn}`, { signal: AbortSignal.timeout(8000) })
+                    fetch(`${workerBase}/sns-catalog/by-cn/${cn}`, { signal: AbortSignal.timeout(8000), headers: analyticsHeaders })
                         .then(r => r.json())
                         .catch(() => ({ found: false, cn }))
                 )),
                 Promise.all(cns.map(cn =>
-                    fetch(`${workerBase}/bifimed/by-cn/${cn}`, { signal: AbortSignal.timeout(8000) })
+                    fetch(`${workerBase}/bifimed/by-cn/${cn}`, { signal: AbortSignal.timeout(8000), headers: analyticsHeaders })
                         .then(r => r.json())
                         .catch(() => ({ found: false, cn }))
                 )),
