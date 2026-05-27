@@ -52,6 +52,26 @@
             border-radius: 4px;
             margin-left: .2rem;
         }
+        .dashboard-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: .5rem;
+            margin-bottom: 1rem;
+        }
+        .print-btn {
+            padding: .45rem .85rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-default);
+            background: var(--bg-surface);
+            color: var(--text-secondary);
+            font-size: .82rem;
+            font-family: inherit;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+        }
+        .print-btn:hover { border-color: var(--primary); color: var(--primary); }
         .back-link {
             font-size: .85rem;
             color: var(--text-secondary);
@@ -155,6 +175,9 @@
             gap: 1rem;
             margin-bottom: 1.75rem;
         }
+        .summary-grid.hero-kpis {
+            grid-template-columns: repeat(4, minmax(150px, 1fr));
+        }
         .stat-card {
             background: var(--bg-surface);
             border: 1px solid var(--border-default);
@@ -187,6 +210,19 @@
         .stat-card.accent-success .stat-value { color: #34d399; }
         .stat-card.accent-warn .stat-value { color: #fbbf24; }
         .stat-card.accent-purple .stat-value { color: #a78bfa; }
+        .hero-kpis .stat-card {
+            padding: 1.4rem 1.5rem;
+            min-height: 132px;
+        }
+        .hero-kpis .stat-card .stat-value {
+            font-size: 2.35rem;
+        }
+        @media (max-width: 900px) {
+            .summary-grid.hero-kpis { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+        }
+        @media (max-width: 520px) {
+            .summary-grid.hero-kpis { grid-template-columns: 1fr; }
+        }
 
         /* CHARTS GRID */
         .charts-grid {
@@ -232,6 +268,17 @@
             line-height: 1.4;
         }
         .chart-wrap { position: relative; }
+        .narrative-summary {
+            font-style: italic;
+            color: var(--text-muted);
+            font-size: .95rem;
+            line-height: 1.6;
+            padding: .85rem 1rem;
+            border-left: 3px solid var(--primary);
+            background: rgba(14,165,233,.05);
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1rem;
+        }
 
         /* TABLE CARD */
         .table-card {
@@ -246,6 +293,28 @@
             border-collapse: collapse;
             font-size: .875rem;
         }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .84rem;
+        }
+        .data-table th {
+            text-align: left;
+            padding: .6rem .75rem;
+            font-size: .68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-default);
+        }
+        .data-table td {
+            padding: .65rem .75rem;
+            border-bottom: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            vertical-align: middle;
+        }
+        .data-table tr:last-child td { border-bottom: none; }
         .analytics-table th {
             text-align: left;
             padding: .6rem .75rem;
@@ -443,6 +512,26 @@
         .drill-list li span:last-child {
             font-weight: 600;
             color: var(--text-primary);
+        }
+        .context-signal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: .75rem;
+            margin-bottom: 1rem;
+        }
+        .context-signal-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+        .context-signal-card h4 {
+            margin: 0 0 .75rem;
+            font-size: .82rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: .5rem;
         }
 
         /* BENCHMARK */
@@ -840,6 +929,33 @@
             font-size: .72rem;
             color: var(--text-muted);
         }
+        .finance-signal {
+            display: grid;
+            grid-template-columns: minmax(160px, 220px) 1fr;
+            gap: 1rem;
+            align-items: stretch;
+        }
+        .finance-signal .kpi-mini { min-width: 0; }
+        .small-muted {
+            color: var(--text-muted);
+            font-size: .78rem;
+            line-height: 1.5;
+        }
+        @media (max-width: 700px) {
+            .finance-signal { grid-template-columns: 1fr; }
+        }
+
+        @media print {
+            body { background: #fff; color: #111827; }
+            #analytics-gate, .period-bar, .tab-bar, .back-link, .dashboard-actions { display: none !important; }
+            .analytics-layout { max-width: none; padding: 0; }
+            .tab-panel { display: block !important; page-break-after: always; }
+            .chart-card, .stat-card, .kpi-mini, .table-card {
+                background: #fff;
+                border-color: #d1d5db;
+                color: #111827;
+            }
+        }
 
         /* AUTH GATE */
         #analytics-gate {
@@ -927,7 +1043,7 @@
         <div class="analytics-brand">
             <i class="fas fa-chart-bar"></i>
             MedCheck
-            <span class="brand-sub">ANALYTICS</span>
+            <span class="brand-sub">INTELIGENCIA CLÍNICA</span>
         </div>
         <a href="medcheck.html" class="back-link">
             <i class="fas fa-arrow-left"></i> Volver a MedCheck
@@ -966,10 +1082,23 @@ const TAXONOMY = {
     interacciones: { label: 'Interacciones',               ely: 'Interacciones medicamentosas',                  icon: 'fa-random',              color: '#a78bfa', section: '4.5' },
     reacciones:    { label: 'Efectos adversos / RAM',      ely: 'Reacciones adversas, causalidad inversa',       icon: 'fa-exclamation-triangle', color: '#f87171', section: '4.8' },
     equivalencias: { label: 'Alternativas / composición',  ely: 'Composición, genéricos, alternativas',          icon: 'fa-exchange-alt',        color: '#22d3ee', section: '—' },
+    farmacogenomica:{ label: 'Farmacogenómica',            ely: 'Biomarcadores y farmacogenómica regulatoria',   icon: 'fa-dna',                 color: '#818cf8', section: '—' },
     suministro:    { label: 'Disponibilidad',              ely: 'Disponibilidad del fármaco',                    icon: 'fa-boxes',               color: '#fbbf24', section: '—' },
     alertas:       { label: 'Alertas de seguridad',        ely: 'Alertas regulatorias (AEMPS)',                  icon: 'fa-bell',                color: '#f472b6', section: '—' },
+    materiales:    { label: 'Materiales',                  ely: 'Materiales informativos de seguridad',          icon: 'fa-book-medical',        color: '#64748b', section: '—' },
     perfil:        { label: 'Gestión de perfil',           ely: '—',                                             icon: 'fa-star',                color: '#94a3b8', section: '—' },
-    'modal-qt':    { label: 'Intervalo QT (pestaña modal)', ely: 'Riesgo arritmogénico, torsade de pointes',       icon: 'fa-heartbeat',           color: '#fbbf24', section: '4.4–4.5' },
+    'modal-info':         { label: 'Ficha — Info general',    ely: 'Identificación y resumen de ficha',            icon: 'fa-info-circle',         color: '#94a3b8', section: '—' },
+    'modal-indications':  { label: 'Ficha — Indicaciones',    ely: 'Indicaciones terapéuticas',                    icon: 'fa-stethoscope',         color: '#34d399', section: '4.1' },
+    'modal-posology':     { label: 'Ficha — Posología',       ely: 'Dosis, pauta y forma de administración',       icon: 'fa-clock',               color: '#60a5fa', section: '4.2' },
+    'modal-interactions': { label: 'Ficha — Interacciones',   ely: 'Interacciones fármaco-fármaco',                icon: 'fa-random',              color: '#a78bfa', section: '4.5' },
+    'modal-adverse':      { label: 'Ficha — Reacciones adv.', ely: 'Reacciones adversas',                          icon: 'fa-exclamation-circle',  color: '#f87171', section: '4.8' },
+    'modal-safety':       { label: 'Ficha — Seguridad',       ely: 'Contraindicaciones y precauciones',            icon: 'fa-shield-alt',          color: '#fb923c', section: '4.3–4.4' },
+    'modal-docs':         { label: 'Ficha — Documentos',      ely: 'Ficha técnica, prospecto y materiales',        icon: 'fa-file-alt',            color: '#64748b', section: '—' },
+    'modal-alerts':       { label: 'Ficha — Alertas',         ely: 'Notas de seguridad AEMPS',                     icon: 'fa-bell',                color: '#f472b6', section: '—' },
+    'modal-qt':           { label: 'Ficha — QT',              ely: 'Riesgo arritmogénico, torsade de pointes',     icon: 'fa-heartbeat',           color: '#fbbf24', section: '4.4–4.5' },
+    'modal-pgx':          { label: 'Ficha — Farmacogenómica', ely: 'Biomarcadores farmacogenómicos',               icon: 'fa-dna',                 color: '#818cf8', section: '—' },
+    'modal-evidence':     { label: 'Ficha — Evidencia',       ely: 'PubMed y registros de ensayos clínicos',       icon: 'fa-flask',               color: '#2dd4bf', section: '—' },
+    'modal-financing':    { label: 'Ficha — Financiación',    ely: 'Precio, financiación y condiciones SNS',       icon: 'fa-euro-sign',           color: '#fbbf24', section: '—' },
 };
 
 const CONTEXTS = {
@@ -1000,9 +1129,26 @@ const SEARCH_TYPES = {
     nregistro:        { label: 'Nº registro',        color: '#c084fc' },
     codigo_nacional:  { label: 'Código nacional',    color: '#fbbf24' },
     otro:             { label: 'Otro',               color: '#94a3b8' },
+    codigo_nacional_sns:     { label: 'CN Nomenclátor SNS',   color: '#475569' },
+    codigo_nacional_bifimed: { label: 'CN BIFIMED',           color: '#475569' },
+    codigo_nacional_pgx:     { label: 'CN Farmacogenómica',   color: '#475569' },
+    nregistro_pgx:           { label: 'Nreg Farmacogenómica', color: '#475569' },
+    reec:                    { label: 'Estudios clínicos',    color: '#475569' },
+    sns_busqueda:            { label: 'Búsqueda SNS',         color: '#475569' },
+    sns_catalog:             { label: 'Catálogo SNS',         color: '#475569' },
+    registro_cambios:        { label: 'Registro cambios',     color: '#475569' },
+    suministro:              { label: 'Suministro',           color: '#475569' },
+    bifimed:                 { label: 'BIFIMED general',      color: '#475569' },
+    farmacogenomica:         { label: 'PGx general',          color: '#475569' },
     // Tipo interno: lectura de sección FT en modal — no es una modalidad de búsqueda
     seccion_ft:       { label: 'Lectura sección FT', color: '#475569' },
 };
+
+const USER_SEARCH_IN = new Set(['nombre', 'principio_activo', 'atc', 'nregistro', 'codigo_nacional', 'otro']);
+const MAIN_CLINICAL_VIEWS = new Set([
+    'indicaciones', 'seguridad', 'interacciones', 'reacciones', 'equivalencias',
+    'farmacogenomica', 'suministro', 'alertas', 'materiales'
+]);
 
 // Términos no clínicos — se señalan visualmente en top términos
 const NON_CLINICAL = new Set(['test', 'prueba', 'asdf', 'qwerty', 'aaa', 'bbb', 'xxx', 'foo', 'bar', 'testing', 'abc', '123', '0000']);
@@ -1055,17 +1201,16 @@ let currentData = null;
 const charts = {};
 
 // ─── PRE-PROCESSING ──────────────────────────────────────────────────────────────
-// seccion_ft no es una modalidad de búsqueda — es un evento interno de lectura FT.
-// Se filtra de los gráficos de modalidad y tasa de éxito para evitar distorsión.
-// Se analiza por separado en la pestaña Dudas Clínicas.
+// Solo los tipos de USER_SEARCH_IN representan búsquedas iniciadas por el usuario.
+// Los tipos técnicos quedan disponibles en _raw_* para la pestaña Sistema.
 function preprocessData(data) {
     // Guardar versión raw para exportación
     data._raw_tipo_busqueda = data.por_tipo_busqueda;
     data._raw_tasa_exito    = data.tasa_exito;
 
-    // Filtrar seccion_ft de modalidad de búsqueda y tasa de resolución
-    data.por_tipo_busqueda = (data.por_tipo_busqueda || []).filter(t => t.tipo_busqueda !== 'seccion_ft');
-    data.tasa_exito        = (data.tasa_exito        || []).filter(t => t.tipo_busqueda !== 'seccion_ft');
+    // Filtrar modalidad de búsqueda y tasa de resolución a interacciones humanas.
+    data.por_tipo_busqueda = (data.por_tipo_busqueda || []).filter(t => USER_SEARCH_IN.has(t.tipo_busqueda));
+    data.tasa_exito        = (data.tasa_exito        || []).filter(t => USER_SEARCH_IN.has(t.tipo_busqueda));
 
     // Calcular lecturas FT del raw para nota informativa
     data._lecturas_ft_count = (data._raw_tipo_busqueda || [])
@@ -1123,6 +1268,18 @@ function typeBadge(tipo) {
         atc:              ['badge-atc',       'ATC'],
         indicacion:       ['badge-indicacion','indicación'],
         codigo_nacional:  ['badge-cn',        'C.N.'],
+        codigo_nacional_sns: ['badge-cn',     'SNS'],
+        codigo_nacional_bifimed: ['badge-cn', 'BIFIMED'],
+        codigo_nacional_pgx: ['badge-cn',     'PGx CN'],
+        nregistro_pgx:    ['badge-nregistro', 'PGx nreg'],
+        reec:             ['badge-indicacion','REEC'],
+        sns_busqueda:     ['badge-cn',        'SNS'],
+        sns_catalog:      ['badge-cn',        'SNS'],
+        suministro:       ['badge-cn',        'suministro'],
+        bifimed:          ['badge-cn',        'BIFIMED'],
+        farmacogenomica:  ['badge-atc',       'PGx'],
+        registro_cambios: ['badge-nregistro', 'cambios'],
+        seccion_ft:       ['badge-nregistro', 'FT'],
     };
     const [cls, label] = map[tipo] || ['badge-nombre', tipo];
     return `<span class="badge ${cls}">${label}</span>`;
@@ -1286,6 +1443,266 @@ function renderInsights(data) {
     <div class="insights-strip">${cards}</div>`;
 }
 
+// ─── RENDER: Panorama ──────────────────────────────────────────────────────────
+function renderPanoramaKpis(data) {
+    const r = data.resumen || {};
+    const busquedas = r.busquedas_directas ?? r.total_consultas ?? 0;
+    const farmacos = r.farmacos_distintos_reales ?? r.terminos_distintos ?? 0;
+    const activeDays = getActiveDays(data);
+    const activeDoctors = estimateActiveDoctors(data);
+
+    return `
+    <div class="summary-grid hero-kpis" id="sec-panorama-kpis">
+        <div class="stat-card accent-primary">
+            <span class="stat-label"><i class="fas fa-search"></i> Consultas clínicas</span>
+            <span class="stat-value">${busquedas}</span>
+            <span class="stat-note">búsquedas directas de usuario</span>
+        </div>
+        <div class="stat-card accent-success">
+            <span class="stat-label"><i class="fas fa-pills"></i> Fármacos distintos</span>
+            <span class="stat-value">${farmacos}</span>
+            <span class="stat-note">medicamentos consultados</span>
+        </div>
+        <div class="stat-card accent-purple">
+            <span class="stat-label"><i class="fas fa-user-md"></i> Médicos activos estimados</span>
+            <span class="stat-value">${activeDoctors}</span>
+            <span class="stat-note">heurística por días con actividad</span>
+        </div>
+        <div class="stat-card accent-warn">
+            <span class="stat-label"><i class="fas fa-calendar-check"></i> Días con actividad</span>
+            <span class="stat-value">${activeDays}</span>
+            <span class="stat-note">en los últimos ${activeDias} días</span>
+        </div>
+    </div>`;
+}
+
+function renderNarrativeSummary(data) {
+    const r = data.resumen || {};
+    const farmacos = r.farmacos_distintos_reales ?? r.terminos_distintos ?? 0;
+    const topAtc = getTopAtc(data);
+    const topView = getTopClinicalView(data);
+    const doctors = estimateActiveDoctors(data);
+    const doctorText = doctors ? `${doctors} médico${doctors !== 1 ? 's' : ''} estimado${doctors !== 1 ? 's' : ''}` : 'actividad clínica registrada';
+    const atcText = topAtc ? topAtc.label : 'sin área ATC dominante todavía';
+    const viewText = topView ? topView.label : 'sin duda clínica dominante todavía';
+
+    return `
+    <div class="narrative-summary">
+        En los últimos ${activeDias} días, ${doctorText} consultaron ${farmacos} fármacos distintos, con mayor actividad en ${escapeHtml(atcText)} y mayor duda clínica en ${escapeHtml(viewText)}.
+    </div>`;
+}
+
+function renderAtcDonutPanel(data) {
+    const hasData = data.por_atc_nivel1?.length > 0;
+    return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-layer-group"></i> Distribución por área terapéutica</div>
+        <p class="chart-subtitle">Agrupación ATC nivel 1 de los medicamentos consultados. Muestra qué áreas terapéuticas concentran la incertidumbre farmacológica registrada.</p>
+        ${hasData
+            ? '<div class="chart-wrap" style="height:320px"><canvas id="atc-donut-chart"></canvas></div>'
+            : '<div class="empty-state"><i class="fas fa-layer-group"></i><p>Sin datos ATC todavía</p></div>'
+        }
+    </div>`;
+}
+
+function renderClinicalQuestionMap(data) {
+    const views = getMainClinicalViews(data);
+    if (!views.length) return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-stethoscope"></i> Mapa de dudas por tipo</div>
+        <div class="empty-state"><i class="fas fa-stethoscope"></i><p>Sin vistas clínicas registradas en el periodo</p></div>
+    </div>`;
+
+    const total = views.reduce((s, v) => s + (v.consultas || 0), 0) || 1;
+    const maxVal = views[0]?.consultas || 1;
+    const rows = views.map(v => {
+        const tax = TAXONOMY[v.vista] || {};
+        const pct = Math.round((v.consultas || 0) / total * 100);
+        return `
+        <tr>
+            <td>
+                <span style="display:inline-flex;align-items:center;gap:.5rem;color:var(--text-primary)">
+                    <i class="fas ${tax.icon || 'fa-circle'}" style="color:${tax.color || '#94a3b8'};width:1rem"></i>
+                    ${escapeHtml(tax.label || v.vista)}
+                </span>
+            </td>
+            <td style="text-align:right"><strong>${v.consultas}</strong></td>
+            <td style="text-align:right">${pct}%</td>
+            <td>
+                <div class="bar-wrap">
+                    <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v.consultas / maxVal * 100)}%;background:${tax.color || 'var(--primary)'}"></div></div>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+
+    return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-stethoscope"></i> Mapa de dudas por tipo</div>
+        <p class="chart-subtitle">Vistas clínicas ordenadas por volumen. Se excluyen búsqueda y perfil porque son navegación, no incertidumbre clínica.</p>
+        <table class="analytics-table">
+            <thead><tr><th>Tipo de duda</th><th style="text-align:right">Consultas</th><th style="text-align:right">%</th><th>Intensidad</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>`;
+}
+
+function renderPersistentUncertainty(data) {
+    const recur = (data.recurrentes || [])
+        .filter(t => (t.dias_distintos || 0) >= 2)
+        .sort((a, b) => b.dias_distintos - a.dias_distintos || b.consultas - a.consultas);
+
+    if (!recur.length) return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Fármacos con incertidumbre persistente</div>
+        <div class="empty-state"><i class="fas fa-redo-alt"></i><p>Sin fármacos consultados en dos o más días distintos</p></div>
+    </div>`;
+
+    const rows = recur.map(t => `
+        <tr>
+            <td class="term-name">${escapeHtml(t.termino)}</td>
+            <td style="text-align:center">${t.consultas}</td>
+            <td style="text-align:center"><span class="recurrence-badge">${t.dias_distintos} día${t.dias_distintos !== 1 ? 's' : ''}</span></td>
+            <td>${t.tipo_busqueda ? typeBadge(t.tipo_busqueda) : '<span class="text-muted">—</span>'}</td>
+        </tr>`).join('');
+
+    return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Fármacos con mayor incertidumbre persistente</div>
+        <p class="chart-subtitle">Medicamentos buscados en dos o más días distintos. Es una señal fuerte de duda clínica real porque el usuario vuelve sobre el mismo fármaco.</p>
+        <table class="analytics-table">
+            <thead><tr><th>Fármaco</th><th style="text-align:center">Veces</th><th style="text-align:center">Días distintos</th><th>Tipo</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>`;
+}
+
+function renderVulnerableContextCards(data) {
+    const ctxTerms = data.contexto_terminos || {};
+    const cards = Object.entries(CONTEXTS).map(([key, info]) => {
+        const terms = (ctxTerms[key] || []).slice(0, 3);
+        if (!terms.length) return '';
+        const items = terms.map(t => `<li><span>${escapeHtml(t.termino)}</span><span>${t.consultas}</span></li>`).join('');
+        return `
+        <div class="context-signal-card">
+            <h4><i class="fas ${info.icon}" style="color:${info.color}"></i> ${info.label}</h4>
+            <ul class="drill-list">${items}</ul>
+        </div>`;
+    }).join('');
+
+    if (!cards) return '';
+    return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-user-shield"></i> Dudas en poblaciones vulnerables</div>
+        <p class="chart-subtitle">Top fármacos consultados cuando hay un contexto activo de paciente. Las tarjetas vacías se omiten para mantener la señal limpia.</p>
+        <div class="context-signal-grid">${cards}</div>
+    </div>`;
+}
+
+function renderModalExploration(data) {
+    const modalViews = getModalViews(data);
+    return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-window-restore"></i> Exploración modal de la ficha</div>
+        <p class="chart-subtitle">Qué pestañas del detalle de medicamento se abren más. Esta vista aproxima el valor percibido de cada bloque de información clínica.</p>
+        ${modalViews.length
+            ? '<div class="chart-wrap" style="height:340px"><canvas id="modalviews-chart"></canvas></div>'
+            : '<div class="empty-state"><i class="fas fa-window-restore"></i><p>Sin datos de pestañas del modal en el periodo</p></div>'
+        }
+    </div>`;
+}
+
+function renderFinancingSignal(data) {
+    const terms = getFinancingTerms(data);
+    const raw = (data.por_vista || []).find(v => v.vista === 'modal-financing')?.consultas || 0;
+    const rows = terms.slice(0, 6).map(t => `
+        <li class="endpoint-item">
+            <span class="endpoint-path">${escapeHtml(t.termino)}</span>
+            <span class="endpoint-count">${t.consultas}</span>
+        </li>`).join('');
+
+    return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-euro-sign"></i> Pestaña Financiación</div>
+        <p class="chart-subtitle">Señal de presión de prescripción por coste, precio o condiciones de financiación. La deduplicación actual es aproximada porque los eventos históricos están a nivel CN.</p>
+        <div class="finance-signal">
+            <div class="kpi-mini">
+                <div class="kpi-label"><i class="fas fa-receipt"></i> Medicamentos aproximados</div>
+                <div class="kpi-value" style="color:#fbbf24">${terms.length}</div>
+                <div class="kpi-note">${raw} llamadas brutas registradas</div>
+            </div>
+            <div>
+                ${terms.length
+                    ? `<ul class="endpoint-list">${rows}</ul>`
+                    : '<p class="small-muted">Sin consultas de financiación en el periodo.</p>'
+                }
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderUserSearchTypePanel(data) {
+    return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-search"></i> Tipo de búsqueda</div>
+        <p class="chart-subtitle">Solo modalidades iniciadas por el usuario. Se excluyen llamadas técnicas SNS, BIFIMED, PGx y lecturas internas.</p>
+        ${data.por_tipo_busqueda?.length
+            ? '<div class="chart-wrap" style="height:240px"><canvas id="searchtype-chart"></canvas></div>'
+            : '<div class="empty-state"><i class="fas fa-search"></i><p>Sin datos de modalidad de búsqueda</p></div>'
+        }
+    </div>`;
+}
+
+function renderSystemSearchTypes(data) {
+    const rows = (data._raw_tipo_busqueda || []).map(t => {
+        const info = SEARCH_TYPES[t.tipo_busqueda] || {};
+        return `
+        <tr>
+            <td>${typeBadge(t.tipo_busqueda)} ${escapeHtml(info.label || t.tipo_busqueda || '—')}</td>
+            <td style="text-align:right"><strong>${t.consultas}</strong></td>
+        </tr>`;
+    }).join('');
+
+    if (!rows) return '';
+    return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-tags"></i> Tipos de evento completos</div>
+        <p class="chart-subtitle">Vista técnica con tipos de usuario y tipos emitidos por módulos auxiliares.</p>
+        <table class="analytics-table">
+            <thead><tr><th>Tipo</th><th style="text-align:right">Eventos</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>`;
+}
+
+function renderTasaExitoCompleta(data) {
+    const rates = data._raw_tasa_exito || data.tasa_exito || [];
+    if (!rates.length) return '';
+
+    const rows = rates.map(t => {
+        const label = SEARCH_TYPES[t.tipo_busqueda]?.label || t.tipo_busqueda;
+        const rate = t.tasa_exito ?? 0;
+        const cls = rate >= 90 ? 'rate-good' : rate >= 70 ? 'rate-ok' : 'rate-bad';
+        return `
+        <tr>
+            <td>${typeBadge(t.tipo_busqueda)} ${escapeHtml(label)}</td>
+            <td style="text-align:center">${t.total}</td>
+            <td style="text-align:center">${t.con_resultado}</td>
+            <td style="text-align:right"><span class="${cls}" style="font-weight:700">${rate}%</span></td>
+        </tr>`;
+    }).join('');
+
+    return `
+    <div class="chart-card">
+        <div class="chart-card-title"><i class="fas fa-bullseye"></i> Tasa de éxito por tipo</div>
+        <p class="chart-subtitle">Diagnóstico técnico. Las tasas de tipos auxiliares pueden no representar búsquedas humanas.</p>
+        <table class="analytics-table">
+            <thead><tr><th>Tipo</th><th style="text-align:center">Total</th><th style="text-align:center">Con resultado</th><th style="text-align:right">Tasa</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>`;
+}
+
 // ─── RENDER: Activity Chart Data ────────────────────────────────────────────────
 function prepareActivityData(dias) {
     const end   = new Date();
@@ -1304,6 +1721,56 @@ function prepareActivityData(dias) {
         cur.setDate(cur.getDate() + 1);
     }
     return { labels, values };
+}
+
+function getActiveDays(data) {
+    return (data.actividad_diaria || []).filter(d => (d.consultas || 0) > 0).length;
+}
+
+function estimateActiveDoctors(data) {
+    const activeDays = getActiveDays(data);
+    return activeDays > 0 ? Math.max(1, Math.round(activeDays * 1.5)) : 0;
+}
+
+function getTopAtc(data) {
+    const top = [...(data.por_atc_nivel1 || [])].sort((a, b) => b.consultas - a.consultas)[0];
+    if (!top) return null;
+    const info = ATC_LEVEL1[top.nivel1] || {};
+    return { ...top, label: info.name || top.nivel1, color: info.color || '#94a3b8' };
+}
+
+function getTopClinicalView(data) {
+    const top = [...(data.por_vista || [])]
+        .filter(v => MAIN_CLINICAL_VIEWS.has(v.vista))
+        .sort((a, b) => b.consultas - a.consultas)[0];
+    if (!top) return null;
+    const tax = TAXONOMY[top.vista] || {};
+    return { ...top, label: tax.label || top.vista, icon: tax.icon || 'fa-stethoscope', color: tax.color || '#94a3b8' };
+}
+
+function getMainClinicalViews(data) {
+    return [...(data.por_vista || [])]
+        .filter(v => MAIN_CLINICAL_VIEWS.has(v.vista))
+        .sort((a, b) => b.consultas - a.consultas);
+}
+
+function getModalViews(data) {
+    return [...(data.por_vista || [])]
+        .filter(v => (v.vista || '').startsWith('modal-'))
+        .sort((a, b) => b.consultas - a.consultas);
+}
+
+function getFinancingTerms(data) {
+    const grouped = new Map();
+    (data.top_por_vista || [])
+        .filter(t => t.vista === 'modal-financing' && t.termino)
+        .forEach(t => {
+            const key = String(t.termino);
+            grouped.set(key, (grouped.get(key) || 0) + (t.consultas || 0));
+        });
+    return [...grouped.entries()]
+        .map(([termino, consultas]) => ({ termino, consultas }))
+        .sort((a, b) => b.consultas - a.consultas);
 }
 
 // ─── RENDER: Clinical Taxonomy ──────────────────────────────────────────────────
@@ -1588,7 +2055,7 @@ function renderBenchmark() {
 
         <div class="edu-insight">
             <i class="fas fa-info-circle"></i>
-            <span><strong>Nota metodológica:</strong> Louro y ENIGMA miden <em>todas</em> las dudas clínicas (diagnósticas, terapéuticas, administrativas). MedCheck registra específicamente <strong>consultas farmacológicas</strong> (~10% del total según ENIGMA). Los datos de analytics son <strong>agregados de todos los usuarios</strong> de la herramienta, no de una práctica individual.</span>
+            <span><strong>Nota metodológica:</strong> Louro y ENIGMA miden <em>todas</em> las dudas clínicas (diagnósticas, terapéuticas, administrativas). MedCheck registra específicamente <strong>consultas farmacológicas</strong> (~10% del total según ENIGMA). Los datos mostrados son <strong>agregados de todos los usuarios</strong> de la herramienta, no de una práctica individual.</span>
         </div>
         <div class="edu-insight">
             <i class="fas fa-lightbulb"></i>
@@ -1762,7 +2229,7 @@ function renderMisLagunas(data) {
     if (!terms || !terms.length) {
         return `
         <div class="chart-card">
-            <div class="chart-card-title"><i class="fas fa-search-minus"></i> Brechas de cobertura CIMA</div>
+            <div class="chart-card-title"><i class="fas fa-search-minus"></i> Lagunas detectadas</div>
             <div class="empty-state">
                 <i class="fas fa-check-circle" style="color:#34d399"></i>
                 <p>Todas las búsquedas devolvieron resultados en este periodo</p>
@@ -1782,8 +2249,8 @@ function renderMisLagunas(data) {
 
     return `
     <div class="chart-card">
-        <div class="chart-card-title"><i class="fas fa-search-minus"></i> Brechas de cobertura CIMA</div>
-        <p class="chart-subtitle">Términos buscados que no devolvieron resultados en el catálogo CIMA/AEMPS. Pueden reflejar errores tipográficos, fármacos no autorizados en España, nombres extranjeros o necesidades de cobertura no cubiertas por la herramienta.</p>
+        <div class="chart-card-title"><i class="fas fa-search-minus"></i> Lagunas detectadas — términos sin respuesta en CIMA</div>
+        <p class="chart-subtitle">Términos buscados sin respuesta en la base de datos oficial. Pueden señalar errores tipográficos, nombres extranjeros, medicamentos no autorizados en España o necesidades de cobertura no cubiertas por la herramienta.</p>
         ${rows}
     </div>`;
 }
@@ -1930,32 +2397,68 @@ function mountCharts(data) {
     // Destroy existing
     Object.values(charts).forEach(c => c?.destroy());
 
-    // 1. Activity chart (daily bar)
+    // 1. Activity chart (daily line)
     const actCtx = document.getElementById('activity-chart')?.getContext('2d');
     if (actCtx) {
         const { labels, values } = prepareActivityData(data.actividad_diaria);
         charts.activity = new Chart(actCtx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels,
                 datasets: [{
                     label: 'Consultas',
                     data: values,
-                    backgroundColor: 'rgba(14,165,233,.6)',
+                    backgroundColor: 'rgba(14,165,233,.14)',
                     borderColor: '#0ea5e9',
-                    borderWidth: 1,
-                    borderRadius: 4,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    tension: .35,
+                    fill: true,
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.parsed.y} consulta${ctx.parsed.y !== 1 ? 's' : ''} registradas`
+                        }
+                    }
+                },
                 scales: {
                     x: { ticks: { ...TICK_STYLE, maxRotation: 45 }, grid: GRID_SUBTLE },
                     y: { beginAtZero: true, ticks: { ...TICK_STYLE, stepSize: 1 }, grid: GRID_LIGHT }
                 }
             }
         });
+    }
+
+    // 1b. ATC panorama doughnut
+    if (data.por_atc_nivel1?.length) {
+        const atcDonutCtx = document.getElementById('atc-donut-chart')?.getContext('2d');
+        if (atcDonutCtx) {
+            const sorted = [...data.por_atc_nivel1].sort((a, b) => b.consultas - a.consultas);
+            charts.atcDonut = new Chart(atcDonutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: sorted.map(a => ATC_LEVEL1[a.nivel1]?.name || a.nivel1),
+                    datasets: [{
+                        data: sorted.map(a => a.consultas),
+                        backgroundColor: sorted.map(a => ATC_LEVEL1[a.nivel1]?.color || '#94a3b8'),
+                        borderColor: '#1e293b',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } }
+                    }
+                }
+            });
+        }
     }
 
     // 2. Search type doughnut
@@ -2012,6 +2515,33 @@ function mountCharts(data) {
                 }
             });
         }
+    }
+
+    // 3b. Modal exploration chart
+    const modalCtx = document.getElementById('modalviews-chart')?.getContext('2d');
+    const modalViews = getModalViews(data);
+    if (modalCtx && modalViews.length) {
+        charts.modalViews = new Chart(modalCtx, {
+            type: 'bar',
+            data: {
+                labels: modalViews.map(v => TAXONOMY[v.vista]?.label || v.vista),
+                datasets: [{
+                    data: modalViews.map(v => v.consultas),
+                    backgroundColor: modalViews.map(v => TAXONOMY[v.vista]?.color || '#94a3b8'),
+                    borderRadius: 4,
+                    barThickness: 24,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, ticks: { ...TICK_STYLE, stepSize: 1 }, grid: GRID_LIGHT },
+                    y: { ticks: { ...TICK_STYLE, font: { size: 11 } }, grid: { display: false } }
+                }
+            }
+        });
     }
 
     // 4. Context chart (horizontal bar)
@@ -2446,114 +2976,61 @@ function renderDashboard(data) {
     data = preprocessData(data);
     currentData = data;
 
-    // Usar métricas de búsquedas directas (excluye lecturas FT modal) para KPIs
-    const busquedas = data.resumen.busquedas_directas ?? data.resumen.total_consultas;
-    const farmacos  = data.resumen.farmacos_distintos_reales ?? data.resumen.terminos_distintos;
-
-    const pctExito = busquedas > 0
-        ? Math.round(data.resumen.con_resultado / busquedas * 100) : 0;
-    const diversidad = busquedas > 0
-        ? Math.round(farmacos / busquedas * 100) : 0;
-
     const html = `
+        <div class="dashboard-actions">
+            <button class="print-btn" id="print-panel"><i class="fas fa-image"></i> Exportar imagen</button>
+        </div>
+
         <nav class="tab-bar" id="tab-bar">
-            <button class="tab-btn active" data-tab="tab-resumen"><i class="fas fa-tachometer-alt"></i> Visión General</button>
-            <button class="tab-btn" data-tab="tab-clinica"><i class="fas fa-stethoscope"></i> Dudas Clínicas</button>
-            <button class="tab-btn" data-tab="tab-farmacos"><i class="fas fa-pills"></i> Fármacos y ATC</button>
-            <button class="tab-btn" data-tab="tab-contextos"><i class="fas fa-user-injured"></i> Contextos</button>
-            <button class="tab-btn" data-tab="tab-patrones"><i class="fas fa-chart-line"></i> Patrones y Datos</button>
+            <button class="tab-btn active" data-tab="tab-panorama"><i class="fas fa-tachometer-alt"></i> Panorama</button>
+            <button class="tab-btn" data-tab="tab-senales"><i class="fas fa-stethoscope"></i> Señales clínicas</button>
+            <button class="tab-btn" data-tab="tab-uso"><i class="fas fa-chart-line"></i> Patrones de uso</button>
+            <button class="tab-btn" data-tab="tab-sistema"><i class="fas fa-tools"></i> Sistema</button>
         </nav>
 
         <div class="update-ts" id="update-ts"></div>
 
-        <!-- ═══════ TAB: VISIÓN GENERAL ═══════ -->
-        <div class="tab-panel active" id="tab-resumen">
-            ${renderSummary(data.resumen)}
-
-            <div class="kpi-row">
-                <div class="kpi-mini">
-                    <div class="kpi-label"><i class="fas fa-bullseye"></i> Tasa de resolución</div>
-                    <div class="kpi-value">${pctExito}%</div>
-                    <div class="kpi-note">consultas con resultado en CIMA</div>
-                </div>
-                <div class="kpi-mini">
-                    <div class="kpi-label"><i class="fas fa-fingerprint"></i> Diversidad</div>
-                    <div class="kpi-value">${diversidad}%</div>
-                    <div class="kpi-note">ratio fármacos únicos / consultas</div>
-                </div>
-                <div class="kpi-mini">
-                    <div class="kpi-label"><i class="fas fa-redo-alt"></i> Recurrentes</div>
-                    <div class="kpi-value">${data.recurrentes?.length || 0}</div>
-                    <div class="kpi-note">fármacos con ≥3 consultas</div>
-                </div>
-            </div>
-
-            ${renderInsights(data)}
+        <!-- TAB: PANORAMA -->
+        <div class="tab-panel active" id="tab-panorama">
+            ${renderPanoramaKpis(data)}
+            ${renderNarrativeSummary(data)}
 
             <div class="chart-card">
-                <div class="chart-card-title"><i class="fas fa-chart-bar"></i> Actividad diaria</div>
-                <p class="chart-subtitle">Volumen de consultas por día en el periodo seleccionado. Los picos pueden correlacionar con guardias, rotaciones o formación.</p>
-                <div class="chart-wrap" style="height:220px">
+                <div class="chart-card-title"><i class="fas fa-chart-line"></i> Actividad diaria</div>
+                <p class="chart-subtitle">Volumen de consultas clínicas por día en el periodo seleccionado. Es la señal más directa de adopción y continuidad de uso.</p>
+                <div class="chart-wrap" style="height:300px">
                     <canvas id="activity-chart"></canvas>
                 </div>
             </div>
 
+            ${renderAtcDonutPanel(data)}
             ${renderBenchmark()}
         </div>
 
-        <!-- ═══════ TAB: DUDAS CLÍNICAS ═══════ -->
-        <div class="tab-panel" id="tab-clinica">
-            <div class="info-banner">
-                <i class="fas fa-info-circle"></i>
-                <span>Este panel analiza <strong>qué tipo de pregunta clínica</strong> motiva la consulta (módulo principal usado) y, cuando se abre una ficha de medicamento, <strong>qué sección de la Ficha Técnica</strong> se consulta en detalle. Son dos niveles distintos de análisis de la duda farmacológica.</span>
-            </div>
-            ${renderTaxonomy(data)}
-            ${renderSeccionesFT(data)}
-        </div>
-
-        <!-- ═══════ TAB: FÁRMACOS Y ATC ═══════ -->
-        <div class="tab-panel" id="tab-farmacos">
-            <div class="charts-grid">
-                <div class="chart-card">
-                    <div class="chart-card-title"><i class="fas fa-chart-pie"></i> Modalidad de búsqueda</div>
-                    <p class="chart-subtitle">Cómo se identifica el fármaco: nombre comercial, principio activo, ATC, código nacional o registro.</p>
-                    ${data.por_tipo_busqueda?.length
-                        ? '<div class="chart-wrap" style="height:220px"><canvas id="searchtype-chart"></canvas></div>'
-                        : '<div class="empty-state"><i class="fas fa-chart-pie"></i><p>Sin datos de modalidad</p></div>'
-                    }
-                </div>
-                <div class="chart-card">
-                    <div class="chart-card-title"><i class="fas fa-bullseye"></i> Tasa de resolución por modalidad</div>
-                    <p class="chart-subtitle">Porcentaje de búsquedas con al menos un resultado según el identificador usado. Indica la eficacia de cada vía de búsqueda.</p>
-                    ${data.tasa_exito?.length
-                        ? '<div class="chart-wrap" style="height:220px"><canvas id="tasaexito-chart"></canvas></div>'
-                        : '<div class="empty-state"><p>Sin datos</p></div>'
-                    }
-                </div>
-            </div>
-
-            ${renderFuente(data)}
-            ${renderTopTerms(data.top_terminos)}
-            ${renderRecurrencia(data)}
-            ${renderATC(data)}
+        <!-- TAB: SEÑALES CLÍNICAS -->
+        <div class="tab-panel" id="tab-senales">
+            ${renderClinicalQuestionMap(data)}
+            ${renderPersistentUncertainty(data)}
+            ${renderVulnerableContextCards(data)}
             ${renderMisLagunas(data)}
         </div>
 
-        <!-- ═══════ TAB: CONTEXTOS CLÍNICOS ═══════ -->
-        <div class="tab-panel" id="tab-contextos">
-            <div class="info-banner">
-                <i class="fas fa-info-circle"></i>
-                <span>Los <strong>contextos clínicos</strong> se activan manualmente antes de buscar un fármaco cuando hay un perfil de riesgo presente (embarazo, insuficiencia renal, paciente mayor…). Permiten analizar qué fármacos generan incertidumbre en <strong>pacientes complejos o vulnerables</strong>.</span>
-            </div>
-            ${renderContexts(data)}
-            ${renderContextoCruce(data)}
+        <!-- TAB: PATRONES DE USO -->
+        <div class="tab-panel" id="tab-uso">
+            ${renderModalExploration(data)}
+            ${renderFinancingSignal(data)}
+            ${renderUserSearchTypePanel(data)}
+            ${renderSeccionesFT(data)}
         </div>
 
-        <!-- ═══════ TAB: PATRONES Y DATOS ═══════ -->
-        <div class="tab-panel" id="tab-patrones">
-            ${renderTemporal(data)}
+        <!-- TAB: SISTEMA -->
+        <div class="tab-panel" id="tab-sistema">
             ${renderExport()}
+            ${renderFuente(data)}
             ${renderEndpoints(data.por_endpoint)}
+            ${renderSystemSearchTypes(data)}
+            ${renderTasaExitoCompleta(data)}
+            ${renderTemporal(data)}
         </div>
     `;
 
@@ -2572,6 +3049,7 @@ function renderDashboard(data) {
     // Export buttons
     document.getElementById('export-csv')?.addEventListener('click', exportCSV);
     document.getElementById('export-json')?.addEventListener('click', exportJSON);
+    document.getElementById('print-panel')?.addEventListener('click', () => window.print());
 
     // Resolver nregistros a nombres de fármaco de forma asíncrona (300ms delay para no bloquear render)
     setTimeout(() => enrichNregistroElements(), 300);
