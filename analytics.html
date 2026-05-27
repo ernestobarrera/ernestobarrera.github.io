@@ -1298,6 +1298,7 @@ const SEARCH_TYPES = {
     suministro:              { label: 'Suministro',           color: '#475569' },
     bifimed:                 { label: 'BIFIMED general',      color: '#475569' },
     farmacogenomica:         { label: 'PGx general',          color: '#475569' },
+    ui_modal_tab:            { label: 'Apertura pestaña modal', color: '#64748b' },
     // Tipo interno: lectura de sección FT en modal — no es una modalidad de búsqueda
     seccion_ft:       { label: 'Lectura sección FT', color: '#475569' },
 };
@@ -1418,6 +1419,10 @@ function escapeHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+function escapeAttr(s) {
+    return escapeHtml(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function typeBadge(tipo) {
     const map = {
         nombre:           ['badge-nombre',    'nombre'],
@@ -1438,9 +1443,64 @@ function typeBadge(tipo) {
         farmacogenomica:  ['badge-atc',       'PGx'],
         registro_cambios: ['badge-nregistro', 'cambios'],
         seccion_ft:       ['badge-nregistro', 'FT'],
+        ui_modal_tab:     ['badge-nregistro', 'modal'],
+        cn:               ['badge-cn',        'CN'],
+        texto:            ['badge-nombre',    'texto'],
     };
     const [cls, label] = map[tipo] || ['badge-nombre', tipo];
     return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function inferTermKind(item) {
+    const tipo = item?.tipo_busqueda || '';
+    const term = String(item?.termino || '').trim();
+    if (item?.term_kind) return item.term_kind;
+    if (['atc'].includes(tipo)) return 'atc';
+    if (['codigo_nacional', 'codigo_nacional_sns', 'codigo_nacional_bifimed', 'codigo_nacional_pgx'].includes(tipo)) return 'cn';
+    if (['nregistro', 'nregistro_pgx', 'seccion_ft', 'ui_modal_tab'].includes(tipo)) return 'nregistro';
+    if (/^[A-Z]\d{2}[A-Z]{0,2}\d{0,2}$/i.test(term)) return 'atc';
+    if (/^\d{6,7}$/.test(term) && tipo.includes('codigo')) return 'cn';
+    if (/^\d+(-\d+)?$/.test(term) && ['nregistro', 'seccion_ft', 'ui_modal_tab'].includes(tipo)) return 'nregistro';
+    return 'texto';
+}
+
+function termKey(item) {
+    const kind = inferTermKind(item);
+    const normalized = String(item?.termino || '').toLowerCase();
+    if (['nregistro', 'atc', 'cn'].includes(kind)) return `${kind}:${normalized}`;
+    return `${kind}:${item?.tipo_busqueda || 'unknown'}:${normalized}`;
+}
+
+function renderTermInline(item, opts = {}) {
+    const termino = String(item?.termino || '');
+    const tipo = item?.tipo_busqueda || '';
+    const kind = inferTermKind(item);
+    const value = kind === 'nregistro'
+        ? `<span class="term-value" data-nregistro="${escapeAttr(termino)}" title="Resolviendo nombre...">${escapeHtml(termino)}</span>`
+        : `<span class="term-value">${escapeHtml(termino)}</span>`;
+    const badge = opts.badge === false ? '' : ` ${typeBadge(tipo || kind)}`;
+    return `${value}${badge}`;
+}
+
+function getTypedVistaTerms(data) {
+    const seen = new Set();
+    const rows = [];
+    [
+        data.top_medicamentos_por_vista || [],
+        data.top_por_vista_clinico || [],
+        data.top_por_vista || [],
+    ].forEach(list => {
+        list.forEach(t => {
+            if (!t.vista || !t.termino) return;
+            const item = { ...t, term_kind: inferTermKind(t) };
+            item.key = termKey(item);
+            const dedupeKey = `${item.vista}:${item.key}`;
+            if (seen.has(dedupeKey)) return;
+            seen.add(dedupeKey);
+            rows.push(item);
+        });
+    });
+    return rows;
 }
 
 function escapeCSV(val) {
@@ -1494,7 +1554,7 @@ function renderSummary(r) {
         <div class="stat-card">
             <span class="stat-label"><i class="fas fa-pills"></i> Fármacos distintos</span>
             <span class="stat-value">${farmacos}</span>
-            <span class="stat-note">medicamentos únicos consultados</span>
+            <span class="stat-note">nregistros/medicamentos identificados</span>
         </div>
         <div class="stat-card accent-success">
             <span class="stat-label"><i class="fas fa-check-circle"></i> Con resultado</span>
@@ -1514,8 +1574,9 @@ function renderInsights(data) {
     const items = [];
 
     // Top tipo de duda clínica
-    if (data.por_vista?.length) {
-        const top = [...data.por_vista]
+    const insightViews = data.por_vista_clinica || data.por_vista || [];
+    if (insightViews.length) {
+        const top = [...insightViews]
             .filter(v => v.vista !== 'perfil')
             .sort((a, b) => b.consultas - a.consultas)[0];
         if (top) {
@@ -1697,8 +1758,8 @@ function renderClinicalQuestionMap(data) {
 
     return `
     <div class="chart-card">
-        <div class="chart-card-title"><i class="fas fa-stethoscope"></i> Mapa de dudas por tipo <small style="font-size:.72rem;color:var(--text-muted);font-weight:400">— haz clic en una fila para ver fármacos</small></div>
-        <p class="chart-subtitle">Vistas clínicas ordenadas por volumen. Clic en una fila expande los fármacos más consultados en ese tipo de duda.</p>
+        <div class="chart-card-title"><i class="fas fa-stethoscope"></i> Mapa de dudas por tipo <small style="font-size:.72rem;color:var(--text-muted);font-weight:400">— haz clic en una fila para ver medicamentos o códigos asociados</small></div>
+        <p class="chart-subtitle">Vistas clínicas ordenadas por volumen. El desplegable prioriza nregistros resolubles; cuando solo existe un ATC, CN o texto histórico, se muestra etiquetado para no confundirlo con un fármaco.</p>
         <table class="analytics-table" id="cqm-table">
             <thead><tr><th>Tipo de duda</th><th style="text-align:right">Consultas</th><th style="text-align:right">%</th><th>Intensidad</th></tr></thead>
             <tbody>${rows}</tbody>
@@ -1713,13 +1774,13 @@ function renderPersistentUncertainty(data) {
 
     if (!recur.length) return `
     <div class="chart-card">
-        <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Fármacos con incertidumbre persistente</div>
-        <div class="empty-state"><i class="fas fa-redo-alt"></i><p>Sin fármacos consultados en dos o más días distintos</p></div>
+        <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Términos clínicos recurrentes</div>
+        <div class="empty-state"><i class="fas fa-redo-alt"></i><p>Sin términos repetidos en dos o más días distintos</p></div>
     </div>`;
 
     const rows = recur.map(t => `
         <tr>
-            <td class="term-name">${escapeHtml(t.termino)}</td>
+            <td class="term-name">${renderTermInline(t, { badge: false })}</td>
             <td style="text-align:center">${t.consultas}</td>
             <td style="text-align:center"><span class="recurrence-badge">${t.dias_distintos} día${t.dias_distintos !== 1 ? 's' : ''}</span></td>
             <td>${t.tipo_busqueda ? typeBadge(t.tipo_busqueda) : '<span class="text-muted">—</span>'}</td>
@@ -1727,10 +1788,10 @@ function renderPersistentUncertainty(data) {
 
     return `
     <div class="chart-card">
-        <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Fármacos con mayor incertidumbre persistente</div>
-        <p class="chart-subtitle">Medicamentos buscados en dos o más días distintos. Es una señal fuerte de duda clínica real porque el usuario vuelve sobre el mismo fármaco.</p>
+        <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Términos clínicos recurrentes</div>
+        <p class="chart-subtitle">Términos, códigos o nregistros repetidos en dos o más días distintos. Es una señal de duda persistente; los nregistros se resuelven a nombre cuando CIMA lo permite.</p>
         <table class="analytics-table">
-            <thead><tr><th>Fármaco</th><th style="text-align:center">Veces</th><th style="text-align:center">Días distintos</th><th>Tipo</th></tr></thead>
+            <thead><tr><th>Término</th><th style="text-align:center">Veces</th><th style="text-align:center">Días distintos</th><th>Tipo</th></tr></thead>
             <tbody>${rows}</tbody>
         </table>
     </div>`;
@@ -1741,7 +1802,7 @@ function renderVulnerableContextCards(data) {
     const cards = Object.entries(CONTEXTS).map(([key, info]) => {
         const terms = (ctxTerms[key] || []).slice(0, 3);
         if (!terms.length) return '';
-        const items = terms.map(t => `<li><span>${escapeHtml(t.termino)}</span><span>${t.consultas}</span></li>`).join('');
+        const items = terms.map(t => `<li><span>${renderTermInline(t)}</span><span>${t.consultas}</span></li>`).join('');
         return `
         <div class="context-signal-card">
             <h4><i class="fas ${info.icon}" style="color:${info.color}"></i> ${info.label}</h4>
@@ -1753,7 +1814,7 @@ function renderVulnerableContextCards(data) {
     return `
     <div class="chart-card">
         <div class="chart-card-title"><i class="fas fa-user-shield"></i> Dudas en poblaciones vulnerables</div>
-        <p class="chart-subtitle">Top fármacos consultados cuando hay un contexto activo de paciente. Las tarjetas vacías se omiten para mantener la señal limpia.</p>
+        <p class="chart-subtitle">Términos y medicamentos consultados cuando hay un contexto activo de paciente. Los códigos se muestran con etiqueta para separar señal clínica de telemetría técnica.</p>
         <div class="context-signal-grid">${cards}</div>
     </div>`;
 }
@@ -1773,17 +1834,17 @@ function renderModalExploration(data) {
 
 function renderFinancingSignal(data) {
     const terms = getFinancingTerms(data);
-    const raw = (data.por_vista || []).find(v => v.vista === 'modal-financing')?.consultas || 0;
+    const raw = (data.por_vista_tecnica || data.por_vista || []).find(v => v.vista === 'modal-financing')?.consultas || 0;
     const rows = terms.slice(0, 6).map(t => `
         <li class="endpoint-item">
-            <span class="endpoint-path">${escapeHtml(t.termino)}</span>
+            <span class="endpoint-path">${renderTermInline(t)}</span>
             <span class="endpoint-count">${t.consultas}</span>
         </li>`).join('');
 
     return `
     <div class="chart-card">
         <div class="chart-card-title"><i class="fas fa-euro-sign"></i> Pestaña Financiación</div>
-        <p class="chart-subtitle">Señal de presión de prescripción por coste, precio o condiciones de financiación. La deduplicación actual es aproximada porque los eventos históricos están a nivel CN.</p>
+        <p class="chart-subtitle">Señal de presión de prescripción por coste, precio o condiciones de financiación. Los eventos nuevos se deduplican por nregistro; el histórico puede contener CN técnicos etiquetados.</p>
         <div class="finance-signal">
             <div class="kpi-mini">
                 <div class="kpi-label"><i class="fas fa-receipt"></i> Medicamentos aproximados</div>
@@ -1900,7 +1961,7 @@ function getTopAtc(data) {
 }
 
 function getTopClinicalView(data) {
-    const top = [...(data.por_vista || [])]
+    const top = [...(data.por_vista_clinica || data.por_vista || [])]
         .filter(v => MAIN_CLINICAL_VIEWS.has(v.vista))
         .sort((a, b) => b.consultas - a.consultas)[0];
     if (!top) return null;
@@ -1909,33 +1970,34 @@ function getTopClinicalView(data) {
 }
 
 function getMainClinicalViews(data) {
-    return [...(data.por_vista || [])]
+    return [...(data.por_vista_clinica || data.por_vista || [])]
         .filter(v => MAIN_CLINICAL_VIEWS.has(v.vista))
         .sort((a, b) => b.consultas - a.consultas);
 }
 
 function getModalViews(data) {
-    return [...(data.por_vista || [])]
+    return [...(data.por_vista_clinica || data.por_vista || [])]
         .filter(v => (v.vista || '').startsWith('modal-'))
         .sort((a, b) => b.consultas - a.consultas);
 }
 
 function getFinancingTerms(data) {
     const grouped = new Map();
-    (data.top_por_vista || [])
+    getTypedVistaTerms(data)
         .filter(t => t.vista === 'modal-financing' && t.termino)
         .forEach(t => {
             const key = String(t.termino);
-            grouped.set(key, (grouped.get(key) || 0) + (t.consultas || 0));
+            const current = grouped.get(key) || { ...t, consultas: 0 };
+            current.consultas += t.consultas || 0;
+            grouped.set(key, current);
         });
-    return [...grouped.entries()]
-        .map(([termino, consultas]) => ({ termino, consultas }))
+    return [...grouped.values()]
         .sort((a, b) => b.consultas - a.consultas);
 }
 
 // ─── RENDER: Clinical Taxonomy ──────────────────────────────────────────────────
 function renderTaxonomy(data) {
-    const hasData = data.por_vista?.length > 0;
+    const hasData = (data.por_vista_clinica || data.por_vista || []).length > 0;
 
     // Taxonomy reference table
     const refRows = Object.entries(TAXONOMY)
@@ -1949,9 +2011,10 @@ function renderTaxonomy(data) {
 
     // Drill-down by vista (top terms per category)
     let drillHtml = '';
-    if (data.top_por_vista?.length) {
+    const topVistaTerms = getTypedVistaTerms(data);
+    if (topVistaTerms.length) {
         const byVista = {};
-        data.top_por_vista.forEach(t => {
+        topVistaTerms.forEach(t => {
             if (!byVista[t.vista]) byVista[t.vista] = [];
             if (byVista[t.vista].length < 5) byVista[t.vista].push(t);
         });
@@ -1960,9 +2023,7 @@ function renderTaxonomy(data) {
             .filter(([vista]) => TAXONOMY[vista] && vista !== 'perfil' && vista !== 'buscar')
             .map(([vista, terms]) => {
                 const tax = TAXONOMY[vista];
-                const items = terms.map(t =>
-                    `<li><span>${escapeHtml(t.termino)}</span><span>${t.consultas}</span></li>`
-                ).join('');
+                const items = terms.map(t => `<li><span>${renderTermInline(t)}</span><span>${t.consultas}</span></li>`).join('');
                 return `
                 <div class="drill-card">
                     <h4><i class="fas ${tax.icon}" style="color:${tax.color}"></i> ${tax.label}</h4>
@@ -2024,11 +2085,7 @@ function renderSeccionesFT(data) {
         const info = FT_SECTIONS[r.seccion] || { label: `Sección ${r.seccion}`, color: '#94a3b8', icon: 'fa-file-alt', ely: '—' };
         const pct = Math.round(r.consultas / total * 100);
         const topItems = (topBySec[r.seccion] || []).map(t => {
-            // termino en seccion_ft es un nregistro numérico — se resuelve a nombre asíncronamente
-            const isNr = /^\d+(-\d+)?$/.test(t.termino);
-            return isNr
-                ? `<span class="tag-pill" data-nregistro="${escapeHtml(t.termino)}" title="Resolviendo nombre...">${escapeHtml(t.termino)}</span>`
-                : `<span class="tag-pill">${escapeHtml(t.termino)}</span>`;
+            return `<span class="tag-pill">${renderTermInline(t, { badge: false })}</span>`;
         }).join('');
         return `
         <tr>
@@ -2121,7 +2178,7 @@ function renderTopTerms(terms) {
             : '';
         return `
         <tr style="${isNonClinical ? 'opacity:.7' : ''}">
-            <td class="term-name">${escapeHtml(t.termino)}${ncBadge}</td>
+            <td class="term-name">${renderTermInline(t, { badge: false })}${ncBadge}</td>
             <td>${typeBadge(t.tipo_busqueda)}</td>
             <td>
                 <div class="bar-wrap">
@@ -2401,8 +2458,7 @@ function renderMisLagunas(data) {
     const rows = terms.map(t => `
         <div class="laguna-row">
             <span>
-                <span class="laguna-term">${escapeHtml(t.termino)}</span>
-                ${typeBadge(t.tipo_busqueda)}
+                <span class="laguna-term">${renderTermInline(t)}</span>
             </span>
             <span class="laguna-count">${t.intentos} intento${t.intentos > 1 ? 's' : ''}</span>
         </div>`).join('');
@@ -2433,7 +2489,7 @@ function renderContextoCruce(data) {
     const cards = Object.entries(ctxTerms).map(([ctx, terms]) => {
         const info = CONTEXTS[ctx] || { label: ctx, icon: 'fa-tag', color: '#94a3b8' };
         const items = terms.slice(0, 7).map(t =>
-            `<li><span>${escapeHtml(t.termino)}</span><span>${t.consultas}</span></li>`
+            `<li><span>${renderTermInline(t)}</span><span>${t.consultas}</span></li>`
         ).join('');
         return `
         <div class="drill-card">
@@ -2444,8 +2500,8 @@ function renderContextoCruce(data) {
 
     return `
     <div class="chart-card">
-        <div class="chart-card-title"><i class="fas fa-project-diagram"></i> Top fármacos por contexto clínico</div>
-        <p class="chart-subtitle">Qué medicamentos se consultan cuando hay un perfil de riesgo activado. Revela la casuística de pacientes complejos (embarazo, insuficiencia renal, polimedicados mayores…).</p>
+        <div class="chart-card-title"><i class="fas fa-project-diagram"></i> Términos por contexto clínico</div>
+        <p class="chart-subtitle">Qué medicamentos o códigos aparecen cuando hay un perfil de riesgo activado. Los nregistros se resuelven a nombre cuando CIMA lo permite.</p>
         <div class="drill-grid">${cards}</div>
     </div>`;
 }
@@ -2456,23 +2512,22 @@ function renderRecurrencia(data) {
     if (!recur || !recur.length) {
         return `
         <div class="chart-card">
-            <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Fármacos recurrentes</div>
+            <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Términos recurrentes</div>
             <div class="empty-state">
                 <i class="fas fa-redo-alt"></i>
-                <p>No hay fármacos con ≥3 consultas en el periodo</p>
+                <p>No hay términos con ≥3 consultas en el periodo</p>
             </div>
         </div>`;
     }
 
-    // Doble filtro (el worker ya filtra seccion_ft desde v4, pero mantenemos client-side por si worker antiguo)
-    const clinicalRecur = recur.filter(t => !/^\d+(-\d+)?$/.test((t.termino || '').trim()));
+    const clinicalRecur = recur;
     if (!clinicalRecur.length) {
         return `
         <div class="chart-card">
-            <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Fármacos recurrentes (≥3 consultas)</div>
+            <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Términos recurrentes (≥3 consultas)</div>
             <div class="empty-state">
                 <i class="fas fa-redo-alt"></i>
-                <p>No hay fármacos con ≥3 consultas en el periodo</p>
+                <p>No hay términos con ≥3 consultas en el periodo</p>
             </div>
         </div>`;
     }
@@ -2485,7 +2540,7 @@ function renderRecurrencia(data) {
             : '';
         return `
         <tr style="${isNonClinical ? 'opacity:.7' : ''}">
-            <td class="term-name">${escapeHtml(t.termino)}${ncBadge}</td>
+            <td class="term-name">${renderTermInline(t)}${ncBadge}</td>
             <td><span class="recurrence-badge">${t.dias_distintos} día${t.dias_distintos > 1 ? 's' : ''}</span></td>
             <td>
                 <div class="bar-wrap">
@@ -2498,10 +2553,10 @@ function renderRecurrencia(data) {
 
     return `
     <div class="chart-card">
-        <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Fármacos recurrentes (≥3 consultas)</div>
-        <p class="chart-subtitle">Medicamentos consultados repetidamente. La recurrencia sugiere incertidumbre persistente o complejidad posológica. La columna "días" indica si la consulta se distribuye en el tiempo o se concentra.</p>
+        <div class="chart-card-title"><i class="fas fa-redo-alt"></i> Términos recurrentes (≥3 consultas)</div>
+        <p class="chart-subtitle">Medicamentos, nregistros o términos consultados repetidamente. La recurrencia sugiere incertidumbre persistente; los códigos aparecen etiquetados para no sobreinterpretar el histórico.</p>
         <table class="analytics-table">
-            <thead><tr><th>Fármaco</th><th>Distribución</th><th>Consultas</th></tr></thead>
+            <thead><tr><th>Término</th><th>Distribución</th><th>Consultas</th></tr></thead>
             <tbody>${rows}</tbody>
         </table>
     </div>`;
@@ -2647,10 +2702,11 @@ function mountCharts(data) {
     }
 
     // 3. Clinical taxonomy (horizontal bar)
-    if (data.por_vista?.length) {
+    const clinicalViewsForChart = data.por_vista_clinica || data.por_vista || [];
+    if (clinicalViewsForChart.length) {
         const taxCtx = document.getElementById('taxonomy-chart')?.getContext('2d');
         if (taxCtx) {
-            const sorted = [...data.por_vista]
+            const sorted = [...clinicalViewsForChart]
                 .filter(v => v.vista !== 'perfil')
                 .sort((a, b) => b.consultas - a.consultas);
             charts.taxonomy = new Chart(taxCtx, {
@@ -3136,20 +3192,27 @@ let _drugIndex  = null;
 
 function buildVistaIndex(data) {
     const idx = new Map();
-    (data.top_por_vista || []).forEach(t => {
+    const source = getTypedVistaTerms(data);
+    source.forEach(t => {
         if (!t.vista || !t.termino) return;
         if (!idx.has(t.vista)) idx.set(t.vista, []);
-        idx.get(t.vista).push({ termino: t.termino, consultas: t.consultas || 0 });
+        idx.get(t.vista).push({
+            ...t,
+            key: termKey(t),
+            term_kind: inferTermKind(t),
+            consultas: t.consultas || 0,
+        });
     });
     return idx;
 }
 
 function buildDrugIndex(data) {
     const idx = new Map();
-    (data.top_por_vista || []).forEach(t => {
+    const source = getTypedVistaTerms(data);
+    source.forEach(t => {
         if (!t.termino) return;
-        const key = (t.termino || '').toLowerCase();
-        if (!idx.has(key)) idx.set(key, { termino: t.termino, vistas: [], totalConsultas: 0, contextos: [] });
+        const key = termKey(t);
+        if (!idx.has(key)) idx.set(key, { ...t, key, vistas: [], totalConsultas: 0, contextos: [] });
         const entry = idx.get(key);
         entry.vistas.push({ vista: t.vista, consultas: t.consultas || 0 });
         entry.totalConsultas += t.consultas || 0;
@@ -3157,8 +3220,8 @@ function buildDrugIndex(data) {
     const ctxTerms = data.contexto_terminos || {};
     Object.entries(ctxTerms).forEach(([ctx, terms]) => {
         (terms || []).forEach(t => {
-            const key = (t.termino || '').toLowerCase();
-            if (!idx.has(key)) idx.set(key, { termino: t.termino, vistas: [], totalConsultas: 0, contextos: [] });
+            const key = termKey(t);
+            if (!idx.has(key)) idx.set(key, { ...t, key, vistas: [], totalConsultas: 0, contextos: [] });
             idx.get(key).contextos.push({ ctx, consultas: t.consultas || 0 });
         });
     });
@@ -3181,15 +3244,15 @@ function initClinicalDrilldown() {
         table.querySelectorAll('.cqm-drill-row').forEach(r => r.remove());
         table.querySelectorAll('.cqm-row.active').forEach(r => r.classList.remove('active'));
         row.classList.add('active');
-        const drugs = (_vistaIndex?.get(vista) || []).slice(0, 10);
+        const terms = (_vistaIndex?.get(vista) || []).slice(0, 10);
         const drillRow = document.createElement('tr');
         drillRow.className = 'cqm-drill-row';
         drillRow.innerHTML = `<td colspan="4">
             <div class="cqm-drill-inner">
-                <span class="cqm-drill-label">Top fármacos:</span>
-                ${drugs.length
-                    ? drugs.map(d => `<span class="cqm-drug-pill" data-drug="${escapeHtml(d.termino)}">${escapeHtml(d.termino)} <span class="pill-count">${d.consultas}</span></span>`).join('')
-                    : '<span class="text-muted" style="font-size:.8rem">Sin datos de fármacos para esta vista</span>'
+                <span class="cqm-drill-label">Términos asociados:</span>
+                ${terms.length
+                    ? terms.map(d => `<span class="cqm-drug-pill" data-term-key="${escapeAttr(d.key)}">${renderTermInline(d)} <span class="pill-count">${d.consultas}</span></span>`).join('')
+                    : '<span class="text-muted" style="font-size:.8rem">Sin términos asociados para esta vista</span>'
                 }
             </div>
         </td>`;
@@ -3197,17 +3260,18 @@ function initClinicalDrilldown() {
         drillRow.querySelectorAll('.cqm-drug-pill').forEach(pill => {
             pill.addEventListener('click', ev => {
                 ev.stopPropagation();
-                openDrugPanel(pill.dataset.drug);
+                openDrugPanel(pill.dataset.termKey);
             });
         });
+        enrichNregistroElements();
     });
 }
 
-function openDrugPanel(termino) {
+function openDrugPanel(termKeyValue) {
     const panel = document.getElementById('drug-panel');
     const overlay = document.getElementById('drug-panel-overlay');
     if (!panel || !overlay) return;
-    const entry = _drugIndex?.get((termino || '').toLowerCase());
+    const entry = _drugIndex?.get(termKeyValue);
     const vistas = (entry?.vistas || []).sort((a, b) => b.consultas - a.consultas);
     const contextos = entry?.contextos || [];
     const maxC = vistas[0]?.consultas || 1;
@@ -3232,16 +3296,17 @@ function openDrugPanel(termino) {
 
     panel.innerHTML = `
         <div class="dp-header">
-            <span class="dp-title">${escapeHtml(termino)}</span>
+            <span class="dp-title">${entry ? renderTermInline(entry) : escapeHtml(termKeyValue)}</span>
             <button class="dp-close" id="dp-close-btn"><i class="fas fa-times"></i></button>
         </div>
         ${contextos.length ? `<div class="dp-section-title">Contextos de riesgo</div><div class="dp-contexts">${ctxPills}</div>` : ''}
         <div class="dp-section-title">Tipo de consulta</div>
-        <div class="dp-vistas">${vistaRows || '<span class="text-muted" style="font-size:.82rem">Sin datos de vistas para este fármaco</span>'}</div>
+        <div class="dp-vistas">${vistaRows || '<span class="text-muted" style="font-size:.82rem">Sin datos de vistas para este término</span>'}</div>
     `;
     panel.classList.add('open');
     overlay.classList.add('open');
     document.getElementById('dp-close-btn')?.addEventListener('click', closeDrugPanel);
+    enrichNregistroElements();
 }
 
 function closeDrugPanel() {

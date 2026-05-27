@@ -639,6 +639,9 @@ class CimaAPI {
     async searchByATC(atcCode, options = {}) {
         const upperCode = atcCode.toUpperCase();
         const pageSize = 500; // Máximo razonable para reducir llamadas
+        const analyticsOptions = options.noTrack
+            ? { headers: { 'X-MC-Autocomplete': '1' } }
+            : {};
 
         console.log(`🔍 Buscando ATC ${upperCode}...`);
 
@@ -650,7 +653,7 @@ class CimaAPI {
             pagina: 1
         };
 
-        const firstPage = await this.searchMedicamentos(firstPageParams);
+        const firstPage = await this.searchMedicamentos(firstPageParams, analyticsOptions);
 
         if (!firstPage || !firstPage.resultados) {
             return { resultados: [], totalFilas: 0 };
@@ -674,7 +677,7 @@ class CimaAPI {
                         tamanioPagina: pageSize,
                         pagina: page
                     };
-                    const pageData = await this.searchMedicamentos(pageParams);
+                    const pageData = await this.searchMedicamentos(pageParams, analyticsOptions);
                     if (pageData.resultados && pageData.resultados.length > 0) {
                         allResults = allResults.concat(pageData.resultados);
                         console.log(`📥 Página ${page}: +${pageData.resultados.length} (total: ${allResults.length})`);

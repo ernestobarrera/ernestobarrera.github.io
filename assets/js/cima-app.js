@@ -2161,7 +2161,7 @@ class MedCheckApp {
         try {
             let allResults = [];
             for (const atcCode of atcCodes) {
-                const results = await this.api.searchByATC(atcCode, { comercializados: true });
+                const results = await this.api.searchByATC(atcCode, { comercializados: true, noTrack: true });
                 if (results.resultados && results.resultados.length > 0) {
                     allResults = allResults.concat(results.resultados);
                 }
@@ -2334,7 +2334,7 @@ class MedCheckApp {
                 // No subcategories from maestras - try dynamic derivation from search results
                 console.log(`🔄 No maestras subcodes for ${atcCode}, trying dynamic derivation...`);
 
-                const searchResults = await this.api.searchByATC(atcCode, { comercializados: true });
+                const searchResults = await this.api.searchByATC(atcCode, { comercializados: true, noTrack: true });
 
                 if (searchResults.resultados && searchResults.resultados.length > 0) {
                     const derivedSubcodes = this.api.extractATCSubcodes(searchResults.resultados, atcCode);
@@ -2458,7 +2458,7 @@ class MedCheckApp {
         `;
 
         try {
-            const data = await this.api.searchByATC(atcCode, { comercializados: true });
+            const data = await this.api.searchByATC(atcCode, { comercializados: true, noTrack: true });
 
             // Create a synthetic matchedIndication for display
             data.matchedIndication = { label, atc: atcCode };
@@ -5382,6 +5382,31 @@ class MedCheckApp {
         // Safe launcher: no DOM injection, no selection scraping, no reads from the source page.
         return "javascript:(()=>{const u='https://ernestobarrera.github.io/medcheck.html?view=search&source=bookmarklet';const w=window.open(u,'_blank','noopener,noreferrer');if(w)try{w.opener=null}catch(e){}})();";
     }
+
+    trackModalTab(med, tab) {
+        if (!this.api?.cloudflareProxy || !med?.nregistro) return;
+        const vista = `modal-${tab || 'info'}`;
+        const payload = {
+            event: 'modal_tab',
+            vista,
+            nregistro: String(med.nregistro),
+            nombre: med.nombre || '',
+            contexto: window._mcActiveContexts || '',
+            source: window._mcSource || 'app',
+        };
+        fetch(`${this.api.cloudflareProxy}/track`, {
+            method: 'POST',
+            keepalive: true,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-MC-View': vista,
+                ...(window._mcActiveContexts ? { 'X-MC-Context': window._mcActiveContexts } : {}),
+                ...(window._mcSource ? { 'X-MC-Source': window._mcSource } : {}),
+            },
+            body: JSON.stringify(payload),
+        }).catch(() => {});
+    }
+
     async openMedDetails(nregistro, initialTab = 'info') {
         this.modal.classList.remove('hidden');
         this.modalBody.innerHTML = '<div class="loading-spinner"></div>';
@@ -5429,6 +5454,7 @@ class MedCheckApp {
 
             // Track modal tab in analytics
             window._mcCurrentView = `modal-${initialTab}`;
+            this.trackModalTab(med, initialTab);
 
             // Check if medication has AEMPS alerts (notas or materiales)
             // The detail endpoint may not return these flags — fall back to search result cache
@@ -5616,6 +5642,7 @@ class MedCheckApp {
                     document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
                     // Actualizar vista para analytics — próxima petición llevará este header
                     window._mcCurrentView = `modal-${tab.dataset.tab}`;
+                    this.trackModalTab(med, tab.dataset.tab);
                     if (!this.isPopstateNavigation) {
                         const modalParams = { view: this.currentView, nregistro: med.nregistro };
                         if (tab.dataset.tab !== 'info') modalParams.tab = tab.dataset.tab;
@@ -7793,7 +7820,8 @@ ${materialesPlaceholder}
             // Search for medications with the same ATC code that are commercialized
             const results = await this.api.searchByATC(atcCode, {
                 comercializados: true,
-                pageSize: 100
+                pageSize: 100,
+                noTrack: true
             });
 
             if (!results.resultados || results.resultados.length === 0) {
