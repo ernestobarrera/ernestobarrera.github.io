@@ -10223,6 +10223,8 @@ ${materialesPlaceholder}
             { id: 'deprescription',    cat: 'clinical',     label: 'Deprescripción',                 icon: 'fa-pills' },
             { id: 'pediatrics',        cat: 'scope',        label: 'Pediatría',                      icon: 'fa-child' },
             { id: 'geriatrics_sensible', cat: 'scope',      label: 'Geriatría',                      icon: 'fa-user-clock' },
+            { id: 'economic_especifico', cat: 'scope',      label: 'Evaluaciones económicas',        icon: 'fa-coins' },
+            { id: 'humans',              cat: 'scope',      label: 'Humanos',                        icon: 'fa-user', defaultChecked: true },
         ];
 
         container.innerHTML = `
@@ -10271,7 +10273,7 @@ ${materialesPlaceholder}
                     ${filterDefs.map(f => `
                         <div class="evidence-filter-row" data-fid="${f.id}">
                             <label class="evidence-filter-check" title="Combinar con otros filtros (AND / OR)">
-                                <input type="checkbox" class="evidence-filter-check-input" data-fid="${f.id}">
+                                <input type="checkbox" class="evidence-filter-check-input" data-fid="${f.id}"${f.defaultChecked ? ' checked' : ''}>
                             </label>
                             <a class="evidence-filter-item" id="evlink-${f.id}" href="#" target="_blank" rel="noopener">
                                 <span class="evidence-filter-icon"><i class="fas ${f.icon}"></i></span>
@@ -10335,6 +10337,10 @@ ${materialesPlaceholder}
 
         // Estado de combinación entre filtros — se resetea cada vez que se renderiza la pestaña
         this._evSelectedFilters = new Set();
+        filterDefs.filter(f => f.defaultChecked).forEach(f => {
+            this._evSelectedFilters.add(f.id);
+            container.querySelector(`.evidence-filter-row[data-fid="${f.id}"]`)?.classList.add('selected');
+        });
         this._evCombineMode = 'AND';
         this._evCombineCycle = 0;
         this._evFilterDefs = filterDefs;
