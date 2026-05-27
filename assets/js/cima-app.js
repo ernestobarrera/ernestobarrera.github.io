@@ -10564,19 +10564,25 @@ ${materialesPlaceholder}
             }
             const linkEl = document.getElementById(`evlink-${f.id}`);
             if (linkEl && query) {
-                linkEl.href = pmBase + enc(`${drugTerm} AND (${query})` + DATE_SUFFIX);
+                const isNot = query.trimStart().startsWith('NOT ');
+                linkEl.href = pmBase + enc(
+                    isNot ? `${drugTerm} ${query}${DATE_SUFFIX}` : `${drugTerm} AND (${query})${DATE_SUFFIX}`
+                );
             }
         });
 
         // Preparar peticiones de conteo
         const countRequests = [
             { id: 'total', query: totalQuery },
-            ...filterDefs.map((f, i) => ({
-                id: f.id,
-                query: loaded[i].query
-                    ? `${drugTerm} AND (${loaded[i].query})` + DATE_SUFFIX
-                    : null
-            }))
+            ...filterDefs.map((f, i) => {
+                const q = loaded[i].query;
+                if (!q) return { id: f.id, query: null };
+                const isNot = q.trimStart().startsWith('NOT ');
+                return {
+                    id: f.id,
+                    query: isNot ? `${drugTerm} ${q}${DATE_SUFFIX}` : `${drugTerm} AND (${q})${DATE_SUFFIX}`,
+                };
+            })
         ];
 
         // Cachear queries de cada filtro por id para que la barra de combinación pueda leerlas
@@ -10832,10 +10838,17 @@ ${materialesPlaceholder}
         }
 
         const mode = this._evCombineMode || 'AND';
-        const combinedFilter = mode === 'AND'
-            ? queries.map(q => `(${q})`).join(' AND ')
-            : '(' + queries.map(q => `(${q})`).join(' OR ') + ')';
-        const finalQuery = `${drugTerm} AND ${combinedFilter}${dateSuffix}`;
+        const notQueries  = queries.filter(q => q.trimStart().startsWith('NOT '));
+        const mainQueries = queries.filter(q => !q.trimStart().startsWith('NOT '));
+        let finalQuery = drugTerm;
+        if (mainQueries.length > 0) {
+            const combinedFilter = mode === 'AND'
+                ? mainQueries.map(q => `(${q})`).join(' AND ')
+                : '(' + mainQueries.map(q => `(${q})`).join(' OR ') + ')';
+            finalQuery += ` AND ${combinedFilter}`;
+        }
+        if (notQueries.length > 0) finalQuery += ' ' + notQueries.join(' ');
+        finalQuery += dateSuffix;
 
         const link = document.getElementById('evidence-combine-link');
         if (link) link.href = 'https://pubmed.ncbi.nlm.nih.gov/?term=' + encodeURIComponent(finalQuery);
