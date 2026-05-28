@@ -7370,6 +7370,15 @@ code {
     background: var(--surface-hover, rgba(14,165,233,0.05));
     border-left-color: var(--primary);
 }
+.evidence-reec-study-date {
+    flex-shrink: 0;
+    font-size: 0.67rem;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    white-space: nowrap;
+    margin-top: 0.15rem;
+}
+
 .evidence-reec-study-ext {
     flex-shrink: 0;
     font-size: 0.6rem;

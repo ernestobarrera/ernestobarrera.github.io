@@ -10581,6 +10581,14 @@ ${materialesPlaceholder}
             'Reclutando': 'reclutando', 'Finalizado': 'finalizado',
             'Fin reclutamiento': 'fin-reclutamiento', 'No iniciado': 'no-iniciado',
         };
+        const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        const formatReecDate = (d) => {
+            if (!d) return null;
+            const m = String(d).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (m) return `${MESES[+m[2]-1]} ${m[3]}`;
+            const dt = new Date(d);
+            return isNaN(dt) ? null : `${MESES[dt.getMonth()]} ${dt.getFullYear()}`;
+        };
         const enc = s => encodeURIComponent(s);
 
         const orderNote = `<div class="evidence-reec-order-note">Con resultados · más recientes primero</div>`;
@@ -10588,12 +10596,14 @@ ${materialesPlaceholder}
             const estado  = s.estado || '';
             const css     = ESTADO_CSS[estado] || 'otro';
             const titulo  = s.titulo || s.identificador || '—';
+            const fecha   = formatReecDate(s.fecha_autorizacion);
             const href    = s.identificador
                 ? `https://reec.aemps.es/reec/list/search=${enc(s.identificador)}&filter=0`
                 : baseUrl;
             return `<a class="evidence-reec-study-item" href="${href}" target="_blank" rel="noopener" title="${this._escapeHtml(titulo)}">
                 <span class="evidence-reec-study-status evidence-reec-study-status--${css}">${this._escapeHtml(estado || '?')}</span>
                 <span class="evidence-reec-study-title">${this._escapeHtml(titulo)}</span>
+                ${fecha ? `<span class="evidence-reec-study-date">${fecha}</span>` : ''}
                 <span class="evidence-reec-study-ext"><i class="fas fa-external-link-alt"></i></span>
             </a>`;
         }).join('');
