@@ -10163,6 +10163,8 @@ ${materialesPlaceholder}
             'tartrato','succinato','acetato','embonato',
             'trihidrato','hemihidrato','monohidrato',
             'potasio','sodio','calcio','magnesio',
+            // Formas adjetivas que usa CIMA: "ROSUVASTATINA CALCICA", "CLOPIDOGREL BESILATO"
+            'calcica','calcico','sodica','sodico','potasica','potasico',
             'acido'
         ]);
         const baseInn = (name) => {
@@ -10175,14 +10177,18 @@ ${materialesPlaceholder}
 
         // Construir término PubMed: (marca|inn_base) si difieren, solo inn si genérico.
         // Pipe = OR en PubMed; PubMed mapea marca → Supplementary Concept automáticamente.
+        // Combinaciones: OR entre componentes para encontrar estudios del combinado y de cada INN.
         let drugTerm;
         if (pa && pa.length > 0) {
-            const innBase = pa.map(p => baseInn(p.nombre)).join(' ');
+            const inns = pa.map(p => baseInn(p.nombre));
+            const innBase = inns.length > 1 ? `(${inns.join('|')})` : inns[0];
             const brand = med.nombre.split(/\s*\d/)[0].trim().toLowerCase();
-            const brandFirst = brand.split(/\s+/)[0];
-            const innFirstWords = pa.map(p => baseInn(p.nombre).split(/\s+/)[0]);
-            const isGeneric = innFirstWords.some(w => brandFirst === w || brand.startsWith(w + ' '));
-            drugTerm = isGeneric ? innBase : `(${brand}|${innBase})`;
+            // Normalizar "/" de combinaciones CIMA ("valsartan/amlodipino actavis") para detección
+            const brandNorm = brand.replace(/\//g, ' ').replace(/\s+/g, ' ').trim();
+            const brandFirst = brandNorm.split(/\s+/)[0];
+            const innFirstWords = inns.map(inn => inn.split(/\s+/)[0]);
+            const isGeneric = innFirstWords.some(w => brandFirst === w || brandNorm.startsWith(w + ' '));
+            drugTerm = isGeneric ? innBase : `(${brandFirst}|${innBase})`;
         } else {
             drugTerm = med.nombre.split(/\s*\d/)[0].trim().toLowerCase();
         }
@@ -10260,6 +10266,8 @@ ${materialesPlaceholder}
             { id: 'pediatrics',        cat: 'scope',        label: 'Pediatría',                      icon: 'fa-child' },
             { id: 'geriatrics_sensible', cat: 'scope',      label: 'Geriatría',                      icon: 'fa-user-clock' },
             { id: 'economic_especifico', cat: 'scope',      label: 'Evaluaciones económicas',        icon: 'fa-coins' },
+            { id: 'primary_sensible',   cat: 'scope',      label: 'Atención Primaria',               icon: 'fa-stethoscope' },
+            { id: 'jnl_top_publications', cat: 'journals', label: 'Revistas de referencia',          icon: 'fa-star' },
             { id: 'humans',              cat: 'scope',      label: 'Humanos',                        icon: 'fa-user', defaultChecked: true },
         ];
 
