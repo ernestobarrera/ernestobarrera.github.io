@@ -7325,29 +7325,61 @@ code {
     background: rgba(14, 165, 233, 0.05);
 }
 
-/* ── REec: filas secundarias y títulos de estudios inline ── */
-.evidence-filter-item--reec-sub .evidence-filter-label {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
+/* ── REec: chips de estadísticas y lista de estudios enlazados ── */
+.evidence-reec-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem 0.3rem;
 }
-.evidence-filter-item--reec-sub .evidence-filter-icon {
-    opacity: 0.65;
+.evidence-reec-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+.evidence-reec-chip i {
+    font-size: 0.65rem;
+    opacity: 0.7;
+}
+.evidence-reec-chip strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.evidence-reec-chip--zero strong {
+    color: var(--text-secondary);
 }
 
 .evidence-reec-studies {
     display: flex;
     flex-direction: column;
-    gap: 0;
-    margin-top: 0.1rem;
 }
 .evidence-reec-study-item {
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
     padding: 0.35rem 0.75rem;
-    border-left: 2px solid var(--border-color, rgba(255,255,255,0.07));
+    border-left: 2px solid transparent;
     margin-left: 0.75rem;
+    text-decoration: none;
+    border-radius: 0 4px 4px 0;
+    transition: background 0.15s, border-color 0.15s;
 }
+.evidence-reec-study-item:hover {
+    background: var(--surface-hover, rgba(14,165,233,0.05));
+    border-left-color: var(--primary);
+}
+.evidence-reec-study-ext {
+    flex-shrink: 0;
+    font-size: 0.6rem;
+    opacity: 0;
+    color: var(--primary);
+    margin-top: 0.2rem;
+    transition: opacity 0.15s;
+}
+.evidence-reec-study-item:hover .evidence-reec-study-ext { opacity: 0.7; }
+
 .evidence-reec-study-status {
     flex-shrink: 0;
     padding: 0.1rem 0.4rem;
@@ -7356,7 +7388,7 @@ code {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.02em;
-    margin-top: 0.05rem;
+    margin-top: 0.1rem;
 }
 .evidence-reec-study-status--reclutando {
     background: rgba(34, 197, 94, 0.15);
@@ -7386,6 +7418,22 @@ code {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
 }
+.evidence-reec-study-item:hover .evidence-reec-study-title {
+    color: var(--text-primary);
+}
+
+.evidence-reec-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.75rem 0.2rem 1.75rem;
+    font-size: 0.7rem;
+    color: var(--primary);
+    text-decoration: none;
+    opacity: 0.8;
+}
+.evidence-reec-footer:hover { opacity: 1; text-decoration: underline; }
+.evidence-reec-footer i { font-size: 0.6rem; }
 
 /* ── Barra de combinación AND/OR ── */
 .evidence-combine-bar {

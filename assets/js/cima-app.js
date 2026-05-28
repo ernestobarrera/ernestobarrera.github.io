@@ -10370,24 +10370,13 @@ ${materialesPlaceholder}
                     </div>
                 </div>
                 <div class="evidence-filter-list">
-                    <a class="evidence-filter-item" id="evlink-reec" href="${reecUrl(drugTerm)}" target="_blank" rel="noopener" title="Todos los estudios en REec · AEMPS">
+                    <a class="evidence-filter-item" id="evlink-reec" href="${reecUrl(drugTerm)}" target="_blank" rel="noopener" title="Ver todos los estudios registrados en REec · AEMPS">
                         <span class="evidence-filter-icon"><i class="fas fa-flag"></i></span>
-                        <span class="evidence-filter-label">Todos los estudios</span>
+                        <span class="evidence-filter-label">REec · España</span>
                         <span class="evidence-filter-count" id="evcount-reec"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
                         <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
                     </a>
-                    <a class="evidence-filter-item evidence-filter-item--reec-sub" id="evlink-reec-recruiting" href="${reecUrl(drugTerm)}" target="_blank" rel="noopener" title="Estudios actualmente en fase de reclutamiento">
-                        <span class="evidence-filter-icon"><i class="fas fa-user-plus"></i></span>
-                        <span class="evidence-filter-label">En reclutamiento</span>
-                        <span class="evidence-filter-count" id="evcount-reec-recruiting"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
-                        <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
-                    </a>
-                    <a class="evidence-filter-item evidence-filter-item--reec-sub" id="evlink-reec-results" href="${reecUrl(drugTerm)}" target="_blank" rel="noopener" title="Estudios finalizados con resultados publicados">
-                        <span class="evidence-filter-icon"><i class="fas fa-check-circle"></i></span>
-                        <span class="evidence-filter-label">Con resultados</span>
-                        <span class="evidence-filter-count" id="evcount-reec-results"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
-                        <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
-                    </a>
+                    <div class="evidence-reec-stats" id="evidence-reec-stats"></div>
                     <div class="evidence-reec-studies" id="evidence-reec-studies"></div>
                     <a class="evidence-filter-item" id="evlink-ct" href="https://clinicaltrials.gov/search?term=${enc(drugTerm)}&viewType=Table" target="_blank" rel="noopener" title="Registro de ensayos de EEUU (FDA / NIH)">
                         <span class="evidence-filter-icon"><i class="fas fa-flag-usa"></i></span>
@@ -10476,23 +10465,18 @@ ${materialesPlaceholder}
             input.addEventListener('change', () => {
                 const t = getCurrentTerm();
                 if (!t) return;
-                const reecBase = reecUrl(t);
-                ['evlink-reec', 'evlink-reec-recruiting', 'evlink-reec-results'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.href = reecBase;
-                });
+                const reecLink = document.getElementById('evlink-reec');
+                if (reecLink) reecLink.href = reecUrl(t);
                 const ctLink = document.getElementById('evlink-ct');
                 const whoLink = document.getElementById('evlink-who');
                 if (ctLink) ctLink.href = `https://clinicaltrials.gov/search?term=${enc(t)}&viewType=Table`;
                 if (whoLink) whoLink.href = `https://trialsearch.who.int/?SearchTerm=${enc(t)}`;
                 updateReferenceLinks(t);
                 resetCounts();
-                ['evcount-reec', 'evcount-reec-recruiting', 'evcount-reec-results'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
-                });
-                const studiesEl = document.getElementById('evidence-reec-studies');
-                if (studiesEl) studiesEl.innerHTML = '';
+                const reecCount = document.getElementById('evcount-reec');
+                if (reecCount) reecCount.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
+                document.getElementById('evidence-reec-stats')?.replaceChildren();
+                document.getElementById('evidence-reec-studies')?.replaceChildren();
                 this._loadReecCount(t);
                 this._loadEvidenceFiltersAndCount(t, filterDefs, getCurrentDays());
                 this._updateEvidenceCombineBar();
@@ -10540,30 +10524,22 @@ ${materialesPlaceholder}
         const query = this._buildReecSearchTerm(drugTerm);
         const baseUrl = this._buildReecSearchUrl(drugTerm);
 
-        ['evlink-reec', 'evlink-reec-recruiting', 'evlink-reec-results'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.href = baseUrl;
-        });
+        const reecLink = document.getElementById('evlink-reec');
+        if (reecLink) reecLink.href = baseUrl;
+
+        const countEl  = document.getElementById('evcount-reec');
+        const statsEl  = document.getElementById('evidence-reec-stats');
+        const studiesEl = document.getElementById('evidence-reec-studies');
 
         const applyStaticFallback = () => {
-            ['evcount-reec', 'evcount-reec-recruiting', 'evcount-reec-results'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.innerHTML = '<span class="evidence-filter-badge-ext">España · AEMPS</span>';
-            });
+            if (countEl) countEl.innerHTML = '<span class="evidence-filter-badge-ext">España · AEMPS</span>';
         };
 
         if (!query || query.length < 2) { applyStaticFallback(); return; }
 
         const cycleId = (this._reecCountCycle = (this._reecCountCycle || 0) + 1);
 
-        const renderCount = (elId, n) => {
-            const el = document.getElementById(elId);
-            if (!el) return;
-            const cls = n === 0 ? 'evidence-count-badge evidence-count-badge--zero' : 'evidence-count-badge';
-            el.innerHTML = `<span class="${cls}">${n.toLocaleString('es-ES')}</span>`;
-        };
-
-        // 3 llamadas en paralelo — total, reclutando, con resultados
+        // 3 llamadas en paralelo: total + reclutando + con resultados
         const [resAll, resRecruiting, resResults] = await Promise.allSettled([
             this.api.searchReecStudies(query),
             this.api.searchReecStudies(query, { estado: '2' }),
@@ -10572,44 +10548,61 @@ ${materialesPlaceholder}
 
         if (this._reecCountCycle !== cycleId) return;
 
-        const dataAll = resAll.status === 'fulfilled' ? resAll.value : null;
-        const nAll = Number.isFinite(dataAll?.count) ? dataAll.count : null;
+        const dataAll  = resAll.status === 'fulfilled' ? resAll.value : null;
+        const nAll     = Number.isFinite(dataAll?.count) ? dataAll.count : null;
 
         if (nAll === null) { applyStaticFallback(); return; }
 
-        renderCount('evcount-reec', nAll);
+        // Conteo total
+        const clsTotal = nAll === 0 ? 'evidence-count-badge evidence-count-badge--zero' : 'evidence-count-badge';
+        if (countEl) countEl.innerHTML = `<span class="${clsTotal}">${nAll.toLocaleString('es-ES')}</span>`;
 
-        const nRecruiting = resRecruiting.status === 'fulfilled' && Number.isFinite(resRecruiting.value?.count)
-            ? resRecruiting.value.count : null;
-        if (nRecruiting !== null) renderCount('evcount-reec-recruiting', nRecruiting);
-        else {
-            const el = document.getElementById('evcount-reec-recruiting');
-            if (el) el.innerHTML = '<span class="evidence-filter-badge-ext">–</span>';
+        // Chips informativos (sin enlace — REec no admite deep-link por filtro)
+        const nRecruiting = resRecruiting.status === 'fulfilled' ? (resRecruiting.value?.count ?? null) : null;
+        const nResults    = resResults.status === 'fulfilled'    ? (resResults.value?.count ?? null)    : null;
+        if (statsEl && (nRecruiting !== null || nResults !== null)) {
+            const chip = (icon, label, n) => n === null ? '' :
+                `<span class="evidence-reec-chip ${n === 0 ? 'evidence-reec-chip--zero' : ''}">
+                    <i class="fas ${icon}"></i>${label}: <strong>${n.toLocaleString('es-ES')}</strong>
+                </span>`;
+            statsEl.innerHTML =
+                chip('fa-user-plus',    'Reclutando',     nRecruiting) +
+                chip('fa-check-circle', 'Con resultados', nResults);
         }
 
-        const nResults = resResults.status === 'fulfilled' && Number.isFinite(resResults.value?.count)
-            ? resResults.value.count : null;
-        if (nResults !== null) renderCount('evcount-reec-results', nResults);
-        else {
-            const el = document.getElementById('evcount-reec-results');
-            if (el) el.innerHTML = '<span class="evidence-filter-badge-ext">–</span>';
-        }
-
-        // Títulos de estudios inline (de la consulta principal)
+        // Estudios inline: cada uno enlaza a REec por su identificador EudraCT
         const studies = dataAll?.studies;
-        const studiesEl = document.getElementById('evidence-reec-studies');
-        if (studiesEl && Array.isArray(studies) && studies.length > 0) {
-            const ESTADO_CSS = { 'Reclutando': 'reclutando', 'Finalizado': 'finalizado', 'Fin reclutamiento': 'fin-reclutamiento', 'No iniciado': 'no-iniciado' };
-            studiesEl.innerHTML = studies.slice(0, 3).map(s => {
-                const estado = s.estado || '';
-                const css = ESTADO_CSS[estado] || 'otro';
-                const titulo = s.titulo || s.identificador || '—';
-                return `<div class="evidence-reec-study-item">
-                    <span class="evidence-reec-study-status evidence-reec-study-status--${css}">${this._escapeHtml(estado || '?')}</span>
-                    <span class="evidence-reec-study-title" title="${this._escapeHtml(titulo)}">${this._escapeHtml(titulo)}</span>
-                </div>`;
-            }).join('');
-        }
+        if (!studiesEl || !Array.isArray(studies) || studies.length === 0) return;
+
+        const ESTADO_CSS = {
+            'Reclutando': 'reclutando', 'Finalizado': 'finalizado',
+            'Fin reclutamiento': 'fin-reclutamiento', 'No iniciado': 'no-iniciado',
+        };
+        const enc = s => encodeURIComponent(s);
+
+        const rows = studies.map(s => {
+            const estado  = s.estado || '';
+            const css     = ESTADO_CSS[estado] || 'otro';
+            const titulo  = s.titulo || s.identificador || '—';
+            const href    = s.identificador
+                ? `https://reec.aemps.es/reec/list/search=${enc(s.identificador)}&filter=0`
+                : baseUrl;
+            return `<a class="evidence-reec-study-item" href="${href}" target="_blank" rel="noopener" title="${this._escapeHtml(titulo)}">
+                <span class="evidence-reec-study-status evidence-reec-study-status--${css}">${this._escapeHtml(estado || '?')}</span>
+                <span class="evidence-reec-study-title">${this._escapeHtml(titulo)}</span>
+                <span class="evidence-reec-study-ext"><i class="fas fa-external-link-alt"></i></span>
+            </a>`;
+        }).join('');
+
+        const shown = studies.length;
+        const footer = nAll > shown
+            ? `<a class="evidence-reec-footer" href="${baseUrl}" target="_blank" rel="noopener">
+                Mostrando ${shown} de ${nAll.toLocaleString('es-ES')} · Ver todos en REec
+                <i class="fas fa-external-link-alt"></i>
+               </a>`
+            : '';
+
+        studiesEl.innerHTML = rows + footer;
     }
 
     async _loadEvidenceFiltersAndCount(drugTerm, filterDefs, dateDays) {
