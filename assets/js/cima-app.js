@@ -10565,9 +10565,12 @@ ${materialesPlaceholder}
                 `<span class="evidence-reec-chip ${n === 0 ? 'evidence-reec-chip--zero' : ''}">
                     <i class="fas ${icon}"></i>${label}: <strong>${n.toLocaleString('es-ES')}</strong>
                 </span>`;
+            // nNoResults: derivado sin llamada extra — los tres chips suman el total
+            const nNoResults = (nAll !== null && nResults !== null) ? nAll - nResults : null;
             statsEl.innerHTML =
-                chip('fa-user-plus',    'Reclutando',     nRecruiting) +
-                chip('fa-check-circle', 'Con resultados', nResults);
+                chip('fa-check-circle',  'Con resultados',  nResults)   +
+                chip('fa-clock',         'Sin resultados',  nNoResults) +
+                chip('fa-user-plus',     'Reclutando',      nRecruiting);
         }
 
         // Estudios inline: cada uno enlaza a REec por su identificador EudraCT
