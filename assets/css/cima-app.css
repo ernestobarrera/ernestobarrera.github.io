@@ -7325,6 +7325,68 @@ code {
     background: rgba(14, 165, 233, 0.05);
 }
 
+/* ── REec: filas secundarias y títulos de estudios inline ── */
+.evidence-filter-item--reec-sub .evidence-filter-label {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+.evidence-filter-item--reec-sub .evidence-filter-icon {
+    opacity: 0.65;
+}
+
+.evidence-reec-studies {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 0.1rem;
+}
+.evidence-reec-study-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    border-left: 2px solid var(--border-color, rgba(255,255,255,0.07));
+    margin-left: 0.75rem;
+}
+.evidence-reec-study-status {
+    flex-shrink: 0;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-top: 0.05rem;
+}
+.evidence-reec-study-status--reclutando {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+.evidence-reec-study-status--finalizado {
+    background: rgba(14, 165, 233, 0.1);
+    color: var(--primary);
+}
+.evidence-reec-study-status--fin-reclutamiento {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+}
+.evidence-reec-study-status--no-iniciado,
+.evidence-reec-study-status--otro {
+    background: var(--surface-alt, rgba(0,0,0,0.06));
+    color: var(--text-secondary);
+}
+.evidence-reec-study-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.73rem;
+    color: var(--text-secondary);
+    line-height: 1.35;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
 /* ── Barra de combinación AND/OR ── */
 .evidence-combine-bar {
     display: flex;
