@@ -7422,6 +7422,15 @@ code {
     color: var(--text-primary);
 }
 
+.evidence-reec-order-note {
+    padding: 0.25rem 0.75rem 0.1rem 1.75rem;
+    font-size: 0.67rem;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
 .evidence-reec-footer {
     display: flex;
     align-items: center;

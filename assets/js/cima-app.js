@@ -10580,6 +10580,7 @@ ${materialesPlaceholder}
         };
         const enc = s => encodeURIComponent(s);
 
+        const orderNote = `<div class="evidence-reec-order-note">Con resultados · más recientes primero</div>`;
         const rows = studies.map(s => {
             const estado  = s.estado || '';
             const css     = ESTADO_CSS[estado] || 'otro';
@@ -10602,7 +10603,7 @@ ${materialesPlaceholder}
                </a>`
             : '';
 
-        studiesEl.innerHTML = rows + footer;
+        studiesEl.innerHTML = orderNote + rows + footer;
     }
 
     async _loadEvidenceFiltersAndCount(drugTerm, filterDefs, dateDays) {
