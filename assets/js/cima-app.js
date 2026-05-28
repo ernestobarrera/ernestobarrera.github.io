@@ -10190,6 +10190,42 @@ ${materialesPlaceholder}
         const enc = q => encodeURIComponent(q);
         const reecTerm = q => this._buildReecSearchTerm(q);
         const reecUrl = q => `https://reec.aemps.es/reec/list/search=${enc(reecTerm(q))}&filter=0`;
+        const referenceTerm = q => reecTerm(q);
+        const referenceLinks = q => {
+            const term = referenceTerm(q);
+            return [
+                {
+                    id: 'uptodate',
+                    label: 'UpToDate',
+                    icon: 'fa-user-md',
+                    href: `https://www.uptodate.com/contents/search?search=${enc(term)}&source=USER_INPUT`,
+                    badge: 'acceso SNS',
+                    title: 'Búsqueda en UpToDate. Requiere acceso institucional o suscripción.'
+                },
+                {
+                    id: 'lexidrug',
+                    label: 'Lexicomp / Lexidrug',
+                    icon: 'fa-random',
+                    href: 'https://www.uptodate.com/drug-interactions/?source=responsive_home#di-druglist',
+                    badge: 'interacciones',
+                    title: 'Checker de interacciones de UpToDate Lexidrug. No permite precargar fármacos por GET desde MedCheck.'
+                }
+            ];
+        };
+        const renderReferenceLinks = q => referenceLinks(q).map(link => `
+            <a class="evidence-filter-item" id="evlink-ref-${link.id}" href="${link.href}" target="_blank" rel="noopener" title="${this._escapeHtml(link.title)}">
+                <span class="evidence-filter-icon"><i class="fas ${link.icon}"></i></span>
+                <span class="evidence-filter-label">${link.label}</span>
+                <span class="evidence-filter-count evidence-filter-count--static"><span class="evidence-filter-badge-ext">${link.badge}</span></span>
+                <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
+            </a>
+        `).join('');
+        const updateReferenceLinks = q => {
+            referenceLinks(q).forEach(link => {
+                const el = document.getElementById(`evlink-ref-${link.id}`);
+                if (el) el.href = link.href;
+            });
+        };
 
         // Rangos temporales discretos. Índice 4 = 5 años (default).
         // days=0 ⇒ sin filtro temporal (∞).
@@ -10306,6 +10342,19 @@ ${materialesPlaceholder}
 
             <div class="evidence-section">
                 <div class="evidence-section-header">
+                    <i class="fas fa-compass"></i>
+                    <div class="evidence-section-header-text">
+                        <h4 class="evidence-section-title">Consulta clínica de referencia</h4>
+                        <p class="evidence-section-subtitle">Síntesis e interacciones</p>
+                    </div>
+                </div>
+                <div class="evidence-filter-list">
+                    ${renderReferenceLinks(drugTerm)}
+                </div>
+            </div>
+
+            <div class="evidence-section">
+                <div class="evidence-section-header">
                     <i class="fas fa-vials"></i>
                     <div class="evidence-section-header-text">
                         <h4 class="evidence-section-title">Registros de ensayos clínicos</h4>
@@ -10412,6 +10461,7 @@ ${materialesPlaceholder}
                 if (reecLink) reecLink.href = reecUrl(t);
                 if (ctLink) ctLink.href = `https://clinicaltrials.gov/search?term=${enc(t)}&viewType=Table`;
                 if (whoLink) whoLink.href = `https://trialsearch.who.int/?SearchTerm=${enc(t)}`;
+                updateReferenceLinks(t);
                 resetCounts();
                 const reecCount = document.getElementById('evcount-reec');
                 if (reecCount) reecCount.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
