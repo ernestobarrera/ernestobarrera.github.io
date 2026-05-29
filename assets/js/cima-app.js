@@ -136,6 +136,9 @@ class MedCheckApp {
         this.currentView = 'search';
         this.currentMed = null;
 
+        // Search scope: 'meds' (CIMA) | 'sns' (Nomenclátor de Facturación)
+        this._searchScope = 'meds';
+
         // Analytics globals — leídos por cima-api.js en cada petición al Worker
         window._mcCurrentView    = 'buscar';
         window._mcActiveContexts = null;
@@ -393,6 +396,55 @@ class MedCheckApp {
                 this.loadView(tab.dataset.view);
             });
         });
+        this.setupSearchScope();
+    }
+
+    /**
+     * Selector de ámbito (Medicamentos CIMA / Efectos y accesorios SNS).
+     * Vive como franja fija en el header, por encima de la nav clínica.
+     */
+    setupSearchScope() {
+        const scopeBar = document.getElementById('search-scope');
+        if (!scopeBar) return;
+        scopeBar.addEventListener('click', (e) => {
+            const btn = e.target.closest('.search-scope-tab[data-scope]');
+            if (btn) this.setSearchScope(btn.dataset.scope);
+        });
+    }
+
+    _reflectScopePills(scope) {
+        document.querySelectorAll('#search-scope .search-scope-tab').forEach(b => {
+            const active = b.dataset.scope === scope;
+            b.classList.toggle('active', active);
+            b.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+    }
+
+    _resetSearchScopeToMeds() {
+        this._searchScope = 'meds';
+        this._reflectScopePills('meds');
+        document.body.classList.remove('scope-sns');
+    }
+
+    /**
+     * Cambia el ámbito de búsqueda. En modo 'sns' se oculta la nav clínica y el
+     * contexto del paciente (no aplican a productos) vía la clase body.scope-sns.
+     */
+    setSearchScope(scope) {
+        if (scope === this._searchScope) return;
+        if (scope === 'sns') {
+            this._searchScope = 'sns';
+            this._reflectScopePills('sns');
+            document.body.classList.add('scope-sns');
+            this.currentView = 'search';
+            this.updateURL({ view: 'sns' });
+            this.renderSnsCatalog();
+        } else {
+            this._resetSearchScopeToMeds();
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.nav-tab[data-view="search"]')?.classList.add('active');
+            this.loadView('search');
+        }
     }
 
     async loadView(viewName, updateURL = true) {
@@ -681,7 +733,7 @@ class MedCheckApp {
                 <div class="search-row-main">
                     <div class="search-input-wrapper">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="search-input" class="search-input" 
+                        <input type="text" id="search-input" class="search-input"
                                placeholder="Buscar medicamento (nombre, principio activo o CN)..." 
                                value="${this.lastSearchQuery}"
                                autocomplete="off"
@@ -5047,11 +5099,12 @@ class MedCheckApp {
 
     async renderSnsCatalog() {
         const workerBase = this.api.cloudflareProxy;
-        if (!this._sns) this._sns = { query: '', tipo: 'all', includeBaja: false, meta: null, debounce: null };
+        if (!this._sns) this._sns = { query: '', tipo: 'efecto', includeBaja: false, meta: null, debounce: null };
         const s = this._sns;
+        if (s.tipo !== 'efecto') s.tipo = 'efecto';
         const esc = v => this._escapeHtml(v);
 
-        const statsHtml = s.meta ? (() => {
+        const renderStats = () => s.meta ? (() => {
             const alta = Object.entries(s.meta.by_estado || {})
                 .filter(([k]) => k.toLowerCase().includes('alta'))
                 .reduce((a, [, v]) => a + v, 0);
@@ -5072,21 +5125,14 @@ class MedCheckApp {
                     <div class="sns-search-wrap">
                         <i class="fas fa-search sns-search-icon"></i>
                         <input type="search" id="sns-search" class="sns-search-input"
-                            placeholder="Buscar por producto, CN o laboratorio..."
+                            placeholder="Buscar producto, grupo, CN o laboratorio..."
                             autocomplete="off" spellcheck="false" value="${esc(s.query)}">
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                     <div class="sns-filter-tags" id="sns-tipo-filters">
-                        <button class="sns-filter-tag ${s.tipo === 'all' ? 'active' : ''}" data-tipo="all">Todos</button>
                         <button class="sns-filter-tag ${s.tipo === 'efecto' ? 'active-efecto' : ''}" data-tipo="efecto">
                             <i class="fas fa-medkit" style="margin-right:0.3rem;font-size:.75em"></i>Ef. y accesorios
-                        </button>
-                        <button class="sns-filter-tag ${s.tipo === 'medicamento' ? 'active' : ''}" data-tipo="medicamento">
-                            <i class="fas fa-pills" style="margin-right:0.3rem;font-size:.75em"></i>Medicamentos
-                        </button>
-                        <button class="sns-filter-tag ${s.tipo === 'dietetico' ? 'active' : ''}" data-tipo="dietetico">
-                            <i class="fas fa-leaf" style="margin-right:0.3rem;font-size:.75em"></i>Dietéticos
                         </button>
                     </div>
                     <label class="sns-toggle-baja" title="Incluir productos dados de baja">
@@ -5095,13 +5141,14 @@ class MedCheckApp {
                     </label>
                 </div>
             </div>
-            ${statsHtml}
+            <div id="sns-stats-slot">${renderStats()}</div>
             <div class="sns-count-bar" id="sns-count-bar" style="display:none"></div>
             <div id="sns-list-container">
                 <div class="sns-loading"><span class="sns-spinner"></span> Conectando con el catálogo SNS...</div>
             </div>
             <div class="sns-disclaimer">
-                <strong>Aviso:</strong> Datos del Nomenclátor de Facturación del Ministerio de Sanidad.
+                <strong>Aviso:</strong> Datos administrativos del Nomenclátor de Facturación del Ministerio de Sanidad.
+                No contiene información clínica, interacciones ni seguridad; la financiación no equivale a recomendación clínica.
                 La aportación indica el <em>tipo</em>, no el importe exacto que pagará el paciente.
                 Fuente: <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do" target="_blank" rel="noopener">Ministerio de Sanidad</a>
             </div>`;
@@ -5111,6 +5158,7 @@ class MedCheckApp {
         const $filters   = this.content.querySelector('#sns-tipo-filters');
         const $countBar  = this.content.querySelector('#sns-count-bar');
         const $container = this.content.querySelector('#sns-list-container');
+        const $statsSlot = this.content.querySelector('#sns-stats-slot');
 
         const doSearch = () => {
             clearTimeout(s.debounce);
@@ -5125,7 +5173,8 @@ class MedCheckApp {
                     const data = await res.json();
                     const items = data.results || [];
                     const total = data.total ?? items.length;
-                    $countBar.textContent = `Mostrando ${items.length.toLocaleString('es')}${total !== items.length ? ` de ${total.toLocaleString('es')}` : ''} productos`;
+                    const limited = data.truncated ? ' · lista limitada: acote la búsqueda' : '';
+                    $countBar.textContent = `Mostrando ${items.length.toLocaleString('es')}${total !== items.length ? ` de ${total.toLocaleString('es')}` : ''} productos${limited}`;
                     $countBar.style.display = 'block';
                     if (items.length === 0) {
                         $container.innerHTML = `<div class="sns-empty">
@@ -5174,6 +5223,7 @@ class MedCheckApp {
                 const res = await fetch(`${workerBase}/sns-catalog/meta`, { signal: AbortSignal.timeout(8000) });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 s.meta = await res.json();
+                if ($statsSlot) $statsSlot.innerHTML = renderStats();
             } catch (err) {
                 $container.innerHTML = `<div class="sns-empty sns-error">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -5211,7 +5261,7 @@ class MedCheckApp {
     _snsBadgeEstado(estado) {
         const e = (estado || '').toLowerCase();
         if (e.includes('alta')) return `<span class="badge badge-success"><i class="fas fa-check-circle"></i> Alta</span>`;
-        if (e.includes('baja')) return `<span class="badge badge-danger"><i class="fas fa-times-circle"></i> Baja</span>`;
+        if (e.includes('baja')) return `<span class="badge badge-neutral" title="Producto dado de baja en el Nomenclátor"><i class="fas fa-circle-minus"></i> Baja</span>`;
         return `<span class="badge badge-neutral">${this._escapeHtml(estado)}</span>`;
     }
 
@@ -8966,9 +9016,30 @@ ${materialesPlaceholder}
 
         // If no params, load default view
         if (Object.keys(params).length === 0) {
+            this._resetSearchScopeToMeds();
             this.loadView('search', false);
             return;
         }
+
+        // Deep-link al carril del Nomenclátor SNS (sub-estado de la vista de búsqueda).
+        // Oculta la nav clínica y el contexto del paciente (no aplican a productos).
+        if (params.view === 'sns') {
+            if (!this.modal.classList.contains('hidden')) {
+                this.modal.classList.add('hidden');
+                this.currentMed = null;
+            }
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.nav-tab[data-view="search"]')?.classList.add('active');
+            this._searchScope = 'sns';
+            this._reflectScopePills('sns');
+            document.body.classList.add('scope-sns');
+            this.currentView = 'search';
+            this.renderSnsCatalog();
+            return;
+        }
+
+        // Cualquier otra vista implica ámbito medicamentos: restaurar nav y contexto visibles
+        this._resetSearchScopeToMeds();
 
         // Get view from params (default to search)
         const view = params.view || 'search';
@@ -10539,11 +10610,11 @@ ${materialesPlaceholder}
 
         const cycleId = (this._reecCountCycle = (this._reecCountCycle || 0) + 1);
 
-        // 3 llamadas en paralelo: total + reclutando + con resultados
+        // 3 llamadas en paralelo: solo la principal se registra en analytics
         const [resAll, resRecruiting, resResults] = await Promise.allSettled([
             this.api.searchReecStudies(query),
-            this.api.searchReecStudies(query, { estado: '2' }),
-            this.api.searchReecStudies(query, { resultados: '1' }),
+            this.api.searchReecStudies(query, { estado: '2',      autocomplete: true }),
+            this.api.searchReecStudies(query, { resultados: '1',  autocomplete: true }),
         ]);
 
         if (this._reecCountCycle !== cycleId) return;

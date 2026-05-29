@@ -2781,7 +2781,8 @@ class CimaAPI {
                 headers: {
                     'Accept': 'application/json',
                     ...(window._mcCurrentView ? { 'X-MC-View': window._mcCurrentView } : {}),
-                    ...(window._mcSource ? { 'X-MC-Source': window._mcSource } : {})
+                    ...(window._mcSource ? { 'X-MC-Source': window._mcSource } : {}),
+                    ...(options.autocomplete ? { 'X-MC-Autocomplete': '1' } : {}),
                 }
             });
             if (!response.ok) throw new Error(`REec Error: ${response.status}`);
