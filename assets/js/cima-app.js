@@ -190,6 +190,86 @@ class MedCheckApp {
             'V': { class: 'Varios', icon: 'flask', color: '#94a3b8', tip: '' }
         };
 
+        // Reglas ATC → especialidad clínica. Orden: de prefijo más específico a
+        // más general; gana la primera que casa. El ATC organiza por sistema
+        // anatómico, que mapea bien (no perfecto) a especialidades. Limitación
+        // conocida: subespecialidades como neurocirugía no son separables por ATC
+        // (caen en Neurología); la dispensación hospitalaria se deriva de cpresc.
+        this.ATC_SPECIALTY_RULES = [
+            ['A10', { name: 'Endocrinología', icon: 'droplet', color: '#10b981' }],
+            ['A',   { name: 'Aparato digestivo', icon: 'utensils', color: '#10b981' }],
+            ['B01', { name: 'Hematología / Anticoagulación', icon: 'tint', color: '#ef4444' }],
+            ['B03', { name: 'Hematología', icon: 'tint', color: '#ef4444' }],
+            ['B',   { name: 'Hematología', icon: 'tint', color: '#ef4444' }],
+            ['C',   { name: 'Cardiología', icon: 'heart-pulse', color: '#f59e0b' }],
+            ['D',   { name: 'Dermatología', icon: 'hand-dots', color: '#8b5cf6' }],
+            ['G03', { name: 'Ginecología / Endocrino', icon: 'venus', color: '#ec4899' }],
+            ['G04', { name: 'Urología', icon: 'restroom', color: '#ec4899' }],
+            ['G',   { name: 'Urología / Ginecología', icon: 'venus-mars', color: '#ec4899' }],
+            ['H',   { name: 'Endocrinología', icon: 'dna', color: '#6366f1' }],
+            ['J',   { name: 'Enf. Infecciosas', icon: 'virus', color: '#14b8a6' }],
+            ['L01', { name: 'Oncología', icon: 'radiation', color: '#f43f5e' }],
+            ['L02', { name: 'Oncología', icon: 'radiation', color: '#f43f5e' }],
+            ['L03', { name: 'Inmunología', icon: 'shield-virus', color: '#f43f5e' }],
+            ['L04', { name: 'Inmunología / Reumatología', icon: 'shield-virus', color: '#f43f5e' }],
+            ['L',   { name: 'Oncología / Inmunología', icon: 'radiation', color: '#f43f5e' }],
+            ['M',   { name: 'Reumatología / Traumatología', icon: 'bone', color: '#0ea5e9' }],
+            ['N01', { name: 'Anestesiología', icon: 'syringe', color: '#a855f7' }],
+            ['N02', { name: 'Dolor / Paliativos', icon: 'hand-holding-heart', color: '#a855f7' }],
+            ['N03', { name: 'Neurología', icon: 'brain', color: '#a855f7' }],
+            ['N04', { name: 'Neurología', icon: 'brain', color: '#a855f7' }],
+            ['N05', { name: 'Psiquiatría', icon: 'comment-medical', color: '#c026d3' }],
+            ['N06', { name: 'Psiquiatría', icon: 'comment-medical', color: '#c026d3' }],
+            ['N07', { name: 'Neurología', icon: 'brain', color: '#a855f7' }],
+            ['N',   { name: 'Neurología', icon: 'brain', color: '#a855f7' }],
+            ['P',   { name: 'Enf. Infecciosas', icon: 'bug', color: '#14b8a6' }],
+            ['R',   { name: 'Neumología / Alergología', icon: 'lungs', color: '#38bdf8' }],
+            ['S01', { name: 'Oftalmología', icon: 'eye', color: '#fbbf24' }],
+            ['S02', { name: 'Otorrinolaringología', icon: 'ear-listen', color: '#fbbf24' }],
+            ['S',   { name: 'Oftalmología / ORL', icon: 'eye', color: '#fbbf24' }],
+            ['V',   { name: 'Varios / Hospitalaria', icon: 'flask', color: '#94a3b8' }]
+        ];
+
+        // SADMANS — fármacos a suspender temporalmente en enfermedad aguda con
+        // riesgo de deshidratación (vómitos/diarrea/fiebre), por riesgo de fracaso
+        // renal agudo. Mnemónico estándar, derivable por ATC. Orden: prefijo largo
+        // primero. NO procede de CIMA; es regla clínica determinista.
+        this.SADMANS_RULES = [
+            ['A10BK', 'iSGLT2'],
+            ['A10BB', 'Sulfonilurea'],
+            ['A10BA', 'Metformina'],
+            ['A10BD', 'Comb. con metformina/iSGLT2'],
+            ['C09B', 'IECA (combinación)'],
+            ['C09A', 'IECA'],
+            ['C09D', 'ARA-II (combinación)'],
+            ['C09C', 'ARA-II'],
+            ['C03',  'Diurético'],
+            ['M01A', 'AINE']
+        ];
+
+        // Monitorización analítica recomendada tras prescripción. Tabla clínica
+        // curada (conocimiento estándar), derivable por ATC. Educativa/orientativa,
+        // NO exhaustiva y NO procedente de CIMA: verificar siempre la ficha técnica.
+        this.MONITORING_RULES = [
+            ['C10AA',   'Transaminasas (basal); CK si mialgias'],
+            ['C09',     'Creatinina y potasio (basal y 1–2 sem tras inicio/ajuste)'],
+            ['C03D',    'Potasio y función renal (ahorradores de potasio)'],
+            ['C03',     'Iones (Na/K) y función renal'],
+            ['A10BA',   'Función renal (FG); vitamina B12 si uso prolongado'],
+            ['A10BK',   'Función renal'],
+            ['C01AA05', 'Digoxinemia, función renal y potasio'],
+            ['C01BD01', 'Función tiroidea y hepática; Rx tórax (amiodarona)'],
+            ['B01AA',   'INR periódico (anticoagulante cumarínico)'],
+            ['B01AF',   'Función renal (ajuste de dosis del ACOD)'],
+            ['H03AA',   'TSH'],
+            ['M04AA',   'Función renal y transaminasas (alopurinol)'],
+            ['N05AN01', 'Litemia, función renal y tiroidea'],
+            ['N03AG01', 'Hemograma y transaminasas (valproato)'],
+            ['L04AX03', 'Hemograma, transaminasas y función renal (metotrexato)'],
+            ['L01BA01', 'Hemograma, transaminasas y función renal (metotrexato)'],
+            ['N05A',    'Perfil metabólico (glucemia, lípidos, peso) — antipsicóticos']
+        ];
+
         // Guide state
         this.GUIDE_SEEN_KEY = 'medcheck_guide_seen';
         this.guideActive = false;
@@ -2074,7 +2154,6 @@ class MedCheckApp {
 
         searchBtn.addEventListener('click', () => this.performIndicationSearch());
         searchInput.addEventListener('keyup', (e) => {
-            console.log('⌨️ Keyup:', e.key, 'Value:', e.target.value);
             if (e.key === 'Enter') this.performIndicationSearch();
             else this.showIndicationAutocomplete(e.target.value);
         });
@@ -2117,7 +2196,6 @@ class MedCheckApp {
         }
 
         const matches = this.api.findIndicationMatches(query.toLowerCase());
-        console.log(`🔍 Autocomplete para "${query}": ${matches.length} matches`, matches);
 
         if (matches.length === 0) {
             dropdown.classList.add('hidden');
@@ -9300,49 +9378,162 @@ ${materialesPlaceholder}
         return this.getFavorites().some(f => f.nregistro === nregistro);
     }
 
-    addFavorite(med) {
-        const favs = this.getFavorites();
-        if (favs.some(f => f.nregistro === med.nregistro)) return;
+    /**
+     * Infiere la letra ATC L1 a partir del principio activo o del nombre
+     * comercial. Reutiliza el mismo mapa que el chip de la tarjeta, para que
+     * un favorito guardado desde una búsqueda quede clasificado igual que se
+     * muestra en pantalla (la API de lista no devuelve `atcs` ni `pactivos`).
+     */
+    _inferAtcLetter(med, principioActivo) {
+        const pa = (principioActivo || med.pactivos || med.vtm?.nombre || '').toLowerCase();
+        if (pa) {
+            const letter = this.inferATCFromActiveIngredient(pa);
+            if (letter) return letter;
+        }
+        if (med.nombre) {
+            const cleaned = med.nombre.toLowerCase()
+                .replace(/\s+\d+[\.,]?\d*\s*(mg|mcg|g|ml|ui|%).*/i, '')
+                .trim();
+            const firstWord = cleaned.split(/\s+/)[0];
+            if (firstWord && firstWord.length >= 4) {
+                return this.inferATCFromActiveIngredient(firstWord) || '';
+            }
+        }
+        return '';
+    }
 
-        // Extract ATC info
-        const atcCodigo = med.atcs?.[0]?.codigo || med.atcCodigo || '';
-        const atcNivel1 = atcCodigo[0] || '';
-        const atcNivel2 = atcCodigo.length >= 3 ? atcCodigo.substring(0, 3) : atcCodigo;
+    /**
+     * Construye el registro de favorito desde un objeto `med`. No hace red:
+     * usa lo que ya trae `med` y, si falta el código ATC, infiere la letra L1.
+     * `extra` permite preservar campos al re-enriquecer (tags, addedAt, viewCount).
+     */
+    _buildFavoriteRecord(med, extra = {}) {
+        let atcCodigo = med.atcs?.[0]?.codigo || med.atcCodigo || '';
         const atcNombre = med.atcs?.[0]?.nombre || med.atcNombre || '';
 
-        // Extract principio activo
         let principioActivo = '';
-        if (med.pactivos) {
-            principioActivo = med.pactivos;
-        } else if (med.vtm?.nombre) {
-            principioActivo = med.vtm.nombre;
-        } else if (med.principiosActivos?.length > 0) {
-            principioActivo = med.principiosActivos.map(pa => pa.nombre).join(', ');
-        }
+        if (med.pactivos) principioActivo = med.pactivos;
+        else if (med.vtm?.nombre) principioActivo = med.vtm.nombre;
+        else if (med.principiosActivos?.length > 0) principioActivo = med.principiosActivos.map(pa => pa.nombre).join(', ');
 
-        const fav = {
+        // Clasificación: código real si existe; si no, letra L1 inferida.
+        let atcNivel1 = atcCodigo[0] || '';
+        const atcInferido = !atcNivel1;
+        if (atcInferido) atcNivel1 = this._inferAtcLetter(med, principioActivo) || '';
+        const atcNivel2 = atcCodigo.length >= 3 ? atcCodigo.substring(0, 3) : atcCodigo;
+
+        // Códigos nacionales (uno por presentación) — granularidad para export
+        // e interoperabilidad con nomenclátor/receta. Solo vienen en el detalle.
+        const cns = Array.isArray(med.presentaciones)
+            ? [...new Set(med.presentaciones.map(p => p && p.cn).filter(Boolean).map(String))]
+            : (med.cn ? [String(med.cn)] : (Array.isArray(extra.cns) ? extra.cns : []));
+
+        const cpresc = med.cpresc || extra.cpresc || '';
+
+        return {
             nregistro: med.nregistro,
             nombre: med.nombre,
             principioActivo,
             dosis: med.dosis || '',
             formaFarmaceutica: med.formaFarmaceutica?.nombre || '',
             via: med.viasAdministracion?.[0]?.nombre || '',
+            cns,
+            cpresc,
             atcCodigo,
             atcNivel1,
             atcNivel2,
             atcNombre,
+            atcInferido: atcInferido && !!atcNivel1,
             generico: !!med.generico,
+            biosimilar: !!med.biosimilar,
             receta: !!med.receta,
             triangulo: !!med.triangulo,
             psum: !!med.psum,
             notas: !!med.notas,
+            materialesInf: !!med.materialesInf,
             conduc: !!med.conduc,
-            addedAt: new Date().toISOString(),
-            viewCount: 0,
-            lastViewedAt: null
+            tags: Array.isArray(extra.tags) ? extra.tags : [],
+            specialtyOverride: extra.specialtyOverride || med.specialtyOverride || null,
+            addedAt: extra.addedAt || new Date().toISOString(),
+            viewCount: extra.viewCount || 0,
+            lastViewedAt: extra.lastViewedAt || null
         };
+    }
 
-        favs.unshift(fav);
+    /**
+     * Clasifica un favorito en una especialidad. Prioridad: corrección manual
+     * del usuario (specialtyOverride) → regla ATC → null. La corrección manual
+     * resuelve el pragmatismo del mapa: cualquiera puede ajustar una asignación.
+     */
+    _specialtyForFav(fav) {
+        if (fav.specialtyOverride) {
+            const ruleInfo = (this.ATC_SPECIALTY_RULES.find(r => r[1].name === fav.specialtyOverride) || [])[1];
+            return { key: fav.specialtyOverride, name: fav.specialtyOverride, icon: ruleInfo?.icon || 'user-doctor', color: ruleInfo?.color || '#0ea5e9', manual: true };
+        }
+        const code = (fav.atcCodigo || fav.atcNivel2 || fav.atcNivel1 || '').toUpperCase();
+        if (!code) return null;
+        // Reglas por prefijo, de más específico a más general (primero que casa, gana).
+        for (const [prefix, info] of this.ATC_SPECIALTY_RULES) {
+            if (code.startsWith(prefix)) return { key: info.name, ...info };
+        }
+        return null;
+    }
+
+    /** Lista de especialidades disponibles (para el selector de corrección). */
+    _allSpecialties() {
+        return [...new Set(this.ATC_SPECIALTY_RULES.map(r => r[1].name))];
+    }
+
+    /** Fija o limpia la especialidad manual de un favorito. */
+    setFavoriteSpecialty(nregistro, specialty) {
+        const favs = this.getFavorites();
+        const fav = favs.find(f => String(f.nregistro) === String(nregistro));
+        if (!fav) return;
+        fav.specialtyOverride = specialty || null;
+        this._saveFavorites(favs);
+    }
+
+    /** ¿El favorito es de dispensación hospitalaria (uso/diagnóstico hospitalario)? */
+    _isHospitalUse(fav) {
+        const cp = (fav.cpresc || '').toLowerCase();
+        return cp.includes('uso hospitalario') || cp.includes('hospitalaria');
+    }
+
+    _isDiagnosticoHospitalario(fav) {
+        const cp = (fav.cpresc || '').toLowerCase();
+        return cp.includes('diagnóstico hospitalario') || cp.includes('diagnostico hospitalario');
+    }
+
+    /**
+     * Determina si un `med` necesita enriquecimiento desde el detalle: las
+     * tarjetas de búsqueda/indicación no incluyen `atcs` ni `pactivos`.
+     */
+    _favNeedsEnrichment(med) {
+        const hasAtc = !!(med.atcs && med.atcs.length && med.atcs[0].codigo);
+        const hasPa = !!(med.pactivos || med.vtm?.nombre || med.principiosActivos?.length);
+        return !hasAtc || !hasPa;
+    }
+
+    async addFavorite(med) {
+        if (this.isFavorite(med.nregistro)) return;
+
+        // Enriquecer desde el detalle cuando el med viene de una lista de
+        // búsqueda/indicación (sin atcs/pactivos). Si falla, se guarda con la
+        // clasificación inferida — nunca se pierde el favorito.
+        let source = med;
+        if (this._favNeedsEnrichment(med)) {
+            try {
+                const detail = await this.api.getMedicamento(med.nregistro, { headers: { 'X-MC-Autocomplete': '1' } });
+                if (detail) source = { ...med, ...detail };
+            } catch (e) {
+                console.warn('No se pudo enriquecer el favorito desde el detalle; se usa inferencia.', e);
+            }
+        }
+
+        // Releer tras el await para no duplicar si hubo otra acción entretanto.
+        const favs = this.getFavorites();
+        if (favs.some(f => f.nregistro === med.nregistro)) return;
+        favs.unshift(this._buildFavoriteRecord(source));
         this._saveFavorites(favs);
     }
 
@@ -9351,21 +9542,102 @@ ${materialesPlaceholder}
         this._saveFavorites(favs);
     }
 
-    toggleFavorite(med) {
+    async toggleFavorite(med) {
         if (this.isFavorite(med.nregistro)) {
             this.removeFavorite(med.nregistro);
             this.showToast(`${med.nombre} eliminado de favoritos`, 'info');
         } else {
-            this.addFavorite(med);
+            await this.addFavorite(med);
             this.showToast(`${med.nombre} guardado en favoritos`, 'success');
         }
+        this.updateFavoritesBadge();
     }
 
-    toggleFavoriteById(nregistro, btnEl) {
-        const med = this._medRenderCache.get(nregistro);
+    async toggleFavoriteById(nregistro, btnEl) {
+        // nregistro llega como string desde el atributo; la caché puede tener
+        // clave numérica (mismo patrón defensivo que openMedDetails).
+        const med = this._medRenderCache.get(nregistro) ?? this._medRenderCache.get(+nregistro);
         if (!med) return;
-        this.toggleFavorite(med);
-        if (btnEl) btnEl.classList.toggle('active', this.isFavorite(nregistro));
+        const willAdd = !this.isFavorite(med.nregistro);
+        if (btnEl) btnEl.classList.toggle('active', willAdd); // feedback optimista
+        await this.toggleFavorite(med);
+        if (btnEl) btnEl.classList.toggle('active', this.isFavorite(med.nregistro)); // reconciliar
+    }
+
+    // ============================================
+    // PROFILE — User tags (etiquetas propias)
+    // ============================================
+
+    /** Lista única de etiquetas usadas en la colección, ordenada por frecuencia. */
+    getAllTags() {
+        const counts = {};
+        this.getFavorites().forEach(f => {
+            (f.tags || []).forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+        });
+        return Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    }
+
+    /** Reemplaza las etiquetas de un favorito. */
+    setFavoriteTags(nregistro, tags) {
+        const favs = this.getFavorites();
+        const fav = favs.find(f => f.nregistro === nregistro || f.nregistro === +nregistro || String(f.nregistro) === String(nregistro));
+        if (!fav) return;
+        fav.tags = Array.from(new Set(tags.map(t => t.trim()).filter(Boolean)));
+        this._saveFavorites(favs);
+    }
+
+    /** Color estable derivado del texto de la etiqueta (hash → hue). */
+    _tagColor(tag) {
+        let h = 0;
+        for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) % 360;
+        return `hsl(${h}, 55%, 55%)`;
+    }
+
+    /**
+     * Re-enriquece favoritos guardados con clasificación incompleta (sin ATC o
+     * sin principio activo) consultando el detalle. Preserva tags/viewCount.
+     * Devuelve el nº de favoritos reparados.
+     */
+    /**
+     * Un favorito está incompleto si le falta grupo ATC, principio activo o el
+     * código nacional. `cns === undefined` distingue registros antiguos (que
+     * nunca tuvieron el campo) de los ya procesados con `cns: []` — así el
+     * banner no reaparece para siempre cuando un detalle no trae CN.
+     */
+    _favIsIncomplete(f) {
+        return !f.atcNivel1 || !f.principioActivo || f.cns === undefined;
+    }
+
+    async repairDegradedFavorites(onProgress) {
+        const favs = this.getFavorites();
+        const degraded = favs.filter(f => this._favIsIncomplete(f));
+        if (degraded.length === 0) return 0;
+
+        let repaired = 0;
+        for (let i = 0; i < degraded.length; i++) {
+            const f = degraded[i];
+            if (onProgress) onProgress(i + 1, degraded.length);
+            try {
+                const detail = await this.api.getMedicamento(f.nregistro, { headers: { 'X-MC-Autocomplete': '1' } });
+                if (!detail) continue;
+                const rebuilt = this._buildFavoriteRecord({ ...f, ...detail }, {
+                    tags: f.tags, addedAt: f.addedAt, viewCount: f.viewCount, lastViewedAt: f.lastViewedAt,
+                    cns: f.cns, cpresc: f.cpresc, specialtyOverride: f.specialtyOverride
+                });
+                Object.assign(f, rebuilt);
+                if (f.cns === undefined) f.cns = []; // marcar como procesado aunque no haya CN
+                repaired++;
+            } catch (e) {
+                // se deja como está; reintentable manualmente
+            }
+        }
+        if (repaired > 0) this._saveFavorites(favs);
+        return repaired;
+    }
+
+    /** Nº de favoritos con datos incompletos (para el banner de reparación). */
+    _countDegradedFavorites() {
+        return this.getFavorites().filter(f => this._favIsIncomplete(f)).length;
     }
 
     incrementFavoriteViewCount(nregistro) {
@@ -9392,6 +9664,7 @@ ${materialesPlaceholder}
     renderProfileView() {
         const favs = this.getFavorites();
         this.updateFavoritesBadge();
+        this._favDrillFilter = null; // entrar al perfil limpia cualquier filtro drill-down
 
         this.content.innerHTML = `
             <div class="profile-view">
@@ -9403,8 +9676,14 @@ ${materialesPlaceholder}
                     <button class="profile-subnav-btn" data-section="analytics">
                         <i class="fas fa-chart-bar"></i> Analítica
                     </button>
+                    <button class="profile-subnav-btn" data-section="prescription">
+                        <i class="fas fa-notes-medical"></i> Prescripción
+                    </button>
+                    <button class="profile-subnav-btn" data-section="materials">
+                        <i class="fas fa-file-medical-alt"></i> Materiales
+                    </button>
                     <button class="profile-subnav-btn" data-section="export">
-                        <i class="fas fa-file-export"></i> Exportar
+                        <i class="fas fa-right-left"></i> Importar / Exportar
                     </button>
                 </div>
                 <div class="profile-section-content" id="profile-section-content">
@@ -9420,8 +9699,11 @@ ${materialesPlaceholder}
                 btn.classList.add('active');
                 const section = btn.dataset.section;
                 const container = document.getElementById('profile-section-content');
+                if (section === 'favorites') this._favDrillFilter = null; // pulsar la pestaña = ver todo
                 if (section === 'favorites') container.innerHTML = this._renderFavoritesSection(this.getFavorites());
                 if (section === 'analytics') container.innerHTML = this._renderAnalyticsSection(this.getFavorites());
+                if (section === 'prescription') container.innerHTML = this._renderPrescriptionSection();
+                if (section === 'materials') container.innerHTML = this._renderMaterialsSection();
                 if (section === 'export') container.innerHTML = this._renderExportSection();
                 if (section === 'analytics') this._initDonutChart();
                 if (section === 'export') this._initExportSection();
@@ -9447,6 +9729,416 @@ ${materialesPlaceholder}
             `;
         }
 
+        // Drill-down: filtro temporal procedente de la analítica (donut / métricas).
+        const drill = this._favDrillFilter || null;
+        const viewFavs = drill ? favs.filter(f => this._matchesDrill(f, drill)) : favs;
+        const drillChip = drill ? `
+            <div class="fav-drill-chip">
+                <span><i class="fas fa-filter"></i> Filtrado: <strong>${drill.label}</strong> · ${viewFavs.length} resultado${viewFavs.length === 1 ? '' : 's'}</span>
+                <button onclick="app._clearFavDrill()" title="Quitar filtro"><i class="fas fa-times"></i> Quitar</button>
+            </div>
+        ` : '';
+
+        if (drill && viewFavs.length === 0) {
+            return drillChip + `<div class="fav-empty-hint"><i class="fas fa-filter"></i> Ningún favorito cumple este filtro.</div>`;
+        }
+
+        this._favGroupMode = this._favGroupMode || 'atc';
+        const mode = this._favGroupMode;
+        const degraded = viewFavs.filter(f => this._favIsIncomplete(f)).length;
+
+        const repairBanner = degraded > 0 ? `
+            <div class="fav-repair-banner" id="fav-repair-banner" title="Versiones antiguas guardaban el favorito sin su código ATC, su principio activo o su código nacional (la API no los devuelve en las listas). 'Reparar' descarga la ficha oficial de cada uno y completa esos datos, para que se agrupen, la analítica funcione y el export sea granular.">
+                <div class="fav-repair-text">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    <span><strong>${degraded}</strong> favorito${degraded > 1 ? 's' : ''} con datos incompletos (grupo ATC, principio activo o código nacional). <strong>Reparar</strong> los completa desde la ficha oficial de AEMPS (1 sola vez).</span>
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="app._handleRepairFavorites()" title="Descargar la ficha oficial y completar la clasificación">
+                    <i class="fas fa-wand-magic-sparkles"></i> Reparar
+                </button>
+            </div>
+        ` : '';
+
+        const toolbar = `
+            <div class="favorites-toolbar">
+                <div class="search-input-wrapper" style="max-width:320px">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="fav-search-input" placeholder="Buscar nombre, principio o etiqueta..." class="search-input" oninput="app._filterFavorites(this.value)">
+                </div>
+                <div class="fav-group-toggle" title="Cómo agrupar tus favoritos">
+                    <button class="fav-group-btn ${mode === 'atc' ? 'active' : ''}" onclick="app._setFavGroupMode('atc')" title="Agrupar por grupo anatómico ATC"><i class="fas fa-layer-group"></i> ATC</button>
+                    <button class="fav-group-btn ${mode === 'tag' ? 'active' : ''}" onclick="app._setFavGroupMode('tag')" title="Agrupar por tus etiquetas"><i class="fas fa-tags"></i> Etiqueta</button>
+                    <button class="fav-group-btn ${mode === 'pa' ? 'active' : ''}" onclick="app._setFavGroupMode('pa')" title="Agrupar por principio activo (reúne dosis/presentaciones de la misma sustancia)"><i class="fas fa-flask"></i> Principio activo</button>
+                    <button class="fav-group-btn ${mode === 'indication' ? 'active' : ''}" onclick="app._setFavGroupMode('indication')" title="Agrupar por indicación clínica cubierta"><i class="fas fa-stethoscope"></i> Indicación</button>
+                    <button class="fav-group-btn ${mode === 'specialty' ? 'active' : ''}" onclick="app._setFavGroupMode('specialty')" title="Agrupar por especialidad clínica (derivada del ATC)"><i class="fas fa-user-doctor"></i> Especialidad</button>
+                </div>
+            </div>
+        `;
+
+        const list = mode === 'tag' ? this._renderFavoritesByTag(viewFavs)
+            : mode === 'pa' ? this._renderFavoritesByActiveIngredient(viewFavs)
+            : mode === 'indication' ? this._renderFavoritesByIndication(viewFavs)
+            : mode === 'specialty' ? this._renderFavoritesBySpecialty(viewFavs)
+            : this._renderFavoritesByATC(viewFavs);
+        return repairBanner + drillChip + toolbar + list;
+    }
+
+    /** Coincidencia de un favorito con un filtro drill-down de la analítica. */
+    _matchesDrill(f, drill) {
+        switch (drill.type) {
+            case 'atcL1': return f.atcNivel1 === drill.value;
+            case 'specialty': {
+                const s = this._specialtyForFav(f);
+                return (s ? s.name : 'Sin especialidad') === drill.value;
+            }
+            case 'biosimilar': return !!f.biosimilar;
+            case 'generico': return !!f.generico;
+            case 'triangulo': return !!f.triangulo;
+            case 'sinStock': return !!f.psum;
+            case 'aemps': return !!f.notas;
+            case 'hospital': return this._isHospitalUse(f) || this._isDiagnosticoHospitalario(f);
+            default: return true;
+        }
+    }
+
+    /** Activa la sección Favoritos filtrada por un criterio (desde la analítica). */
+    _drillToFavorites(type, value, label) {
+        this._favDrillFilter = { type, value, label };
+        this.content.querySelectorAll('.profile-subnav-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.section === 'favorites'));
+        const container = document.getElementById('profile-section-content');
+        if (container) container.innerHTML = this._renderFavoritesSection(this.getFavorites());
+    }
+
+    _clearFavDrill() {
+        this._favDrillFilter = null;
+        this._refreshFavoritesSection();
+    }
+
+    /** Re-renderiza solo la sección de favoritos conservando modo y subnav. */
+    _refreshFavoritesSection() {
+        const container = document.getElementById('profile-section-content');
+        if (container) container.innerHTML = this._renderFavoritesSection(this.getFavorites());
+        const countEl = document.querySelector('.profile-subnav-btn[data-section="favorites"] .subnav-count');
+        if (countEl) countEl.textContent = this.getFavorites().length;
+    }
+
+    _setFavGroupMode(mode) {
+        this._favGroupMode = mode;
+        this._refreshFavoritesSection();
+    }
+
+    async _handleRepairFavorites() {
+        const banner = document.getElementById('fav-repair-banner');
+        if (banner) banner.innerHTML = `<div class="fav-repair-text"><div class="loading-spinner-sm"></div> <span>Reparando favoritos desde la ficha oficial…</span></div>`;
+        const n = await this.repairDegradedFavorites();
+        this.showToast(
+            n > 0 ? `${n} favorito${n > 1 ? 's' : ''} reparado${n > 1 ? 's' : ''}` : 'No se pudo reparar (revisa la conexión)',
+            n > 0 ? 'success' : 'warning'
+        );
+        this._refreshFavoritesSection();
+    }
+
+    /** Agrupado por etiquetas de usuario (un favorito puede aparecer en varias). */
+    _renderFavoritesByTag(favs) {
+        const byTag = {};
+        const untagged = [];
+        favs.forEach(fav => {
+            const tags = fav.tags || [];
+            if (tags.length === 0) untagged.push(fav);
+            else tags.forEach(t => { (byTag[t] = byTag[t] || []).push(fav); });
+        });
+        const sortedTags = Object.keys(byTag).sort((a, b) => byTag[b].length - byTag[a].length);
+
+        let html = `<div id="favorites-list">`;
+
+        if (sortedTags.length === 0) {
+            html += `<div class="fav-empty-hint"><i class="fas fa-tags"></i> Aún no tienes etiquetas. Pulsa <i class="fas fa-tag"></i> en cualquier favorito para crear las tuyas (p. ej. «Botiquín», «Crónicos», «EPOC»).</div>`;
+        }
+
+        sortedTags.forEach((tag, idx) => {
+            const color = this._tagColor(tag);
+            const items = byTag[tag];
+            html += `
+                <div class="fav-atc-group ${idx === 0 ? '' : 'collapsed'}" data-tag="${tag}">
+                    <div class="fav-atc-group-header" onclick="this.parentElement.classList.toggle('collapsed')" style="border-color:${color}40; background:${color}10">
+                        <div class="fav-atc-group-title">
+                            <span class="fav-atc-icon" style="color:${color}"><i class="fas fa-tag"></i></span>
+                            <span class="fav-atc-name">${tag}</span>
+                        </div>
+                        <div class="fav-atc-meta">
+                            <span class="fav-atc-count">${items.length}</span>
+                            <i class="fas fa-chevron-down fav-atc-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="fav-atc-group-body">
+                        <div class="fav-cards-grid">
+                            ${items.map(fav => this._renderFavCard(fav, this.ATC_CLINICAL_INFO[fav.atcNivel1] || { color, icon: 'tag' })).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        if (untagged.length > 0) {
+            html += `
+                <div class="fav-atc-group collapsed" data-tag="none">
+                    <div class="fav-atc-group-header" onclick="this.parentElement.classList.toggle('collapsed')" style="border-color:#94a3b840; background:#94a3b810">
+                        <div class="fav-atc-group-title">
+                            <span class="fav-atc-icon" style="color:#94a3b8"><i class="fas fa-tag"></i></span>
+                            <span class="fav-atc-name">Sin etiqueta</span>
+                        </div>
+                        <div class="fav-atc-meta">
+                            <span class="fav-atc-count">${untagged.length}</span>
+                            <i class="fas fa-chevron-down fav-atc-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="fav-atc-group-body">
+                        <div class="fav-cards-grid">
+                            ${untagged.map(fav => this._renderFavCard(fav, this.ATC_CLINICAL_INFO[fav.atcNivel1] || { color: '#94a3b8', icon: 'pills' })).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        html += `</div>`;
+        return html;
+    }
+
+    /**
+     * Cruza los favoritos contra el catálogo clínico (CLINICAL_DICTIONARY) y
+     * devuelve indicaciones cubiertas (con sus fármacos), sin cobertura y los
+     * favoritos que no encajan en ninguna indicación catalogada.
+     */
+    _buildIndicationCoverageGroups(favs) {
+        const dict = CimaAPI.CLINICAL_DICTIONARY || {};
+        const covered = [];
+        const uncovered = [];
+        const matched = new Set();
+
+        for (const [key, data] of Object.entries(dict)) {
+            // Saltar abreviaturas (igual criterio que la analítica)
+            if (key.length <= 5 && key === key.toUpperCase()) continue;
+            const atcList = Array.isArray(data.atc) ? data.atc : [data.atc];
+            const label = data.label || key;
+            const items = favs.filter(f => {
+                const a = f.atcCodigo || f.atcNivel2 || f.atcNivel1;
+                return a && atcList.some(g => a.startsWith(g));
+            });
+            if (items.length > 0) {
+                covered.push({ key, label, items });
+                items.forEach(f => matched.add(f.nregistro));
+            } else {
+                uncovered.push({ key, label });
+            }
+        }
+        const others = favs.filter(f => !matched.has(f.nregistro));
+        return { covered, uncovered, others };
+    }
+
+    /** Agrupado por cobertura de indicaciones (clasificación clínica navegable). */
+    _renderFavoritesByIndication(favs) {
+        const { covered, uncovered, others } = this._buildIndicationCoverageGroups(favs);
+        const green = '#10b981';
+
+        let html = `<div id="favorites-list">`;
+
+        html += `
+            <div class="coverage-summary-bar">
+                <span class="coverage-pill covered"><i class="fas fa-circle-check"></i> ${covered.length} cubierta${covered.length === 1 ? '' : 's'}</span>
+                <span class="coverage-pill uncovered"><i class="fas fa-circle-xmark"></i> ${uncovered.length} sin cobertura</span>
+            </div>
+        `;
+
+        if (covered.length === 0 && others.length === 0) {
+            html += `<div class="fav-empty-hint"><i class="fas fa-stethoscope"></i> Ninguno de tus favoritos cubre una indicación del catálogo clínico todavía.</div>`;
+        }
+
+        covered.forEach((g, idx) => {
+            html += `
+                <div class="fav-atc-group ${idx === 0 ? '' : 'collapsed'}" data-indication="${g.key}">
+                    <div class="fav-atc-group-header" onclick="this.parentElement.classList.toggle('collapsed')" style="border-color:${green}40; background:${green}10">
+                        <div class="fav-atc-group-title">
+                            <span class="fav-atc-icon" style="color:${green}"><i class="fas fa-circle-check"></i></span>
+                            <span class="fav-atc-name">${g.label}</span>
+                        </div>
+                        <div class="fav-atc-meta">
+                            <span class="fav-atc-count">${g.items.length}</span>
+                            <i class="fas fa-chevron-down fav-atc-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="fav-atc-group-body">
+                        <div class="fav-cards-grid">
+                            ${g.items.map(fav => this._renderFavCard(fav, this.ATC_CLINICAL_INFO[fav.atcNivel1] || { color: green, icon: 'circle-check' })).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        if (others.length > 0) {
+            html += `
+                <div class="fav-atc-group collapsed" data-indication="otros">
+                    <div class="fav-atc-group-header" onclick="this.parentElement.classList.toggle('collapsed')" style="border-color:#94a3b840; background:#94a3b810">
+                        <div class="fav-atc-group-title">
+                            <span class="fav-atc-icon" style="color:#94a3b8"><i class="fas fa-pills"></i></span>
+                            <span class="fav-atc-name">Otros (sin indicación catalogada)</span>
+                        </div>
+                        <div class="fav-atc-meta">
+                            <span class="fav-atc-count">${others.length}</span>
+                            <i class="fas fa-chevron-down fav-atc-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="fav-atc-group-body">
+                        <div class="fav-cards-grid">
+                            ${others.map(fav => this._renderFavCard(fav, this.ATC_CLINICAL_INFO[fav.atcNivel1] || { color: '#94a3b8', icon: 'pills' })).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (uncovered.length > 0) {
+            html += `
+                <div class="coverage-gaps">
+                    <div class="coverage-gaps-header"><i class="fas fa-circle-xmark"></i> Sin cobertura en favoritos (${uncovered.length})</div>
+                    <p class="coverage-gaps-hint">Indicaciones del catálogo que ningún favorito cubre. Pulsa para buscar fármacos.</p>
+                    <div class="coverage-gaps-grid">
+                        ${uncovered.map(u => `
+                            <button class="coverage-gap-item" onclick="app._searchIndicationFromCoverage('${u.key.replace(/'/g, "\\'")}')" title="Buscar fármacos para: ${u.label}">
+                                <i class="fas fa-magnifying-glass"></i> <span>${u.label}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        html += `</div>`;
+        return html;
+    }
+
+    /** Salta a la pestaña Indicaciones y busca el término de una indicación sin cubrir. */
+    _searchIndicationFromCoverage(key) {
+        this.loadView('indications');
+        setTimeout(() => {
+            const input = document.getElementById('indication-input');
+            if (input) {
+                input.value = key;
+                this.performIndicationSearch();
+            }
+        }, 60);
+    }
+
+    /** Bloque colapsable reutilizable (cabecera de color + rejilla de tarjetas). */
+    _renderFavGroupBlock(title, color, icon, items, expanded, dataAttr = '') {
+        return `
+            <div class="fav-atc-group ${expanded ? '' : 'collapsed'}" ${dataAttr}>
+                <div class="fav-atc-group-header" onclick="this.parentElement.classList.toggle('collapsed')" style="border-color:${color}40; background:${color}10">
+                    <div class="fav-atc-group-title">
+                        <span class="fav-atc-icon" style="color:${color}"><i class="fas fa-${icon}"></i></span>
+                        <span class="fav-atc-name">${title}</span>
+                    </div>
+                    <div class="fav-atc-meta">
+                        <span class="fav-atc-count">${items.length}</span>
+                        <i class="fas fa-chevron-down fav-atc-chevron"></i>
+                    </div>
+                </div>
+                <div class="fav-atc-group-body">
+                    <div class="fav-cards-grid">
+                        ${items.map(fav => this._renderFavCard(fav, { color, icon })).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /** Agrupado por especialidad clínica (derivada del ATC) + dispensación hospitalaria. */
+    _renderFavoritesBySpecialty(favs) {
+        const groups = {};
+        const noSpec = [];
+        favs.forEach(fav => {
+            const spec = this._specialtyForFav(fav);
+            if (!spec) { noSpec.push(fav); return; }
+            if (!groups[spec.name]) groups[spec.name] = { info: spec, items: [] };
+            groups[spec.name].items.push(fav);
+        });
+        const hospital = favs.filter(f => this._isHospitalUse(f) || this._isDiagnosticoHospitalario(f));
+        const sortedNames = Object.keys(groups).sort((a, b) => groups[b].items.length - groups[a].items.length);
+
+        let html = `<div id="favorites-list">`;
+
+        html += `
+            <div class="coverage-summary-bar">
+                <span class="coverage-pill covered"><i class="fas fa-user-doctor"></i> ${sortedNames.length} especialidad${sortedNames.length === 1 ? '' : 'es'}</span>
+                ${hospital.length ? `<span class="coverage-pill uncovered"><i class="fas fa-hospital"></i> ${hospital.length} de dispensación hospitalaria</span>` : ''}
+            </div>
+        `;
+
+        if (sortedNames.length === 0 && noSpec.length === 0) {
+            html += `<div class="fav-empty-hint"><i class="fas fa-user-doctor"></i> No se pudo asignar especialidad. Si ves muchos sin clasificar, pulsa «Reparar» para completar el ATC.</div>`;
+        }
+
+        sortedNames.forEach((name, idx) => {
+            const { info, items } = groups[name];
+            html += this._renderFavGroupBlock(name, info.color, info.icon, items, idx === 0, `data-spec="${name}"`);
+        });
+
+        if (hospital.length > 0) {
+            html += this._renderFavGroupBlock('Farmacia hospitalaria (uso / diagnóstico hospitalario)', '#0ea5e9', 'hospital', hospital, false, 'data-spec="hospital"');
+        }
+        if (noSpec.length > 0) {
+            html += this._renderFavGroupBlock('Sin especialidad asignada', '#94a3b8', 'circle-question', noSpec, false, 'data-spec="none"');
+        }
+
+        html += `</div>`;
+        return html;
+    }
+
+    /**
+     * Agrupado por principio activo: reúne en un solo bloque las distintas dosis
+     * y presentaciones de la misma sustancia (p. ej. la escalada de semaglutida
+     * o los antiacneicos a varias concentraciones), pensando por sustancia.
+     */
+    _renderFavoritesByActiveIngredient(favs) {
+        const groups = {};
+        const noPA = [];
+        favs.forEach(f => {
+            const pa = (f.principioActivo || '').trim();
+            if (!pa) { noPA.push(f); return; }
+            const key = pa.toLowerCase();
+            if (!groups[key]) groups[key] = { label: pa, items: [] };
+            groups[key].items.push(f);
+        });
+        const sorted = Object.keys(groups).sort((a, b) => {
+            const d = groups[b].items.length - groups[a].items.length;
+            return d !== 0 ? d : groups[a].label.localeCompare(groups[b].label);
+        });
+        const multi = sorted.filter(k => groups[k].items.length > 1).length;
+
+        let html = `<div id="favorites-list">`;
+        html += `
+            <div class="coverage-summary-bar">
+                <span class="coverage-pill covered"><i class="fas fa-flask"></i> ${sorted.length} principio${sorted.length === 1 ? '' : 's'} activo${sorted.length === 1 ? '' : 's'}</span>
+                ${multi ? `<span class="coverage-pill uncovered"><i class="fas fa-layer-group"></i> ${multi} con varias presentaciones</span>` : ''}
+            </div>
+        `;
+
+        sorted.forEach((key, idx) => {
+            const g = groups[key];
+            const color = this.ATC_CLINICAL_INFO[g.items[0].atcNivel1]?.color || '#0ea5e9';
+            const titleSuffix = g.items.length > 1 ? ' <span class="pa-group-strengths">· ' + g.items.length + ' presentaciones</span>' : '';
+            html += this._renderFavGroupBlock(g.label + titleSuffix, color, 'flask', g.items, idx === 0, `data-pa-group="${key}"`);
+        });
+        if (noPA.length) {
+            html += this._renderFavGroupBlock('Sin principio activo', '#94a3b8', 'circle-question', noPA, false, 'data-pa-group="none"');
+        }
+        html += `</div>`;
+        return html;
+    }
+
+    /** Agrupado automático por ATC (L1 → L2). */
+    _renderFavoritesByATC(favs) {
         // Group by ATC L1
         const grouped = {};
         const noATC = [];
@@ -9468,12 +10160,6 @@ ${materialesPlaceholder}
         );
 
         let html = `
-            <div class="favorites-search-bar">
-                <div class="search-input-wrapper" style="max-width:360px">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="fav-search-input" placeholder="Buscar en mis favoritos..." class="search-input" oninput="app._filterFavorites(this.value)">
-                </div>
-            </div>
             <div id="favorites-list">
         `;
 
@@ -9564,21 +10250,44 @@ ${materialesPlaceholder}
         const accentColor = atcInfo?.color || '#94a3b8';
         const viewsText = fav.viewCount > 0 ? `<span class="fav-card-views" title="Veces consultado"><i class="fas fa-eye"></i> ${fav.viewCount}</span>` : '';
         const badgesTags = [];
-        if (fav.generico) badgesTags.push('<span class="badge badge-success badge-xs">Gen.</span>');
+        if (fav.generico) badgesTags.push('<span class="badge badge-success badge-xs" title="Genérico (EFG)">Gen.</span>');
+        if (fav.biosimilar) badgesTags.push('<span class="badge badge-biosimilar badge-xs" title="Biosimilar — no sustituible automáticamente"><i class="fas fa-dna"></i> Biosim.</span>');
         if (fav.triangulo) badgesTags.push('<span class="badge badge-danger badge-xs" title="Triángulo negro">▲</span>');
+        if (this._isHospitalUse(fav)) badgesTags.push('<span class="badge badge-hospital badge-xs" title="Uso Hospitalario — solo farmacia hospitalaria"><i class="fas fa-hospital"></i> H</span>');
+        else if (this._isDiagnosticoHospitalario(fav)) badgesTags.push('<span class="badge badge-hospital badge-xs" title="Diagnóstico Hospitalario — prescripción iniciada en hospital"><i class="fas fa-hospital"></i> DH</span>');
         if (fav.psum) badgesTags.push('<span class="badge badge-danger badge-xs">Sin stock</span>');
         if (fav.notas) badgesTags.push('<span class="badge badge-warning badge-xs">AEMPS</span>');
 
+        // Detalle galénico: forma farmacéutica + vía + código(s) nacional(es)
+        const galenicParts = [fav.formaFarmaceutica, fav.via].filter(Boolean);
+        const cns = Array.isArray(fav.cns) ? fav.cns : [];
+        if (cns.length) galenicParts.push(`CN ${cns[0]}${cns.length > 1 ? ' +' + (cns.length - 1) : ''}`);
+        const galenic = galenicParts.join(' · ');
+
+        const tags = fav.tags || [];
+        const tagChips = tags.map(t => {
+            const c = this._tagColor(t);
+            return `<span class="fav-tag-chip" style="background:${c}22; color:${c}; border-color:${c}55">${t}</span>`;
+        }).join('');
+        const safeNreg = String(fav.nregistro).replace(/'/g, "\\'");
+
         return `
-            <div class="fav-card" data-nregistro="${fav.nregistro}" data-name="${fav.nombre.toLowerCase()}" data-pa="${(fav.principioActivo || '').toLowerCase()}"
-                 style="border-left-color:${accentColor}" onclick="app.openMedDetails('${fav.nregistro}', 'info')">
+            <div class="fav-card" data-nregistro="${fav.nregistro}" data-name="${(fav.nombre || '').toLowerCase()}" data-pa="${(fav.principioActivo || '').toLowerCase()}" data-tags="${tags.join('|').toLowerCase()}"
+                 style="border-left-color:${accentColor}" onclick="app.openMedDetails('${safeNreg}', 'info')">
                 <div class="fav-card-header">
                     <span class="fav-card-name">${fav.nombre}</span>
-                    <button class="fav-star-btn active" onclick="event.stopPropagation(); app.removeFavorite('${fav.nregistro}'); app.updateFavoritesBadge(); app.renderProfileView();" title="Quitar de favoritos">
-                        <i class="fas fa-star"></i>
-                    </button>
+                    <div class="fav-card-actions">
+                        <button class="fav-tag-btn ${tags.length ? 'has-tags' : ''}" onclick="event.stopPropagation(); app.openTagEditor('${safeNreg}')" title="Editar etiquetas">
+                            <i class="fas fa-tag"></i>
+                        </button>
+                        <button class="fav-star-btn active" onclick="event.stopPropagation(); app.removeFavorite('${safeNreg}'); app.updateFavoritesBadge(); app._refreshFavoritesSection();" title="Quitar de favoritos">
+                            <i class="fas fa-star"></i>
+                        </button>
+                    </div>
                 </div>
                 ${fav.principioActivo ? `<div class="fav-card-pa"><i class="fas fa-flask"></i> ${fav.principioActivo}${fav.dosis ? ' · ' + fav.dosis : ''}</div>` : ''}
+                ${galenic ? `<div class="fav-card-galenic"><i class="fas fa-prescription-bottle"></i> ${galenic}</div>` : ''}
+                ${tagChips ? `<div class="fav-card-tags">${tagChips}</div>` : ''}
                 <div class="fav-card-footer">
                     <div class="fav-card-badges">${badgesTags.join('')}</div>
                     ${viewsText}
@@ -9592,7 +10301,8 @@ ${materialesPlaceholder}
         document.querySelectorAll('.fav-card').forEach(card => {
             const name = card.dataset.name || '';
             const pa = card.dataset.pa || '';
-            const match = !q || name.includes(q) || pa.includes(q);
+            const tags = card.dataset.tags || '';
+            const match = !q || name.includes(q) || pa.includes(q) || tags.includes(q);
             card.style.display = match ? '' : 'none';
         });
         // Show/hide L2 headers and L1 groups based on visible cards
@@ -9607,6 +10317,340 @@ ${materialesPlaceholder}
     }
 
     // ============================================
+    // PROFILE — Tag editor (editor de etiquetas)
+    // ============================================
+
+    openTagEditor(nregistro) {
+        const fav = this.getFavorites().find(f => String(f.nregistro) === String(nregistro));
+        if (!fav) return;
+        this._tagEditorNreg = fav.nregistro;
+        this._tagEditorDraft = [...(fav.tags || [])];
+        this._tagEditorSpecialty = fav.specialtyOverride || '';
+
+        let overlay = document.getElementById('fav-tags-modal');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'fav-tags-modal';
+            overlay.className = 'modal-overlay modal-overlay-centered hidden';
+            document.body.appendChild(overlay);
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) this._closeTagEditor(); });
+        }
+        overlay.innerHTML = this._renderTagEditor(fav);
+        overlay.classList.remove('hidden');
+        const input = overlay.querySelector('#tag-new-input');
+        if (input) setTimeout(() => input.focus(), 50);
+    }
+
+    _tagEditorKnownTags() {
+        const suggestions = ['Botiquín', 'Crónicos', 'Agudos', 'Urgencias', 'Domicilio'];
+        return Array.from(new Set([...this.getAllTags(), ...suggestions, ...this._tagEditorDraft]));
+    }
+
+    _renderTagToggles() {
+        const draft = this._tagEditorDraft || [];
+        return this._tagEditorKnownTags().map(t => {
+            const on = draft.includes(t);
+            const c = this._tagColor(t);
+            const style = on ? `background:${c};border-color:${c};color:#fff` : `border-color:${c}55;color:${c}`;
+            const safe = t.replace(/'/g, "\\'");
+            return `<button class="tag-toggle ${on ? 'on' : ''}" style="${style}" onclick="app._toggleDraftTag('${safe}')">${on ? '<i class="fas fa-check"></i> ' : ''}${t}</button>`;
+        }).join('');
+    }
+
+    _renderTagEditor(fav) {
+        const autoSpec = (() => {
+            const code = (fav.atcCodigo || fav.atcNivel2 || fav.atcNivel1 || '').toUpperCase();
+            for (const [prefix, info] of this.ATC_SPECIALTY_RULES) {
+                if (code && code.startsWith(prefix)) return info.name;
+            }
+            return null;
+        })();
+        const current = this._tagEditorSpecialty || '';
+        const options = this._allSpecialties().map(s =>
+            `<option value="${s}" ${current === s ? 'selected' : ''}>${s}</option>`
+        ).join('');
+
+        return `
+            <div class="modal-content tag-editor-content">
+                <button class="modal-close" onclick="app._closeTagEditor()"><i class="fas fa-times"></i></button>
+                <h3 class="tag-editor-title"><i class="fas fa-tags"></i> Etiquetas y especialidad</h3>
+                <p class="tag-editor-med">${fav.nombre}</p>
+
+                <label class="tag-editor-sublabel"><i class="fas fa-tag"></i> Etiquetas</label>
+                <div class="tag-toggle-grid" id="tag-toggle-grid">${this._renderTagToggles()}</div>
+                <div class="tag-new-row">
+                    <input type="text" id="tag-new-input" class="search-input" placeholder="Nueva etiqueta…" maxlength="24"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();app._addDraftTagFromInput();}">
+                    <button class="btn btn-sm btn-secondary" onclick="app._addDraftTagFromInput()"><i class="fas fa-plus"></i> Crear</button>
+                </div>
+
+                <label class="tag-editor-sublabel"><i class="fas fa-user-doctor"></i> Especialidad</label>
+                <select class="search-input tag-specialty-select" onchange="app._tagEditorSpecialty=this.value">
+                    <option value="">Automática${autoSpec ? ` (${autoSpec})` : ' (sin asignar)'}</option>
+                    ${options}
+                </select>
+                <p class="tag-editor-hint">Corrige aquí la especialidad si la asignación automática por ATC no encaja en tu caso.</p>
+
+                <div class="tag-editor-actions">
+                    <button class="btn btn-secondary" onclick="app._closeTagEditor()">Cancelar</button>
+                    <button class="btn btn-primary" onclick="app._saveTagEditor()"><i class="fas fa-check"></i> Guardar</button>
+                </div>
+            </div>
+        `;
+    }
+
+    _refreshTagGrid() {
+        const grid = document.getElementById('tag-toggle-grid');
+        if (grid) grid.innerHTML = this._renderTagToggles();
+    }
+
+    _toggleDraftTag(tag) {
+        const i = this._tagEditorDraft.indexOf(tag);
+        if (i >= 0) this._tagEditorDraft.splice(i, 1);
+        else this._tagEditorDraft.push(tag);
+        this._refreshTagGrid();
+    }
+
+    _addDraftTagFromInput() {
+        const input = document.getElementById('tag-new-input');
+        if (!input) return;
+        const val = input.value.trim().replace(/[<>"']/g, '');
+        if (val && !this._tagEditorDraft.includes(val)) this._tagEditorDraft.push(val);
+        input.value = '';
+        this._refreshTagGrid();
+        input.focus();
+    }
+
+    _saveTagEditor() {
+        this.setFavoriteTags(this._tagEditorNreg, this._tagEditorDraft);
+        this.setFavoriteSpecialty(this._tagEditorNreg, this._tagEditorSpecialty);
+        this._closeTagEditor();
+        this._refreshFavoritesSection();
+        this.showToast('Favorito actualizado', 'success');
+    }
+
+    _closeTagEditor() {
+        const overlay = document.getElementById('fav-tags-modal');
+        if (overlay) overlay.classList.add('hidden');
+    }
+
+    // ============================================
+    // PROFILE — Prescription support (ayudas a la prescripción)
+    // ============================================
+
+    /** Categoría SADMANS de un favorito (o null). Derivada del ATC. */
+    _sadmansCategory(f) {
+        const code = (f.atcCodigo || '').toUpperCase();
+        if (!code) return null;
+        for (const [prefix, cat] of this.SADMANS_RULES) {
+            if (code.startsWith(prefix)) return cat;
+        }
+        return null;
+    }
+
+    /** Monitorización analítica recomendada para un favorito (lista, puede ser vacía). */
+    _monitoringFor(f) {
+        const code = (f.atcCodigo || '').toUpperCase();
+        if (!code) return [];
+        const out = [];
+        for (const [prefix, text] of this.MONITORING_RULES) {
+            if (code.startsWith(prefix)) out.push(text);
+        }
+        return [...new Set(out)];
+    }
+
+    /** Fila compacta para las listas transversales (clic abre la ficha). */
+    _renderRxRow(fav, rightHtml, tab = 'safety') {
+        const safeNreg = String(fav.nregistro).replace(/'/g, "\\'");
+        return `
+            <div class="rx-row" onclick="app.openMedDetails('${safeNreg}', '${tab}')" title="Abrir ficha">
+                <div class="rx-row-main">
+                    <span class="rx-row-name">${fav.nombre}</span>
+                    ${fav.principioActivo ? `<span class="rx-row-pa">${fav.principioActivo}</span>` : ''}
+                </div>
+                <div class="rx-row-right">${rightHtml}</div>
+            </div>
+        `;
+    }
+
+    /**
+     * Ayudas a la prescripción restringidas a la colección: SADMANS, monitorización
+     * analítica y farmacogenómica. Todo se calcula en local (ATC + índice PGx); no
+     * hay fuente externa que refrescar. Es un segundo eje de revisión por tema clínico.
+     */
+    _renderPrescriptionSection() {
+        const favs = this.getFavorites();
+        if (favs.length === 0) {
+            return `<div class="profile-empty"><i class="fas fa-notes-medical"></i><h3>Sin favoritos</h3><p>Guarda medicamentos para revisar aquí ayudas a la prescripción.</p></div>`;
+        }
+
+        // SADMANS
+        const sadmans = favs.map(f => ({ f, cat: this._sadmansCategory(f) })).filter(x => x.cat);
+        // Monitorización
+        const monitoring = favs.map(f => ({ f, items: this._monitoringFor(f) })).filter(x => x.items.length > 0);
+        // Farmacogenómica (índice local)
+        const pgxReady = !!this._pgxSet;
+        const pgx = pgxReady ? favs.filter(f => this._pgxSet.has(String(f.nregistro))) : [];
+
+        const disclaimer = `
+            <div class="export-note">
+                <i class="fas fa-circle-info"></i>
+                Ayuda educativa <strong>orientativa</strong> calculada a partir del código ATC de tu colección. No procede de CIMA, no es exhaustiva y no sustituye la ficha técnica ni el criterio clínico.
+            </div>
+        `;
+
+        // Panel SADMANS
+        const sadmansPanel = `
+            <div class="rx-panel">
+                <h4 class="rx-panel-title rx-title-warn"><i class="fas fa-triangle-exclamation"></i> Suspender en enfermedad aguda (SADMANS) <span class="rx-count">${sadmans.length}</span></h4>
+                <p class="rx-panel-sub">Considerar pausa temporal ante enfermedad aguda con riesgo de deshidratación (vómitos, diarrea, fiebre), por riesgo de fracaso renal agudo.</p>
+                ${sadmans.length === 0
+                    ? `<p class="text-muted text-sm">Ninguno de tus favoritos entra en SADMANS.</p>`
+                    : sadmans
+                        .sort((a, b) => a.cat.localeCompare(b.cat))
+                        .map(x => this._renderRxRow(x.f, `<span class="rx-tag rx-tag-warn">${x.cat}</span>`, 'safety')).join('')}
+            </div>
+        `;
+
+        // Panel monitorización
+        const monitoringPanel = `
+            <div class="rx-panel">
+                <h4 class="rx-panel-title rx-title-info"><i class="fas fa-vial"></i> Requieren monitorización analítica <span class="rx-count">${monitoring.length}</span></h4>
+                <p class="rx-panel-sub">Controles de laboratorio recomendados tras iniciar o ajustar el tratamiento.</p>
+                ${monitoring.length === 0
+                    ? `<p class="text-muted text-sm">Ningún favorito con monitorización en la tabla.</p>`
+                    : monitoring.map(x => this._renderRxRow(x.f, x.items.map(t => `<span class="rx-monitor">${t}</span>`).join(''), 'safety')).join('')}
+            </div>
+        `;
+
+        // Panel farmacogenómica
+        const pgxPanel = `
+            <div class="rx-panel">
+                <h4 class="rx-panel-title rx-title-pgx"><i class="fas fa-dna"></i> Farmacogenómica <span class="rx-count">${pgxReady ? pgx.length : '…'}</span></h4>
+                <p class="rx-panel-sub">Favoritos con biomarcador farmacogenético en ficha técnica (AEMPS). El gen/fenotipo puede condicionar dosis o elección.</p>
+                ${!pgxReady
+                    ? `<p class="text-muted text-sm"><div class="loading-spinner-sm" style="display:inline-block"></div> Cargando índice farmacogenómico… <button class="btn btn-sm btn-secondary" onclick="app._reloadPgxAndRefreshRx()">Reintentar</button></p>`
+                    : pgx.length === 0
+                        ? `<p class="text-muted text-sm">Ninguno de tus favoritos tiene biomarcador farmacogenético indexado.</p>`
+                        : pgx.map(f => this._renderRxRow(f, `<span class="rx-tag rx-tag-pgx"><i class="fas fa-dna"></i> PGx</span>`, 'pgx')).join('')}
+            </div>
+        `;
+
+        return `
+            <div class="prescription-section">
+                ${disclaimer}
+                ${sadmansPanel}
+                ${monitoringPanel}
+                ${pgxPanel}
+            </div>
+        `;
+    }
+
+    /** Reintenta cargar el índice PGx y re-renderiza la sección Prescripción. */
+    async _reloadPgxAndRefreshRx() {
+        try {
+            const res = await this.api.getPgxIndexLight();
+            if (res) { this._pgxSet = res.set; this._pgxMeta = res.meta; }
+        } catch (e) { /* silencioso */ }
+        const container = document.getElementById('profile-section-content');
+        if (container) container.innerHTML = this._renderPrescriptionSection();
+    }
+
+    // ============================================
+    // PROFILE — Materials section (materiales de mi colección)
+    // ============================================
+
+    /**
+     * Materiales informativos/docentes de seguridad (AEMPS) restringidos a la
+     * colección del usuario. Encaja canónicamente: la API tiene un endpoint
+     * /materiales por nregistro y la mayoría de favoritos no tienen → la señal
+     * es selectiva y de alto valor (guías de administración, vídeos, tarjetas).
+     */
+    _renderMaterialsSection() {
+        const favs = this.getFavorites();
+        if (favs.length === 0) {
+            return `<div class="profile-empty"><i class="fas fa-file-medical-alt"></i><h3>Sin favoritos</h3><p>Guarda medicamentos para reunir aquí sus materiales informativos.</p></div>`;
+        }
+        // Pista por la bandera materialesInf (puede faltar en favoritos antiguos).
+        const flagged = favs.filter(f => f.materialesInf);
+        const hint = flagged.length > 0
+            ? `Al menos <strong>${flagged.length}</strong> de tus ${favs.length} favoritos tienen materiales informativos de seguridad.`
+            : `Se revisarán tus <strong>${favs.length}</strong> favoritos (los antiguos no guardan la marca, por eso se comprueban todos).`;
+
+        return `
+            <div class="materials-section">
+                <div class="export-note">
+                    <i class="fas fa-circle-info"></i>
+                    Materiales informativos de seguridad (AEMPS): guías de administración, vídeos, tarjetas de paciente y listas de comprobación, <strong>solo de los medicamentos de tu colección</strong>. ${hint}
+                </div>
+                <button class="btn btn-primary" id="btn-load-materials" onclick="app._loadCollectionMaterials()">
+                    <i class="fas fa-download"></i> Reunir materiales de mi colección
+                </button>
+                <div id="materials-result" class="mt-md"></div>
+            </div>
+        `;
+    }
+
+    async _loadCollectionMaterials() {
+        const btn = document.getElementById('btn-load-materials');
+        const result = document.getElementById('materials-result');
+        if (!result) return;
+
+        const favs = this.getFavorites();
+        // Si hay marcas, consultar solo esos; si no, comprobar todos (favoritos antiguos).
+        const flagged = favs.filter(f => f.materialesInf);
+        const targets = flagged.length > 0 ? flagged : favs;
+
+        if (btn) { btn.disabled = true; btn.innerHTML = '<div class="loading-spinner-sm"></div> Consultando fichas…'; }
+
+        const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
+        const found = [];
+        await Promise.all(targets.map(async fav => {
+            try {
+                const mats = await this.api.getMateriales(fav.nregistro);
+                const docs = [...(mats.profesional || []), ...(mats.paciente || [])];
+                if (docs.length > 0) found.push({ fav, profesional: mats.profesional || [], paciente: mats.paciente || [] });
+            } catch (e) { /* sin materiales: se omite */ }
+        }));
+
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-rotate"></i> Volver a comprobar'; }
+
+        if (found.length === 0) {
+            result.innerHTML = `<p class="text-muted text-sm"><i class="fas fa-circle-check" style="color:#10b981"></i> Ninguno de tus favoritos tiene materiales informativos de seguridad publicados.</p>`;
+            return;
+        }
+
+        // Orden estable por nombre
+        found.sort((a, b) => (a.fav.nombre || '').localeCompare(b.fav.nombre || ''));
+
+        const blocks = found.map(({ fav, profesional, paciente }) => {
+            const safeNreg = String(fav.nregistro).replace(/'/g, "\\'");
+            const prof = profesional.length ? `
+                <div class="materials-subgroup"><span class="materials-subgroup-label"><i class="fas fa-user-md"></i> Profesional</span>
+                    <div class="materials-cards">${profesional.map(m => this.renderMaterialCard(m)).join('')}</div>
+                </div>` : '';
+            const pac = paciente.length ? `
+                <div class="materials-subgroup"><span class="materials-subgroup-label"><i class="fas fa-user"></i> Paciente</span>
+                    <div class="materials-cards">${paciente.map(m => this.renderMaterialCard(m)).join('')}</div>
+                </div>` : '';
+            return `
+                <div class="materials-med-block">
+                    <div class="materials-med-header" onclick="app.openMedDetails('${safeNreg}', 'docs')" title="Abrir ficha del medicamento">
+                        <i class="fas fa-pills"></i> <strong>${fav.nombre}</strong>
+                        ${fav.principioActivo ? `<span class="text-muted">· ${fav.principioActivo}</span>` : ''}
+                    </div>
+                    ${prof}${pac}
+                </div>
+            `;
+        }).join('');
+
+        result.innerHTML = `
+            <p class="text-sm text-muted mb-sm"><strong>${found.length}</strong> medicamento${found.length === 1 ? '' : 's'} de tu colección con materiales:</p>
+            ${blocks}
+        `;
+    }
+
+    // ============================================
     // PROFILE — Analytics section
     // ============================================
 
@@ -9615,6 +10659,7 @@ ${materialesPlaceholder}
         if (total === 0) return null;
 
         const generics = favs.filter(f => f.generico).length;
+        const biosimilares = favs.filter(f => f.biosimilar).length;
         const withReceta = favs.filter(f => f.receta).length;
         const triangulos = favs.filter(f => f.triangulo);
         const sinStock = favs.filter(f => f.psum);
@@ -9631,6 +10676,15 @@ ${materialesPlaceholder}
         // Unique ATC L2 groups
         const uniqueL2 = new Set(favs.map(f => f.atcNivel2).filter(Boolean));
         const uniquePA = new Set(favs.map(f => f.principioActivo).filter(Boolean));
+
+        // Distribución por especialidad (para el resumen y el drill-down)
+        const specialtyDist = {};
+        favs.forEach(f => {
+            const spec = this._specialtyForFav(f);
+            const name = spec ? spec.name : 'Sin especialidad';
+            if (!specialtyDist[name]) specialtyDist[name] = { count: 0, color: spec?.color || '#94a3b8', icon: spec?.icon || 'circle-question' };
+            specialtyDist[name].count++;
+        });
 
         // Duplicate ATC L3 detection
         const atcL3Groups = {};
@@ -9653,8 +10707,8 @@ ${materialesPlaceholder}
         const coverage = this._computeIndicationCoverage(favs);
 
         return {
-            total, generics, withReceta, triangulos, sinStock, conAemps,
-            atcDist, uniqueL2: uniqueL2.size, uniquePA: uniquePA.size,
+            total, generics, biosimilares, withReceta, triangulos, sinStock, conAemps,
+            atcDist, specialtyDist, uniqueL2: uniqueL2.size, uniquePA: uniquePA.size,
             duplicates, topViewed, coverage,
             genericRate: Math.round(generics / total * 100),
             prescRate: Math.round(withReceta / total * 100),
@@ -9699,15 +10753,16 @@ ${materialesPlaceholder}
             `;
         }
 
-        const { total, generics, withReceta, triangulos, sinStock, conAemps, atcDist,
+        const { total, generics, biosimilares, withReceta, triangulos, sinStock, conAemps, atcDist, specialtyDist,
                 uniqueL2, uniquePA, duplicates, topViewed, coverage,
                 genericRate, prescRate, diversityLabel } = stats;
 
-        // Metric card helper
-        const metricCard = (icon, label, value, subtitle, status) => {
+        // Metric card helper — `drill` opcional hace la tarjeta clicable (filtra favoritos)
+        const metricCard = (icon, label, value, subtitle, status, drill) => {
             const statusClass = status === 'good' ? 'metric-good' : status === 'warn' ? 'metric-warn' : status === 'alert' ? 'metric-alert' : '';
+            const clickable = drill ? ` metric-clickable" onclick="app._drillToFavorites('${drill.type}', ${JSON.stringify(drill.value)}, '${drill.label.replace(/'/g, "\\'")}')" title="Ver estos favoritos` : '';
             return `
-                <div class="metric-card ${statusClass}">
+                <div class="metric-card ${statusClass}${clickable}">
                     <div class="metric-icon"><i class="fas fa-${icon}"></i></div>
                     <div class="metric-body">
                         <div class="metric-value">${value}</div>
@@ -9718,36 +10773,39 @@ ${materialesPlaceholder}
             `;
         };
 
-        // Automatic alerts
+        // ALERTAS VERDADERAS — solo lo accionable. El triángulo negro NO es alerta
+        // (es estatus regulatorio que casi todo fármaco nuevo tiene → fatiga). Se
+        // queda como métrica informativa, no como alerta.
         const alerts = [];
         if (duplicates.length > 0) {
             duplicates.forEach(group => {
-                const atcInfo = this.ATC_CLINICAL_INFO[group[0].atcNivel1] || {};
-                alerts.push(`<div class="analytics-alert alert-dup">
+                alerts.push(`<div class="analytics-alert alert-dup" onclick="app._drillToFavorites('atcL1','${group[0].atcNivel1}','Grupo ${group[0].atcNivel1}')" style="cursor:pointer">
                     <i class="fas fa-copy"></i>
-                    <span>Posible duplicidad terapéutica (${group[0].atcCodigo?.substring(0,4)}):
-                    <strong>${group.map(g => g.nombre).join(' + ')}</strong></span>
+                    <span><strong>Revisar duplicidad terapéutica</strong> (${group[0].atcCodigo?.substring(0,4)}): ${group.map(g => g.nombre).join(' + ')}</span>
                 </div>`);
             });
         }
-        if (triangulos.length > 0) {
-            alerts.push(`<div class="analytics-alert alert-warn">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>▲ Triángulo negro — requieren monitorización activa: <strong>${triangulos.map(t => t.nombre).join(', ')}</strong></span>
-            </div>`);
-        }
         if (sinStock.length > 0) {
-            alerts.push(`<div class="analytics-alert alert-danger">
+            alerts.push(`<div class="analytics-alert alert-danger" onclick="app._drillToFavorites('sinStock',true,'Sin suministro')" style="cursor:pointer">
                 <i class="fas fa-exclamation-circle"></i>
-                <span>Problemas de suministro: <strong>${sinStock.map(s => s.nombre).join(', ')}</strong></span>
+                <span><strong>Problemas de suministro</strong> — busca alternativa: ${sinStock.map(s => s.nombre).join(', ')}</span>
             </div>`);
         }
         if (conAemps.length > 0) {
-            alerts.push(`<div class="analytics-alert alert-warn">
+            alerts.push(`<div class="analytics-alert alert-warn" onclick="app._drillToFavorites('aemps',true,'Con alerta AEMPS')" style="cursor:pointer">
                 <i class="fas fa-bell"></i>
-                <span>Alertas AEMPS activas en: <strong>${conAemps.map(a => a.nombre).join(', ')}</strong></span>
+                <span><strong>Notas de seguridad AEMPS</strong> en: ${conAemps.map(a => a.nombre).join(', ')}</span>
             </div>`);
         }
+
+        // Resumen de especialidades (chips clicables → drill-down)
+        const specEntries = Object.entries(specialtyDist).sort((a, b) => b[1].count - a[1].count);
+        const specialtyChips = specEntries.map(([name, d]) => {
+            const safe = name.replace(/'/g, "\\'");
+            return `<button class="specialty-chip" style="border-color:${d.color}66; color:${d.color}" onclick="app._drillToFavorites('specialty', '${safe}', '${safe}')" title="Ver estos favoritos">
+                <i class="fas fa-${d.icon}"></i> ${name} <span class="specialty-chip-count">${d.count}</span>
+            </button>`;
+        }).join('');
 
         // Coverage section
         const coveredHtml = coverage.covered.slice(0, 10).map(c =>
@@ -9775,8 +10833,9 @@ ${materialesPlaceholder}
                     <span><strong>${uniquePA}</strong> principios activos únicos</span>
                     <span>·</span>
                     <span><strong>${uniqueL2}</strong> grupos ATC</span>
+                    ${biosimilares > 0 ? `<span>·</span><span><strong>${biosimilares}</strong> biosimilares</span>` : ''}
                     <span>·</span>
-                    <span class="diversity-label">${diversityLabel}</span>
+                    <span class="diversity-label" title="Generalista: tu colección cubre ≥40% de los 14 grupos ATC principales (variedad terapéutica amplia). Especializado: se concentra en pocos grupos.">${diversityLabel} <i class="fas fa-circle-info" style="opacity:.5;font-size:.75em"></i></span>
                 </div>
 
                 <div class="analytics-grid-2col">
@@ -9790,22 +10849,32 @@ ${materialesPlaceholder}
 
                     <!-- Metrics grid -->
                     <div class="analytics-card">
-                        <h4 class="analytics-card-title"><i class="fas fa-clipboard-check"></i> Calidad de prescripción</h4>
+                        <h4 class="analytics-card-title" title="Indicadores descriptivos de los medicamentos que has guardado (no de tu prescripción real).">
+                            <i class="fas fa-clipboard-check"></i> Perfil de tu colección
+                            <i class="fas fa-circle-info" style="opacity:.45;font-size:.8em;margin-left:.25rem"></i>
+                        </h4>
                         <div class="metrics-grid">
-                            ${metricCard('pills', 'Tasa genericidad', genericRate + '%',
+                            ${metricCard('pills', 'Genéricos (EFG)', genericRate + '%',
                                 `${generics}/${total} genéricos`,
-                                genericRate >= 50 ? 'good' : genericRate >= 30 ? 'warn' : 'alert')}
+                                genericRate >= 50 ? 'good' : genericRate >= 30 ? 'warn' : 'alert',
+                                generics > 0 ? { type: 'generico', value: true, label: 'Genéricos (EFG)' } : null)}
+                            ${metricCard('dna', 'Biosimilares', biosimilares,
+                                biosimilares === 1 ? '1 medicamento' : `${biosimilares} medicamentos`, '',
+                                biosimilares > 0 ? { type: 'biosimilar', value: true, label: 'Biosimilares' } : null)}
                             ${metricCard('file-prescription', 'Con receta', prescRate + '%',
                                 `${withReceta}/${total}`, '')}
                             ${metricCard('exclamation-triangle', 'Triángulo negro', triangulos.length,
-                                'Vigilancia especial',
-                                triangulos.length === 0 ? 'good' : 'warn')}
+                                'Vigilancia adicional',
+                                triangulos.length === 0 ? 'good' : '',
+                                triangulos.length > 0 ? { type: 'triangulo', value: true, label: 'Triángulo negro' } : null)}
                             ${metricCard('bell', 'Alertas AEMPS', conAemps.length,
                                 'Notas de seguridad',
-                                conAemps.length === 0 ? 'good' : 'warn')}
+                                conAemps.length === 0 ? 'good' : 'warn',
+                                conAemps.length > 0 ? { type: 'aemps', value: true, label: 'Con alerta AEMPS' } : null)}
                             ${metricCard('exclamation-circle', 'Sin suministro', sinStock.length,
                                 'Problemas stock',
-                                sinStock.length === 0 ? 'good' : 'alert')}
+                                sinStock.length === 0 ? 'good' : 'alert',
+                                sinStock.length > 0 ? { type: 'sinStock', value: true, label: 'Sin suministro' } : null)}
                             ${metricCard('th-large', 'Grupos ATC', uniqueL2 + '/14',
                                 diversityLabel,
                                 uniqueL2 >= 6 ? 'good' : 'warn')}
@@ -9813,10 +10882,10 @@ ${materialesPlaceholder}
                     </div>
                 </div>
 
-                ${alerts.length > 0 ? `
-                    <div class="analytics-card analytics-alerts">
-                        <h4 class="analytics-card-title"><i class="fas fa-shield-alt"></i> Alertas sobre tu colección</h4>
-                        ${alerts.join('')}
+                ${specialtyChips ? `
+                    <div class="analytics-card">
+                        <h4 class="analytics-card-title"><i class="fas fa-user-doctor"></i> Especialidades de tu colección <span class="text-muted" style="font-weight:400;font-size:.8em">· pulsa para filtrar</span></h4>
+                        <div class="specialty-chips-row">${specialtyChips}</div>
                     </div>
                 ` : ''}
 
@@ -9853,6 +10922,17 @@ ${materialesPlaceholder}
                     </div>
                 </div>
 
+                ${alerts.length > 0 ? `
+                    <div class="analytics-card analytics-alerts analytics-alerts-footer">
+                        <h4 class="analytics-card-title"><i class="fas fa-circle-exclamation"></i> Requiere tu revisión <span class="text-muted" style="font-weight:400;font-size:.8em">· ${alerts.length} punto${alerts.length === 1 ? '' : 's'} accionable${alerts.length === 1 ? '' : 's'}</span></h4>
+                        ${alerts.join('')}
+                    </div>
+                ` : `
+                    <div class="analytics-card analytics-alerts-footer analytics-noalerts">
+                        <i class="fas fa-circle-check"></i> Sin avisos accionables en tu colección (duplicidades, suministro o notas AEMPS).
+                    </div>
+                `}
+
             </div>
         `;
     }
@@ -9887,13 +10967,15 @@ ${materialesPlaceholder}
             const ix2 = cx + innerR * Math.cos(currentAngle + angle);
             const iy2 = cy + innerR * Math.sin(currentAngle + angle);
 
+            const drillLabel = `${l1} ${atcInfo.class}`;
             pathsHtml += `<path d="M${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${largeArc},1 ${x2.toFixed(2)},${y2.toFixed(2)} L${ix2.toFixed(2)},${iy2.toFixed(2)} A${innerR},${innerR} 0 ${largeArc},0 ${ix1.toFixed(2)},${iy1.toFixed(2)} Z"
-                fill="${atcInfo.color}" opacity="0.85" class="donut-segment"
+                fill="${atcInfo.color}" opacity="0.85" class="donut-segment" style="cursor:pointer"
                 data-label="${atcInfo.class}: ${count} (${Math.round(count/total*100)}%)"
+                onclick="app._drillToFavorites('atcL1','${l1}','${drillLabel.replace(/'/g, "")}')"
                 onmouseover="document.getElementById('donut-tooltip').textContent=this.dataset.label; this.setAttribute('opacity','1')"
                 onmouseout="document.getElementById('donut-tooltip').textContent=''; this.setAttribute('opacity','0.85')"/>`;
 
-            legendHtml += `<div class="donut-legend-item">
+            legendHtml += `<div class="donut-legend-item donut-legend-clickable" onclick="app._drillToFavorites('atcL1','${l1}','${drillLabel.replace(/'/g, "")}')" title="Ver estos favoritos">
                 <span class="donut-legend-dot" style="background:${atcInfo.color}"></span>
                 <span class="donut-legend-text">${l1} ${atcInfo.class}</span>
                 <span class="donut-legend-count">${count} (${Math.round(count/total*100)}%)</span>
@@ -9932,19 +11014,29 @@ ${materialesPlaceholder}
         resultDiv.innerHTML = '';
 
         try {
-            const nregistros = favs.map(f => f.nregistro);
-            const report = await this.api.analyzeInteractions(nregistros);
+            // analyzeInteractions espera objetos med ({nregistro, nombre, pactivos})
+            // y devuelve un objeto { interactions: [...] }, no un array.
+            const meds = favs.map(f => ({ nregistro: f.nregistro, nombre: f.nombre, pactivos: f.principioActivo || '' }));
+            const report = await this.api.analyzeInteractions(meds);
+            const interactions = (report && report.interactions) || [];
 
-            if (!report || report.length === 0) {
-                resultDiv.innerHTML = '<p class="text-muted text-sm"><i class="fas fa-check-circle" style="color:#10b981"></i> No se detectaron interacciones destacadas en tu colección.</p>';
+            if (interactions.length === 0) {
+                resultDiv.innerHTML = '<p class="text-muted text-sm"><i class="fas fa-check-circle" style="color:#10b981"></i> No se detectaron menciones cruzadas entre tus favoritos en las secciones 4.5 de sus fichas técnicas.</p>';
             } else {
-                const items = report.slice(0, 8).map(item => `
-                    <div class="analytics-alert alert-warn">
-                        <i class="fas fa-random"></i>
-                        <span>${item}</span>
-                    </div>
-                `).join('');
-                resultDiv.innerHTML = `<div class="mt-sm">${items}</div>`;
+                const items = interactions.slice(0, 10).map(it => {
+                    const sev = (it.severity === 'high' || it.severity === 'alta') ? 'alert-danger' : 'alert-warn';
+                    const d1 = (it.drug1 || '').split(' ')[0];
+                    const d2 = (it.drug2 || '').split(' ')[0];
+                    return `
+                        <div class="analytics-alert ${sev}">
+                            <i class="fas fa-random"></i>
+                            <span><strong>${d1} ↔ ${d2}</strong>${it.matchedTerm ? ` · «${it.matchedTerm}»` : ''} <span class="text-muted">(${it.source || 'ficha técnica'})</span></span>
+                        </div>
+                    `;
+                }).join('');
+                resultDiv.innerHTML = `
+                    <p class="text-xs text-muted mb-sm">Menciones en sección 4.5 (no implican contraindicación automática; verifica la ficha). ${interactions.length} resultado${interactions.length === 1 ? '' : 's'}.</p>
+                    <div>${items}</div>`;
             }
         } catch (e) {
             resultDiv.innerHTML = '<p class="text-muted text-sm">Error al analizar interacciones.</p>';
@@ -9962,9 +11054,13 @@ ${materialesPlaceholder}
         const favs = this.getFavorites();
         return `
             <div class="export-section">
+                <div class="export-note">
+                    <i class="fas fa-circle-info"></i>
+                    Tus favoritos se guardan en este navegador (almacenamiento local), no en la nube. Para llevarlos a otro equipo, expórtalos aquí e impórtalos allí: al importar se <strong>fusionan</strong> etiquetas y contadores de uso, no se duplican.
+                </div>
                 <div class="export-card">
                     <h4><i class="fas fa-file-download"></i> Exportar favoritos</h4>
-                    <p class="text-muted">Descarga tu lista de medicamentos favoritos como archivo JSON para copia de seguridad o migración entre dispositivos.</p>
+                    <p class="text-muted">Descarga tu lista como archivo JSON (incluye etiquetas, grupo ATC y contador de consultas) para copia de seguridad o migración entre dispositivos.</p>
                     <button class="btn btn-primary" onclick="app._exportFavorites()" ${favs.length === 0 ? 'disabled' : ''}>
                         <i class="fas fa-download"></i> Descargar JSON (${favs.length} medicamentos)
                     </button>
@@ -9981,7 +11077,7 @@ ${materialesPlaceholder}
 
                 <div class="export-card">
                     <h4><i class="fas fa-file-upload"></i> Importar favoritos</h4>
-                    <p class="text-muted">Restaura favoritos desde un archivo JSON previamente exportado. Los favoritos actuales se mantendrán (merge).</p>
+                    <p class="text-muted">Restaura desde un JSON exportado. Los favoritos repetidos se fusionan (unión de etiquetas, se conserva el mayor contador de consultas); no se pierde nada de lo que ya tienes.</p>
                     <label class="btn btn-secondary" style="cursor:pointer">
                         <i class="fas fa-folder-open"></i> Seleccionar archivo JSON
                         <input type="file" accept=".json" style="display:none" onchange="app._importFavorites(this)">
@@ -10024,8 +11120,9 @@ ${materialesPlaceholder}
         const favs = this.getFavorites();
         const text = favs.map((f, i) => {
             const pa = f.principioActivo ? ` (${f.principioActivo}${f.dosis ? ' ' + f.dosis : ''})` : '';
-            const cn = f.nregistro ? ` — Nreg: ${f.nregistro}` : '';
-            return `${i + 1}. ${f.nombre}${pa}${cn}`;
+            const cnList = Array.isArray(f.cns) && f.cns.length ? ` — CN: ${f.cns.join(', ')}` : '';
+            const nreg = f.nregistro ? ` — Nreg: ${f.nregistro}` : '';
+            return `${i + 1}. ${f.nombre}${pa}${cnList}${nreg}`;
         }).join('\n');
 
         navigator.clipboard.writeText(text).then(() => {
@@ -10050,17 +11147,40 @@ ${materialesPlaceholder}
                 if (!Array.isArray(imported)) throw new Error('Formato inválido');
 
                 const existing = this.getFavorites();
-                const existingIds = new Set(existing.map(f => f.nregistro));
-                const newItems = imported.filter(f => f.nregistro && !existingIds.has(f.nregistro));
-                const merged = [...existing, ...newItems];
-                this._saveFavorites(merged);
+                const byId = new Map(existing.map(f => [String(f.nregistro), f]));
+                let added = 0, fused = 0;
+
+                imported.forEach(imp => {
+                    if (!imp || !imp.nregistro) return;
+                    const key = String(imp.nregistro);
+                    const cur = byId.get(key);
+                    if (!cur) {
+                        imp.tags = Array.isArray(imp.tags) ? imp.tags : [];
+                        byId.set(key, imp);
+                        added++;
+                        return;
+                    }
+                    // Fusionar: unión de etiquetas, mayor contador de vistas,
+                    // y completar clasificación si la actual está incompleta.
+                    cur.tags = Array.from(new Set([...(cur.tags || []), ...(imp.tags || [])]));
+                    cur.viewCount = Math.max(cur.viewCount || 0, imp.viewCount || 0);
+                    if (imp.lastViewedAt && (!cur.lastViewedAt || imp.lastViewedAt > cur.lastViewedAt)) cur.lastViewedAt = imp.lastViewedAt;
+                    if (!cur.atcNivel1 && imp.atcNivel1) {
+                        cur.atcCodigo = imp.atcCodigo; cur.atcNivel1 = imp.atcNivel1;
+                        cur.atcNivel2 = imp.atcNivel2; cur.atcNombre = imp.atcNombre;
+                    }
+                    if (!cur.principioActivo && imp.principioActivo) cur.principioActivo = imp.principioActivo;
+                    fused++;
+                });
+
+                this._saveFavorites(Array.from(byId.values()));
                 this.updateFavoritesBadge();
 
                 const resultDiv = document.getElementById('import-result');
                 if (resultDiv) {
-                    resultDiv.innerHTML = `<p class="text-success"><i class="fas fa-check-circle"></i> Importados ${newItems.length} nuevos favoritos (${imported.length - newItems.length} ya existían).</p>`;
+                    resultDiv.innerHTML = `<p class="text-success"><i class="fas fa-check-circle"></i> ${added} nuevos · ${fused} fusionados (etiquetas y vistas combinadas).</p>`;
                 }
-                this.showToast(`${newItems.length} favoritos importados`, 'success');
+                this.showToast(`Importación: ${added} nuevos, ${fused} fusionados`, 'success');
             } catch (err) {
                 const resultDiv = document.getElementById('import-result');
                 if (resultDiv) resultDiv.innerHTML = `<p class="text-danger"><i class="fas fa-times-circle"></i> Error: archivo JSON inválido.</p>`;

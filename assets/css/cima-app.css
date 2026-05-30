@@ -6686,6 +6686,13 @@ code {
     border-bottom: 1px solid var(--border);
     background: var(--bg-surface);
     flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.profile-subnav-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .profile-subnav-btn {
@@ -6932,6 +6939,639 @@ code {
     align-items: center;
     justify-content: space-between;
     gap: 0.3rem;
+}
+
+/* ============================================
+   FAVORITES — Toolbar, agrupado y reparación
+   ============================================ */
+
+.favorites-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.fav-group-toggle {
+    display: inline-flex;
+    flex-wrap: wrap;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 2px;
+    gap: 2px;
+}
+
+.fav-group-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.4rem 0.75rem;
+    border-radius: calc(var(--radius-md) - 2px);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: background 0.15s, color 0.15s;
+}
+
+.fav-group-btn:hover {
+    color: var(--text-primary);
+}
+
+.fav-group-btn.active {
+    background: var(--primary);
+    color: #fff;
+}
+
+.fav-repair-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: var(--radius-md);
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.fav-repair-text {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    flex: 1;
+    min-width: 220px;
+}
+
+.fav-repair-text i.fa-triangle-exclamation {
+    color: #f59e0b;
+}
+
+.fav-empty-hint {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+/* Tags en la tarjeta de favorito */
+.fav-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    flex-shrink: 0;
+}
+
+.fav-tag-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 0.8rem;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.fav-tag-btn:hover {
+    opacity: 1;
+    color: var(--primary);
+}
+
+.fav-tag-btn.has-tags {
+    opacity: 0.9;
+    color: var(--primary);
+}
+
+.fav-card-galenic {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    opacity: 0.85;
+    margin-bottom: 0.3rem;
+}
+
+.fav-card-galenic i {
+    opacity: 0.6;
+    margin-right: 0.15rem;
+}
+
+.export-note {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.export-note i {
+    color: var(--primary);
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+}
+
+.fav-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: 0.3rem;
+}
+
+.fav-tag-chip {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 999px;
+    border: 1px solid;
+    line-height: 1.5;
+}
+
+/* Editor de etiquetas (modal) */
+.tag-editor-content {
+    max-width: 440px;
+    width: 90%;
+    padding: 1.5rem;
+}
+
+.tag-editor-title {
+    color: var(--primary);
+    margin: 0 0 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tag-editor-med {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin: 0 0 1rem;
+}
+
+.tag-toggle-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.tag-toggle {
+    background: none;
+    border: 1px solid;
+    border-radius: 999px;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.tag-toggle:hover {
+    transform: translateY(-1px);
+}
+
+.tag-new-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.tag-new-row .search-input {
+    flex: 1;
+}
+
+.tag-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* Cobertura de indicaciones (modo "Por indicación") */
+.coverage-summary-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+    flex-wrap: wrap;
+}
+
+.coverage-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid;
+}
+
+.coverage-pill.covered {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.35);
+}
+
+.coverage-pill.uncovered {
+    color: var(--text-secondary);
+    background: var(--bg-surface);
+    border-color: var(--border);
+}
+
+.coverage-gaps {
+    margin-top: 0.75rem;
+    padding: 0.85rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+}
+
+.coverage-gaps-header {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.coverage-gaps-header i {
+    color: #94a3b8;
+}
+
+.coverage-gaps-hint {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+    margin: 0 0 0.6rem;
+}
+
+.coverage-gaps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.35rem;
+}
+
+.coverage-gap-item {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    text-align: left;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    padding: 0.4rem 0.6rem;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.coverage-gap-item:hover {
+    border-color: var(--primary);
+    color: var(--text-primary);
+    background: var(--bg-surface-hover);
+}
+
+.coverage-gap-item i {
+    opacity: 0.55;
+    font-size: 0.72rem;
+    flex-shrink: 0;
+}
+
+/* Drill-down (filtro desde la analítica) */
+.fav-drill-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    background: var(--primary-light);
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.85rem;
+    font-size: 0.82rem;
+    color: var(--text-primary);
+}
+
+.fav-drill-chip button {
+    background: none;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    border-radius: var(--radius-md);
+    padding: 0.2rem 0.55rem;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+.fav-drill-chip button:hover {
+    background: var(--primary);
+    color: #fff;
+}
+
+.metric-clickable {
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.15s;
+}
+
+.metric-clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+}
+
+.metric-clickable::after {
+    content: "\f00e";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 0.65rem;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.metric-card {
+    position: relative;
+}
+
+.metric-clickable:hover::after {
+    opacity: 0.5;
+}
+
+.analytics-alert {
+    transition: filter 0.15s;
+}
+
+.analytics-alert[style*="cursor:pointer"]:hover {
+    filter: brightness(1.12);
+}
+
+.analytics-alerts-footer {
+    margin-top: 0.25rem;
+}
+
+.analytics-noalerts {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding: 0.85rem 1rem;
+}
+
+.analytics-noalerts i {
+    color: #10b981;
+}
+
+/* Resumen de especialidades */
+.specialty-chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.specialty-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--bg-surface);
+    border: 1px solid;
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.15s;
+}
+
+.specialty-chip:hover {
+    transform: translateY(-1px);
+    background: var(--bg-surface-hover);
+}
+
+.specialty-chip-count {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    padding: 0 6px;
+    font-size: 0.72rem;
+}
+
+.donut-legend-clickable {
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+
+.donut-legend-clickable:hover {
+    background: var(--bg-surface-hover);
+}
+
+/* Editor de favorito: subetiquetas y selector de especialidad */
+.tag-editor-sublabel {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0.5rem 0 0.4rem;
+}
+
+.tag-specialty-select {
+    width: 100%;
+    margin-bottom: 0.4rem;
+}
+
+.tag-editor-hint {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+    margin: 0 0 1rem;
+}
+
+/* Materiales de mi colección */
+.materials-med-block {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 0.85rem;
+    margin-bottom: 0.75rem;
+    background: var(--bg-card);
+}
+
+.materials-med-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+}
+
+.materials-med-header i {
+    color: var(--primary);
+}
+
+.materials-med-header:hover strong {
+    color: var(--primary);
+}
+
+.materials-subgroup {
+    margin-bottom: 0.5rem;
+}
+
+.materials-subgroup-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.35rem;
+}
+
+.materials-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.5rem;
+}
+
+/* Modo "Por principio activo" */
+.pa-group-strengths {
+    font-weight: 400;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* Ayudas a la prescripción */
+.rx-panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.85rem;
+    margin-bottom: 0.85rem;
+    background: var(--bg-card);
+}
+
+.rx-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.25rem;
+    font-size: 0.95rem;
+}
+
+.rx-title-warn { color: #f59e0b; }
+.rx-title-info { color: #0ea5e9; }
+.rx-title-pgx  { color: #a855f7; }
+
+.rx-count {
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 1px 8px;
+    margin-left: auto;
+}
+
+.rx-panel-sub {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.6rem;
+    line-height: 1.45;
+}
+
+.rx-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    margin-bottom: 0.35rem;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.rx-row:hover {
+    background: var(--bg-surface-hover);
+    transform: translateY(-1px);
+}
+
+.rx-row-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.rx-row-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.rx-row-pa {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.rx-row-right {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    justify-content: flex-end;
+    align-items: center;
+    flex-shrink: 0;
+    max-width: 60%;
+}
+
+.rx-tag {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.rx-tag-warn {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.rx-tag-pgx {
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+    border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.rx-monitor {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 2px 8px;
+    text-align: right;
 }
 
 /* ─── PESTAÑA EVIDENCIA ──────────────────────────────────────────────────── */
