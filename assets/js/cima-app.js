@@ -5097,6 +5097,9 @@ class MedCheckApp {
     // NOMENCLÁTOR SNS
     // ============================================
 
+    // DEMO/LAB — no enlazar desde la UI principal sin revision explicita.
+    // Ruta oculta `medcheck.html?view=sns` para demos cerradas del Nomenclator
+    // de Facturacion. Revisar doc privado de stand-by antes de produccion amplia.
     async renderSnsCatalog() {
         const workerBase = this.api.cloudflareProxy;
         if (!this._sns) this._sns = { query: '', tipo: 'efecto', includeBaja: false, meta: null, debounce: null };
