@@ -9787,6 +9787,7 @@ ${materialesPlaceholder}
     _matchesDrill(f, drill) {
         switch (drill.type) {
             case 'atcL1': return f.atcNivel1 === drill.value;
+            case 'atcL2': return f.atcNivel2 === drill.value;
             case 'specialty': {
                 const s = this._specialtyForFav(f);
                 return (s ? s.name : 'Sin especialidad') === drill.value;
@@ -10740,6 +10741,60 @@ ${materialesPlaceholder}
         return { covered, uncovered };
     }
 
+    /**
+     * Tarjeta de concentración (regla 80/20 / Pareto) por grupo terapéutico ATC.
+     * Los estudios de utilización de medicamentos muestran que el consumo se
+     * concentra en pocos grupos; esta tarjeta lo refleja sobre la colección.
+     */
+    _renderConcentrationCard(favs) {
+        const dist = {};
+        favs.forEach(f => {
+            const code = f.atcNivel2 || f.atcNivel1;
+            if (!code) return;
+            if (!dist[code]) dist[code] = { code, name: f.atcNombre || code, count: 0, l2: !!f.atcNivel2 };
+            dist[code].count++;
+        });
+        const entries = Object.values(dist).sort((a, b) => b.count - a.count);
+        const total = entries.reduce((s, e) => s + e.count, 0);
+        if (total === 0 || entries.length < 3) return ''; // poco informativo con muy pocos grupos
+
+        let cum = 0, n80 = 0;
+        entries.forEach((e, i) => {
+            cum += e.count;
+            if (n80 === 0 && (cum / total) >= 0.8) n80 = i + 1;
+        });
+        if (n80 === 0) n80 = entries.length;
+        const pct80groups = Math.round(n80 / entries.length * 100);
+
+        const maxCount = entries[0].count;
+        const rows = entries.slice(0, 10).map((e, i) => {
+            const pct = Math.round(e.count / total * 100);
+            const w = Math.max(6, Math.round(e.count / maxCount * 100));
+            const inTop = (i + 1) <= n80;
+            const drillType = e.l2 ? 'atcL2' : 'atcL1';
+            const label = `${e.code} ${e.name}`.replace(/'/g, "");
+            return `
+                <div class="pareto-row ${inTop ? 'pareto-top' : ''}" onclick="app._drillToFavorites('${drillType}','${e.code}','${label}')" title="Ver estos favoritos">
+                    <span class="pareto-label">${e.code} · ${e.name}</span>
+                    <span class="pareto-bar-wrap"><span class="pareto-bar" style="width:${w}%"></span></span>
+                    <span class="pareto-pct">${e.count} · ${pct}%</span>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="analytics-card">
+                <h4 class="analytics-card-title" title="Principio de Pareto aplicado a tu colección: cuántos grupos terapéuticos concentran el 80% de los medicamentos guardados.">
+                    <i class="fas fa-chart-column"></i> Concentración (regla 80/20)
+                    <i class="fas fa-circle-info" style="opacity:.45;font-size:.8em;margin-left:.25rem"></i>
+                </h4>
+                <p class="pareto-headline"><strong>${n80}</strong> de ${entries.length} grupos terapéuticos (${pct80groups}%) concentran el <strong>80%</strong> de tu colección.</p>
+                <div class="pareto-list">${rows}</div>
+                <p class="pareto-foot">Concentración por grupo ATC. Refleja lo que <em>guardas</em>, no tu volumen real de prescripción.</p>
+            </div>
+        `;
+    }
+
     _renderAnalyticsSection(favs) {
         const stats = this._analyzeFavorites(favs);
 
@@ -10888,6 +10943,8 @@ ${materialesPlaceholder}
                         <div class="specialty-chips-row">${specialtyChips}</div>
                     </div>
                 ` : ''}
+
+                ${this._renderConcentrationCard(favs)}
 
                 <div class="analytics-grid-2col">
                     <!-- Indication coverage -->

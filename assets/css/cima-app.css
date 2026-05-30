@@ -7381,6 +7381,79 @@ code {
     background: var(--bg-surface-hover);
 }
 
+/* Concentración 80/20 (Pareto) */
+.pareto-headline {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin: 0 0 0.6rem;
+}
+
+.pareto-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.pareto-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 90px auto;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.35rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.pareto-row:hover {
+    background: var(--bg-surface-hover);
+}
+
+.pareto-label {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pareto-top .pareto-label {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.pareto-bar-wrap {
+    background: var(--bg-surface);
+    border-radius: 999px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.pareto-bar {
+    display: block;
+    height: 100%;
+    background: #94a3b8;
+    border-radius: 999px;
+}
+
+.pareto-top .pareto-bar {
+    background: var(--primary);
+}
+
+.pareto-pct {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    text-align: right;
+}
+
+.pareto-foot {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+    margin: 0.5rem 0 0;
+}
+
 /* Editor de favorito: subetiquetas y selector de especialidad */
 .tag-editor-sublabel {
     display: flex;
