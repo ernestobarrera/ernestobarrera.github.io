@@ -7861,6 +7861,32 @@ code {
     font-family: monospace;
 }
 
+/* Agrupado por especialidad en listas transversales (PGx, monitorización, materiales) */
+.rx-spec-group {
+    margin-bottom: 0.6rem;
+}
+
+.rx-spec-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.3rem 0.1rem;
+    margin-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.rx-spec-count {
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-surface);
+    border-radius: 999px;
+    padding: 0 7px;
+}
+
 /* SADMANS: corrección manual por fármaco */
 .rx-excl-btn {
     background: none;

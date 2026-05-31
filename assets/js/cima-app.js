@@ -10860,6 +10860,30 @@ ${materialesPlaceholder}
     }
 
     /**
+     * Agrupa una lista transversal por ESPECIALIDAD (eje canónico: cada fármaco
+     * cae en una sola especialidad y siempre se asigna desde el ATC, por lo que
+     * es exhaustivo y fiable). `getFav` extrae el favorito de cada ítem; `rowFn`
+     * renderiza cada ítem. Devuelve cabeceras de especialidad + filas.
+     */
+    _renderRxBySpecialty(items, getFav, rowFn) {
+        const groups = {};
+        items.forEach(it => {
+            const spec = this._specialtyForFav(getFav(it));
+            const key = spec ? spec.name : 'Sin especialidad asignada';
+            if (!groups[key]) groups[key] = { color: spec?.color || '#94a3b8', icon: spec?.icon || 'circle-question', items: [] };
+            groups[key].items.push(it);
+        });
+        return Object.entries(groups)
+            .sort((a, b) => b[1].items.length - a[1].items.length)
+            .map(([name, g]) => `
+                <div class="rx-spec-group">
+                    <div class="rx-spec-header" style="color:${g.color}"><i class="fas fa-${g.icon}"></i> ${name} <span class="rx-spec-count">${g.items.length}</span></div>
+                    ${g.items.map(rowFn).join('')}
+                </div>
+            `).join('');
+    }
+
+    /**
      * Ayudas a la prescripción restringidas a la colección: SADMANS, monitorización
      * analítica y farmacogenómica. Todo se calcula en local (ATC + índice PGx); no
      * hay fuente externa que refrescar. Es un segundo eje de revisión por tema clínico.
@@ -10929,7 +10953,7 @@ ${materialesPlaceholder}
                 ${this._rxRulesExplainer(this.MONITORING_RULES, 'Qué monitorizar')}
                 ${monitoring.length === 0
                     ? `<p class="text-muted text-sm">Ningún favorito con monitorización en la tabla.</p>`
-                    : monitoring.map(monitoringRow).join('')}
+                    : this._renderRxBySpecialty(monitoring, x => x.f, monitoringRow)}
             </div>
         `;
 
@@ -10942,7 +10966,7 @@ ${materialesPlaceholder}
                     ? `<p class="text-muted text-sm"><div class="loading-spinner-sm" style="display:inline-block"></div> Cargando índice farmacogenómico… <button class="btn btn-sm btn-secondary" onclick="app._reloadPgxAndRefreshRx()">Reintentar</button></p>`
                     : pgx.length === 0
                         ? `<p class="text-muted text-sm">Ninguno de tus favoritos tiene biomarcador farmacogenético indexado.</p>`
-                        : pgx.map(f => this._renderRxRow(f, `<span class="rx-tag rx-tag-pgx"><i class="fas fa-dna"></i> PGx</span>`, 'pgx')).join('')}
+                        : this._renderRxBySpecialty(pgx, f => f, f => this._renderRxRow(f, `<span class="rx-tag rx-tag-pgx"><i class="fas fa-dna"></i> PGx</span>`, 'pgx'))}
             </div>
         `;
 
@@ -11033,7 +11057,7 @@ ${materialesPlaceholder}
         // Orden estable por nombre
         found.sort((a, b) => (a.fav.nombre || '').localeCompare(b.fav.nombre || ''));
 
-        const blocks = found.map(({ fav, profesional, paciente }) => {
+        const medBlock = ({ fav, profesional, paciente }) => {
             const safeNreg = String(fav.nregistro).replace(/'/g, "\\'");
             const prof = profesional.length ? `
                 <div class="materials-subgroup"><span class="materials-subgroup-label"><i class="fas fa-user-md"></i> Profesional</span>
@@ -11052,10 +11076,13 @@ ${materialesPlaceholder}
                     ${prof}${pac}
                 </div>
             `;
-        }).join('');
+        };
+
+        // Agrupado por especialidad (eje canónico, exhaustivo desde el ATC).
+        const blocks = this._renderRxBySpecialty(found, x => x.fav, medBlock);
 
         result.innerHTML = `
-            <p class="text-sm text-muted mb-sm"><strong>${found.length}</strong> medicamento${found.length === 1 ? '' : 's'} de tu colección con materiales:</p>
+            <p class="text-sm text-muted mb-sm"><strong>${found.length}</strong> medicamento${found.length === 1 ? '' : 's'} de tu colección con materiales, agrupados por especialidad:</p>
             ${blocks}
         `;
     }
