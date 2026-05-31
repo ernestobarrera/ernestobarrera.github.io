@@ -359,9 +359,10 @@ class MedCheckApp {
         ];
 
         // Guide state
-        this.GUIDE_SEEN_KEY = 'medcheck_guide_seen';
+        this.GUIDE_SEEN_KEY = 'medcheck_guide_seen_v20260531a';
         this.guideActive = false;
         this.guideStep = 0;
+        this.guideTour = 'core';
 
         this.init();
     }
@@ -11808,115 +11809,239 @@ ${materialesPlaceholder}
     //  Interactive Guide / Onboarding Tour
     // =========================================================
 
-    _guideSteps() {
-        return [
-            {
-                target: null, // centered welcome
-                title: 'Bienvenido a MedCheck',
-                icon: 'fa-pills',
-                body: `
-                    <p>Tu herramienta clínica de medicamentos con <span class="guide-highlight">datos en tiempo real</span> de la AEMPS.</p>
-                    <p>En unos segundos conocerás todo lo que necesitas para sacarle el máximo partido.</p>
-                `,
+    _guideTours() {
+        return {
+            core: {
+                label: 'Recorrido rápido',
+                desc: 'El mapa mental mínimo para presentar MedCheck sin sobrecargar.',
+                icon: 'fa-route',
+                steps: [
+                    {
+                        target: null,
+                        title: 'MedCheck en una idea',
+                        icon: 'fa-pills',
+                        body: `
+                            <p>MedCheck combina <span class="guide-highlight">consulta rápida de medicamentos</span> y <span class="guide-highlight">colección personal</span>.</p>
+                            <p>El flujo canónico es: buscar, abrir ficha, guardar lo relevante y revisar tu vademécum desde distintos ejes clínicos.</p>
+                        `,
+                    },
+                    {
+                        target: '#app-content',
+                        title: '1. Buscar y orientarse',
+                        icon: 'fa-search',
+                        body: `
+                            <p>Empieza por nombre comercial, principio activo o código nacional.</p>
+                            <p>Las tarjetas te dejan saltar por principio activo, grupo ATC, equivalentes, problemas de suministro, materiales o PGx cuando existan.</p>
+                        `,
+                        position: 'bottom',
+                    },
+                    {
+                        target: '.app-nav',
+                        title: '2. Elegir la pregunta',
+                        icon: 'fa-compass',
+                        body: `
+                            <p>La navegación no es una lista para memorizar: es un selector de pregunta clínica.</p>
+                            <ul class="guide-features">
+                                <li><i class="fas fa-shield-alt"></i> seguridad</li>
+                                <li><i class="fas fa-random"></i> interacciones</li>
+                                <li><i class="fas fa-dna"></i> PGx</li>
+                                <li><i class="fas fa-file-medical-alt"></i> materiales</li>
+                                <li><i class="fas fa-star"></i> perfil</li>
+                            </ul>
+                        `,
+                        position: 'bottom',
+                    },
+                    {
+                        target: '.context-toggles',
+                        title: '3. Contexto antes de decidir',
+                        icon: 'fa-user-injured',
+                        body: `
+                            <p>Activa embarazo, lactancia, edad, conducción, renal o hepática antes de consultar.</p>
+                            <p>El contexto no identifica al paciente: solo ajusta alertas y recordatorios de seguridad dentro de la sesión.</p>
+                        `,
+                        position: 'bottom',
+                    },
+                    {
+                        target: '#nav-profile',
+                        title: '4. Mi vademécum',
+                        icon: 'fa-star',
+                        body: `
+                            <p>Guardar favoritos convierte MedCheck en un <span class="guide-highlight">formulario personal</span>: no una nube, sino tu colección local.</p>
+                            <p>Desde ahí aparecen Esenciales, Analítica 80/20, Prescripción, Materiales de la colección e Importar/Exportar.</p>
+                        `,
+                        position: 'bottom',
+                    },
+                    {
+                        target: '#start-guide-btn',
+                        title: 'Ampliar sin ruido',
+                        icon: 'fa-circle-question',
+                        body: `
+                            <p>El botón <span class="guide-key"><i class="fas fa-question" style="font-size:0.7rem"></i></span> abre subguías breves: ficha/modal, Mi vademécum, PGx y Materiales.</p>
+                            <p>MedCheck consulta fuentes oficiales cuando puede y guarda favoritos/preferencias solo en este navegador.</p>
+                        `,
+                        position: 'bottom',
+                    },
+                ],
             },
-            {
-                target: '.app-nav',
-                title: 'Navegación por secciones',
-                icon: 'fa-compass',
-                body: `
-                    <p>9 módulos especializados a un clic:</p>
-                    <ul class="guide-features">
-                        <li><i class="fas fa-search"></i> Buscar</li>
-                        <li><i class="fas fa-stethoscope"></i> Indicaciones</li>
-                        <li><i class="fas fa-shield-alt"></i> Seguridad</li>
-                        <li><i class="fas fa-random"></i> Interacciones</li>
-                        <li><i class="fas fa-exclamation-triangle"></i> Reacciones</li>
-                        <li><i class="fas fa-exchange-alt"></i> Equivalencias</li>
-                        <li><i class="fas fa-boxes"></i> Suministro</li>
-                        <li><i class="fas fa-bell"></i> Alertas</li>
-                        <li><i class="fas fa-star"></i> Mi Perfil</li>
-                    </ul>
-                `,
-                position: 'bottom',
+            modal: {
+                label: 'Ficha de medicamento',
+                desc: 'Cómo leer el modal sin perderse entre pestañas.',
+                icon: 'fa-window-maximize',
+                steps: [
+                    {
+                        target: '.modal-content',
+                        title: 'La ficha es la mesa de trabajo',
+                        icon: 'fa-window-maximize',
+                        body: `
+                            <p>Al abrir un medicamento, el modal reúne la información accionable: ficha, indicaciones, posología, interacciones, seguridad, documentos, evidencia y financiación si existe.</p>
+                            <p>Si no hay ficha abierta, busca un medicamento y vuelve a lanzar esta subguía.</p>
+                        `,
+                    },
+                    {
+                        target: '.modal-fav-btn',
+                        title: 'Guardar desde el detalle',
+                        icon: 'fa-star',
+                        body: `
+                            <p>La estrella del modal guarda el medicamento ya enriquecido con ATC, principio activo y códigos nacionales.</p>
+                            <p>Eso mejora agrupaciones, analítica, exportación y revisión posterior de la colección.</p>
+                        `,
+                    },
+                    {
+                        target: '.modal-tabs',
+                        title: 'Pestañas con carga diferida',
+                        icon: 'fa-layer-group',
+                        body: `
+                            <p>Las pestañas profundas cargan cuando las abres: documentos, materiales, PGx, evidencia o financiación no bloquean la ficha inicial.</p>
+                            <p>Las URL conservan el medicamento y la pestaña para poder volver o compartir el recorrido dentro del piloto.</p>
+                        `,
+                    },
+                ],
             },
-            {
-                target: '#app-content',
-                title: 'Búsqueda inteligente',
-                icon: 'fa-search',
-                body: `
-                    <p>Busca por <span class="guide-highlight">nombre comercial</span>, <span class="guide-highlight">principio activo</span> o <span class="guide-highlight">código nacional</span>.</p>
-                    <p>El autocompletado muestra resultados al instante con código de colores ATC para identificar la categoría terapéutica.</p>
-                `,
-                position: 'bottom',
+            profile: {
+                label: 'Mi vademécum',
+                desc: 'Favoritos como formulario personal y asistente de prescripción.',
+                icon: 'fa-star',
+                view: 'profile',
+                steps: [
+                    {
+                        target: '#nav-profile',
+                        title: 'Favoritos = formulario personal',
+                        icon: 'fa-star',
+                        body: `
+                            <p>Mi Perfil transforma favoritos en una colección revisable, no en una simple lista de accesos rápidos.</p>
+                            <p>Todo vive en localStorage: queda en este navegador salvo que exportes/importes.</p>
+                        `,
+                        position: 'bottom',
+                    },
+                    {
+                        target: '.profile-subnav',
+                        title: 'Seis lentes de revisión',
+                        icon: 'fa-table-columns',
+                        body: `
+                            <ul class="guide-features">
+                                <li><i class="fas fa-star"></i> favoritos</li>
+                                <li><i class="fas fa-clipboard-list"></i> esenciales</li>
+                                <li><i class="fas fa-chart-bar"></i> analítica</li>
+                                <li><i class="fas fa-notes-medical"></i> prescripción</li>
+                                <li><i class="fas fa-file-medical-alt"></i> materiales</li>
+                                <li><i class="fas fa-right-left"></i> exportar</li>
+                            </ul>
+                            <p>Las subpestañas tienen URL propia: atrás/adelante recuperan sección, agrupación y drill-down.</p>
+                        `,
+                        position: 'bottom',
+                    },
+                    {
+                        target: '#profile-section-content',
+                        title: 'Revisar por colección',
+                        icon: 'fa-notes-medical',
+                        body: `
+                            <p>Esenciales recuerda principios activos nucleares de AP; Prescripción cruza SADMANS, monitorización y PGx; Materiales reúne documentos de seguridad de tus medicamentos.</p>
+                            <p>La regla 80/20 y los chips por especialidad ayudan a explicar la colección de un vistazo.</p>
+                        `,
+                    },
+                ],
             },
-            {
-                target: '#app-content',
-                title: 'Tarjetas interactivas',
-                icon: 'fa-hand-pointer',
-                body: `
-                    <p>En cada tarjeta de resultado puedes navegar directamente:</p>
-                    <ul class="guide-features">
-                        <li><i class="fas fa-flask"></i> <strong>Principio activo</strong> — pulsa la etiqueta para buscar todos los fármacos con ese PA</li>
-                        <li><i class="fas fa-tag"></i> <strong>Chip ATC</strong> — pulsa la categoría terapéutica para explorar el grupo ATC en Indicaciones</li>
-                    </ul>
-                    <p>Así puedes saltar entre medicamentos, equivalentes y grupos sin escribir nada nuevo.</p>
-                `,
-                position: 'bottom',
+            pgx: {
+                label: 'Farmacogenómica',
+                desc: 'PGx como ampliación selectiva, no como ruido inicial.',
+                icon: 'fa-dna',
+                view: 'pharmacogenomics',
+                steps: [
+                    {
+                        target: '.nav-tab[data-view="pharmacogenomics"]',
+                        title: 'PGx como señal regulatoria',
+                        icon: 'fa-dna',
+                        body: `
+                            <p>PGx muestra medicamentos cuyo Nomenclátor de Prescripción AEMPS menciona biomarcadores farmacogenómicos.</p>
+                            <p>Es una capa selectiva: aparece como vista global y como pestaña dentro del modal cuando aplica.</p>
+                        `,
+                        position: 'bottom',
+                    },
+                    {
+                        target: '.pgx-controls',
+                        title: 'Filtrar o agrupar',
+                        icon: 'fa-filter',
+                        body: `
+                            <p>Busca por medicamento o biomarcador, filtra por gen/clase y agrupa por biomarcador, ATC o especialidad.</p>
+                            <p>Los grupos empiezan cerrados para que se vea primero la estructura completa.</p>
+                        `,
+                    },
+                    {
+                        target: '#pgx-results',
+                        title: 'De la vista global al modal',
+                        icon: 'fa-arrow-up-right-from-square',
+                        body: `
+                            <p>Cada tarjeta abre la ficha directamente en la pestaña PGx, donde puedes verificar fuente AEMPS y ampliar con CPIC o prompt con citas.</p>
+                        `,
+                    },
+                ],
             },
-            {
-                target: '.context-toggles',
-                title: 'Contexto del paciente',
-                icon: 'fa-user-injured',
-                body: `
-                    <p>Activa los <span class="guide-highlight">filtros de contexto</span> antes de consultar un medicamento:</p>
-                    <ul class="guide-features">
-                        <li><i class="fas fa-baby"></i> Embarazo</li>
-                        <li><i class="fas fa-baby-carriage"></i> Lactancia</li>
-                        <li><i class="fas fa-user-clock"></i> Edad &gt;65</li>
-                        <li><i class="fas fa-car"></i> Conducción</li>
-                        <li><i class="fas fa-droplet"></i> I. Renal</li>
-                        <li><i class="fas fa-disease"></i> I. Hepática</li>
-                    </ul>
-                    <p>Las alertas de seguridad se adaptan automáticamente al perfil activo.</p>
-                `,
-                position: 'bottom',
+            materials: {
+                label: 'Materiales',
+                desc: 'Guías, vídeos y tarjetas AEMPS cuando aportan valor.',
+                icon: 'fa-file-medical-alt',
+                view: 'materials',
+                steps: [
+                    {
+                        target: '.nav-tab[data-view="materials"]',
+                        title: 'Materiales informativos',
+                        icon: 'fa-file-medical-alt',
+                        body: `
+                            <p>Esta vista reúne materiales AEMPS publicados para medicamentos concretos: guías, tarjetas de paciente, documentos profesionales y vídeos.</p>
+                        `,
+                        position: 'bottom',
+                    },
+                    {
+                        target: '.materiales-header',
+                        title: 'Audiencia y formato',
+                        icon: 'fa-sliders',
+                        body: `
+                            <p>Filtra por paciente, profesional o vídeos. Después puedes agrupar por ATC o especialidad para una lectura más clínica.</p>
+                        `,
+                    },
+                    {
+                        target: '.materiales-grid, .mat-atc-grupo',
+                        title: 'Abrir cuando importa',
+                        icon: 'fa-folder-open',
+                        body: `
+                            <p>La tarjeta lleva al documento original y, si tiene registro CIMA, a la ficha del medicamento.</p>
+                            <p>Dentro de Mi Perfil hay otra vista de Materiales limitada solo a tu colección.</p>
+                        `,
+                    },
+                ],
             },
-            {
-                target: '#open-bookmarklet-modal',
-                title: 'Atajo seguro: acceso rapido',
-                icon: 'fa-bookmark',
-                body: `
-                    <p>Instala el <span class="guide-highlight">atajo seguro</span> para abrir MedCheck sin modificar la pagina clinica origen.</p>
-                    <p>Copia el farmaco si estas en una HCE, pulsa el atajo y pega/busca dentro de MedCheck. El atajo no lee ni modifica la pagina origen.</p>
-                `,
-                position: 'bottom',
-            },
-            {
-                target: null, // centered
-                title: 'Modelo de datos',
-                icon: 'fa-database',
-                body: `
-                    <p>MedCheck consulta la <span class="guide-highlight">API pública de la AEMPS (CIMA)</span> en tiempo real. No almacena base de datos local de medicamentos.</p>
-                    <p>Esto significa que siempre trabajas con <span class="guide-highlight">información actualizada</span>: fichas técnicas, alertas, problemas de suministro y cambios de registro.</p>
-                    <p>Tus <span class="guide-highlight">favoritos y preferencias</span> se guardan solo en tu navegador (localStorage).</p>
-                `,
-            },
-            {
-                target: null, // centered final
-                title: '¡Todo listo!',
-                icon: 'fa-rocket',
-                body: `
-                    <p>Ya conoces las claves de MedCheck. Empieza buscando un medicamento o explora las secciones.</p>
-                    <p>Puedes relanzar esta guía cuando quieras pulsando <span class="guide-key"><i class="fas fa-question" style="font-size:0.7rem"></i></span> en la cabecera.</p>
-                `,
-            },
-        ];
+        };
+    }
+
+    _guideSteps(tourKey = this.guideTour || 'core') {
+        const tours = this._guideTours();
+        return (tours[tourKey] || tours.core).steps;
     }
 
     setupGuide() {
         const btn = document.getElementById('start-guide-btn');
         if (btn) {
-            btn.addEventListener('click', () => this.startGuide());
+            btn.addEventListener('click', () => this.showGuideMenu());
         }
     }
 
@@ -11930,8 +12055,79 @@ ${materialesPlaceholder}
         try { localStorage.setItem(this.GUIDE_SEEN_KEY, 'true'); } catch {}
     }
 
-    startGuide() {
+    showGuideMenu() {
         if (this.guideActive) return;
+        const overlay = document.getElementById('guide-overlay');
+        if (!overlay) return;
+        const tours = this._guideTours();
+        const items = Object.entries(tours).map(([key, tour]) => `
+            <button class="guide-menu-btn" data-guide-tour="${key}">
+                <span class="guide-menu-icon"><i class="fas ${tour.icon}"></i></span>
+                <span class="guide-menu-text">
+                    <strong>${tour.label}</strong>
+                    <small>${tour.desc}</small>
+                </span>
+                <i class="fas fa-arrow-right guide-menu-arrow"></i>
+            </button>
+        `).join('');
+
+        overlay.innerHTML = `
+            <svg class="guide-backdrop" width="100%" height="100%">
+                <rect width="100%" height="100%" fill="rgba(0,0,0,0.72)"/>
+            </svg>
+            <div class="guide-card guide-menu-card centered" id="guide-card">
+                <div class="guide-header">
+                    <div class="guide-step-label"><i class="fas fa-circle-question"></i> Guías</div>
+                    <h3 class="guide-title">¿Qué quieres entender ahora?</h3>
+                </div>
+                <div class="guide-body">
+                    <div class="guide-menu-list">${items}</div>
+                </div>
+                <div class="guide-footer">
+                    <span class="guide-menu-hint">Recorridos breves, contextuales y repetibles.</span>
+                    <button class="guide-btn guide-btn-ghost" id="guide-menu-close">Cerrar</button>
+                </div>
+            </div>
+        `;
+        overlay.classList.add('active');
+        requestAnimationFrame(() => document.getElementById('guide-card')?.classList.add('visible'));
+
+        overlay.querySelectorAll('[data-guide-tour]').forEach(btn => {
+            btn.addEventListener('click', () => this.startGuide(btn.dataset.guideTour));
+        });
+        document.getElementById('guide-menu-close')?.addEventListener('click', () => this.closeGuideMenu());
+        overlay.querySelector('.guide-backdrop')?.addEventListener('click', () => this.closeGuideMenu());
+        this._guideMenuKeyHandler = (e) => {
+            if (e.key === 'Escape') this.closeGuideMenu();
+        };
+        document.addEventListener('keydown', this._guideMenuKeyHandler);
+    }
+
+    closeGuideMenu() {
+        const overlay = document.getElementById('guide-overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+            setTimeout(() => { if (!this.guideActive) overlay.innerHTML = ''; }, 250);
+        }
+        if (this._guideMenuKeyHandler) {
+            document.removeEventListener('keydown', this._guideMenuKeyHandler);
+            this._guideMenuKeyHandler = null;
+        }
+    }
+
+    async _prepareGuideTour(tourKey) {
+        const tour = this._guideTours()[tourKey];
+        if (!tour?.view) return;
+        if (this.currentView !== tour.view) {
+            await this.loadView(tour.view);
+        }
+    }
+
+    async startGuide(tourKey = 'core') {
+        if (this.guideActive) return;
+        this.closeGuideMenu();
+        this.guideTour = this._guideTours()[tourKey] ? tourKey : 'core';
+        await this._prepareGuideTour(this.guideTour);
         this.guideActive = true;
         this.guideStep = 0;
         this._renderGuideStep();
@@ -12814,7 +13010,7 @@ ${materialesPlaceholder}
 
     endGuide() {
         this.guideActive = false;
-        this._markGuideSeen();
+        if ((this.guideTour || 'core') === 'core') this._markGuideSeen();
         const overlay = document.getElementById('guide-overlay');
         if (overlay) {
             overlay.classList.remove('active');
@@ -12868,6 +13064,7 @@ ${materialesPlaceholder}
                 targetEl.classList.add('guide-spotlight-target');
             }
         }
+        const effectiveCentered = isCentered || !targetRect;
 
         // Build progress dots
         const dots = steps.map((_, i) => {
@@ -12909,7 +13106,7 @@ ${materialesPlaceholder}
 
         overlay.innerHTML = `
             ${backdropSVG}
-            <div class="guide-card ${isCentered ? 'centered' : ''}" id="guide-card">
+            <div class="guide-card ${effectiveCentered ? 'centered' : ''}" id="guide-card">
                 <div class="guide-header">
                     <div class="guide-step-label">
                         <i class="fas ${step.icon}"></i>
@@ -12933,7 +13130,7 @@ ${materialesPlaceholder}
 
         // Position the card relative to target
         const card = document.getElementById('guide-card');
-        if (card && targetRect && !isCentered) {
+        if (card && targetRect && !effectiveCentered) {
             requestAnimationFrame(() => {
                 const cardRect = card.getBoundingClientRect();
                 const vw = window.innerWidth;
@@ -12967,7 +13164,7 @@ ${materialesPlaceholder}
                 // Animate in
                 requestAnimationFrame(() => card.classList.add('visible'));
             });
-        } else if (card && isCentered) {
+        } else if (card && effectiveCentered) {
             requestAnimationFrame(() => card.classList.add('visible'));
         }
 
