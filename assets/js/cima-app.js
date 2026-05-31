@@ -280,49 +280,49 @@ class MedCheckApp {
         // `atc` = código para detectar cobertura; `isNew` = grupo nuevo de alto valor.
         this.ESSENTIAL_FORMULARY = [
             // Cardiovascular
-            { area: 'Cardiovascular', name: 'Enalapril', pa: 'enalapril', atc: 'C09AA02', note: 'IECA — núcleo HTA/IC (WHO EML)' },
-            { area: 'Cardiovascular', name: 'Losartán', pa: 'losartan', atc: 'C09CA01', note: 'ARA-II (WHO EML)' },
-            { area: 'Cardiovascular', name: 'Amlodipino', pa: 'amlodipino', atc: 'C08CA01', note: 'Calcioantagonista (WHO EML)' },
-            { area: 'Cardiovascular', name: 'Hidroclorotiazida', pa: 'hidroclorotiazida', atc: 'C03AA03', note: 'Tiazida (WHO EML)' },
-            { area: 'Cardiovascular', name: 'Bisoprolol', pa: 'bisoprolol', atc: 'C07AB07', note: 'Betabloqueante (WHO EML)' },
-            { area: 'Cardiovascular', name: 'Furosemida', pa: 'furosemida', atc: 'C03CA01', note: 'Diurético de asa — IC (WHO EML)' },
-            { area: 'Cardiovascular', name: 'Espironolactona', pa: 'espironolactona', atc: 'C03DA01', note: 'Antialdosterónico — IC/HTA resistente (WHO EML)' },
-            { area: 'Cardiovascular', name: 'Atorvastatina', pa: 'atorvastatina', atc: 'C10AA05', note: 'Estatina — núcleo lípidos' },
-            { area: 'Cardiovascular', name: 'Nitroglicerina', pa: 'nitroglicerina', atc: 'C01DA02', route: 'sublingual/transdérmica', note: 'Antianginoso (WHO EML)' },
+            { area: 'Cardiovascular', name: 'Enalapril', pa: 'enalapril', atc: 'C09AA02', note: 'IECA — núcleo HTA/IC' },
+            { area: 'Cardiovascular', name: 'Losartán', pa: 'losartan', atc: 'C09CA01', note: 'ARA-II' },
+            { area: 'Cardiovascular', name: 'Amlodipino', pa: 'amlodipino', atc: 'C08CA01', note: 'Calcioantagonista' },
+            { area: 'Cardiovascular', name: 'Hidroclorotiazida', pa: 'hidroclorotiazida', atc: 'C03AA03', note: 'Tiazida' },
+            { area: 'Cardiovascular', name: 'Bisoprolol', pa: 'bisoprolol', atc: 'C07AB07', note: 'Betabloqueante' },
+            { area: 'Cardiovascular', name: 'Furosemida', pa: 'furosemida', atc: 'C03CA01', note: 'Diurético de asa — IC' },
+            { area: 'Cardiovascular', name: 'Espironolactona', pa: 'espironolactona', atc: 'C03DA01', note: 'Antialdosterónico — IC/HTA resistente' },
+            { area: 'Cardiovascular', name: 'Atorvastatina', pa: 'atorvastatina', atc: 'C10AA05', inn: 'atorvastatin', note: 'Estatina — núcleo lípidos' },
+            { area: 'Cardiovascular', name: 'Nitroglicerina', pa: 'nitroglicerina', atc: 'C01DA02', route: 'sublingual/transdérmica', note: 'Antianginoso' },
             // Anticoagulación / antiagregación
-            { area: 'Anticoagulación', name: 'Ácido acetilsalicílico (antiagregante)', pa: 'acetilsalicilico', atc: 'B01AC06', note: 'Antiagregante (WHO EML)' },
-            { area: 'Anticoagulación', name: 'Clopidogrel', pa: 'clopidogrel', atc: 'B01AC04', note: 'Antiagregante (WHO EML)' },
-            { area: 'Anticoagulación', name: 'Apixabán', pa: 'apixaban', atc: 'B01AF02', isNew: true, note: 'ACOD — estándar FANV/ETV (no en EML por coste; añadido por evidencia)' },
+            { area: 'Anticoagulación', name: 'Ácido acetilsalicílico (antiagregante)', pa: 'acetilsalicilico', atc: 'B01AC06', note: 'Antiagregante' },
+            { area: 'Anticoagulación', name: 'Clopidogrel', pa: 'clopidogrel', atc: 'B01AC04', note: 'Antiagregante' },
+            { area: 'Anticoagulación', name: 'Apixabán', pa: 'apixaban', atc: 'B01AF02', inn: 'apixaban', isNew: true, note: 'ACOD — estándar FANV/ETV' },
             { area: 'Anticoagulación', name: 'Acenocumarol', pa: 'acenocumarol', atc: 'B01AA07', note: 'AVK (EML mantiene warfarina)' },
-            { area: 'Anticoagulación', name: 'Enoxaparina', pa: 'enoxaparina', atc: 'B01AB05', route: 'subcutánea', note: 'HBPM (WHO EML)' },
+            { area: 'Anticoagulación', name: 'Enoxaparina', pa: 'enoxaparina', atc: 'B01AB05', route: 'subcutánea', note: 'HBPM' },
             // Diabetes / Metabólico
-            { area: 'Diabetes / Metabólico', name: 'Metformina', pa: 'metformina', atc: 'A10BA02', note: '1.ª línea inamovible (WHO EML)' },
+            { area: 'Diabetes / Metabólico', name: 'Metformina', pa: 'metformina', atc: 'A10BA02', note: '1.ª línea inamovible' },
             { area: 'Diabetes / Metabólico', name: 'Empagliflozina', pa: 'empagliflozina', atc: 'A10BK03', isNew: true, note: 'iSGLT2 — beneficio cardiorrenal (EML desde 2021)' },
             { area: 'Diabetes / Metabólico', name: 'Semaglutida', pa: 'semaglutida', atc: 'A10BJ06', route: 'subcutánea/oral', isNew: true, note: 'arGLP-1 — DM2/obesidad (representación limitada en EML)' },
-            { area: 'Diabetes / Metabólico', name: 'Insulina glargina', pa: 'insulina glargina', atc: 'A10AE04', route: 'subcutánea', note: 'Insulina basal (WHO EML)' },
-            { area: 'Diabetes / Metabólico', name: 'Gliclazida', pa: 'gliclazida', atc: 'A10BB09', note: 'Sulfonilurea (WHO EML)' },
+            { area: 'Diabetes / Metabólico', name: 'Insulina glargina', pa: 'insulina glargina', atc: 'A10AE04', route: 'subcutánea', note: 'Insulina basal' },
+            { area: 'Diabetes / Metabólico', name: 'Gliclazida', pa: 'gliclazida', atc: 'A10BB09', note: 'Sulfonilurea' },
             // Respiratorio
-            { area: 'Respiratorio', name: 'Salbutamol', pa: 'salbutamol', atc: 'R03AC02', route: 'inhalatoria', note: 'SABA (WHO EML)' },
-            { area: 'Respiratorio', name: 'Budesonida inhalada', pa: 'budesonida', atc: 'R03BA02', route: 'inhalatoria', note: 'Corticoide inhalado (WHO EML)' },
+            { area: 'Respiratorio', name: 'Salbutamol', pa: 'salbutamol', atc: 'R03AC02', route: 'inhalatoria', note: 'SABA' },
+            { area: 'Respiratorio', name: 'Budesonida inhalada', pa: 'budesonida', atc: 'R03BA02', route: 'inhalatoria', note: 'Corticoide inhalado' },
             { area: 'Respiratorio', name: 'Budesonida/Formoterol', pa: 'budesonida formoterol', atc: 'R03AK07', route: 'inhalatoria', note: 'LABA + corticoide inhalado' },
             { area: 'Respiratorio', name: 'Tiotropio', pa: 'tiotropio', atc: 'R03BB04', route: 'inhalatoria', note: 'LAMA — EPOC' },
             { area: 'Respiratorio', name: 'Montelukast', pa: 'montelukast', atc: 'R03DC03', note: 'Antileucotrieno' },
             // Digestivo
-            { area: 'Digestivo', name: 'Omeprazol', pa: 'omeprazol', atc: 'A02BC01', note: 'IBP (WHO EML)' },
-            { area: 'Digestivo', name: 'Loperamida', pa: 'loperamida', atc: 'A07DA03', note: 'Antidiarreico (WHO EML)' },
+            { area: 'Digestivo', name: 'Omeprazol', pa: 'omeprazol', atc: 'A02BC01', note: 'IBP' },
+            { area: 'Digestivo', name: 'Loperamida', pa: 'loperamida', atc: 'A07DA03', note: 'Antidiarreico' },
             { area: 'Digestivo', name: 'Metoclopramida', pa: 'metoclopramida', atc: 'A03FA01', note: 'Procinético/antiemético' },
             { area: 'Digestivo', name: 'Lactulosa', pa: 'lactulosa', atc: 'A06AD11', note: 'Laxante osmótico' },
             // Dolor / Musculoesquelético / Reumatología
-            { area: 'Dolor / Musculoesquelético', name: 'Paracetamol', pa: 'paracetamol', atc: 'N02BE01', note: '1.er escalón analgésico (WHO EML)' },
-            { area: 'Dolor / Musculoesquelético', name: 'Ibuprofeno', pa: 'ibuprofeno', atc: 'M01AE01', note: 'AINE (WHO EML)' },
-            { area: 'Dolor / Musculoesquelético', name: 'Naproxeno', pa: 'naproxeno', atc: 'M01AE02', note: 'AINE (WHO EML)' },
-            { area: 'Dolor / Musculoesquelético', name: 'Tramadol', pa: 'tramadol', atc: 'N02AX02', note: 'Opioide menor (WHO EML)' },
+            { area: 'Dolor / Musculoesquelético', name: 'Paracetamol', pa: 'paracetamol', atc: 'N02BE01', note: '1.er escalón analgésico' },
+            { area: 'Dolor / Musculoesquelético', name: 'Ibuprofeno', pa: 'ibuprofeno', atc: 'M01AE01', note: 'AINE' },
+            { area: 'Dolor / Musculoesquelético', name: 'Naproxeno', pa: 'naproxeno', atc: 'M01AE02', inn: 'naproxen', note: 'AINE' },
+            { area: 'Dolor / Musculoesquelético', name: 'Tramadol', pa: 'tramadol', atc: 'N02AX02', note: 'Opioide menor' },
             { area: 'Dolor / Musculoesquelético', name: 'Metamizol', pa: 'metamizol', atc: 'N02BB02', note: 'Analgésico de uso habitual en España' },
-            { area: 'Dolor / Musculoesquelético', name: 'Alopurinol', pa: 'alopurinol', atc: 'M04AA01', note: 'Hipouricemiante — gota (WHO EML)' },
-            { area: 'Dolor / Musculoesquelético', name: 'Colchicina', pa: 'colchicina', atc: 'M04AC01', note: 'Crisis gotosa (WHO EML)' },
-            { area: 'Dolor / Musculoesquelético', name: 'Prednisona', pa: 'prednisona', atc: 'H02AB07', note: 'Corticoide oral (EML: prednisolona)' },
+            { area: 'Dolor / Musculoesquelético', name: 'Alopurinol', pa: 'alopurinol', atc: 'M04AA01', note: 'Hipouricemiante — gota' },
+            { area: 'Dolor / Musculoesquelético', name: 'Colchicina', pa: 'colchicina', atc: 'M04AC01', note: 'Crisis gotosa' },
+            { area: 'Dolor / Musculoesquelético', name: 'Prednisona', pa: 'prednisona', atc: 'H02AB07', inn: 'prednisone', note: 'Corticoide oral' },
             // Osteoporosis
-            { area: 'Osteoporosis', name: 'Alendronato', pa: 'alendronico', atc: 'M05BA04', note: 'Bifosfonato (WHO EML)' },
+            { area: 'Osteoporosis', name: 'Alendronato', pa: 'alendronico', atc: 'M05BA04', note: 'Bifosfonato' },
             { area: 'Osteoporosis', name: 'Colecalciferol (vitamina D)', pa: 'colecalciferol', atc: 'A11CC05', note: 'Vitamina D' },
             // Salud mental
             { area: 'Salud mental', name: 'Sertralina', pa: 'sertralina', atc: 'N06AB06', note: 'ISRS (EML: fluoxetina como representante)' },
@@ -333,29 +333,29 @@ class MedCheckApp {
             // Neurología
             { area: 'Neurología', name: 'Pregabalina', pa: 'pregabalina', atc: 'N03AX16', isNew: true, note: 'Gabapentinoide — dolor neuropático (vigilar mal uso)' },
             { area: 'Neurología', name: 'Gabapentina', pa: 'gabapentina', atc: 'N03AX12', note: 'Gabapentinoide' },
-            { area: 'Neurología', name: 'Amitriptilina', pa: 'amitriptilina', atc: 'N06AA09', note: 'Dolor neuropático/depresión (WHO EML)' },
+            { area: 'Neurología', name: 'Amitriptilina', pa: 'amitriptilina', atc: 'N06AA09', note: 'Dolor neuropático/depresión' },
             { area: 'Neurología', name: 'Levetiracetam', pa: 'levetiracetam', atc: 'N03AX14', note: 'Antiepiléptico' },
             // Infecciosas
-            { area: 'Infecciosas', name: 'Amoxicilina', pa: 'amoxicilina', atc: 'J01CA04', note: 'Penicilina (WHO EML)' },
-            { area: 'Infecciosas', name: 'Amoxicilina/clavulánico', pa: 'amoxicilina clavulanico', atc: 'J01CR02', note: '(WHO EML)' },
-            { area: 'Infecciosas', name: 'Azitromicina', pa: 'azitromicina', atc: 'J01FA10', note: 'Macrólido (WHO EML)' },
-            { area: 'Infecciosas', name: 'Doxiciclina', pa: 'doxiciclina', atc: 'J01AA02', note: 'Tetraciclina (WHO EML)' },
+            { area: 'Infecciosas', name: 'Amoxicilina', pa: 'amoxicilina', atc: 'J01CA04', note: 'Penicilina' },
+            { area: 'Infecciosas', name: 'Amoxicilina/clavulánico', pa: 'amoxicilina clavulanico', atc: 'J01CR02', note: 'Penicilina + inhibidor de betalactamasa' },
+            { area: 'Infecciosas', name: 'Azitromicina', pa: 'azitromicina', atc: 'J01FA10', note: 'Macrólido' },
+            { area: 'Infecciosas', name: 'Doxiciclina', pa: 'doxiciclina', atc: 'J01AA02', note: 'Tetraciclina' },
             { area: 'Infecciosas', name: 'Fosfomicina', pa: 'fosfomicina', atc: 'J01XX01', note: 'ITU no complicada' },
             { area: 'Infecciosas', name: 'Cefuroxima', pa: 'cefuroxima', atc: 'J01DC02', note: 'Cefalosporina de 2.ª generación' },
             // Endocrino / Tiroides
-            { area: 'Endocrino / Tiroides', name: 'Levotiroxina', pa: 'levotiroxina', atc: 'H03AA01', note: 'Hipotiroidismo (WHO EML)' },
+            { area: 'Endocrino / Tiroides', name: 'Levotiroxina', pa: 'levotiroxina', atc: 'H03AA01', note: 'Hipotiroidismo' },
             // Genitourinario / Próstata
             { area: 'Genitourinario', name: 'Tamsulosina', pa: 'tamsulosina', atc: 'G04CA02', note: 'Hiperplasia benigna de próstata' },
             { area: 'Genitourinario', name: 'Finasterida', pa: 'finasterida', atc: 'G04CB01', note: 'Hiperplasia benigna de próstata' },
             // Alergia
-            { area: 'Alergia', name: 'Cetirizina', pa: 'cetirizina', atc: 'R06AE07', note: 'Antihistamínico (EML: loratadina)' },
+            { area: 'Alergia', name: 'Cetirizina', pa: 'cetirizina', atc: 'R06AE07', inn: 'cetirizine', note: 'Antihistamínico' },
             // Dermatología
-            { area: 'Dermatología', name: 'Mometasona (tópica)', pa: 'mometasona', atc: 'D07AC13', route: 'tópica', note: 'Corticoide tópico' },
+            { area: 'Dermatología', name: 'Mometasona (tópica)', pa: 'mometasona', atc: 'D07AC13', inn: 'mometasone', route: 'tópica', note: 'Corticoide tópico' },
             { area: 'Dermatología', name: 'Mupirocina (tópica)', pa: 'mupirocina', atc: 'D06AX09', route: 'tópica', note: 'Antibiótico tópico' },
-            { area: 'Dermatología', name: 'Clotrimazol (tópico)', pa: 'clotrimazol', atc: 'D01AC01', route: 'tópica', note: 'Antifúngico tópico' },
+            { area: 'Dermatología', name: 'Clotrimazol (tópico)', pa: 'clotrimazol', atc: 'D01AC01', inn: 'clotrimazole', route: 'tópica', note: 'Antifúngico tópico' },
             // Salud de la mujer
-            { area: 'Salud de la mujer', name: 'Etinilestradiol/Levonorgestrel', pa: 'levonorgestrel etinilestradiol', atc: 'G03AA07', note: 'Anticoncepción (WHO EML)' },
-            { area: 'Salud de la mujer', name: 'Ácido fólico', pa: 'acido folico', atc: 'B03BB01', note: 'Embarazo/anemia (WHO EML)' }
+            { area: 'Salud de la mujer', name: 'Etinilestradiol/Levonorgestrel', pa: 'levonorgestrel etinilestradiol', atc: 'G03AA07', note: 'Anticoncepción' },
+            { area: 'Salud de la mujer', name: 'Ácido fólico', pa: 'acido folico', atc: 'B03BB01', note: 'Embarazo/anemia' }
         ];
 
         // Guide state
@@ -10567,8 +10567,12 @@ ${materialesPlaceholder}
             .then(r => r.ok ? r.json() : null)
             .then(data => {
                 if (data && data.byAtc) {
-                    data._medByName = {};
-                    (data.meds || []).forEach(m => { data._medByName[m.name] = m; });
+                    data._medByName = {};   // nombre exacto OMS → med (para tooltips)
+                    data._byName = {};      // nombre normalizado → med (cruce INN sin ATC)
+                    (data.meds || []).forEach(m => {
+                        data._medByName[m.name] = m;
+                        data._byName[this._normTxt(m.name)] = m;
+                    });
                     this._emlData = data;
                 } else {
                     this._emlData = empty;
@@ -10845,8 +10849,22 @@ ${materialesPlaceholder}
                 const atcMatch = e.atc && favAtcs[i] && favAtcs[i].startsWith(e.atc);
                 if (paMatch || atcMatch) { fav = favs[i]; break; }
             }
-            return { ...e, covered: !!fav, fav };
+            return { ...e, covered: !!fav, fav, oms: this._essentialIsOms(e) };
         });
+    }
+
+    /**
+     * ¿Este esencial de la lista curada está además en la WHO EML?
+     * Validado contra eml.json en runtime (no etiqueta manual): ATC exacto y,
+     * para los esenciales OMS sin ATC en la lista, por su nombre INN explícito.
+     * Si la OMS retirase el fármaco, deja de marcarse solo. Requiere _loadEml().
+     */
+    _essentialIsOms(e) {
+        if (this._emlMatchByAtc(e.atc)) return true;
+        if (e.inn && this._emlData && this._emlData._byName) {
+            return !!this._emlData._byName[this._normTxt(e.inn)];
+        }
+        return false;
     }
 
     /** Lanza el buscador por principio activo aplicando las preferencias del usuario. */
@@ -10867,6 +10885,7 @@ ${materialesPlaceholder}
         const coverage = this._essentialCoverage();
         const total = coverage.length;
         const coveredCount = coverage.filter(c => c.covered).length;
+        const omsCount = coverage.filter(c => c.oms).length;
         const prefs = this._essentialPrefs();
 
         // Agrupar por área conservando el orden de aparición.
@@ -10885,13 +10904,16 @@ ${materialesPlaceholder}
 
             const rows = items.map(i => {
                 const isNew = i.isNew ? '<span class="ess-new" title="Grupo nuevo de alto valor (más allá de la EML)">nuevo</span>' : '';
+                const omsChip = i.oms
+                    ? '<span class="badge badge-eml badge-xs" title="En la Lista Modelo de Medicamentos Esenciales de la OMS (eEML 23.ª, 2023). Cruce validado en tiempo real con la lista oficial."><i class="fas fa-globe"></i> OMS</span>'
+                    : '<span class="ess-own" title="Selección propia para Atención Primaria: no figura en la lista de la OMS (o la OMS usa otro representante). Justificada por contexto español/evidencia.">propia</span>';
                 const route = i.route ? `<span class="ess-route" title="Vía habitual"><i class="fas fa-route"></i> ${i.route}</span>` : '';
                 if (i.covered) {
                     const safeNreg = String(i.fav.nregistro).replace(/'/g, "\\'");
                     return `
                         <div class="ess-row ess-covered" onclick="app.openMedDetails('${safeNreg}','info')" title="Lo cubres con: ${i.fav.nombre}">
                             <span class="ess-status"><i class="fas fa-circle-check"></i></span>
-                            <span class="ess-name">${i.name} ${isNew}</span>
+                            <span class="ess-name">${i.name} ${isNew} ${omsChip}</span>
                             <span class="ess-meta">${i.fav.nombre}</span>
                         </div>`;
                 }
@@ -10899,7 +10921,7 @@ ${materialesPlaceholder}
                 return `
                     <div class="ess-row ess-missing">
                         <span class="ess-status"><i class="fas fa-circle"></i></span>
-                        <span class="ess-name">${i.name} ${isNew}<span class="ess-note">${i.note || ''}</span></span>
+                        <span class="ess-name">${i.name} ${isNew} ${omsChip}<span class="ess-note">${i.note || ''}</span></span>
                         <span class="ess-action">${route}
                             <button class="btn btn-sm btn-primary-outline" onclick="app._searchEssential('${safePa}')" title="Buscar ${i.name} y elegir presentación">
                                 <i class="fas fa-magnifying-glass"></i> Buscar
@@ -10928,11 +10950,11 @@ ${materialesPlaceholder}
             <div class="essentials-section">
                 <div class="export-note">
                     <i class="fas fa-circle-info"></i>
-                    <span>Vademécum esencial de Atención Primaria por <strong>principio activo</strong> (no marcas). Base: <a href="https://list.essentialmeds.org/" target="_blank" rel="noopener"><strong>WHO Model List of Essential Medicines</strong> <i class="fas fa-arrow-up-right-from-square" style="font-size:.7em"></i></a> (23.ª lista, 2023), complementada con perfiles de prescripción OCDE 2018-25 y los grupos nuevos de alto valor (iSGLT2, arGLP-1, gabapentinoides, ACOD). Orientativo y editable; no sustituye a las guías nacionales ni al criterio clínico. <strong>No añade nada solo</strong>: te recuerda lo que falta y te lleva al buscador para que elijas la presentación.</span>
+                    <span><strong>Selección de referencia para Atención Primaria</strong> por <strong>principio activo</strong> (no marcas). No es la lista de la OMS: la <em>adapta</em> al contexto español. Combina los medicamentos esenciales de la <a href="https://list.essentialmeds.org/" target="_blank" rel="noopener"><strong>OMS</strong> <i class="fas fa-arrow-up-right-from-square" style="font-size:.7em"></i></a> (eEML 23.ª, 2023) —marcados <span class="badge badge-eml badge-xs"><i class="fas fa-globe"></i> OMS</span>— con fármacos de <span class="ess-own">selección propia</span> añadidos por evidencia/contexto (iSGLT2, arGLP-1, ACOD, gabapentinoides…) que la lista global de la OMS no recoge o representa con otro fármaco. El distintivo OMS se <strong>cruza en tiempo real con la lista oficial</strong>, no es una etiqueta manual. Orientativo; no sustituye a las guías nacionales ni al criterio clínico.</span>
                 </div>
 
                 <div class="ess-toolbar">
-                    <div class="ess-summary"><strong>${coveredCount}/${total}</strong> esenciales cubiertos · ${Object.keys(areas).length} áreas</div>
+                    <div class="ess-summary"><strong>${coveredCount}/${total}</strong> cubiertos · <span class="badge badge-eml badge-xs"><i class="fas fa-globe"></i> OMS</span> ${omsCount} con aval OMS · ${Object.keys(areas).length} áreas</div>
                     <div class="ess-prefs">
                         <span class="ess-prefs-label">Al buscar, preferir:</span>
                         <button class="ess-pref-btn ${prefs.generic ? 'on' : ''}" onclick="app._toggleEssentialPref('generic')"><i class="fas fa-pills"></i> Genérico (EFG)</button>

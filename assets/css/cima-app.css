@@ -7755,6 +7755,20 @@ code {
     margin-left: 0.25rem;
 }
 
+/* Distintivo "selección propia" (no OMS) en el vademécum esencial */
+.ess-own {
+    font-size: 0.58rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted, #94a3b8);
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 999px;
+    padding: 0 6px;
+    white-space: nowrap;
+}
+
 /* Ayudas a la prescripción */
 .rx-panel {
     border: 1px solid var(--border);
