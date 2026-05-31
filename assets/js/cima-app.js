@@ -270,6 +270,94 @@ class MedCheckApp {
             ['N05A',    'Perfil metabólico (glucemia, lípidos, peso) — antipsicóticos']
         ];
 
+        // Vademécum esencial de Atención Primaria — lista por PRINCIPIO ACTIVO
+        // (no marcas). Base: WHO Model List of Essential Medicines 23.ª (2023);
+        // complementada con la revisión de perfiles de prescripción OCDE 2018-25
+        // y, explícitamente, los cuatro grupos nuevos (iSGLT2, arGLP-1,
+        // gabapentinoides, ACOD) que la EML aún no representa bien por coste/lag.
+        // ORIENTATIVO y editable: no sustituye a guías nacionales (PAPPS, GEMA,
+        // GesEPOC, redGDPS) ni al criterio clínico. `pa` = término de búsqueda;
+        // `atc` = código para detectar cobertura; `isNew` = grupo nuevo de alto valor.
+        this.ESSENTIAL_FORMULARY = [
+            // Cardiovascular
+            { area: 'Cardiovascular', name: 'Enalapril', pa: 'enalapril', atc: 'C09AA02', note: 'IECA — núcleo HTA/IC (WHO EML)' },
+            { area: 'Cardiovascular', name: 'Losartán', pa: 'losartan', atc: 'C09CA01', note: 'ARA-II (WHO EML)' },
+            { area: 'Cardiovascular', name: 'Amlodipino', pa: 'amlodipino', atc: 'C08CA01', note: 'Calcioantagonista (WHO EML)' },
+            { area: 'Cardiovascular', name: 'Hidroclorotiazida', pa: 'hidroclorotiazida', atc: 'C03AA03', note: 'Tiazida (WHO EML)' },
+            { area: 'Cardiovascular', name: 'Bisoprolol', pa: 'bisoprolol', atc: 'C07AB07', note: 'Betabloqueante (WHO EML)' },
+            { area: 'Cardiovascular', name: 'Furosemida', pa: 'furosemida', atc: 'C03CA01', note: 'Diurético de asa — IC (WHO EML)' },
+            { area: 'Cardiovascular', name: 'Espironolactona', pa: 'espironolactona', atc: 'C03DA01', note: 'Antialdosterónico — IC/HTA resistente (WHO EML)' },
+            { area: 'Cardiovascular', name: 'Atorvastatina', pa: 'atorvastatina', atc: 'C10AA05', note: 'Estatina — núcleo lípidos' },
+            { area: 'Cardiovascular', name: 'Nitroglicerina', pa: 'nitroglicerina', atc: 'C01DA02', route: 'sublingual/transdérmica', note: 'Antianginoso (WHO EML)' },
+            // Anticoagulación / antiagregación
+            { area: 'Anticoagulación', name: 'Ácido acetilsalicílico (antiagregante)', pa: 'acetilsalicilico', atc: 'B01AC06', note: 'Antiagregante (WHO EML)' },
+            { area: 'Anticoagulación', name: 'Clopidogrel', pa: 'clopidogrel', atc: 'B01AC04', note: 'Antiagregante (WHO EML)' },
+            { area: 'Anticoagulación', name: 'Apixabán', pa: 'apixaban', atc: 'B01AF02', isNew: true, note: 'ACOD — estándar FANV/ETV (no en EML por coste; añadido por evidencia)' },
+            { area: 'Anticoagulación', name: 'Acenocumarol', pa: 'acenocumarol', atc: 'B01AA07', note: 'AVK (EML mantiene warfarina)' },
+            { area: 'Anticoagulación', name: 'Enoxaparina', pa: 'enoxaparina', atc: 'B01AB05', route: 'subcutánea', note: 'HBPM (WHO EML)' },
+            // Diabetes / Metabólico
+            { area: 'Diabetes / Metabólico', name: 'Metformina', pa: 'metformina', atc: 'A10BA02', note: '1.ª línea inamovible (WHO EML)' },
+            { area: 'Diabetes / Metabólico', name: 'Empagliflozina', pa: 'empagliflozina', atc: 'A10BK03', isNew: true, note: 'iSGLT2 — beneficio cardiorrenal (EML desde 2021)' },
+            { area: 'Diabetes / Metabólico', name: 'Semaglutida', pa: 'semaglutida', atc: 'A10BJ06', route: 'subcutánea/oral', isNew: true, note: 'arGLP-1 — DM2/obesidad (representación limitada en EML)' },
+            { area: 'Diabetes / Metabólico', name: 'Insulina glargina', pa: 'insulina glargina', atc: 'A10AE04', route: 'subcutánea', note: 'Insulina basal (WHO EML)' },
+            { area: 'Diabetes / Metabólico', name: 'Gliclazida', pa: 'gliclazida', atc: 'A10BB09', note: 'Sulfonilurea (WHO EML)' },
+            // Respiratorio
+            { area: 'Respiratorio', name: 'Salbutamol', pa: 'salbutamol', atc: 'R03AC02', route: 'inhalatoria', note: 'SABA (WHO EML)' },
+            { area: 'Respiratorio', name: 'Budesonida inhalada', pa: 'budesonida', atc: 'R03BA02', route: 'inhalatoria', note: 'Corticoide inhalado (WHO EML)' },
+            { area: 'Respiratorio', name: 'Budesonida/Formoterol', pa: 'budesonida formoterol', atc: 'R03AK07', route: 'inhalatoria', note: 'LABA + corticoide inhalado' },
+            { area: 'Respiratorio', name: 'Tiotropio', pa: 'tiotropio', atc: 'R03BB04', route: 'inhalatoria', note: 'LAMA — EPOC' },
+            { area: 'Respiratorio', name: 'Montelukast', pa: 'montelukast', atc: 'R03DC03', note: 'Antileucotrieno' },
+            // Digestivo
+            { area: 'Digestivo', name: 'Omeprazol', pa: 'omeprazol', atc: 'A02BC01', note: 'IBP (WHO EML)' },
+            { area: 'Digestivo', name: 'Loperamida', pa: 'loperamida', atc: 'A07DA03', note: 'Antidiarreico (WHO EML)' },
+            { area: 'Digestivo', name: 'Metoclopramida', pa: 'metoclopramida', atc: 'A03FA01', note: 'Procinético/antiemético' },
+            { area: 'Digestivo', name: 'Lactulosa', pa: 'lactulosa', atc: 'A06AD11', note: 'Laxante osmótico' },
+            // Dolor / Musculoesquelético / Reumatología
+            { area: 'Dolor / Musculoesquelético', name: 'Paracetamol', pa: 'paracetamol', atc: 'N02BE01', note: '1.er escalón analgésico (WHO EML)' },
+            { area: 'Dolor / Musculoesquelético', name: 'Ibuprofeno', pa: 'ibuprofeno', atc: 'M01AE01', note: 'AINE (WHO EML)' },
+            { area: 'Dolor / Musculoesquelético', name: 'Naproxeno', pa: 'naproxeno', atc: 'M01AE02', note: 'AINE (WHO EML)' },
+            { area: 'Dolor / Musculoesquelético', name: 'Tramadol', pa: 'tramadol', atc: 'N02AX02', note: 'Opioide menor (WHO EML)' },
+            { area: 'Dolor / Musculoesquelético', name: 'Metamizol', pa: 'metamizol', atc: 'N02BB02', note: 'Analgésico de uso habitual en España' },
+            { area: 'Dolor / Musculoesquelético', name: 'Alopurinol', pa: 'alopurinol', atc: 'M04AA01', note: 'Hipouricemiante — gota (WHO EML)' },
+            { area: 'Dolor / Musculoesquelético', name: 'Colchicina', pa: 'colchicina', atc: 'M04AC01', note: 'Crisis gotosa (WHO EML)' },
+            { area: 'Dolor / Musculoesquelético', name: 'Prednisona', pa: 'prednisona', atc: 'H02AB07', note: 'Corticoide oral (EML: prednisolona)' },
+            // Osteoporosis
+            { area: 'Osteoporosis', name: 'Alendronato', pa: 'alendronico', atc: 'M05BA04', note: 'Bifosfonato (WHO EML)' },
+            { area: 'Osteoporosis', name: 'Colecalciferol (vitamina D)', pa: 'colecalciferol', atc: 'A11CC05', note: 'Vitamina D' },
+            // Salud mental
+            { area: 'Salud mental', name: 'Sertralina', pa: 'sertralina', atc: 'N06AB06', note: 'ISRS (EML: fluoxetina como representante)' },
+            { area: 'Salud mental', name: 'Escitalopram', pa: 'escitalopram', atc: 'N06AB10', note: 'ISRS' },
+            { area: 'Salud mental', name: 'Mirtazapina', pa: 'mirtazapina', atc: 'N06AX11', note: 'Antidepresivo' },
+            { area: 'Salud mental', name: 'Lorazepam', pa: 'lorazepam', atc: 'N05BA06', note: 'Benzodiacepina (EML: diazepam)' },
+            { area: 'Salud mental', name: 'Quetiapina', pa: 'quetiapina', atc: 'N05AH04', note: 'Antipsicótico' },
+            // Neurología
+            { area: 'Neurología', name: 'Pregabalina', pa: 'pregabalina', atc: 'N03AX16', isNew: true, note: 'Gabapentinoide — dolor neuropático (vigilar mal uso)' },
+            { area: 'Neurología', name: 'Gabapentina', pa: 'gabapentina', atc: 'N03AX12', note: 'Gabapentinoide' },
+            { area: 'Neurología', name: 'Amitriptilina', pa: 'amitriptilina', atc: 'N06AA09', note: 'Dolor neuropático/depresión (WHO EML)' },
+            { area: 'Neurología', name: 'Levetiracetam', pa: 'levetiracetam', atc: 'N03AX14', note: 'Antiepiléptico' },
+            // Infecciosas
+            { area: 'Infecciosas', name: 'Amoxicilina', pa: 'amoxicilina', atc: 'J01CA04', note: 'Penicilina (WHO EML)' },
+            { area: 'Infecciosas', name: 'Amoxicilina/clavulánico', pa: 'amoxicilina clavulanico', atc: 'J01CR02', note: '(WHO EML)' },
+            { area: 'Infecciosas', name: 'Azitromicina', pa: 'azitromicina', atc: 'J01FA10', note: 'Macrólido (WHO EML)' },
+            { area: 'Infecciosas', name: 'Doxiciclina', pa: 'doxiciclina', atc: 'J01AA02', note: 'Tetraciclina (WHO EML)' },
+            { area: 'Infecciosas', name: 'Fosfomicina', pa: 'fosfomicina', atc: 'J01XX01', note: 'ITU no complicada' },
+            { area: 'Infecciosas', name: 'Cefuroxima', pa: 'cefuroxima', atc: 'J01DC02', note: 'Cefalosporina de 2.ª generación' },
+            // Endocrino / Tiroides
+            { area: 'Endocrino / Tiroides', name: 'Levotiroxina', pa: 'levotiroxina', atc: 'H03AA01', note: 'Hipotiroidismo (WHO EML)' },
+            // Genitourinario / Próstata
+            { area: 'Genitourinario', name: 'Tamsulosina', pa: 'tamsulosina', atc: 'G04CA02', note: 'Hiperplasia benigna de próstata' },
+            { area: 'Genitourinario', name: 'Finasterida', pa: 'finasterida', atc: 'G04CB01', note: 'Hiperplasia benigna de próstata' },
+            // Alergia
+            { area: 'Alergia', name: 'Cetirizina', pa: 'cetirizina', atc: 'R06AE07', note: 'Antihistamínico (EML: loratadina)' },
+            // Dermatología
+            { area: 'Dermatología', name: 'Mometasona (tópica)', pa: 'mometasona', atc: 'D07AC13', route: 'tópica', note: 'Corticoide tópico' },
+            { area: 'Dermatología', name: 'Mupirocina (tópica)', pa: 'mupirocina', atc: 'D06AX09', route: 'tópica', note: 'Antibiótico tópico' },
+            { area: 'Dermatología', name: 'Clotrimazol (tópico)', pa: 'clotrimazol', atc: 'D01AC01', route: 'tópica', note: 'Antifúngico tópico' },
+            // Salud de la mujer
+            { area: 'Salud de la mujer', name: 'Etinilestradiol/Levonorgestrel', pa: 'levonorgestrel etinilestradiol', atc: 'G03AA07', note: 'Anticoncepción (WHO EML)' },
+            { area: 'Salud de la mujer', name: 'Ácido fólico', pa: 'acido folico', atc: 'B03BB01', note: 'Embarazo/anemia (WHO EML)' }
+        ];
+
         // Guide state
         this.GUIDE_SEEN_KEY = 'medcheck_guide_seen';
         this.guideActive = false;
@@ -9673,6 +9761,9 @@ ${materialesPlaceholder}
                         <i class="fas fa-star"></i> Favoritos
                         <span class="subnav-count">${favs.length}</span>
                     </button>
+                    <button class="profile-subnav-btn" data-section="essentials">
+                        <i class="fas fa-clipboard-list"></i> Esenciales
+                    </button>
                     <button class="profile-subnav-btn" data-section="analytics">
                         <i class="fas fa-chart-bar"></i> Analítica
                     </button>
@@ -9701,6 +9792,7 @@ ${materialesPlaceholder}
                 const container = document.getElementById('profile-section-content');
                 if (section === 'favorites') this._favDrillFilter = null; // pulsar la pestaña = ver todo
                 if (section === 'favorites') container.innerHTML = this._renderFavoritesSection(this.getFavorites());
+                if (section === 'essentials') container.innerHTML = this._renderEssentialsSection();
                 if (section === 'analytics') container.innerHTML = this._renderAnalyticsSection(this.getFavorites());
                 if (section === 'prescription') container.innerHTML = this._renderPrescriptionSection();
                 if (section === 'materials') container.innerHTML = this._renderMaterialsSection();
@@ -10433,6 +10525,147 @@ ${materialesPlaceholder}
     _closeTagEditor() {
         const overlay = document.getElementById('fav-tags-modal');
         if (overlay) overlay.classList.add('hidden');
+    }
+
+    // ============================================
+    // PROFILE — Essentials (vademécum esencial de AP)
+    // ============================================
+
+    /** Normaliza texto: minúsculas + sin acentos (para emparejar principios activos). */
+    _normTxt(s) {
+        return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    }
+
+    /** Preferencias de captura de esenciales (genérico/biosimilar), en localStorage. */
+    _essentialPrefs() {
+        try { return JSON.parse(localStorage.getItem('medcheck_essential_prefs') || '{}'); }
+        catch { return {}; }
+    }
+
+    _toggleEssentialPref(key) {
+        const prefs = this._essentialPrefs();
+        prefs[key] = !prefs[key];
+        localStorage.setItem('medcheck_essential_prefs', JSON.stringify(prefs));
+        const container = document.getElementById('profile-section-content');
+        if (container) container.innerHTML = this._renderEssentialsSection();
+    }
+
+    /**
+     * Cruza el vademécum esencial con los favoritos del usuario. Un esencial está
+     * "cubierto" si algún favorito comparte su principio activo (emparejado por
+     * tokens normalizados) o su código ATC. No añade nada: solo informa.
+     */
+    _essentialCoverage() {
+        const favs = this.getFavorites();
+        const favPAs = favs.map(f => this._normTxt(f.principioActivo));
+        const favAtcs = favs.map(f => (f.atcCodigo || '').toUpperCase());
+
+        return this.ESSENTIAL_FORMULARY.map(e => {
+            const tokens = this._normTxt(e.pa).split(/[\s/,]+/).filter(w => w.length >= 5);
+            let fav = null;
+            for (let i = 0; i < favs.length; i++) {
+                const paMatch = tokens.some(t => favPAs[i].includes(t));
+                const atcMatch = e.atc && favAtcs[i] && favAtcs[i].startsWith(e.atc);
+                if (paMatch || atcMatch) { fav = favs[i]; break; }
+            }
+            return { ...e, covered: !!fav, fav };
+        });
+    }
+
+    /** Lanza el buscador por principio activo aplicando las preferencias del usuario. */
+    _searchEssential(pa) {
+        const prefs = this._essentialPrefs();
+        // Fijar filtros antes de renderizar el buscador (los lee performSearch).
+        this.lastSearchFilters = {
+            comerc: true,
+            generic: !!prefs.generic,
+            receta: false,
+            biosimilar: !!prefs.biosimilar,
+            showBrands: false
+        };
+        this.searchByPA(pa);
+    }
+
+    _renderEssentialsSection() {
+        const coverage = this._essentialCoverage();
+        const total = coverage.length;
+        const coveredCount = coverage.filter(c => c.covered).length;
+        const prefs = this._essentialPrefs();
+
+        // Agrupar por área conservando el orden de aparición.
+        const areas = {};
+        coverage.forEach(c => {
+            if (!areas[c.area]) areas[c.area] = [];
+            areas[c.area].push(c);
+        });
+
+        const areaBlocks = Object.keys(areas).map((area, idx) => {
+            const items = areas[area];
+            const cov = items.filter(i => i.covered).length;
+            const pct = Math.round(cov / items.length * 100);
+            const complete = cov === items.length;
+            const color = complete ? '#10b981' : (cov === 0 ? '#94a3b8' : '#f59e0b');
+
+            const rows = items.map(i => {
+                const isNew = i.isNew ? '<span class="ess-new" title="Grupo nuevo de alto valor (más allá de la EML)">nuevo</span>' : '';
+                const route = i.route ? `<span class="ess-route" title="Vía habitual"><i class="fas fa-route"></i> ${i.route}</span>` : '';
+                if (i.covered) {
+                    const safeNreg = String(i.fav.nregistro).replace(/'/g, "\\'");
+                    return `
+                        <div class="ess-row ess-covered" onclick="app.openMedDetails('${safeNreg}','info')" title="Lo cubres con: ${i.fav.nombre}">
+                            <span class="ess-status"><i class="fas fa-circle-check"></i></span>
+                            <span class="ess-name">${i.name} ${isNew}</span>
+                            <span class="ess-meta">${i.fav.nombre}</span>
+                        </div>`;
+                }
+                const safePa = i.pa.replace(/'/g, "\\'");
+                return `
+                    <div class="ess-row ess-missing">
+                        <span class="ess-status"><i class="fas fa-circle"></i></span>
+                        <span class="ess-name">${i.name} ${isNew}<span class="ess-note">${i.note || ''}</span></span>
+                        <span class="ess-action">${route}
+                            <button class="btn btn-sm btn-primary-outline" onclick="app._searchEssential('${safePa}')" title="Buscar ${i.name} y elegir presentación">
+                                <i class="fas fa-magnifying-glass"></i> Buscar
+                            </button>
+                        </span>
+                    </div>`;
+            }).join('');
+
+            return `
+                <div class="fav-atc-group ${idx === 0 ? '' : 'collapsed'}" data-essarea="${area}">
+                    <div class="fav-atc-group-header" onclick="this.parentElement.classList.toggle('collapsed')" style="border-color:${color}40; background:${color}10">
+                        <div class="fav-atc-group-title">
+                            <span class="fav-atc-icon" style="color:${color}"><i class="fas fa-${complete ? 'circle-check' : 'notes-medical'}"></i></span>
+                            <span class="fav-atc-name">${area}</span>
+                        </div>
+                        <div class="fav-atc-meta">
+                            <span class="fav-atc-count">${cov}/${items.length}</span>
+                            <i class="fas fa-chevron-down fav-atc-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="fav-atc-group-body"><div class="ess-list">${rows}</div></div>
+                </div>`;
+        }).join('');
+
+        return `
+            <div class="essentials-section">
+                <div class="export-note">
+                    <i class="fas fa-circle-info"></i>
+                    Vademécum esencial de Atención Primaria por <strong>principio activo</strong> (no marcas). Base: <strong>WHO Model List of Essential Medicines 2023</strong>, complementada con perfiles de prescripción OCDE 2018-25 y los grupos nuevos de alto valor (iSGLT2, arGLP-1, gabapentinoides, ACOD). Orientativo y editable; no sustituye a las guías nacionales ni al criterio clínico. <strong>No añade nada solo</strong>: te recuerda lo que falta y te lleva al buscador para que elijas la presentación.
+                </div>
+
+                <div class="ess-toolbar">
+                    <div class="ess-summary"><strong>${coveredCount}/${total}</strong> esenciales cubiertos · ${Object.keys(areas).length} áreas</div>
+                    <div class="ess-prefs">
+                        <span class="ess-prefs-label">Al buscar, preferir:</span>
+                        <button class="ess-pref-btn ${prefs.generic ? 'on' : ''}" onclick="app._toggleEssentialPref('generic')"><i class="fas fa-pills"></i> Genérico (EFG)</button>
+                        <button class="ess-pref-btn ${prefs.biosimilar ? 'on' : ''}" onclick="app._toggleEssentialPref('biosimilar')"><i class="fas fa-dna"></i> Biosimilar</button>
+                    </div>
+                </div>
+
+                ${areaBlocks}
+            </div>
+        `;
     }
 
     // ============================================
