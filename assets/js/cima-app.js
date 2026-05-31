@@ -561,6 +561,11 @@ class MedCheckApp {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
+                // Clic en "Mi Perfil" = entrada fresca: favoritos sin filtro drill.
+                if (tab.dataset.view === 'profile') {
+                    this._profileSection = 'favorites';
+                    this._favDrillFilter = null;
+                }
                 this.loadView(tab.dataset.view);
             });
         });
@@ -1115,21 +1120,25 @@ class MedCheckApp {
             // (si está activo, todos los resultados ya son comercializados → ocultar)
             _setCount('cnt-comerc', this.lastSearchFilters.comerc ? 0 : rawData.resultados.filter(m => m.comerc).length);
 
-            // Filtrar genéricos en cliente si está activo
-            if (this.lastSearchFilters.generic) {
+            // Genérico y biosimilar son alternativas de menor coste. Si se marcan
+            // AMBOS se combinan en OR (un fármaco no es a la vez EFG y biosimilar,
+            // así que un AND daría siempre cero resultados).
+            const fGen = this.lastSearchFilters.generic;
+            const fBio = this.lastSearchFilters.biosimilar;
+            if (fGen && fBio) {
+                displayResults = displayResults.filter(med => med.generico === true || med.biosimilar === true);
+                totalFilas = displayResults.length;
+            } else if (fGen) {
                 displayResults = displayResults.filter(med => med.generico === true);
                 totalFilas = displayResults.length;
-            }
-
-            // Filtrar por receta en cliente si está activo
-            if (this.lastSearchFilters.receta) {
-                displayResults = displayResults.filter(med => med.receta === true);
+            } else if (fBio) {
+                displayResults = displayResults.filter(med => med.biosimilar === true);
                 totalFilas = displayResults.length;
             }
 
-            // Filtrar biosimilares en cliente si está activo
-            if (this.lastSearchFilters.biosimilar) {
-                displayResults = displayResults.filter(med => med.biosimilar === true);
+            // Filtrar por receta en cliente si está activo (independiente)
+            if (this.lastSearchFilters.receta) {
+                displayResults = displayResults.filter(med => med.receta === true);
                 totalFilas = displayResults.length;
             }
 
@@ -3482,6 +3491,17 @@ class MedCheckApp {
             return;
         }
 
+        // Mapa nombre→nregistro (de la lista de fármacos añadidos) para enlazar.
+        const nameToNreg = {};
+        (this.interactionsDrugList || []).forEach(m => { if (m.nombre) nameToNreg[m.nombre] = m.nregistro; });
+        const drugLink = (fullName) => {
+            const short = (fullName || '').split(' ')[0];
+            const nreg = nameToNreg[fullName];
+            if (!nreg) return short;
+            const safe = String(nreg).replace(/'/g, "\\'");
+            return `<span class="rx-link" onclick="event.stopPropagation(); app.openMedDetails('${safe}','interactions')" title="Abrir ${fullName}">${short}</span>`;
+        };
+
         const interactionsHtml = results.interactions.map(int => `
     <div class="safety-check-item ${int.severity}">
                 <div class="safety-check-icon">
@@ -3489,7 +3509,7 @@ class MedCheckApp {
                 </div>
                 <div class="safety-check-content">
                     <div class="safety-check-title">
-                        ${int.drug1.split(' ')[0]} ↔ ${int.drug2.split(' ')[0]}
+                        ${drugLink(int.drug1)} ↔ ${drugLink(int.drug2)}
                     </div>
                     <div class="safety-check-detail">
                         <span class="text-muted">${int.source}</span><br>
@@ -5725,6 +5745,11 @@ class MedCheckApp {
                 }
             }
 
+            // Cachear el med enriquecido del detalle para que el botón de favorito
+            // del modal guarde el registro completo (ATC, principio activo, CN).
+            this._medRenderCache.set(med.nregistro, med);
+            const isModalFav = this.isFavorite(med.nregistro);
+
             this.modalBody.innerHTML = `
     <div class="modal-header">
                     <div class="med-thumbnail-wrapper">
@@ -5741,6 +5766,9 @@ class MedCheckApp {
                         <div class="med-header-info">
                             <h2 class="modal-title">${med.nombre}${med.nosustituible && med.nosustituible.id === 2 ? ' <span class="badge badge-nti" title="Índice Terapéutico Estrecho — No sustituible"><i class="fas fa-exclamation-triangle"></i> NTI</span>' : ''}</h2>
                             <p class="modal-subtitle">${med.labtitular}</p>
+                            <button class="modal-fav-btn ${isModalFav ? 'active' : ''}" onclick="app.toggleFavoriteFromModal('${med.nregistro}', this)" title="${isModalFav ? 'Quitar de Mi vademécum (favoritos)' : 'Guardar en Mi vademécum (favoritos)'}">
+                                <i class="fas fa-star"></i> <span>${isModalFav ? 'En Mi vademécum' : 'Guardar en Mi vademécum'}</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -9251,6 +9279,20 @@ ${materialesPlaceholder}
             }
         }
 
+        // Restaurar estado del perfil (subpestaña, agrupación, drill) desde la URL.
+        if (targetView === 'profile' && !params.nregistro) {
+            const validSecs = ['favorites', 'essentials', 'analytics', 'prescription', 'materials', 'export'];
+            this._profileSection = validSecs.includes(params.psec) ? params.psec : 'favorites';
+            if (params.group) this._favGroupMode = params.group;
+            if (params.dt) {
+                this._favDrillFilter = { type: params.dt, value: params.dv, label: params.dl || params.dv };
+            } else {
+                this._favDrillFilter = null;
+            }
+            await this.loadView('profile', false);
+            return;
+        }
+
         // Handle nregistro - open medication detail
         if (params.nregistro) {
             // First load the base view without URL update
@@ -9542,6 +9584,7 @@ ${materialesPlaceholder}
             conduc: !!med.conduc,
             tags: Array.isArray(extra.tags) ? extra.tags : [],
             specialtyOverride: extra.specialtyOverride || med.specialtyOverride || null,
+            sadmansOverride: extra.sadmansOverride || med.sadmansOverride || null,
             addedAt: extra.addedAt || new Date().toISOString(),
             viewCount: extra.viewCount || 0,
             lastViewedAt: extra.lastViewedAt || null
@@ -9652,6 +9695,22 @@ ${materialesPlaceholder}
         if (btnEl) btnEl.classList.toggle('active', this.isFavorite(med.nregistro)); // reconciliar
     }
 
+    /** Alterna el favorito desde el modal de detalle (med ya enriquecido) y actualiza el botón con etiqueta. */
+    async toggleFavoriteFromModal(nregistro, btnEl) {
+        const med = this._medRenderCache.get(nregistro) ?? this._medRenderCache.get(+nregistro);
+        if (!med) return;
+        const willAdd = !this.isFavorite(med.nregistro);
+        if (btnEl) btnEl.classList.toggle('active', willAdd); // optimista
+        await this.toggleFavorite(med);
+        const active = this.isFavorite(med.nregistro);
+        if (btnEl) {
+            btnEl.classList.toggle('active', active);
+            const lbl = btnEl.querySelector('span');
+            if (lbl) lbl.textContent = active ? 'En Mi vademécum' : 'Guardar en Mi vademécum';
+            btnEl.title = active ? 'Quitar de Mi vademécum (favoritos)' : 'Guardar en Mi vademécum (favoritos)';
+        }
+    }
+
     // ============================================
     // PROFILE — User tags (etiquetas propias)
     // ============================================
@@ -9710,7 +9769,7 @@ ${materialesPlaceholder}
                 if (!detail) continue;
                 const rebuilt = this._buildFavoriteRecord({ ...f, ...detail }, {
                     tags: f.tags, addedAt: f.addedAt, viewCount: f.viewCount, lastViewedAt: f.lastViewedAt,
-                    cns: f.cns, cpresc: f.cpresc, specialtyOverride: f.specialtyOverride
+                    cns: f.cns, cpresc: f.cpresc, specialtyOverride: f.specialtyOverride, sadmansOverride: f.sadmansOverride
                 });
                 Object.assign(f, rebuilt);
                 if (f.cns === undefined) f.cns = []; // marcar como procesado aunque no haya CN
@@ -9752,55 +9811,80 @@ ${materialesPlaceholder}
     renderProfileView() {
         const favs = this.getFavorites();
         this.updateFavoritesBadge();
-        this._favDrillFilter = null; // entrar al perfil limpia cualquier filtro drill-down
+        this._profileSection = this._profileSection || 'favorites';
+        const section = this._profileSection;
+
+        const navBtn = (sec, icon, label, extra = '') =>
+            `<button class="profile-subnav-btn ${section === sec ? 'active' : ''}" data-section="${sec}"><i class="fas fa-${icon}"></i> ${label}${extra}</button>`;
 
         this.content.innerHTML = `
             <div class="profile-view">
                 <div class="profile-subnav">
-                    <button class="profile-subnav-btn active" data-section="favorites">
-                        <i class="fas fa-star"></i> Favoritos
-                        <span class="subnav-count">${favs.length}</span>
-                    </button>
-                    <button class="profile-subnav-btn" data-section="essentials">
-                        <i class="fas fa-clipboard-list"></i> Esenciales
-                    </button>
-                    <button class="profile-subnav-btn" data-section="analytics">
-                        <i class="fas fa-chart-bar"></i> Analítica
-                    </button>
-                    <button class="profile-subnav-btn" data-section="prescription">
-                        <i class="fas fa-notes-medical"></i> Prescripción
-                    </button>
-                    <button class="profile-subnav-btn" data-section="materials">
-                        <i class="fas fa-file-medical-alt"></i> Materiales
-                    </button>
-                    <button class="profile-subnav-btn" data-section="export">
-                        <i class="fas fa-right-left"></i> Importar / Exportar
-                    </button>
+                    ${navBtn('favorites', 'star', 'Favoritos', `<span class="subnav-count">${favs.length}</span>`)}
+                    ${navBtn('essentials', 'clipboard-list', 'Esenciales')}
+                    ${navBtn('analytics', 'chart-bar', 'Analítica')}
+                    ${navBtn('prescription', 'notes-medical', 'Prescripción')}
+                    ${navBtn('materials', 'file-medical-alt', 'Materiales')}
+                    ${navBtn('export', 'right-left', 'Importar / Exportar')}
                 </div>
                 <div class="profile-section-content" id="profile-section-content">
-                    ${this._renderFavoritesSection(favs)}
+                    ${this._renderProfileSection(section)}
                 </div>
             </div>
         `;
+        this._initProfileSection(section);
 
-        // Sub-navigation
-        this.content.querySelectorAll('.profile-subnav-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.content.querySelectorAll('.profile-subnav-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                const section = btn.dataset.section;
-                const container = document.getElementById('profile-section-content');
-                if (section === 'favorites') this._favDrillFilter = null; // pulsar la pestaña = ver todo
-                if (section === 'favorites') container.innerHTML = this._renderFavoritesSection(this.getFavorites());
-                if (section === 'essentials') container.innerHTML = this._renderEssentialsSection();
-                if (section === 'analytics') container.innerHTML = this._renderAnalyticsSection(this.getFavorites());
-                if (section === 'prescription') container.innerHTML = this._renderPrescriptionSection();
-                if (section === 'materials') container.innerHTML = this._renderMaterialsSection();
-                if (section === 'export') container.innerHTML = this._renderExportSection();
-                if (section === 'analytics') this._initDonutChart();
-                if (section === 'export') this._initExportSection();
-            });
+        this.content.querySelectorAll('.profile-subnav-btn').forEach(b => {
+            b.addEventListener('click', () => this._activateProfileSection(b.dataset.section, true));
         });
+    }
+
+    /** Devuelve el HTML de una sub-sección del perfil. */
+    _renderProfileSection(section) {
+        switch (section) {
+            case 'essentials': return this._renderEssentialsSection();
+            case 'analytics': return this._renderAnalyticsSection(this.getFavorites());
+            case 'prescription': return this._renderPrescriptionSection();
+            case 'materials': return this._renderMaterialsSection();
+            case 'export': return this._renderExportSection();
+            case 'favorites':
+            default: return this._renderFavoritesSection(this.getFavorites());
+        }
+    }
+
+    /** Inicialización post-render de una sub-sección (gráficos, handlers inline). */
+    _initProfileSection(section) {
+        if (section === 'analytics') this._initDonutChart();
+        if (section === 'export') this._initExportSection();
+    }
+
+    /** Activa una sub-sección, re-renderiza y (si push) deja rastro en el historial. */
+    _activateProfileSection(section, push) {
+        this._profileSection = section;
+        if (section === 'favorites') this._favDrillFilter = null; // pulsar la pestaña = ver todo
+        this.content.querySelectorAll('.profile-subnav-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.section === section));
+        const container = document.getElementById('profile-section-content');
+        if (container) container.innerHTML = this._renderProfileSection(section);
+        this._initProfileSection(section);
+        if (push) this._updateProfileURL();
+    }
+
+    /** Sincroniza la URL con el estado del perfil (subpestaña, agrupación, drill). */
+    _updateProfileURL() {
+        if (this.isPopstateNavigation) return;
+        const params = { view: 'profile' };
+        const section = this._profileSection || 'favorites';
+        if (section !== 'favorites') params.psec = section;
+        if (section === 'favorites') {
+            if (this._favGroupMode && this._favGroupMode !== 'atc') params.group = this._favGroupMode;
+            if (this._favDrillFilter) {
+                params.dt = this._favDrillFilter.type;
+                params.dv = String(this._favDrillFilter.value);
+                params.dl = this._favDrillFilter.label;
+            }
+        }
+        this.updateURL(params);
     }
 
     // ============================================
@@ -9897,15 +9981,18 @@ ${materialesPlaceholder}
     /** Activa la sección Favoritos filtrada por un criterio (desde la analítica). */
     _drillToFavorites(type, value, label) {
         this._favDrillFilter = { type, value, label };
+        this._profileSection = 'favorites';
         this.content.querySelectorAll('.profile-subnav-btn').forEach(b =>
             b.classList.toggle('active', b.dataset.section === 'favorites'));
         const container = document.getElementById('profile-section-content');
         if (container) container.innerHTML = this._renderFavoritesSection(this.getFavorites());
+        this._updateProfileURL();
     }
 
     _clearFavDrill() {
         this._favDrillFilter = null;
         this._refreshFavoritesSection();
+        this._updateProfileURL();
     }
 
     /** Re-renderiza solo la sección de favoritos conservando modo y subnav. */
@@ -9919,6 +10006,7 @@ ${materialesPlaceholder}
     _setFavGroupMode(mode) {
         this._favGroupMode = mode;
         this._refreshFavoritesSection();
+        this._updateProfileURL();
     }
 
     async _handleRepairFavorites() {
@@ -10419,6 +10507,7 @@ ${materialesPlaceholder}
         this._tagEditorNreg = fav.nregistro;
         this._tagEditorDraft = [...(fav.tags || [])];
         this._tagEditorSpecialty = fav.specialtyOverride || '';
+        this._tagEditorSadmans = fav.sadmansOverride || 'auto';
 
         let overlay = document.getElementById('fav-tags-modal');
         if (!overlay) {
@@ -10458,6 +10547,7 @@ ${materialesPlaceholder}
             }
             return null;
         })();
+        const autoSadmans = this._sadmansRuleCategory(fav);
         const current = this._tagEditorSpecialty || '';
         const options = this._allSpecialties().map(s =>
             `<option value="${s}" ${current === s ? 'selected' : ''}>${s}</option>`
@@ -10483,6 +10573,14 @@ ${materialesPlaceholder}
                     ${options}
                 </select>
                 <p class="tag-editor-hint">Corrige aquí la especialidad si la asignación automática por ATC no encaja en tu caso.</p>
+
+                <label class="tag-editor-sublabel"><i class="fas fa-triangle-exclamation"></i> SADMANS (suspender en enfermedad aguda)</label>
+                <select class="search-input tag-specialty-select" onchange="app._tagEditorSadmans=this.value">
+                    <option value="auto" ${this._tagEditorSadmans === 'auto' ? 'selected' : ''}>Automático${autoSadmans ? ` (sí: ${autoSadmans})` : ' (no)'}</option>
+                    <option value="include" ${this._tagEditorSadmans === 'include' ? 'selected' : ''}>Forzar incluir</option>
+                    <option value="exclude" ${this._tagEditorSadmans === 'exclude' ? 'selected' : ''}>Forzar excluir</option>
+                </select>
+                <p class="tag-editor-hint">Por defecto se decide por el código ATC. Cámbialo solo si discrepas con la asignación automática.</p>
 
                 <div class="tag-editor-actions">
                     <button class="btn btn-secondary" onclick="app._closeTagEditor()">Cancelar</button>
@@ -10517,6 +10615,7 @@ ${materialesPlaceholder}
     _saveTagEditor() {
         this.setFavoriteTags(this._tagEditorNreg, this._tagEditorDraft);
         this.setFavoriteSpecialty(this._tagEditorNreg, this._tagEditorSpecialty);
+        this.setFavoriteSadmans(this._tagEditorNreg, this._tagEditorSadmans);
         this._closeTagEditor();
         this._refreshFavoritesSection();
         this.showToast('Favorito actualizado', 'success');
@@ -10651,7 +10750,7 @@ ${materialesPlaceholder}
             <div class="essentials-section">
                 <div class="export-note">
                     <i class="fas fa-circle-info"></i>
-                    Vademécum esencial de Atención Primaria por <strong>principio activo</strong> (no marcas). Base: <strong>WHO Model List of Essential Medicines 2023</strong>, complementada con perfiles de prescripción OCDE 2018-25 y los grupos nuevos de alto valor (iSGLT2, arGLP-1, gabapentinoides, ACOD). Orientativo y editable; no sustituye a las guías nacionales ni al criterio clínico. <strong>No añade nada solo</strong>: te recuerda lo que falta y te lleva al buscador para que elijas la presentación.
+                    <span>Vademécum esencial de Atención Primaria por <strong>principio activo</strong> (no marcas). Base: <a href="https://list.essentialmeds.org/" target="_blank" rel="noopener"><strong>WHO Model List of Essential Medicines</strong> <i class="fas fa-arrow-up-right-from-square" style="font-size:.7em"></i></a> (23.ª lista, 2023), complementada con perfiles de prescripción OCDE 2018-25 y los grupos nuevos de alto valor (iSGLT2, arGLP-1, gabapentinoides, ACOD). Orientativo y editable; no sustituye a las guías nacionales ni al criterio clínico. <strong>No añade nada solo</strong>: te recuerda lo que falta y te lleva al buscador para que elijas la presentación.</span>
                 </div>
 
                 <div class="ess-toolbar">
@@ -10672,14 +10771,58 @@ ${materialesPlaceholder}
     // PROFILE — Prescription support (ayudas a la prescripción)
     // ============================================
 
-    /** Categoría SADMANS de un favorito (o null). Derivada del ATC. */
-    _sadmansCategory(f) {
+    /** Explicador desplegable de cómo se calcula una ayuda por reglas ATC. */
+    _rxRulesExplainer(rules, kindLabel) {
+        const rows = rules.map(([p, c]) => `<tr><td><code>${p}</code></td><td>${c}</td></tr>`).join('');
+        return `
+            <details class="rx-explain">
+                <summary><i class="fas fa-circle-question"></i> Cómo se calcula y qué cubre</summary>
+                <div class="rx-explain-body">
+                    <p>Se asigna por <strong>código ATC</strong> del medicamento (por prefijo). Como el ATC es independiente del nombre comercial, <strong>funciona con cualquier marca, nombre de fantasía o asociación</strong>: cuenta la sustancia/clase, no el envase. Requiere que el favorito tenga su ATC completo; si faltan, pulsa «Reparar» en Favoritos.</p>
+                    <table class="rx-rules-table"><thead><tr><th>ATC empieza por</th><th>${kindLabel}</th></tr></thead><tbody>${rows}</tbody></table>
+                    <p class="text-muted">Reglas deterministas mantenidas en la app (editables en el código, no en CIMA). Orientativas.</p>
+                </div>
+            </details>
+        `;
+    }
+
+    /** Categoría SADMANS según la regla ATC, sin override (o null). */
+    _sadmansRuleCategory(f) {
         const code = (f.atcCodigo || '').toUpperCase();
         if (!code) return null;
         for (const [prefix, cat] of this.SADMANS_RULES) {
             if (code.startsWith(prefix)) return cat;
         }
         return null;
+    }
+
+    /**
+     * Categoría SADMANS final de un favorito (o null). Respeta la corrección
+     * manual del usuario: 'exclude' fuerza fuera, 'include' fuerza dentro.
+     */
+    _sadmansCategory(f) {
+        const ov = f.sadmansOverride;
+        if (ov === 'exclude') return null;
+        const ruleCat = this._sadmansRuleCategory(f);
+        if (ov === 'include') return ruleCat || 'Manual';
+        return ruleCat;
+    }
+
+    /** Fija la corrección manual de SADMANS de un favorito ('auto'|'include'|'exclude'). */
+    setFavoriteSadmans(nregistro, value) {
+        const favs = this.getFavorites();
+        const fav = favs.find(f => String(f.nregistro) === String(nregistro));
+        if (!fav) return;
+        fav.sadmansOverride = (value === 'include' || value === 'exclude') ? value : null;
+        this._saveFavorites(favs);
+    }
+
+    /** Acción rápida desde el panel: fija override y re-renderiza Prescripción. */
+    _setSadmansOverride(nregistro, value) {
+        this.setFavoriteSadmans(nregistro, value);
+        const container = document.getElementById('profile-section-content');
+        if (container) container.innerHTML = this._renderPrescriptionSection();
+        this.showToast(value === 'exclude' ? 'Excluido de SADMANS' : 'Restaurado a automático', 'info');
     }
 
     /** Monitorización analítica recomendada para un favorito (lista, puede ser vacía). */
@@ -10733,27 +10876,51 @@ ${materialesPlaceholder}
             </div>
         `;
 
-        // Panel SADMANS
+        // Panel SADMANS — con override por fármaco (excluir / restaurar)
+        const sadmansExcluded = favs.filter(f => f.sadmansOverride === 'exclude');
+        const sadmansRow = (x) => {
+            const atc = (x.f.atcCodigo || '').slice(0, 5);
+            const safeNreg = String(x.f.nregistro).replace(/'/g, "\\'");
+            const manual = x.f.sadmansOverride === 'include';
+            const right = `<span class="rx-tag rx-tag-warn" title="Asignado por ATC ${x.f.atcCodigo || '—'}${manual ? ' · incluido manualmente' : ''}">${x.cat}${manual ? ' ·M' : ''}</span>${atc ? `<span class="rx-atc">${atc}</span>` : ''}<button class="rx-excl-btn" onclick="event.stopPropagation(); app._setSadmansOverride('${safeNreg}','exclude')" title="Quitar de SADMANS (corrección manual)">&times;</button>`;
+            return this._renderRxRow(x.f, right, 'safety');
+        };
+        const excludedHtml = sadmansExcluded.length ? `
+            <details class="rx-excluded">
+                <summary><i class="fas fa-eye-slash"></i> Excluidos manualmente (${sadmansExcluded.length})</summary>
+                <div class="rx-excluded-body">
+                    ${sadmansExcluded.map(f => {
+                        const safeNreg = String(f.nregistro).replace(/'/g, "\\'");
+                        return `<div class="rx-excl-row"><span>${f.nombre}</span><button class="btn btn-sm btn-secondary" onclick="app._setSadmansOverride('${safeNreg}','auto')"><i class="fas fa-rotate-left"></i> Restaurar</button></div>`;
+                    }).join('')}
+                </div>
+            </details>` : '';
         const sadmansPanel = `
             <div class="rx-panel">
                 <h4 class="rx-panel-title rx-title-warn"><i class="fas fa-triangle-exclamation"></i> Suspender en enfermedad aguda (SADMANS) <span class="rx-count">${sadmans.length}</span></h4>
-                <p class="rx-panel-sub">Considerar pausa temporal ante enfermedad aguda con riesgo de deshidratación (vómitos, diarrea, fiebre), por riesgo de fracaso renal agudo.</p>
+                <p class="rx-panel-sub">Considerar pausa temporal ante enfermedad aguda con riesgo de deshidratación (vómitos, diarrea, fiebre), por riesgo de fracaso renal agudo. <strong>S</strong>ulfonilureas, <strong>A</strong>RA-II, <strong>D</strong>iuréticos, <strong>M</strong>etformina, <strong>A</strong>INE, IECA y i<strong>S</strong>GLT2. Corrige casos concretos con <strong>×</strong> (excluir) o desde el editor del favorito (incluir/excluir).</p>
+                ${this._rxRulesExplainer(this.SADMANS_RULES, 'Categoría')}
                 ${sadmans.length === 0
                     ? `<p class="text-muted text-sm">Ninguno de tus favoritos entra en SADMANS.</p>`
-                    : sadmans
-                        .sort((a, b) => a.cat.localeCompare(b.cat))
-                        .map(x => this._renderRxRow(x.f, `<span class="rx-tag rx-tag-warn">${x.cat}</span>`, 'safety')).join('')}
+                    : sadmans.sort((a, b) => a.cat.localeCompare(b.cat)).map(sadmansRow).join('')}
+                ${excludedHtml}
             </div>
         `;
 
         // Panel monitorización
+        const monitoringRow = (x) => {
+            const atc = (x.f.atcCodigo || '').slice(0, 5);
+            const right = x.items.map(t => `<span class="rx-monitor">${t}</span>`).join('') + (atc ? `<span class="rx-atc">${atc}</span>` : '');
+            return this._renderRxRow(x.f, right, 'safety');
+        };
         const monitoringPanel = `
             <div class="rx-panel">
                 <h4 class="rx-panel-title rx-title-info"><i class="fas fa-vial"></i> Requieren monitorización analítica <span class="rx-count">${monitoring.length}</span></h4>
                 <p class="rx-panel-sub">Controles de laboratorio recomendados tras iniciar o ajustar el tratamiento.</p>
+                ${this._rxRulesExplainer(this.MONITORING_RULES, 'Qué monitorizar')}
                 ${monitoring.length === 0
                     ? `<p class="text-muted text-sm">Ningún favorito con monitorización en la tabla.</p>`
-                    : monitoring.map(x => this._renderRxRow(x.f, x.items.map(t => `<span class="rx-monitor">${t}</span>`).join(''), 'safety')).join('')}
+                    : monitoring.map(monitoringRow).join('')}
             </div>
         `;
 
@@ -11313,14 +11480,22 @@ ${materialesPlaceholder}
             if (interactions.length === 0) {
                 resultDiv.innerHTML = '<p class="text-muted text-sm"><i class="fas fa-check-circle" style="color:#10b981"></i> No se detectaron menciones cruzadas entre tus favoritos en las secciones 4.5 de sus fichas técnicas.</p>';
             } else {
+                // Mapa nombre→nregistro para enlazar cada fármaco a su ficha.
+                const nameToNreg = {};
+                favs.forEach(f => { if (f.nombre) nameToNreg[f.nombre] = f.nregistro; });
+                const drugLink = (fullName) => {
+                    const short = (fullName || '').split(' ')[0];
+                    const nreg = nameToNreg[fullName];
+                    if (!nreg) return `<strong>${short}</strong>`;
+                    const safe = String(nreg).replace(/'/g, "\\'");
+                    return `<strong class="rx-link" onclick="event.stopPropagation(); app.openMedDetails('${safe}','interactions')" title="Abrir ${fullName}">${short}</strong>`;
+                };
                 const items = interactions.slice(0, 10).map(it => {
                     const sev = (it.severity === 'high' || it.severity === 'alta') ? 'alert-danger' : 'alert-warn';
-                    const d1 = (it.drug1 || '').split(' ')[0];
-                    const d2 = (it.drug2 || '').split(' ')[0];
                     return `
                         <div class="analytics-alert ${sev}">
                             <i class="fas fa-random"></i>
-                            <span><strong>${d1} ↔ ${d2}</strong>${it.matchedTerm ? ` · «${it.matchedTerm}»` : ''} <span class="text-muted">(${it.source || 'ficha técnica'})</span></span>
+                            <span>${drugLink(it.drug1)} ↔ ${drugLink(it.drug2)}${it.matchedTerm ? ` · «${it.matchedTerm}»` : ''} <span class="text-muted">(${it.source || 'ficha técnica'})</span></span>
                         </div>
                     `;
                 }).join('');

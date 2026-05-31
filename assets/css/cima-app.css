@@ -6610,13 +6610,19 @@ code {
     background: none;
     border: none;
     cursor: pointer;
-    color: var(--text-secondary);
-    font-size: 1rem;
+    color: #94a3b8;
+    opacity: 0.9;
+    font-size: 1.05rem;
     padding: 0.1rem 0.3rem;
     border-radius: var(--radius-sm);
-    transition: color 0.15s, transform 0.15s;
+    transition: color 0.15s, transform 0.15s, opacity 0.15s;
     flex-shrink: 0;
+    align-self: flex-start;
     line-height: 1;
+}
+
+.fav-star-btn:not(.active) i {
+    -webkit-text-stroke: 0.5px #cbd5e1;
 }
 
 .fav-star-btn:hover {
@@ -7784,6 +7790,168 @@ code {
     border-radius: var(--radius-md);
     padding: 2px 8px;
     text-align: right;
+}
+
+/* Explicador de reglas (transparencia SADMANS/monitorización) */
+.rx-explain {
+    margin: 0 0 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    overflow: hidden;
+}
+
+.rx-explain summary {
+    cursor: pointer;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    user-select: none;
+}
+
+.rx-explain summary:hover {
+    color: var(--text-primary);
+}
+
+.rx-explain-body {
+    padding: 0.6rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.rx-explain-body p {
+    margin: 0 0 0.5rem;
+}
+
+.rx-rules-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.74rem;
+    margin-bottom: 0.5rem;
+}
+
+.rx-rules-table th,
+.rx-rules-table td {
+    text-align: left;
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.rx-rules-table th {
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.rx-rules-table code {
+    font-size: 0.72rem;
+    color: var(--primary);
+}
+
+.rx-atc {
+    font-size: 0.66rem;
+    color: var(--text-secondary);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: monospace;
+}
+
+/* SADMANS: corrección manual por fármaco */
+.rx-excl-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    line-height: 1;
+    font-size: 0.9rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.rx-excl-btn:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.rx-excluded {
+    margin-top: 0.5rem;
+    font-size: 0.78rem;
+}
+
+.rx-excluded summary {
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 0.3rem 0;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.rx-excl-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+/* Nombre de fármaco enlazable en resultados de interacciones */
+.rx-link {
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-underline-offset: 2px;
+}
+
+.rx-link:hover {
+    color: var(--primary);
+}
+
+/* Botón de favorito dentro del modal de detalle */
+.modal-fav-btn {
+    margin-top: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.modal-fav-btn:hover {
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.modal-fav-btn.active {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.modal-fav-btn i {
+    color: #f59e0b;
+}
+
+.modal-fav-btn:not(.active) i {
+    color: #94a3b8;
 }
 
 /* ─── PESTAÑA EVIDENCIA ──────────────────────────────────────────────────── */
