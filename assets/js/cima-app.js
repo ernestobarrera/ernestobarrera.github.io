@@ -4483,6 +4483,7 @@ class MedCheckApp {
                         Agrupar por:
                         <button class="pgx-group-btn ${state.groupBy === 'biomarcador' ? 'active' : ''}" data-group="biomarcador">Biomarcador</button>
                         <button class="pgx-group-btn ${state.groupBy === 'atc' ? 'active' : ''}" data-group="atc">Grupo ATC</button>
+                        <button class="pgx-group-btn ${state.groupBy === 'specialty' ? 'active' : ''}" data-group="specialty" title="Especialidad clínica derivada del ATC (orientativa)">Especialidad</button>
                         <button class="pgx-group-btn ${state.groupBy === 'none' ? 'active' : ''}" data-group="none">Sin agrupar</button>
                     </div>
                 </div>
@@ -4549,6 +4550,8 @@ class MedCheckApp {
                 let keys;
                 if (state.groupBy === 'biomarcador') {
                     keys = (m.biom || []).map(b => b.biomarcador || '—');
+                } else if (state.groupBy === 'specialty') {
+                    keys = [this._specialtyForAtc(m.atc)?.name || 'Sin especialidad asignada'];
                 } else { // atc
                     keys = [m.atc ? m.atc.substring(0, 1) : '—']; // primer nivel ATC
                 }
@@ -4978,7 +4981,11 @@ class MedCheckApp {
         const catalogo = this._materialesCatalogo || [];
         const busqueda = (this._materialesBusqueda || '').toLowerCase();
         const filtro = this._materialesFiltroTipo || 'todos';
-        const agrupar = !!this._materialesAgruparATC;
+        // Migración del flag booleano antiguo (_materialesAgruparATC) al modo.
+        if (this._materialesAgrupar === undefined) {
+            this._materialesAgrupar = this._materialesAgruparATC ? 'atc' : 'none';
+        }
+        const modoAgrup = this._materialesAgrupar || 'none';
 
         // Filtrar
         const filtrados = catalogo.filter(item => {
@@ -5014,16 +5021,18 @@ class MedCheckApp {
             </button>`;
         }).join('');
 
-        const atcActive = agrupar ? 'active' : '';
-        const atcBtn = `<button class="mat-filtro-chip chip-atc ${atcActive}" onclick="app._toggleAtcAgrupacion()">
+        const atcBtn = `<button class="mat-filtro-chip chip-atc ${modoAgrup === 'atc' ? 'active' : ''}" onclick="app._setMaterialesAgrupar('atc')">
             <i class="fas fa-layer-group"></i> Por ATC
+        </button>`;
+        const specBtn = `<button class="mat-filtro-chip chip-atc ${modoAgrup === 'specialty' ? 'active' : ''}" onclick="app._setMaterialesAgrupar('specialty')" title="Especialidad clínica derivada del ATC (orientativa)">
+            <i class="fas fa-user-doctor"></i> Por especialidad
         </button>`;
 
         const headerHTML = `
             <div class="search-box" style="margin-bottom:0.5rem">
                 <div class="materiales-header">
                     <h3><i class="fas fa-file-medical-alt"></i> Materiales Informativos</h3>
-                    <div class="mat-filtro-chips">${filtroChips}${atcBtn}</div>
+                    <div class="mat-filtro-chips">${filtroChips}${atcBtn}${specBtn}</div>
                     <span class="materiales-count">${totalStr}</span>
                 </div>
                 <div class="search-input-wrapper">
@@ -5035,8 +5044,10 @@ class MedCheckApp {
                 </div>
             </div>`;
 
-        const bodyHTML = agrupar
+        const bodyHTML = modoAgrup === 'atc'
             ? this._renderMaterialesAgrupados(filtrados)
+            : modoAgrup === 'specialty'
+            ? this._renderMaterialesAgrupadosEspecialidad(filtrados)
             : `<div class="materiales-grid">${filtrados.map(item => this._renderMatCard(item)).join('') || `
                 <div class="empty-state">
                     <i class="fas fa-file-medical-alt"></i>
@@ -5139,9 +5150,37 @@ class MedCheckApp {
         }).join('');
     }
 
-    _toggleAtcAgrupacion() {
-        this._materialesAgruparATC = !this._materialesAgruparATC;
+    /** Fija el modo de agrupación de materiales ('atc'|'specialty'); repetir lo apaga. */
+    _setMaterialesAgrupar(modo) {
+        this._materialesAgrupar = (this._materialesAgrupar === modo) ? 'none' : modo;
         this._renderMaterialesView();
+    }
+
+    /** Agrupa materiales por especialidad clínica (derivada del ATC, orientativa). */
+    _renderMaterialesAgrupadosEspecialidad(filtrados) {
+        const grupos = {};
+        filtrados.forEach(item => {
+            const spec = this._specialtyForAtc(item.atcCodigo);
+            const name = spec ? spec.name : 'Sin especialidad asignada';
+            if (!grupos[name]) grupos[name] = { color: spec?.color || '#94a3b8', icon: spec?.icon || 'circle-question', items: [] };
+            grupos[name].items.push(item);
+        });
+        const ordenadas = Object.entries(grupos).sort((a, b) => b[1].items.length - a[1].items.length);
+        if (!ordenadas.length) {
+            return `<div class="empty-state"><i class="fas fa-user-doctor"></i><p>Sin resultados</p></div>`;
+        }
+        return ordenadas.map(([name, g]) => `
+            <div class="mat-atc-grupo">
+                <div class="mat-atc-grupo-header" onclick="this.closest('.mat-atc-grupo').classList.toggle('collapsed')">
+                    <span class="mat-atc-grupo-letra" style="color:${g.color}"><i class="fas fa-${g.icon}"></i></span>
+                    <span class="mat-atc-grupo-nombre">${name}</span>
+                    <span class="mat-atc-grupo-count">${g.items.length}</span>
+                    <i class="fas fa-chevron-down mat-atc-grupo-chevron"></i>
+                </div>
+                <div class="mat-atc-grupo-body">
+                    <div class="materiales-grid">${g.items.map(item => this._renderMatCard(item)).join('')}</div>
+                </div>
+            </div>`).join('');
     }
 
     _setMaterialesFiltro(tipo) {
@@ -9610,7 +9649,16 @@ ${materialesPlaceholder}
             const ruleInfo = (this.ATC_SPECIALTY_RULES.find(r => r[1].name === fav.specialtyOverride) || [])[1];
             return { key: fav.specialtyOverride, name: fav.specialtyOverride, icon: ruleInfo?.icon || 'user-doctor', color: ruleInfo?.color || '#0ea5e9', manual: true };
         }
-        const code = (fav.atcCodigo || fav.atcNivel2 || fav.atcNivel1 || '').toUpperCase();
+        return this._specialtyForAtc(fav.atcCodigo || fav.atcNivel2 || fav.atcNivel1 || '');
+    }
+
+    /**
+     * Especialidad clínica a partir de un código ATC (sin overrides). Determinista,
+     * reutilizable por vistas públicas (PGx, Materiales) sobre su propio campo ATC,
+     * por lo que es tan fiable como la agrupación ATC que ya usan.
+     */
+    _specialtyForAtc(atcCode) {
+        const code = (atcCode || '').toUpperCase();
         if (!code) return null;
         // Reglas por prefijo, de más específico a más general (primero que casa, gana).
         for (const [prefix, info] of this.ATC_SPECIALTY_RULES) {
