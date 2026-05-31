@@ -5746,6 +5746,7 @@ class MedCheckApp {
     async openMedDetails(nregistro, initialTab = 'info') {
         this.modal.classList.remove('hidden');
         this.modalBody.innerHTML = '<div class="loading-spinner"></div>';
+        this._loadEml(); // disparo anticipado: el JSON local suele cargar antes que la ficha remota
 
         try {
             // Cargar datos del medicamento y análisis de seguridad en paralelo
@@ -5861,7 +5862,7 @@ class MedCheckApp {
                     : `<div class="med-thumbnail-placeholder"><i class="fas fa-pills"></i></div>`
                 }
                         <div class="med-header-info">
-                            <h2 class="modal-title">${med.nombre}${med.nosustituible && med.nosustituible.id === 2 ? ' <span class="badge badge-nti" title="Índice Terapéutico Estrecho — No sustituible"><i class="fas fa-exclamation-triangle"></i> NTI</span>' : ''}</h2>
+                            <h2 class="modal-title">${med.nombre}${med.nosustituible && med.nosustituible.id === 2 ? ' <span class="badge badge-nti" title="Índice Terapéutico Estrecho — No sustituible"><i class="fas fa-exclamation-triangle"></i> NTI</span>' : ''}${med.atcs && med.atcs[0] ? ' ' + this._emlBadgeHtml(med.atcs[0].codigo) : ''}</h2>
                             <p class="modal-subtitle">${med.labtitular}</p>
                             <button class="modal-fav-btn ${isModalFav ? 'active' : ''}" onclick="app.toggleFavoriteFromModal('${med.nregistro}', this)" title="${isModalFav ? 'Quitar de Mi vademécum (favoritos)' : 'Guardar en Mi vademécum (favoritos)'}">
                                 <i class="fas fa-star"></i> <span>${isModalFav ? 'En Mi vademécum' : 'Guardar en Mi vademécum'}</span>
@@ -9923,7 +9924,8 @@ ${materialesPlaceholder}
     // PROFILE VIEW — Main render
     // ============================================
 
-    renderProfileView() {
+    async renderProfileView() {
+        await this._loadEml();
         const favs = this.getFavorites();
         this.updateFavoritesBadge();
         this._profileSection = this._profileSection || 'favorites';
@@ -10071,7 +10073,17 @@ ${materialesPlaceholder}
             : mode === 'indication' ? this._renderFavoritesByIndication(viewFavs)
             : mode === 'specialty' ? this._renderFavoritesBySpecialty(viewFavs)
             : this._renderFavoritesByATC(viewFavs);
-        return repairBanner + drillChip + toolbar + list;
+
+        // Atribución OMS (obligación CC BY-NC-SA): solo si algún favorito es esencial OMS.
+        const emlMatches = viewFavs.filter(f => this._emlMatchByAtc(f.atcCodigo)).length;
+        const emlLegend = emlMatches > 0 ? `
+            <div class="fav-eml-legend">
+                <span class="badge badge-eml badge-xs"><i class="fas fa-globe"></i> OMS</span>
+                <span>${emlMatches} en la <strong>Lista Modelo de Medicamentos Esenciales</strong> de la OMS (eEML 23ª, 2023).
+                <a href="https://list.essentialmeds.org/" target="_blank" rel="noopener">WHO EML</a> · CC BY-NC-SA 3.0 IGO. Cruce por ATC; no marca los esenciales sin ATC en la lista.</span>
+            </div>
+        ` : '';
+        return repairBanner + drillChip + toolbar + list + emlLegend;
     }
 
     /** Coincidencia de un favorito con un filtro drill-down de la analítica. */
@@ -10542,6 +10554,55 @@ ${materialesPlaceholder}
         return html;
     }
 
+    /**
+     * Carga diferida del índice de la WHO Essential Medicines List (eml.json).
+     * Cachea en this._emlData {meds, byAtc, _medByName, _meta}. Idempotente.
+     * Si falla, deja un índice vacío (el badge simplemente no aparece).
+     */
+    async _loadEml() {
+        if (this._emlData) return this._emlData;
+        if (this._emlLoading) return this._emlLoading;
+        const empty = { byAtc: {}, meds: [], _medByName: {}, _meta: {} };
+        this._emlLoading = fetch('/assets/data/eml.json')
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data && data.byAtc) {
+                    data._medByName = {};
+                    (data.meds || []).forEach(m => { data._medByName[m.name] = m; });
+                    this._emlData = data;
+                } else {
+                    this._emlData = empty;
+                }
+                return this._emlData;
+            })
+            .catch(() => { this._emlData = empty; return this._emlData; });
+        return this._emlLoading;
+    }
+
+    /** Esencial OMS si el ATC L5 está en la EML. Cruce exacto: sub-reclama, nunca falso positivo. */
+    _emlMatchByAtc(atcCode) {
+        const eml = this._emlData;
+        if (!eml || !eml.byAtc) return null;
+        const code = (atcCode || '').trim().toUpperCase();
+        if (!code) return null;
+        const name = eml.byAtc[code];
+        if (!name) return null;
+        return (eml._medByName && eml._medByName[name]) || { name, indications: [] };
+    }
+
+    /** HTML del badge "Esencial OMS". opts.compact para tarjetas. '' si no aplica o no cargado. */
+    _emlBadgeHtml(atcCode, opts = {}) {
+        const med = this._emlMatchByAtc(atcCode);
+        if (!med) return '';
+        const inds = (med.indications || []).slice(0, 3).join('; ');
+        const tip = (`Medicamento esencial OMS (${med.name})${inds ? ' · indicación: ' + inds : ''}`
+            + ` · Lista Modelo de Medicamentos Esenciales (OMS), CC BY-NC-SA 3.0 IGO`)
+            .replace(/"/g, '&quot;');
+        return opts.compact
+            ? `<span class="badge badge-eml badge-xs" title="${tip}"><i class="fas fa-globe"></i> OMS</span>`
+            : `<span class="badge badge-eml" title="${tip}"><i class="fas fa-globe"></i> Esencial OMS</span>`;
+    }
+
     _renderFavCard(fav, atcInfo) {
         const accentColor = atcInfo?.color || '#94a3b8';
         const viewsText = fav.viewCount > 0 ? `<span class="fav-card-views" title="Veces consultado"><i class="fas fa-eye"></i> ${fav.viewCount}</span>` : '';
@@ -10553,6 +10614,8 @@ ${materialesPlaceholder}
         else if (this._isDiagnosticoHospitalario(fav)) badgesTags.push('<span class="badge badge-hospital badge-xs" title="Diagnóstico Hospitalario — prescripción iniciada en hospital"><i class="fas fa-hospital"></i> DH</span>');
         if (fav.psum) badgesTags.push('<span class="badge badge-danger badge-xs">Sin stock</span>');
         if (fav.notas) badgesTags.push('<span class="badge badge-warning badge-xs">AEMPS</span>');
+        const emlBadge = this._emlBadgeHtml(fav.atcCodigo, { compact: true });
+        if (emlBadge) badgesTags.push(emlBadge);
 
         // Detalle galénico: forma farmacéutica + vía + código(s) nacional(es)
         const galenicParts = [fav.formaFarmaceutica, fav.via].filter(Boolean);

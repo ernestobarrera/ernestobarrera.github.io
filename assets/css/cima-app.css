@@ -969,6 +969,37 @@ body {
     color: #818cf8;
 }
 
+/* Esencial OMS (WHO EML) — verde/teal OMS, con borde para distinguir capa externa */
+.badge-eml {
+    background: rgba(13, 148, 136, 0.14);
+    color: #2dd4bf;
+    border: 1px solid rgba(13, 148, 136, 0.45);
+}
+.badge-eml i {
+    font-size: 0.65rem;
+}
+
+/* Leyenda de atribución OMS al pie de Favoritos (obligación CC BY-NC-SA) */
+.fav-eml-legend {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding: 0.6rem 0.8rem;
+    border-top: 1px solid var(--border, rgba(148, 163, 184, 0.2));
+    font-size: 0.72rem;
+    color: var(--text-muted, #94a3b8);
+    line-height: 1.45;
+}
+.fav-eml-legend .badge-eml {
+    flex-shrink: 0;
+    margin-top: 0.05rem;
+}
+.fav-eml-legend a {
+    color: #2dd4bf;
+    text-decoration: underline;
+}
+
 /* Farmacogenómica (PGx) — magenta/violeta para diferenciarlo claramente del resto */
 .badge-pgx {
     background: rgba(217, 70, 239, 0.15);
