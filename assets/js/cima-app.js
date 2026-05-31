@@ -9255,6 +9255,11 @@ ${materialesPlaceholder}
      * @param {Object} params - Parameters to set in URL
      */
     updateURL(params) {
+        // Durante la guía demostrativa no ensuciamos el historial: la guía abre
+        // fichas y recorre pestañas de forma efímera; el botón Atrás debe seguir
+        // valiendo al terminar. Un único guard cubre todas las rutas de pushState.
+        if (this._guideNavigating) return;
+
         const url = new URL(window.location.href);
 
         // Clear existing search params
@@ -12357,7 +12362,7 @@ ${materialesPlaceholder}
         const btn = this.modalBody?.querySelector(`.modal-tab[data-tab="${tab}"]`);
         if (!btn) return false;
         btn.click();
-        await this._guideWait(160);
+        await this._guideWait(240); // margen para contenido diferido antes del spotlight
         return true;
     }
 
@@ -12371,7 +12376,8 @@ ${materialesPlaceholder}
                 return false;
             }
             await this.openMedDetails(nregistro, tab);
-            await this._guideWait(160);
+            this._guideOpenedModal = true; // ficha de demo: endGuide la cerrará
+            await this._guideWait(240);
             return true;
         }
         if (tab && tab !== 'info') {
@@ -13311,6 +13317,16 @@ ${materialesPlaceholder}
     endGuide() {
         this.guideActive = false;
         if ((this.guideTour || 'core') === 'core') this._markGuideSeen();
+        // Si la guía abrió una ficha de demostración, ciérrala al terminar/saltar
+        // para no dejar al usuario dentro de un medicamento que él no abrió.
+        // El guard evita empujar URL al cerrar.
+        if (this._guideOpenedModal && this.modal && !this.modal.classList.contains('hidden')) {
+            this._guideNavigating = true;
+            this.closeModal();
+            this._guideNavigating = false;
+        }
+        this._guideOpenedModal = false;
+        this._guideBusy = false;
         const overlay = document.getElementById('guide-overlay');
         if (overlay) {
             overlay.classList.remove('active');
@@ -13327,19 +13343,33 @@ ${materialesPlaceholder}
     }
 
     async nextGuideStep() {
-        const steps = this._guideSteps();
-        if (this.guideStep < steps.length - 1) {
-            this.guideStep++;
-            await this._renderGuideStep();
-        } else {
-            this.endGuide();
+        // Lock: las acciones de paso son async (abrir ficha, lazy-load). Sin esto,
+        // pulsar Siguiente/→ repetido solapa acciones y descuadra spotlight/contenido.
+        if (this._guideBusy) return;
+        this._guideBusy = true;
+        try {
+            const steps = this._guideSteps();
+            if (this.guideStep < steps.length - 1) {
+                this.guideStep++;
+                await this._renderGuideStep();
+            } else {
+                this.endGuide();
+            }
+        } finally {
+            this._guideBusy = false;
         }
     }
 
     async prevGuideStep() {
-        if (this.guideStep > 0) {
-            this.guideStep--;
-            await this._renderGuideStep();
+        if (this._guideBusy) return;
+        this._guideBusy = true;
+        try {
+            if (this.guideStep > 0) {
+                this.guideStep--;
+                await this._renderGuideStep();
+            }
+        } finally {
+            this._guideBusy = false;
         }
     }
 
@@ -13349,7 +13379,14 @@ ${materialesPlaceholder}
         const overlay = document.getElementById('guide-overlay');
         if (!overlay) return;
 
-        await this._runGuideStepAction(step);
+        // La navegación que dispara la acción (abrir ficha, cambiar pestaña,
+        // subpestaña) no debe empujar entradas de historial: ver guard en updateURL.
+        this._guideNavigating = true;
+        try {
+            await this._runGuideStepAction(step);
+        } finally {
+            this._guideNavigating = false;
+        }
 
         // Remove previous spotlight
         document.querySelectorAll('.guide-spotlight-target').forEach(el => {
