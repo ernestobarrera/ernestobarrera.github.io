@@ -1044,6 +1044,20 @@ class MedCheckApp {
         }
     }
 
+    /**
+     * Limpia los filtros facetados (forma, laboratorio, dosis, vía, principio
+     * activo) al iniciar una búsqueda NUEVA. Evita que un filtro de la búsqueda
+     * anterior persista y oculte todos los resultados de la siguiente. No toca
+     * los filtros de ámbito del buscador (comercializado/genérico/receta).
+     */
+    _resetResultFilters() {
+        this.filterState = { form: null, lab: null, doses: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false };
+        if (this.groupingState) {
+            this.groupingState.routeFilters?.clear?.();
+            this.groupingState.activeIngredientFilters?.clear?.();
+        }
+    }
+
     async performSearch() {
         const query = document.getElementById('search-input').value.trim();
 
@@ -1051,6 +1065,8 @@ class MedCheckApp {
             this.showToast('Introduce al menos 2 caracteres', 'warning');
             return;
         }
+
+        this._resetResultFilters();
 
         // Auto-detectar tipo de búsqueda
         // CN = 6-7 dígitos numéricos, todo lo demás = búsqueda inteligente combinada
@@ -2448,6 +2464,7 @@ class MedCheckApp {
 
     async showATCSubcategories(atcCode, breadcrumb = []) {
         const resultsContainer = document.getElementById('indication-results');
+        this._resetResultFilters(); // nueva navegación ATC = filtros facetados limpios
 
         // Check if we have static subcategories for this code (search recursively)
         const staticMatch = this.findStaticATCCategory(atcCode);
@@ -2713,6 +2730,8 @@ class MedCheckApp {
             this.showToast('Introduce al menos 2 caracteres', 'warning');
             return;
         }
+
+        this._resetResultFilters();
 
         // Hide autocomplete
         document.getElementById('autocomplete-results').classList.add('hidden');
