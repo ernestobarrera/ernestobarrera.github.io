@@ -1459,6 +1459,51 @@ body {
     font-size: 0.75rem;
     font-weight: 500;
 }
+
+/* Grupos PGx plegables (contraídos por defecto) */
+.pgx-result-group-title {
+    cursor: pointer;
+    user-select: none;
+}
+.pgx-group-name { flex: 1; }
+.pgx-group-chevron {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    transition: transform 0.2s;
+}
+.pgx-result-group.collapsed .pgx-group-chevron { transform: rotate(-90deg); }
+.pgx-result-group.collapsed .pgx-result-grid { display: none; }
+
+/* Barra de agrupado prominente */
+.pgx-group-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin: 0.25rem 0 0.75rem;
+    padding: 0.5rem 0.7rem;
+    background: rgba(217, 70, 239, 0.06);
+    border: 1px solid rgba(217, 70, 239, 0.2);
+    border-radius: var(--radius-sm);
+}
+.pgx-group-bar-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* Separador entre chips de audiencia y el toggle de vídeo (Materiales) */
+.mat-chip-sep {
+    display: inline-block;
+    width: 1px;
+    height: 18px;
+    background: var(--border-color, rgba(255,255,255,0.15));
+    margin: 0 0.15rem;
+    vertical-align: middle;
+}
 .pgx-result-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

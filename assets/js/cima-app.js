@@ -4465,12 +4465,22 @@ class MedCheckApp {
                 <div class="pgx-controls">
                     <input type="search" id="pgx-search" class="pgx-search-input" placeholder="Buscar por nombre de medicamento o biomarcador..." value="${this._escapeHtml(state.query)}">
 
+                    <div class="pgx-group-bar">
+                        <span class="pgx-group-bar-label"><i class="fas fa-layer-group"></i> Agrupar la lista por:</span>
+                        <div class="pgx-group-toggle">
+                            <button class="pgx-group-btn ${state.groupBy === 'biomarcador' ? 'active' : ''}" data-group="biomarcador">Biomarcador</button>
+                            <button class="pgx-group-btn ${state.groupBy === 'atc' ? 'active' : ''}" data-group="atc">Grupo ATC</button>
+                            <button class="pgx-group-btn ${state.groupBy === 'specialty' ? 'active' : ''}" data-group="specialty" title="Especialidad clínica derivada del ATC (orientativa)">Especialidad</button>
+                            <button class="pgx-group-btn ${state.groupBy === 'none' ? 'active' : ''}" data-group="none">Sin agrupar</button>
+                        </div>
+                    </div>
+
                     <div class="pgx-filter-group">
-                        <label class="pgx-filter-label">Biomarcador</label>
+                        <label class="pgx-filter-label">Filtrar · Biomarcador</label>
                         <div class="pgx-chips">${biomChips}</div>
                     </div>
                     <div class="pgx-filter-group">
-                        <label class="pgx-filter-label">Clase</label>
+                        <label class="pgx-filter-label">Filtrar · Clase</label>
                         <div class="pgx-chips">${claseChips}</div>
                     </div>
 
@@ -4478,14 +4488,6 @@ class MedCheckApp {
                     <button class="btn btn-sm btn-secondary" id="pgx-clear-filters">
                         <i class="fas fa-times"></i> Limpiar filtros
                     </button>` : ''}
-
-                    <div class="pgx-group-toggle">
-                        Agrupar por:
-                        <button class="pgx-group-btn ${state.groupBy === 'biomarcador' ? 'active' : ''}" data-group="biomarcador">Biomarcador</button>
-                        <button class="pgx-group-btn ${state.groupBy === 'atc' ? 'active' : ''}" data-group="atc">Grupo ATC</button>
-                        <button class="pgx-group-btn ${state.groupBy === 'specialty' ? 'active' : ''}" data-group="specialty" title="Especialidad clínica derivada del ATC (orientativa)">Especialidad</button>
-                        <button class="pgx-group-btn ${state.groupBy === 'none' ? 'active' : ''}" data-group="none">Sin agrupar</button>
-                    </div>
                 </div>
 
                 <div id="pgx-results"></div>
@@ -4560,10 +4562,20 @@ class MedCheckApp {
                     groups.get(k).push(m);
                 }
             }
-            const sortedGroups = [...groups.entries()].sort((a, b) => b[1].length - a[1].length);
+            const isCatchAll = (k) => k === '—' || k === '?' || k === 'Sin especialidad asignada';
+            const sortedGroups = [...groups.entries()].sort((a, b) => {
+                const ca = isCatchAll(a[0]), cb = isCatchAll(b[0]);
+                if (ca !== cb) return ca ? 1 : -1; // catch-all siempre al final
+                return b[1].length - a[1].length;
+            });
+            // Contraídos por defecto: se ven todos los grupos por número de un vistazo.
             html = sortedGroups.map(([key, list]) => `
-                <div class="pgx-result-group">
-                    <h3 class="pgx-result-group-title">${this._escapeHtml(key)} <span class="pgx-result-group-count">${list.length}</span></h3>
+                <div class="pgx-result-group collapsed">
+                    <div class="pgx-result-group-title" onclick="this.closest('.pgx-result-group').classList.toggle('collapsed')" role="button" tabindex="0">
+                        <i class="fas fa-chevron-down pgx-group-chevron"></i>
+                        <span class="pgx-group-name">${this._escapeHtml(key)}</span>
+                        <span class="pgx-result-group-count">${list.length}</span>
+                    </div>
                     <div class="pgx-result-grid">${list.map(renderCard).join('')}</div>
                 </div>`).join('');
         }
@@ -4980,46 +4992,62 @@ class MedCheckApp {
     _renderMaterialesView() {
         const catalogo = this._materialesCatalogo || [];
         const busqueda = (this._materialesBusqueda || '').toLowerCase();
-        const filtro = this._materialesFiltroTipo || 'todos';
+        // Audiencia (radio: todos/paciente/profesional) + Vídeos (toggle independiente).
+        // Migración del filtro único antiguo (_materialesFiltroTipo).
+        if (this._materialesAudiencia === undefined) {
+            const old = this._materialesFiltroTipo;
+            this._materialesAudiencia = (old === 'paciente' || old === 'profesional') ? old : 'todos';
+            this._materialesSoloVideo = (old === 'video');
+        }
+        const audiencia = this._materialesAudiencia || 'todos';
+        const soloVideo = !!this._materialesSoloVideo;
         // Migración del flag booleano antiguo (_materialesAgruparATC) al modo.
         if (this._materialesAgrupar === undefined) {
             this._materialesAgrupar = this._materialesAgruparATC ? 'atc' : 'none';
         }
         const modoAgrup = this._materialesAgrupar || 'none';
 
-        // Filtrar
+        // Filtrar: audiencia y vídeo son ejes independientes (se combinan en AND).
         const filtrados = catalogo.filter(item => {
             const textoMatch = !busqueda ||
                 item.medicamento?.toLowerCase().includes(busqueda) ||
                 item.principiosActivos?.toLowerCase().includes(busqueda);
 
-            const tipoMatch = filtro === 'todos' ||
-                (filtro === 'paciente' && item.listaDocsPaciente?.length > 0) ||
-                (filtro === 'profesional' && item.listaDocsProfesional?.length > 0) ||
-                (filtro === 'video' && [
-                    ...(item.listaDocsPaciente || []),
-                    ...(item.listaDocsProfesional || [])
-                ].some(d => d.video));
+            const docsPac = item.listaDocsPaciente || [];
+            const docsProf = item.listaDocsProfesional || [];
+            const audMatch = audiencia === 'todos'
+                || (audiencia === 'paciente' && docsPac.length > 0)
+                || (audiencia === 'profesional' && docsProf.length > 0);
 
-            return textoMatch && tipoMatch;
+            // El vídeo se exige dentro de la audiencia seleccionada.
+            let videoMatch = true;
+            if (soloVideo) {
+                const pool = audiencia === 'paciente' ? docsPac
+                    : audiencia === 'profesional' ? docsProf
+                    : [...docsPac, ...docsProf];
+                videoMatch = pool.some(d => d.video);
+            }
+
+            return textoMatch && audMatch && videoMatch;
         });
 
         const totalStr = filtrados.length === catalogo.length
             ? `${catalogo.length} medicamentos`
             : `${filtrados.length} / ${catalogo.length}`;
 
-        const chipDefs = [
+        const audDefs = [
             { f: 'todos',        label: 'Todos',       icon: 'list',         extra: '' },
             { f: 'paciente',     label: 'Paciente',    icon: 'user-circle',  extra: 'chip-paciente' },
             { f: 'profesional',  label: 'Profesional', icon: 'stethoscope',  extra: 'chip-profesional' },
-            { f: 'video',        label: 'Vídeos',      icon: 'play-circle',  extra: 'chip-video' },
         ];
-        const filtroChips = chipDefs.map(({ f, label, icon, extra }) => {
-            const active = filtro === f ? 'active' : '';
-            return `<button class="mat-filtro-chip ${active} ${extra}" onclick="app._setMaterialesFiltro('${f}')">
+        const audChips = audDefs.map(({ f, label, icon, extra }) =>
+            `<button class="mat-filtro-chip ${audiencia === f ? 'active' : ''} ${extra}" onclick="app._setMaterialesAudiencia('${f}')">
                 <i class="fas fa-${icon}"></i> ${label}
-            </button>`;
-        }).join('');
+            </button>`).join('');
+        const videoChip = `<button class="mat-filtro-chip chip-video ${soloVideo ? 'active' : ''}" onclick="app._toggleMaterialesVideo()" title="Solo materiales que incluyen vídeo (combinable con la audiencia)">
+            <i class="fas fa-play-circle"></i> Vídeos
+        </button>`;
+        const filtroChips = `${audChips}<span class="mat-chip-sep"></span>${videoChip}`;
 
         const atcBtn = `<button class="mat-filtro-chip chip-atc ${modoAgrup === 'atc' ? 'active' : ''}" onclick="app._setMaterialesAgrupar('atc')">
             <i class="fas fa-layer-group"></i> Por ATC
@@ -5136,7 +5164,7 @@ class MedCheckApp {
             const items = grupos[letra];
             const nombre = CATS[letra] || 'Sin clasificar';
             return `
-                <div class="mat-atc-grupo">
+                <div class="mat-atc-grupo collapsed">
                     <div class="mat-atc-grupo-header" onclick="this.closest('.mat-atc-grupo').classList.toggle('collapsed')">
                         <span class="mat-atc-grupo-letra">${letra}</span>
                         <span class="mat-atc-grupo-nombre">${nombre}</span>
@@ -5165,12 +5193,17 @@ class MedCheckApp {
             if (!grupos[name]) grupos[name] = { color: spec?.color || '#94a3b8', icon: spec?.icon || 'circle-question', items: [] };
             grupos[name].items.push(item);
         });
-        const ordenadas = Object.entries(grupos).sort((a, b) => b[1].items.length - a[1].items.length);
+        const esCatchAll = (k) => k === 'Sin especialidad asignada';
+        const ordenadas = Object.entries(grupos).sort((a, b) => {
+            const ca = esCatchAll(a[0]), cb = esCatchAll(b[0]);
+            if (ca !== cb) return ca ? 1 : -1; // catch-all al final
+            return b[1].items.length - a[1].items.length;
+        });
         if (!ordenadas.length) {
             return `<div class="empty-state"><i class="fas fa-user-doctor"></i><p>Sin resultados</p></div>`;
         }
         return ordenadas.map(([name, g]) => `
-            <div class="mat-atc-grupo">
+            <div class="mat-atc-grupo collapsed">
                 <div class="mat-atc-grupo-header" onclick="this.closest('.mat-atc-grupo').classList.toggle('collapsed')">
                     <span class="mat-atc-grupo-letra" style="color:${g.color}"><i class="fas fa-${g.icon}"></i></span>
                     <span class="mat-atc-grupo-nombre">${name}</span>
@@ -5183,8 +5216,13 @@ class MedCheckApp {
             </div>`).join('');
     }
 
-    _setMaterialesFiltro(tipo) {
-        this._materialesFiltroTipo = tipo;
+    _setMaterialesAudiencia(tipo) {
+        this._materialesAudiencia = tipo;
+        this._renderMaterialesView();
+    }
+
+    _toggleMaterialesVideo() {
+        this._materialesSoloVideo = !this._materialesSoloVideo;
         this._renderMaterialesView();
     }
 
@@ -9658,7 +9696,7 @@ ${materialesPlaceholder}
      * por lo que es tan fiable como la agrupación ATC que ya usan.
      */
     _specialtyForAtc(atcCode) {
-        const code = (atcCode || '').toUpperCase();
+        const code = (atcCode || '').trim().toUpperCase();
         if (!code) return null;
         // Reglas por prefijo, de más específico a más general (primero que casa, gana).
         for (const [prefix, info] of this.ATC_SPECIALTY_RULES) {
