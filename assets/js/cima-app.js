@@ -11947,14 +11947,32 @@ ${materialesPlaceholder}
                         position: 'bottom',
                     },
                     {
-                        target: '#nav-profile',
-                        title: '4. Mi vademécum',
+                        target: '.modal-content',
+                        title: '4. Abrir la ficha',
+                        icon: 'fa-window-maximize',
+                        action: { type: 'modal', tab: 'info', source: 'any' },
+                        body: `
+                            <p>La ficha del medicamento concentra la lectura profunda: información, indicaciones, posología, interacciones, seguridad, documentos, evidencia y financiación si existe.</p>
+                            <p>La guía abre un ejemplo real para que la demo no se quede en teoría.</p>
+                        `,
+                    },
+                    {
+                        target: '.modal-fav-btn',
+                        title: '5. Guardar lo relevante',
                         icon: 'fa-star',
                         body: `
-                            <p>Guardar favoritos convierte MedCheck en un <span class="guide-highlight">formulario personal</span>: no una nube, sino tu colección local.</p>
-                            <p>Desde ahí aparecen Esenciales, Analítica 80/20, Prescripción, Materiales de la colección e Importar/Exportar.</p>
+                            <p>La estrella guarda el medicamento ya enriquecido para que después pueda agruparse por ATC, principio activo, indicación o especialidad.</p>
+                            <p>No es una nube: es tu colección local en este navegador.</p>
                         `,
-                        position: 'bottom',
+                    },
+                    {
+                        target: '.profile-subnav',
+                        title: '6. Revisar la colección',
+                        icon: 'fa-table-columns',
+                        action: { type: 'profileSection', section: 'favorites' },
+                        body: `
+                            <p>Mi Perfil convierte favoritos en un <span class="guide-highlight">formulario personal</span>: favoritos, esenciales, analítica 80/20, prescripción, materiales e importación/exportación.</p>
+                        `,
                     },
                     {
                         target: '#start-guide-btn',
@@ -11977,9 +11995,10 @@ ${materialesPlaceholder}
                         target: '.modal-content',
                         title: 'La ficha es la mesa de trabajo',
                         icon: 'fa-window-maximize',
+                        action: { type: 'modal', tab: 'info', source: 'any' },
                         body: `
                             <p>Al abrir un medicamento, el modal reúne la información accionable: ficha, indicaciones, posología, interacciones, seguridad, documentos, evidencia y financiación si existe.</p>
-                            <p>Si no hay ficha abierta, busca un medicamento y vuelve a lanzar esta subguía.</p>
+                            <p>Si no había una ficha abierta, la guía carga un ejemplo real para poder recorrerla.</p>
                         `,
                     },
                     {
@@ -11992,12 +12011,60 @@ ${materialesPlaceholder}
                         `,
                     },
                     {
-                        target: '.modal-tabs',
-                        title: 'Pestañas con carga diferida',
-                        icon: 'fa-layer-group',
+                        target: '#tab-indications.active',
+                        title: 'Indicaciones',
+                        icon: 'fa-stethoscope',
+                        action: { type: 'modalTab', tab: 'indications' },
                         body: `
-                            <p>Las pestañas profundas cargan cuando las abres: documentos, materiales, PGx, evidencia o financiación no bloquean la ficha inicial.</p>
-                            <p>Las URL conservan el medicamento y la pestaña para poder volver o compartir el recorrido dentro del piloto.</p>
+                            <p>La pestaña Indicaciones extrae la sección 4.1 de la ficha técnica cuando CIMA la expone.</p>
+                            <p>Sirve para comprobar uso autorizado sin salir de la ficha.</p>
+                        `,
+                    },
+                    {
+                        target: '#tab-posology.active',
+                        title: 'Posología',
+                        icon: 'fa-prescription-bottle-medical',
+                        action: { type: 'modalTab', tab: 'posology' },
+                        body: `
+                            <p>Posología abre la dosificación oficial. Es una lectura lenta bajo demanda, no una tarjeta rápida.</p>
+                        `,
+                    },
+                    {
+                        target: '#tab-safety.active',
+                        title: 'Seguridad por contexto',
+                        icon: 'fa-shield-alt',
+                        action: { type: 'modalTab', tab: 'safety' },
+                        body: `
+                            <p>Seguridad cruza la ficha con el contexto activo: embarazo, lactancia, edad, conducción, renal o hepática.</p>
+                            <p>El criterio clínico sigue mandando; la pestaña organiza señales.</p>
+                        `,
+                    },
+                    {
+                        target: '#tab-interactions.active',
+                        title: 'Interacciones y reacciones',
+                        icon: 'fa-random',
+                        action: { type: 'modalTab', tab: 'interactions' },
+                        body: `
+                            <p>Interacciones y Reacciones son pestañas de verificación dirigida. La guía abre Interacciones; Reacciones queda al lado cuando la duda sea de tolerabilidad.</p>
+                        `,
+                    },
+                    {
+                        target: '#tab-docs.active',
+                        title: 'Documentos y materiales',
+                        icon: 'fa-file-medical-alt',
+                        action: { type: 'modalTab', tab: 'docs' },
+                        body: `
+                            <p>Documentos enlaza ficha técnica, prospecto y, cuando existen, materiales informativos de seguridad AEMPS.</p>
+                        `,
+                    },
+                    {
+                        target: '#tab-evidence.active',
+                        title: 'Evidencia y financiación',
+                        icon: 'fa-book-medical',
+                        action: { type: 'modalTab', tab: 'evidence' },
+                        body: `
+                            <p>Evidencia abre PubMed y fuentes de referencia desde el término clínico. Financiación aparece como pestaña adicional cuando hay códigos nacionales consultables.</p>
+                            <p>Las pestañas profundas cargan de forma diferida para no bloquear la apertura inicial.</p>
                         `,
                     },
                 ],
@@ -12022,6 +12089,7 @@ ${materialesPlaceholder}
                         target: '.profile-subnav',
                         title: 'Seis lentes de revisión',
                         icon: 'fa-table-columns',
+                        action: { type: 'profileSection', section: 'favorites' },
                         body: `
                             <ul class="guide-features">
                                 <li><i class="fas fa-star"></i> favoritos</li>
@@ -12037,11 +12105,29 @@ ${materialesPlaceholder}
                     },
                     {
                         target: '#profile-section-content',
-                        title: 'Revisar por colección',
-                        icon: 'fa-notes-medical',
+                        title: 'Esenciales',
+                        icon: 'fa-clipboard-list',
+                        action: { type: 'profileSection', section: 'essentials' },
                         body: `
-                            <p>Esenciales recuerda principios activos nucleares de AP; Prescripción cruza SADMANS, monitorización y PGx; Materiales reúne documentos de seguridad de tus medicamentos.</p>
-                            <p>La regla 80/20 y los chips por especialidad ayudan a explicar la colección de un vistazo.</p>
+                            <p>Esenciales recuerda principios activos nucleares de AP y enlaza lo que falta al buscador para que elijas la presentación.</p>
+                        `,
+                    },
+                    {
+                        target: '#profile-section-content',
+                        title: 'Prescripción',
+                        icon: 'fa-notes-medical',
+                        action: { type: 'profileSection', section: 'prescription' },
+                        body: `
+                            <p>Prescripción cruza tu colección con SADMANS, monitorización analítica y farmacogenómica indexada.</p>
+                        `,
+                    },
+                    {
+                        target: '#profile-section-content',
+                        title: 'Analítica 80/20',
+                        icon: 'fa-chart-bar',
+                        action: { type: 'profileSection', section: 'analytics' },
+                        body: `
+                            <p>Analítica resume tu colección, permite drill-down y muestra concentración terapéutica para explicar rápidamente tu perfil de prescripción.</p>
                         `,
                     },
                 ],
@@ -12072,9 +12158,10 @@ ${materialesPlaceholder}
                         `,
                     },
                     {
-                        target: '#pgx-results',
+                        target: '#tab-pgx.active, .modal-content',
                         title: 'De la vista global al modal',
                         icon: 'fa-arrow-up-right-from-square',
+                        action: { type: 'modal', tab: 'pgx', source: 'pgx' },
                         body: `
                             <p>Cada tarjeta abre la ficha directamente en la pestaña PGx, donde puedes verificar fuente AEMPS y ampliar con CPIC o prompt con citas.</p>
                         `,
@@ -12105,9 +12192,10 @@ ${materialesPlaceholder}
                         `,
                     },
                     {
-                        target: '.materiales-grid, .mat-atc-grupo',
+                        target: '#tab-docs.active, .modal-content',
                         title: 'Abrir cuando importa',
                         icon: 'fa-folder-open',
+                        action: { type: 'modal', tab: 'docs', source: 'materials' },
                         body: `
                             <p>La tarjeta lleva al documento original y, si tiene registro CIMA, a la ficha del medicamento.</p>
                             <p>Dentro de Mi Perfil hay otra vista de Materiales limitada solo a tu colección.</p>
@@ -12208,6 +12296,133 @@ ${materialesPlaceholder}
         }
     }
 
+    _guideWait(ms = 80) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async _resolveGuideMedicationNregistro(source = 'any') {
+        if (source === 'pgx') {
+            if (!this._pgxAll || this._pgxAll.length === 0) {
+                try {
+                    const data = await this.api.getPgxAll();
+                    this._pgxAll = Array.isArray(data?.items) ? data.items : [];
+                    this._pgxAllMeta = data?.meta || this._pgxAllMeta || {};
+                } catch {}
+            }
+            const pgxItem = (this._pgxAll || []).find(m => m.nreg);
+            if (pgxItem?.nreg) return pgxItem.nreg;
+        }
+
+        if (source === 'materials') {
+            if (!this._materialesCatalogo) {
+                try {
+                    await this.renderMaterials();
+                } catch {}
+            }
+            const matItem = (this._materialesCatalogo || []).find(m => m.nregistro);
+            if (matItem?.nregistro) return matItem.nregistro;
+        }
+
+        if (this.currentMed?.nregistro) return this.currentMed.nregistro;
+        if (this.selectedMedication?.nregistro) return this.selectedMedication.nregistro;
+        const fav = this.getFavorites?.().find(f => f.nregistro);
+        if (fav?.nregistro) return fav.nregistro;
+
+        const domItem = document.querySelector('[data-nregistro]:not([data-nregistro=""])');
+        if (domItem?.dataset?.nregistro) return domItem.dataset.nregistro;
+
+        try {
+            const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
+            const results = await this.api.searchMedicamentos({ practiv1: 'paracetamol', comerc: 1, pagina: 1 }, noTrack);
+            return results?.resultados?.find(m => m.nregistro)?.nregistro || null;
+        } catch {
+            return null;
+        }
+    }
+
+    async _ensureGuidePgxIndex() {
+        if (this._pgxSet) return;
+        try {
+            const res = await this.api.getPgxIndexLight();
+            if (res) {
+                this._pgxSet = res.set;
+                this._pgxMeta = res.meta;
+            }
+        } catch {}
+    }
+
+    async _selectGuideModalTab(tab) {
+        if (!tab) return false;
+        if (tab === 'pgx') await this._ensureGuidePgxIndex();
+        const btn = this.modalBody?.querySelector(`.modal-tab[data-tab="${tab}"]`);
+        if (!btn) return false;
+        btn.click();
+        await this._guideWait(160);
+        return true;
+    }
+
+    async _ensureGuideModal(tab = 'info', source = 'any') {
+        if (tab === 'pgx') await this._ensureGuidePgxIndex();
+        const visible = this.modal && !this.modal.classList.contains('hidden');
+        if (!visible || !this.currentMed?.nregistro) {
+            const nregistro = await this._resolveGuideMedicationNregistro(source);
+            if (!nregistro) {
+                this.showToast?.('No se ha podido abrir una ficha para la guía', 'warning');
+                return false;
+            }
+            await this.openMedDetails(nregistro, tab);
+            await this._guideWait(160);
+            return true;
+        }
+        if (tab && tab !== 'info') {
+            const selected = await this._selectGuideModalTab(tab);
+            if (!selected && tab === 'pgx') {
+                this.showToast?.('Este medicamento no tiene pestaña PGx; se muestra la ficha general', 'info');
+            }
+        } else {
+            await this._selectGuideModalTab('info');
+        }
+        return true;
+    }
+
+    async _runGuideStepAction(step) {
+        const action = step?.action;
+        if (!action) return;
+
+        if (action.type === 'modal') {
+            await this._ensureGuideModal(action.tab || 'info', action.source || 'any');
+            return;
+        }
+
+        if (action.type === 'modalTab') {
+            await this._ensureGuideModal('info', action.source || 'any');
+            await this._selectGuideModalTab(action.tab);
+            return;
+        }
+
+        if (action.type === 'profileSection') {
+            if (this.modal && !this.modal.classList.contains('hidden')) {
+                this.closeModal();
+            }
+            if (this.currentView !== 'profile') {
+                await this.loadView('profile');
+            }
+            this._activateProfileSection(action.section || 'favorites', true);
+            await this._guideWait(80);
+            return;
+        }
+
+        if (action.type === 'view' && action.view) {
+            if (this.modal && !this.modal.classList.contains('hidden')) {
+                this.closeModal();
+            }
+            if (this.currentView !== action.view) {
+                await this.loadView(action.view);
+            }
+            await this._guideWait(80);
+        }
+    }
+
     async startGuide(tourKey = 'core') {
         if (this.guideActive) return;
         this.closeGuideMenu();
@@ -12215,7 +12430,7 @@ ${materialesPlaceholder}
         await this._prepareGuideTour(this.guideTour);
         this.guideActive = true;
         this.guideStep = 0;
-        this._renderGuideStep();
+        await this._renderGuideStep();
         this._guideKeyHandler = (e) => {
             if (!this.guideActive) return;
             if (e.key === 'Escape') { this.endGuide(); }
@@ -13111,28 +13326,30 @@ ${materialesPlaceholder}
         }
     }
 
-    nextGuideStep() {
+    async nextGuideStep() {
         const steps = this._guideSteps();
         if (this.guideStep < steps.length - 1) {
             this.guideStep++;
-            this._renderGuideStep();
+            await this._renderGuideStep();
         } else {
             this.endGuide();
         }
     }
 
-    prevGuideStep() {
+    async prevGuideStep() {
         if (this.guideStep > 0) {
             this.guideStep--;
-            this._renderGuideStep();
+            await this._renderGuideStep();
         }
     }
 
-    _renderGuideStep() {
+    async _renderGuideStep() {
         const steps = this._guideSteps();
         const step = steps[this.guideStep];
         const overlay = document.getElementById('guide-overlay');
         if (!overlay) return;
+
+        await this._runGuideStepAction(step);
 
         // Remove previous spotlight
         document.querySelectorAll('.guide-spotlight-target').forEach(el => {
