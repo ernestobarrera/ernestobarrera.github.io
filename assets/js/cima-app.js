@@ -8203,9 +8203,12 @@ ${materialesPlaceholder}
     }
 
     closeModal() {
+        // Solo sincronizar la URL si había un modal abierto. Llamadas de limpieza
+        // (p. ej. searchByPA) no deben empujar una entrada de historial espuria.
+        const wasOpen = !this.modal.classList.contains('hidden');
         this.modal.classList.add('hidden');
         this.currentMed = null;
-        if (!this.isPopstateNavigation) {
+        if (wasOpen && !this.isPopstateNavigation) {
             this.updateURLWithCurrentState();
         }
     }
@@ -9175,6 +9178,12 @@ ${materialesPlaceholder}
      */
     updateURLWithCurrentState() {
         if (this.isPopstateNavigation) return;
+
+        // El perfil tiene su propio estado (subpestaña, agrupación, drill).
+        if (this.currentView === 'profile') {
+            this._updateProfileURL();
+            return;
+        }
 
         const params = { view: this.currentView };
 
