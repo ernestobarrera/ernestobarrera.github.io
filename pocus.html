@@ -1421,194 +1421,21 @@
       };
 
       // Base de datos de referencias
-      const references = {
-        pneumonia_long_2017: {
-          id: "pneumonia_long_2017",
-          citation:
-            "Long L, et al. Lung ultrasound for the diagnosis of pneumonia in adults: A meta-analysis. Medicine (Baltimore). 2017;96(3):e5713.",
-          url: "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5279090/",
-        },
-        pneumothorax_lichtenstein_2008: {
-          id: "pneumothorax_lichtenstein_2008",
-          citation:
-            "Lichtenstein DA, Mezière GA. Relevance of lung ultrasound in the diagnosis of acute respiratory failure: the BLUE protocol. Chest. 2008;134(1):117-25.",
-          url: "https://pubmed.ncbi.nlm.nih.gov/18403664/",
-        },
-        aaa_rubano_2013: {
-          id: "aaa_rubano_2013",
-          citation:
-            "Rubano E, et al. Systematic review: emergency department bedside ultrasonography for diagnosing suspected abdominal aortic aneurysm. Acad Emerg Med. 2013;20(2):128-38.",
-          url: "https://pubmed.ncbi.nlm.nih.gov/23406071/",
-        },
-        biliary_summers_2010: {
-          id: "biliary_summers_2010",
-          citation:
-            "Summers SM, Scruggs W, Menchine MD, et al. A prospective evaluation of emergency department bedside ultrasonography for the detection of acute cholecystitis. Ann Emerg Med. 2010;56(2):114-22.",
-          url: "https://doi.org/10.1016/j.annemergmed.2010.01.014",
-        },
-        appendicitis_becker_2022: {
-          id: "appendicitis_becker_2022",
-          citation:
-            "Becker BA, Kaminstein D, Secko M, et al. A prospective, multicenter evaluation of point-of-care ultrasound for appendicitis in the emergency department. Acad Emerg Med. 2022;29(2):164-173.",
-          url: "https://doi.org/10.1111/acem.14378",
-        },
-        dvt_pomero_2022: {
-          id: "dvt_pomero_2022",
-          citation:
-            "Pomero F, Dentali F, Borretta V, et al. Accuracy of emergency physician-performed ultrasonography in the diagnosis of deep-vein thrombosis: a systematic review and meta-analysis. Thromb Haemost. 2013;109(1):137-45.",
-          url: "https://doi.org/10.1160/TH12-07-0473",
-        },
-        cervical_nodes_ahuja_2008: {
-          id: "cervical_nodes_ahuja_2008",
-          citation:
-            "Ahuja AT, et al. Ultrasound of malignant cervical lymph nodes. Cancer Imaging. 2008;8(1):48-56.",
-          url: "https://pubmed.ncbi.nlm.nih.gov/18390388/",
-        },
-        abscess_subramaniam_2016: {
-          id: "abscess_subramaniam_2016",
-          citation:
-            "Subramaniam S, Bober J, Chao J, Zehtabchi S. Point-of-care Ultrasound for Diagnosis of Abscess in Skin and Soft Tissue Infections. Acad Emerg Med. 2016;23(11):1298-1306.",
-          url: "https://doi.org/10.1111/acem.13049",
-        },
-        testicular_torsion_bandarkar_2019: {
-          id: "testicular_torsion_bandarkar_2019",
-          citation:
-            "Bandarkar AN, Blask AR. Testicular torsion with preserved flow: key sonographic features and value-added approach to diagnosis. Pediatr Radiol. 2018;48(5):735-744.",
-          url: "https://doi.org/10.1007/s00247-018-4093-0",
-        },
-
-        ocular_pocus101_guide: {
-          id: "ocular_pocus101_guide",
-          citation:
-            "POCUS 101. Ocular Ultrasound Made Easy: Step-by-Step Guide. POCUS 101. Consultado el 7 de julio de 2025.",
-          url: "https://www.pocus101.com/ocular-ultrasound-made-easy-step-by-step-guide/",
-        },
-        // Dentro de const references = { ... }, añade este nuevo objeto:
-    tvp_rioja_2024: {
-      id: "tvp_rioja_2024",
-      citation:
-        "Rioja Delgado EM, et al. Diagnóstico ecográfico de trombosis venosa profunda de extremidades inferiores. FMC. 2024;31(6):320-5.",
-      url: "https://www.fmc.es/es-diagnostico-ecografico-de-trombosis-veno-articulo-S113420722400077X",
-    },
-
-    soft_tissue_hung_2020: {
-      id: "soft_tissue_hung_2020",
-      citation: "Hung EHY, Griffith JF, Yip SWY, et al. Accuracy of ultrasound in the characterization of superficial soft tissue tumors: a prospective study. Skeletal Radiol. 2020;49(6):883-892.",
-      url: "https://doi.org/10.1007/s00256-019-03365-z",
-    },
-    soft_tissue_guillin_2024: {
-      id: "soft_tissue_guillin_2024",
-      citation: "Guillin R, Ract I, Pesquer L, Drakonaki E. Ultrasound Spot Diagnosis of Common Benign Subcutaneous Masses and Pseudomasses: What the Radiologist Needs to Know. Semin Musculoskelet Radiol. 2024;28(6):749-757.",
-      url: "https://doi.org/10.1055/s-0044-1791494",
-    },
-    soft_tissue_knaysi_2020: {
-      id: "soft_tissue_knaysi_2020",
-      citation: "Knaysi G, Ringelberg J, Stadlberger N, Soucy Z. Point of Care Ultrasound Use by Associate Providers for Differentiating Abscess Versus Cellulitis Skin and Soft Tissue Infection in the Emergency Department. J Emerg Med. 2021;60(1):e1-e7.",
-      url: "https://doi.org/10.1016/j.jemermed.2020.07.028",
-    },
-    soft_tissue_wang_2024: {
-      id: "soft_tissue_wang_2024",
-      citation: "Wang Q, Ren W, Wang L, et al. Role of high-frequency ultrasound in differentiating benign and malignant skin lesions: potential and limitations. Ultrasonography. 2024;43(4):238-249.",
-      url: "https://doi.org/10.14366/usg.24015",
-    },
-    soft_tissue_kato_2025: {
-      id: "soft_tissue_kato_2025",
-      citation: "Kato Y, Nakamura Y, Ishizuki S, Nomura T. Lesion size plays a crucial role in determining internal echogenicity: a retrospective study of 55 cases of epidermal cysts with sonographic examination. Eur J Dermatol. 2025;35(6):477-482.",
-      url: "https://doi.org/10.1684/ejd.2025.4983",
-    },
-
-    // Referencias nuevas fichas AP (abril 2026)
-    fascitis_rogers_2022: {
-      id: "fascitis_rogers_2022",
-      citation: "Rogers J, et al. Ultrasound characteristics of plantar fasciitis: a case-control study. Arthritis Care Res (Hoboken). 2022.",
-      url: "https://doi.org/10.1002/acr.24887",
-    },
-    fascitis_ramu_2022: {
-      id: "fascitis_ramu_2022",
-      citation: "Ramu M, et al. Role of shear wave elastography in plantar fasciitis diagnosis. J Ultrasound. 2022.",
-      url: "https://doi.org/10.1007/s40477-022-00694-z",
-    },
-    stc_luo_2024: {
-      id: "stc_luo_2024",
-      citation: "Luo Y, et al. Diagnostic value of ultrasonography for carpal tunnel syndrome: a meta-analysis. J Formos Med Assoc. 2024.",
-      url: "https://doi.org/10.1016/j.jfma.2024.06.026",
-    },
-    stc_roomizadeh_2019: {
-      id: "stc_roomizadeh_2019",
-      citation: "Roomizadeh P, et al. Ultrasonographic assessment for carpal tunnel syndrome severity: a systematic review and meta-analysis. Am J Phys Med Rehabil. 2019;98(5):373-381.",
-      url: "https://doi.org/10.1097/PHM.0000000000001104",
-    },
-    aquiles_cushman_2024: {
-      id: "aquiles_cushman_2024",
-      citation: "Cushman D, et al. Association between Achilles tendon ultrasound abnormalities and future Achilles tendon pain: a systematic review and meta-analysis. Clin J Sport Med. 2024.",
-      url: "https://doi.org/10.1097/JSM.0000000000001236",
-    },
-    hidronefrosis_sibley_2020: {
-      id: "hidronefrosis_sibley_2020",
-      citation: "Sibley S, et al. Emergency physician POCUS for evaluation of patients with suspected ureteral colic. Ultrasound J. 2020;12:25.",
-      url: "https://doi.org/10.1186/s13089-020-00178-3",
-    },
-    hidronefrosis_popat_2024: {
-      id: "hidronefrosis_popat_2024",
-      citation: "Popat A, et al. Diagnostic Performance of Point-of-Care Ultrasound in Emergency Departments: A Systematic Review and Meta-Analysis. Cureus. 2024;16(1):e52371.",
-      url: "https://doi.org/10.7759/cureus.52371",
-    },
-    efast_netherton_2019: {
-      id: "efast_netherton_2019",
-      citation: "Netherton S, et al. Diagnostic accuracy of eFAST in the trauma patient: a systematic review and meta-analysis. CJEM. 2019;21(6):727-738.",
-      url: "https://doi.org/10.1017/cem.2019.381",
-    },
-    neumonia_gentilotti_2021: {
-      id: "neumonia_gentilotti_2021",
-      citation: "Gentilotti E, et al. Diagnostic accuracy of point-of-care tests in acute community-acquired lower respiratory tract infections. Clin Microbiol Infect. 2022;28(1):13-21.",
-      url: "https://doi.org/10.1016/j.cmi.2021.09.025",
-    },
-    neumonia_shi_2024: {
-      id: "neumonia_shi_2024",
-      citation: "Shi ZL, et al. Diagnostic accuracy of lung ultrasound in pediatric pneumonia: systematic review and meta-analysis. Pediatr Pulmonol. 2024.",
-      url: "https://doi.org/10.1002/ppul.27221",
-    },
-    hernia_ohkura_2022: {
-      id: "hernia_ohkura_2022",
-      citation: "Ohkura Y, et al. Sonographic characteristics of inguinal hernias in children. Pediatrics International. 2022.",
-      url: "https://doi.org/10.1111/ped.15193",
-    },
-    bursitis_eliason_2021: {
-      id: "bursitis_eliason_2021",
-      citation: "Eliason L, et al. Ultrasonographic findings in patients with unilateral subacromial pain syndrome. Physiother Theory Pract. 2021.",
-      url: "https://doi.org/10.1080/09593985.2021.1962462",
-    },
-    gatillo_nakagawa_2023: {
-      id: "gatillo_nakagawa_2023",
-      citation: "Nakagawa H, et al. Ultrasound-guided percutaneous release for trigger finger: a systematic review. J Ultrasound Med. 2023.",
-      url: "https://doi.org/10.1002/jum.16294",
-    },
-    varicocele_freeman_2020: {
-      id: "varicocele_freeman_2020",
-      citation: "Freeman SJ, et al. (ESUR-SPIWG). Ultrasound evaluation of varicocele: guidelines and recommendations of the European Society of Urogenital Radiology Scrotal and Penile Imaging Working Group. Eur Radiol. 2020;30(1):11-25.",
-      url: "https://doi.org/10.1007/s00330-019-06280-y",
-    },
-    baker_tejero_2019: {
-      id: "baker_tejero_2019",
-      citation: "Tejero S, et al. Ruptured popliteal cyst causing acute compartment syndrome: series of seven cases. Emergencias. 2019;31(1):63-64.",
-      url: "https://pubmed.ncbi.nlm.nih.gov/30638346/",
-    },
-    imt_willeit_2020: {
-      id: "imt_willeit_2020",
-      citation: "Willeit P, et al. Carotid intima-media thickness progression as surrogate marker for cardiovascular risk: meta-analysis of 119 randomised trials with 100,667 patients. Circulation. 2020;142(7):621-642.",
-      url: "https://doi.org/10.1161/CIRCULATIONAHA.120.046361",
-    },
-    morton_mak_2020: {
-      id: "morton_mak_2020",
-      citation: "Mak SM, et al. Morton's neuroma: ultrasound-guided management. Clin Radiol. 2021;76(1):76.e1-76.e8.",
-      url: "https://doi.org/10.1016/j.crad.2020.10.006",
-    },
-    sjogren_siso_2021: {
-      id: "sjogren_siso_2021",
-      citation: "Sisó-Almirall A, et al. Salivary gland ultrasound in primary Sjögren syndrome: a position statement from the Catalan Society of Family and Community Medicine. Clin Exp Rheumatol. 2021.",
-      url: "https://doi.org/10.55563/clinexprheumatol/pal3z7",
-    },
-      };
+      // === Referencias bibliográficas: fuente única externalizada y verificada ===
+      // Datos en assets/data/pocus-refs.json (cada entrada lleva campo `verified`).
+      // El fetch arranca al cargar el script; renderSegmentContent espera _refsReady
+      // antes de pintar las fuentes, de modo que el primer render ya las tiene.
+      let references = {};
+      const _refsReady = fetch("assets/data/pocus-refs.json")
+        .then((r) => (r.ok ? r.json() : {}))
+        .then((data) => {
+          references = data;
+          return data;
+        })
+        .catch((err) => {
+          console.warn("No se pudieron cargar las referencias POCUS:", err);
+          return {};
+        });
 
       // Base de datos POCUS
       const pocusData = [
@@ -5862,7 +5689,8 @@ CONCLUSIÓN:`,
           });
 
         // Función para renderizar contenido del segmento
-        function renderSegmentContent(segmentId) {
+        async function renderSegmentContent(segmentId) {
+          await _refsReady;
           contentArea.innerHTML = "";
 
           // Pausar todos los videos
