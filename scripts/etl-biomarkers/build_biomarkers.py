@@ -32,16 +32,18 @@ import sys
 import urllib.request
 import zipfile
 from collections import OrderedDict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 ZIP_URL = "https://listadomedicamentos.aemps.gob.es/prescripcion.zip"
 XML_ENTRY = "Prescripcion.xml"
 SCHEMA_VERSION = 1  # bump cuando cambie la estructura del JSON
+UA = "Mozilla/5.0 (compatible; MedCheck-ETL/1.0; +https://ernestobarrera.github.io)"
 
 
 def head(url: str) -> dict[str, str | None]:
-    req = urllib.request.Request(url, method="HEAD")
+    req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=30) as r:
         return {
             "status": str(r.status),
@@ -53,7 +55,8 @@ def head(url: str) -> dict[str, str | None]:
 
 def download(url: str) -> bytes:
     print(f"[etl] descargando {url}", file=sys.stderr)
-    with urllib.request.urlopen(url, timeout=120) as r:
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=120) as r:
         return r.read()
 
 
@@ -203,6 +206,7 @@ def main(argv: list[str] | None = None) -> int:
             "source": source,
             "attribution": "Fuente: Agencia Espanola de Medicamentos y Productos Sanitarios (AEMPS) - www.aemps.gob.es",
             "list_prescription_date": parsed["list_prescription_date"],
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "medicamentos_con_biomarcador": len(by_nreg),
             "presentaciones_con_biomarcador": len(cn_index),
         },

@@ -85,3 +85,21 @@ jobs:
           echo "HTTP ${status}"
           echo "$body" | jq .
           test "$status" = "200" || exit 1
+
+      - name: Publicar meta a Cloudflare KV
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+        run: |
+          jq -c '.meta' bifimed_catalog.json > bifimed_catalog_meta.json
+          response=$(curl -sS -w "\n%{http_code}" -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${CF_KV_NAMESPACE_ID}/values/bifimed%3Ameta" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary @bifimed_catalog_meta.json)
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "HTTP ${status}"
+          echo "$body" | jq .
+          test "$status" = "200" || exit 1

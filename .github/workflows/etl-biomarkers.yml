@@ -29,7 +29,16 @@ jobs:
       - name: HEAD check del ZIP remoto
         id: head
         run: |
-          python scripts/etl-biomarkers/build_biomarkers.py --head-only | tee head.json
+          set +e
+          python scripts/etl-biomarkers/build_biomarkers.py --head-only > head.json
+          head_status=$?
+          set -e
+          if [ "$head_status" -ne 0 ] || ! jq -e . head.json >/dev/null 2>&1; then
+            echo "::warning::No se pudo consultar HEAD de AEMPS; se intentará usar caché o descarga directa"
+            printf '{"status":"unreachable","etag":"","last_modified":"","content_length":""}\n' > head.json
+          fi
+          cat head.json
+          echo "head_status=${head_status}" >> "$GITHUB_OUTPUT"
           echo "etag=$(jq -r '.etag // empty' head.json)" >> "$GITHUB_OUTPUT"
           echo "last_modified=$(jq -r '.last_modified // empty' head.json)" >> "$GITHUB_OUTPUT"
 
@@ -38,12 +47,41 @@ jobs:
         uses: actions/cache@v4
         with:
           path: prescripcion.zip
-          key: prescripcion-${{ steps.head.outputs.etag }}
+          key: prescripcion-${{ steps.head.outputs.etag || github.run_id }}
+          restore-keys: |
+            prescripcion-
 
-      - name: Descargar ZIP si no hay cache
-        if: steps.zip-cache.outputs.cache-hit != 'true'
+      - name: Preparar ZIP de AEMPS
         run: |
-          curl -sSfL -o prescripcion.zip https://listadomedicamentos.aemps.gob.es/prescripcion.zip
+          if [ "${{ steps.zip-cache.outputs.cache-hit }}" = "true" ]; then
+            echo "ZIP restaurado desde caché exacta"
+            ls -lh prescripcion.zip
+            exit 0
+          fi
+
+          set +e
+          curl -sSfL \
+            --connect-timeout 20 \
+            --max-time 180 \
+            --retry 3 \
+            --retry-delay 10 \
+            --retry-all-errors \
+            -A "Mozilla/5.0 (compatible; MedCheck-ETL/1.0; +https://ernestobarrera.github.io)" \
+            -o prescripcion.zip.new \
+            https://listadomedicamentos.aemps.gob.es/prescripcion.zip
+          curl_status=$?
+          set -e
+
+          if [ "$curl_status" -eq 0 ]; then
+            mv prescripcion.zip.new prescripcion.zip
+            echo "ZIP descargado desde AEMPS"
+          elif [ -f prescripcion.zip ]; then
+            echo "::warning::AEMPS no responde; se usa el ZIP restaurado desde caché anterior"
+            rm -f prescripcion.zip.new
+          else
+            echo "::error::AEMPS no responde y no hay ZIP en caché"
+            exit "$curl_status"
+          fi
           ls -lh prescripcion.zip
 
       - name: Construir JSON de biomarcadores
@@ -59,20 +97,75 @@ jobs:
             echo "list_date=${list_date}"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Comprobar antigüedad del dato
+        id: staleness
+        env:
+          HEAD_STATUS: ${{ steps.head.outputs.head_status }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import sys
+          from datetime import datetime, timezone
+
+          MAX_AGE_HOURS = 72
+          HEAD_STATUS = os.environ.get("HEAD_STATUS", "")
+
+          with open("biomarkers.json", encoding="utf-8") as f:
+              meta = json.load(f)["meta"]
+
+          raw_date = meta.get("list_prescription_date")
+          if not raw_date or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw_date):
+              print(f"::error::Formato inesperado de list_prescription_date: {raw_date!r}")
+              sys.exit(1)
+
+          list_date = datetime.strptime(raw_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+          now = datetime.now(timezone.utc)
+          age_hours = (now - list_date).total_seconds() / 3600
+          print(f"list_prescription_date={raw_date}; age_hours={age_hours:.1f}")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"age_hours={age_hours:.1f}\n")
+
+          if age_hours > MAX_AGE_HOURS and HEAD_STATUS != "0":
+              print(
+                  f"::error::El Nomenclátor AEMPS tiene {age_hours:.1f} h "
+                  f"(umbral {MAX_AGE_HOURS} h) y AEMPS no respondió en este run. "
+                  f"Posible caída prolongada de AEMPS."
+              )
+              sys.exit(1)
+          if age_hours > MAX_AGE_HOURS:
+              print(
+                  f"::warning::El Nomenclátor AEMPS tiene {age_hours:.1f} h, "
+                  "pero AEMPS respondió en este run; puede ser una edición no regenerada."
+              )
+              sys.exit(0)
+          if age_hours > 48:
+              print(f"::warning::El Nomenclátor AEMPS tiene {age_hours:.1f} h; vigilar si AEMPS sigue sin responder.")
+          PY
+
       - name: Resumen
+        if: always()
         run: |
           {
             echo "## ETL biomarcadores"
             echo ""
+            echo "- HEAD status: \`${{ steps.head.outputs.head_status }}\`"
             echo "- ETag remoto: \`${{ steps.head.outputs.etag }}\`"
             echo "- Last-Modified: \`${{ steps.head.outputs.last_modified }}\`"
             echo "- Cache hit: \`${{ steps.zip-cache.outputs.cache-hit }}\`"
             echo "- JSON: \`${{ steps.build.outputs.size_kb }} KB\`"
+            echo "- Edad del dato: \`${{ steps.staleness.outputs.age_hours }} h\`"
             echo ""
             echo "### Cabecera meta"
-            echo '```json'
-            python -c "import json; d=json.load(open('biomarkers.json')); print(json.dumps(d['meta'], indent=2, ensure_ascii=False))"
-            echo '```'
+            if [ -f biomarkers.json ]; then
+              echo '```json'
+              python -c "import json; d=json.load(open('biomarkers.json')); print(json.dumps(d['meta'], indent=2, ensure_ascii=False))"
+              echo '```'
+            else
+              echo "biomarkers.json no generado."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Subir artefacto (retención 7 días)
@@ -95,6 +188,24 @@ jobs:
             -H "Authorization: Bearer ${CF_API_TOKEN}" \
             -H "Content-Type: application/json" \
             --data-binary @biomarkers.json)
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "HTTP ${status}"
+          echo "$body" | jq .
+          test "$status" = "200" || exit 1
+
+      - name: Publicar meta a Cloudflare KV
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+        run: |
+          jq -c '.meta' biomarkers.json > biomarkers_meta.json
+          response=$(curl -sS -w "\n%{http_code}" -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${CF_KV_NAMESPACE_ID}/values/biomarkers%3Ameta" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary @biomarkers_meta.json)
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)
           echo "HTTP ${status}"

@@ -43,6 +43,7 @@ import datetime
 import gzip
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -88,6 +89,34 @@ def download_bifimed_files(out_dir: Path) -> list[Path]:
               file=sys.stderr)
         sys.exit(1)
 
+    def get_with_retry(
+        session: "requests.Session",
+        *,
+        url: str,
+        label: str,
+        timeout: int,
+        params: dict[str, str] | None = None,
+    ) -> "requests.Response":
+        attempts = 4
+        delay = 10
+        last_error: Exception | None = None
+        for attempt in range(1, attempts + 1):
+            try:
+                response = session.get(url, params=params, timeout=timeout)
+                response.raise_for_status()
+                return response
+            except requests.RequestException as exc:
+                last_error = exc
+                if attempt == attempts:
+                    break
+                print(
+                    f"[etl]   Reintento {attempt}/{attempts - 1} en {delay}s "
+                    f"tras fallo en {label}: {exc}",
+                    file=sys.stderr,
+                )
+                time.sleep(delay)
+        raise RuntimeError(f"BIFIMED: fallo persistente en {label}") from last_error
+
     headers = {
         "User-Agent": UA,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -101,8 +130,7 @@ def download_bifimed_files(out_dir: Path) -> list[Path]:
         session.headers.update(headers)
 
         print(f"[etl] GET inicio → {BASE_URL}", file=sys.stderr)
-        r0 = session.get(BASE_URL, timeout=30)
-        r0.raise_for_status()
+        r0 = get_with_retry(session, url=BASE_URL, label="inicio", timeout=30)
         print(f"[etl] Sesión establecida. JSESSIONID: {'sí' if 'JSESSIONID' in r0.cookies else 'no'}",
               file=sys.stderr)
 
@@ -115,12 +143,22 @@ def download_bifimed_files(out_dir: Path) -> list[Path]:
             params = dict(SEARCH_PARAMS_BASE)
             params["financiado"] = financiado
 
-            busq = session.get(BASE_URL, params=params, timeout=60)
-            busq.raise_for_status()
+            busq = get_with_retry(
+                session,
+                url=BASE_URL,
+                params=params,
+                label=f"búsqueda {nombre}",
+                timeout=60,
+            )
             print(f"[etl]   Búsqueda: {busq.status_code}, {len(busq.content)} bytes", file=sys.stderr)
 
-            dl = session.get(BASE_URL, params={"metodo": "descargar"}, timeout=180)
-            dl.raise_for_status()
+            dl = get_with_retry(
+                session,
+                url=BASE_URL,
+                params={"metodo": "descargar"},
+                label=f"descarga {nombre}",
+                timeout=180,
+            )
             contenido = dl.content
             print(f"[etl]   Descarga: {dl.status_code}, {len(contenido)/1024/1024:.1f} MB", file=sys.stderr)
 
@@ -436,6 +474,7 @@ def main(argv: list[str] | None = None) -> int:
             "source": source,
             "attribution": "Fuente: Ministerio de Sanidad - Gobierno de España · www.sanidad.gob.es",
             "download_date": download_date,
+            "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "total_cn": parsed["total_cn"],
             "total_medicamentos": parsed["total_medicamentos"],
             "total_indicaciones": parsed["total_indicaciones"],

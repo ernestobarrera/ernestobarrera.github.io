@@ -299,6 +299,7 @@ def main(argv: list[str] | None = None) -> int:
             "source": source,
             "attribution": "Fuente: Ministerio de Sanidad - Gobierno de España · www.sanidad.gob.es",
             "download_date": download_date,
+            "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "total_products": len(items),
             "by_estado": parsed["stats_estado"],
             "by_tipo": parsed["stats_tipo"],

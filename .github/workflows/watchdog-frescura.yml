@@ -1,0 +1,46 @@
+name: Watchdog frescura del entorno
+
+on:
+  workflow_dispatch:
+    inputs:
+      send_test_email:
+        description: 'Enviar email de prueba y salir (valida la configuracion de Resend)'
+        type: boolean
+        default: false
+  schedule:
+    # 09:00 UTC diario, tras las ETL diarias (biomarkers corre a las 06:17).
+    - cron: '0 9 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: watchdog-frescura
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Comprobar frescura de las fuentes KV
+        env:
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+          # Token de solo lectura recomendado; si no existe, se usa CF_API_TOKEN.
+          CF_API_TOKEN_RO: ${{ secrets.CF_API_TOKEN_RO }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          # Aviso por email (Resend). Si faltan, queda el fallo del workflow.
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          ALERT_EMAIL_FROM: ${{ vars.ALERT_EMAIL_FROM }}
+          WATCHDOG_SEND_TEST_EMAIL: ${{ inputs.send_test_email && '1' || '' }}
+        run: python scripts/watchdog/check_freshness.py
