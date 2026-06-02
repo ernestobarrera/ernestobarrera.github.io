@@ -210,7 +210,7 @@
       }
 
       .tooltip-advanced {
-        position: absolute;
+        position: fixed;
         background: rgba(17, 24, 39, 0.95);
         backdrop-filter: blur(10px);
         color: white;
@@ -219,17 +219,18 @@
         font-size: 0.875rem;
         font-weight: 500;
         pointer-events: none;
-        z-index: 1000;
+        z-index: 9999;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         border: 1px solid rgba(255, 255, 255, 0.1);
         opacity: 0;
-        transform: translateY(10px);
-        transition: all 0.3s ease;
+        transform: translate(-50%, 10px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        white-space: nowrap;
       }
 
       .tooltip-advanced.show {
         opacity: 1;
-        transform: translateY(0);
+        transform: translate(-50%, 0);
       }
 
       /* Estilos originales para las fichas de contenido */
@@ -5702,6 +5703,12 @@ CONCLUSIÓN:`,
         const contentArea = document.getElementById("content-area");
         const welcomeMessage = document.getElementById("welcome-message");
         const tooltip = document.getElementById("tooltip");
+        // El tooltip se posiciona con coordenadas de viewport (getBoundingClientRect),
+        // así que debe ser position:fixed y colgar del <body> para que ningún ancestro
+        // con filter/transform lo reancle ni lo deje bajo el stacking de las tarjetas.
+        if (tooltip && tooltip.parentElement !== document.body) {
+          document.body.appendChild(tooltip);
+        }
         const segments = document.querySelectorAll(".anatomy-segment");
 
         // Event listeners para segmentos anatómicos
@@ -5726,7 +5733,7 @@ CONCLUSIÓN:`,
 
             const rect = e.target.getBoundingClientRect();
             tooltip.style.left = rect.left + rect.width / 2 + "px";
-            tooltip.style.top = rect.top - 10 + "px";
+            tooltip.style.top = rect.top - tooltip.offsetHeight - 8 + "px";
           });
 
           segment.addEventListener("mouseleave", function () {
