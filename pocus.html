@@ -5,7 +5,7 @@
 =====================
 -->
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="pocus-gate-pending">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -16,6 +16,9 @@
       rel="stylesheet"
     />
     <style>
+      /* Gate de acceso: oculta el contenido hasta validar el código de acceso */
+      html.pocus-gate-pending body { visibility: hidden; }
+
       :root {
         --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -5608,8 +5611,71 @@ CONCLUSIÓN:`,
         }
       });
 
+      // === Gate de acceso (?code=POCUS-2026-EB) — disuasorio, no seguridad real ===
+      // GitHub Pages sirve el HTML entero; esto solo evita el acceso casual a una
+      // página no enlazada. Para añadir/rotar códigos: editar _POCUS_ACCESS_HASHES.
+      const _POCUS_ACCESS_HASHES = new Set([
+        "053fb841ff59480bf2cf44d58acb42393bd0c197bbe6bbfa96906b4b86eb5b73", // POCUS-2026-EB
+      ]);
+      async function _pocusHash(code) {
+        const buf = await crypto.subtle.digest(
+          "SHA-256",
+          new TextEncoder().encode(code.trim())
+        );
+        return Array.from(new Uint8Array(buf))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+      }
+      async function checkPocusGate() {
+        const LS = "pocus_auth";
+        try {
+          const stored = localStorage.getItem(LS);
+          if (stored && _POCUS_ACCESS_HASHES.has(stored)) return true;
+          if (stored) localStorage.removeItem(LS);
+        } catch (_) {
+          /* storage bloqueado */
+        }
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+        if (code) {
+          const hash = await _pocusHash(code);
+          if (_POCUS_ACCESS_HASHES.has(hash)) {
+            try {
+              localStorage.setItem(LS, hash);
+            } catch (_) {
+              /* ignore */
+            }
+            params.delete("code");
+            const q = params.toString();
+            history.replaceState(
+              {},
+              "",
+              window.location.pathname + (q ? "?" + q : "")
+            );
+            return true;
+          }
+        }
+        return false;
+      }
+      function showPocusLock() {
+        document.body.innerHTML =
+          '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;font-family:\'Inter\',system-ui,sans-serif;color:#94a3b8;padding:2rem;box-sizing:border-box;">' +
+          '<div style="max-width:460px;text-align:center;">' +
+          '<div style="font-size:3rem;margin-bottom:1rem;">&#x1F512;</div>' +
+          '<h1 style="color:#f1f5f9;font-size:1.4rem;margin:0 0 .75rem;">Acceso restringido</h1>' +
+          '<p style="margin:0 0 1.5rem;line-height:1.6;">POCUS-Clínic Atlas es un recurso educativo en acceso restringido.<br>Entra con el enlace personalizado que te ha facilitado el autor.</p>' +
+          '<p style="font-size:.8rem;color:#475569;">&#x26A0;&#xFE0F; Material formativo sobre ecografía clínica.<br>No sustituye el juicio clínico profesional ni la formación reglada.</p>' +
+          "</div></div>";
+      }
+
       // Inicialización cuando el DOM esté listo
-      document.addEventListener("DOMContentLoaded", function () {
+      document.addEventListener("DOMContentLoaded", async function () {
+        const _hasAccess = await checkPocusGate();
+        document.documentElement.classList.remove("pocus-gate-pending");
+        if (!_hasAccess) {
+          showPocusLock();
+          return;
+        }
         const contentArea = document.getElementById("content-area");
         const welcomeMessage = document.getElementById("welcome-message");
         const tooltip = document.getElementById("tooltip");
