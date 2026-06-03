@@ -2304,15 +2304,33 @@ class CimaAPI {
             };
         }
 
+        // Enriquecer marca→principio activo. Las listas de búsqueda de CIMA no traen
+        // `pactivos` (solo el detalle). Sin él, _getInteractionSearchTerms solo dispone
+        // de la 1ª palabra del nombre comercial, lo que produce FALSOS NEGATIVOS con
+        // marcas de fantasía (p. ej. "Aldactone", cuya interacción figura en la FT como
+        // "espironolactona"). Se resuelve aquí para que cualquier origen (verificador
+        // manual, análisis de favoritos) se beneficie. getMedicamento está cacheado.
+        const enriched = await Promise.all(medicamentos.map(async (med) => {
+            if (med.pactivos && String(med.pactivos).trim()) return med;
+            try {
+                const details = await this.getMedicamento(med.nregistro);
+                const pa = (details?.principiosActivos || [])
+                    .map(p => p.nombre).filter(Boolean).join(', ');
+                return pa ? { ...med, pactivos: pa } : med;
+            } catch {
+                return med; // Degradación grácil: se mantiene el comportamiento anterior
+            }
+        }));
+
         const results = {
-            medicamentos: medicamentos.map(m => m.nombre),
+            medicamentos: enriched.map(m => m.nombre),
             interactions: [],
             status: 'success',
             sectionsAnalyzed: 0
         };
 
         // Para cada medicamento, obtener sección 4.5 y buscar menciones de otros
-        for (const med of medicamentos) {
+        for (const med of enriched) {
             try {
                 const section45 = await this.getDocSeccion(med.nregistro, '4.5');
                 results.sectionsAnalyzed++;
@@ -2320,7 +2338,7 @@ class CimaAPI {
                 if (!section45 || section45.length < 50) continue;
 
                 // Buscar menciones de los otros medicamentos
-                for (const otherMed of medicamentos) {
+                for (const otherMed of enriched) {
                     if (otherMed.nregistro === med.nregistro) continue;
 
                     const searchTerms = this._getInteractionSearchTerms(otherMed);
@@ -2375,7 +2393,12 @@ class CimaAPI {
                 const cleanText = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
                 const lowerText = cleanText.toLowerCase();
 
-                if (lowerText.includes(normalizedSymptom)) {
+                // Coincidencia por PALABRA COMPLETA: evita falsos positivos por subcadena
+                // (p. ej. "tos" dentro de "daTOS"), que mostraban el extracto de otra reacción.
+                // Alineado con la regla antifalsos de la búsqueda (sesión 14).
+                const escSym = normalizedSymptom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const symptomRe = new RegExp('(?<![a-záéíóúñü])' + escSym + '(?![a-záéíóúñü])', 'i');
+                if (symptomRe.test(lowerText)) {
                     // Encontrado! Extraer contexto
                     const context = this._extractSymptomContext(cleanText, normalizedSymptom);
                     return {
@@ -2402,7 +2425,11 @@ class CimaAPI {
      */
     _extractSymptomContext(text, term) {
         const lowerText = text.toLowerCase();
-        const index = lowerText.indexOf(term);
+        // Localizar la PALABRA COMPLETA (no subcadena) para centrar el extracto en la
+        // aparición real del síntoma, no en un falso positivo previo (p. ej. "datos").
+        const esc = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const m = new RegExp('(?<![a-záéíóúñü])' + esc + '(?![a-záéíóúñü])', 'i').exec(lowerText);
+        const index = m ? m.index : Math.max(0, lowerText.indexOf(term));
 
         // Tomar unos 60 caracteres antes y después para dar contexto
         const start = Math.max(0, index - 60);
@@ -2414,9 +2441,8 @@ class CimaAPI {
         if (start > 0) snippet = '...' + snippet;
         if (end < text.length) snippet = snippet + '...';
 
-        // Resaltar término (usando HTML básico ya que esto irá al DOM)
-        // Usamos una expresión regular case-insensitive para reemplazar el término original
-        const regex = new RegExp(`(${term})`, 'gi');
+        // Resaltar solo la palabra completa (coherente con la detección).
+        const regex = new RegExp('(?<![a-záéíóúñü])(' + esc + ')(?![a-záéíóúñü])', 'gi');
         return snippet.replace(regex, '<strong>$1</strong>');
     }
 

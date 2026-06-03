@@ -2227,6 +2227,13 @@ body {
     /* Hide labels for compact view */
 }
 
+/* Excepción: los checkboxes de "Tipo" (Genérico/Biosimilar) son <label class="search-option">
+   y el grupo oculta los <label> por compacidad; estos deben verse. El título "Tipo"
+   (un <label> sin clase) sigue oculto, como en los demás grupos. */
+.equiv-filter-group .search-option {
+    display: flex;
+}
+
 .equiv-filter-group select {
     padding: 0.3rem 0.5rem;
     background: var(--bg-dark);

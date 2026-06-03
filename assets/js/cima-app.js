@@ -649,6 +649,16 @@ class MedCheckApp {
         } catch (error) {
             this.showError('Error cargando vista', error);
         }
+
+        // Foco automático en el input principal de cada vista al abrirla (coherencia de UX;
+        // solo en navegación de vista, no en re-renders internos, para no robar el foco).
+        const focusTargets = {
+            search: 'search-input', indications: 'indication-input', safety: 'safety-input',
+            interactions: 'interaction-search', adverse: 'adverse-drug-search',
+            equivalences: 'equiv-input', pharmacogenomics: 'pgx-search'
+        };
+        const focusId = focusTargets[viewName];
+        if (focusId) setTimeout(() => document.getElementById(focusId)?.focus(), 60);
     }
 
     // ============================================
@@ -869,6 +879,10 @@ class MedCheckApp {
 
     clearSelectedMedication() {
         this.selectedMedication = null;
+        // El banner se auto-copia a la lista de Reacciones (adverseDrugList); limpiar solo
+        // el banner dejaba el chip "pegado" abajo (había que quitarlo a mano). Se limpian
+        // las dos cosas a la vez para que "Limpiar" limpie de verdad (H5).
+        this.adverseDrugList = [];
         // Re-render current view to remove banner
         this.loadView(this.currentView);
     }
@@ -1066,6 +1080,11 @@ class MedCheckApp {
             this.showToast('Introduce al menos 2 caracteres', 'warning');
             return;
         }
+
+        // Una búsqueda nueva define un contexto nuevo: descartar el "medicamento activo"
+        // de una ficha abierta antes, para que no se filtre obsoleto a Reacciones/Seguridad
+        // (donde se auto-añade). Evita analizar la RAM del fármaco equivocado (H4).
+        this.selectedMedication = null;
 
         this._resetResultFilters();
 
@@ -3491,18 +3510,23 @@ class MedCheckApp {
         if (results.interactions.length === 0) {
             container.innerHTML = `
     <div class="safety-panel" style="margin-top: 1rem;">
-        <div class="safety-check-item safe">
+        <div class="safety-check-item review">
             <div class="safety-check-icon">
-                <i class="fas fa-check"></i>
+                <i class="fas fa-circle-info"></i>
             </div>
             <div class="safety-check-content">
-                <div class="safety-check-title">Sin interacciones detectadas</div>
+                <div class="safety-check-title">Sin coincidencias por nombre en las fichas técnicas</div>
                 <div class="safety-check-detail">
-                    No se encontraron menciones cruzadas entre los ${results.medicamentos.length} medicamentos
-                    en las secciones 4.5 de sus fichas técnicas.
+                    No se encontraron menciones cruzadas <strong>por nombre de principio activo</strong>
+                    entre los ${results.medicamentos.length} medicamentos en las secciones 4.5 de sus fichas técnicas.
                     <br><br>
-                        <strong>Nota:</strong> Esto no garantiza ausencia de interacciones.
-                        Consulte fuentes adicionales si tiene dudas clínicas.
+                        <strong>Importante — no es lo mismo que "sin interacciones".</strong>
+                        Esta herramienta solo detecta interacciones citadas <strong>por el nombre del principio
+                        activo</strong>. <strong>No</strong> detecta las descritas por <strong>clase o grupo
+                        farmacológico</strong> (p. ej. «benzodiacepinas», «depresores del SNC», «AINE», «IMAO»).
+                        Por tanto, un resultado negativo <strong>no descarta una interacción</strong>: verifica
+                        siempre las combinaciones de riesgo (p. ej. opioide + benzodiacepina) en una fuente
+                        de interacciones.
                     </div>
                 </div>
             </div>
@@ -3597,8 +3621,8 @@ class MedCheckApp {
                             <input type="text" id="adverse-drug-search" class="search-input" 
                                    placeholder="Añadir medicamento..." autocomplete="off">
                             <button id="add-adverse-drug-btn" class="search-btn">Añadir</button>
+                            <div id="adverse-autocomplete" class="autocomplete-dropdown hidden"></div>
                         </div>
-                        <div id="adverse-autocomplete" class="autocomplete-dropdown hidden"></div>
 
                         <div class="drug-list-container drug-list-compact mt-sm">
                             <div class="drug-list-header">
@@ -3885,6 +3909,7 @@ class MedCheckApp {
         const searchBtn = document.getElementById('equiv-btn');
 
         searchBtn.addEventListener('click', () => {
+            clearTimeout(this.equivAutocompleteTimer);
             document.getElementById('equiv-autocomplete').classList.add('hidden');
             this.performEquivSearch();
         });
@@ -3896,6 +3921,9 @@ class MedCheckApp {
 
             if (e.key === 'Enter') {
                 e.preventDefault();
+                // Cancelar el autocompletado pendiente (debounce): si no, su setTimeout
+                // se dispara después del Enter y vuelve a abrir el desplegable.
+                clearTimeout(this.equivAutocompleteTimer);
                 dropdown?.classList.add('hidden');
 
                 if (hasVisibleItems) {
@@ -4118,8 +4146,20 @@ class MedCheckApp {
                 return;
             }
 
-            // Con npactiv ya filtramos en la API, los resultados son exactos
-            const resultsToShow = equivData.resultados;
+            // CIMA filtra `practiv1` por SUBCADENA, así que "omeprazol" arrastra "esomeprazol"
+            // (es-omeprazol). Para monocomponentes, nos quedamos solo con el principio activo
+            // EXACTO comparando la molécula canónica `vtm.nombre` (presente en los resultados de
+            // lista; `pactivos` viene vacío), molécula-con-molécula, nunca por subcadena.
+            const _normPA = (s) => (s || '').toString().toLowerCase()
+                .normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+            let resultsToShow = equivData.resultados;
+            const targetVtm = _normPA(firstMed.vtm?.nombre);
+            if (numPrincipiosOriginal === 1 && targetVtm) {
+                resultsToShow = resultsToShow.filter(m => {
+                    const v = _normPA(m.vtm?.nombre);
+                    return !v || v === targetVtm; // sin vtm → no descartar; con vtm → debe coincidir exacto
+                });
+            }
 
             // A.3: Comprobar NTI (Índice Terapéutico Estrecho) — campo nosustituible de CIMA
             let ntiFlag = false;
@@ -4188,6 +4228,7 @@ class MedCheckApp {
         // Separar genéricos y marcas
         const genericos = results.filter(m => m.generico);
         const marcas = results.filter(m => !m.generico);
+        const biosimilares = results.filter(m => m.biosimilar);
 
         // Construir selectores de filtros
         const filtersHtml = `
@@ -4215,11 +4256,16 @@ class MedCheckApp {
                 </div>
                 <div class="equiv-filter-group">
                     <label><i class="fas fa-tag"></i> Tipo</label>
-                    <select id="equiv-filter-tipo">
-                        <option value="">Todos</option>
-                        <option value="generico">Solo genéricos (${genericos.length})</option>
-                        <option value="marca">Solo marcas (${marcas.length})</option>
-                    </select>
+                    <div class="search-options">
+                        <label class="search-option" title="Solo genéricos (EFG)">
+                            <input type="checkbox" id="equiv-filter-generico">
+                            <span>Genérico (${genericos.length})</span>
+                        </label>
+                        <label class="search-option" title="Solo biosimilares">
+                            <input type="checkbox" id="equiv-filter-biosimilar">
+                            <span>Biosimilar (${biosimilares.length})</span>
+                        </label>
+                    </div>
                 </div>
             </div>
         `;
@@ -4256,7 +4302,7 @@ class MedCheckApp {
         this.applyEquivFilters();
 
         // Event listeners para filtros
-        ['equiv-filter-dosis', 'equiv-filter-forma', 'equiv-filter-lab', 'equiv-filter-tipo'].forEach(id => {
+        ['equiv-filter-dosis', 'equiv-filter-forma', 'equiv-filter-lab', 'equiv-filter-generico', 'equiv-filter-biosimilar'].forEach(id => {
             document.getElementById(id)?.addEventListener('change', () => this.applyEquivFilters());
         });
     }
@@ -4268,7 +4314,8 @@ class MedCheckApp {
         const dosisFilter = document.getElementById('equiv-filter-dosis')?.value || '';
         const formaFilter = document.getElementById('equiv-filter-forma')?.value || '';
         const labFilter = document.getElementById('equiv-filter-lab')?.value || '';
-        const tipoFilter = document.getElementById('equiv-filter-tipo')?.value || '';
+        const onlyGeneric = document.getElementById('equiv-filter-generico')?.checked || false;
+        const onlyBiosimilar = document.getElementById('equiv-filter-biosimilar')?.checked || false;
 
         let filtered = [...this.equivAllResults];
 
@@ -4282,10 +4329,14 @@ class MedCheckApp {
         if (labFilter) {
             filtered = filtered.filter(m => m.labtitular === labFilter);
         }
-        if (tipoFilter === 'generico') {
+        // Genérico + biosimilar en OR cuando se marcan ambos (ningún fármaco es las dos
+        // cosas; AND daría cero resultados). Misma lógica que el buscador (sesión 18).
+        if (onlyGeneric && onlyBiosimilar) {
+            filtered = filtered.filter(m => m.generico || m.biosimilar);
+        } else if (onlyGeneric) {
             filtered = filtered.filter(m => m.generico);
-        } else if (tipoFilter === 'marca') {
-            filtered = filtered.filter(m => !m.generico);
+        } else if (onlyBiosimilar) {
+            filtered = filtered.filter(m => m.biosimilar);
         }
 
         const resultsContainer = document.getElementById('equiv-filtered-results');
