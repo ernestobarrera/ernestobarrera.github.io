@@ -159,6 +159,8 @@ class MedCheckApp {
         // Multi-drug lists
         this.interactionsDrugList = [];
         this.adverseDrugList = [];
+        // Lista compartida de la vista "Fármacos" (fusión de Interacciones + Reacciones)
+        this.comboDrugList = [];
 
         // Pagination state
         this.resultsDisplayedCount = 50;
@@ -636,8 +638,9 @@ class MedCheckApp {
                 case 'search': this.renderSearch(); break;
                 case 'indications': this.renderIndications(); break;
                 case 'safety': this.renderSafetyChecker(); break;
-                case 'interactions': this.renderInteractions(); break;
-                case 'adverse': this.renderAdverseReactions(); break;
+                case 'combo':
+                case 'interactions':
+                case 'adverse': this.renderCombination(); break;
                 case 'equivalences': this.renderEquivalences(); break;
                 case 'pharmacogenomics': await this.renderPharmacogenomics(); break;
                 case 'supply': await this.renderSupply(); break;
@@ -654,7 +657,7 @@ class MedCheckApp {
         // solo en navegación de vista, no en re-renders internos, para no robar el foco).
         const focusTargets = {
             search: 'search-input', indications: 'indication-input', safety: 'safety-input',
-            interactions: 'interaction-search', adverse: 'adverse-drug-search',
+            combo: 'combo-drug-search', interactions: 'combo-drug-search', adverse: 'combo-drug-search',
             equivalences: 'equiv-input', pharmacogenomics: 'pgx-search'
         };
         const focusId = focusTargets[viewName];
@@ -3017,17 +3020,17 @@ class MedCheckApp {
             ${selectionBanner}
             <div class="search-box">
                 <h3 style="margin-bottom: 1rem; color: var(--primary);">
-                    <i class="fas fa-shield-alt"></i> Verificador de Seguridad
+                    <i class="fas fa-shield-alt"></i> Seguridad por contexto (ficha técnica)
                 </h3>
                 <p class="text-muted mb-md">
-                    Analiza un medicamento según el contexto del paciente actual.
+                    Muestra las secciones de la ficha (4.4/4.6/4.7) según el contexto marcado.
                 </p>
                 <div class="search-input-wrapper">
                     <i class="fas fa-pills"></i>
-                    <input type="text" id="safety-input" class="search-input" 
-                           placeholder="Nombre del medicamento a verificar..."
+                    <input type="text" id="safety-input" class="search-input"
+                           placeholder="Nombre del medicamento..."
                            value="${prefillValue}">
-                    <button id="safety-btn" class="search-btn">Analizar</button>
+                    <button id="safety-btn" class="search-btn">Consultar ficha</button>
                 </div>
                 <p class="mt-sm text-muted" style="font-size: 0.85rem;">
                     <i class="fas fa-user-injured"></i> Contexto actual: <strong>${contextSummary}</strong>
@@ -3133,8 +3136,8 @@ class MedCheckApp {
                     </div>
                     <div class="p-md text-center text-muted">
                         <i class="fas fa-info-circle mb-sm" style="font-size: 1.5rem;"></i>
-                        <p>No se detectaron alertas para el contexto actual.</p>
-                        <p class="text-xs">Activa condiciones del paciente (embarazo, renal, etc.) para iniciar el análisis.</p>
+                        <p>No hay menciones específicas para el contexto marcado. <strong>Esto no descarta riesgos</strong>: revisa la ficha completa.</p>
+                        <p class="text-xs">Activa condiciones del paciente (embarazo, renal, etc.) para ver las secciones relevantes de la ficha.</p>
                     </div>
                 </div> `;
         }
@@ -3252,6 +3255,7 @@ class MedCheckApp {
      * Allows adding multiple drugs and analyzing interactions
      */
     renderInteractions() {
+        return this.renderCombination();
         // State for selected drugs (persisted for this session)
         if (!this.interactionsDrugList) {
             this.interactionsDrugList = [];
@@ -3270,7 +3274,7 @@ class MedCheckApp {
         this.content.innerHTML = `
             <div class="search-box search-box-compact">
                 <div class="interaction-header">
-                    <h3><i class="fas fa-random"></i> Verificador de Interacciones</h3>
+                    <h3><i class="fas fa-random"></i> Interacciones en fichas técnicas (4.5)</h3>
                     <span class="text-muted text-sm">Añade 2+ medicamentos</span>
                 </div>
                 
@@ -3294,7 +3298,7 @@ class MedCheckApp {
                 </div>
 
                 <button class="btn btn-primary btn-compact w-full" id="analyze-interactions-btn" ${this.interactionsDrugList.length < 2 ? 'disabled' : ''}>
-                    <i class="fas fa-search-plus"></i> Analizar
+                    <i class="fas fa-search-plus"></i> Buscar en fichas (4.5)
                 </button>
             </div>
             <div id="interactions-results"></div>
@@ -3469,11 +3473,313 @@ class MedCheckApp {
         this.renderInteractions();
     }
 
+    // ============================================
+    // FÁRMACOS (lista compartida: Interacciones 4.5 + Síntoma 4.8)
+    // ============================================
+
+    /**
+     * Vista única "Fármacos": una sola lista temporal sobre la que se ejecutan dos
+     * acciones informacionales (interacciones 4.5 y búsqueda de síntoma 4.8), con resultados
+     * separados. Al cambiar la lista, el re-render limpia los resultados (hay que reanalizar).
+     * Lista TEMPORAL, sin persistencia: no es el botiquín de un paciente real.
+     */
+    renderCombination() {
+        if (!this.comboDrugList) this.comboDrugList = [];
+        const n = this.comboDrugList.length;
+        const symptomValue = this._comboSymptom || '';
+        const hasSymptom = symptomValue.trim().length > 0;
+        const chips = this.comboDrugList.map((med, i) => `
+            <div class="drug-chip">
+                <span>${med.nombre}</span>
+                <i class="fas fa-times" onclick="app.removeComboDrug(${i})"></i>
+            </div>`).join('');
+
+        this.content.innerHTML = `
+            <div class="search-box search-box-compact combo-list-box">
+                <div class="interaction-header">
+                    <h3><i class="fas fa-layer-group"></i> Lista de fármacos</h3>
+                    <span class="text-muted text-sm">Añade los fármacos de una situación a revisar</span>
+                </div>
+                <div class="search-input-wrapper" style="position: relative;">
+                    <i class="fas fa-plus-circle"></i>
+                    <input type="text" id="combo-drug-search" class="search-input" placeholder="Añadir medicamento..." autocomplete="off">
+                    <button id="combo-add-btn" class="search-btn">Añadir</button>
+                    <div id="combo-autocomplete" class="autocomplete-dropdown hidden"></div>
+                </div>
+                <div class="drug-list-container drug-list-compact mt-sm">
+                    <div class="drug-list-header">
+                        <span><i class="fas fa-list-ul"></i> Fármacos (${n})</span>
+                        ${n > 0 ? `<button class="btn btn-sm btn-secondary" onclick="app.clearComboDrugs()"><i class="fas fa-eraser"></i> Limpiar</button>` : ''}
+                    </div>
+                    <div class="drug-chips">${chips || '<span class="text-muted">Ninguno</span>'}</div>
+                </div>
+            </div>
+
+            <div class="combo-grid">
+                <div class="search-box search-box-compact combo-action-card">
+                    <div class="combo-card-kicker"><i class="fas fa-file-medical"></i> Ficha técnica</div>
+                    <h3 style="color: var(--primary);"><i class="fas fa-random"></i> Interacciones fármaco–fármaco <span class="text-muted text-sm" style="font-weight:400;">(ficha 4.5)</span></h3>
+                    <p class="text-muted text-sm mb-sm">Menciones cruzadas <strong>por nombre de fármaco</strong> dentro del texto de la sección 4.5 (necesita 2 o más).</p>
+                    <button class="btn btn-primary btn-compact w-full" onclick="app.performInteractionAnalysis()" ${n < 2 ? 'disabled' : ''}>
+                        <i class="fas fa-search-plus"></i> Buscar en fichas (4.5)
+                    </button>
+                    <div id="interactions-results"></div>
+                </div>
+
+                <div class="search-box search-box-compact combo-action-card">
+                    <div class="combo-card-kicker"><i class="fas fa-file-medical"></i> Ficha técnica</div>
+                    <h3 style="color: var(--primary);"><i class="fas fa-user-md"></i> Fármaco–síntoma <span class="text-muted text-sm" style="font-weight:400;">(ficha 4.8)</span></h3>
+                    <p class="text-muted text-sm mb-sm">Busca el síntoma <strong>dentro del texto</strong> de la sección 4.8 de las fichas de la lista.</p>
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search-plus"></i>
+                        <input type="text" id="symptom-search" class="search-input" value="${this._escapeHtml(symptomValue)}" placeholder='ej: "tos", "edema"...' autocomplete="off">
+                    </div>
+                    <button id="combo-symptom-btn" class="btn btn-primary btn-compact w-full mt-sm" onclick="app.performSymptomAnalysis()" ${(n === 0 || !hasSymptom) ? 'disabled' : ''}>
+                        <i class="fas fa-microscope"></i> Buscar en fichas (4.8)
+                    </button>
+                    <div id="adverse-results"></div>
+                </div>
+            </div>
+
+            <div class="search-box search-box-compact combo-research-panel">
+                <div class="combo-research-header">
+                    <div>
+                        <div class="combo-card-kicker"><i class="fas fa-robot"></i> Fuera de ficha técnica</div>
+                        <h3><i class="fas fa-magnifying-glass"></i> Investigar con IA externa</h3>
+                    </div>
+                    <span class="combo-research-badge">opcional</span>
+                </div>
+                <p class="combo-research-copy">MedCheck no interpreta la respuesta de la IA. Solo prepara una consulta para una herramienta externa. Verifica siempre las fuentes citadas y contrasta con ficha técnica, fuentes de interacciones y criterio clínico.</p>
+                <label class="combo-field-label" for="combo-ai-context">Contexto o pregunta adicional</label>
+                <textarea id="combo-ai-context" class="combo-ai-context" rows="2" maxlength="800" placeholder="Ej.: enfoque o una duda concreta para la consulta a IA...">${this._escapeHtml(this._comboAIContext || '')}</textarea>
+                <div class="combo-field-help">
+                    <span>No incluyas nombre, edad exacta, iniciales, historia clínica, fechas, ubicación ni ningún dato identificable.</span>
+                    <span id="combo-ai-context-count">${(this._comboAIContext || '').length}/800</span>
+                </div>
+                <div class="combo-ai-actions">
+                    <div class="combo-ai-action">
+                        <div>
+                            <strong>Interacciones (IA)</strong>
+                            <span>Consulta referenciada sobre la combinación, incluidas descripciones por clase.</span>
+                        </div>
+                        <div class="combo-ai-buttons">
+                            <button class="btn btn-sm btn-secondary" type="button" onclick="app.openComboPerplexity('interactions')" ${n < 2 ? 'disabled' : ''}><i class="fas fa-search"></i> Perplexity</button>
+                            <button class="btn btn-sm btn-secondary" type="button" onclick="app.copyComboPrompt('interactions')" ${n < 2 ? 'disabled' : ''}><i class="fas fa-clipboard"></i> Copiar prompt</button>
+                        </div>
+                    </div>
+                    <div class="combo-ai-action">
+                        <div>
+                            <strong>Fármaco–síntoma (IA)</strong>
+                            <span>Consulta referenciada sobre posibles asociaciones fármaco-síntoma.</span>
+                        </div>
+                        <div class="combo-ai-buttons">
+                            <button id="combo-ai-symptom-perplexity" class="btn btn-sm btn-secondary" type="button" onclick="app.openComboPerplexity('symptom')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''}><i class="fas fa-search"></i> Perplexity</button>
+                            <button id="combo-ai-symptom-copy" class="btn btn-sm btn-secondary" type="button" onclick="app.copyComboPrompt('symptom')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''}><i class="fas fa-clipboard"></i> Copiar prompt</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const input = document.getElementById('combo-drug-search');
+        document.getElementById('combo-add-btn').addEventListener('click', () => this.addComboDrug());
+        input.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                clearTimeout(this.comboAutocompleteTimer);
+                document.getElementById('combo-autocomplete')?.classList.add('hidden');
+                this.addComboDrug();
+            } else if (e.key === 'Escape') {
+                document.getElementById('combo-autocomplete')?.classList.add('hidden');
+            } else {
+                this.showComboAutocomplete(input.value);
+            }
+        });
+        input.addEventListener('blur', () => setTimeout(() => document.getElementById('combo-autocomplete')?.classList.add('hidden'), 200));
+
+        const symptomInput = document.getElementById('symptom-search');
+        symptomInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter' && this.comboDrugList.length > 0 && symptomInput.value.trim()) this.performSymptomAnalysis();
+        });
+        // Preservar síntoma y contexto SOLO en memoria (no localStorage) para no perderlos al
+        // re-renderizar al añadir/quitar fármacos. Se borran con "Limpiar" y al recargar.
+        const syncSymptomActions = () => {
+            const enabled = this.comboDrugList.length > 0 && symptomInput.value.trim().length > 0;
+            ['combo-symptom-btn', 'combo-ai-symptom-perplexity', 'combo-ai-symptom-copy'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.disabled = !enabled;
+            });
+        };
+        symptomInput.addEventListener('input', () => {
+            this._comboSymptom = symptomInput.value;
+            syncSymptomActions();
+        });
+        const ctxEl = document.getElementById('combo-ai-context');
+        const ctxCount = document.getElementById('combo-ai-context-count');
+        if (ctxEl) ctxEl.addEventListener('input', () => {
+            this._comboAIContext = ctxEl.value;
+            if (ctxCount) ctxCount.textContent = `${ctxEl.value.length}/800`;
+        });
+        syncSymptomActions();
+
+        // Foco en el buscador de fármacos al abrir la vista y tras cada cambio de la lista.
+        setTimeout(() => document.getElementById('combo-drug-search')?.focus(), 60);
+    }
+
+    async addComboDrug() {
+        const input = document.getElementById('combo-drug-search');
+        const query = input.value.trim();
+        if (query.length < 2) return;
+        try {
+            const results = await this.api.smartSearch(query, { comerc: 1 });
+            if (results.resultados && results.resultados.length > 0) {
+                await this.addDrugToComboList(results.resultados[0]);
+                input.value = '';
+                document.getElementById('combo-autocomplete')?.classList.add('hidden');
+            } else {
+                this.showToast('Medicamento no encontrado', 'warning');
+            }
+        } catch (error) {
+            this.showToast('Error buscando medicamento', 'error');
+        }
+    }
+
+    async addDrugToComboList(med) {
+        if (this.comboDrugList.some(m => m.nregistro === med.nregistro)) {
+            this.showToast('Este medicamento ya está en la lista', 'warning');
+            return;
+        }
+        let pactivos = med.pactivos || med.vtm?.nombre || '';
+        if (!pactivos && med.nregistro) {
+            try {
+                const detail = await this.api.getMedicamento(med.nregistro, { headers: { 'X-MC-Autocomplete': '1' } });
+                pactivos = detail?.vtm?.nombre || detail?.pactivos
+                    || (Array.isArray(detail?.principiosActivos) ? detail.principiosActivos.map(pa => pa.nombre).filter(Boolean).join(' + ') : '');
+            } catch (_) {
+                // La lista sigue siendo usable con nombre comercial; el enriquecimiento solo mejora el prompt IA.
+            }
+        }
+        this.comboDrugList.push({ nregistro: med.nregistro, nombre: med.nombre, pactivos });
+        // Re-render: vacía los contenedores de resultados → la lista cambió, hay que reanalizar.
+        this.renderCombination();
+        this.showToast(`${med.nombre.split(' ')[0]} añadido`, 'success');
+    }
+
+    removeComboDrug(index) {
+        this.comboDrugList.splice(index, 1);
+        this.renderCombination();
+    }
+
+    clearComboDrugs() {
+        this.comboDrugList = [];
+        this._comboSymptom = '';
+        this._comboAIContext = '';
+        this.renderCombination();
+    }
+
+    async showComboAutocomplete(query) {
+        const dropdown = document.getElementById('combo-autocomplete');
+        if (!dropdown) return;
+        if (!query || query.trim().length < 2) { dropdown.classList.add('hidden'); return; }
+        clearTimeout(this.comboAutocompleteTimer);
+        this.comboAutocompleteTimer = setTimeout(async () => {
+            try {
+                const results = await this.api.smartSearch(query.trim(), { comerc: 1 }, { headers: { 'X-MC-Autocomplete': '1' } });
+                if (!results.resultados?.length) { dropdown.classList.add('hidden'); return; }
+                dropdown.innerHTML = results.resultados.slice(0, 6).map(med => `
+                    <button class="autocomplete-item" data-nregistro="${med.nregistro}">
+                        <span class="autocomplete-term">${med.nombre}</span>
+                        ${med.pactivos ? `<span class="autocomplete-label">${med.pactivos}</span>` : ''}
+                    </button>`).join('');
+                dropdown.classList.remove('hidden');
+                dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+                    item.addEventListener('click', async () => {
+                        const med = results.resultados.find(m => m.nregistro === item.dataset.nregistro);
+                        if (med) await this.addDrugToComboList(med);
+                    });
+                });
+            } catch (e) { console.warn(e); }
+        }, 250);
+    }
+
+    // --- Botonera "Investigar con IA externa" (lanzadera; MedCheck NO ingiere la respuesta) ---
+
+    _comboDrugLines() {
+        return this.comboDrugList.map(m => {
+            const pa = (m.pactivos || '').trim();
+            return `- ${m.nombre}${pa ? ` (principio activo: ${pa})` : ''}`;
+        }).join('\n');
+    }
+
+    _validateComboAi(kind) {
+        if (kind === 'interactions') {
+            if (this.comboDrugList.length < 2) { this.showToast('Añade al menos 2 fármacos', 'warning'); return false; }
+        } else {
+            if (this.comboDrugList.length < 1) { this.showToast('Añade al menos 1 fármaco', 'warning'); return false; }
+            const symptom = (document.getElementById('symptom-search')?.value || '').trim();
+            if (!symptom) { this.showToast('Escribe primero el/los síntoma(s) en el campo de arriba', 'warning'); return false; }
+        }
+        return true;
+    }
+
+    /**
+     * Construye el prompt EN EL MOMENTO DEL CLIC (no al render), para incluir el síntoma y el
+     * contexto actuales. Pide información referenciada para valoración profesional; nunca una
+     * orden de actuación (límites acordados en el contraste con Codex, 2026-06-04).
+     */
+    _buildComboAiPrompt(kind) {
+        const limits = 'Responde con información clínica referenciada para valoración profesional. No emitas una orden de actuación, no recomiendes iniciar, suspender, cambiar dosis o evitar fármacos, no clasifiques la combinación como segura/insegura y no sustituyas fuentes específicas de interacciones ni ficha técnica.';
+        const ctx = (document.getElementById('combo-ai-context')?.value || '').trim();
+        const lines = [
+            'Eres farmacólogo clínico. Asistes a un profesional sanitario (de cualquier especialidad, en España) que consulta en el punto de atención.',
+            '',
+            'Fármacos a considerar (identifica el principio activo de cada uno):',
+            this._comboDrugLines(),
+            ''
+        ];
+        if (kind === 'interactions') {
+            lines.push(
+                'Tarea: resume información referenciada sobre posibles INTERACCIONES entre estos fármacos, incluyendo las descritas por CLASE o grupo farmacológico (no solo por molécula).',
+                'Para cada par o grupo relevante: mecanismo descrito · posible relevancia clínica descrita · señales clínicas o parámetros que las fuentes mencionan · solidez de la evidencia, CITANDO FUENTES CONCRETAS (con URL cuando sea posible).'
+            );
+        } else {
+            const symptom = (document.getElementById('symptom-search')?.value || '').trim();
+            lines.push(
+                `Síntoma(s) a evaluar: ${symptom}`,
+                '',
+                'Tarea: resume información referenciada sobre posibles asociaciones fármaco-síntoma como REACCIÓN ADVERSA.',
+                'Para cada fármaco con señal bibliográfica o farmacológica: mecanismo descrito · frecuencia descrita · factores que aumentarían o reducirían la plausibilidad · qué datos ayudarían a valorarlo, CITANDO FUENTES.'
+            );
+        }
+        lines.push(
+            'Separa explícitamente lo que procede de: (1) ficha técnica / AEMPS (CIMA), (2) fuentes específicas de interacciones / farmacovigilancia, (3) literatura (PubMed), (4) plausibilidad farmacológica. Declara la incertidumbre cuando la haya.'
+        );
+        if (ctx) lines.push('', `Contexto o pregunta adicional del profesional: ${ctx}`);
+        lines.push('', limits, '', 'Consulta de investigación con IA, FUERA de la ficha técnica. El profesional verificará las fuentes citadas.');
+        return lines.join('\n');
+    }
+
+    openComboPerplexity(kind) {
+        if (!this._validateComboAi(kind)) return;
+        const prompt = this._buildComboAiPrompt(kind);
+        window.open(`https://www.perplexity.ai/search?q=${encodeURIComponent(prompt)}`, '_blank', 'noopener');
+    }
+
+    async copyComboPrompt(kind) {
+        if (!this._validateComboAi(kind)) return;
+        const prompt = this._buildComboAiPrompt(kind);
+        try {
+            await navigator.clipboard.writeText(prompt);
+            this.showToast('Prompt copiado — pégalo en la IA que prefieras', 'success');
+        } catch (e) {
+            this.showToast('No se pudo copiar el prompt', 'error');
+        }
+    }
+
     /**
      * Performs the interaction analysis
      */
     async performInteractionAnalysis() {
-        if (this.interactionsDrugList.length < 2) {
+        if (this.comboDrugList.length < 2) {
             this.showToast('Añade al menos 2 medicamentos', 'warning');
             return;
         }
@@ -3487,7 +3793,7 @@ class MedCheckApp {
     `;
 
         try {
-            const results = await this.api.analyzeInteractions(this.interactionsDrugList);
+            const results = await this.api.analyzeInteractions(this.comboDrugList);
             this.displayInteractionResults(results);
         } catch (error) {
             console.error('Interaction analysis error:', error);
@@ -3537,7 +3843,7 @@ class MedCheckApp {
 
         // Mapa nombre→nregistro (de la lista de fármacos añadidos) para enlazar.
         const nameToNreg = {};
-        (this.interactionsDrugList || []).forEach(m => { if (m.nombre) nameToNreg[m.nombre] = m.nregistro; });
+        (this.comboDrugList || []).forEach(m => { if (m.nombre) nameToNreg[m.nombre] = m.nregistro; });
         const drugLink = (fullName) => {
             const short = (fullName || '').split(' ')[0];
             const nreg = nameToNreg[fullName];
@@ -3597,6 +3903,7 @@ class MedCheckApp {
      * Allows searching symptoms across multiple medications
      */
     renderAdverseReactions() {
+        return this.renderCombination();
         const drugChipsHtml = this.adverseDrugList.map((med, index) => `
     <div class="drug-chip">
                 <span>${med.nombre}</span>
@@ -3654,7 +3961,7 @@ class MedCheckApp {
 
                         <button class="btn btn-primary btn-compact w-full mt-sm" id="analyze-symptom-btn" 
                                 ${this.adverseDrugList.length === 0 ? 'disabled' : ''}>
-                            <i class="fas fa-microscope"></i> Analizar Causalidad
+                            <i class="fas fa-microscope"></i> Buscar síntoma en fichas (4.8)
                         </button>
                     </div>
                 </div>
@@ -3786,7 +4093,7 @@ class MedCheckApp {
             this.showToast('Introduce un síntoma por favor', 'warning');
             return;
         }
-        if (this.adverseDrugList.length === 0) {
+        if (this.comboDrugList.length === 0) {
             this.showToast('Añade al menos un medicamento', 'warning');
             return;
         }
@@ -3799,7 +4106,7 @@ class MedCheckApp {
     `;
 
         try {
-            const results = await this.api.analyzeSymptom(this.adverseDrugList, symptom);
+            const results = await this.api.analyzeSymptom(this.comboDrugList, symptom);
             this.displaySymptomResults(results);
         } catch (error) {
             console.error('Analysis error:', error);
@@ -3837,16 +4144,16 @@ class MedCheckApp {
 
         // Crear HTML de coincidencias
         const matchesHtml = results.matches.map(m => `
-    <div class="safety-check-item danger">
+    <div class="safety-check-item review">
                 <div class="safety-check-icon">
-                    <i class="fas fa-exclamation-circle"></i>
+                    <i class="fas fa-info-circle"></i>
                 </div>
                 <div class="safety-check-content">
                     <div class="safety-check-title">${m.med.nombre}</div>
                     <div class="safety-check-detail">
                         <div class="text-muted mb-sm text-xs">Sección 4.8 (Reacciones Adversas):</div>
-                        <div class="p-sm bg-light rounded border-l-4 border-danger" 
-                             style="font-family: serif; background: #fff5f5; border-left: 3px solid var(--danger);">
+                        <div class="p-sm bg-light rounded border-l-4 border-primary"
+                             style="font-family: serif; border-left: 3px solid var(--primary);">
                             "...${m.context}..."
                         </div>
                     </div>
@@ -4427,19 +4734,13 @@ class MedCheckApp {
     }
 
     goToSafetyWithMed(medName) {
-        // Cerrar modal si está abierto
-        this.closeModal();
-
-        // Navegar a la vista de seguridad con búsqueda automática
-        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-        document.querySelector('[data-view="safety"]').classList.add('active');
-
-        this.renderSafetyChecker();
-
-        setTimeout(() => {
-            document.getElementById('safety-input').value = medName;
-            this.performSafetyCheck();
-        }, 100);
+        if (this.openModalTab('safety')) return;
+        const nregistro = this.currentMed?.nregistro || this.selectedMedication?.nregistro;
+        if (nregistro) {
+            this.openMedDetails(nregistro, 'safety');
+            return;
+        }
+        this.showToast(`Abre la ficha de ${medName || 'un medicamento'} para revisar seguridad`, 'info');
     }
 
     // ============================================
@@ -6457,11 +6758,18 @@ class MedCheckApp {
                 <button class="btn btn-primary" onclick="app.searchEquivalences('${med.nombre.replace(/'/g, "\\'")}')">
                     <i class="fas fa-exchange-alt"></i> Equivalencias
                 </button>
-                <button class="btn btn-secondary" onclick="app.goToSafetyWithMed('${med.nombre}')">
-                    <i class="fas fa-shield-alt"></i> Analizar seguridad
+                <button class="btn btn-secondary" onclick="app.openModalTab('safety')">
+                    <i class="fas fa-shield-alt"></i> Ver seguridad
                 </button>
             </div>
 `;
+    }
+
+    openModalTab(tabName) {
+        const tab = this.modalBody?.querySelector(`.modal-tab[data-tab="${tabName}"]`);
+        if (!tab) return false;
+        tab.click();
+        return true;
     }
 
 
@@ -9406,6 +9714,7 @@ ${materialesPlaceholder}
         const validViews = [
             'search',
             'indications',
+            'combo',
             'safety',
             'interactions',
             'adverse',
