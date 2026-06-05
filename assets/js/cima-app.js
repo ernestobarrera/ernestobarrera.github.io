@@ -3485,16 +3485,77 @@ class MedCheckApp {
      */
     renderCombination() {
         if (!this.comboDrugList) this.comboDrugList = [];
+        if (!this._comboSymptoms) this._comboSymptoms = [];
         const n = this.comboDrugList.length;
-        const symptomValue = this._comboSymptom || '';
-        const hasSymptom = symptomValue.trim().length > 0;
+        const hasSymptom = this._comboSymptoms.length > 0;
         const chips = this.comboDrugList.map((med, i) => `
             <div class="drug-chip">
                 <span>${med.nombre}</span>
                 <i class="fas fa-times" onclick="app.removeComboDrug(${i})"></i>
             </div>`).join('');
+        // Síntomas acumulativos (chips), se unen por OR en detective 4.8, IA y Evidencia.
+        const symptomChips = this._comboSymptoms.map((s, i) => `
+            <span class="drug-chip combo-symptom-chip">
+                <span>${this._escapeHtml(s)}</span>
+                <i class="fas fa-times" onclick="app.removeComboSymptom(${i})"></i>
+            </span>`).join('');
+
+        // C5 (eje DOCUMENTAL, no perfil de paciente): la parametrización pregunta a las
+        // fuentes ("¿qué describen sobre esta combinación en…?"), NUNCA describe a un paciente.
+        // Etiquetas y redacción acordadas con Codex (acta 2026-06-05) para no recaer en MDSW.
+        if (!this._comboFocus) this._comboFocus = new Set();
+        if (!this._comboTopics) this._comboTopics = new Set();
+        const focusOpts = [
+            { id: 'mecanismo', label: 'Mecanismo descrito' },
+            { id: 'relevancia', label: 'Relevancia descrita' },
+            { id: 'precauciones', label: 'Precauciones/parámetros citados' },
+            { id: 'evidencia', label: 'Solidez / incertidumbre' }
+        ];
+        const topicOpts = [
+            { id: 'embarazo', label: 'Embarazo / lactancia' },
+            { id: 'renal', label: 'Insuf. renal' },
+            { id: 'hepatica', label: 'Insuf. hepática' },
+            { id: 'edad', label: 'Edad avanzada' },
+            { id: 'conduccion', label: 'Conducción' }
+        ];
+        const chipHtml = (opt, sel) => `<button type="button" class="combo-chip${sel ? ' is-active' : ''}" data-chipgroup="" data-chip="${opt.id}">${opt.label}</button>`;
+        const focusChips = focusOpts.map(o => chipHtml(o, this._comboFocus.has(o.id))).join('');
+        const topicChips = topicOpts.map(o => chipHtml(o, this._comboTopics.has(o.id))).join('');
+
+        // Evidencia "como el modal": una fila editable por producto con (marca OR principio activo);
+        // entre productos se cruza con AND. El término es editable porque PubMed indexa en inglés.
+        // Traduce el principio activo a inglés (PubMed) con el diccionario reutilizable window.innDict.
+        // Si no está cargado o no conoce el término, deja el español y el usuario lo edita.
+        const evDefaultTerm = (med) => {
+            const brand = (med.nombre || '').split(/\s+/)[0];
+            const pas = (med.pactivos || '').split('+').map(s => s.trim()).filter(Boolean);
+            const en = pas.map(pa => (window.innDict ? window.innDict.toEnglish(pa) : pa));
+            const uniq = [...new Set([brand, ...en].filter(Boolean))];
+            return `(${uniq.map(t => (t.includes(' ') ? `"${t}"` : t)).join(' OR ')})`;
+        };
+        // Si el diccionario aún no ha cargado, re-render una vez al terminar (solo si Evidencia es visible).
+        if (window.innDict && !window.innDict.loaded) {
+            window.innDict.load().then(() => {
+                if (this.currentView === 'combo' && this.comboDrugList.length >= 2) this.renderCombination();
+            });
+        }
+        const evidenceRows = this.comboDrugList.map((med, i) => `
+            <div class="combo-ev-row">
+                <label class="combo-ev-label" for="combo-ev-term-${i}" title="${this._escapeHtml(med.nombre)}">${this._escapeHtml(med.nombre.split(' ')[0])}</label>
+                <input type="text" id="combo-ev-term-${i}" class="combo-ev-input" value="${this._escapeHtml(evDefaultTerm(med))}" autocomplete="off" spellcheck="false">
+            </div>`).join('');
+        // Fila de síntomas en Evidencia (OR), cruzada con los productos por AND. Editable (PubMed en inglés).
+        const evSymptomDefault = this._comboSymptoms.length
+            ? `(${this._comboSymptoms.map(s => (s.includes(' ') ? `"${s}"` : s)).join(' OR ')})`
+            : '';
+        const evSymptomRow = this._comboSymptoms.length ? `
+            <div class="combo-ev-row">
+                <label class="combo-ev-label" for="combo-ev-symptoms" title="Síntomas (OR), cruzados con los productos por AND">Síntomas</label>
+                <input type="text" id="combo-ev-symptoms" class="combo-ev-input" value="${this._escapeHtml(evSymptomDefault)}" autocomplete="off" spellcheck="false">
+            </div>` : '';
 
         this.content.innerHTML = `
+            <div class="combo-view">
             <div class="search-box search-box-compact combo-list-box">
                 <div class="interaction-header">
                     <h3><i class="fas fa-layer-group"></i> Lista de fármacos</h3>
@@ -3529,11 +3590,12 @@ class MedCheckApp {
                 <div class="search-box search-box-compact combo-action-card">
                     <div class="combo-card-kicker"><i class="fas fa-file-medical"></i> Ficha técnica</div>
                     <h3 style="color: var(--primary);"><i class="fas fa-user-md"></i> Fármaco–síntoma <span class="text-muted text-sm" style="font-weight:400;">(ficha 4.8)</span></h3>
-                    <p class="text-muted text-sm mb-sm">Busca el síntoma <strong>dentro del texto</strong> de la sección 4.8 de las fichas de la lista.</p>
+                    <p class="text-muted text-sm mb-sm">Busca el síntoma <strong>dentro del texto</strong> de la sección 4.8. Puedes añadir <strong>varios</strong> (Enter): se buscan unidos por <strong>OR</strong>.</p>
                     <div class="search-input-wrapper">
                         <i class="fas fa-search-plus"></i>
-                        <input type="text" id="symptom-search" class="search-input" value="${this._escapeHtml(symptomValue)}" placeholder='ej: "tos", "edema"...' autocomplete="off">
+                        <input type="text" id="symptom-search" class="search-input" placeholder='ej: "tos", "edema"… (Enter para añadir)' autocomplete="off">
                     </div>
+                    <div id="combo-symptom-chips" class="combo-symptom-chips">${symptomChips}</div>
                     <button id="combo-symptom-btn" class="btn btn-primary btn-compact w-full mt-sm" onclick="app.performSymptomAnalysis()" ${(n === 0 || !hasSymptom) ? 'disabled' : ''}>
                         <i class="fas fa-microscope"></i> Buscar en fichas (4.8)
                     </button>
@@ -3544,74 +3606,161 @@ class MedCheckApp {
             <div class="search-box search-box-compact combo-research-panel">
                 <div class="combo-research-header">
                     <div>
-                        <div class="combo-card-kicker"><i class="fas fa-robot"></i> Fuera de ficha técnica</div>
+                        <div class="combo-card-kicker"><i class="fas fa-robot"></i> Fuera de ficha técnica · IA externa</div>
                         <h3><i class="fas fa-magnifying-glass"></i> Investigar con IA externa</h3>
                     </div>
                     <span class="combo-research-badge">opcional</span>
                 </div>
-                <p class="combo-research-copy">MedCheck no interpreta la respuesta de la IA. Solo prepara una consulta para una herramienta externa. Verifica siempre las fuentes citadas y contrasta con ficha técnica, fuentes de interacciones y criterio clínico.</p>
-                <label class="combo-field-label" for="combo-ai-context">Contexto o pregunta adicional</label>
-                <textarea id="combo-ai-context" class="combo-ai-context" rows="2" maxlength="800" placeholder="Ej.: enfoque o una duda concreta para la consulta a IA...">${this._escapeHtml(this._comboAIContext || '')}</textarea>
+                <p class="combo-research-copy">MedCheck no interpreta, no guarda y no muestra la respuesta. Solo prepara una consulta para una herramienta externa. Verifica las fuentes con ficha técnica/AEMPS, fuentes de interacciones y criterio profesional.</p>
+
+                <div class="combo-doc-params">
+                    <div class="combo-param-block">
+                        <span class="combo-param-title">Enfoque documental</span>
+                        <div class="combo-chips" id="combo-focus-chips">${focusChips}</div>
+                    </div>
+                    <div class="combo-param-block">
+                        <span class="combo-param-title">Preguntar a fuentes sobre</span>
+                        <div class="combo-chips" id="combo-topic-chips">${topicChips}</div>
+                        <span class="combo-param-note">Estos temas orientan la búsqueda documental. No describen necesariamente a una persona concreta.</span>
+                    </div>
+                </div>
+
+                <label class="combo-field-label" for="combo-ai-context">Contexto adicional no identificable (opcional)</label>
+                <textarea id="combo-ai-context" class="combo-ai-context" rows="2" maxlength="800" placeholder="Ej.: un matiz documental para acotar la consulta…">${this._escapeHtml(this._comboAIContext || '')}</textarea>
                 <div class="combo-field-help">
-                    <span>No incluyas nombre, edad exacta, iniciales, historia clínica, fechas, ubicación ni ningún dato identificable.</span>
+                    <span>No incluyas nombre, iniciales, edad exacta, fechas, ubicación, nº de historia ni detalles que permitan reconocer a una persona.</span>
                     <span id="combo-ai-context-count">${(this._comboAIContext || '').length}/800</span>
                 </div>
+
                 <div class="combo-ai-actions">
                     <div class="combo-ai-action">
-                        <div>
+                        <div class="combo-ai-action-head">
                             <strong>Interacciones (IA)</strong>
                             <span>Consulta referenciada sobre la combinación, incluidas descripciones por clase.</span>
                         </div>
                         <div class="combo-ai-buttons">
-                            <button class="btn btn-sm btn-secondary" type="button" onclick="app.openComboPerplexity('interactions')" ${n < 2 ? 'disabled' : ''}><i class="fas fa-search"></i> Perplexity</button>
-                            <button class="btn btn-sm btn-secondary" type="button" onclick="app.copyComboPrompt('interactions')" ${n < 2 ? 'disabled' : ''}><i class="fas fa-clipboard"></i> Copiar prompt</button>
+                            <button class="btn btn-sm btn-ai-perplexity" type="button" onclick="app.openComboEngine('interactions','perplexity')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre Perplexity. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> Perplexity</button>
+                            <button class="btn btn-sm btn-ai-chatgpt" type="button" onclick="app.openComboEngine('interactions','chatgpt')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre ChatGPT. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
+                            <button class="btn btn-sm btn-secondary" type="button" onclick="app.copyComboPrompt('interactions')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt para pegarlo en cualquier IA (Claude, Gemini, Copilot…)"><i class="fas fa-clipboard"></i> Copiar</button>
                         </div>
                     </div>
                     <div class="combo-ai-action">
-                        <div>
+                        <div class="combo-ai-action-head">
                             <strong>Fármaco–síntoma (IA)</strong>
                             <span>Consulta referenciada sobre posibles asociaciones fármaco-síntoma.</span>
                         </div>
                         <div class="combo-ai-buttons">
-                            <button id="combo-ai-symptom-perplexity" class="btn btn-sm btn-secondary" type="button" onclick="app.openComboPerplexity('symptom')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''}><i class="fas fa-search"></i> Perplexity</button>
-                            <button id="combo-ai-symptom-copy" class="btn btn-sm btn-secondary" type="button" onclick="app.copyComboPrompt('symptom')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''}><i class="fas fa-clipboard"></i> Copiar prompt</button>
+                            <button id="combo-ai-symptom-perplexity" class="btn btn-sm btn-ai-perplexity" type="button" onclick="app.openComboEngine('symptom','perplexity')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt y abre Perplexity. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> Perplexity</button>
+                            <button id="combo-ai-symptom-chatgpt" class="btn btn-sm btn-ai-chatgpt" type="button" onclick="app.openComboEngine('symptom','chatgpt')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt y abre ChatGPT. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
+                            <button id="combo-ai-symptom-copy" class="btn btn-sm btn-secondary" type="button" onclick="app.copyComboPrompt('symptom')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt para pegarlo en cualquier IA (Claude, Gemini, Copilot…)"><i class="fas fa-clipboard"></i> Copiar</button>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div class="search-box search-box-compact combo-evidence-panel">
+                <div class="combo-research-header">
+                    <div>
+                        <div class="combo-card-kicker"><i class="fas fa-book-medical"></i> Fuera de ficha técnica · Literatura</div>
+                        <h3><i class="fas fa-magnifying-glass-chart"></i> Evidencia en PubMed</h3>
+                    </div>
+                    <span class="combo-research-badge">opcional</span>
+                </div>
+                <p class="combo-research-copy">Publicaciones que mencionan <strong>juntos</strong> estos términos. Es un conteo de literatura, <strong>no</strong> una conclusión de interacción, causalidad, riesgo ni seguridad. Cero resultados no descarta una interacción.</p>
+                ${n >= 2 ? `
+                <p class="combo-ev-hint">Cada producto combina marca y principio activo con <strong>OR</strong>; entre productos se cruza con <strong>AND</strong>. <strong>Edita</strong> los términos si hace falta — PubMed indexa en inglés (p. ej. <em>adapalene</em>, <em>benzoyl peroxide</em>).</p>
+                <div class="combo-ev-rows">${evidenceRows}${evSymptomRow}</div>
+                <div class="combo-ev-op" id="combo-ev-op">
+                    <span class="combo-ev-op-label">Entre productos:</span>
+                    <button type="button" class="combo-ev-op-pill is-active" data-op="AND" title="Intersección: aparecen todos los productos">AND</button>
+                    <button type="button" class="combo-ev-op-pill" data-op="OR" title="Unión: aparece cualquiera de los productos">OR</button>
+                </div>
+                <label class="combo-ev-query-label" for="combo-ev-query">Consulta base (editable — productos + síntomas; o pega aquí la del GPT)</label>
+                <textarea id="combo-ev-query" class="combo-ev-query-box" rows="2" spellcheck="false" placeholder="Se construye desde los campos; edítala o pega la consulta del GPT…"></textarea>
+                <div class="combo-ev-toolbar">
+                    <div class="combo-ev-date" id="combo-ev-date">
+                        <span class="combo-ev-op-label">Fecha:</span>
+                        <button type="button" class="combo-ev-date-pill is-active" data-days="0">∞</button>
+                        <button type="button" class="combo-ev-date-pill" data-days="1825">5 a</button>
+                        <button type="button" class="combo-ev-date-pill" data-days="3650">10 a</button>
+                    </div>
+                    <div class="combo-ev-toolbar-actions">
+                        <button class="btn btn-sm btn-secondary" type="button" onclick="app.loadComboEvidenceCounts()" title="Recalcular los conteos por filtro"><i class="fas fa-rotate"></i> Actualizar</button>
+                        <button class="btn btn-sm btn-ai-chatgpt" type="button" onclick="app.openComboPubmedGpt()" title="Copia un prompt de búsqueda y abre tu GPT de PubMed. Los GPT no precargan texto por URL: pega con Ctrl+V."><i class="fas fa-up-right-from-square"></i> Afinar en tu GPT de PubMed</button>
+                    </div>
+                </div>
+                <div class="combo-ev-grid" id="combo-ev-grid">
+                    <a class="combo-ev-frow combo-ev-frow--total" id="combo-evlink-total" href="#" target="_blank" rel="noopener">
+                        <span class="combo-ev-frow-label"><i class="fas fa-database"></i> Todas las citas</span>
+                        <span class="combo-ev-frow-count" id="combo-evcount-total">–</span>
+                        <span class="combo-ev-frow-ext"><i class="fas fa-external-link-alt"></i></span>
+                    </a>
+                    ${this._evidenceFilterDefs().map(f => `
+                    <a class="combo-ev-frow" id="combo-evlink-${f.id}" data-fid="${f.id}" data-cat="${f.cat}" href="#" target="_blank" rel="noopener">
+                        <span class="combo-ev-frow-label"><i class="fas ${f.icon}"></i> ${f.label}</span>
+                        <span class="combo-ev-frow-count" id="combo-evcount-${f.id}">–</span>
+                        <span class="combo-ev-frow-ext"><i class="fas fa-external-link-alt"></i></span>
+                    </a>`).join('')}
+                </div>
+                <p class="combo-ev-gpt-note">Conteo de literatura por filtro, <strong>no</strong> juicio clínico de interacción/seguridad. Cada fila abre PubMed. El GPT es externo: copia el prompt y abre para pegar (Ctrl+V).</p>` : `<p class="text-muted text-sm">Añade al menos 2 fármacos para construir la consulta combinada.</p>`}
+            </div>
             </div>
         `;
 
         const input = document.getElementById('combo-drug-search');
         document.getElementById('combo-add-btn').addEventListener('click', () => this.addComboDrug());
-        input.addEventListener('keyup', (e) => {
+        // Navegación con teclado idéntica al buscador principal: ↑/↓ mueven el resaltado
+        // (.autocomplete-item.active) y Enter añade el ítem resaltado (o busca el texto si no hay).
+        input.addEventListener('keydown', (e) => {
+            const dropdown = document.getElementById('combo-autocomplete');
+            const items = dropdown?.querySelectorAll('.autocomplete-item');
+            const hasItems = items && items.length > 0 && !dropdown.classList.contains('hidden');
+
             if (e.key === 'Enter') {
+                e.preventDefault();
                 clearTimeout(this.comboAutocompleteTimer);
-                document.getElementById('combo-autocomplete')?.classList.add('hidden');
+                if (hasItems) {
+                    const active = dropdown.querySelector('.autocomplete-item.active');
+                    if (active) {
+                        dropdown.classList.add('hidden');
+                        const med = (this._comboAutocompleteResults || []).find(m => m.nregistro === active.dataset.nregistro);
+                        if (med) this.addDrugToComboList(med);
+                        return;
+                    }
+                }
+                dropdown?.classList.add('hidden');
                 this.addComboDrug();
-            } else if (e.key === 'Escape') {
-                document.getElementById('combo-autocomplete')?.classList.add('hidden');
-            } else {
-                this.showComboAutocomplete(input.value);
+                return;
+            }
+            if (e.key === 'Escape') { dropdown?.classList.add('hidden'); return; }
+            if (!hasItems) return;
+
+            const idx = Array.from(items).findIndex(it => it.classList.contains('active'));
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                items[idx]?.classList.remove('active');
+                const next = idx < items.length - 1 ? idx + 1 : 0;
+                items[next].classList.add('active');
+                items[next].scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                items[idx]?.classList.remove('active');
+                const prev = idx > 0 ? idx - 1 : items.length - 1;
+                items[prev].classList.add('active');
+                items[prev].scrollIntoView({ block: 'nearest' });
             }
         });
+        input.addEventListener('input', () => this.showComboAutocomplete(input.value));
         input.addEventListener('blur', () => setTimeout(() => document.getElementById('combo-autocomplete')?.classList.add('hidden'), 200));
 
         const symptomInput = document.getElementById('symptom-search');
-        symptomInput.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter' && this.comboDrugList.length > 0 && symptomInput.value.trim()) this.performSymptomAnalysis();
-        });
-        // Preservar síntoma y contexto SOLO en memoria (no localStorage) para no perderlos al
-        // re-renderizar al añadir/quitar fármacos. Se borran con "Limpiar" y al recargar.
-        const syncSymptomActions = () => {
-            const enabled = this.comboDrugList.length > 0 && symptomInput.value.trim().length > 0;
-            ['combo-symptom-btn', 'combo-ai-symptom-perplexity', 'combo-ai-symptom-copy'].forEach(id => {
-                const btn = document.getElementById(id);
-                if (btn) btn.disabled = !enabled;
-            });
-        };
-        symptomInput.addEventListener('input', () => {
-            this._comboSymptom = symptomInput.value;
-            syncSymptomActions();
+        // Enter (o coma) añade un síntoma como chip; no lanza la búsqueda directamente.
+        symptomInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                this.addComboSymptom(symptomInput.value);
+                symptomInput.value = '';
+            }
         });
         const ctxEl = document.getElementById('combo-ai-context');
         const ctxCount = document.getElementById('combo-ai-context-count');
@@ -3619,10 +3768,98 @@ class MedCheckApp {
             this._comboAIContext = ctxEl.value;
             if (ctxCount) ctxCount.textContent = `${ctxEl.value.length}/800`;
         });
-        syncSymptomActions();
 
-        // Foco en el buscador de fármacos al abrir la vista y tras cada cambio de la lista.
-        setTimeout(() => document.getElementById('combo-drug-search')?.focus(), 60);
+        // Chips de parametrización documental (toggle en memoria; se reflejan en el prompt).
+        const wireChips = (containerId, set) => {
+            document.getElementById(containerId)?.querySelectorAll('.combo-chip').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.chip;
+                    if (set.has(id)) { set.delete(id); btn.classList.remove('is-active'); }
+                    else { set.add(id); btn.classList.add('is-active'); }
+                });
+            });
+        };
+        wireChips('combo-focus-chips', this._comboFocus);
+        wireChips('combo-topic-chips', this._comboTopics);
+
+        // --- Evidencia (grid estilo modal: un conteo por filtro, auto-actualizable) ---
+        // Operador entre productos: single-select; reconstruye la consulta base y recarga conteos.
+        document.getElementById('combo-ev-op')?.querySelectorAll('.combo-ev-op-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('#combo-ev-op .combo-ev-op-pill').forEach(p => p.classList.remove('is-active'));
+                pill.classList.add('is-active');
+                this._comboEvRebuildBase();
+            });
+        });
+        // Editar término de producto o de síntoma → reconstruir base (debounced).
+        document.querySelectorAll('.combo-ev-input').forEach(inp => {
+            inp.addEventListener('input', () => this._comboEvRebuildBase());
+        });
+        // Editar/pegar la consulta base directamente → recargar conteos (debounced).
+        document.getElementById('combo-ev-query')?.addEventListener('input', () => this._scheduleComboEvLoad());
+        // Fecha: single-select → recargar conteos.
+        document.getElementById('combo-ev-date')?.querySelectorAll('.combo-ev-date-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('#combo-ev-date .combo-ev-date-pill').forEach(p => p.classList.remove('is-active'));
+                pill.classList.add('is-active');
+                this._scheduleComboEvLoad();
+            });
+        });
+        // Carga inicial: rellena la consulta base desde los campos y dispara los conteos.
+        if (this.comboDrugList.length >= 2) this._comboEvRebuildBase();
+
+        this._syncComboSymptomButtons();
+
+        // Foco: por defecto el buscador de fármacos; tras añadir un síntoma, el campo de síntoma.
+        const focusId = this._comboFocusId || 'combo-drug-search';
+        this._comboFocusId = null;
+        setTimeout(() => document.getElementById(focusId)?.focus(), 60);
+    }
+
+    /** Habilita/deshabilita el botón 4.8 y los de IA-síntoma según haya ≥1 fármaco y ≥1 síntoma. */
+    _syncComboSymptomButtons() {
+        const enabled = this.comboDrugList.length > 0 && (this._comboSymptoms?.length > 0);
+        ['combo-symptom-btn', 'combo-ai-symptom-perplexity', 'combo-ai-symptom-chatgpt', 'combo-ai-symptom-copy'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) btn.disabled = !enabled;
+        });
+    }
+
+    /** Añade un síntoma a la lista acumulativa (chips). Evita duplicados (case-insensitive). */
+    addComboSymptom(value) {
+        const v = (value || '').trim();
+        if (!v) return;
+        if (!this._comboSymptoms) this._comboSymptoms = [];
+        if (this._comboSymptoms.some(s => s.toLowerCase() === v.toLowerCase())) return;
+        this._comboSymptoms.push(v);
+        this._comboFocusId = 'symptom-search';
+        this.renderCombination();
+    }
+
+    removeComboSymptom(index) {
+        if (!this._comboSymptoms) return;
+        this._comboSymptoms.splice(index, 1);
+        this.renderCombination();
+    }
+
+    /**
+     * Búsqueda de fármacos para la lista temporal de combo. A diferencia de `smartSearch`
+     * (que para texto consulta SOLO `nombre=`), reutiliza la misma cascada que el buscador
+     * principal (`_performSmartSearch`: nombre + practiv1 + sinónimos), para que buscar por
+     * PRINCIPIO ACTIVO funcione aunque no haya genérico con el PA en el nombre comercial.
+     * Marcado no-track (X-MC-Autocomplete) para no inflar la analítica con sugerencias/alta.
+     */
+    async _comboFindMeds(query) {
+        const trimmed = (query || '').trim();
+        if (!trimmed) return { resultados: [], totalFilas: 0 };
+        const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
+        if (/^\d{6,7}$/.test(trimmed)) {
+            return this.api.searchMedicamentos({ cn: trimmed, comerc: 1 }, noTrack);
+        }
+        if (/^[A-Za-z]\d{2}/.test(trimmed)) {
+            return this.api.searchMedicamentos({ atc: trimmed, comerc: 1 }, noTrack);
+        }
+        return this._performSmartSearch(trimmed, { comerc: 1 }, { trackPrimary: false });
     }
 
     async addComboDrug() {
@@ -3630,7 +3867,7 @@ class MedCheckApp {
         const query = input.value.trim();
         if (query.length < 2) return;
         try {
-            const results = await this.api.smartSearch(query, { comerc: 1 });
+            const results = await this._comboFindMeds(query);
             if (results.resultados && results.resultados.length > 0) {
                 await this.addDrugToComboList(results.resultados[0]);
                 input.value = '';
@@ -3671,8 +3908,10 @@ class MedCheckApp {
 
     clearComboDrugs() {
         this.comboDrugList = [];
-        this._comboSymptom = '';
+        this._comboSymptoms = [];
         this._comboAIContext = '';
+        this._comboFocus = new Set();
+        this._comboTopics = new Set();
         this.renderCombination();
     }
 
@@ -3683,9 +3922,10 @@ class MedCheckApp {
         clearTimeout(this.comboAutocompleteTimer);
         this.comboAutocompleteTimer = setTimeout(async () => {
             try {
-                const results = await this.api.smartSearch(query.trim(), { comerc: 1 }, { headers: { 'X-MC-Autocomplete': '1' } });
-                if (!results.resultados?.length) { dropdown.classList.add('hidden'); return; }
-                dropdown.innerHTML = results.resultados.slice(0, 6).map(med => `
+                const results = await this._comboFindMeds(query.trim());
+                if (!results.resultados?.length) { dropdown.classList.add('hidden'); this._comboAutocompleteResults = []; return; }
+                this._comboAutocompleteResults = results.resultados.slice(0, 6);
+                dropdown.innerHTML = this._comboAutocompleteResults.map(med => `
                     <button class="autocomplete-item" data-nregistro="${med.nregistro}">
                         <span class="autocomplete-term">${med.nombre}</span>
                         ${med.pactivos ? `<span class="autocomplete-label">${med.pactivos}</span>` : ''}
@@ -3715,8 +3955,10 @@ class MedCheckApp {
             if (this.comboDrugList.length < 2) { this.showToast('Añade al menos 2 fármacos', 'warning'); return false; }
         } else {
             if (this.comboDrugList.length < 1) { this.showToast('Añade al menos 1 fármaco', 'warning'); return false; }
-            const symptom = (document.getElementById('symptom-search')?.value || '').trim();
-            if (!symptom) { this.showToast('Escribe primero el/los síntoma(s) en el campo de arriba', 'warning'); return false; }
+            // Incluir texto pendiente en el input como un síntoma más antes de validar.
+            const pending = (document.getElementById('symptom-search')?.value || '').trim();
+            if (pending) this.addComboSymptom(pending);
+            if (!(this._comboSymptoms?.length > 0)) { this.showToast('Añade al menos un síntoma en el campo de arriba', 'warning'); return false; }
         }
         return true;
     }
@@ -3726,9 +3968,47 @@ class MedCheckApp {
      * contexto actuales. Pide información referenciada para valoración profesional; nunca una
      * orden de actuación (límites acordados en el contraste con Codex, 2026-06-04).
      */
+    /**
+     * Frases para el bloque de ENFOQUE documental (C5). Piden a las fuentes un TIPO de
+     * información, no un juicio clínico aplicable a un paciente.
+     */
+    _comboFocusLines() {
+        const map = {
+            mecanismo: 'el mecanismo farmacológico descrito (farmacocinético/farmacodinámico)',
+            relevancia: 'la relevancia clínica descrita por las fuentes',
+            precauciones: 'las precauciones o parámetros que las fuentes mencionan vigilar',
+            evidencia: 'la solidez y la incertidumbre de la evidencia'
+        };
+        return [...(this._comboFocus || [])].map(id => map[id]).filter(Boolean);
+    }
+
+    /**
+     * Temas DOCUMENTALES (C5): se formulan como pregunta a la literatura, nunca como
+     * descripción de un paciente. Etiqueta y redacción acordadas con Codex (acta 2026-06-05).
+     */
+    _comboTopicLines() {
+        const map = {
+            embarazo: 'embarazo o lactancia',
+            renal: 'insuficiencia renal',
+            hepatica: 'insuficiencia hepática',
+            edad: 'edad avanzada',
+            conduccion: 'conducción de vehículos'
+        };
+        return [...(this._comboTopics || [])].map(id => map[id]).filter(Boolean);
+    }
+
+    /**
+     * Construye el prompt EN EL MOMENTO DEL CLIC (no al render), para incluir síntoma, contexto
+     * y parámetros documentales actuales. Pide información referenciada para valoración
+     * profesional; nunca una orden de actuación. Los "temas" se tratan como filtros documentales
+     * sobre qué dicen las fuentes, NO como contexto de un paciente concreto (límites acordados
+     * en el contraste con Codex, actas 2026-06-04 y 2026-06-05).
+     */
     _buildComboAiPrompt(kind) {
-        const limits = 'Responde con información clínica referenciada para valoración profesional. No emitas una orden de actuación, no recomiendes iniciar, suspender, cambiar dosis o evitar fármacos, no clasifiques la combinación como segura/insegura y no sustituyas fuentes específicas de interacciones ni ficha técnica.';
+        const limits = 'Responde con información clínica referenciada para valoración profesional. No asumas que existe un paciente con ninguna condición. No emitas una orden de actuación, no recomiendes iniciar, suspender, cambiar dosis o evitar fármacos, no clasifiques la combinación como segura/insegura ni estratifiques el riesgo, y no sustituyas fuentes específicas de interacciones ni ficha técnica.';
         const ctx = (document.getElementById('combo-ai-context')?.value || '').trim();
+        const focus = this._comboFocusLines();
+        const topics = this._comboTopicLines();
         const lines = [
             'Eres farmacólogo clínico. Asistes a un profesional sanitario (de cualquier especialidad, en España) que consulta en el punto de atención.',
             '',
@@ -3742,7 +4022,7 @@ class MedCheckApp {
                 'Para cada par o grupo relevante: mecanismo descrito · posible relevancia clínica descrita · señales clínicas o parámetros que las fuentes mencionan · solidez de la evidencia, CITANDO FUENTES CONCRETAS (con URL cuando sea posible).'
             );
         } else {
-            const symptom = (document.getElementById('symptom-search')?.value || '').trim();
+            const symptom = (this._comboSymptoms || []).join(', ');
             lines.push(
                 `Síntoma(s) a evaluar: ${symptom}`,
                 '',
@@ -3750,7 +4030,17 @@ class MedCheckApp {
                 'Para cada fármaco con señal bibliográfica o farmacológica: mecanismo descrito · frecuencia descrita · factores que aumentarían o reducirían la plausibilidad · qué datos ayudarían a valorarlo, CITANDO FUENTES.'
             );
         }
+        if (focus.length) {
+            lines.push('', `Enfoca la respuesta en: ${focus.join('; ')}.`);
+        }
+        if (topics.length) {
+            lines.push(
+                '',
+                `Temas documentales a cubrir (como pregunta a las fuentes, NO como contexto de un paciente): ¿qué describen las fuentes sobre esta combinación en relación con ${topics.join(', ')}?`
+            );
+        }
         lines.push(
+            '',
             'Separa explícitamente lo que procede de: (1) ficha técnica / AEMPS (CIMA), (2) fuentes específicas de interacciones / farmacovigilancia, (3) literatura (PubMed), (4) plausibilidad farmacológica. Declara la incertidumbre cuando la haya.'
         );
         if (ctx) lines.push('', `Contexto o pregunta adicional del profesional: ${ctx}`);
@@ -3758,10 +4048,25 @@ class MedCheckApp {
         return lines.join('\n');
     }
 
-    openComboPerplexity(kind) {
+    /**
+     * Patrón "copiar-y-abrir" (C4): copia el prompt al portapapeles Y abre el motor con `?q=`.
+     * Si el prefill por URL falla (motor que ignora `?q=`), el usuario solo tiene que pegar.
+     * Así no dependemos de la estabilidad del deep link. Solo motores con GET confirmado:
+     * Perplexity y ChatGPT (Claude se cubre con "Copiar"; su `?q=` web no es fiable).
+     * MedCheck no registra el prompt, no lo guarda y no lee la respuesta.
+     */
+    async openComboEngine(kind, engine) {
         if (!this._validateComboAi(kind)) return;
         const prompt = this._buildComboAiPrompt(kind);
-        window.open(`https://www.perplexity.ai/search?q=${encodeURIComponent(prompt)}`, '_blank', 'noopener');
+        const urls = {
+            perplexity: `https://www.perplexity.ai/search?q=${encodeURIComponent(prompt)}`,
+            chatgpt: `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`
+        };
+        const url = urls[engine];
+        if (!url) return;
+        try { await navigator.clipboard.writeText(prompt); } catch (_) { /* no bloquea la apertura */ }
+        window.open(url, '_blank', 'noopener');
+        this.showToast('Prompt copiado y motor abierto — si no se precarga, pega con Ctrl+V', 'success');
     }
 
     async copyComboPrompt(kind) {
@@ -3772,6 +4077,198 @@ class MedCheckApp {
             this.showToast('Prompt copiado — pégalo en la IA que prefieras', 'success');
         } catch (e) {
             this.showToast('No se pudo copiar el prompt', 'error');
+        }
+    }
+
+    /**
+     * Evidencia combinada (zona 3, patrón análogo a la pestaña Evidencia del modal): construye la
+     * consulta a partir de un término EDITABLE por producto —(marca OR principio activo)— cruzados
+     * con AND, más filtros opcionales (tipo de estudio, fecha). SOLO recupera y muestra + enlaza.
+     * Línea roja (actas 2026-06-04/05): nunca ordenar, puntuar, semáforo ni matriz automática.
+     * Reutiliza el motor existente `_fetchPubmedCount` (POST a esearch, sin tope de URL).
+     */
+    /**
+     * Lleva la búsqueda al GPT personalizado de PubMed del usuario. Los GPT de OpenAI NO aceptan
+     * prompt por URL (`?q=` solo funciona en el ChatGPT general, no en `/g/g-...`), así que se
+     * COPIA el prompt y se ABRE el GPT para pegarlo (Ctrl+V). Patrón "copiar-y-abrir" honesto.
+     * El prompt es de BÚSQUEDA bibliográfica (no juicio clínico): pide traducir a inglés/MeSH,
+     * construir la query booleana y devolver el enlace PubMed.
+     */
+    async openComboPubmedGpt() {
+        if (this.comboDrugList.length < 1) { this.showToast('Añade al menos 1 fármaco', 'warning'); return; }
+        // Si ya hay una consulta en el textarea (construida o pegada), se usa como base; si no, se arma.
+        const products = this.comboDrugList.map((_, i) => (document.getElementById(`combo-ev-term-${i}`)?.value || '').trim()).filter(Boolean);
+        const op = document.querySelector('#combo-ev-op .combo-ev-op-pill.is-active')?.dataset.op || 'AND';
+        const symptomTerm = (document.getElementById('combo-ev-symptoms')?.value || '').trim();
+        const taQuery = (document.getElementById('combo-ev-query')?.value || '').trim();
+        const baseQuery = taQuery || (products.length >= 2
+            ? (op === 'OR' ? `(${products.join(' OR ')})` : products.join(' AND ')) + (symptomTerm ? ` AND ${symptomTerm.startsWith('(') ? symptomTerm : `(${symptomTerm})`}` : '')
+            : '');
+        const lines = [
+            'Eres un asistente experto en búsquedas avanzadas en PubMed. Ayuda a un profesional sanitario a construir y ejecutar una búsqueda BIBLIOGRÁFICA sobre la concurrencia de estos elementos. No es una consulta clínica individual ni pides datos de paciente: es búsqueda de literatura.',
+            '',
+            'Fármacos (nombre comercial en España; identifica el principio activo / INN en inglés):',
+            this._comboDrugLines()
+        ];
+        if ((this._comboSymptoms || []).length) {
+            lines.push('', `Síntomas / reacciones a considerar (tradúcelos al término inglés / MeSH): ${this._comboSymptoms.join(', ')}`);
+        }
+        if (baseQuery) {
+            lines.push('', `Consulta base que he construido en español (puede mejorarse): ${baseQuery}`);
+        }
+        // Arrastrar también la parametrización documental y el contexto libre de la zona IA externa.
+        const gptFocus = this._comboFocusLines();
+        const gptTopics = this._comboTopicLines();
+        const gptCtx = (document.getElementById('combo-ai-context')?.value || '').trim();
+        if (gptFocus.length) lines.push('', `Enfoca la búsqueda en: ${gptFocus.join('; ')}.`);
+        if (gptTopics.length) lines.push('', `Temas documentales (como pregunta a las fuentes, no como contexto de un paciente): ${gptTopics.join(', ')}.`);
+        if (gptCtx) lines.push('', `Contexto adicional del profesional: ${gptCtx}`);
+        lines.push(
+            '',
+            'Tareas:',
+            '1. Traduce principios activos y síntomas a su término inglés / MeSH correcto.',
+            '2. Construye una consulta PubMed booleana optimizada: principios activos cruzados con AND (o el operador que indique la base), síntomas con OR, usando [tiab] y [mesh] donde proceda.',
+            '3. Sugiere filtros útiles (tipo de estudio, fecha) y ofrece la URL de PubMed lista para abrir.',
+            '4. Resume brevemente qué tipo de literatura existe sobre esta concurrencia, explicando la estrategia y CITANDO. No emitas juicio clínico de seguridad, causalidad ni recomendación de actuación.',
+            '',
+            'Devuelve la consulta final en un bloque copiable y el enlace a PubMed.'
+        );
+        const prompt = lines.join('\n');
+        try { await navigator.clipboard.writeText(prompt); } catch (_) { /* no bloquea la apertura */ }
+        window.open('https://chatgpt.com/g/g-679fc8b5a99481919ee408d9c064f2ed-pubmed-help-y-asistente-para-busquedas-avanzadas', '_blank', 'noopener');
+        this.showToast('Prompt copiado — pégalo (Ctrl+V) en tu GPT de PubMed', 'success');
+    }
+
+    /**
+     * Definiciones canónicas de los filtros PubMed (compartidas por el modal de Evidencia y la
+     * zona de Evidencia de combo). Las queries reales viven en el repo pubmed-filters y se cargan
+     * con `_fetchEvidenceFilter`. Fuente única para mantener paridad entre ambas superficies.
+     */
+    _evidenceFilterDefs() {
+        return [
+            { id: 'metaanalysis',        cat: 'methodology', label: 'RS / Meta-análisis / HTA',      icon: 'fa-layer-group' },
+            { id: 'indirect_comparison', cat: 'methodology', label: 'Comparaciones indirectas',       icon: 'fa-random' },
+            { id: 'NNT_NNH',            cat: 'clinical',    label: 'NNT / NNH',                      icon: 'fa-calculator' },
+            { id: 'drugs_ae',           cat: 'clinical',    label: 'Efectos adversos Medicamentos',  icon: 'fa-exclamation-triangle' },
+            { id: 'gpc',               cat: 'methodology',  label: 'Guías de práctica clínica',      icon: 'fa-file-medical' },
+            { id: 'deprescription',    cat: 'clinical',     label: 'Deprescripción',                 icon: 'fa-pills' },
+            { id: 'pediatrics',        cat: 'scope',        label: 'Pediatría',                      icon: 'fa-child' },
+            { id: 'geriatrics_sensible', cat: 'scope',      label: 'Geriatría',                      icon: 'fa-user-clock' },
+            { id: 'economic_especifico', cat: 'scope',      label: 'Evaluaciones económicas',        icon: 'fa-coins' },
+            { id: 'primary_sensible',   cat: 'scope',      label: 'Atención Primaria',               icon: 'fa-stethoscope' },
+            { id: 'jnl_top_publications', cat: 'journals', label: 'Revistas de referencia',          icon: 'fa-star' },
+            { id: 'humans',              cat: 'scope',      label: 'Humanos',                        icon: 'fa-user', defaultChecked: true },
+        ];
+    }
+
+    /**
+     * Carga (con caché de sesión) la query PubMed de un filtro desde el repo pubmed-filters.
+     * Devuelve { query, tooltip }. Compartido entre el modal y combo (mismo `_evidenceFilterQueryCache`).
+     */
+    async _fetchEvidenceFilter(f) {
+        if (!this._evidenceFilterQueryCache) this._evidenceFilterQueryCache = new Map();
+        if (this._evidenceFilterQueryCache.has(f.id)) return this._evidenceFilterQueryCache.get(f.id);
+        const url = `https://ernestobarrera.github.io/pubmed-filters/filters/${f.cat}/${f.id}.txt`;
+        try {
+            const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+            if (!res.ok) throw new Error('fetch-error');
+            const txt = await res.text();
+            const [filterPart, metaPart] = txt.split('@@@FILTER_METADATA@@@');
+            const query = filterPart.split('\n').filter(l => !l.trim().startsWith('#')).join('\n').trim();
+            let tooltip = null;
+            if (metaPart) { try { tooltip = this._buildEvidenceTooltip(JSON.parse(metaPart.trim())); } catch {} }
+            const result = { query, tooltip };
+            this._evidenceFilterQueryCache.set(f.id, result);
+            return result;
+        } catch {
+            const result = { query: null, tooltip: null };
+            this._evidenceFilterQueryCache.set(f.id, result);
+            return result;
+        }
+    }
+
+    /**
+     * Reconstruye la CONSULTA BASE (productos con AND/OR + síntomas OR) desde los campos y la
+     * vuelca al textarea editable, luego reprograma la carga de conteos. Los filtros NO se mezclan
+     * aquí: se aplican por fila en el grid (cada filtro = base AND filtro), como en el modal.
+     */
+    _comboEvRebuildBase() {
+        const ta = document.getElementById('combo-ev-query');
+        if (!ta) return;
+        const products = this.comboDrugList
+            .map((_, i) => (document.getElementById(`combo-ev-term-${i}`)?.value || '').trim())
+            .filter(Boolean)
+            .map(p => (p.startsWith('(') && p.endsWith(')')) ? p : `(${p})`);
+        if (products.length < 2) { ta.value = ''; this.loadComboEvidenceCounts(); return; }
+        const op = document.querySelector('#combo-ev-op .combo-ev-op-pill.is-active')?.dataset.op || 'AND';
+        let q = op === 'OR' ? `(${products.join(' OR ')})` : products.join(' AND ');
+        const symptomTerm = (document.getElementById('combo-ev-symptoms')?.value || '').trim();
+        if (symptomTerm) q += ` AND ${symptomTerm.startsWith('(') ? symptomTerm : `(${symptomTerm})`}`;
+        ta.value = q;
+        this._scheduleComboEvLoad();
+    }
+
+    /** Debounce para no martillear NCBI mientras se editan campos. */
+    _scheduleComboEvLoad(delay = 900) {
+        clearTimeout(this._comboEvDebounce);
+        this._comboEvDebounce = setTimeout(() => this.loadComboEvidenceCounts(), delay);
+    }
+
+    /**
+     * Carga el conteo PubMed de la combinación POR CADA FILTRO (mismo comportamiento que el grid del
+     * modal de Evidencia): total + base AND (cada uno de los 12 filtros validados), con su enlace.
+     * Serie con espaciado 400 ms (límite NCBI 3 req/s) y guard por ciclo para abortar si cambian los
+     * campos. Solo recupera y muestra; sin ranking ni semáforo (el 0 se atenúa, nada más).
+     */
+    async loadComboEvidenceCounts() {
+        const grid = document.getElementById('combo-ev-grid');
+        if (!grid) return;
+        const filterDefs = this._evidenceFilterDefs();
+        const setCount = (id, html, cls = '') => {
+            const el = document.getElementById(`combo-evcount-${id}`);
+            if (el) { el.innerHTML = html; el.className = 'combo-ev-frow-count' + (cls ? ` ${cls}` : ''); }
+        };
+        const base = (document.getElementById('combo-ev-query')?.value || '').trim();
+        if (!base) { setCount('total', '–'); filterDefs.forEach(f => setCount(f.id, '–')); return; }
+
+        const cycle = (this._comboEvCycle = (this._comboEvCycle || 0) + 1);
+        const days = parseInt(document.querySelector('#combo-ev-date .combo-ev-date-pill.is-active')?.dataset.days || '0', 10);
+        const dateSuffix = days ? ` AND ("last ${days} days"[dp])` : '';
+        const pmBase = 'https://pubmed.ncbi.nlm.nih.gov/?term=';
+        const enc = encodeURIComponent;
+        const spin = '<i class="fas fa-circle-notch fa-spin"></i>';
+        setCount('total', spin); filterDefs.forEach(f => setCount(f.id, spin));
+
+        const totalQuery = base + dateSuffix;
+        const totalLink = document.getElementById('combo-evlink-total');
+        if (totalLink) totalLink.href = pmBase + enc(totalQuery);
+
+        // Cargar las queries de los filtros (caché compartida con el modal) y fijar enlaces.
+        const loaded = await Promise.all(filterDefs.map(f => this._fetchEvidenceFilter(f)));
+        if (this._comboEvCycle !== cycle) return;
+        const requests = [{ id: 'total', query: totalQuery }];
+        filterDefs.forEach((f, i) => {
+            const q = loaded[i].query;
+            if (!q) { requests.push({ id: f.id, query: null }); return; }
+            const isNot = q.trimStart().startsWith('NOT ');
+            const full = isNot ? `${base} ${q}${dateSuffix}` : `${base} AND (${q})${dateSuffix}`;
+            requests.push({ id: f.id, query: full });
+            const link = document.getElementById(`combo-evlink-${f.id}`);
+            if (link) link.href = pmBase + enc(full);
+        });
+
+        // Conteos en serie, respetando el límite de NCBI.
+        for (const req of requests) {
+            if (this._comboEvCycle !== cycle) return;
+            if (!req.query) { setCount(req.id, 'n/d'); continue; }
+            try {
+                const count = await this._fetchPubmedCount(req.query, () => this._comboEvCycle === cycle);
+                if (count === null || this._comboEvCycle !== cycle) return;
+                setCount(req.id, count.toLocaleString('es-ES'), count === 0 ? 'is-zero' : '');
+            } catch {
+                setCount(req.id, '—');
+            }
+            await new Promise(r => setTimeout(r, 400));
         }
     }
 
@@ -4086,10 +4583,13 @@ class MedCheckApp {
     // --- Lógica de Análisis ---
 
     async performSymptomAnalysis() {
-        const symptom = document.getElementById('symptom-search').value.trim();
-        const resultsContainer = document.getElementById('adverse-results');
+        // Incluir como síntoma cualquier texto pendiente en el input (sin necesidad de pulsar Enter).
+        // Esto puede re-renderizar la vista, así que la referencia al contenedor se toma DESPUÉS.
+        const pending = (document.getElementById('symptom-search')?.value || '').trim();
+        if (pending) { this.addComboSymptom(pending); }
+        const symptoms = this._comboSymptoms || [];
 
-        if (!symptom) {
+        if (symptoms.length === 0) {
             this.showToast('Introduce un síntoma por favor', 'warning');
             return;
         }
@@ -4098,6 +4598,7 @@ class MedCheckApp {
             return;
         }
 
+        const resultsContainer = document.getElementById('adverse-results');
         resultsContainer.innerHTML = `
     <div class="text-center p-xl">
                 <div class="loading-spinner mb-md"></div>
@@ -4106,8 +4607,15 @@ class MedCheckApp {
     `;
 
         try {
-            const results = await this.api.analyzeSymptom(this.comboDrugList, symptom);
-            this.displaySymptomResults(results);
+            // OR entre síntomas: se busca cada uno y se unen las coincidencias (con su término).
+            const perSymptom = await Promise.all(
+                symptoms.map(s => this.api.analyzeSymptom(this.comboDrugList, s).then(r => ({ s, r })))
+            );
+            const matches = [];
+            for (const { s, r } of perSymptom) {
+                for (const m of (r.matches || [])) matches.push({ ...m, sintoma: s });
+            }
+            this.displaySymptomResults({ sintoma: symptoms.join(' / '), matches });
         } catch (error) {
             console.error('Analysis error:', error);
             resultsContainer.innerHTML = `
@@ -4149,7 +4657,7 @@ class MedCheckApp {
                     <i class="fas fa-info-circle"></i>
                 </div>
                 <div class="safety-check-content">
-                    <div class="safety-check-title">${m.med.nombre}</div>
+                    <div class="safety-check-title">${m.med.nombre}${m.sintoma ? ` <span class="badge badge-info">${this._escapeHtml(m.sintoma)}</span>` : ''}</div>
                     <div class="safety-check-detail">
                         <div class="text-muted mb-sm text-xs">Sección 4.8 (Reacciones Adversas):</div>
                         <div class="p-sm bg-light rounded border-l-4 border-primary"
@@ -4177,12 +4685,16 @@ class MedCheckApp {
                 <div class="safety-checks">
                     ${matchesHtml}
                 </div>
-                ${this.adverseDrugList.length > results.matches.length ? `
+                ${(() => {
+                    // Con multi-síntoma un fármaco puede aparecer en varias coincidencias: contar
+                    // fármacos DISTINTOS con match (no nº de matches) sobre la lista de combo.
+                    const matchedDrugs = new Set(results.matches.map(m => m.med?.nregistro)).size;
+                    const rest = this.comboDrugList.length - matchedDrugs;
+                    return rest > 0 ? `
                     <div class="p-md text-center text-muted text-sm border-t">
-                        El resto de medicamentos (${this.adverseDrugList.length - results.matches.length}) no mencionan este término.
-                    </div>
-                ` : ''
-            }
+                        El resto de medicamentos (${rest}) no mencionan estos términos.
+                    </div>` : '';
+                })()}
             </div>
     `;
     }
@@ -12918,20 +13430,7 @@ ${materialesPlaceholder}
             return EV_RANGES[idx]?.days ?? 1825;
         };
 
-        const filterDefs = [
-            { id: 'metaanalysis',        cat: 'methodology', label: 'RS / Meta-análisis / HTA',      icon: 'fa-layer-group' },
-            { id: 'indirect_comparison', cat: 'methodology', label: 'Comparaciones indirectas',       icon: 'fa-random' },
-            { id: 'NNT_NNH',            cat: 'clinical',    label: 'NNT / NNH',                      icon: 'fa-calculator' },
-            { id: 'drugs_ae',           cat: 'clinical',    label: 'Efectos adversos Medicamentos',  icon: 'fa-exclamation-triangle' },
-            { id: 'gpc',               cat: 'methodology',  label: 'Guías de práctica clínica',      icon: 'fa-file-medical' },
-            { id: 'deprescription',    cat: 'clinical',     label: 'Deprescripción',                 icon: 'fa-pills' },
-            { id: 'pediatrics',        cat: 'scope',        label: 'Pediatría',                      icon: 'fa-child' },
-            { id: 'geriatrics_sensible', cat: 'scope',      label: 'Geriatría',                      icon: 'fa-user-clock' },
-            { id: 'economic_especifico', cat: 'scope',      label: 'Evaluaciones económicas',        icon: 'fa-coins' },
-            { id: 'primary_sensible',   cat: 'scope',      label: 'Atención Primaria',               icon: 'fa-stethoscope' },
-            { id: 'jnl_top_publications', cat: 'journals', label: 'Revistas de referencia',          icon: 'fa-star' },
-            { id: 'humans',              cat: 'scope',      label: 'Humanos',                        icon: 'fa-user', defaultChecked: true },
-        ];
+        const filterDefs = this._evidenceFilterDefs();
 
         container.innerHTML = `
             <div class="evidence-section">
