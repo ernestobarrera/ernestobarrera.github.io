@@ -3702,7 +3702,7 @@ class MedCheckApp {
                         <span class="combo-ev-frow-ext"><i class="fas fa-external-link-alt"></i></span>
                     </a>`).join('')}
                 </div>
-                <p class="combo-ev-gpt-note">Conteo de literatura por filtro, <strong>no</strong> juicio clínico de interacción/seguridad. Cada fila abre PubMed. El GPT es externo: copia el prompt y abre para pegar (Ctrl+V).</p>` : `<p class="text-muted text-sm">Añade al menos 2 fármacos para construir la consulta combinada.</p>`}
+                <p class="combo-ev-gpt-note">Filtros <strong>bibliográficos</strong> (tipo de estudio, ámbito), <strong>no</strong> priorización ni descarte clínico. El conteo es volumen de literatura, no juicio de interacción ni de seguridad; cero no descarta nada. Cada fila abre PubMed. El GPT es externo: copia el prompt y abre para pegar (Ctrl+V).</p>` : `<p class="text-muted text-sm">Añade al menos 2 fármacos para construir la consulta combinada.</p>`}
             </div>
             </div>
         `;
@@ -4228,10 +4228,12 @@ class MedCheckApp {
             const el = document.getElementById(`combo-evcount-${id}`);
             if (el) { el.innerHTML = html; el.className = 'combo-ev-frow-count' + (cls ? ` ${cls}` : ''); }
         };
+        // Invalidar SIEMPRE el ciclo (incluso si la consulta queda vacía) para abortar cargas en vuelo.
+        const cycle = (this._comboEvCycle = (this._comboEvCycle || 0) + 1);
+        if (!this._evidenceCountCache) this._evidenceCountCache = new Map();
         const base = (document.getElementById('combo-ev-query')?.value || '').trim();
         if (!base) { setCount('total', '–'); filterDefs.forEach(f => setCount(f.id, '–')); return; }
 
-        const cycle = (this._comboEvCycle = (this._comboEvCycle || 0) + 1);
         const days = parseInt(document.querySelector('#combo-ev-date .combo-ev-date-pill.is-active')?.dataset.days || '0', 10);
         const dateSuffix = days ? ` AND ("last ${days} days"[dp])` : '';
         const pmBase = 'https://pubmed.ncbi.nlm.nih.gov/?term=';
@@ -4257,13 +4259,20 @@ class MedCheckApp {
             if (link) link.href = pmBase + enc(full);
         });
 
-        // Conteos en serie, respetando el límite de NCBI.
+        // Conteos en serie, respetando el límite de NCBI. Caché compartida con el modal: las queries
+        // ya vistas no vuelven a pegar a NCBI (ni esperan los 400 ms).
         for (const req of requests) {
             if (this._comboEvCycle !== cycle) return;
             if (!req.query) { setCount(req.id, 'n/d'); continue; }
+            if (this._evidenceCountCache.has(req.query)) {
+                const n = this._evidenceCountCache.get(req.query);
+                setCount(req.id, n.toLocaleString('es-ES'), n === 0 ? 'is-zero' : '');
+                continue;
+            }
             try {
                 const count = await this._fetchPubmedCount(req.query, () => this._comboEvCycle === cycle);
                 if (count === null || this._comboEvCycle !== cycle) return;
+                this._evidenceCountCache.set(req.query, count);
                 setCount(req.id, count.toLocaleString('es-ES'), count === 0 ? 'is-zero' : '');
             } catch {
                 setCount(req.id, '—');
