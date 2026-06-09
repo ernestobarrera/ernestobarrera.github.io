@@ -30,6 +30,33 @@ class CimaAPI {
 
         // Flag de estado de conexión
         this.isOnline = true;
+
+        // Precarga (no bloqueante) de la ontología clínica externalizada. Estará lista mucho antes
+        // de que el usuario navegue a "Indicaciones" y teclee; la búsqueda real la espera igualmente.
+        this._loadClinicalOntology();
+    }
+
+    /**
+     * Carga la ontología clínica (indicaciones → ATC) desde el JSON externo y la vuelca en
+     * `CimaAPI.CLINICAL_DICTIONARY` (fuente que leen búsqueda, autocomplete, sugerencias y cobertura).
+     * Una sola vez; falla en abierto (si no carga, queda el dict vacío y la búsqueda cae al ATC-cache).
+     * Ampliable: editar assets/data/clinical-ontology.json y subir el `?v=`.
+     */
+    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260609a') {
+        if (this._clinicalOntologyLoaded) return CimaAPI.CLINICAL_DICTIONARY;
+        if (this._clinicalOntologyLoading) return this._clinicalOntologyLoading;
+        this._clinicalOntologyLoading = fetch(url, { cache: 'force-cache' })
+            .then(r => (r.ok ? r.json() : null))
+            .then(data => {
+                const terms = data?.terms;
+                if (terms && typeof terms === 'object') {
+                    CimaAPI.CLINICAL_DICTIONARY = terms;
+                }
+                this._clinicalOntologyLoaded = true;
+                return CimaAPI.CLINICAL_DICTIONARY;
+            })
+            .catch(() => { this._clinicalOntologyLoaded = true; return CimaAPI.CLINICAL_DICTIONARY; });
+        return this._clinicalOntologyLoading;
     }
 
     /**
@@ -783,6 +810,8 @@ class CimaAPI {
      * @returns {Promise<Object>} Resultados con medicamentos y metadata
      */
     async searchByIndication(query, options = {}) {
+        // Garantizar la ontología cargada antes de una búsqueda real (la precarga suele bastar).
+        await this._loadClinicalOntology();
         // Normalize: lowercase + remove accents for consistent matching
         const normalizedQuery = query.toLowerCase().trim()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -865,12 +894,12 @@ class CimaAPI {
 
         // Normalize query (should already be normalized, but ensure)
         const normalizedQuery = query.toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/-/g, ' ');
 
         for (const [term, data] of Object.entries(CimaAPI.CLINICAL_DICTIONARY)) {
             // Normalize dictionary term for comparison
             const normalizedTerm = term.toLowerCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/-/g, ' ');
 
             // Coincidencia exacta
             if (normalizedTerm === normalizedQuery) {
@@ -884,16 +913,20 @@ class CimaAPI {
                 continue;
             }
 
-            // Buscar en sinónimos (require min 4 chars to avoid 'ic' matching 'ansioliticos')
+            // Buscar en sinónimos por COINCIDENCIA DE PALABRA, no de subcadena: el sinónimo casa si
+            // es igual a la query o si alguna de sus PALABRAS empieza por la query (>=4 chars). Evita
+            // que un término genérico (p. ej. 'dolor') arrastre indicaciones cuyo sinónimo lo contenía
+            // en mitad de una frase descriptiva, y el 'ic' dentro de 'ansioliticos'.
             if (data.synonyms) {
                 for (const syn of data.synonyms) {
                     const normalizedSyn = syn.toLowerCase()
-                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/-/g, ' ');
 
-                    // Only match if synonym is long enough and matches well
                     if (normalizedSyn.length >= 4) {
-                        if (normalizedSyn === normalizedQuery ||
-                            (normalizedQuery.length >= 4 && normalizedSyn.includes(normalizedQuery))) {
+                        const wordMatch = normalizedSyn === normalizedQuery ||
+                            (normalizedQuery.length >= 4 &&
+                             normalizedSyn.split(/[\s\-/]+/).some(w => w.startsWith(normalizedQuery)));
+                        if (wordMatch) {
                             matches.push({ ...data, term, score: 70 });
                             break;
                         }
@@ -1071,302 +1104,10 @@ class CimaAPI {
      * 2. Son abreviaturas o sinónimos españoles que no existen en ATC
      * Para términos que coinciden con nombres ATC, se busca directamente en el cache
      */
-    static CLINICAL_DICTIONARY = {
-        // ===== SÍNDROMES CARDIOVASCULARES (multi-ATC) =====
-        'hipertensión': {
-            atc: ['C02', 'C03', 'C07', 'C08', 'C09'],
-            label: 'Antihipertensivos (todos)',
-            synonyms: ['hta', 'tensión alta', 'hipertensión arterial', 'presión alta']
-        },
-        'insuficiencia cardiaca': {
-            atc: ['C03', 'C07', 'C09', 'A10BK'],
-            label: 'IC (diuréticos, BB, IECA/ARA, iSGLT2)',
-            synonyms: ['ic', 'fallo cardiaco', 'insuficiencia cardíaca']
-        },
-        'fibrilación auricular': {
-            atc: ['B01A', 'C01B', 'C07'],
-            label: 'FA (anticoag, antiarrit, BB)',
-            synonyms: ['fa', 'acfa', 'arritmia auricular']
-        },
-        'angina': {
-            atc: ['C01D', 'C07', 'C08'],
-            label: 'Antianginosos',
-            synonyms: ['angor', 'angina de pecho']
-        },
-        'trombosis': {
-            atc: ['B01A'],
-            label: 'Antitrombóticos',
-            synonyms: ['tromboembolismo', 'tvp', 'embolia pulmonar', 'tep', 'anticoagulación']
-        },
-        'dislipemia': {
-            atc: ['C10'],
-            label: 'Hipolipemiantes',
-            synonyms: ['colesterol', 'hipercolesterolemia', 'hiperlipidemia', 'triglicéridos']
-        },
-
-        // ===== SÍNDROMES METABÓLICOS (multi-ATC) =====
-        'diabetes': {
-            atc: ['A10A', 'A10B'],
-            label: 'Antidiabéticos (insulinas + orales)',
-            synonyms: ['dm', 'azúcar alta']
-        },
-        'hipotiroidismo': {
-            atc: ['H03A'],
-            label: 'Hormonas tiroideas',
-            synonyms: ['tiroides', 'levotiroxina', 'eutirox']
-        },
-        'hipertiroidismo': {
-            atc: ['H03B'],
-            label: 'Antitiroideos',
-            synonyms: ['tirotoxicosis', 'graves', 'carbimazol']
-        },
-        'gota': {
-            atc: ['M04'],
-            label: 'Antigotosos',
-            synonyms: ['hiperuricemia', 'ácido úrico', 'acido urico', 'alopurinol', 'colchicina']
-        },
-        'osteoporosis': {
-            atc: ['M05B'],
-            label: 'Antiosteoporóticos',
-            synonyms: ['bisfosfonatos', 'densidad ósea', 'densidad osea', 'fracturas osteoporóticas']
-        },
-
-        // ===== DOLOR (multi-ATC) =====
-        'dolor': {
-            atc: ['N02', 'M01A'],
-            label: 'Analgésicos y AINE',
-            synonyms: ['analgesia']
-        },
-        'dolor neuropático': {
-            atc: ['N03', 'N06A'],
-            label: 'Dolor neuropático (antiepilépticos + antidepresivos)',
-            synonyms: ['neuropatía', 'neuralgia']
-        },
-        'dolor crónico': {
-            atc: ['N02A', 'N03', 'N06A'],
-            label: 'Dolor crónico (opioides, antiepil, antidep)'
-        },
-        'migraña': {
-            atc: ['N02C'],
-            label: 'Antimigrañosos',
-            synonyms: ['jaqueca', 'cefalea migrañosa', 'triptanes', 'sumatriptan']
-        },
-
-        // ===== PSIQUIATRÍA (multi-ATC) =====
-        'depresión': {
-            atc: ['N06AA', 'N06AB', 'N06AX'],
-            label: 'Antidepresivos (tricíclicos, ISRS, otros)',
-            synonyms: ['tristeza', 'antidepresivo']
-        },
-        'ansiedad': {
-            atc: ['N05B', 'N06AB'],
-            label: 'Ansiolíticos e ISRS',
-            synonyms: ['trastorno de ansiedad', 'tag', 'ansiedad generalizada', 'crisis de pánico']
-        },
-        'insomnio': {
-            atc: ['N05C'],
-            label: 'Hipnóticos y sedantes',
-            synonyms: ['trastorno del sueño', 'conciliar el sueño', 'zolpidem', 'lormetazepam']
-        },
-        'esquizofrenia': {
-            atc: ['N05A'],
-            label: 'Antipsicóticos',
-            synonyms: ['psicosis', 'trastorno psicótico', 'brote psicótico']
-        },
-        'tdah': {
-            atc: ['N06BA'],
-            label: 'Psicoestimulantes (TDAH)',
-            synonyms: ['déficit de atención', 'deficit de atencion', 'hiperactividad', 'metilfenidato']
-        },
-        'trastorno bipolar': {
-            atc: ['N03', 'N05A'],
-            label: 'Estabilizadores + Antipsicóticos',
-            synonyms: ['bipolar', 'litio', 'ácido valproico']
-        },
-
-        // ===== NEUROLOGÍA =====
-        'epilepsia': {
-            atc: ['N03'],
-            label: 'Antiepilépticos',
-            synonyms: ['convulsiones', 'crisis epiléptica', 'fenitoína', 'levetiracetam']
-        },
-        'parkinson': {
-            atc: ['N04'],
-            label: 'Antiparkinsonianos',
-            synonyms: ['enfermedad de parkinson', 'levodopa', 'temblor parkinsoniano']
-        },
-        'alzheimer': {
-            atc: ['N06D'],
-            label: 'Antidemencia',
-            synonyms: ['demencia', 'deterioro cognitivo', 'donepezilo', 'memantina']
-        },
-
-        // ===== GASTROENTEROLOGÍA =====
-        'reflujo': {
-            atc: ['A02B'],
-            label: 'Antiulcerosos',
-            synonyms: ['erge', 'rge', 'acidez', 'pirosis', 'hernia hiato']
-        },
-        'estreñimiento': {
-            atc: ['A06'],
-            label: 'Laxantes',
-            synonyms: ['constipación', 'laxante']
-        },
-        'diarrea': {
-            atc: ['A07'],
-            label: 'Antidiarreicos',
-            synonyms: ['loperamida', 'gastroenteritis']
-        },
-        'náuseas': {
-            atc: ['A04', 'A03FA'],
-            label: 'Antieméticos y procinéticos',
-            synonyms: ['vómitos', 'vomitos', 'antiemético', 'metoclopramida', 'domperidona', 'ondansetron']
-        },
-        'enfermedad inflamatoria intestinal': {
-            atc: ['A07E'],
-            label: 'Aminosalicilatos y corticoides intestinales',
-            synonyms: ['eii', 'crohn', 'colitis ulcerosa', 'mesalazina']
-        },
-
-        // ===== INFECCIONES (multi-ATC) =====
-        'infección urinaria': {
-            atc: ['J01'],
-            label: 'Antibióticos (ITU)',
-            synonyms: ['itu', 'cistitis', 'pielonefritis']
-        },
-        'infección respiratoria': {
-            atc: ['J01'],
-            label: 'Antibióticos (respiratorio)',
-            synonyms: ['bronquitis', 'neumonía']
-        },
-        'faringitis': {
-            atc: ['J01C'],
-            label: 'Penicilinas',
-            synonyms: ['amigdalitis', 'faringoamigdalitis', 'anginas']
-        },
-        'otitis': {
-            atc: ['J01', 'S02'],
-            label: 'Antibióticos sistémicos y óticos',
-            synonyms: ['otitis media', 'otitis externa', 'dolor de oído']
-        },
-        'candidiasis': {
-            atc: ['J02', 'G01A', 'D01'],
-            label: 'Antifúngicos',
-            synonyms: ['hongos', 'candida', 'micosis', 'fluconazol']
-        },
-
-        // ===== RESPIRATORIO (multi-ATC) =====
-        'asma': {
-            atc: ['R03'],
-            label: 'Antiasmáticos',
-            synonyms: ['broncoespasmo']
-        },
-        'epoc': {
-            atc: ['R03'],
-            label: 'EPOC',
-            synonyms: ['broncodilatadores', 'enfisema']
-        },
-        'rinitis alérgica': {
-            atc: ['R06', 'R01A'],
-            label: 'Antihistamínicos y corticoides nasales',
-            synonyms: ['alergia', 'rinitis', 'estornudos', 'cetirizina', 'loratadina']
-        },
-        'tos': {
-            atc: ['R05'],
-            label: 'Antitusivos y mucolíticos',
-            synonyms: ['tos seca', 'tos productiva', 'expectorante', 'mucolítico']
-        },
-
-        // ===== DERMATOLOGÍA =====
-        'acné': {
-            atc: ['D10'],
-            label: 'Antiacneicos',
-            synonyms: ['acne', 'espinillas', 'tretinoína', 'isotretinoína']
-        },
-        'dermatitis atópica': {
-            atc: ['D07', 'D11AH'],
-            label: 'Corticoides tópicos e inmunomoduladores',
-            synonyms: ['eccema', 'eczema', 'dermatitis', 'piel atópica']
-        },
-        'psoriasis': {
-            atc: ['D05', 'L04'],
-            label: 'Antipsoríasicos tópicos y sistémicos',
-            synonyms: ['placas psoriásicas', 'metotrexato']
-        },
-        'urticaria': {
-            atc: ['R06'],
-            label: 'Antihistamínicos',
-            synonyms: ['habones', 'picazón', 'prurito']
-        },
-
-        // ===== REUMATOLOGÍA (multi-ATC) =====
-        'artritis reumatoide': {
-            atc: ['M01A', 'L04'],
-            label: 'AR (AINE + inmunomod)',
-            synonyms: ['ar', 'reumatoide']
-        },
-        'artrosis': {
-            atc: ['M01A', 'N02'],
-            label: 'AINE y analgésicos',
-            synonyms: ['osteoartritis', 'desgaste articular', 'gonartrosis', 'coxartrosis']
-        },
-        'fibromialgia': {
-            atc: ['N06A', 'N03', 'M03'],
-            label: 'Antidepresivos, antiepilépticos y relajantes',
-            synonyms: ['dolor musculoesquelético difuso', 'puntos gatillo']
-        },
-
-        // ===== UROLOGÍA / GINECOLOGÍA =====
-        'incontinencia urinaria': {
-            atc: ['G04BD'],
-            label: 'Antimuscarínicos urinarios',
-            synonyms: ['vejiga hiperactiva', 'urgencia miccional', 'solifenacina', 'mirabegron']
-        },
-        'disfunción eréctil': {
-            atc: ['G04BE'],
-            label: 'Inhibidores de PDE5',
-            synonyms: ['impotencia', 'sildenafilo', 'tadalafilo']
-        },
-        'menopausia': {
-            atc: ['G03C', 'G03F'],
-            label: 'THS (Terapia Hormonal Sustitutiva)',
-            synonyms: ['climaterio', 'sofocos', 'terapia hormonal']
-        },
-        'anticoncepción': {
-            atc: ['G03A'],
-            label: 'Anticonceptivos hormonales',
-            synonyms: ['anticonceptivos', 'píldora', 'planificación familiar']
-        },
-
-        // ===== OFTALMOLOGÍA =====
-        'glaucoma': {
-            atc: ['S01E'],
-            label: 'Antiglaucomatosos',
-            synonyms: ['presión intraocular', 'timolol', 'latanoprost']
-        },
-        'conjuntivitis': {
-            atc: ['S01A'],
-            label: 'Antiinfecciosos oculares',
-            synonyms: ['ojo rojo', 'infección ocular']
-        },
-
-        // ===== ABREVIATURAS Y SINÓNIMOS ESPAÑOLES =====
-        // (términos que NO existen en nomenclatura ATC)
-        'ieca': { atc: 'C09A', label: 'IECA', synonyms: ['inhibidores eca'] },
-        'ara ii': { atc: 'C09C', label: 'ARA-II', synonyms: ['araii', 'sartanes'] },
-        'aine': { atc: 'M01A', label: 'AINE', synonyms: ['antiinflamatorio'] },
-        'ibp': { atc: 'A02BC', label: 'IBP', synonyms: ['protector gástrico', 'omeprazol'] },
-        'isrs': { atc: 'N06AB', label: 'ISRS', synonyms: ['sertralina', 'escitalopram'] },
-        'sglt2': { atc: 'A10BK', label: 'iSGLT2', synonyms: ['isglt2', 'gliflozinas', 'empagliflozina', 'dapagliflozina'] },
-        'glp1': { atc: 'A10BJ', label: 'Agonistas GLP-1', synonyms: ['semaglutida', 'ozempic', 'liraglutida'] },
-        'dpp4': { atc: 'A10BH', label: 'iDPP4', synonyms: ['idpp4', 'gliptinas', 'sitagliptina'] },
-        'acod': { atc: 'B01AF', label: 'ACOD', synonyms: ['naco', 'rivaroxaban', 'apixaban', 'dabigatran'] },
-        'hbp': { atc: 'G04C', label: 'HBP', synonyms: ['próstata', 'prostatismo'] },
-        'corticoides': { atc: 'H02', label: 'Corticosteroides sistémicos', synonyms: ['prednisona', 'dexametasona', 'metilprednisolona'] },
-        'benzodiacepinas': { atc: 'N05BA', label: 'Benzodiacepinas', synonyms: ['diazepam', 'lorazepam', 'alprazolam', 'benzo'] },
-        'hierro': { atc: 'B03A', label: 'Ferroterapia', synonyms: ['anemia ferropénica', 'ferropenia', 'sulfato ferroso'] },
-        'vitamina d': { atc: 'A11CC', label: 'Vitamina D', synonyms: ['colecalciferol', 'calcifediol', 'déficit vitamina d'] }
-    };
+    // Ontología clínica externalizada a assets/data/clinical-ontology.json (fuente única editable).
+    // Arranca vacía y se rellena con _loadClinicalOntology() (precargado en el constructor). Si el
+    // fetch falla, queda vacía y la búsqueda por indicación cae al matching por nombre ATC del caché.
+    static CLINICAL_DICTIONARY = {};
 
     /**
      * Mantener compatibilidad con código existente que referencia INDICATION_DICTIONARY

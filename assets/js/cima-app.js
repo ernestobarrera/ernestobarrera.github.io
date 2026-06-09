@@ -2324,12 +2324,16 @@ class MedCheckApp {
         }
     }
 
-    showIndicationAutocomplete(query) {
+    async showIndicationAutocomplete(query) {
         const dropdown = document.getElementById('autocomplete-results');
         if (!query || query.length < 2) {
             dropdown.classList.add('hidden');
             return;
         }
+
+        // Asegurar la ontología externalizada cargada antes de sugerir (cold-load: la precarga del
+        // constructor suele bastar; si el usuario teclea muy rápido al entrar, esto lo cubre).
+        await this.api._loadClinicalOntology();
 
         const matches = this.api.findIndicationMatches(query.toLowerCase());
 
@@ -10812,6 +10816,9 @@ ${materialesPlaceholder}
 
     async renderProfileView() {
         await this._loadEml();
+        // Ontología clínica externalizada: asegurar cargada antes de calcular cobertura de indicaciones
+        // (deep-link en frío a ?view=profile podría llegar antes que la precarga del constructor).
+        await this.api._loadClinicalOntology();
         const favs = this.getFavorites();
         this.updateFavoritesBadge();
         this._profileSection = this._profileSection || 'favorites';
