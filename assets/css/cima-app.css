@@ -5150,6 +5150,44 @@ body {
     border-top: 1px solid var(--border-subtle);
 }
 
+/* "Más filtros": colapsa forma/lab/dosis para reducir la fricción de la barra */
+.more-filters > summary {
+    cursor: pointer;
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    user-select: none;
+}
+.more-filters > summary::-webkit-details-marker { display: none; }
+.more-filters > summary:hover,
+.more-filters[open] > summary { border-color: var(--primary); color: var(--text-primary); }
+.more-filters > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.more-filters-badge {
+    background: var(--primary);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    padding: 0.05rem 0.4rem;
+    font-weight: 600;
+}
+/* Al abrir, ocupa su propia fila a lo ancho para que forma/lab/dosis respiren */
+.more-filters[open] { flex-basis: 100%; order: 99; }
+.more-filters-body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+}
+.more-filters-body .dose-row { border-top: none; padding-top: 0; flex-basis: 100%; }
+
 /* Standard select style */
 .control-select {
     padding: 0.4rem 0.6rem;

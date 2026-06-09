@@ -9539,6 +9539,11 @@ ${materialesPlaceholder}
             (this.filterState.recetaOnly ? 1 : 0) +
             (this.filterState.biosimilarOnly ? 1 : 0);
 
+        // Filtros SECUNDARIOS (forma, lab, dosis) → se colapsan en "Más filtros" para reducir la
+        // fricción de la barra. Los frecuentes (agrupar, ordenar, toggles) quedan siempre visibles.
+        const secondaryActive = (this.filterState.form ? 1 : 0) + (this.filterState.lab ? 1 : 0) + (this.filterState.doses?.size || 0);
+        const hasSecondary = forms.length > 1 || labs.length > 1 || doses.length > 1;
+
         return `
             <div class="results-control-bar">
                 <div class="control-row-main">
@@ -9555,22 +9560,6 @@ ${materialesPlaceholder}
                             <option value="doseDesc" ${this.groupingState.sortBy === 'doseDesc' ? 'selected' : ''}>Dosis ↓</option>
                         </select>
                     </div>
-                    ${forms.length > 1 || labs.length > 1 ? `
-                    <div class="control-section">
-                        ${forms.length > 1 ? `
-                        <select id="form-filter" class="control-select">
-                            <option value="">📦 Forma</option>
-                            ${formOptions}
-                        </select>
-                        ` : ''}
-                        ${labs.length > 1 ? `
-                        <select id="lab-filter" class="control-select">
-                            <option value="">🏭 Lab</option>
-                            ${labOptions}
-                        </select>
-                        ` : ''}
-                    </div>
-                    ` : ''}
                     ${showEFG && (efgCount > 0 || recetaCount > 0 || biosimilarCount > 0) ? `
                     <div class="control-section" style="gap:var(--space-md);">
                         ${efgCount > 0 ? `<label class="search-option" title="Solo genéricos">
@@ -9587,6 +9576,24 @@ ${materialesPlaceholder}
                         </label>` : ''}
                     </div>
                     ` : ''}
+                    ${hasSecondary ? `
+                    <details class="more-filters" ${secondaryActive > 0 ? 'open' : ''}>
+                        <summary><i class="fas fa-sliders"></i> Más filtros${secondaryActive > 0 ? ` <span class="more-filters-badge">${secondaryActive}</span>` : ''}</summary>
+                        <div class="more-filters-body">
+                            ${forms.length > 1 ? `
+                            <select id="form-filter" class="control-select">
+                                <option value="">📦 Forma</option>
+                                ${formOptions}
+                            </select>` : ''}
+                            ${labs.length > 1 ? `
+                            <select id="lab-filter" class="control-select">
+                                <option value="">🏭 Lab</option>
+                                ${labOptions}
+                            </select>` : ''}
+                            ${doses.length > 1 ? `<div class="dose-row">${doseChipsHtml}</div>` : ''}
+                        </div>
+                    </details>
+                    ` : ''}
                     <div class="control-section results-info">
                         <span class="results-count"><strong>${totalResults}</strong> resultados</span>
                         ${activeFilters > 0 ? `
@@ -9596,11 +9603,6 @@ ${materialesPlaceholder}
                         ` : ''}
                     </div>
                 </div>
-                ${doses.length > 1 ? `
-                <div class="dose-row">
-                    ${doseChipsHtml}
-                </div>
-                ` : ''}
             </div>
         `;
     }
