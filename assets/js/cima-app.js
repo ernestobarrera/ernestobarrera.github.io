@@ -1076,6 +1076,58 @@ class MedCheckApp {
         }
     }
 
+    _normalizeDrugSearchText(value) {
+        return (value || '').toString().toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, ' ')
+            .trim();
+    }
+
+    _scoreMedForQuery(med, query) {
+        const q = this._normalizeDrugSearchText(query);
+        if (!q) return 0;
+
+        const qWords = q.split(/\s+/).filter(Boolean);
+        const fields = [
+            this._normalizeDrugSearchText(med.pactivos || med.vtm?.nombre || ''),
+            this._normalizeDrugSearchText(med.nombre || '')
+        ].filter(Boolean);
+        const wordsOf = (text) => text.split(/\s+/).filter(Boolean);
+        const startsToken = (text, needle) => wordsOf(text).some(w => w.startsWith(needle));
+        const includesText = (text, needle) => text.includes(needle);
+
+        let score = 0;
+        for (const field of fields) {
+            if (field === q) score = Math.max(score, 120);
+            else if (field.startsWith(q)) score = Math.max(score, 110);
+            else if (startsToken(field, q)) score = Math.max(score, 95);
+            else if (includesText(field, q)) score = Math.max(score, 45);
+        }
+
+        if (qWords.length > 1) {
+            const prefixHits = qWords.filter(w => fields.some(f => startsToken(f, w) || f.startsWith(w))).length;
+            const includeHits = qWords.filter(w => fields.some(f => includesText(f, w))).length;
+            if (prefixHits === qWords.length) score = Math.max(score, 90);
+            else if (prefixHits > 0) score = Math.max(score, 60 + prefixHits * 10);
+            else if (includeHits > 0) score = Math.max(score, 30 + includeHits * 5);
+        }
+
+        return score;
+    }
+
+    _sortMedsByQueryRelevance(results, query) {
+        return [...(results || [])]
+            .map((med, index) => ({ ...med, _matchScore: this._scoreMedForQuery(med, query), _sortIndex: index }))
+            .sort((a, b) => {
+                if (b._matchScore !== a._matchScore) return b._matchScore - a._matchScore;
+                const lenA = (a.nombre || '').length;
+                const lenB = (b.nombre || '').length;
+                if (lenA !== lenB) return lenA - lenB;
+                return a._sortIndex - b._sortIndex;
+            })
+            .map(({ _sortIndex, ...med }) => med);
+    }
+
     async performSearch() {
         const query = document.getElementById('search-input').value.trim();
 
@@ -1303,7 +1355,7 @@ class MedCheckApp {
         // Si hay resultados de fase 1, usarlos (son los más relevantes)
         if (allResults.length > 0) {
             return {
-                resultados: allResults,
+                resultados: this._sortMedsByQueryRelevance(allResults, query),
                 totalFilas: allResults.length
             };
         }
@@ -1334,7 +1386,7 @@ class MedCheckApp {
         }
 
         return {
-            resultados: allResults,
+            resultados: this._sortMedsByQueryRelevance(allResults, query),
             totalFilas: allResults.length
         };
     }
@@ -1446,24 +1498,11 @@ class MedCheckApp {
                     }
                 }
 
-                // Rankear resultados por relevancia si hay matcheos locales posibles
-                // NOTA: El campo pactivos viene undefined en búsquedas (solo en detalle)
-                // Por eso NO filtramos, solo ordenamos. La API ya pre-filtra por practiv1.
+                // Rankear por relevancia local: CIMA devuelve coincidencias por subcadena
+                // (omepra dentro de esomeprazol). No filtramos; solo ponemos antes el PA/nombre
+                // que empieza por la consulta.
                 if (allResults.length > 0) {
-                    allResults = allResults.map(med => {
-                        const pactivos = (med.pactivos || med.vtm?.nombre || '').toLowerCase();
-                        const nombre = (med.nombre || '').toLowerCase();
-
-                        // Contar cuántas palabras de la query (o sus sinónimos) aparecen
-                        let matchCount = 0;
-                        for (const word of expandedWords) {
-                            if (pactivos.includes(word) || nombre.includes(word)) {
-                                matchCount++;
-                            }
-                        }
-                        return { ...med, _matchScore: matchCount };
-                    })
-                        .sort((a, b) => b._matchScore - a._matchScore);  // Solo ordenar, NO filtrar
+                    allResults = this._sortMedsByQueryRelevance(allResults, query);
                 }
 
                 // Fallback para medicamentos no comercializados (ej: retirados del mercado)
@@ -3395,7 +3434,9 @@ class MedCheckApp {
                 return;
             }
 
-            dropdown.innerHTML = results.resultados.slice(0, 6).map(med => `
+            const sortedResults = this._sortMedsByQueryRelevance(results.resultados, query);
+
+            dropdown.innerHTML = sortedResults.slice(0, 6).map(med => `
                 <button class="autocomplete-item" data-nregistro="${med.nregistro}">
                     <span class="autocomplete-term">${med.nombre}</span>
                     <span class="autocomplete-label">${med.pactivos || ''}</span>
@@ -3407,7 +3448,7 @@ class MedCheckApp {
 
             dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
                 item.addEventListener('click', () => {
-                    const med = results.resultados.find(m => m.nregistro === item.dataset.nregistro);
+                    const med = sortedResults.find(m => m.nregistro === item.dataset.nregistro);
                     if (med) {
                         this.addDrugToInteractionList(med);
                         document.getElementById('interaction-search').value = '';
@@ -3431,7 +3472,8 @@ class MedCheckApp {
         try {
             const results = await this.api.smartSearch(query, { comerc: 1 });
             if (results.resultados && results.resultados.length > 0) {
-                this.addDrugToInteractionList(results.resultados[0]);
+                const [bestMatch] = this._sortMedsByQueryRelevance(results.resultados, query);
+                this.addDrugToInteractionList(bestMatch);
                 input.value = '';
             } else {
                 this.showToast('Medicamento no encontrado', 'warning');
@@ -4528,7 +4570,9 @@ class MedCheckApp {
                 return;
             }
 
-            dropdown.innerHTML = results.resultados.slice(0, 5).map(med => `
+            const sortedResults = this._sortMedsByQueryRelevance(results.resultados, query);
+
+            dropdown.innerHTML = sortedResults.slice(0, 5).map(med => `
     <button class="autocomplete-item" data-nregistro="${med.nregistro}">
         <span class="autocomplete-term">${med.nombre}</span>
                 </button>
@@ -4537,7 +4581,7 @@ class MedCheckApp {
 
             dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
                 item.addEventListener('click', () => {
-                    const med = results.resultados.find(m => m.nregistro === item.dataset.nregistro);
+                    const med = sortedResults.find(m => m.nregistro === item.dataset.nregistro);
                     if (med) {
                         this.addDrugToAdverseList(med);
                         document.getElementById('adverse-drug-search').value = '';
@@ -4558,7 +4602,8 @@ class MedCheckApp {
         try {
             const results = await this.api.smartSearch(query, { comerc: 1 });
             if (results.resultados && results.resultados.length > 0) {
-                this.addDrugToAdverseList(results.resultados[0]);
+                const [bestMatch] = this._sortMedsByQueryRelevance(results.resultados, query);
+                this.addDrugToAdverseList(bestMatch);
                 input.value = '';
             } else {
                 this.showToast('Medicamento no encontrado', 'warning');
@@ -4829,7 +4874,9 @@ class MedCheckApp {
                     return;
                 }
 
-                dropdown.innerHTML = results.resultados.slice(0, 8).map(med => {
+                const sortedResults = this._sortMedsByQueryRelevance(results.resultados, query);
+
+                dropdown.innerHTML = sortedResults.slice(0, 8).map(med => {
                     const pactivo = med.pactivos || '';
                     return `
                         <button class="autocomplete-item" data-nregistro="${med.nregistro}" data-nombre="${med.nombre}">
@@ -4879,39 +4926,10 @@ class MedCheckApp {
             }
 
             // Buscar el medicamento que mejor coincida con la búsqueda
-            // Usamos un sistema de scoring más robusto
-            const queryLower = query.toLowerCase();
-            let bestMatch = searchData.resultados[0];
-            let bestScore = 0;
-
-            for (const med of searchData.resultados) {
-                const medName = (med.nombre || '').toLowerCase();
-                let score = 0;
-
-                // Coincidencia exacta del nombre
-                if (medName === queryLower) {
-                    score = 100;
-                }
-                // El nombre empieza con la búsqueda
-                else if (medName.startsWith(queryLower)) {
-                    score = 90;
-                }
-                // La búsqueda está contenida en el nombre
-                else if (medName.includes(queryLower)) {
-                    score = 80;
-                }
-                // Palabras de la búsqueda están en el nombre
-                else {
-                    const queryWords = queryLower.split(/\s+/);
-                    const matchedWords = queryWords.filter(w => medName.includes(w));
-                    score = (matchedWords.length / queryWords.length) * 70;
-                }
-
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestMatch = med;
-                }
-            }
+            // Usamos el mismo scoring que el buscador principal para no elegir
+            // esomeprazol antes que omeprazol cuando la consulta es "omepra".
+            const [bestMatch] = this._sortMedsByQueryRelevance(searchData.resultados, query);
+            const bestScore = this._scoreMedForQuery(bestMatch, query);
 
             console.log(`🔍 Mejor coincidencia para "${query}": ${bestMatch.nombre} (score: ${bestScore})`);
 
