@@ -1027,7 +1027,9 @@ class MedCheckApp {
             }, 200);
         });
 
-        // Filter checkboxes apply changes immediately (if there are existing results)
+        // Filter checkboxes apply changes immediately if there are existing results.
+        // They do not reopen autocomplete; the dropdown reads current filters whenever
+        // the user types again.
         filterComerc.addEventListener('change', () => {
             if (this.lastSearchQuery) this.performSearch();
         });
@@ -1088,20 +1090,40 @@ class MedCheckApp {
         if (!q) return 0;
 
         const qWords = q.split(/\s+/).filter(Boolean);
-        const fields = [
-            this._normalizeDrugSearchText(med.pactivos || med.vtm?.nombre || ''),
-            this._normalizeDrugSearchText(med.nombre || '')
-        ].filter(Boolean);
+        const pa = this._normalizeDrugSearchText(med.pactivos || med.vtm?.nombre || '');
+        const name = this._normalizeDrugSearchText(med.nombre || '');
+        const fields = [pa, name].filter(Boolean);
         const wordsOf = (text) => text.split(/\s+/).filter(Boolean);
         const startsToken = (text, needle) => wordsOf(text).some(w => w.startsWith(needle));
         const includesText = (text, needle) => text.includes(needle);
+        const paWords = wordsOf(pa);
+        const nameWords = wordsOf(name);
+        const firstPa = paWords[0] || '';
+        const firstName = nameWords[0] || '';
 
         let score = 0;
-        for (const field of fields) {
-            if (field === q) score = Math.max(score, 120);
-            else if (field.startsWith(q)) score = Math.max(score, 110);
-            else if (startsToken(field, q)) score = Math.max(score, 95);
-            else if (includesText(field, q)) score = Math.max(score, 45);
+        if (pa) {
+            if (pa === q) score = Math.max(score, 160);
+            else if (pa.startsWith(q)) score = Math.max(score, 140);
+            else if (startsToken(pa, q)) score = Math.max(score, 125);
+            else if (includesText(pa, q)) score = Math.max(score, 45);
+        }
+        if (name) {
+            if (name === q) score = Math.max(score, 180);
+            else if (name.startsWith(q)) score = Math.max(score + 55, 155);
+            else if (startsToken(name, q)) score = Math.max(score + 35, 130);
+            else if (includesText(name, q)) score = Math.max(score, Math.max(score, 40) + 5);
+        }
+
+        // Preferir presentaciones cuyo nombre empieza por el PA buscado
+        // (habitualmente genéricos: OMEPRAZOL CINFA/NORMON...), pero sin
+        // confundir subcadenas internas como es-omeprazol.
+        if (pa && name) {
+            if (name.startsWith(pa) || (firstPa && firstName === firstPa)) {
+                score += 35;
+            } else if (firstPa && firstName.startsWith(firstPa)) {
+                score += 20;
+            }
         }
 
         if (qWords.length > 1) {
@@ -1120,12 +1142,40 @@ class MedCheckApp {
             .map((med, index) => ({ ...med, _matchScore: this._scoreMedForQuery(med, query), _sortIndex: index }))
             .sort((a, b) => {
                 if (b._matchScore !== a._matchScore) return b._matchScore - a._matchScore;
+                if (!!b.generico !== !!a.generico) return b.generico ? 1 : -1;
+                if (!!b.biosimilar !== !!a.biosimilar) return b.biosimilar ? 1 : -1;
                 const lenA = (a.nombre || '').length;
                 const lenB = (b.nombre || '').length;
                 if (lenA !== lenB) return lenA - lenB;
                 return a._sortIndex - b._sortIndex;
             })
             .map(({ _sortIndex, ...med }) => med);
+    }
+
+    _getSearchScopeFiltersFromUI() {
+        return {
+            comerc: document.getElementById('filter-comerc')?.checked ?? true,
+            generic: document.getElementById('filter-generic')?.checked || false,
+            receta: document.getElementById('filter-receta')?.checked || false,
+            biosimilar: document.getElementById('filter-biosimilar')?.checked || false
+        };
+    }
+
+    _filterMedsBySearchScope(results, scope = this._getSearchScopeFiltersFromUI()) {
+        let filtered = [...(results || [])];
+        const fGen = scope.generic;
+        const fBio = scope.biosimilar;
+        if (fGen && fBio) {
+            filtered = filtered.filter(med => med.generico === true || med.biosimilar === true);
+        } else if (fGen) {
+            filtered = filtered.filter(med => med.generico === true);
+        } else if (fBio) {
+            filtered = filtered.filter(med => med.biosimilar === true);
+        }
+        if (scope.receta) {
+            filtered = filtered.filter(med => med.receta === true);
+        }
+        return filtered;
     }
 
     async performSearch() {
@@ -1270,6 +1320,7 @@ class MedCheckApp {
                 if (this.lastSearchFilters.comerc) urlParams.comerc = '1';
                 if (this.lastSearchFilters.generic) urlParams.generic = '1';
                 if (this.lastSearchFilters.receta) urlParams.receta = '1';
+                if (this.lastSearchFilters.biosimilar) urlParams.biosimilar = '1';
                 this.updateURL(urlParams);
             }
 
@@ -1414,7 +1465,8 @@ class MedCheckApp {
             return;
         }
 
-        // Debounce: wait 350ms after last keystroke + cancel in-flight requests
+        // Debounce corto + cancelación real: sensación de autocomplete rápido sin
+        // dejar peticiones antiguas compitiendo detrás.
         clearTimeout(this.autocompleteTimer);
         if (this.autocompleteAbortController) {
             this.autocompleteAbortController.abort();
@@ -1448,33 +1500,34 @@ class MedCheckApp {
                     'bifásica': 'insulina bifasica',
                 };
 
-                // Normalizar query y expandir sinónimos
+                // Normalizar query para activar solo sinónimos reales.
                 const normalizedQuery = query.toLowerCase();
                 const words = normalizedQuery.split(/\s+/).filter(w => w.length >= 3);
-
-                // Expandir palabras con sinónimos
-                const expandedWords = new Set(words);
-                for (const word of words) {
-                    if (synonyms[word]) {
-                        expandedWords.add(synonyms[word]);
-                    }
-                }
 
                 // Estrategia de búsqueda múltiple para autocomplete:
                 // 1. Búsqueda por nombre comercial (query exacto)
                 // 2. Búsqueda por principio activo (practiv1 - query completo)
-                // 3. Búsqueda por cada palabra individual (incluyendo sinónimos)
-                const acOpts = { headers: { 'X-MC-Autocomplete': '1' } };
+                // 3. Búsqueda por sinónimos explícitos si existen
+                const scope = this._getSearchScopeFiltersFromUI();
+                const apiFilters = {
+                    ...(scope.comerc ? { comerc: 1 } : {}),
+                    pagina: 1
+                };
+                const acOpts = {
+                    signal: currentAbortController.signal,
+                    headers: { 'X-MC-Autocomplete': '1' }
+                };
                 const searches = [
-                    this.api.searchMedicamentos({ nombre: query, comerc: 1, pagina: 1 }, acOpts),
-                    this.api.searchMedicamentos({ practiv1: query, comerc: 1, pagina: 1 }, acOpts)
+                    this.api.searchMedicamentos({ nombre: query, ...apiFilters }, acOpts),
+                    this.api.searchMedicamentos({ practiv1: query, ...apiFilters }, acOpts)
                 ];
 
-                // Buscar por cada palabra/expansión individual
-                // Saltar si la palabra ya es igual al query completo (tier 2 ya la cubre)
-                for (const word of expandedWords) {
-                    if (word !== normalizedQuery) {
-                        searches.push(this.api.searchMedicamentos({ practiv1: word, comerc: 1, pagina: 1 }, acOpts));
+                // En autocomplete evitamos expandir agresivamente: solo añadimos
+                // sinónimos reales, no cada palabra suelta, para no penalizar latencia.
+                for (const word of words) {
+                    const synonym = synonyms[word];
+                    if (synonym && synonym !== normalizedQuery) {
+                        searches.push(this.api.searchMedicamentos({ practiv1: synonym, ...apiFilters }, acOpts));
                     }
                 }
 
@@ -1482,6 +1535,10 @@ class MedCheckApp {
 
                 // Si llegó una tecla nueva mientras esperábamos, descartar estos resultados
                 if (currentAbortController.signal.aborted) return;
+                if (document.activeElement !== document.getElementById('search-input')) {
+                    dropdown.classList.add('hidden');
+                    return;
+                }
 
                 // Combinar y deduplicar resultados (por nregistro)
                 const seen = new Set();
@@ -1502,28 +1559,10 @@ class MedCheckApp {
                 // (omepra dentro de esomeprazol). No filtramos; solo ponemos antes el PA/nombre
                 // que empieza por la consulta.
                 if (allResults.length > 0) {
-                    allResults = this._sortMedsByQueryRelevance(allResults, query);
-                }
-
-                // Fallback para medicamentos no comercializados (ej: retirados del mercado)
-                // Si comerc=1 no devuelve nada, reintentar sin filtro y marcar como retirados
-                if (!allResults.length) {
-                    if (currentAbortController.signal.aborted) return;
-                    const noComercOpts = { headers: { 'X-MC-Autocomplete': '1' } };
-                    const fallbackResults = await Promise.allSettled([
-                        this.api.searchMedicamentos({ nombre: query, pagina: 1 }, noComercOpts),
-                        this.api.searchMedicamentos({ practiv1: query, pagina: 1 }, noComercOpts)
-                    ]);
-                    if (currentAbortController.signal.aborted) return;
-                    for (const result of fallbackResults) {
-                        if (result.status !== 'fulfilled') continue;
-                        for (const med of (result.value?.resultados || [])) {
-                            if (!seen.has(med.nregistro)) {
-                                seen.add(med.nregistro);
-                                allResults.push({ ...med, _retirado: true });
-                            }
-                        }
-                    }
+                    allResults = this._sortMedsByQueryRelevance(
+                        this._filterMedsBySearchScope(allResults, scope),
+                        query
+                    );
                 }
 
                 if (!allResults.length) {
@@ -1531,7 +1570,7 @@ class MedCheckApp {
                     return;
                 }
 
-                dropdown.innerHTML = allResults.slice(0, 8).map(med => {
+                dropdown.innerHTML = allResults.slice(0, 14).map(med => {
                     const atcInfo = this.getATCClinicalInfo(med);
                     const pactivos = med.pactivos || '';
 
@@ -1576,7 +1615,7 @@ class MedCheckApp {
             } catch (e) {
                 if (e.name !== 'AbortError') console.warn('Autocomplete error:', e);
             }
-        }, 350);
+        }, 170);
     }
 
 
@@ -10346,6 +10385,14 @@ ${materialesPlaceholder}
             const filterGeneric = document.getElementById('filter-generic');
             if (filterGeneric) {
                 filterGeneric.checked = params.generic === '1';
+            }
+            const filterReceta = document.getElementById('filter-receta');
+            if (filterReceta) {
+                filterReceta.checked = params.receta === '1';
+            }
+            const filterBiosimilar = document.getElementById('filter-biosimilar');
+            if (filterBiosimilar) {
+                filterBiosimilar.checked = params.biosimilar === '1';
             }
 
             // Restore grouping UI selectors

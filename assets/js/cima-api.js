@@ -172,6 +172,9 @@ class CimaAPI {
             return data;
 
         } catch (error) {
+            if (error.name === 'AbortError') {
+                throw error;
+            }
             console.error('❌ CIMA API Error:', error.message);
             this.isOnline = false;
             throw error;
