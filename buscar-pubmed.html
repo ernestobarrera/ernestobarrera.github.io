@@ -1261,29 +1261,33 @@ filtros estructurados para profesionales sanitarios
               const búsquedasImportadas = JSON.parse(e.target.result);
               const búsquedasActuales = obtenerBúsquedasGuardadas();
 
-              // Merge inteligente
+              // Merge inteligente con deduplicación por firma semántica
+              const firmasActuales = new Set(
+                Object.values(búsquedasActuales).map(_firmaSearch)
+              );
+
               Object.entries(búsquedasImportadas).forEach(
                 ([nombre, búsqueda]) => {
+                  // Saltar si ya existe una búsqueda semánticamente idéntica
+                  if (firmasActuales.has(_firmaSearch(búsqueda))) return;
+
                   let nombreFinal = nombre;
                   let counter = 1;
 
-                  // Si existe y es diferente, añadir numeración
+                  // Si existe con el mismo nombre pero contenido distinto, añadir numeración
                   while (
                     búsquedasActuales[nombreFinal] &&
-                    JSON.stringify(búsquedasActuales[nombreFinal]) !==
-                    JSON.stringify(búsqueda)
+                    _firmaSearch(búsquedasActuales[nombreFinal]) !==
+                    _firmaSearch(búsqueda)
                   ) {
                     nombreFinal = `${nombre} (${counter})`;
                     counter++;
                   }
 
-                  // Solo guardar si es nueva o diferente
-                  if (
-                    !búsquedasActuales[nombreFinal] ||
-                    JSON.stringify(búsquedasActuales[nombreFinal]) !==
-                    JSON.stringify(búsqueda)
-                  ) {
+                  // Solo guardar si es nueva
+                  if (!búsquedasActuales[nombreFinal]) {
                     búsquedasActuales[nombreFinal] = búsqueda;
+                    firmasActuales.add(_firmaSearch(búsqueda));
                   }
                 }
               );
@@ -2432,6 +2436,20 @@ filtros estructurados para profesionales sanitarios
 
     function guardarBúsquedasGuardadas(búsquedas) {
       localStorage.setItem("saved_searches", JSON.stringify(búsquedas));
+    }
+
+    function _firmaSearch(s) {
+      const op = s.operadores || {};
+      const opNorm = Object.keys(op).sort().reduce((acc, k) => {
+        acc[k] = op[k]; return acc;
+      }, {});
+      return JSON.stringify({
+        termino: (s.termino || '').trim(),
+        filtros: (s.filtros || []).slice().sort(),
+        fecha: s.fecha || '',
+        orden: s.orden || 'date',
+        operadores: opNorm
+      });
     }
 
     // Funciones de manejo de modales
