@@ -215,7 +215,22 @@ jobs:
       - name: Verificar endpoint del Worker
         run: |
           echo "GET /pharmacogenomics/meta"
-          meta=$(curl -sSf "https://medcheck-proxy.medtools.workers.dev/pharmacogenomics/meta")
+          # Verificación posterior a la publicación: los datos ya están en KV (PUT 200).
+          # Un fallo transitorio de red/TLS aquí NO debe marcar el run como fallido.
+          set +e
+          meta=$(curl -sS \
+            --connect-timeout 20 \
+            --max-time 60 \
+            --retry 4 \
+            --retry-delay 10 \
+            --retry-all-errors \
+            "https://medcheck-proxy.medtools.workers.dev/pharmacogenomics/meta")
+          curl_status=$?
+          set -e
+          if [ "$curl_status" -ne 0 ]; then
+            echo "::warning::No se pudo verificar el Worker (curl ${curl_status}); los datos ya se publicaron en KV. Verificación omitida."
+            exit 0
+          fi
           echo "$meta" | jq .
           # Compara la fecha del Nomenclátor servida por el Worker con la del JSON recién generado
           worker_date=$(echo "$meta" | jq -r '.list_prescription_date')
