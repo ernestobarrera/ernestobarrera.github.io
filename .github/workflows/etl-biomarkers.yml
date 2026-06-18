@@ -19,10 +19,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
@@ -44,7 +44,7 @@ jobs:
 
       - name: Cache del ZIP por ETag
         id: zip-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: prescripcion.zip
           key: prescripcion-${{ steps.head.outputs.etag || github.run_id }}
@@ -169,7 +169,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Subir artefacto (retención 7 días)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: biomarkers-${{ steps.build.outputs.list_date }}
           path: biomarkers.json
