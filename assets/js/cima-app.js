@@ -3639,6 +3639,10 @@ class MedCheckApp {
                 <input type="text" id="combo-ev-symptoms" class="combo-ev-input" value="${this._escapeHtml(evSymptomDefault)}" autocomplete="off" spellcheck="false">
             </div>` : '';
 
+        // Estado de los desplegables persistente entre re-renders + nº de parámetros activos en "Afinar".
+        const refineCount = (this._comboFocus?.size || 0) + (this._comboTopics?.size || 0) + ((this._comboAIContext || '').trim() ? 1 : 0);
+        const refineOpen = this._comboRefineOpen || refineCount > 0;
+
         this.content.innerHTML = `
             <div class="combo-view">
             <div class="search-box search-box-compact combo-list-box">
@@ -3661,96 +3665,76 @@ class MedCheckApp {
                 </div>
             </div>
 
-            <div class="combo-grid">
-                <div class="search-box search-box-compact combo-action-card">
-                    <div class="combo-card-kicker"><i class="fas fa-file-medical"></i> Ficha técnica</div>
-                    <h3 style="color: var(--primary);"><i class="fas fa-random"></i> Interacciones fármaco–fármaco <span class="text-muted text-sm" style="font-weight:400;">(ficha 4.5)</span></h3>
-                    <p class="text-muted text-sm mb-sm">Menciones cruzadas <strong>por nombre de fármaco</strong> dentro del texto de la sección 4.5 (necesita 2 o más).</p>
-                    <button class="btn btn-primary btn-compact w-full" onclick="app.performInteractionAnalysis()" ${n < 2 ? 'disabled' : ''}>
-                        <i class="fas fa-search-plus"></i> Buscar en fichas (4.5)
-                    </button>
-                    <div id="interactions-results"></div>
+            <div class="search-box combo-ai-hero">
+                <div class="combo-ai-hero-head">
+                    <i class="fas fa-robot combo-ai-hero-icon"></i>
+                    <div>
+                        <h3>Consultar esta combinación con IA</h3>
+                        <p>Prepara una consulta referenciada para una IA externa con citas a fuentes (incluidas interacciones descritas por clase farmacológica). MedCheck no interpreta, no guarda ni muestra la respuesta — verifica siempre con ficha técnica/AEMPS y criterio profesional.</p>
+                    </div>
+                    <span class="combo-research-badge">opcional</span>
                 </div>
 
-                <div class="search-box search-box-compact combo-action-card">
-                    <div class="combo-card-kicker"><i class="fas fa-file-medical"></i> Ficha técnica</div>
-                    <h3 style="color: var(--primary);"><i class="fas fa-user-md"></i> Fármaco–síntoma <span class="text-muted text-sm" style="font-weight:400;">(ficha 4.8)</span></h3>
-                    <p class="text-muted text-sm mb-sm">Busca el síntoma <strong>dentro del texto</strong> de la sección 4.8. Puedes añadir <strong>varios</strong> (Enter): se buscan unidos por <strong>OR</strong>.</p>
+                <div class="combo-ai-primary">
+                    <div class="combo-ai-action-head">
+                        <strong><i class="fas fa-random"></i> Interacciones</strong>
+                        <span>Sobre la combinación de fármacos, incluidas las descritas por clase o grupo farmacológico.</span>
+                    </div>
+                    <div class="combo-ai-buttons">
+                        <button class="btn btn-ai-perplexity" type="button" onclick="app.openComboEngine('interactions','perplexity')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre Perplexity. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> Perplexity</button>
+                        <button class="btn btn-ai-chatgpt" type="button" onclick="app.openComboEngine('interactions','chatgpt')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre ChatGPT. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
+                        <button class="btn btn-secondary" type="button" onclick="app.copyComboPrompt('interactions')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt para pegarlo en cualquier IA (Claude, Gemini, Copilot…)"><i class="fas fa-clipboard"></i> Copiar</button>
+                    </div>
+                    ${n < 2 ? '<p class="combo-ai-need">Añade al menos 2 fármacos para consultar interacciones.</p>' : ''}
+                </div>
+
+                <div class="combo-ai-primary">
+                    <div class="combo-ai-action-head">
+                        <strong><i class="fas fa-user-md"></i> Fármaco–síntoma</strong>
+                        <span>Posibles asociaciones entre la combinación y un síntoma (como reacción adversa).</span>
+                    </div>
                     <div class="search-input-wrapper">
-                        <i class="fas fa-search-plus"></i>
-                        <input type="text" id="symptom-search" class="search-input" placeholder='ej: "tos", "edema"… (Enter para añadir)' autocomplete="off">
+                        <i class="fas fa-notes-medical"></i>
+                        <input type="text" id="symptom-search" class="search-input" placeholder='Añade un síntoma: "tos", "edema"… (Enter)' autocomplete="off">
                     </div>
                     <div id="combo-symptom-chips" class="combo-symptom-chips">${symptomChips}</div>
-                    <button id="combo-symptom-btn" class="btn btn-primary btn-compact w-full mt-sm" onclick="app.performSymptomAnalysis()" ${(n === 0 || !hasSymptom) ? 'disabled' : ''}>
-                        <i class="fas fa-microscope"></i> Buscar en fichas (4.8)
-                    </button>
-                    <div id="adverse-results"></div>
+                    <div class="combo-ai-buttons">
+                        <button id="combo-ai-symptom-perplexity" class="btn btn-ai-perplexity" type="button" onclick="app.openComboEngine('symptom','perplexity')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt y abre Perplexity. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> Perplexity</button>
+                        <button id="combo-ai-symptom-chatgpt" class="btn btn-ai-chatgpt" type="button" onclick="app.openComboEngine('symptom','chatgpt')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt y abre ChatGPT. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
+                        <button id="combo-ai-symptom-copy" class="btn btn-secondary" type="button" onclick="app.copyComboPrompt('symptom')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt para pegarlo en cualquier IA (Claude, Gemini, Copilot…)"><i class="fas fa-clipboard"></i> Copiar</button>
+                    </div>
                 </div>
+
+                <details class="combo-ai-refine" id="combo-ai-refine" ${refineOpen ? 'open' : ''}>
+                    <summary><i class="fas fa-sliders"></i> Afinar la consulta${refineCount ? ` <span class="combo-refine-count">${refineCount}</span>` : ''}</summary>
+                    <div class="combo-ai-refine-body">
+                        <div class="combo-doc-params">
+                            <div class="combo-param-block">
+                                <span class="combo-param-title">Enfoque documental</span>
+                                <div class="combo-chips" id="combo-focus-chips">${focusChips}</div>
+                            </div>
+                            <div class="combo-param-block">
+                                <span class="combo-param-title">Preguntar a fuentes sobre</span>
+                                <div class="combo-chips" id="combo-topic-chips">${topicChips}</div>
+                                <span class="combo-param-note">Estos temas orientan la búsqueda documental. No describen necesariamente a una persona concreta.</span>
+                            </div>
+                        </div>
+                        <label class="combo-field-label" for="combo-ai-context">Contexto adicional no identificable (opcional)</label>
+                        <textarea id="combo-ai-context" class="combo-ai-context" rows="2" maxlength="800" placeholder="Ej.: un matiz documental para acotar la consulta…">${this._escapeHtml(this._comboAIContext || '')}</textarea>
+                        <div class="combo-field-help">
+                            <span>No incluyas nombre, iniciales, edad exacta, fechas, ubicación, nº de historia ni detalles que permitan reconocer a una persona.</span>
+                            <span id="combo-ai-context-count">${(this._comboAIContext || '').length}/800</span>
+                        </div>
+                    </div>
+                </details>
             </div>
 
-            <div class="search-box search-box-compact combo-research-panel">
-                <div class="combo-research-header">
-                    <div>
-                        <div class="combo-card-kicker"><i class="fas fa-robot"></i> Fuera de ficha técnica · IA externa</div>
-                        <h3><i class="fas fa-magnifying-glass"></i> Investigar con IA externa</h3>
-                    </div>
-                    <span class="combo-research-badge">opcional</span>
-                </div>
-                <p class="combo-research-copy">MedCheck no interpreta, no guarda y no muestra la respuesta. Solo prepara una consulta para una herramienta externa. Verifica las fuentes con ficha técnica/AEMPS, fuentes de interacciones y criterio profesional.</p>
-
-                <div class="combo-doc-params">
-                    <div class="combo-param-block">
-                        <span class="combo-param-title">Enfoque documental</span>
-                        <div class="combo-chips" id="combo-focus-chips">${focusChips}</div>
-                    </div>
-                    <div class="combo-param-block">
-                        <span class="combo-param-title">Preguntar a fuentes sobre</span>
-                        <div class="combo-chips" id="combo-topic-chips">${topicChips}</div>
-                        <span class="combo-param-note">Estos temas orientan la búsqueda documental. No describen necesariamente a una persona concreta.</span>
-                    </div>
-                </div>
-
-                <label class="combo-field-label" for="combo-ai-context">Contexto adicional no identificable (opcional)</label>
-                <textarea id="combo-ai-context" class="combo-ai-context" rows="2" maxlength="800" placeholder="Ej.: un matiz documental para acotar la consulta…">${this._escapeHtml(this._comboAIContext || '')}</textarea>
-                <div class="combo-field-help">
-                    <span>No incluyas nombre, iniciales, edad exacta, fechas, ubicación, nº de historia ni detalles que permitan reconocer a una persona.</span>
-                    <span id="combo-ai-context-count">${(this._comboAIContext || '').length}/800</span>
-                </div>
-
-                <div class="combo-ai-actions">
-                    <div class="combo-ai-action">
-                        <div class="combo-ai-action-head">
-                            <strong>Interacciones (IA)</strong>
-                            <span>Consulta referenciada sobre la combinación, incluidas descripciones por clase.</span>
-                        </div>
-                        <div class="combo-ai-buttons">
-                            <button class="btn btn-sm btn-ai-perplexity" type="button" onclick="app.openComboEngine('interactions','perplexity')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre Perplexity. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> Perplexity</button>
-                            <button class="btn btn-sm btn-ai-chatgpt" type="button" onclick="app.openComboEngine('interactions','chatgpt')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre ChatGPT. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
-                            <button class="btn btn-sm btn-secondary" type="button" onclick="app.copyComboPrompt('interactions')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt para pegarlo en cualquier IA (Claude, Gemini, Copilot…)"><i class="fas fa-clipboard"></i> Copiar</button>
-                        </div>
-                    </div>
-                    <div class="combo-ai-action">
-                        <div class="combo-ai-action-head">
-                            <strong>Fármaco–síntoma (IA)</strong>
-                            <span>Consulta referenciada sobre posibles asociaciones fármaco-síntoma.</span>
-                        </div>
-                        <div class="combo-ai-buttons">
-                            <button id="combo-ai-symptom-perplexity" class="btn btn-sm btn-ai-perplexity" type="button" onclick="app.openComboEngine('symptom','perplexity')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt y abre Perplexity. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> Perplexity</button>
-                            <button id="combo-ai-symptom-chatgpt" class="btn btn-sm btn-ai-chatgpt" type="button" onclick="app.openComboEngine('symptom','chatgpt')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt y abre ChatGPT. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
-                            <button id="combo-ai-symptom-copy" class="btn btn-sm btn-secondary" type="button" onclick="app.copyComboPrompt('symptom')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt para pegarlo en cualquier IA (Claude, Gemini, Copilot…)"><i class="fas fa-clipboard"></i> Copiar</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="search-box search-box-compact combo-evidence-panel">
-                <div class="combo-research-header">
-                    <div>
-                        <div class="combo-card-kicker"><i class="fas fa-book-medical"></i> Fuera de ficha técnica · Literatura</div>
-                        <h3><i class="fas fa-magnifying-glass-chart"></i> Evidencia en PubMed</h3>
-                    </div>
-                    <span class="combo-research-badge">opcional</span>
-                </div>
+            <details class="search-box combo-evidence-panel combo-collapse" id="combo-ev-details" ${this._comboEvOpen ? 'open' : ''}>
+                <summary class="combo-collapse-summary">
+                    <span class="combo-collapse-title"><i class="fas fa-magnifying-glass-chart"></i> Evidencia en PubMed</span>
+                    <span class="combo-collapse-meta">conteo de literatura · opcional</span>
+                </summary>
+                <div class="combo-collapse-body">
                 <p class="combo-research-copy">Publicaciones que mencionan <strong>juntos</strong> estos términos. Es un conteo de literatura, <strong>no</strong> una conclusión de interacción, causalidad, riesgo ni seguridad. Cero resultados no descarta una interacción.</p>
                 ${n >= 2 ? `
                 <p class="combo-ev-hint">Cada producto combina marca y principio activo con <strong>OR</strong>; entre productos se cruza con <strong>AND</strong>. <strong>Edita</strong> los términos si hace falta — PubMed indexa en inglés (p. ej. <em>adapalene</em>, <em>benzoyl peroxide</em>).</p>
@@ -3788,7 +3772,39 @@ class MedCheckApp {
                     </a>`).join('')}
                 </div>
                 <p class="combo-ev-gpt-note">Filtros <strong>bibliográficos</strong> (tipo de estudio, ámbito), <strong>no</strong> priorización ni descarte clínico. El conteo es volumen de literatura, no juicio de interacción ni de seguridad; cero no descarta nada. Cada fila abre PubMed. El GPT es externo: copia el prompt y abre para pegar (Ctrl+V).</p>` : `<p class="text-muted text-sm">Añade al menos 2 fármacos para construir la consulta combinada.</p>`}
-            </div>
+                </div>
+            </details>
+
+            <details class="search-box combo-ficha-panel combo-collapse" id="combo-ficha-details" ${this._comboFichaOpen ? 'open' : ''}>
+                <summary class="combo-collapse-summary">
+                    <span class="combo-collapse-title"><i class="fas fa-file-medical"></i> Buscar en la ficha técnica oficial (AEMPS)</span>
+                    <span class="combo-collapse-meta">menciones literales · secciones 4.5 y 4.8</span>
+                </summary>
+                <div class="combo-collapse-body">
+                    <p class="combo-research-copy">Búsqueda <strong>dentro del texto oficial</strong> de la ficha técnica: encuentra menciones literales, no detecta interacciones descritas por clase ni razona sobre ellas (para eso, la consulta con IA de arriba).</p>
+                    <div class="combo-grid">
+                        <div class="search-box search-box-compact combo-action-card">
+                            <div class="combo-card-kicker"><i class="fas fa-file-medical"></i> Ficha técnica · 4.5</div>
+                            <h3 style="color: var(--primary);"><i class="fas fa-random"></i> Interacciones fármaco–fármaco</h3>
+                            <p class="text-muted text-sm mb-sm">Menciones cruzadas <strong>por nombre de fármaco</strong> dentro del texto de la sección 4.5 (necesita 2 o más).</p>
+                            <button class="btn btn-primary btn-compact w-full" onclick="app.performInteractionAnalysis()" ${n < 2 ? 'disabled' : ''}>
+                                <i class="fas fa-search-plus"></i> Buscar en fichas (4.5)
+                            </button>
+                            <div id="interactions-results"></div>
+                        </div>
+
+                        <div class="search-box search-box-compact combo-action-card">
+                            <div class="combo-card-kicker"><i class="fas fa-file-medical"></i> Ficha técnica · 4.8</div>
+                            <h3 style="color: var(--primary);"><i class="fas fa-user-md"></i> Fármaco–síntoma</h3>
+                            <p class="text-muted text-sm mb-sm">Busca los síntomas añadidos arriba <strong>dentro del texto</strong> de la sección 4.8 (unidos por <strong>OR</strong>).</p>
+                            <button id="combo-symptom-btn" class="btn btn-primary btn-compact w-full" onclick="app.performSymptomAnalysis()" ${(n === 0 || !hasSymptom) ? 'disabled' : ''}>
+                                <i class="fas fa-microscope"></i> Buscar en fichas (4.8)
+                            </button>
+                            <div id="adverse-results"></div>
+                        </div>
+                    </div>
+                </div>
+            </details>
             </div>
         `;
 
@@ -3890,8 +3906,21 @@ class MedCheckApp {
                 this._scheduleComboEvLoad();
             });
         });
-        // Carga inicial: rellena la consulta base desde los campos y dispara los conteos.
-        if (this.comboDrugList.length >= 2) this._comboEvRebuildBase();
+        // Carga inicial: rellena la consulta base desde los campos. Solo dispara conteos a NCBI si la
+        // sección PubMed está desplegada (lazy: evita peticiones cuando está plegada).
+        if (this.comboDrugList.length >= 2) this._comboEvRebuildBase({ load: this._comboEvOpen });
+
+        // Persistir el estado abierto/cerrado de los desplegables entre re-renders y, en PubMed,
+        // cargar los conteos la primera vez que se abre (lazy-load).
+        const evDetails = document.getElementById('combo-ev-details');
+        if (evDetails) evDetails.addEventListener('toggle', () => {
+            this._comboEvOpen = evDetails.open;
+            if (evDetails.open) this.loadComboEvidenceCounts();
+        });
+        const fichaDetails = document.getElementById('combo-ficha-details');
+        if (fichaDetails) fichaDetails.addEventListener('toggle', () => { this._comboFichaOpen = fichaDetails.open; });
+        const refineDetails = document.getElementById('combo-ai-refine');
+        if (refineDetails) refineDetails.addEventListener('toggle', () => { this._comboRefineOpen = refineDetails.open; });
 
         this._syncComboSymptomButtons();
 
@@ -4277,20 +4306,20 @@ class MedCheckApp {
      * vuelca al textarea editable, luego reprograma la carga de conteos. Los filtros NO se mezclan
      * aquí: se aplican por fila en el grid (cada filtro = base AND filtro), como en el modal.
      */
-    _comboEvRebuildBase() {
+    _comboEvRebuildBase({ load = true } = {}) {
         const ta = document.getElementById('combo-ev-query');
         if (!ta) return;
         const products = this.comboDrugList
             .map((_, i) => (document.getElementById(`combo-ev-term-${i}`)?.value || '').trim())
             .filter(Boolean)
             .map(p => (p.startsWith('(') && p.endsWith(')')) ? p : `(${p})`);
-        if (products.length < 2) { ta.value = ''; this.loadComboEvidenceCounts(); return; }
+        if (products.length < 2) { ta.value = ''; if (load) this.loadComboEvidenceCounts(); return; }
         const op = document.querySelector('#combo-ev-op .combo-ev-op-pill.is-active')?.dataset.op || 'AND';
         let q = op === 'OR' ? `(${products.join(' OR ')})` : products.join(' AND ');
         const symptomTerm = (document.getElementById('combo-ev-symptoms')?.value || '').trim();
         if (symptomTerm) q += ` AND ${symptomTerm.startsWith('(') ? symptomTerm : `(${symptomTerm})`}`;
         ta.value = q;
-        this._scheduleComboEvLoad();
+        if (load) this._scheduleComboEvLoad();
     }
 
     /** Debounce para no martillear NCBI mientras se editan campos. */

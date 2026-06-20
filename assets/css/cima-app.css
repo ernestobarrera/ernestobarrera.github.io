@@ -2455,6 +2455,141 @@ body {
     border-color: rgba(99, 102, 241, 0.75);
 }
 
+/* --- S25: IA como acción primaria de la vista Fármacos (hero + plegables) --- */
+.combo-ai-hero {
+    margin-top: var(--space-md);
+    padding: var(--space-md);
+    border: 1px solid rgba(99, 102, 241, 0.55);
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.13), rgba(99, 102, 241, 0.04));
+    box-shadow: 0 10px 28px -16px rgba(99, 102, 241, 0.65);
+}
+.combo-ai-hero-head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+.combo-ai-hero-icon {
+    font-size: 1.4rem;
+    color: #c7d2fe;
+    margin-top: 0.15rem;
+    flex: 0 0 auto;
+}
+.combo-ai-hero-head h3 {
+    margin: 0 0 0.2rem;
+    color: #e0e7ff;
+}
+.combo-ai-hero-head p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+.combo-ai-hero-head .combo-research-badge { margin-left: auto; flex: 0 0 auto; }
+
+.combo-ai-primary {
+    border: 1px solid rgba(99, 102, 241, 0.22);
+    border-radius: var(--radius-md);
+    background: rgba(15, 23, 42, 0.28);
+    padding: var(--space-sm) var(--space-md);
+    margin-bottom: var(--space-sm);
+}
+.combo-ai-primary .combo-ai-action-head strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 0.92rem;
+}
+.combo-ai-primary .combo-ai-action-head span {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin-top: 0.1rem;
+}
+.combo-ai-primary .search-input-wrapper { margin: var(--space-sm) 0 0; }
+.combo-ai-primary .combo-symptom-chips:not(:empty) { margin-top: var(--space-sm); }
+.combo-ai-need {
+    margin: var(--space-sm) 0 0;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-style: italic;
+}
+.combo-ai-hero .combo-ai-buttons { margin-top: var(--space-sm); }
+.combo-ai-hero .combo-ai-buttons .btn { font-size: 0.85rem; padding: 0.45rem 0.9rem; }
+
+/* "Afinar la consulta": plegable secundario dentro del hero */
+.combo-ai-refine {
+    border-top: 1px dashed rgba(99, 102, 241, 0.3);
+    margin-top: var(--space-sm);
+    padding-top: var(--space-sm);
+}
+.combo-ai-refine > summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #c7d2fe;
+    font-size: 0.84rem;
+    font-weight: 600;
+    padding: 0.2rem 0;
+}
+.combo-ai-refine > summary::-webkit-details-marker { display: none; }
+.combo-ai-refine > summary::after {
+    content: '\f078';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 0.7rem;
+    margin-left: auto;
+    transition: transform 0.15s ease;
+}
+.combo-ai-refine[open] > summary::after { transform: rotate(180deg); }
+.combo-refine-count {
+    background: rgba(99, 102, 241, 0.3);
+    border: 1px solid rgba(99, 102, 241, 0.6);
+    color: #e0e7ff;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    min-width: 1.1rem;
+    text-align: center;
+    padding: 0 0.35rem;
+}
+.combo-ai-refine-body { padding-top: var(--space-sm); }
+
+/* Secciones secundarias colapsables (PubMed, ficha técnica) */
+.combo-collapse { margin-top: var(--space-md); }
+.combo-collapse > summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: 0.2rem 0;
+}
+.combo-collapse > summary::-webkit-details-marker { display: none; }
+.combo-collapse-title {
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+.combo-collapse-meta { color: var(--text-secondary); font-size: 0.74rem; }
+.combo-collapse > summary::after {
+    content: '\f078';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 0.75rem;
+    margin-left: auto;
+    color: var(--text-secondary);
+    transition: transform 0.15s ease;
+}
+.combo-collapse[open] > summary::after { transform: rotate(180deg); }
+.combo-collapse-body { padding-top: var(--space-md); }
+.combo-evidence-panel.combo-collapse .combo-collapse-title i { color: #6ee7b7; }
+.combo-ficha-panel.combo-collapse { border-style: solid; }
+.combo-ficha-panel.combo-collapse .combo-collapse-title i { color: var(--text-secondary); }
+
 /* --- Zona 3: Evidencia en PubMed (conteo informacional, sin ranking) --- */
 .combo-evidence-panel {
     margin-top: var(--space-md);
