@@ -2312,58 +2312,25 @@ class CimaAPI {
             .trim();
         const lowerContent = plainText.toLowerCase();
 
-        // MEJORADO 2026-04-01: Patrones de negación para reducir falsos positivos
-        // Si un keyword match aparece dentro de una frase negada, degradar a 'review'
-        const NEGATION_PATTERNS = [
-            /no\s+(es\s+)?necesari[oa]\s+ajust/i,
-            /no\s+se\s+(ha\s+)?observad/i,
-            /no\s+requiere\s+ajuste/i,
-            /sin\s+ajuste\s+(de\s+)?dosis/i,
-            /no\s+se\s+recomienda\s+ajust/i,
-            /no\s+se\s+dispone\s+de\s+datos/i,
-            /no\s+se\s+han\s+(notificad|comunicad|descrit)/i,
-            /no\s+se\s+ha\s+establecido/i,
-            /puede\s+utilizarse\s+sin\s+ajuste/i,
-            /no\s+es\s+necesari[oa]\s+(una\s+)?reduc/i,
-            /no\s+se\s+consider[ae]\s+necesari/i,
-            /no\s+afecta/i,
-            /no\s+tiene\s+influencia/i
-        ];
-
-        // Buscar palabras clave
+        // Espejo, no juez. Si el término aparece en la sección oficial, MedCheck
+        // NO emite juicio de gravedad propio a partir de su análisis de texto
+        // libre: hacerlo es inferencia no validada (falsos positivos y
+        // acercamiento a "producto sanitario" MDSW). Se limita a señalar que el
+        // tema se menciona y a remitir a la sección oficial para que el clínico
+        // la lea y juzgue. Cualquier coincidencia recibe el mismo mensaje neutro
+        // (sin distinguir "negado": esa lectura también es interpretación). La
+        // gravedad solo la marcan fuentes oficiales estructuradas (notas AEMPS,
+        // contexto determinista), no aquí.
         for (const keyword of keywords) {
             const index = lowerContent.indexOf(keyword.toLowerCase());
             if (index !== -1) {
-                // Encontrado - extraer contexto
                 const start = Math.max(0, index - 60);
                 const end = Math.min(plainText.length, index + keyword.length + 100);
                 const excerpt = '...' + plainText.substring(start, end).trim() + '...';
 
-                // Extraer la frase que contiene el match (ventana de ~120 chars alrededor)
-                const sentenceStart = Math.max(0, index - 80);
-                const sentenceEnd = Math.min(lowerContent.length, index + keyword.length + 80);
-                const sentenceContext = lowerContent.substring(sentenceStart, sentenceEnd);
-
-                // Comprobar si el match está negado
-                const isNegated = NEGATION_PATTERNS.some(pattern => pattern.test(sentenceContext));
-
-                if (isNegated) {
-                    // Match negado: degradar a 'review' en vez de warning/danger
-                    return {
-                        status: 'review',
-                        message: 'Mencionado sin contraindicación aparente — revisar texto',
-                        excerpt
-                    };
-                }
-
-                // Determinar si es contraindicación
-                const isContraindicated = lowerContent.includes('contraindica') ||
-                    lowerContent.includes('no debe') ||
-                    lowerContent.includes('está contraindicado');
-
                 return {
-                    status: isContraindicated ? 'danger' : 'warning',
-                    message: isContraindicated ? 'Contraindicación detectada' : 'Precaución recomendada',
+                    status: 'review',
+                    message: 'Mencionado en la ficha — revisar la sección oficial',
                     excerpt
                 };
             }
