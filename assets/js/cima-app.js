@@ -3669,7 +3669,7 @@ class MedCheckApp {
                 <div class="combo-ai-hero-head">
                     <i class="fas fa-robot combo-ai-hero-icon"></i>
                     <div>
-                        <h3>Consultar esta combinación con IA</h3>
+                        <h3>Consultar esta combinación con IA <sup class="combo-ai-fn-call">*</sup></h3>
                         <p>Prepara una consulta referenciada para una IA externa con citas a fuentes (incluidas interacciones descritas por clase farmacológica). MedCheck no interpreta, no guarda ni muestra la respuesta — verifica siempre con ficha técnica/AEMPS y criterio profesional.</p>
                     </div>
                     <span class="combo-research-badge">opcional</span>
@@ -3681,8 +3681,8 @@ class MedCheckApp {
                         <span>Sobre la combinación de fármacos, incluidas las descritas por clase o grupo farmacológico.</span>
                     </div>
                     <div class="combo-ai-buttons">
-                        <button class="btn btn-ai-perplexity" type="button" onclick="app.openComboEngine('interactions','perplexity')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre Perplexity. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> Perplexity</button>
-                        <button class="btn btn-ai-chatgpt" type="button" onclick="app.openComboEngine('interactions','chatgpt')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre ChatGPT. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
+                        <button class="btn btn-ai-perplexity" type="button" onclick="app.openComboEngine('interactions','perplexity')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre Perplexity (Ctrl+V si no se precarga)."><i class="fas fa-up-right-from-square"></i> Perplexity</button>
+                        <button class="btn btn-ai-chatgpt" type="button" onclick="app.openComboEngine('interactions','chatgpt')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre ChatGPT (Ctrl+V si no se precarga)."><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
                         <button class="btn btn-secondary" type="button" onclick="app.copyComboPrompt('interactions')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt para pegarlo en cualquier IA (Claude, Gemini, Copilot…)"><i class="fas fa-clipboard"></i> Copiar</button>
                     </div>
                     ${n < 2 ? '<p class="combo-ai-need">Añade al menos 2 fármacos para consultar interacciones.</p>' : ''}
@@ -3699,11 +3699,13 @@ class MedCheckApp {
                     </div>
                     <div id="combo-symptom-chips" class="combo-symptom-chips">${symptomChips}</div>
                     <div class="combo-ai-buttons">
-                        <button id="combo-ai-symptom-perplexity" class="btn btn-ai-perplexity" type="button" onclick="app.openComboEngine('symptom','perplexity')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt y abre Perplexity. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> Perplexity</button>
-                        <button id="combo-ai-symptom-chatgpt" class="btn btn-ai-chatgpt" type="button" onclick="app.openComboEngine('symptom','chatgpt')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt y abre ChatGPT. La consulta puede quedar en la URL, historial y sistemas del proveedor."><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
+                        <button id="combo-ai-symptom-perplexity" class="btn btn-ai-perplexity" type="button" onclick="app.openComboEngine('symptom','perplexity')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt y abre Perplexity (Ctrl+V si no se precarga)."><i class="fas fa-up-right-from-square"></i> Perplexity</button>
+                        <button id="combo-ai-symptom-chatgpt" class="btn btn-ai-chatgpt" type="button" onclick="app.openComboEngine('symptom','chatgpt')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt y abre ChatGPT (Ctrl+V si no se precarga)."><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
                         <button id="combo-ai-symptom-copy" class="btn btn-secondary" type="button" onclick="app.copyComboPrompt('symptom')" ${(n === 0 || !hasSymptom) ? 'disabled' : ''} title="Copia el prompt para pegarlo en cualquier IA (Claude, Gemini, Copilot…)"><i class="fas fa-clipboard"></i> Copiar</button>
                     </div>
                 </div>
+
+                <p class="combo-ai-fn"><span class="combo-ai-fn-call">*</span>Perplexity y ChatGPT reciben la consulta por la dirección web (queda en su historial); «Copiar» no la envía por la URL.</p>
 
                 <details class="combo-ai-refine" id="combo-ai-refine" ${refineOpen ? 'open' : ''}>
                     <summary><i class="fas fa-sliders"></i> Afinar la consulta${refineCount ? ` <span class="combo-refine-count">${refineCount}</span>` : ''}</summary>
@@ -4179,7 +4181,7 @@ class MedCheckApp {
         const url = urls[engine];
         if (!url) return;
         try { await navigator.clipboard.writeText(prompt); } catch (_) { /* no bloquea la apertura */ }
-        window.open(url, '_blank', 'noopener');
+        window.open(url, '_blank', 'noopener,noreferrer');
         this.showToast('Prompt copiado y motor abierto — si no se precarga, pega con Ctrl+V', 'success');
     }
 
@@ -4249,7 +4251,7 @@ class MedCheckApp {
         );
         const prompt = lines.join('\n');
         try { await navigator.clipboard.writeText(prompt); } catch (_) { /* no bloquea la apertura */ }
-        window.open('https://chatgpt.com/g/g-679fc8b5a99481919ee408d9c064f2ed-pubmed-help-y-asistente-para-busquedas-avanzadas', '_blank', 'noopener');
+        window.open('https://chatgpt.com/g/g-679fc8b5a99481919ee408d9c064f2ed-pubmed-help-y-asistente-para-busquedas-avanzadas', '_blank', 'noopener,noreferrer');
         this.showToast('Prompt copiado — pégalo (Ctrl+V) en tu GPT de PubMed', 'success');
     }
 

@@ -2513,6 +2513,20 @@ body {
     font-size: 0.78rem;
     font-style: italic;
 }
+/* S26 (Diff C): nota al pie discreta sobre el envío a IA externa, con llamada canónica */
+.combo-ai-fn {
+    margin: var(--space-sm) 0 0;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    line-height: 1.4;
+    font-style: italic;
+    opacity: 0.85;
+}
+.combo-ai-fn-call {
+    font-weight: 700;
+    font-style: normal;
+    margin-right: 0.1rem;
+}
 .combo-ai-hero .combo-ai-buttons { margin-top: var(--space-sm); }
 .combo-ai-hero .combo-ai-buttons .btn { font-size: 0.85rem; padding: 0.45rem 0.9rem; }
 
