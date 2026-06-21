@@ -5112,12 +5112,6 @@ body {
     margin-top: var(--space-md);
 }
 
-.interaction-severity-summary {
-    display: flex;
-    gap: 0.5rem;
-    margin-left: auto;
-}
-
 .btn-sm {
     padding: 0.35rem 0.65rem;
     font-size: 0.8rem;
@@ -9519,6 +9513,12 @@ code {
     background: var(--danger-light);
     color: #fca5a5;
     border-left: 3px solid var(--danger);
+}
+
+.alert-info {
+    background: rgba(14, 165, 233, 0.12);
+    color: #7dd3fc;
+    border-left: 3px solid var(--primary);
 }
 
 /* Donut chart */

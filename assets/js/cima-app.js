@@ -4472,10 +4472,13 @@ class MedCheckApp {
             return `<span class="rx-link" onclick="event.stopPropagation(); app.openMedDetails('${safe}','interactions')" title="Abrir ${fullName}">${short}</span>`;
         };
 
+        // Espejo, no juez: cada fila es una MENCIÓN literal en la 4.5, sin color ni
+        // etiqueta de gravedad inferida. Estilo informativo único; la interpretación
+        // se delega al criterio profesional o a la consulta con IA de la pantalla.
         const interactionsHtml = results.interactions.map(int => `
-    <div class="safety-check-item ${int.severity}">
+    <div class="safety-check-item review">
                 <div class="safety-check-icon">
-                    <i class="fas fa-${int.severity === 'danger' ? 'times' : int.severity === 'warning' ? 'exclamation' : 'info'}"></i>
+                    <i class="fas fa-quote-right"></i>
                 </div>
                 <div class="safety-check-content">
                     <div class="safety-check-title">
@@ -4489,24 +4492,16 @@ class MedCheckApp {
             </div>
     `).join('');
 
-        // Count by severity
-        const dangerCount = results.interactions.filter(i => i.severity === 'danger').length;
-        const warningCount = results.interactions.filter(i => i.severity === 'warning').length;
-        const infoCount = results.interactions.filter(i => i.severity === 'info').length;
-
+        const n = results.interactions.length;
         container.innerHTML = `
     <div class="safety-panel" style="margin-top: 1rem;">
                 <div class="safety-header">
-                    <i class="fas fa-random"></i>
+                    <i class="fas fa-quote-right"></i>
                     <span class="safety-drug-name">
-                        ${results.interactions.length} interacción${results.interactions.length > 1 ? 'es' : ''} encontrada${results.interactions.length > 1 ? 's' : ''}
+                        ${n} coincidencia${n > 1 ? 's' : ''} por nombre en la sección 4.5 (Interacciones)
                     </span>
-                    <div class="interaction-severity-summary">
-                        ${dangerCount > 0 ? `<span class="badge badge-danger">${dangerCount} grave${dangerCount > 1 ? 's' : ''}</span>` : ''}
-                        ${warningCount > 0 ? `<span class="badge badge-warning">${warningCount} precaución</span>` : ''}
-                        ${infoCount > 0 ? `<span class="badge badge-info">${infoCount} info</span>` : ''}
-                    </div>
                 </div>
+                <p class="combo-research-copy" style="margin: 0.25rem 0 0.5rem;">Coincidencias <strong>literales</strong> del nombre de un fármaco en la ficha de otro. MedCheck no clasifica su gravedad ni detecta interacciones por clase; valora con criterio profesional, ficha técnica/AEMPS o la consulta con IA de arriba.</p>
                 <div class="safety-checks">
                     ${interactionsHtml}
                 </div>
@@ -12707,11 +12702,15 @@ ${materialesPlaceholder}
                     return `<strong class="rx-link" onclick="event.stopPropagation(); app.openMedDetails('${safe}','interactions')" title="Abrir ${fullName}">${short}</strong>`;
                 };
                 const items = interactions.slice(0, 10).map(it => {
-                    const sev = (it.severity === 'high' || it.severity === 'alta') ? 'alert-danger' : 'alert-warn';
+                    // Espejo, no juez: mención literal en la 4.5, estilo informativo
+                    // neutro (sin color de gravedad inferida) y con el excerpt textual.
                     return `
-                        <div class="analytics-alert ${sev}">
-                            <i class="fas fa-random"></i>
-                            <span>${drugLink(it.drug1)} ↔ ${drugLink(it.drug2)}${it.matchedTerm ? ` · «${it.matchedTerm}»` : ''} <span class="text-muted">(${it.source || 'ficha técnica'})</span></span>
+                        <div class="analytics-alert alert-info">
+                            <i class="fas fa-quote-right"></i>
+                            <div>
+                                <span>${drugLink(it.drug1)} ↔ ${drugLink(it.drug2)}${it.matchedTerm ? ` · «${it.matchedTerm}»` : ''} <span class="text-muted">(${it.source || 'ficha técnica'})</span></span>
+                                ${it.excerpt ? `<div class="text-muted text-xs" style="margin-top:0.2rem;"><em>"${it.excerpt}"</em></div>` : ''}
+                            </div>
                         </div>
                     `;
                 }).join('');

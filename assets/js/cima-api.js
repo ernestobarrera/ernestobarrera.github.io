@@ -2089,13 +2089,17 @@ class CimaAPI {
                     const mention = this._findInteractionMention(section45, searchTerms);
 
                     if (mention.found) {
+                        // Espejo, no juez: registramos la MENCIÓN literal de un fármaco en
+                        // la 4.5 de otro (par + fuente + excerpt). No clasificamos la
+                        // gravedad — hacerlo es inferencia no validada sobre texto libre.
+                        // La interpretación se delega al criterio profesional o a la
+                        // consulta con IA externa que ofrece la propia pantalla.
                         results.interactions.push({
                             drug1: med.nombre,
                             drug2: otherMed.nombre,
                             matchedTerm: mention.term,
                             source: `Sección 4.5 de ${med.nombre.split(' ')[0]}`,
-                            excerpt: mention.excerpt,
-                            severity: this._classifyInteractionSeverity(mention.excerpt)
+                            excerpt: mention.excerpt
                         });
                     }
                 }
@@ -2243,39 +2247,6 @@ class CimaAPI {
         }
 
         return { found: false };
-    }
-
-    /**
-     * Clasifica la severidad de una interacción basándose en el texto
-     * @private
-     */
-    _classifyInteractionSeverity(excerpt) {
-        const text = excerpt.toLowerCase();
-
-        // Contraindicado / Evitar
-        if (text.includes('contraindicad') ||
-            text.includes('no debe') ||
-            text.includes('está prohibid') ||
-            text.includes('evitar') ||
-            text.includes('no se recomienda') ||
-            text.includes('asociación contraindicada')) {
-            return 'danger';
-        }
-
-        // Precaución / Monitorizar
-        if (text.includes('precaución') ||
-            text.includes('vigilar') ||
-            text.includes('monitorizar') ||
-            text.includes('ajust') ||
-            text.includes('reducir') ||
-            text.includes('aumentar el riesgo') ||
-            text.includes('puede potenciar') ||
-            text.includes('puede disminuir')) {
-            return 'warning';
-        }
-
-        // Información sin severidad clara
-        return 'info';
     }
 
     /**
