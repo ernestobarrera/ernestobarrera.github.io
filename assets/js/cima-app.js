@@ -361,7 +361,7 @@ class MedCheckApp {
         ];
 
         // Guide state
-        this.GUIDE_SEEN_KEY = 'medcheck_guide_seen_v20260531a';
+        this.GUIDE_SEEN_KEY = 'medcheck_guide_seen_v20260622a';
         this.guideActive = false;
         this.guideStep = 0;
         this.guideTour = 'core';
@@ -3607,16 +3607,12 @@ class MedCheckApp {
         const focusChips = focusOpts.map(o => chipHtml(o, this._comboFocus.has(o.id))).join('');
         const topicChips = topicOpts.map(o => chipHtml(o, this._comboTopics.has(o.id))).join('');
 
-        // Evidencia "como el modal": una fila editable por producto con (marca OR principio activo);
-        // entre productos se cruza con AND. El término es editable porque PubMed indexa en inglés.
-        // Traduce el principio activo a inglés (PubMed) con el diccionario reutilizable window.innDict.
-        // Si no está cargado o no conoce el término, deja el español y el usuario lo edita.
+        // Evidencia "como el modal": una fila editable por producto. El término sale de la identidad de
+        // sustancia unificada (_substanceIdentity): variantes ES+EN sin comillas (PubMed indexa en inglés
+        // pero su ATM también mapea ES; las comillas romperían ese mapeo). Editable por el usuario.
         const evDefaultTerm = (med) => {
-            const brand = (med.nombre || '').split(/\s+/)[0];
-            const pas = (med.pactivos || '').split('+').map(s => s.trim()).filter(Boolean);
-            const en = pas.map(pa => (window.innDict ? window.innDict.toEnglish(pa) : pa));
-            const uniq = [...new Set([brand, ...en].filter(Boolean))];
-            return `(${uniq.map(t => (t.includes(' ') ? `"${t}"` : t)).join(' OR ')})`;
+            const id = this._substanceIdentity(med);
+            return id.pubmed || (med.nombre || '').split(/\s*\d/)[0].trim().toLowerCase();
         };
         // Si el diccionario aún no ha cargado, re-render una vez al terminar (solo si Evidencia es visible).
         if (window.innDict && !window.innDict.loaded) {
@@ -4001,17 +3997,28 @@ class MedCheckApp {
             this.showToast('Este medicamento ya está en la lista', 'warning');
             return;
         }
+        // Conservar vtm y principiosActivos (Codex): los usa _substanceIdentity para los términos de búsqueda.
+        let vtm = med.vtm || null;
+        let principiosActivos = med.principiosActivos || null;
         let pactivos = med.pactivos || med.vtm?.nombre || '';
-        if (!pactivos && med.nregistro) {
+        const NON_INF = /^(multicomponente|varios|asociaciones|combinaciones)$/i;
+        const vtmInformativo = vtm?.nombre && !NON_INF.test(vtm.nombre.trim());
+        // Enriquecer con el detalle cuando falte identidad fiable (vtm informativo o PA estructurados).
+        // El fallback a `pactivos` cubre fallos de red, no es la ruta habitual.
+        if (!vtmInformativo && !principiosActivos?.length && med.nregistro) {
             try {
                 const detail = await this.api.getMedicamento(med.nregistro, { headers: { 'X-MC-Autocomplete': '1' } });
-                pactivos = detail?.vtm?.nombre || detail?.pactivos
-                    || (Array.isArray(detail?.principiosActivos) ? detail.principiosActivos.map(pa => pa.nombre).filter(Boolean).join(' + ') : '');
+                if (detail) {
+                    vtm = detail.vtm || vtm;
+                    principiosActivos = detail.principiosActivos || principiosActivos;
+                    pactivos = pactivos || detail?.vtm?.nombre || detail?.pactivos
+                        || (Array.isArray(detail?.principiosActivos) ? detail.principiosActivos.map(pa => pa.nombre).filter(Boolean).join(' + ') : '');
+                }
             } catch (_) {
-                // La lista sigue siendo usable con nombre comercial; el enriquecimiento solo mejora el prompt IA.
+                // Fallo de red: la lista sigue usable con pactivos/nombre comercial.
             }
         }
-        this.comboDrugList.push({ nregistro: med.nregistro, nombre: med.nombre, pactivos });
+        this.comboDrugList.push({ nregistro: med.nregistro, nombre: med.nombre, pactivos, vtm, principiosActivos });
         // Re-render: vacía los contenedores de resultados → la lista cambió, hay que reanalizar.
         this.renderCombination();
         this.showToast(`${med.nombre.split(' ')[0]} añadido`, 'success');
@@ -12888,7 +12895,7 @@ ${materialesPlaceholder}
         return {
             core: {
                 label: 'Recorrido rápido',
-                desc: 'El mapa mental mínimo para presentar MedCheck sin sobrecargar.',
+                desc: 'Recorrido general por las funciones principales de MedCheck.',
                 icon: 'fa-route',
                 steps: [
                     {
@@ -12915,14 +12922,18 @@ ${materialesPlaceholder}
                         title: '2. Elegir la pregunta',
                         icon: 'fa-compass',
                         body: `
-                            <p>La navegación no es una lista para memorizar: es un selector de pregunta clínica.</p>
+                            <p>Cada pestaña de la navegación responde a una pregunta clínica distinta.</p>
                             <ul class="guide-features">
-                                <li><i class="fas fa-shield-alt"></i> seguridad</li>
-                                <li><i class="fas fa-random"></i> interacciones</li>
+                                <li><i class="fas fa-stethoscope"></i> indicaciones</li>
+                                <li><i class="fas fa-layer-group"></i> fármacos (combinación e interacciones)</li>
+                                <li><i class="fas fa-exchange-alt"></i> equivalencias</li>
                                 <li><i class="fas fa-dna"></i> PGx</li>
+                                <li><i class="fas fa-boxes"></i> suministro</li>
+                                <li><i class="fas fa-bell"></i> alertas</li>
                                 <li><i class="fas fa-file-medical-alt"></i> materiales</li>
                                 <li><i class="fas fa-star"></i> perfil</li>
                             </ul>
+                            <p>La <span class="guide-highlight">seguridad por contexto</span> se consulta dentro de la ficha de cada medicamento, ajustada al contexto que actives.</p>
                         `,
                         position: 'bottom',
                     },
@@ -12943,7 +12954,7 @@ ${materialesPlaceholder}
                         action: { type: 'modal', tab: 'info', source: 'any' },
                         body: `
                             <p>La ficha del medicamento concentra la lectura profunda: información, indicaciones, posología, interacciones, seguridad, documentos, evidencia y financiación si existe.</p>
-                            <p>La guía abre un ejemplo real para que la demo no se quede en teoría.</p>
+                            <p>La guía abre un medicamento de ejemplo para recorrer la ficha con datos reales.</p>
                         `,
                     },
                     {
@@ -12952,7 +12963,7 @@ ${materialesPlaceholder}
                         icon: 'fa-star',
                         body: `
                             <p>La estrella guarda el medicamento ya enriquecido para que después pueda agruparse por ATC, principio activo, indicación o especialidad.</p>
-                            <p>No es una nube: es tu colección local en este navegador.</p>
+                            <p>La colección se guarda localmente en este navegador, no en un servidor.</p>
                         `,
                     },
                     {
@@ -12966,10 +12977,10 @@ ${materialesPlaceholder}
                     },
                     {
                         target: '#start-guide-btn',
-                        title: 'Ampliar sin ruido',
+                        title: 'Subguías por área',
                         icon: 'fa-circle-question',
                         body: `
-                            <p>El botón <span class="guide-key"><i class="fas fa-question" style="font-size:0.7rem"></i></span> abre subguías breves: ficha/modal, Mi vademécum, PGx y Materiales.</p>
+                            <p>El botón <span class="guide-key"><i class="fas fa-question" style="font-size:0.7rem"></i></span> abre una subguía breve por área: ficha/modal, Mi vademécum y cada eje clínico de la navegación (indicaciones, fármacos, equivalencias, PGx, suministro, alertas, materiales).</p>
                             <p>MedCheck consulta fuentes oficiales cuando puede y guarda favoritos/preferencias solo en este navegador.</p>
                         `,
                         position: 'bottom',
@@ -12983,7 +12994,7 @@ ${materialesPlaceholder}
                 steps: [
                     {
                         target: '.modal-content',
-                        title: 'La ficha es la mesa de trabajo',
+                        title: 'La ficha del medicamento',
                         icon: 'fa-window-maximize',
                         action: { type: 'modal', tab: 'info', source: 'any' },
                         body: `
@@ -13016,7 +13027,7 @@ ${materialesPlaceholder}
                         icon: 'fa-prescription-bottle-medical',
                         action: { type: 'modalTab', tab: 'posology' },
                         body: `
-                            <p>Posología abre la dosificación oficial. Es una lectura lenta bajo demanda, no una tarjeta rápida.</p>
+                            <p>Posología muestra la dosificación oficial completa de la ficha técnica, para lectura detenida.</p>
                         `,
                     },
                     {
@@ -13026,7 +13037,7 @@ ${materialesPlaceholder}
                         action: { type: 'modalTab', tab: 'safety' },
                         body: `
                             <p>Seguridad cruza la ficha con el contexto activo: embarazo, lactancia, edad, conducción, renal o hepática.</p>
-                            <p>El criterio clínico sigue mandando; la pestaña organiza señales.</p>
+                            <p>Organiza las señales de seguridad relevantes según el contexto activo; la valoración final es clínica.</p>
                         `,
                     },
                     {
@@ -13070,14 +13081,14 @@ ${materialesPlaceholder}
                         title: 'Favoritos = formulario personal',
                         icon: 'fa-star',
                         body: `
-                            <p>Mi Perfil transforma favoritos en una colección revisable, no en una simple lista de accesos rápidos.</p>
+                            <p>Mi Perfil organiza los favoritos como una colección revisable.</p>
                             <p>Todo vive en localStorage: queda en este navegador salvo que exportes/importes.</p>
                         `,
                         position: 'bottom',
                     },
                     {
                         target: '.profile-subnav',
-                        title: 'Seis lentes de revisión',
+                        title: 'Seis secciones de revisión',
                         icon: 'fa-table-columns',
                         action: { type: 'profileSection', section: 'favorites' },
                         body: `
@@ -13124,13 +13135,13 @@ ${materialesPlaceholder}
             },
             pgx: {
                 label: 'Farmacogenómica',
-                desc: 'PGx como ampliación selectiva, no como ruido inicial.',
+                desc: 'Medicamentos con biomarcadores farmacogenómicos según el Nomenclátor de la AEMPS.',
                 icon: 'fa-dna',
                 view: 'pharmacogenomics',
                 steps: [
                     {
                         target: '.nav-tab[data-view="pharmacogenomics"]',
-                        title: 'PGx como señal regulatoria',
+                        title: 'Biomarcadores en el Nomenclátor',
                         icon: 'fa-dna',
                         body: `
                             <p>PGx muestra medicamentos cuyo Nomenclátor de Prescripción AEMPS menciona biomarcadores farmacogenómicos.</p>
@@ -13189,6 +13200,148 @@ ${materialesPlaceholder}
                         body: `
                             <p>La tarjeta lleva al documento original y, si tiene registro CIMA, a la ficha del medicamento.</p>
                             <p>Dentro de Mi Perfil hay otra vista de Materiales limitada solo a tu colección.</p>
+                        `,
+                    },
+                ],
+            },
+            indications: {
+                label: 'Indicaciones',
+                desc: 'Buscar medicamentos por para qué sirven, no por su nombre.',
+                icon: 'fa-stethoscope',
+                view: 'indications',
+                steps: [
+                    {
+                        target: '.nav-tab[data-view="indications"]',
+                        title: 'Partir de la indicación',
+                        icon: 'fa-stethoscope',
+                        body: `
+                            <p>Esta vista parte del <span class="guide-highlight">problema clínico</span>, no del fármaco: buscas una indicación o síntoma y devuelve medicamentos cuya ficha técnica (sección 4.1) la recoge como uso autorizado.</p>
+                        `,
+                        position: 'bottom',
+                    },
+                    {
+                        target: '.indications-search-panel',
+                        title: 'Escribir la indicación',
+                        icon: 'fa-keyboard',
+                        body: `
+                            <p>Teclea la indicación o el síntoma; el buscador lo cruza con las indicaciones autorizadas en CIMA y lista los medicamentos que la declaran.</p>
+                        `,
+                    },
+                    {
+                        target: '.indications-categories-panel',
+                        title: 'O explorar por categoría',
+                        icon: 'fa-sitemap',
+                        body: `
+                            <p>También puedes partir de una categoría clínica y descender, para recorrer el abanico autorizado en un área sin saber de antemano qué fármaco buscas.</p>
+                        `,
+                    },
+                ],
+            },
+            combo: {
+                label: 'Fármacos (combinación)',
+                desc: 'Cruzar varios medicamentos: interacciones y evidencia, sin veredicto.',
+                icon: 'fa-layer-group',
+                view: 'combo',
+                steps: [
+                    {
+                        target: '.nav-tab[data-view="combo"]',
+                        title: 'Consultar una combinación',
+                        icon: 'fa-layer-group',
+                        body: `
+                            <p>Reúnes dos o más medicamentos (o síntomas) y MedCheck prepara la consulta de <span class="guide-highlight">interacciones fármaco-fármaco</span> y la evidencia asociada.</p>
+                        `,
+                        position: 'bottom',
+                    },
+                    {
+                        target: '#combo-drug-search',
+                        title: 'Armar la combinación',
+                        icon: 'fa-plus',
+                        body: `
+                            <p>Añade medicamentos uno a uno. A partir de dos se habilitan las consultas de interacción y de evidencia.</p>
+                        `,
+                    },
+                    {
+                        target: '.combo-ev-toolbar',
+                        title: 'Consulta sin veredicto automático',
+                        icon: 'fa-magnifying-glass-chart',
+                        body: `
+                            <p>MedCheck no dictamina la combinación: construye el <span class="guide-highlight">prompt</span> y la búsqueda en PubMed para que la resuelvas en una IA externa (Perplexity, ChatGPT, tu GPT de PubMed) o en la fuente primaria.</p>
+                            <p>Reúne la pregunta y la evidencia en un solo lugar; la valoración final es clínica.</p>
+                        `,
+                    },
+                ],
+            },
+            equivalences: {
+                label: 'Equivalencias',
+                desc: 'Alternativas con el mismo principio activo y la opción más económica.',
+                icon: 'fa-exchange-alt',
+                view: 'equivalences',
+                steps: [
+                    {
+                        target: '.nav-tab[data-view="equivalences"]',
+                        title: 'Alternativas equivalentes',
+                        icon: 'fa-exchange-alt',
+                        body: `
+                            <p>Parte de un medicamento y muestra sus equivalentes —mismo principio activo, dosis y forma—. Útil para sustitución, genéricos y resolver un desabastecimiento.</p>
+                        `,
+                        position: 'bottom',
+                    },
+                    {
+                        target: null,
+                        title: 'La opción más eficiente',
+                        icon: 'fa-coins',
+                        body: `
+                            <p>El equivalente de menor precio se marca con el distintivo <span class="guide-highlight">€ Económico</span>, para que la alternativa más eficiente salte a la vista sin comparar a mano.</p>
+                        `,
+                    },
+                ],
+            },
+            supply: {
+                label: 'Suministro',
+                desc: 'Problemas de desabastecimiento activos según la AEMPS.',
+                icon: 'fa-boxes',
+                view: 'supply',
+                steps: [
+                    {
+                        target: '.nav-tab[data-view="supply"]',
+                        title: 'Desabastecimientos activos',
+                        icon: 'fa-boxes',
+                        body: `
+                            <p>Lista los problemas de suministro <span class="guide-highlight">activos</span> publicados por la AEMPS, con su estado y fechas, sin tener que entrar medicamento por medicamento.</p>
+                        `,
+                        position: 'bottom',
+                    },
+                    {
+                        target: null,
+                        title: 'Buscar alternativa',
+                        icon: 'fa-right-left',
+                        body: `
+                            <p>Desde la ficha de un medicamento afectado, "Alternativas de Suministro" propone equivalentes disponibles para no dejar al paciente sin tratamiento.</p>
+                        `,
+                    },
+                ],
+            },
+            alerts: {
+                label: 'Alertas',
+                desc: 'Notas de seguridad y farmacovigilancia de la AEMPS.',
+                icon: 'fa-bell',
+                view: 'alerts',
+                steps: [
+                    {
+                        target: '.nav-tab[data-view="alerts"]',
+                        title: 'Seguridad oficial',
+                        icon: 'fa-bell',
+                        body: `
+                            <p>Reúne las <span class="guide-highlight">comunicaciones oficiales de seguridad</span> de la AEMPS —notas informativas de farmacovigilancia— ligadas a medicamentos.</p>
+                        `,
+                        position: 'bottom',
+                    },
+                    {
+                        target: null,
+                        title: 'En cada ficha',
+                        icon: 'fa-exclamation-circle',
+                        body: `
+                            <p>Dentro de la ficha, la pestaña Alertas muestra solo las notas que afectan a ese medicamento; los que tienen notas se marcan en los listados con el distintivo <span class="guide-highlight">Alertas AEMPS</span>.</p>
                         `,
                     },
                 ],
@@ -13431,6 +13584,54 @@ ${materialesPlaceholder}
         document.addEventListener('keydown', this._guideKeyHandler);
     }
 
+    /**
+     * Identidad de sustancia de un medicamento para búsqueda bibliográfica (fase 1, contraste Claude↔Codex).
+     * Prioridad: vtm.nombre informativo → principiosActivos[] → pactivos → nombre comercial.
+     * Devuelve:
+     *  - pubmed: monocomponente → variantes ES+EN con OR; combinación → AND entre componentes
+     *    (OR de variantes dentro). Sin comillas (aprovecha el ATM de PubMed).
+     *  - canonicalEs: componentes en español base (sin sal) para REEC (registro español).
+     *  - canonicalEn: componentes en inglés simple para ClinicalTrials/WHO/UpToDate (mejor recall; medido).
+     *  - components[]: { baseEs, en, variants, confidence } por componente.
+     *  - confidence: 'low' si la fuente es el nombre comercial o algún componente no se resolvió.
+     * Requiere window.innDict cargado (el llamador hace await innDict.load() o re-render al cargar).
+     */
+    _substanceIdentity(med) {
+        const dict = window.innDict;
+        const vtm = (med?.vtm?.nombre || '').trim();
+        const NON_INF = /^(multicomponente|varios|asociaciones|combinaciones)$/i;
+        let sourceName, source;
+        if (vtm && !NON_INF.test(vtm)) { sourceName = vtm; source = 'vtm'; }
+        else if (med?.principiosActivos?.length) { sourceName = med.principiosActivos.map(p => p.nombre).filter(Boolean).join(' + '); source = 'pa'; }
+        else if (med?.pactivos) { sourceName = med.pactivos; source = 'pactivos'; }
+        else { sourceName = (med?.nombre || '').split(/\s*\d/)[0].trim(); source = 'nombre'; }
+
+        const allowTrim = source !== 'vtm';   // con vtm la sal ya viene resuelta; no recortar
+        const parts = String(sourceName).split(/[+,/]/).map(s => s.trim()).filter(Boolean);
+        // Conservar componentes (Codex): no aplanar variantes globalmente; habilita la política por destino.
+        const components = parts.map(c => dict
+            ? dict.toSearchTerm(c, { allowCounterionTrim: allowTrim })
+            : { baseEs: c.toLowerCase(), en: null, variants: [c.toLowerCase()], confidence: 'low' });
+
+        // PubMed: monocomponente → OR de variantes; combinación → AND entre componentes (OR de variantes dentro).
+        const pubmed = components.length === 1
+            ? components[0].variants.join(' OR ')
+            : components.map(c => `(${c.variants.join(' OR ')})`).join(' AND ');
+        // Canónico por destino (medido): REEC en español; ClinicalTrials/WHO/UpToDate en inglés simple
+        // (frase, sin AND ni OR: mejor recall que el AND, sin el ruido del OR). Fallback a baseEs si no hay en.
+        const canonicalEs = components.map(c => c.baseEs).filter(Boolean).join(' ');
+        const canonicalEn = components.map(c => c.en || c.baseEs).filter(Boolean).join(' ');
+        return {
+            source,
+            pubmed,
+            canonicalEs,
+            canonicalEn,
+            components,
+            // El nombre comercial no es identidad fiable de sustancia → low.
+            confidence: (source === 'nombre' || components.some(c => c.confidence === 'low')) ? 'low' : 'high',
+        };
+    }
+
     // ─── PESTAÑA EVIDENCIA ────────────────────────────────────────────────────
 
     renderEvidenceTab(med) {
@@ -13438,47 +13639,22 @@ ${materialesPlaceholder}
         if (!container || container.dataset.loaded) return;
         container.dataset.loaded = '1';
 
-        // Elimina sufijos de sal/hidratación/ion del final del INN para obtener el término base
-        // que PubMed mapea correctamente a MeSH/Supplementary Concept.
-        // Ej: "DABIGATRAN ETEXILATO MESILATO" → "dabigatran"
-        //     "ACETILSALICILICO ACIDO" → "acetilsalicilico" (inversión CIMA)
-        //     "CLAVULANATO POTASIO" → "clavulanato"
-        const SALT_TOKENS = new Set([
-            'etexilato','mesilato','besilato','tosilato','xinafoato',
-            'hidrocloruro','clorhidrato',
-            'fosfato','bisulfato','sulfato','maleato','fumarato',
-            'tartrato','succinato','acetato','embonato',
-            'trihidrato','hemihidrato','monohidrato',
-            'potasio','sodio','calcio','magnesio',
-            // Formas adjetivas que usa CIMA: "ROSUVASTATINA CALCICA", "CLOPIDOGREL BESILATO"
-            'calcica','calcico','sodica','sodico','potasica','potasico',
-            'acido'
-        ]);
-        const baseInn = (name) => {
-            const words = name.toLowerCase().trim().split(/\s+/);
-            while (words.length > 1 && SALT_TOKENS.has(words[words.length - 1])) words.pop();
-            return words.join(' ');
-        };
-
-        const pa = med.principiosActivos;
-
-        // Construir término PubMed: (marca|inn_base) si difieren, solo inn si genérico.
-        // Pipe = OR en PubMed; PubMed mapea marca → Supplementary Concept automáticamente.
-        // Combinaciones: OR entre componentes para encontrar estudios del combinado y de cada INN.
-        let drugTerm;
-        if (pa && pa.length > 0) {
-            const inns = pa.map(p => baseInn(p.nombre));
-            const innBase = inns.length > 1 ? `(${inns.join('|')})` : inns[0];
-            const brand = med.nombre.split(/\s*\d/)[0].trim().toLowerCase();
-            // Normalizar "/" de combinaciones CIMA ("valsartan/amlodipino actavis") para detección
-            const brandNorm = brand.replace(/\//g, ' ').replace(/\s+/g, ' ').trim();
-            const brandFirst = brandNorm.split(/\s+/)[0];
-            const innFirstWords = inns.map(inn => inn.split(/\s+/)[0]);
-            const isGeneric = innFirstWords.some(w => brandFirst === w || brandNorm.startsWith(w + ' '));
-            drugTerm = isGeneric ? innBase : `(${brandFirst}|${innBase})`;
-        } else {
-            drugTerm = med.nombre.split(/\s*\d/)[0].trim().toLowerCase();
+        // Identidad de sustancia unificada (fase 1, contraste Claude↔Codex). Términos por destino:
+        //  - pubmedTerm: variantes ES+EN (AND entre componentes en combinaciones), SIN comillas. Campo editable.
+        //  - canonicalEsTerm: español base, para REEC (registro español).
+        //  - canonicalEnTerm: inglés simple, para ClinicalTrials/WHO/UpToDate (mejor recall; medido).
+        //    No se reutiliza el término PubMed con OR/AND, que esos buscadores no entienden igual.
+        // Esperar al diccionario INN (normalmente ya precargado) antes de construir los términos.
+        if (window.innDict && !window.innDict.loaded) {
+            // Esperar de verdad: salir sin construir términos (map vacío) y re-renderizar al cargar (Codex).
+            window.innDict.load().then(() => { container.dataset.loaded = ''; this.renderEvidenceTab(med); });
+            return;
         }
+        const identity = this._substanceIdentity(med);
+        const fallbackBrand = (med.nombre || '').split(/\s*\d/)[0].trim().toLowerCase();
+        const pubmedTerm = identity.pubmed || fallbackBrand;
+        const canonicalEsTerm = identity.canonicalEs || fallbackBrand;
+        const canonicalEnTerm = identity.canonicalEn || fallbackBrand;
 
         const enc = q => encodeURIComponent(q);
         const reecTerm = q => this._buildReecSearchTerm(q);
@@ -13513,12 +13689,6 @@ ${materialesPlaceholder}
                 <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
             </a>
         `).join('');
-        const updateReferenceLinks = q => {
-            referenceLinks(q).forEach(link => {
-                const el = document.getElementById(`evlink-ref-${link.id}`);
-                if (el) el.href = link.href;
-            });
-        };
 
         // Rangos temporales discretos. Índice 4 = 5 años (default).
         // days=0 ⇒ sin filtro temporal (∞).
@@ -13536,7 +13706,7 @@ ${materialesPlaceholder}
         const resetCounts = () => document.querySelectorAll('[id^="evcount-"]:not(#evcount-reec)').forEach(el => {
             el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
         });
-        const getCurrentTerm = () => document.getElementById('evidence-drug-input')?.value.trim() || drugTerm;
+        const getCurrentTerm = () => document.getElementById('evidence-drug-input')?.value.trim() || pubmedTerm;
         const getCurrentDays = () => {
             const s = document.getElementById('evidence-date-slider');
             const idx = s ? parseInt(s.value, 10) : EV_RANGE_DEFAULT;
@@ -13554,7 +13724,7 @@ ${materialesPlaceholder}
                         <div class="evidence-drug-row" title="Edita para ajustar el término de búsqueda en PubMed">
                             <label class="evidence-drug-label" for="evidence-drug-input"><i class="fas fa-search"></i></label>
                             <input type="text" id="evidence-drug-input" class="evidence-drug-input"
-                                   value="${this._escapeHtml(drugTerm)}"
+                                   value="${this._escapeHtml(pubmedTerm)}"
                                    placeholder="término PubMed"
                                    spellcheck="false"
                                    autocomplete="off"
@@ -13631,7 +13801,7 @@ ${materialesPlaceholder}
                     </div>
                 </div>
                 <div class="evidence-filter-list">
-                    ${renderReferenceLinks(drugTerm)}
+                    ${renderReferenceLinks(canonicalEnTerm)}
                 </div>
             </div>
 
@@ -13644,7 +13814,7 @@ ${materialesPlaceholder}
                     </div>
                 </div>
                 <div class="evidence-filter-list">
-                    <a class="evidence-filter-item" id="evlink-reec" href="${reecUrl(drugTerm)}" target="_blank" rel="noopener" title="Ver todos los estudios registrados en REec · AEMPS">
+                    <a class="evidence-filter-item" id="evlink-reec" href="${reecUrl(canonicalEsTerm)}" target="_blank" rel="noopener" title="Ver todos los estudios registrados en REec · AEMPS">
                         <span class="evidence-filter-icon"><i class="fas fa-flag"></i></span>
                         <span class="evidence-filter-label">REec · España</span>
                         <span class="evidence-filter-count" id="evcount-reec"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
@@ -13652,13 +13822,13 @@ ${materialesPlaceholder}
                     </a>
                     <div class="evidence-reec-stats" id="evidence-reec-stats"></div>
                     <div class="evidence-reec-studies" id="evidence-reec-studies"></div>
-                    <a class="evidence-filter-item" id="evlink-ct" href="https://clinicaltrials.gov/search?term=${enc(drugTerm)}&viewType=Table" target="_blank" rel="noopener" title="Registro de ensayos de EEUU (FDA / NIH)">
+                    <a class="evidence-filter-item" id="evlink-ct" href="https://clinicaltrials.gov/search?term=${enc(canonicalEnTerm)}&viewType=Table" target="_blank" rel="noopener" title="Registro de ensayos de EEUU (FDA / NIH)">
                         <span class="evidence-filter-icon"><i class="fas fa-flag-usa"></i></span>
                         <span class="evidence-filter-label">ClinicalTrials.gov</span>
                         <span class="evidence-filter-count evidence-filter-count--static"><span class="evidence-filter-badge-ext">EEUU · FDA/NIH</span></span>
                         <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
                     </a>
-                    <a class="evidence-filter-item" id="evlink-who" href="https://trialsearch.who.int/?SearchTerm=${enc(drugTerm)}" target="_blank" rel="noopener" title="Registro Internacional de Ensayos Clínicos (OMS / ICTRP)">
+                    <a class="evidence-filter-item" id="evlink-who" href="https://trialsearch.who.int/?SearchTerm=${enc(canonicalEnTerm)}" target="_blank" rel="noopener" title="Registro Internacional de Ensayos Clínicos (OMS / ICTRP)">
                         <span class="evidence-filter-icon"><i class="fas fa-globe-europe"></i></span>
                         <span class="evidence-filter-label">WHO ICTRP</span>
                         <span class="evidence-filter-count evidence-filter-count--static"><span class="evidence-filter-badge-ext">OMS · Internacional</span></span>
@@ -13680,8 +13850,8 @@ ${materialesPlaceholder}
         this._evFilterQueryById = this._evFilterQueryById || {};
 
         // Carga inicial con rango por defecto (5 años)
-        this._loadEvidenceFiltersAndCount(drugTerm, filterDefs, EV_RANGES[EV_RANGE_DEFAULT].days);
-        this._loadReecCount(drugTerm);
+        this._loadEvidenceFiltersAndCount(pubmedTerm, filterDefs, EV_RANGES[EV_RANGE_DEFAULT].days);
+        this._loadReecCount(canonicalEsTerm);
 
         const slider = document.getElementById('evidence-date-slider');
         const dateLabel = document.getElementById('evidence-date-label');
@@ -13734,24 +13904,13 @@ ${materialesPlaceholder}
             });
         });
 
-        // Campo editable — actualiza todos los enlaces y recarga conteos
+        // Campo editable — controla SOLO PubMed (Codex). REEC/ClinicalTrials/WHO/UpToDate quedan fijados
+        // al término canónico del render y NO reaccionan a lo que el usuario teclee para PubMed (otra sintaxis).
         if (input) {
             input.addEventListener('change', () => {
                 const t = getCurrentTerm();
                 if (!t) return;
-                const reecLink = document.getElementById('evlink-reec');
-                if (reecLink) reecLink.href = reecUrl(t);
-                const ctLink = document.getElementById('evlink-ct');
-                const whoLink = document.getElementById('evlink-who');
-                if (ctLink) ctLink.href = `https://clinicaltrials.gov/search?term=${enc(t)}&viewType=Table`;
-                if (whoLink) whoLink.href = `https://trialsearch.who.int/?SearchTerm=${enc(t)}`;
-                updateReferenceLinks(t);
                 resetCounts();
-                const reecCount = document.getElementById('evcount-reec');
-                if (reecCount) reecCount.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
-                document.getElementById('evidence-reec-stats')?.replaceChildren();
-                document.getElementById('evidence-reec-studies')?.replaceChildren();
-                this._loadReecCount(t);
                 this._loadEvidenceFiltersAndCount(t, filterDefs, getCurrentDays());
                 this._updateEvidenceCombineBar();
             });
