@@ -54,7 +54,7 @@ class InnDictionary {
   }
 
   /** Carga el JSON una sola vez. Falla en abierto (si no carga, opera solo con reglas). */
-  load(url = 'assets/data/inn-es-en.json?v=20260605b') {
+  load(url = 'assets/data/inn-es-en.json?v=20260622b') {
     if (this.loaded) return Promise.resolve();
     if (this._loading) return this._loading;
     this._loading = fetch(url, { cache: 'force-cache' })
@@ -70,11 +70,17 @@ class InnDictionary {
     return this._loading;
   }
 
-  /** Reglas de sufijo conservadoras (solo palabra única alfabética). */
+  /**
+   * Reglas de sufijo ES→EN solo de RAÍZ LIMPIA (palabra única alfabética; el diccionario cura los
+   * irregulares y siempre tiene prioridad). Se limitan a sufijos sin divergencia de raíz frecuente.
+   * NO se incluyen -ona/-onio/-ina: dan falsos por transliteración (ciproterona→cyproterone ci→cy,
+   * suxametonio→suxamethonium t→th, atorvastatina→atorvastatin -in≠-ine). Esos casos van por diccionario.
+   */
   _applyRules(n) {
     if (/\s/.test(n) || !/^[a-z]+$/.test(n)) return n;
-    // Azoles: omeprazol -> omeprazole, fluconazol -> fluconazole
-    if (/azol$/.test(n)) return n.replace(/azol$/, 'azole');
+    if (/azol$/.test(n))  return n.replace(/azol$/, 'azole');    // omeprazol → omeprazole
+    if (/caina$/.test(n)) return n.replace(/caina$/, 'caine');   // bupivacaina → bupivacaine
+    if (/oina$/.test(n))  return n.replace(/oina$/, 'oin');      // alitretinoina → alitretinoin
     return n;
   }
 
