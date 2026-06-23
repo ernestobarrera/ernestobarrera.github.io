@@ -783,7 +783,7 @@ body {
    ============================================ */
 .results-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
     gap: var(--space-sm);
 }
 
@@ -802,12 +802,16 @@ body {
     box-shadow: var(--shadow-md);
 }
 
-/* Prevenir desbordamiento de texto en tarjetas */
+/* Prevenir desbordamiento de texto y permitir que la tarjeta encoja a su columna
+   (si no, en contenedor estrecho la tarjeta desborda y la estrella de favorito se corta). */
 .result-card {
     overflow: hidden;
+    min-width: 0;
 }
 
 .result-card-title {
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -4191,6 +4195,7 @@ body {
 
 .med-info-content {
     flex: 1;
+    min-width: 0;
 }
 
 .result-card-title {
@@ -5937,7 +5942,7 @@ body {
 
 .result-group-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
     gap: var(--space-sm);
 }
 
