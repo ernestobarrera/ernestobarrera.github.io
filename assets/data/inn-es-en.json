@@ -1,5 +1,5 @@
 {
-  "version": "2026-06-22",
+  "version": "2026-06-24",
   "note": "Diccionario INN español -> inglés para búsquedas en PubMed/ensayos clínicos. Solo irregulares (los que no se deducen por regla de sufijo). Claves en minúscula sin acentos. Ampliable: añade pares aquí. Lo consume assets/js/inn-dict.js (window.innDict).",
   "map": {
     "paracetamol": "acetaminophen",
@@ -432,6 +432,7 @@
     "suxametonio": "suxamethonium",
     "magnesio": "magnesium",
     "potasio": "potassium",
-    "calcio": "calcium"
+    "calcio": "calcium",
+    "ciclosilicato sodio zirconio": "sodium zirconium cyclosilicate"
   }
 }
