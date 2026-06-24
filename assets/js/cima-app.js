@@ -396,7 +396,13 @@ class MedCheckApp {
         // Una sola petición por sesión, datos pequeños y cacheados en cima-api.
         this._supplyIndex = null;
         this.api.getSuministroIndex()
-            .then(idx => { this._supplyIndex = idx; })
+            .then(idx => {
+                this._supplyIndex = idx;
+                // Repintar la búsqueda visible: las fechas de suministro llegan async y antes no se refrescaban.
+                if (this.currentView === 'search' && this.lastSearchResults?.resultados) {
+                    this.displaySearchResults(this.lastSearchResults);
+                }
+            })
             .catch(() => { /* silencioso: degrada al comportamiento previo */ });
 
         // Índice ligero de nregistros con biomarcador farmacogenómico (AEMPS).
@@ -2161,20 +2167,40 @@ class MedCheckApp {
         return `hasta ${ffinStr}`;
     }
 
+    /**
+     * Modelo central del estado de suministro (H7). Refleja el flag oficial `med.psum` del nomenclátor de
+     * CIMA (coincide con el módulo de prescripción de la HCE). Máxima "no reinterpretar la fuente": el color
+     * es SIEMPRE neutro y el cruce con /psuministro (índice de activos por CN, `_aggregateShortage`) solo
+     * ENRIQUECE el tooltip; nunca gobierna ni degrada la aparición del badge.
+     * @returns {null | {confirmed, label, icon, badgeClass, suffix, tooltip, agg}}
+     */
+    _supplyInfo(med) {
+        if (!med || !med.psum) return null;
+        const agg = this._aggregateShortage(med);
+        const suffix = agg ? (this._formatShortageBadgeText(agg) || '') : '';
+        const tooltip = agg
+            ? (this._formatShortageTooltip(agg, 'Ver alternativas') || 'Problema de suministro · AEMPS')
+            : 'CIMA marca un problema de suministro (nomenclátor). Verifícalo en Suministro o en la ficha técnica.';
+        return { confirmed: !!agg, label: 'Problema de suministro', icon: 'fa-boxes', badgeClass: 'badge-neutral', suffix, tooltip, agg };
+    }
+
+    /** HTML del badge de suministro para las cards (clickable → alternativas). Cadena vacía si no hay psum. */
+    _supplyBadgeHtml(med) {
+        const s = this._supplyInfo(med);
+        if (!s) return '';
+        const safeName = (med.nombre || '').replace(/'/g, "\\'");
+        // Fecha/ventana en una 2ª línea dentro del badge (estilos en línea para que se vea aunque el CSS esté cacheado).
+        const dateLine = s.suffix ? `<span style="font-size:0.82em;opacity:0.78;font-weight:400;">${this._escapeHtml(s.suffix)}</span>` : '';
+        return `<span class="badge ${s.badgeClass} badge-clickable" title="${this._escapeHtml(s.tooltip)}" onclick="event.stopPropagation(); app.showSupplyAlternativesByNregistro('${med.nregistro}', '${safeName}')"><i class="fas ${s.icon}"></i> <span style="display:inline-flex;flex-direction:column;line-height:1.15;text-align:left;"><span>${s.label}</span>${dateLine}</span></span>`;
+    }
+
     renderMedCard(med) {
         // Badges de estado — tipología de producto centralizada
         const badges = [...this._renderProductTypeBadges(med)];
         if (med.receta) badges.push('<span class="badge badge-info">Receta</span>');
         if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro - Vigilancia adicional">▲ Vigilancia</span>');
-        if (med.psum) {
-            // Always make badge clickable using nregistro (ATC might not be available in search results)
-            const agg = this._aggregateShortage(med);
-            const shortText = this._formatShortageBadgeText(agg);
-            const tooltip = this._formatShortageTooltip(agg, 'Click para ver alternativas');
-            const labelSuffix = shortText ? ` · ${shortText}` : '';
-            const titleAttr = tooltip || 'Sin stock - Click para ver alternativas';
-            badges.push(`<span class="badge badge-danger badge-clickable" title="${titleAttr}" onclick="event.stopPropagation(); app.showSupplyAlternativesByNregistro('${med.nregistro}', '${med.nombre.replace(/'/g, "\\'")}')"><i class="fas fa-exclamation-triangle"></i> Sin stock${labelSuffix}</span>`);
-        }
+        const supplyBadge = this._supplyBadgeHtml(med);
+        if (supplyBadge) badges.push(supplyBadge);
         if (med.estupiTemp) badges.push('<span class="badge badge-dark" title="Estupefaciente - Receta especial">⚠ Estupef.</span>');
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
         // Notas de seguridad oficiales de la AEMPS
@@ -2964,15 +2990,9 @@ class MedCheckApp {
         const badges = [...this._renderProductTypeBadges(med)];
         if (med.receta) badges.push('<span class="badge badge-info">Receta</span>');
         if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro">▲ Vigilancia</span>');
-        // Badge psum clickable para ver alternativas
-        if (med.psum) {
-            // Always make badge clickable using nregistro
-            const aggInd = this._aggregateShortage(med);
-            const shortInd = this._formatShortageBadgeText(aggInd);
-            const tipInd = this._formatShortageTooltip(aggInd, 'Click para ver alternativas') || 'Sin stock - Click para ver alternativas';
-            const suffixInd = shortInd ? ` · ${shortInd}` : '';
-            badges.push(`<span class="badge badge-danger badge-clickable" title="${tipInd}" onclick="event.stopPropagation(); app.showSupplyAlternativesByNregistro('${med.nregistro}', '${med.nombre.replace(/'/g, "\\'")}')"><i class="fas fa-exclamation-triangle"></i> Sin stock${suffixInd}</span>`);
-        }
+        // Badge de suministro (modelo central; neutro, fiel al nomenclátor)
+        const supplyBadgeInd = this._supplyBadgeHtml(med);
+        if (supplyBadgeInd) badges.push(supplyBadgeInd);
         if (med.estupiTemp) badges.push('<span class="badge badge-dark" title="Estupefaciente - Receta especial">⚠ Estupef.</span>');
         if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
         // Notas de seguridad AEMPS
@@ -5280,7 +5300,10 @@ class MedCheckApp {
             const dosis = med.dosis || '';
             const forma = med.formaFarmaceutica?.nombre || '';
             const isGeneric = med.generico;
-            const hasStock = !med.psum;
+            const supply = this._supplyInfo(med);
+            const supplyChip = supply
+                ? `<span class="badge ${supply.badgeClass} ml-sm" title="${this._escapeHtml(supply.tooltip)}"><i class="fas ${supply.icon}"></i> ${supply.label}</span>`
+                : '';
 
             return `
                 <tr class="${isGeneric ? 'equiv-row-generic' : ''}">
@@ -5291,7 +5314,7 @@ class MedCheckApp {
                     <td>${lab}</td>
                     <td>
                         ${isGeneric ? '<span class="badge badge-success">Genérico</span>' : '<span class="badge badge-neutral">Marca</span>'}
-                        ${!hasStock ? '<span class="badge badge-danger ml-sm">Sin stock</span>' : ''}
+                        ${supplyChip}
                     </td>
                     <td>
                         <button class="btn btn-icon btn-secondary" onclick="app.openMedDetails('${med.nregistro}')" title="Ver detalles">
@@ -7102,7 +7125,7 @@ class MedCheckApp {
         const countText = commercializedCount === presentations.length
             ? `${presentations.length} comercializada${presentations.length !== 1 ? 's' : ''}`
             : `${commercializedCount} comercializada${commercializedCount !== 1 ? 's' : ''} de ${presentations.length}`;
-        const supplyText = stockIssues > 0 ? ` · ${stockIssues} suministro` : '';
+        const supplyText = stockIssues > 0 ? ` · ${stockIssues} con problema de suministro` : '';
 
         const rows = presentations.map(presentation => {
             const format = this._getPresentationFormat(med.nombre, presentation.nombre);
@@ -7129,8 +7152,8 @@ class MedCheckApp {
                             : null,
                     })
                     : 'Problema de suministro activo';
-                const label = windowText ? `Suministro · ${windowText}` : 'Suministro';
-                supplyBadge = `<span class="presentation-status presentation-status--danger" title="${tip}">${label}</span>`;
+                const label = windowText ? `Suministro · ${windowText}` : 'Problema de suministro';
+                supplyBadge = `<span class="presentation-status presentation-status--muted" title="${tip}"><i class="fas fa-boxes"></i> ${label}</span>`;
             }
 
             return `
@@ -7188,7 +7211,7 @@ class MedCheckApp {
             const shortInfo = this._formatShortageBadgeText(aggInfo);
             const tooltipInfo = this._formatShortageTooltip(aggInfo) || 'Problema de suministro activo';
             const suffixInfo = shortInfo ? ` · ${shortInfo}` : '';
-            alerts.push(`<span class="badge badge-danger" title="${tooltipInfo}"><i class="fas fa-boxes"></i> Problema suministro${suffixInfo}</span>`);
+            alerts.push(`<span class="badge badge-neutral" title="${tooltipInfo}"><i class="fas fa-boxes"></i> Problema de suministro${suffixInfo}</span>`);
             // Fila adicional con la ventana completa: misma estética que el
             // resto del modal, sin badge naranja (ese tono pertenece a la
             // vista Suministro). El badge superior da urgencia; esta fila
@@ -8956,7 +8979,7 @@ ${materialesPlaceholder}
                     <div class="summary-stat summary-stat-success">
                         <i class="fas fa-check-circle"></i>
                         <span class="summary-number">${available.length}</span>
-                        <span class="summary-label">Disponibles</span>
+                        <span class="summary-label">Sin incidencia registrada</span>
                     </div>
                     <div class="summary-stat summary-stat-info">
                         <i class="fas fa-layer-group"></i>
@@ -8964,9 +8987,9 @@ ${materialesPlaceholder}
                         <span class="summary-label">Dosis</span>
                     </div>
                     <div class="summary-stat summary-stat-danger">
-                        <i class="fas fa-exclamation-triangle"></i>
+                        <i class="fas fa-boxes"></i>
                         <span class="summary-number">${unavailable.length}</span>
-                        <span class="summary-label">Sin stock</span>
+                        <span class="summary-label">Con problema de suministro</span>
                     </div>
                 </div>
 
@@ -9013,12 +9036,11 @@ ${materialesPlaceholder}
 
                 ${unavailable.length > 0 ? `
                     <div class="alternatives-section alternatives-section-muted" style="margin-top: 1.5rem; opacity: 0.7;">
-                        <h4 class="alternatives-section-title text-danger">
-                            <i class="fas fa-exclamation-triangle"></i> También Sin Stock (${unavailable.length})
+                        <h4 class="alternatives-section-title text-muted">
+                            <i class="fas fa-boxes"></i> También con problema de suministro (${unavailable.length})
                         </h4>
                         <div class="alternatives-chips">
-                            ${unavailable.slice(0, 10).map(med => `<span class="alternative-chip-muted">${med.nombre.split(' ')[0]}</span>`).join('')}
-                            ${unavailable.length > 10 ? `<span class="alternative-chip-muted">+${unavailable.length - 10} más</span>` : ''}
+                            ${(() => { const marcas = [...new Set(unavailable.map(m => (m.nombre || '').split(' ')[0]).filter(Boolean))]; return marcas.slice(0, 10).map(mc => `<span class="alternative-chip-muted">${mc}</span>`).join('') + (marcas.length > 10 ? `<span class="alternative-chip-muted">+${marcas.length - 10} más</span>` : ''); })()}
                         </div>
                     </div>
                 ` : ''}
@@ -9184,19 +9206,19 @@ ${materialesPlaceholder}
                     <div class="summary-stat summary-stat-success">
                         <i class="fas fa-check-circle"></i>
                         <span class="summary-number">${available.length}</span>
-                        <span class="summary-label">Disponibles</span>
+                        <span class="summary-label">Sin incidencia registrada</span>
                     </div>
                     <div class="summary-stat summary-stat-danger">
-                        <i class="fas fa-exclamation-triangle"></i>
+                        <i class="fas fa-boxes"></i>
                         <span class="summary-number">${unavailable.length}</span>
-                        <span class="summary-label">Sin stock</span>
+                        <span class="summary-label">Con problema de suministro</span>
                     </div>
                 </div>
 
                 ${available.length > 0 ? `
                     <div class="alternatives-section">
                         <h4 class="alternatives-section-title text-success">
-                            <i class="fas fa-check-circle"></i> Alternativas Disponibles
+                            <i class="fas fa-check-circle"></i> Alternativas sin incidencia registrada
                         </h4>
                         <div class="alternatives-grid">
                             ${available.slice(0, 20).map(med => this.renderAlternativeCard(med, true)).join('')}
@@ -9214,13 +9236,12 @@ ${materialesPlaceholder}
 
                 ${unavailable.length > 0 ? `
                     <div class="alternatives-section alternatives-section-muted">
-                        <h4 class="alternatives-section-title text-danger">
-                            <i class="fas fa-exclamation-triangle"></i> También Sin Stock (${unavailable.length})
+                        <h4 class="alternatives-section-title text-muted">
+                            <i class="fas fa-boxes"></i> También con problema de suministro (${unavailable.length})
                         </h4>
                         <p class="text-muted text-sm mb-md">Estos medicamentos del mismo grupo también tienen problemas de suministro:</p>
                         <div class="alternatives-chips">
-                            ${unavailable.slice(0, 10).map(med => `<span class="alternative-chip-muted">${med.nombre.split(' ')[0]}</span>`).join('')}
-                            ${unavailable.length > 10 ? `<span class="alternative-chip-muted">+${unavailable.length - 10} más</span>` : ''}
+                            ${(() => { const marcas = [...new Set(unavailable.map(m => (m.nombre || '').split(' ')[0]).filter(Boolean))]; return marcas.slice(0, 10).map(mc => `<span class="alternative-chip-muted">${mc}</span>`).join('') + (marcas.length > 10 ? `<span class="alternative-chip-muted">+${marcas.length - 10} más</span>` : ''); })()}
                         </div>
                     </div>
                 ` : ''}
@@ -11609,7 +11630,7 @@ ${materialesPlaceholder}
         if (fav.triangulo) badgesTags.push('<span class="badge badge-danger badge-xs" title="Triángulo negro">▲</span>');
         if (this._isHospitalUse(fav)) badgesTags.push('<span class="badge badge-hospital badge-xs" title="Uso Hospitalario — solo farmacia hospitalaria"><i class="fas fa-hospital"></i> H</span>');
         else if (this._isDiagnosticoHospitalario(fav)) badgesTags.push('<span class="badge badge-hospital badge-xs" title="Diagnóstico Hospitalario — prescripción iniciada en hospital"><i class="fas fa-hospital"></i> DH</span>');
-        if (fav.psum) badgesTags.push('<span class="badge badge-danger badge-xs">Sin stock</span>');
+        if (fav.psum) badgesTags.push('<span class="badge badge-neutral badge-xs" title="Problema de suministro (nomenclátor CIMA)"><i class="fas fa-boxes"></i> Suministro</span>');
         if (fav.notas) badgesTags.push('<span class="badge badge-warning badge-xs">AEMPS</span>');
         const emlBadge = this._emlBadgeHtml(fav.atcCodigo, { compact: true });
         if (emlBadge) badgesTags.push(emlBadge);
@@ -12461,7 +12482,7 @@ ${materialesPlaceholder}
             });
         }
         if (sinStock.length > 0) {
-            alerts.push(`<div class="analytics-alert alert-danger" onclick="app._drillToFavorites('sinStock',true,'Sin suministro')" style="cursor:pointer">
+            alerts.push(`<div class="analytics-alert alert-danger" onclick="app._drillToFavorites('sinStock',true,'Con problema de suministro')" style="cursor:pointer">
                 <i class="fas fa-exclamation-circle"></i>
                 <span><strong>Problemas de suministro</strong> — busca alternativa: ${sinStock.map(s => s.nombre).join(', ')}</span>
             </div>`);
@@ -12546,10 +12567,10 @@ ${materialesPlaceholder}
                                 'Notas de seguridad',
                                 conAemps.length === 0 ? 'good' : 'warn',
                                 conAemps.length > 0 ? { type: 'aemps', value: true, label: 'Con alerta AEMPS' } : null)}
-                            ${metricCard('exclamation-circle', 'Sin suministro', sinStock.length,
-                                'Problemas stock',
+                            ${metricCard('boxes', 'Problema de suministro', sinStock.length,
+                                'Problemas de suministro',
                                 sinStock.length === 0 ? 'good' : 'alert',
-                                sinStock.length > 0 ? { type: 'sinStock', value: true, label: 'Sin suministro' } : null)}
+                                sinStock.length > 0 ? { type: 'sinStock', value: true, label: 'Con problema de suministro' } : null)}
                             ${metricCard('th-large', 'Grupos ATC', uniqueL2 + '/14',
                                 diversityLabel,
                                 uniqueL2 >= 6 ? 'good' : 'warn')}
