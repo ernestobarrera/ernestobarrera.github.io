@@ -3706,6 +3706,19 @@ class MedCheckApp {
 
                 <div class="combo-ai-primary">
                     <div class="combo-ai-action-head">
+                        <strong><i class="fas fa-sitemap"></i> Mapa de la lista</strong>
+                        <span>Ordena la lista por grupo ATC, duplicidades por grupo e indicaciones autorizadas, según fuentes. No evalúa a un paciente.</span>
+                    </div>
+                    <div class="combo-ai-buttons">
+                        <button class="btn btn-ai-perplexity" type="button" onclick="app.openComboEngine('mapa','perplexity')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre Perplexity (Ctrl+V si no se precarga)."><i class="fas fa-up-right-from-square"></i> Perplexity</button>
+                        <button class="btn btn-ai-chatgpt" type="button" onclick="app.openComboEngine('mapa','chatgpt')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre ChatGPT (Ctrl+V si no se precarga)."><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
+                        <button class="btn btn-secondary" type="button" onclick="app.copyComboPrompt('mapa')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt para pegarlo en cualquier IA (Claude, Gemini, Copilot…)"><i class="fas fa-clipboard"></i> Copiar</button>
+                    </div>
+                    ${n < 2 ? '<p class="combo-ai-need">Añade al menos 2 fármacos para el mapa de la lista.</p>' : ''}
+                </div>
+
+                <div class="combo-ai-primary">
+                    <div class="combo-ai-action-head">
                         <strong><i class="fas fa-user-md"></i> Fármaco–síntoma</strong>
                         <span>Posibles asociaciones entre la combinación y un síntoma (como reacción adversa).</span>
                     </div>
@@ -4094,7 +4107,7 @@ class MedCheckApp {
     }
 
     _validateComboAi(kind) {
-        if (kind === 'interactions') {
+        if (kind === 'interactions' || kind === 'mapa') {
             if (this.comboDrugList.length < 2) { this.showToast('Añade al menos 2 fármacos', 'warning'); return false; }
         } else {
             if (this.comboDrugList.length < 1) { this.showToast('Añade al menos 1 fármaco', 'warning'); return false; }
@@ -4164,6 +4177,11 @@ class MedCheckApp {
                 'Tarea: resume información referenciada sobre posibles INTERACCIONES entre estos fármacos, incluyendo las descritas por CLASE o grupo farmacológico (no solo por molécula).',
                 'Para cada par o grupo relevante: mecanismo descrito · posible relevancia clínica descrita · señales clínicas o parámetros que las fuentes mencionan · solidez de la evidencia, CITANDO FUENTES CONCRETAS (con URL cuando sea posible).'
             );
+        } else if (kind === 'mapa') {
+            lines.push(
+                'Tarea: ORDENA documentalmente esta lista de fármacos por su estructura farmacológica, a partir de fuentes oficiales. No asumas que existe un paciente concreto ni ordenes retirar, cambiar o priorizar nada.',
+                'Para la lista: (1) agrupa por grupo ATC / diana farmacológica; (2) señala DUPLICIDADES POTENCIALES por grupo (mismo grupo ATC o efecto solapado), citando fuente y sin afirmar que «sobra» ninguno; (3) indica la INDICACIÓN AUTORIZADA (ficha técnica 4.1) de cada fármaco como referencia «a confirmar» frente al uso real; (4) los PARÁMETROS DE MONITORIZACIÓN que las fuentes asocian a cada fármaco o grupo. CITA FUENTES (CIMA/AEMPS y guías) con URL y fecha cuando sea posible.'
+            );
         } else {
             const symptom = (this._comboSymptoms || []).join(', ');
             lines.push(
@@ -4198,18 +4216,9 @@ class MedCheckApp {
      * Perplexity y ChatGPT (Claude se cubre con "Copiar"; su `?q=` web no es fiable).
      * MedCheck no registra el prompt, no lo guarda y no lee la respuesta.
      */
-    async openComboEngine(kind, engine) {
+    openComboEngine(kind, engine) {
         if (!this._validateComboAi(kind)) return;
-        const prompt = this._buildComboAiPrompt(kind);
-        const urls = {
-            perplexity: `https://www.perplexity.ai/search?q=${encodeURIComponent(prompt)}`,
-            chatgpt: `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`
-        };
-        const url = urls[engine];
-        if (!url) return;
-        try { await navigator.clipboard.writeText(prompt); } catch (_) { /* no bloquea la apertura */ }
-        window.open(url, '_blank', 'noopener,noreferrer');
-        this.showToast('Prompt copiado y motor abierto — si no se precarga, pega con Ctrl+V', 'success');
+        this._openAiEngine(engine, this._buildComboAiPrompt(kind));
     }
 
     async copyComboPrompt(kind) {
@@ -4221,6 +4230,149 @@ class MedCheckApp {
         } catch (e) {
             this.showToast('No se pudo copiar el prompt', 'error');
         }
+    }
+
+    /**
+     * Pestaña "Consultar IA" del modal (hub de handoff por fármaco). Eje DOCUMENTAL: el prompt
+     * pregunta a las fuentes (FT/guías), no perfila ni evalúa a un paciente (decisión 2026-06-24,
+     * acta perfilado-vs-informacional). De momento aloja Monitorización; ampliable con más prompts.
+     */
+    renderConsultAiTab(med) {
+        const checks = [
+            { id: 'monitorizacion', label: 'Monitorización', desc: 'qué vigilar, cuándo y con qué umbrales', def: true },
+            { id: 'eficacia', label: '¿Sirve de verdad? Eficacia en absolutos', desc: 'beneficio absoluto, NNT/NNH, y si la indicación tiene base' },
+            { id: 'seguridad', label: 'Seguridad por escenarios', desc: 'embarazo, renal/hepático, mayores frágiles, interacciones' },
+            { id: 'comparacion', label: 'Comparación con la 1ª línea', desc: 'no solo frente a placebo' },
+            { id: 'dosis', label: 'Dosis y administración', desc: 'posología, ajustes y detalles de prescripción' },
+            { id: 'poem', label: '¿Cambia la práctica? (POEM)', desc: 'evidencia orientada al paciente, no a subrogados' },
+            { id: 'deprescripcion', label: 'Deprescripción (criterios de la clase)', desc: 'STOPP/START y Beers, como documentación' },
+        ];
+        const scenarios = [
+            { id: 'edad', label: 'Edad avanzada' },
+            { id: 'renal', label: 'Insuf. renal' },
+            { id: 'hepatica', label: 'Insuf. hepática' },
+            { id: 'embarazo', label: 'Embarazo / lactancia' },
+            { id: 'polifarmacia', label: 'Polifarmacia' },
+        ];
+        const checkHtml = checks.map(c => `<label class="consult-opt"><input type="checkbox" data-check="${c.id}" ${c.def ? 'checked' : ''}><span><strong>${c.label}</strong> — ${c.desc}</span></label>`).join('');
+        const scenarioHtml = scenarios.map(s => `<label class="consult-chip"><input type="checkbox" data-scenario="${s.id}"><span>${s.label}</span></label>`).join('');
+        return `
+            <div class="search-box combo-ai-hero">
+                <div class="combo-ai-hero-head">
+                    <i class="fas fa-robot combo-ai-hero-icon"></i>
+                    <div>
+                        <h3>Consulta a IA externa — fuera de la ficha técnica</h3>
+                        <p>Marca los aspectos que te interesen: el prompt se compone con esos apartados. MedCheck prepara la consulta; no interpreta, no guarda ni muestra la respuesta — verifícala con la ficha técnica/AEMPS y tu criterio. Perplexity y ChatGPT reciben la consulta por la URL (queda en su historial); «Copiar» no la envía por la URL.</p>
+                    </div>
+                    <span class="combo-research-badge">opcional</span>
+                </div>
+                <div class="combo-ai-primary">
+                    <div class="combo-ai-action-head">
+                        <strong><i class="fas fa-list-check"></i> Aspectos a preguntar a las fuentes</strong>
+                        <span>El prompt crece con lo que marques. Todo se formula como pregunta a la evidencia, no como evaluación de un paciente.</span>
+                    </div>
+                    <div class="consult-opts">${checkHtml}</div>
+                    <div class="combo-ai-action-head consult-sub">
+                        <strong><i class="fas fa-users"></i> Escenario documental (opcional)</strong>
+                        <span>Acota la pregunta a una población; nunca a un paciente concreto.</span>
+                    </div>
+                    <div class="consult-chips">${scenarioHtml}</div>
+                    <label class="combo-field-label consult-sub" for="consult-doubt">Duda concreta (opcional)</label>
+                    <textarea id="consult-doubt" class="combo-ai-context" rows="2" maxlength="500" placeholder="Tu pregunta, como duda documental. No incluyas datos que identifiquen a una persona."></textarea>
+                    <div class="combo-ai-buttons consult-sub">
+                        <button class="btn btn-ai-perplexity" type="button" onclick="app.openConsultEngine('perplexity')" title="Copia el prompt y abre Perplexity (Ctrl+V si no se precarga)."><i class="fas fa-up-right-from-square"></i> Perplexity</button>
+                        <button class="btn btn-ai-chatgpt" type="button" onclick="app.openConsultEngine('chatgpt')" title="Copia el prompt y abre ChatGPT (Ctrl+V si no se precarga)."><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
+                        <button class="btn btn-secondary" type="button" onclick="app.copyConsultPrompt()" title="Copia el prompt para pegarlo en cualquier IA (Claude, Gemini, Copilot…)"><i class="fas fa-clipboard"></i> Copiar</button>
+                    </div>
+                </div>
+                <p class="combo-ai-fn">Uso no validado, fuera de la información de la ficha técnica oficial. MedCheck solo prepara la consulta; el resultado es exploración asistida que verificas y empleas bajo tu responsabilidad profesional.</p>
+            </div>`;
+    }
+
+    /**
+     * Compone el prompt de la pestaña "Consultar IA" del modal según los aspectos marcados (eje
+     * DOCUMENTAL: pregunta a las fuentes, escenario poblacional opcional, sin perfilar paciente ni
+     * emitir plan individual). Decisión 2026-06-24 (acta perfilado-vs-informacional).
+     */
+    _buildConsultPrompt() {
+        const med = this.currentMed;
+        if (!med) return '';
+        const root = document.getElementById('tab-consult');
+        if (!root) return '';
+        const selected = [...root.querySelectorAll('input[data-check]:checked')].map(i => i.dataset.check);
+        if (!selected.length) { this.showToast('Marca al menos un aspecto', 'warning'); return ''; }
+        const scenarios = [...root.querySelectorAll('input[data-scenario]:checked')].map(i => i.dataset.scenario);
+        const doubt = (root.querySelector('#consult-doubt')?.value || '').trim();
+
+        const pa = med.vtm?.nombre
+            || (Array.isArray(med.principiosActivos) ? med.principiosActivos.map(p => p.nombre).filter(Boolean).join(' + ') : '')
+            || med.pactivos || med.nombre;
+        const atc = med.atcs?.[0]?.codigo || '';
+
+        const SCEN = { edad: 'edad avanzada', renal: 'insuficiencia renal', hepatica: 'insuficiencia hepática', embarazo: 'embarazo o lactancia', polifarmacia: 'polifarmacia' };
+        const BLOCKS = {
+            monitorizacion: 'MONITORIZACIÓN: qué vigilar, cuándo y con qué umbrales según ficha técnica (CIMA 4.2/4.4) y guías — monitorización basal, de seguimiento (parámetro · cuándo · umbral · qué señalan las fuentes si se cruza) y signos de alarma.',
+            eficacia: '¿SIRVE DE VERDAD? — EFICACIA EN ABSOLUTOS: para su(s) indicación(es) habitual(es), la magnitud del beneficio en términos ABSOLUTOS siempre que la fuente lo permita (reducción absoluta del riesgo, NNT, NNH, eventos por 1000, horizonte temporal y población). Señala EXPLÍCITAMENTE si la evidencia para una indicación habitual o promocionada es débil, indirecta o ausente. Si la fuente solo da medidas relativas o no da números, dilo; no conviertas ni inventes.',
+            seguridad: 'SEGURIDAD: qué describen las fuentes sobre seguridad en las poblaciones relevantes para este fármaco (embarazo/lactancia, insuficiencia renal/hepática, personas mayores o frágiles) y las interacciones clínicamente importantes. Señala contraindicaciones mayores y usos incorrectos frecuentes; distingue la señal de seguridad de la mera mención.',
+            comparacion: 'COMPARACIÓN: cómo se compara con la alternativa de primera línea según las fuentes (eficacia en absolutos, seguridad, comodidad y coste si la fuente lo da), no solo frente a placebo.',
+            dosis: 'DOSIS Y ADMINISTRACIÓN: posología, ajustes (renal/hepático/edad), forma de administración y los detalles de prescripción que habría que buscar en otra fuente, según ficha técnica (CIMA 4.2) y guías.',
+            poem: '¿CAMBIA LA PRÁCTICA? (POEM): ¿la evidencia es patient-oriented (mortalidad, morbilidad, síntomas, calidad de vida, ingresos, efectos adversos relevantes) o solo orientada a enfermedad/subrogados? Clasifícala (POEM sólido / POEM limitado / orientada a enfermedad / señal de seguridad / recomendación de guía / evidencia insuficiente), indica qué desenlaces mide y en qué población se estudió, y, según las fuentes, si ese hallazgo confirmaría, cambiaría o no modificaría la práctica habitual y en qué población se sostiene. No dirijas la conducta de un paciente concreto.',
+            deprescripcion: 'DEPRESCRIPCIÓN (documental): qué describen los criterios vigentes (STOPP/START, Beers) y las guías de deprescripción sobre este fármaco o su clase — en qué situaciones lo señalan como potencialmente inadecuado, y qué advertencias dan sobre su retirada (incluido si las fuentes describen retirada gradual y los efectos de retirada o reaparición a vigilar). Como documentación de las fuentes sobre la clase, no como pauta ni secuencia de retirada para un paciente concreto.'
+        };
+        const order = ['eficacia', 'comparacion', 'poem', 'dosis', 'monitorizacion', 'seguridad', 'deprescripcion'];
+        const tasks = order.filter(id => selected.includes(id)).map((id, i) => `${i + 1}. ${BLOCKS[id]}`);
+
+        const lines = [
+            'Eres un consultor en medicina basada en la evidencia para un médico de familia del Sistema Nacional de Salud español. Respondes SOBRE LO QUE DICEN LAS FUENTES acerca de un fármaco; no asumes que existe un paciente concreto ni emites una orden de actuación individual. Español de España, registro de médico de familia, sin metodología básica.',
+            '',
+            `FÁRMACO: ${pa}${atc ? ` (ATC ${atc})` : ''} — ${med.nombre}`,
+        ];
+        if (doubt) lines.push('', `DUDA DEL CLÍNICO (formúlala como pregunta a las fuentes; no incluye datos identificables): ${doubt}`);
+        if (scenarios.length) lines.push('', `ESCENARIO DOCUMENTAL (poblaciones/situaciones sobre las que preguntar a las fuentes, NO un paciente concreto): ${scenarios.map(s => SCEN[s]).filter(Boolean).join(', ')}. En cada apartado, añade qué describen las fuentes en ese escenario.`);
+        lines.push(
+            '',
+            'BUSCA en tiempo real y prioriza: guías vigentes (NICE, ESC/EASD y otras europeas, españolas, GuíaSalud), revisiones sistemáticas y metaanálisis (Cochrane), ensayos relevantes; para seguridad, AEMPS (CIMA, notas de seguridad) y EMA/PRAC. Prioriza lo publicado o actualizado en los últimos 3-5 años salvo que el estándar de referencia sea anterior.',
+            '',
+            'RESPONDE a estos apartados (en español de España):',
+            ...tasks,
+            '',
+            'EN CADA APARTADO: cada afirmación con enlace y fecha; separa lo respaldado por fuente de tu razonamiento; declara la certeza (alta/moderada/baja/muy baja) y qué la limita; y di QUÉ FALTA (qué dato del paciente o qué evidencia ausente cambiaría la respuesta). No emitas una orden de actuación ni un plan individual: describe lo que las fuentes sostienen para que el clínico lo aplique con su criterio. Si la búsqueda no devuelve evidencia suficiente para un apartado, declara la incertidumbre en vez de rellenarla.'
+        );
+        return lines.join('\n');
+    }
+
+    openConsultEngine(engine) {
+        const prompt = this._buildConsultPrompt();
+        if (!prompt) return;
+        this._openAiEngine(engine, prompt);
+    }
+
+    async copyConsultPrompt() {
+        const prompt = this._buildConsultPrompt();
+        if (!prompt) return;
+        try {
+            await navigator.clipboard.writeText(prompt);
+            this.showToast('Prompt copiado — pégalo en la IA que prefieras', 'success');
+        } catch (e) {
+            this.showToast('No se pudo copiar el prompt', 'error');
+        }
+    }
+
+    /**
+     * Copiar-y-abrir genérico para handoff IA (Perplexity/ChatGPT). Centraliza la guarda de longitud
+     * de ChatGPT: si el ?q= sería excesivo, abre el motor sin precargar (el prompt ya está copiado).
+     */
+    _openAiEngine(engine, prompt) {
+        const q = encodeURIComponent(prompt);
+        // ChatGPT abre una página de error si el ?q= es excesivo; por encima del umbral se abre sin
+        // precargar y el usuario pega (el prompt ya está copiado). Perplexity tolera consultas largas.
+        const CHATGPT_Q_MAX = 4000;
+        const url = engine === 'chatgpt'
+            ? (q.length <= CHATGPT_Q_MAX ? `https://chatgpt.com/?q=${q}` : 'https://chatgpt.com/')
+            : `https://www.perplexity.ai/search?q=${q}`;
+        navigator.clipboard.writeText(prompt).catch(() => { /* no bloquea la apertura */ });
+        window.open(url, '_blank', 'noopener,noreferrer');
+        this.showToast('Prompt copiado y motor abierto — si no se precarga, pega con Ctrl+V', 'success');
     }
 
     /**
@@ -5058,7 +5210,9 @@ class MedCheckApp {
 
             // Construir parámetros de búsqueda con los principios activos
             // Usar npactiv para filtrar por número exacto de principios activos (solución canónica de la API)
-            const searchParams = { comerc: 1 };
+            // tamanioPagina alto: traer todo el conjunto de equivalentes de una vez (no depender del
+            // tamaño de página por defecto de CIMA/proxy) para que el "Ver más" en cliente sea completo.
+            const searchParams = { comerc: 1, tamanioPagina: 250 };
 
             // Añadir todos los principios activos disponibles (la API soporta practiv1 y practiv2)
             if (principiosActivos[0]) searchParams.practiv1 = principiosActivos[0];
@@ -5240,12 +5394,16 @@ class MedCheckApp {
             <div id="equiv-filtered-results"></div>
         `;
 
-        // Renderizar resultados iniciales
+        // Renderizar resultados iniciales (cada búsqueda nueva arranca colapsada)
+        this.equivExpanded = false;
         this.applyEquivFilters();
 
         // Event listeners para filtros
         ['equiv-filter-dosis', 'equiv-filter-forma', 'equiv-filter-lab', 'equiv-filter-generico', 'equiv-filter-biosimilar'].forEach(id => {
-            document.getElementById(id)?.addEventListener('change', () => this.applyEquivFilters());
+            document.getElementById(id)?.addEventListener('change', () => {
+                this.equivExpanded = false; // un cambio de filtro vuelve a colapsar
+                this.applyEquivFilters();
+            });
         });
     }
 
@@ -5294,7 +5452,8 @@ class MedCheckApp {
             return;
         }
 
-        const rows = filtered.slice(0, 50).map(med => {
+        const INITIAL_SHOW = 50;
+        const rows = (this.equivExpanded ? filtered : filtered.slice(0, INITIAL_SHOW)).map(med => {
             const nombre = med.nombre || 'Sin nombre';
             const lab = med.labtitular || 'Laboratorio desconocido';
             const dosis = med.dosis || '';
@@ -5325,6 +5484,8 @@ class MedCheckApp {
             `;
         }).join('');
 
+        const remaining = filtered.length - INITIAL_SHOW;
+        const showViewMore = !this.equivExpanded && remaining > 0;
         resultsContainer.innerHTML = `
             <p class="text-muted text-sm mb-sm"><strong>${filtered.length}</strong> resultados${filtered.length !== this.equivAllResults.length ? ' (filtrados)' : ''}</p>
             <table class="equiv-table">
@@ -5340,8 +5501,19 @@ class MedCheckApp {
                     ${rows}
                 </tbody>
             </table>
-            ${filtered.length > 50 ? '<p class="text-muted mt-md">Mostrando primeros 50 resultados</p>' : ''}
+            ${showViewMore ? `
+                <button type="button" class="view-more-btn" onclick="app.expandEquiv()">
+                    <i class="fas fa-chevron-down"></i> Ver ${remaining} más
+                </button>` : ''}
         `;
+    }
+
+    /**
+     * "Ver más" de equivalencias: muestra todos los resultados de golpe (como Indicaciones).
+     */
+    expandEquiv() {
+        this.equivExpanded = true;
+        this.applyEquivFilters();
     }
 
 
@@ -6712,12 +6884,15 @@ class MedCheckApp {
     trackModalTab(med, tab) {
         if (!this.api?.cloudflareProxy || !med?.nregistro) return;
         const vista = `modal-${tab || 'info'}`;
+        // En "Consultar IA" no asociamos el contexto clínico activo al evento, por coherencia con el
+        // encuadre documental (el handoff no perfila paciente). Analítica interna agregada.
+        const ctx = tab === 'consult' ? '' : (window._mcActiveContexts || '');
         const payload = {
             event: 'modal_tab',
             vista,
             nregistro: String(med.nregistro),
             nombre: med.nombre || '',
-            contexto: window._mcActiveContexts || '',
+            contexto: ctx,
             source: window._mcSource || 'app',
         };
         fetch(`${this.api.cloudflareProxy}/track`, {
@@ -6726,7 +6901,7 @@ class MedCheckApp {
             headers: {
                 'Content-Type': 'application/json',
                 'X-MC-View': vista,
-                ...(window._mcActiveContexts ? { 'X-MC-Context': window._mcActiveContexts } : {}),
+                ...(ctx ? { 'X-MC-Context': ctx } : {}),
                 ...(window._mcSource ? { 'X-MC-Source': window._mcSource } : {}),
             },
             body: JSON.stringify(payload),
@@ -6778,6 +6953,7 @@ class MedCheckApp {
             const isSafetyActive = initialTab === 'safety';
             const isAlertsActive = initialTab === 'alerts';
             const isEvidenceActive = initialTab === 'evidence';
+            const isConsultActive = initialTab === 'consult';
 
             // Track modal tab in analytics
             window._mcCurrentView = `modal-${initialTab}`;
@@ -6872,6 +7048,7 @@ class MedCheckApp {
                     ${hasAempsAlerts ? `<button class="modal-tab alert-pulse ${isAlertsActive ? 'active' : ''}" data-tab="alerts"><i class="fas fa-exclamation-triangle"></i> Alertas AEMPS</button>` : ''}
                     ${hasPgx ? `<button class="modal-tab modal-tab-pgx ${isPgxActive ? 'active' : ''}" data-tab="pgx" title="Biomarcador farmacogenómico (AEMPS)"><i class="fas fa-dna"></i> PGx</button>` : ''}
                     <button class="modal-tab modal-tab-evidence ${isEvidenceActive ? 'active' : ''}" data-tab="evidence" title="Evidencia científica: PubMed y registros de ensayos clínicos"><i class="fas fa-book-medical"></i> Evidencia</button>
+                    <button class="modal-tab modal-tab-consult ${isConsultActive ? 'active' : ''}" data-tab="consult" title="Preparar una consulta a una IA externa (fuera de ficha técnica)"><i class="fas fa-robot"></i> Consultar IA</button>
                     ${hasCns ? `<button class="modal-tab modal-tab-financing ${isFinancingActive ? 'active' : ''}" data-tab="financing" title="Financiación SNS: aportación, estado, precio"><i class="fas fa-receipt"></i> Financiación</button>` : ''}
                 </div>
 
@@ -6930,6 +7107,10 @@ class MedCheckApp {
                     <div id="evidence-content">
                         <div class="loading-spinner"></div>
                     </div>
+                </div>
+
+                <div id="tab-consult" class="tab-content ${isConsultActive ? 'active' : ''}">
+                    ${this.renderConsultAiTab(med)}
                 </div>
 
                 ${hasCns ? `
@@ -8389,27 +8570,19 @@ ${materialesPlaceholder}
     _renderPgxAiBlock(medName, medAtc, biomList) {
         if (!biomList || biomList.length === 0) return '';
         const prompt = this._buildPgxAiPrompt(medName, medAtc, biomList);
-        const encoded = encodeURIComponent(prompt);
-        const perplexityUrl = `https://www.perplexity.ai/search?q=${encoded}`;
         const promptB64 = btoa(unescape(encodeURIComponent(prompt))); // safe data attribute storage
         return `
             <div class="pgx-ai-block">
                 <div class="pgx-ai-header">
                     <i class="fas fa-robot"></i> Consultar con IA sobre estos biomarcadores
                 </div>
-                <div class="pgx-ai-menu pgx-ai-menu-horizontal">
-                    <a class="pgx-ai-option pgx-ai-option-primary" href="${perplexityUrl}" target="_blank" rel="noopener" title="Perplexity ofrece respuestas con citas a fuentes — recomendado para verificar información clínica">
-                        <i class="fas fa-search"></i>
-                        <span class="pgx-ai-option-main">Abrir en Perplexity</span>
-                        <span class="pgx-ai-option-sub">respuestas con citas a fuentes</span>
-                    </a>
-                    <button class="pgx-ai-option pgx-ai-option-secondary pgx-ai-copy" type="button" data-prompt-b64="${promptB64}" title="Copia el prompt al portapapeles para pegarlo en Claude, ChatGPT, Copilot, Gemini o cualquier otra IA">
-                        <i class="fas fa-clipboard"></i>
-                        <span>Copiar prompt para otra IA <small>(Claude, ChatGPT, Copilot…)</small></span>
-                    </button>
+                <div class="combo-ai-buttons">
+                    <button class="btn btn-ai-perplexity pgx-ai-engine" type="button" data-prompt-b64="${promptB64}" data-engine="perplexity" title="Copia el prompt y abre Perplexity (Ctrl+V si no se precarga) — respuestas con citas a fuentes"><i class="fas fa-up-right-from-square"></i> Perplexity</button>
+                    <button class="btn btn-ai-chatgpt pgx-ai-engine" type="button" data-prompt-b64="${promptB64}" data-engine="chatgpt" title="Copia el prompt y abre ChatGPT (Ctrl+V si no se precarga)"><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
+                    <button class="btn btn-secondary pgx-ai-copy" type="button" data-prompt-b64="${promptB64}" title="Copia el prompt para pegarlo en cualquier IA (Claude, Gemini, Copilot…)"><i class="fas fa-clipboard"></i> Copiar</button>
                 </div>
                 <p class="pgx-ai-warning text-muted">
-                    Las respuestas de IA pueden contener errores. Verifique siempre con fuentes primarias (ficha técnica AEMPS, guidelines CPIC).
+                    Perplexity y ChatGPT reciben la consulta por la URL (queda en su historial); «Copiar» no la envía por la URL. Las respuestas de IA pueden contener errores: verifique siempre con fuentes primarias (ficha técnica AEMPS, guidelines CPIC).
                 </p>
             </div>`;
     }
@@ -8433,6 +8606,8 @@ ${materialesPlaceholder}
             '',
             'Soy un profesional sanitario prescriptor (puede ser de atención primaria, oncología, farmacia hospitalaria, internista, anestesia u otra especialidad) consultando esta información en un punto de atención clínica.',
             '',
+            'Resúmeme lo que las guías farmacogenéticas (CPIC/DPWG) y la ficha técnica de la AEMPS RECOMIENDAN según el genotipo. Es información de guías publicadas, no una orden para un paciente concreto: yo la verifico y la aplico con mi criterio.',
+            '',
             'Necesito una respuesta estructurada con el siguiente orden:',
             '',
             '1. **Resumen interpretativo** (5–7 líneas, punto de partida):',
@@ -8440,17 +8615,17 @@ ${materialesPlaceholder}
             '   - 1–2 frases más: en qué procesos farmacológicos interviene y por qué importa para este fármaco concreto.',
             '   - Después: qué significa clínicamente la asociación fármaco–biomarcador, a quién afecta (prevalencia poblacional desglosada por grupos étnicos o clínicos cuando aplique) y magnitud del impacto (toxicidad, pérdida de eficacia, etc.).',
             '',
-            '2. **Tabla resumen en markdown** con tres filas (un escenario por fila) y tres columnas: Escenario | Acción concreta (dosis + alternativa) | Cuándo aplica. Que sea legible de un vistazo, sin redundancia con el detalle posterior. Ejemplo de estructura:',
-            '   | Escenario | Acción | Cuándo aplica |',
+            '2. **Tabla resumen en markdown** con tres filas (un escenario por fila) y tres columnas: Escenario | Qué recomienda la guía (CPIC/DPWG/AEMPS): dosis o alternativa | Cuándo aplica. Es la recomendación de la guía publicada para cada genotipo, no una orden para un paciente concreto. Legible de un vistazo, sin redundancia con el detalle posterior. Ejemplo de estructura:',
+            '   | Escenario | Recomendación de la guía | Cuándo aplica |',
             '   |---|---|---|',
             '   | Portador positivo conocido | Suspender / dosis X / alternativa Y | Genotipado disponible |',
             '   | Portador negativo conocido | Dosis estándar | Genotipado normal |',
             '   | Desconocido + factor de riesgo | Cribar / alternativa empírica Z | Etnia/clínica de riesgo |',
             '',
-            '3. **Detalle por escenario** (formato situación → acción → alternativa, breve):',
-            '   a) **Portador positivo conocido**: paciente con genotipo/fenotipo confirmado.',
-            '   b) **Portador negativo conocido** (variante salvaje / metabolizador normal).',
-            '   c) **Estado genotípico DESCONOCIDO — escenario más habitual en la práctica clínica**: qué hacer si el paciente pertenece al grupo de riesgo previsto en la ficha técnica AEMPS. Indica explícitamente cuál es el factor de riesgo (étnico concreto, comorbilidad, fármaco concomitante…). ¿Cribar antes? ¿Alternativa empírica? ¿Consentimiento? Si no hay factor identificable, ¿puede iniciarse sin genotipado?',
+            '3. **Detalle por escenario** (formato situación → qué recomienda la guía → alternativa, breve):',
+            '   a) **Portador positivo conocido**: qué recomienda la guía para un genotipo/fenotipo de riesgo confirmado.',
+            '   b) **Portador negativo conocido** (variante salvaje / metabolizador normal): qué recomienda la guía.',
+            '   c) **Estado genotípico DESCONOCIDO — escenario más habitual en la práctica clínica**: qué recomiendan las guías y la ficha técnica AEMPS cuando el genotipo no se conoce y existe un grupo de riesgo. Indica explícitamente cuál es el factor de riesgo (étnico concreto, comorbilidad, fármaco concomitante…). ¿Las fuentes recomiendan cribar antes, una alternativa empírica, consentimiento? ¿Contemplan iniciar sin genotipado si no hay factor identificable?',
             '',
             '4. **Contexto del prescriptor**: perfil profesional al que aplica principalmente. Si es biomarcador oncológico somático NO aplicable fuera de oncología/anatomía patológica, dilo y termina.',
             '',
@@ -8487,6 +8662,14 @@ ${materialesPlaceholder}
                 } catch (e) {
                     btn.innerHTML = '<i class="fas fa-times"></i> Error';
                 }
+            });
+        });
+        // Botones "copiar-y-abrir" (Perplexity/ChatGPT): unificado con el resto vía _openAiEngine
+        // (misma guarda de longitud de ChatGPT). Perplexity tolera consultas largas.
+        root.querySelectorAll('.pgx-ai-engine').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const prompt = decodeURIComponent(escape(atob(btn.dataset.promptB64 || '')));
+                this._openAiEngine(btn.dataset.engine, prompt);
             });
         });
     }

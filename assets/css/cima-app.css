@@ -2534,6 +2534,16 @@ body {
 .combo-ai-hero .combo-ai-buttons { margin-top: var(--space-sm); }
 .combo-ai-hero .combo-ai-buttons .btn { font-size: 0.85rem; padding: 0.45rem 0.9rem; }
 
+/* Compositor "Consultar IA" del modal: checks que componen el prompt */
+.consult-opts { display: flex; flex-direction: column; gap: 0.4rem; margin-top: var(--space-sm); }
+.consult-opt { display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.85rem; line-height: 1.35; cursor: pointer; }
+.consult-opt input { margin-top: 0.2rem; flex: 0 0 auto; }
+.consult-opt span strong { font-weight: 600; }
+.consult-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: var(--space-sm); }
+.consult-chip { display: inline-flex; gap: 0.35rem; align-items: center; font-size: 0.8rem; padding: 0.25rem 0.6rem; border: 1px solid var(--border-default); border-radius: 999px; cursor: pointer; }
+.consult-chip input { margin: 0; }
+.consult-sub { margin-top: 0.85rem; }
+
 /* "Afinar la consulta": plegable secundario dentro del hero */
 .combo-ai-refine {
     border-top: 1px dashed rgba(99, 102, 241, 0.3);
