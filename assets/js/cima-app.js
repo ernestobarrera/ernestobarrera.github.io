@@ -24,10 +24,10 @@ class MedCheckApp {
     // Para añadir un código: await MedCheckApp._hashCode('NUEVO-CÓDIGO') en consola.
     // Para revocar: eliminar el hash correspondiente y subir nueva versión.
     static _ACCESS_HASHES = new Set([
-        '4f216deccb922820e9a887dde56f85f4804d6a073c206ce0e0359bc12cc90777', // MEDCHECK-2026-EB
-        '92ae8e8c39b4ac5efc207837a0ac3fbe272b635e8514118b4d03ec9cb6c84360', // PILOTO-A-2026
-        '65e247b6d35980132cfefc69263183b93b6c5d1a990837cca19ab61efb334d2e', // PILOTO-B-2026
-        '7b90945ec7cd02f56238387a65a6de604ea1ddbe63196f65b73fdc4d6a5c963e', // MEDCHECK-ML-JUL26
+        '4f216deccb922820e9a887dde56f85f4804d6a073c206ce0e0359bc12cc90777', // autor
+        '92ae8e8c39b4ac5efc207837a0ac3fbe272b635e8514118b4d03ec9cb6c84360', // piloto A
+        '65e247b6d35980132cfefc69263183b93b6c5d1a990837cca19ab61efb334d2e', // piloto B
+        '60fb2ff4822021da8905de54b7809a393d64262a4872c225d2ee887b674a5a68', // ML 2026
     ]);
 
     static async _hashCode(code) {
