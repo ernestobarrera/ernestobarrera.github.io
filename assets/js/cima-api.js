@@ -42,7 +42,7 @@ class CimaAPI {
      * Una sola vez; falla en abierto (si no carga, queda el dict vacío y la búsqueda cae al ATC-cache).
      * Ampliable: editar assets/data/clinical-ontology.json y subir el `?v=`.
      */
-    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260628a') {
+    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260628b') {
         if (this._clinicalOntologyLoaded) return CimaAPI.CLINICAL_DICTIONARY;
         if (this._clinicalOntologyLoading) return this._clinicalOntologyLoading;
         this._clinicalOntologyLoading = fetch(url, { cache: 'force-cache' })
@@ -879,11 +879,93 @@ class CimaAPI {
             return true;
         });
 
+        const sectionFilter = matchData.section41Filter || matchData.sectionFilter;
+        if (sectionFilter) {
+            const filtered = await this._filterIndicationResultsBySection(uniqueResults, sectionFilter);
+            return {
+                resultados: filtered.resultados,
+                totalFilas: filtered.resultados.length,
+                matchedIndication: {
+                    ...matchData,
+                    filterSummary: filtered.summary
+                }
+            };
+        }
+
         return {
             resultados: uniqueResults,
             totalFilas: uniqueResults.length,
             matchedIndication: matchData
         };
+    }
+
+    /**
+     * Filtra resultados por texto oficial de una sección de ficha técnica.
+     * Se usa para indicaciones sensibles (p. ej. oncología), donde el ATC por sí solo
+     * agrupa fármacos de muchos tumores distintos.
+     * @private
+     */
+    async _filterIndicationResultsBySection(medications, filter) {
+        const section = filter.section || '4.1';
+        const includeAny = this._normalizeSectionFilterTerms(filter.includeAny || filter.terms || []);
+        const includeAll = this._normalizeSectionFilterTerms(filter.includeAll || []);
+        const excludeAny = this._normalizeSectionFilterTerms(filter.excludeAny || []);
+        const batchSize = filter.batchSize || 12;
+        const resultados = [];
+        const summary = {
+            section,
+            candidates: medications.length,
+            checked: 0,
+            matched: 0,
+            errors: 0
+        };
+
+        for (let i = 0; i < medications.length; i += batchSize) {
+            const batch = medications.slice(i, i + batchSize);
+            const checked = await Promise.all(batch.map(async (med) => {
+                try {
+                    const html = await this.getDocSeccion(med.nregistro, section);
+                    const text = this._normalizeSectionFilterText(html);
+                    summary.checked++;
+                    return this._matchesSectionFilter(text, includeAny, includeAll, excludeAny) ? med : null;
+                } catch (error) {
+                    summary.errors++;
+                    return null;
+                }
+            }));
+
+            resultados.push(...checked.filter(Boolean));
+        }
+
+        summary.matched = resultados.length;
+        return { resultados, summary };
+    }
+
+    _normalizeSectionFilterTerms(terms) {
+        return (Array.isArray(terms) ? terms : [terms])
+            .filter(Boolean)
+            .map(term => this._normalizeSectionFilterText(term));
+    }
+
+    _normalizeSectionFilterText(value) {
+        let text = String(value || '').replace(/<[^>]*>/g, ' ');
+        if (typeof document !== 'undefined') {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = text;
+            text = textarea.value;
+        }
+        return text
+            .toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    _matchesSectionFilter(text, includeAny, includeAll, excludeAny) {
+        if (includeAll.length > 0 && !includeAll.every(term => text.includes(term))) return false;
+        if (includeAny.length > 0 && !includeAny.some(term => text.includes(term))) return false;
+        if (excludeAny.length > 0 && excludeAny.some(term => text.includes(term))) return false;
+        return includeAny.length > 0 || includeAll.length > 0;
     }
 
     /**
@@ -973,7 +1055,9 @@ class CimaAPI {
         // Eliminar duplicados por código ATC
         const seen = new Set();
         return combined.filter(m => {
-            const key = Array.isArray(m.atc) ? m.atc.join(',') : m.atc;
+            const key = m.source === 'atc-cache'
+                ? `atc:${m.atc}`
+                : `clinical:${m.term || m.label || (Array.isArray(m.atc) ? m.atc.join(',') : m.atc)}`;
             if (seen.has(key)) return false;
             seen.add(key);
             return true;
