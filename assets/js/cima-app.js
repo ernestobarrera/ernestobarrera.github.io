@@ -2449,8 +2449,14 @@ class MedCheckApp {
             return;
         }
 
+        // Conservar las matches completas (incluyen section41Filter/matchMode) para que el clic
+        // ejecute la búsqueda CORRECTA. Antes el botón solo serializaba atc+label, perdía el filtro
+        // 4.1 y mostraba fármacos de otros tumores bajo la misma indicación.
+        const suggestions = matches.slice(0, 8);
+        this._indicationSuggestions = suggestions;
+
         // Render matches with visual differentiation
-        dropdown.innerHTML = matches.slice(0, 8).map(match => {
+        dropdown.innerHTML = suggestions.map((match, idx) => {
             const isATC = match.source === 'atc-cache';
             const atcCodes = Array.isArray(match.atc) ? match.atc : [match.atc];
             const atcDisplay = atcCodes.length > 1
@@ -2474,11 +2480,7 @@ class MedCheckApp {
             }
 
             return `
-                <button class="autocomplete-item" 
-                        data-atc="${atcCodes[0]}" 
-                        data-label="${match.label}"
-                        data-is-multi="${atcCodes.length > 1}"
-                        data-all-atc='${JSON.stringify(atcCodes)}'>
+                <button class="autocomplete-item" data-idx="${idx}">
                     <div class="autocomplete-main">
                         <i class="fas ${icon} autocomplete-icon"></i>
                         <span class="autocomplete-term">${displayName}</span>
@@ -2494,19 +2496,54 @@ class MedCheckApp {
 
         dropdown.classList.remove('hidden');
 
-        // Click handler: perform ATC search directly
+        // Click handler: ejecuta la indicación seleccionada recuperando la match COMPLETA por
+        // su índice (no solo atc+label), para aplicar su filtro 4.1 si lo tiene.
         dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
             item.addEventListener('click', () => {
                 dropdown.classList.add('hidden');
                 document.getElementById('indication-input').value = '';
 
-                const label = item.dataset.label;
-                const atcCodes = JSON.parse(item.dataset.allAtc);
-
-                // Always use _searchMultipleATCs (works for single and multi ATCs)
-                this._searchMultipleATCs(atcCodes, label);
+                const match = this._indicationSuggestions?.[Number(item.dataset.idx)];
+                if (match) this._runIndicationSuggestion(match);
             });
         });
+    }
+
+    /**
+     * Ejecuta la búsqueda de una sugerencia de indicación seleccionada en el autocomplete.
+     * Si la entrada lleva filtro de sección 4.1, pasa por la ruta filtrada (_executeIndicationSearch)
+     * para no mostrar fármacos de otras indicaciones; si no, hace la búsqueda multi-ATC directa.
+     * @private
+     */
+    async _runIndicationSuggestion(match) {
+        const label = match.label || match.term;
+        const atcCodes = Array.isArray(match.atc) ? match.atc : [match.atc];
+        const hasSectionFilter = !!(match.section41Filter || match.sectionFilter);
+
+        // Sin filtro 4.1: comportamiento previo (unión de grupos ATC).
+        if (!hasSectionFilter) {
+            return this._searchMultipleATCs(atcCodes, label);
+        }
+
+        // Con filtro 4.1: mismo camino que teclear + Enter, para que el resultado sea coherente.
+        const resultsContainer = document.getElementById('indication-results');
+        resultsContainer.innerHTML = `
+            <div class="text-center p-xl">
+                <div class="loading-spinner mb-md"></div>
+                <p class="text-muted">Buscando ${label} y filtrando por indicación oficial (sección 4.1)...</p>
+            </div>
+        `;
+
+        try {
+            const data = await this.api._executeIndicationSearch(match, { comercializados: true });
+            this.groupingState.collapsedGroups.clear();
+            this.groupingState.expandedGroups.clear();
+            this.lastIndicationQuery = label;
+            this.lastIndicationResults = data;
+            this.displayIndicationResults(data, label);
+        } catch (error) {
+            this.handleSearchError(resultsContainer, error);
+        }
     }
 
     /**

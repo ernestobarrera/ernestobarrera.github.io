@@ -974,12 +974,18 @@ class CimaAPI {
      * @param {string} query - Término normalizado
      * @returns {Array} Coincidencias ordenadas por relevancia
      */
-    findClinicalDictionaryMatches(query) {
+    findClinicalDictionaryMatches(query, { suggest = false } = {}) {
         const matches = [];
 
         // Normalize query (should already be normalized, but ensure)
         const normalizedQuery = query.toLowerCase()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/-/g, ' ');
+
+        // Prefijo de palabra: alguna palabra del texto empieza por la query. Se usa SOLO para
+        // sugerir entradas matchMode:'exact' en el autocomplete (descubribilidad de 'cancer',
+        // 'prostata', 'linfoma'... sin el ruido de subcadena que tendria un includes()).
+        const wordPrefix = (text) => normalizedQuery.length >= 3 &&
+            text.split(/[\s\-/]+/).some(w => w.startsWith(normalizedQuery));
 
         for (const [term, data] of Object.entries(CimaAPI.CLINICAL_DICTIONARY)) {
             // Normalize dictionary term for comparison
@@ -999,6 +1005,14 @@ class CimaAPI {
                 continue;
             }
 
+            // En modo sugerencia, las entradas exact también se PROPONEN por prefijo de palabra
+            // del término. Solo propone: la búsqueda real (searchByIndication, sin suggest) sigue
+            // exigiendo término o sinónimo exacto, y el clic ejecuta su ATC + filtro 4.1 concretos.
+            if (suggest && exactOnly && wordPrefix(normalizedTerm)) {
+                matches.push({ ...data, term, score: 78 });
+                continue;
+            }
+
             // Buscar en sinónimos por COINCIDENCIA DE PALABRA, no de subcadena: el sinónimo casa si
             // es igual a la query o si alguna de sus PALABRAS empieza por la query (>=4 chars). Evita
             // que un término genérico (p. ej. 'dolor') arrastre indicaciones cuyo sinónimo lo contenía
@@ -1008,7 +1022,9 @@ class CimaAPI {
                     const normalizedSyn = syn.toLowerCase()
                         .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/-/g, ' ');
 
-                    if (exactOnly) {
+                    // B\u00fasqueda real con entrada exact: solo sin\u00f3nimo id\u00e9ntico. En modo sugerencia
+                    // las exact pasan por la rama de prefijo de palabra (descubribilidad segura).
+                    if (exactOnly && !suggest) {
                         if (normalizedSyn === normalizedQuery) {
                             matches.push({ ...data, term, score: 70 });
                             break;
@@ -1041,8 +1057,9 @@ class CimaAPI {
      * @returns {Array} Matches combinados
      */
     findIndicationMatches(query) {
-        // Primero matches del diccionario clínico
-        const clinicalMatches = this.findClinicalDictionaryMatches(query);
+        // Primero matches del diccionario clínico. suggest:true habilita la descubribilidad por
+        // prefijo de palabra de las entradas exact (cáncer, biológicos...) SOLO como sugerencia.
+        const clinicalMatches = this.findClinicalDictionaryMatches(query, { suggest: true });
 
         // Nota: Para ATC names, usamos versión síncrona (cache ya cargado)
         // Si el cache no está listo, solo devolvemos clinical matches
