@@ -28,6 +28,9 @@ class MedCheckApp {
         '92ae8e8c39b4ac5efc207837a0ac3fbe272b635e8514118b4d03ec9cb6c84360', // piloto A
         '65e247b6d35980132cfefc69263183b93b6c5d1a990837cca19ab61efb334d2e', // piloto B
         '60fb2ff4822021da8905de54b7809a393d64262a4872c225d2ee887b674a5a68', // ML 2026
+        'eb4fe726daef41674a8ab2d9f0acb655c70d332ba60da404da768a0ac7975ba0', // LR revisor (revocar 31-jul-2026)
+        '169740e9adede4e29b7e4da5e350e9a9cb914c5dca886497eb2c9dd515c8535e', // EC revisor (revocar 31-jul-2026)
+        '1ca21fe46058b447595779c7df75824e4294a4cdfd113b6991d1fa0c46ea7122', // CB revisor (revocar 31-jul-2026)
     ]);
 
     static async _hashCode(code) {

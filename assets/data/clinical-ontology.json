@@ -1,6 +1,6 @@
 {
-  "version": "2026-06-09",
-  "note": "Ontología clínica de indicaciones de MedCheck: términos/síndromes/abreviaturas españoles -> códigos ATC. Fuente única editable (externalizada desde cima-api.js). La consume CimaAPI (búsqueda por indicación + autocomplete). status: stable|beta. synonyms = términos de BÚSQUEDA alternativos (abreviaturas, nombres alternativos, fármacos representativos), NO descripciones genéricas (evita ruido en el autocomplete por palabras como 'dolor').",
+  "version": "2026-06-28",
+  "note": "Ontología clínica de indicaciones de MedCheck: términos/síndromes/abreviaturas españoles -> códigos ATC. Fuente única editable (externalizada desde cima-api.js). La consume CimaAPI (búsqueda por indicación + autocomplete). status: stable|beta. matchMode exact = solo término o sinónimo completo. synonyms = términos de BÚSQUEDA alternativos (abreviaturas, nombres alternativos, fármacos representativos), NO descripciones genéricas (evita ruido en el autocomplete por palabras como 'dolor').",
   "terms": {
     "hipertensión": { "atc": ["C02", "C03", "C07", "C08", "C09"], "label": "Antihipertensivos (todos)", "synonyms": ["hta", "tensión alta", "hipertensión arterial", "presión alta"], "status": "stable" },
     "insuficiencia cardiaca": { "atc": ["C03", "C07", "C09", "A10BK"], "label": "IC (diuréticos, BB, IECA/ARA, iSGLT2)", "synonyms": ["ic", "fallo cardiaco", "insuficiencia cardíaca"], "status": "stable" },
@@ -49,6 +49,7 @@
     "fibromialgia": { "atc": ["N06A", "N03", "M03"], "label": "Antidepresivos, antiepilépticos y relajantes", "synonyms": ["puntos gatillo", "pregabalina", "duloxetina"], "status": "stable" },
     "incontinencia urinaria": { "atc": ["G04BD"], "label": "Antimuscarínicos urinarios", "synonyms": ["vejiga hiperactiva", "urgencia miccional", "solifenacina", "mirabegron"], "status": "stable" },
     "disfunción eréctil": { "atc": ["G04BE"], "label": "Inhibidores de PDE5", "synonyms": ["impotencia", "sildenafilo", "tadalafilo"], "status": "stable" },
+    "cáncer de próstata": { "atc": ["L02BB", "L02BX", "L02AE"], "label": "Cáncer de próstata (hormonoterapia y antiandrógenos)", "synonyms": ["cancer de prostata", "cancer prostata", "neoplasia de próstata", "neoplasia prostática", "carcinoma de próstata", "tumor de próstata", "tumor prostático", "ca próstata", "ca prostata", "cprc", "cprcm", "cphsm", "cp hormonosensible", "cp resistente a la castración"], "status": "beta", "matchMode": "exact" },
     "menopausia": { "atc": ["G03C", "G03F"], "label": "THS (Terapia Hormonal Sustitutiva)", "synonyms": ["climaterio", "sofocos", "terapia hormonal"], "status": "stable" },
     "anticoncepción": { "atc": ["G03A"], "label": "Anticonceptivos hormonales", "synonyms": ["anticonceptivos", "píldora", "planificación familiar"], "status": "stable" },
     "glaucoma": { "atc": ["S01E"], "label": "Antiglaucomatosos", "synonyms": ["presión intraocular", "timolol", "latanoprost"], "status": "stable" },
@@ -62,7 +63,7 @@
     "glp1": { "atc": "A10BJ", "label": "Agonistas GLP-1", "synonyms": ["semaglutida", "ozempic", "liraglutida"], "status": "stable" },
     "dpp4": { "atc": "A10BH", "label": "iDPP4", "synonyms": ["idpp4", "gliptinas", "sitagliptina"], "status": "stable" },
     "acod": { "atc": "B01AF", "label": "ACOD", "synonyms": ["naco", "rivaroxaban", "apixaban", "dabigatran"], "status": "stable" },
-    "hbp": { "atc": "G04C", "label": "HBP", "synonyms": ["próstata", "prostatismo"], "status": "stable" },
+    "hbp": { "atc": "G04C", "label": "HBP", "synonyms": ["hiperplasia prostática", "hiperplasia benigna de próstata", "adenoma de próstata", "prostatismo", "stui", "síntomas tracto urinario inferior"], "status": "stable", "matchMode": "exact" },
     "corticoides": { "atc": "H02", "label": "Corticosteroides sistémicos", "synonyms": ["prednisona", "dexametasona", "metilprednisolona"], "status": "stable" },
     "benzodiacepinas": { "atc": "N05BA", "label": "Benzodiacepinas", "synonyms": ["diazepam", "lorazepam", "alprazolam", "benzo"], "status": "stable" },
     "hierro": { "atc": "B03A", "label": "Ferroterapia", "synonyms": ["anemia ferropénica", "ferropenia", "sulfato ferroso"], "status": "stable" },

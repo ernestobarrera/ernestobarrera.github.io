@@ -42,7 +42,7 @@ class CimaAPI {
      * Una sola vez; falla en abierto (si no carga, queda el dict vacío y la búsqueda cae al ATC-cache).
      * Ampliable: editar assets/data/clinical-ontology.json y subir el `?v=`.
      */
-    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260609a') {
+    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260628a') {
         if (this._clinicalOntologyLoaded) return CimaAPI.CLINICAL_DICTIONARY;
         if (this._clinicalOntologyLoading) return this._clinicalOntologyLoading;
         this._clinicalOntologyLoading = fetch(url, { cache: 'force-cache' })
@@ -903,6 +903,7 @@ class CimaAPI {
             // Normalize dictionary term for comparison
             const normalizedTerm = term.toLowerCase()
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/-/g, ' ');
+            const exactOnly = data.matchMode === 'exact';
 
             // Coincidencia exacta
             if (normalizedTerm === normalizedQuery) {
@@ -911,7 +912,7 @@ class CimaAPI {
             }
 
             // Coincidencia parcial (require min 4 chars to avoid false positives)
-            if (normalizedQuery.length >= 4 && normalizedTerm.includes(normalizedQuery)) {
+            if (!exactOnly && normalizedQuery.length >= 4 && normalizedTerm.includes(normalizedQuery)) {
                 matches.push({ ...data, term, score: 80 });
                 continue;
             }
@@ -925,7 +926,12 @@ class CimaAPI {
                     const normalizedSyn = syn.toLowerCase()
                         .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/-/g, ' ');
 
-                    if (normalizedSyn.length >= 4) {
+                    if (exactOnly) {
+                        if (normalizedSyn === normalizedQuery) {
+                            matches.push({ ...data, term, score: 70 });
+                            break;
+                        }
+                    } else if (normalizedSyn.length >= 4) {
                         const wordMatch = normalizedSyn === normalizedQuery ||
                             (normalizedQuery.length >= 4 &&
                              normalizedSyn.split(/[\s\-/]+/).some(w => w.startsWith(normalizedQuery)));
