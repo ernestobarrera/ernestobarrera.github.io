@@ -8943,6 +8943,25 @@ code {
     font-size: 0.8rem;
 }
 
+/* Error de conteo recuperable: botón de reintento (no un "–" mudo que parezca dato vacío) */
+.evidence-count-retry {
+    appearance: none;
+    border: none;
+    background: var(--bg-surface-hover);
+    color: var(--warning, #d97706);
+    font-size: 0.72rem;
+    line-height: 1.4;
+    padding: 0.15rem 0.45rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.evidence-count-retry:hover {
+    background: var(--warning, #d97706);
+    color: #fff;
+}
+
 .evidence-filter-ext {
     color: var(--text-secondary);
     font-size: 0.65rem;

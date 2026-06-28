@@ -14021,6 +14021,7 @@ ${materialesPlaceholder}
                     <a class="evidence-filter-item" id="evlink-reec" href="${reecUrl(canonicalEsTerm)}" target="_blank" rel="noopener" title="Ver todos los estudios registrados en REec · AEMPS">
                         <span class="evidence-filter-icon"><i class="fas fa-flag"></i></span>
                         <span class="evidence-filter-label">REec · España</span>
+                        <span class="evidence-filter-info"><i class="fas fa-info-circle evidence-info-icon" title="Conteo completo del registro REec (servicio de datos oficial): incluye los estudios donde el fármaco figura como comparador o secundario y todos los estados de reclutamiento. Al abrir el enlace, la web de REec aplica su búsqueda básica y puede mostrar algunos menos."></i></span>
                         <span class="evidence-filter-count" id="evcount-reec"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
                         <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
                     </a>
@@ -14190,9 +14191,12 @@ ${materialesPlaceholder}
 
         if (nAll === null) { applyStaticFallback(); return; }
 
-        // Conteo total
+        // Conteo total. Es el resultado COMPLETO del servicio de datos de REec (búsqueda amplia
+        // multi-campo, todos los estados); la web de REec, al abrir el enlace, usa su búsqueda
+        // básica y puede mostrar algunos menos. El icono de info junto a la etiqueta lo explica.
         const clsTotal = nAll === 0 ? 'evidence-count-badge evidence-count-badge--zero' : 'evidence-count-badge';
-        if (countEl) countEl.innerHTML = `<span class="${clsTotal}">${nAll.toLocaleString('es-ES')}</span>`;
+        const totalTitle = 'Conteo completo de REec (servicio oficial). La web puede mostrar menos al usar su búsqueda básica.';
+        if (countEl) countEl.innerHTML = `<span class="${clsTotal}" title="${totalTitle}">${nAll.toLocaleString('es-ES')}</span>`;
 
         // Chips informativos (sin enlace — REec no admite deep-link por filtro)
         const nRecruiting = resRecruiting.status === 'fulfilled' ? (resRecruiting.value?.count ?? null) : null;
@@ -14247,8 +14251,8 @@ ${materialesPlaceholder}
 
         const shown = studies.length;
         const footer = nAll > shown
-            ? `<a class="evidence-reec-footer" href="${baseUrl}" target="_blank" rel="noopener">
-                Mostrando ${shown} de ${nAll.toLocaleString('es-ES')} · Ver todos en REec
+            ? `<a class="evidence-reec-footer" href="${baseUrl}" target="_blank" rel="noopener" title="Abre la búsqueda en REec. Su web usa la búsqueda básica y puede mostrar menos de ${nAll.toLocaleString('es-ES')}.">
+                Mostrando ${shown} de ${nAll.toLocaleString('es-ES')} · Abrir en REec
                 <i class="fas fa-external-link-alt"></i>
                </a>`
             : '';
@@ -14335,6 +14339,11 @@ ${materialesPlaceholder}
             })
         ];
 
+        // Registro id→query del ciclo actual, para que retryEvidenceCount() pueda recargar
+        // una fila concreta sin reconstruir toda la pestaña.
+        this._evidenceCountRequests = {};
+        countRequests.forEach(r => { this._evidenceCountRequests[r.id] = { query: r.query }; });
+
         // Cachear queries de cada filtro por id para que la barra de combinación pueda leerlas
         // sin re-fetch. _evFilterQueryById ya se inicializa en renderEvidenceTab.
         this._evFilterQueryById = this._evFilterQueryById || {};
@@ -14342,14 +14351,16 @@ ${materialesPlaceholder}
             if (loaded[i].query) this._evFilterQueryById[f.id] = loaded[i].query;
         });
 
-        // Lanzar en serie respetando límite NCBI (3 req/s sin API key).
-        // 400 ms = 2.5 req/s con margen para jitter de red.
+        // Lanzar todas las peticiones: el espaciado y los reintentos los gobierna la cola
+        // serial de _fetchPubmedCount (_enqueueNcbi). Encolarlas aquí, ANTES que la sparkline,
+        // les da prioridad en la cola compartida.
         for (const req of countRequests) {
             if (this._evidenceCountCycle !== cycleId) break;
 
             if (!req.query) {
+                // El fichero del filtro (.txt) no cargó: ofrecer reintento, no un "–" mudo.
                 const el = document.getElementById(`evcount-${req.id}`);
-                if (el) el.innerHTML = '<span class="evidence-count-err">–</span>';
+                if (el) el.innerHTML = this._evCountErrorHtml(req.id);
                 continue;
             }
 
@@ -14364,11 +14375,11 @@ ${materialesPlaceholder}
                 continue;
             }
 
-            // Petición fire-and-forget con retry interno ante rate limit
+            // Petición a la cola; el backoff interno absorbe los 429 transitorios.
             (async (r, cycle) => {
                 try {
                     const count = await this._fetchPubmedCount(r.query, () => this._evidenceCountCycle === cycle);
-                    if (count == null) return; // cancelado durante el retry
+                    if (count == null) return; // cancelado durante el reintento o ciclo invalidado
                     this._evidenceCountCache.set(r.query, count);
                     if (this._evidenceCountCycle !== cycle) return;
                     const el = document.getElementById(`evcount-${r.id}`);
@@ -14379,11 +14390,9 @@ ${materialesPlaceholder}
                 } catch {
                     if (this._evidenceCountCycle !== cycle) return;
                     const el = document.getElementById(`evcount-${r.id}`);
-                    if (el) el.innerHTML = '<span class="evidence-count-err" title="Error al obtener conteo">–</span>';
+                    if (el) el.innerHTML = this._evCountErrorHtml(r.id);
                 }
             })(req, cycleId);
-
-            await new Promise(r => setTimeout(r, 400));
         }
 
         // Refrescar la barra de combinación si hay ≥2 filtros seleccionados
@@ -14395,6 +14404,42 @@ ${materialesPlaceholder}
         if (this._lastSparklineTerm !== drugTerm) {
             this._lastSparklineTerm = drugTerm;
             this._loadEvidenceSparkline(drugTerm);
+        }
+    }
+
+    // HTML del estado de error de una celda de conteo: botón de reintento (no un "–" mudo).
+    // stopPropagation/preventDefault evitan abrir el enlace a PubMed del <a> contenedor.
+    _evCountErrorHtml(id) {
+        return `<button type="button" class="evidence-count-retry" title="No se pudo cargar — clic para reintentar" onclick="event.preventDefault();event.stopPropagation();app.retryEvidenceCount('${id}')"><i class="fas fa-rotate-right"></i></button>`;
+    }
+
+    // Reintenta el conteo de una sola fila. Si el filtro nunca cargó su query (.txt falló),
+    // invalida su caché y relanza la carga completa con el término y rango actuales.
+    async retryEvidenceCount(id) {
+        const el = document.getElementById(`evcount-${id}`);
+        const req = this._evidenceCountRequests?.[id];
+        if (!req || !req.query) {
+            const term = document.getElementById('evidence-drug-input')?.value.trim();
+            const slider = document.getElementById('evidence-date-slider');
+            const days = parseInt(slider?.dataset.days ?? '0', 10);
+            if (id !== 'total' && term && this._evFilterDefs) {
+                this._evidenceFilterQueryCache?.delete(id); // forzar re-fetch del fichero del filtro
+                if (el) el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
+                this._loadEvidenceFiltersAndCount(term, this._evFilterDefs, days);
+            }
+            return;
+        }
+        if (el) el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
+        try {
+            const count = await this._fetchPubmedCount(req.query);
+            if (count == null) { if (el) el.innerHTML = this._evCountErrorHtml(id); return; }
+            this._evidenceCountCache.set(req.query, count);
+            if (el) {
+                const cls = count === 0 ? 'evidence-count-badge evidence-count-badge--zero' : 'evidence-count-badge';
+                el.innerHTML = `<span class="${cls}">${count.toLocaleString('es-ES')}</span>`;
+            }
+        } catch {
+            if (el) el.innerHTML = this._evCountErrorHtml(id);
         }
     }
 
@@ -14431,10 +14476,8 @@ ${materialesPlaceholder}
         const counts = new Array(bins.length).fill(null);
         this._renderEvidenceSparkline(svg, meta, bins, counts);
 
-        // Pequeño retraso inicial para no competir con el grid recién lanzado
-        await new Promise(r => setTimeout(r, 600));
-        if (this._evSparklineCycle !== cycleId) return;
-
+        // Sin retardos manuales: la cola serial compartida (_enqueueNcbi) ya espacia estas
+        // peticiones tras las del grid, que se encolaron primero. Encolarlas todas seguidas.
         for (let i = 0; i < bins.length; i++) {
             if (this._evSparklineCycle !== cycleId) return;
             const { startYear, endYear } = bins[i];
@@ -14455,13 +14498,12 @@ ${materialesPlaceholder}
                         this._renderEvidenceSparkline(svg, meta, bins, counts);
                     })
                     .catch(() => {
+                        // Un bin que falla queda null (barra base tenue), no 0: no falsea el
+                        // gráfico ni inventa un pico. Con la cola, los fallos son raros.
                         if (this._evSparklineCycle !== cycle) return;
-                        counts[idx] = 0;
                         this._renderEvidenceSparkline(svg, meta, bins, counts);
                     });
             })(i, query, cycleId);
-
-            await new Promise(r => setTimeout(r, 400));
         }
     }
 
@@ -14519,13 +14561,38 @@ ${materialesPlaceholder}
         }
     }
 
-    // Helper compartido: petición de conteo a NCBI con un retry ante rate limit.
-    // Usa POST (NCBI lo recomienda para >200 chars/UIDs) — evita el límite ~8 KB de
-    // URL que rompía las queries combinadas con varios filtros largos.
-    // Content-Type application/x-www-form-urlencoded no dispara CORS preflight.
-    // isStillValid: callback que devuelve false si el ciclo se ha invalidado
-    // (cambio de término/fecha/selección durante el retry).
+    // Cola global SERIAL para TODAS las llamadas a NCBI E-utilities. El grid de filtros,
+    // la sparkline de bienios y la barra de combinación comparten esta cola: garantiza un
+    // único request en vuelo y un espaciado mínimo bajo el techo de NCBI sin API key
+    // (3 req/s por IP). Antes el grid y la sparkline corrían en dos bucles concurrentes que
+    // superaban ese límite → 429 → celdas en "–" que parecían datos vacíos pese a existir.
+    // isStillValid descarta tareas de un ciclo ya invalidado sin gastar el hueco de espaciado.
+    _enqueueNcbi(task, isStillValid = () => true) {
+        const MIN_GAP = 350; // ms entre dispatches ⇒ ~2,8 req/s, con margen sobre el techo de 3 req/s
+        const prev = this._ncbiChain || Promise.resolve();
+        const run = prev.then(async () => {
+            if (!isStillValid()) return null; // término/fecha cambiaron: saltar sin esperar
+            const since = this._ncbiLastDispatch ? Date.now() - this._ncbiLastDispatch : MIN_GAP;
+            if (since < MIN_GAP) await new Promise(r => setTimeout(r, MIN_GAP - since));
+            this._ncbiLastDispatch = Date.now();
+            return task();
+        });
+        // La cola no debe romperse si una tarea rechaza: la siguiente espera igual.
+        this._ncbiChain = run.then(() => {}, () => {});
+        return run;
+    }
+
+    // Helper compartido: conteo a NCBI a través de la cola serial, con backoff exponencial
+    // ante rate limit (4 intentos: ~0,8 / 1,6 / 3,2 s). Usa POST (NCBI lo recomienda para
+    // >200 chars/UIDs) — evita el límite ~8 KB de URL que rompía las queries combinadas con
+    // varios filtros largos. Content-Type application/x-www-form-urlencoded no dispara CORS
+    // preflight. isStillValid: callback que devuelve false si el ciclo se ha invalidado
+    // (cambio de término/fecha/selección durante el reintento).
     async _fetchPubmedCount(query, isStillValid = () => true) {
+        return this._enqueueNcbi(() => this._fetchPubmedCountAttempts(query, isStillValid), isStillValid);
+    }
+
+    async _fetchPubmedCountAttempts(query, isStillValid) {
         const endpoint = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
         const body = `db=pubmed&rettype=count&retmode=json&term=${encodeURIComponent(query)}`;
         const tryOnce = async () => {
@@ -14544,14 +14611,26 @@ ${materialesPlaceholder}
             return { count: parseInt(data.esearchresult.count, 10) };
         };
 
-        let result = await tryOnce();
-        if (result.rateLimited) {
-            await new Promise(r => setTimeout(r, 1200));
+        const MAX_ATTEMPTS = 4;
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
             if (!isStillValid()) return null;
-            result = await tryOnce();
-            if (result.rateLimited) throw new Error('rate-limit-persistent');
+            let result;
+            try {
+                result = await tryOnce();
+            } catch (err) {
+                // Error de red puntual: un respiro y reintento; si es el último intento, propaga.
+                if (attempt >= MAX_ATTEMPTS - 1) throw err;
+                await new Promise(r => setTimeout(r, 600 * Math.pow(2, attempt) + Math.random() * 250));
+                continue;
+            }
+            if (!result.rateLimited) return result.count;
+            // 429: backoff exponencial con jitter. Al estar dentro de la cola serial, este
+            // respiro frena TODO el tráfico a NCBI, dándole margen para recuperarse.
+            if (attempt >= MAX_ATTEMPTS - 1) throw new Error('rate-limit-persistent');
+            await new Promise(r => setTimeout(r, 800 * Math.pow(2, attempt) + Math.random() * 300));
+            if (!isStillValid()) return null;
         }
-        return result.count;
+        return null;
     }
 
     async _updateEvidenceCombineBar() {
