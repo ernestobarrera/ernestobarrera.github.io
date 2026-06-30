@@ -2541,6 +2541,7 @@ class MedCheckApp {
             this.lastIndicationQuery = label;
             this.lastIndicationResults = data;
             this.displayIndicationResults(data, label);
+            this._warnUnverifiedSectionFilter(data);
         } catch (error) {
             this.handleSearchError(resultsContainer, error);
         }
@@ -2962,10 +2963,23 @@ class MedCheckApp {
             this.lastIndicationResults = data;
 
             this.displayIndicationResults(data, query);
+            this._warnUnverifiedSectionFilter(data);
 
         } catch (error) {
             console.error('Indication search error:', error);
             this.handleSearchError(resultsContainer, error);
+        }
+    }
+
+    /**
+     * Avisa si el filtro de sección 4.1 no pudo verificar algún fármaco (fallo de red/CIMA).
+     * Esos fármacos se muestran igualmente (fail-open) marcados como no verificados.
+     * @private
+     */
+    _warnUnverifiedSectionFilter(data) {
+        const errors = data?.matchedIndication?.filterSummary?.errors || 0;
+        if (errors > 0) {
+            this.showToast(`${errors} fármaco(s) no se pudieron verificar en ficha técnica (mostrados sin filtrar por 4.1)`, 'warning');
         }
     }
 

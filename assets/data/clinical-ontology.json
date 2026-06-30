@@ -1,8 +1,8 @@
 {
-  "version": "2026-06-28",
+  "version": "2026-06-30",
   "note": "Ontología clínica de indicaciones de MedCheck: términos/síndromes/abreviaturas españoles -> códigos ATC. Fuente única editable (externalizada desde cima-api.js). La consume CimaAPI (búsqueda por indicación + autocomplete). status: stable|beta|broad|needsSection41Filter. matchMode exact = solo término o sinónimo completo. section41Filter = filtro posterior por indicación oficial en sección 4.1 de ficha técnica. biosimilarRelevant = área o principio activo que exige refresco EMA+CIMA; no afirma disponibilidad permanente ni financiación. synonyms = términos de BÚSQUEDA alternativos (abreviaturas, nombres alternativos, fármacos representativos), NO descripciones genéricas (evita ruido en el autocomplete por palabras como 'dolor').",
   "metadata": {
-    "lastReviewed": "2026-06-28",
+    "lastReviewed": "2026-06-30",
     "statusValues": ["stable", "beta", "broad", "needsSection41Filter"],
     "sources": {
       "cimaMedicamentos": "https://cima.aemps.es/cima/rest/medicamentos",
@@ -103,7 +103,7 @@
     "litiasis renal": { "atc": "G04BC", "label": "Disolventes/prevención de litiasis urinaria", "synonyms": ["cólico renal", "colico renal", "cálculo renal", "calculo renal", "urolitiasis"], "status": "stable", "matchMode": "exact" },
     "vejiga hiperactiva": { "atc": "G04BD", "label": "Vejiga hiperactiva e incontinencia de urgencia", "synonyms": ["urgencia miccional", "solifenacina", "mirabegron"], "status": "stable", "matchMode": "exact" },
     "esclerosis múltiple": { "atc": ["L03AX", "L04AA", "N07XX"], "label": "Esclerosis múltiple (inmunomoduladores y modificadores)", "synonyms": ["esclerosis multiple", "em", "dimetilfumarato", "natalizumab", "ocrelizumab"], "status": "broad", "matchMode": "exact", "biologicArea": true },
-    "adicciones": { "atc": "N07B", "label": "Tratamiento de adicciones", "synonyms": ["dependencia", "deshabituación", "deshabituacion", "alcoholismo", "tabaquismo", "trastorno por uso de opioides"], "status": "broad", "matchMode": "exact" },
+    "adicciones": { "atc": "N07B", "label": "Tratamiento de adicciones", "synonyms": ["dependencia", "deshabituación", "deshabituacion", "alcoholismo", "trastorno por uso de opioides"], "status": "broad", "matchMode": "exact" },
     "espondiloartritis": { "atc": ["M01A", "L04AB", "L04AC", "L04AA"], "label": "Espondiloartritis (AINE + biológicos/inmunomoduladores)", "synonyms": ["espondilitis anquilosante", "axspa", "espondiloartritis axial"], "status": "broad", "matchMode": "exact", "biologicArea": true, "biosimilarRelevant": true },
     "artritis psoriásica": { "atc": ["M01A", "L04AB", "L04AC", "L04AA"], "label": "Artritis psoriásica (AINE + biológicos/inmunomoduladores)", "synonyms": ["artritis psoriasica", "aps", "psoriatic arthritis"], "status": "broad", "matchMode": "exact", "biologicArea": true, "biosimilarRelevant": true },
     "lupus": { "atc": ["P01BA", "H02", "L04AA"], "label": "LES (antipalúdicos, corticoides, biológicos/inmunomoduladores)", "synonyms": ["les", "lupus eritematoso sistémico", "lupus eritematoso sistemico", "belimumab"], "status": "broad", "matchMode": "exact", "biologicArea": true },
@@ -153,6 +153,20 @@
     "enoxaparina": { "atc": "B01AB05", "label": "Enoxaparina", "synonyms": ["heparina de bajo peso molecular", "hbpm"], "status": "stable", "matchMode": "exact", "biologicArea": true, "biosimilarRelevant": true, "sourceDate": "2026-06-28" },
     "denosumab": { "atc": "M05BX04", "label": "Denosumab", "synonyms": ["prolia", "xgeva"], "status": "stable", "matchMode": "exact", "biologicArea": true, "biosimilarRelevant": true, "sourceDate": "2026-06-28" },
     "teriparatida": { "atc": "H05AA02", "label": "Teriparatida", "synonyms": ["pth"], "status": "stable", "matchMode": "exact", "biologicArea": true, "biosimilarRelevant": true, "sourceDate": "2026-06-28" },
-    "omalizumab": { "atc": "R03DX05", "label": "Omalizumab", "synonyms": ["xolair"], "status": "stable", "matchMode": "exact", "biologicArea": true, "biosimilarRelevant": true, "sourceDate": "2026-06-28" }
+    "omalizumab": { "atc": "R03DX05", "label": "Omalizumab", "synonyms": ["xolair"], "status": "stable", "matchMode": "exact", "biologicArea": true, "biosimilarRelevant": true, "sourceDate": "2026-06-28" },
+    "dermatofitosis": { "atc": ["D01", "J02"], "label": "Antifúngicos (dermatofitosis/tiña)", "synonyms": ["tiña", "tinea", "pie de atleta", "tiña inguinal", "tiña corporal", "terbinafina", "clotrimazol"], "status": "stable" },
+    "onicomicosis": { "atc": ["D01", "J02"], "label": "Antifúngicos (onicomicosis)", "synonyms": ["hongos en las uñas", "tiña ungueal", "amorolfina", "ciclopirox", "uña con hongo"], "status": "stable" },
+    "hemorroides": { "atc": "C05A", "label": "Antihemorroidales tópicos", "synonyms": ["almorranas", "hemorroidal", "fisura anal"], "status": "stable" },
+    "herpes": { "atc": ["J05AB", "D06BB"], "label": "Antivirales del herpes (sistémicos y tópicos)", "synonyms": ["herpes labial", "herpes zóster", "herpes genital", "aciclovir", "valaciclovir", "famciclovir"], "status": "stable" },
+    "pediculosis": { "atc": "P03A", "label": "Pediculicidas/ectoparasiticidas", "synonyms": ["piojos", "liendres", "permetrina"], "status": "stable" },
+    "escabiosis": { "atc": ["P03A", "P02CF"], "label": "Escabicidas (tópicos e ivermectina)", "synonyms": ["sarna", "ácaro de la sarna", "ivermectina"], "status": "stable" },
+    "dispepsia": { "atc": "A02", "label": "Antiácidos y antiulcerosos", "synonyms": ["indigestión", "ardor de estómago", "malas digestiones", "gastritis"], "status": "stable" },
+    "espasmo abdominal": { "atc": ["A03A", "A03B"], "label": "Antiespasmódicos digestivos", "synonyms": ["cólico abdominal", "retortijones", "espasmo intestinal", "butilescopolamina", "colon irritable"], "status": "stable" },
+    "contractura muscular": { "atc": "M03B", "label": "Relajantes musculares de acción central", "synonyms": ["espasmo muscular", "relajante muscular", "tiocolchicósido", "tizanidina", "metocarbamol", "baclofeno"], "status": "stable" },
+    "insuficiencia venosa": { "atc": "C05C", "label": "Venotónicos/capilaroprotectores", "synonyms": ["varices", "piernas cansadas", "insuficiencia venosa crónica", "diosmina", "dobesilato"], "status": "stable" },
+    "dismenorrea": { "atc": "M01A", "label": "AINE (dolor menstrual)", "synonyms": ["dolor menstrual", "regla dolorosa", "cólico menstrual"], "status": "stable" },
+    "tabaquismo": { "atc": "N07BA", "label": "Deshabituación tabáquica", "synonyms": ["dejar de fumar", "deshabituación tabáquica", "vareniclina", "bupropión", "terapia sustitutiva de nicotina"], "status": "stable" },
+    "vaginosis bacteriana": { "atc": "G01A", "label": "Antiinfecciosos ginecológicos", "synonyms": ["vaginosis", "infección vaginal", "metronidazol vaginal", "clindamicina vaginal"], "status": "stable" },
+    "aftas bucales": { "atc": ["A01AB", "A01AC", "A01AD"], "label": "Tratamiento local de aftas (antisépticos/corticoide/otros)", "synonyms": ["aftas", "llagas en la boca", "estomatitis", "úlcera bucal"], "status": "stable" }
   }
 }

@@ -64,7 +64,9 @@ const warnings = [];
 const duplicateIndex = new Map();
 
 for (const [term, entry] of entries) {
-  stats[entry.status] = (stats[entry.status] || 0) + 1;
+  // Solo contabilizar estados reales: evita una clave "undefined" en el informe cuando
+  // falta status (que ya se reporta como problema estructural más abajo).
+  if (entry.status) stats[entry.status] = (stats[entry.status] || 0) + 1;
   if (entry.matchMode === 'exact') stats.exact += 1;
   if (entry.section41Filter || entry.sectionFilter) stats.section41 += 1;
   if (entry.biosimilarRelevant) stats.biosimilarRelevant += 1;
@@ -86,10 +88,16 @@ for (const [term, entry] of entries) {
 }
 
 const missingExpected = expectedTerms.filter(term => !terms[term] && !hasSynonym(term));
+const atcSignature = (owner) => JSON.stringify(
+  toAtcList(terms[owner] || {}).map(a => String(a).toUpperCase()).sort()
+);
 const duplicateTerms = [...duplicateIndex.entries()]
   .map(([key, refs]) => {
     const owners = new Set(refs.map(ref => ref.owner));
     if (owners.size <= 1) return null;
+    // Ruido inofensivo: si todos los dueños apuntan al MISMO ATC, el solapamiento de
+    // sinónimos no cambia el resultado de la búsqueda. Solo señalamos divergencias reales.
+    if (new Set([...owners].map(atcSignature)).size <= 1) return null;
     return `${key}: ${refs.map(ref => ref.label).join(', ')}`;
   })
   .filter(Boolean);
@@ -231,12 +239,20 @@ async function countSectionMatches(meds, filter) {
     const text = await fetchSectionText(med.nregistro, section);
     if (!text) continue;
     const normalizedText = normalize(text.replace(/<[^>]*>/g, ' '));
-    const okAll = includeAll.length === 0 || includeAll.every(term => normalizedText.includes(term));
-    const okAny = includeAny.length === 0 || includeAny.some(term => normalizedText.includes(term));
-    const okExclude = excludeAny.length === 0 || !excludeAny.some(term => normalizedText.includes(term));
+    const okAll = includeAll.length === 0 || includeAll.every(term => termInText(normalizedText, term));
+    const okAny = includeAny.length === 0 || includeAny.some(term => termInText(normalizedText, term));
+    const okExclude = excludeAny.length === 0 || !excludeAny.some(term => termInText(normalizedText, term));
     if (okAll && okAny && okExclude) matched += 1;
   }
   return matched;
+}
+
+// Mismo criterio que CimaAPI._sectionTermInText: coincidencia al inicio de palabra
+// (evita que 'recto' case en 'directo' o 'renal' en 'suprarrenal').
+function termInText(text, term) {
+  if (!term) return false;
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^a-z0-9])${escaped}`).test(text);
 }
 
 async function fetchSectionText(nregistro, section) {

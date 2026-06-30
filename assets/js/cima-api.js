@@ -42,7 +42,7 @@ class CimaAPI {
      * Una sola vez; falla en abierto (si no carga, queda el dict vacío y la búsqueda cae al ATC-cache).
      * Ampliable: editar assets/data/clinical-ontology.json y subir el `?v=`.
      */
-    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260628c') {
+    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260630a') {
         if (this._clinicalOntologyLoaded) return CimaAPI.CLINICAL_DICTIONARY;
         if (this._clinicalOntologyLoading) return this._clinicalOntologyLoading;
         this._clinicalOntologyLoading = fetch(url, { cache: 'force-cache' })
@@ -929,8 +929,12 @@ class CimaAPI {
                     summary.checked++;
                     return this._matchesSectionFilter(text, includeAny, includeAll, excludeAny) ? med : null;
                 } catch (error) {
+                    // Fail-open: si no podemos leer la ficha técnica (fallo de red/CIMA), NO ocultamos
+                    // un fármaco potencialmente válido. Lo incluimos marcado como no verificado y lo
+                    // contamos para avisar al usuario en la UI.
                     summary.errors++;
-                    return null;
+                    med._sectionUnverified = true;
+                    return med;
                 }
             }));
 
@@ -962,10 +966,25 @@ class CimaAPI {
     }
 
     _matchesSectionFilter(text, includeAny, includeAll, excludeAny) {
-        if (includeAll.length > 0 && !includeAll.every(term => text.includes(term))) return false;
-        if (includeAny.length > 0 && !includeAny.some(term => text.includes(term))) return false;
-        if (excludeAny.length > 0 && excludeAny.some(term => text.includes(term))) return false;
+        const has = (term) => this._sectionTermInText(text, term);
+        if (includeAll.length > 0 && !includeAll.every(has)) return false;
+        if (includeAny.length > 0 && !includeAny.some(has)) return false;
+        if (excludeAny.length > 0 && excludeAny.some(has)) return false;
         return includeAny.length > 0 || includeAll.length > 0;
+    }
+
+    /**
+     * ¿Aparece `term` en `text` (ya normalizado) al INICIO de una palabra?
+     * Antes se usaba includes() puro y un token corto como "recto" casaba dentro de
+     * "directo", o "renal" dentro de "suprarrenal". Exigir frontera SOLO al inicio mata
+     * esos falsos positivos pero conserva la morfología española (renal→renales,
+     * mama→mamario) y las frases ("carcinoma de celulas renales").
+     * @private
+     */
+    _sectionTermInText(text, term) {
+        if (!term) return false;
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(`(^|[^a-z0-9])${escaped}`).test(text);
     }
 
     /**
