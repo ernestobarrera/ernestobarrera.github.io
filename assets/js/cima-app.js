@@ -2453,18 +2453,39 @@ class MedCheckApp {
             .normalize('NFD').replace(/[̀-ͯ]/g, '');
         const esc = (s) => (s || '').toString().replace(/"/g, '&quot;');
 
-        // Agrupar por sistema ATC (primera letra del primer código ATC de la entrada)
+        // Agrupar por DOMINIO CLÍNICO curado (catalogGroup). El ATC clasifica el órgano diana
+        // del fármaco, no el dominio de la enfermedad (p. ej. doxilamina→R06 metería "náuseas del
+        // embarazo" en Respiratorio); por eso el grupo lo fija la ontología, no el ATC. El ATC solo
+        // es fallback si faltara catalogGroup (el auditor avisa de ese caso). Orden clínico fijo;
+        // "Fármacos y clases" (atajos que no son enfermedades) al final.
+        const GROUP_ORDER = [
+            'Cardiovascular', 'Nefrología y medio interno', 'Endocrinología y metabolismo',
+            'Digestivo', 'Respiratorio', 'Otorrinolaringología', 'Oftalmología', 'Dermatología',
+            'Neurología', 'Salud mental y adicciones', 'Dolor y cuidados paliativos',
+            'Reumatología y musculoesquelético', 'Inmunología, autoinmunes y trasplante',
+            'Infecciosas', 'Hematología y hemostasia', 'Oncología',
+            'Ginecología y obstetricia', 'Urología', 'Fármacos y clases'
+        ];
+        const orderIndex = (name) => {
+            const i = GROUP_ORDER.indexOf(name);
+            return i === -1 ? GROUP_ORDER.length : i;
+        };
         const groups = new Map();
         for (const term of Object.keys(dict)) {
             const entry = dict[term] || {};
-            const atc = Array.isArray(entry.atc) ? entry.atc[0] : entry.atc;
-            const letter = String(atc || '').trim().charAt(0).toUpperCase();
-            const groupName = this.api.getATCCategoryName(letter) || 'Otros';
+            let groupName = entry.catalogGroup;
+            if (!groupName) {
+                const atc = Array.isArray(entry.atc) ? entry.atc[0] : entry.atc;
+                const letter = String(atc || '').trim().charAt(0).toUpperCase();
+                groupName = this.api.getATCCategoryName(letter) || 'Otros';
+            }
             if (!groups.has(groupName)) groups.set(groupName, []);
             groups.get(groupName).push({ term, entry });
         }
         const total = Object.keys(dict).length;
-        const sortedGroups = [...groups.keys()].sort((a, b) => a.localeCompare(b, 'es'));
+        const sortedGroups = [...groups.keys()].sort(
+            (a, b) => orderIndex(a) - orderIndex(b) || a.localeCompare(b, 'es')
+        );
 
         const groupsHtml = sortedGroups.map(g => {
             const items = groups.get(g).sort((a, b) => a.term.localeCompare(b.term, 'es'));
@@ -2495,6 +2516,7 @@ class MedCheckApp {
                 </div>
                 <div class="catalog-body">${groupsHtml}</div>
                 <p class="catalog-empty hidden" id="catalog-empty">Sin coincidencias.</p>
+                <p class="catalog-disclaimer"><i class="fas fa-circle-info"></i> Agrupación orientativa por área clínica: una indicación puede pertenecer a varias y es un apoyo de navegación, no una clasificación oficial. Contrástala con tu criterio.</p>
             </div>`;
         document.body.appendChild(overlay);
 

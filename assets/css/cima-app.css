@@ -4663,6 +4663,26 @@ body {
     padding: 1rem;
 }
 
+.catalog-disclaimer {
+    flex: 0 0 auto;
+    margin: 0.75rem 0 0;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--border-default);
+    font-size: 0.72rem;
+    font-style: italic;
+    line-height: 1.4;
+    color: var(--text-secondary);
+    opacity: 0.9;
+    display: flex;
+    gap: 0.4rem;
+}
+
+.catalog-disclaimer i {
+    margin-top: 0.15rem;
+    color: var(--primary);
+    opacity: 0.8;
+}
+
 /* Compact grid for two-column layout */
 .atc-categories-grid-compact {
     display: grid;

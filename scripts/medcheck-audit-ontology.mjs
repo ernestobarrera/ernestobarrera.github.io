@@ -42,6 +42,18 @@ const expectedTerms = [
   'profilaxis infecciosa'
 ];
 
+// Dominios clínicos permitidos para catalogGroup (deben coincidir con GROUP_ORDER en cima-app.js).
+// El catálogo de indicaciones agrupa por este campo curado, no por ATC (que clasifica el fármaco,
+// no la enfermedad). El guardián de abajo avisa si una entrada no lo trae o usa un dominio no listado.
+const allowedCatalogGroups = new Set([
+  'Cardiovascular', 'Nefrología y medio interno', 'Endocrinología y metabolismo',
+  'Digestivo', 'Respiratorio', 'Otorrinolaringología', 'Oftalmología', 'Dermatología',
+  'Neurología', 'Salud mental y adicciones', 'Dolor y cuidados paliativos',
+  'Reumatología y musculoesquelético', 'Inmunología, autoinmunes y trasplante',
+  'Infecciosas', 'Hematología y hemostasia', 'Oncología',
+  'Ginecología y obstetricia', 'Urología', 'Fármacos y clases'
+]);
+
 const raw = await fs.readFile(ontologyPath, 'utf8');
 const ontology = JSON.parse(raw);
 const terms = ontology.terms || {};
@@ -77,6 +89,8 @@ for (const [term, entry] of entries) {
   if (!entry.label) problems.push(`${term}: falta label`);
   if (!entry.status) problems.push(`${term}: falta status`);
   if (entry.status && !allowedStatuses.has(entry.status)) problems.push(`${term}: status desconocido "${entry.status}"`);
+  if (!entry.catalogGroup) warnings.push(`${term}: sin catalogGroup (caería al fallback ATC en el catálogo)`);
+  else if (!allowedCatalogGroups.has(entry.catalogGroup)) problems.push(`${term}: catalogGroup desconocido "${entry.catalogGroup}"`);
   if ((entry.status === 'broad' || entry.status === 'needsSection41Filter') && entry.matchMode !== 'exact') {
     warnings.push(`${term}: estado ${entry.status} sin matchMode exact`);
   }
