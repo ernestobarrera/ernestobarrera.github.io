@@ -2378,6 +2378,10 @@ class MedCheckApp {
                     <div class="indication-chips-inline">
                         ${chipsHtml}
                     </div>
+                    <button type="button" id="open-indication-catalog" class="indication-catalog-link"
+                            title="Ver el índice completo de indicaciones reconocidas">
+                        <i class="fas fa-book-medical"></i> Ver catálogo completo
+                    </button>
                 </div>
                 <div class="indications-categories-panel">
                     <h3 class="panel-title">
@@ -2414,6 +2418,10 @@ class MedCheckApp {
             });
         });
 
+        // Catálogo completo (índice generado en vivo desde la ontología)
+        document.getElementById('open-indication-catalog')
+            ?.addEventListener('click', () => this.openIndicationCatalog());
+
         // Category card click handlers - clear search state when using ATC navigation
         document.querySelectorAll('.atc-category-card').forEach(card => {
             card.addEventListener('click', () => {
@@ -2429,6 +2437,104 @@ class MedCheckApp {
         if (this.lastIndicationResults && this.lastIndicationResults.resultados) {
             this.displayIndicationResults(this.lastIndicationResults, this.lastIndicationQuery);
         }
+    }
+
+    /**
+     * Catálogo completo de indicaciones: índice navegable generado EN VIVO desde la
+     * ontología (clinical-ontology.json), agrupado por sistema ATC y con filtro de texto.
+     * No se mantiene a mano: cada término que se añada al JSON aparece automáticamente,
+     * a diferencia de los quick-chips (lista curada fija). Overlay efímero (se crea al
+     * abrir y se destruye al cerrar), sin tocar el HTML base.
+     */
+    async openIndicationCatalog() {
+        await this.api._loadClinicalOntology();
+        const dict = CimaAPI.CLINICAL_DICTIONARY || {};
+        const norm = (s) => (s || '').toString().toLowerCase()
+            .normalize('NFD').replace(/[̀-ͯ]/g, '');
+        const esc = (s) => (s || '').toString().replace(/"/g, '&quot;');
+
+        // Agrupar por sistema ATC (primera letra del primer código ATC de la entrada)
+        const groups = new Map();
+        for (const term of Object.keys(dict)) {
+            const entry = dict[term] || {};
+            const atc = Array.isArray(entry.atc) ? entry.atc[0] : entry.atc;
+            const letter = String(atc || '').trim().charAt(0).toUpperCase();
+            const groupName = this.api.getATCCategoryName(letter) || 'Otros';
+            if (!groups.has(groupName)) groups.set(groupName, []);
+            groups.get(groupName).push({ term, entry });
+        }
+        const total = Object.keys(dict).length;
+        const sortedGroups = [...groups.keys()].sort((a, b) => a.localeCompare(b, 'es'));
+
+        const groupsHtml = sortedGroups.map(g => {
+            const items = groups.get(g).sort((a, b) => a.term.localeCompare(b.term, 'es'));
+            const chips = items.map(({ term, entry }) => {
+                const search = norm([term, ...(entry.synonyms || []), entry.label].join(' '));
+                return `<button type="button" class="catalog-chip" data-term="${esc(term)}" `
+                    + `data-search="${esc(search)}" title="${esc(entry.label || term)}">${term}</button>`;
+            }).join('');
+            return `<div class="catalog-group">
+                        <h4 class="catalog-group-title">${g} <span class="catalog-group-count">${items.length}</span></h4>
+                        <div class="catalog-group-chips">${chips}</div>
+                    </div>`;
+        }).join('');
+
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay modal-overlay-centered';
+        overlay.id = 'indication-catalog-modal';
+        overlay.innerHTML = `
+            <div class="catalog-modal-content">
+                <button class="modal-close" id="catalog-close" title="Cerrar"><i class="fas fa-times"></i></button>
+                <div class="catalog-header">
+                    <h3 class="catalog-title"><i class="fas fa-book-medical"></i> Catálogo de indicaciones <span class="catalog-total">${total}</span></h3>
+                    <p class="catalog-sub">Lista orientativa, no exhaustiva. Haz clic en una indicación para buscarla.</p>
+                    <div class="catalog-filter-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="catalog-filter" class="catalog-filter" placeholder="Filtrar por nombre, sinónimo o fármaco…" autocomplete="off">
+                    </div>
+                </div>
+                <div class="catalog-body">${groupsHtml}</div>
+                <p class="catalog-empty hidden" id="catalog-empty">Sin coincidencias.</p>
+            </div>`;
+        document.body.appendChild(overlay);
+
+        const onKey = (e) => { if (e.key === 'Escape') close(); };
+        const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+        overlay.querySelector('#catalog-close').addEventListener('click', close);
+        document.addEventListener('keydown', onKey);
+
+        // Filtro en vivo (término + sinónimos + label, sin acentos)
+        const filter = overlay.querySelector('#catalog-filter');
+        const emptyMsg = overlay.querySelector('#catalog-empty');
+        filter.addEventListener('input', () => {
+            const q = norm(filter.value.trim());
+            let anyVisible = false;
+            overlay.querySelectorAll('.catalog-group').forEach(group => {
+                let visible = 0;
+                group.querySelectorAll('.catalog-chip').forEach(chip => {
+                    const match = !q || chip.dataset.search.includes(q);
+                    chip.classList.toggle('hidden', !match);
+                    if (match) visible++;
+                });
+                group.classList.toggle('hidden', visible === 0);
+                if (visible > 0) anyVisible = true;
+            });
+            emptyMsg.classList.toggle('hidden', anyVisible);
+        });
+
+        // Clic en una indicación → rellenar el buscador y lanzar la búsqueda existente
+        overlay.querySelectorAll('.catalog-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const term = chip.dataset.term;
+                close();
+                const input = document.getElementById('indication-input');
+                if (input) input.value = term;
+                this.performIndicationSearch();
+            });
+        });
+
+        setTimeout(() => filter.focus(), 50);
     }
 
     async showIndicationAutocomplete(query) {
@@ -7237,6 +7343,9 @@ class MedCheckApp {
                 });
             });
 
+            // Resumen de financiación en la ficha Información (vistazo rápido; carga diferida + caché 24h)
+            if (hasCns) this._hydrateFinancingSummary(med);
+
         } catch (error) {
             if (error.code === 'NO_CONTENT') {
                 await this._renderMissingFromCimaModal(nregistro);
@@ -7482,6 +7591,17 @@ class MedCheckApp {
                </div>`
             : '';
 
+        // Resumen de financiación SNS (vistazo rápido, junto a "Estado"). Se hidrata async en
+        // _hydrateFinancingSummary (openMedDetails) con caché 24h. El detalle completo
+        // (precio, aportación, financiación por indicación BIFIMED) vive en la pestaña Financiación.
+        const hasCnsInfo = Array.isArray(med.presentaciones) && med.presentaciones.some(p => p.cn);
+        const financingSummaryHtml = hasCnsInfo
+            ? `<div class="detail-item" id="financing-summary-item">
+                    <span class="detail-label">Financiación SNS</span>
+                    <span class="detail-value" id="financing-summary-value"><span class="text-muted" style="font-size:0.85em"><i class="fas fa-spinner fa-spin"></i> consultando…</span></span>
+               </div>`
+            : '';
+
         // Fecha última actualización de la Ficha Técnica
         let ftFechaHtml = '';
         if (med.docs && med.docs.length > 0) {
@@ -7607,6 +7727,7 @@ class MedCheckApp {
                         ${med.comerc ? '<span class="text-success">Comercializado</span>' : '<span class="text-muted">No comercializado</span>'}
                     </span>
                 </div>
+                ${financingSummaryHtml}
                 ${shortageRowHtml}
                 <div class="detail-item">
                     <span class="detail-label">Receta</span>
@@ -8318,6 +8439,112 @@ ${materialesPlaceholder}
             if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
             textNode.parentNode.replaceChild(fragment, textNode);
         });
+    }
+
+    // ============================================
+    // RESUMEN DE FINANCIACIÓN EN FICHA INFORMACIÓN (vistazo rápido)
+    // ============================================
+
+    /** Lee la caché de financiación por CN de localStorage. */
+    _finCacheRead() {
+        try { return JSON.parse(localStorage.getItem('medcheck_fin_summary_cache') || '{}'); }
+        catch (e) { return {}; }
+    }
+
+    /** Persiste la caché de financiación por CN en localStorage (best-effort). */
+    _finCacheWrite(cache) {
+        try { localStorage.setItem('medcheck_fin_summary_cache', JSON.stringify(cache)); }
+        catch (e) { /* cuota/no disponible: la caché es best-effort */ }
+    }
+
+    /**
+     * Estado de financiación por CN desde BIFIMED (solo situación de financiación), con caché 24h.
+     * Devuelve Map cn -> { found, sit }. Una sola llamada por CN nuevo; el detalle (precio,
+     * aportación, por indicación) lo carga aparte la pestaña Financiación. Marca las llamadas
+     * como no-track (X-MC-Autocomplete) para no inflar la analítica con consultas automáticas.
+     */
+    async _fetchFinancingByCns(cns) {
+        const TTL = 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        const cache = this._finCacheRead();
+        const result = new Map();
+        const pending = [];
+        for (const cn of cns) {
+            const entry = cache[cn];
+            if (entry && entry.d && (now - entry.t) < TTL) result.set(cn, entry.d);
+            else pending.push(cn);
+        }
+        if (pending.length) {
+            const workerBase = this.api.cloudflareProxy;
+            const headers = { 'X-MC-Autocomplete': '1' }; // no-track: consulta automática, no acción explícita
+            await Promise.all(pending.map(cn =>
+                fetch(`${workerBase}/bifimed/by-cn/${cn}`, { signal: AbortSignal.timeout(8000), headers })
+                    .then(r => r.json())
+                    .then(j => {
+                        const d = { found: !!j.found, sit: j.situacion_financiacion || '' };
+                        result.set(cn, d);
+                        cache[cn] = { t: now, d };
+                    })
+                    .catch(() => { result.set(cn, { found: false, sit: '' }); })
+            ));
+            this._finCacheWrite(cache);
+        }
+        return result;
+    }
+
+    /** Clasifica la situación de financiación cruda de BIFIMED en 'fin' | 'nofin' | 'sindato'. */
+    _classifyFinSit(sit, found) {
+        if (!found) return 'sindato';
+        const s = (sit || '').trim().toLowerCase();
+        if (!s) return 'sindato';
+        if (s === 'si' || s === 'sí' || s === 'financiado' || s === 'financiada') return 'fin';
+        if (s.includes('no incluid') || s.includes('no financiad') || s.includes('excluid')) return 'nofin';
+        return 'sindato';
+    }
+
+    /**
+     * Agrega el estado por CN en un resumen honesto a nivel medicamento (no colapsa a "sí" si
+     * solo alguna presentación está financiada): todas → 'si'; ninguna → 'no'; mezcla → 'parcial';
+     * sin dato utilizable → 'sindato'. Mismo criterio que "X comercializadas de Y".
+     */
+    _computeFinancingSummary(map) {
+        let fin = 0, nofin = 0;
+        for (const d of map.values()) {
+            const c = this._classifyFinSit(d.sit, d.found);
+            if (c === 'fin') fin++;
+            else if (c === 'nofin') nofin++;
+        }
+        const conDato = fin + nofin;
+        if (conDato === 0) return { estado: 'sindato', label: 'Sin datos de financiación', icon: 'fa-circle-question', color: 'var(--text-secondary)' };
+        if (nofin === 0) return { estado: 'si', label: 'Financiado por el SNS', icon: 'fa-check-circle', color: 'var(--success)' };
+        if (fin === 0) return { estado: 'no', label: 'No financiado por el SNS', icon: 'fa-times-circle', color: 'var(--text-secondary)' };
+        return { estado: 'parcial', label: `Financiación parcial (${fin} de ${conDato} presentaciones)`, icon: 'fa-circle-half-stroke', color: 'var(--warning)' };
+    }
+
+    /** HTML del valor de la línea Financiación (icono + estado + enlace al detalle en la pestaña). */
+    _financingSummaryValueHtml(summary) {
+        const link = `<a href="#" onclick="event.preventDefault(); app.openModalTab('financing');" style="margin-left:0.5rem; font-size:0.85em;">Ver detalle →</a>`;
+        return `<i class="fas ${summary.icon}" style="color:${summary.color}"></i> ${this._escapeHtml(summary.label)}${link}`;
+    }
+
+    /**
+     * Hidrata la línea de financiación de la ficha Información al abrir el modal.
+     * Carga diferida (no bloquea el render) con caché 24h. No repinta si el usuario cambió de medicamento.
+     */
+    async _hydrateFinancingSummary(med) {
+        const valueEl = document.getElementById('financing-summary-value');
+        if (!valueEl) return;
+        const cns = [...new Set((med.presentaciones || []).map(p => p && p.cn).filter(Boolean).map(String))];
+        if (!cns.length) { valueEl.innerHTML = '<span class="text-muted" style="font-size:0.85em">Sin código nacional consultable</span>'; return; }
+        try {
+            const map = await this._fetchFinancingByCns(cns);
+            if (this.currentMed?.nregistro !== med.nregistro) return; // el modal cambió mientras cargaba
+            const el = document.getElementById('financing-summary-value');
+            if (el) el.innerHTML = this._financingSummaryValueHtml(this._computeFinancingSummary(map));
+        } catch (e) {
+            const el = document.getElementById('financing-summary-value');
+            if (el) el.innerHTML = '<span class="text-muted" style="font-size:0.85em">Financiación no disponible ahora</span>';
+        }
     }
 
     /**

@@ -4495,6 +4495,174 @@ body {
     font-size: 0.75rem;
 }
 
+/* Enlace discreto al catálogo completo de indicaciones */
+.indication-catalog-link {
+    margin-top: var(--space-sm);
+    background: none;
+    border: none;
+    padding: 0.2rem 0;
+    color: var(--primary);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: color var(--transition-fast);
+}
+
+.indication-catalog-link:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+
+/* ── Modal catálogo de indicaciones (índice completo generado desde la ontología) ── */
+.catalog-modal-content {
+    position: relative;
+    width: min(760px, 100%);
+    max-height: min(86vh, 800px);
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98));
+    box-shadow: 0 28px 72px rgba(2, 6, 23, 0.42);
+    padding: 1.5rem;
+}
+
+.catalog-header {
+    flex: 0 0 auto;
+    padding-right: 2.5rem;
+}
+
+.catalog-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 1.05rem;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.catalog-total {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-light);
+    border-radius: var(--radius-xl);
+    padding: 0.05rem 0.5rem;
+}
+
+.catalog-sub {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin: 0.35rem 0 0.75rem;
+}
+
+.catalog-filter-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.catalog-filter-wrapper > i {
+    position: absolute;
+    left: 0.7rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    pointer-events: none;
+}
+
+.catalog-filter {
+    width: 100%;
+    padding: 0.55rem 0.75rem 0.55rem 2rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.85rem;
+}
+
+.catalog-filter:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.catalog-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    margin-top: 0.85rem;
+    padding-right: 0.4rem;
+}
+
+.catalog-group {
+    margin-bottom: 1rem;
+}
+
+.catalog-group.hidden,
+.catalog-chip.hidden,
+.catalog-empty.hidden {
+    display: none;
+}
+
+.catalog-group-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    margin: 0 0 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-bottom: 1px solid var(--border-default);
+    padding-bottom: 0.3rem;
+}
+
+.catalog-group-count {
+    font-weight: 400;
+    opacity: 0.7;
+}
+
+.catalog-group-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.catalog-chip {
+    padding: 0.35rem 0.7rem;
+    background: var(--bg-surface-hover);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: inherit;
+}
+
+.catalog-chip:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.catalog-chip:first-letter {
+    text-transform: uppercase;
+}
+
+.catalog-empty {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    padding: 1rem;
+}
+
 /* Compact grid for two-column layout */
 .atc-categories-grid-compact {
     display: grid;
