@@ -24,7 +24,7 @@ const expectedTerms = [
   'hipertensión', 'insuficiencia cardiaca', 'cardiopatía isquémica', 'fibrilación auricular',
   'trombosis', 'antiagregación', 'dislipemia', 'hipertensión pulmonar',
   'asma', 'epoc', 'fibrosis pulmonar', 'rinitis alérgica', 'infección respiratoria',
-  'reflujo', 'enfermedad inflamatoria intestinal', 'hepatitis', 'cirrosis', 'pancreatitis',
+  'reflujo', 'enfermedad inflamatoria intestinal', 'hepatitis', 'cirrosis', 'insuficiencia pancreática',
   'náuseas', 'estreñimiento', 'diarrea', 'diabetes', 'obesidad', 'hipotiroidismo',
   'hipertiroidismo', 'osteoporosis', 'gota', 'enfermedad renal crónica', 'anemia renal',
   'hiperpotasemia', 'hbp', 'vejiga hiperactiva', 'litiasis renal', 'infección urinaria',
