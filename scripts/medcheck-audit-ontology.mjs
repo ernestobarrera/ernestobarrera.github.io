@@ -372,7 +372,13 @@ function classifyGapsAgainstBaseline(row) {
 async function writeBaseline(rows) {
   // Preserva las clasificaciones existentes (no degrada un "accepted" a "review"); añade los GAPS
   // nuevos como "review" para que el humano los mueva a accepted/curated con motivo.
-  const next = { version: today(), generatedBy: 'medcheck-audit-ontology --update-baseline', terms: { ...(baseline.terms || {}) } };
+  const next = {
+    version: today(),
+    generatedBy: 'medcheck-audit-ontology --update-baseline',
+    // Preserva la documentación editada a mano (si no, se perdería en cada regeneración).
+    ...(baseline._doc ? { _doc: baseline._doc } : {}),
+    terms: { ...(baseline.terms || {}) }
+  };
   for (const row of rows) {
     const prev = next.terms[row.term]?.gaps || baselineEntryFor(row.term)?.gaps || {};
     const gaps = { ...prev };

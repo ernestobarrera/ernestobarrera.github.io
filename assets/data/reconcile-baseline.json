@@ -1,6 +1,6 @@
 {
   "version": "2026-07-02",
-  "generatedBy": "medcheck-audit-ontology --update-baseline (clasificado a mano)",
+  "generatedBy": "medcheck-audit-ontology --update-baseline",
   "_doc": "Memoria de GAPS de reconciliacion ya revisados. status: 'accepted' = revisado, fuera de alcance o falso positivo, NO bloquea el gate; 'curated' = ya cubierto por el ATC/filtro; 'review' = pendiente de decision humana, BLOQUEA. Un GAP nuevo no listado aqui bloquea la publicacion hasta curarlo o registrarlo. Regenerar/anadir nuevos: node scripts/medcheck-audit-ontology.mjs --update-baseline --terms=\"<indicacion>\".",
   "terms": {
     "enfermedad renal crónica": {
@@ -95,6 +95,16 @@
           "status": "accepted",
           "nombre": "KAPRUVIA 50 MICROGRAMOS/ML SOLUCION INYECTABLE",
           "reason": "Difelikefalina: prurito urémico en hemodiálisis; uso hospitalario/diálisis, fuera de foco AP."
+        }
+      }
+    },
+    "obesidad": {
+      "anchor": "obesidad",
+      "gaps": {
+        "58048": {
+          "status": "accepted",
+          "nombre": "AMICACINA BRAUN 500 MG/2ML SOLUCIÓN INYECTABLE",
+          "reason": "Falso positivo: amikacina (antibiótico); la 4.1 menciona 'obesidad' para el ajuste de dosis por volumen de distribución, no como indicación."
         }
       }
     }
