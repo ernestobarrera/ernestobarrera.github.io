@@ -5503,10 +5503,11 @@ class MedCheckApp {
         const formaOptions = Array.from(formaSet).sort();
         const labOptions = Array.from(labSet).sort();
 
-        // Separar genéricos y marcas
+        // Separar genéricos, biosimilares y marcas (excluyentes, para que el
+        // resumen cuadre con los badges de la tabla: un fármaco es una sola cosa).
         const genericos = results.filter(m => m.generico);
-        const marcas = results.filter(m => !m.generico);
         const biosimilares = results.filter(m => m.biosimilar);
+        const marcas = results.filter(m => !m.generico && !m.biosimilar);
 
         // Construir selectores de filtros
         const filtersHtml = `
@@ -5566,9 +5567,9 @@ class MedCheckApp {
                     ${ntiFlag ? '<span class="badge badge-nti" title="Índice Terapéutico Estrecho"><i class="fas fa-exclamation-triangle"></i> NTI</span>' : ''}
                 </p>
                 <p class="text-muted mb-md">
-                    <strong>${results.length}</strong> presentaciones encontradas 
-                    (<span class="text-success">${genericos.length} genéricos</span>, 
-                    ${marcas.length} marcas)
+                    <strong>${results.length}</strong> presentaciones encontradas
+                    (<span class="text-success">${genericos.length} genéricos</span>,
+                    ${marcas.length} marcas${biosimilares.length > 0 ? `, <strong>${biosimilares.length}</strong> biosimilares` : ''})
                 </p>
             </div>
             ${ntiBanner}
@@ -5646,6 +5647,19 @@ class MedCheckApp {
                 ? `<span class="badge ${supply.badgeClass} ml-sm" title="${this._escapeHtml(supply.tooltip)}"><i class="fas ${supply.icon}"></i> ${supply.label}</span>`
                 : '';
 
+            // Tipo: un solo badge por fila (coherente con _renderProductTypeBadges,
+            // pero limitado a la tipología para no saturar la columna en móvil).
+            let tipoBadge;
+            if (isGeneric) {
+                tipoBadge = '<span class="badge badge-success">Genérico</span>';
+            } else if (med.biosimilar) {
+                tipoBadge = '<span class="badge badge-biosimilar" title="Biosimilar — no sustituible automáticamente"><i class="fas fa-dna"></i> Biosimilar</span>';
+            } else if (med.nosustituible && med.nosustituible.id === 1) {
+                tipoBadge = '<span class="badge badge-purple" title="Biológico original — no sustituible automáticamente"><i class="fas fa-microscope"></i> Biológico</span>';
+            } else {
+                tipoBadge = '<span class="badge badge-neutral">Marca</span>';
+            }
+
             return `
                 <tr class="${isGeneric ? 'equiv-row-generic' : ''}">
                     <td>
@@ -5654,7 +5668,7 @@ class MedCheckApp {
                     </td>
                     <td>${lab}</td>
                     <td>
-                        ${isGeneric ? '<span class="badge badge-success">Genérico</span>' : '<span class="badge badge-neutral">Marca</span>'}
+                        ${tipoBadge}
                         ${supplyChip}
                     </td>
                     <td>
