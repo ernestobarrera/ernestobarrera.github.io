@@ -10163,10 +10163,10 @@ ${materialesPlaceholder}
             (this.filterState.recetaOnly ? 1 : 0) +
             (this.filterState.biosimilarOnly ? 1 : 0);
 
-        // Filtros SECUNDARIOS (forma, lab, dosis) → se colapsan en "Más filtros" para reducir la
-        // fricción de la barra. Los frecuentes (agrupar, ordenar, toggles) quedan siempre visibles.
-        const secondaryActive = (this.filterState.form ? 1 : 0) + (this.filterState.lab ? 1 : 0) + (this.filterState.doses?.size || 0);
-        const hasSecondary = forms.length > 1 || labs.length > 1 || doses.length > 1;
+        // Forma farmacéutica es discriminador clínico de primer nivel ("quiero sobres,
+        // efervescente...") → siempre visible. Lab y dosis quedan en "Más filtros".
+        const secondaryActive = (this.filterState.lab ? 1 : 0) + (this.filterState.doses?.size || 0);
+        const hasSecondary = labs.length > 1 || doses.length > 1;
 
         return `
             <div class="results-control-bar">
@@ -10183,6 +10183,11 @@ ${materialesPlaceholder}
                             <option value="doseAsc" ${this.groupingState.sortBy === 'doseAsc' ? 'selected' : ''}>Dosis ↑</option>
                             <option value="doseDesc" ${this.groupingState.sortBy === 'doseDesc' ? 'selected' : ''}>Dosis ↓</option>
                         </select>
+                        ${forms.length > 1 ? `
+                        <select id="form-filter" class="control-select" title="Filtrar por forma farmacéutica">
+                            <option value="">📦 Forma farmacéutica</option>
+                            ${formOptions}
+                        </select>` : ''}
                     </div>
                     ${showEFG && (efgCount > 0 || recetaCount > 0 || biosimilarCount > 0) ? `
                     <div class="control-section" style="gap:var(--space-md);">
@@ -10204,11 +10209,6 @@ ${materialesPlaceholder}
                     <details class="more-filters" ${secondaryActive > 0 ? 'open' : ''}>
                         <summary><i class="fas fa-sliders"></i> Más filtros${secondaryActive > 0 ? ` <span class="more-filters-badge">${secondaryActive}</span>` : ''}</summary>
                         <div class="more-filters-body">
-                            ${forms.length > 1 ? `
-                            <select id="form-filter" class="control-select">
-                                <option value="">📦 Forma</option>
-                                ${formOptions}
-                            </select>` : ''}
                             ${labs.length > 1 ? `
                             <select id="lab-filter" class="control-select">
                                 <option value="">🏭 Lab</option>
