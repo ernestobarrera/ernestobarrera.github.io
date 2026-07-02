@@ -12,6 +12,8 @@ const CIMA_BASE = 'https://cima.aemps.es/cima/rest';
 const args = new Set(process.argv.slice(2));
 const live = args.has('--live');
 const reconcile = args.has('--reconcile');
+const updateBaseline = args.has('--update-baseline');
+const baselinePath = path.join(repoRoot, 'assets', 'data', 'reconcile-baseline.json');
 const requestedTerms = readStringArg('--terms')
   .split(',')
   .map(normalize)
@@ -159,24 +161,32 @@ if (live) {
 // oraculo: la busqueda por texto tiene falsos positivos (un 4.1 que menciona "dejar de fumar"
 // como consejo) y depende de la fraseologia. Pensado para refresco periodico y gate pre-publicacion.
 let reconcileRows = [];
-if (reconcile) {
+let newGapCount = 0;
+const baseline = await loadBaseline();
+if (reconcile || updateBaseline) {
   if (typeof fetch !== 'function') {
     throw new Error('Este Node no expone fetch global. Usa Node 18+ para --reconcile.');
   }
   const requestedSet = new Set(requestedTerms);
-  // Por defecto solo las entradas con filtro 4.1 (las que tienen fraseologia curada); con --terms
-  // se fuerza cualquiera. Evita ruido masivo en entradas sin terminos curados (caerian al termino).
+  // Por defecto solo las entradas con fraseologia curada (filtro 4.1, ancla o reconcileTerms); con
+  // --terms se fuerza cualquiera. Evita ruido masivo en entradas sin terminos curados.
   const source = requestedSet.size > 0
     ? entries.filter(([term]) => requestedSet.has(normalize(term)))
-    : entries.filter(([, entry]) => entry.section41Filter || entry.sectionFilter || entry.reconcileTerms);
+    : entries.filter(([, entry]) => entry.section41Filter || entry.sectionFilter || entry.reconcileTerms || entry.reconcileAnchor);
   const recEntries = source.slice(0, Number.isFinite(maxTerms) ? maxTerms : source.length);
   for (const [term, entry] of recEntries) {
-    reconcileRows.push(await reconcileEntry(term, entry));
+    const row = await reconcileEntry(term, entry);
+    classifyGapsAgainstBaseline(row);
+    newGapCount += row.newGaps.length;
+    reconcileRows.push(row);
   }
+  if (updateBaseline) await writeBaseline(reconcileRows);
 }
 
 printReport();
-if (problems.length > 0) process.exitCode = 1;
+// Gate pre-publicacion: un GAP NUEVO no clasificado en el baseline bloquea (como los problemas
+// estructurales). Se resuelve curando (ampliar ATC/filtro) o registrandolo en el baseline con motivo.
+if (problems.length > 0 || newGapCount > 0) process.exitCode = 1;
 
 function readNumberArg(name, fallback) {
   const rawArg = process.argv.slice(2).find(arg => arg.startsWith(`${name}=`));
@@ -198,6 +208,27 @@ function normalize(value) {
     .replace(/-/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// El endpoint docSegmentado devuelve la 4.1 con entidades HTML sin decodificar
+// (p. ej. "cr&#243;nica"). En el navegador, CimaAPI._normalizeSectionFilterText las
+// decodifica con un <textarea>; en Node no hay document, asi que hay que hacerlo a mano
+// o el texto "enfermedad renal cronica" NUNCA casaria y el auditor subcontaria (justo el
+// caso de los iSGLT2 en ERC). Cubre entidades numericas (dec/hex) y las nombradas comunes.
+const NAMED_ENTITIES = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  aacute: '\u00e1', eacute: '\u00e9', iacute: '\u00ed', oacute: '\u00f3', uacute: '\u00fa',
+  Aacute: '\u00c1', Eacute: '\u00c9', Iacute: '\u00cd', Oacute: '\u00d3', Uacute: '\u00da',
+  ntilde: '\u00f1', Ntilde: '\u00d1', uuml: '\u00fc', Uuml: '\u00dc', ordm: '\u00ba', ordf: '\u00aa', deg: '\u00b0'
+};
+function decodeEntities(value) {
+  return String(value || '')
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => safeFromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => safeFromCodePoint(parseInt(dec, 10)))
+    .replace(/&([a-z]+);/gi, (m, name) => (name in NAMED_ENTITIES ? NAMED_ENTITIES[name] : m));
+}
+function safeFromCodePoint(code) {
+  try { return Number.isFinite(code) ? String.fromCodePoint(code) : ''; } catch { return ''; }
 }
 
 function addDuplicateKey(value, owner, label) {
@@ -297,40 +328,114 @@ async function buscarFichaTecnica(section, texto) {
 // luego los del filtro; como ultimo recurso el propio termino (menos fiable, se marca en el informe).
 function reconcileTermsFor(term, entry) {
   const f = entry.section41Filter || entry.sectionFilter;
+  // El ancla (opcional) solo tiene sentido con fraseologia precisa que verificar sobre el texto real.
+  const anchor = typeof entry.reconcileAnchor === 'string' ? entry.reconcileAnchor : null;
   if (Array.isArray(entry.reconcileTerms) && entry.reconcileTerms.length) {
-    return { terms: entry.reconcileTerms, source: 'reconcileTerms' };
+    return { terms: entry.reconcileTerms, source: 'reconcileTerms', anchor };
   }
   if (f && Array.isArray(f.includeAny) && f.includeAny.length) {
-    return { terms: f.includeAny, source: 'section41Filter.includeAny' };
+    return { terms: f.includeAny, source: 'section41Filter.includeAny', anchor };
   }
   if (f && Array.isArray(f.terms) && f.terms.length) {
-    return { terms: f.terms, source: 'section41Filter.terms' };
+    return { terms: f.terms, source: 'section41Filter.terms', anchor };
   }
-  return { terms: [term], source: 'fallback:term' };
+  return { terms: [term], source: 'fallback:term', anchor };
+}
+
+// ---- Baseline de descartes de reconciliacion --------------------------------------------------
+// Memoria versionada de los GAPS ya revisados por un humano: los clasificados (accepted = fuera de
+// alcance / falso positivo del texto; curated = ya cubierto) se silencian, para que un barrido
+// futuro SOLO destaque GAPS NUEVOS (p. ej. un nuevo iSGLT2 autorizado para ERC). Eso es lo que hace
+// la red de seguridad "automantenida": alerta de novedades, no repite el ruido conocido.
+async function loadBaseline() {
+  try {
+    const raw = await fs.readFile(baselinePath, 'utf8');
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : { version: null, terms: {} };
+  } catch {
+    return { version: null, terms: {} };
+  }
+}
+
+function baselineEntryFor(term) {
+  const t = baseline.terms || {};
+  return t[term] || t[normalize(term)] || null;
+}
+
+function classifyGapsAgainstBaseline(row) {
+  const known = baselineEntryFor(row.term);
+  const accepted = new Set(Object.keys(known?.gaps || {}));
+  row.newGaps = row.gaps.filter(([nr]) => !accepted.has(String(nr)));
+  row.knownGaps = row.gaps.filter(([nr]) => accepted.has(String(nr)));
+}
+
+async function writeBaseline(rows) {
+  // Preserva las clasificaciones existentes (no degrada un "accepted" a "review"); añade los GAPS
+  // nuevos como "review" para que el humano los mueva a accepted/curated con motivo.
+  const next = { version: today(), generatedBy: 'medcheck-audit-ontology --update-baseline', terms: { ...(baseline.terms || {}) } };
+  for (const row of rows) {
+    const prev = next.terms[row.term]?.gaps || baselineEntryFor(row.term)?.gaps || {};
+    const gaps = { ...prev };
+    for (const [nr, nombre] of row.gaps) {
+      if (!gaps[nr]) gaps[nr] = { status: 'review', nombre, reason: '' };
+      else if (!gaps[nr].nombre) gaps[nr].nombre = nombre;
+    }
+    next.terms[row.term] = { anchor: row.anchor || null, gaps };
+  }
+  await fs.writeFile(baselinePath, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
+  console.log(`\n[baseline] escrito ${path.relative(repoRoot, baselinePath)} (${rows.length} entradas)`);
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 async function reconcileEntry(term, entry) {
-  const { terms, source } = reconcileTermsFor(term, entry);
   // Conjunto ATC: lo que MedCheck devuelve hoy (por nregistro).
   const atcMeds = await searchEntry(entry);
   const atcIds = new Set(atcMeds.map(m => m.nregistro).filter(Boolean));
-  // Conjunto verdad: union de la 4.1 por cada fraseo.
+
+  // Conjunto verdad (la 4.1 = verdad legal). Dos motores:
+  //  - anchor: si la entrada declara reconcileAnchor, acotamos el universo con un termino AMPLIO
+  //    server-side (buscarEnFichaTecnica, barato) y verificamos la fraseologia PRECISA sobre el texto
+  //    real (docSegmentado decodificado, regex inicio-palabra = MISMO criterio que el runtime). Es el
+  //    unico modo que ve fraseos que buscarEnFichaTecnica NO indexa (p. ej. "enfermedad renal cronica"
+  //    devuelve 0 server-side pese a estar en la 4.1 de los iSGLT2 -> el caso que motivó esto).
+  //  - directo (retrocompat): sin ancla, cuenta con buscarEnFichaTecnica por cada fraseo.
+  const { terms, source, anchor } = reconcileTermsFor(term, entry);
   const txt = new Map(); // nregistro -> nombre
   const perTerm = [];
-  for (const t of terms) {
-    let meds = [];
+  if (anchor) {
+    let universo = [];
     try {
-      meds = await buscarFichaTecnica('4.1', t);
-    } catch (error) {
-      perTerm.push(`${t}=ERR`);
-      continue;
+      universo = await buscarFichaTecnica('4.1', anchor);
+    } catch { universo = []; }
+    perTerm.push(`ancla "${anchor}"=${universo.length}`);
+    const normalizedTerms = terms.map(normalize);
+    let matched = 0;
+    for (const m of universo) {
+      if (!m.nregistro) continue;
+      const text = normalize((await fetchSectionText(m.nregistro, '4.1')).replace(/<[^>]*>/g, ' '));
+      if (normalizedTerms.some(t => termInText(text, t))) { txt.set(m.nregistro, m.nombre); matched += 1; }
     }
-    perTerm.push(`${t}=${meds.length}`);
-    for (const m of meds) if (m.nregistro) txt.set(m.nregistro, m.nombre);
+    perTerm.push(`verdad(${terms.join('|')})=${matched}`);
+  } else {
+    for (const t of terms) {
+      let meds = [];
+      try {
+        meds = await buscarFichaTecnica('4.1', t);
+      } catch (error) {
+        perTerm.push(`${t}=ERR`);
+        continue;
+      }
+      perTerm.push(`${t}=${meds.length}`);
+      for (const m of meds) if (m.nregistro) txt.set(m.nregistro, m.nombre);
+    }
   }
   const gaps = [...txt.entries()].filter(([nr]) => !atcIds.has(nr));
   const extra = atcMeds.filter(m => m.nregistro && !txt.has(m.nregistro)).length;
-  return { term, source, atc: atcIds.size, ft: txt.size, perTerm, gaps, extra };
+  // newGaps/knownGaps los rellena classifyGapsAgainstBaseline.
+  return { term, source, anchor, atc: atcIds.size, ft: txt.size, perTerm, gaps, extra, newGaps: [], knownGaps: [] };
 }
 
 async function countSectionMatches(meds, filter) {
@@ -373,9 +478,9 @@ async function fetchSectionText(nregistro, section) {
     const raw = await r.text();
     if (!raw) return '';
     let data;
-    try { data = JSON.parse(raw); } catch { return raw; }
-    if (Array.isArray(data)) return data.map(item => `${item.titulo || ''} ${item.contenido || ''}`).join(' ');
-    return typeof data === 'string' ? data : raw;
+    try { data = JSON.parse(raw); } catch { return decodeEntities(raw); }
+    if (Array.isArray(data)) return decodeEntities(data.map(item => `${item.titulo || ''} ${item.contenido || ''}`).join(' '));
+    return decodeEntities(typeof data === 'string' ? data : raw);
   } catch {
     return '';
   }
@@ -413,25 +518,34 @@ function printReport() {
     printList('## Section 4.1 Filters Returning Zero', zeroSection);
   }
 
-  if (reconcile) {
+  if (reconcile || updateBaseline) {
     console.log('## Reconciliation: ATC vs ficha tecnica 4.1');
-    console.log('(GAPS = farmacos con la indicacion en su 4.1 que el ATC NO captura. Candidatos a revisar:');
-    console.log(' incluyen falsos positivos del texto -p. ej. un 4.1 que solo aconseja dejar de fumar-.)');
+    console.log('(GAPS = farmacos con la indicacion en su 4.1 que el ATC NO captura. NEW = no clasificados');
+    console.log(' en el baseline (bloquean el gate); KNOWN = ya revisados/aceptados en reconcile-baseline.json.)');
     console.log('');
     if (!reconcileRows.length) {
       console.log('- none');
       console.log('');
     }
     for (const r of reconcileRows) {
-      console.log(`- ${r.term} [${r.source}] ATC=${r.atc} 4.1=${r.ft} extra(ATC sin 4.1)=${r.extra}`);
+      const mode = r.anchor ? 'ancla+texto real' : 'buscarEnFichaTecnica';
+      console.log(`- ${r.term} [${r.source} · ${mode}] ATC=${r.atc} 4.1=${r.ft} extra(ATC sin 4.1)=${r.extra}`);
       console.log(`    terms: ${r.perTerm.join(', ')}`);
-      if (r.gaps.length) {
-        console.log(`    GAPS (en 4.1, ausentes del ATC) = ${r.gaps.length}:`);
-        for (const [nr, nombre] of r.gaps.slice(0, 15)) console.log(`      + ${nombre} (nregistro ${nr})`);
-        if (r.gaps.length > 15) console.log(`      ... (+${r.gaps.length - 15} mas)`);
+      if (r.newGaps.length) {
+        console.log(`    GAPS NUEVOS (sin clasificar, BLOQUEAN) = ${r.newGaps.length}:`);
+        for (const [nr, nombre] of r.newGaps.slice(0, 20)) console.log(`      ! ${nombre} (nregistro ${nr})`);
+        if (r.newGaps.length > 20) console.log(`      ... (+${r.newGaps.length - 20} mas)`);
       } else {
-        console.log('    GAPS = 0');
+        console.log('    GAPS NUEVOS = 0');
       }
+      if (r.knownGaps.length) {
+        console.log(`    GAPS conocidos (baseline) = ${r.knownGaps.length}`);
+      }
+    }
+    if (newGapCount > 0 && !updateBaseline) {
+      console.log('');
+      console.log(`>> ${newGapCount} GAP(s) nuevo(s): cura la entrada (ampliar ATC/filtro) o registralos en`);
+      console.log('   reconcile-baseline.json con motivo (o corre --update-baseline y clasifica los "review").');
     }
     console.log('');
   }

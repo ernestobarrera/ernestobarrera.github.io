@@ -1,0 +1,102 @@
+{
+  "version": "2026-07-02",
+  "generatedBy": "medcheck-audit-ontology --update-baseline (clasificado a mano)",
+  "_doc": "Memoria de GAPS de reconciliacion ya revisados. status: 'accepted' = revisado, fuera de alcance o falso positivo, NO bloquea el gate; 'curated' = ya cubierto por el ATC/filtro; 'review' = pendiente de decision humana, BLOQUEA. Un GAP nuevo no listado aqui bloquea la publicacion hasta curarlo o registrarlo. Regenerar/anadir nuevos: node scripts/medcheck-audit-ontology.mjs --update-baseline --terms=\"<indicacion>\".",
+  "terms": {
+    "enfermedad renal crónica": {
+      "anchor": "enfermedad renal",
+      "gaps": {
+        "46186": {
+          "status": "accepted",
+          "nombre": "DISTRANEURINE 192 MG CÁPSULAS BLANDAS",
+          "reason": "Falso positivo: clometiazol (insomnio/agitación); su 4.1 cita la insuf. renal como precaución de uso, no como indicación."
+        },
+        "53683": {
+          "status": "accepted",
+          "nombre": "HIDROFEROL 0,266 mg SOLUCION ORAL",
+          "reason": "Calcifediol: uso mayoritario en AP = déficit de vitamina D (no ERC); la indicación renal (osteodistrofia) es secundaria. Dejado fuera del cajón ERC. PENDIENTE confirmación del responsable."
+        },
+        "55315": {
+          "status": "accepted",
+          "nombre": "HIDROFEROL 0,1 mg/ml GOTAS ORALES EN SOLUCION",
+          "reason": "Calcifediol: uso mayoritario en AP = déficit de vitamina D (no ERC); la indicación renal (osteodistrofia) es secundaria. Dejado fuera del cajón ERC. PENDIENTE confirmación del responsable."
+        },
+        "80095": {
+          "status": "accepted",
+          "nombre": "HIDROFEROL 0,266 MG CAPSULAS BLANDAS",
+          "reason": "Calcifediol: uso mayoritario en AP = déficit de vitamina D (no ERC); la indicación renal (osteodistrofia) es secundaria. Dejado fuera del cajón ERC. PENDIENTE confirmación del responsable."
+        },
+        "84991": {
+          "status": "accepted",
+          "nombre": "TOLVAPTAN TEVA 30 MG + TOLVAPTAN TEVA 60 MG COMPRIMIDOS EFG",
+          "reason": "Tolvaptán C03XA01: poliquistosis renal (ADPKD) / hiponatremia. Nefroprotección especializada (visado, control nefrología/hepático), no AP. Candidato a entrada dedicada 'poliquistosis renal'. PENDIENTE decisión clínica del responsable."
+        },
+        "84992": {
+          "status": "accepted",
+          "nombre": "TOLVAPTAN TEVA 30 MG COMPRIMIDOS EFG",
+          "reason": "Tolvaptán C03XA01: poliquistosis renal (ADPKD) / hiponatremia. Nefroprotección especializada (visado, control nefrología/hepático), no AP. Candidato a entrada dedicada 'poliquistosis renal'. PENDIENTE decisión clínica del responsable."
+        },
+        "84993": {
+          "status": "accepted",
+          "nombre": "TOLVAPTAN TEVA 15 MG + TOLVAPTAN TEVA 45 MG COMPRIMIDOS EFG",
+          "reason": "Tolvaptán C03XA01: poliquistosis renal (ADPKD) / hiponatremia. Nefroprotección especializada (visado, control nefrología/hepático), no AP. Candidato a entrada dedicada 'poliquistosis renal'. PENDIENTE decisión clínica del responsable."
+        },
+        "84994": {
+          "status": "accepted",
+          "nombre": "TOLVAPTAN TEVA 15 MG COMPRIMIDOS EFG",
+          "reason": "Tolvaptán C03XA01: poliquistosis renal (ADPKD) / hiponatremia. Nefroprotección especializada (visado, control nefrología/hepático), no AP. Candidato a entrada dedicada 'poliquistosis renal'. PENDIENTE decisión clínica del responsable."
+        },
+        "84997": {
+          "status": "accepted",
+          "nombre": "TOLVAPTAN TEVA 30 MG + TOLVAPTAN TEVA 90 MG COMPRIMIDOS EFG",
+          "reason": "Tolvaptán C03XA01: poliquistosis renal (ADPKD) / hiponatremia. Nefroprotección especializada (visado, control nefrología/hepático), no AP. Candidato a entrada dedicada 'poliquistosis renal'. PENDIENTE decisión clínica del responsable."
+        },
+        "90346": {
+          "status": "accepted",
+          "nombre": "NORDITROPIN FLEXPRO 10 MG/1,5 ML SOLUCION INYECTABLE EN PLUMA PRECARGADA",
+          "reason": "Somatropina: retraso del crecimiento en IRC pediátrica; especializado (endocrino/nefro infantil), fuera de foco AP."
+        },
+        "90347": {
+          "status": "accepted",
+          "nombre": "NORDITROPIN FLEXPRO 15 MG/1,5 ML SOLUCION INYECTABLE EN PLUMA PRECARGADA",
+          "reason": "Somatropina: retraso del crecimiento en IRC pediátrica; especializado (endocrino/nefro infantil), fuera de foco AP."
+        },
+        "90348": {
+          "status": "accepted",
+          "nombre": "NORDITROPIN FLEXPRO 5 MG/1,5 ML SOLUCION INYECTABLE EN PLUMA PRECARGADA",
+          "reason": "Somatropina: retraso del crecimiento en IRC pediátrica; especializado (endocrino/nefro infantil), fuera de foco AP."
+        },
+        "1151000001": {
+          "status": "accepted",
+          "nombre": "JINARC 15 mg COMPRIMIDOS",
+          "reason": "Tolvaptán (Jinarc): poliquistosis renal (ADPKD). Nefroprotección especializada (visado, monitorización hepática), no AP. Candidato a entrada dedicada 'poliquistosis renal'. PENDIENTE decisión clínica del responsable."
+        },
+        "1151000003": {
+          "status": "accepted",
+          "nombre": "JINARC 30 mg COMPRIMIDOS",
+          "reason": "Tolvaptán (Jinarc): poliquistosis renal (ADPKD). Nefroprotección especializada (visado, monitorización hepática), no AP. Candidato a entrada dedicada 'poliquistosis renal'. PENDIENTE decisión clínica del responsable."
+        },
+        "1151000007": {
+          "status": "accepted",
+          "nombre": "JINARC 15 mg + 45 mg COMPRIMIDOS",
+          "reason": "Tolvaptán (Jinarc): poliquistosis renal (ADPKD). Nefroprotección especializada (visado, monitorización hepática), no AP. Candidato a entrada dedicada 'poliquistosis renal'. PENDIENTE decisión clínica del responsable."
+        },
+        "1151000010": {
+          "status": "accepted",
+          "nombre": "JINARC 30 mg + 60 mg comprimidos",
+          "reason": "Tolvaptán (Jinarc): poliquistosis renal (ADPKD). Nefroprotección especializada (visado, monitorización hepática), no AP. Candidato a entrada dedicada 'poliquistosis renal'. PENDIENTE decisión clínica del responsable."
+        },
+        "1151000013": {
+          "status": "accepted",
+          "nombre": "JINARC 30 mg + 90 mg COMPRIMIDOS",
+          "reason": "Tolvaptán (Jinarc): poliquistosis renal (ADPKD). Nefroprotección especializada (visado, monitorización hepática), no AP. Candidato a entrada dedicada 'poliquistosis renal'. PENDIENTE decisión clínica del responsable."
+        },
+        "1221643002": {
+          "status": "accepted",
+          "nombre": "KAPRUVIA 50 MICROGRAMOS/ML SOLUCION INYECTABLE",
+          "reason": "Difelikefalina: prurito urémico en hemodiálisis; uso hospitalario/diálisis, fuera de foco AP."
+        }
+      }
+    }
+  }
+}

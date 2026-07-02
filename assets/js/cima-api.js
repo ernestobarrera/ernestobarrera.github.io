@@ -42,7 +42,7 @@ class CimaAPI {
      * Una sola vez; falla en abierto (si no carga, queda el dict vacío y la búsqueda cae al ATC-cache).
      * Ampliable: editar assets/data/clinical-ontology.json y subir el `?v=`.
      */
-    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260701b') {
+    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260702a') {
         if (this._clinicalOntologyLoaded) return CimaAPI.CLINICAL_DICTIONARY;
         if (this._clinicalOntologyLoading) return this._clinicalOntologyLoading;
         this._clinicalOntologyLoading = fetch(url, { cache: 'force-cache' })
