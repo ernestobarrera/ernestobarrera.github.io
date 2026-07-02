@@ -2460,7 +2460,7 @@ class MedCheckApp {
         // "Fármacos y clases" (atajos que no son enfermedades) al final.
         const GROUP_ORDER = [
             'Cardiovascular', 'Nefrología y medio interno', 'Endocrinología y metabolismo',
-            'Digestivo', 'Respiratorio', 'Otorrinolaringología', 'Oftalmología', 'Dermatología',
+            'Digestivo', 'Respiratorio', 'Otorrinolaringología', 'Alergología', 'Oftalmología', 'Dermatología',
             'Neurología', 'Salud mental y adicciones', 'Dolor y cuidados paliativos',
             'Reumatología y musculoesquelético', 'Inmunología, autoinmunes y trasplante',
             'Infecciosas', 'Hematología y hemostasia', 'Oncología',
