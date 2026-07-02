@@ -802,6 +802,21 @@ body {
     box-shadow: var(--shadow-md);
 }
 
+/* No comercializado: atenuación de tarjeta completa (se recupera al pasar el
+   ratón para poder leer detalles y usar los botones sin esfuerzo). */
+.result-card--no-comerc {
+    opacity: 0.55;
+    border-style: dashed;
+}
+
+.result-card--no-comerc:hover {
+    opacity: 0.9;
+}
+
+.result-card--no-comerc .result-card-title {
+    color: var(--text-secondary);
+}
+
 /* Prevenir desbordamiento de texto y permitir que la tarjeta encoja a su columna
    (si no, en contenedor estrecho la tarjeta desborda y la estrella de favorito se corta). */
 .result-card {
@@ -940,6 +955,15 @@ body {
 .badge-neutral {
     background: var(--bg-surface-hover);
     color: var(--text-secondary);
+}
+
+/* No comercializado — contorno discontinuo, sin color de alerta (estado, no riesgo) */
+.badge-no-comerc {
+    background: transparent;
+    border: 1px dashed var(--text-secondary);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
 }
 
 .badge-purple {

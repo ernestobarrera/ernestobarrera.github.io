@@ -2200,6 +2200,7 @@ class MedCheckApp {
     renderMedCard(med) {
         // Badges de estado — tipología de producto centralizada
         const badges = [...this._renderProductTypeBadges(med)];
+        if (!med.comerc) badges.unshift('<span class="badge badge-no-comerc" title="Sin presentaciones comercializadas actualmente">No comercializado</span>');
         if (med.receta) badges.push('<span class="badge badge-info">Receta</span>');
         if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro - Vigilancia adicional">▲ Vigilancia</span>');
         const supplyBadge = this._supplyBadgeHtml(med);
@@ -2273,14 +2274,14 @@ class MedCheckApp {
         this._medRenderCache.set(med.nregistro, med);
         const isFav = this.isFavorite(med.nregistro);
         return `
-            <div class="result-card" data-nregistro="${med.nregistro}" title="Ver información general">
+            <div class="result-card${!med.comerc ? ' result-card--no-comerc' : ''}" data-nregistro="${med.nregistro}" title="Ver información general">
                 <div class="result-card-main">
                     <div class="med-icon-wrapper">
                         <i class="fas fa-${medIcon}"></i>
                     </div>
                     <div class="med-info-content">
                         <div class="result-card-header">
-                            <span class="result-card-title"${!med.comerc ? ' style="color:#9ca3af;"' : ''}>${med.nombre}</span>
+                            <span class="result-card-title">${med.nombre}</span>
                             <button class="fav-star-btn ${isFav ? 'active' : ''}"
                                 onclick="event.stopPropagation(); app.toggleFavoriteById('${med.nregistro}', this); app.updateFavoritesBadge();"
                                 title="${isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}">
@@ -3170,6 +3171,7 @@ class MedCheckApp {
     renderIndicationMedCard(med, searchQuery) {
         // Badges de estado — tipología de producto centralizada
         const badges = [...this._renderProductTypeBadges(med)];
+        if (!med.comerc) badges.unshift('<span class="badge badge-no-comerc" title="Sin presentaciones comercializadas actualmente">No comercializado</span>');
         if (med.receta) badges.push('<span class="badge badge-info">Receta</span>');
         if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro">▲ Vigilancia</span>');
         // Badge de suministro (modelo central; neutro, fiel al nomenclátor)
@@ -3239,14 +3241,14 @@ class MedCheckApp {
         const isFav = this.isFavorite(med.nregistro);
 
         return `
-            <div class="result-card" data-nregistro="${med.nregistro}">
+            <div class="result-card${!med.comerc ? ' result-card--no-comerc' : ''}" data-nregistro="${med.nregistro}">
                 <div class="result-card-main">
                     <div class="med-icon-wrapper indication">
                         <i class="fas fa-${medIcon}"></i>
                     </div>
                     <div class="med-info-content">
                         <div class="result-card-header">
-                            <span class="result-card-title"${!med.comerc ? ' style="color:#9ca3af;"' : ''}>${med.nombre}</span>
+                            <span class="result-card-title">${med.nombre}</span>
                             <button class="fav-star-btn ${isFav ? 'active' : ''}"
                                 onclick="event.stopPropagation(); app.toggleFavoriteById('${med.nregistro}', this); app.updateFavoritesBadge();"
                                 title="${isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}">
