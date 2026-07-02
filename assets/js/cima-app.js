@@ -8514,38 +8514,49 @@ ${materialesPlaceholder}
         return result;
     }
 
-    /** Clasifica la situación de financiación cruda de BIFIMED en 'fin' | 'nofin' | 'sindato'. */
+    /**
+     * Clasifica la situación de financiación cruda de BIFIMED en 'fin' | 'cond' | 'nofin' | 'sindato'.
+     * Se apoya en marcadores ASCII (no en igualdad exacta) porque el dataset trae valores compuestos
+     * ("Sí para determinadas indicaciones/condiciones") y con mojibake por doble UTF-8 (los acentos no
+     * son fiables). 'cond' = financiado pero con visado/por indicación (dabigatrán, etc.).
+     */
     _classifyFinSit(sit, found) {
         if (!found) return 'sindato';
         const s = (sit || '').trim().toLowerCase();
         if (!s) return 'sindato';
-        if (s === 'si' || s === 'sí' || s === 'financiado' || s === 'financiada') return 'fin';
         if (s.includes('no incluid') || s.includes('no financiad') || s.includes('excluid')) return 'nofin';
+        if (s.includes('determinad') || s.includes('condicion') || s.includes('restring') || s.includes('restricci')) return 'cond';
+        if (s.startsWith('si') || s.includes('financiad')) return 'fin';
         return 'sindato';
     }
 
     /**
      * Agrega el estado por CN en un resumen honesto a nivel medicamento (no colapsa a "sí" si
-     * solo alguna presentación está financiada): todas → 'si'; ninguna → 'no'; mezcla → 'parcial';
-     * sin dato utilizable → 'sindato'. Mismo criterio que "X comercializadas de Y".
+     * solo alguna presentación está financiada). La financiación condicionada (visado/por indicación)
+     * cuenta como financiada pero se muestra aparte, no como "sin datos". Mezcla financiada/no → parcial.
      */
     _computeFinancingSummary(map) {
-        let fin = 0, nofin = 0;
+        let fin = 0, cond = 0, nofin = 0;
         for (const d of map.values()) {
             const c = this._classifyFinSit(d.sit, d.found);
             if (c === 'fin') fin++;
+            else if (c === 'cond') cond++;
             else if (c === 'nofin') nofin++;
         }
-        const conDato = fin + nofin;
+        const financiadas = fin + cond;
+        const conDato = financiadas + nofin;
         if (conDato === 0) return { estado: 'sindato', label: 'Sin datos de financiación', icon: 'fa-circle-question', color: 'var(--text-secondary)' };
-        if (nofin === 0) return { estado: 'si', label: 'Financiado por el SNS', icon: 'fa-check-circle', color: 'var(--success)' };
-        if (fin === 0) return { estado: 'no', label: 'No financiado por el SNS', icon: 'fa-times-circle', color: 'var(--text-secondary)' };
-        return { estado: 'parcial', label: `Financiación parcial (${fin} de ${conDato} presentaciones)`, icon: 'fa-circle-half-stroke', color: 'var(--warning)' };
+        if (nofin === 0) {
+            if (cond === 0) return { estado: 'si', label: 'Financiado por el SNS', icon: 'fa-check-circle', color: 'var(--success)' };
+            return { estado: 'cond', label: 'Financiado (condicionado: visado / por indicación)', icon: 'fa-circle-check', color: 'var(--warning)' };
+        }
+        if (financiadas === 0) return { estado: 'no', label: 'No financiado por el SNS', icon: 'fa-times-circle', color: 'var(--text-secondary)' };
+        return { estado: 'parcial', label: `Financiación parcial (${financiadas} de ${conDato} presentaciones)`, icon: 'fa-circle-half-stroke', color: 'var(--warning)' };
     }
 
     /** HTML del valor de la línea Financiación (icono + estado + enlace al detalle en la pestaña). */
     _financingSummaryValueHtml(summary) {
-        const link = `<a href="#" onclick="event.preventDefault(); app.openModalTab('financing');" style="margin-left:0.5rem; font-size:0.85em;">Ver detalle →</a>`;
+        const link = `<a href="#" onclick="event.preventDefault(); app.openModalTab('financing');" style="margin-left:0.5rem; font-size:0.85em; color:var(--primary); font-weight:500;">Ver detalle →</a>`;
         return `<i class="fas ${summary.icon}" style="color:${summary.color}"></i> ${this._escapeHtml(summary.label)}${link}`;
     }
 
