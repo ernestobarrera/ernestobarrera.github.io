@@ -1485,83 +1485,21 @@ class MedCheckApp {
         this.autocompleteTimer = setTimeout(async () => {
             if (currentAbortController.signal.aborted) return;
             try {
-                // Diccionario de expansiones: mapea un término parcial al PA completo
-                // Necesario cuando el término buscado es la segunda palabra del PA
-                // (ej. "glargina" → CIMA lo tiene como "insulina glargina")
-                const synonyms = {
-                    // Sales y formas iónicas
-                    'ferroso': 'hierro',
-                    'ferrico': 'hierro',
-                    'potasico': 'potasio',
-                    'sodico': 'sodio',
-                    'calcico': 'calcio',
-                    'magnésico': 'magnesio',
-                    'magnesico': 'magnesio',
-                    // Insulinas: el PA en CIMA siempre empieza por "insulina"
-                    'glargina': 'insulina glargina',
-                    'lispro': 'insulina lispro',
-                    'aspart': 'insulina aspart',
-                    'detemir': 'insulina detemir',
-                    'degludec': 'insulina degludec',
-                    'glulisina': 'insulina glulisina',
-                    'nph': 'insulina nph',
-                    'bifasica': 'insulina bifasica',
-                    'bifásica': 'insulina bifasica',
-                };
-
-                // Normalizar query para activar solo sinónimos reales.
-                const normalizedQuery = query.toLowerCase();
-                const words = normalizedQuery.split(/\s+/).filter(w => w.length >= 3);
-
-                // Estrategia de búsqueda múltiple para autocomplete:
-                // 1. Búsqueda por nombre comercial (query exacto)
-                // 2. Búsqueda por principio activo (practiv1 - query completo)
-                // 3. Búsqueda por sinónimos explícitos si existen
                 const scope = this._getSearchScopeFiltersFromUI();
                 const apiFilters = {
                     ...(scope.comerc ? { comerc: 1 } : {}),
                     pagina: 1
                 };
-                const acOpts = {
+                let allResults = await this._fetchAutocompleteMeds(query, apiFilters, {
                     signal: currentAbortController.signal,
                     headers: { 'X-MC-Autocomplete': '1' }
-                };
-                const searches = [
-                    this.api.searchMedicamentos({ nombre: query, ...apiFilters }, acOpts),
-                    this.api.searchMedicamentos({ practiv1: query, ...apiFilters }, acOpts)
-                ];
-
-                // En autocomplete evitamos expandir agresivamente: solo añadimos
-                // sinónimos reales, no cada palabra suelta, para no penalizar latencia.
-                for (const word of words) {
-                    const synonym = synonyms[word];
-                    if (synonym && synonym !== normalizedQuery) {
-                        searches.push(this.api.searchMedicamentos({ practiv1: synonym, ...apiFilters }, acOpts));
-                    }
-                }
-
-                const results = await Promise.allSettled(searches);
+                });
 
                 // Si llegó una tecla nueva mientras esperábamos, descartar estos resultados
                 if (currentAbortController.signal.aborted) return;
                 if (document.activeElement !== document.getElementById('search-input')) {
                     dropdown.classList.add('hidden');
                     return;
-                }
-
-                // Combinar y deduplicar resultados (por nregistro)
-                const seen = new Set();
-                let allResults = [];
-
-                // Procesar todos los resultados
-                for (const result of results) {
-                    if (result.status !== 'fulfilled') continue;
-                    for (const med of (result.value?.resultados || [])) {
-                        if (!seen.has(med.nregistro)) {
-                            seen.add(med.nregistro);
-                            allResults.push(med);
-                        }
-                    }
                 }
 
                 // Rankear por relevancia local: CIMA devuelve coincidencias por subcadena
@@ -1579,39 +1517,7 @@ class MedCheckApp {
                     return;
                 }
 
-                dropdown.innerHTML = allResults.slice(0, 14).map(med => {
-                    const atcInfo = this.getATCClinicalInfo(med);
-                    const pactivos = med.pactivos || '';
-
-                    // Detectar si es una combinación (contiene / o ,)
-                    const isCombination = pactivos.includes('/') || pactivos.includes(',');
-                    const combinationBadge = isCombination
-                        ? '<span class="autocomplete-combo-badge"><i class="fas fa-layer-group"></i> Comb</span>'
-                        : '';
-
-                    // Badge de retirado para medicamentos no comercializados
-                    const retiradoBadge = med._retirado
-                        ? '<span class="autocomplete-retirado-badge">No comercializado</span>'
-                        : '';
-
-                    // Formatear principios activos
-                    const formattedPactivos = pactivos
-                        ? `<span class="autocomplete-pactivos">${pactivos}</span>`
-                        : (med.labtitular ? `<span class="autocomplete-lab">${med.labtitular}</span>` : '');
-
-                    return `
-                        <button class="autocomplete-item ${isCombination ? 'has-combination' : ''} ${med._retirado ? 'is-retirado' : ''}" data-nregistro="${med.nregistro}">
-                            <div class="autocomplete-main">
-                                ${combinationBadge}
-                                <span class="autocomplete-term">${med.nombre}</span>
-                                ${retiradoBadge}
-                            </div>
-                            ${formattedPactivos}
-                            ${atcInfo ? `<span class="autocomplete-atc" style="background: ${atcInfo.color}22; color: ${atcInfo.color};">${atcInfo.class}</span>` : ''}
-                        </button>
-                    `;
-                }).join('');
-
+                dropdown.innerHTML = this._renderAutocompleteMedItems(allResults, 14);
                 dropdown.classList.remove('hidden');
 
                 // Click handlers for selection
@@ -1625,6 +1531,114 @@ class MedCheckApp {
                 if (e.name !== 'AbortError') console.warn('Autocomplete error:', e);
             }
         }, 170);
+    }
+
+    /**
+     * Motor compartido de autocompletado de medicamentos: búsqueda dual
+     * (nombre comercial + principio activo) con sinónimos, deduplicada por nregistro.
+     * Lo consumen el buscador general y el de equivalencias.
+     */
+    async _fetchAutocompleteMeds(query, apiFilters = {}, requestOptions = {}) {
+        // Diccionario de expansiones: mapea un término parcial al PA completo
+        // Necesario cuando el término buscado es la segunda palabra del PA
+        // (ej. "glargina" → CIMA lo tiene como "insulina glargina")
+        const synonyms = {
+            // Sales y formas iónicas
+            'ferroso': 'hierro',
+            'ferrico': 'hierro',
+            'potasico': 'potasio',
+            'sodico': 'sodio',
+            'calcico': 'calcio',
+            'magnésico': 'magnesio',
+            'magnesico': 'magnesio',
+            // Insulinas: el PA en CIMA siempre empieza por "insulina"
+            'glargina': 'insulina glargina',
+            'lispro': 'insulina lispro',
+            'aspart': 'insulina aspart',
+            'detemir': 'insulina detemir',
+            'degludec': 'insulina degludec',
+            'glulisina': 'insulina glulisina',
+            'nph': 'insulina nph',
+            'bifasica': 'insulina bifasica',
+            'bifásica': 'insulina bifasica',
+        };
+
+        // Normalizar query para activar solo sinónimos reales.
+        const normalizedQuery = query.toLowerCase();
+        const words = normalizedQuery.split(/\s+/).filter(w => w.length >= 3);
+
+        // Estrategia de búsqueda múltiple para autocomplete:
+        // 1. Búsqueda por nombre comercial (query exacto)
+        // 2. Búsqueda por principio activo (practiv1 - query completo)
+        // 3. Búsqueda por sinónimos explícitos si existen
+        const searches = [
+            this.api.searchMedicamentos({ nombre: query, ...apiFilters }, requestOptions),
+            this.api.searchMedicamentos({ practiv1: query, ...apiFilters }, requestOptions)
+        ];
+
+        // En autocomplete evitamos expandir agresivamente: solo añadimos
+        // sinónimos reales, no cada palabra suelta, para no penalizar latencia.
+        for (const word of words) {
+            const synonym = synonyms[word];
+            if (synonym && synonym !== normalizedQuery) {
+                searches.push(this.api.searchMedicamentos({ practiv1: synonym, ...apiFilters }, requestOptions));
+            }
+        }
+
+        const results = await Promise.allSettled(searches);
+
+        // Combinar y deduplicar resultados (por nregistro)
+        const seen = new Set();
+        const allResults = [];
+        for (const result of results) {
+            if (result.status !== 'fulfilled') continue;
+            for (const med of (result.value?.resultados || [])) {
+                if (!seen.has(med.nregistro)) {
+                    seen.add(med.nregistro);
+                    allResults.push(med);
+                }
+            }
+        }
+        return allResults;
+    }
+
+    /**
+     * Render compartido de items de autocompletado: badge de combinación,
+     * "No comercializado", principios activos y chip ATC.
+     */
+    _renderAutocompleteMedItems(meds, limit = 14) {
+        return meds.slice(0, limit).map(med => {
+            const atcInfo = this.getATCClinicalInfo(med);
+            const pactivos = med.pactivos || '';
+
+            // Detectar si es una combinación (contiene / o ,)
+            const isCombination = pactivos.includes('/') || pactivos.includes(',');
+            const combinationBadge = isCombination
+                ? '<span class="autocomplete-combo-badge"><i class="fas fa-layer-group"></i> Comb</span>'
+                : '';
+
+            // Badge de retirado para medicamentos no comercializados
+            const retiradoBadge = med._retirado
+                ? '<span class="autocomplete-retirado-badge">No comercializado</span>'
+                : '';
+
+            // Formatear principios activos
+            const formattedPactivos = pactivos
+                ? `<span class="autocomplete-pactivos">${pactivos}</span>`
+                : (med.labtitular ? `<span class="autocomplete-lab">${med.labtitular}</span>` : '');
+
+            return `
+                <button class="autocomplete-item ${isCombination ? 'has-combination' : ''} ${med._retirado ? 'is-retirado' : ''}" data-nregistro="${med.nregistro}" data-nombre="${med.nombre.replace(/"/g, '&quot;')}">
+                    <div class="autocomplete-main">
+                        ${combinationBadge}
+                        <span class="autocomplete-term">${med.nombre}</span>
+                        ${retiradoBadge}
+                    </div>
+                    ${formattedPactivos}
+                    ${atcInfo ? `<span class="autocomplete-atc" style="background: ${atcInfo.color}22; color: ${atcInfo.color};">${atcInfo.class}</span>` : ''}
+                </button>
+            `;
+        }).join('');
     }
 
 
@@ -5262,28 +5276,34 @@ class MedCheckApp {
             return;
         }
 
-        // Debounce
+        // Debounce + cancelación real, como en el buscador general
         clearTimeout(this.equivAutocompleteTimer);
+        if (this.equivAutocompleteAbortController) {
+            this.equivAutocompleteAbortController.abort();
+        }
+        this.equivAutocompleteAbortController = new AbortController();
+        const currentAbortController = this.equivAutocompleteAbortController;
         this.equivAutocompleteTimer = setTimeout(async () => {
+            if (currentAbortController.signal.aborted) return;
             try {
-                const results = await this.api.smartSearch(query, { comerc: 1, pagina: 1 }, { headers: { 'X-MC-Autocomplete': '1' } });
-                if (!results.resultados?.length) {
+                // Motor compartido con el buscador general: nombre + principio
+                // activo + sinónimos. Solo cambia la acción al seleccionar.
+                const meds = await this._fetchAutocompleteMeds(query, { comerc: 1, pagina: 1 }, {
+                    signal: currentAbortController.signal,
+                    headers: { 'X-MC-Autocomplete': '1' }
+                });
+
+                if (currentAbortController.signal.aborted) return;
+                if (document.activeElement !== document.getElementById('equiv-input')) {
+                    dropdown.classList.add('hidden');
+                    return;
+                }
+                if (!meds.length) {
                     dropdown.classList.add('hidden');
                     return;
                 }
 
-                const sortedResults = this._sortMedsByQueryRelevance(results.resultados, query);
-
-                dropdown.innerHTML = sortedResults.slice(0, 8).map(med => {
-                    const pactivo = med.pactivos || '';
-                    return `
-                        <button class="autocomplete-item" data-nregistro="${med.nregistro}" data-nombre="${med.nombre}">
-                            <span class="autocomplete-term">${med.nombre}</span>
-                            ${pactivo ? `<span class="autocomplete-label">${pactivo}</span>` : ''}
-                        </button>
-                    `;
-                }).join('');
-
+                dropdown.innerHTML = this._renderAutocompleteMedItems(this._sortMedsByQueryRelevance(meds, query), 14);
                 dropdown.classList.remove('hidden');
 
                 // Click handlers
@@ -5295,7 +5315,7 @@ class MedCheckApp {
                     });
                 });
             } catch (e) {
-                console.warn('Equiv autocomplete error:', e);
+                if (e.name !== 'AbortError') console.warn('Equiv autocomplete error:', e);
             }
         }, 200);
     }
