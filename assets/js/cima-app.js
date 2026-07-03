@@ -1342,12 +1342,14 @@ class MedCheckApp {
      * Búsqueda inteligente combinada con filtrado de relevancia
      * Estrategia: Primero buscar query completo (+ versión con sinónimos), luego expandir solo si necesario
      */
-    async _performSmartSearch(query, filters = {}, { trackPrimary = true } = {}) {
-        // Diccionario de expansiones: mapea un término parcial al PA completo
-        // Necesario porque la API de CIMA hace matching por PREFIJO: "glargina" no
-        // encuentra "insulina glargina" porque el PA empieza por "insulina".
-        // Mantener sincronizado con el mismo diccionario en showSearchAutocomplete.
-        const synonyms = {
+    /**
+     * Diccionario compartido de expansiones PA: mapea un término parcial al PA
+     * completo. Necesario porque la API de CIMA hace matching por PREFIJO:
+     * "glargina" no encuentra "insulina glargina". Lo consumen
+     * _performSmartSearch y _fetchAutocompleteMeds.
+     */
+    get _paSynonyms() {
+        return {
             // Sales y formas iónicas
             'ferroso': 'hierro',
             'ferrico': 'hierro',
@@ -1367,6 +1369,10 @@ class MedCheckApp {
             'bifasica': 'insulina bifasica',
             'bifásica': 'insulina bifasica',
         };
+    }
+
+    async _performSmartSearch(query, filters = {}, { trackPrimary = true } = {}) {
+        const synonyms = this._paSynonyms;
 
         // Normalizar query
         const normalizedQuery = query.toLowerCase();
@@ -1539,29 +1545,7 @@ class MedCheckApp {
      * Lo consumen el buscador general y el de equivalencias.
      */
     async _fetchAutocompleteMeds(query, apiFilters = {}, requestOptions = {}) {
-        // Diccionario de expansiones: mapea un término parcial al PA completo
-        // Necesario cuando el término buscado es la segunda palabra del PA
-        // (ej. "glargina" → CIMA lo tiene como "insulina glargina")
-        const synonyms = {
-            // Sales y formas iónicas
-            'ferroso': 'hierro',
-            'ferrico': 'hierro',
-            'potasico': 'potasio',
-            'sodico': 'sodio',
-            'calcico': 'calcio',
-            'magnésico': 'magnesio',
-            'magnesico': 'magnesio',
-            // Insulinas: el PA en CIMA siempre empieza por "insulina"
-            'glargina': 'insulina glargina',
-            'lispro': 'insulina lispro',
-            'aspart': 'insulina aspart',
-            'detemir': 'insulina detemir',
-            'degludec': 'insulina degludec',
-            'glulisina': 'insulina glulisina',
-            'nph': 'insulina nph',
-            'bifasica': 'insulina bifasica',
-            'bifásica': 'insulina bifasica',
-        };
+        const synonyms = this._paSynonyms;
 
         // Normalizar query para activar solo sinónimos reales.
         const normalizedQuery = query.toLowerCase();
@@ -3655,22 +3639,15 @@ class MedCheckApp {
         }
 
         try {
-            const results = await this.api.smartSearch(query, { comerc: 1 }, { headers: { 'X-MC-Autocomplete': '1' } });
-            if (!results.resultados || results.resultados.length === 0) {
+            // Motor compartido (nombre + PA + sinónimos) y render rico comunes
+            const meds = await this._fetchAutocompleteMeds(query, { comerc: 1, pagina: 1 }, { headers: { 'X-MC-Autocomplete': '1' } });
+            if (!meds.length) {
                 dropdown.classList.add('hidden');
                 return;
             }
 
-            const sortedResults = this._sortMedsByQueryRelevance(results.resultados, query);
-
-            dropdown.innerHTML = sortedResults.slice(0, 6).map(med => `
-                <button class="autocomplete-item" data-nregistro="${med.nregistro}">
-                    <span class="autocomplete-term">${med.nombre}</span>
-                    <span class="autocomplete-label">${med.pactivos || ''}</span>
-                </button>
-            `).join('');
-
-
+            const sortedResults = this._sortMedsByQueryRelevance(meds, query);
+            dropdown.innerHTML = this._renderAutocompleteMedItems(sortedResults, 8);
             dropdown.classList.remove('hidden');
 
             dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
@@ -3697,10 +3674,10 @@ class MedCheckApp {
         if (query.length < 2) return;
 
         try {
-            const results = await this.api.smartSearch(query, { comerc: 1 });
+            // Búsqueda compartida: CN/ATC directos + cascada nombre+PA+sinónimos
+            const results = await this._smartFindMeds(query, { track: true });
             if (results.resultados && results.resultados.length > 0) {
-                const [bestMatch] = this._sortMedsByQueryRelevance(results.resultados, query);
-                this.addDrugToInteractionList(bestMatch);
+                this.addDrugToInteractionList(results.resultados[0]);
                 input.value = '';
             } else {
                 this.showToast('Medicamento no encontrado', 'warning');
@@ -4156,23 +4133,27 @@ class MedCheckApp {
     }
 
     /**
-     * Búsqueda de fármacos para la lista temporal de combo. A diferencia de `smartSearch`
-     * (que para texto consulta SOLO `nombre=`), reutiliza la misma cascada que el buscador
-     * principal (`_performSmartSearch`: nombre + practiv1 + sinónimos), para que buscar por
-     * PRINCIPIO ACTIVO funcione aunque no haya genérico con el PA en el nombre comercial.
-     * Marcado no-track (X-MC-Autocomplete) para no inflar la analítica con sugerencias/alta.
+     * Búsqueda compartida de fármacos para los "pickers" (combo, interacciones,
+     * adversos, equivalencias). A diferencia de `smartSearch` (que para texto
+     * consulta SOLO `nombre=`), detecta CN y código ATC y para texto reutiliza
+     * la cascada del buscador principal (`_performSmartSearch`: nombre +
+     * practiv1 + sinónimos), para que buscar por PRINCIPIO ACTIVO funcione
+     * aunque no haya genérico con el PA en el nombre comercial.
+     * @param {Object} [opts]
+     * @param {boolean} [opts.track=false] - Si false, marca no-track
+     *   (X-MC-Autocomplete) para no inflar la analítica con sugerencias/alta.
      */
-    async _comboFindMeds(query) {
+    async _smartFindMeds(query, { track = false } = {}) {
         const trimmed = (query || '').trim();
         if (!trimmed) return { resultados: [], totalFilas: 0 };
-        const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
+        const requestOptions = track ? {} : { headers: { 'X-MC-Autocomplete': '1' } };
         if (/^\d{6,7}$/.test(trimmed)) {
-            return this.api.searchMedicamentos({ cn: trimmed, comerc: 1 }, noTrack);
+            return this.api.searchMedicamentos({ cn: trimmed, comerc: 1 }, requestOptions);
         }
         if (/^[A-Za-z]\d{2}/.test(trimmed)) {
-            return this.api.searchMedicamentos({ atc: trimmed, comerc: 1 }, noTrack);
+            return this.api.searchMedicamentos({ atc: trimmed, comerc: 1 }, requestOptions);
         }
-        return this._performSmartSearch(trimmed, { comerc: 1 }, { trackPrimary: false });
+        return this._performSmartSearch(trimmed, { comerc: 1 }, { trackPrimary: track });
     }
 
     async addComboDrug() {
@@ -4180,7 +4161,7 @@ class MedCheckApp {
         const query = input.value.trim();
         if (query.length < 2) return;
         try {
-            const results = await this._comboFindMeds(query);
+            const results = await this._smartFindMeds(query);
             if (results.resultados && results.resultados.length > 0) {
                 await this.addDrugToComboList(results.resultados[0]);
                 input.value = '';
@@ -4246,14 +4227,10 @@ class MedCheckApp {
         clearTimeout(this.comboAutocompleteTimer);
         this.comboAutocompleteTimer = setTimeout(async () => {
             try {
-                const results = await this._comboFindMeds(query.trim());
+                const results = await this._smartFindMeds(query.trim());
                 if (!results.resultados?.length) { dropdown.classList.add('hidden'); this._comboAutocompleteResults = []; return; }
-                this._comboAutocompleteResults = results.resultados.slice(0, 6);
-                dropdown.innerHTML = this._comboAutocompleteResults.map(med => `
-                    <button class="autocomplete-item" data-nregistro="${med.nregistro}">
-                        <span class="autocomplete-term">${med.nombre}</span>
-                        ${med.pactivos ? `<span class="autocomplete-label">${med.pactivos}</span>` : ''}
-                    </button>`).join('');
+                this._comboAutocompleteResults = results.resultados.slice(0, 8);
+                dropdown.innerHTML = this._renderAutocompleteMedItems(this._comboAutocompleteResults, 8);
                 dropdown.classList.remove('hidden');
                 dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
                     item.addEventListener('click', async () => {
@@ -4975,35 +4952,35 @@ class MedCheckApp {
             return;
         }
 
-        try {
-            const results = await this.api.smartSearch(query, { comerc: 1 }, { headers: { 'X-MC-Autocomplete': '1' } });
-            if (!results.resultados || results.resultados.length === 0) {
-                dropdown.classList.add('hidden');
-                return;
-            }
+        // Debounce interno: el listener de keyup dispara en cada tecla sin retardo propio
+        clearTimeout(this.adverseAutocompleteTimer);
+        this.adverseAutocompleteTimer = setTimeout(async () => {
+            try {
+                // Motor compartido (nombre + PA + sinónimos) y render rico comunes
+                const meds = await this._fetchAutocompleteMeds(query, { comerc: 1, pagina: 1 }, { headers: { 'X-MC-Autocomplete': '1' } });
+                if (!meds.length) {
+                    dropdown.classList.add('hidden');
+                    return;
+                }
 
-            const sortedResults = this._sortMedsByQueryRelevance(results.resultados, query);
+                const sortedResults = this._sortMedsByQueryRelevance(meds, query);
+                dropdown.innerHTML = this._renderAutocompleteMedItems(sortedResults, 8);
+                dropdown.classList.remove('hidden');
 
-            dropdown.innerHTML = sortedResults.slice(0, 5).map(med => `
-    <button class="autocomplete-item" data-nregistro="${med.nregistro}">
-        <span class="autocomplete-term">${med.nombre}</span>
-                </button>
-    `).join('');
-            dropdown.classList.remove('hidden');
-
-            dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const med = sortedResults.find(m => m.nregistro === item.dataset.nregistro);
-                    if (med) {
-                        this.addDrugToAdverseList(med);
-                        document.getElementById('adverse-drug-search').value = '';
-                        dropdown.classList.add('hidden');
-                    }
+                dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const med = sortedResults.find(m => m.nregistro === item.dataset.nregistro);
+                        if (med) {
+                            this.addDrugToAdverseList(med);
+                            document.getElementById('adverse-drug-search').value = '';
+                            dropdown.classList.add('hidden');
+                        }
+                    });
                 });
-            });
-        } catch (e) {
-            console.warn(e);
-        }
+            } catch (e) {
+                console.warn(e);
+            }
+        }, 250);
     }
 
     async addAdverseDrug() {
@@ -5012,10 +4989,10 @@ class MedCheckApp {
         if (query.length < 2) return;
 
         try {
-            const results = await this.api.smartSearch(query, { comerc: 1 });
+            // Búsqueda compartida: CN/ATC directos + cascada nombre+PA+sinónimos
+            const results = await this._smartFindMeds(query, { track: true });
             if (results.resultados && results.resultados.length > 0) {
-                const [bestMatch] = this._sortMedsByQueryRelevance(results.resultados, query);
-                this.addDrugToAdverseList(bestMatch);
+                this.addDrugToAdverseList(results.resultados[0]);
                 input.value = '';
             } else {
                 this.showToast('Medicamento no encontrado', 'warning');
@@ -5329,8 +5306,10 @@ class MedCheckApp {
         resultsContainer.innerHTML = '<div class="loading-spinner"></div>';
 
         try {
-            // Primero, buscar el medicamento para obtener su principio activo
-            const searchData = await this.api.smartSearch(query, { comerc: 1 });
+            // Primero, buscar el medicamento para obtener su principio activo.
+            // Búsqueda compartida (CN/ATC directos + cascada nombre+PA+sinónimos):
+            // permite teclear un PA y pulsar Buscar sin pasar por el autocompletado.
+            const searchData = await this._smartFindMeds(query, { track: true });
 
             if (!searchData.resultados || searchData.resultados.length === 0) {
                 resultsContainer.innerHTML = `
