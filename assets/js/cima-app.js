@@ -1761,42 +1761,6 @@ class MedCheckApp {
         // Store data for re-rendering
         this._lastSearchData = data;
 
-        // Local filter helpers (used for both display and faceted chip counts)
-        const applyRouteFilter = (results) => {
-            if (!this.groupingState.routeFilters?.size) return results;
-            return results.filter(med => {
-                const route = med.viasAdministracion?.[0]?.nombre || '';
-                const forma = (med.formaFarmaceutica?.nombre || '').toLowerCase();
-                for (const filterRoute of this.groupingState.routeFilters) {
-                    if (route === filterRoute) return true;
-                    if (filterRoute === 'Oral' && (forma.includes('comprimid') || forma.includes('cápsula'))) return true;
-                    if (filterRoute === 'Transdérmica' && forma.includes('parche')) return true;
-                    if (filterRoute === 'Parenteral' && (forma.includes('inyectable') || forma.includes('jeringa'))) return true;
-                    if (filterRoute === 'Tópica' && (forma.includes('crema') || forma.includes('pomada'))) return true;
-                }
-                return false;
-            });
-        };
-        const applyPAFilter = (results) => {
-            if (!this.groupingState.activeIngredientFilters?.size) return results;
-            return results.filter(med => {
-                let medPAs;
-                if (med.principiosActivos?.length > 0) {
-                    medPAs = new Set(med.principiosActivos.map(pa => pa.nombre).filter(Boolean));
-                } else if (med.pactivos) {
-                    medPAs = new Set(med.pactivos.split(/\s*[+/;]\s*/).map(p =>
-                        p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
-                    ).filter(Boolean));
-                } else if (med.vtm?.nombre) {
-                    medPAs = new Set([med.vtm.nombre]);
-                } else { medPAs = new Set(); }
-                for (const filterPA of this.groupingState.activeIngredientFilters) {
-                    if (medPAs.has(filterPA)) return true;
-                }
-                return false;
-            });
-        };
-
         // Apply faceted filters (form, lab, doses) first — base for chip extraction
         let baseResults = data.resultados;
         if (this.filterState?.form) {
@@ -1818,11 +1782,11 @@ class MedCheckApp {
         // Faceted chip extraction: each chip group reflects all other active filters
         // Route chips: counts after PA filter + faceted (not route filter itself)
         // PA chips: counts after route filter + faceted (not PA filter itself)
-        const routes = this.extractUniqueRoutes(applyPAFilter(baseResults));
-        const paList = this.extractUniquePrincipiosActivos(applyRouteFilter(baseResults));
+        const routes = this.extractUniqueRoutes(this._applyPAFilter(baseResults));
+        const paList = this.extractUniquePrincipiosActivos(this._applyRouteFilter(baseResults));
 
         // Full filtered results for display
-        let filteredResults = applyPAFilter(applyRouteFilter(baseResults));
+        let filteredResults = this._applyPAFilter(this._applyRouteFilter(baseResults));
 
         // Group results
         const groups = this.groupResultsByField(filteredResults, this.groupingState.groupBy);
@@ -10098,6 +10062,48 @@ ${materialesPlaceholder}
     }
 
     /**
+     * Applies the active route-chip filters (shared by both result views and the control bar)
+     */
+    _applyRouteFilter(results) {
+        if (!this.groupingState?.routeFilters?.size) return results;
+        return results.filter(med => {
+            const route = med.viasAdministracion?.[0]?.nombre || '';
+            const forma = (med.formaFarmaceutica?.nombre || '').toLowerCase();
+            for (const filterRoute of this.groupingState.routeFilters) {
+                if (route === filterRoute) return true;
+                if (filterRoute === 'Oral' && (forma.includes('comprimid') || forma.includes('cápsula'))) return true;
+                if (filterRoute === 'Transdérmica' && forma.includes('parche')) return true;
+                if (filterRoute === 'Parenteral' && (forma.includes('inyectable') || forma.includes('jeringa'))) return true;
+                if (filterRoute === 'Tópica' && (forma.includes('crema') || forma.includes('pomada'))) return true;
+            }
+            return false;
+        });
+    }
+
+    /**
+     * Applies the active principio-activo chip filters (OR semantics)
+     */
+    _applyPAFilter(results) {
+        if (!this.groupingState?.activeIngredientFilters?.size) return results;
+        return results.filter(med => {
+            let medPAs;
+            if (med.principiosActivos?.length > 0) {
+                medPAs = new Set(med.principiosActivos.map(pa => pa.nombre).filter(Boolean));
+            } else if (med.pactivos) {
+                medPAs = new Set(med.pactivos.split(/\s*[+/;]\s*/).map(p =>
+                    p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
+                ).filter(Boolean));
+            } else if (med.vtm?.nombre) {
+                medPAs = new Set([med.vtm.nombre]);
+            } else { medPAs = new Set(); }
+            for (const filterPA of this.groupingState.activeIngredientFilters) {
+                if (medPAs.has(filterPA)) return true;
+            }
+            return false;
+        });
+    }
+
+    /**
      * Gets icon class for a route
      */
     getRouteIcon(route) {
@@ -10119,36 +10125,58 @@ ${materialesPlaceholder}
     renderResultsControlBar(totalResults, filteredData = null, originalData = null, options = {}) {
         const { showDoses = true, showEFG = false } = options;
 
-        // Extract unique values - use original data for all filters (so they remain visible)
+        // Universo de opciones: datos originales, para que las opciones no desaparezcan al filtrar
         const sourceForFilters = originalData?.resultados || filteredData?.resultados || [];
-
-        const forms = this._extractUniqueForms(sourceForFilters);
-        const labs = this._extractUniqueLabs(sourceForFilters);
-        const doses = showDoses ? this._extractUniqueDoses(sourceForFilters) : [];
-
-        // EFG count (only computed when needed)
-        const efgCount = showEFG ? sourceForFilters.filter(m => m.generico).length : 0;
-        const recetaCount = showEFG ? sourceForFilters.filter(m => m.receta).length : 0;
-        const biosimilarCount = showEFG ? sourceForFilters.filter(m => m.biosimilar).length : 0;
 
         // Initialize filter state if needed
         if (!this.filterState) {
             this.filterState = { form: null, lab: null, doses: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false };
         }
 
-        // Build form dropdown options (top 10)
-        const formOptions = forms.slice(0, 10).map(f =>
-            `<option value="${f.name}" ${this.filterState.form === f.name ? 'selected' : ''}>${f.name} (${f.count})</option>`
-        ).join('');
+        // Contadores facetados: cada selector cuenta sobre los resultados con todos los
+        // demás filtros activos aplicados MENOS el suyo (mismo criterio que los chips
+        // de vía y principio activo, para que los números cuadren con lo que se ve).
+        const byForm = (arr) => this.filterState.form
+            ? arr.filter(med => (med.formaFarmaceutica?.nombre || 'Sin forma') === this.filterState.form) : arr;
+        const byLab = (arr) => this.filterState.lab
+            ? arr.filter(med => (med.labtitular || 'Sin laboratorio') === this.filterState.lab) : arr;
+        const byDoses = (arr) => this.filterState.doses?.size > 0
+            ? arr.filter(med => med.dosis && this.filterState.doses.has(this.normalizeDosis(med.dosis))) : arr;
+        const byToggles = (arr) => {
+            let out = arr;
+            if (this.filterState.efgOnly) out = out.filter(m => m.generico);
+            if (this.filterState.recetaOnly) out = out.filter(m => m.receta);
+            if (this.filterState.biosimilarOnly) out = out.filter(m => m.biosimilar);
+            return out;
+        };
+        const crossBase = this._applyPAFilter(this._applyRouteFilter(byToggles(sourceForFilters)));
 
-        // Build lab dropdown options (top 10)
-        const labOptions = labs.slice(0, 10).map(l =>
-            `<option value="${l.name}" ${this.filterState.lab === l.name ? 'selected' : ''}>${l.name} (${l.count})</option>`
-        ).join('');
+        const forms = this._facetCounts(this._extractUniqueForms(sourceForFilters), this._extractUniqueForms(byDoses(byLab(crossBase))));
+        const labs = this._facetCounts(this._extractUniqueLabs(sourceForFilters), this._extractUniqueLabs(byForm(byDoses(crossBase))));
+        const doses = showDoses ? this._facetCounts(this._extractUniqueDoses(sourceForFilters), this._extractUniqueDoses(byForm(byLab(crossBase)))) : [];
 
-        // Build dose chips - sorted by frequency (most common first), max 8
-        const dosesByFrequency = [...doses].sort((a, b) => b.count - a.count);
-        const doseChipsHtml = dosesByFrequency.slice(0, 8).map(d => {
+        // EFG count (only computed when needed)
+        const efgCount = showEFG ? sourceForFilters.filter(m => m.generico).length : 0;
+        const recetaCount = showEFG ? sourceForFilters.filter(m => m.receta).length : 0;
+        const biosimilarCount = showEFG ? sourceForFilters.filter(m => m.biosimilar).length : 0;
+
+        // Opciones de los selectores: top 10 con resultados; la seleccionada se
+        // conserva siempre aunque quede a cero (para poder deseleccionarla).
+        const buildSelectOptions = (list, selected) => {
+            const visible = list.filter(o => o.count > 0 || o.name === selected).slice(0, 10);
+            if (selected && !visible.some(o => o.name === selected)) {
+                const sel = list.find(o => o.name === selected);
+                if (sel) visible.push(sel);
+            }
+            return visible.map(o =>
+                `<option value="${o.name}" ${selected === o.name ? 'selected' : ''}>${o.name} (${o.count})</option>`
+            ).join('');
+        };
+        const formOptions = buildSelectOptions(forms, this.filterState.form);
+        const labOptions = buildSelectOptions(labs, this.filterState.lab);
+
+        // Build dose chips - most common first, max 8; active ones survive even at 0
+        const doseChipsHtml = doses.filter(d => d.count > 0 || this.filterState.doses?.has(d.name)).slice(0, 8).map(d => {
             const isActive = this.filterState.doses?.has(d.name);
             return `<button class="filter-chip ${isActive ? 'active' : ''}" data-dose="${d.name}">${d.name} <span class="chip-count">${d.count}</span></button>`;
         }).join('');
@@ -10229,6 +10257,17 @@ ${materialesPlaceholder}
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Merges the option universe (full list) with faceted counts: keeps every
+     * option known in the original results but re-counts against the filtered set.
+     */
+    _facetCounts(fullList, facetedList) {
+        const counts = new Map(facetedList.map(f => [f.name, f.count]));
+        return fullList
+            .map(({ name }) => ({ name, count: counts.get(name) || 0 }))
+            .sort((a, b) => b.count - a.count);
     }
 
     /**
@@ -10488,43 +10527,6 @@ ${materialesPlaceholder}
             this.groupingState.groupBy = 'atc';
         }
 
-        // Local filter helpers for faceted chip counts
-        const applyRouteFilter = (results) => {
-            if (this.groupingState.routeFilters.size === 0) return results;
-            return results.filter(med => {
-                const route = med.viasAdministracion?.[0]?.nombre || '';
-                const forma = (med.formaFarmaceutica?.nombre || '').toLowerCase();
-                for (const filterRoute of this.groupingState.routeFilters) {
-                    if (route === filterRoute) return true;
-                    if (filterRoute === 'Oral' && (forma.includes('comprimid') || forma.includes('cápsula'))) return true;
-                    if (filterRoute === 'Transdérmica' && forma.includes('parche')) return true;
-                    if (filterRoute === 'Parenteral' && (forma.includes('inyectable') || forma.includes('jeringa'))) return true;
-                    if (filterRoute === 'Tópica' && (forma.includes('crema') || forma.includes('pomada'))) return true;
-                }
-                return false;
-            });
-        };
-
-        const applyPAFilter = (results) => {
-            if (!this.groupingState.activeIngredientFilters?.size) return results;
-            return results.filter(med => {
-                let medPAs;
-                if (med.principiosActivos?.length > 0) {
-                    medPAs = new Set(med.principiosActivos.map(pa => pa.nombre).filter(Boolean));
-                } else if (med.pactivos) {
-                    medPAs = new Set(med.pactivos.split(/\s*[+/;]\s*/).map(p =>
-                        p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
-                    ).filter(Boolean));
-                } else if (med.vtm?.nombre) {
-                    medPAs = new Set([med.vtm.nombre]);
-                } else { medPAs = new Set(); }
-                for (const filterPA of this.groupingState.activeIngredientFilters) {
-                    if (medPAs.has(filterPA)) return true;
-                }
-                return false;
-            });
-        };
-
         // Apply faceted filters (form, lab, efg) first → baseResults
         let baseResults = data.resultados;
         if (this.filterState?.form) {
@@ -10548,11 +10550,11 @@ ${materialesPlaceholder}
         }
 
         // Extract chips from cross-filtered subsets for correct faceted counts
-        const routes = this.extractUniqueRoutes(applyPAFilter(baseResults));
-        const paList = this.extractUniquePrincipiosActivos(applyRouteFilter(baseResults));
+        const routes = this.extractUniqueRoutes(this._applyPAFilter(baseResults));
+        const paList = this.extractUniquePrincipiosActivos(this._applyRouteFilter(baseResults));
 
         // Apply both chip filters for display
-        let filteredResults = applyPAFilter(applyRouteFilter(baseResults));
+        let filteredResults = this._applyPAFilter(this._applyRouteFilter(baseResults));
 
         // Group results
         const groups = this.groupResultsByField(filteredResults, this.groupingState.groupBy);
