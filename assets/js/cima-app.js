@@ -1918,6 +1918,9 @@ class MedCheckApp {
                     } else {
                         this.groupingState.routeFilters.add(route);
                     }
+                } else if (this.groupingState.routeFilters.size === 1 && this.groupingState.routeFilters.has(route)) {
+                    // Clic sobre el único activo → toggle off (patrón canónico)
+                    this.groupingState.routeFilters.clear();
                 } else {
                     this.groupingState.routeFilters.clear();
                     this.groupingState.routeFilters.add(route);
@@ -1939,6 +1942,9 @@ class MedCheckApp {
                     } else {
                         this.groupingState.activeIngredientFilters.add(pa);
                     }
+                } else if (this.groupingState.activeIngredientFilters.size === 1 && this.groupingState.activeIngredientFilters.has(pa)) {
+                    // Clic sobre el único activo → toggle off (patrón canónico)
+                    this.groupingState.activeIngredientFilters.clear();
                 } else {
                     this.groupingState.activeIngredientFilters.clear();
                     this.groupingState.activeIngredientFilters.add(pa);
@@ -10696,6 +10702,9 @@ ${materialesPlaceholder}
                     } else {
                         this.groupingState.routeFilters.add(route);
                     }
+                } else if (this.groupingState.routeFilters.size === 1 && this.groupingState.routeFilters.has(route)) {
+                    // Clic sobre el único activo → toggle off (patrón canónico)
+                    this.groupingState.routeFilters.clear();
                 } else {
                     // Regular click: single selection (clears others)
                     this.groupingState.routeFilters.clear();
@@ -10718,6 +10727,9 @@ ${materialesPlaceholder}
                     } else {
                         this.groupingState.activeIngredientFilters.add(pa);
                     }
+                } else if (this.groupingState.activeIngredientFilters.size === 1 && this.groupingState.activeIngredientFilters.has(pa)) {
+                    // Clic sobre el único activo → toggle off (patrón canónico)
+                    this.groupingState.activeIngredientFilters.clear();
                 } else {
                     this.groupingState.activeIngredientFilters.clear();
                     this.groupingState.activeIngredientFilters.add(pa);
