@@ -188,6 +188,22 @@ def _find_col(headers: list[str], keywords: list[str]) -> int:
     return -1
 
 
+def fix_mojibake(s: str | None) -> str | None:
+    """
+    Corrige el mojibake por doble codificación UTF-8 de la fuente BIFIMED
+    (texto UTF-8 leído como Latin-1/cp1252: "Sí" → "SÃ­", "á" → "Ã¡", "ñ" → "Ã±").
+    Heurística conservadora: solo actúa si aparecen los marcadores típicos ('Ã'/'Â')
+    y si el round-trip latin-1 → utf-8 tiene éxito; en cualquier otro caso devuelve
+    el texto original intacto (no toca strings ya correctos ni con caracteres exóticos).
+    """
+    if not s or ("Ã" not in s and "Â" not in s):
+        return s
+    try:
+        return s.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return s
+
+
 def _cell_str(ws: Any, r: int, c: int) -> str | None:
     if c < 0 or c >= ws.ncols:
         return None
@@ -197,7 +213,7 @@ def _cell_str(ws: Any, r: int, c: int) -> str | None:
     s = str(v).strip()
     if s.endswith(".0"):
         s = s[:-2]
-    return s or None
+    return fix_mojibake(s) or None
 
 
 def _cell_bool(ws: Any, r: int, c: int) -> bool | None:

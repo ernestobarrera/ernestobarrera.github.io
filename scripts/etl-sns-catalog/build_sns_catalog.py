@@ -124,6 +124,16 @@ def parse_xls(data: bytes, download_date: str) -> dict[str, Any]:
         print(f"[etl] ADVERTENCIA — columnas no encontradas: {missing}", file=sys.stderr)
     print(f"[etl] mapa de columnas: {col}", file=sys.stderr)
 
+    def fix_mojibake(s: str | None) -> str | None:
+        """Corrige mojibake por doble codificación UTF-8 de la fuente (misma causa que etl-bifimed).
+        Conservador: solo actúa si detecta 'Ã'/'Â' y el round-trip latin-1→utf-8 tiene éxito."""
+        if not s or ("Ã" not in s and "Â" not in s):
+            return s
+        try:
+            return s.encode("latin-1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            return s
+
     def cell_str(r: int, c: int) -> str | None:
         if c < 0 or c >= ws.ncols:
             return None
@@ -134,7 +144,7 @@ def parse_xls(data: bytes, download_date: str) -> dict[str, Any]:
         # xlrd returns floats for numeric cells (CN is numeric in old XLS)
         if s.endswith(".0"):
             s = s[:-2]
-        return s or None
+        return fix_mojibake(s) or None
 
     def cell_decimal(r: int, c: int) -> float | None:
         if c < 0 or c >= ws.ncols:
