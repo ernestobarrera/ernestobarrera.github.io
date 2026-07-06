@@ -1,0 +1,2595 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reparto de analíticas por vacaciones</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --ink: #1f2937;
+      --muted: #64748b;
+      --line: #d6dde6;
+      --line-strong: #aeb9c8;
+      --primary: #227c70;
+      --primary-hover: #17685e;
+      --accent: #4c6fff;
+      --success: #157347;
+      --warning: #b7791f;
+      --danger: #b42318;
+      --danger-bg: #fde8e8;
+      --warning-bg: #fff7df;
+      --success-bg: #e6f4ed;
+      --info-bg: #eef4ff;
+      --radius: 6px;
+      --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .app {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    .topbar {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    }
+
+    .topline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.35rem;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 12px 0;
+      font-size: 1.1rem;
+    }
+
+    h3 {
+      margin: 0 0 10px 0;
+      font-size: 0.98rem;
+    }
+
+    p {
+      margin: 0 0 8px 0;
+    }
+
+    .subtitle,
+    .muted,
+    .help-text {
+      color: var(--muted);
+    }
+
+    .subtitle {
+      margin-top: 2px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .actions,
+    .toolbar,
+    .inline-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tab-button {
+      border: 1px solid transparent;
+      border-bottom: 0;
+      border-radius: 6px 6px 0 0;
+      background: transparent;
+      color: #4b5563;
+      padding: 8px 12px;
+      margin-bottom: -1px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab-button:hover {
+      background: var(--surface-soft);
+    }
+
+    .tab-button.active {
+      background: var(--surface);
+      color: var(--primary);
+      border-color: var(--line);
+      border-bottom: 1px solid var(--surface);
+    }
+
+    main {
+      margin-top: 12px;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .grid.two {
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .panel + .panel {
+      margin-top: 12px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      color: #475569;
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      font-size: 0.88rem;
+      padding: 7px 9px;
+    }
+
+    textarea {
+      min-height: 170px;
+      resize: vertical;
+      font-family: Consolas, "Courier New", monospace;
+      line-height: 1.35;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: 0;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(34, 124, 112, 0.14);
+    }
+
+    button {
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background: var(--primary);
+      color: #fff;
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.86rem;
+      font-weight: 700;
+      min-height: 32px;
+      padding: 6px 11px;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+    }
+
+    button.secondary {
+      background: #fff;
+      color: #334155;
+      border-color: var(--line-strong);
+    }
+
+    button.secondary:hover {
+      background: var(--surface-soft);
+    }
+
+    button.info {
+      background: #fff;
+      color: var(--accent);
+      border-color: #c7d2fe;
+    }
+
+    button.info:hover {
+      background: var(--info-bg);
+    }
+
+    button.warning {
+      background: #fff;
+      color: var(--warning);
+      border-color: #f0cc77;
+    }
+
+    button.warning:hover {
+      background: var(--warning-bg);
+    }
+
+    button.danger {
+      background: #fff;
+      color: var(--danger);
+      border-color: #f2b8b5;
+    }
+
+    button.danger:hover {
+      background: var(--danger-bg);
+    }
+
+    button.small {
+      min-height: 26px;
+      padding: 3px 8px;
+      font-size: 0.78rem;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+
+    .form-grid.compact {
+      grid-template-columns: minmax(220px, 1.4fr) minmax(170px, 0.8fr) minmax(130px, 0.6fr) auto;
+    }
+
+    .status-strip,
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+      gap: 8px;
+    }
+
+    .status-card,
+    .stat-card {
+      background: var(--surface-soft);
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius);
+      padding: 9px 10px;
+    }
+
+    .status-label,
+    .stat-label {
+      color: var(--muted);
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .status-value,
+    .stat-value {
+      color: var(--ink);
+      display: block;
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      max-height: 66vh;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #e8edf3;
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    tr:nth-child(even) td {
+      background: #fcfdff;
+    }
+
+    tr:hover td {
+      background: #f5f9fb;
+    }
+
+    .sticky-col {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      background: #fff;
+      box-shadow: 1px 0 0 #e2e8f0;
+    }
+
+    th.sticky-col {
+      z-index: 4;
+      background: #f8fafc;
+    }
+
+    .cell-input {
+      min-width: 145px;
+      padding: 4px 6px;
+      font-size: 0.8rem;
+    }
+
+    .name-cell {
+      min-width: 230px;
+      max-width: 280px;
+      white-space: normal;
+      font-weight: 700;
+    }
+
+    .week-head {
+      min-width: 92px;
+      text-align: center;
+    }
+
+    .presence-btn {
+      width: 74px;
+      min-height: 28px;
+      padding: 3px 6px;
+      justify-content: center;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .presence-btn.present {
+      background: var(--success-bg);
+      border-color: #9fd6ba;
+      color: var(--success);
+    }
+
+    .presence-btn.absent {
+      background: var(--danger-bg);
+      border-color: #f2b8b5;
+      color: var(--danger);
+    }
+
+    .presence-btn.inactive {
+      background: #f1f5f9;
+      color: #94a3b8;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      border: 1px solid transparent;
+    }
+
+    .badge.auto {
+      background: var(--info-bg);
+      color: #2947a9;
+      border-color: #c7d2fe;
+    }
+
+    .badge.manual {
+      background: var(--warning-bg);
+      color: var(--warning);
+      border-color: #f0cc77;
+    }
+
+    .badge.ok {
+      background: var(--success-bg);
+      color: var(--success);
+      border-color: #9fd6ba;
+    }
+
+    .badge.alert {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border-color: #f2b8b5;
+    }
+
+    .notice {
+      border: 1px solid #c7d2fe;
+      border-left: 4px solid var(--accent);
+      background: var(--info-bg);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      color: #2f3f68;
+      margin-bottom: 10px;
+    }
+
+    .notice.warning {
+      border-color: #f0cc77;
+      border-left-color: var(--warning);
+      background: var(--warning-bg);
+      color: #7a4f08;
+    }
+
+    .notice.danger {
+      border-color: #f2b8b5;
+      border-left-color: var(--danger);
+      background: var(--danger-bg);
+      color: #8a1c16;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 22px;
+      text-align: center;
+    }
+
+    .bar-track {
+      width: 130px;
+      height: 9px;
+      border-radius: 999px;
+      background: #e8edf3;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 999px;
+    }
+
+    .log-list {
+      display: grid;
+      gap: 6px;
+      max-height: 330px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .log-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      background: #fff;
+      padding: 8px 10px;
+    }
+
+    .log-item strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .split-line {
+      height: 1px;
+      background: var(--line);
+      margin: 12px 0;
+    }
+
+    .quick-start {
+      background: #f7fbfa;
+      border: 1px solid #b9ddd6;
+      border-left: 4px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+
+    .quick-start h2 {
+      margin-bottom: 4px;
+    }
+
+    .quick-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .quick-step {
+      background: #fff;
+      border: 1px solid #d7e9e5;
+      border-radius: 4px;
+      padding: 8px 9px;
+      font-weight: 700;
+    }
+
+    .quick-step span {
+      color: var(--primary);
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+
+    .privacy-inline {
+      color: #3f5f59;
+      font-size: 0.84rem;
+      margin-top: 10px;
+    }
+
+    .site-footer {
+      color: #475569;
+      font-size: 0.84rem;
+      margin-top: 14px;
+      padding: 14px 16px;
+    }
+
+    .site-footer h2 {
+      font-size: 0.98rem;
+      margin-bottom: 6px;
+    }
+
+    .site-footer p {
+      margin-bottom: 6px;
+    }
+
+    .site-footer strong {
+      color: #334155;
+    }
+
+    a.external {
+      color: var(--primary);
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    a.external:hover {
+      text-decoration: underline;
+    }
+
+    .tour-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.56);
+      z-index: 40;
+    }
+
+    .tour-backdrop[hidden],
+    .tour-popover[hidden] {
+      display: none;
+    }
+
+    .tour-popover {
+      position: fixed;
+      z-index: 55;
+      width: min(420px, calc(100vw - 28px));
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+      padding: 14px;
+    }
+
+    .tour-popover h2 {
+      margin: 2px 0 6px;
+      font-size: 1.08rem;
+    }
+
+    .tour-popover p {
+      color: #334155;
+      margin-bottom: 10px;
+    }
+
+    .tour-kicker {
+      color: var(--primary);
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .tour-progress {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .tour-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .tour-active-target {
+      position: relative;
+      z-index: 45;
+      box-shadow: 0 0 0 4px rgba(34, 124, 112, 0.28), 0 16px 34px rgba(15, 23, 42, 0.18) !important;
+      outline: 2px solid #22a391;
+      outline-offset: 2px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      max-width: min(420px, calc(100vw - 32px));
+      background: #111827;
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+      opacity: 0;
+      transform: translateY(10px);
+      visibility: hidden;
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+      z-index: 30;
+      font-weight: 700;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      visibility: visible;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    ul.compact {
+      margin: 8px 0 0 18px;
+      padding: 0;
+    }
+
+    ul.compact li {
+      margin-bottom: 5px;
+    }
+
+    @media (max-width: 980px) {
+      .grid.two,
+      .grid.three,
+      .form-grid,
+      .form-grid.compact {
+        grid-template-columns: 1fr;
+      }
+
+      .topline {
+        display: block;
+      }
+
+      .actions {
+        margin-top: 10px;
+      }
+
+      button,
+      .tab-button {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="topline">
+        <div>
+          <h1>Reparto de analíticas por vacaciones</h1>
+          <div class="subtitle">Planificación semanal local para centros sanitarios, sin servidor ni dependencias externas</div>
+        </div>
+        <div class="actions">
+          <button id="startTourBtn" type="button">Tour rápido</button>
+          <button class="secondary" id="saveNowBtn" type="button">Guardar</button>
+          <button class="info" id="exportJsonBtn" type="button">Exportar JSON</button>
+          <button class="info" id="importJsonBtn" type="button">Importar JSON</button>
+          <button class="danger" id="newCenterBtn" type="button">Nuevo centro</button>
+          <input class="sr-only" id="importJsonInput" type="file" accept=".json,application/json">
+        </div>
+      </div>
+      <nav class="tabs" aria-label="Secciones">
+        <button class="tab-button active" id="tabInicioBtn" type="button" data-view="inicio">Inicio</button>
+        <button class="tab-button" id="tabPresenciasBtn" type="button" data-view="presencias">Presencias</button>
+        <button class="tab-button" id="tabRepartoBtn" type="button" data-view="reparto">Reparto</button>
+        <button class="tab-button" id="tabEstadisticasBtn" type="button" data-view="estadisticas">Estadísticas</button>
+        <button class="tab-button" id="tabHistoricoBtn" type="button" data-view="historico">Histórico</button>
+        <button class="tab-button" id="tabManualBtn" type="button" data-view="manual">Manual</button>
+      </nav>
+      <div class="status-strip" id="statusStrip" style="margin-top: 12px;"></div>
+    </header>
+
+    <main>
+      <section class="view active" id="view-inicio">
+        <div class="quick-start" id="quickStartPanel">
+          <div class="section-head">
+            <div>
+              <h2>Para empezar en 2 minutos</h2>
+              <p>Copia un listado de profesionales, pégalo en Importación masiva, genera semanas y marca ausencias. La herramienta hace el reparto y permite copiarlo a Excel.</p>
+            </div>
+            <button id="quickTourBtn" type="button">Ver tour guiado</button>
+          </div>
+          <div class="quick-steps">
+            <div class="quick-step"><span>1</span>Pega la tabla de profesionales</div>
+            <div class="quick-step"><span>2</span>Genera las semanas del verano</div>
+            <div class="quick-step"><span>3</span>Marca quién está ausente</div>
+            <div class="quick-step"><span>4</span>Copia el reparto final</div>
+          </div>
+          <p class="privacy-inline"><strong>Privacidad:</strong> no introduzcas datos de pacientes. Los datos se guardan en este navegador; los CSV/JSON exportados pueden contener nombres y ausencias reales.</p>
+        </div>
+        <div class="grid two">
+          <div class="panel" id="centerSetupPanel">
+            <div class="section-head">
+              <div>
+                <h2>Inicio y configuración del centro</h2>
+                <p class="muted">Define el periodo, genera semanas lunes-domingo y carga la plantilla de profesionales.</p>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div>
+                <label for="centerName">Nombre del centro</label>
+                <input id="centerName" type="text" placeholder="Centro de salud">
+              </div>
+              <div>
+                <label for="startDate">Fecha inicio</label>
+                <input id="startDate" type="date">
+              </div>
+              <div>
+                <label for="endDate">Fecha fin</label>
+                <input id="endDate" type="date">
+              </div>
+              <div>
+                <button id="generateWeeksBtn" type="button">Generar semanas</button>
+              </div>
+            </div>
+            <div class="split-line"></div>
+            <div class="form-grid compact">
+              <div>
+                <label for="manualName">Añadir profesional</label>
+                <input id="manualName" type="text" placeholder="Apellidos y nombre">
+              </div>
+              <div>
+                <label for="manualCategory">Categoría</label>
+                <input id="manualCategory" type="text" placeholder="Medicina de Familia">
+              </div>
+              <div>
+                <label for="manualSchedule">Horario</label>
+                <input id="manualSchedule" type="text" placeholder="Mañana, tarde, mixto">
+              </div>
+              <div>
+                <button id="addProfessionalBtn" type="button">Añadir</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" id="bulkImportPanel">
+            <div class="section-head">
+              <div>
+                <h2>Importación masiva</h2>
+                <p class="muted">Pega desde Excel, una web o una tabla tabulada. Puedes copiar listados disponibles en páginas externas, como <a class="external" href="https://www.libreeleccion.sanidadmadrid.org/Seleccione/AtencionPrimaria.aspx" target="_blank" rel="noopener">Libre Elección Sanitaria</a>, tras localizar el centro; esta herramienta no está afiliada a esas fuentes.</p>
+              </div>
+              <button class="secondary" id="loadExampleBtn" type="button">Cargar ejemplo</button>
+            </div>
+            <textarea id="bulkImport" spellcheck="false" placeholder="Apellidos y nombre	Categoría profesional	Horario	Seleccionar
+PROFESIONAL 01	Medicina de Familia	Mañana
+PROFESIONAL 02	Medicina de Familia	Mixto"></textarea>
+            <div class="toolbar" style="margin-top: 8px;">
+              <button id="importProfessionalsBtn" type="button">Importar profesionales</button>
+              <button class="secondary" id="clearImportBtn" type="button">Limpiar</button>
+            </div>
+            <div id="importFeedback" class="help-text" style="margin-top: 8px;"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h2>Profesionales del centro</h2>
+              <p class="muted">Puedes editar nombre, categoría, horario y activar o desactivar profesionales sin perder el registro.</p>
+            </div>
+            <button class="info" id="copyProfessionalsBtn" type="button">Copiar lista</button>
+          </div>
+          <div class="table-wrap" id="professionalsTable"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-presencias">
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h2>Presencias y ausencias por semana</h2>
+              <p class="muted">Cada celda alterna entre presente y ausente. El reparto se recalcula al cambiar una ausencia.</p>
+            </div>
+            <div class="toolbar">
+              <button id="recalculateFromAvailabilityBtn" type="button">Recalcular reparto</button>
+              <button class="info" id="copyAvailabilityBtn" type="button">Copiar matriz</button>
+              <button class="warning" id="copyPreviousWeekBtn" type="button">Copiar semana anterior</button>
+              <button class="danger" id="allPresentBtn" type="button">Todos presentes</button>
+            </div>
+          </div>
+          <div id="availabilityWarnings"></div>
+          <div class="table-wrap" id="availabilityTable"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-reparto">
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h2>Reparto generado</h2>
+              <p class="muted">Las asignaciones manuales quedan bloqueadas; el resto se recalcula de forma equilibrada.</p>
+            </div>
+            <div class="toolbar">
+              <button id="generateAssignmentsBtn" type="button">Generar / recalcular</button>
+              <button class="warning" id="clearManualBtn" type="button">Quitar bloqueos</button>
+              <button class="info" id="copyAssignmentsBtn" type="button">Copiar a Excel</button>
+              <button class="info" id="downloadAssignmentsBtn" type="button">Descargar CSV</button>
+              <button class="secondary" id="saveSnapshotBtn" type="button">Guardar versión</button>
+            </div>
+          </div>
+          <div id="assignmentWarnings"></div>
+          <div class="table-wrap" id="assignmentsTable"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-estadisticas">
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <h2>Estadísticas de carga y equidad</h2>
+              <p class="muted">La carga esperada pondera cuántas semanas está presente cada profesional.</p>
+            </div>
+            <div class="toolbar">
+              <button class="info" id="copyStatsBtn" type="button">Copiar estadísticas</button>
+              <button class="secondary" id="refreshStatsBtn" type="button">Actualizar</button>
+            </div>
+          </div>
+          <div class="stats-grid" id="statsCards"></div>
+          <div class="split-line"></div>
+          <h3>Por profesional</h3>
+          <div class="table-wrap" id="professionalStatsTable"></div>
+          <div class="split-line"></div>
+          <h3>Por semana</h3>
+          <div class="table-wrap" id="weekStatsTable"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-historico">
+        <div class="grid two">
+          <div class="panel">
+            <div class="section-head">
+              <div>
+                <h2>Histórico de versiones</h2>
+                <p class="muted">Guarda cortes del reparto para comparar o documentar versiones compartidas.</p>
+              </div>
+              <button class="danger" id="clearHistoryBtn" type="button">Vaciar histórico</button>
+            </div>
+            <div class="table-wrap" id="historyTable"></div>
+          </div>
+          <div class="panel">
+            <div class="section-head">
+              <div>
+                <h2>Registro de cambios</h2>
+                <p class="muted">Últimos movimientos realizados en esta copia local.</p>
+              </div>
+              <button class="danger" id="clearLogBtn" type="button">Vaciar registro</button>
+            </div>
+            <div class="log-list" id="changeLog"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-manual">
+        <div class="panel">
+          <h2>Manual de uso</h2>
+          <div class="notice">
+            Todo se guarda en este navegador mediante localStorage. Para continuar el trabajo en otro navegador, usa Exportar JSON y trata ese archivo como documentación interna si contiene datos reales.
+          </div>
+          <div class="grid two">
+            <div>
+              <h3>Flujo recomendado</h3>
+              <ul class="compact">
+                <li>Configura centro y periodo; las fechas por defecto cubren del 01/07/2026 al 30/09/2026.</li>
+                <li>Genera las semanas lunes-domingo. Las semanas inicial o final pueden solaparse parcialmente con el periodo.</li>
+                <li>Importa profesionales pegando una tabla. Se reconocen columnas como Apellidos y nombre, Nombre, Profesional, Categoría profesional y Horario.</li>
+                <li>Marca ausencias en la matriz semanal. En cuanto haya ausentes, el reparto puede generarse.</li>
+                <li>En Reparto, cambia un selector para forzar una asignación manual. Esa celda queda bloqueada y el resto se reequilibra.</li>
+                <li>Guarda una versión en Histórico cuando el reparto ya esté revisado o enviado.</li>
+              </ul>
+            </div>
+            <div>
+              <h3>Criterios del reparto</h3>
+              <ul class="compact">
+                <li>Solo reciben analíticas profesionales activos y presentes en esa semana.</li>
+                <li>Un profesional ausente no se asigna a sí mismo ni recibe cargas esa semana.</li>
+                <li>El algoritmo reparte primero los bloqueos manuales y después asigna automáticamente a quien lleva menor carga acumulada.</li>
+                <li>La estadística de equidad compara asignaciones reales con carga esperada según disponibilidad semanal.</li>
+                <li>Las filas sin profesional presente se marcan como sin cobertura para revisión humana.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="panel site-footer" id="privacyNotice">
+      <h2>Aviso de uso y privacidad</h2>
+      <p><strong>Herramienta no oficial.</strong> Es una utilidad estática de apoyo organizativo; el reparto resultante debe revisarse antes de utilizarse.</p>
+      <p><strong>Datos locales.</strong> La aplicación no tiene backend y no envía datos a servidores. Lo que se introduzca se guarda en el navegador mediante localStorage.</p>
+      <p><strong>No introducir datos de pacientes.</strong> Si se exportan CSV o JSON con nombres, ausencias o asignaciones reales, esos archivos deben tratarse como documentación interna y no compartirse públicamente.</p>
+      <p><strong>Fuentes externas.</strong> Los listados que se copien desde páginas de terceros pertenecen a sus fuentes originales; esta herramienta no está afiliada ni avalada por ellas.</p>
+    </footer>
+  </div>
+
+  <div class="tour-backdrop" id="tourBackdrop" hidden></div>
+  <div class="tour-popover" id="tourPopover" role="dialog" aria-modal="true" aria-labelledby="tourTitle" hidden>
+    <div class="tour-kicker">Tour rápido</div>
+    <h2 id="tourTitle"></h2>
+    <p id="tourBody"></p>
+    <div class="tour-progress" id="tourProgress"></div>
+    <div class="tour-actions">
+      <button class="secondary" id="tourCloseBtn" type="button">Salir</button>
+      <div class="inline-actions">
+        <button class="secondary" id="tourPrevBtn" type="button">Atrás</button>
+        <button id="tourNextBtn" type="button">Siguiente</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const STORAGE_KEY = "repartoAnaliticas_v1";
+      const APP_VERSION = "1.0.0";
+      const DEFAULT_START = "2026-07-01";
+      const DEFAULT_END = "2026-09-30";
+
+      const EXAMPLE_IMPORT = [
+        "Apellidos y nombre\tCategoría profesional\tHorario\tSeleccionar",
+        "PROFESIONAL 01\tMedicina de Familia\tMañana",
+        "PROFESIONAL 02\tMedicina de Familia\tMixto",
+        "PROFESIONAL 03\tMedicina de Familia\tMañana",
+        "PROFESIONAL 04\tMedicina de Familia\tMañana",
+        "PROFESIONAL 05\tMedicina de Familia\tMixto",
+        "PROFESIONAL 06\tMedicina de Familia\tMañana",
+        "PROFESIONAL 07\tMedicina de Familia\tMixto",
+        "PROFESIONAL 08\tMedicina de Familia\tMañana",
+        "PROFESIONAL 09\tMedicina de Familia\tMixto",
+        "PROFESIONAL 10\tMedicina de Familia\tMixto",
+        "PROFESIONAL 11\tMedicina de Familia\tTarde",
+        "PROFESIONAL 12\tMedicina de Familia\tMixto",
+        "PROFESIONAL 13\tMedicina de Familia\tMañana",
+        "PROFESIONAL 14\tMedicina de Familia\tMixto"
+      ].join("\n");
+
+      let state = defaultState();
+      let currentView = "inicio";
+      let toastTimer = null;
+      let tourSteps = [];
+      let tourIndex = 0;
+      let tourTarget = null;
+      let tourOpen = false;
+
+      const $ = (selector) => document.querySelector(selector);
+
+      document.addEventListener("DOMContentLoaded", init);
+
+      function init() {
+        state = loadState();
+        bindEvents();
+        syncForm();
+        ensureAvailabilityShape();
+        recalculateAssignments(false);
+        renderAll();
+        if (!state.tourSeen && !state.professionals.length) {
+          setTimeout(() => startTour(false), 450);
+        }
+      }
+
+      function defaultState() {
+        return {
+          app: "reparto-analiticas",
+          version: APP_VERSION,
+          centerName: "",
+          startDate: DEFAULT_START,
+          endDate: DEFAULT_END,
+          weeks: [],
+          professionals: [],
+          availability: {},
+          assignments: {},
+          history: [],
+          changeLog: [],
+          tourSeen: false,
+          createdAt: nowIso(),
+          updatedAt: nowIso(),
+          lastGeneratedAt: ""
+        };
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return defaultState();
+          return migrateState(JSON.parse(raw));
+        } catch (error) {
+          console.error(error);
+          return defaultState();
+        }
+      }
+
+      function migrateState(input) {
+        const base = defaultState();
+        const source = input && input.state ? input.state : input;
+        const merged = Object.assign(base, source || {});
+        merged.professionals = Array.isArray(merged.professionals) ? merged.professionals : [];
+        merged.weeks = Array.isArray(merged.weeks) ? merged.weeks : [];
+        merged.availability = merged.availability && typeof merged.availability === "object" ? merged.availability : {};
+        merged.assignments = merged.assignments && typeof merged.assignments === "object" ? merged.assignments : {};
+        merged.history = Array.isArray(merged.history) ? merged.history : [];
+        merged.changeLog = Array.isArray(merged.changeLog) ? merged.changeLog : [];
+        merged.professionals = merged.professionals.map((professional, index) => ({
+          id: professional.id || makeId("p", professional.name || String(index)),
+          name: professional.name || "",
+          category: professional.category || "",
+          schedule: professional.schedule || "",
+          active: professional.active !== false
+        })).filter((professional) => professional.name.trim());
+        merged.weeks = merged.weeks.map((week, index) => ({
+          id: week.id || week.start || makeId("w", String(index)),
+          index,
+          start: week.start,
+          end: week.end,
+          label: week.label || makeWeekLabel(week.start, week.end),
+          partial: Boolean(week.partial)
+        })).filter((week) => week.start && week.end);
+        return merged;
+      }
+
+      function saveState(showMessage) {
+        state.updatedAt = nowIso();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        if (showMessage) showToast("Datos guardados en este navegador.");
+        renderStatus();
+      }
+
+      function bindEvents() {
+        document.querySelectorAll("[data-view]").forEach((button) => {
+          button.addEventListener("click", () => switchView(button.dataset.view));
+        });
+
+        $("#centerName").addEventListener("input", (event) => {
+          state.centerName = event.target.value;
+          saveState(false);
+        });
+        $("#startDate").addEventListener("change", (event) => {
+          state.startDate = event.target.value || DEFAULT_START;
+          saveState(false);
+        });
+        $("#endDate").addEventListener("change", (event) => {
+          state.endDate = event.target.value || DEFAULT_END;
+          saveState(false);
+        });
+
+        $("#generateWeeksBtn").addEventListener("click", handleGenerateWeeks);
+        $("#loadExampleBtn").addEventListener("click", () => {
+          $("#bulkImport").value = EXAMPLE_IMPORT;
+          $("#importFeedback").textContent = "Ejemplo cargado. Puedes importarlo o sustituirlo por tu tabla.";
+        });
+        $("#clearImportBtn").addEventListener("click", () => {
+          $("#bulkImport").value = "";
+          $("#importFeedback").textContent = "";
+        });
+        $("#importProfessionalsBtn").addEventListener("click", handleImportProfessionals);
+        $("#addProfessionalBtn").addEventListener("click", handleAddProfessional);
+
+        $("#professionalsTable").addEventListener("change", handleProfessionalTableChange);
+        $("#professionalsTable").addEventListener("click", handleProfessionalTableClick);
+
+        $("#availabilityTable").addEventListener("click", handleAvailabilityClick);
+        $("#allPresentBtn").addEventListener("click", handleAllPresent);
+        $("#copyPreviousWeekBtn").addEventListener("click", handleCopyPreviousWeek);
+        $("#recalculateFromAvailabilityBtn").addEventListener("click", () => {
+          recalculateAssignments(true);
+          pushLog("Reparto", "Reparto recalculado desde la matriz de presencias.");
+          saveState(true);
+          renderAll();
+        });
+        $("#copyAvailabilityBtn").addEventListener("click", () => copyText(makeAvailabilityTsv(), "Matriz copiada para Excel."));
+
+        $("#generateAssignmentsBtn").addEventListener("click", () => {
+          recalculateAssignments(true);
+          pushLog("Reparto", "Reparto generado o recalculado.");
+          saveState(true);
+          renderAll();
+        });
+        $("#assignmentsTable").addEventListener("change", handleAssignmentChange);
+        $("#assignmentsTable").addEventListener("click", handleAssignmentClick);
+        $("#clearManualBtn").addEventListener("click", handleClearManual);
+        $("#copyAssignmentsBtn").addEventListener("click", () => copyText(makeAssignmentsTsv(), "Reparto copiado para Excel."));
+        $("#downloadAssignmentsBtn").addEventListener("click", () => downloadText("reparto_analiticas.csv", makeAssignmentsCsv(), "text/csv;charset=utf-8"));
+        $("#saveSnapshotBtn").addEventListener("click", handleSaveSnapshot);
+
+        $("#copyStatsBtn").addEventListener("click", () => copyText(makeStatsTsv(), "Estadísticas copiadas para Excel."));
+        $("#refreshStatsBtn").addEventListener("click", renderStats);
+        $("#copyProfessionalsBtn").addEventListener("click", () => copyText(makeProfessionalsTsv(), "Lista de profesionales copiada."));
+
+        $("#saveNowBtn").addEventListener("click", () => saveState(true));
+        $("#startTourBtn").addEventListener("click", () => startTour(true));
+        $("#quickTourBtn").addEventListener("click", () => startTour(true));
+        $("#tourCloseBtn").addEventListener("click", () => closeTour(false));
+        $("#tourPrevBtn").addEventListener("click", previousTourStep);
+        $("#tourNextBtn").addEventListener("click", nextTourStep);
+        window.addEventListener("resize", () => {
+          if (tourOpen) positionTour();
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && tourOpen) closeTour(false);
+        });
+        $("#exportJsonBtn").addEventListener("click", exportJson);
+        $("#importJsonBtn").addEventListener("click", () => $("#importJsonInput").click());
+        $("#importJsonInput").addEventListener("change", importJson);
+        $("#newCenterBtn").addEventListener("click", handleNewCenter);
+        $("#clearHistoryBtn").addEventListener("click", handleClearHistory);
+        $("#clearLogBtn").addEventListener("click", handleClearLog);
+      }
+
+      function syncForm() {
+        $("#centerName").value = state.centerName || "";
+        $("#startDate").value = state.startDate || DEFAULT_START;
+        $("#endDate").value = state.endDate || DEFAULT_END;
+      }
+
+      function renderAll() {
+        syncForm();
+        renderStatus();
+        renderProfessionals();
+        renderAvailability();
+        renderAssignments();
+        renderStats();
+        renderHistory();
+        renderChangeLog();
+        if (tourOpen) positionTour();
+      }
+
+      function switchView(view) {
+        currentView = view;
+        document.querySelectorAll(".tab-button").forEach((button) => {
+          button.classList.toggle("active", button.dataset.view === view);
+        });
+        document.querySelectorAll(".view").forEach((section) => {
+          section.classList.toggle("active", section.id === "view-" + view);
+        });
+      }
+
+      function buildTourSteps() {
+        return [
+          {
+            view: "inicio",
+            selector: "#quickStartPanel",
+            title: "Empieza por el camino corto",
+            body: "La secuencia práctica es simple: pegar profesionales, generar semanas, marcar ausencias y copiar el reparto. No hace falta configurar nada técnico."
+          },
+          {
+            view: "inicio",
+            selector: "#bulkImport",
+            title: "Pega aquí el listado",
+            body: "Puedes copiar filas desde Excel o desde páginas con listados de centro, como Libre Elección Sanitaria de Madrid tras localizar el centro. La herramienta no está afiliada a esas fuentes y detecta columnas como nombre, categoría y horario."
+          },
+          {
+            view: "inicio",
+            selector: "#loadExampleBtn",
+            title: "Prueba sin miedo",
+            body: "Si quiere practicar antes de usar datos reales, este botón carga un ejemplo completo. Sirve para entender el flujo en menos de un minuto."
+          },
+          {
+            view: "inicio",
+            selector: "#centerSetupPanel",
+            title: "Centro y periodo",
+            body: "Escribe el nombre del centro si quieres que aparezca en exportaciones. El periodo ya viene preparado para julio, agosto y septiembre de 2026."
+          },
+          {
+            view: "inicio",
+            selector: "#generateWeeksBtn",
+            title: "Genera semanas",
+            body: "Este botón crea las semanas de lunes a domingo. Después solo tendrás que indicar quién está presente o ausente cada semana."
+          },
+          {
+            view: "presencias",
+            selector: "#availabilityTable",
+            title: "Marca ausencias",
+            body: "Cada celda alterna entre presente y ausente. Cuando marques vacaciones, el reparto se recalcula automáticamente con los profesionales que sí están presentes."
+          },
+          {
+            view: "reparto",
+            selector: "#assignmentsTable",
+            title: "Revisa el reparto",
+            body: "Aquí ves quién revisa las analíticas de cada profesional ausente. Puedes cambiar un desplegable para fijar una asignación manual; el resto se reequilibra."
+          },
+          {
+            view: "reparto",
+            selector: "#copyAssignmentsBtn",
+            title: "Copia para enviar",
+            body: "Cuando esté revisado, copia el reparto a Excel o descarga un CSV. Es la salida rápida para compartir."
+          },
+          {
+            view: "inicio",
+            selector: "#exportJsonBtn",
+            title: "Guarda una copia editable",
+            body: "Exportar JSON guarda todo: centro, semanas, ausencias, cambios manuales e histórico. Si contiene datos reales, compártelo solo como documentación interna."
+          }
+        ];
+      }
+
+      function startTour(manualStart) {
+        tourSteps = buildTourSteps();
+        tourIndex = 0;
+        tourOpen = true;
+        $("#tourBackdrop").hidden = false;
+        $("#tourPopover").hidden = false;
+        showTourStep(0);
+        if (manualStart) showToast("Tour rápido iniciado.");
+      }
+
+      function showTourStep(index) {
+        if (!tourOpen || !tourSteps.length) return;
+        tourIndex = Math.max(0, Math.min(index, tourSteps.length - 1));
+        const step = tourSteps[tourIndex];
+        switchView(step.view);
+        clearTourTarget();
+        const target = $(step.selector);
+        if (target) {
+          tourTarget = target;
+          tourTarget.classList.add("tour-active-target");
+          if (typeof tourTarget.scrollIntoView === "function") {
+            tourTarget.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+          }
+        }
+        $("#tourTitle").textContent = step.title;
+        $("#tourBody").textContent = step.body;
+        $("#tourProgress").textContent = `Paso ${tourIndex + 1} de ${tourSteps.length}`;
+        $("#tourPrevBtn").disabled = tourIndex === 0;
+        $("#tourNextBtn").textContent = tourIndex === tourSteps.length - 1 ? "Empezar" : "Siguiente";
+        setTimeout(positionTour, 80);
+      }
+
+      function positionTour() {
+        const popover = $("#tourPopover");
+        if (!popover || popover.hidden) return;
+        const margin = 14;
+        const fallbackLeft = Math.max(margin, (window.innerWidth - popover.offsetWidth) / 2);
+        const fallbackTop = Math.max(margin, (window.innerHeight - popover.offsetHeight) / 2);
+        if (!tourTarget || typeof tourTarget.getBoundingClientRect !== "function") {
+          popover.style.left = `${fallbackLeft}px`;
+          popover.style.top = `${fallbackTop}px`;
+          return;
+        }
+        const rect = tourTarget.getBoundingClientRect();
+        const width = popover.offsetWidth || 420;
+        const height = popover.offsetHeight || 210;
+        let left = rect.right + margin;
+        let top = rect.top;
+        if (left + width > window.innerWidth - margin) left = rect.left - width - margin;
+        if (left < margin) left = Math.min(Math.max(rect.left, margin), window.innerWidth - width - margin);
+        if (top + height > window.innerHeight - margin) top = window.innerHeight - height - margin;
+        if (top < margin) top = margin;
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+      }
+
+      function nextTourStep() {
+        if (tourIndex >= tourSteps.length - 1) {
+          closeTour(true);
+          return;
+        }
+        showTourStep(tourIndex + 1);
+      }
+
+      function previousTourStep() {
+        showTourStep(tourIndex - 1);
+      }
+
+      function closeTour(completed) {
+        clearTourTarget();
+        tourOpen = false;
+        $("#tourBackdrop").hidden = true;
+        $("#tourPopover").hidden = true;
+        state.tourSeen = true;
+        saveState(false);
+        if (completed) {
+          switchView("inicio");
+          showToast("Listo: ya puedes pegar el listado y empezar.");
+        }
+      }
+
+      function clearTourTarget() {
+        if (tourTarget) tourTarget.classList.remove("tour-active-target");
+        tourTarget = null;
+      }
+
+      function renderStatus() {
+        const stats = computeStats();
+        const cards = [
+          ["Centro", state.centerName || "Sin nombre"],
+          ["Periodo", state.weeks.length ? `${formatDate(state.startDate)} - ${formatDate(state.endDate)}` : "Semanas pendientes"],
+          ["Semanas", String(state.weeks.length)],
+          ["Profesionales activos", String(activeProfessionals().length)],
+          ["Ausencias marcadas", String(stats.totalAbsences)],
+          ["Sin cobertura", String(stats.uncovered)]
+        ];
+        $("#statusStrip").innerHTML = cards.map(([label, value]) => `
+          <div class="status-card">
+            <span class="status-label">${escapeHtml(label)}</span>
+            <span class="status-value">${escapeHtml(value)}</span>
+          </div>
+        `).join("");
+      }
+
+      function renderProfessionals() {
+        const target = $("#professionalsTable");
+        if (!state.professionals.length) {
+          target.innerHTML = `<div class="empty">Aún no hay profesionales cargados.</div>`;
+          return;
+        }
+
+        target.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Activo</th>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Horario</th>
+                <th>Ausencias</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${state.professionals.map((professional) => {
+                const absentCount = state.weeks.filter((week) => !isPresent(week.id, professional.id)).length;
+                return `
+                  <tr>
+                    <td><input type="checkbox" data-professional="${professional.id}" data-field="active" ${professional.active ? "checked" : ""}></td>
+                    <td><input class="cell-input" data-professional="${professional.id}" data-field="name" value="${escapeAttr(professional.name)}"></td>
+                    <td><input class="cell-input" data-professional="${professional.id}" data-field="category" value="${escapeAttr(professional.category)}"></td>
+                    <td><input class="cell-input" data-professional="${professional.id}" data-field="schedule" value="${escapeAttr(professional.schedule)}"></td>
+                    <td>${absentCount}</td>
+                    <td><button class="danger small" type="button" data-delete-professional="${professional.id}">Eliminar</button></td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
+      function renderAvailability() {
+        const table = $("#availabilityTable");
+        const warnings = $("#availabilityWarnings");
+        if (!state.weeks.length || !state.professionals.length) {
+          table.innerHTML = `<div class="empty">Genera semanas y carga profesionales para marcar presencias.</div>`;
+          warnings.innerHTML = "";
+          return;
+        }
+
+        const active = activeProfessionals();
+        const uncoveredWeeks = state.weeks.filter((week) => {
+          const absent = active.filter((professional) => !isPresent(week.id, professional.id)).length;
+          const present = active.filter((professional) => isPresent(week.id, professional.id)).length;
+          return absent > 0 && present === 0;
+        });
+        warnings.innerHTML = uncoveredWeeks.length ? `
+          <div class="notice danger">Hay ${uncoveredWeeks.length} semana(s) con ausencias y ningún profesional presente. Revisa la matriz antes de cerrar el reparto.</div>
+        ` : "";
+
+        table.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th class="sticky-col">Profesional</th>
+                <th>Categoría</th>
+                <th>Horario</th>
+                ${state.weeks.map((week) => {
+                  const absentCount = active.filter((professional) => !isPresent(week.id, professional.id)).length;
+                  return `<th class="week-head">${escapeHtml(shortWeekLabel(week))}<br><span class="muted">${absentCount} aus.</span></th>`;
+                }).join("")}
+              </tr>
+            </thead>
+            <tbody>
+              ${state.professionals.map((professional) => `
+                <tr>
+                  <td class="sticky-col name-cell">${escapeHtml(professional.name)}${professional.active ? "" : " <span class=\"badge alert\">Inactivo</span>"}</td>
+                  <td>${escapeHtml(professional.category || "-")}</td>
+                  <td>${escapeHtml(professional.schedule || "-")}</td>
+                  ${state.weeks.map((week) => {
+                    const present = professional.active && isPresent(week.id, professional.id);
+                    const absent = professional.active && !present;
+                    const className = professional.active ? (present ? "present" : "absent") : "inactive";
+                    const text = professional.active ? (present ? "Presente" : "Ausente") : "Inactivo";
+                    return `<td style="text-align:center"><button class="presence-btn ${className}" type="button" data-week="${week.id}" data-professional="${professional.id}" ${professional.active ? "" : "disabled"}>${text}</button></td>`;
+                  }).join("")}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
+      function renderAssignments() {
+        const target = $("#assignmentsTable");
+        const warningTarget = $("#assignmentWarnings");
+        if (!state.weeks.length || !state.professionals.length) {
+          target.innerHTML = `<div class="empty">Configura semanas y profesionales antes de generar el reparto.</div>`;
+          warningTarget.innerHTML = "";
+          return;
+        }
+
+        const rows = [];
+        const active = activeProfessionals();
+        state.weeks.forEach((week) => {
+          const absent = active.filter((professional) => !isPresent(week.id, professional.id));
+          const candidates = active.filter((professional) => isPresent(week.id, professional.id));
+          absent.forEach((absentProfessional) => {
+            const assignment = getAssignment(week.id, absentProfessional.id);
+            rows.push({ week, absentProfessional, candidates, assignment });
+          });
+        });
+
+        const uncovered = rows.filter((row) => !row.assignment || !row.assignment.assigneeId).length;
+        const manual = rows.filter((row) => row.assignment && row.assignment.manual).length;
+        const warnings = [];
+        if (!rows.length) warnings.push(`<div class="notice">No hay ausencias marcadas. El reparto aparecerá aquí cuando marques profesionales ausentes.</div>`);
+        if (uncovered) warnings.push(`<div class="notice danger">${uncovered} asignación(es) quedan sin cobertura por falta de profesionales presentes.</div>`);
+        if (manual) warnings.push(`<div class="notice warning">${manual} asignación(es) manuales están bloqueadas y se respetan al recalcular.</div>`);
+        warningTarget.innerHTML = warnings.join("");
+
+        if (!rows.length) {
+          target.innerHTML = `<div class="empty">Sin ausencias para repartir.</div>`;
+          return;
+        }
+
+        target.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Semana</th>
+                <th>Profesional ausente</th>
+                <th>Revisa analíticas</th>
+                <th>Modo</th>
+                <th>Profesionales presentes</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map((row) => assignmentRowHtml(row)).join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
+      function assignmentRowHtml(row) {
+        const assignment = row.assignment || {};
+        const assigneeId = assignment.assigneeId || "";
+        const mode = assigneeId ? (assignment.manual ? "Manual" : "Auto") : "Sin cobertura";
+        const badgeClass = assigneeId ? (assignment.manual ? "manual" : "auto") : "alert";
+        const presentNames = row.candidates.map((professional) => professional.name).join(", ") || "Ninguno";
+        const options = [
+          `<option value="" ${assigneeId ? "" : "selected"}>Sin asignar</option>`,
+          ...row.candidates.map((professional) => `<option value="${professional.id}" ${professional.id === assigneeId ? "selected" : ""}>${escapeHtml(professional.name)}</option>`)
+        ].join("");
+        return `
+          <tr>
+            <td>${escapeHtml(row.week.label)}</td>
+            <td class="name-cell">${escapeHtml(row.absentProfessional.name)}</td>
+            <td>
+              <select data-assignment-week="${row.week.id}" data-assignment-absent="${row.absentProfessional.id}">
+                ${options}
+              </select>
+            </td>
+            <td><span class="badge ${badgeClass}">${mode}</span></td>
+            <td title="${escapeAttr(presentNames)}">${row.candidates.length}</td>
+            <td>
+              <button class="secondary small" type="button" data-reset-assignment="${row.week.id}|${row.absentProfessional.id}" ${assignment.manual ? "" : "disabled"}>Auto</button>
+            </td>
+          </tr>
+        `;
+      }
+
+      function renderStats() {
+        const stats = computeStats();
+        const maxLoad = Math.max(1, ...stats.professionals.map((row) => row.assigned));
+
+        $("#statsCards").innerHTML = [
+          ["Revisiones a repartir", stats.totalAbsences],
+          ["Asignadas", stats.totalAssigned],
+          ["Sin cobertura", stats.uncovered],
+          ["Bloqueos manuales", stats.manualAssignments],
+          ["Diferencia máx.-mín.", stats.spread],
+          ["Coef. variación", stats.cv ? stats.cv.toFixed(2) : "0.00"]
+        ].map(([label, value]) => `
+          <div class="stat-card">
+            <span class="stat-label">${escapeHtml(label)}</span>
+            <span class="stat-value">${escapeHtml(String(value))}</span>
+          </div>
+        `).join("");
+
+        $("#professionalStatsTable").innerHTML = stats.professionals.length ? `
+          <table>
+            <thead>
+              <tr>
+                <th>Profesional</th>
+                <th>Horario</th>
+                <th>Presente</th>
+                <th>Ausente</th>
+                <th>Asignadas</th>
+                <th>Carga esperada</th>
+                <th>Desviación</th>
+                <th>Manuales</th>
+                <th>Carga</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${stats.professionals.map((row) => `
+                <tr>
+                  <td class="name-cell">${escapeHtml(row.name)}</td>
+                  <td>${escapeHtml(row.schedule || "-")}</td>
+                  <td>${row.presentWeeks}</td>
+                  <td>${row.absentWeeks}</td>
+                  <td><strong>${row.assigned}</strong></td>
+                  <td>${row.expected.toFixed(1)}</td>
+                  <td>${formatSigned(row.deviation)}</td>
+                  <td>${row.manual}</td>
+                  <td><div class="bar-track"><div class="bar-fill" style="width:${Math.round((row.assigned / maxLoad) * 100)}%"></div></div></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        ` : `<div class="empty">Sin profesionales activos.</div>`;
+
+        $("#weekStatsTable").innerHTML = stats.weeks.length ? `
+          <table>
+            <thead>
+              <tr>
+                <th>Semana</th>
+                <th>Presentes</th>
+                <th>Ausentes</th>
+                <th>Asignadas</th>
+                <th>Sin cobertura</th>
+                <th>Máx. carga semanal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${stats.weeks.map((row) => `
+                <tr>
+                  <td>${escapeHtml(row.label)}</td>
+                  <td>${row.present}</td>
+                  <td>${row.absent}</td>
+                  <td>${row.assigned}</td>
+                  <td>${row.uncovered ? `<span class="badge alert">${row.uncovered}</span>` : "0"}</td>
+                  <td>${row.maxWeekLoad}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        ` : `<div class="empty">Sin semanas generadas.</div>`;
+      }
+
+      function renderHistory() {
+        const target = $("#historyTable");
+        if (!state.history.length) {
+          target.innerHTML = `<div class="empty">No hay versiones guardadas todavía.</div>`;
+          return;
+        }
+        target.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Centro</th>
+                <th>Periodo</th>
+                <th>Asignadas</th>
+                <th>Sin cobertura</th>
+                <th>Manuales</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${state.history.slice().reverse().map((item) => `
+                <tr>
+                  <td>${escapeHtml(formatDateTime(item.createdAt))}</td>
+                  <td>${escapeHtml(item.centerName || "-")}</td>
+                  <td>${escapeHtml(item.period || "-")}</td>
+                  <td>${item.summary.totalAssigned}</td>
+                  <td>${item.summary.uncovered}</td>
+                  <td>${item.summary.manualAssignments}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
+      function renderChangeLog() {
+        const target = $("#changeLog");
+        if (!state.changeLog.length) {
+          target.innerHTML = `<div class="empty">Sin cambios registrados.</div>`;
+          return;
+        }
+        target.innerHTML = state.changeLog.slice().reverse().slice(0, 120).map((item) => `
+          <div class="log-item">
+            <strong>${escapeHtml(item.type)} · ${escapeHtml(formatDateTime(item.at))}</strong>
+            <span>${escapeHtml(item.detail)}</span>
+          </div>
+        `).join("");
+      }
+
+      function handleGenerateWeeks() {
+        const start = $("#startDate").value;
+        const end = $("#endDate").value;
+        const weeks = buildWeeks(start, end);
+        if (!weeks.length) {
+          showToast("Revisa las fechas del periodo.");
+          return;
+        }
+        state.startDate = start;
+        state.endDate = end;
+        state.weeks = weeks;
+        ensureAvailabilityShape();
+        pruneAvailability();
+        recalculateAssignments(true);
+        pushLog("Semanas", `${weeks.length} semanas generadas entre ${formatDate(start)} y ${formatDate(end)}.`);
+        saveState(true);
+        renderAll();
+        switchView("presencias");
+      }
+
+      function handleImportProfessionals() {
+        const text = $("#bulkImport").value;
+        const result = parseProfessionals(text);
+        if (!result.rows.length) {
+          $("#importFeedback").textContent = "No se han detectado profesionales. Revisa el texto pegado.";
+          showToast("No se han detectado profesionales.");
+          return;
+        }
+
+        let added = 0;
+        let updated = 0;
+        result.rows.forEach((row) => {
+          const existing = findProfessionalByName(row.name);
+          if (existing) {
+            existing.category = row.category || existing.category;
+            existing.schedule = row.schedule || existing.schedule;
+            existing.active = true;
+            updated += 1;
+          } else {
+            state.professionals.push({
+              id: makeUniqueProfessionalId(row.name),
+              name: row.name,
+              category: row.category,
+              schedule: row.schedule,
+              active: true
+            });
+            added += 1;
+          }
+        });
+
+        ensureAvailabilityShape();
+        recalculateAssignments(true);
+        pushLog("Importación", `${added} profesionales añadidos y ${updated} actualizados. Columnas: ${result.detected.join(", ")}.`);
+        saveState(true);
+        renderAll();
+        $("#importFeedback").textContent = `${added} añadidos, ${updated} actualizados. Columnas detectadas: ${result.detected.join(", ")}.`;
+      }
+
+      function handleAddProfessional() {
+        const name = $("#manualName").value.trim();
+        if (!name) {
+          showToast("Escribe el nombre del profesional.");
+          return;
+        }
+        const existing = findProfessionalByName(name);
+        if (existing) {
+          showToast("Ese profesional ya existe.");
+          return;
+        }
+        state.professionals.push({
+          id: makeUniqueProfessionalId(name),
+          name,
+          category: $("#manualCategory").value.trim(),
+          schedule: $("#manualSchedule").value.trim(),
+          active: true
+        });
+        $("#manualName").value = "";
+        $("#manualCategory").value = "";
+        $("#manualSchedule").value = "";
+        ensureAvailabilityShape();
+        recalculateAssignments(true);
+        pushLog("Profesionales", `${name} añadido manualmente.`);
+        saveState(true);
+        renderAll();
+      }
+
+      function handleProfessionalTableChange(event) {
+        const input = event.target;
+        const id = input.dataset.professional;
+        const field = input.dataset.field;
+        if (!id || !field) return;
+        const professional = state.professionals.find((item) => item.id === id);
+        if (!professional) return;
+        if (field === "active") {
+          professional.active = input.checked;
+        } else {
+          professional[field] = input.value.trim();
+        }
+        recalculateAssignments(true);
+        pushLog("Profesionales", `${professional.name || "Profesional"} actualizado.`);
+        saveState(false);
+        renderAll();
+      }
+
+      function handleProfessionalTableClick(event) {
+        const button = event.target.closest("[data-delete-professional]");
+        if (!button) return;
+        const id = button.dataset.deleteProfessional;
+        const professional = state.professionals.find((item) => item.id === id);
+        if (!professional) return;
+        if (!confirm(`¿Eliminar a ${professional.name}?`)) return;
+        state.professionals = state.professionals.filter((item) => item.id !== id);
+        Object.keys(state.availability).forEach((weekId) => {
+          delete state.availability[weekId][id];
+        });
+        Object.keys(state.assignments).forEach((weekId) => {
+          delete state.assignments[weekId][id];
+          Object.keys(state.assignments[weekId]).forEach((absentId) => {
+            if (state.assignments[weekId][absentId].assigneeId === id) {
+              delete state.assignments[weekId][absentId];
+            }
+          });
+        });
+        recalculateAssignments(true);
+        pushLog("Profesionales", `${professional.name} eliminado.`);
+        saveState(true);
+        renderAll();
+      }
+
+      function handleAvailabilityClick(event) {
+        const button = event.target.closest("[data-week][data-professional]");
+        if (!button) return;
+        const weekId = button.dataset.week;
+        const professionalId = button.dataset.professional;
+        const professional = getProfessional(professionalId);
+        const week = getWeek(weekId);
+        if (!professional || !week || !professional.active) return;
+        const nextPresent = !isPresent(weekId, professionalId);
+        setPresent(weekId, professionalId, nextPresent);
+        recalculateAssignments(true);
+        pushLog("Presencias", `${professional.name}: ${nextPresent ? "presente" : "ausente"} en ${week.label}.`);
+        saveState(false);
+        renderAll();
+      }
+
+      function handleAllPresent() {
+        if (!confirm("¿Marcar todos los profesionales activos como presentes en todas las semanas?")) return;
+        state.availability = {};
+        ensureAvailabilityShape();
+        recalculateAssignments(true);
+        pushLog("Presencias", "Todas las semanas se han marcado como presentes.");
+        saveState(true);
+        renderAll();
+      }
+
+      function handleCopyPreviousWeek() {
+        if (state.weeks.length < 2) {
+          showToast("Necesitas al menos dos semanas.");
+          return;
+        }
+        const selected = prompt("Número de semana destino para copiar la anterior (2, 3, 4...).");
+        const number = Number(selected);
+        if (!Number.isInteger(number) || number < 2 || number > state.weeks.length) {
+          showToast("Número de semana no válido.");
+          return;
+        }
+        const previous = state.weeks[number - 2];
+        const target = state.weeks[number - 1];
+        state.availability[target.id] = Object.assign({}, state.availability[previous.id] || {});
+        recalculateAssignments(true);
+        pushLog("Presencias", `Copiada la matriz de ${previous.label} a ${target.label}.`);
+        saveState(true);
+        renderAll();
+      }
+
+      function handleAssignmentChange(event) {
+        const select = event.target;
+        const weekId = select.dataset.assignmentWeek;
+        const absentId = select.dataset.assignmentAbsent;
+        if (!weekId || !absentId) return;
+        const assigneeId = select.value || "";
+        const week = getWeek(weekId);
+        const absent = getProfessional(absentId);
+        const assignee = assigneeId ? getProfessional(assigneeId) : null;
+        if (!state.assignments[weekId]) state.assignments[weekId] = {};
+        state.assignments[weekId][absentId] = {
+          absentId,
+          assigneeId,
+          manual: true,
+          updatedAt: nowIso()
+        };
+        recalculateAssignments(true);
+        pushLog("Cambio manual", `${week.label}: ${absent.name} queda asignado a ${assignee ? assignee.name : "sin cobertura manual"}.`);
+        saveState(true);
+        renderAll();
+      }
+
+      function handleAssignmentClick(event) {
+        const button = event.target.closest("[data-reset-assignment]");
+        if (!button) return;
+        const [weekId, absentId] = button.dataset.resetAssignment.split("|");
+        if (state.assignments[weekId] && state.assignments[weekId][absentId]) {
+          state.assignments[weekId][absentId].manual = false;
+        }
+        const week = getWeek(weekId);
+        const absent = getProfessional(absentId);
+        recalculateAssignments(true);
+        pushLog("Cambio manual", `${week.label}: ${absent.name} vuelve a reparto automático.`);
+        saveState(true);
+        renderAll();
+      }
+
+      function handleClearManual() {
+        if (!confirm("¿Quitar todos los bloqueos manuales y recalcular el reparto?")) return;
+        Object.keys(state.assignments).forEach((weekId) => {
+          Object.keys(state.assignments[weekId]).forEach((absentId) => {
+            state.assignments[weekId][absentId].manual = false;
+          });
+        });
+        recalculateAssignments(true);
+        pushLog("Reparto", "Todos los bloqueos manuales se han retirado.");
+        saveState(true);
+        renderAll();
+      }
+
+      function handleSaveSnapshot() {
+        const stats = computeStats();
+        const snapshot = {
+          id: makeId("h", nowIso()),
+          createdAt: nowIso(),
+          centerName: state.centerName,
+          period: `${formatDate(state.startDate)} - ${formatDate(state.endDate)}`,
+          summary: {
+            totalAbsences: stats.totalAbsences,
+            totalAssigned: stats.totalAssigned,
+            uncovered: stats.uncovered,
+            manualAssignments: stats.manualAssignments,
+            spread: stats.spread,
+            cv: stats.cv
+          },
+          assignments: JSON.parse(JSON.stringify(state.assignments))
+        };
+        state.history.push(snapshot);
+        pushLog("Histórico", "Versión del reparto guardada.");
+        saveState(true);
+        renderAll();
+        switchView("historico");
+      }
+
+      function handleClearHistory() {
+        if (!confirm("¿Vaciar el histórico de versiones?")) return;
+        state.history = [];
+        pushLog("Histórico", "Histórico de versiones vaciado.");
+        saveState(true);
+        renderAll();
+      }
+
+      function handleClearLog() {
+        if (!confirm("¿Vaciar el registro de cambios?")) return;
+        state.changeLog = [];
+        saveState(true);
+        renderAll();
+      }
+
+      function handleNewCenter() {
+        if (!confirm("¿Crear un centro nuevo? Se perderán los datos locales no exportados.")) return;
+        state = defaultState();
+        localStorage.removeItem(STORAGE_KEY);
+        syncForm();
+        renderAll();
+        switchView("inicio");
+        showToast("Centro nuevo preparado.");
+      }
+
+      function buildWeeks(startValue, endValue) {
+        const start = parseDate(startValue);
+        const end = parseDate(endValue);
+        if (!start || !end || start > end) return [];
+        const firstMonday = getMonday(start);
+        const lastSunday = getSunday(end);
+        const weeks = [];
+        let cursor = new Date(firstMonday);
+        let index = 0;
+        while (cursor <= lastSunday) {
+          const weekStart = new Date(cursor);
+          const weekEnd = addDays(weekStart, 6);
+          weeks.push({
+            id: toIsoDate(weekStart),
+            index,
+            start: toIsoDate(weekStart),
+            end: toIsoDate(weekEnd),
+            label: makeWeekLabel(toIsoDate(weekStart), toIsoDate(weekEnd)),
+            partial: weekStart < start || weekEnd > end
+          });
+          cursor = addDays(cursor, 7);
+          index += 1;
+        }
+        return weeks;
+      }
+
+      function recalculateAssignments(updateTimestamp) {
+        ensureAvailabilityShape();
+        const previous = state.assignments || {};
+        const next = {};
+        const active = activeProfessionals();
+        const load = Object.fromEntries(active.map((professional) => [professional.id, 0]));
+        const lastWeek = Object.fromEntries(active.map((professional) => [professional.id, -99]));
+
+        state.weeks.forEach((week) => {
+          const absent = active.filter((professional) => !isPresent(week.id, professional.id)).sort(byName);
+          const candidates = active.filter((professional) => isPresent(week.id, professional.id)).sort(byName);
+          const candidatesById = new Set(candidates.map((professional) => professional.id));
+          const weekLoad = Object.fromEntries(candidates.map((professional) => [professional.id, 0]));
+          next[week.id] = {};
+
+          absent.forEach((absentProfessional) => {
+            const old = previous[week.id] && previous[week.id][absentProfessional.id];
+            if (old && old.manual) {
+              const validManual = !old.assigneeId || candidatesById.has(old.assigneeId);
+              if (validManual) {
+                next[week.id][absentProfessional.id] = {
+                  absentId: absentProfessional.id,
+                  assigneeId: old.assigneeId || "",
+                  manual: true,
+                  updatedAt: old.updatedAt || nowIso()
+                };
+                if (old.assigneeId) {
+                  load[old.assigneeId] = (load[old.assigneeId] || 0) + 1;
+                  weekLoad[old.assigneeId] = (weekLoad[old.assigneeId] || 0) + 1;
+                  lastWeek[old.assigneeId] = week.index;
+                }
+              }
+            }
+          });
+
+          absent.forEach((absentProfessional) => {
+            if (next[week.id][absentProfessional.id]) return;
+            if (!candidates.length) {
+              next[week.id][absentProfessional.id] = {
+                absentId: absentProfessional.id,
+                assigneeId: "",
+                manual: false,
+                updatedAt: nowIso(),
+                reason: "Sin profesionales presentes"
+              };
+              return;
+            }
+            const chosen = chooseAssignee(candidates, load, weekLoad, lastWeek, week.index);
+            next[week.id][absentProfessional.id] = {
+              absentId: absentProfessional.id,
+              assigneeId: chosen.id,
+              manual: false,
+              updatedAt: nowIso()
+            };
+            load[chosen.id] = (load[chosen.id] || 0) + 1;
+            weekLoad[chosen.id] = (weekLoad[chosen.id] || 0) + 1;
+            lastWeek[chosen.id] = week.index;
+          });
+        });
+
+        state.assignments = next;
+        if (updateTimestamp) state.lastGeneratedAt = nowIso();
+      }
+
+      function chooseAssignee(candidates, load, weekLoad, lastWeek, weekIndex) {
+        return candidates.slice().sort((a, b) => {
+          const scoreA = (load[a.id] || 0) * 100 + (weekLoad[a.id] || 0) * 18 + (lastWeek[a.id] === weekIndex - 1 ? 4 : 0);
+          const scoreB = (load[b.id] || 0) * 100 + (weekLoad[b.id] || 0) * 18 + (lastWeek[b.id] === weekIndex - 1 ? 4 : 0);
+          if (scoreA !== scoreB) return scoreA - scoreB;
+          return a.name.localeCompare(b.name, "es");
+        })[0];
+      }
+
+      function computeStats() {
+        const active = activeProfessionals();
+        const professionals = active.map((professional) => ({
+          id: professional.id,
+          name: professional.name,
+          schedule: professional.schedule,
+          presentWeeks: 0,
+          absentWeeks: 0,
+          assigned: 0,
+          expected: 0,
+          deviation: 0,
+          manual: 0
+        }));
+        const byId = new Map(professionals.map((row) => [row.id, row]));
+        const weekRows = [];
+        let totalAbsences = 0;
+        let totalAssigned = 0;
+        let uncovered = 0;
+        let manualAssignments = 0;
+
+        state.weeks.forEach((week) => {
+          const absent = active.filter((professional) => !isPresent(week.id, professional.id));
+          const present = active.filter((professional) => isPresent(week.id, professional.id));
+          const weekLoad = {};
+          totalAbsences += absent.length;
+          active.forEach((professional) => {
+            const row = byId.get(professional.id);
+            if (isPresent(week.id, professional.id)) row.presentWeeks += 1;
+            else row.absentWeeks += 1;
+          });
+          if (present.length) {
+            const share = absent.length / present.length;
+            present.forEach((professional) => {
+              byId.get(professional.id).expected += share;
+            });
+          }
+          absent.forEach((absentProfessional) => {
+            const assignment = getAssignment(week.id, absentProfessional.id);
+            if (assignment && assignment.assigneeId && byId.has(assignment.assigneeId)) {
+              const row = byId.get(assignment.assigneeId);
+              row.assigned += 1;
+              row.manual += assignment.manual ? 1 : 0;
+              totalAssigned += 1;
+              manualAssignments += assignment.manual ? 1 : 0;
+              weekLoad[assignment.assigneeId] = (weekLoad[assignment.assigneeId] || 0) + 1;
+            } else {
+              uncovered += 1;
+            }
+          });
+          weekRows.push({
+            label: week.label,
+            present: present.length,
+            absent: absent.length,
+            assigned: absent.length - absent.filter((professional) => {
+              const assignment = getAssignment(week.id, professional.id);
+              return !assignment || !assignment.assigneeId;
+            }).length,
+            uncovered: absent.filter((professional) => {
+              const assignment = getAssignment(week.id, professional.id);
+              return !assignment || !assignment.assigneeId;
+            }).length,
+            maxWeekLoad: Math.max(0, ...Object.values(weekLoad))
+          });
+        });
+
+        professionals.forEach((row) => {
+          row.deviation = row.assigned - row.expected;
+        });
+        professionals.sort((a, b) => b.assigned - a.assigned || a.name.localeCompare(b.name, "es"));
+
+        const loads = professionals.map((row) => row.assigned);
+        const mean = loads.length ? loads.reduce((sum, value) => sum + value, 0) / loads.length : 0;
+        const variance = loads.length ? loads.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / loads.length : 0;
+        const cv = mean ? Math.sqrt(variance) / mean : 0;
+        const spread = loads.length ? Math.max(...loads) - Math.min(...loads) : 0;
+
+        return {
+          professionals,
+          weeks: weekRows,
+          totalAbsences,
+          totalAssigned,
+          uncovered,
+          manualAssignments,
+          spread,
+          cv
+        };
+      }
+
+      function parseProfessionals(text) {
+        const lines = String(text || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+        if (!lines.length) return { rows: [], detected: [] };
+        const splitRows = lines.map(splitDelimitedLine);
+        const first = splitRows[0];
+        const header = detectHeader(first);
+        const hasHeader = header.hasHeader;
+        const indexes = hasHeader ? header.indexes : inferIndexes(first);
+        const dataRows = hasHeader ? splitRows.slice(1) : splitRows;
+        const rows = [];
+        dataRows.forEach((cells) => {
+          const name = cleanCell(cells[indexes.name]);
+          if (!name || isHeaderLike(name)) return;
+          rows.push({
+            name,
+            category: cleanCell(cells[indexes.category]) || "",
+            schedule: cleanCell(cells[indexes.schedule]) || ""
+          });
+        });
+        const detected = [];
+        if (indexes.name >= 0) detected.push("nombre");
+        if (indexes.category >= 0) detected.push("categoría");
+        if (indexes.schedule >= 0) detected.push("horario");
+        return { rows, detected };
+      }
+
+      function splitDelimitedLine(line) {
+        if (line.includes("\t")) return line.split("\t").map(cleanCell);
+        if (line.includes(";")) return line.split(";").map(cleanCell);
+        const multiSpace = line.split(/\s{2,}/).map(cleanCell);
+        if (multiSpace.length > 1) return multiSpace;
+        return [cleanCell(line)];
+      }
+
+      function detectHeader(cells) {
+        const normalized = cells.map(normalizeText);
+        const aliases = {
+          name: ["apellidos y nombre", "nombre", "nombre y apellidos", "profesional", "medico", "médico", "facultativo", "persona"],
+          category: ["categoria profesional", "categoría profesional", "categoria", "categoría", "especialidad", "puesto"],
+          schedule: ["horario", "turno", "jornada"]
+        };
+        const indexes = {
+          name: findAliasIndex(normalized, aliases.name),
+          category: findAliasIndex(normalized, aliases.category),
+          schedule: findAliasIndex(normalized, aliases.schedule)
+        };
+        return {
+          hasHeader: indexes.name >= 0 || indexes.category >= 0 || indexes.schedule >= 0,
+          indexes
+        };
+      }
+
+      function inferIndexes(cells) {
+        const indexes = { name: 0, category: -1, schedule: -1 };
+        if (cells.length >= 3) {
+          indexes.category = 1;
+          indexes.schedule = 2;
+        } else if (cells.length === 2) {
+          const second = normalizeText(cells[1]);
+          if (["mañana", "manana", "tarde", "mixto", "mixta", "noche"].some((word) => second.includes(normalizeText(word)))) {
+            indexes.schedule = 1;
+          } else {
+            indexes.category = 1;
+          }
+        }
+        return indexes;
+      }
+
+      function findAliasIndex(normalizedHeaders, aliases) {
+        const normalizedAliases = aliases.map(normalizeText);
+        return normalizedHeaders.findIndex((header) => normalizedAliases.some((alias) => header === alias || header.includes(alias)));
+      }
+
+      function isHeaderLike(value) {
+        const normalized = normalizeText(value);
+        return normalized === "apellidos y nombre" || normalized === "nombre" || normalized === "profesional";
+      }
+
+      function ensureAvailabilityShape() {
+        state.weeks.forEach((week) => {
+          if (!state.availability[week.id]) state.availability[week.id] = {};
+        });
+      }
+
+      function pruneAvailability() {
+        const weekIds = new Set(state.weeks.map((week) => week.id));
+        const professionalIds = new Set(state.professionals.map((professional) => professional.id));
+        Object.keys(state.availability).forEach((weekId) => {
+          if (!weekIds.has(weekId)) {
+            delete state.availability[weekId];
+            return;
+          }
+          Object.keys(state.availability[weekId]).forEach((professionalId) => {
+            if (!professionalIds.has(professionalId)) delete state.availability[weekId][professionalId];
+          });
+        });
+      }
+
+      function isPresent(weekId, professionalId) {
+        const professional = getProfessional(professionalId);
+        if (!professional || !professional.active) return false;
+        return !(state.availability[weekId] && state.availability[weekId][professionalId] === false);
+      }
+
+      function setPresent(weekId, professionalId, present) {
+        if (!state.availability[weekId]) state.availability[weekId] = {};
+        if (present) delete state.availability[weekId][professionalId];
+        else state.availability[weekId][professionalId] = false;
+      }
+
+      function getAssignment(weekId, absentId) {
+        return state.assignments && state.assignments[weekId] ? state.assignments[weekId][absentId] : null;
+      }
+
+      function activeProfessionals() {
+        return state.professionals.filter((professional) => professional.active);
+      }
+
+      function getProfessional(id) {
+        return state.professionals.find((professional) => professional.id === id);
+      }
+
+      function getWeek(id) {
+        return state.weeks.find((week) => week.id === id);
+      }
+
+      function findProfessionalByName(name) {
+        const normalized = normalizeText(name);
+        return state.professionals.find((professional) => normalizeText(professional.name) === normalized);
+      }
+
+      function makeUniqueProfessionalId(name) {
+        let id = makeId("p", name);
+        let counter = 2;
+        const used = new Set(state.professionals.map((professional) => professional.id));
+        while (used.has(id)) {
+          id = `${makeId("p", name)}_${counter}`;
+          counter += 1;
+        }
+        return id;
+      }
+
+      function pushLog(type, detail) {
+        state.changeLog.push({ at: nowIso(), type, detail });
+        if (state.changeLog.length > 500) state.changeLog = state.changeLog.slice(-500);
+      }
+
+      function exportJson() {
+        const payload = {
+          exportedAt: nowIso(),
+          app: "reparto-analiticas",
+          version: APP_VERSION,
+          state
+        };
+        const center = slugify(state.centerName || "centro");
+        downloadText(`reparto_analiticas_${center}.json`, JSON.stringify(payload, null, 2), "application/json;charset=utf-8");
+        showToast("Archivo JSON exportado.");
+      }
+
+      function importJson(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const imported = migrateState(JSON.parse(reader.result));
+            state = imported;
+            ensureAvailabilityShape();
+            recalculateAssignments(false);
+            pushLog("Importación", `Datos importados desde ${file.name}.`);
+            saveState(true);
+            renderAll();
+            switchView("inicio");
+          } catch (error) {
+            console.error(error);
+            showToast("No se pudo importar el JSON.");
+          } finally {
+            event.target.value = "";
+          }
+        };
+        reader.readAsText(file, "utf-8");
+      }
+
+      function makeAssignmentsTsv() {
+        const rows = [["Semana inicio", "Semana fin", "Semana", "Profesional ausente", "Revisa analíticas", "Modo", "Aviso"]];
+        const active = activeProfessionals();
+        state.weeks.forEach((week) => {
+          const absent = active.filter((professional) => !isPresent(week.id, professional.id)).sort(byName);
+          absent.forEach((absentProfessional) => {
+            const assignment = getAssignment(week.id, absentProfessional.id);
+            const assignee = assignment && assignment.assigneeId ? getProfessional(assignment.assigneeId) : null;
+            rows.push([
+              week.start,
+              week.end,
+              week.label,
+              absentProfessional.name,
+              assignee ? assignee.name : "",
+              assignment && assignment.manual ? "Manual" : "Automático",
+              assignee ? "" : "Sin cobertura"
+            ]);
+          });
+        });
+        return toTsv(rows);
+      }
+
+      function makeAssignmentsCsv() {
+        const rows = [["Semana inicio", "Semana fin", "Semana", "Profesional ausente", "Revisa analíticas", "Modo", "Aviso"]];
+        const active = activeProfessionals();
+        state.weeks.forEach((week) => {
+          const absent = active.filter((professional) => !isPresent(week.id, professional.id)).sort(byName);
+          absent.forEach((absentProfessional) => {
+            const assignment = getAssignment(week.id, absentProfessional.id);
+            const assignee = assignment && assignment.assigneeId ? getProfessional(assignment.assigneeId) : null;
+            rows.push([
+              week.start,
+              week.end,
+              week.label,
+              absentProfessional.name,
+              assignee ? assignee.name : "",
+              assignment && assignment.manual ? "Manual" : "Automático",
+              assignee ? "" : "Sin cobertura"
+            ]);
+          });
+        });
+        return toCsv(rows);
+      }
+
+      function makeStatsTsv() {
+        const stats = computeStats();
+        const rows = [["Profesional", "Horario", "Semanas presente", "Semanas ausente", "Asignadas", "Carga esperada", "Desviación", "Manuales"]];
+        stats.professionals.forEach((row) => {
+          rows.push([row.name, row.schedule || "", row.presentWeeks, row.absentWeeks, row.assigned, row.expected.toFixed(2), row.deviation.toFixed(2), row.manual]);
+        });
+        rows.push([]);
+        rows.push(["Semana", "Presentes", "Ausentes", "Asignadas", "Sin cobertura", "Máx. carga semanal"]);
+        stats.weeks.forEach((row) => {
+          rows.push([row.label, row.present, row.absent, row.assigned, row.uncovered, row.maxWeekLoad]);
+        });
+        return toTsv(rows);
+      }
+
+      function makeAvailabilityTsv() {
+        const rows = [["Profesional", "Categoría", "Horario", ...state.weeks.map((week) => week.label)]];
+        state.professionals.forEach((professional) => {
+          rows.push([
+            professional.name,
+            professional.category || "",
+            professional.schedule || "",
+            ...state.weeks.map((week) => professional.active ? (isPresent(week.id, professional.id) ? "Presente" : "Ausente") : "Inactivo")
+          ]);
+        });
+        return toTsv(rows);
+      }
+
+      function makeProfessionalsTsv() {
+        const rows = [["Nombre", "Categoría", "Horario", "Activo"]];
+        state.professionals.forEach((professional) => {
+          rows.push([professional.name, professional.category || "", professional.schedule || "", professional.active ? "Sí" : "No"]);
+        });
+        return toTsv(rows);
+      }
+
+      function toTsv(rows) {
+        return rows.map((row) => row.map((cell) => String(cell == null ? "" : cell).replace(/\t/g, " ").replace(/\r?\n/g, " ")).join("\t")).join("\n");
+      }
+
+      function toCsv(rows) {
+        return rows.map((row) => row.map((cell) => {
+          const value = String(cell == null ? "" : cell).replace(/\r?\n/g, " ");
+          return `"${value.replace(/"/g, '""')}"`;
+        }).join(",")).join("\n");
+      }
+
+      async function copyText(text, message) {
+        if (!text.trim()) {
+          showToast("No hay datos para copiar.");
+          return;
+        }
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            textarea.style.left = "-9999px";
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+          }
+          showToast(message);
+        } catch (error) {
+          console.error(error);
+          showToast("No se pudo copiar. Descarga o selecciona manualmente.");
+        }
+      }
+
+      function downloadText(filename, text, type) {
+        const blob = new Blob([text], { type });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+
+      function parseDate(value) {
+        if (!value) return null;
+        const date = new Date(value + "T00:00:00");
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+
+      function toIsoDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      function getMonday(date) {
+        const result = new Date(date);
+        const day = (result.getDay() + 6) % 7;
+        result.setDate(result.getDate() - day);
+        return result;
+      }
+
+      function getSunday(date) {
+        return addDays(getMonday(date), 6);
+      }
+
+      function addDays(date, days) {
+        const result = new Date(date);
+        result.setDate(result.getDate() + days);
+        return result;
+      }
+
+      function makeWeekLabel(start, end) {
+        return `${formatDate(start)} - ${formatDate(end)}`;
+      }
+
+      function shortWeekLabel(week) {
+        return `${formatShortDate(week.start)}\n${formatShortDate(week.end)}`;
+      }
+
+      function formatDate(value) {
+        const date = parseDate(value);
+        if (!date) return "";
+        return date.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
+      }
+
+      function formatShortDate(value) {
+        const date = parseDate(value);
+        if (!date) return "";
+        return date.toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
+      }
+
+      function formatDateTime(value) {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "";
+        return date.toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" });
+      }
+
+      function formatSigned(value) {
+        if (Math.abs(value) < 0.05) return "0.0";
+        return `${value > 0 ? "+" : ""}${value.toFixed(1)}`;
+      }
+
+      function nowIso() {
+        return new Date().toISOString();
+      }
+
+      function cleanCell(value) {
+        return String(value == null ? "" : value).replace(/\u00a0/g, " ").trim();
+      }
+
+      function normalizeText(value) {
+        return cleanCell(value)
+          .toLocaleLowerCase("es-ES")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
+      }
+
+      function slugify(value) {
+        return normalizeText(value).replace(/\s+/g, "-") || "sin-nombre";
+      }
+
+      function makeId(prefix, value) {
+        return `${prefix}_${slugify(value)}_${hashString(String(value)).slice(0, 5)}`;
+      }
+
+      function hashString(value) {
+        let hash = 0;
+        for (let index = 0; index < value.length; index += 1) {
+          hash = ((hash << 5) - hash) + value.charCodeAt(index);
+          hash |= 0;
+        }
+        return Math.abs(hash).toString(36);
+      }
+
+      function byName(a, b) {
+        return a.name.localeCompare(b.name, "es");
+      }
+
+      function escapeHtml(value) {
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function escapeAttr(value) {
+        return escapeHtml(value).replace(/`/g, "&#096;");
+      }
+
+      function showToast(message) {
+        const toast = $("#toast");
+        clearTimeout(toastTimer);
+        toast.textContent = message;
+        toast.classList.add("show");
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
+      }
+    })();
+  </script>
+</body>
+
+</html>
