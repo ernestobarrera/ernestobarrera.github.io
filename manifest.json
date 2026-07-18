@@ -1,7 +1,7 @@
 {
-    "name": "MedCheck - Herramienta Clínica",
+    "name": "MedCheck - Información de medicamentos",
     "short_name": "MedCheck",
-    "description": "Herramienta clínica de medicamentos para médicos de familia. Verificación de seguridad, equivalencias y alertas.",
+    "description": "Agrega información oficial de medicamentos (CIMA/AEMPS, Nomenclátor SNS, BIFIMED) para médicos de familia: fichas, equivalencias, financiación y alertas.",
     "start_url": "/medcheck.html",
     "scope": "/medcheck.html",
     "display": "standalone",
@@ -41,9 +41,9 @@
             ]
         },
         {
-            "name": "Analizar seguridad",
-            "short_name": "Seguridad",
-            "url": "/medcheck.html?view=safety",
+            "name": "Buscar por indicación",
+            "short_name": "Indicaciones",
+            "url": "/medcheck.html?view=indications",
             "icons": [
                 {
                     "src": "assets/icons/medcheck-icon-192.png",
