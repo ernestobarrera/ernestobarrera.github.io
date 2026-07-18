@@ -5542,7 +5542,8 @@ class MedCheckApp {
         container.innerHTML = `
             <div class="equiv-summary">
                 <p class="text-muted mb-sm">
-                    <i class="fas fa-flask"></i> Principio activo: <strong class="text-primary">${principioActivo}</strong>
+                    <i class="fas fa-flask"></i> Principio activo:
+                    <button type="button" class="equiv-pa-link" onclick="app.searchByPA('${this._escapeHtml(principioActivo).replace(/'/g, "\\'")}')" title="Ver todas las presentaciones de este principio activo en el buscador">${this._escapeHtml(principioActivo)} <i class="fas fa-arrow-up-right-from-square"></i></button>
                     ${ntiFlag ? '<span class="badge badge-nti" title="Índice Terapéutico Estrecho"><i class="fas fa-exclamation-triangle"></i> NTI</span>' : ''}
                 </p>
                 <p class="text-muted mb-md">
@@ -7879,15 +7880,28 @@ ${materialesPlaceholder}
     }
 
     renderModalSafetyTab(med, safetyReport) {
-        const checks = safetyReport ? safetyReport.checks : [];
+        const allChecks = safetyReport ? safetyReport.checks : [];
+        // H17: las secciones que CIMA no devuelve ('unknown') se agrupan en una nota
+        // compacta al pie en vez de tarjetas completas — menos ruido, mismo aviso honesto.
+        const checks = allChecks.filter(c => c.status !== 'unknown');
+        const unknownChecks = allChecks.filter(c => c.status === 'unknown');
+        const unknownNote = unknownChecks.length ? `
+    <div class="safety-unknown-note">
+        <i class="fas fa-question-circle"></i>
+        Sin sección recuperable en CIMA para: ${unknownChecks.map(c => `${c.label}${c.section ? ` (${c.section})` : ''}`).join(' · ')} — verificar la ficha técnica completa desde Documentos.
+    </div>` : '';
 
-        if (checks.length === 0) {
+        if (allChecks.length === 0) {
             return `
     <div class="empty-state">
                      <i class="fas fa-check-circle text-success" style="font-size: 2rem; margin-bottom: 1rem;"></i>
                     <p class="text-muted">No se detectaron alertas de seguridad para el contexto actual.</p>
                 </div>
     `;
+        }
+
+        if (checks.length === 0) {
+            return `<div class="safety-panel">${unknownNote}</div>`;
         }
 
         return `
@@ -7929,6 +7943,7 @@ ${materialesPlaceholder}
                     </div>`;
         }).join('')
             }
+            ${unknownNote}
             </div>
     `;
     }
@@ -10572,10 +10587,17 @@ ${materialesPlaceholder}
         // Group results
         const groups = this.groupResultsByField(filteredResults, this.groupingState.groupBy);
 
-        // Build breadcrumb
-        const matchInfoInline = data.matchedIndication
-            ? `<span class="match-label">${data.matchedIndication.label}</span>
-               <span class="match-atc">${data.matchedIndication.atc}</span>`
+        // Build breadcrumb (H18: transparencia de la selección — qué ATC se consultan
+        // y, si hubo filtro 4.1, cuántos candidatos superaron la verificación en ficha)
+        const mi = data.matchedIndication;
+        const miAtcList = mi ? (Array.isArray(mi.atc) ? mi.atc : [mi.atc]).join(' · ') : '';
+        const miFs = mi?.filterSummary;
+        const miFilterNote = miFs
+            ? ` <span class="match-filter" title="Precisión: de ${miFs.candidates} candidatos por grupo ATC se muestran los ${miFs.matched} cuya sección 4.1 (indicaciones) recoge este uso">filtro 4.1: ${miFs.matched} de ${miFs.candidates}</span>`
+            : '';
+        const matchInfoInline = mi
+            ? `<span class="match-label">${mi.label}</span>
+               <span class="match-atc" title="Grupos ATC consultados para esta indicación">${miAtcList}</span>${miFilterNote}`
             : '';
         const currentBreadcrumb = this.lastATCBreadcrumb || [];
         const breadcrumbHtml = this.renderResultsBreadcrumb(currentBreadcrumb, matchInfoInline);

@@ -4942,6 +4942,51 @@ body {
     border-radius: var(--radius-sm);
 }
 
+/* H18: transparencia del filtro 4.1 en el breadcrumb de Indicaciones */
+.match-filter {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    background: var(--bg-dark);
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--border-hover);
+    cursor: help;
+}
+
+/* H17: nota compacta de secciones FT no recuperables (pestaña Seguridad del modal) */
+.safety-unknown-note {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    margin-top: 0.75rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--border-default);
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+/* H13: el principio activo de Equivalencias es un salto visible al buscador */
+.equiv-pa-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+}
+
+.equiv-pa-link:hover {
+    text-decoration-style: solid;
+}
+
+.equiv-pa-link .fa-arrow-up-right-from-square {
+    font-size: 0.7em;
+    opacity: 0.7;
+}
+
 /* Autocomplete Dropdown */
 .autocomplete-dropdown {
     position: absolute;
