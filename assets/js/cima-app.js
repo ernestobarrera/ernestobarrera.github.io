@@ -442,6 +442,12 @@ class MedCheckApp {
             document.body.style.overflow = 'hidden'; // Prevent scrolling
         } else {
             modal.classList.add('hidden');
+            // Con la aceptación legal persistida, el flujo del botón «Aceptar» no vuelve
+            // a ejecutarse: re-evaluar aquí la guía es lo que permite que un
+            // GUIDE_SEEN_KEY re-versionado se muestre a los usuarios existentes.
+            if (!this.hasSeenGuide()) {
+                setTimeout(() => this.startGuide(), 600);
+            }
         }
 
         btn.addEventListener('click', () => {
@@ -633,6 +639,9 @@ class MedCheckApp {
     }
 
     async loadView(viewName, updateURL = true) {
+        // Vista legacy 'safety' retirada (la seguridad por contexto vive en la pestaña
+        // Seguridad de la ficha); enlaces y shortcuts antiguos aterrizan en el buscador.
+        if (viewName === 'safety') viewName = 'search';
         this.currentView = viewName;
         window._mcCurrentView = MedCheckApp._VIEW_ANALYTICS_MAP[viewName] || viewName;
         this.content.innerHTML = '<div class="loading-spinner"></div>';
@@ -646,7 +655,6 @@ class MedCheckApp {
             switch (viewName) {
                 case 'search': this.renderSearch(); break;
                 case 'indications': this.renderIndications(); break;
-                case 'safety': this.renderSafetyChecker(); break;
                 case 'combo':
                 case 'interactions':
                 case 'adverse': this.renderCombination(); break;
