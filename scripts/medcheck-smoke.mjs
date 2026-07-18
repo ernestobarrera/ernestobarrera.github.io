@@ -48,7 +48,9 @@ function extractVersions(html) {
 
 // 1. Página en producción + sincronía de versiones con el repo local
 try {
-    const { status, body } = await get(SITE, { asJson: false });
+    // Query única anti-caché: el CDN de GitHub Pages sirve el HTML con max-age=600,
+    // así que sin esto el smoke puede dar un falso «push pendiente» hasta 10 min tras desplegar.
+    const { status, body } = await get(`${SITE}?smoke=${Date.now()}`, { asJson: false });
     if (status !== 200) {
         report('FALLO', 'Página en producción', `HTTP ${status}`);
     } else {
