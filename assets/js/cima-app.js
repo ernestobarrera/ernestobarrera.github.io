@@ -364,7 +364,7 @@ class MedCheckApp {
         ];
 
         // Guide state
-        this.GUIDE_SEEN_KEY = 'medcheck_guide_seen_v20260622a';
+        this.GUIDE_SEEN_KEY = 'medcheck_guide_seen_v20260718a';
         this.guideActive = false;
         this.guideStep = 0;
         this.guideTour = 'core';
@@ -13615,6 +13615,16 @@ ${materialesPlaceholder}
                             <p>Las pestañas profundas cargan de forma diferida para no bloquear la apertura inicial.</p>
                         `,
                     },
+                    {
+                        target: '#tab-consult.active',
+                        title: 'Consultar IA (documental)',
+                        icon: 'fa-robot',
+                        action: { type: 'modalTab', tab: 'consult' },
+                        body: `
+                            <p>Consultar IA compone la pregunta por ti: marcas aspectos (monitorización, eficacia, seguridad, comparación, dosis…) y MedCheck construye un <span class="guide-highlight">prompt documental</span> para resolverlo en una IA externa o en la fuente primaria.</p>
+                            <p>MedCheck no devuelve la respuesta: prepara la consulta y la valoración final sigue siendo clínica.</p>
+                        `,
+                    },
                 ],
             },
             profile: {
@@ -13782,6 +13792,15 @@ ${materialesPlaceholder}
                             <p>También puedes partir de una categoría clínica y descender, para recorrer el abanico autorizado en un área sin saber de antemano qué fármaco buscas.</p>
                         `,
                     },
+                    {
+                        target: '#open-indication-catalog',
+                        title: 'Ver catálogo completo',
+                        icon: 'fa-book-open',
+                        body: `
+                            <p>Bajo los accesos rápidos, <span class="guide-highlight">«Ver catálogo completo»</span> abre el índice de todas las indicaciones del diccionario, agrupadas por área clínica y con filtro de texto en vivo.</p>
+                            <p>Se genera desde la ontología en cada apertura: nunca se queda desactualizado.</p>
+                        `,
+                    },
                 ],
             },
             combo: {
@@ -13813,6 +13832,7 @@ ${materialesPlaceholder}
                         icon: 'fa-magnifying-glass-chart',
                         body: `
                             <p>MedCheck no dictamina la combinación: construye el <span class="guide-highlight">prompt</span> y la búsqueda en PubMed para que la resuelvas en una IA externa (Perplexity, ChatGPT, tu GPT de PubMed) o en la fuente primaria.</p>
+                            <p>«Mapa de la lista» genera además un mapa documental de la combinación (grupos ATC, duplicidades por grupo, monitorización) como pregunta a las fuentes.</p>
                             <p>Reúne la pregunta y la evidencia en un solo lugar; la valoración final es clínica.</p>
                         `,
                     },
