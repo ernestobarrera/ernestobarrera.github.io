@@ -364,7 +364,7 @@ class MedCheckApp {
         ];
 
         // Guide state
-        this.GUIDE_SEEN_KEY = 'medcheck_guide_seen_v20260718a';
+        this.GUIDE_SEEN_KEY = 'medcheck_guide_seen_v20260718b';
         this.guideActive = false;
         this.guideStep = 0;
         this.guideTour = 'core';
@@ -13513,8 +13513,18 @@ ${materialesPlaceholder}
                         `,
                     },
                     {
+                        target: '#tab-consult.active',
+                        title: '5. Preparar la consulta a IA',
+                        icon: 'fa-robot',
+                        action: { type: 'modalTab', tab: 'consult' },
+                        body: `
+                            <p>La pestaña <span class="guide-highlight">Consultar IA</span> compone la pregunta por ti: marcas aspectos (monitorización, eficacia, seguridad, dosis…) y MedCheck construye el prompt documental para resolverlo en una IA externa o en la fuente primaria.</p>
+                            <p>MedCheck no devuelve la respuesta: prepara la consulta y la valoración final sigue siendo clínica.</p>
+                        `,
+                    },
+                    {
                         target: '.modal-fav-btn',
-                        title: '5. Guardar lo relevante',
+                        title: '6. Guardar lo relevante',
                         icon: 'fa-star',
                         body: `
                             <p>La estrella guarda el medicamento ya enriquecido para que después pueda agruparse por ATC, principio activo, indicación o especialidad.</p>
@@ -13523,7 +13533,7 @@ ${materialesPlaceholder}
                     },
                     {
                         target: '.profile-subnav',
-                        title: '6. Revisar la colección',
+                        title: '7. Revisar la colección',
                         icon: 'fa-table-columns',
                         action: { type: 'profileSection', section: 'favorites' },
                         body: `
