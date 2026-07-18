@@ -33,7 +33,9 @@ const args = process.argv.slice(2).filter(a => a !== '--dry');
 const dry = process.argv.includes('--dry');
 const keys = args.includes('all') ? Object.keys(TARGETS) : args;
 
-const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+// Fecha local (no UTC): de madrugada en Madrid, toISOString() daría el día anterior.
+const now = new Date();
+const today = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
 
 function nextVersion(current) {
     if (!current?.startsWith(today)) return `${today}a`;

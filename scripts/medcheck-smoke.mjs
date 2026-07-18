@@ -89,11 +89,17 @@ try {
     report('FALLO', 'BIFIMED /meta', e.message);
 }
 
-// 4. Farmacogenómica en KV
+// 4. Farmacogenómica en KV (frescura: ETL diario + margen)
 try {
     const { status, body } = await get(`${WORKER}/pharmacogenomics/meta`, { headers: NO_TRACK });
-    if (status === 200) report('OK', 'PGx /meta', JSON.stringify(body).slice(0, 120));
-    else report('FALLO', 'PGx /meta', `HTTP ${status}`);
+    if (status !== 200) {
+        report('FALLO', 'PGx /meta', `HTTP ${status}`);
+    } else {
+        const age = (Date.now() - new Date(body.generated_at)) / 86400000;
+        const detail = `nomenclátor=${body.list_prescription_date}, ${body.medicamentos_con_biomarcador} medicamentos`;
+        if (!body.generated_at || age > 7) report('AVISO', 'PGx envejecido (>7 días; revisar cron etl-biomarkers)', detail);
+        else report('OK', 'PGx en KV', detail);
+    }
 } catch (e) {
     report('FALLO', 'PGx /meta', e.message);
 }
