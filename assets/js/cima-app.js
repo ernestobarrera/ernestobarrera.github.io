@@ -644,6 +644,11 @@ class MedCheckApp {
         if (viewName === 'safety') viewName = 'search';
         this.currentView = viewName;
         window._mcCurrentView = MedCheckApp._VIEW_ANALYTICS_MAP[viewName] || viewName;
+        // Sincroniza aquí la pestaña activa de navegación: antes cada caller lo hacía a
+        // mano y rutas como navigateToATCFromModal dejaban marcada la pestaña anterior.
+        const navView = (viewName === 'interactions' || viewName === 'adverse') ? 'combo' : viewName;
+        document.querySelectorAll('.nav-tab').forEach(t =>
+            t.classList.toggle('active', t.dataset.view === navView));
         this.content.innerHTML = '<div class="loading-spinner"></div>';
 
         // Update URL unless this is a popstate navigation or explicitly disabled
@@ -10593,11 +10598,14 @@ ${materialesPlaceholder}
         const miAtcList = mi ? (Array.isArray(mi.atc) ? mi.atc : [mi.atc]).join(' · ') : '';
         const miFs = mi?.filterSummary;
         const miFilterNote = miFs
-            ? ` <span class="match-filter" title="Precisión: de ${miFs.candidates} candidatos por grupo ATC se muestran los ${miFs.matched} cuya sección 4.1 (indicaciones) recoge este uso">filtro 4.1: ${miFs.matched} de ${miFs.candidates}</span>`
+            ? ` <span class="match-filter" title="Esta indicación lleva criba adicional por ficha técnica: de ${miFs.candidates} candidatos por grupo ATC se muestran los ${miFs.matched} cuya sección 4.1 (indicaciones autorizadas) recoge este uso. Solo algunas indicaciones sensibles llevan esta criba.">verificados en ficha (4.1): ${miFs.matched} de ${miFs.candidates}</span>`
             : '';
+        const miAtcTitle = miFs
+            ? 'Grupos ATC consultados para esta indicación'
+            : 'Grupos ATC consultados — mapeo orientativo por clase terapéutica, sin criba por ficha técnica';
         const matchInfoInline = mi
             ? `<span class="match-label">${mi.label}</span>
-               <span class="match-atc" title="Grupos ATC consultados para esta indicación">${miAtcList}</span>${miFilterNote}`
+               <span class="match-atc" title="${miAtcTitle}">${miAtcList}</span>${miFilterNote}`
             : '';
         const currentBreadcrumb = this.lastATCBreadcrumb || [];
         const breadcrumbHtml = this.renderResultsBreadcrumb(currentBreadcrumb, matchInfoInline);
