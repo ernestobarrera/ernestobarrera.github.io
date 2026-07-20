@@ -1,5 +1,5 @@
 {
-  "version": "2026-07-02",
+  "version": "2026-07-20",
   "generatedBy": "medcheck-audit-ontology --update-baseline",
   "_doc": "Memoria de GAPS de reconciliacion ya revisados. status: 'accepted' = revisado, fuera de alcance o falso positivo, NO bloquea el gate; 'curated' = ya cubierto por el ATC/filtro; 'review' = pendiente de decision humana, BLOQUEA. Un GAP nuevo no listado aqui bloquea la publicacion hasta curarlo o registrarlo. Regenerar/anadir nuevos: node scripts/medcheck-audit-ontology.mjs --update-baseline --terms=\"<indicacion>\".",
   "terms": {
@@ -105,6 +105,661 @@
           "status": "accepted",
           "nombre": "AMICACINA BRAUN 500 MG/2ML SOLUCIÓN INYECTABLE",
           "reason": "Falso positivo: amikacina (antibiótico); la 4.1 menciona 'obesidad' para el ajuste de dosis por volumen de distribución, no como indicación."
+        }
+      }
+    },
+    "insuficiencia cardiaca": {
+      "anchor": "insuficiencia cardiaca",
+      "gaps": {
+        "23850": {
+          "status": "review",
+          "nombre": "DIGOXINA TEOFARMA 0,25 mg COMPRIMIDOS",
+          "reason": ""
+        },
+        "50560": {
+          "status": "review",
+          "nombre": "LANIRAPID 0,1 mg COMPRIMIDOS",
+          "reason": ""
+        },
+        "50891": {
+          "status": "accepted",
+          "nombre": "MANIDON 80 mg COMPRIMIDOS CON CUBIERTA PELICULAR",
+          "reason": "Verapamilo (C08DA01): indicado para angina/HTA/profilaxis de TSV. Sin indicacion de insuficiencia cardiaca en su 4.1; consistente con que los calcioantagonistas no-dihidropiridinicos suelen contraindicarse en IC-FEVIr. Ya cubierto en \"fibrilacion auricular\" (C08D, control de frecuencia), que es su uso real relacionado."
+        },
+        "53434": {
+          "status": "accepted",
+          "nombre": "MANIDON RETARD 120 mg COMPRIMIDOS DE LIBERACION PROLONGADA",
+          "reason": "Verapamilo (C08DA01): indicado para angina/HTA/profilaxis de TSV. Sin indicacion de insuficiencia cardiaca en su 4.1; consistente con que los calcioantagonistas no-dihidropiridinicos suelen contraindicarse en IC-FEVIr. Ya cubierto en \"fibrilacion auricular\" (C08D, control de frecuencia), que es su uso real relacionado."
+        },
+        "58369": {
+          "status": "accepted",
+          "nombre": "MANIDON HTA 240 mg COMPRIMIDOS DE LIBERACION PROLONGADA",
+          "reason": "Verapamilo (C08DA01): indicado para angina/HTA/profilaxis de TSV. Sin indicacion de insuficiencia cardiaca en su 4.1; consistente con que los calcioantagonistas no-dihidropiridinicos suelen contraindicarse en IC-FEVIr. Ya cubierto en \"fibrilacion auricular\" (C08D, control de frecuencia), que es su uso real relacionado."
+        },
+        "58502": {
+          "status": "accepted",
+          "nombre": "CLEXANE 2.000 UI (20 mg)/0,2 ml SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "58503": {
+          "status": "accepted",
+          "nombre": "CLEXANE 4.000 UI (40 mg)/ 0,4 ml SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "58849": {
+          "status": "review",
+          "nombre": "COROTROPE 1 mg/ml SOLUCIÓN INYECTABLE",
+          "reason": ""
+        },
+        "60724": {
+          "status": "accepted",
+          "nombre": "MANIDON RETARD 180 mg COMPRIMIDOS DE LIBERACION PROLONGADA",
+          "reason": "Verapamilo (C08DA01): indicado para angina/HTA/profilaxis de TSV. Sin indicacion de insuficiencia cardiaca en su 4.1; consistente con que los calcioantagonistas no-dihidropiridinicos suelen contraindicarse en IC-FEVIr. Ya cubierto en \"fibrilacion auricular\" (C08D, control de frecuencia), que es su uso real relacionado."
+        },
+        "62470": {
+          "status": "accepted",
+          "nombre": "CLEXANE 6.000 UI (60 mg)/ 0,6 ml SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "62471": {
+          "status": "accepted",
+          "nombre": "CLEXANE 8.000 UI (80 mg)/ 0,8 ml SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "62472": {
+          "status": "accepted",
+          "nombre": "CLEXANE 10.000 UI (100 mg)/ 1 ml SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "63000": {
+          "status": "accepted",
+          "nombre": "CLEXANE 15.000 UI (150 mg)/ 1 ml SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "63002": {
+          "status": "accepted",
+          "nombre": "CLEXANE 12.000 UI (120 mg)/ 0,8 ml SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "64154": {
+          "status": "review",
+          "nombre": "SIMDAX 2,5 mg/ml CONCENTRADO PARA SOLUCION PARA PERFUSION",
+          "reason": ""
+        },
+        "68722": {
+          "status": "accepted",
+          "nombre": "ADREVIEW 74 MBq/ml SOLUCION INYECTABLE",
+          "reason": "Radiofarmaco de uso diagnostico (V09IX01, gammagrafia con iobenguano/MIBG), no es un tratamiento. Fuera de alcance para una entrada de indicacion terapeutica."
+        },
+        "82490": {
+          "status": "accepted",
+          "nombre": "ENOXAPARINA ROVI 10.000 UI (100 MG)/1 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "82491": {
+          "status": "accepted",
+          "nombre": "ENOXAPARINA ROVI 15.000 UI (150 MG)/1 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "82492": {
+          "status": "accepted",
+          "nombre": "ENOXAPARINA ROVI 12.000 UI (120 MG)/0,8 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "82493": {
+          "status": "accepted",
+          "nombre": "ENOXAPARINA ROVI 8.000 UI (80 MG)/0,8 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "82494": {
+          "status": "accepted",
+          "nombre": "ENOXAPARINA ROVI 6.000 UI (60 MG)/0,6 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "82495": {
+          "status": "accepted",
+          "nombre": "ENOXAPARINA ROVI 4.000 UI (40 MG)/0,4 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "82496": {
+          "status": "accepted",
+          "nombre": "ENOXAPARINA ROVI 2.000 UI (20 MG)/0,2 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "83288": {
+          "status": "accepted",
+          "nombre": "HEPAXANE 10.000 UI (100 MG)/1 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "83289": {
+          "status": "accepted",
+          "nombre": "HEPAXANE 15.000 UI (150 MG)/1 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "83290": {
+          "status": "accepted",
+          "nombre": "HEPAXANE 12.000 UI (120 MG)/0,8 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "83291": {
+          "status": "accepted",
+          "nombre": "HEPAXANE 6.000 UI (60 MG)/0,6 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "83292": {
+          "status": "accepted",
+          "nombre": "HEPAXANE 4.000 UI (40 MG)/0,4 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "83293": {
+          "status": "accepted",
+          "nombre": "HEPAXANE 2.000 UI (20 MG)/0,2 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "83294": {
+          "status": "accepted",
+          "nombre": "HEPAXANE 8.000 UI (80 MG)/0,8 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "84007": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN AUROVITAS 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "84008": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN AUROVITAS 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "84026": {
+          "status": "accepted",
+          "nombre": "DRONEDARONA TEVA 400 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Dronedarona (C01BD07): indicada para mantenimiento de ritmo sinusal en FA. La insuficiencia cardiaca aparece en su 4.1/4.3 como CONTRAINDICACION por disfuncion sistolica, no como indicacion de tratarla. Verificado en vivo (MULTAQ nreg 09591003)."
+        },
+        "84061": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN PENSA 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "84063": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN PENSA 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "84320": {
+          "status": "accepted",
+          "nombre": "DRONEDARONA ARISTO 400 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Dronedarona (C01BD07): indicada para mantenimiento de ritmo sinusal en FA. La insuficiencia cardiaca aparece en su 4.1/4.3 como CONTRAINDICACION por disfuncion sistolica, no como indicacion de tratarla. Verificado en vivo (MULTAQ nreg 09591003)."
+        },
+        "84424": {
+          "status": "accepted",
+          "nombre": "ENOXAPARINA LEDRAXEN 10.000 UI (100 MG)/1 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "84425": {
+          "status": "accepted",
+          "nombre": "ENOXAPARINA LEDRAXEN 8.000 UI (80 MG)/0,8 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "84426": {
+          "status": "accepted",
+          "nombre": "ENOXAPARINA LEDRAXEN 6.000 UI (60 MG)/0,6 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "84427": {
+          "status": "accepted",
+          "nombre": "ENOXAPARINA LEDRAXEN 4.000 UI (40 MG)/0,4 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "84428": {
+          "status": "accepted",
+          "nombre": "ENOXAPARINA LEDRAXEN 2.000 UI (20 MG)/0,2 ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "84479": {
+          "status": "accepted",
+          "nombre": "DRONEDARONA AUROVITAS SPAIN 400 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Dronedarona (C01BD07): indicada para mantenimiento de ritmo sinusal en FA. La insuficiencia cardiaca aparece en su 4.1/4.3 como CONTRAINDICACION por disfuncion sistolica, no como indicacion de tratarla. Verificado en vivo (MULTAQ nreg 09591003)."
+        },
+        "85048": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN KRKA 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "85049": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN KRKA 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "85109": {
+          "status": "accepted",
+          "nombre": "DRONEDARONA AUROVITAS 400 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Dronedarona (C01BD07): indicada para mantenimiento de ritmo sinusal en FA. La insuficiencia cardiaca aparece en su 4.1/4.3 como CONTRAINDICACION por disfuncion sistolica, no como indicacion de tratarla. Verificado en vivo (MULTAQ nreg 09591003)."
+        },
+        "85819": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN TEVA 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "85820": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN TEVA 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "85993": {
+          "status": "review",
+          "nombre": "LEVOSIMENDAN ALTAN 2,5 MG/ML CONCENTRADO PARA SOLUCION PARA PERFUSION EFG",
+          "reason": ""
+        },
+        "86407": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN SANDOZ 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "86414": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN SANDOZ 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "86667": {
+          "status": "review",
+          "nombre": "LEVOSIMENDAN ACCORD 2,5 MG/ML CONCENTRADO PARA SOLUCION PARA PERFUSION EFG",
+          "reason": ""
+        },
+        "87325": {
+          "status": "review",
+          "nombre": "LEVOSIMENDAN ZENTIVA 2,5 MG/ML CONCENTRADO PARA SOLUCION PARA PERFUSION EFG",
+          "reason": ""
+        },
+        "87460": {
+          "status": "accepted",
+          "nombre": "EPICAR 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "87461": {
+          "status": "accepted",
+          "nombre": "EPICAR 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "87471": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN ALTER 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "87472": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN ALTER 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88050": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN ALMUS 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88051": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN ALMUS 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88374": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN VIR 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88375": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN VIR 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88429": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN COMBIX 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88430": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN COMBIX 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88572": {
+          "status": "accepted",
+          "nombre": "RIXAVARTE 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88573": {
+          "status": "accepted",
+          "nombre": "RIXAVARTE 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88789": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN TARBIS 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88790": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN TARBIS 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88807": {
+          "status": "accepted",
+          "nombre": "BLOMENSY 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88808": {
+          "status": "accepted",
+          "nombre": "BLOMENSY 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88852": {
+          "status": "review",
+          "nombre": "LEVOSIMENDAN EVER PHARMA 2,5 MG/ML CONCENTRADO PARA SOLUCION PARA PERFUSION EFG",
+          "reason": ""
+        },
+        "88885": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN CINFA 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88886": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN CINFA 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88919": {
+          "status": "review",
+          "nombre": "LEVOSIMENDAN SALA 2,5 MG/ML CONCENTRADO PARA SOLUCION PARA PERFUSION EFG",
+          "reason": ""
+        },
+        "88968": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN KERN PHARMA 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "88969": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN KERN PHARMA 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "89274": {
+          "status": "accepted",
+          "nombre": "RIVAXA 20 MG COMPRIMIDOS RECUBIERTOS CON PELÍCULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "89276": {
+          "status": "accepted",
+          "nombre": "RIVAXA 15 MG COMPRIMIDOS RECUBIERTOS CON PELÍCULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "89321": {
+          "status": "accepted",
+          "nombre": "RIVAROXABÁN NORMON 15 MG COMPRIMIDOS RECUBIERTOS CON PELÍCULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "89322": {
+          "status": "accepted",
+          "nombre": "RIVAROXABÁN NORMON 20 MG COMPRIMIDOS RECUBIERTOS CON PELÍCULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "89712": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN CINFA 15 MG CAPSULAS DURAS EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "89713": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN CINFA 20 MG CAPSULAS DURAS EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "90457": {
+          "status": "accepted",
+          "nombre": "PLABELUS 15 MG CAPSULAS DURAS EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "90458": {
+          "status": "accepted",
+          "nombre": "PLABELUS 20 MG CAPSULAS DURAS EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "90564": {
+          "status": "accepted",
+          "nombre": "DABIGATRAN ETEXILATO ALTER GENERICOS 150 MG CAPSULAS DURAS EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "90566": {
+          "status": "accepted",
+          "nombre": "DABIGATRAN ETEXILATO ALTER GENERICOS 110 MG CAPSULAS DURAS EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "90693": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN VIVANTA 15 MG COMPRIMIDOS RECUBIERTOS CON PELÍCULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "90694": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN VIVANTA 20 MG COMPRIMIDOS RECUBIERTOS CON PELÍCULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "11691002": {
+          "status": "accepted",
+          "nombre": "ELIQUIS 2,5 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "11691003": {
+          "status": "accepted",
+          "nombre": "ELIQUIS 2,5 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "11691005": {
+          "status": "accepted",
+          "nombre": "ELIQUIS 2,5 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "111691009": {
+          "status": "accepted",
+          "nombre": "ELIQUIS 5 MG COMPRIMIDO RECUBIERTO CON PELICULA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "111691010": {
+          "status": "accepted",
+          "nombre": "ELIQUIS 5 MG COMPRIMIDO RECUBIERTO CON PELICULA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "111691014": {
+          "status": "accepted",
+          "nombre": "ELIQUIS 5 MG COMPRIMIDO RECUBIERTO CON PELICULA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "115993001": {
+          "status": "accepted",
+          "nombre": "LIXIANA 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "115993005": {
+          "status": "accepted",
+          "nombre": "LIXIANA 30 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "115993015": {
+          "status": "accepted",
+          "nombre": "LIXIANA 30 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "115993018": {
+          "status": "accepted",
+          "nombre": "LIXIANA 60 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "115993028": {
+          "status": "accepted",
+          "nombre": "LIXIANA 60 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "1161132001": {
+          "status": "accepted",
+          "nombre": "INHIXA 2.000 UI (20 MG)/0,2 ML SOLUCION INYECTABLE",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "1161132003": {
+          "status": "accepted",
+          "nombre": "INHIXA 4.000 UI (40 MG)/0,4 ML SOLUCION INYECTABLE",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "1161132005": {
+          "status": "accepted",
+          "nombre": "INHIXA 6.000 UI (60 MG)/0,6 ML SOLUCION INYECTABLE",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "1161132007": {
+          "status": "accepted",
+          "nombre": "INHIXA 8.000 UI (80 MG)/0,8 ML SOLUCION INYECTABLE",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "1161132009": {
+          "status": "accepted",
+          "nombre": "INHIXA 10.000 UI (100 MG)/1 ML SOLUCION INYECTABLE",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "1161132069": {
+          "status": "accepted",
+          "nombre": "INHIXA 12.000 UI (120 MG)/0,8 ML SOLUCION INYECTABLE",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "1161132070": {
+          "status": "accepted",
+          "nombre": "INHIXA 15.000 UI (150 MG)/1 ML SOLUCION INYECTABLE",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "1211561001": {
+          "status": "review",
+          "nombre": "VERQUVO 2,5 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
+          "reason": ""
+        },
+        "1211561012": {
+          "status": "review",
+          "nombre": "VERQUVO 5 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
+          "reason": ""
+        },
+        "1211561023": {
+          "status": "review",
+          "nombre": "VERQUVO 10 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
+          "reason": ""
+        },
+        "1211588033": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN VIATRIS 15 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "1211588047": {
+          "status": "accepted",
+          "nombre": "RIVAROXABAN VIATRIS 20 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "1231769008": {
+          "status": "accepted",
+          "nombre": "DABIGATRAN ETEXILATO TEVA 110 MG CAPSULAS DURAS EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "1231769020": {
+          "status": "accepted",
+          "nombre": "DABIGATRAN ETEXILATO TEVA 150 MG CAPSULAS DURAS EFG",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "08472016": {
+          "status": "accepted",
+          "nombre": "XARELTO 15 mg COMPRIMIDOS RECUBIERTOS CON PELICULA (100 COMPRIMIDOS)",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "08472012": {
+          "status": "accepted",
+          "nombre": "XARELTO 15 mg COMPRIMIDOS RECUBIERTOS CON PELICULA (28 COMPRIMIDOS)",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "08472013": {
+          "status": "accepted",
+          "nombre": "XARELTO 15 mg COMPRIMIDOS RECUBIERTOS CON PELICULA (42 COMPRIMIDOS)",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "08472021": {
+          "status": "accepted",
+          "nombre": "XARELTO 20 mg COMPRIMIDOS RECUBIERTOS CON PELICULA (100 COMPRIMIDOS)",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "08472018": {
+          "status": "accepted",
+          "nombre": "XARELTO 20 mg COMPRIMIDOS RECUBIERTOS CON PELICULA (28 COMPRIMIDOS)",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "02206006": {
+          "status": "accepted",
+          "nombre": "ARIXTRA 1,5 MG/0,3 ML SOLUCION INYECTABLE, JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "02206003": {
+          "status": "accepted",
+          "nombre": "ARIXTRA 2,5 MG/0,5 ML SOLUCION INYECTABLE, JERINGA PRECARGADA",
+          "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
+        },
+        "09591003": {
+          "status": "accepted",
+          "nombre": "MULTAQ 400 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
+          "reason": "Dronedarona (C01BD07): indicada para mantenimiento de ritmo sinusal en FA. La insuficiencia cardiaca aparece en su 4.1/4.3 como CONTRAINDICACION por disfuncion sistolica, no como indicacion de tratarla. Verificado en vivo (MULTAQ nreg 09591003)."
+        }
+      }
+    },
+    "fibrilación auricular": {
+      "anchor": "auricular",
+      "gaps": {
+        "36189": {
+          "status": "accepted",
+          "nombre": "ATEPODIN 100 mg POLVO Y DISOLVENTE PARA SOLUCION INYECTABLE",
+          "reason": "Adenosina (C01EB10): indicacion real es reversion de taquicardia paroxistica supraventricular (TPSV, incl. WPW), arritmia distinta de la fibrilacion auricular. Coincidia con el ancla \"auricular\" por mencion incidental (diagnostico diferencial), no por indicacion de tratar la FA. Verificado en vivo contra su 4.1 (Adenocor nreg 60375)."
+        },
+        "60375": {
+          "status": "accepted",
+          "nombre": "ADENOCOR 6 mg/2 ml SOLUCION INYECTABLE",
+          "reason": "Adenosina (C01EB10): indicacion real es reversion de taquicardia paroxistica supraventricular (TPSV, incl. WPW), arritmia distinta de la fibrilacion auricular. Coincidia con el ancla \"auricular\" por mencion incidental (diagnostico diferencial), no por indicacion de tratar la FA. Verificado en vivo contra su 4.1 (Adenocor nreg 60375)."
+        },
+        "81604": {
+          "status": "accepted",
+          "nombre": "ADENOSINA KABI 3 MG/ML SOLUCION INYECTABLE EN JERINGA PRECARGADA",
+          "reason": "Adenosina (C01EB10): indicacion real es reversion de taquicardia paroxistica supraventricular (TPSV, incl. WPW), arritmia distinta de la fibrilacion auricular. Coincidia con el ancla \"auricular\" por mencion incidental (diagnostico diferencial), no por indicacion de tratar la FA. Verificado en vivo contra su 4.1 (Adenocor nreg 60375)."
+        },
+        "86371": {
+          "status": "accepted",
+          "nombre": "ADENOSINA HIKMA 6 MG/2ML SOLUCION INYECTABLE EFG",
+          "reason": "Adenosina (C01EB10): indicacion real es reversion de taquicardia paroxistica supraventricular (TPSV, incl. WPW), arritmia distinta de la fibrilacion auricular. Coincidia con el ancla \"auricular\" por mencion incidental (diagnostico diferencial), no por indicacion de tratar la FA. Verificado en vivo contra su 4.1 (Adenocor nreg 60375)."
+        }
+      }
+    },
+    "depresión": {
+      "anchor": "depresivo",
+      "gaps": {
+        "74757": {
+          "status": "accepted",
+          "nombre": "ATROLAK PROLONG 300 MG COMPRIMIDOS DE LIBERACION PROLONGADA EFG",
+          "reason": "Quetiapina (mismo principio activo que las presentaciones ya cubiertas por N05AH04): estas presentaciones concretas tienen en CIMA un ATC incompleto (solo \"N05A\"/\"N05AH\", sin bajar al nivel 5 N05AH04 que si tienen el resto de presentaciones de quetiapina). Dato incompleto de origen en CIMA, no fallo de curacion de la ontologia — misma sustancia, misma indicacion real de deposicion adyuvante/bipolar ya verificada."
+        },
+        "74758": {
+          "status": "accepted",
+          "nombre": "ATROLAK PROLONG 400MG COMPRIMIDOS DE LIBERACION PROLONGADA EFG",
+          "reason": "Quetiapina (mismo principio activo que las presentaciones ya cubiertas por N05AH04): estas presentaciones concretas tienen en CIMA un ATC incompleto (solo \"N05A\"/\"N05AH\", sin bajar al nivel 5 N05AH04 que si tienen el resto de presentaciones de quetiapina). Dato incompleto de origen en CIMA, no fallo de curacion de la ontologia — misma sustancia, misma indicacion real de deposicion adyuvante/bipolar ya verificada."
+        },
+        "75501": {
+          "status": "accepted",
+          "nombre": "QUETIAPINA CINFA 200 mg COMPRIMIDOS DE LIBERACION PROLONGADA EFG",
+          "reason": "Quetiapina (mismo principio activo que las presentaciones ya cubiertas por N05AH04): estas presentaciones concretas tienen en CIMA un ATC incompleto (solo \"N05A\"/\"N05AH\", sin bajar al nivel 5 N05AH04 que si tienen el resto de presentaciones de quetiapina). Dato incompleto de origen en CIMA, no fallo de curacion de la ontologia — misma sustancia, misma indicacion real de deposicion adyuvante/bipolar ya verificada."
+        },
+        "75502": {
+          "status": "accepted",
+          "nombre": "QUETIAPINA CINFA 300 mg COMPRIMIDOS DE LIBERACION PROLONGADA EFG",
+          "reason": "Quetiapina (mismo principio activo que las presentaciones ya cubiertas por N05AH04): estas presentaciones concretas tienen en CIMA un ATC incompleto (solo \"N05A\"/\"N05AH\", sin bajar al nivel 5 N05AH04 que si tienen el resto de presentaciones de quetiapina). Dato incompleto de origen en CIMA, no fallo de curacion de la ontologia — misma sustancia, misma indicacion real de deposicion adyuvante/bipolar ya verificada."
+        },
+        "75503": {
+          "status": "accepted",
+          "nombre": "QUETIAPINA CINFA 400 mg COMPRIMIDOS DE LIBERACION PROLONGADA EFG",
+          "reason": "Quetiapina (mismo principio activo que las presentaciones ya cubiertas por N05AH04): estas presentaciones concretas tienen en CIMA un ATC incompleto (solo \"N05A\"/\"N05AH\", sin bajar al nivel 5 N05AH04 que si tienen el resto de presentaciones de quetiapina). Dato incompleto de origen en CIMA, no fallo de curacion de la ontologia — misma sustancia, misma indicacion real de deposicion adyuvante/bipolar ya verificada."
         }
       }
     }

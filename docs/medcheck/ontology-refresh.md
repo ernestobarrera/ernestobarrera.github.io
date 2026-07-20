@@ -42,13 +42,28 @@ The live audit reports:
 
 ## Sensitivity/specificity: SmPC 4.1 is the source of truth, ATC is a proxy
 
-The mapping "indication -> ATC" is a fast proxy with two failure modes:
+The mapping "indication -> ATC" is a fast proxy with three failure modes:
 
 - **Sensitivity loss**: a molecule authorised for the indication is coded under a different ATC.
   Real case: *Zyntabac* (bupropion, smoking cessation) is coded **N06AX12 (antidepressant)** in
   CIMA, so `tabaquismo -> N07BA` alone missed it. Fix: add the molecule ATC (`N06AX12`) and let the
-  4.1 filter separate it from *Elontril* (same code, depression). See the `tabaquismo` entry.
+  4.1 filter separate it from *Elontril* (same code, depression). See the `tabaquismo` entry. Also
+  seen in `insuficiencia cardiaca` (missing digoxina/C01AA, vericiguat/C01DX22, levosimendan/C01CX08,
+  milrinona/C01CE02 — 2026-07-19) and `fibrilación auricular` (missing digoxina/verapamilo for rate
+  control).
 - **Specificity loss**: an ATC group is broader than the indication (oncology). Fix: `section41Filter`.
+- **Contextual mention (false positive from `--reconcile`, not from ATC)**: the anchor/text engine
+  finds the reconcile term in a drug's 4.1, but the drug is not actually indicated to *treat* that
+  condition — the term appears as a **risk-factor criterion for a different indication** (e.g.
+  apixaban/Eliquis mentions "insuficiencia cardiaca" as a CHA2DS2-VASc-style eligibility criterion for
+  stroke prevention in AF, not as a heart-failure indication) or as a **contraindication/warning**
+  (dronedarona/Multaq and verapamilo/Manidon mention "insuficiencia cardiaca" in 4.3/4.4 because
+  they're contraindicated or cautioned in it, not because they treat it). Distinguish by reading the
+  `excerptAround` snippet the tool prints for each GAP group (or the ficha directly): an indication
+  reads like "está indicado para el tratamiento de…"; a risk-factor or contraindication mention reads
+  like "…con historia de…" or "no debe administrarse en pacientes con…". Discovered 2026-07-19 while
+  curating `insuficiencia cardiaca` (97 anticoagulant "gaps", all false positives) — see
+  `reconcile-baseline.json` for the full worked example and reasons.
 
 The legal ground truth for "authorised for X" is **ficha tecnica section 4.1**, which CIMA exposes and
 lets you full-text search (`POST /buscarEnFichaTecnica`). Use ATC for recall, 4.1 for precision.
@@ -73,6 +88,22 @@ For each entry it compares the **ATC set** (what MedCheck returns today) against
 By default it only reconciles entries that carry curated phrasing (`section41Filter.includeAny` or the
 optional `reconcileTerms` field); `--terms` forces any entry. Treat a non-empty, unexplained GAP list
 as a release blocker until each gap is curated (add ATC + filter) or dismissed as a false positive.
+
+**A disproportionate GAP count (hundreds, not tens) is itself a signal — check the data layer before
+curating.** On 2026-07-19, reconciling three new anchors returned 430 GAPS instead of a plausible dozen.
+Root cause was not clinical: CIMA caps `/medicamentos` responses at 200 items and silently ignores a
+larger `tamanioPagina`, and `searchByATC`/the auditor's ATC fetch computed page count from the
+*requested* size, so `Math.ceil(400/500)=1` skipped the pagination loop entirely — any ATC group over
+200 marketed products (33 of 203 codes in this ontology, 63 of 168 indications) was silently truncated
+to its first 200. Fixed in `CimaAPI.searchMedicamentosAll` (paginates by the *returned* page size, used
+by `searchByATC`, Equivalencias and Alternativas de Suministro) and mirrored in this auditor's
+`searchAtc`. If a future `--reconcile` run again returns an implausibly large GAP count, suspect the
+data layer (a CIMA endpoint change, a new truncation point) before assuming the ontology regressed.
+
+**GAPS are grouped by active substance (`vtm.nombre`), not by pack**, with a short 4.1 excerpt around
+the match when running in anchor mode — a 119-pack GAP list is usually 10-15 substances. Read the
+excerpt first: it is normally enough to classify without opening the ficha (see the "contextual
+mention" failure mode above for what a false positive looks like in the excerpt).
 
 ### Maturity / honesty for a public release
 
