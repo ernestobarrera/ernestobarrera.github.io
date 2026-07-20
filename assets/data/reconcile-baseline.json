@@ -112,14 +112,14 @@
       "anchor": "insuficiencia cardiaca",
       "gaps": {
         "23850": {
-          "status": "review",
+          "status": "curated",
           "nombre": "DIGOXINA TEOFARMA 0,25 mg COMPRIMIDOS",
-          "reason": ""
+          "reason": "Curado 2026-07-19: indicación real de IC, ya cubierta por el ATC C01AA05 (digoxina) añadido a la entrada. Verificado 2026-07-20: deja de aparecer como GAP en el reconcile."
         },
         "50560": {
-          "status": "review",
+          "status": "curated",
           "nombre": "LANIRAPID 0,1 mg COMPRIMIDOS",
-          "reason": ""
+          "reason": "Curado 2026-07-19: indicación real de IC, ya cubierta por el ATC C01AA08 (metildigoxina) añadido a la entrada. Verificado 2026-07-20: deja de aparecer como GAP en el reconcile."
         },
         "50891": {
           "status": "accepted",
@@ -147,9 +147,9 @@
           "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
         },
         "58849": {
-          "status": "review",
+          "status": "curated",
           "nombre": "COROTROPE 1 mg/ml SOLUCIÓN INYECTABLE",
-          "reason": ""
+          "reason": "Curado 2026-07-19: indicación real de IC, ya cubierta por el ATC C01CE02 (milrinona) añadido a la entrada. Verificado 2026-07-20: deja de aparecer como GAP en el reconcile."
         },
         "60724": {
           "status": "accepted",
@@ -182,9 +182,9 @@
           "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
         },
         "64154": {
-          "status": "review",
+          "status": "curated",
           "nombre": "SIMDAX 2,5 mg/ml CONCENTRADO PARA SOLUCION PARA PERFUSION",
-          "reason": ""
+          "reason": "Curado 2026-07-19: indicación real de IC, ya cubierta por el ATC C01CX08 (levosimendán) añadido a la entrada. Verificado 2026-07-20: deja de aparecer como GAP en el reconcile."
         },
         "68722": {
           "status": "accepted",
@@ -347,9 +347,9 @@
           "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
         },
         "85993": {
-          "status": "review",
+          "status": "curated",
           "nombre": "LEVOSIMENDAN ALTAN 2,5 MG/ML CONCENTRADO PARA SOLUCION PARA PERFUSION EFG",
-          "reason": ""
+          "reason": "Curado 2026-07-19: indicación real de IC, ya cubierta por el ATC C01CX08 (levosimendán) añadido a la entrada. Verificado 2026-07-20: deja de aparecer como GAP en el reconcile."
         },
         "86407": {
           "status": "accepted",
@@ -362,14 +362,14 @@
           "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
         },
         "86667": {
-          "status": "review",
+          "status": "curated",
           "nombre": "LEVOSIMENDAN ACCORD 2,5 MG/ML CONCENTRADO PARA SOLUCION PARA PERFUSION EFG",
-          "reason": ""
+          "reason": "Curado 2026-07-19: indicación real de IC, ya cubierta por el ATC C01CX08 (levosimendán) añadido a la entrada. Verificado 2026-07-20: deja de aparecer como GAP en el reconcile."
         },
         "87325": {
-          "status": "review",
+          "status": "curated",
           "nombre": "LEVOSIMENDAN ZENTIVA 2,5 MG/ML CONCENTRADO PARA SOLUCION PARA PERFUSION EFG",
-          "reason": ""
+          "reason": "Curado 2026-07-19: indicación real de IC, ya cubierta por el ATC C01CX08 (levosimendán) añadido a la entrada. Verificado 2026-07-20: deja de aparecer como GAP en el reconcile."
         },
         "87460": {
           "status": "accepted",
@@ -452,9 +452,9 @@
           "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
         },
         "88852": {
-          "status": "review",
+          "status": "curated",
           "nombre": "LEVOSIMENDAN EVER PHARMA 2,5 MG/ML CONCENTRADO PARA SOLUCION PARA PERFUSION EFG",
-          "reason": ""
+          "reason": "Curado 2026-07-19: indicación real de IC, ya cubierta por el ATC C01CX08 (levosimendán) añadido a la entrada. Verificado 2026-07-20: deja de aparecer como GAP en el reconcile."
         },
         "88885": {
           "status": "accepted",
@@ -467,9 +467,9 @@
           "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
         },
         "88919": {
-          "status": "review",
+          "status": "curated",
           "nombre": "LEVOSIMENDAN SALA 2,5 MG/ML CONCENTRADO PARA SOLUCION PARA PERFUSION EFG",
-          "reason": ""
+          "reason": "Curado 2026-07-19: indicación real de IC, ya cubierta por el ATC C01CX08 (levosimendán) añadido a la entrada. Verificado 2026-07-20: deja de aparecer como GAP en el reconcile."
         },
         "88968": {
           "status": "accepted",
@@ -632,19 +632,19 @@
           "reason": "Anticoagulante/antitrombotico (B01A): su 4.1 menciona la insuficiencia cardiaca como factor de riesgo/criterio dentro de la indicacion de prevencion de ictus en FA o tromboembolismo, no como indicacion de tratar la IC en si. Decision clinica del responsable 2026-07-19: en el contexto de la ICC sin arritmia no se piensa en anticoagulacion por este motivo."
         },
         "1211561001": {
-          "status": "review",
+          "status": "curated",
           "nombre": "VERQUVO 2,5 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
-          "reason": ""
+          "reason": "Curado 2026-07-19: indicación real de IC, ya cubierta por el ATC C01DX22 (vericiguat) añadido a la entrada. Verificado 2026-07-20: deja de aparecer como GAP en el reconcile."
         },
         "1211561012": {
-          "status": "review",
+          "status": "curated",
           "nombre": "VERQUVO 5 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
-          "reason": ""
+          "reason": "Curado 2026-07-19: indicación real de IC, ya cubierta por el ATC C01DX22 (vericiguat) añadido a la entrada. Verificado 2026-07-20: deja de aparecer como GAP en el reconcile."
         },
         "1211561023": {
-          "status": "review",
+          "status": "curated",
           "nombre": "VERQUVO 10 MG COMPRIMIDOS RECUBIERTOS CON PELICULA",
-          "reason": ""
+          "reason": "Curado 2026-07-19: indicación real de IC, ya cubierta por el ATC C01DX22 (vericiguat) añadido a la entrada. Verificado 2026-07-20: deja de aparecer como GAP en el reconcile."
         },
         "1211588033": {
           "status": "accepted",
@@ -736,6 +736,54 @@
     "depresión": {
       "anchor": "depresivo",
       "gaps": {
+        "39955": {
+          "status": "accepted",
+          "nombre": "CARBAMAZEPINA",
+          "vtm": "carbamazepina",
+          "reason": "Falso positivo para esta entrada por HOMONIMIA parcial: coincide en 'maníaco-depresiva' (profilaxis del trastorno bipolar), que es otra indicación y ya está cubierta por la entrada trastorno bipolar (N03). Revisado 2026-07-21."
+        },
+        "49796": {
+          "status": "accepted",
+          "nombre": "LORAZEPAM",
+          "vtm": "lorazepam",
+          "reason": "Falso positivo por MENCIÓN CONTEXTUAL: su 4.1 indica ansiedad asociada a insomnio y depresión — trata la ansiedad concomitante, no la depresión. No es antidepresivo. Revisado 2026-07-21."
+        },
+        "54276": {
+          "status": "accepted",
+          "nombre": "NALOXONA",
+          "vtm": "naloxona",
+          "reason": "Falso positivo por HOMONIMIA: su 4.1 dice 'depresión del SNC' y 'depresión respiratoria' (reversión de opiáceos), no depresión como trastorno del ánimo. Revisado 2026-07-21."
+        },
+        "56232": {
+          "status": "accepted",
+          "nombre": "TEGRETOL 400 mg COMPRIMIDOS",
+          "vtm": "carbamazepina",
+          "reason": "Falso positivo para esta entrada por HOMONIMIA parcial: coincide en 'maníaco depresiva' (profilaxis del trastorno bipolar), que es otra indicación y ya está cubierta por la entrada trastorno bipolar (N03). Revisado 2026-07-21."
+        },
+        "62250": {
+          "status": "accepted",
+          "nombre": "SPIRAXIN 200 mg COMPRIMIDOS RECUBIERTOS CON PELICULA",
+          "vtm": "rifaximina",
+          "reason": "Falso positivo por HOMONIMIA: el término aparece dentro de 'inmuno-depresión' como factor de riesgo del paciente, no como indicación. Revisado 2026-07-21."
+        },
+        "62620": {
+          "status": "accepted",
+          "nombre": "CARBAMAZEPINA NORMON 200 mg COMPRIMIDOS EFG",
+          "vtm": "carbamazepina",
+          "reason": "Falso positivo para esta entrada por HOMONIMIA parcial: coincide en 'maníaco-depresiva' (profilaxis del trastorno bipolar), que es otra indicación y ya está cubierta por la entrada trastorno bipolar (N03). Revisado 2026-07-21."
+        },
+        "62621": {
+          "status": "accepted",
+          "nombre": "CARBAMAZEPINA NORMON",
+          "vtm": "carbamazepina",
+          "reason": "Falso positivo para esta entrada por HOMONIMIA parcial: coincide en 'maníaco-depresiva' (profilaxis del trastorno bipolar), que es otra indicación y ya está cubierta por la entrada trastorno bipolar (N03). Revisado 2026-07-21."
+        },
+        "69533": {
+          "status": "accepted",
+          "nombre": "NALOXONA B. BRAUN 0,4 mg/ml SOLUCION INYECTABLE Y PARA PERFUSION",
+          "vtm": "naloxona",
+          "reason": "Falso positivo por HOMONIMIA: su 4.1 dice 'depresión del SNC' y 'depresión respiratoria' (reversión de opiáceos), no depresión como trastorno del ánimo. Revisado 2026-07-21."
+        },
         "74757": {
           "status": "accepted",
           "nombre": "ATROLAK PROLONG 300 MG COMPRIMIDOS DE LIBERACION PROLONGADA EFG",
@@ -760,6 +808,12 @@
           "status": "accepted",
           "nombre": "QUETIAPINA CINFA 400 mg COMPRIMIDOS DE LIBERACION PROLONGADA EFG",
           "reason": "Quetiapina (mismo principio activo que las presentaciones ya cubiertas por N05AH04): estas presentaciones concretas tienen en CIMA un ATC incompleto (solo \"N05A\"/\"N05AH\", sin bajar al nivel 5 N05AH04 que si tienen el resto de presentaciones de quetiapina). Dato incompleto de origen en CIMA, no fallo de curacion de la ontologia — misma sustancia, misma indicacion real de deposicion adyuvante/bipolar ya verificada."
+        },
+        "77785": {
+          "status": "accepted",
+          "nombre": "LORAZEPAM NORMON 5 MG COMPRIMIDOS EFG",
+          "vtm": "lorazepam",
+          "reason": "Falso positivo por MENCIÓN CONTEXTUAL: su 4.1 indica ansiedad asociada a insomnio y depresión — trata la ansiedad concomitante, no la depresión. No es antidepresivo. Revisado 2026-07-21."
         }
       }
     }
