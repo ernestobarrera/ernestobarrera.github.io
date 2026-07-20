@@ -386,9 +386,12 @@ async function writeBaseline(rows) {
   for (const row of rows) {
     const prev = next.terms[row.term]?.gaps || baselineEntryFor(row.term)?.gaps || {};
     const gaps = { ...prev };
-    for (const [nr, nombre] of row.gaps) {
-      if (!gaps[nr]) gaps[nr] = { status: 'review', nombre, reason: '' };
-      else if (!gaps[nr].nombre) gaps[nr].nombre = nombre;
+    for (const [nr, nombre, vtm] of row.gaps) {
+      if (!gaps[nr]) gaps[nr] = { status: 'review', nombre, vtm: vtm || undefined, reason: '' };
+      else {
+        if (!gaps[nr].nombre) gaps[nr].nombre = nombre;
+        if (!gaps[nr].vtm && vtm) gaps[nr].vtm = vtm;
+      }
     }
     next.terms[row.term] = { anchor: row.anchor || null, gaps };
   }
@@ -413,7 +416,7 @@ async function reconcileEntry(term, entry) {
   //    devuelve 0 server-side pese a estar en la 4.1 de los iSGLT2 -> el caso que motivó esto).
   //  - directo (retrocompat): sin ancla, cuenta con buscarEnFichaTecnica por cada fraseo.
   const { terms, source, anchor } = reconcileTermsFor(term, entry);
-  const txt = new Map(); // nregistro -> nombre
+  const txt = new Map(); // nregistro -> { nombre, vtm, excerpt }
   const perTerm = [];
   if (anchor) {
     let universo = [];
@@ -425,8 +428,13 @@ async function reconcileEntry(term, entry) {
     let matched = 0;
     for (const m of universo) {
       if (!m.nregistro) continue;
-      const text = normalize((await fetchSectionText(m.nregistro, '4.1')).replace(/<[^>]*>/g, ' '));
-      if (normalizedTerms.some(t => termInText(text, t))) { txt.set(m.nregistro, m.nombre); matched += 1; }
+      const rawText = (await fetchSectionText(m.nregistro, '4.1')).replace(/<[^>]*>/g, ' ');
+      const text = normalize(rawText);
+      const hitTerm = normalizedTerms.find(t => termInText(text, t));
+      if (hitTerm) {
+        txt.set(m.nregistro, { nombre: m.nombre, vtm: m.vtm?.nombre || m.nombre, excerpt: excerptAround(rawText, hitTerm) });
+        matched += 1;
+      }
     }
     perTerm.push(`verdad(${terms.join('|')})=${matched}`);
   } else {
@@ -439,10 +447,15 @@ async function reconcileEntry(term, entry) {
         continue;
       }
       perTerm.push(`${t}=${meds.length}`);
-      for (const m of meds) if (m.nregistro) txt.set(m.nregistro, m.nombre);
+      for (const m of meds) {
+        if (!m.nregistro) continue;
+        // Este modo (retrocompat, sin ancla) no descarga el texto completo de la 4.1
+        // (buscarEnFichaTecnica solo confirma la coincidencia server-side) — sin excerpt honesto.
+        txt.set(m.nregistro, { nombre: m.nombre, vtm: m.vtm?.nombre || m.nombre, excerpt: '' });
+      }
     }
   }
-  const gaps = [...txt.entries()].filter(([nr]) => !atcIds.has(nr));
+  const gaps = [...txt.entries()].map(([nr, v]) => [nr, v.nombre, v.vtm, v.excerpt]).filter(([nr]) => !atcIds.has(nr));
   const extra = atcMeds.filter(m => m.nregistro && !txt.has(m.nregistro)).length;
   // newGaps/knownGaps los rellena classifyGapsAgainstBaseline.
   return { term, source, anchor, atc: atcIds.size, ft: txt.size, perTerm, gaps, extra, newGaps: [], knownGaps: [] };
@@ -473,6 +486,20 @@ function termInText(text, term) {
   if (!term) return false;
   const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`(^|[^a-z0-9])${escaped}`).test(text);
+}
+
+// Extracto legible alrededor de la primera mencion del termino, para que un GAP se pueda
+// adjudicar (indicacion real vs. mencion incidental de contraindicacion/factor de riesgo,
+// ver ontology-refresh.md "modo de fallo: mencion contextual") sin abrir la ficha a mano.
+function excerptAround(rawText, term, radius = 90) {
+  if (!rawText || !term) return '';
+  const idx = normalize(rawText).indexOf(normalize(term));
+  if (idx < 0) return rawText.slice(0, radius * 2).replace(/\s+/g, ' ').trim();
+  const start = Math.max(0, idx - radius);
+  const end = Math.min(rawText.length, idx + term.length + radius);
+  const prefix = start > 0 ? '…' : '';
+  const suffix = end < rawText.length ? '…' : '';
+  return (prefix + rawText.slice(start, end) + suffix).replace(/\s+/g, ' ').trim();
 }
 
 async function fetchSectionText(nregistro, section) {
@@ -542,9 +569,25 @@ function printReport() {
       console.log(`- ${r.term} [${r.source} · ${mode}] ATC=${r.atc} 4.1=${r.ft} extra(ATC sin 4.1)=${r.extra}`);
       console.log(`    terms: ${r.perTerm.join(', ')}`);
       if (r.newGaps.length) {
-        console.log(`    GAPS NUEVOS (sin clasificar, BLOQUEAN) = ${r.newGaps.length}:`);
-        for (const [nr, nombre] of r.newGaps.slice(0, 20)) console.log(`      ! ${nombre} (nregistro ${nr})`);
-        if (r.newGaps.length > 20) console.log(`      ... (+${r.newGaps.length - 20} mas)`);
+        // Agrupar por principio activo (vtm): un GAP de 119 presentaciones suele ser
+        // 10-15 sustancias con muchas dosis/marcas cada una — la unidad de decision
+        // clinica es la sustancia, no el envase. Reduce el ruido visual ~80-90%.
+        const byVtm = new Map();
+        for (const [nr, nombre, vtm, excerpt] of r.newGaps) {
+          const key = vtm || nombre;
+          if (!byVtm.has(key)) byVtm.set(key, { count: 0, sample: nombre, nregs: [], excerpt });
+          const g = byVtm.get(key);
+          g.count += 1;
+          g.nregs.push(nr);
+        }
+        console.log(`    GAPS NUEVOS (sin clasificar, BLOQUEAN) = ${r.newGaps.length} presentaciones en ${byVtm.size} principios activos:`);
+        const groups = [...byVtm.entries()].sort((a, b) => b[1].count - a[1].count);
+        for (const [vtm, g] of groups.slice(0, 15)) {
+          const nregSample = g.nregs.slice(0, 3).join(',') + (g.nregs.length > 3 ? '…' : '');
+          console.log(`      ! ${vtm} (${g.count}x, p.ej. "${g.sample}", nregistro ${nregSample})`);
+          if (g.excerpt) console.log(`          4.1: "${g.excerpt}"`);
+        }
+        if (groups.length > 15) console.log(`      ... (+${groups.length - 15} principios activos mas)`);
       } else {
         console.log('    GAPS NUEVOS = 0');
       }

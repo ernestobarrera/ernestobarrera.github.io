@@ -5376,9 +5376,7 @@ class MedCheckApp {
 
             // Construir parámetros de búsqueda con los principios activos
             // Usar npactiv para filtrar por número exacto de principios activos (solución canónica de la API)
-            // tamanioPagina alto: traer todo el conjunto de equivalentes de una vez (no depender del
-            // tamaño de página por defecto de CIMA/proxy) para que el "Ver más" en cliente sea completo.
-            const searchParams = { comerc: 1, tamanioPagina: 250 };
+            const searchParams = { comerc: 1 };
 
             // Añadir todos los principios activos disponibles (la API soporta practiv1 y practiv2)
             if (principiosActivos[0]) searchParams.practiv1 = principiosActivos[0];
@@ -5392,9 +5390,12 @@ class MedCheckApp {
 
             console.log(`🔍 Buscando equivalentes con:`, searchParams);
 
-            // Buscar todos los medicamentos con esos principios activos y mismo número de PA
+            // Buscar TODOS los medicamentos con esos principios activos y mismo número de PA
+            // (searchMedicamentosAll pagina de verdad; un fetch suelto con tamanioPagina alto
+            // perdía en silencio genéricos de principios activos muy comercializados —
+            // omeprazol, ibuprofeno… — en cuanto superaban el tope real de CIMA, 200/página).
             // Petición derivada de la búsqueda inicial — no registrar como búsqueda aparte
-            const equivData = await this.api.searchMedicamentos(searchParams, noTrack);
+            const equivData = await this.api.searchMedicamentosAll(searchParams, { analyticsOptions: noTrack });
 
             if (!equivData.resultados || equivData.resultados.length === 0) {
                 const displayPactivos = principiosActivos.join(' + ');
@@ -9382,7 +9383,7 @@ ${materialesPlaceholder}
             `;
 
             // Build search parameters based on whether it's a combination or single ingredient
-            let searchParams = { comerc: 1, tamanioPagina: 100 };
+            let searchParams = { comerc: 1 };
 
             if (isCombination && principiosActivos.length >= 2) {
                 // For combinations, use practiv1 and practiv2 separately
@@ -9398,8 +9399,9 @@ ${materialesPlaceholder}
                 console.log(`🔍 Buscando monocomponente: practiv1=${pactivos}`);
             }
 
-            // Búsqueda de alternativas — follow-up derivado, no registrar
-            const results = await this.api.searchMedicamentos(searchParams, noTrack);
+            // Búsqueda de alternativas — searchMedicamentosAll pagina de verdad (ver nota en
+            // performEquivSearch); follow-up derivado, no registrar
+            const results = await this.api.searchMedicamentosAll(searchParams, { analyticsOptions: noTrack });
 
             if (!results.resultados || results.resultados.length === 0) {
                 this.modalBody.innerHTML = `

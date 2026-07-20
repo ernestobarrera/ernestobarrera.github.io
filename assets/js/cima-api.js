@@ -42,7 +42,7 @@ class CimaAPI {
      * Una sola vez; falla en abierto (si no carga, queda el dict vacío y la búsqueda cae al ATC-cache).
      * Ampliable: editar assets/data/clinical-ontology.json y subir el `?v=`.
      */
-    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260702a') {
+    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260720a') {
         if (this._clinicalOntologyLoaded) return CimaAPI.CLINICAL_DICTIONARY;
         if (this._clinicalOntologyLoading) return this._clinicalOntologyLoading;
         this._clinicalOntologyLoading = fetch(url, { cache: 'force-cache' })
@@ -199,6 +199,41 @@ class CimaAPI {
         });
 
         return this._request(`/medicamentos?${queryParams.toString()}`, options);
+    }
+
+    /**
+     * Trae TODOS los resultados de una búsqueda, paginando de verdad.
+     *
+     * CIMA capa sus respuestas en 200 elementos e IGNORA en silencio cualquier
+     * `tamanioPagina` mayor (eco: pides 500, te devuelve 200 y no avisa). Un fetch
+     * de una sola página que asuma "con tamanioPagina alto ya me llega todo" pierde
+     * resultados sin error visible en cuanto el conjunto real supera 200 — bug real
+     * encontrado en searchByATC (63/168 indicaciones de la ontología perdían más de
+     * la mitad de sus fármacos) y con el mismo patrón latente en Equivalencias y
+     * Alternativas de Suministro. Usar SIEMPRE este helper en vez de un fetch suelto
+     * con tamanioPagina>100 cuando se necesite el conjunto completo.
+     * @param {Object} params - Mismos params que searchMedicamentos (sin pagina/tamanioPagina)
+     * @param {Object} options - { analyticsOptions, maxPages } (maxPages default 10 = hasta 2000 resultados)
+     * @returns {Promise<{resultados: Array, totalFilas: number}>}
+     */
+    async searchMedicamentosAll(params, options = {}) {
+        const { analyticsOptions = {}, maxPages = 10 } = options;
+        const pageSize = 200; // tope real de CIMA, no un "máximo razonable" nuestro
+
+        const first = await this.searchMedicamentos({ ...params, tamanioPagina: pageSize, pagina: 1 }, analyticsOptions);
+        let allResults = [...(first?.resultados || [])];
+        const totalFilas = first?.totalFilas || allResults.length;
+        const actualPageSize = allResults.length || pageSize;
+
+        if (totalFilas > allResults.length) {
+            const totalPages = Math.min(Math.ceil(totalFilas / actualPageSize), maxPages);
+            for (let pagina = 2; pagina <= totalPages; pagina += 1) {
+                const page = await this.searchMedicamentos({ ...params, tamanioPagina: pageSize, pagina }, analyticsOptions);
+                if (page?.resultados?.length) allResults = allResults.concat(page.resultados);
+            }
+        }
+
+        return { resultados: allResults, totalFilas };
     }
 
     /**
@@ -668,62 +703,22 @@ class CimaAPI {
      */
     async searchByATC(atcCode, options = {}) {
         const upperCode = atcCode.toUpperCase();
-        const pageSize = 200; // Tope real de CIMA: pedir más se ignora (devuelve 200)
-        const maxPages = 10;  // Cortafuegos: 2.000 resultados por grupo ATC es más que de sobra
         const analyticsOptions = options.noTrack
             ? { headers: { 'X-MC-Autocomplete': '1' } }
             : {};
 
         console.log(`🔍 Buscando ATC ${upperCode}...`);
 
-        // Primera página para obtener totalFilas
-        const firstPageParams = {
+        const { resultados, totalFilas } = await this.searchMedicamentosAll({
             atc: upperCode,
-            comerc: options.comercializados !== false ? 1 : undefined,
-            tamanioPagina: pageSize,
-            pagina: 1
-        };
+            comerc: options.comercializados !== false ? 1 : undefined
+        }, { analyticsOptions });
 
-        const firstPage = await this.searchMedicamentos(firstPageParams, analyticsOptions);
+        console.log(`📥 Recuperados ${resultados.length} de ${totalFilas} resultados`);
 
-        if (!firstPage || !firstPage.resultados) {
+        let allResults = resultados;
+        if (allResults.length === 0) {
             return { resultados: [], totalFilas: 0 };
-        }
-
-        let allResults = [...firstPage.resultados];
-        const totalFilas = firstPage.totalFilas || allResults.length;
-
-        console.log(`📥 Página 1: ${allResults.length} de ${totalFilas} resultados`);
-
-        // Si hay más páginas, obtenerlas.
-        // CIMA CAPA el tamaño de página en 200 e IGNORA valores mayores (su respuesta
-        // devuelve tamanioPagina:200 aunque pidas 500). Calcular las páginas con el tamaño
-        // PEDIDO daba ceil(400/500)=1 y el bucle no se ejecutaba nunca: los grupos ATC de
-        // más de 200 comercializados perdían la mitad en silencio (B01A devolvía 200 de 400
-        // → Sintrom y los genéricos de dabigatrán no salían en "fibrilación auricular").
-        // Hay que paginar con el tamaño REAL devuelto.
-        const actualPageSize = allResults.length || pageSize;
-        if (totalFilas > allResults.length) {
-            const totalPages = Math.min(Math.ceil(totalFilas / actualPageSize), maxPages);
-            console.log(`📄 Paginando: ${totalPages} páginas totales...`);
-
-            for (let page = 2; page <= totalPages; page++) {
-                try {
-                    const pageParams = {
-                        atc: upperCode,
-                        comerc: options.comercializados !== false ? 1 : undefined,
-                        tamanioPagina: pageSize,
-                        pagina: page
-                    };
-                    const pageData = await this.searchMedicamentos(pageParams, analyticsOptions);
-                    if (pageData.resultados && pageData.resultados.length > 0) {
-                        allResults = allResults.concat(pageData.resultados);
-                        console.log(`📥 Página ${page}: +${pageData.resultados.length} (total: ${allResults.length})`);
-                    }
-                } catch (e) {
-                    console.warn(`Error en página ${page}:`, e);
-                }
-            }
         }
 
         // FILTRO ESTRICTO: solo medicamentos cuyo ATC COMIENCE con el código buscado
