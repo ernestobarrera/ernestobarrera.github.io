@@ -668,7 +668,8 @@ class CimaAPI {
      */
     async searchByATC(atcCode, options = {}) {
         const upperCode = atcCode.toUpperCase();
-        const pageSize = 500; // Máximo razonable para reducir llamadas
+        const pageSize = 200; // Tope real de CIMA: pedir más se ignora (devuelve 200)
+        const maxPages = 10;  // Cortafuegos: 2.000 resultados por grupo ATC es más que de sobra
         const analyticsOptions = options.noTrack
             ? { headers: { 'X-MC-Autocomplete': '1' } }
             : {};
@@ -694,9 +695,16 @@ class CimaAPI {
 
         console.log(`📥 Página 1: ${allResults.length} de ${totalFilas} resultados`);
 
-        // Si hay más páginas, obtenerlas
+        // Si hay más páginas, obtenerlas.
+        // CIMA CAPA el tamaño de página en 200 e IGNORA valores mayores (su respuesta
+        // devuelve tamanioPagina:200 aunque pidas 500). Calcular las páginas con el tamaño
+        // PEDIDO daba ceil(400/500)=1 y el bucle no se ejecutaba nunca: los grupos ATC de
+        // más de 200 comercializados perdían la mitad en silencio (B01A devolvía 200 de 400
+        // → Sintrom y los genéricos de dabigatrán no salían en "fibrilación auricular").
+        // Hay que paginar con el tamaño REAL devuelto.
+        const actualPageSize = allResults.length || pageSize;
         if (totalFilas > allResults.length) {
-            const totalPages = Math.ceil(totalFilas / pageSize);
+            const totalPages = Math.min(Math.ceil(totalFilas / actualPageSize), maxPages);
             console.log(`📄 Paginando: ${totalPages} páginas totales...`);
 
             for (let page = 2; page <= totalPages; page++) {

@@ -264,20 +264,24 @@ async function searchEntry(entry) {
 
 async function searchAtc(atc) {
   const upper = String(atc).toUpperCase();
+  // CIMA capa la pagina en 200 e ignora tamanioPagina mayores; paginar con el tamano
+  // PEDIDO (500) daba ceil(400/500)=1 y el conjunto ATC se quedaba a la mitad, generando
+  // GAPS falsos en masa (el reconcile los veia como agujeros de sensibilidad).
   const first = await fetchCima('/medicamentos', {
     atc: upper,
     comerc: '1',
-    tamanioPagina: '500',
+    tamanioPagina: '200',
     pagina: '1'
   });
   const items = [...(first?.resultados || [])];
   const total = first?.totalFilas || items.length;
-  const pages = Math.min(Math.ceil(total / 500), 4);
+  const actualPageSize = items.length || 200;
+  const pages = Math.min(Math.ceil(total / actualPageSize), 10);
   for (let pagina = 2; pagina <= pages; pagina += 1) {
     const page = await fetchCima('/medicamentos', {
       atc: upper,
       comerc: '1',
-      tamanioPagina: '500',
+      tamanioPagina: '200',
       pagina: String(pagina)
     });
     items.push(...(page?.resultados || []));
