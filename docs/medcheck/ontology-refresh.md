@@ -64,6 +64,65 @@ The mapping "indication -> ATC" is a fast proxy with three failure modes:
   like "…con historia de…" or "no debe administrarse en pacientes con…". Discovered 2026-07-19 while
   curating `insuficiencia cardiaca` (97 anticoagulant "gaps", all false positives) — see
   `reconcile-baseline.json` for the full worked example and reasons.
+- **Homonymy (false positive from `--reconcile`, distinct from the contextual mention above)**: the
+  term is present and correctly spelled, but belongs to a **different semantic field**. Unlike a
+  contextual mention — where the condition is real but plays another role (risk factor,
+  contraindication) — here the word simply means something else. Worked example (`depresión`,
+  2026-07-21): naloxona ("depresión del SNC", "depresión respiratoria"), rifaximina
+  ("inmuno-depresión" as a patient risk factor), carbamazepina ("maníaco-depresiva", which is bipolar
+  and belongs to another entry). Lorazepam was rejected in the same batch but as a *contextual*
+  mention, not homonymy ("ansiedad asociada a insomnio, depresión": it treats the comorbid anxiety).
+  The distinction matters when writing the baseline `reason`: homonymy will never become an
+  indication, whereas a contextual mention could, if the label is later extended.
+
+### Anchor recruitment is accent-literal — the anchor must be a UNION of spellings
+
+`POST /buscarEnFichaTecnica` matches **literally, including accents**. This splits the universe in a
+way that is invisible from the results:
+
+| anchor | marketed hits |
+|---|---|
+| `insuficiencia cardiaca` | 527 |
+| `insuficiencia cardíaca` | 64 (a **different**, largely disjoint set) |
+| `dolor neuropatico` | 0 |
+| `dolor neuropático` | 32 |
+| `hipertension arterial` | 0 |
+| `hipertensión arterial` | 123 |
+
+The verification half of anchor mode is *not* affected — it runs `normalize()` over the real 4.1 text
+and strips accents. **The blind spot is purely in recruitment**: a product whose 4.1 spells it
+"cardíaca" is never fetched, so it can never be checked. This is the same class of defect as the
+CIMA-200 pagination bug — silent under-recruitment, not a wrong answer.
+
+Therefore `reconcileAnchor` accepts an **array of spelling variants**, and the universe is the
+deduplicated union (a plain string still works, for retrocompatibility):
+
+```json
+"reconcileAnchor": ["insuficiencia cardiaca", "insuficiencia cardíaca"]
+```
+
+Found 2026-07-21. Re-anchoring the two published entries this way took `insuficiencia cardiaca` from
+527 to 575 products and surfaced **ivabradina** (C01EB17, guideline drug for chronic HFrEF) and
+**hidralazina** (C02DB02, with nitrates in refractory congestive HF); `depresión` went from 241 to 289
+and surfaced **moclobemida** (N06AG02 — the entry had no N06AG at all) and **sulpirida** (N05AL01).
+All four had been invisible since the anchors were introduced.
+
+**A zero-sized anchor universe is now a hard failure, not a clean pass.** An anchor that recruits
+nothing — bad accent, wrong phrasing, or a transient CIMA error — used to be swallowed by a `catch`
+and reported as `GAPS NUEVOS = 0`, which is indistinguishable from "verified clean". The auditor now
+marks the row `RECONCILIACION INVALIDA`, blocks the gate (exit 1), and refuses to persist that row to
+the baseline. When adding an anchor, probe it against CIMA first and confirm a plausible hit count.
+
+Two genuine zeros to keep in mind when curating: `infección urinaria` (0 even accented — the fichas say
+"infecciones del tracto urinario") and `fibromialgia` (0 — no marketed drug in Spain carries it as a
+4.1 indication). A zero can be real; it just must never be assumed.
+
+### The 4.1 search is paginated too — and truncates silently
+
+`buscarEnFichaTecnica` returns 100 per page. The page cap was 6 (600 products), silently dropping the
+rest: `hipercolesterolemia` alone returns 622. The cap is now `FT_MAX_PAGES = 30` and any truncation
+prints a loud `[AVISO]`. Same failure class as the two pagination bugs before it — when a count looks
+suspiciously round or a broad umbrella yields fewer gaps than expected, check the data layer first.
 
 The legal ground truth for "authorised for X" is **ficha tecnica section 4.1**, which CIMA exposes and
 lets you full-text search (`POST /buscarEnFichaTecnica`). Use ATC for recall, 4.1 for precision.

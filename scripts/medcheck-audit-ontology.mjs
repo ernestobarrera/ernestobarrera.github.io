@@ -8,6 +8,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 const ontologyPath = path.join(repoRoot, 'assets', 'data', 'clinical-ontology.json');
 const CIMA_BASE = 'https://cima.aemps.es/cima/rest';
+// Tope de paginas de /buscarEnFichaTecnica (100 por pagina). Se declara aqui arriba, junto al resto
+// de constantes de modulo, porque el bloque `await` de nivel superior corre ANTES que las
+// declaraciones de la mitad inferior del archivo (zona muerta temporal).
+const FT_MAX_PAGES = 30;
 
 const args = new Set(process.argv.slice(2));
 const live = args.has('--live');
@@ -162,6 +166,7 @@ if (live) {
 // como consejo) y depende de la fraseologia. Pensado para refresco periodico y gate pre-publicacion.
 let reconcileRows = [];
 let newGapCount = 0;
+let invalidReconcileCount = 0;
 const baseline = await loadBaseline();
 if (reconcile || updateBaseline) {
   if (typeof fetch !== 'function') {
@@ -178,15 +183,20 @@ if (reconcile || updateBaseline) {
     const row = await reconcileEntry(term, entry);
     classifyGapsAgainstBaseline(row);
     newGapCount += row.newGaps.length;
+    invalidReconcileCount += row.anchorErrors.length ? 1 : 0;
     reconcileRows.push(row);
   }
-  if (updateBaseline) await writeBaseline(reconcileRows);
+  // Solo se persisten las filas con universo valido: escribir el baseline desde una pasada ciega
+  // consolidaria un "sin GAPS" falso como si fuera revision humana.
+  if (updateBaseline) await writeBaseline(reconcileRows.filter(r => !r.anchorErrors.length));
 }
 
 printReport();
 // Gate pre-publicacion: un GAP NUEVO no clasificado en el baseline bloquea (como los problemas
 // estructurales). Se resuelve curando (ampliar ATC/filtro) o registrandolo en el baseline con motivo.
-if (problems.length > 0 || newGapCount > 0) process.exitCode = 1;
+// Una reconciliacion INVALIDA (ancla sin universo: error de red o fraseo) tambien bloquea: su "0
+// GAPS" no es una comprobacion superada, es una comprobacion que no se ha hecho.
+if (problems.length > 0 || newGapCount > 0 || invalidReconcileCount > 0) process.exitCode = 1;
 
 function readNumberArg(name, fallback) {
   const rawArg = process.argv.slice(2).find(arg => arg.startsWith(`${name}=`));
@@ -315,17 +325,35 @@ async function postCima(endpoint, params, body) {
 }
 
 // Busca medicamentos comercializados cuya seccion de ficha tecnica contiene `texto`.
+// OJO: el tope de paginas es una truncatura silenciosa de la MISMA clase que el bug de
+// /medicamentos (200): si totalFilas supera lo que traemos, el universo del ancla queda
+// recortado y el reconcile deja de ver GAPS reales sin avisar. Por eso el tope es alto y
+// cualquier truncatura se reporta en voz alta (p. ej. "hipercolesterolemia" = 622 filas).
+// FT_MAX_PAGES se define arriba con las constantes de modulo (ver nota sobre la zona muerta).
 async function buscarFichaTecnica(section, texto) {
   const body = JSON.stringify([{ seccion: section, texto, contiene: 1 }]);
   const first = await postCima('/buscarEnFichaTecnica', { comerc: '1', tamanioPagina: '100', pagina: '1' }, body);
   const out = [...(first?.resultados || [])];
   const total = first?.totalFilas || out.length;
-  const pages = Math.min(Math.ceil(total / 100), 6);
+  const needed = Math.ceil(total / 100);
+  const pages = Math.min(needed, FT_MAX_PAGES);
   for (let pagina = 2; pagina <= pages; pagina += 1) {
     const d = await postCima('/buscarEnFichaTecnica', { comerc: '1', tamanioPagina: '100', pagina: String(pagina) }, body);
     out.push(...(d?.resultados || []));
   }
+  if (needed > pages) {
+    console.warn(`[AVISO] "${texto}" en ${section}: ${total} filas y solo se traen ${pages * 100} — universo TRUNCADO, el reconcile puede perder GAPS. Acota el ancla o sube FT_MAX_PAGES.`);
+  }
   return out;
+}
+
+// Un ancla puede declararse como string (retrocompat) o como array de variantes de escritura.
+// Devuelve siempre array (o null), sin duplicados ni vacios.
+function normalizeAnchor(value) {
+  const list = (Array.isArray(value) ? value : [value])
+    .filter(v => typeof v === 'string' && v.trim())
+    .map(v => v.trim());
+  return list.length ? [...new Set(list)] : null;
 }
 
 // Fraseologia para la busqueda en 4.1: preferimos terminos curados especificos (reconcileTerms),
@@ -333,7 +361,10 @@ async function buscarFichaTecnica(section, texto) {
 function reconcileTermsFor(term, entry) {
   const f = entry.section41Filter || entry.sectionFilter;
   // El ancla (opcional) solo tiene sentido con fraseologia precisa que verificar sobre el texto real.
-  const anchor = typeof entry.reconcileAnchor === 'string' ? entry.reconcileAnchor : null;
+  // Admite VARIAS variantes de escritura (array): buscarEnFichaTecnica es literal con los acentos
+  // ("insuficiencia cardiaca"=527 vs "insuficiencia cardíaca"=64, conjuntos distintos), asi que el
+  // universo se recluta como UNION de variantes. Ver el modo de fallo 4 en ontology-refresh.md.
+  const anchor = normalizeAnchor(entry.reconcileAnchor);
   if (Array.isArray(entry.reconcileTerms) && entry.reconcileTerms.length) {
     return { terms: entry.reconcileTerms, source: 'reconcileTerms', anchor };
   }
@@ -418,12 +449,33 @@ async function reconcileEntry(term, entry) {
   const { terms, source, anchor } = reconcileTermsFor(term, entry);
   const txt = new Map(); // nregistro -> { nombre, vtm, excerpt }
   const perTerm = [];
+  const anchorErrors = [];
   if (anchor) {
-    let universo = [];
-    try {
-      universo = await buscarFichaTecnica('4.1', anchor);
-    } catch { universo = []; }
-    perTerm.push(`ancla "${anchor}"=${universo.length}`);
+    // Universo = UNION de las variantes del ancla, deduplicada por nregistro (una misma ficha
+    // puede caer en varias variantes; descargarla dos veces solo cuesta red).
+    const universoMap = new Map();
+    for (const variante of anchor) {
+      let parcial = [];
+      try {
+        parcial = await buscarFichaTecnica('4.1', variante);
+      } catch (error) {
+        // NO tragarse el error: un 429/500 transitorio dejaria el universo vacio y el reconcile
+        // informaria "0 GAPS" estando ciego, que es indistinguible de "todo correcto". Se marca
+        // la fila como invalida para que bloquee el gate.
+        anchorErrors.push(`ancla "${variante}": ${error.message}`);
+        continue;
+      }
+      const nuevos = parcial.filter(m => m.nregistro && !universoMap.has(m.nregistro)).length;
+      for (const m of parcial) if (m.nregistro) universoMap.set(m.nregistro, m);
+      perTerm.push(`ancla "${variante}"=${parcial.length}${anchor.length > 1 ? ` (+${nuevos} nuevos)` : ''}`);
+      // Un ancla que no recluta nada es casi siempre un fallo de escritura (acento/fraseo), no
+      // una ausencia clinica: sin universo, el reconcile diria "0 GAPS" estando ciego.
+      if (!parcial.length) {
+        anchorErrors.push(`ancla "${variante}": 0 productos reclutados (¿acento o fraseo?)`);
+      }
+    }
+    const universo = [...universoMap.values()];
+    if (anchor.length > 1) perTerm.push(`universo union=${universo.length}`);
     const normalizedTerms = terms.map(normalize);
     let matched = 0;
     for (const m of universo) {
@@ -458,7 +510,7 @@ async function reconcileEntry(term, entry) {
   const gaps = [...txt.entries()].map(([nr, v]) => [nr, v.nombre, v.vtm, v.excerpt]).filter(([nr]) => !atcIds.has(nr));
   const extra = atcMeds.filter(m => m.nregistro && !txt.has(m.nregistro)).length;
   // newGaps/knownGaps los rellena classifyGapsAgainstBaseline.
-  return { term, source, anchor, atc: atcIds.size, ft: txt.size, perTerm, gaps, extra, newGaps: [], knownGaps: [] };
+  return { term, source, anchor, atc: atcIds.size, ft: txt.size, perTerm, gaps, extra, anchorErrors, newGaps: [], knownGaps: [] };
 }
 
 async function countSectionMatches(meds, filter) {
@@ -568,6 +620,13 @@ function printReport() {
       const mode = r.anchor ? 'ancla+texto real' : 'buscarEnFichaTecnica';
       console.log(`- ${r.term} [${r.source} · ${mode}] ATC=${r.atc} 4.1=${r.ft} extra(ATC sin 4.1)=${r.extra}`);
       console.log(`    terms: ${r.perTerm.join(', ')}`);
+      if (r.anchorErrors.length) {
+        // No decir "0 GAPS" cuando no se ha podido mirar: distinguir "limpio" de "ciego".
+        console.log('    !! RECONCILIACION INVALIDA (universo del ancla vacio) — NO es un "sin GAPS":');
+        for (const e of r.anchorErrors) console.log(`       - ${e}`);
+        console.log('       Repite la pasada; si persiste, revisa acentos/fraseo del ancla contra CIMA.');
+        continue;
+      }
       if (r.newGaps.length) {
         // Agrupar por principio activo (vtm): un GAP de 119 presentaciones suele ser
         // 10-15 sustancias con muchas dosis/marcas cada una — la unidad de decision
