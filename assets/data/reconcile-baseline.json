@@ -21,6 +21,54 @@
           "nombre": "HIDROFEROL 0,1 mg/ml GOTAS ORALES EN SOLUCION",
           "reason": "Calcifediol: decisión clínica del responsable: FUERA de ERC. Su sitio es el déficit de vitamina D (cubierto por la entrada 'vitamina d', A11CC)."
         },
+        "58536": {
+          "status": "accepted",
+          "nombre": "FRAGMIN 2.500 UI/0,2 ml SOLUCION INYECTABLE EN JERINGAS PRECARGADAS",
+          "vtm": "dalteparina sodio",
+          "reason": "Falso positivo por MENCIÓN CONTEXTUAL: prevención de coágulos del circuito extracorpóreo en hemodiálisis — la ERC es el escenario, no la diana. Revisado 2026-07-21."
+        },
+        "58537": {
+          "status": "accepted",
+          "nombre": "FRAGMIN (dalteparina)",
+          "vtm": "dalteparina sodio",
+          "reason": "Falso positivo por MENCIÓN CONTEXTUAL: prevención de coágulos del circuito extracorpóreo en hemodiálisis — la ERC es el escenario, no la diana. Revisado 2026-07-21."
+        },
+        "62155": {
+          "status": "accepted",
+          "nombre": "FRAGMIN (dalteparina)",
+          "vtm": "dalteparina sodio",
+          "reason": "Falso positivo por MENCIÓN CONTEXTUAL: su 4.1 indica prevención de coágulos del sistema extracorpóreo durante la hemodiálisis en enfermos con IRC — la ERC es el escenario del procedimiento, no la diana terapéutica. Revisado 2026-07-21."
+        },
+        "62156": {
+          "status": "accepted",
+          "nombre": "FRAGMIN (dalteparina)",
+          "vtm": "dalteparina sodio",
+          "reason": "Falso positivo por MENCIÓN CONTEXTUAL: su 4.1 indica prevención de coágulos del sistema extracorpóreo durante la hemodiálisis en enfermos con IRC — la ERC es el escenario del procedimiento, no la diana terapéutica. Revisado 2026-07-21."
+        },
+        "62157": {
+          "status": "accepted",
+          "nombre": "FRAGMIN (dalteparina)",
+          "vtm": "dalteparina sodio",
+          "reason": "Falso positivo por MENCIÓN CONTEXTUAL: su 4.1 indica prevención de coágulos del sistema extracorpóreo durante la hemodiálisis en enfermos con IRC — la ERC es el escenario del procedimiento, no la diana terapéutica. Revisado 2026-07-21."
+        },
+        "62158": {
+          "status": "accepted",
+          "nombre": "FRAGMIN (dalteparina)",
+          "vtm": "dalteparina sodio",
+          "reason": "Falso positivo por MENCIÓN CONTEXTUAL: prevención de coágulos del circuito extracorpóreo en hemodiálisis — la ERC es el escenario, no la diana. Revisado 2026-07-21."
+        },
+        "62567": {
+          "status": "accepted",
+          "nombre": "FRAGMIN (dalteparina)",
+          "vtm": "dalteparina sodio",
+          "reason": "Falso positivo por MENCIÓN CONTEXTUAL: prevención de coágulos del circuito extracorpóreo en hemodiálisis — la ERC es el escenario, no la diana. Revisado 2026-07-21."
+        },
+        "62568": {
+          "status": "accepted",
+          "nombre": "FRAGMIN (dalteparina)",
+          "vtm": "dalteparina sodio",
+          "reason": "Falso positivo por MENCIÓN CONTEXTUAL: prevención de coágulos del circuito extracorpóreo en hemodiálisis — la ERC es el escenario, no la diana. Revisado 2026-07-21."
+        },
         "80095": {
           "status": "accepted",
           "nombre": "HIDROFEROL 0,266 MG CAPSULAS BLANDAS",
