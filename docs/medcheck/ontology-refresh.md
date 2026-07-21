@@ -211,6 +211,45 @@ Mark entries verified against 4.1 vs ATC-only heuristics, and never present an a
 authorised". Pending: surface a "lista orientativa, no exhaustiva" note in the UI for unverified
 entries before any public launch.
 
+## A synonym must have exactly one owner
+
+`findClinicalDictionaryMatches` scores an exact **term** match 100 and a **synonym** match 70, and
+`searchByIndication` takes `matches[0]`. `matches.sort()` compares scores only, so when two entries
+match the same query **by synonym**, they tie at 70 and the winner is whichever key comes first in
+`clinical-ontology.json`. Reordering the file — a purely cosmetic edit — would silently change which
+drug list a clinician sees.
+
+Collisions where one owner matches by *term* are harmless: 100 beats 70 deterministically. Only
+synonym-vs-synonym ties are a defect, and the auditor now reports them as a **structural problem**
+(blocking), not as an informational note.
+
+Fix them in the data, by giving the synonym a single owner. Resolved 2026-07-21 (all three verified
+to keep the drug reachable through the winning entry's ATC):
+
+| query | winner | removed from | reachable because |
+|---|---|---|---|
+| `aciclovir` | `herpes` (J05AB, D06BB) | `antivirales` (J05 dragged in HIV/hepatitis antivirals) | J05AB contains aciclovir |
+| `eritropoyetina` | `anemia renal` (B03XA, all ESAs) | `epoetina` (B03XA01 only) | B03XA contains B03XA01 |
+| `gcsf` / `g-csf` | `neutropenia` (L03AA, the whole G-CSF family) | `filgrastim` (L03AA02 only) | L03AA contains L03AA02 |
+
+## Options that lie: `medcheck-lint-options.mjs`
+
+```powershell
+node .\scripts\medcheck-lint-options.mjs
+```
+
+Reports keys passed in a call's `options` object that the target method never reads. They break
+nothing visibly — which is why they are dangerous: whoever reads the code believes a business rule
+exists ("here we cap at 100") that does not. Found this way: `searchByATC(atc, { pageSize: 100 })` in
+Alternativas de Suministro, a leftover from before `searchByATC` started paginating the whole group —
+and one that would have been actively harmful if honoured, since the code below it filters to exact
+ATC7 matches and a 100-item cap would have hidden alternatives.
+
+Heuristic, regex-based, no AST: it resolves option forwarding between methods (`searchMedicamentos`
+→ `_request`) and skips methods that read options dynamically (`options[key]`, as `searchReecStudies`
+does with its filter whitelist). **A finding must be confirmed by reading the method; silence does not
+prove there is nothing.** Validated by reintroducing the known regression and checking it is caught.
+
 ## Biosimilar policy
 
 `biosimilarRelevant: true` means "refresh this area against EMA + CIMA"; it does not mean that all products are authorised, marketed, financed or substitutable in Spain. Store the review date in `sourceDate` for molecule-level shortcuts when checked.

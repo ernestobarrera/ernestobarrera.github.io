@@ -113,6 +113,14 @@ const missingExpected = expectedTerms.filter(term => !terms[term] && !hasSynonym
 const atcSignature = (owner) => JSON.stringify(
   toAtcList(terms[owner] || {}).map(a => String(a).toUpperCase()).sort()
 );
+// Colisiones de termino/sinonimo entre entradas. Se separan en dos, porque solo unas son un
+// fallo real: findClinicalDictionaryMatches puntua el termino exacto con 100 y el sinonimo con 70,
+// y searchByIndication se queda con matches[0]. Si alguno de los duenos casa por TERMINO, gana de
+// forma determinista y la colision es inocua. Si TODOS casan por sinonimo, empatan a 70 y el
+// desempate lo decide el orden de las claves del JSON: reordenar el fichero —una edicion
+// cosmetica— cambiaria en silencio la lista de farmacos que ve un clinico. Eso es ambiguo y
+// bloquea; se arregla dando UN solo dueno al sinonimo.
+const ambiguousTerms = [];
 const duplicateTerms = [...duplicateIndex.entries()]
   .map(([key, refs]) => {
     const owners = new Set(refs.map(ref => ref.owner));
@@ -120,9 +128,16 @@ const duplicateTerms = [...duplicateIndex.entries()]
     // Ruido inofensivo: si todos los dueños apuntan al MISMO ATC, el solapamiento de
     // sinónimos no cambia el resultado de la búsqueda. Solo señalamos divergencias reales.
     if (new Set([...owners].map(atcSignature)).size <= 1) return null;
-    return `${key}: ${refs.map(ref => ref.label).join(', ')}`;
+    const linea = `${key}: ${refs.map(ref => ref.label).join(', ')}`;
+    const hayTermino = refs.some(ref => String(ref.label).startsWith('term:'));
+    if (!hayTermino) {
+      ambiguousTerms.push(`${linea} — EMPATE a 70: hoy gana "${refs[0].owner}" solo por orden en el JSON`);
+      return null;
+    }
+    return linea;
   })
   .filter(Boolean);
+for (const a of ambiguousTerms) problems.push(`Sinónimo ambiguo (desempate por orden de fichero) → ${a}`);
 
 let liveRows = [];
 let sectionRows = [];

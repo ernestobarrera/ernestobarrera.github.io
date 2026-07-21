@@ -9671,9 +9671,12 @@ ${materialesPlaceholder}
 
         try {
             // Search for medications with the same ATC code that are commercialized
+            // Sin pageSize: searchByATC pagina el grupo entero (searchMedicamentosAll) y aquí
+            // hace falta, porque justo debajo se filtra a coincidencias ATC7 exactas — con un
+            // tope de 100 se perderían alternativas. El `pageSize: 100` que había aquí era un
+            // vestigio de antes de ese cambio y searchByATC ya no lo leía: parámetro que mentía.
             const results = await this.api.searchByATC(atcCode, {
                 comercializados: true,
-                pageSize: 100,
                 noTrack: true
             });
 
