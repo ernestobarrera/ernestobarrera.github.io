@@ -16,6 +16,7 @@ const FT_MAX_PAGES = 30;
 const args = new Set(process.argv.slice(2));
 const live = args.has('--live');
 const reconcile = args.has('--reconcile');
+const probeAnchors = args.has('--probe-anchors');
 const updateBaseline = args.has('--update-baseline');
 const baselinePath = path.join(repoRoot, 'assets', 'data', 'reconcile-baseline.json');
 const requestedTerms = readStringArg('--terms')
@@ -167,6 +168,8 @@ if (live) {
 let reconcileRows = [];
 let newGapCount = 0;
 let invalidReconcileCount = 0;
+let orphanAnchorCount = 0;
+let probeRows = [];
 const baseline = await loadBaseline();
 if (reconcile || updateBaseline) {
   if (typeof fetch !== 'function') {
@@ -191,12 +194,25 @@ if (reconcile || updateBaseline) {
   if (updateBaseline) await writeBaseline(reconcileRows.filter(r => !r.anchorErrors.length));
 }
 
+if (probeAnchors) {
+  const todas = Object.entries(ontology.terms);
+  const objetivo = requestedTerms.length
+    ? todas.filter(([t]) => requestedTerms.includes(normalize(t)))
+    : todas;
+  probeRows = await probeAnchorsFor(objetivo);
+  // Un huerfano en una entrada YA anclada es un universo publicado que se esta perdiendo
+  // productos: bloquea, igual que un GAP nuevo.
+  orphanAnchorCount = probeRows.filter(r => (r.huerfanos || []).some(h => h.ciego)).length;
+}
+
 printReport();
 // Gate pre-publicacion: un GAP NUEVO no clasificado en el baseline bloquea (como los problemas
 // estructurales). Se resuelve curando (ampliar ATC/filtro) o registrandolo en el baseline con motivo.
 // Una reconciliacion INVALIDA (ancla sin universo: error de red o fraseo) tambien bloquea: su "0
 // GAPS" no es una comprobacion superada, es una comprobacion que no se ha hecho.
-if (problems.length > 0 || newGapCount > 0 || invalidReconcileCount > 0) process.exitCode = 1;
+// Un ancla con variantes huerfanas (--probe-anchors) tambien bloquea: significa que una entrada ya
+// publicada esta reconciliando contra un universo incompleto y sus "0 GAPS" no valen.
+if (problems.length > 0 || newGapCount > 0 || invalidReconcileCount > 0 || orphanAnchorCount > 0) process.exitCode = 1;
 
 function readNumberArg(name, fallback) {
   const rawArg = process.argv.slice(2).find(arg => arg.startsWith(`${name}=`));
@@ -345,6 +361,92 @@ async function buscarFichaTecnica(section, texto) {
     console.warn(`[AVISO] "${texto}" en ${section}: ${total} filas y solo se traen ${pages * 100} — universo TRUNCADO, el reconcile puede perder GAPS. Acota el ancla o sube FT_MAX_PAGES.`);
   }
   return out;
+}
+
+// ---- Preflight de anclas (--probe-anchors) ----------------------------------------------------
+// El fallo que motivo esto: buscarEnFichaTecnica compara literalmente (acentos incluidos), asi que
+// un ancla bien escrita puede dejar fuera del universo a las fichas que escriben el termino de otra
+// forma, sin que nada lo delate (el resultado es "0 GAPS", que parece exito). En vez de descubrirlo
+// entrada por entrada cuando ya esta publicada, esto sondea TODAS de golpe, barato: una llamada por
+// candidata leyendo solo totalFilas, sin descargar fichas.
+//
+// La regla que lo hace generico: las variantes de escritura que el ancla se pierde ya suelen estar
+// escritas en la propia ontologia como sinonimos ("insuficiencia cardíaca" era sinonimo de la
+// entrada cuyo ancla era "insuficiencia cardiaca"). Candidatas = termino + sinonimos + ancla actual
+// + reconcileTerms, cada una tal cual y sin acentos.
+function anchorCandidates(term, entry) {
+  const out = new Set();
+  const add = v => { if (typeof v === 'string' && v.trim().length > 3) out.add(v.trim()); };
+  add(term);
+  for (const s of toArray(entry.synonyms)) add(s);
+  for (const a of toArray(entry.reconcileAnchor)) add(a);
+  for (const t of toArray(entry.reconcileTerms)) add(t);
+  // Variante sin acentos de cada candidata: si difiere como cadena, CIMA la trata como otra busqueda.
+  for (const v of [...out]) {
+    const sinAcentos = v.normalize('NFD').replace(/[̀-ͯ]/g, '');
+    if (sinAcentos !== v) out.add(sinAcentos);
+  }
+  return [...out];
+}
+
+// Cuenta sin traer resultados: tamanioPagina=1 y leemos totalFilas.
+async function contarEnFicha(texto) {
+  const body = JSON.stringify([{ seccion: '4.1', texto, contiene: 1 }]);
+  const d = await postCima('/buscarEnFichaTecnica', { comerc: '1', tamanioPagina: '1', pagina: '1' }, body);
+  return d?.totalFilas ?? 0;
+}
+
+// Conjunto de nregistros de una busqueda (para medir solapamiento real, no solo conteos).
+async function idsEnFicha(texto) {
+  const meds = await buscarFichaTecnica('4.1', texto);
+  return new Set(meds.map(m => m.nregistro).filter(Boolean));
+}
+
+async function probeAnchorsFor(entries) {
+  const filas = [];
+  for (const [term, entry] of entries) {
+    const candidatas = anchorCandidates(term, entry);
+    const actual = normalizeAnchor(entry.reconcileAnchor);
+    const conteos = [];
+    for (const c of candidatas) {
+      try {
+        conteos.push({ texto: c, n: await contarEnFicha(c) });
+      } catch (error) {
+        conteos.push({ texto: c, n: null, error: error.message });
+      }
+    }
+    conteos.sort((a, b) => (b.n ?? -1) - (a.n ?? -1));
+
+    // Solo para las entradas YA ancladas medimos huerfanos de verdad (con los nregistro), que es
+    // donde la precision importa y donde el coste es asumible: un universo publicado que se esta
+    // perdiendo productos es un fallo en vivo, no una sugerencia de curacion.
+    let huerfanos = null;
+    if (actual) {
+      try {
+        const cubierto = new Set();
+        for (const a of actual) for (const id of await idsEnFicha(a)) cubierto.add(id);
+        // Un huerfano solo es CIEGO (bloquea) si la capa de verificacion habria aceptado esos
+        // productos: es decir, si esa escritura esta en reconcileTerms o en el filtro 4.1. Si no
+        // lo esta, los productos se descartarian igualmente al verificar y el huerfano es solo
+        // informativo. Sin esta distincion el gate bloquea por ruido y se acaba ignorando.
+        const f = entry.section41Filter || entry.sectionFilter;
+        const aceptadas = new Set([
+          ...toArray(entry.reconcileTerms),
+          ...toArray(f?.includeAny),
+          ...toArray(f?.terms)
+        ].map(normalize));
+        huerfanos = [];
+        for (const { texto, n } of conteos) {
+          if (!n || actual.includes(texto)) continue;
+          const ids = await idsEnFicha(texto);
+          const fuera = [...ids].filter(id => !cubierto.has(id));
+          if (fuera.length) huerfanos.push({ texto, fuera: fuera.length, total: ids.size, ciego: aceptadas.has(normalize(texto)) });
+        }
+      } catch { huerfanos = null; }
+    }
+    filas.push({ term, actual, conteos, huerfanos });
+  }
+  return filas;
 }
 
 // Un ancla puede declararse como string (retrocompat) o como array de variantes de escritura.
@@ -605,6 +707,53 @@ function printReport() {
     printList(`## Live Broad Entries Over ${tooManyThreshold}`, tooMany);
     printList('## Live Biosimilar Signals', biosimilarRows);
     printList('## Section 4.1 Filters Returning Zero', zeroSection);
+  }
+
+  if (probeAnchors) {
+    console.log('## Preflight de anclas (sondeo barato, sin descargar fichas)');
+    console.log('(buscarEnFichaTecnica compara LITERALMENTE, acentos incluidos: dos escrituras del');
+    console.log(' mismo termino son dos universos distintos. HUERFANA = recluta productos que el');
+    console.log(' ancla actual NO ve -> ese reconcile esta ciego y BLOQUEA.)');
+    console.log('');
+    const conAncla = probeRows.filter(r => r.actual);
+    const sinAncla = probeRows.filter(r => !r.actual);
+
+    if (conAncla.length) {
+      console.log('### Entradas ya ancladas');
+      for (const r of conAncla) {
+        const ciegas = (r.huerfanos || []).filter(h => h.ciego);
+        const estado = r.huerfanos === null
+          ? '?? no se pudo medir'
+          : (ciegas.length ? '!! CIEGA (bloquea)' : 'ok');
+        console.log(`- ${r.term} [ancla: ${r.actual.join(' | ')}] ${estado}`);
+        for (const h of ciegas) {
+          console.log(`    !! "${h.texto}" esta en la fraseologia que se verifica, recluta ${h.total} y ${h.fuera} quedan FUERA del universo — nunca se comprueban`);
+        }
+        for (const h of (r.huerfanos || []).filter(h => !h.ciego)) {
+          console.log(`    ·  "${h.texto}" reclutaria ${h.fuera} productos nuevos, pero esa escritura no se verifica (informativo: amplia reconcileTerms si deberia contar)`);
+        }
+      }
+      console.log('');
+    }
+
+    if (sinAncla.length) {
+      console.log('### Entradas sin ancla — candidatas ordenadas por cobertura');
+      console.log('(elige la que recluta un universo amplio y plausible; un 0 casi siempre es');
+      console.log(' acento o fraseo, no ausencia clinica — verificalo antes de darlo por bueno)');
+      for (const r of sinAncla) {
+        const vivas = r.conteos.filter(c => c.n);
+        const ceros = r.conteos.filter(c => c.n === 0).map(c => c.texto);
+        const trunca = vivas.filter(c => c.n > FT_MAX_PAGES * 100).map(c => `${c.texto}=${c.n}`);
+        if (!vivas.length) {
+          console.log(`- ${r.term}: NINGUNA candidata recluta nada — requiere fraseo a mano`);
+          continue;
+        }
+        console.log(`- ${r.term}: ${vivas.slice(0, 4).map(c => `"${c.texto}"=${c.n}`).join(', ')}`);
+        if (ceros.length) console.log(`      (0 productos: ${ceros.slice(0, 4).join(', ')})`);
+        if (trunca.length) console.log(`      !! supera el tope de paginacion: ${trunca.join(', ')}`);
+      }
+      console.log('');
+    }
   }
 
   if (reconcile || updateBaseline) {

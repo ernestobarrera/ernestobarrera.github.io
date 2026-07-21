@@ -16,6 +16,13 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 console.log('Fase 1: catálogo de materiales...');
 const cat = await get(`${BASE}/materiales?pagina=1&pageSize=300`);
 const items = cat.resultados || [];
+// Mismo cuidado que en CimaAPI.getMaterialesCatalogo: un solo call con pageSize alto es la
+// asunción que ya ocultó media verdad en searchByATC. Hoy caben (281 de 300), pero si deja
+// de caber hay que enterarse, no generar un catálogo incompleto en silencio.
+if (cat.totalFilas && items.length < cat.totalFilas) {
+  console.error(`  ABORTA: catálogo truncado, ${items.length} de ${cat.totalFilas}. Pagina antes de regenerar.`);
+  process.exit(1);
+}
 console.log(`  ${items.length} items\n`);
 
 // ── 2. Buscar nregistro por nombre ────────────────────────────────────────

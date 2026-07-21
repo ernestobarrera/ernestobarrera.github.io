@@ -117,6 +117,47 @@ Two genuine zeros to keep in mind when curating: `infección urinaria` (0 even a
 "infecciones del tracto urinario") and `fibromialgia` (0 — no marketed drug in Spain carries it as a
 4.1 indication). A zero can be real; it just must never be assumed.
 
+**Accent asymmetry — the two layers take opposite spellings.** This bites easily:
+
+| layer | who runs it | correct spelling |
+|---|---|---|
+| `reconcileAnchor` | CIMA, server-side, literal | **with** accents (and list every variant) |
+| `reconcileTerms` / `section41Filter` | us, over `normalize()`d text | **without** accents (they are stripped anyway) |
+
+So `"perdida de peso"` is right in a filter and useless as an anchor (it recruits 0), while
+`"pérdida de peso"` is right as an anchor. Same string, opposite verdicts, depending on the layer.
+
+### Preflight: `--probe-anchors` (run this BEFORE anchoring anything)
+
+```powershell
+node .\scripts\medcheck-audit-ontology.mjs --probe-anchors
+node .\scripts\medcheck-audit-ontology.mjs --probe-anchors "--terms=cirrosis,urticaria"
+```
+
+Cheap sweep (one call per candidate, reading only `totalFilas`; it never downloads fichas). Candidates
+are built from the entry's own **term + synonyms + current anchor + reconcileTerms**, each in its
+written form and de-accented. That heuristic works because the spelling an anchor misses is usually
+already written in the ontology as a synonym — `insuficiencia cardíaca` was a synonym of the entry
+whose anchor was `insuficiencia cardiaca`.
+
+It reports two things:
+
+- **Entries already anchored**: whether any candidate spelling is an **orphan** (recruits products the
+  current anchor never sees). An orphan is `CIEGA` **and blocks the gate** only when that spelling is
+  one the verification layer would have accepted (it appears in `reconcileTerms` or the 4.1 filter) —
+  i.e. the entry is self-inconsistent: its own phrasing says those products count, but its anchor
+  never fetches them. Orphans in spellings that are *not* verified are printed as informational, so
+  the gate stays trustworthy instead of crying wolf.
+- **Entries without an anchor**: candidate spellings ranked by coverage, with zeros and
+  over-the-pagination-cap counts flagged — pick the anchor from real numbers, not intuition.
+
+On its first run (2026-07-21) it found **2 of the 5 published anchors were blind**: `enfermedad renal
+crónica` (its `reconcileTerms` carry "insuficiencia renal cronica", but the anchor `enfermedad renal`
+never recruited the 9 products spelling it that way — widening to `enfermedad renal` + `insuficiencia
+renal` took the universe from 195 to 381 and surfaced 52 never-checked presentations) and `obesidad`
+(its 4.1 filter accepts "sobrepeso", "pérdida de peso" and "reducción de peso", but the anchor was
+just "obesidad", leaving ~130 products unrecruited).
+
 ### The 4.1 search is paginated too — and truncates silently
 
 `buscarEnFichaTecnica` returns 100 per page. The page cap was 6 (600 products), silently dropping the

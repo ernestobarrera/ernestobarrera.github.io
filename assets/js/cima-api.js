@@ -42,7 +42,7 @@ class CimaAPI {
      * Una sola vez; falla en abierto (si no carga, queda el dict vacío y la búsqueda cae al ATC-cache).
      * Ampliable: editar assets/data/clinical-ontology.json y subir el `?v=`.
      */
-    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260720a') {
+    async _loadClinicalOntology(url = 'assets/data/clinical-ontology.json?v=20260721a') {
         if (this._clinicalOntologyLoaded) return CimaAPI.CLINICAL_DICTIONARY;
         if (this._clinicalOntologyLoading) return this._clinicalOntologyLoading;
         this._clinicalOntologyLoading = fetch(url, { cache: 'force-cache' })
@@ -388,11 +388,28 @@ class CimaAPI {
      * @returns {Promise<Array>} Array con todos los medicamentos y sus materiales
      */
     async getMaterialesCatalogo() {
+        // Antes se hacía UN solo call con pageSize=300 asumiendo que basta. Es el mismo patrón
+        // que ocultó media verdad en searchByATC: hoy /materiales devuelve 281 de 300, así que
+        // el día que el catálogo pase de 300 se truncaría en silencio, sin error. Se pagina
+        // contra totalFilas y se avisa si aun así falta algo.
+        const PAGE_SIZE = 300;
+        const MAX_PAGES = 10;
         try {
-            // Un solo call con pageSize grande para traer todo el catálogo
-            const response = await this._request(`/materiales?pagina=1&pageSize=300`);
-            if (!response || !response.resultados) return [];
-            return response.resultados;
+            const first = await this._request(`/materiales?pagina=1&pageSize=${PAGE_SIZE}`);
+            if (!first || !first.resultados) return [];
+            const all = [...first.resultados];
+            const totalFilas = first.totalFilas || all.length;
+            const actualPageSize = all.length || PAGE_SIZE;
+            const totalPages = Math.min(Math.ceil(totalFilas / actualPageSize), MAX_PAGES);
+            for (let pagina = 2; pagina <= totalPages; pagina += 1) {
+                const page = await this._request(`/materiales?pagina=${pagina}&pageSize=${PAGE_SIZE}`);
+                if (!page || !page.resultados || !page.resultados.length) break;
+                all.push(...page.resultados);
+            }
+            if (all.length < totalFilas) {
+                console.warn(`Catálogo de materiales incompleto: ${all.length} de ${totalFilas}`);
+            }
+            return all;
         } catch (error) {
             console.warn('Error cargando catálogo de materiales', error);
             return [];
