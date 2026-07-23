@@ -1038,10 +1038,19 @@ class CimaAPI {
                 continue;
             }
 
-            // Coincidencia parcial (require min 4 chars to avoid false positives)
+            // Coincidencia parcial sobre el TÉRMINO (>=4 chars), en dos niveles con doctrina distinta:
+            // - Prefijo de palabra ("depre"→depresión): score 80, puede ejecutar la búsqueda real.
+            // - Subcadena INTERIOR ("presión"→de·presión): score 60, SOLO sugerencia. Nunca decide
+            //   en silencio una lista farmacológica: con includes() a 80, "presión" ejecutaba
+            //   depresión por delante de hipertensión/glaucoma (sinónimos curados, 70). La entrada
+            //   se sigue evaluando por sinónimos; la sugerencia 60 solo se emite si no casó ninguno.
+            let interiorSubstring = false;
             if (!exactOnly && normalizedQuery.length >= 4 && normalizedTerm.includes(normalizedQuery)) {
-                matches.push({ ...data, term, score: 80 });
-                continue;
+                if (wordPrefix(normalizedTerm)) {
+                    matches.push({ ...data, term, score: 80 });
+                    continue;
+                }
+                interiorSubstring = true;
             }
 
             // En modo sugerencia, las entradas exact también se PROPONEN por prefijo de palabra
@@ -1056,6 +1065,7 @@ class CimaAPI {
             // es igual a la query o si alguna de sus PALABRAS empieza por la query (>=4 chars). Evita
             // que un término genérico (p. ej. 'dolor') arrastre indicaciones cuyo sinónimo lo contenía
             // en mitad de una frase descriptiva, y el 'ic' dentro de 'ansioliticos'.
+            let synonymMatched = false;
             if (data.synonyms) {
                 for (const syn of data.synonyms) {
                     const normalizedSyn = syn.toLowerCase()
@@ -1066,6 +1076,7 @@ class CimaAPI {
                     if (exactOnly && !suggest) {
                         if (normalizedSyn === normalizedQuery) {
                             matches.push({ ...data, term, score: 70 });
+                            synonymMatched = true;
                             break;
                         }
                     } else if (normalizedSyn.length >= 4) {
@@ -1074,14 +1085,22 @@ class CimaAPI {
                              normalizedSyn.split(/[\s\-/]+/).some(w => w.startsWith(normalizedQuery)));
                         if (wordMatch) {
                             matches.push({ ...data, term, score: 70 });
+                            synonymMatched = true;
                             break;
                         }
                     } else if (normalizedSyn === normalizedQuery) {
                         // Short synonyms only match exactly
                         matches.push({ ...data, term, score: 70 });
+                        synonymMatched = true;
                         break;
                     }
                 }
+            }
+
+            // Subcadena interior: descubribilidad en el autocomplete (60, bajo el sin\u00f3nimo curado),
+            // nunca en la b\u00fasqueda real. Los casos leg\u00edtimos deben curarse como sin\u00f3nimo expl\u00edcito.
+            if (suggest && interiorSubstring && !synonymMatched) {
+                matches.push({ ...data, term, score: 60 });
             }
         }
 
