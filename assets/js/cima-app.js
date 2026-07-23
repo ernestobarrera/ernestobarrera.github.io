@@ -3036,6 +3036,23 @@ class MedCheckApp {
         try {
             const data = await this.api.searchByIndication(query, { comercializados: true });
 
+            if (data.ambiguous) {
+                // Varios candidatos empatados con planes ATC/4.1 distintos: elige el usuario.
+                // Nunca se ejecuta una lista farmacológica en silencio sobre un término ambiguo.
+                this.lastIndicationResults = null;
+                resultsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-code-branch" style="color: var(--warning);"></i>
+                        <h3>"${query}" puede referirse a varias cosas</h3>
+                        <p class="text-xs text-secondary mt-sm">Elige la indicación que buscas:</p>
+                        <div class="indication-chips mt-sm">
+                            ${data.candidates.map((c) => `<button class="indication-chip" onclick="document.getElementById('indication-input').value='${c.term.replace(/'/g, '&#39;')}'; app.performIndicationSearch();">${c.label}</button>`).join('')}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
             if (data.noMatch) {
                 // No dictionary match found
                 resultsContainer.innerHTML = `

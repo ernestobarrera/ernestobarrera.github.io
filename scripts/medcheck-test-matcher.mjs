@@ -129,6 +129,67 @@ for (const t of Object.keys(terms)) {
 check(`invariante: ninguna subcadena interior ejecuta en búsqueda real (${sweepQueries} queries)`,
     sweepFails.length === 0, sweepFails.slice(0, 5).join('; '));
 
+// --- Resolutor de candidatos (desambiguación): empates con planes distintos nunca ejecutan ---
+const resolve = (q) => api.resolveIndicationCandidates(real(q));
+
+let res = resolve('presión');
+check('resolver "presión" → ambiguous (hipertensión | glaucoma)',
+    res.mode === 'ambiguous' && res.candidates.length === 2 &&
+    res.candidates.some((c) => c.term === 'hipertensión') && res.candidates.some((c) => c.term === 'glaucoma'),
+    JSON.stringify(res.candidates?.map((c) => c.term) ?? res.mode));
+
+res = resolve('insuficiencia');
+check('resolver "insuficiencia" → ambiguous (cardiaca | venosa)',
+    res.mode === 'ambiguous' && res.candidates.some((c) => c.term === 'insuficiencia cardiaca') &&
+    res.candidates.some((c) => c.term === 'insuficiencia venosa'),
+    JSON.stringify(res.candidates?.map((c) => c.term) ?? res.mode));
+
+res = resolve('micosis');
+check('resolver "micosis" → execute candidiasis (sin empate)',
+    res.mode === 'execute' && res.match.term === 'candidiasis', res.mode);
+
+res = resolve('depresión');
+check('resolver "depresión" → execute (exacto nunca es ambiguo)',
+    res.mode === 'execute' && res.match.term === 'depresión', res.mode);
+
+check('resolver sin matches → none', api.resolveIndicationCandidates([]).mode === 'none');
+
+// --- Independencia del orden del JSON: original vs invertida vs barajada (semilla fija) ---
+{
+    const battery = [
+        ...Object.keys(terms),
+        'presión', 'presión alta', 'micosis', 'depre', 'insuficiencia', 'anti', 'tiroidismo',
+    ];
+    const snapshot = () => battery.map((q) => JSON.stringify([
+        real(q).map((m) => [m.term, m.score]),
+        sug(q).map((m) => [m.term, m.score]),
+        api.resolveIndicationCandidates(real(q)).mode,
+    ])).join('\n');
+
+    const original = snapshot();
+
+    const entries = Object.entries(terms);
+    CimaAPI.CLINICAL_DICTIONARY = Object.fromEntries([...entries].reverse());
+    const reversed = snapshot();
+
+    // Barajado determinista (LCG con semilla fija) para no depender de Math.random.
+    let seed = 20260723;
+    const rand = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const shuffled = [...entries];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(rand() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    CimaAPI.CLINICAL_DICTIONARY = Object.fromEntries(shuffled);
+    const random = snapshot();
+
+    CimaAPI.CLINICAL_DICTIONARY = terms; // restaurar
+
+    check(`invariante: resultado idéntico con ontología original, invertida y barajada (${battery.length} queries)`,
+        original === reversed && original === random,
+        original !== reversed ? 'difiere invertida' : 'difiere barajada');
+}
+
 // --- Resumen ---
 if (failures > 0) {
     console.log(`\n${failures} caso(s) en rojo.`);

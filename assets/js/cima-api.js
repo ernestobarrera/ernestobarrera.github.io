@@ -842,9 +842,19 @@ class CimaAPI {
         // 1. Buscar en diccionario clínico (síndromes, abreviaturas, sinónimos españoles)
         const clinicalMatches = this.findClinicalDictionaryMatches(normalizedQuery);
 
-        if (clinicalMatches.length > 0) {
-            console.log(`📚 Match en diccionario clínico: "${clinicalMatches[0].term}"`);
-            return this._executeIndicationSearch(clinicalMatches[0], options);
+        const resolution = this.resolveIndicationCandidates(clinicalMatches);
+        if (resolution.mode === 'ambiguous') {
+            console.log(`📚 Término ambiguo: "${normalizedQuery}" → ${resolution.candidates.map((c) => c.term).join(' | ')}`);
+            return {
+                resultados: [],
+                totalFilas: 0,
+                ambiguous: true,
+                candidates: resolution.candidates.map((c) => ({ term: c.term, label: c.label || c.term })),
+            };
+        }
+        if (resolution.mode === 'execute') {
+            console.log(`📚 Match en diccionario clínico: "${resolution.match.term}"`);
+            return this._executeIndicationSearch(resolution.match, options);
         }
 
         // 2. Buscar en nombres ATC del cache de maestras
@@ -1104,8 +1114,41 @@ class CimaAPI {
             }
         }
 
-        matches.sort((a, b) => b.score - a.score);
+        // Orden determinista: score y, a igualdad, alfabético del término. Sin el segundo
+        // criterio, los empates heredaban el orden de inserción del JSON de la ontología
+        // (hipotiroidismo vs hipertiroidismo dependía de cómo estuviera escrito el archivo).
+        matches.sort((a, b) => b.score - a.score || a.term.localeCompare(b.term, 'es'));
         return matches;
+    }
+
+    /**
+     * Clave del "plan de ejecución" de un match de indicación: qué ATC se consultan y con
+     * qué filtro 4.1. Dos matches con la misma clave son intercambiables para el usuario.
+     * @private
+     */
+    _indicationPlanKey(match) {
+        const atc = (Array.isArray(match.atc) ? [...match.atc] : [match.atc]).sort();
+        const filter = match.section41Filter || match.sectionFilter || null;
+        return JSON.stringify({ atc, filter });
+    }
+
+    /**
+     * Decide qué hacer con los matches del diccionario en una búsqueda real:
+     * - execute: un único candidato en el grupo de score máximo (o varios con el MISMO plan).
+     * - ambiguous: varios candidatos empatados con planes distintos → debe elegir el usuario.
+     *   Un empate de sinónimos (p. ej. "presión" → hipertensión|glaucoma, "tiroidismo" →
+     *   hipo|hipertiroidismo) nunca se resuelve en silencio por orden alfabético.
+     * Puro y síncrono: lo cubren los tests de scripts/medcheck-test-matcher.mjs.
+     */
+    resolveIndicationCandidates(matches) {
+        if (!matches || matches.length === 0) return { mode: 'none' };
+        const topScore = matches[0].score;
+        const top = matches.filter((m) => m.score === topScore);
+        const plans = new Set(top.map((m) => this._indicationPlanKey(m)));
+        if (top.length > 1 && plans.size > 1) {
+            return { mode: 'ambiguous', candidates: top };
+        }
+        return { mode: 'execute', match: matches[0] };
     }
 
     /**
