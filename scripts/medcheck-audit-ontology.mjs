@@ -18,7 +18,23 @@ const live = args.has('--live');
 const reconcile = args.has('--reconcile');
 const probeAnchors = args.has('--probe-anchors');
 const updateBaseline = args.has('--update-baseline');
-const baselinePath = path.join(repoRoot, 'assets', 'data', 'reconcile-baseline.json');
+// --baseline= permite apuntar a otro archivo (lo usan los tests de gates con baselines sintéticos).
+const baselineArg = readStringArg('--baseline');
+const baselinePath = baselineArg
+  ? path.resolve(baselineArg)
+  : path.join(repoRoot, 'assets', 'data', 'reconcile-baseline.json');
+// Antigüedad máxima de un 'accepted' antes de exigir re-revisión humana.
+const ACCEPTED_MAX_AGE_DAYS = 180;
+// Base de los backoffs de reintento (1-3-8 × base). MC_AUDIT_BACKOFF_MS=1 en tests.
+// Estas const/class viven aquí arriba por la misma zona muerta temporal que FT_MAX_PAGES:
+// el bloque await superior corre antes que las declaraciones de la mitad inferior.
+const BACKOFF_BASE_MS = Number(process.env.MC_AUDIT_BACKOFF_MS) || 1000;
+const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
+class UnknownResultError extends Error {}
+// Motivos por los que esta ejecución NO puede certificar nada (red agotada, respuesta inválida,
+// truncación del universo decisorio). Si hay alguno y ningún problema determinista, exit 2:
+// "repite la pasada", que es distinto de exit 1: "el producto está mal".
+const inconclusive = [];
 const requestedTerms = readStringArg('--terms')
   .split(',')
   .map(normalize)
@@ -155,7 +171,14 @@ if (live) {
   }
   const liveEntries = liveSource.slice(0, Number.isFinite(maxTerms) ? maxTerms : liveSource.length);
   for (const [term, entry] of liveEntries) {
-    const meds = await searchEntry(entry);
+    let meds = [];
+    try {
+      meds = await searchEntry(entry);
+    } catch (error) {
+      // --live es informativo: no bloquea, pero un término no medible no puede aparecer como "0".
+      warnings.push(`${term}: live no medible (${error.message})`);
+      continue;
+    }
     const biosimilars = meds.filter(med => med.biosimilar === true).length;
     liveRows.push({
       term,
@@ -168,7 +191,8 @@ if (live) {
     const sectionFilter = entry.section41Filter || entry.sectionFilter;
     if (sectionFilter && meds.length > 0) {
       const checked = meds.slice(0, sectionLimit);
-      const matched = await countSectionMatches(checked, sectionFilter);
+      const { matched, unknown } = await countSectionMatches(checked, sectionFilter);
+      if (unknown > 0) warnings.push(`${term}: ${unknown}/${checked.length} fichas no verificables al medir el filtro 4.1 (métrica informativa parcial)`);
       sectionRows.push({ term, candidates: meds.length, checked: checked.length, matched });
     }
   }
@@ -182,6 +206,7 @@ if (live) {
 // como consejo) y depende de la fraseologia. Pensado para refresco periodico y gate pre-publicacion.
 let reconcileRows = [];
 let newGapCount = 0;
+let blockedGapCount = 0;
 let invalidReconcileCount = 0;
 let orphanAnchorCount = 0;
 let probeRows = [];
@@ -199,14 +224,22 @@ if (reconcile || updateBaseline) {
   const recEntries = source.slice(0, Number.isFinite(maxTerms) ? maxTerms : source.length);
   for (const [term, entry] of recEntries) {
     const row = await reconcileEntry(term, entry);
-    classifyGapsAgainstBaseline(row);
+    classifyGapsAgainstBaseline(row, entry);
     newGapCount += row.newGaps.length;
+    blockedGapCount += row.blockedGaps.length;
     invalidReconcileCount += row.anchorErrors.length ? 1 : 0;
+    for (const motivo of row.inconcluso) inconclusive.push(`reconcile "${term}": ${motivo}`);
     reconcileRows.push(row);
   }
-  // Solo se persisten las filas con universo valido: escribir el baseline desde una pasada ciega
-  // consolidaria un "sin GAPS" falso como si fuera revision humana.
-  if (updateBaseline) await writeBaseline(reconcileRows.filter(r => !r.anchorErrors.length));
+  // Una pasada inconclusa NUNCA escribe baseline: consolidaria como "revisado" un universo que no
+  // se pudo medir. Ademas solo se persisten filas con universo valido (sin anchorErrors).
+  if (updateBaseline) {
+    if (inconclusive.length) {
+      console.log('\n[baseline] NO escrito: ejecución inconclusa (repite la pasada cuando la red/universo estén completos).');
+    } else {
+      await writeBaseline(reconcileRows.filter(r => !r.anchorErrors.length));
+    }
+  }
 }
 
 if (probeAnchors) {
@@ -221,13 +254,19 @@ if (probeAnchors) {
 }
 
 printReport();
-// Gate pre-publicacion: un GAP NUEVO no clasificado en el baseline bloquea (como los problemas
-// estructurales). Se resuelve curando (ampliar ATC/filtro) o registrandolo en el baseline con motivo.
-// Una reconciliacion INVALIDA (ancla sin universo: error de red o fraseo) tambien bloquea: su "0
-// GAPS" no es una comprobacion superada, es una comprobacion que no se ha hecho.
-// Un ancla con variantes huerfanas (--probe-anchors) tambien bloquea: significa que una entrada ya
-// publicada esta reconciliando contra un universo incompleto y sus "0 GAPS" no valen.
-if (problems.length > 0 || newGapCount > 0 || invalidReconcileCount > 0 || orphanAnchorCount > 0) process.exitCode = 1;
+// Gate pre-publicacion con salida ternaria (revision cruzada 2026-07-23):
+//   0 → cobertura completa y limpia.
+//   1 → problema DETERMINISTA: estructural, GAP nuevo, GAP bloqueado por el baseline (review/
+//       curated reaparecido/accepted caducado), ancla que recluta 0 (fraseo) o huerfano ciego.
+//       Se arregla curando la ontologia o revisando el baseline.
+//   2 → ejecucion INCONCLUSA: red agotada, respuesta invalida o universo truncado. No significa
+//       "el producto esta mal", significa "repite la pasada": un exit 2 jamas imprime un GAPS=0
+//       certificado ni escribe baseline.
+// Ambos codigos bloquean publicacion.
+const deterministicBlock = problems.length > 0 || newGapCount > 0 || blockedGapCount > 0
+  || invalidReconcileCount > 0 || orphanAnchorCount > 0;
+if (deterministicBlock) process.exitCode = 1;
+else if (inconclusive.length > 0) process.exitCode = 2;
 
 function readNumberArg(name, fallback) {
   const rawArg = process.argv.slice(2).find(arg => arg.startsWith(`${name}=`));
@@ -333,25 +372,58 @@ async function searchAtc(atc) {
   });
 }
 
+// ---- Contrato de red -------------------------------------------------------------------------
+// CIMA da 429/500 transitorios con frecuencia. Un gate que falla ABIERTO ante ellos certifica en
+// falso; uno que falla CERRADO ante cada 429 se acaba ignorando. El contrato: reintentar lo
+// transitorio (429/408/red/500-504, 4 intentos, Retry-After o backoff ~1-3-8s con jitter) y, si
+// se agota, lanzar UnknownResultError: el resultado es 'unknown', nunca un array/texto vacío que
+// se confunda con 'absent'. Quien lo capture debe marcar la ejecución como inconclusa (exit 2).
+// (UnknownResultError y RETRYABLE_STATUS se declaran arriba, junto a BACKOFF_BASE_MS, por la TDZ.)
+
+async function fetchWithRetry(url, options = {}) {
+  let lastReason = '';
+  for (let intento = 1; intento <= 4; intento += 1) {
+    let response = null;
+    let retryAfterMs = 0;
+    try {
+      response = await fetch(url, options);
+    } catch (error) {
+      lastReason = error.message; // error de red puro
+    }
+    if (response) {
+      if (!RETRYABLE_STATUS.has(response.status)) return response;
+      lastReason = `HTTP ${response.status}`;
+      const retryAfter = Number(response.headers?.get?.('retry-after'));
+      if (Number.isFinite(retryAfter) && retryAfter > 0) retryAfterMs = retryAfter * 1000;
+    }
+    if (intento < 4) {
+      const base = [1, 3, 8][intento - 1] * BACKOFF_BASE_MS;
+      const waitMs = retryAfterMs || base + Math.random() * BACKOFF_BASE_MS * 0.5;
+      await new Promise(resolve => setTimeout(resolve, waitMs));
+    }
+  }
+  throw new UnknownResultError(`agotados 4 intentos (${lastReason}) ${url}`);
+}
+
 async function fetchCima(endpoint, params) {
   const url = new URL(`${CIMA_BASE}${endpoint}`);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
-  const response = await fetch(url, { headers: { accept: 'application/json' } });
+  const response = await fetchWithRetry(url, { headers: { accept: 'application/json' } });
   if (response.status === 204) return null;
-  if (!response.ok) throw new Error(`CIMA ${response.status} ${url}`);
+  if (!response.ok) throw new UnknownResultError(`CIMA ${response.status} ${url}`);
   return response.json();
 }
 
 async function postCima(endpoint, params, body) {
   const url = new URL(`${CIMA_BASE}${endpoint}`);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
-  const response = await fetch(url, {
+  const response = await fetchWithRetry(url, {
     method: 'POST',
     headers: { accept: 'application/json', 'content-type': 'application/json' },
     body
   });
   if (response.status === 204) return null;
-  if (!response.ok) throw new Error(`CIMA ${response.status} ${url}`);
+  if (!response.ok) throw new UnknownResultError(`CIMA ${response.status} ${url}`);
   return response.json();
 }
 
@@ -373,7 +445,9 @@ async function buscarFichaTecnica(section, texto) {
     out.push(...(d?.resultados || []));
   }
   if (needed > pages) {
-    console.warn(`[AVISO] "${texto}" en ${section}: ${total} filas y solo se traen ${pages * 100} — universo TRUNCADO, el reconcile puede perder GAPS. Acota el ancla o sube FT_MAX_PAGES.`);
+    // La truncación afecta al universo DECISORIO (reconcile o huérfanos de ancla): no puede
+    // quedarse en aviso, porque el "0 GAPS" resultante estaría medido sobre un universo recortado.
+    inconclusive.push(`universo truncado: "${texto}" en ${section} tiene ${total} filas y solo se traen ${pages * 100} — acota el ancla o sube FT_MAX_PAGES`);
   }
   return out;
 }
@@ -396,6 +470,12 @@ function anchorCandidates(term, entry) {
   for (const s of toArray(entry.synonyms)) add(s);
   for (const a of toArray(entry.reconcileAnchor)) add(a);
   for (const t of toArray(entry.reconcileTerms)) add(t);
+  // Las frases del filtro 4.1 forman parte de la fraseologia ACEPTADA por la verificacion: si una
+  // de ellas recluta productos que el ancla no ve, ese huerfano es CIEGO. Sin incluirlas aqui, el
+  // preflight ni siquiera las media (hueco señalado en la revision cruzada 2026-07-23).
+  const f = entry.section41Filter || entry.sectionFilter;
+  for (const t of toArray(f?.includeAny)) add(t);
+  for (const t of toArray(f?.terms)) add(t);
   // Variante sin acentos de cada candidata: si difiere como cadena, CIMA la trata como otra busqueda.
   for (const v of [...out]) {
     const sinAcentos = v.normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -427,7 +507,10 @@ async function probeAnchorsFor(entries) {
       try {
         conteos.push({ texto: c, n: await contarEnFicha(c) });
       } catch (error) {
+        // n:null ya no se omite en silencio: una candidata no medible deja el preflight de esta
+        // entrada sin certificar (antes podia acabar mostrando "ok" y devolviendo exit 0).
         conteos.push({ texto: c, n: null, error: error.message });
+        inconclusive.push(`preflight "${term}": candidata "${c}" no medible (${error.message})`);
       }
     }
     conteos.sort((a, b) => (b.n ?? -1) - (a.n ?? -1));
@@ -457,7 +540,12 @@ async function probeAnchorsFor(entries) {
           const fuera = [...ids].filter(id => !cubierto.has(id));
           if (fuera.length) huerfanos.push({ texto, fuera: fuera.length, total: ids.size, ciego: aceptadas.has(normalize(texto)) });
         }
-      } catch { huerfanos = null; }
+      } catch (error) {
+        // "?? no se pudo medir" sin consecuencia era un gate que fallaba abierto: el preflight
+        // de una entrada YA anclada que no se puede medir deja la ejecución inconclusa (exit 2).
+        huerfanos = null;
+        inconclusive.push(`preflight "${term}": huérfanos no medibles (${error.message})`);
+      }
     }
     filas.push({ term, actual, conteos, huerfanos });
   }
@@ -514,16 +602,94 @@ function baselineEntryFor(term) {
   return t[term] || t[normalize(term)] || null;
 }
 
-function classifyGapsAgainstBaseline(row) {
+// Huella FNV-1a de una cadena (hex, 8 chars). Suficiente para detectar "esto cambió desde la
+// revisión humana"; no es criptográfica ni lo necesita.
+function fingerprint(value) {
+  let h = 0x811c9dc5;
+  const s = String(value || '');
+  for (let i = 0; i < s.length; i += 1) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+
+// Huella de la configuración de la entrada que afecta a la reconciliación: si el humano aceptó un
+// GAP con una configuración y esta cambia, la aceptación deja de valer y el caso se reabre.
+function entryConfigHash(entry) {
+  const f = entry.section41Filter || entry.sectionFilter || null;
+  return fingerprint(JSON.stringify({
+    atc: toAtcList(entry).map(a => String(a).toUpperCase()).sort(),
+    filter: f,
+    reconcileTerms: toArray(entry.reconcileTerms),
+    anchor: normalizeAnchor(entry.reconcileAnchor)
+  }));
+}
+
+function daysSince(isoDate) {
+  const t = Date.parse(isoDate);
+  if (!Number.isFinite(t)) return null;
+  return Math.floor((Date.now() - t) / 86400000);
+}
+
+// Máquina de estados del baseline (revisión cruzada 2026-07-23). Para un GAP aún PRESENTE:
+//   review    → bloquea siempre (pendiente de humano; aparecer en el baseline no es revisión).
+//   accepted  → único estado que silencia, y solo si la aceptación sigue vigente (ver abajo).
+//   curated   → bloquea: significaba "ya cubierto por ATC/filtro"; si reaparece, la cura falló.
+//   otro/ausente → bloquea por error de esquema.
+// Vigencia de un accepted: reason no vacío, fecha de revisión (reviewedAt, o la version del
+// archivo para registros legacy) con antigüedad <= ACCEPTED_MAX_AGE_DAYS, y huellas coherentes:
+// si el registro guarda configHash/hash41 y difieren de los actuales, la entrada o la 4.1
+// cambiaron desde la revisión → se reabre. Los registros legacy sin huella valen hasta caducar.
+function acceptedBlockReason(gapRecord, termRecord, currentHash41, currentConfigHash) {
+  if (!String(gapRecord.reason || '').trim()) return 'accepted sin reason (esquema)';
+  const reviewedAt = gapRecord.reviewedAt || baseline.version || null;
+  if (!reviewedAt) return 'accepted sin fecha de revisión (esquema)';
+  const age = daysSince(reviewedAt);
+  if (age === null) return `accepted con fecha ilegible "${reviewedAt}"`;
+  if (age > ACCEPTED_MAX_AGE_DAYS) return `accepted caducado (${age} días > ${ACCEPTED_MAX_AGE_DAYS}; renovar revisión humana)`;
+  const legacy = !gapRecord.hash41 && !termRecord?.configHash;
+  if (!legacy) {
+    if (!String(gapRecord.reviewedBy || '').trim()) return 'accepted sin responsable (reviewedBy)';
+    if (termRecord?.configHash && currentConfigHash && termRecord.configHash !== currentConfigHash) {
+      return 'la configuración de la entrada cambió desde la revisión (reabrir)';
+    }
+    if (gapRecord.hash41 && currentHash41 && gapRecord.hash41 !== currentHash41) {
+      return 'el texto 4.1 cambió desde la revisión (reabrir)';
+    }
+  }
+  return null;
+}
+
+function classifyGapsAgainstBaseline(row, entry) {
   const known = baselineEntryFor(row.term);
-  const accepted = new Set(Object.keys(known?.gaps || {}));
-  row.newGaps = row.gaps.filter(([nr]) => !accepted.has(String(nr)));
-  row.knownGaps = row.gaps.filter(([nr]) => accepted.has(String(nr)));
+  const currentConfigHash = entry ? entryConfigHash(entry) : null;
+  row.newGaps = [];
+  row.knownGaps = [];
+  row.blockedGaps = []; // [gap, motivo]
+  for (const gap of row.gaps) {
+    const [nr, , , , hash41] = gap;
+    const record = known?.gaps?.[String(nr)];
+    if (!record) { row.newGaps.push(gap); continue; }
+    const status = record.status;
+    if (status === 'accepted') {
+      const motivo = acceptedBlockReason(record, known, hash41, currentConfigHash);
+      if (motivo) row.blockedGaps.push([gap, motivo]);
+      else row.knownGaps.push(gap);
+    } else if (status === 'curated') {
+      row.blockedGaps.push([gap, 'curated pero el GAP ha REAPARECIDO: la cura (ATC/filtro) ya no lo cubre']);
+    } else if (status === 'review') {
+      row.blockedGaps.push([gap, 'pendiente de revisión humana (review): estar en el baseline no lo silencia']);
+    } else {
+      row.blockedGaps.push([gap, `status desconocido "${status}" (esquema)`]);
+    }
+  }
 }
 
 async function writeBaseline(rows) {
-  // Preserva las clasificaciones existentes (no degrada un "accepted" a "review"); añade los GAPS
-  // nuevos como "review" para que el humano los mueva a accepted/curated con motivo.
+  // --update-baseline solo puede CREAR estados 'review' o REABRIR como 'review' aceptaciones cuya
+  // huella ya no coincide. Nunca acepta automáticamente: mover un gap a accepted/curated (con
+  // reason, reviewedAt y reviewedBy) es siempre un acto humano sobre el JSON.
   const next = {
     version: today(),
     generatedBy: 'medcheck-audit-ontology --update-baseline',
@@ -532,16 +698,36 @@ async function writeBaseline(rows) {
     terms: { ...(baseline.terms || {}) }
   };
   for (const row of rows) {
-    const prev = next.terms[row.term]?.gaps || baselineEntryFor(row.term)?.gaps || {};
-    const gaps = { ...prev };
-    for (const [nr, nombre, vtm] of row.gaps) {
-      if (!gaps[nr]) gaps[nr] = { status: 'review', nombre, vtm: vtm || undefined, reason: '' };
-      else {
-        if (!gaps[nr].nombre) gaps[nr].nombre = nombre;
-        if (!gaps[nr].vtm && vtm) gaps[nr].vtm = vtm;
+    const entry = terms[row.term] || {};
+    const configHash = entryConfigHash(entry);
+    const prevTerm = next.terms[row.term] || baselineEntryFor(row.term) || {};
+    const gaps = { ...(prevTerm.gaps || {}) };
+    for (const [nr, nombre, vtm, , hash41] of row.gaps) {
+      const existing = gaps[nr];
+      if (!existing) {
+        gaps[nr] = {
+          status: 'review',
+          nombre,
+          vtm: vtm || undefined,
+          reason: '',
+          detectedAt: today(),
+          ...(hash41 ? { hash41 } : {})
+        };
+        continue;
+      }
+      if (!existing.nombre) existing.nombre = nombre;
+      if (!existing.vtm && vtm) existing.vtm = vtm;
+      // Reapertura por huella: la aceptación se hizo sobre otra configuración u otra 4.1.
+      if (existing.status === 'accepted') {
+        const motivo = acceptedBlockReason(existing, prevTerm, hash41, configHash);
+        if (motivo && (motivo.includes('cambió') || motivo.includes('caducado'))) {
+          existing.status = 'review';
+          existing.reopened = `${motivo} (${today()})`;
+          if (hash41) existing.hash41 = hash41;
+        }
       }
     }
-    next.terms[row.term] = { anchor: row.anchor || null, gaps };
+    next.terms[row.term] = { anchor: row.anchor || null, configHash, gaps };
   }
   await fs.writeFile(baselinePath, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
   console.log(`\n[baseline] escrito ${path.relative(repoRoot, baselinePath)} (${rows.length} entradas)`);
@@ -552,8 +738,17 @@ function today() {
 }
 
 async function reconcileEntry(term, entry) {
-  // Conjunto ATC: lo que MedCheck devuelve hoy (por nregistro).
-  const atcMeds = await searchEntry(entry);
+  // Motivos por los que ESTA fila no puede certificar nada (se agregan al exit 2 global).
+  const inconcluso = [];
+  // Conjunto ATC: lo que MedCheck devuelve hoy (por nregistro). Si la red se agota aquí, el
+  // universo ATC es desconocido y TODO lo que salga en 4.1 parecería GAP: fila inconclusa entera.
+  let atcMeds = [];
+  try {
+    atcMeds = await searchEntry(entry);
+  } catch (error) {
+    inconcluso.push(`universo ATC no medible: ${error.message}`);
+    return { term, source: 'n/a', anchor: null, atc: 0, ft: 0, perTerm: [], gaps: [], extra: 0, anchorErrors: [], inconcluso, newGaps: [], knownGaps: [], blockedGaps: [] };
+  }
   const atcIds = new Set(atcMeds.map(m => m.nregistro).filter(Boolean));
 
   // Conjunto verdad (la 4.1 = verdad legal). Dos motores:
@@ -576,10 +771,10 @@ async function reconcileEntry(term, entry) {
       try {
         parcial = await buscarFichaTecnica('4.1', variante);
       } catch (error) {
-        // NO tragarse el error: un 429/500 transitorio dejaria el universo vacio y el reconcile
-        // informaria "0 GAPS" estando ciego, que es indistinguible de "todo correcto". Se marca
-        // la fila como invalida para que bloquee el gate.
-        anchorErrors.push(`ancla "${variante}": ${error.message}`);
+        // NO tragarse el error: un 429/500 agotado dejaria el universo vacio y el reconcile
+        // informaria "0 GAPS" estando ciego. Red agotada = fila INCONCLUSA (exit 2: repetir);
+        // no es lo mismo que un ancla que recluta 0 (fraseo mal escrito, exit 1: corregir).
+        inconcluso.push(`ancla "${variante}": ${error.message}`);
         continue;
       }
       const nuevos = parcial.filter(m => m.nregistro && !universoMap.has(m.nregistro)).length;
@@ -595,16 +790,24 @@ async function reconcileEntry(term, entry) {
     if (anchor.length > 1) perTerm.push(`universo union=${universo.length}`);
     const normalizedTerms = terms.map(normalize);
     let matched = 0;
+    let unknownTexts = 0;
     for (const m of universo) {
       if (!m.nregistro) continue;
-      const rawText = (await fetchSectionText(m.nregistro, '4.1')).replace(/<[^>]*>/g, ' ');
+      const seccion = await fetchSectionText(m.nregistro, '4.1');
+      if (seccion.status === 'unknown') {
+        // Sin el texto no se sabe si este producto es un GAP: la fila no puede certificar "0".
+        unknownTexts += 1;
+        continue;
+      }
+      const rawText = seccion.text.replace(/<[^>]*>/g, ' ');
       const text = normalize(rawText);
       const hitTerm = normalizedTerms.find(t => termInText(text, t));
       if (hitTerm) {
-        txt.set(m.nregistro, { nombre: m.nombre, vtm: m.vtm?.nombre || m.nombre, excerpt: excerptAround(rawText, hitTerm) });
+        txt.set(m.nregistro, { nombre: m.nombre, vtm: m.vtm?.nombre || m.nombre, excerpt: excerptAround(rawText, hitTerm), hash41: fingerprint(text) });
         matched += 1;
       }
     }
+    if (unknownTexts > 0) inconcluso.push(`${unknownTexts} ficha(s) 4.1 no verificables tras reintentos`);
     perTerm.push(`verdad(${terms.join('|')})=${matched}`);
   } else {
     for (const t of terms) {
@@ -612,22 +815,25 @@ async function reconcileEntry(term, entry) {
       try {
         meds = await buscarFichaTecnica('4.1', t);
       } catch (error) {
-        perTerm.push(`${t}=ERR`);
+        // Antes: "${t}=ERR" y seguir, con lo que la fila podia terminar en "GAPS NUEVOS = 0"
+        // habiendose saltado un fraseo entero. Red agotada = fila inconclusa.
+        inconcluso.push(`fraseo "${t}": ${error.message}`);
+        perTerm.push(`${t}=??`);
         continue;
       }
       perTerm.push(`${t}=${meds.length}`);
       for (const m of meds) {
         if (!m.nregistro) continue;
         // Este modo (retrocompat, sin ancla) no descarga el texto completo de la 4.1
-        // (buscarEnFichaTecnica solo confirma la coincidencia server-side) — sin excerpt honesto.
-        txt.set(m.nregistro, { nombre: m.nombre, vtm: m.vtm?.nombre || m.nombre, excerpt: '' });
+        // (buscarEnFichaTecnica solo confirma la coincidencia server-side) — sin excerpt ni hash.
+        txt.set(m.nregistro, { nombre: m.nombre, vtm: m.vtm?.nombre || m.nombre, excerpt: '', hash41: null });
       }
     }
   }
-  const gaps = [...txt.entries()].map(([nr, v]) => [nr, v.nombre, v.vtm, v.excerpt]).filter(([nr]) => !atcIds.has(nr));
+  const gaps = [...txt.entries()].map(([nr, v]) => [nr, v.nombre, v.vtm, v.excerpt, v.hash41]).filter(([nr]) => !atcIds.has(nr));
   const extra = atcMeds.filter(m => m.nregistro && !txt.has(m.nregistro)).length;
-  // newGaps/knownGaps los rellena classifyGapsAgainstBaseline.
-  return { term, source, anchor, atc: atcIds.size, ft: txt.size, perTerm, gaps, extra, anchorErrors, newGaps: [], knownGaps: [] };
+  // newGaps/knownGaps/blockedGaps los rellena classifyGapsAgainstBaseline.
+  return { term, source, anchor, atc: atcIds.size, ft: txt.size, perTerm, gaps, extra, anchorErrors, inconcluso, newGaps: [], knownGaps: [], blockedGaps: [] };
 }
 
 async function countSectionMatches(meds, filter) {
@@ -636,17 +842,21 @@ async function countSectionMatches(meds, filter) {
   const includeAll = toArray(filter.includeAll).map(normalize);
   const excludeAny = toArray(filter.excludeAny).map(normalize);
   let matched = 0;
+  let unknown = 0;
 
+  // Métrica INFORMATIVA (--live): un fallo puntual no invalida la ejecución, pero se cuenta y se
+  // reporta aparte — un "0 coincidencias" con la mitad de fichas ilegibles no es un cero real.
   for (const med of meds) {
-    const text = await fetchSectionText(med.nregistro, section);
-    if (!text) continue;
-    const normalizedText = normalize(text.replace(/<[^>]*>/g, ' '));
+    const seccion = await fetchSectionText(med.nregistro, section);
+    if (seccion.status === 'unknown') { unknown += 1; continue; }
+    if (!seccion.text) continue;
+    const normalizedText = normalize(seccion.text.replace(/<[^>]*>/g, ' '));
     const okAll = includeAll.length === 0 || includeAll.every(term => termInText(normalizedText, term));
     const okAny = includeAny.length === 0 || includeAny.some(term => termInText(normalizedText, term));
     const okExclude = excludeAny.length === 0 || !excludeAny.some(term => termInText(normalizedText, term));
     if (okAll && okAny && okExclude) matched += 1;
   }
-  return matched;
+  return { matched, unknown };
 }
 
 // Mismo criterio que CimaAPI._sectionTermInText: coincidencia al inicio de palabra
@@ -671,6 +881,9 @@ function excerptAround(rawText, term, radius = 90) {
   return (prefix + rawText.slice(start, end) + suffix).replace(/\s+/g, ' ').trim();
 }
 
+// Resultado TERNARIO, nunca texto vacío ambiguo: 'success' (texto obtenido), 'absent' (la ficha
+// no tiene esa sección: 204/404, ausencia real) o 'unknown' (red agotada o respuesta inválida:
+// NO se sabe qué dice la 4.1, y tratarlo como vacío certificaba GAPS=0 estando ciego).
 async function fetchSectionText(nregistro, section) {
   // El endpoint docSegmentado devuelve a veces JSON (array de secciones) y a veces texto/HTML.
   // Replicamos a CimaAPI.getDocSeccion: leer texto y parsear con fallback (fetchCima haría
@@ -679,16 +892,19 @@ async function fetchSectionText(nregistro, section) {
     const url = new URL(`${CIMA_BASE}/docSegmentado/contenido/1`);
     url.searchParams.set('nregistro', nregistro);
     url.searchParams.set('seccion', section);
-    const r = await fetch(url, { headers: { accept: 'application/json' } });
-    if (!r.ok) return '';
+    const r = await fetchWithRetry(url, { headers: { accept: 'application/json' } });
+    if (r.status === 204 || r.status === 404) return { status: 'absent', text: '' };
+    if (!r.ok) return { status: 'unknown', text: '', reason: `HTTP ${r.status}` };
     const raw = await r.text();
-    if (!raw) return '';
+    if (!raw) return { status: 'absent', text: '' };
     let data;
-    try { data = JSON.parse(raw); } catch { return decodeEntities(raw); }
-    if (Array.isArray(data)) return decodeEntities(data.map(item => `${item.titulo || ''} ${item.contenido || ''}`).join(' '));
-    return decodeEntities(typeof data === 'string' ? data : raw);
-  } catch {
-    return '';
+    try { data = JSON.parse(raw); } catch { return { status: 'success', text: decodeEntities(raw) }; }
+    if (Array.isArray(data)) {
+      return { status: 'success', text: decodeEntities(data.map(item => `${item.titulo || ''} ${item.contenido || ''}`).join(' ')) };
+    }
+    return { status: 'success', text: decodeEntities(typeof data === 'string' ? data : raw) };
+  } catch (error) {
+    return { status: 'unknown', text: '', reason: error.message };
   }
 }
 
@@ -784,12 +1000,24 @@ function printReport() {
       const mode = r.anchor ? 'ancla+texto real' : 'buscarEnFichaTecnica';
       console.log(`- ${r.term} [${r.source} · ${mode}] ATC=${r.atc} 4.1=${r.ft} extra(ATC sin 4.1)=${r.extra}`);
       console.log(`    terms: ${r.perTerm.join(', ')}`);
+      if (r.inconcluso.length) {
+        // Una fila inconclusa nunca certifica un "0": ni GAPS NUEVOS = 0 ni universo completo.
+        console.log('    ?? FILA INCONCLUSA (exit 2: repetir la pasada) — lo no medido NO cuenta como limpio:');
+        for (const motivo of r.inconcluso) console.log(`       - ${motivo}`);
+      }
       if (r.anchorErrors.length) {
         // No decir "0 GAPS" cuando no se ha podido mirar: distinguir "limpio" de "ciego".
         console.log('    !! RECONCILIACION INVALIDA (universo del ancla vacio) — NO es un "sin GAPS":');
         for (const e of r.anchorErrors) console.log(`       - ${e}`);
-        console.log('       Repite la pasada; si persiste, revisa acentos/fraseo del ancla contra CIMA.');
+        console.log('       Revisa acentos/fraseo del ancla contra CIMA.');
         continue;
+      }
+      if (r.blockedGaps.length) {
+        console.log(`    GAPS BLOQUEADOS por el baseline = ${r.blockedGaps.length}:`);
+        for (const [[nr, nombre], motivo] of r.blockedGaps.slice(0, 10)) {
+          console.log(`      !! ${nombre} (nregistro ${nr}): ${motivo}`);
+        }
+        if (r.blockedGaps.length > 10) console.log(`      ... (+${r.blockedGaps.length - 10} más)`);
       }
       if (r.newGaps.length) {
         // Agrupar por principio activo (vtm): un GAP de 119 presentaciones suele ser
@@ -811,11 +1039,11 @@ function printReport() {
           if (g.excerpt) console.log(`          4.1: "${g.excerpt}"`);
         }
         if (groups.length > 15) console.log(`      ... (+${groups.length - 15} principios activos mas)`);
-      } else {
+      } else if (!r.inconcluso.length) {
         console.log('    GAPS NUEVOS = 0');
       }
       if (r.knownGaps.length) {
-        console.log(`    GAPS conocidos (baseline) = ${r.knownGaps.length}`);
+        console.log(`    GAPS conocidos (accepted vigente en baseline) = ${r.knownGaps.length}`);
       }
     }
     if (newGapCount > 0 && !updateBaseline) {
@@ -823,6 +1051,20 @@ function printReport() {
       console.log(`>> ${newGapCount} GAP(s) nuevo(s): cura la entrada (ampliar ATC/filtro) o registralos en`);
       console.log('   reconcile-baseline.json con motivo (o corre --update-baseline y clasifica los "review").');
     }
+    if (blockedGapCount > 0) {
+      console.log('');
+      console.log(`>> ${blockedGapCount} GAP(s) bloqueado(s) por el baseline: revisa los 'review' pendientes, las`);
+      console.log("   curas reaparecidas ('curated') y los 'accepted' caducados o con huella desfasada.");
+    }
+    console.log('');
+  }
+
+  if (inconclusive.length) {
+    console.log('## Ejecución INCONCLUSA — lo no medido no cuenta como limpio');
+    console.log('(exit 2 salvo que además haya problemas deterministas, que ganan con exit 1.');
+    console.log(' Significa "repite la pasada", no "el producto está mal". Nunca escribe baseline.)');
+    console.log('');
+    for (const motivo of inconclusive) console.log(`- ${motivo}`);
     console.log('');
   }
 }

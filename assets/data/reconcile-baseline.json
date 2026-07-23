@@ -1,7 +1,7 @@
 {
   "version": "2026-07-20",
   "generatedBy": "medcheck-audit-ontology --update-baseline",
-  "_doc": "Memoria de GAPS de reconciliacion ya revisados. status: 'accepted' = revisado, fuera de alcance o falso positivo, NO bloquea el gate; 'curated' = ya cubierto por el ATC/filtro; 'review' = pendiente de decision humana, BLOQUEA. Un GAP nuevo no listado aqui bloquea la publicacion hasta curarlo o registrarlo. Regenerar/anadir nuevos: node scripts/medcheck-audit-ontology.mjs --update-baseline --terms=\"<indicacion>\".",
+  "_doc": "Memoria de GAPS de reconciliacion ya revisados. Maquina de estados (revision cruzada 2026-07-23), para un GAP aun presente: 'review' = pendiente de decision humana, BLOQUEA siempre (estar aqui no es revision); 'accepted' = revisado, fuera de alcance o falso positivo, UNICO estado que silencia, y solo vigente (reason no vacio + reviewedAt <= 180 dias + reviewedBy y huellas configHash/hash41 coherentes en registros nuevos; los legacy sin huella valen hasta caducar contando desde la version del archivo); 'curated' = ya cubierto por ATC/filtro, BLOQUEA si reaparece (la cura fallo); status ausente o desconocido = bloquea por esquema. Aceptar es siempre un acto humano sobre este JSON: --update-baseline solo crea 'review' (o reabre como 'review' aceptaciones caducadas o con huella desfasada) y NUNCA escribe tras una pasada inconclusa (exit 2). Anadir nuevos: node scripts/medcheck-audit-ontology.mjs --update-baseline --terms=indicacion.",
   "terms": {
     "enfermedad renal crónica": {
       "anchor": "enfermedad renal",
