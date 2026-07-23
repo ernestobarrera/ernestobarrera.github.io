@@ -135,13 +135,17 @@ check(`invariante: ninguna subcadena interior ejecuta en búsqueda real (${sweep
 const resolve = (q) => api.resolveIndicationCandidates(real(q), sug(q));
 
 let res = resolve('presión');
-check('resolver "presión" → ambiguous (hipertensión | glaucoma)',
-    res.mode === 'ambiguous' && res.candidates.length === 2 &&
-    res.candidates.some((c) => c.term === 'hipertensión') && res.candidates.some((c) => c.term === 'glaucoma'),
-    JSON.stringify(res.candidates?.map((c) => c.term) ?? res.mode));
-check('resolver "presión" NO ofrece depresión (subcadena 60, no es lectura clínica)',
-    !res.candidates.some((c) => c.term === 'depresión'),
-    JSON.stringify(res.candidates?.map((c) => c.term)));
+check('resolver "presión" → ambiguous, con hipertensión y glaucoma primero',
+    res.mode === 'ambiguous' &&
+    res.candidates[0]?.term === 'glaucoma' && res.candidates[1]?.term === 'hipertensión',
+    JSON.stringify(res.candidates?.map((c) => `${c.term}=${c.score}`) ?? res.mode));
+// Coherencia total con el autocomplete (decisión de Ernesto, 2026-07-23): la subcadena interior
+// también se ofrece, pero SIEMPRE por detrás de los sinónimos curados y solo como elección
+// explícita — nunca ejecutándose sola, que es lo que la doctrina impide.
+check('resolver "presión" ofrece depresión al final (subcadena 60, nunca la primera)',
+    res.candidates.some((c) => c.term === 'depresión' && c.score === 60) &&
+    res.candidates.findIndex((c) => c.term === 'depresión') === res.candidates.length - 1,
+    JSON.stringify(res.candidates?.map((c) => `${c.term}=${c.score}`)));
 
 res = resolve('insuficiencia');
 check('resolver "insuficiencia" → ambiguous (cardiaca | venosa)',
@@ -152,11 +156,27 @@ check('resolver "insuficiencia" → ambiguous (cardiaca | venosa)',
 // las que el usuario acaba de ver al teclear (fallo detectado en uso real, 2026-07-23).
 {
     const ofrecidos = new Set(res.candidates.map((c) => c.term));
-    const autocompletados = sug('insuficiencia').filter((m) => m.score >= 70).map((m) => m.term);
+    const autocompletados = sug('insuficiencia').map((m) => m.term);
     check('resolver "insuficiencia" ofrece TODO lo del autocomplete (pancreática y ERC incluidas)',
         autocompletados.every((t) => ofrecidos.has(t)) &&
         ofrecidos.has('insuficiencia pancreática') && ofrecidos.has('enfermedad renal crónica'),
         `ofrecidos=${JSON.stringify([...ofrecidos])} autocomplete=${JSON.stringify(autocompletados)}`);
+}
+
+// Invariante de coherencia: para CUALQUIER query ambigua, la pantalla de elección ofrece
+// exactamente el mismo conjunto que el autocomplete del diccionario clínico. Sin excepciones.
+{
+    const fallos = [];
+    const battery = [...Object.keys(terms), 'presión', 'insuficiencia', 'tiroidismo', 'anti', 'micosis'];
+    for (const q of battery) {
+        const r = api.resolveIndicationCandidates(real(q), sug(q));
+        if (r.mode !== 'ambiguous') continue;
+        const ofrecidos = r.candidates.map((c) => c.term).sort().join('|');
+        const autocomplete = sug(q).map((m) => m.term).sort().join('|');
+        if (ofrecidos !== autocomplete) fallos.push(q);
+    }
+    check(`invariante: elección ≡ autocomplete en toda query ambigua (${battery.length} queries)`,
+        fallos.length === 0, fallos.slice(0, 5).join(', '));
 }
 
 res = resolve('micosis');

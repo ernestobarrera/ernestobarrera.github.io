@@ -1153,13 +1153,13 @@ class CimaAPI {
         const plans = new Set(top.map((m) => this._indicationPlanKey(m)));
         if (top.length > 1 && plans.size > 1) {
             // Decidir SI se ejecuta usa solo el grupo de score máximo (arriba). Pero una vez
-            // decidido que NO se ejecuta, la pantalla de elección debe ofrecer lo mismo que el
-            // autocomplete: restringirla no protege de nada y obliga a reescribir la búsqueda.
-            // Se admiten desde 70 (término, prefijo de palabra o sinónimo curado) y se excluye
-            // la subcadena interior (60), que es coincidencia lexical, no lectura clínica:
-            // "presión" ofrece hipertensión y glaucoma, nunca depresión.
-            const candidates = (suggestMatches || matches).filter((m) => m.score >= 70);
-            return { mode: 'ambiguous', candidates: candidates.length ? candidates : top };
+            // decidido que NO se ejecuta, la pantalla de elección ofrece EXACTAMENTE lo mismo que
+            // el autocomplete, subcadena interior incluida: restringirla no protege de nada y
+            // obliga a reescribir la búsqueda. La subcadena va al final por score ("presión" →
+            // hipertensión y glaucoma primero, depresión después) y elegirla es un acto explícito
+            // del usuario, no una ejecución en silencio — que es lo que la doctrina impide.
+            const candidates = suggestMatches && suggestMatches.length ? suggestMatches : matches;
+            return { mode: 'ambiguous', candidates };
         }
         return { mode: 'execute', match: matches[0] };
     }
