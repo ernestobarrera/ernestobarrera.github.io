@@ -842,7 +842,13 @@ class CimaAPI {
         // 1. Buscar en diccionario clínico (síndromes, abreviaturas, sinónimos españoles)
         const clinicalMatches = this.findClinicalDictionaryMatches(normalizedQuery);
 
-        const resolution = this.resolveIndicationCandidates(clinicalMatches);
+        // El segundo conjunto (suggest) solo se usa si hay que PREGUNTAR: ofrece las mismas
+        // lecturas que ve el usuario en el autocomplete, incluidas las entradas exact por prefijo
+        // y los sinónimos de otras entradas ("insuficiencia" → también pancreática y ERC).
+        const resolution = this.resolveIndicationCandidates(
+            clinicalMatches,
+            this.findClinicalDictionaryMatches(normalizedQuery, { suggest: true })
+        );
         if (resolution.mode === 'ambiguous') {
             console.log(`📚 Término ambiguo: "${normalizedQuery}" → ${resolution.candidates.map((c) => c.term).join(' | ')}`);
             return {
@@ -1140,13 +1146,20 @@ class CimaAPI {
      *   hipo|hipertiroidismo) nunca se resuelve en silencio por orden alfabético.
      * Puro y síncrono: lo cubren los tests de scripts/medcheck-test-matcher.mjs.
      */
-    resolveIndicationCandidates(matches) {
+    resolveIndicationCandidates(matches, suggestMatches = null) {
         if (!matches || matches.length === 0) return { mode: 'none' };
         const topScore = matches[0].score;
         const top = matches.filter((m) => m.score === topScore);
         const plans = new Set(top.map((m) => this._indicationPlanKey(m)));
         if (top.length > 1 && plans.size > 1) {
-            return { mode: 'ambiguous', candidates: top };
+            // Decidir SI se ejecuta usa solo el grupo de score máximo (arriba). Pero una vez
+            // decidido que NO se ejecuta, la pantalla de elección debe ofrecer lo mismo que el
+            // autocomplete: restringirla no protege de nada y obliga a reescribir la búsqueda.
+            // Se admiten desde 70 (término, prefijo de palabra o sinónimo curado) y se excluye
+            // la subcadena interior (60), que es coincidencia lexical, no lectura clínica:
+            // "presión" ofrece hipertensión y glaucoma, nunca depresión.
+            const candidates = (suggestMatches || matches).filter((m) => m.score >= 70);
+            return { mode: 'ambiguous', candidates: candidates.length ? candidates : top };
         }
         return { mode: 'execute', match: matches[0] };
     }

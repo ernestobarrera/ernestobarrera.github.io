@@ -3046,7 +3046,15 @@ class MedCheckApp {
                         <h3>"${query}" puede referirse a varias cosas</h3>
                         <p class="text-xs text-secondary mt-sm">Elige la indicación que buscas:</p>
                         <div class="indication-chips mt-sm">
-                            ${data.candidates.map((c) => `<button class="indication-chip" onclick="document.getElementById('indication-input').value='${c.term.replace(/'/g, '&#39;')}'; app.performIndicationSearch();">${c.label}</button>`).join('')}
+                            ${data.candidates.map((c) => {
+                                // Mismo texto que ve en el autocomplete (el término), con el label
+                                // farmacológico como apoyo: en el chip solo cabía el label largo y
+                                // no coincidía con lo que acababa de leer al teclear.
+                                const term = c.term.replace(/'/g, '&#39;');
+                                const detalle = c.label && c.label !== c.term
+                                    ? `<small class="text-muted"> · ${c.label}</small>` : '';
+                                return `<button class="indication-chip" title="${c.label}" onclick="document.getElementById('indication-input').value='${term}'; app.performIndicationSearch();"><strong style="text-transform:capitalize">${c.term}</strong>${detalle}</button>`;
+                            }).join('')}
                         </div>
                     </div>
                 `;

@@ -130,19 +130,34 @@ check(`invariante: ninguna subcadena interior ejecuta en búsqueda real (${sweep
     sweepFails.length === 0, sweepFails.slice(0, 5).join('; '));
 
 // --- Resolutor de candidatos (desambiguación): empates con planes distintos nunca ejecutan ---
-const resolve = (q) => api.resolveIndicationCandidates(real(q));
+// Se le pasa el conjunto suggest, igual que hace searchByIndication: al preguntar (no ejecutar)
+// la pantalla debe ofrecer lo mismo que el autocomplete.
+const resolve = (q) => api.resolveIndicationCandidates(real(q), sug(q));
 
 let res = resolve('presión');
 check('resolver "presión" → ambiguous (hipertensión | glaucoma)',
     res.mode === 'ambiguous' && res.candidates.length === 2 &&
     res.candidates.some((c) => c.term === 'hipertensión') && res.candidates.some((c) => c.term === 'glaucoma'),
     JSON.stringify(res.candidates?.map((c) => c.term) ?? res.mode));
+check('resolver "presión" NO ofrece depresión (subcadena 60, no es lectura clínica)',
+    !res.candidates.some((c) => c.term === 'depresión'),
+    JSON.stringify(res.candidates?.map((c) => c.term)));
 
 res = resolve('insuficiencia');
 check('resolver "insuficiencia" → ambiguous (cardiaca | venosa)',
     res.mode === 'ambiguous' && res.candidates.some((c) => c.term === 'insuficiencia cardiaca') &&
     res.candidates.some((c) => c.term === 'insuficiencia venosa'),
     JSON.stringify(res.candidates?.map((c) => c.term) ?? res.mode));
+// Coherencia con el autocomplete: la pantalla de elección no puede ofrecer MENOS lecturas que
+// las que el usuario acaba de ver al teclear (fallo detectado en uso real, 2026-07-23).
+{
+    const ofrecidos = new Set(res.candidates.map((c) => c.term));
+    const autocompletados = sug('insuficiencia').filter((m) => m.score >= 70).map((m) => m.term);
+    check('resolver "insuficiencia" ofrece TODO lo del autocomplete (pancreática y ERC incluidas)',
+        autocompletados.every((t) => ofrecidos.has(t)) &&
+        ofrecidos.has('insuficiencia pancreática') && ofrecidos.has('enfermedad renal crónica'),
+        `ofrecidos=${JSON.stringify([...ofrecidos])} autocomplete=${JSON.stringify(autocompletados)}`);
+}
 
 res = resolve('micosis');
 check('resolver "micosis" → execute candidiasis (sin empate)',
