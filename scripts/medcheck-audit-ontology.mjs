@@ -31,6 +31,14 @@ const ACCEPTED_MAX_AGE_DAYS = 180;
 const BACKOFF_BASE_MS = Number(process.env.MC_AUDIT_BACKOFF_MS) || 1000;
 const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 class UnknownResultError extends Error {}
+// Entidades HTML nombradas que decodeEntities traduce a mano (docSegmentado no las decodifica).
+// Ver la nota junto a decodeEntities: DEBE vivir aquí arriba por la zona muerta temporal.
+const NAMED_ENTITIES = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  aacute: 'á', eacute: 'é', iacute: 'í', oacute: 'ó', uacute: 'ú',
+  Aacute: 'Á', Eacute: 'É', Iacute: 'Í', Oacute: 'Ó', Uacute: 'Ú',
+  ntilde: 'ñ', Ntilde: 'Ñ', uuml: 'ü', Uuml: 'Ü', ordm: 'º', ordf: 'ª', deg: '°'
+};
 // Motivos por los que esta ejecución NO puede certificar nada (red agotada, respuesta inválida,
 // truncación del universo decisorio). Si hay alguno y ningún problema determinista, exit 2:
 // "repite la pasada", que es distinto de exit 1: "el producto está mal".
@@ -295,12 +303,11 @@ function normalize(value) {
 // decodifica con un <textarea>; en Node no hay document, asi que hay que hacerlo a mano
 // o el texto "enfermedad renal cronica" NUNCA casaria y el auditor subcontaria (justo el
 // caso de los iSGLT2 en ERC). Cubre entidades numericas (dec/hex) y las nombradas comunes.
-const NAMED_ENTITIES = {
-  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
-  aacute: '\u00e1', eacute: '\u00e9', iacute: '\u00ed', oacute: '\u00f3', uacute: '\u00fa',
-  Aacute: '\u00c1', Eacute: '\u00c9', Iacute: '\u00cd', Oacute: '\u00d3', Uacute: '\u00da',
-  ntilde: '\u00f1', Ntilde: '\u00d1', uuml: '\u00fc', Uuml: '\u00dc', ordm: '\u00ba', ordf: '\u00aa', deg: '\u00b0'
-};
+// NAMED_ENTITIES vive arriba con las constantes de m\u00f3dulo (zona muerta temporal): aqu\u00ed abajo, el
+// callback de decodeEntities solo la tocaba al encontrar una entidad nombrada en el texto, y esas
+// fichas concretas lanzaban ReferenceError que el antiguo catch convert\u00eda en texto vac\u00edo \u2014 83
+// fichas 4.1 invisibles para el reconciliador sin que nada lo delatara (destapado 2026-07-23 por
+// el contrato ternario success/absent/unknown).
 function decodeEntities(value) {
   return String(value || '')
     .replace(/&#x([0-9a-f]+);/gi, (_, hex) => safeFromCodePoint(parseInt(hex, 16)))
@@ -791,12 +798,14 @@ async function reconcileEntry(term, entry) {
     const normalizedTerms = terms.map(normalize);
     let matched = 0;
     let unknownTexts = 0;
+    const unknownReasons = new Set();
     for (const m of universo) {
       if (!m.nregistro) continue;
       const seccion = await fetchSectionText(m.nregistro, '4.1');
       if (seccion.status === 'unknown') {
         // Sin el texto no se sabe si este producto es un GAP: la fila no puede certificar "0".
         unknownTexts += 1;
+        unknownReasons.add(seccion.reason || 'motivo desconocido');
         continue;
       }
       const rawText = seccion.text.replace(/<[^>]*>/g, ' ');
@@ -807,7 +816,10 @@ async function reconcileEntry(term, entry) {
         matched += 1;
       }
     }
-    if (unknownTexts > 0) inconcluso.push(`${unknownTexts} ficha(s) 4.1 no verificables tras reintentos`);
+    if (unknownTexts > 0) {
+      const motivo = [...unknownReasons].slice(0, 3).join(' · ');
+      inconcluso.push(`${unknownTexts} ficha(s) 4.1 no verificables tras reintentos (${motivo})`);
+    }
     perTerm.push(`verdad(${terms.join('|')})=${matched}`);
   } else {
     for (const t of terms) {
