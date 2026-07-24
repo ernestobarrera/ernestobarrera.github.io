@@ -182,6 +182,28 @@ check('resolver "insuficiencia" → ambiguous (cardiaca | venosa)',
 res = resolve('micosis');
 check('resolver "micosis" → execute candidiasis (sin empate)',
     res.mode === 'execute' && res.match.term === 'candidiasis', res.mode);
+// La subcadena interior (60) se OFRECE pero no cuenta como plan competidor: onicomicosis aparece
+// en el autocomplete pero no debe forzar a preguntar cuando "micosis" es un sinónimo curado.
+check('resolver "micosis" ofrece onicomicosis pero no por ello pregunta',
+    has(sug('micosis'), 'onicomicosis') && res.mode === 'execute',
+    JSON.stringify(sug('micosis').map((m) => `${m.term}=${m.score}`)));
+
+// --- Autoejecución de prefijos multi-lectura (revisión cruzada Codex 2026-07-24) ---
+// La decisión ejecutar-vs-preguntar se toma sobre el conjunto VISIBLE, no sobre el real: un único
+// líder no-exact NO puede autoejecutar si el autocomplete ofrece otras lecturas del mismo prefijo.
+res = resolve('anti');
+check('resolver "anti" → ambiguous (NO autoejecuta anticoncepción)',
+    res.mode === 'ambiguous' && res.candidates.some((c) => c.term === 'anticoncepción'),
+    `${res.mode}${res.mode === 'execute' ? ' ' + res.match.term : ''}`);
+check('resolver "anti" ofrece las lecturas exact del autocomplete (anti-tnf, antibióticos...)',
+    res.mode === 'ambiguous' && has(res.candidates, 'anti-tnf') && has(res.candidates, 'antibióticos'),
+    JSON.stringify(res.candidates?.map((c) => c.term) ?? res.mode));
+
+res = resolve('pulmonar');
+check('resolver "pulmonar" → ambiguous (NO autoejecuta trombosis)',
+    res.mode === 'ambiguous' && has(res.candidates, 'fibrosis pulmonar') &&
+    has(res.candidates, 'hipertensión pulmonar'),
+    `${res.mode}${res.mode === 'execute' ? ' ' + res.match.term : ''}`);
 
 res = resolve('depresión');
 check('resolver "depresión" → execute (exacto nunca es ambiguo)',

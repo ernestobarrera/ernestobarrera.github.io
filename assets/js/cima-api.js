@@ -1140,26 +1140,34 @@ class CimaAPI {
 
     /**
      * Decide qué hacer con los matches del diccionario en una búsqueda real:
-     * - execute: un único candidato en el grupo de score máximo (o varios con el MISMO plan).
-     * - ambiguous: varios candidatos empatados con planes distintos → debe elegir el usuario.
-     *   Un empate de sinónimos (p. ej. "presión" → hipertensión|glaucoma, "tiroidismo" →
-     *   hipo|hipertiroidismo) nunca se resuelve en silencio por orden alfabético.
+     * - execute: la query determina UN plan inequívoco (término exacto, o una sola lectura visible).
+     * - ambiguous: el prefijo abre varias lecturas en pantalla → debe elegir el usuario.
+     *
+     * La decisión ejecutar-vs-preguntar se toma sobre el conjunto VISIBLE (lo que el usuario ve en
+     * el autocomplete = `suggestMatches`), NO sobre el conjunto real (`matches`). Mirar solo el
+     * grupo de score máximo del conjunto real dejaba autoejecutar un único líder no-exact aunque el
+     * autocomplete mostrase un menú: "anti" ejecutaba anticoncepción (80) pese a ofrecer anti-TNF,
+     * anti-VEGF, antibióticos... (78); "pulmonar" ejecutaba trombosis pese a ofrecer fibrosis e
+     * hipertensión pulmonar (revisión cruzada Codex 2026-07-24). Si el prefijo tiene varios planes
+     * plausibles en pantalla, preguntar — aunque uno puntúe 80 y los demás 78/70.
+     *
+     * Las coincidencias de subcadena interior (score 60, p. ej. "onicomicosis" por "micosis") son
+     * textuales aproximadas, no lecturas clínicas equivalentes: se siguen OFRECIENDO en la pantalla
+     * de elección (candidates = conjunto visible completo), pero NO cuentan como plan competidor
+     * para decidir la ambigüedad — si no, "micosis" dejaría de ejecutar candidiasis.
      * Puro y síncrono: lo cubren los tests de scripts/medcheck-test-matcher.mjs.
      */
     resolveIndicationCandidates(matches, suggestMatches = null) {
         if (!matches || matches.length === 0) return { mode: 'none' };
-        const topScore = matches[0].score;
-        const top = matches.filter((m) => m.score === topScore);
-        const plans = new Set(top.map((m) => this._indicationPlanKey(m)));
-        if (top.length > 1 && plans.size > 1) {
-            // Decidir SI se ejecuta usa solo el grupo de score máximo (arriba). Pero una vez
-            // decidido que NO se ejecuta, la pantalla de elección ofrece EXACTAMENTE lo mismo que
-            // el autocomplete, subcadena interior incluida: restringirla no protege de nada y
-            // obliga a reescribir la búsqueda. La subcadena va al final por score ("presión" →
-            // hipertensión y glaucoma primero, depresión después) y elegirla es un acto explícito
-            // del usuario, no una ejecución en silencio — que es lo que la doctrina impide.
-            const candidates = suggestMatches && suggestMatches.length ? suggestMatches : matches;
-            return { mode: 'ambiguous', candidates };
+        // Término exacto (la query ES el término): un único plan por definición, ejecuta sin preguntar.
+        if (matches[0].score === 100) return { mode: 'execute', match: matches[0] };
+
+        const visible = suggestMatches && suggestMatches.length ? suggestMatches : matches;
+        // Planes competidores = lecturas visibles con score > 60 (excluye la subcadena aproximada).
+        const deciding = visible.filter((m) => m.score > 60);
+        const plans = new Set(deciding.map((m) => this._indicationPlanKey(m)));
+        if (plans.size > 1) {
+            return { mode: 'ambiguous', candidates: visible };
         }
         return { mode: 'execute', match: matches[0] };
     }
