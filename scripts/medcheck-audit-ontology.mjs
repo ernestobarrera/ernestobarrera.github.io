@@ -595,13 +595,31 @@ function reconcileTermsFor(term, entry) {
 // futuro SOLO destaque GAPS NUEVOS (p. ej. un nuevo iSGLT2 autorizado para ERC). Eso es lo que hace
 // la red de seguridad "automantenida": alerta de novedades, no repite el ruido conocido.
 async function loadBaseline() {
+  // Distinción crítica: "el archivo no existe todavía" (primera vez) es baseline vacío legítimo;
+  // "existe pero no se puede leer/parsear" NO lo es. Tratar lo segundo como vacío silencioso deja
+  // que --update-baseline sobrescriba y DESTRUYA la curación humana acumulada (los accepted). Por
+  // eso un baseline corrupto/ilegible marca la ejecución como INCONCLUSA (exit 2): eso a su vez
+  // impide writeBaseline (ver arranque) y avisa, en vez de borrar en silencio.
+  let raw;
   try {
-    const raw = await fs.readFile(baselinePath, 'utf8');
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : { version: null, terms: {} };
-  } catch {
-    return { version: null, terms: {} };
+    raw = await fs.readFile(baselinePath, 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return { version: null, terms: {} };
+    inconclusive.push(`baseline ilegible (${path.relative(repoRoot, baselinePath)}): ${error.message}`);
+    return { version: null, terms: {}, _loadError: true };
   }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    inconclusive.push(`baseline corrupto, no es JSON válido (${path.relative(repoRoot, baselinePath)}): ${error.message}`);
+    return { version: null, terms: {}, _loadError: true };
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || (parsed.terms != null && typeof parsed.terms !== 'object')) {
+    inconclusive.push(`baseline con esquema inválido (${path.relative(repoRoot, baselinePath)}): se esperaba un objeto con "terms"`);
+    return { version: null, terms: {}, _loadError: true };
+  }
+  return parsed;
 }
 
 function baselineEntryFor(term) {
@@ -694,6 +712,12 @@ function classifyGapsAgainstBaseline(row, entry) {
 }
 
 async function writeBaseline(rows) {
+  // Defensa en profundidad: nunca reescribir partiendo de un baseline que no se pudo cargar. El
+  // arranque ya no llega aquí si la carga falló (queda inconcluso), pero si alguien reordena ese
+  // flujo, este guard evita colapsar la curación humana a {} y sobrescribir el archivo.
+  if (baseline._loadError) {
+    throw new Error('baseline no cargado (corrupto/ilegible): se aborta la escritura para no destruir la curación');
+  }
   // --update-baseline solo puede CREAR estados 'review' o REABRIR como 'review' aceptaciones cuya
   // huella ya no coincide. Nunca acepta automáticamente: mover un gap a accepted/curated (con
   // reason, reviewedAt y reviewedBy) es siempre un acto humano sobre el JSON.

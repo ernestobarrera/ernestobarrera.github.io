@@ -145,6 +145,36 @@ const hace10dias = new Date(Date.now() - 10 * 86400000).toISOString().slice(0, 1
     check('la 1ª pasada también bloqueó (GAP nuevo)', first.code === 1, `exit ${first.code}`);
 }
 
+// 11. Baseline corrupto / esquema inválido / inexistente (revisión cruzada Codex 2026-07-24):
+//     un baseline ilegible NO puede tratarse como vacío — eso dejaría que --update-baseline lo
+//     sobrescriba y DESTRUYA la curación humana. Debe quedar inconcluso (exit 2) y no tocar el archivo.
+{
+    // 11a. JSON corrupto + --update-baseline → exit 2, archivo INTACTO, avisa.
+    const corrupto = join(workDir, 'b11-corrupto.json');
+    writeFileSync(corrupto, '{ esto no es json valido,,, ', 'utf8');
+    const before = readFileSync(corrupto, 'utf8');
+    const a = runAudit({ mode: 'ok', baseline: corrupto, extraArgs: ['--update-baseline'] });
+    const after = readFileSync(corrupto, 'utf8');
+    check('baseline corrupto → exit 2 (inconcluso, no exit 0)', a.code === 2, `exit ${a.code}`);
+    check('baseline corrupto → archivo intacto (curación a salvo, no sobrescribe)', before === after);
+    check('baseline corrupto → avisa "corrupto" y que NO escribe',
+        a.out.includes('baseline corrupto') && a.out.includes('[baseline] NO escrito'), a.out.slice(-300));
+
+    // 11b. Esquema inválido (array JSON válido, sin "terms") → exit 2.
+    const malEsquema = join(workDir, 'b11-esquema.json');
+    writeFileSync(malEsquema, '[1,2,3]', 'utf8');
+    const b = runAudit({ mode: 'ok', baseline: malEsquema });
+    check('baseline con esquema inválido → exit 2', b.code === 2, `exit ${b.code}`);
+    check('baseline con esquema inválido → avisa "esquema inválido"', b.out.includes('esquema inválido'));
+
+    // 11c. Baseline inexistente (ENOENT) → primera vez legítima: NO bloquea por eso.
+    const inexistente = join(workDir, 'b11-no-existe.json');
+    const c = runAudit({ mode: 'ok', baseline: inexistente });
+    check('baseline inexistente (ENOENT) → no bloquea (exit 0, primera vez legítima)', c.code === 0, `exit ${c.code}\n${c.out.slice(-300)}`);
+    check('baseline inexistente → no se confunde con corrupto/ilegible',
+        !c.out.includes('baseline corrupto') && !c.out.includes('ilegible') && !c.out.includes('esquema inválido'));
+}
+
 if (failures > 0) {
     console.log(`\n${failures} caso(s) en rojo.`);
     process.exit(1);
