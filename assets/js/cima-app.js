@@ -148,6 +148,11 @@ class MedCheckApp {
         // Fuente de apertura: 'bookmarklet' si la app se abrio desde el atajo seguro, 'app' si acceso directo
         const _urlSrc = new URLSearchParams(window.location.search).get('source');
         window._mcSource = _urlSrc === 'bookmarklet' ? 'bookmarklet' : 'app';
+        // La atribucion 'bookmarklet' debe sobrevivir hasta la PRIMERA busqueda (que puede
+        // ser diferida: el atajo precarga el termino pero el usuario confirma con un clic).
+        // Reset de un solo disparo en performSearch para no atribuir a bookmarklet las
+        // busquedas manuales posteriores de la misma pestana.
+        this._pendingSourceReset = window._mcSource === 'bookmarklet';
 
         // URL Router state - prevents URL update during popstate navigation
         this.isPopstateNavigation = false;
@@ -1256,6 +1261,14 @@ class MedCheckApp {
                 if (rawData.resultados && rawData.resultados.length > 0) {
                     retiradosAviso = true;
                 }
+            }
+
+            // Las peticiones anteriores ya capturaron X-MC-Source de forma sincrona (fetch()
+            // lee window._mcSource antes de su await). Consumimos aqui el reset diferido para
+            // que las busquedas manuales siguientes de esta pestana no hereden 'bookmarklet'.
+            if (this._pendingSourceReset) {
+                window._mcSource = 'app';
+                this._pendingSourceReset = false;
             }
 
             if (!rawData.resultados || rawData.resultados.length === 0) {
@@ -6992,9 +7005,9 @@ class MedCheckApp {
         this.bookmarkletModalBody.innerHTML = `
             <div class="bookmarklet-sheet">
                 <div class="bookmarklet-hero">
-                    <span class="bookmarklet-kicker">Atajo seguro</span>
-                    <h2 class="bookmarklet-title">Atajo seguro MedCheck</h2>
-                    <p class="bookmarklet-subtitle">Abre MedCheck en una pestana nueva sin modificar la pagina clinica origen. Copia el farmaco y pegalo ya dentro de MedCheck.</p>
+                    <span class="bookmarklet-kicker">Atajo</span>
+                    <h2 class="bookmarklet-title">Buscar en MedCheck desde cualquier pagina</h2>
+                    <p class="bookmarklet-subtitle">Selecciona un farmaco —en la historia clinica o en cualquier web— y abrelo en MedCheck con un clic, sin salir de lo que estas haciendo.</p>
                 </div>
 
                 <div class="bookmarklet-grid">
@@ -7003,9 +7016,9 @@ class MedCheckApp {
                         <p class="bookmarklet-anchor-note">Arrastra este marcador a tu barra del navegador:</p>
                         <a class="bookmarklet-link" id="bookmarklet-install-link" draggable="true">
                             <i class="fas fa-bookmark"></i>
-                            <span>Abrir MedCheck seguro</span>
+                            <span>Buscar en MedCheck</span>
                         </a>
-                        <p class="bookmarklet-helper">Tambien puedes copiar el codigo completo y crear el marcador manualmente. Este atajo no lee ni modifica la pagina origen.</p>
+                        <p class="bookmarklet-helper">¿Prefieres hacerlo a mano? Copia el codigo y crea tu el marcador.</p>
                         <div class="bookmarklet-actions">
                             <button type="button" class="btn btn-primary" id="copy-bookmarklet-btn">
                                 <i class="fas fa-copy"></i> Copiar atajo
@@ -7019,16 +7032,16 @@ class MedCheckApp {
                     <div class="bookmarklet-card">
                         <h3>Uso</h3>
                         <ol>
-                            <li>Copia el farmaco, principio activo o CN si estas en una HCE.</li>
-                            <li>Pulsa el marcador <strong>Abrir MedCheck seguro</strong>.</li>
-                            <li>Pega y busca dentro de MedCheck. El atajo no inserta modales en la pagina origen.</li>
+                            <li>Selecciona el nombre del farmaco (por ejemplo, en la historia clinica).</li>
+                            <li>Pulsa el marcador <strong>Buscar en MedCheck</strong>.</li>
+                            <li>MedCheck se abre con el termino ya cargado. Revisalo y busca.</li>
                         </ol>
                     </div>
 
                     <details class="bookmarklet-card bookmarklet-code-panel">
                         <summary class="bookmarklet-summary">Ver javascript completo</summary>
                         <textarea class="bookmarklet-code" id="bookmarklet-code" readonly></textarea>
-                        <p class="bookmarklet-note">Este codigo solo abre MedCheck; no lee seleccion, URL ni contenido de la pagina origen.</p>
+                        <p class="bookmarklet-note">Solo usa el texto que seleccionas y abre MedCheck en una pestana nueva.</p>
                     </details>
                 </div>
             </div>
@@ -7041,7 +7054,7 @@ class MedCheckApp {
 
         installLink?.setAttribute('href', bookmarkletCode);
         installLink?.setAttribute('title', 'Arrastra este marcador a tu barra de marcadores');
-        installLink?.setAttribute('aria-label', 'Marcador arrastrable Abrir MedCheck seguro');
+        installLink?.setAttribute('aria-label', 'Marcador arrastrable Buscar en MedCheck');
 
         if (codeArea) {
             codeArea.value = bookmarkletCode;
@@ -7084,8 +7097,10 @@ class MedCheckApp {
         return meta[status] || { label: 'Estado: informacion', badge: 'badge-info' };
     }
     getBookmarkletCode() {
-        // Safe launcher: no DOM injection, no selection scraping, no reads from the source page.
-        return "javascript:(()=>{const u='https://ernestobarrera.github.io/medcheck.html?view=search&source=bookmarklet';const w=window.open(u,'_blank','noopener,noreferrer');if(w)try{w.opener=null}catch(e){}})();";
+        // Atajo seguro (Opcion B): lee SOLO la seleccion (operacion pasiva), no inyecta DOM
+        // ni overlay en la pagina origen, no altera la HCE. Lleva el texto a MedCheck via URL,
+        // donde el usuario revisa/confirma antes de buscar (precarga, no auto-ejecuta).
+        return "javascript:(()=>{const s=(window.getSelection?window.getSelection().toString():'').replace(/\\s+/g,' ').trim();const u=new URL('https://ernestobarrera.github.io/medcheck.html');u.searchParams.set('view','search');u.searchParams.set('source','bookmarklet');if(s)u.searchParams.set('q',s);const w=window.open(u.toString(),'_blank','noopener,noreferrer');if(w)try{w.opener=null}catch(e){}})();";
     }
 
     trackModalTab(med, tab) {
@@ -11053,14 +11068,23 @@ ${materialesPlaceholder}
                 sortBySelect.value = params.sortBy;
             }
 
-            // Perform the search
+            // Atajo desde la HCE: precargamos el termino seleccionado pero NO lanzamos la
+            // busqueda. El usuario revisa/edita y confirma dentro de MedCheck. Humano en el
+            // bucle: evita que texto seleccionado en la HCE viaje a CIMA sin verificacion, y
+            // deja el punto de decision en el dominio de MedCheck, no en un overlay sobre la HCE.
+            if (params.source === 'bookmarklet') {
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+                this.showToast('Termino precargado desde tu seleccion. Revisa y pulsa buscar.', 'info');
+                // No reseteamos _mcSource: la busqueda que el usuario confirme debe seguir
+                // atribuida al atajo. El reset de un solo disparo vive en performSearch().
+                return;
+            }
+
+            // Enlace de busqueda compartido (?q= sin atajo): auto-ejecucion directa.
             this.performSearch();
-            // Reset source immediately after launching the initial shortcut search.
-            // All fetch() calls inside performSearch() capture headers synchronously before
-            // any await, so the shortcut tag is already captured and it's safe to reset.
-            // Without this reset, every subsequent manual search in the same tab would be
-            // incorrectly attributed to the shortcut.
-            window._mcSource = 'app';
             return;
         }
 
@@ -13599,6 +13623,16 @@ ${materialesPlaceholder}
                         body: `
                             <p>Mi Perfil convierte favoritos en un <span class="guide-highlight">formulario personal</span>: favoritos, esenciales, analítica 80/20, prescripción, materiales e importación/exportación.</p>
                         `,
+                    },
+                    {
+                        target: '#open-bookmarklet-modal',
+                        title: 'Buscar desde cualquier página',
+                        icon: 'fa-bookmark',
+                        body: `
+                            <p>El <span class="guide-highlight">atajo</span> te deja buscar en MedCheck sin dejar lo que estás mirando: selecciona un fármaco —por ejemplo en la historia clínica— y ábrelo aquí con un clic.</p>
+                            <p>MedCheck se abre con el término ya cargado; tú lo revisas y buscas. Instálalo arrastrándolo a tu barra de marcadores.</p>
+                        `,
+                        position: 'bottom',
                     },
                     {
                         target: '#start-guide-btn',
