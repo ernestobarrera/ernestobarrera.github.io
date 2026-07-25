@@ -7034,7 +7034,7 @@ class MedCheckApp {
                         <ol>
                             <li>Selecciona el nombre del farmaco (por ejemplo, en la historia clinica).</li>
                             <li>Pulsa el marcador <strong>Buscar en MedCheck</strong>.</li>
-                            <li>MedCheck se abre con el termino ya cargado. Revisalo y busca.</li>
+                            <li>MedCheck se abre y te muestra los resultados del farmaco seleccionado.</li>
                         </ol>
                     </div>
 
@@ -11068,18 +11068,28 @@ ${materialesPlaceholder}
                 sortBySelect.value = params.sortBy;
             }
 
-            // Atajo desde la HCE: precargamos el termino seleccionado pero NO lanzamos la
-            // busqueda. El usuario revisa/edita y confirma dentro de MedCheck. Humano en el
-            // bucle: evita que texto seleccionado en la HCE viaje a CIMA sin verificacion, y
-            // deja el punto de decision en el dominio de MedCheck, no en un overlay sobre la HCE.
+            // Atajo desde la HCE: automatico con red de seguridad. Una seleccion deliberada
+            // de farmaco es corta (nombre comercial o principio activo, pocas palabras); en ese
+            // caso lanzamos la busqueda directamente, misma experiencia que escribir a mano.
+            // Si el texto es anormalmente largo (posible arrastre accidental de una linea de la
+            // HCE con datos del paciente), NO auto-buscamos: precargamos, damos foco y pedimos
+            // revision, para no enviar a CIMA texto no verificado. Humano en el bucle solo
+            // cuando aporta valor real.
             if (params.source === 'bookmarklet') {
-                if (searchInput) {
-                    searchInput.focus();
-                    searchInput.select();
+                const term = (params.q || '').trim();
+                const looksClean = term.length <= 80 && term.split(/\s+/).length <= 10;
+                if (looksClean) {
+                    this.performSearch();
+                } else {
+                    if (searchInput) {
+                        searchInput.focus();
+                        searchInput.select();
+                    }
+                    this.showToast('Tu selección es larga: revísala antes de buscar por si arrastró datos del paciente.', 'warning');
                 }
-                this.showToast('Termino precargado desde tu seleccion. Revisa y pulsa buscar.', 'info');
-                // No reseteamos _mcSource: la busqueda que el usuario confirme debe seguir
-                // atribuida al atajo. El reset de un solo disparo vive en performSearch().
+                // No reseteamos _mcSource aqui: si no auto-buscamos, la busqueda que el usuario
+                // confirme debe seguir atribuida al atajo. El reset de un solo disparo vive en
+                // performSearch().
                 return;
             }
 
@@ -13630,7 +13640,7 @@ ${materialesPlaceholder}
                         icon: 'fa-bookmark',
                         body: `
                             <p>El <span class="guide-highlight">atajo</span> te deja buscar en MedCheck sin dejar lo que estás mirando: selecciona un fármaco —por ejemplo en la historia clínica— y ábrelo aquí con un clic.</p>
-                            <p>MedCheck se abre con el término ya cargado; tú lo revisas y buscas. Instálalo arrastrándolo a tu barra de marcadores.</p>
+                            <p>MedCheck se abre y te muestra los resultados del fármaco. Instálalo arrastrándolo a tu barra de marcadores.</p>
                         `,
                         position: 'bottom',
                     },
