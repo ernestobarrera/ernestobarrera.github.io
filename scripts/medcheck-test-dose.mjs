@@ -1,0 +1,161 @@
+#!/usr/bin/env node
+/**
+ * MedCheck — test del canonicalizador de dosis (_canonicalDose / normalizeDosis / _displayDose)
+ *
+ * El campo `dosis` de CIMA es texto libre: 4.435 cadenas distintas para 16.133 productos
+ * comercializados, y "1 G" / "1 g paracetamol" / "1000 mg" / "1 g / comprimido" son el
+ * mismo miligramaje escrito de cuatro formas.
+ *
+ * `_canonicalDose` es la FUENTE ÚNICA del chip de la tarjeta, de los chips de filtro, de
+ * Equivalencias y de Alternativas de suministro. Por eso cada caso se comprueba por las dos
+ * puertas (`_displayDose` y `normalizeDosis`): si divergen, dos superficies mostrarían
+ * dosis distintas para el mismo producto.
+ *
+ * Doctrina que fija este test:
+ *   - se canonicaliza SOLO lo demostrable: una potencia (cifra + unidad de masa/actividad)
+ *     o dos componentes con LA MISMA unidad;
+ *   - todo lo demás se devuelve LITERAL — espejo por defecto;
+ *   - NUNCA se inventa una unidad: era la causa de errores de 1000× en el catálogo real;
+ *   - decimal con coma y SIN separador de miles ("1000 mg", "2,5 mg"): en dosis, "1.000"
+ *     podría leerse como decimal anglosajón y esa ambigüedad no es aceptable;
+ *   - el literal oficial queda siempre en el tooltip.
+ *
+ * Uso: node scripts/medcheck-test-dose.mjs
+ */
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import vm from 'node:vm';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+const sandbox = {
+    window: {}, document: { addEventListener() {} },
+    console: { log() {}, warn() {}, error() {} },
+    localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+    fetch: () => Promise.reject(new Error('sin red en tests')),
+    setTimeout, clearTimeout, setInterval, clearInterval,
+    Date, Math, JSON, Promise, Map, Set, RegExp, URL, URLSearchParams,
+    navigator: { onLine: true }, location: { search: '', href: '' },
+};
+sandbox.globalThis = sandbox;
+vm.createContext(sandbox);
+vm.runInContext(`${readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8')}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox);
+const app = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+
+let failures = 0;
+function fail(name, got, expected) {
+    failures += 1;
+    console.log(`✗ ${name}\n    esperado: ${JSON.stringify(expected)}\n    obtenido: ${JSON.stringify(got)}`);
+}
+/** Comprueba por las DOS puertas: tarjeta y filtro deben coincidir. */
+function dose(name, raw, expected) {
+    const card = app._displayDose(raw).text;
+    const filter = app.normalizeDosis(raw);
+    if (card !== expected) return fail(`${name} [tarjeta]`, card, expected);
+    if (filter !== expected) return fail(`${name} [filtro]`, filter, expected);
+    console.log(`✓ ${name}`);
+}
+function plain(name, got, expected) {
+    if (got === expected) console.log(`✓ ${name}`);
+    else fail(name, got, expected);
+}
+
+// --- Las grafías del caso paracetamol de la captura ---------------------------
+console.log('--- caso real: las grafías de paracetamol 1 g ---');
+dose('"1 G"', '1 G', '1000 mg');
+dose('"1 g paracetamol"', '1 g paracetamol', '1000 mg');
+dose('"1000 mg"', '1000 mg', '1000 mg');
+dose('"1 g / comprimido"', '1 g / comprimido', '1000 mg');
+dose('"1.000 mg" (miles con punto)', '1.000 mg', '1000 mg');
+dose('"650 mg paracetamol"', '650 mg paracetamol', '650 mg');
+dose('"500 mg paracetamol"', '500 mg paracetamol', '500 mg');
+
+// --- Los errores de 1000× que había en los chips de filtro --------------------
+console.log('--- regresión: errores de 1000x del normalizador anterior ---');
+dose('fentanilo "400 microgramos" (antes: 400 mg)', '400 microgramos', '400 mcg');
+dose('"100 microgramos" (antes: 100 mg)', '100 microgramos', '100 mcg');
+dose('"1 microgramo" en singular', '1 microgramo', '1 mcg');
+dose('enoxaparina "10.000 UI" (antes: 10 ui)', '10.000 UI', '10000 UI');
+dose('"2.000 UI" (antes: 2 ui)', '2.000 UI', '2000 UI');
+dose('"500 miligramos" con letra', '500 miligramos', '500 mg');
+dose('"1 gramo" con letra', '1 gramo', '1000 mg');
+dose('insulina "100 U/ml" (antes: 100 mg)', '100 U/ml', '100 U/ml');
+dose('"100 unidades/ml" (antes: 100 mg)', '100 unidades/ml', '100 unidades/ml');
+dose('"0,5 ml" (antes: 0.5 mg)', '0,5 ml', '0,5 ml');
+dose('"10 % acetilcisteina" (antes: 10 mg)', '10 % acetilcisteina', '10 % acetilcisteina');
+dose('"6,14 ml glicerol" (antes: 6.1 mg)', '6,14 ml glicerol', '6,14 ml glicerol');
+dose('"250 mg/5 ml" (antes: 250/5 mg)', '250 mg/5 ml', '250 mg/5 ml');
+
+// --- Denominador = forma farmacéutica (benigno) vs magnitud (peligroso) --------
+console.log('--- "por comprimido" no es un ratio ---');
+dose('"/cápsula" sin espacios', '20 mg/cápsula', '20 mg');
+dose('"/sobres" en plural', '600 mg / sobres', '600 mg');
+dose('"/parche"', '5 mg/parche', '5 mg');
+dose('PERO "/dosis" es magnitud', '20 mg/dosis', '20 mg/dosis');
+dose('PERO "/ml" es magnitud', '1 mg/ml', '1 mg/ml');
+dose('PERO "/g" es magnitud', '50 mg/g', '50 mg/g');
+dose('denominador desconocido', '10 mg/aplicador', '10 mg/aplicador');
+
+// --- Combinaciones: misma unidad se canonicaliza; distinta, literal -----------
+console.log('--- combinaciones ---');
+dose('unidad solo en la segunda', '875-125 mg', '875 mg/125 mg');
+dose('ambas con unidad', '875 mg/125 mg', '875 mg/125 mg');
+dose('espacios alrededor de la barra', '37.5 mg / 325 mg', '37,5 mg/325 mg');
+dose('ya canónica', '37,5 mg/325 mg', '37,5 mg/325 mg');
+dose('separador "+"', '600 mg + 300 mg', '600 mg/300 mg');
+dose('microgramos en ambas', '50 microgramos/250 microgramos', '50 mcg/250 mcg');
+dose('unidades DISTINTAS → literal', '2800 UI / 70 mg', '2800 UI / 70 mg');
+dose('concentración masa/masa NO es combinación', '10 mg/2 g', '10 mg/2 g');
+dose('triple → literal', '267 mg/40 mg/133 mg', '267 mg/40 mg/133 mg');
+
+// --- Unidades y formato numérico ----------------------------------------------
+console.log('--- unidades y formato ---');
+dose('decimal con coma española', '2,5 mg', '2,5 mg');
+dose('decimal en punto se normaliza a coma', '2.5 mg', '2,5 mg');
+dose('sin separador de miles en la salida', '1500 mg', '1500 mg');
+dose('gramos grandes NO se convierten (>= 10 g)', '50 g', '50 g');
+dose('mcg', '500 mcg', '500 mcg');
+dose('µg se unifica a mcg', '25 µg', '25 mcg');
+dose('UI en mayúsculas', '2800 ui', '2800 UI');
+dose('U.I. con puntos', '400 U.I.', '400 UI');
+dose('espaciado irregular', '  1   g   paracetamol ', '1000 mg');
+plain('cadena vacía en tarjeta', app._displayDose('').text, '');
+plain('nulo en tarjeta', app._displayDose(null).text, '');
+plain('vacío en filtro es "Sin dosis"', app.normalizeDosis(''), 'Sin dosis');
+plain('la "g" de glicerol no se toma por gramos',
+    app.normalizeDosis('5 glicerol'), '5 glicerol');
+
+// --- Literales: íntegros, sin recortar en JS ----------------------------------
+// Recortar ocultaría estructura clínica (el "/ml" de una concentración) con un umbral
+// arbitrario. El ancho es un problema de layout, no de datos.
+console.log('--- literales largos: íntegros ---');
+const largo = '37.5 MG TRAMADOL HIDROCLORURO + 325 MG PARACETAMOL POR COMPRIMIDO RECUBIERTO';
+dose('el literal desmesurado se entrega completo', largo, largo);
+dose('la concentración conserva el denominador',
+    '1 mg cetirizina dihidrocloruro/ml', '1 mg cetirizina dihidrocloruro/ml');
+dose('masa por volumen con nombre de PA',
+    '900 mg sodio cloruro/ 100 ml', '900 mg sodio cloruro/ 100 ml');
+dose('dos concentraciones tópicas', '5 mg/g + 100 mg/g', '5 mg/g + 100 mg/g');
+dose('por dosis, combinación', '60 microgramos/dosis + 60 microgramos/dosis',
+    '60 microgramos/dosis + 60 microgramos/dosis');
+
+// --- Centinela del condensador descartado (S39) -------------------------------
+// Se midió condensar quitando el nombre de la sustancia; convertía "19,2 mg fentanilo
+// (100 µg/h)" en "19,2 mg 100 g/h" (µg → g: error de 1000× en un parche de fentanilo).
+console.log('--- centinela del condensador descartado ---');
+dose('parche de fentanilo: literal, sin tokenizar',
+    '19,2 mg fentanilo (100 µg/h)', '19,2 mg fentanilo (100 µg/h)');
+dose('parche con superficie en cm2',
+    '16.5mg/30cm2 que liberan 100mcg de Fentanilo/h',
+    '16.5mg/30cm2 que liberan 100mcg de Fentanilo/h');
+
+// --- Tooltip ------------------------------------------------------------------
+console.log('--- tooltip ---');
+plain('normalizada: el tooltip declara el literal de CIMA',
+    app._displayDose('1 g paracetamol').title, 'Dosis según CIMA: 1 g paracetamol');
+plain('literal: el tooltip también lo declara',
+    app._displayDose('650 mg').title, 'Dosis según CIMA: 650 mg');
+
+console.log(failures === 0 ? '\nOK — todas las aserciones pasan' : `\nFALLOS: ${failures}`);
+process.exit(failures === 0 ? 0 : 1);

@@ -791,67 +791,132 @@ class MedCheckApp {
     }
 
     /**
-     * Normaliza una dosis para permitir agrupación consistente
-     * Maneja formato europeo: "1.000 mg" = 1000mg, "1,5 mg" = 1.5mg
+     * Normaliza una dosis para agrupar de forma consistente. Alias público de
+     * `_canonicalDose`, que es la fuente única (ver allí el contrato y los modos de fallo).
+     * Maneja el formato europeo: "1.000 mg" = 1000 mg, "1,5 mg" = 1,5 mg.
      * Ejemplos:
-     * - "1 G", "1 g", "1000 mg", "1.000 mg", "1 g paracetamol" → "1000 mg"
-     * - "650 mg", "650 mg paracetamol" → "650 mg"
-     * - "37,5/325 mg/mg", "37,5 mg/325 mg" → "37.5/325 mg"
-     * - "10 mg/ml", "10 MG/ML" → "10 mg/ml"
+     * - "1 G", "1 g", "1.000 mg", "1 g paracetamol", "1 g / comprimido" → "1000 mg"
+     * - "400 microgramos" → "400 mcg"
+     * - "875-125 mg", "875 mg/125 mg" → "875 mg/125 mg"
+     * - "100 U/ml", "250 mg/5 ml", "10 % acetilcisteína" → literal (no son potencias)
      * @param {string} dosisStr - String de dosis de la API
-     * @returns {string} Dosis normalizada
+     * @returns {string} Dosis canónica
      */
     normalizeDosis(dosisStr) {
-        if (!dosisStr) return 'Sin dosis';
+        return this._canonicalDose(dosisStr);
+    }
 
-        const str = dosisStr.toLowerCase().trim();
+    /**
+     * Unidades de potencia reconocidas, con su forma canónica. Alternancia ordenada de más
+     * larga a más corta para que "gramos" no case como "g" ni "unidades" como "u".
+     *
+     * SOLO masa y actividad. `ml`, `l`, `%`, `dosis`, `cm2`, `pulsación`… quedan FUERA a
+     * propósito: son denominadores o superficies, y una cifra junto a ellas no es una
+     * potencia convertible.
+     */
+    static get DOSE_UNITS() {
+        return [
+            ['microgramos', 'mcg'], ['microgramo', 'mcg'],
+            ['miligramos', 'mg'], ['miligramo', 'mg'],
+            ['gramos', 'g'], ['gramo', 'g'],
+            ['unidades', 'U'], ['unidad', 'U'],
+            ['mcg', 'mcg'], ['µg', 'mcg'], ['ug', 'mcg'],
+            ['mg', 'mg'],
+            ['u.i.', 'UI'], ['ui', 'UI'], ['iu', 'UI'],
+            ['g', 'g'], ['u', 'U'],
+        ];
+    }
 
-        // Detectar si es concentración (mg/ml, etc.)
-        const isConcentration = /\d+\s*(mg|g|mcg)?\s*\/\s*ml/i.test(str);
-        if (isConcentration) {
-            // Para concentraciones, extraer y normalizar
-            const match = str.match(/(\d[\d.,]*)\s*(mg|g|mcg)?\s*\/\s*ml/i);
-            if (match) {
-                const value = this._parseEuropeanNumber(match[1]);
-                const unit = match[2] || 'mg';
-                return `${value} ${unit}/ml`;
+    _doseUnitAlternation() {
+        return MedCheckApp.DOSE_UNITS
+            .map(([raw]) => raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+            .join('|');
+    }
+
+    _canonicalDoseUnit(token) {
+        const t = String(token || '').toLowerCase();
+        const hit = MedCheckApp.DOSE_UNITS.find(([raw]) => raw === t);
+        return hit ? hit[1] : null;
+    }
+
+    /** Formatea el valor con decimal en coma y SIN separador de miles (ambigüedad no aceptable en dosis). */
+    _formatDoseValue(value) {
+        return Number.isInteger(value)
+            ? String(value)
+            : String(parseFloat(value.toFixed(3))).replace('.', ',');
+    }
+
+    /** Aplica la conversión a mg de las potencias orales típicas (< 10 g). */
+    _doseToMg(value, unit) {
+        return (unit === 'g' && value < 10)
+            ? { value: Math.round(value * 1000), unit: 'mg' }
+            : { value, unit };
+    }
+
+    /**
+     * Canonicaliza una cadena de dosis. **Fuente única** del chip de la tarjeta, de los
+     * chips de filtro, de la agrupación de Equivalencias y de la de Alternativas de
+     * suministro: si dos superficies muestran dosis, muestran la misma.
+     *
+     * Solo transforma lo que es **demostrablemente** una potencia (una o dos componentes con
+     * unidad de masa o actividad reconocida y nada más). Cualquier otra cosa —concentraciones,
+     * porcentajes, parches con superficie, triples, texto libre— se devuelve **literal**, con
+     * los espacios colapsados y nada más. Espejo por defecto.
+     *
+     * Sustituye a la versión que extraía "el primer número y si no hay unidad, mg", que
+     * producía errores de 1000× en el catálogo real: `400 microgramos` → `400 mg` (fentanilo),
+     * `100 U/ml` → `100 mg` (insulinas), `10.000 UI` → `10 ui` (enoxaparina), `0,5 ml` →
+     * `0.5 mg`, `10 % acetilcisteína` → `10 mg`.
+     *
+     * @param {string} dosisStr - campo `dosis` de CIMA (texto libre)
+     * @returns {string} clave canónica y etiqueta mostrable
+     */
+    _canonicalDose(dosisStr) {
+        const literal = String(dosisStr ?? '').replace(/\s+/g, ' ').trim();
+        if (!literal) return 'Sin dosis';
+
+        const U = this._doseUnitAlternation();
+        // Nada de letra pegada detrás: evita que la "g" case con la de "glicerol".
+        const FIN = '(?![a-záéíóúñ0-9])';
+
+        // --- Una componente: "1 g", "1 g paracetamol", "400 microgramos", "1 g / comprimido"
+        const mono = new RegExp(`^(\\d[\\d.,]*)\\s*(${U})${FIN}`, 'i').exec(literal);
+        if (mono) {
+            const resto = literal.slice(mono[0].length).replace(
+                /\s*\/\s*(comprimidos?|c[áa]psulas?|sobres?|parches?|supositorios?|[óo]vulos?|ampollas?|viales?|pastillas?|grageas?|tabletas?)\s*$/i,
+                ''
+            );
+            const limpio = !/\d/.test(resto) && !/[/%]/.test(resto)
+                && !/\b(ml|l|dosis|puls\w*|horas?|h|cm|cm2|m2)\b/i.test(resto);
+            if (limpio) {
+                const { value, unit } = this._doseToMg(
+                    this._parseEuropeanNumber(mono[1]),
+                    this._canonicalDoseUnit(mono[2])
+                );
+                return `${this._formatDoseValue(value)} ${unit}`;
             }
         }
 
-        // Detectar si es combinación con guión (ej: "875-125 mg", "250 -62,5 mg")
-        const dashMatch = str.match(/(\d[\d.,]*)\s*[/-]\s*(\d[\d.,]*)\s*(mg)?/i);
-        if (dashMatch) {
-            const val1 = this._parseEuropeanNumber(dashMatch[1]);
-            const val2 = this._parseEuropeanNumber(dashMatch[2]);
-            return `${val1}/${val2} mg`;
+        // --- Dos componentes: "875-125 mg", "37,5 mg/325 mg", "2800 UI / 70 mg"
+        // La unidad puede estar solo en la segunda ("875-125 mg" = 875 mg + 125 mg).
+        const combo = new RegExp(
+            `^(\\d[\\d.,]*)\\s*(${U})?${FIN}\\s*[/+-]\\s*(\\d[\\d.,]*)\\s*(${U})${FIN}$`, 'i'
+        ).exec(literal);
+        if (combo) {
+            const u2 = this._canonicalDoseUnit(combo[4]);
+            const u1 = combo[2] ? this._canonicalDoseUnit(combo[2]) : u2;
+            // Ambas unidades han de ser LA MISMA. Si difieren no se puede distinguir
+            // "componente A + componente B" de "cantidad por cantidad": `10 mg/2 g` es una
+            // concentración tópica, y tratarla como combinación daría `10 mg/2000 mg`.
+            // Unidades distintas (`2800 UI / 70 mg`) → literal, que además se lee mejor.
+            if (u1 && u2 && u1 === u2) {
+                const a = this._doseToMg(this._parseEuropeanNumber(combo[1]), u1);
+                const b = this._doseToMg(this._parseEuropeanNumber(combo[3]), u2);
+                return `${this._formatDoseValue(a.value)} ${a.unit}/${this._formatDoseValue(b.value)} ${b.unit}`;
+            }
         }
 
-        // Detectar si es combinación (dos dosis separadas por /)
-        const slashMatch = str.match(/(\d[\d.,]*)\s*(mg|g)?\s*\/\s*(\d[\d.,]*)\s*(mg)?/i);
-        if (slashMatch && !isConcentration) {
-            const val1 = this._parseEuropeanNumber(slashMatch[1]);
-            const val2 = this._parseEuropeanNumber(slashMatch[3]);
-            return `${val1}/${val2} mg`;
-        }
-
-        // Monocomponente: extraer el primer número que EMPIEZA con un dígito
-        // Esto evita capturar ".250" de "a.clav.250"
-        const monoMatch = str.match(/(\d[\d.,]*)\s*(mg|g|mcg|ui)?/i);
-        if (!monoMatch) return 'Sin dosis';
-
-        let value = this._parseEuropeanNumber(monoMatch[1]);
-        let unit = (monoMatch[2] || 'mg').toLowerCase();
-
-        // Convertir gramos a miligramos para dosis orales típicas (< 10g)
-        if (unit === 'g' && value < 10) {
-            value = Math.round(value * 1000);
-            unit = 'mg';
-        }
-
-        // Formatear sin decimales innecesarios
-        const formatted = Number.isInteger(value) ? value.toString() : value.toFixed(1).replace(/\.0$/, '');
-
-        return `${formatted} ${unit}`;
+        return literal;
     }
 
     /**
@@ -1827,6 +1892,10 @@ class MedCheckApp {
         // Setup event listeners for grouping controls
         this.setupSearchGroupingEventListeners(data);
         this.setupGroupedResultsEventListeners(resultsContainer);
+
+        // El índice de envases llega async: rellena los huecos ya pintados (mismo patrón
+        // de repintado que el índice de suministro, S29).
+        this._hydratePackTags(resultsContainer);
 
         // Add click handlers for cards
         resultsContainer.querySelectorAll('.result-card').forEach(card => {
@@ -3239,7 +3308,13 @@ class MedCheckApp {
             }
         }
 
-        const dosis = med.dosis || '';
+        // Dosis normalizada cuando es potencia simple; literal oficial en el tooltip.
+        // El texto va en un span propio: `text-overflow` no actúa sobre el ítem anónimo de
+        // un contenedor flex, y `.med-detail-tag` es `inline-flex` (icono + texto).
+        const dose = this._displayDose(med.dosis);
+        const doseTag = dose.text
+            ? `<span class="med-detail-tag med-detail-tag--dose" title="${this._escapeHtml(dose.title)}"><span class="med-detail-tag__text">${this._escapeHtml(dose.text)}</span></span>`
+            : '';
 
         // Extraer código ATC principal para mostrar
         let atcCode = '';
@@ -3259,6 +3334,10 @@ class MedCheckApp {
         this._medRenderCache.set(med.nregistro, med);
         const isFav = this.isFavorite(med.nregistro);
 
+        // `.med-details-inline` va FUERA de `.med-info-content` a propósito: así ocupa el
+        // ancho completo de la tarjeta en vez de empezar sangrada tras el icono de 36 px,
+        // igual que ya hace la fila de badges. Recupera ~44 px, que es exactamente lo que
+        // le faltaba a "1000 mg · 20 y 40 comprimidos" para no cortarse.
         return `
             <div class="result-card${!med.comerc ? ' result-card--no-comerc' : ''}" data-nregistro="${med.nregistro}">
                 <div class="result-card-main">
@@ -3274,11 +3353,15 @@ class MedCheckApp {
                                 <i class="fas fa-star"></i>
                             </button>
                         </div>
-                        <div class="med-details-inline">
-                            ${pActivo ? `<span class="med-detail-tag med-detail-tag--clickable" data-pa="${pActivo.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); app.searchByPA(this.dataset.pa);" title="Buscar otros medicamentos con ${pActivo.replace(/"/g, '&quot;')}"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
-                            ${dosis ? `<span class="med-detail-tag">${dosis}</span>` : ''}
-                        </div>
                     </div>
+                </div>
+
+                <div class="med-details-inline">
+                    ${pActivo ? `<span class="med-detail-tag med-detail-tag--clickable" data-pa="${pActivo.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); app.searchByPA(this.dataset.pa);" title="Buscar otros medicamentos con ${pActivo.replace(/"/g, '&quot;')}"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
+                    <span class="med-detail-pair">
+                        ${doseTag}
+                        <span class="med-detail-tag med-detail-tag--packs" data-packs-nreg="${med.nregistro}" hidden></span>
+                    </span>
                 </div>
 
                 ${(badges.length > 0 || contextAlerts.length > 0) ? `
@@ -7515,6 +7598,126 @@ class MedCheckApp {
         return `${visibleCount} formato${visibleCount !== 1 ? 's' : ''}`;
     }
 
+    /**
+     * Resumen compacto de los envases COMERCIALIZADOS para la línea visible de
+     * "Presentaciones" (el tamaño de envase es la pregunta de última milla: cuántos
+     * comprimidos lleva la caja). El texto oficial íntegro —con su acondicionamiento
+     * y sus erratas de origen— se conserva en las filas desplegadas; aquí solo se
+     * compacta para que quepa de un vistazo.
+     *
+     * Devuelve '' si no hay ninguna comercializada: la línea de conteo ya lo dice y
+     * anunciar formatos no disponibles induciría a error.
+     */
+    _summarizePackFormats(medName, presentations) {
+        const formats = [];
+        for (const presentation of (presentations || [])) {
+            if (!presentation || presentation.comerc === false) continue;
+            const raw = this._getPresentationFormat(medName, presentation.nombre);
+            // El acondicionamiento final entre paréntesis ("(Blister OPA/Al/PE-Al/PE)")
+            // no aporta al vistazo y desborda la línea.
+            const clean = String(raw || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+            if (clean && clean !== '-' && !formats.includes(clean)) formats.push(clean);
+        }
+        return this._compactPackList(formats);
+    }
+
+    /**
+     * Compacta una lista de envases ya recortados. Regla única compartida por el modal
+     * (que la calcula en vivo desde el detalle) y la tarjeta de resultado (que la recibe
+     * pre-recortada del índice de scripts/etl-packs): un solo criterio, un solo sitio.
+     */
+    _compactPackList(formats) {
+        const list = [...new Set((formats || []).map(f => String(f || '').trim()).filter(f => f && f !== '-'))];
+        if (list.length === 0) return '';
+
+        const shown = list.slice(0, 2);
+        const rest = list.length - shown.length;
+
+        // Si comparten unidad, se colapsa: "28 comprimidos" + "56 comprimidos" → "28 y 56 comprimidos".
+        // Con unidades heterogéneas (30 comprimidos / 1 frasco de 100 ml) no se colapsa.
+        const parts = shown.map(f => f.match(/^([\d.,]+)\s+(.+)$/));
+        let text;
+        if (shown.length === 2 && parts[0] && parts[1]
+            && parts[0][2].toLowerCase() === parts[1][2].toLowerCase()) {
+            text = `${parts[0][1]} y ${parts[1][1]} ${parts[0][2]}`;
+        } else {
+            text = shown.join(' y ');
+        }
+        if (rest > 0) text += ` · +${rest} formato${rest !== 1 ? 's' : ''}`;
+        return text;
+    }
+
+    /**
+     * Texto de dosis para la tarjeta. Delega en `_canonicalDose` —el mismo canonicalizador
+     * que alimenta los chips de filtro, Equivalencias y Alternativas de suministro—, así que
+     * lo que muestra la tarjeta y lo que agrupa el filtro no pueden divergir.
+     *
+     * El campo `dosis` de CIMA es texto libre y muy dispar (4.435 cadenas distintas para
+     * 16.133 productos; el 56,7 % pasa de 14 caracteres y la más larga tiene 238): "1 G",
+     * "1 g paracetamol", "1000 mg" y "1 g / comprimido" son el mismo miligramaje escrito de
+     * cuatro formas, y eso rompía la línea y el escaneo visual.
+     *
+     * El literal oficial queda siempre en el `title`. Lo que no es potencia demostrable se
+     * muestra íntegro y sin recortar en JS: recortar ocultaría estructura clínica (el "/ml"
+     * de una concentración) con un umbral arbitrario. El ancho lo resuelve el CSS con elipsis,
+     * que se adapta al hueco real.
+     *
+     * @returns {{text: string, title: string}} texto a pintar y tooltip
+     */
+    _displayDose(raw) {
+        const literal = String(raw ?? '').replace(/\s+/g, ' ').trim();
+        if (!literal) return { text: '', title: '' };
+        return { text: this._canonicalDose(literal), title: `Dosis según CIMA: ${literal}` };
+    }
+
+    /**
+     * Índice de envases por nregistro (Nivel 2), generado a diario por scripts/etl-packs
+     * desde el propio REST de CIMA — misma fuente que la tarjeta, un solo criterio de
+     * alta/baja. Existe porque `/medicamentos` NO devuelve `presentaciones`: sin índice,
+     * mostrar el envase en la tarjeta costaría una petición de detalle por resultado.
+     *
+     * Falla en abierto: si no carga, la tarjeta queda exactamente como antes. El modal
+     * sigue siendo la autoridad (lee el detalle en vivo, no este índice).
+     */
+    _loadPacksIndex(url = 'assets/data/packs-index.json?v=20260729a') {
+        if (this._packsIndex) return Promise.resolve(this._packsIndex);
+        if (this._packsIndexPromise) return this._packsIndexPromise;
+        this._packsIndexPromise = fetch(url, { cache: 'force-cache' })
+            .then(r => (r.ok ? r.json() : null))
+            .then(data => {
+                this._packsIndexMeta = data?._meta || null;
+                this._packsIndex = (data && typeof data.packs === 'object' && data.packs) || {};
+                return this._packsIndex;
+            })
+            .catch(() => {
+                this._packsIndex = {};
+                return this._packsIndex;
+            });
+        return this._packsIndexPromise;
+    }
+
+    /**
+     * Rellena las etiquetas de envase de las tarjetas ya pintadas. El índice llega async,
+     * así que el render deja el hueco oculto y esto lo revela cuando hay dato (mismo patrón
+     * de repintado que el índice de suministro, S29).
+     */
+    _hydratePackTags(container) {
+        const slots = container?.querySelectorAll?.('[data-packs-nreg]');
+        if (!slots || slots.length === 0) return;
+        this._loadPacksIndex().then(packs => {
+            const fecha = this._packsIndexMeta?.generated_at;
+            const tip = `Envases comercializados${fecha ? ` · CIMA, actualizado ${fecha}` : ''}`;
+            slots.forEach(slot => {
+                if (!slot.isConnected || !slot.hidden) return;
+                const text = this._compactPackList(packs[slot.dataset.packsNreg]);
+                if (!text) return;
+                slot.innerHTML = `<i class="fas fa-box"></i><span class="med-detail-tag__text">${this._escapeHtml(text)}</span>`;
+                slot.title = tip;
+                slot.hidden = false;
+            });
+        });
+    }
+
     renderPresentationsDetailItem(med) {
         const presentations = Array.isArray(med.presentaciones) ? med.presentaciones : [];
         if (presentations.length === 0) {
@@ -7532,6 +7735,8 @@ class MedCheckApp {
             ? `${presentations.length} comercializada${presentations.length !== 1 ? 's' : ''}`
             : `${commercializedCount} comercializada${commercializedCount !== 1 ? 's' : ''} de ${presentations.length}`;
         const supplyText = stockIssues > 0 ? ` · ${stockIssues} con problema de suministro` : '';
+        const packSummary = this._summarizePackFormats(med.nombre, presentations);
+        const packText = packSummary ? ` · ${this._escapeHtml(packSummary)}` : '';
 
         const rows = presentations.map(presentation => {
             const format = this._getPresentationFormat(med.nombre, presentation.nombre);
@@ -7580,10 +7785,10 @@ class MedCheckApp {
             <div class="detail-item detail-item--stacked detail-item--presentations">
                 <div class="detail-item-main">
                     <span class="detail-label">Presentaciones</span>
-                    <span class="detail-value">${countText}${supplyText}</span>
+                    <span class="detail-value">${countText}${packText}${supplyText}</span>
                 </div>
                 <details class="presentations-inline">
-                    <summary>Ver formatos por CN</summary>
+                    <summary>Ver envases y CN</summary>
                     <div class="presentations-list">
                         ${rows}
                     </div>
@@ -9472,20 +9677,11 @@ ${materialesPlaceholder}
                 });
             }
 
-            // Helper function to normalize dose for grouping
-            // Extracts numeric values: "37,5 mg/325 mg" → "37.5/325 mg"
-            const normalizeDosis = (dosisStr) => {
-                if (!dosisStr) return 'Sin dosis';
-                // Extract all numbers (including decimals with , or .)
-                const nums = dosisStr.match(/[\d]+[,.]?[\d]*/g);
-                if (!nums || nums.length === 0) return 'Sin dosis';
-                // Normalize decimal separator and join
-                const normalized = nums.map(n => n.replace(',', '.')).join('/');
-                // Add unit if present
-                const unitMatch = dosisStr.match(/\s*(mg|g|ml|mcg|ui|u)/i);
-                const unit = unitMatch ? ' ' + unitMatch[1].toLowerCase() : ' mg';
-                return normalized + unit;
-            };
+            // Agrupación por dosis con el canonicalizador compartido. Antes había aquí una
+            // copia local que unía TODOS los números con "/" y, si no encontraba unidad,
+            // asumía mg — de modo que esta vista agrupaba "1 g" mientras el buscador
+            // agrupaba "1000 mg", y un parche de "400 microgramos" salía como "400 mg".
+            const normalizeDosis = (dosisStr) => this.normalizeDosis(dosisStr);
 
             // Filter and group by normalized dose
             const available = filteredResults.filter(m => !m.psum);
@@ -10670,6 +10866,10 @@ ${materialesPlaceholder}
         // Setup event listeners
         this.setupGroupingEventListeners(data, searchQuery);
         this.setupGroupedResultsEventListeners(resultsContainer);
+
+        // El índice de envases llega async: rellena los huecos ya pintados (mismo patrón
+        // de repintado que el índice de suministro, S29).
+        this._hydratePackTags(resultsContainer);
 
         // Add click handlers for cards
         resultsContainer.querySelectorAll('.result-card').forEach(card => {

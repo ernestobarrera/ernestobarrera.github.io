@@ -4270,6 +4270,62 @@ body {
     color: var(--text-muted);
 }
 
+/* El hueco del envase se pinta oculto y se revela al llegar el índice (async).
+   Sin esta regla, `display: inline-flex` gana al [hidden] del navegador y dejaría
+   un chip vacío en cada tarjeta. */
+.med-detail-tag[hidden] {
+    display: none;
+}
+
+/* Dosis + envase se leen juntos ("1000 mg · 20 y 40 comprimidos"): forman una unidad
+   que salta de línea entera, en vez de quedar el envase huérfano bajo la dosis. El
+   principio activo, que va antes y suele ser redundante con el título, es el que cede
+   sitio primero. No se usa `nowrap` en toda la fila a propósito: truncar una dosis es
+   peor que partir la línea, y en móvil estrecho partir es lo correcto.
+
+   `flex-wrap` en el propio par es el último recurso: cuando ni con el ancho completo
+   caben juntos (concentraciones con envase largo: "100 mg/ml" + "1 frasco de 30 ml y
+   1 jeringa"), se apilan uno sobre otro PERO siguen contiguos y legibles. Preferimos
+   apilar a recortar: un envase cortado a media palabra no informa de nada. */
+.med-detail-pair {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.med-detail-tag--dose,
+.med-detail-tag--packs {
+    max-width: 100%;
+    min-width: 0;
+}
+
+/* El icono nunca cede: lo que se ajusta es el texto. */
+.med-detail-tag--dose i,
+.med-detail-tag--packs i {
+    flex-shrink: 0;
+}
+
+/* Guarda final contra el desbordamiento. Va en un span interno porque `text-overflow`
+   NO actúa sobre el ítem anónimo de un contenedor flex, y `.med-detail-tag` es
+   `inline-flex` — por eso un literal largo se cortaba a media palabra y sin elipsis.
+
+   Se permite envolver hasta DOS líneas antes de recortar (mismo patrón que
+   `.result-card-title`): "10 ampollas de 10 ml y 10 ampollas de 3 ml" se lee entero en
+   dos líneas en vez de perderse. Solo a partir de ahí aparece la elipsis, y el texto
+   completo sigue en el tooltip. Los literales de dosis de CIMA llegan a 238 caracteres. */
+.med-detail-tag__text {
+    min-width: 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow-wrap: anywhere;
+}
+
 .med-detail-tag.atc {
     color: var(--primary);
     background: var(--primary-light);

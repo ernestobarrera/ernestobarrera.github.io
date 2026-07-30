@@ -11,7 +11,7 @@
  *   node scripts/medcheck-bump-version.mjs app css      → bumpa cima-app.js y cima-app.css
  *   node scripts/medcheck-bump-version.mjs all --dry    → simula el bump de todo
  *
- * Objetivos: app · api · css · dict · ontology · innjson · all
+ * Objetivos: app · api · css · dict · ontology · innjson · packs · all
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -27,6 +27,7 @@ const TARGETS = {
     dict:     { file: 'medcheck.html',          pattern: /(assets\/js\/inn-dict\.js\?v=)(\d{8}[a-z]?)/g },
     ontology: { file: 'assets/js/cima-api.js',  pattern: /(clinical-ontology\.json\?v=)(\d{8}[a-z]?)/g },
     innjson:  { file: 'assets/js/inn-dict.js',  pattern: /(inn-es-en\.json\?v=)(\d{8}[a-z]?)/g },
+    packs:    { file: 'assets/js/cima-app.js',  pattern: /(packs-index\.json\?v=)(\d{8}[a-z]?)/g },
 };
 
 const args = process.argv.slice(2).filter(a => a !== '--dry');

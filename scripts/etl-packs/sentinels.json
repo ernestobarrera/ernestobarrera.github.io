@@ -1,0 +1,25 @@
+{
+  "_note": "Centinelas del recorte de envase. Si CIMA cambia cómo compone presentaciones[].nombre, el índice se llenaría de nombres completos en silencio; estos casos lo cazan. Cubren los separadores reales observados: coma+espacio, coma sin espacio, sin coma, y acondicionamiento final entre paréntesis.",
+  "checks": [
+    {
+      "nregistro": "82921",
+      "note": "ESOMEPRAZOL CINFA 20 MG CAPSULAS — coma+espacio y acondicionamiento '(Blister)'",
+      "expectAny": ["28 cápsulas"]
+    },
+    {
+      "nregistro": "75071",
+      "note": "ESOMEPRAZOL CINFA 20 mg COMPRIMIDOS — coma SIN espacio y '(BLISTER)' en mayúsculas",
+      "expectAny": ["56 comprimidos"]
+    },
+    {
+      "nregistro": "81515",
+      "note": "DIAZEPAM AUROVITAS SPAIN 10 MG — sin coma separadora",
+      "expectAny": ["30 comprimidos"]
+    },
+    {
+      "nregistro": "89559",
+      "note": "DIAZEPAM BASI SOLUCIÓN INYECTABLE — unidad compuesta 'ampollas de 2 ml'",
+      "expectAny": ["50 ampollas de 2 ml"]
+    }
+  ]
+}
