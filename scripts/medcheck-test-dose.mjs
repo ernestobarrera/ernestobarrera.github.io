@@ -65,9 +65,12 @@ function plain(name, got, expected) {
 console.log('--- caso real: las grafías de paracetamol 1 g ---');
 dose('"1 G"', '1 G', '1 g');
 dose('"1 g paracetamol"', '1 g paracetamol', '1 g');
-dose('"1000 mg"', '1000 mg', '1 g');
+// Nota: "1000 mg" NO converge con "1 g". Se probó subir mg→g y cambiaba la unidad
+// visible en 223 productos con resultados poco familiares (Darzalex 1800 mg → 1,8 g).
+// Son dos formas legítimas de escribirlo y cada producto conserva la suya.
+dose('"1000 mg" conserva su unidad', '1000 mg', '1000 mg');
 dose('"1 g / comprimido"', '1 g / comprimido', '1 g');
-dose('"1.000 mg" (miles con punto)', '1.000 mg', '1 g');
+dose('"1.000 mg" (miles con punto)', '1.000 mg', '1000 mg');
 dose('"650 mg paracetamol"', '650 mg paracetamol', '650 mg');
 dose('"500 mg paracetamol"', '500 mg paracetamol', '500 mg');
 
@@ -110,6 +113,28 @@ dose('combinación en gramos NO se reescala', '2 g / 15 g', '2 g/15 g');
 dose('ni al revés', '10 g / 2,12 g', '10 g/2,12 g');
 dose('combinación en mg conserva su unidad', '50 mg/1000 mg', '50 mg/1000 mg');
 
+// --- Millares con varios puntos (P0 de la 2ª revisión de Codex) ---------------
+// `parseFloat("1.200.000")` se para en el segundo punto y devuelve 1,2. Sin validar que
+// la cifra se consume entera, Farmaproina salía como "1,2 UI": un error de 1.000.000×.
+console.log('--- millares con varios separadores ---');
+dose('Farmaproina 1.200.000 UI', '1.200.000 UI', '1200000 UI');
+dose('Colobreathe 1.662.500 UI', '1.662.500 UI', '1662500 UI');
+dose('1.000.000 UI', '1.000.000 UI', '1000000 UI');
+dose('unidades no reconocidas siguen literales', '100.000.000 UFC', '100.000.000 UFC');
+plain('el parser rechaza lo que no consume entero', app._parseDoseNumber('1.200.000x'), null);
+plain('y acepta el millar múltiple', app._parseDoseNumber('1.200.000'), 1200000);
+plain('un solo punto de 3 sigue siendo ambiguo', app._parseDoseNumber('12.500'), null);
+
+// --- Ordenación sensible a la unidad (P2 de Codex) ----------------------------
+// Ordenar por el número a secas colocaba "1 g" antes que "500 mg".
+console.log('--- ordenación por unidad base ---');
+plain('500 mg < 650 mg', app._doseSortValue('500 mg') < app._doseSortValue('650 mg'), true);
+plain('650 mg < 1 g', app._doseSortValue('650 mg') < app._doseSortValue('1 g'), true);
+plain('1 g < 10 g', app._doseSortValue('1 g') < app._doseSortValue('10 g'), true);
+plain('500 mcg < 1 mg', app._doseSortValue('500 mcg') < app._doseSortValue('1 mg'), true);
+plain('lo ilegible va al final',
+    app._doseSortValue('12.500 UI (sin unidad base)') === Number.MAX_SAFE_INTEGER, true);
+
 // --- Precisión: canonicalizar no puede redondear una dosis --------------------
 // `toFixed(3)` convertía 0,0242 mg en 0,024 mg. Cazado por la auditoría de magnitud
 // sobre el catálogo completo (criterio 2 de Codex). Casos reales.
@@ -144,7 +169,8 @@ dose('triple → literal', '267 mg/40 mg/133 mg', '267 mg/40 mg/133 mg');
 console.log('--- unidades y formato ---');
 dose('decimal con coma española', '2,5 mg', '2,5 mg');
 dose('decimal en punto se normaliza a coma', '2.5 mg', '2,5 mg');
-dose('1500 mg sube a g (equivalencia exacta)', '1500 mg', '1,5 g');
+dose('1500 mg conserva su unidad', '1500 mg', '1500 mg');
+dose('sub-gramo sí baja a mg (familiar)', '0,25 g', '250 mg');
 dose('sin separador de miles en la salida', '2500 UI', '2500 UI');
 dose('gramos grandes se quedan en g', '50 g', '50 g');
 dose('gramos pequeños tambien (sin umbral)', '9 g', '9 g');

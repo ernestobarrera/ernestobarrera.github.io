@@ -874,20 +874,38 @@ class MedCheckApp {
      */
     _parseDoseNumber(numStr) {
         const s = String(numStr ?? '').trim();
-        if (!s) return null;
-        // Con coma presente, el punto es separador de miles sin ambigüedad ("2.081,8").
+        // Solo dígitos y separadores: cualquier otra cosa no es un número de dosis.
+        // Sin esta guarda, `parseFloat` consumía solo el principio de la cadena y
+        // "1.200.000 UI" se convertía en 1,2 — un error de un millón de veces en
+        // productos reales (Farmaproina, Colobreathe). Lo cazó la revisión de Codex.
+        if (!/^\d[\d.,]*$/.test(s)) return null;
+
+        // Con coma decimal, los puntos han de formar grupos de tres ("2.081,8").
         if (s.includes(',')) {
-            const v = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+            const trozos = s.split(',');
+            if (trozos.length !== 2 || !/^\d+$/.test(trozos[1])) return null;
+            if (!/^\d{1,3}(\.\d{3})*$/.test(trozos[0]) && !/^\d+$/.test(trozos[0])) return null;
+            const v = parseFloat(`${trozos[0].replace(/\./g, '')}.${trozos[1]}`);
             return Number.isFinite(v) ? v : null;
         }
-        const m = /^(\d+)\.(\d{3})$/.exec(s);
-        if (m) {
-            if (m[1] === '0') return parseFloat(s);
-            if (m[2] === '000') return parseInt(m[1], 10) * 1000;
-            return null;
+
+        if (/^\d+$/.test(s)) return parseFloat(s);          // entero puro
+
+        const grupos = s.split('.');
+        const pareceMillares = grupos.length > 1
+            && /^\d{1,3}$/.test(grupos[0])
+            && grupos.slice(1).every(g => /^\d{3}$/.test(g));
+        if (pareceMillares) {
+            // Dos o más puntos solo pueden ser millares: nadie escribe dos decimales.
+            if (grupos.length > 2) return parseInt(s.replace(/\./g, ''), 10);
+            // Un solo punto con tres decimales es ambiguo salvo en dos casos:
+            if (grupos[1] === '000') return parseInt(s.replace(/\./g, ''), 10);  // millares
+            if (grupos[0] === '0') return parseFloat(s);                          // decimal
+            return null;   // "12.500", "20.645", "2.063": indecidible → literal
         }
-        const v = parseFloat(s);
-        return Number.isFinite(v) ? v : null;
+
+        if (/^\d+\.\d+$/.test(s)) return parseFloat(s);     // decimal normal ("2.5")
+        return null;
     }
 
     /**
@@ -904,11 +922,35 @@ class MedCheckApp {
      * 2,0818 g y el formato a 3 decimales lo redondearía.
      */
     _scaleDoseUnit(value, unit) {
-        if (unit === 'mg' && value >= 1000 && Number.isInteger(value)) {
-            return { value: value / 1000, unit: 'g' };
-        }
+        // NO se sube de mg a g. Se probó y cambiaba la unidad visible en 223 productos con
+        // resultados poco familiares para quien prescribe (Darzalex 1800 mg → 1,8 g,
+        // Tecentriq 1875 mg → 1,875 g). Consecuencia asumida: "1 g" y "1000 mg" siguen
+        // siendo etiquetas distintas — son dos formas legítimas de escribirlo y cada
+        // producto conserva la suya. Espejo por defecto.
         if (unit === 'g' && value < 1) return { value: value * 1000, unit: 'mg' };
         return { value, unit };
+    }
+
+    /**
+     * Valor numérico de una dosis en unidad base, **solo para ordenar**. Nunca se muestra.
+     *
+     * Ordenar por `parseFloat` del texto ignora la unidad y coloca `1 g` antes que
+     * `500 mg`. Las magnitudes de distinta naturaleza (masa, actividad, volumen) no son
+     * comparables entre sí: se agrupan por rango para que al menos no se entrelacen, y lo
+     * no reconocible va al final.
+     */
+    _doseSortValue(dosisStr) {
+        const canon = this._canonicalDose(dosisStr);
+        const m = new RegExp(`^([\\d.,]+)\\s*(${this._doseUnitAlternation()})(?![a-záéíóúñ0-9])`, 'i')
+            .exec(canon);
+        if (!m) return Number.MAX_SAFE_INTEGER;
+        const v = this._parseDoseNumber(m[1]);
+        if (v === null) return Number.MAX_SAFE_INTEGER;
+        const unidad = this._canonicalDoseUnit(m[2]);
+        const EN_MG = { mcg: 1e-3, mg: 1, g: 1e3 };
+        if (EN_MG[unidad]) return v * EN_MG[unidad];
+        // UI y U no convierten a masa: rango propio, por detrás de las masas.
+        return 1e9 + v;
     }
 
     /**
@@ -1991,10 +2033,9 @@ class MedCheckApp {
         if (sortBySelect) {
             sortBySelect.addEventListener('change', (e) => {
                 this.groupingState.sortBy = e.target.value;
-                const extractDoseNum = (med) => {
-                    const match = (med.dosis || '').match(/[\d,.]+/);
-                    return match ? parseFloat(match[0].replace(',', '.')) : 0;
-                };
+                // Sensible a la unidad: ordenar por el número a secas ponía "1 g" antes
+                // que "500 mg". _doseSortValue lleva las masas a una base común.
+                const extractDoseNum = (med) => this._doseSortValue(med.dosis);
                 switch (e.target.value) {
                     case 'nameAsc':
                         data.resultados.sort((a, b) => a.nombre.localeCompare(b.nombre));
@@ -5662,11 +5703,8 @@ class MedCheckApp {
         });
 
         // Ordenar dosis numéricamente
-        const dosisOptions = Array.from(dosisMap.keys()).sort((a, b) => {
-            const numA = parseFloat(a.match(/[\d.]+/)?.[0] || 0);
-            const numB = parseFloat(b.match(/[\d.]+/)?.[0] || 0);
-            return numA - numB;
-        });
+        const dosisOptions = Array.from(dosisMap.keys())
+            .sort((a, b) => this._doseSortValue(a) - this._doseSortValue(b));
         const formaOptions = Array.from(formaSet).sort();
         const labOptions = Array.from(labSet).sort();
 
@@ -9776,11 +9814,8 @@ ${materialesPlaceholder}
             });
 
             // Sort dose groups by numeric value
-            const sortedDoses = Object.keys(doseGroups).sort((a, b) => {
-                const numA = parseFloat(a.split('/')[0]) || 0;
-                const numB = parseFloat(b.split('/')[0]) || 0;
-                return numA - numB;
-            });
+            const sortedDoses = Object.keys(doseGroups)
+                .sort((a, b) => this._doseSortValue(a) - this._doseSortValue(b));
 
             // Get unique forms and labs for filters
             const uniqueForms = [...new Set(available.map(m => m.formaFarmaceuticaSimplificada?.nombre || 'Otra').filter(Boolean))];
