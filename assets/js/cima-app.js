@@ -795,10 +795,13 @@ class MedCheckApp {
      * `_canonicalDose`, que es la fuente única (ver allí el contrato y los modos de fallo).
      * Maneja el formato europeo: "1.000 mg" = 1000 mg, "1,5 mg" = 1,5 mg.
      * Ejemplos:
-     * - "1 G", "1 g", "1.000 mg", "1 g paracetamol", "1 g / comprimido" → "1000 mg"
+     * - "1 G", "1 g", "1 g paracetamol", "1 g / comprimido" → "1 g"
+     * - "1.000 mg" → "1000 mg"  (NO converge con "1 g": no se sube de mg a g, ver
+     *   `_scaleDoseUnit`; son dos grafías legítimas y cada producto conserva la suya)
      * - "400 microgramos" → "400 mcg"
      * - "875-125 mg", "875 mg/125 mg" → "875 mg/125 mg"
-     * - "100 U/ml", "250 mg/5 ml", "10 % acetilcisteína" → literal (no son potencias)
+     * - "1.200.000 UI" → "1200000 UI"
+     * - "100 U/ml", "250 mg/5 ml", "10 % acetilcisteína", "12.500 UI" → literal
      * @param {string} dosisStr - String de dosis de la API
      * @returns {string} Dosis canónica
      */
@@ -909,17 +912,21 @@ class MedCheckApp {
     }
 
     /**
-     * Ajusta la escala **solo en el par g↔mg**, donde la equivalencia es exacta y conocida
-     * por cualquier clínico: mg ≥ 1000 sube a g, g < 1 baja a mg. Nunca toca mcg ni UI
-     * (bajar `0,5 mg` a `500 mcg` cambiaría etiquetas familiares como el alprazolam).
+     * Ajusta la escala **en un solo sentido**: `g < 1` baja a mg (`0,25 g` → `250 mg`),
+     * que es como se escribe habitualmente. **No sube de mg a g** y nunca toca mcg ni UI.
      *
-     * Sustituye al umbral `g < 10`, que era indefendible: producía `9 g` → `9000 mg` frente
-     * a `10 g` → `10 g`, y **18 principios activos tienen dosis a ambos lados** (povidona
-     * yodada mostraba `1000 mg` y `10 g` en la misma lista). Con esta regla, "1 G",
-     * "1 g paracetamol", "1000 mg" y "1 g / comprimido" convergen todos en `1 g`.
+     * Historia de la regla, para que no se reintroduzca:
+     * - El umbral original `g < 10` era indefendible: daba `9 g` → `9000 mg` frente a
+     *   `10 g` → `10 g`, y **18 principios activos tienen dosis a ambos lados** (povidona
+     *   yodada mostraba `1000 mg` junto a `10 g` en la misma lista).
+     * - Se probó sustituirlo por la equivalencia exacta en ambos sentidos (mg ≥ 1000 → g),
+     *   pero cambiaba la unidad visible en **223 productos** con resultados poco familiares
+     *   para quien prescribe: Darzalex 1800 mg → 1,8 g, Tecentriq 1875 mg → 1,875 g. Y era
+     *   el origen de una anomalía de orden (`1 g` antes que `500 mg`).
      *
-     * Solo sube mg→g con valores enteros, para no perder precisión: 2081,8 mg serían
-     * 2,0818 g y el formato a 3 decimales lo redondearía.
+     * Consecuencia asumida: **`1 g` y `1000 mg` NO convergen**. Son dos grafías legítimas.
+     * Unificarlas exigiría separar etiqueta visible, clave de agrupación y valor de orden
+     * (queda como mejora posterior, no como deuda).
      */
     _scaleDoseUnit(value, unit) {
         // NO se sube de mg a g. Se probó y cambiaba la unidad visible en 223 productos con
