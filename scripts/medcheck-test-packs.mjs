@@ -184,5 +184,50 @@ check('espaciado irregular en el nombre',
     ]),
     '30 comprimidos');
 
+// --- Paridad tarjeta (ETL) ↔ modal ---------------------------------------------
+// La tarjeta lee el envase del índice del ETL y el modal lo calcula en vivo; si el recorte
+// difiere, el mismo producto enseña dos envases distintos. Había 10 divergencias sobre
+// 20.626 presentaciones (revisión de Codex, S39): en 8 el modal repetía el nombre completo
+// porque el respaldo por coma comparaba contra el nombre SIN normalizar, y un espacio doble
+// interno lo invalidaba. Estos son los casos reales.
+console.log('--- paridad con el ETL: espaciado interno irregular ---');
+check('doble espacio antes de la coma (Rosuvastatina/Ezetimiba Normon)',
+    summarize('ROSUVASTATINA/EZETIMIBA NORMON 10 MG/10 MG CAPSULAS DURAS', [
+        { cn: '1', comerc: true, nombre: 'ROSUVASTATINA/EZETIMIBA NORMON 10 MG /10 MG  CAPSULAS DURAS, 30 cápsulas' },
+    ]),
+    '30 cápsulas');
+
+check('doble espacio tras la marca (Sitagliptina/Metformina Stada)',
+    summarize('SITAGLIPTINA/METFORMINA STADA 50 MG/1.000 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG', [
+        { cn: '2', comerc: true, nombre: 'SITAGLIPTINA/METFORMINA STADA  50 MG/1000 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG, 56 comprimidos' },
+    ]),
+    '56 comprimidos');
+
+check('doble espacio dentro del envase (Vaxar)',
+    summarize('VAXAR 5 MG COMPRIMIDOS RECUBIERTOS CON PELICULA EFG', [
+        { cn: '3', comerc: true, nombre: 'VAXAR 5 MG COMPRIMIDOS RECUBIERTOS CON PELICULA, 28  comprimidos' },
+    ]),
+    '28 comprimidos');
+
+check('minúsculas y doble espacio (Pariet)',
+    summarize('PARIET 20 MG COMPRIMIDOS GASTRORRESISTENTES', [
+        { cn: '4', comerc: true, nombre: 'PARIET 20mg  COMPRIMIDOS GASTRORRESISTENTES, 28 comprimidos' },
+    ]),
+    '28 comprimidos');
+
+// Cuando el nombre del medicamento YA es el de la presentación, CIMA no declara envase
+// aparte: se omite del resumen en vez de repetir el producto (el ETL devuelve null ahí).
+check('VITRAKVI: el envase va dentro del nombre → sin resumen',
+    summarize('VITRAKVI 20 MG/ML SOLUCION ORAL, 2 frascos de 50 ml', [
+        { cn: '5', comerc: true, nombre: 'VITRAKVI 20 MG/ML SOLUCION ORAL, 2 frascos de 50 ml' },
+    ]),
+    '');
+
+check('BRITAPEN: CIMA no declara envase → sin resumen',
+    summarize('BRITAPEN 1 G POLVO PARA SOLUCIÓN PARA INYECCIÓN', [
+        { cn: '6', comerc: true, nombre: 'BRITAPEN 1 G POLVO PARA SOLUCIÓN PARA INYECCIÓN' },
+    ]),
+    '');
+
 console.log(failures === 0 ? '\nOK — todas las aserciones pasan' : `\nFALLOS: ${failures}`);
 process.exit(failures === 0 ? 0 : 1);

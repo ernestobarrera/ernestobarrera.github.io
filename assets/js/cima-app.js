@@ -822,7 +822,9 @@ class MedCheckApp {
             ['unidades', 'U'], ['unidad', 'U'],
             ['mcg', 'mcg'], ['µg', 'mcg'], ['ug', 'mcg'],
             ['mg', 'mg'],
-            ['u.i.', 'UI'], ['ui', 'UI'], ['iu', 'UI'],
+            // 'u.i' sin punto final va ANTES de 'u': si no, "10.000 u.i" casaba como 'u'
+            // y se mostraba "10000 U" en vez de UI.
+            ['u.i.', 'UI'], ['u.i', 'UI'], ['ui', 'UI'], ['iu', 'UI'],
             ['g', 'g'], ['u', 'U'],
         ];
     }
@@ -846,11 +848,58 @@ class MedCheckApp {
             : String(parseFloat(value.toFixed(3))).replace('.', ',');
     }
 
-    /** Aplica la conversión a mg de las potencias orales típicas (< 10 g). */
-    _doseToMg(value, unit) {
-        return (unit === 'g' && value < 10)
-            ? { value: Math.round(value * 1000), unit: 'mg' }
-            : { value, unit };
+    /**
+     * Parsea el número de una dosis, o devuelve `null` si el punto es AMBIGUO.
+     *
+     * En español el punto es separador de miles, pero CIMA mezcla ambas convenciones y
+     * `N.NNN` puede ser cualquiera de las dos: `1.000 mg` son mil miligramos, `20.645 mg`
+     * son veinte coma seiscientos cuarenta y cinco. Solo hay dos casos decidibles por la
+     * forma de la cadena:
+     *   - parte entera `0` → decimal seguro (`0.625` no puede ser millares);
+     *   - decimales `000`  → millares seguro (nadie escribe un decimal como `,000`).
+     * El resto (`12.500`, `20.645`, `2.063`) es indecidible y **no se canonicaliza**: la
+     * dosis se muestra literal. Medido: 52 usos de 32 tokens en todo el catálogo.
+     *
+     * Sin esta guarda, `2 mg / 0.625 mg` se mostraba como `2 mg/625 mg` — un error de
+     * 1000× introducido al arreglar otros errores de 1000×. Lo cazó la revisión de Codex.
+     */
+    _parseDoseNumber(numStr) {
+        const s = String(numStr ?? '').trim();
+        if (!s) return null;
+        // Con coma presente, el punto es separador de miles sin ambigüedad ("2.081,8").
+        if (s.includes(',')) {
+            const v = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+            return Number.isFinite(v) ? v : null;
+        }
+        const m = /^(\d+)\.(\d{3})$/.exec(s);
+        if (m) {
+            if (m[1] === '0') return parseFloat(s);
+            if (m[2] === '000') return parseInt(m[1], 10) * 1000;
+            return null;
+        }
+        const v = parseFloat(s);
+        return Number.isFinite(v) ? v : null;
+    }
+
+    /**
+     * Ajusta la escala **solo en el par g↔mg**, donde la equivalencia es exacta y conocida
+     * por cualquier clínico: mg ≥ 1000 sube a g, g < 1 baja a mg. Nunca toca mcg ni UI
+     * (bajar `0,5 mg` a `500 mcg` cambiaría etiquetas familiares como el alprazolam).
+     *
+     * Sustituye al umbral `g < 10`, que era indefendible: producía `9 g` → `9000 mg` frente
+     * a `10 g` → `10 g`, y **18 principios activos tienen dosis a ambos lados** (povidona
+     * yodada mostraba `1000 mg` y `10 g` en la misma lista). Con esta regla, "1 G",
+     * "1 g paracetamol", "1000 mg" y "1 g / comprimido" convergen todos en `1 g`.
+     *
+     * Solo sube mg→g con valores enteros, para no perder precisión: 2081,8 mg serían
+     * 2,0818 g y el formato a 3 decimales lo redondearía.
+     */
+    _scaleDoseUnit(value, unit) {
+        if (unit === 'mg' && value >= 1000 && Number.isInteger(value)) {
+            return { value: value / 1000, unit: 'g' };
+        }
+        if (unit === 'g' && value < 1) return { value: value * 1000, unit: 'mg' };
+        return { value, unit };
     }
 
     /**
@@ -888,11 +937,9 @@ class MedCheckApp {
             );
             const limpio = !/\d/.test(resto) && !/[/%]/.test(resto)
                 && !/\b(ml|l|dosis|puls\w*|horas?|h|cm|cm2|m2)\b/i.test(resto);
-            if (limpio) {
-                const { value, unit } = this._doseToMg(
-                    this._parseEuropeanNumber(mono[1]),
-                    this._canonicalDoseUnit(mono[2])
-                );
+            const num = this._parseDoseNumber(mono[1]);
+            if (limpio && num !== null) {
+                const { value, unit } = this._scaleDoseUnit(num, this._canonicalDoseUnit(mono[2]));
                 return `${this._formatDoseValue(value)} ${unit}`;
             }
         }
@@ -909,10 +956,13 @@ class MedCheckApp {
             // "componente A + componente B" de "cantidad por cantidad": `10 mg/2 g` es una
             // concentración tópica, y tratarla como combinación daría `10 mg/2000 mg`.
             // Unidades distintas (`2800 UI / 70 mg`) → literal, que además se lee mejor.
-            if (u1 && u2 && u1 === u2) {
-                const a = this._doseToMg(this._parseEuropeanNumber(combo[1]), u1);
-                const b = this._doseToMg(this._parseEuropeanNumber(combo[3]), u2);
-                return `${this._formatDoseValue(a.value)} ${a.unit}/${this._formatDoseValue(b.value)} ${b.unit}`;
+            const n1 = this._parseDoseNumber(combo[1]);
+            const n2 = this._parseDoseNumber(combo[3]);
+            if (u1 && u2 && u1 === u2 && n1 !== null && n2 !== null) {
+                // En combinaciones NO se ajusta la escala: hacerlo por componente producía
+                // parejas incoherentes como `2 g / 15 g` → `2000 mg/15 g`. Conservan la
+                // unidad escrita, que además ya es común a las dos por la regla de arriba.
+                return `${this._formatDoseValue(n1)} ${u1}/${this._formatDoseValue(n2)} ${u2}`;
             }
         }
 
@@ -7564,24 +7614,35 @@ class MedCheckApp {
         return String(value ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
+    /**
+     * Recorta el nombre del medicamento del nombre de la presentación.
+     *
+     * DEBE comportarse exactamente igual que `packFormat` en scripts/etl-packs: la tarjeta
+     * lee el envase del índice generado por el ETL y el modal lo calcula en vivo, así que
+     * cualquier divergencia enseña dos envases distintos para el mismo producto. Había 10
+     * sobre 20.626 presentaciones, y en 8 el modal repetía el nombre completo del
+     * medicamento: la comparación del respaldo se hacía contra el nombre SIN normalizar,
+     * de modo que un espacio doble interno la invalidaba. Cazado por la revisión de Codex.
+     */
     _getPresentationFormat(medName, presentationName) {
         if (!presentationName) return '-';
 
-        let format = String(presentationName).replace(/\s+/g, ' ').trim();
+        const pres = String(presentationName).replace(/\s+/g, ' ').trim();
+        let format = pres;
         const normalizedMedName = String(medName || '').replace(/\s+/g, ' ').trim();
 
         if (normalizedMedName) {
-            const medNamePattern = new RegExp(`^${this._escapeRegex(normalizedMedName)}\\s*,?\\s*`, 'i');
+            const medNamePattern = new RegExp(`^${this._escapeRegex(normalizedMedName)}\\s*[,.]?\\s*`, 'i');
             format = format.replace(medNamePattern, '').trim();
         }
 
         // CIMA suele separar el formato con coma: "NOMBRE , 28 comprimidos".
         // Si el recorte exacto no encaja, conservamos la parte final tras la coma.
-        if (format === presentationName && format.includes(',')) {
+        if (format === pres && format.includes(',')) {
             format = format.split(',').pop().trim();
         }
 
-        return format || presentationName;
+        return format || pres;
     }
 
     _formatPresentationSummary(med) {
@@ -7613,10 +7674,16 @@ class MedCheckApp {
         for (const presentation of (presentations || [])) {
             if (!presentation || presentation.comerc === false) continue;
             const raw = this._getPresentationFormat(medName, presentation.nombre);
+            const pres = String(presentation.nombre || '').replace(/\s+/g, ' ').trim();
+            // Si no se recortó nada, es que CIMA no declara envase aparte (VITRAKVI trae el
+            // envase dentro del propio nombre; BRITAPEN no lo declara). Se omite del resumen
+            // en vez de repetir el nombre del producto — mismo criterio que el ETL, que ahí
+            // devuelve null. El texto oficial sigue íntegro en las filas desplegadas.
+            if (!raw || raw === '-' || raw === pres) continue;
             // El acondicionamiento final entre paréntesis ("(Blister OPA/Al/PE-Al/PE)")
             // no aporta al vistazo y desborda la línea.
-            const clean = String(raw || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
-            if (clean && clean !== '-' && !formats.includes(clean)) formats.push(clean);
+            const clean = raw.replace(/\s*\([^)]*\)\s*$/, '').trim();
+            if (clean && !formats.includes(clean)) formats.push(clean);
         }
         return this._compactPackList(formats);
     }
@@ -10245,7 +10312,9 @@ ${materialesPlaceholder}
                     key = med.formaFarmaceutica?.nombre || 'Sin forma';
                     break;
                 case 'dose':
-                    key = med.dosis || 'Sin dosis especificada';
+                    // Por el canonicalizador, no por el literal: agrupar en crudo separaba
+                    // "1 G" de "1000 mg" en dos grupos siendo la misma dosis.
+                    key = med.dosis ? this.normalizeDosis(med.dosis) : 'Sin dosis especificada';
                     break;
                 case 'lab':
                     key = med.labtitular || 'Sin laboratorio';
@@ -12490,7 +12559,7 @@ ${materialesPlaceholder}
                         </button>
                     </div>
                 </div>
-                ${fav.principioActivo ? `<div class="fav-card-pa"><i class="fas fa-flask"></i> ${fav.principioActivo}${fav.dosis ? ' · ' + fav.dosis : ''}</div>` : ''}
+                ${fav.principioActivo ? `<div class="fav-card-pa"><i class="fas fa-flask"></i> ${fav.principioActivo}${fav.dosis ? ' · ' + this._escapeHtml(this._displayDose(fav.dosis).text) : ''}</div>` : ''}
                 ${galenic ? `<div class="fav-card-galenic"><i class="fas fa-prescription-bottle"></i> ${galenic}</div>` : ''}
                 ${tagChips ? `<div class="fav-card-tags">${tagChips}</div>` : ''}
                 <div class="fav-card-footer">

@@ -63,11 +63,11 @@ function plain(name, got, expected) {
 
 // --- Las grafías del caso paracetamol de la captura ---------------------------
 console.log('--- caso real: las grafías de paracetamol 1 g ---');
-dose('"1 G"', '1 G', '1000 mg');
-dose('"1 g paracetamol"', '1 g paracetamol', '1000 mg');
-dose('"1000 mg"', '1000 mg', '1000 mg');
-dose('"1 g / comprimido"', '1 g / comprimido', '1000 mg');
-dose('"1.000 mg" (miles con punto)', '1.000 mg', '1000 mg');
+dose('"1 G"', '1 G', '1 g');
+dose('"1 g paracetamol"', '1 g paracetamol', '1 g');
+dose('"1000 mg"', '1000 mg', '1 g');
+dose('"1 g / comprimido"', '1 g / comprimido', '1 g');
+dose('"1.000 mg" (miles con punto)', '1.000 mg', '1 g');
 dose('"650 mg paracetamol"', '650 mg paracetamol', '650 mg');
 dose('"500 mg paracetamol"', '500 mg paracetamol', '500 mg');
 
@@ -78,14 +78,37 @@ dose('"100 microgramos" (antes: 100 mg)', '100 microgramos', '100 mcg');
 dose('"1 microgramo" en singular', '1 microgramo', '1 mcg');
 dose('enoxaparina "10.000 UI" (antes: 10 ui)', '10.000 UI', '10000 UI');
 dose('"2.000 UI" (antes: 2 ui)', '2.000 UI', '2000 UI');
+dose('"10.000 u.i" sin punto final (antes: 10000 U)', '10.000 u.i', '10000 UI');
 dose('"500 miligramos" con letra', '500 miligramos', '500 mg');
-dose('"1 gramo" con letra', '1 gramo', '1000 mg');
+dose('"1 gramo" con letra', '1 gramo', '1 g');
 dose('insulina "100 U/ml" (antes: 100 mg)', '100 U/ml', '100 U/ml');
 dose('"100 unidades/ml" (antes: 100 mg)', '100 unidades/ml', '100 unidades/ml');
 dose('"0,5 ml" (antes: 0.5 mg)', '0,5 ml', '0,5 ml');
 dose('"10 % acetilcisteina" (antes: 10 mg)', '10 % acetilcisteina', '10 % acetilcisteina');
 dose('"6,14 ml glicerol" (antes: 6.1 mg)', '6,14 ml glicerol', '6,14 ml glicerol');
 dose('"250 mg/5 ml" (antes: 250/5 mg)', '250 mg/5 ml', '250 mg/5 ml');
+
+// --- Ambigüedad del punto decimal (hallazgo bloqueante de Codex) --------------
+// "N.NNN" puede ser millares o decimal. Solo son decidibles el 0.xxx (decimal) y el
+// .000 (millares); el resto se muestra literal en vez de arriesgar un 1000x.
+console.log('--- punto ambiguo: 0.xxx decimal, .000 millares, resto literal ---');
+dose('0.625 no puede ser millares → decimal', '2 mg / 0.625 mg', '2 mg/0,625 mg');
+dose('0.075/0.030 → decimales', '0.075 mg/0.030 mg', '0,075 mg/0,03 mg');
+dose('20.645 es indecidible → literal', '20.645 mg/cápsula', '20.645 mg/cápsula');
+dose('12.500 es indecidible → literal', '12.500 UI', '12.500 UI');
+dose('2.063 es indecidible → literal', '2.063 mg', '2.063 mg');
+dose('1.000 termina en 000 → millares', '1.000 UI', '1000 UI');
+dose('coma presente: el punto es millares', '2.081,8 mg', '2081,8 mg');
+
+// --- Escala g<->mg sin umbral (hallazgo de Codex) ------------------------------
+// El umbral `g < 10` daba 9 g -> 9000 mg pero 10 g -> 10 g, y 18 principios activos
+// tienen dosis a ambos lados (povidona yodada mostraba "1000 mg" junto a "10 g").
+console.log('--- escala g<->mg, sin umbral ---');
+dose('povidona 1 g', '1 g povidona iodada', '1 g');
+dose('povidona 10 g — misma unidad que la anterior', '10 g', '10 g');
+dose('combinación en gramos NO se reescala', '2 g / 15 g', '2 g/15 g');
+dose('ni al revés', '10 g / 2,12 g', '10 g/2,12 g');
+dose('combinación en mg conserva su unidad', '50 mg/1000 mg', '50 mg/1000 mg');
 
 // --- Denominador = forma farmacéutica (benigno) vs magnitud (peligroso) --------
 console.log('--- "por comprimido" no es un ratio ---');
@@ -113,13 +136,17 @@ dose('triple → literal', '267 mg/40 mg/133 mg', '267 mg/40 mg/133 mg');
 console.log('--- unidades y formato ---');
 dose('decimal con coma española', '2,5 mg', '2,5 mg');
 dose('decimal en punto se normaliza a coma', '2.5 mg', '2,5 mg');
-dose('sin separador de miles en la salida', '1500 mg', '1500 mg');
-dose('gramos grandes NO se convierten (>= 10 g)', '50 g', '50 g');
+dose('1500 mg sube a g (equivalencia exacta)', '1500 mg', '1,5 g');
+dose('sin separador de miles en la salida', '2500 UI', '2500 UI');
+dose('gramos grandes se quedan en g', '50 g', '50 g');
+dose('gramos pequeños tambien (sin umbral)', '9 g', '9 g');
+dose('sub-gramo baja a mg', '0,5 g', '500 mg');
+dose('mg no entero NO sube a g (perdería precisión)', '2081,8 mg', '2081,8 mg');
 dose('mcg', '500 mcg', '500 mcg');
 dose('µg se unifica a mcg', '25 µg', '25 mcg');
 dose('UI en mayúsculas', '2800 ui', '2800 UI');
 dose('U.I. con puntos', '400 U.I.', '400 UI');
-dose('espaciado irregular', '  1   g   paracetamol ', '1000 mg');
+dose('espaciado irregular', '  1   g   paracetamol ', '1 g');
 plain('cadena vacía en tarjeta', app._displayDose('').text, '');
 plain('nulo en tarjeta', app._displayDose(null).text, '');
 plain('vacío en filtro es "Sin dosis"', app.normalizeDosis(''), 'Sin dosis');
