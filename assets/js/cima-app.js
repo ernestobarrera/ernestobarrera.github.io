@@ -841,11 +841,20 @@ class MedCheckApp {
         return hit ? hit[1] : null;
     }
 
-    /** Formatea el valor con decimal en coma y SIN separador de miles (ambigüedad no aceptable en dosis). */
+    /**
+     * Formatea el valor con decimal en coma y SIN separador de miles: en dosis, "1.000"
+     * podría leerse como decimal anglosajón y esa ambigüedad no es aceptable.
+     *
+     * NO redondea. `toFixed(3)` convertía `0,0242 mg` en `0,024 mg` y `0,0165 mg` en
+     * `0,017 mg` — un cambio de magnitud en una dosis real, cazado por la auditoría del
+     * catálogo completo. `toPrecision(12)` quita el ruido binario (1.5000000000000002) sin
+     * tocar cifras significativas. Devuelve null si el valor no se puede escribir en
+     * notación normal, para que la dosis caiga a literal en vez de mostrarse en exponencial.
+     */
     _formatDoseValue(value) {
-        return Number.isInteger(value)
-            ? String(value)
-            : String(parseFloat(value.toFixed(3))).replace('.', ',');
+        if (Number.isInteger(value)) return String(value);
+        const s = String(parseFloat(value.toPrecision(12)));
+        return s.includes('e') ? null : s.replace('.', ',');
     }
 
     /**
@@ -940,7 +949,8 @@ class MedCheckApp {
             const num = this._parseDoseNumber(mono[1]);
             if (limpio && num !== null) {
                 const { value, unit } = this._scaleDoseUnit(num, this._canonicalDoseUnit(mono[2]));
-                return `${this._formatDoseValue(value)} ${unit}`;
+                const txt = this._formatDoseValue(value);
+                if (txt !== null) return `${txt} ${unit}`;
             }
         }
 
@@ -962,7 +972,8 @@ class MedCheckApp {
                 // En combinaciones NO se ajusta la escala: hacerlo por componente producía
                 // parejas incoherentes como `2 g / 15 g` → `2000 mg/15 g`. Conservan la
                 // unidad escrita, que además ya es común a las dos por la regla de arriba.
-                return `${this._formatDoseValue(n1)} ${u1}/${this._formatDoseValue(n2)} ${u2}`;
+                const t1 = this._formatDoseValue(n1), t2 = this._formatDoseValue(n2);
+                if (t1 !== null && t2 !== null) return `${t1} ${u1}/${t2} ${u2}`;
             }
         }
 

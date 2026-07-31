@@ -110,6 +110,14 @@ dose('combinación en gramos NO se reescala', '2 g / 15 g', '2 g/15 g');
 dose('ni al revés', '10 g / 2,12 g', '10 g/2,12 g');
 dose('combinación en mg conserva su unidad', '50 mg/1000 mg', '50 mg/1000 mg');
 
+// --- Precisión: canonicalizar no puede redondear una dosis --------------------
+// `toFixed(3)` convertía 0,0242 mg en 0,024 mg. Cazado por la auditoría de magnitud
+// sobre el catálogo completo (criterio 2 de Codex). Casos reales.
+console.log('--- precisión: sin redondeo ---');
+dose('4 decimales se conservan', '2500 mg/0,0242 mg', '2500 mg/0,0242 mg');
+dose('y en el primer componente', '0,0165 mg / 72 mg', '0,0165 mg/72 mg');
+dose('sin ruido binario', '1,5 mg', '1,5 mg');
+
 // --- Denominador = forma farmacéutica (benigno) vs magnitud (peligroso) --------
 console.log('--- "por comprimido" no es un ratio ---');
 dose('"/cápsula" sin espacios', '20 mg/cápsula', '20 mg');
