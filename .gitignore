@@ -99,3 +99,6 @@ test-dosis*.js
 *_old.html
 criteria_data.json
 workers/
+
+### Caché local de auditorías (medcheck-audit-dose.mjs --cache) ###
+.cache/
