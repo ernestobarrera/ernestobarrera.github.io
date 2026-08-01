@@ -225,8 +225,14 @@ plain('DESCENDENTE: el ilegible sigue al final',
     app._compareByDose('500 mg', 'Desconocida', 'desc') < 0, true);
 plain('descendente: y por el otro lado también',
     app._compareByDose('Desconocida', '500 mg', 'desc') > 0, true);
-plain('dos ilegibles empatan (orden estable)',
-    app._compareByDose('Desconocida', '-', 'desc'), 0);
+// Dos ilegibles ya NO empatan a 0: desempatan por la propia cadena, para que el resultado no
+// dependa del orden en que llegaron (ver el bloque de desempate determinista más abajo).
+plain('dos ilegibles desempatan de forma determinista',
+    Math.sign(app._compareByDose('Desconocida', '-', 'desc'))
+    === Math.sign('Desconocida'.localeCompare('-')), true);
+plain('y el desempate es simétrico',
+    Math.sign(app._compareByDose('-', 'Desconocida', 'desc')),
+    -Math.sign(app._compareByDose('Desconocida', '-', 'desc')));
 plain('descendente ordena de mayor a menor', app._compareByDose('1 g', '500 mg', 'desc') < 0, true);
 
 // R1: la lectura de millares solo se rescata en unidades de ACTIVIDAD.
@@ -269,6 +275,48 @@ for (const raw of ['1 g paracetamol', '0,25 g', '875-125 mg', '12.500 UI', '400 
     plain(`sort(raw) === sort(canónica): ${JSON.stringify(raw)}`,
         app._doseSortValue(raw), app._doseSortValue(app.normalizeDosis(raw)));
 }
+
+// --- Estado de orden: mismo criterio, misma secuencia (S40, P2 de Codex) -------
+// `Array.sort` es estable: devolver 0 en los empates conservaba el orden dejado por el
+// criterio anterior, así que el mismo `doseDesc` daba secuencias distintas según se llegara
+// directo o pasando por "Nombre A-Z" — y una URL compartida no reproducía lo compartido.
+console.log('--- desempate determinista del estado de orden ---');
+const muestra = () => [
+    { nombre: 'Zeta', nregistro: '5', dosis: '1 g' },
+    { nombre: 'Alfa', nregistro: '1', dosis: '500 mg' },
+    { nombre: 'Delta', nregistro: '4', dosis: '1000 mg' },
+    { nombre: 'Charlie', nregistro: '3', dosis: 'Desconocida' },
+    { nombre: 'Beta', nregistro: '2', dosis: '500 mg' },
+];
+const secuencia = (lista) => lista.map(m => m.nombre).join(' > ');
+const ordenar = (lista, sortBy) => {
+    app.groupingState = { sortBy };
+    return app._applySortState(lista);
+};
+// Ruta directa frente a ruta pasando por otro criterio: deben coincidir.
+for (const criterio of ['doseAsc', 'doseDesc', 'nameAsc', 'nameDesc']) {
+    const directo = secuencia(ordenar(muestra(), criterio));
+    const indirecto = secuencia(ordenar(ordenar(muestra(), 'nameAsc'), criterio));
+    const desdeElFinal = secuencia(ordenar(ordenar(muestra(), 'nameDesc'), criterio));
+    plain(`${criterio}: directo === tras nameAsc`, indirecto, directo);
+    plain(`${criterio}: directo === tras nameDesc`, desdeElFinal, directo);
+}
+// `1 g` (Zeta) y `1000 mg` (Delta) valen lo mismo: el desempate por cadena los deja siempre
+// en el mismo orden, y ese bloque se lee igual en ascendente y en descendente.
+plain('dosis equivalentes desempatan por etiqueta, no por llegada',
+    secuencia(ordenar(muestra(), 'doseAsc')), 'Alfa > Beta > Zeta > Delta > Charlie');
+plain('y el ilegible sigue al final en descendente',
+    secuencia(ordenar(muestra(), 'doseDesc')), 'Zeta > Delta > Alfa > Beta > Charlie');
+
+// Orden por defecto: sin `sortBy` la lista queda en A-Z, no en el orden en que llegó.
+// El selector dice "Nombre A-Z" desde el principio y no puede mentir.
+console.log('--- orden por defecto ---');
+app.groupingState = {};
+plain('sin sortBy, entrada desordenada sale en A-Z',
+    secuencia(app._applySortState(muestra())), 'Alfa > Beta > Charlie > Delta > Zeta');
+app.groupingState = { sortBy: 'nameAsc' };
+plain('nameAsc explícito da lo mismo que el defecto',
+    secuencia(app._applySortState(muestra())), 'Alfa > Beta > Charlie > Delta > Zeta');
 
 // --- Tooltip ------------------------------------------------------------------
 console.log('--- tooltip ---');

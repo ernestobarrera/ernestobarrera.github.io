@@ -1016,13 +1016,19 @@ class MedCheckApp {
      */
     _compareByDose(a, b, dir = 'asc') {
         const UNK = MedCheckApp.DOSE_SORT_UNKNOWN;
-        const va = this._doseSortValue(a);
-        const vb = this._doseSortValue(b);
-        if (va === UNK || vb === UNK) {
-            if (va === UNK && vb === UNK) return 0;
-            return va === UNK ? 1 : -1;
+        const sa = String(a ?? '');
+        const sb = String(b ?? '');
+        const va = this._doseSortValue(sa);
+        const vb = this._doseSortValue(sb);
+        if (va !== vb) {
+            if (va === UNK || vb === UNK) return va === UNK ? 1 : -1;
+            return dir === 'desc' ? vb - va : va - vb;
         }
-        return dir === 'desc' ? vb - va : va - vb;
+        // Mismo valor, o ambas ilegibles: desempate por la propia cadena para no depender del
+        // orden en que llegaron. `1 g` y `1000 mg` valen lo mismo y deben salir siempre igual.
+        // El desempate NO se invierte con `dir`: así el bloque de una misma dosis se lee
+        // igual en ascendente y en descendente.
+        return sa.localeCompare(sb);
     }
 
     /**
@@ -1037,19 +1043,28 @@ class MedCheckApp {
      */
     _applySortState(list) {
         if (!Array.isArray(list)) return list;
+        const nombre = (m) => String(m?.nombre || '');
+        const nreg = (m) => String(m?.nregistro || '');
+
+        // Desempate TOTAL, siempre. `Array.sort` es estable, así que devolver 0 en un empate
+        // conserva el orden que dejó el criterio anterior: el mismo `doseDesc` daba secuencias
+        // distintas según se llegara directamente o pasando antes por "Nombre A-Z", y por tanto
+        // una URL compartida no reproducía lo que veía quien la compartió. Cazado por Codex.
+        const tie = (a, b) => nombre(a).localeCompare(nombre(b)) || nreg(a).localeCompare(nreg(b));
+
         switch (this.groupingState?.sortBy) {
             case 'nameDesc':
-                list.sort((a, b) => String(b.nombre || '').localeCompare(String(a.nombre || '')));
+                list.sort((a, b) => nombre(b).localeCompare(nombre(a)) || nreg(a).localeCompare(nreg(b)));
                 break;
             case 'doseAsc':
-                list.sort((a, b) => this._compareByDose(a.dosis, b.dosis, 'asc'));
+                list.sort((a, b) => this._compareByDose(a.dosis, b.dosis, 'asc') || tie(a, b));
                 break;
             case 'doseDesc':
-                list.sort((a, b) => this._compareByDose(a.dosis, b.dosis, 'desc'));
+                list.sort((a, b) => this._compareByDose(a.dosis, b.dosis, 'desc') || tie(a, b));
                 break;
             case 'nameAsc':
             default:
-                list.sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || '')));
+                list.sort(tie);
                 break;
         }
         return list;
