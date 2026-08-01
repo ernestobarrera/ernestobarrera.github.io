@@ -132,8 +132,10 @@ plain('500 mg < 650 mg', app._doseSortValue('500 mg') < app._doseSortValue('650 
 plain('650 mg < 1 g', app._doseSortValue('650 mg') < app._doseSortValue('1 g'), true);
 plain('1 g < 10 g', app._doseSortValue('1 g') < app._doseSortValue('10 g'), true);
 plain('500 mcg < 1 mg', app._doseSortValue('500 mcg') < app._doseSortValue('1 mg'), true);
+// El ejemplo era "12.500 UI (sin unidad base)", que R1 rescata a propósito desde S40
+// (en actividad los millares sí son decidibles). En masa siguen sin serlo.
 plain('lo ilegible va al final',
-    app._doseSortValue('12.500 UI (sin unidad base)') === Number.MAX_SAFE_INTEGER, true);
+    app._doseSortValue('12.500 mg (sin unidad base)') === Number.MAX_SAFE_INTEGER, true);
 
 // --- Precisión: canonicalizar no puede redondear una dosis --------------------
 // `toFixed(3)` convertía 0,0242 mg en 0,024 mg. Cazado por la auditoría de magnitud
@@ -210,6 +212,63 @@ dose('parche de fentanilo: literal, sin tokenizar',
 dose('parche con superficie en cm2',
     '16.5mg/30cm2 que liberan 100mcg de Fentanilo/h',
     '16.5mg/30cm2 que liberan 100mcg de Fentanilo/h');
+
+// --- Puerta del valor de orden (S40) ------------------------------------------
+// El valor de orden nunca se muestra, pero SÍ decide qué se ve: la vista "Sin agrupar"
+// recorta, así que el orden elige quién entra en el recorte. Por eso tiene puerta propia.
+const UNK = app.constructor.DOSE_SORT_UNKNOWN;
+console.log('--- centinela: ilegibles al final en AMBOS sentidos ---');
+plain('el centinela tiene nombre', UNK, Number.MAX_SAFE_INTEGER);
+plain('ascendente: ilegible después de una masa',
+    app._compareByDose('500 mg', 'Desconocida', 'asc') < 0, true);
+plain('DESCENDENTE: el ilegible sigue al final',
+    app._compareByDose('500 mg', 'Desconocida', 'desc') < 0, true);
+plain('descendente: y por el otro lado también',
+    app._compareByDose('Desconocida', '500 mg', 'desc') > 0, true);
+plain('dos ilegibles empatan (orden estable)',
+    app._compareByDose('Desconocida', '-', 'desc'), 0);
+plain('descendente ordena de mayor a menor', app._compareByDose('1 g', '500 mg', 'desc') < 0, true);
+
+// R1: la lectura de millares solo se rescata en unidades de ACTIVIDAD.
+console.log('--- R1: millares indecidibles, solo en UI/U ---');
+plain('12.500 UI ya tiene valor de orden', app._doseSortValue('12.500 UI') !== UNK, true);
+plain('y ordena entre sus hermanas',
+    app._doseSortValue('10.000 UI') < app._doseSortValue('12.500 UI')
+    && app._doseSortValue('12.500 UI') < app._doseSortValue('15.000 UI'), true);
+plain('Fragmin completo en orden', ['12.500 UI', '2.500 UI', '18.000 UI', '7.500 UI', '5.000 UI',
+    '15.000 UI', '10.000 UI'].sort((a, b) => app._compareByDose(a, b)).join(' '),
+    '2.500 UI 5.000 UI 7.500 UI 10.000 UI 12.500 UI 15.000 UI 18.000 UI');
+// En masa el punto es ambiguo DE VERDAD: el catálogo tiene 8 cadenas mg que son millares y
+// 7 que son decimales. Leerlas como millares ordenaría "6.563 g" como 6,5 kg.
+plain('1.500 mg sigue SIN valor de orden', app._doseSortValue('1.500 mg'), UNK);
+plain('2.063 mg (parche) sigue sin valor', app._doseSortValue('2.063 mg'), UNK);
+plain('6.563 g sigue sin valor', app._doseSortValue('6.563 g'), UNK);
+plain('R1 no toca la etiqueta visible', app.normalizeDosis('12.500 UI'), '12.500 UI');
+plain('ni el parser de la etiqueta', app._parseDoseNumber('12.500'), null);
+
+// R2 descartada: la cadena no distingue contenido total de potencia. Casos reales.
+console.log('--- R2 descartada: contenido total no es potencia ---');
+plain('Buprenorfina 20 mg (TRANSTEC 35 mcg/h)', app._doseSortValue('Buprenorfina 20 mg'), UNK);
+plain('Fentanilo 23,12 mg (parche 100 mcg/h)', app._doseSortValue('Fentanilo 23,12 mg'), UNK);
+plain('Estradiol 6,4 mg (EVOPAD 100 mcg/24 h)', app._doseSortValue('Estradiol 6,4 mg'), UNK);
+plain('Ibuprofeno 4 g (APIROFENO 40 mg/ml)', app._doseSortValue('Ibuprofeno 4 g'), UNK);
+plain('umbral, no valor', app._doseSortValue('Mayor o igual que 2,5 UI'), UNK);
+plain('concentración con PA delante', app._doseSortValue('GALANTAMINA (HIDROBROMURO) 4 mg/ml'), UNK);
+
+// Bandas: masa y actividad no son comparables, no deben entrelazarse.
+console.log('--- bandas ---');
+plain('toda masa por debajo de toda actividad',
+    app._doseSortValue('50 g') < app._doseSortValue('0,6 UI'), true);
+plain('la actividad ordena dentro de su banda',
+    app._doseSortValue('2800 UI') < app._doseSortValue('1.200.000 UI'), true);
+
+// Idempotencia: Equivalencias y Alternativas pasan cadenas YA canónicas.
+console.log('--- idempotencia sobre la cadena canónica ---');
+for (const raw of ['1 g paracetamol', '0,25 g', '875-125 mg', '12.500 UI', '400 microgramos',
+    '1.200.000 UI', '10 % acetilcisteína', 'Buprenorfina 20 mg', '2 mg / 0.625 mg']) {
+    plain(`sort(raw) === sort(canónica): ${JSON.stringify(raw)}`,
+        app._doseSortValue(raw), app._doseSortValue(app.normalizeDosis(raw)));
+}
 
 // --- Tooltip ------------------------------------------------------------------
 console.log('--- tooltip ---');

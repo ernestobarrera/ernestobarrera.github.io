@@ -939,25 +939,120 @@ class MedCheckApp {
     }
 
     /**
+     * Centinela de "no sé leer esta dosis". Tiene nombre porque hay que compararlo de forma
+     * explícita: usado como número normal en un comparador descendente se va al principio,
+     * que es justo lo contrario de lo que se pretende. Ver `_compareByDose`.
+     */
+    static get DOSE_SORT_UNKNOWN() {
+        return Number.MAX_SAFE_INTEGER;
+    }
+
+    /**
+     * Rescata, **solo para ordenar**, el único `N.NNN` indecidible cuya lectura sí es
+     * demostrable: el de las unidades de actividad.
+     *
+     * `_parseDoseNumber` deja `12.500` en literal porque en masa el punto es ambiguo de
+     * verdad, y con razón: en el catálogo hay 8 cadenas mg que son millares (`1.500 mg` de
+     * glucosamina) y 7 que son decimales (`2.063 mg` de un parche de fentanilo, `6.563 g`).
+     * No hay forma de distinguirlas por la forma de la cadena.
+     *
+     * En UI/U no ocurre: las 5 cadenas indecidibles del catálogo (`2.500`, `3.500`, `7.500`,
+     * `12.500`, `14.400 UI`) son **todas** millares, ninguna decimal. Sin esto, Fragmin se
+     * ordenaba `5.000 · 10.000 · 15.000 · 18.000` y luego, al final, `12.500 · 7.500 · 2.500`.
+     *
+     * NO toca `_parseDoseNumber` ni la etiqueta visible: la dosis sigue mostrándose literal.
+     */
+    _doseThousandsForActivity(numStr, unidad) {
+        if (unidad !== 'UI' && unidad !== 'U') return null;
+        const s = String(numStr).trim();
+        if (!/^\d{1,3}(\.\d{3})+$/.test(s)) return null;
+        return parseInt(s.replace(/\./g, ''), 10);
+    }
+
+    /**
      * Valor numérico de una dosis en unidad base, **solo para ordenar**. Nunca se muestra.
      *
      * Ordenar por `parseFloat` del texto ignora la unidad y coloca `1 g` antes que
      * `500 mg`. Las magnitudes de distinta naturaleza (masa, actividad, volumen) no son
      * comparables entre sí: se agrupan por rango para que al menos no se entrelacen, y lo
      * no reconocible va al final.
+     *
+     * Solo lee la cifra que está al PRINCIPIO de la cadena canónica. Se estudió extraerla
+     * en cualquier posición para ordenar los 408 productos que llevan el principio activo
+     * delante, y se descartó: la cadena no distingue contenido total de potencia. Casos
+     * reales del catálogo — `Buprenorfina 20 mg` es TRANSTEC 35 mcg/h, `Fentanilo 23,12 mg`
+     * es un parche de 100 mcg/h, `Estradiol 6,4 mg` es EVOPAD 100 mcg/24 h, `Ibuprofeno 4 g`
+     * es APIROFENO 40 mg/ml, y `Mayor o igual que 2,5 UI` es un umbral. Ordenar por esa cifra
+     * pondría una suspensión pediátrica por encima de todos los comprimidos de 600 mg.
      */
     _doseSortValue(dosisStr) {
         const canon = this._canonicalDose(dosisStr);
         const m = new RegExp(`^([\\d.,]+)\\s*(${this._doseUnitAlternation()})(?![a-záéíóúñ0-9])`, 'i')
             .exec(canon);
-        if (!m) return Number.MAX_SAFE_INTEGER;
-        const v = this._parseDoseNumber(m[1]);
-        if (v === null) return Number.MAX_SAFE_INTEGER;
+        if (!m) return MedCheckApp.DOSE_SORT_UNKNOWN;
         const unidad = this._canonicalDoseUnit(m[2]);
+        let v = this._parseDoseNumber(m[1]);
+        if (v === null) v = this._doseThousandsForActivity(m[1], unidad);
+        if (v === null) return MedCheckApp.DOSE_SORT_UNKNOWN;
         const EN_MG = { mcg: 1e-3, mg: 1, g: 1e3 };
         if (EN_MG[unidad]) return v * EN_MG[unidad];
         // UI y U no convierten a masa: rango propio, por detrás de las masas.
         return 1e9 + v;
+    }
+
+    /**
+     * Comparador único de dosis. Los ilegibles van **siempre al final**, también en
+     * descendente.
+     *
+     * Restar el centinela (`vb - va`) lo trataba como "la dosis más alta": con "Dosis ↓" los
+     * 1.249 productos sin dosis legible (7,8 % del catálogo) pasaban delante de todos los
+     * demás. En la vista plana, que recorta, eso los convertía en los únicos visibles: para
+     * `multicomponente` los 50 productos mostrados eran los 50 ilegibles y quedaban ocultos
+     * 53 con dosis perfectamente legible.
+     *
+     * @param {string} a - dosis literal de CIMA
+     * @param {string} b - dosis literal de CIMA
+     * @param {'asc'|'desc'} dir
+     */
+    _compareByDose(a, b, dir = 'asc') {
+        const UNK = MedCheckApp.DOSE_SORT_UNKNOWN;
+        const va = this._doseSortValue(a);
+        const vb = this._doseSortValue(b);
+        if (va === UNK || vb === UNK) {
+            if (va === UNK && vb === UNK) return 0;
+            return va === UNK ? 1 : -1;
+        }
+        return dir === 'desc' ? vb - va : va - vb;
+    }
+
+    /**
+     * Aplica al array el `sortBy` vigente. **Fuente única** del orden: la usan el buscador,
+     * Indicaciones y el repintado tras restaurar estado desde la URL.
+     *
+     * Antes cada superficie ordenaba por su cuenta dentro del listener del `<select>`, con
+     * tres consecuencias: en Indicaciones las opciones "Dosis ↑/↓" existían pero el listener
+     * solo implementaba nombre, así que no hacían nada; al restaurar una URL con
+     * `sortBy=doseDesc` el selector aparecía marcado pero la lista seguía en el orden de
+     * AEMPS; y el orden se perdía en cualquier repintado que no viniese del `<select>`.
+     */
+    _applySortState(list) {
+        if (!Array.isArray(list)) return list;
+        switch (this.groupingState?.sortBy) {
+            case 'nameDesc':
+                list.sort((a, b) => String(b.nombre || '').localeCompare(String(a.nombre || '')));
+                break;
+            case 'doseAsc':
+                list.sort((a, b) => this._compareByDose(a.dosis, b.dosis, 'asc'));
+                break;
+            case 'doseDesc':
+                list.sort((a, b) => this._compareByDose(a.dosis, b.dosis, 'desc'));
+                break;
+            case 'nameAsc':
+            default:
+                list.sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || '')));
+                break;
+        }
+        return list;
     }
 
     /**
@@ -1960,6 +2055,10 @@ class MedCheckApp {
         // Store data for re-rendering
         this._lastSearchData = data;
 
+        // El orden se aplica aquí, desde el estado, no en el listener del <select>: así el
+        // selector nunca miente sobre lo que se está viendo (URL restaurada incluida).
+        this._applySortState(data.resultados);
+
         // Apply faceted filters (form, lab, doses) first — base for chip extraction
         let baseResults = data.resultados;
         if (this.filterState?.form) {
@@ -2040,23 +2139,8 @@ class MedCheckApp {
         if (sortBySelect) {
             sortBySelect.addEventListener('change', (e) => {
                 this.groupingState.sortBy = e.target.value;
-                // Sensible a la unidad: ordenar por el número a secas ponía "1 g" antes
-                // que "500 mg". _doseSortValue lleva las masas a una base común.
-                const extractDoseNum = (med) => this._doseSortValue(med.dosis);
-                switch (e.target.value) {
-                    case 'nameAsc':
-                        data.resultados.sort((a, b) => a.nombre.localeCompare(b.nombre));
-                        break;
-                    case 'nameDesc':
-                        data.resultados.sort((a, b) => b.nombre.localeCompare(a.nombre));
-                        break;
-                    case 'doseAsc':
-                        data.resultados.sort((a, b) => extractDoseNum(a) - extractDoseNum(b));
-                        break;
-                    case 'doseDesc':
-                        data.resultados.sort((a, b) => extractDoseNum(b) - extractDoseNum(a));
-                        break;
-                }
+                // El orden lo aplica `displaySearchResults` desde el estado: aquí solo se
+                // registra la elección, para que un repintado o una URL restaurada den lo mismo.
                 this.displaySearchResults(data);
                 // Update URL with new sortBy
                 this.updateURLWithCurrentState();
@@ -5709,9 +5793,9 @@ class MedCheckApp {
             if (med.labtitular) labSet.add(med.labtitular);
         });
 
-        // Ordenar dosis numéricamente
+        // Ordenar dosis numéricamente (comparador único: los ilegibles al final)
         const dosisOptions = Array.from(dosisMap.keys())
-            .sort((a, b) => this._doseSortValue(a) - this._doseSortValue(b));
+            .sort((a, b) => this._compareByDose(a, b));
         const formaOptions = Array.from(formaSet).sort();
         const labOptions = Array.from(labSet).sort();
 
@@ -9820,9 +9904,9 @@ ${materialesPlaceholder}
                 doseGroups[normalizedDose].push(med);
             });
 
-            // Sort dose groups by numeric value
+            // Sort dose groups by numeric value (comparador único: los ilegibles al final)
             const sortedDoses = Object.keys(doseGroups)
-                .sort((a, b) => this._doseSortValue(a) - this._doseSortValue(b));
+                .sort((a, b) => this._compareByDose(a, b));
 
             // Get unique forms and labs for filters
             const uniqueForms = [...new Set(available.map(m => m.formaFarmaceuticaSimplificada?.nombre || 'Otra').filter(Boolean))];
@@ -10267,6 +10351,15 @@ ${materialesPlaceholder}
             collapsedGroups: new Set(),           // Set of collapsed group IDs
             expandedGroups: new Set()             // Set of expanded group IDs (for "Ver más")
         };
+    }
+
+    /**
+     * Id del pseudo-grupo de la vista "Sin agrupar", para reutilizar el "Ver más" y el
+     * `expandedGroups` de la vista agrupada. No puede colisionar con un grupo real:
+     * `buildGroupId` siempre devuelve `group-<slug>-<hash>`.
+     */
+    static get FLAT_GROUP_ID() {
+        return 'flat-all';
     }
 
     buildGroupId(groupName) {
@@ -10801,10 +10894,25 @@ ${materialesPlaceholder}
             // No grouping - just render as flat grid
             let allMeds = [];
             groups.forEach(g => allMeds = allMeds.concat(g.meds));
+
+            // El recorte era permanente y sin escape: los productos a partir del 51 eran
+            // inalcanzables. Como el orden decide quién entra en esos 50, "Sin agrupar" +
+            // "Dosis ↓" ocultaba productos legítimos. Mismo "Ver más" que la vista agrupada.
+            const flatId = MedCheckApp.FLAT_GROUP_ID;
+            const initialShow = 50;
+            const isExpanded = this.groupingState.expandedGroups?.has(flatId);
+            const medsToShow = isExpanded ? allMeds : allMeds.slice(0, initialShow);
+            const remainingCount = allMeds.length - initialShow;
+
             return `
                 <div class="results-grid">
-                    ${allMeds.slice(0, 50).map(med => this.renderIndicationMedCard(med, searchQuery)).join('')}
+                    ${medsToShow.map(med => this.renderIndicationMedCard(med, searchQuery)).join('')}
                 </div>
+                ${!isExpanded && remainingCount > 0 ? `
+                    <button type="button" class="view-more-btn" data-group-id="${flatId}">
+                        <i class="fas fa-chevron-down"></i> Ver ${remainingCount} más
+                    </button>
+                ` : ''}
             `;
         }
 
@@ -10923,6 +11031,9 @@ ${materialesPlaceholder}
             this.groupingState.groupBy = 'atc';
         }
 
+        // Mismo orden centralizado que el buscador (aquí "Dosis ↑/↓" no ordenaba nada).
+        this._applySortState(data.resultados);
+
         // Apply faceted filters (form, lab, efg) first → baseResults
         let baseResults = data.resultados;
         if (this.filterState?.form) {
@@ -11024,12 +11135,8 @@ ${materialesPlaceholder}
         if (sortBySelect) {
             sortBySelect.addEventListener('change', (e) => {
                 this.groupingState.sortBy = e.target.value;
-                // Sort the results
-                if (e.target.value === 'nameAsc') {
-                    data.resultados.sort((a, b) => a.nombre.localeCompare(b.nombre));
-                } else if (e.target.value === 'nameDesc') {
-                    data.resultados.sort((a, b) => b.nombre.localeCompare(a.nombre));
-                }
+                // Antes aquí solo se implementaba nombre: "Dosis ↑/↓" figuraban en el
+                // desplegable y no hacían nada. El orden lo aplica ahora el render.
                 this.displayGroupedIndicationResults(data, searchQuery);
             });
         }
