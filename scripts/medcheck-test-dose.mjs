@@ -225,14 +225,12 @@ plain('DESCENDENTE: el ilegible sigue al final',
     app._compareByDose('500 mg', 'Desconocida', 'desc') < 0, true);
 plain('descendente: y por el otro lado también',
     app._compareByDose('Desconocida', '500 mg', 'desc') > 0, true);
-// Dos ilegibles ya NO empatan a 0: desempatan por la propia cadena, para que el resultado no
-// dependa del orden en que llegaron (ver el bloque de desempate determinista más abajo).
-plain('dos ilegibles desempatan de forma determinista',
-    Math.sign(app._compareByDose('Desconocida', '-', 'desc'))
-    === Math.sign('Desconocida'.localeCompare('-')), true);
-plain('y el desempate es simétrico',
-    Math.sign(app._compareByDose('-', 'Desconocida', 'desc')),
-    -Math.sign(app._compareByDose('Desconocida', '-', 'desc')));
+// `_compareByDose` es un comparador puro: empata a 0 y el desempate lo pone cada llamador,
+// porque lo útil depende de qué se ordene (productos → nombre; etiquetas → etiqueta).
+plain('dos ilegibles empatan en el comparador',
+    app._compareByDose('Desconocida', '-', 'desc'), 0);
+plain('y dos etiquetas de igual valor también',
+    app._compareByDose('1 g', '1000 mg', 'asc'), 0);
 plain('descendente ordena de mayor a menor', app._compareByDose('1 g', '500 mg', 'desc') < 0, true);
 
 // R1: la lectura de millares solo se rescata en unidades de ACTIVIDAD.
@@ -241,9 +239,16 @@ plain('12.500 UI ya tiene valor de orden', app._doseSortValue('12.500 UI') !== U
 plain('y ordena entre sus hermanas',
     app._doseSortValue('10.000 UI') < app._doseSortValue('12.500 UI')
     && app._doseSortValue('12.500 UI') < app._doseSortValue('15.000 UI'), true);
-plain('Fragmin completo en orden', ['12.500 UI', '2.500 UI', '18.000 UI', '7.500 UI', '5.000 UI',
-    '15.000 UI', '10.000 UI'].sort((a, b) => app._compareByDose(a, b)).join(' '),
+plain('millares de actividad en orden', ['12.500 UI', '2.500 UI', '18.000 UI', '7.500 UI',
+    '5.000 UI', '15.000 UI', '10.000 UI'].sort((a, b) => app._compareByDose(a, b)).join(' '),
     '2.500 UI 5.000 UI 7.500 UI 10.000 UI 12.500 UI 15.000 UI 18.000 UI');
+// PERO las cadenas REALES de Fragmin llevan el volumen detrás, así que son razones y desde
+// S40 no se ordenan. R1 sigue siendo correcta y sigue cubierta arriba, pero hoy no rescata
+// ningún producto del catálogo: las 5 cadenas UI indecidibles reales son todas razones.
+// Si esto empieza a rescatar productos otra vez, es que CIMA cambió de grafía, no un fallo.
+plain('la cadena real de Fragmin es una razón: sin orden',
+    app._doseSortValue('12.500 UI dalterapina sodica/0,5 ml'), UNK);
+plain('y la del vial por ml también', app._doseSortValue('2.500 UI/ML'), UNK);
 // En masa el punto es ambiguo DE VERDAD: el catálogo tiene 8 cadenas mg que son millares y
 // 7 que son decimales. Leerlas como millares ordenaría "6.563 g" como 6,5 kg.
 plain('1.500 mg sigue SIN valor de orden', app._doseSortValue('1.500 mg'), UNK);
@@ -260,6 +265,29 @@ plain('Estradiol 6,4 mg (EVOPAD 100 mcg/24 h)', app._doseSortValue('Estradiol 6,
 plain('Ibuprofeno 4 g (APIROFENO 40 mg/ml)', app._doseSortValue('Ibuprofeno 4 g'), UNK);
 plain('umbral, no valor', app._doseSortValue('Mayor o igual que 2,5 UI'), UNK);
 plain('concentración con PA delante', app._doseSortValue('GALANTAMINA (HIDROBROMURO) 4 mg/ml'), UNK);
+
+// --- Razones verdaderas: no son cantidades comparables (S40) -------------------
+// Leer el numerador de una razón la hace comparable con una masa que no lo es. Bilastina
+// mostraba `2,5 mg/ml · 6 mg/ml · 10 mg · 20 mg`: una solución oral por debajo de un
+// comprimido como si 6 < 10 dijera algo. Medido: 2.870 productos del catálogo se ordenaban así.
+console.log('--- razones verdaderas: sin valor de orden ---');
+for (const razon of ['100 mg/ml', '20 mg/g', '50 mcg/ml', '100 U/ml', '10 %', '2 %',
+    '250 mg/5 ml', '0,5 ml', '50 microgramos/ml', '3 mg/ml', '1,27 mg/g', '20 mg/dosis']) {
+    plain(`razón sin orden: ${JSON.stringify(razon)}`, app._doseSortValue(razon), UNK);
+}
+// Y los contraejemplos benignos conservan su valor: el denominador que es forma farmacéutica
+// ya venía canonicalizado, y la combinación de misma unidad es una cantidad, no un cociente.
+console.log('--- contraejemplos benignos: conservan orden ---');
+plain('combinación de misma unidad', app._doseSortValue('875 mg/125 mg'), 875);
+plain('combinación con guion', app._doseSortValue('875-125 mg'), 875);
+plain('denominador = forma farmacéutica', app._doseSortValue('20 mg/cápsula'), 20);
+plain('y con barra espaciada', app._doseSortValue('600 mg / sobres'), 600);
+plain('potencia simple con PA detrás', app._doseSortValue('1 g paracetamol'), 1000);
+plain('sub-gramo escalado', app._doseSortValue('0,25 g'), 250);
+// La puerta es de forma, no una lista de denominadores: cualquier literal queda fuera.
+plain('literal con texto libre', app._doseSortValue('Desconocida'), UNK);
+plain('triple', app._doseSortValue('267 mg/40 mg/133 mg'), UNK);
+plain('unidades distintas', app._doseSortValue('2800 UI / 70 mg'), UNK);
 
 // Bandas: masa y actividad no son comparables, no deben entrelazarse.
 console.log('--- bandas ---');
@@ -301,12 +329,11 @@ for (const criterio of ['doseAsc', 'doseDesc', 'nameAsc', 'nameDesc']) {
     plain(`${criterio}: directo === tras nameAsc`, indirecto, directo);
     plain(`${criterio}: directo === tras nameDesc`, desdeElFinal, directo);
 }
-// `1 g` (Zeta) y `1000 mg` (Delta) valen lo mismo: el desempate por cadena los deja siempre
-// en el mismo orden, y ese bloque se lee igual en ascendente y en descendente.
-plain('dosis equivalentes desempatan por etiqueta, no por llegada',
-    secuencia(ordenar(muestra(), 'doseAsc')), 'Alfa > Beta > Zeta > Delta > Charlie');
+// `1 g` (Zeta) y `1000 mg` (Delta) valen lo mismo: desempatan por nombre, no por llegada.
+plain('dosis equivalentes desempatan por nombre',
+    secuencia(ordenar(muestra(), 'doseAsc')), 'Alfa > Beta > Delta > Zeta > Charlie');
 plain('y el ilegible sigue al final en descendente',
-    secuencia(ordenar(muestra(), 'doseDesc')), 'Zeta > Delta > Alfa > Beta > Charlie');
+    secuencia(ordenar(muestra(), 'doseDesc')), 'Delta > Zeta > Alfa > Beta > Charlie');
 
 // Orden por defecto: sin `sortBy` la lista queda en A-Z, no en el orden en que llegó.
 // El selector dice "Nombre A-Z" desde el principio y no puede mentir.

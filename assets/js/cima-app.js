@@ -970,6 +970,41 @@ class MedCheckApp {
     }
 
     /**
+     * ¿La cadena canónica es una cantidad **comparable**, o solo algo que empieza por una
+     * cifra? Solo las dos formas que `_canonicalDose` sabe demostrar: una potencia simple
+     * (`500 mg`) o una combinación de la misma unidad (`875 mg/125 mg`).
+     *
+     * Es una puerta de forma, no una lista de denominadores prohibidos: `_canonicalDose` ya
+     * hizo el trabajo difícil y devolvió literal todo lo que no pudo demostrar, así que basta
+     * con no ordenar los literales. Una taxonomía de denominadores tendría que enumerar `ml`,
+     * `g`, `dosis`, `h`, `cm2`, `aplicación`, `pulsación`… y fallaría con el primero que
+     * faltara.
+     *
+     * Lo que esto excluye, y por qué: leer el numerador de una razón la hace comparable con
+     * una masa que no lo es. Medido en el catálogo, 2.093 productos en 983 cadenas eran
+     * razones ordenadas por su numerador, y en 338 principios activos se entrelazaban con
+     * dosis absolutas. Bilastina mostraba `2,5 mg/ml · 6 mg/ml · 10 mg · 20 mg`: una solución
+     * oral de 6 mg/ml colocada por debajo de un comprimido de 10 mg como si 6 < 10 dijera
+     * algo. Es el mismo error que llevó a descartar la extracción en cualquier posición.
+     *
+     * Los denominadores que son forma farmacéutica (`20 mg/cápsula`) no se pierden: llegan
+     * aquí ya canonicalizados a `20 mg` por `_canonicalDose`.
+     */
+    _isComparableDoseShape(canon) {
+        const U = this._doseUnitAlternation();
+        const FIN = '(?![a-záéíóúñ0-9])';
+        const N = '\\d[\\d.,]*';
+        if (new RegExp(`^${N}\\s*(?:${U})${FIN}$`, 'i').test(canon)) return true;
+        const dos = new RegExp(`^${N}\\s*(${U})${FIN}\\s*\\/\\s*${N}\\s*(${U})${FIN}$`, 'i').exec(canon);
+        if (!dos) return false;
+        // Las dos unidades han de ser LA MISMA, el mismo requisito que exige `_canonicalDose`
+        // para tratar algo como combinación: con unidades distintas no se puede distinguir
+        // "componente A + componente B" de "cantidad por cantidad", y `2800 UI / 70 mg`
+        // acabaría ordenándose por 2800 UI.
+        return this._canonicalDoseUnit(dos[1]) === this._canonicalDoseUnit(dos[2]);
+    }
+
+    /**
      * Valor numérico de una dosis en unidad base, **solo para ordenar**. Nunca se muestra.
      *
      * Ordenar por `parseFloat` del texto ignora la unidad y coloca `1 g` antes que
@@ -987,6 +1022,10 @@ class MedCheckApp {
      */
     _doseSortValue(dosisStr) {
         const canon = this._canonicalDose(dosisStr);
+        // Puerta de forma: solo se ordena lo que es una cantidad comparable. Antes se leía la
+        // cifra inicial de cualquier cadena, incluidos los literales, y eso metía razones
+        // (`100 mg/ml`) entre las masas absolutas.
+        if (!this._isComparableDoseShape(canon)) return MedCheckApp.DOSE_SORT_UNKNOWN;
         const m = new RegExp(`^([\\d.,]+)\\s*(${this._doseUnitAlternation()})(?![a-záéíóúñ0-9])`, 'i')
             .exec(canon);
         if (!m) return MedCheckApp.DOSE_SORT_UNKNOWN;
@@ -1024,11 +1063,13 @@ class MedCheckApp {
             if (va === UNK || vb === UNK) return va === UNK ? 1 : -1;
             return dir === 'desc' ? vb - va : va - vb;
         }
-        // Mismo valor, o ambas ilegibles: desempate por la propia cadena para no depender del
-        // orden en que llegaron. `1 g` y `1000 mg` valen lo mismo y deben salir siempre igual.
-        // El desempate NO se invierte con `dir`: así el bloque de una misma dosis se lee
-        // igual en ascendente y en descendente.
-        return sa.localeCompare(sb);
+        // Mismo valor, o ambas ilegibles: aquí no hay nada más que decidir. El desempate lo
+        // pone cada llamador, porque lo útil depende de qué se esté ordenando: una lista de
+        // productos desempata por nombre (ver `_applySortState`) y una lista de etiquetas de
+        // dosis, por la etiqueta. Devolver la comparación de cadenas aquí alfabetizaba los
+        // productos ilegibles de un mismo principio activo, que con dosis numéricas se lee
+        // como un orden roto (`10.000 · 12.500 · 2.500 · 5.000`).
+        return 0;
     }
 
     /**
@@ -5810,7 +5851,7 @@ class MedCheckApp {
 
         // Ordenar dosis numéricamente (comparador único: los ilegibles al final)
         const dosisOptions = Array.from(dosisMap.keys())
-            .sort((a, b) => this._compareByDose(a, b));
+            .sort((a, b) => this._compareByDose(a, b) || a.localeCompare(b));
         const formaOptions = Array.from(formaSet).sort();
         const labOptions = Array.from(labSet).sort();
 
@@ -9921,7 +9962,7 @@ ${materialesPlaceholder}
 
             // Sort dose groups by numeric value (comparador único: los ilegibles al final)
             const sortedDoses = Object.keys(doseGroups)
-                .sort((a, b) => this._compareByDose(a, b));
+                .sort((a, b) => this._compareByDose(a, b) || a.localeCompare(b));
 
             // Get unique forms and labs for filters
             const uniqueForms = [...new Set(available.map(m => m.formaFarmaceuticaSimplificada?.nombre || 'Otra').filter(Boolean))];
