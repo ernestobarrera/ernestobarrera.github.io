@@ -41,9 +41,13 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CIMA_BASE = 'https://cima.aemps.es/cima/rest';
 const MAX_PAGES = 200;              // tope de seguridad (hoy hacen falta ~81)
 const CACHE_PATH = join(ROOT, '.cache', 'cima-comercializados.json');
-// El catálogo de CIMA cambia a diario. Una caché más vieja que esto presentaría cifras
-// antiguas como si describieran el catálogo de hoy.
-const CACHE_MAX_DIAS = 7;
+// El catálogo de CIMA cambia a diario, así que la caché caduca en un día: una copia más vieja
+// presentaría cifras antiguas como si describieran el catálogo de hoy, que es exactamente el
+// error que motivó este script. El coste de acortarlo es solo tiempo (volver a bajar ~81
+// páginas); no hay contrapartida de correción, así que no hay motivo para ser laxo.
+// Solo afecta a la caché implícita: un volcado pasado a mano con --catalog= se acepta a
+// cualquier edad, porque su propósito es reproducir una medición concreta.
+const CACHE_MAX_DIAS = 1;
 
 const args = new Set(process.argv.slice(2));
 const asJson = args.has('--json');
@@ -128,8 +132,18 @@ async function descargarCatalogo() {
     return envolver(out, `${CIMA_BASE}/medicamentos?comerc=1`, total);
 }
 
-/** Valida forma y contenido. Cualquier duda sobre la procedencia deja la auditoría inconclusa. */
-function validarVolcado(v, origen) {
+/**
+ * Valida forma y contenido. Cualquier duda sobre la procedencia deja la auditoría inconclusa.
+ *
+ * `exigirFrescura` distingue dos usos que no son el mismo:
+ *   - la caché implícita (`--cache`) pretende describir el catálogo de HOY, así que caducar es
+ *     un fallo: presentaría cifras viejas como actuales, que es el error que motivó el script;
+ *   - un volcado explícito (`--catalog=`) es un acto deliberado para REPRODUCIR una medición
+ *     concreta. Exigirle frescura rompería el propósito del script: mañana ya no se podría
+ *     verificar el volcado de hoy. Se acepta a cualquier edad, pero la salida la declara y
+ *     marca `describeCatalogoActual: false`.
+ */
+function validarVolcado(v, origen, { exigirFrescura = true } = {}) {
     if (Array.isArray(v)) {
         throw new AuditoriaInconclusa(
             `${origen} es un array desnudo, sin fuente ni fecha: no acredita de qué catálogo`
@@ -146,9 +160,9 @@ function validarVolcado(v, origen) {
             `${origen} está truncado: ${v.registros.length} registros de ${v.totalDeclarado}`);
     }
     const dias = (Date.now() - Date.parse(v.fecha)) / 86_400_000;
-    if (dias > CACHE_MAX_DIAS) {
+    if (exigirFrescura && dias > CACHE_MAX_DIAS) {
         throw new AuditoriaInconclusa(
-            `${origen} tiene ${dias.toFixed(0)} días (máximo ${CACHE_MAX_DIAS}).`
+            `${origen} tiene ${dias.toFixed(1)} días (máximo ${CACHE_MAX_DIAS}).`
             + ' El catálogo de CIMA cambia a diario, así que estas cifras describirían otro'
             + ` catálogo. Borra ${CACHE_PATH} o ejecuta sin --cache para descargar de nuevo.`);
     }
@@ -166,13 +180,19 @@ function validarVolcado(v, origen) {
     if (v.registros.some(m => typeof m.nregistro !== 'string' && typeof m.nregistro !== 'number')) {
         throw new AuditoriaInconclusa(`${origen} tiene registros sin nregistro`);
     }
-    return { ...v, diasDeAntiguedad: Number(dias.toFixed(2)), unicos: vistos.size };
+    return {
+        ...v,
+        diasDeAntiguedad: Number(dias.toFixed(2)),
+        unicos: vistos.size,
+        describeCatalogoActual: dias <= CACHE_MAX_DIAS,
+    };
 }
 
 async function obtenerCatalogo() {
     if (catalogArg) {
         const ruta = resolve(catalogArg);
-        return validarVolcado(JSON.parse(readFileSync(ruta, 'utf8')), ruta);
+        // Sin exigir frescura: reproducir una medición pasada es el motivo de existir de --catalog.
+        return validarVolcado(JSON.parse(readFileSync(ruta, 'utf8')), ruta, { exigirFrescura: false });
     }
     if (useCache && existsSync(CACHE_PATH)) {
         return validarVolcado(JSON.parse(readFileSync(CACHE_PATH, 'utf8')), 'la caché local');
@@ -233,6 +253,9 @@ const procedencia = {
     fuente: volcado.fuente,
     fecha: volcado.fecha,
     diasDeAntiguedad: volcado.diasDeAntiguedad,
+    // false = las cifras describen el catálogo de esa fecha, no el de hoy. Solo puede pasar
+    // con --catalog=, que se acepta a cualquier edad para poder reproducir mediciones.
+    describeCatalogoActual: volcado.describeCatalogoActual,
     totalDeclarado: volcado.totalDeclarado,
     registros: cat.length,
     nregistroUnicos: volcado.unicos,
@@ -378,7 +401,12 @@ if (asJson) {
     console.log(`  registros: ${procedencia.registros} obtenidos`
         + `, ${procedencia.totalDeclarado ?? '?'} declarados por CIMA`
         + `, ${procedencia.nregistroUnicos} nregistro únicos`);
-    console.log(`  con dosis no vacía: ${conDosis.length}\n`);
+    console.log(`  con dosis no vacía: ${conDosis.length}`);
+    if (!procedencia.describeCatalogoActual) {
+        console.log(`  AVISO: este volcado tiene ${procedencia.diasDeAntiguedad} días.`
+            + ' Las cifras describen el catálogo de esa fecha, NO el actual.');
+    }
+    console.log('');
 
     console.log('INVARIANTES');
     console.log(`  ${divergentes.length === 0 ? 'OK  ' : 'FALLO'} tarjeta y filtro coinciden`
