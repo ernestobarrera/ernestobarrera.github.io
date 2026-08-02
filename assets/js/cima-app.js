@@ -1006,8 +1006,11 @@ class MedCheckApp {
      * combinación. CIMA da `100 mg/2 mg` para TRAMADOL KRKA 100 MG/2 ML (escribe `mg` donde
      * toca `ml`) y `2,2 mg/270 mg` para AXHIDROX 2,2 MG/PULSACIÓN, y ambos se ordenan por su
      * primer componente. Distinguirlos exigiría el nombre o la forma farmacéutica, que aquí no
-     * están. `medcheck-audit-dose.mjs` los saca en una cola de revisión cruzando la dosis con
-     * el nombre; son 26 productos frente a 1.241 combinaciones legítimas.
+     * están. `medcheck-audit-dose.mjs` los saca en una cola de revisión cruzando la dosis con el
+     * nombre: 26 productos marcados de 1.267 pares. Los otros 1.241 son **no marcados por la
+     * heurística**, no "verificados": la cola tiene falsos positivos (FORMODUAL `100 mcg/6 mcg`
+     * es una combinación real que se dosifica por pulsación) y falsos negativos (SERETIDE
+     * `50/250 mcg/INHALACION` no se marca), así que ausencia de señal no es validación clínica.
      */
     _isComparableDoseShape(canon) {
         const U = this._doseUnitAlternation();

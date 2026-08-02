@@ -155,7 +155,18 @@ function validarVolcado(v, origen, { exigirFrescura = true } = {}) {
     if (!v.fecha || Number.isNaN(Date.parse(v.fecha))) {
         throw new AuditoriaInconclusa(`${origen} no lleva fecha válida`);
     }
-    if (typeof v.totalDeclarado === 'number' && v.registros.length !== v.totalDeclarado) {
+    if (typeof v.fuente !== 'string' || !v.fuente.trim()) {
+        throw new AuditoriaInconclusa(`${origen} no declara fuente`);
+    }
+    // `totalDeclarado` es OBLIGATORIO, no solo "coherente si está". Comprobarlo solo cuando ya
+    // era numérico dejaba pasar un volcado sin él: sin ese contraste nada acredita completitud,
+    // y un catálogo de un registro terminaba en "ok".
+    if (!Number.isInteger(v.totalDeclarado) || v.totalDeclarado <= 0) {
+        throw new AuditoriaInconclusa(
+            `${origen} no declara totalDeclarado como entero positivo: sin él nada acredita`
+            + ' que el volcado esté completo');
+    }
+    if (v.registros.length !== v.totalDeclarado) {
         throw new AuditoriaInconclusa(
             `${origen} está truncado: ${v.registros.length} registros de ${v.totalDeclarado}`);
     }
@@ -206,15 +217,21 @@ async function obtenerCatalogo() {
 }
 
 // --- Utilidades ---------------------------------------------------------------------------
+/**
+ * Agrupa por principio activo virtual. Devuelve también los registros SIN VTM, porque
+ * descartarlos en silencio los sacaba de los invariantes 2 y 3: un catálogo entero sin VTM
+ * terminaba en "ok" con 0 principios activos, sin haber comprobado nada.
+ */
 const porVtm = (cat) => {
     const m = new Map();
+    const sinVtm = [];
     for (const med of cat) {
         const k = (med.vtm || '').trim().toLowerCase();
-        if (!k) continue;
+        if (!k) { sinVtm.push(med); continue; }
         if (!m.has(k)) m.set(k, []);
         m.get(k).push(med);
     }
-    return m;
+    return { grupos: m, sinVtm };
 };
 
 /** Clave numérica en unidad base de una potencia simple. `null` si no la hay. */
@@ -236,16 +253,18 @@ const ordenar = (lista, sortBy) => {
 };
 
 // --- Auditoría ----------------------------------------------------------------------------
+// 2 = inconcluso (no sabemos), distinto de 1 = invariante roto (sabemos que está mal).
+function salirInconcluso(motivo) {
+    if (asJson) console.log(JSON.stringify({ estado: 'inconclusive', motivo }, null, 2));
+    else console.error(`INCONCLUSO — no se pudo auditar: ${motivo}`);
+    process.exit(2);
+}
+
 let volcado;
 try {
     volcado = await obtenerCatalogo();
 } catch (e) {
-    const inconcluso = e instanceof AuditoriaInconclusa;
-    const msg = `INCONCLUSO — no se pudo auditar: ${e.message}`;
-    if (asJson) console.log(JSON.stringify({ estado: 'inconclusive', motivo: e.message }, null, 2));
-    else console.error(msg);
-    // 2 = inconcluso (no sabemos), distinto de 1 = invariante roto (sabemos que está mal).
-    process.exit(inconcluso ? 2 : 2);
+    salirInconcluso(e.message);
 }
 
 const cat = volcado.registros;
@@ -261,7 +280,22 @@ const procedencia = {
     nregistroUnicos: volcado.unicos,
 };
 const conDosis = cat.filter(m => m.dosis && String(m.dosis).trim());
-const grupos = porVtm(cat);
+
+// Cobertura de agrupación: los invariantes 2 y 3 se comprueban POR principio activo, así que un
+// registro sin VTM no los atravesaría. No se puede certificar lo que no se ha mirado.
+const { grupos, sinVtm } = porVtm(cat);
+procedencia.vtmCobertura = {
+    agrupados: cat.length - sinVtm.length,
+    sinVtm: sinVtm.length,
+    principiosActivos: grupos.size,
+};
+if (sinVtm.length) {
+    salirInconcluso(
+        `${sinVtm.length} de ${cat.length} registros no tienen VTM, así que quedarían fuera de`
+        + ' los invariantes de centinela y estabilidad, que se comprueban por principio activo'
+        + ` (p. ej. nregistro ${sinVtm[0].nregistro}, ${String(sinVtm[0].nombre).slice(0, 40)})`);
+}
+
 const fallos = [];
 const metricas = { productos: cat.length, conDosis: conDosis.length };
 
@@ -402,6 +436,8 @@ if (asJson) {
         + `, ${procedencia.totalDeclarado ?? '?'} declarados por CIMA`
         + `, ${procedencia.nregistroUnicos} nregistro únicos`);
     console.log(`  con dosis no vacía: ${conDosis.length}`);
+    console.log(`  agrupables por VTM: ${procedencia.vtmCobertura.agrupados}/${cat.length}`
+        + ` en ${procedencia.vtmCobertura.principiosActivos} principios activos`);
     if (!procedencia.describeCatalogoActual) {
         console.log(`  AVISO: este volcado tiene ${procedencia.diasDeAntiguedad} días.`
             + ' Las cifras describen el catálogo de esa fecha, NO el actual.');
@@ -432,9 +468,12 @@ if (asJson) {
     console.log(`  fusión de chips si la clave fuese numérica: ${f.paQueFusionarian} de ${f.principiosActivos} PA,`
         + ` ${f.chipsAntes} → ${f.chipsDespues} chips (ahorro ${f.chipsAhorrados})`);
 
-    console.log(`\nCOLA DE REVISIÓN — ${colaRevision.length} pares cuyo nombre declara una razón`);
-    console.log('  Revisión humana, no fallo. Da falsos positivos: una combinación real puede'
-        + ' dosificarse por pulsación.');
+    console.log(`\nCOLA DE REVISIÓN — ${colaRevision.length} de ${pares.length} pares`
+        + ' cuyo nombre declara una razón');
+    console.log('  Heurística con falsos positivos (una combinación real puede dosificarse por'
+        + ' pulsación) y falsos negativos.');
+    console.log(`  Los otros ${pares.length - colaRevision.length} están NO MARCADOS, que no es`
+        + ' lo mismo que verificados.');
     for (const r of colaRevision.slice(0, 12)) {
         console.log(`  ${String(r.dosis).padEnd(20)} ${r.nombre.slice(0, 62)}`);
     }
