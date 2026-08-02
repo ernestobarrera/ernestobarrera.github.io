@@ -16,8 +16,15 @@
  *   3. Un mismo criterio de orden da la misma secuencia por cualquier ruta de llegada.
  *
  * Y publica MÉTRICAS descriptivas, que no fallan pero conviene vigilar: cuántos productos no
- * tienen valor de orden y por qué, cuántas razones se cuelan entre dosis absolutas, y cuántos
- * chips de dosis se fusionarían si la clave de agrupación fuese numérica.
+ * tienen valor de orden y por qué, cuántos pares de misma unidad se ordenan por su primer
+ * componente, y cuántos chips de dosis se fusionarían si la clave de agrupación fuese numérica.
+ * Más una COLA DE REVISIÓN humana con los pares cuyo nombre declara una razón que la dosis no.
+ *
+ * Códigos de salida, porque "no lo sé" no es "está bien":
+ *   0  los invariantes se cumplen
+ *   1  algún invariante roto — sabemos que está mal
+ *   2  INCONCLUSO — catálogo truncado, caché caducada, esquema inválido o CIMA inaccesible.
+ *      No se emiten cifras: unas métricas sobre un catálogo incompleto describen otra cosa.
  *
  * Uso:
  *   node scripts/medcheck-audit-dose.mjs                     descarga el catálogo y audita
@@ -32,9 +39,11 @@ import vm from 'node:vm';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CIMA_BASE = 'https://cima.aemps.es/cima/rest';
-const PAGE_SIZE = 200;              // lo que devuelve /medicamentos por página
-const MAX_PAGES = 200;              // tope de seguridad
+const MAX_PAGES = 200;              // tope de seguridad (hoy hacen falta ~81)
 const CACHE_PATH = join(ROOT, '.cache', 'cima-comercializados.json');
+// El catálogo de CIMA cambia a diario. Una caché más vieja que esto presentaría cifras
+// antiguas como si describieran el catálogo de hoy.
+const CACHE_MAX_DIAS = 7;
 
 const args = new Set(process.argv.slice(2));
 const asJson = args.has('--json');
@@ -62,13 +71,34 @@ const app = Object.create(MedCheckApp.prototype);
 const UNK = MedCheckApp.DOSE_SORT_UNKNOWN;
 
 // --- Catálogo -----------------------------------------------------------------------------
+//
+// Un catálogo truncado, rancio o con esquema raro NO puede terminar en "OK": daría por buenas
+// unas cifras que describen otra cosa. Todo lo que impide auditar con garantías devuelve
+// INCONCLUSO (código 2), que es distinto de un invariante roto (código 1).
+class AuditoriaInconclusa extends Error {}
+
+/** Envoltorio con procedencia: sin esto, una copia local no acredita de qué catálogo habla. */
+function envolver(registros, fuente, totalDeclarado) {
+    return {
+        esquema: 1,
+        fuente,
+        fecha: new Date().toISOString(),
+        totalDeclarado,
+        registros,
+    };
+}
+
 async function descargarCatalogo() {
     const out = [];
     let pagina = 1;
     let total = null;
-    while (pagina <= MAX_PAGES) {
+    let truncadoPorTope = false;
+    while (true) {
+        if (pagina > MAX_PAGES) { truncadoPorTope = true; break; }
         const r = await fetch(`${CIMA_BASE}/medicamentos?comerc=1&pagina=${pagina}`);
-        if (!r.ok) throw new Error(`CIMA devolvió HTTP ${r.status} en la página ${pagina}`);
+        if (!r.ok) {
+            throw new AuditoriaInconclusa(`CIMA devolvió HTTP ${r.status} en la página ${pagina}`);
+        }
         const d = await r.json();
         total = d.totalFilas ?? total;
         for (const m of d.resultados || []) {
@@ -85,21 +115,74 @@ async function descargarCatalogo() {
         if (!d.resultados?.length || (total && out.length >= total)) break;
         pagina += 1;
     }
-    if (total && out.length !== total) {
-        process.stderr.write(`aviso: descargados ${out.length} de ${total} declarados\n`);
+    if (truncadoPorTope) {
+        throw new AuditoriaInconclusa(
+            `se alcanzó el tope de ${MAX_PAGES} páginas con ${out.length} registros`
+            + ` (declarados ${total ?? '?'}): sube MAX_PAGES`);
     }
-    return out;
+    if (total === null) throw new AuditoriaInconclusa('CIMA no declaró totalFilas');
+    if (out.length !== total) {
+        throw new AuditoriaInconclusa(
+            `descargados ${out.length} de ${total} declarados por CIMA`);
+    }
+    return envolver(out, `${CIMA_BASE}/medicamentos?comerc=1`, total);
+}
+
+/** Valida forma y contenido. Cualquier duda sobre la procedencia deja la auditoría inconclusa. */
+function validarVolcado(v, origen) {
+    if (Array.isArray(v)) {
+        throw new AuditoriaInconclusa(
+            `${origen} es un array desnudo, sin fuente ni fecha: no acredita de qué catálogo`
+            + ' habla. Regenéralo con --cache.');
+    }
+    if (!v || v.esquema !== 1 || !Array.isArray(v.registros)) {
+        throw new AuditoriaInconclusa(`${origen} no tiene el esquema esperado (esquema: 1)`);
+    }
+    if (!v.fecha || Number.isNaN(Date.parse(v.fecha))) {
+        throw new AuditoriaInconclusa(`${origen} no lleva fecha válida`);
+    }
+    if (typeof v.totalDeclarado === 'number' && v.registros.length !== v.totalDeclarado) {
+        throw new AuditoriaInconclusa(
+            `${origen} está truncado: ${v.registros.length} registros de ${v.totalDeclarado}`);
+    }
+    const dias = (Date.now() - Date.parse(v.fecha)) / 86_400_000;
+    if (dias > CACHE_MAX_DIAS) {
+        throw new AuditoriaInconclusa(
+            `${origen} tiene ${dias.toFixed(0)} días (máximo ${CACHE_MAX_DIAS}).`
+            + ' El catálogo de CIMA cambia a diario, así que estas cifras describirían otro'
+            + ` catálogo. Borra ${CACHE_PATH} o ejecuta sin --cache para descargar de nuevo.`);
+    }
+    // Unicidad: un `nregistro` repetido inflaría recuentos y podría falsear un invariante.
+    const vistos = new Set();
+    const repetidos = [];
+    for (const m of v.registros) {
+        if (vistos.has(m.nregistro)) repetidos.push(m.nregistro);
+        vistos.add(m.nregistro);
+    }
+    if (repetidos.length) {
+        throw new AuditoriaInconclusa(
+            `${origen} tiene ${repetidos.length} nregistro repetidos (p. ej. ${repetidos[0]})`);
+    }
+    if (v.registros.some(m => typeof m.nregistro !== 'string' && typeof m.nregistro !== 'number')) {
+        throw new AuditoriaInconclusa(`${origen} tiene registros sin nregistro`);
+    }
+    return { ...v, diasDeAntiguedad: Number(dias.toFixed(2)), unicos: vistos.size };
 }
 
 async function obtenerCatalogo() {
-    if (catalogArg) return JSON.parse(readFileSync(resolve(catalogArg), 'utf8'));
-    if (useCache && existsSync(CACHE_PATH)) return JSON.parse(readFileSync(CACHE_PATH, 'utf8'));
-    const cat = await descargarCatalogo();
+    if (catalogArg) {
+        const ruta = resolve(catalogArg);
+        return validarVolcado(JSON.parse(readFileSync(ruta, 'utf8')), ruta);
+    }
+    if (useCache && existsSync(CACHE_PATH)) {
+        return validarVolcado(JSON.parse(readFileSync(CACHE_PATH, 'utf8')), 'la caché local');
+    }
+    const v = await descargarCatalogo();
     if (useCache) {
         mkdirSync(dirname(CACHE_PATH), { recursive: true });
-        writeFileSync(CACHE_PATH, JSON.stringify(cat));
+        writeFileSync(CACHE_PATH, JSON.stringify(v));
     }
-    return cat;
+    return validarVolcado(v, 'la descarga en vivo');
 }
 
 // --- Utilidades ---------------------------------------------------------------------------
@@ -133,7 +216,27 @@ const ordenar = (lista, sortBy) => {
 };
 
 // --- Auditoría ----------------------------------------------------------------------------
-const cat = await obtenerCatalogo();
+let volcado;
+try {
+    volcado = await obtenerCatalogo();
+} catch (e) {
+    const inconcluso = e instanceof AuditoriaInconclusa;
+    const msg = `INCONCLUSO — no se pudo auditar: ${e.message}`;
+    if (asJson) console.log(JSON.stringify({ estado: 'inconclusive', motivo: e.message }, null, 2));
+    else console.error(msg);
+    // 2 = inconcluso (no sabemos), distinto de 1 = invariante roto (sabemos que está mal).
+    process.exit(inconcluso ? 2 : 2);
+}
+
+const cat = volcado.registros;
+const procedencia = {
+    fuente: volcado.fuente,
+    fecha: volcado.fecha,
+    diasDeAntiguedad: volcado.diasDeAntiguedad,
+    totalDeclarado: volcado.totalDeclarado,
+    registros: cat.length,
+    nregistroUnicos: volcado.unicos,
+};
 const conDosis = cat.filter(m => m.dosis && String(m.dosis).trim());
 const grupos = porVtm(cat);
 const fallos = [];
@@ -214,6 +317,23 @@ const pares = conDosis.filter(m => esParMismaUnidad(m.dosis));
 const cadenasPares = new Set(pares.map(m => app.normalizeDosis(m.dosis)));
 metricas.paresMismaUnidad = { productos: pares.length, cadenas: cadenasPares.size };
 
+// COLA DE REVISIÓN — pares cuyo NOMBRE declara una razón que la dosis no declara.
+//
+// `_doseSortValue` solo recibe la cadena `dosis`, así que no puede saber que el `100 mg/2 mg`
+// de TRAMADOL KRKA es en realidad 100 mg/2 ML (CIMA escribe `mg` donde toca `ml`) ni que el
+// `2,2 mg/270 mg` de AXHIDROX es 2,2 mg por pulsación. El nombre sí lo dice, y aquí sí lo
+// tenemos: cruzarlos saca esos casos a la luz.
+//
+// Es una COLA DE REVISIÓN HUMANA, no un clasificador, y no falla la auditoría. Da falsos
+// positivos por diseño: FORMODUAL `100 mcg/6 mcg` es una combinación real de beclometasona y
+// formoterol cuyo nombre lleva `/PULSACION` porque la combinación se dosifica por pulsación.
+// Distinguir unos de otros exige criterio clínico, que es justo lo que no se automatiza.
+const RAZON_EN_NOMBRE = /\/\s*(ml|l|g|h|hora|horas|24\s*h|12\s*h|dosis|puls\w*|aplicaci\w*|cm2|m2|min|kg)\b/i;
+const colaRevision = pares
+    .filter(m => RAZON_EN_NOMBRE.test(m.nombre || ''))
+    .map(m => ({ nregistro: m.nregistro, dosis: app.normalizeDosis(m.dosis), nombre: m.nombre }));
+metricas.colaRevisionParesDudosos = colaRevision.length;
+
 // MÉTRICA — R1: millares de actividad rescatados solo para ordenar.
 const rescatadosR1 = conDosis.filter(m => {
     const canon = app.normalizeDosis(m.dosis);
@@ -247,11 +367,18 @@ metricas.fusionDeChips = {
 };
 
 // --- Salida -------------------------------------------------------------------------------
+const estado = fallos.length === 0 ? 'ok' : 'failed';
 if (asJson) {
-    console.log(JSON.stringify({ ok: fallos.length === 0, fallos, metricas }, null, 2));
+    console.log(JSON.stringify({ estado, procedencia, fallos, metricas, colaRevision }, null, 2));
 } else {
     const pct = (n) => `${(100 * n / conDosis.length).toFixed(1)} %`;
-    console.log(`Catálogo: ${cat.length} medicamentos comercializados, ${conDosis.length} con dosis no vacía\n`);
+    console.log('PROCEDENCIA');
+    console.log(`  fuente:    ${procedencia.fuente}`);
+    console.log(`  fecha:     ${procedencia.fecha} (${procedencia.diasDeAntiguedad} días)`);
+    console.log(`  registros: ${procedencia.registros} obtenidos`
+        + `, ${procedencia.totalDeclarado ?? '?'} declarados por CIMA`
+        + `, ${procedencia.nregistroUnicos} nregistro únicos`);
+    console.log(`  con dosis no vacía: ${conDosis.length}\n`);
 
     console.log('INVARIANTES');
     console.log(`  ${divergentes.length === 0 ? 'OK  ' : 'FALLO'} tarjeta y filtro coinciden`
@@ -277,7 +404,16 @@ if (asJson) {
     console.log(`  fusión de chips si la clave fuese numérica: ${f.paQueFusionarian} de ${f.principiosActivos} PA,`
         + ` ${f.chipsAntes} → ${f.chipsDespues} chips (ahorro ${f.chipsAhorrados})`);
 
-    console.log(fallos.length === 0 ? '\nOK — los invariantes se cumplen' : `\nFALLOS:\n  - ${fallos.join('\n  - ')}`);
+    console.log(`\nCOLA DE REVISIÓN — ${colaRevision.length} pares cuyo nombre declara una razón`);
+    console.log('  Revisión humana, no fallo. Da falsos positivos: una combinación real puede'
+        + ' dosificarse por pulsación.');
+    for (const r of colaRevision.slice(0, 12)) {
+        console.log(`  ${String(r.dosis).padEnd(20)} ${r.nombre.slice(0, 62)}`);
+    }
+    if (colaRevision.length > 12) console.log(`  … y ${colaRevision.length - 12} más (usa --json)`);
+
+    console.log(estado === 'ok' ? '\nOK — los invariantes se cumplen' : `\nFALLOS:\n  - ${fallos.join('\n  - ')}`);
 }
 
-process.exit(fallos.length === 0 ? 0 : 1);
+// 0 = invariantes OK · 1 = invariante roto · 2 = inconcluso (ver el catch de obtenerCatalogo)
+process.exit(estado === 'ok' ? 0 : 1);

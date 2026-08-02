@@ -957,8 +957,16 @@ class MedCheckApp {
      * No hay forma de distinguirlas por la forma de la cadena.
      *
      * En UI/U no ocurre: las 5 cadenas indecidibles del catálogo (`2.500`, `3.500`, `7.500`,
-     * `12.500`, `14.400 UI`) son **todas** millares, ninguna decimal. Sin esto, Fragmin se
-     * ordenaba `5.000 · 10.000 · 15.000 · 18.000` y luego, al final, `12.500 · 7.500 · 2.500`.
+     * `12.500`, `14.400 UI`) son **todas** millares, ninguna decimal.
+     *
+     * **Regla latente: hoy no rescata ningún producto real.** Nació para ordenar Fragmin, pero
+     * las cadenas reales de Fragmin llevan el volumen detrás (`12.500 UI dalterapina
+     * sodica/0,5 ml`, `2.500 UI/ML`), así que son razones y `_isComparableDoseShape` las
+     * rechaza antes de llegar aquí — coherentemente, porque una jeringa precargada y un vial
+     * por ml no son comparables por la misma cifra. La regla sigue siendo correcta para una
+     * grafía `12.500 UI` sin denominador y está cubierta por aserciones sintéticas; se conserva
+     * porque el catálogo cambia a diario. Si `medcheck-audit-dose.mjs` empieza a contar
+     * rescates, es que CIMA cambió de grafía, no que algo falle.
      *
      * NO toca `_parseDoseNumber` ni la etiqueta visible: la dosis sigue mostrándose literal.
      */
@@ -981,14 +989,25 @@ class MedCheckApp {
      * faltara.
      *
      * Lo que esto excluye, y por qué: leer el numerador de una razón la hace comparable con
-     * una masa que no lo es. Medido en el catálogo, 2.093 productos en 983 cadenas eran
-     * razones ordenadas por su numerador, y en 338 principios activos se entrelazaban con
-     * dosis absolutas. Bilastina mostraba `2,5 mg/ml · 6 mg/ml · 10 mg · 20 mg`: una solución
-     * oral de 6 mg/ml colocada por debajo de un comprimido de 10 mg como si 6 < 10 dijera
-     * algo. Es el mismo error que llevó a descartar la extracción en cualquier posición.
+     * una masa que no lo es. Bilastina mostraba `2,5 mg/ml · 6 mg/ml · 10 mg · 20 mg`: una
+     * solución oral de 6 mg/ml por debajo de un comprimido de 10 mg como si 6 < 10 dijera algo.
+     * Es el mismo error que llevó a descartar la extracción en cualquier posición.
+     *
+     * Coste asumido, medido sobre el catálogo: **2.895 productos** dejan de tener valor de
+     * orden, y la cola pasa de 1.249 a **4.144 (25,8 %)**. Se acepta porque es pérdida de
+     * utilidad, no información falsa: el orden por defecto es A-Z y la vista plana tiene
+     * "Ver más", así que nada queda oculto. A cambio, los principios activos donde razones y
+     * dosis absolutas se entrelazaban bajan de 338 a 2.
      *
      * Los denominadores que son forma farmacéutica (`20 mg/cápsula`) no se pierden: llegan
      * aquí ya canonicalizados a `20 mg` por `_canonicalDose`.
+     *
+     * **Límite conocido.** La forma no demuestra que un par de misma unidad sea una
+     * combinación. CIMA da `100 mg/2 mg` para TRAMADOL KRKA 100 MG/2 ML (escribe `mg` donde
+     * toca `ml`) y `2,2 mg/270 mg` para AXHIDROX 2,2 MG/PULSACIÓN, y ambos se ordenan por su
+     * primer componente. Distinguirlos exigiría el nombre o la forma farmacéutica, que aquí no
+     * están. `medcheck-audit-dose.mjs` los saca en una cola de revisión cruzando la dosis con
+     * el nombre; son 26 productos frente a 1.241 combinaciones legítimas.
      */
     _isComparableDoseShape(canon) {
         const U = this._doseUnitAlternation();
@@ -1044,10 +1063,11 @@ class MedCheckApp {
      * descendente.
      *
      * Restar el centinela (`vb - va`) lo trataba como "la dosis más alta": con "Dosis ↓" los
-     * 1.249 productos sin dosis legible (7,8 % del catálogo) pasaban delante de todos los
-     * demás. En la vista plana, que recorta, eso los convertía en los únicos visibles: para
-     * `multicomponente` los 50 productos mostrados eran los 50 ilegibles y quedaban ocultos
-     * 53 con dosis perfectamente legible.
+     * productos sin dosis legible pasaban delante de todos los demás. En la vista plana, que
+     * recorta, eso los convertía en los únicos visibles: para `multicomponente` los 50 productos
+     * mostrados eran los 50 ilegibles y quedaban ocultos 53 con dosis perfectamente legible.
+     * Entonces la cola eran 1.249 productos (7,8 %); hoy son 4.144 (25,8 %) porque las razones
+     * también dejaron de ordenarse, así que la colocación del centinela importa más, no menos.
      *
      * @param {string} a - dosis literal de CIMA
      * @param {string} b - dosis literal de CIMA

@@ -289,6 +289,23 @@ plain('literal con texto libre', app._doseSortValue('Desconocida'), UNK);
 plain('triple', app._doseSortValue('267 mg/40 mg/133 mg'), UNK);
 plain('unidades distintas', app._doseSortValue('2800 UI / 70 mg'), UNK);
 
+// LÍMITE CONOCIDO de la puerta, cazado por la revisión de Codex. La forma no demuestra que un
+// par de misma unidad sea una combinación: estas dos cadenas son razones que CIMA escribe como
+// par, y se ordenan por su primer componente. Distinguirlas exigiría el nombre del producto o
+// la forma farmacéutica, que `_doseSortValue` no recibe.
+// Estas aserciones NO celebran el comportamiento: lo fijan para que el día que se decida
+// atacarlo (pasando contexto del producto) el cambio sea deliberado y no un efecto colateral.
+// `medcheck-audit-dose.mjs` los saca en una cola de revisión cruzando dosis y nombre.
+console.log('--- límite conocido: pares que en realidad son razones ---');
+plain('TRAMADOL KRKA 100 MG/2 ML lo escribe "100 mg/2 mg"',
+    app._doseSortValue('100 mg/2 mg'), 100);
+plain('AXHIDROX 2,2 MG/PULSACIÓN lo escribe "2,2 mg/270 mg"',
+    app._doseSortValue('2,2 mg/270 mg'), 2.2);
+// Y el contraste que impide "arreglarlo" con una regla de forma: estas sí son combinaciones,
+// con exactamente la misma forma de cadena.
+plain('pero "3 mg/0,03 mg" es YASMIN, combinación real', app._doseSortValue('3 mg/0,03 mg'), 3);
+plain('y "600 mg/300 mg" es abacavir/lamivudina', app._doseSortValue('600 mg/300 mg'), 600);
+
 // Bandas: masa y actividad no son comparables, no deben entrelazarse.
 console.log('--- bandas ---');
 plain('toda masa por debajo de toda actividad',
