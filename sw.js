@@ -2,7 +2,22 @@
 // Network-first strategy for active development + PWA support
 
 // Auto-versioning: includes date for cache-busting on deploy
-const VERSION = '20260401a';
+//
+// IMPORTANTE: hay que subir esta VERSION en CADA release que cambie un recurso versionado con
+// `?v=` (los que gestiona `scripts/medcheck-bump-version.mjs`). No es opcional ni cosmético.
+//
+// El motivo está en el fallback offline de abajo: `caches.match` se llama con
+// `ignoreSearch: true`, así que ignora la query y considera equivalentes
+// `cima-app.js?v=20260731c` y `cima-app.js?v=20260803a`. Como la estrategia network-first
+// cachea la URL completa, el caché acumula ambas y `match` devuelve la primera insertada, que
+// es la ANTIGUA. Resultado: sin red, el usuario ejecutaría el JavaScript viejo aunque el HTML
+// pida el nuevo. Subir VERSION cambia CACHE_NAME, y entonces `activate` borra el caché anterior
+// con la entrada rancia dentro.
+//
+// Es decir: subir el `?v=` del HTML garantiza la actualización ONLINE; subir esta VERSION
+// garantiza la OFFLINE. Hacen falta las dos. Lo cazó la revisión de Codex al preparar el
+// release 20260803a, cuando el `?v=` se había subido y esta VERSION seguía en 20260401a.
+const VERSION = '20260803a';
 const CACHE_NAME = `medcheck-${VERSION}`;
 
 // Install event — sin precache: NETWORK-FIRST ya cachea dinámicamente.
