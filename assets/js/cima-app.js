@@ -1406,20 +1406,34 @@ class MedCheckApp {
         // Filter checkboxes apply changes immediately if there are existing results.
         // They do not reopen autocomplete; the dropdown reads current filters whenever
         // the user types again.
+        //
+        // Genérico, receta y biosimilar son filtros de CLIENTE: repintan sobre el
+        // universo ya descargado. Antes llamaban a performSearch(), que empieza por
+        // _resetResultFilters() y por tanto borraba en silencio el principio activo, la
+        // vía, la forma, la dosis y el laboratorio que el usuario acabara de elegir.
+        // Comercializado sí cambia el universo (es parámetro de la petición a CIMA), así
+        // que vuelve a buscar — pero conservando las facetas de cliente.
+        const applyClientToggle = (key) => {
+            if (!this.lastSearchQuery || !this._lastSearchData) return;
+            if (!this.filterState) this.filterState = this._emptyFilterState();
+            this.filterState[key] = !!document.getElementById({
+                efgOnly: 'filter-generic',
+                recetaOnly: 'filter-receta',
+                biosimilarOnly: 'filter-biosimilar',
+            }[key])?.checked;
+            this.displaySearchResults(this._lastSearchData);
+            // replace: la URL refleja el estado visible, pero marcar una casilla no es
+            // un paso de navegación (ver `updateURL`).
+            this.updateURLWithCurrentState({ replace: true });
+        };
         filterComerc.addEventListener('change', () => {
-            if (this.lastSearchQuery) this.performSearch();
+            if (this.lastSearchQuery) this.performSearch({ preserveFilters: true });
         });
-        filterGeneric.addEventListener('change', () => {
-            if (this.lastSearchQuery) this.performSearch();
-        });
-        document.getElementById('filter-receta')?.addEventListener('change', () => {
-            if (this.lastSearchQuery) this.performSearch();
-        });
-        document.getElementById('filter-biosimilar')?.addEventListener('change', () => {
-            if (this.lastSearchQuery) this.performSearch();
-        });
+        filterGeneric.addEventListener('change', () => applyClientToggle('efgOnly'));
+        document.getElementById('filter-receta')?.addEventListener('change', () => applyClientToggle('recetaOnly'));
+        document.getElementById('filter-biosimilar')?.addEventListener('change', () => applyClientToggle('biosimilarOnly'));
         filterShowBrands?.addEventListener('change', () => {
-            if (this.lastSearchQuery) this.performSearch();
+            if (this.lastSearchQuery) this.performSearch({ preserveFilters: true });
         });
 
         // Restore previous results if available
@@ -1447,11 +1461,7 @@ class MedCheckApp {
      * los filtros de ámbito del buscador (comercializado/genérico/receta).
      */
     _resetResultFilters() {
-        this.filterState = { form: null, lab: null, doses: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false };
-        if (this.groupingState) {
-            this.groupingState.routeFilters?.clear?.();
-            this.groupingState.activeIngredientFilters?.clear?.();
-        }
+        this._clearAllResultFilters();
     }
 
     _normalizeDrugSearchText(value) {
@@ -1554,7 +1564,14 @@ class MedCheckApp {
         return filtered;
     }
 
-    async performSearch() {
+    /**
+     * @param {Object} [options]
+     * @param {boolean} [options.preserveFilters] - conservar las facetas de cliente (PA,
+     *   vía, forma, dosis, laboratorio, tipo de producto, receta). Se usa cuando lo que
+     *   cambia es el ÁMBITO de la petición (comercializado), no la consulta: el universo
+     *   se rehace, pero lo que el usuario había elegido sigue siendo su intención.
+     */
+    async performSearch(options = {}) {
         const query = document.getElementById('search-input').value.trim();
 
         if (query.length < 2) {
@@ -1567,22 +1584,32 @@ class MedCheckApp {
         // (donde se auto-añade). Evita analizar la RAM del fármaco equivocado (H4).
         this.selectedMedication = null;
 
-        this._resetResultFilters();
+        // Solo una consulta textual REALMENTE nueva reinicia las facetas. Antes se
+        // reiniciaban en toda llamada, así que cualquier control que reejecutase la
+        // búsqueda borraba en silencio los filtros del usuario.
+        const isNewQuery = query !== this.lastSearchQuery;
+        if (isNewQuery && !options.preserveFilters) {
+            this._resetResultFilters();
+        }
 
         // Auto-detectar tipo de búsqueda
         // CN = 6-7 dígitos numéricos, todo lo demás = búsqueda inteligente combinada
         const isCN = /^\d{6,7}$/.test(query);
         const searchType = isCN ? 'cn' : 'smart';
 
-        // Save search state for persistence
+        // Save search state for persistence. `comerc` y `showBrands` son ámbito de la
+        // petición; genérico/receta/biosimilar viven en `filterState` como el resto de
+        // facetas de cliente, para que haya UNA sola fuente de verdad.
         this.lastSearchQuery = query;
         this.lastSearchFilters = {
             comerc: document.getElementById('filter-comerc').checked,
-            generic: document.getElementById('filter-generic').checked,
-            receta: document.getElementById('filter-receta').checked,
-            biosimilar: document.getElementById('filter-biosimilar')?.checked || false,
-            showBrands: document.getElementById('filter-show-brands')?.checked || false
+            showBrands: document.getElementById('filter-show-brands')?.checked || false,
+            searchType,
         };
+        if (!this.filterState) this.filterState = this._emptyFilterState();
+        this.filterState.efgOnly = document.getElementById('filter-generic')?.checked || false;
+        this.filterState.recetaOnly = document.getElementById('filter-receta')?.checked || false;
+        this.filterState.biosimilarOnly = document.getElementById('filter-biosimilar')?.checked || false;
 
         const resultsContainer = document.getElementById('search-results');
         resultsContainer.innerHTML = '<div class="loading-spinner"></div>';
@@ -1632,56 +1659,21 @@ class MedCheckApp {
                 return;
             }
 
-            // Crear una copia para trabajar
-            let displayResults = [...rawData.resultados];
-            let totalFilas = rawData.totalFilas;
-
-            // Update filter counts from raw results (before client-side filters)
-            const _setCount = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n > 0 ? n : ''; };
-            _setCount('cnt-generic', rawData.resultados.filter(m => m.generico).length);
-            _setCount('cnt-receta', rawData.resultados.filter(m => m.receta).length);
-            _setCount('cnt-biosimilar', rawData.resultados.filter(m => m.biosimilar).length);
-            // Contador comerc: solo significativo cuando el filtro está desactivado
-            // (si está activo, todos los resultados ya son comercializados → ocultar)
-            _setCount('cnt-comerc', this.lastSearchFilters.comerc ? 0 : rawData.resultados.filter(m => m.comerc).length);
-
-            // Genérico y biosimilar son alternativas de menor coste. Si se marcan
-            // AMBOS se combinan en OR (un fármaco no es a la vez EFG y biosimilar,
-            // así que un AND daría siempre cero resultados).
-            const fGen = this.lastSearchFilters.generic;
-            const fBio = this.lastSearchFilters.biosimilar;
-            if (fGen && fBio) {
-                displayResults = displayResults.filter(med => med.generico === true || med.biosimilar === true);
-                totalFilas = displayResults.length;
-            } else if (fGen) {
-                displayResults = displayResults.filter(med => med.generico === true);
-                totalFilas = displayResults.length;
-            } else if (fBio) {
-                displayResults = displayResults.filter(med => med.biosimilar === true);
-                totalFilas = displayResults.length;
-            }
-
-            // Filtrar por receta en cliente si está activo (independiente)
-            if (this.lastSearchFilters.receta) {
-                displayResults = displayResults.filter(med => med.receta === true);
-                totalFilas = displayResults.length;
-            }
-
-            // Save results for persistence (stores the view state)
+            // `lastSearchResults` guarda el UNIVERSO sin filtrar. Todo el filtrado de
+            // cliente (tipo de producto, receta, forma, lab, dosis, vía, PA) lo aplica
+            // `displaySearchResults` desde el núcleo único, que es también quien
+            // recalcula los contadores de forma disyuntiva en cada repintado.
             this.lastSearchResults = {
                 ...rawData,
-                resultados: displayResults,
-                totalFilas: totalFilas,
+                resultados: [...rawData.resultados],
+                totalFilas: rawData.totalFilas,
                 searchType: searchType
             };
 
-            // Reset filters when performing a new search
-            this.filterState = { form: null, lab: null, doses: new Set() };
-            if (this.groupingState?.routeFilters) {
-                this.groupingState.routeFilters.clear();
-                this.groupingState.activeIngredientFilters?.clear();
-                this.groupingState.collapsedGroups.clear();
-                this.groupingState.expandedGroups.clear();
+            // Los grupos plegados/desplegados sí pertenecen a la consulta anterior.
+            if (isNewQuery && this.groupingState) {
+                this.groupingState.collapsedGroups?.clear?.();
+                this.groupingState.expandedGroups?.clear?.();
             }
 
             this.displaySearchResults(this.lastSearchResults);
@@ -1694,18 +1686,9 @@ class MedCheckApp {
                 );
             }
 
-            // Update URL with search parameters
+            // Update URL with search parameters (serializador único, §_searchURLParams)
             if (!this.isPopstateNavigation) {
-                const urlParams = {
-                    view: 'search',
-                    q: query,
-                    type: searchType
-                };
-                if (this.lastSearchFilters.comerc) urlParams.comerc = '1';
-                if (this.lastSearchFilters.generic) urlParams.generic = '1';
-                if (this.lastSearchFilters.receta) urlParams.receta = '1';
-                if (this.lastSearchFilters.biosimilar) urlParams.biosimilar = '1';
-                this.updateURL(urlParams);
+                this.updateURL(this._searchURLParams());
             }
 
         } catch (error) {
@@ -2131,39 +2114,31 @@ class MedCheckApp {
             this.initGroupingState();
         }
 
-        // Store data for re-rendering
+        // Store data for re-rendering. `data.resultados` es el UNIVERSO sin filtrar:
+        // todo el filtrado de cliente ocurre aquí, para que los contadores puedan
+        // recalcularse de forma disyuntiva sobre una base estable.
         this._lastSearchData = data;
 
         // El orden se aplica aquí, desde el estado, no en el listener del <select>: así el
         // selector nunca miente sobre lo que se está viendo (URL restaurada incluida).
         this._applySortState(data.resultados);
 
-        // Apply faceted filters (form, lab, doses) first — base for chip extraction
-        let baseResults = data.resultados;
-        if (this.filterState?.form) {
-            baseResults = baseResults.filter(med =>
-                (med.formaFarmaceutica?.nombre || 'Sin forma') === this.filterState.form
-            );
-        }
-        if (this.filterState?.lab) {
-            baseResults = baseResults.filter(med =>
-                (med.labtitular || 'Sin laboratorio') === this.filterState.lab
-            );
-        }
-        if (this.filterState?.doses?.size > 0) {
-            baseResults = baseResults.filter(med =>
-                med.dosis && this.filterState.doses.has(this.normalizeDosis(med.dosis))
-            );
-        }
+        const universe = data.resultados;
+        const snap = this._filterSnapshot();
 
-        // Faceted chip extraction: each chip group reflects all other active filters
-        // Route chips: counts after PA filter + faceted (not route filter itself)
-        // PA chips: counts after route filter + faceted (not PA filter itself)
-        const routes = this.extractUniqueRoutes(this._applyPAFilter(baseResults));
-        const paList = this.extractUniquePrincipiosActivos(this._applyRouteFilter(baseResults));
+        // Chips facetados: cada grupo excluye su propia dimensión y aplica todas las demás
+        // (incluidas tipo de producto y receta, que antes no entraban en el cálculo).
+        const routes = this.extractUniqueRoutes(this._applyResultFilters(universe, snap, { exclude: 'route' }));
+        const paList = this.extractUniquePrincipiosActivos(this._applyResultFilters(universe, snap, { exclude: 'pa' }));
 
-        // Full filtered results for display
-        let filteredResults = this._applyPAFilter(this._applyRouteFilter(baseResults));
+        // Resultados realmente mostrados
+        const filteredResults = this._applyResultFilters(universe, snap);
+
+        // Contadores de las casillas superiores del buscador: disyuntivos y recalculados
+        // en CADA repintado. Antes se calculaban una sola vez en performSearch sobre el
+        // universo entero y quedaban congelados al facetar (caso `epoetina`).
+        this._updateTopFilterCounts(universe, snap);
+        this._syncTopFilterCheckboxes();
 
         // Group results
         const groups = this.groupResultsByField(filteredResults, this.groupingState.groupBy);
@@ -2208,8 +2183,9 @@ class MedCheckApp {
                 this.groupingState.collapsedGroups.clear();
                 this.groupingState.expandedGroups.clear();
                 this.displaySearchResults(data);
-                // Update URL with new groupBy
-                this.updateURLWithCurrentState();
+                // Update URL with new groupBy — misma categoría que una faceta: refleja
+                // el estado visible sin apilar historial (ver `updateURL`).
+                this.updateURLWithCurrentState({ replace: true });
             });
         }
 
@@ -2221,17 +2197,27 @@ class MedCheckApp {
                 // El orden lo aplica `displaySearchResults` desde el estado: aquí solo se
                 // registra la elección, para que un repintado o una URL restaurada den lo mismo.
                 this.displaySearchResults(data);
-                // Update URL with new sortBy
-                this.updateURLWithCurrentState();
+                // Update URL with new sortBy — igual que groupBy: replace, no push.
+                this.updateURLWithCurrentState({ replace: true });
             });
         }
+
+        // Toda faceta repinta desde el universo y reescribe la URL: el estado sobrevive a
+        // recargar y a compartir el enlace. Se REEMPLAZA la entrada de historial en vez
+        // de apilar una nueva — si no, seleccionar seis chips de dosis dejaría seis
+        // entradas y el botón Atrás dejaría de servir para salir de la búsqueda. Atrás
+        // sigue devolviendo a la búsqueda anterior, ya con su estado restaurado.
+        const applyFacet = () => {
+            this.displaySearchResults(data);
+            this.updateURLWithCurrentState({ replace: true });
+        };
 
         // Form filter dropdown
         const formFilter = document.getElementById('form-filter');
         if (formFilter) {
             formFilter.addEventListener('change', (e) => {
                 this.filterState.form = e.target.value || null;
-                this.displaySearchResults(data);
+                applyFacet();
             });
         }
 
@@ -2240,7 +2226,7 @@ class MedCheckApp {
         if (labFilter) {
             labFilter.addEventListener('change', (e) => {
                 this.filterState.lab = e.target.value || null;
-                this.displaySearchResults(data);
+                applyFacet();
             });
         }
 
@@ -2255,18 +2241,31 @@ class MedCheckApp {
                 } else {
                     this.filterState.doses.add(dose);
                 }
-                this.displaySearchResults(data);
+                applyFacet();
             });
         });
 
-        // Clear filters button
+        // Casillas de tipo de producto y receta cuando la barra las muestra (misma
+        // dimensión y mismo estado que las casillas superiores del buscador).
+        document.getElementById('efg-filter')?.addEventListener('change', (e) => {
+            this.filterState.efgOnly = e.target.checked;
+            applyFacet();
+        });
+        document.getElementById('receta-filter')?.addEventListener('change', (e) => {
+            this.filterState.recetaOnly = e.target.checked;
+            applyFacet();
+        });
+        document.getElementById('biosimilar-filter')?.addEventListener('change', (e) => {
+            this.filterState.biosimilarOnly = e.target.checked;
+            applyFacet();
+        });
+
+        // Clear filters button — limpia exactamente lo que cuenta "Limpiar N".
         const clearBtn = document.getElementById('clear-filters-btn');
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
-                this.filterState = { form: null, lab: null, doses: new Set() };
-                this.groupingState.routeFilters.clear();
-                this.groupingState.activeIngredientFilters.clear();
-                this.displaySearchResults(data);
+                this._clearAllResultFilters();
+                applyFacet();
             });
         }
 
@@ -2291,11 +2290,13 @@ class MedCheckApp {
                     this.groupingState.routeFilters.add(route);
                 }
 
-                this.displaySearchResults(data);
+                applyFacet();
             });
         });
 
-        // PA filter chips (AND semantics, Ctrl+click for multi-select)
+        // PA filter chips — semántica OR dentro de la dimensión (Ctrl+clic para
+        // multiselección). El comentario anterior decía "AND semantics" y era falso:
+        // `_applyPAFilter` devuelve true en cuanto encaja UNO de los PA seleccionados.
         document.querySelectorAll('.pa-chip[data-pa]').forEach(chip => {
             chip.addEventListener('click', (e) => {
                 const pa = chip.dataset.pa;
@@ -2314,7 +2315,7 @@ class MedCheckApp {
                     this.groupingState.activeIngredientFilters.clear();
                     this.groupingState.activeIngredientFilters.add(pa);
                 }
-                this.displaySearchResults(data);
+                applyFacet();
             });
         });
     }
@@ -2328,13 +2329,19 @@ class MedCheckApp {
     _renderProductTypeBadges(med) {
         const badges = [];
         if (med.generico) badges.push('<span class="badge badge-success">Genérico</span>');
-        // Biosimilar vs Biológico original: campos API distintos
-        // biosimilar === true → copia biosimilar (Imraldi, Hyrimoz...)
-        // nosustituible.id === 1 && !biosimilar → biológico original (Humira, Enbrel...)
+        // Identidad del producto, NO regla jurídica. Son dos capas distintas:
+        //  - `biosimilar === true` (CIMA) → el producto se autorizó como biosimilar.
+        //  - `nosustituible.id === 1` → el producto está en la lista de NO SUSTITUIBLES
+        //    en dispensación, categoría "Biológicos". Es una clasificación administrativa,
+        //    no la afirmación de que sea el medicamento de referencia: se verificó en vivo
+        //    que Humira (referencia) y sus biosimilares llevan TODOS `id === 1`.
+        // Por eso aquí no se dice "original" (no consta en ninguna fuente que MedCheck
+        // consuma cuál es el de referencia) ni se afirma la regla de sustitución, que
+        // depende de norma, ámbito y fecha y se mostrará con su fuente cuando exista.
         if (med.biosimilar) {
-            badges.push('<span class="badge badge-biosimilar" title="Medicamento biosimilar — No sustituible automáticamente"><i class="fas fa-dna"></i> Biosimilar</span>');
+            badges.push('<span class="badge badge-biosimilar" title="Autorizado como medicamento biosimilar (CIMA/AEMPS)"><i class="fas fa-dna"></i> Biosimilar</span>');
         } else if (med.nosustituible && med.nosustituible.id === 1) {
-            badges.push('<span class="badge badge-purple" title="Medicamento biológico original — No sustituible automáticamente"><i class="fas fa-microscope"></i> Biológico</span>');
+            badges.push('<span class="badge badge-purple" title="Medicamento biológico (categoría «Biológicos» de la lista de no sustituibles de la AEMPS). No indica si es el medicamento de referencia."><i class="fas fa-microscope"></i> Biológico</span>');
         }
         // Registro centralizado EMA
         if (med.ema) badges.push('<span class="badge badge-ema" title="Autorizado por procedimiento centralizado de la EMA"><i class="fas fa-globe-europe"></i> EMA</span>');
@@ -2540,8 +2547,14 @@ class MedCheckApp {
         if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro - Vigilancia adicional">▲ Vigilancia</span>');
         const supplyBadge = this._supplyBadgeHtml(med);
         if (supplyBadge) badges.push(supplyBadge);
-        if (med.estupiTemp) badges.push('<span class="badge badge-dark" title="Estupefaciente - Receta especial">⚠ Estupef.</span>');
-        if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
+        // RETIRADAS 2026-08-03 — insignias "⚠ Estupef." (med.estupiTemp) y "€ Económico"
+        // (med.precioMenor). Verificado en vivo contra CIMA el 2026-08-03: ninguno de los
+        // dos campos existe en /medicamentos, /medicamento ni /presentaciones, así que las
+        // condiciones eran inalcanzables y las insignias nunca podían renderizarse.
+        // El "precio menor" SÍ existe como concepto oficial (agrupaciones homogéneas del
+        // Nomenclátor); lo que falta es integrarlo en MedCheck desde esa fuente. No se
+        // reintroduce ninguna insignia económica hasta consumir esa fuente y poder decir
+        // exactamente qué afirma ("precio menor del conjunto"), no "opción eficiente".
         // Notas de seguridad oficiales de la AEMPS
         if (med.notas) badges.push(`<span class="badge badge-warning badge-clickable" title="Ver alertas de seguridad de la AEMPS" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'alerts')"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>`);
         if (med.materialesInf) badges.push(`<span class="badge badge-material badge-clickable" title="Ver materiales informativos de seguridad (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
@@ -3537,8 +3550,9 @@ class MedCheckApp {
         // Badge de suministro (modelo central; neutro, fiel al nomenclátor)
         const supplyBadgeInd = this._supplyBadgeHtml(med);
         if (supplyBadgeInd) badges.push(supplyBadgeInd);
-        if (med.estupiTemp) badges.push('<span class="badge badge-dark" title="Estupefaciente - Receta especial">⚠ Estupef.</span>');
-        if (med.precioMenor) badges.push('<span class="badge badge-gold" title="Precio menor entre equivalentes">€ Económico</span>');
+        // RETIRADAS 2026-08-03 — "⚠ Estupef." y "€ Económico": los campos `estupiTemp` y
+        // `precioMenor` no existen en ningún endpoint de CIMA que MedCheck consuma
+        // (verificado en vivo). Ver la nota extensa en `renderMedCard`.
         // Notas de seguridad AEMPS
         if (med.notas) badges.push(`<span class="badge badge-warning badge-clickable" title="Ver alertas de seguridad de la AEMPS" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'alerts')"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>`);
         if (med.materialesInf) badges.push(`<span class="badge badge-material badge-clickable" title="Ver materiales informativos de seguridad (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
@@ -6029,9 +6043,9 @@ class MedCheckApp {
             if (isGeneric) {
                 tipoBadge = '<span class="badge badge-success">Genérico</span>';
             } else if (med.biosimilar) {
-                tipoBadge = '<span class="badge badge-biosimilar" title="Biosimilar — no sustituible automáticamente"><i class="fas fa-dna"></i> Biosimilar</span>';
+                tipoBadge = '<span class="badge badge-biosimilar" title="Autorizado como medicamento biosimilar (CIMA/AEMPS)"><i class="fas fa-dna"></i> Biosimilar</span>';
             } else if (med.nosustituible && med.nosustituible.id === 1) {
-                tipoBadge = '<span class="badge badge-purple" title="Biológico original — no sustituible automáticamente"><i class="fas fa-microscope"></i> Biológico</span>';
+                tipoBadge = '<span class="badge badge-purple" title="Medicamento biológico (categoría «Biológicos» de la lista de no sustituibles de la AEMPS). No indica si es el medicamento de referencia."><i class="fas fa-microscope"></i> Biológico</span>';
             } else {
                 tipoBadge = '<span class="badge badge-neutral">Marca</span>';
             }
@@ -7602,7 +7616,7 @@ class MedCheckApp {
                     : `<div class="med-thumbnail-placeholder"><i class="fas fa-pills"></i></div>`
                 }
                         <div class="med-header-info">
-                            <h2 class="modal-title">${med.nombre}${med.nosustituible && med.nosustituible.id === 2 ? ' <span class="badge badge-nti" title="Índice Terapéutico Estrecho — No sustituible"><i class="fas fa-exclamation-triangle"></i> NTI</span>' : ''}${med.atcs && med.atcs[0] ? ' ' + this._emlBadgeHtml(med.atcs[0].codigo) : ''}</h2>
+                            <h2 class="modal-title">${med.nombre}${med.nosustituible && med.nosustituible.id === 2 ? ' <span class="badge badge-nti" title="Categoría «principios activos de estrecho margen terapéutico» de la lista de no sustituibles de la AEMPS"><i class="fas fa-exclamation-triangle"></i> NTI</span>' : ''}${med.atcs && med.atcs[0] ? ' ' + this._emlBadgeHtml(med.atcs[0].codigo) : ''}</h2>
                             <p class="modal-subtitle">${med.labtitular}</p>
                             <button class="modal-fav-btn ${isModalFav ? 'active' : ''}" onclick="app.toggleFavoriteFromModal('${med.nregistro}', this)" title="${isModalFav ? 'Quitar de Mi vademécum (favoritos)' : 'Guardar en Mi vademécum (favoritos)'}">
                                 <i class="fas fa-star"></i> <span>${isModalFav ? 'En Mi vademécum' : 'Guardar en Mi vademécum'}</span>
@@ -8100,7 +8114,9 @@ class MedCheckApp {
 
         // Alertas especiales — tipología de producto centralizada + alertas clínicas
         const alerts = [...this._renderProductTypeBadges(med)];
-        if (med.nosustituible && med.nosustituible.id === 2) alerts.push('<span class="badge badge-nti" title="Estrecho margen terapéutico — No sustituible"><i class="fas fa-exclamation-triangle"></i> NTI — Estrecho margen terapéutico</span>');
+        // Igual que la insignia "Biológico": se describe la categoría de la lista oficial,
+        // no se enuncia la regla (que depende de norma, ámbito y fecha).
+        if (med.nosustituible && med.nosustituible.id === 2) alerts.push('<span class="badge badge-nti" title="Categoría «principios activos de estrecho margen terapéutico» de la lista de no sustituibles de la AEMPS"><i class="fas fa-exclamation-triangle"></i> NTI — Estrecho margen terapéutico</span>');
         if (med.triangulo) alerts.push('<span class="badge badge-danger" title="Triángulo negro">▲ Vigilancia adicional</span>');
         let shortageRowHtml = '';
         if (med.psum) {
@@ -10633,42 +10649,209 @@ ${materialesPlaceholder}
      * Applies the active route-chip filters (shared by both result views and the control bar)
      */
     _applyRouteFilter(results) {
-        if (!this.groupingState?.routeFilters?.size) return results;
-        return results.filter(med => {
-            const route = med.viasAdministracion?.[0]?.nombre || '';
-            const forma = (med.formaFarmaceutica?.nombre || '').toLowerCase();
-            for (const filterRoute of this.groupingState.routeFilters) {
-                if (route === filterRoute) return true;
-                if (filterRoute === 'Oral' && (forma.includes('comprimid') || forma.includes('cápsula'))) return true;
-                if (filterRoute === 'Transdérmica' && forma.includes('parche')) return true;
-                if (filterRoute === 'Parenteral' && (forma.includes('inyectable') || forma.includes('jeringa'))) return true;
-                if (filterRoute === 'Tópica' && (forma.includes('crema') || forma.includes('pomada'))) return true;
-            }
-            return false;
-        });
+        return this._applyResultFilters(results, this._filterSnapshot(), { only: 'route' });
     }
 
     /**
      * Applies the active principio-activo chip filters (OR semantics)
      */
     _applyPAFilter(results) {
-        if (!this.groupingState?.activeIngredientFilters?.size) return results;
-        return results.filter(med => {
-            let medPAs;
-            if (med.principiosActivos?.length > 0) {
-                medPAs = new Set(med.principiosActivos.map(pa => pa.nombre).filter(Boolean));
-            } else if (med.pactivos) {
-                medPAs = new Set(med.pactivos.split(/\s*[+/;]\s*/).map(p =>
-                    p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
-                ).filter(Boolean));
-            } else if (med.vtm?.nombre) {
-                medPAs = new Set([med.vtm.nombre]);
-            } else { medPAs = new Set(); }
-            for (const filterPA of this.groupingState.activeIngredientFilters) {
-                if (medPAs.has(filterPA)) return true;
+        return this._applyResultFilters(results, this._filterSnapshot(), { only: 'pa' });
+    }
+
+    // ============================================
+    // Contrato único de filtrado y faceting
+    // ============================================
+    //
+    // SEMÁNTICA: AND entre dimensiones distintas, OR dentro de una misma dimensión
+    // multiselección.
+    //
+    //   productType  genérico | biosimilar   → UNA dimensión, dos valores, OR entre ellos.
+    //                Marcarlos a la vez con AND daría siempre cero (ningún medicamento es
+    //                a la vez EFG y biosimilar). Esto describe cómo se combinan los
+    //                valores; NO afirma nada sobre coste, equivalencia ni sustituibilidad.
+    //   receta       dimensión propia, AND con el resto.
+    //   form/lab     selección única.
+    //   dose/route/pa  multiselección, OR interno.
+    //
+    // El ámbito "comercializado" NO vive aquí: es un parámetro de la petición a CIMA
+    // (dimensión de servidor), no un filtro de cliente.
+    //
+    // CONTADORES: faceting disyuntivo. El contador de una opción indica cuántos
+    // resultados quedarían al aplicarla junto con todos los filtros activos de las DEMÁS
+    // dimensiones, excluyendo temporalmente la dimensión a la que pertenece la propia
+    // opción. Sin esa exclusión, el contador de una casilla ya marcada se cuenta a sí
+    // mismo y el de una sin marcar miente en cuanto hay cualquier otra faceta activa
+    // — que es exactamente el defecto que se corrige aquí (caso `epoetina`).
+
+    /** Dimensiones del contrato, en el orden en que se aplican. */
+    static get FILTER_DIMENSIONS() {
+        return ['productType', 'receta', 'form', 'lab', 'dose', 'route', 'pa'];
+    }
+
+    /**
+     * Instantánea normalizada del estado de filtros de cliente. Fuente única: lo que
+     * lean el render, los contadores, la URL y las pruebas es siempre esto.
+     */
+    _filterSnapshot() {
+        const fs = this.filterState || {};
+        const gs = this.groupingState || {};
+        return {
+            generic: !!fs.efgOnly,
+            biosimilar: !!fs.biosimilarOnly,
+            receta: !!fs.recetaOnly,
+            form: fs.form || null,
+            lab: fs.lab || null,
+            doses: new Set(fs.doses || []),
+            routes: new Set(gs.routeFilters || []),
+            pas: new Set(gs.activeIngredientFilters || []),
+        };
+    }
+
+    /** Principios activos de un medicamento, con los respaldos de la API CIMA. */
+    _medPrincipiosActivos(med) {
+        if (med.principiosActivos?.length > 0) {
+            return new Set(med.principiosActivos.map(pa => pa.nombre).filter(Boolean));
+        }
+        if (med.pactivos) {
+            return new Set(med.pactivos.split(/\s*[+/;]\s*/).map(p =>
+                p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim()
+            ).filter(Boolean));
+        }
+        if (med.vtm?.nombre) return new Set([med.vtm.nombre]);
+        return new Set();
+    }
+
+    /** ¿Encaja `med` en la vía `filterRoute`? (incluye los respaldos por forma farmacéutica) */
+    _medMatchesRoute(med, filterRoute) {
+        const route = med.viasAdministracion?.[0]?.nombre || '';
+        const forma = (med.formaFarmaceutica?.nombre || '').toLowerCase();
+        if (route === filterRoute) return true;
+        if (filterRoute === 'Oral' && (forma.includes('comprimid') || forma.includes('cápsula'))) return true;
+        if (filterRoute === 'Transdérmica' && forma.includes('parche')) return true;
+        if (filterRoute === 'Parenteral' && (forma.includes('inyectable') || forma.includes('jeringa'))) return true;
+        if (filterRoute === 'Tópica' && (forma.includes('crema') || forma.includes('pomada'))) return true;
+        return false;
+    }
+
+    /**
+     * Predicado por dimensión. Una dimensión sin selección devuelve `null` (no filtra),
+     * lo que permite distinguir "sin filtrar" de "filtra y no pasa nadie".
+     */
+    _filterPredicate(dim, snap) {
+        switch (dim) {
+            case 'productType': {
+                if (!snap.generic && !snap.biosimilar) return null;
+                return (med) => (snap.generic && med.generico === true)
+                    || (snap.biosimilar && med.biosimilar === true);
             }
-            return false;
-        });
+            case 'receta':
+                return snap.receta ? (med) => med.receta === true : null;
+            case 'form':
+                return snap.form ? (med) => (med.formaFarmaceutica?.nombre || 'Sin forma') === snap.form : null;
+            case 'lab':
+                return snap.lab ? (med) => (med.labtitular || 'Sin laboratorio') === snap.lab : null;
+            case 'dose':
+                return snap.doses.size ? (med) => !!med.dosis && snap.doses.has(this.normalizeDosis(med.dosis)) : null;
+            case 'route':
+                return snap.routes.size
+                    ? (med) => { for (const r of snap.routes) if (this._medMatchesRoute(med, r)) return true; return false; }
+                    : null;
+            case 'pa':
+                return snap.pas.size
+                    ? (med) => { const medPAs = this._medPrincipiosActivos(med); for (const p of snap.pas) if (medPAs.has(p)) return true; return false; }
+                    : null;
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Núcleo único de filtrado. Recibe universo + estado y devuelve los resultados.
+     * @param {Array} universe - universo base, SIN filtrar
+     * @param {Object} snap - instantánea de `_filterSnapshot()`
+     * @param {Object} [opts]
+     * @param {string|null} [opts.exclude] - dimensión a excluir (faceting disyuntivo)
+     * @param {string|null} [opts.only] - aplicar SOLO esta dimensión (compatibilidad)
+     */
+    _applyResultFilters(universe, snap, opts = {}) {
+        const { exclude = null, only = null } = opts;
+        const dims = only
+            ? [only]
+            : MedCheckApp.FILTER_DIMENSIONS.filter(d => d !== exclude);
+        let out = Array.isArray(universe) ? universe : [];
+        for (const dim of dims) {
+            const pred = this._filterPredicate(dim, snap);
+            if (pred) out = out.filter(pred);
+        }
+        return out;
+    }
+
+    /**
+     * Contador disyuntivo de una opción: cuántos resultados quedarían al aplicar
+     * `optionTest` sobre el universo con todas las demás dimensiones activas.
+     */
+    _disjunctiveCount(universe, snap, dim, optionTest) {
+        return this._applyResultFilters(universe, snap, { exclude: dim }).filter(optionTest).length;
+    }
+
+    /**
+     * Número de filtros realmente activos — es lo que cuenta el botón "Limpiar N",
+     * que debe coincidir con lo que ese botón limpia.
+     */
+    _activeFilterCount(snap = this._filterSnapshot()) {
+        return (snap.generic ? 1 : 0)
+            + (snap.biosimilar ? 1 : 0)
+            + (snap.receta ? 1 : 0)
+            + (snap.form ? 1 : 0)
+            + (snap.lab ? 1 : 0)
+            + snap.doses.size
+            + snap.routes.size
+            + snap.pas.size;
+    }
+
+    /** Estado limpio de filtros de cliente. Un solo sitio donde se define el "vacío". */
+    _emptyFilterState() {
+        return { form: null, lab: null, doses: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false };
+    }
+
+    /**
+     * Limpia TODAS las dimensiones de cliente y sincroniza las casillas superiores del
+     * buscador (que son la otra superficie de las mismas dimensiones).
+     */
+    _clearAllResultFilters() {
+        this.filterState = this._emptyFilterState();
+        this.groupingState?.routeFilters?.clear?.();
+        this.groupingState?.activeIngredientFilters?.clear?.();
+        this._syncTopFilterCheckboxes();
+    }
+
+    /**
+     * Recalcula los contadores de las casillas superiores del buscador con faceting
+     * disyuntivo. `generic` y `biosimilar` comparten dimensión (`productType`), así que
+     * ambos se cuentan excluyendo esa dimensión entera: marcar "Biosimilar" no debe
+     * hacer desaparecer el número de "Genérico".
+     */
+    _updateTopFilterCounts(universe, snap = this._filterSnapshot()) {
+        const setCount = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n > 0 ? n : ''; };
+        const base = Array.isArray(universe) ? universe : [];
+        setCount('cnt-generic', this._disjunctiveCount(base, snap, 'productType', m => m.generico === true));
+        setCount('cnt-biosimilar', this._disjunctiveCount(base, snap, 'productType', m => m.biosimilar === true));
+        setCount('cnt-receta', this._disjunctiveCount(base, snap, 'receta', m => m.receta === true));
+        // Comercializado es dimensión de servidor: su contador solo informa cuando el
+        // filtro está desactivado (si está activo, todo el universo ya es comercializado).
+        setCount('cnt-comerc', this.lastSearchFilters?.comerc
+            ? 0
+            : this._applyResultFilters(base, snap).filter(m => m.comerc).length);
+    }
+
+    /** Refleja `filterState` en las casillas superiores del buscador. */
+    _syncTopFilterCheckboxes() {
+        const snap = this._filterSnapshot();
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.checked = v; };
+        set('filter-generic', snap.generic);
+        set('filter-receta', snap.receta);
+        set('filter-biosimilar', snap.biosimilar);
     }
 
     /**
@@ -10701,32 +10884,27 @@ ${materialesPlaceholder}
             this.filterState = { form: null, lab: null, doses: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false };
         }
 
-        // Contadores facetados: cada selector cuenta sobre los resultados con todos los
-        // demás filtros activos aplicados MENOS el suyo (mismo criterio que los chips
-        // de vía y principio activo, para que los números cuadren con lo que se ve).
-        const byForm = (arr) => this.filterState.form
-            ? arr.filter(med => (med.formaFarmaceutica?.nombre || 'Sin forma') === this.filterState.form) : arr;
-        const byLab = (arr) => this.filterState.lab
-            ? arr.filter(med => (med.labtitular || 'Sin laboratorio') === this.filterState.lab) : arr;
-        const byDoses = (arr) => this.filterState.doses?.size > 0
-            ? arr.filter(med => med.dosis && this.filterState.doses.has(this.normalizeDosis(med.dosis))) : arr;
-        const byToggles = (arr) => {
-            let out = arr;
-            if (this.filterState.efgOnly) out = out.filter(m => m.generico);
-            if (this.filterState.recetaOnly) out = out.filter(m => m.receta);
-            if (this.filterState.biosimilarOnly) out = out.filter(m => m.biosimilar);
-            return out;
-        };
-        const crossBase = this._applyPAFilter(this._applyRouteFilter(byToggles(sourceForFilters)));
+        // Contadores facetados (faceting disyuntivo, §"Contrato único de filtrado"):
+        // cada selector cuenta sobre el universo con todas las demás dimensiones activas
+        // aplicadas y la suya EXCLUIDA, para que los números cuadren con lo que se ve.
+        const snap = this._filterSnapshot();
+        const forms = this._facetCounts(
+            this._extractUniqueForms(sourceForFilters),
+            this._extractUniqueForms(this._applyResultFilters(sourceForFilters, snap, { exclude: 'form' })));
+        const labs = this._facetCounts(
+            this._extractUniqueLabs(sourceForFilters),
+            this._extractUniqueLabs(this._applyResultFilters(sourceForFilters, snap, { exclude: 'lab' })));
+        const doses = showDoses
+            ? this._facetCounts(
+                this._extractUniqueDoses(sourceForFilters),
+                this._extractUniqueDoses(this._applyResultFilters(sourceForFilters, snap, { exclude: 'dose' })))
+            : [];
 
-        const forms = this._facetCounts(this._extractUniqueForms(sourceForFilters), this._extractUniqueForms(byDoses(byLab(crossBase))));
-        const labs = this._facetCounts(this._extractUniqueLabs(sourceForFilters), this._extractUniqueLabs(byForm(byDoses(crossBase))));
-        const doses = showDoses ? this._facetCounts(this._extractUniqueDoses(sourceForFilters), this._extractUniqueDoses(byForm(byLab(crossBase)))) : [];
-
-        // EFG count (only computed when needed)
-        const efgCount = showEFG ? sourceForFilters.filter(m => m.generico).length : 0;
-        const recetaCount = showEFG ? sourceForFilters.filter(m => m.receta).length : 0;
-        const biosimilarCount = showEFG ? sourceForFilters.filter(m => m.biosimilar).length : 0;
+        // Tipo de producto (genérico | biosimilar) es UNA dimensión: ambos valores se
+        // cuentan excluyéndola entera, para que marcar uno no borre el número del otro.
+        const efgCount = showEFG ? this._disjunctiveCount(sourceForFilters, snap, 'productType', m => m.generico === true) : 0;
+        const biosimilarCount = showEFG ? this._disjunctiveCount(sourceForFilters, snap, 'productType', m => m.biosimilar === true) : 0;
+        const recetaCount = showEFG ? this._disjunctiveCount(sourceForFilters, snap, 'receta', m => m.receta === true) : 0;
 
         // Opciones de los selectores: top 10 con resultados; la seleccionada se
         // conserva siempre aunque quede a cero (para poder deseleccionarla).
@@ -10749,15 +10927,8 @@ ${materialesPlaceholder}
             return `<button class="filter-chip ${isActive ? 'active' : ''}" data-dose="${d.name}">${d.name} <span class="chip-count">${d.count}</span></button>`;
         }).join('');
 
-        // Count active filters
-        const activeFilters = (this.filterState.form ? 1 : 0) +
-            (this.filterState.lab ? 1 : 0) +
-            (this.filterState.doses?.size || 0) +
-            (this.groupingState.routeFilters?.size || 0) +
-            (this.groupingState.activeIngredientFilters?.size || 0) +
-            (this.filterState.efgOnly ? 1 : 0) +
-            (this.filterState.recetaOnly ? 1 : 0) +
-            (this.filterState.biosimilarOnly ? 1 : 0);
+        // Filtros activos — debe coincidir exactamente con lo que limpia "Limpiar N".
+        const activeFilters = this._activeFilterCount(snap);
 
         // Forma farmacéutica es discriminador clínico de primer nivel ("quiero sobres,
         // efervescente...") → siempre visible. Lab y dosis quedan en "Más filtros".
@@ -10785,18 +10956,18 @@ ${materialesPlaceholder}
                             ${formOptions}
                         </select>` : ''}
                     </div>
-                    ${showEFG && (efgCount > 0 || recetaCount > 0 || biosimilarCount > 0) ? `
+                    ${showEFG && (efgCount > 0 || recetaCount > 0 || biosimilarCount > 0 || snap.generic || snap.receta || snap.biosimilar) ? `
                     <div class="control-section" style="gap:var(--space-md);">
-                        ${efgCount > 0 ? `<label class="search-option" title="Solo genéricos">
-                            <input type="checkbox" id="efg-filter" ${this.filterState.efgOnly ? 'checked' : ''}>
+                        ${(efgCount > 0 || snap.generic) ? `<label class="search-option" title="Solo genéricos">
+                            <input type="checkbox" id="efg-filter" ${snap.generic ? 'checked' : ''}>
                             <span>Genérico <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${efgCount}</span></span>
                         </label>` : ''}
-                        ${recetaCount > 0 ? `<label class="search-option" title="Solo con receta">
-                            <input type="checkbox" id="receta-filter" ${this.filterState.recetaOnly ? 'checked' : ''}>
+                        ${(recetaCount > 0 || snap.receta) ? `<label class="search-option" title="Solo con receta">
+                            <input type="checkbox" id="receta-filter" ${snap.receta ? 'checked' : ''}>
                             <span>Receta <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${recetaCount}</span></span>
                         </label>` : ''}
-                        ${biosimilarCount > 0 ? `<label class="search-option" title="Solo biosimilares">
-                            <input type="checkbox" id="biosimilar-filter" ${this.filterState.biosimilarOnly ? 'checked' : ''}>
+                        ${(biosimilarCount > 0 || snap.biosimilar) ? `<label class="search-option" title="Solo biosimilares">
+                            <input type="checkbox" id="biosimilar-filter" ${snap.biosimilar ? 'checked' : ''}>
                             <span>Biosimilar <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${biosimilarCount}</span></span>
                         </label>` : ''}
                     </div>
@@ -11113,34 +11284,17 @@ ${materialesPlaceholder}
         // Mismo orden centralizado que el buscador (aquí "Dosis ↑/↓" no ordenaba nada).
         this._applySortState(data.resultados);
 
-        // Apply faceted filters (form, lab, efg) first → baseResults
-        let baseResults = data.resultados;
-        if (this.filterState?.form) {
-            baseResults = baseResults.filter(med =>
-                (med.formaFarmaceutica?.nombre || 'Sin forma') === this.filterState.form
-            );
-        }
-        if (this.filterState?.lab) {
-            baseResults = baseResults.filter(med =>
-                (med.labtitular || 'Sin laboratorio') === this.filterState.lab
-            );
-        }
-        if (this.filterState?.efgOnly) {
-            baseResults = baseResults.filter(med => med.generico);
-        }
-        if (this.filterState?.recetaOnly) {
-            baseResults = baseResults.filter(med => med.receta);
-        }
-        if (this.filterState?.biosimilarOnly) {
-            baseResults = baseResults.filter(med => med.biosimilar);
-        }
+        // Mismo núcleo de filtrado que el buscador (§"Contrato único de filtrado").
+        // Antes esta vista aplicaba genérico/receta/biosimilar con AND entre los tres,
+        // de modo que marcar Genérico + Biosimilar daba siempre cero, mientras el
+        // buscador los combinaba en OR: dos superficies con semántica divergente.
+        const universe = data.resultados;
+        const snap = this._filterSnapshot();
 
-        // Extract chips from cross-filtered subsets for correct faceted counts
-        const routes = this.extractUniqueRoutes(this._applyPAFilter(baseResults));
-        const paList = this.extractUniquePrincipiosActivos(this._applyRouteFilter(baseResults));
+        const routes = this.extractUniqueRoutes(this._applyResultFilters(universe, snap, { exclude: 'route' }));
+        const paList = this.extractUniquePrincipiosActivos(this._applyResultFilters(universe, snap, { exclude: 'pa' }));
 
-        // Apply both chip filters for display
-        let filteredResults = this._applyPAFilter(this._applyRouteFilter(baseResults));
+        const filteredResults = this._applyResultFilters(universe, snap);
 
         // Group results
         const groups = this.groupResultsByField(filteredResults, this.groupingState.groupBy);
@@ -11266,13 +11420,11 @@ ${materialesPlaceholder}
             this.displayGroupedIndicationResults(data, searchQuery);
         });
 
-        // Clear filters button
+        // Clear filters button — limpia exactamente lo que cuenta "Limpiar N".
         const clearBtn = document.getElementById('clear-filters-btn');
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
-                this.filterState = { form: null, lab: null, doses: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false };
-                this.groupingState.routeFilters.clear();
-                this.groupingState.activeIngredientFilters.clear();
+                this._clearAllResultFilters();
                 this.displayGroupedIndicationResults(data, searchQuery);
             });
         }
@@ -11368,7 +11520,18 @@ ${materialesPlaceholder}
      * Update URL with new parameters (pushState)
      * @param {Object} params - Parameters to set in URL
      */
-    updateURL(params) {
+    /**
+     * @param {Object} params
+     * @param {Object} [opts]
+     * @param {boolean} [opts.replace] - reemplazar la entrada actual en vez de apilar una
+     *   nueva. Se usa para los cambios de FACETA: la URL debe reflejar siempre el estado
+     *   visible (para copiarla o recargarla), pero marcar un chip no es un paso de
+     *   navegación. Sin esto, seleccionar seis dosis dejaba seis entradas de historial y
+     *   el botón Atrás dejaba de servir para salir de la búsqueda.
+     *   Los cambios de NIVEL DE NAVEGACIÓN (búsqueda nueva, cambio de vista) sí apilan,
+     *   para que Atrás devuelva a la búsqueda anterior ya restaurada.
+     */
+    updateURL(params, opts = {}) {
         // Durante la guía demostrativa no ensuciamos el historial: la guía abre
         // fichas y recorre pestañas de forma efímera; el botón Atrás debe seguir
         // valiendo al terminar. Un único guard cubre todas las rutas de pushState.
@@ -11386,14 +11549,22 @@ ${materialesPlaceholder}
             }
         }
 
-        // Push state without reloading
-        window.history.pushState(params, '', url.toString());
+        // Update state without reloading
+        if (opts.replace) {
+            window.history.replaceState(params, '', url.toString());
+        } else {
+            window.history.pushState(params, '', url.toString());
+        }
     }
 
     /**
      * Update URL with current search state (used when groupBy/sortBy changes)
      */
-    updateURLWithCurrentState() {
+    /**
+     * @param {Object} [opts]
+     * @param {boolean} [opts.replace] - true para cambios de faceta (no apilan historial).
+     */
+    updateURLWithCurrentState(opts = {}) {
         if (this.isPopstateNavigation) return;
 
         // El perfil tiene su propio estado (subpestaña, agrupación, drill).
@@ -11402,17 +11573,21 @@ ${materialesPlaceholder}
             return;
         }
 
-        const params = { view: this.currentView };
+        const params = this.currentView === 'search'
+            ? this._searchURLParams()
+            : { view: this.currentView, ...this._groupingURLParams() };
 
-        // Add search params if in search view with results
-        if (this.currentView === 'search' && this.lastSearchQuery) {
-            params.q = this.lastSearchQuery;
-            params.type = this.lastSearchFilters?.searchType || 'pa';
-            if (this.lastSearchFilters?.comerc) params.comerc = '1';
-            if (this.lastSearchFilters?.generic) params.generic = '1';
+        // Add ATC params if in indications view with ATC search
+        if (this.currentView === 'indications' && this.lastATCCode) {
+            params.atc = this.lastATCCode;
         }
 
-        // Add grouping/sorting params if not default
+        this.updateURL(params, { replace: !!opts.replace });
+    }
+
+    /** Agrupación y orden, si no son los valores por defecto. */
+    _groupingURLParams() {
+        const params = {};
         if (this.groupingState) {
             if (this.groupingState.groupBy && this.groupingState.groupBy !== 'activeIngredient') {
                 params.groupBy = this.groupingState.groupBy;
@@ -11421,13 +11596,51 @@ ${materialesPlaceholder}
                 params.sortBy = this.groupingState.sortBy;
             }
         }
+        return params;
+    }
 
-        // Add ATC params if in indications view with ATC search
-        if (this.currentView === 'indications' && this.lastATCCode) {
-            params.atc = this.lastATCCode;
-        }
+    /**
+     * Serializador ÚNICO del estado de búsqueda. Antes había dos: `performSearch`
+     * escribía receta y biosimilar, y `updateURLWithCurrentState` no — de modo que
+     * reordenar o reagrupar después de marcar "Biosimilar" reescribía la URL sin él y
+     * un marcador copiado en ese momento restauraba una búsqueda distinta.
+     * Las facetas se serializan con `|` como separador (no aparece en los valores de
+     * CIMA: nombres de forma, laboratorio, vía y principio activo).
+     */
+    _searchURLParams() {
+        const params = { view: 'search' };
+        if (!this.lastSearchQuery) return { ...params, ...this._groupingURLParams() };
 
-        this.updateURL(params);
+        const snap = this._filterSnapshot();
+        params.q = this.lastSearchQuery;
+        params.type = this.lastSearchFilters?.searchType || 'pa';
+        if (this.lastSearchFilters?.comerc) params.comerc = '1';
+        if (snap.generic) params.generic = '1';
+        if (snap.receta) params.receta = '1';
+        if (snap.biosimilar) params.biosimilar = '1';
+        if (snap.form) params.form = snap.form;
+        if (snap.lab) params.lab = snap.lab;
+        if (snap.doses.size) params.dose = [...snap.doses].join('|');
+        if (snap.routes.size) params.route = [...snap.routes].join('|');
+        if (snap.pas.size) params.pa = [...snap.pas].join('|');
+        return { ...params, ...this._groupingURLParams() };
+    }
+
+    /** Restaura en `filterState`/`groupingState` las facetas serializadas en la URL. */
+    _restoreFiltersFromURL(params) {
+        if (!this.filterState) this.filterState = this._emptyFilterState();
+        this.filterState.efgOnly = params.generic === '1';
+        this.filterState.recetaOnly = params.receta === '1';
+        this.filterState.biosimilarOnly = params.biosimilar === '1';
+        this.filterState.form = params.form || null;
+        this.filterState.lab = params.lab || null;
+        this.filterState.doses = new Set(params.dose ? params.dose.split('|').filter(Boolean) : []);
+        if (!this.groupingState) this.initGroupingState();
+        this.groupingState.routeFilters = new Set(params.route ? params.route.split('|').filter(Boolean) : []);
+        this.groupingState.activeIngredientFilters = new Set(params.pa ? params.pa.split('|').filter(Boolean) : []);
+        if (params.groupBy) this.groupingState.groupBy = params.groupBy;
+        if (params.sortBy) this.groupingState.sortBy = params.sortBy;
+        this._syncTopFilterCheckboxes();
     }
 
     /**
@@ -11548,23 +11761,14 @@ ${materialesPlaceholder}
                 searchTypeSelect.value = params.type;
             }
 
-            // Set filters
+            // Set filters — el ámbito de servidor va a la casilla; las facetas de cliente
+            // (tipo de producto, receta, forma, lab, dosis, vía, PA) y la agrupación se
+            // restauran desde el serializador único.
             const filterComerc = document.getElementById('filter-comerc');
             if (filterComerc) {
                 filterComerc.checked = params.comerc === '1';
             }
-            const filterGeneric = document.getElementById('filter-generic');
-            if (filterGeneric) {
-                filterGeneric.checked = params.generic === '1';
-            }
-            const filterReceta = document.getElementById('filter-receta');
-            if (filterReceta) {
-                filterReceta.checked = params.receta === '1';
-            }
-            const filterBiosimilar = document.getElementById('filter-biosimilar');
-            if (filterBiosimilar) {
-                filterBiosimilar.checked = params.biosimilar === '1';
-            }
+            this._restoreFiltersFromURL(params);
 
             // Restore grouping UI selectors
             const groupBySelect = document.getElementById('group-by-select');
@@ -11587,7 +11791,7 @@ ${materialesPlaceholder}
                 const term = (params.q || '').trim();
                 const looksClean = term.length <= 80 && term.split(/\s+/).length <= 10;
                 if (looksClean) {
-                    this.performSearch();
+                    this.performSearch({ preserveFilters: true });
                 } else {
                     if (searchInput) {
                         searchInput.focus();
@@ -11602,7 +11806,9 @@ ${materialesPlaceholder}
             }
 
             // Enlace de busqueda compartido (?q= sin atajo): auto-ejecucion directa.
-            this.performSearch();
+            // preserveFilters: las facetas acaban de restaurarse desde la URL y no deben
+            // borrarse por ser esta una consulta "nueva" para la sesion.
+            this.performSearch({ preserveFilters: true });
             return;
         }
 
@@ -12762,7 +12968,7 @@ ${materialesPlaceholder}
         const viewsText = fav.viewCount > 0 ? `<span class="fav-card-views" title="Veces consultado"><i class="fas fa-eye"></i> ${fav.viewCount}</span>` : '';
         const badgesTags = [];
         if (fav.generico) badgesTags.push('<span class="badge badge-success badge-xs" title="Genérico (EFG)">Gen.</span>');
-        if (fav.biosimilar) badgesTags.push('<span class="badge badge-biosimilar badge-xs" title="Biosimilar — no sustituible automáticamente"><i class="fas fa-dna"></i> Biosim.</span>');
+        if (fav.biosimilar) badgesTags.push('<span class="badge badge-biosimilar badge-xs" title="Autorizado como medicamento biosimilar (CIMA/AEMPS)"><i class="fas fa-dna"></i> Biosim.</span>');
         if (fav.triangulo) badgesTags.push('<span class="badge badge-danger badge-xs" title="Triángulo negro">▲</span>');
         if (this._isHospitalUse(fav)) badgesTags.push('<span class="badge badge-hospital badge-xs" title="Uso Hospitalario — solo farmacia hospitalaria"><i class="fas fa-hospital"></i> H</span>');
         else if (this._isDiagnosticoHospitalario(fav)) badgesTags.push('<span class="badge badge-hospital badge-xs" title="Diagnóstico Hospitalario — prescripción iniciada en hospital"><i class="fas fa-hospital"></i> DH</span>');
@@ -14470,27 +14676,26 @@ ${materialesPlaceholder}
             },
             equivalences: {
                 label: 'Equivalencias',
-                desc: 'Alternativas con el mismo principio activo y la opción más económica.',
+                desc: 'Otros medicamentos con el mismo principio activo, dosis y forma.',
                 icon: 'fa-exchange-alt',
                 view: 'equivalences',
                 steps: [
                     {
                         target: '.nav-tab[data-view="equivalences"]',
-                        title: 'Alternativas equivalentes',
+                        title: 'Mismo principio activo',
                         icon: 'fa-exchange-alt',
                         body: `
-                            <p>Parte de un medicamento y muestra sus equivalentes —mismo principio activo, dosis y forma—. Útil para sustitución, genéricos y resolver un desabastecimiento.</p>
+                            <p>Parte de un medicamento y lista los que comparten <span class="guide-highlight">principio activo, dosis y forma</span> según CIMA. Sirve para ver qué hay disponible ante un desabastecimiento o al buscar un genérico.</p>
+                            <p>Compartir principio activo, dosis y forma no demuestra por sí solo que dos medicamentos sean intercambiables: pueden diferir en vía, dispositivo, excipientes o condiciones de sustitución. La decisión es clínica.</p>
                         `,
                         position: 'bottom',
                     },
-                    {
-                        target: null,
-                        title: 'La opción más eficiente',
-                        icon: 'fa-coins',
-                        body: `
-                            <p>El equivalente de menor precio se marca con el distintivo <span class="guide-highlight">€ Económico</span>, para que la alternativa más eficiente salte a la vista sin comparar a mano.</p>
-                        `,
-                    },
+                    // RETIRADO 2026-08-03 — paso "La opción más eficiente". Explicaba la
+                    // insignia "€ Económico", que no podía aparecer nunca porque el campo
+                    // `precioMenor` no existe en ningún endpoint de CIMA (verificado en
+                    // vivo). La guía prometía una función inexistente. No se reintroduce
+                    // hasta consumir el precio menor desde las agrupaciones homogéneas
+                    // del Nomenclátor y poder describirlo sin hablar de "eficiencia".
                 ],
             },
             supply: {
