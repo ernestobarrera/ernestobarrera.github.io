@@ -102,3 +102,5 @@ workers/
 
 ### Caché local de auditorías (medcheck-audit-dose.mjs --cache) ###
 .cache/
+### Caché del día de medcheck-audit-biosimilars.mjs (~1.000 peticiones por pasada) ###
+.cache-biosimilars/
