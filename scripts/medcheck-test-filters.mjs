@@ -217,6 +217,36 @@ check('restaurar desde la URL reproduce el mismo estado',
 check('restaurar desde la URL reproduce los mismos resultados',
     names(destino), names(origen));
 
+// Indicaciones: hasta 2026-08-03 esta vista no serializaba NADA. Había una rama de
+// restauración que leía `params.indication`, pero nadie escribía ese parámetro y apuntaba
+// a un `#indication-search` inexistente, así que un enlace de Indicaciones nunca se pudo
+// restaurar. Ahora comparte serializador de facetas con el buscador.
+const ind = appWith({ biosimilar: true, form: 'SOLUCION INYECTABLE', pas: ['epoetina alfa'] });
+ind.currentView = 'indications';
+ind.lastIndicationQuery = 'anemia renal';
+ind.lastATCCode = null;
+const indParams = ind._indicationURLParams();
+check('Indicaciones serializa la consulta y sus facetas',
+    Object.keys(indParams).sort(), ['biosimilar', 'form', 'indication', 'pa', 'view']);
+check('…y la restauración reproduce el mismo estado', (() => {
+    const dst = appWith({});
+    dst.initGroupingState = function () { this.groupingState = { routeFilters: new Set(), activeIngredientFilters: new Set() }; };
+    dst._syncTopFilterCheckboxes = function () {};
+    dst._restoreFiltersFromURL(indParams);
+    return JSON.stringify(dst._filterSnapshot()) === JSON.stringify(ind._filterSnapshot());
+})(), true);
+// Con navegación ATC manda el código, no el texto: son dos formas distintas de llegar.
+const indAtc = appWith({ biosimilar: true });
+indAtc.currentView = 'indications';
+indAtc.lastIndicationQuery = 'anemia renal';
+indAtc.lastATCCode = 'B03XA';
+check('con drill-down ATC la URL lleva el ATC, no la consulta de texto',
+    Object.keys(indAtc._indicationURLParams()).sort(), ['atc', 'biosimilar', 'view']);
+// Buscador e Indicaciones comparten UNA sola lista de facetas.
+check('buscador e Indicaciones usan el mismo serializador de facetas',
+    JSON.stringify(ind._facetURLParams()),
+    JSON.stringify(appWith({ biosimilar: true, form: 'SOLUCION INYECTABLE', pas: ['epoetina alfa'] })._facetURLParams()));
+
 // Round-trip cuando NO hay facetas: la URL no debe arrastrar claves vacías.
 const limpio = appWith({});
 limpio.currentView = 'search';

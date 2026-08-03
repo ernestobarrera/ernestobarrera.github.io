@@ -3392,14 +3392,24 @@ class MedCheckApp {
         }
     }
 
-    async performIndicationSearch() {
+    /**
+     * @param {Object} [options]
+     * @param {boolean} [options.preserveFilters] - conservar las facetas de cliente. Se usa
+     *   al restaurar desde la URL, donde las facetas acaban de leerse del enlace y no deben
+     *   borrarse por ser esta una consulta "nueva" para la sesión.
+     */
+    async performIndicationSearch(options = {}) {
         const query = document.getElementById('indication-input').value.trim();
         if (query.length < 2) {
             this.showToast('Introduce al menos 2 caracteres', 'warning');
             return;
         }
 
-        this._resetResultFilters();
+        // Mismo criterio que el buscador: solo una consulta realmente nueva reinicia las
+        // facetas de resultado (ver `_resetResultFilters`).
+        if (query !== this.lastIndicationQuery && !options.preserveFilters) {
+            this._resetResultFilters();
+        }
 
         // Hide autocomplete
         document.getElementById('autocomplete-results').classList.add('hidden');
@@ -3485,6 +3495,12 @@ class MedCheckApp {
 
             this.displayIndicationResults(data, query);
             this._warnUnverifiedSectionFilter(data);
+
+            // La búsqueda por indicación pasa a tener URL propia: hasta ahora esta vista no
+            // serializaba nada, así que ni se podía compartir ni sobrevivía a una recarga.
+            if (!this.isPopstateNavigation) {
+                this.updateURL(this._indicationURLParams());
+            }
 
         } catch (error) {
             console.error('Indication search error:', error);
@@ -11370,6 +11386,15 @@ ${materialesPlaceholder}
     /**
      * Setup event listeners for grouping controls
      */
+    /**
+     * Repinta Indicaciones y sincroniza la URL. Equivalente a `applyFacet` del buscador:
+     * `replace` para no apilar una entrada de historial por cada chip pulsado.
+     */
+    _applyIndicationFacet(data, searchQuery) {
+        this.displayGroupedIndicationResults(data, searchQuery);
+        this.updateURLWithCurrentState({ replace: true });
+    }
+
     setupGroupingEventListeners(data, searchQuery) {
         // Group by selector
         const groupBySelect = document.getElementById('group-by-select');
@@ -11378,7 +11403,7 @@ ${materialesPlaceholder}
                 this.groupingState.groupBy = e.target.value;
                 this.groupingState.collapsedGroups.clear();
                 this.groupingState.expandedGroups.clear();
-                this.displayGroupedIndicationResults(data, searchQuery);
+                this._applyIndicationFacet(data, searchQuery);
             });
         }
 
@@ -11389,7 +11414,7 @@ ${materialesPlaceholder}
                 this.groupingState.sortBy = e.target.value;
                 // Antes aquí solo se implementaba nombre: "Dosis ↑/↓" figuraban en el
                 // desplegable y no hacían nada. El orden lo aplica ahora el render.
-                this.displayGroupedIndicationResults(data, searchQuery);
+                this._applyIndicationFacet(data, searchQuery);
             });
         }
 
@@ -11398,7 +11423,7 @@ ${materialesPlaceholder}
         if (formFilter) {
             formFilter.addEventListener('change', (e) => {
                 this.filterState.form = e.target.value || null;
-                this.displayGroupedIndicationResults(data, searchQuery);
+                this._applyIndicationFacet(data, searchQuery);
             });
         }
 
@@ -11407,7 +11432,7 @@ ${materialesPlaceholder}
         if (labFilter) {
             labFilter.addEventListener('change', (e) => {
                 this.filterState.lab = e.target.value || null;
-                this.displayGroupedIndicationResults(data, searchQuery);
+                this._applyIndicationFacet(data, searchQuery);
             });
         }
 
@@ -11421,22 +11446,22 @@ ${materialesPlaceholder}
                 } else {
                     this.filterState.doses.add(dose);
                 }
-                this.displayGroupedIndicationResults(data, searchQuery);
+                this._applyIndicationFacet(data, searchQuery);
             });
         });
 
         // EFG toggle
         document.getElementById('efg-filter')?.addEventListener('change', (e) => {
             this.filterState.efgOnly = e.target.checked;
-            this.displayGroupedIndicationResults(data, searchQuery);
+            this._applyIndicationFacet(data, searchQuery);
         });
         document.getElementById('receta-filter')?.addEventListener('change', (e) => {
             this.filterState.recetaOnly = e.target.checked;
-            this.displayGroupedIndicationResults(data, searchQuery);
+            this._applyIndicationFacet(data, searchQuery);
         });
         document.getElementById('biosimilar-filter')?.addEventListener('change', (e) => {
             this.filterState.biosimilarOnly = e.target.checked;
-            this.displayGroupedIndicationResults(data, searchQuery);
+            this._applyIndicationFacet(data, searchQuery);
         });
 
         // Clear filters button — limpia exactamente lo que cuenta "Limpiar N".
@@ -11444,7 +11469,7 @@ ${materialesPlaceholder}
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
                 this._clearAllResultFilters();
-                this.displayGroupedIndicationResults(data, searchQuery);
+                this._applyIndicationFacet(data, searchQuery);
             });
         }
 
@@ -11472,7 +11497,7 @@ ${materialesPlaceholder}
                     this.groupingState.routeFilters.add(route);
                 }
 
-                this.displayGroupedIndicationResults(data, searchQuery);
+                this._applyIndicationFacet(data, searchQuery);
             });
         });
 
@@ -11495,7 +11520,7 @@ ${materialesPlaceholder}
                     this.groupingState.activeIngredientFilters.clear();
                     this.groupingState.activeIngredientFilters.add(pa);
                 }
-                this.displayGroupedIndicationResults(data, searchQuery);
+                this._applyIndicationFacet(data, searchQuery);
             });
         });
     }
@@ -11592,13 +11617,13 @@ ${materialesPlaceholder}
             return;
         }
 
-        const params = this.currentView === 'search'
-            ? this._searchURLParams()
-            : { view: this.currentView, ...this._groupingURLParams() };
-
-        // Add ATC params if in indications view with ATC search
-        if (this.currentView === 'indications' && this.lastATCCode) {
-            params.atc = this.lastATCCode;
+        let params;
+        if (this.currentView === 'search') {
+            params = this._searchURLParams();
+        } else if (this.currentView === 'indications') {
+            params = this._indicationURLParams();
+        } else {
+            params = { view: this.currentView, ...this._groupingURLParams() };
         }
 
         this.updateURL(params, { replace: !!opts.replace });
@@ -11630,10 +11655,31 @@ ${materialesPlaceholder}
         const params = { view: 'search' };
         if (!this.lastSearchQuery) return { ...params, ...this._groupingURLParams() };
 
-        const snap = this._filterSnapshot();
         params.q = this.lastSearchQuery;
         params.type = this.lastSearchFilters?.searchType || 'pa';
         if (this.lastSearchFilters?.comerc) params.comerc = '1';
+        return { ...params, ...this._facetURLParams(), ...this._groupingURLParams() };
+    }
+
+    /**
+     * Serializador de la vista Indicaciones. Antes esta vista no persistía NADA: ni la
+     * indicación buscada ni las facetas. Había una rama de restauración que leía
+     * `params.indication`, pero ningún código escribía ese parámetro y además apuntaba a
+     * un `#indication-search` que no existe (el input es `#indication-input`), así que un
+     * enlace de Indicaciones nunca se pudo restaurar.
+     */
+    _indicationURLParams() {
+        const params = { view: 'indications' };
+        if (this.lastATCCode) params.atc = this.lastATCCode;
+        else if (this.lastIndicationQuery) params.indication = this.lastIndicationQuery;
+        if (!params.atc && !params.indication) return { ...params, ...this._groupingURLParams() };
+        return { ...params, ...this._facetURLParams(), ...this._groupingURLParams() };
+    }
+
+    /** Facetas de resultado y de ámbito, comunes a Buscador e Indicaciones. */
+    _facetURLParams() {
+        const snap = this._filterSnapshot();
+        const params = {};
         if (snap.generic) params.generic = '1';
         if (snap.receta) params.receta = '1';
         if (snap.biosimilar) params.biosimilar = '1';
@@ -11642,7 +11688,7 @@ ${materialesPlaceholder}
         if (snap.doses.size) params.dose = [...snap.doses].join('|');
         if (snap.routes.size) params.route = [...snap.routes].join('|');
         if (snap.pas.size) params.pa = [...snap.pas].join('|');
-        return { ...params, ...this._groupingURLParams() };
+        return params;
     }
 
     /** Restaura en `filterState`/`groupingState` las facetas serializadas en la URL. */
@@ -11856,17 +11902,20 @@ ${materialesPlaceholder}
             return;
         }
 
-        // Handle indication search query
+        // Handle indication search query. El id correcto es `indication-input`; la versión
+        // anterior escribía en un `indication-search` inexistente, así que el input quedaba
+        // vacío y `performIndicationSearch` abortaba con "Introduce al menos 2 caracteres".
         if (targetView === 'indications' && params.indication) {
             await this.loadView('indications', false);
 
-            // Set the indication search input and perform search
-            const indicationInput = document.getElementById('indication-search');
+            const indicationInput = document.getElementById('indication-input');
             if (indicationInput) {
                 indicationInput.value = params.indication;
             }
             this.lastIndicationQuery = params.indication;
-            this.performIndicationSearch();
+            this._restoreFiltersFromURL(params);
+            // preserveFilters: las facetas acaban de restaurarse desde el enlace.
+            this.performIndicationSearch({ preserveFilters: true });
             return;
         }
 
