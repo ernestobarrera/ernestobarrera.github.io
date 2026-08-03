@@ -369,5 +369,66 @@ plain('normalizada: el tooltip declara el literal de CIMA',
 plain('literal: el tooltip también lo declara',
     app._displayDose('650 mg').title, 'Dosis según CIMA: 650 mg');
 
+// --- Memoización --------------------------------------------------------------
+// El canonicalizador se memoiza porque era el coste dominante del repintado: medido
+// sobre 1.342 productos, la ordenación por dosis costaba 478 ms y ahora cuesta 14 ms.
+// Estas aserciones fijan que memoizar no cambia NINGÚN resultado y que no introduce
+// estado compartido peligroso.
+console.log('--- memoización ---');
+
+const MedCheckApp = sandbox.window.__MedCheckAppClass;
+
+plain('DOSE_UNITS devuelve siempre la MISMA referencia (antes construía 18 arrays nuevos)',
+    MedCheckApp.DOSE_UNITS === MedCheckApp.DOSE_UNITS, true);
+plain('la tabla está congelada', Object.isFrozen(MedCheckApp.DOSE_UNITS), true);
+plain('la alternancia se cachea', app._doseUnitAlternation() === app._doseUnitAlternation(), true);
+
+// Ninguna RegExp memoizada puede llevar flag `g`: una global compartida arrastra
+// `lastIndex` entre llamadas y el resultado pasaría a depender de la llamada anterior.
+// Es el modo de fallo silencioso que convierte una optimización en un bug intermitente.
+const RE = MedCheckApp._doseRegexes(app._doseUnitAlternation());
+plain('las 5 RegExp memoizadas NO son globales',
+    Object.values(RE).every((r) => r.global === false), true);
+plain('son exactamente 5', Object.keys(RE).length, 5);
+
+// Pureza entre instancias: el memo vive en la instancia, así que dos apps distintas no
+// se contaminan, y ambas dan el mismo resultado.
+const appA = Object.create(MedCheckApp.prototype);
+const appB = Object.create(MedCheckApp.prototype);
+appA._canonicalDose('1 g paracetamol');
+plain('el memo de una instancia no es visible en otra', appB._doseCache === undefined, true);
+plain('y ambas dan el mismo resultado',
+    appA._canonicalDose('875-125 mg') === appB._canonicalDose('875-125 mg'), true);
+
+// Equivalencia dura: para cada caso ya probado arriba, el resultado memoizado tiene que
+// coincidir con el recalculado desde cero. Si la memoización rompiera algo, salta aquí.
+const casos = ['1 g', '1 g paracetamol', '1000 mg', '400 microgramos', '10.000 UI', '100 U/ml',
+    '0,5 ml', '10 % acetilcisteina', '250 mg/5 ml', '875-125 mg', '37.5 mg / 325 mg',
+    '2 mg / 0.625 mg', '2800 UI / 70 mg', '1.200.000 UI', '19,2 mg fentanilo (100 µg/h)',
+    '', 'Sin dosis', '9 g', '0,5 mg'];
+let divergencias = 0;
+for (const c of casos) {
+    const memo = app._canonicalDose(c);
+    const memoSort = app._doseSortValue(c);
+    const limpio = Object.create(MedCheckApp.prototype);
+    limpio._resetDoseCaches();
+    if (limpio._canonicalDose(c) !== memo || limpio._doseSortValue(c) !== memoSort) {
+        divergencias += 1;
+        console.log(`  divergencia en "${c}": memo=${memo} limpio=${limpio._canonicalDose(c)}`);
+    }
+}
+plain(`equivalencia memoizado vs recalculado en ${casos.length} casos`, divergencias, 0);
+
+// Cota del Map: no puede crecer sin límite en una sesión larga de navegador.
+const acotada = Object.create(MedCheckApp.prototype);
+for (let i = 0; i < 5100; i += 1) acotada._canonicalDose(`${i} mg`);
+plain('el memo se acota por debajo de 5100 entradas', acotada._doseCache.size <= 5001, true);
+plain('y sigue devolviendo bien tras vaciarse', acotada._canonicalDose('875-125 mg'), '875 mg/125 mg');
+
+// Autoverificación: si alguien memoizara con una RegExp global, este detector lo cazaría.
+const conGlobal = { mono: /x/gi };
+plain('el detector de flag `g` caza una RegExp global reintroducida',
+    Object.values(conGlobal).every((r) => r.global === false), false);
+
 console.log(failures === 0 ? '\nOK — todas las aserciones pasan' : `\nFALLOS: ${failures}`);
 process.exit(failures === 0 ? 0 : 1);

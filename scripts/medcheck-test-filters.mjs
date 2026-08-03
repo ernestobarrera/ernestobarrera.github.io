@@ -300,6 +300,13 @@ check('no queda lectura del control inexistente #filter-show-brands',
 // `lastSearchFilters`, donde `performSearch` ya no escribe esas tres claves.
 check('renderSearch no lee generic/receta/biosimilar de lastSearchFilters',
     /lastSearchFilters\.(generic|receta|biosimilar)\b/.test(sinComentarios), false);
+// Código muerto retirado tras el contrato: los dos envoltorios quedaron sin llamadores al
+// pasar los renderizadores al núcleo, y `loadMoreResults` nunca se invocó (el "Ver más"
+// real de Indicaciones es `groupingState.expandedGroups`).
+check('no vuelven los envoltorios muertos del contrato',
+    /_apply(PA|Route)Filter\s*\(/.test(sinComentarios), false);
+check('no vuelve la paginación muerta',
+    /loadMoreResults|resultsDisplayedCount/.test(sinComentarios), false);
 
 console.log('\n— Autoverificación: ¿los detectores cazan la regresión conocida? —');
 // Un detector que nunca ha demostrado detectar nada no es una red de seguridad, es

@@ -170,9 +170,6 @@ class MedCheckApp {
         // Lista compartida de la vista "Fármacos" (fusión de Interacciones + Reacciones)
         this.comboDrugList = [];
 
-        // Pagination state
-        this.resultsDisplayedCount = 50;
-
         // Clinical Grouping State
         this.initGroupingState();
 
@@ -818,30 +815,102 @@ class MedCheckApp {
      * potencia convertible.
      */
     static get DOSE_UNITS() {
-        return [
-            ['microgramos', 'mcg'], ['microgramo', 'mcg'],
-            ['miligramos', 'mg'], ['miligramo', 'mg'],
-            ['gramos', 'g'], ['gramo', 'g'],
-            ['unidades', 'U'], ['unidad', 'U'],
-            ['mcg', 'mcg'], ['µg', 'mcg'], ['ug', 'mcg'],
-            ['mg', 'mg'],
-            // 'u.i' sin punto final va ANTES de 'u': si no, "10.000 u.i" casaba como 'u'
-            // y se mostraba "10000 U" en vez de UI.
-            ['u.i.', 'UI'], ['u.i', 'UI'], ['ui', 'UI'], ['iu', 'UI'],
-            ['g', 'g'], ['u', 'U'],
-        ];
+        // Memoizada y congelada. Antes este getter construía 18 sub-arrays NUEVOS en cada
+        // acceso, y se accede dos o tres veces por llamada a `_canonicalDose`, que a su vez
+        // se invoca una vez por medicamento y pasada. Medido sobre 1.342 productos, la
+        // ordenación por dosis costaba 478 ms por repintado casi todo en esto y en compilar
+        // las mismas expresiones regulares una y otra vez.
+        if (!MedCheckApp._DOSE_UNITS) {
+            MedCheckApp._DOSE_UNITS = Object.freeze([
+                ['microgramos', 'mcg'], ['microgramo', 'mcg'],
+                ['miligramos', 'mg'], ['miligramo', 'mg'],
+                ['gramos', 'g'], ['gramo', 'g'],
+                ['unidades', 'U'], ['unidad', 'U'],
+                ['mcg', 'mcg'], ['µg', 'mcg'], ['ug', 'mcg'],
+                ['mg', 'mg'],
+                // 'u.i' sin punto final va ANTES de 'u': si no, "10.000 u.i" casaba como 'u'
+                // y se mostraba "10000 U" en vez de UI.
+                ['u.i.', 'UI'], ['u.i', 'UI'], ['ui', 'UI'], ['iu', 'UI'],
+                ['g', 'g'], ['u', 'U'],
+            ].map((par) => Object.freeze(par)));
+        }
+        return MedCheckApp._DOSE_UNITS;
     }
 
     _doseUnitAlternation() {
-        return MedCheckApp.DOSE_UNITS
-            .map(([raw]) => raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-            .join('|');
+        if (!MedCheckApp._DOSE_ALT) {
+            MedCheckApp._DOSE_ALT = MedCheckApp.DOSE_UNITS
+                .map(([raw]) => raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+                .join('|');
+        }
+        return MedCheckApp._DOSE_ALT;
+    }
+
+    /**
+     * Las cinco expresiones regulares constantes del canonicalizador, compiladas UNA vez.
+     *
+     * NINGUNA lleva el flag `g` a propósito, y hay un test que lo comprueba: una RegExp
+     * global compartida arrastra `lastIndex` entre llamadas, así que memoizarla haría que
+     * el resultado dependiese de la llamada anterior. Es el modo de fallo silencioso que
+     * convierte una optimización en un bug intermitente.
+     */
+    static _doseRegexes(alternation) {
+        if (!MedCheckApp._DOSE_RE) {
+            const U = alternation;
+            const FIN = '(?![a-záéíóúñ0-9])';
+            const N = '\\d[\\d.,]*';
+            MedCheckApp._DOSE_RE = Object.freeze({
+                mono: new RegExp(`^(\\d[\\d.,]*)\\s*(${U})${FIN}`, 'i'),
+                combo: new RegExp(`^(\\d[\\d.,]*)\\s*(${U})?${FIN}\\s*[/+-]\\s*(\\d[\\d.,]*)\\s*(${U})${FIN}$`, 'i'),
+                shapeSimple: new RegExp(`^${N}\\s*(?:${U})${FIN}$`, 'i'),
+                shapePair: new RegExp(`^${N}\\s*(${U})${FIN}\\s*\\/\\s*${N}\\s*(${U})${FIN}$`, 'i'),
+                sortHead: new RegExp(`^([\\d.,]+)\\s*(${U})${FIN}`, 'i'),
+            });
+        }
+        return MedCheckApp._DOSE_RE;
     }
 
     _canonicalDoseUnit(token) {
-        const t = String(token || '').toLowerCase();
-        const hit = MedCheckApp.DOSE_UNITS.find(([raw]) => raw === t);
-        return hit ? hit[1] : null;
+        if (!MedCheckApp._DOSE_UNIT_MAP) {
+            MedCheckApp._DOSE_UNIT_MAP = new Map(MedCheckApp.DOSE_UNITS);
+        }
+        return MedCheckApp._DOSE_UNIT_MAP.get(String(token || '').toLowerCase()) || null;
+    }
+
+    /**
+     * Vacía las cachés de dosis. No se llama desde producción: existe como escotilla para
+     * el auditor y para el test que comprueba que memoizar no cambia ningún resultado.
+     */
+    _resetDoseCaches() {
+        MedCheckApp._DOSE_UNITS = null;
+        MedCheckApp._DOSE_ALT = null;
+        MedCheckApp._DOSE_RE = null;
+        MedCheckApp._DOSE_UNIT_MAP = null;
+        this._doseCache = null;
+        this._doseSortCache = null;
+    }
+
+    /**
+     * Memo por cadena de entrada. Vive en la INSTANCIA, no en la clase, aunque las
+     * constantes derivadas de arriba sí sean estáticas. La asimetría es deliberada: las
+     * estáticas derivan de un literal congelado y compartirlas no puede contaminar nada;
+     * este memo depende de que `_canonicalDose` sea puro —hoy lo es, no lee ningún campo
+     * de `this`— y ponerlo en la instancia hace que, si algún día dejara de serlo, el
+     * fallo fuese local en vez de global.
+     *
+     * El patrón `this._x || (this._x = ...)` es necesario porque los tests construyen la
+     * clase con `Object.create(MedCheckApp.prototype)`, sin pasar por el constructor.
+     */
+    _doseMemo(key, cacheName, compute) {
+        const cache = this[cacheName] || (this[cacheName] = new Map());
+        if (cache.has(key)) return cache.get(key);
+        const value = compute();
+        // Cota de cordura: el catálogo real tiene ~4.435 cadenas de dosis distintas, así
+        // que no se alcanza en uso normal. Está para no dejar un Map sin límite en una
+        // sesión larga de navegador.
+        if (cache.size > 5000) cache.clear();
+        cache.set(key, value);
+        return value;
     }
 
     /**
@@ -1013,11 +1082,9 @@ class MedCheckApp {
      * `50/250 mcg/INHALACION` no se marca), así que ausencia de señal no es validación clínica.
      */
     _isComparableDoseShape(canon) {
-        const U = this._doseUnitAlternation();
-        const FIN = '(?![a-záéíóúñ0-9])';
-        const N = '\\d[\\d.,]*';
-        if (new RegExp(`^${N}\\s*(?:${U})${FIN}$`, 'i').test(canon)) return true;
-        const dos = new RegExp(`^${N}\\s*(${U})${FIN}\\s*\\/\\s*${N}\\s*(${U})${FIN}$`, 'i').exec(canon);
+        const RE = MedCheckApp._doseRegexes(this._doseUnitAlternation());
+        if (RE.shapeSimple.test(canon)) return true;
+        const dos = RE.shapePair.exec(canon);
         if (!dos) return false;
         // Las dos unidades han de ser LA MISMA, el mismo requisito que exige `_canonicalDose`
         // para tratar algo como combinación: con unidades distintas no se puede distinguir
@@ -1043,13 +1110,18 @@ class MedCheckApp {
      * pondría una suspensión pediátrica por encima de todos los comprimidos de 600 mg.
      */
     _doseSortValue(dosisStr) {
+        // Memoizado aparte de `_canonicalDose`: es el camino caliente del comparador de
+        // ordenación (~2·N·log N llamadas por repintado) y encadena dos funciones más.
+        return this._doseMemo(String(dosisStr ?? ''), '_doseSortCache', () => this._computeDoseSortValue(dosisStr));
+    }
+
+    _computeDoseSortValue(dosisStr) {
         const canon = this._canonicalDose(dosisStr);
         // Puerta de forma: solo se ordena lo que es una cantidad comparable. Antes se leía la
         // cifra inicial de cualquier cadena, incluidos los literales, y eso metía razones
         // (`100 mg/ml`) entre las masas absolutas.
         if (!this._isComparableDoseShape(canon)) return MedCheckApp.DOSE_SORT_UNKNOWN;
-        const m = new RegExp(`^([\\d.,]+)\\s*(${this._doseUnitAlternation()})(?![a-záéíóúñ0-9])`, 'i')
-            .exec(canon);
+        const m = MedCheckApp._doseRegexes(this._doseUnitAlternation()).sortHead.exec(canon);
         if (!m) return MedCheckApp.DOSE_SORT_UNKNOWN;
         const unidad = this._canonicalDoseUnit(m[2]);
         let v = this._parseDoseNumber(m[1]);
@@ -1153,15 +1225,19 @@ class MedCheckApp {
      * @returns {string} clave canónica y etiqueta mostrable
      */
     _canonicalDose(dosisStr) {
+        return this._doseMemo(String(dosisStr ?? ''), '_doseCache', () => this._computeCanonicalDose(dosisStr));
+    }
+
+    _computeCanonicalDose(dosisStr) {
         const literal = String(dosisStr ?? '').replace(/\s+/g, ' ').trim();
         if (!literal) return 'Sin dosis';
 
-        const U = this._doseUnitAlternation();
-        // Nada de letra pegada detrás: evita que la "g" case con la de "glicerol".
-        const FIN = '(?![a-záéíóúñ0-9])';
+        // Las regex van compiladas una sola vez (ver `_doseRegexes`). El `FIN` de no-letra
+        // pegada detrás —que evita que la "g" case con la de "glicerol"— vive ya dentro.
+        const RE = MedCheckApp._doseRegexes(this._doseUnitAlternation());
 
         // --- Una componente: "1 g", "1 g paracetamol", "400 microgramos", "1 g / comprimido"
-        const mono = new RegExp(`^(\\d[\\d.,]*)\\s*(${U})${FIN}`, 'i').exec(literal);
+        const mono = RE.mono.exec(literal);
         if (mono) {
             const resto = literal.slice(mono[0].length).replace(
                 /\s*\/\s*(comprimidos?|c[áa]psulas?|sobres?|parches?|supositorios?|[óo]vulos?|ampollas?|viales?|pastillas?|grageas?|tabletas?)\s*$/i,
@@ -1179,9 +1255,7 @@ class MedCheckApp {
 
         // --- Dos componentes: "875-125 mg", "37,5 mg/325 mg", "2800 UI / 70 mg"
         // La unidad puede estar solo en la segunda ("875-125 mg" = 875 mg + 125 mg).
-        const combo = new RegExp(
-            `^(\\d[\\d.,]*)\\s*(${U})?${FIN}\\s*[/+-]\\s*(\\d[\\d.,]*)\\s*(${U})${FIN}$`, 'i'
-        ).exec(literal);
+        const combo = RE.combo.exec(literal);
         if (combo) {
             const u2 = this._canonicalDoseUnit(combo[4]);
             const u1 = combo[2] ? this._canonicalDoseUnit(combo[2]) : u2;
@@ -2315,7 +2389,7 @@ class MedCheckApp {
 
         // PA filter chips — semántica OR dentro de la dimensión (Ctrl+clic para
         // multiselección). El comentario anterior decía "AND semantics" y era falso:
-        // `_applyPAFilter` devuelve true en cuanto encaja UNO de los PA seleccionados.
+        // el predicado devuelve true en cuanto encaja UNO de los PA seleccionados.
         document.querySelectorAll('.pa-chip[data-pa]').forEach(chip => {
             chip.addEventListener('click', (e) => {
                 const pa = chip.dataset.pa;
@@ -3379,7 +3453,6 @@ class MedCheckApp {
             this.groupingState.expandedGroups.clear();
             this.lastIndicationQuery = label;
             this.lastIndicationResults = data;
-            this.resultsDisplayedCount = 50; // Reset pagination
 
             this.displayIndicationResults(data, label);
 
@@ -3532,48 +3605,6 @@ class MedCheckApp {
     displayIndicationResults(data, searchQuery) {
         // Delegate to grouped results display for clinical grouping
         this.displayGroupedIndicationResults(data, searchQuery);
-    }
-
-    loadMoreResults(data, searchQuery) {
-        // Increment displayed count
-        this.resultsDisplayedCount += 50;
-        const totalResults = data.resultados.length;
-        const displayCount = Math.min(this.resultsDisplayedCount, totalResults);
-        const hasMore = totalResults > displayCount;
-
-        // Get grid and add new cards
-        const grid = document.getElementById('results-grid');
-        const previousCount = displayCount - 50;
-        const newCards = data.resultados.slice(previousCount, displayCount);
-
-        newCards.forEach(med => {
-            const cardHtml = this.renderIndicationMedCard(med, data.matchedIndication?.label || searchQuery);
-            grid.insertAdjacentHTML('beforeend', cardHtml);
-        });
-
-        // Update newly added cards with click handlers
-        grid.querySelectorAll('.result-card:not([data-clickbound])').forEach(card => {
-            card.setAttribute('data-clickbound', 'true');
-            card.addEventListener('click', (e) => {
-                const tabTarget = e.target.closest('[data-open-tab]');
-                if (tabTarget) { this.openMedDetails(card.dataset.nregistro, tabTarget.dataset.openTab); return; }
-                if (e.target.closest('.badge-clickable, .fav-star-btn, .med-detail-tag--clickable, .atc-clinical-chip--clickable, .btn')) return;
-                this.openMedDetails(card.dataset.nregistro);
-            });
-        });
-
-        // Update load more section
-        const loadMoreContainer = document.querySelector('.load-more-container');
-        if (hasMore) {
-            loadMoreContainer.querySelector('.load-more-info').textContent =
-                `Mostrando ${displayCount} de ${totalResults} `;
-        } else {
-            loadMoreContainer.innerHTML = `
-    <span class="load-more-info" style="color: var(--success);">
-        <i class="fas fa-check-circle"></i> Todos los ${totalResults} medicamentos cargados
-                </span>
-    `;
-        }
     }
 
     renderIndicationMedCard(med, searchQuery) {
@@ -10678,20 +10709,6 @@ ${materialesPlaceholder}
         return Array.from(paCounts.entries())
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
-    }
-
-    /**
-     * Applies the active route-chip filters (shared by both result views and the control bar)
-     */
-    _applyRouteFilter(results) {
-        return this._applyResultFilters(results, this._filterSnapshot(), { only: 'route' });
-    }
-
-    /**
-     * Applies the active principio-activo chip filters (OR semantics)
-     */
-    _applyPAFilter(results) {
-        return this._applyResultFilters(results, this._filterSnapshot(), { only: 'pa' });
     }
 
     // ============================================
