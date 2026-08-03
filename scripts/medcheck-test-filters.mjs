@@ -223,6 +223,29 @@ limpio.currentView = 'search';
 check('sin facetas la URL solo lleva lo esencial',
     Object.keys(limpio._searchURLParams()).sort(), ['comerc', 'q', 'type', 'view']);
 
+console.log('\n— Ámbito vs faceta: qué sobrevive a una búsqueda nueva —');
+// Regresión real: al unificar el contrato, genérico/receta/biosimilar pasaron a
+// `filterState` y `_resetResultFilters()` lo vaciaba entero, de modo que buscar otro
+// fármaco DESMARCABA esas tres casillas en silencio. Son ámbito (viven junto al buscador,
+// como `Comercializado`), no faceta de resultado.
+const ambito = appWith({ biosimilar: true, receta: true, generic: true,
+    form: 'SOLUCION INYECTABLE', lab: 'Lab B', doses: ['1000 UI'],
+    routes: ['Parenteral'], pas: ['epoetina alfa'] });
+ambito._syncTopFilterCheckboxes = function () {};
+ambito._resetResultFilters();
+const tras = ambito._filterSnapshot();
+check('una búsqueda nueva CONSERVA tipo de producto y receta',
+    [tras.generic, tras.biosimilar, tras.receta], [true, true, true]);
+check('…y limpia las facetas de resultado',
+    [tras.form, tras.lab, tras.doses.size, tras.routes.size, tras.pas.size],
+    [null, null, 0, 0, 0]);
+// "Limpiar N" sí lo limpia todo: ahí el usuario lo ha pedido explícitamente.
+const todo = appWith({ biosimilar: true, receta: true, generic: true, form: 'X' });
+todo._syncTopFilterCheckboxes = function () {};
+todo._clearAllResultFilters();
+check('"Limpiar" sí limpia también tipo de producto y receta',
+    todo._activeFilterCount(), 0);
+
 console.log('\n— Regresiones de honestidad —');
 // Estas dos condiciones eran inalcanzables (los campos no existen en CIMA) y una de ellas
 // estaba explicada en la guía interactiva. El test impide que vuelvan.
@@ -236,6 +259,17 @@ check('la insignia biosimilar no afirma la regla de sustitución',
 check('no se afirma "biológico original"', /[Bb]iológico original/.test(sinComentarios), false);
 check('no se llama a genérico/biosimilar "alternativas de menor coste"',
     /alternativas de menor coste/i.test(fuente), false);
+// Comentarios que describían como AND una semántica que es OR. Había tres; se corrigió
+// uno y sobrevivieron dos hasta que Codex los señaló.
+check('ningún comentario describe los chips de PA como AND',
+    /activeIngredientFilters.*AND semantics|PA filter chips \(AND/i.test(fuente), false);
+// Estado muerto: `#filter-show-brands` no existe en ninguna plantilla.
+check('no queda lectura del control inexistente #filter-show-brands',
+    /getElementById\('filter-show-brands'\)/.test(sinComentarios), false);
+// `renderSearch` debe marcar las casillas desde la fuente única, no desde
+// `lastSearchFilters`, donde `performSearch` ya no escribe esas tres claves.
+check('renderSearch no lee generic/receta/biosimilar de lastSearchFilters',
+    /lastSearchFilters\.(generic|receta|biosimilar)\b/.test(sinComentarios), false);
 
 console.log('\n— Autoverificación: ¿los detectores cazan la regresión conocida? —');
 // Un detector que nunca ha demostrado detectar nada no es una red de seguridad, es

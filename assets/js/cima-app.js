@@ -1288,12 +1288,16 @@ class MedCheckApp {
     // ============================================
 
     renderSearch() {
-        // Restore previous filter state
+        // Restore previous filter state. `comerc` es ámbito de la petición y vive en
+        // `lastSearchFilters`; tipo de producto y receta son facetas de cliente y viven en
+        // `filterState`, que es la fuente única desde el contrato de filtrado. Leerlas de
+        // `lastSearchFilters` dejaba las casillas en blanco al repintar la vista sin
+        // resultados guardados, porque `performSearch` ya no escribe ahí esas tres claves.
+        const snap = this._filterSnapshot();
         const comercChecked = this.lastSearchFilters.comerc ? 'checked' : '';
-        const genericChecked = this.lastSearchFilters.generic ? 'checked' : '';
-        const recetaChecked = this.lastSearchFilters.receta ? 'checked' : '';
-        const biosimilarChecked = this.lastSearchFilters.biosimilar ? 'checked' : '';
-        const showBrandsChecked = this.lastSearchFilters.showBrands ? 'checked' : '';
+        const genericChecked = snap.generic ? 'checked' : '';
+        const recetaChecked = snap.receta ? 'checked' : '';
+        const biosimilarChecked = snap.biosimilar ? 'checked' : '';
 
         this.content.innerHTML = `
             <div class="search-box">
@@ -1335,7 +1339,6 @@ class MedCheckApp {
         const searchBtn = document.getElementById('search-btn');
         const filterComerc = document.getElementById('filter-comerc');
         const filterGeneric = document.getElementById('filter-generic');
-        const filterShowBrands = document.getElementById('filter-show-brands');
 
         searchBtn.addEventListener('click', () => {
             document.getElementById('search-autocomplete').classList.add('hidden');
@@ -1432,9 +1435,7 @@ class MedCheckApp {
         filterGeneric.addEventListener('change', () => applyClientToggle('efgOnly'));
         document.getElementById('filter-receta')?.addEventListener('change', () => applyClientToggle('recetaOnly'));
         document.getElementById('filter-biosimilar')?.addEventListener('change', () => applyClientToggle('biosimilarOnly'));
-        filterShowBrands?.addEventListener('change', () => {
-            if (this.lastSearchQuery) this.performSearch({ preserveFilters: true });
-        });
+        // Sin listener de `#filter-show-brands`: ese control no existe en ninguna plantilla.
 
         // Restore previous results if available
         if (this.lastSearchResults && this.lastSearchResults.resultados) {
@@ -1460,8 +1461,25 @@ class MedCheckApp {
      * anterior persista y oculte todos los resultados de la siguiente. No toca
      * los filtros de ámbito del buscador (comercializado/genérico/receta).
      */
+    /**
+     * Limpia las facetas de RESULTADO (forma, laboratorio, dosis, vía, principio activo)
+     * al cambiar de universo: consulta textual nueva o navegación ATC.
+     *
+     * NO toca tipo de producto ni receta. Esas tres casillas viven junto al buscador y son
+     * ÁMBITO, no faceta: el usuario que marca "Genérico" y busca otro fármaco espera
+     * seguir viendo genéricos, igual que con "Comercializado". Vaciarlas aquí las
+     * desmarcaba en silencio en cada búsqueda nueva.
+     *
+     * Para limpiarlo todo —incluidas esas tres— está `_clearAllResultFilters`, que es lo
+     * que invoca el botón "Limpiar N", donde el usuario sí lo ha pedido explícitamente.
+     */
     _resetResultFilters() {
-        this._clearAllResultFilters();
+        if (!this.filterState) this.filterState = this._emptyFilterState();
+        this.filterState.form = null;
+        this.filterState.lab = null;
+        this.filterState.doses = new Set();
+        this.groupingState?.routeFilters?.clear?.();
+        this.groupingState?.activeIngredientFilters?.clear?.();
     }
 
     _normalizeDrugSearchText(value) {
@@ -1597,13 +1615,14 @@ class MedCheckApp {
         const isCN = /^\d{6,7}$/.test(query);
         const searchType = isCN ? 'cn' : 'smart';
 
-        // Save search state for persistence. `comerc` y `showBrands` son ámbito de la
-        // petición; genérico/receta/biosimilar viven en `filterState` como el resto de
-        // facetas de cliente, para que haya UNA sola fuente de verdad.
+        // Save search state for persistence. `comerc` es ámbito de la petición;
+        // genérico/receta/biosimilar viven en `filterState`, que es la fuente única del
+        // contrato de filtrado (y persisten entre búsquedas: son ámbito, no faceta).
         this.lastSearchQuery = query;
+        // `showBrands` se retiró: leía `#filter-show-brands`, un control que no existe en
+        // ninguna plantilla, así que el valor era siempre false y no lo consumía nadie.
         this.lastSearchFilters = {
             comerc: document.getElementById('filter-comerc').checked,
-            showBrands: document.getElementById('filter-show-brands')?.checked || false,
             searchType,
         };
         if (!this.filterState) this.filterState = this._emptyFilterState();
@@ -10442,7 +10461,7 @@ ${materialesPlaceholder}
             groupBy: 'activeIngredient', // activeIngredient | route | form | none
             sortBy: 'nameAsc',           // nameAsc | nameDesc | doseAsc | doseDesc
             routeFilters: new Set(),              // Set of selected route names (empty = show all)
-            activeIngredientFilters: new Set(),   // Set of selected PA names (AND semantics)
+            activeIngredientFilters: new Set(),   // Set of selected PA names (OR dentro de la dimensión)
             collapsedGroups: new Set(),           // Set of collapsed group IDs
             expandedGroups: new Set()             // Set of expanded group IDs (for "Ver más")
         };
@@ -11457,7 +11476,7 @@ ${materialesPlaceholder}
             });
         });
 
-        // PA filter chips (AND semantics, Ctrl+click for multi-select)
+        // PA filter chips — OR dentro de la dimensión (Ctrl+clic para multiselección)
         document.querySelectorAll('.pa-chip[data-pa]').forEach(chip => {
             chip.addEventListener('click', (e) => {
                 const pa = chip.dataset.pa;
@@ -13226,14 +13245,17 @@ ${materialesPlaceholder}
     /** Lanza el buscador por principio activo aplicando las preferencias del usuario. */
     _searchEssential(pa) {
         const prefs = this._essentialPrefs();
-        // Fijar filtros antes de renderizar el buscador (los lee performSearch).
-        this.lastSearchFilters = {
-            comerc: true,
-            generic: !!prefs.generic,
-            receta: false,
-            biosimilar: !!prefs.biosimilar,
-            showBrands: false
-        };
+        // Fijar filtros antes de renderizar el buscador. `comerc` es ámbito de la petición;
+        // las preferencias de tipo de producto son facetas de cliente y van a `filterState`,
+        // que es de donde las lee `renderSearch` para marcar las casillas y de donde las
+        // toma después el núcleo de filtrado. Sembrarlas en `lastSearchFilters` dejó de
+        // funcionar al unificar el contrato: allí ya no las lee nadie.
+        this.lastSearchFilters = { comerc: true, searchType: 'smart' };
+        this.filterState = this._emptyFilterState();
+        this.filterState.efgOnly = !!prefs.generic;
+        this.filterState.biosimilarOnly = !!prefs.biosimilar;
+        this.groupingState?.routeFilters?.clear?.();
+        this.groupingState?.activeIngredientFilters?.clear?.();
         this.searchByPA(pa);
     }
 

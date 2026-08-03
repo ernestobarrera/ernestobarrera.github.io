@@ -432,10 +432,13 @@ async function main() {
             const registros = f.registros.map((r) => ({ ...r, presentaciones: cnPorRegistro.get(r.nregistro) || [] }));
             return { ...f, registros, dcp_signal: dcpSignal(registros) };
         }),
-        // Calidad del propio flag `biosimilar` de CIMA. No todo lo que CIMA marca como
-        // biosimilar es un biosimilar autorizado por la EMA: hay registros nacionales y
-        // hasta productos fuera de la lista «Biológicos» de no sustituibles. Quien
-        // construya encima de este flag tiene que saberlo antes, no después.
+        // Alcance del flag `biosimilar` de CIMA. No es un control de calidad: es la
+        // distinción entre DOS afirmaciones que no deben confundirse —
+        //   cima_biosimilar         clasificación publicada por CIMA/AEMPS, que incluye
+        //                           biosimilares nacionales (art. 10.4 Directiva 2001/83)
+        //   ema_biosimilar_confirmed biosimilar centralizado con relación EMA verificada
+        // Sirve para la interfaz si se muestra con su procedencia; no permite inferir
+        // autorización EMA, familia, referente ni intercambiabilidad europea.
         calidad_flag_biosimilar: (() => {
             const bios = registrosPlanos.filter((r) => r.biosimilar);
             const noEma = bios.filter((r) => !r.ema);
@@ -444,7 +447,7 @@ async function main() {
                 total: bios.length,
                 sin_registro_ema: noEma.length,
                 fuera_lista_biologicos_aemps: fueraListaBiologicos.length,
-                nota: '`biosimilar === true` en CIMA no equivale a «biosimilar autorizado por la EMA». Revisar estos casos antes de tratar el flag como criterio regulatorio.',
+                nota: '`biosimilar === true` en CIMA es la clasificación publicada por CIMA/AEMPS, que incluye biosimilares NACIONALES (art. 10.4) además de los centralizados por la EMA. No es un error de CIMA ni permite inferir autorización EMA, familia, referente ni intercambiabilidad europea. Verificado en los IPE de CN 80333 y 80391: ambos condroitín sulfato se clasifican expresamente como biosimilares nacionales con Condrosulf como producto de referencia. Que un producto no esté en la lista de no sustituibles (`nosustituible.id ≠ 1`) tampoco invalida el flag: esa lista es una clasificación jurídica distinta, no una ontología de biológicos.',
                 casos_a_revisar: fueraListaBiologicos.map((r) => ({
                     nregistro: r.nregistro, nombre: r.nombre, ema: r.ema, nosustituible_id: r.nosustituible_id,
                 })),
@@ -540,10 +543,10 @@ function renderMarkdown(p) {
     L.push('');
     if (p.calidad_flag_biosimilar) {
         const q = p.calidad_flag_biosimilar;
-        L.push('## Calidad del flag `biosimilar` de CIMA');
+        L.push('## Alcance del flag `biosimilar` de CIMA');
         L.push('');
         L.push(`- Registros con \`biosimilar=true\`: **${q.total}**`);
-        L.push(`- …sin registro EMA (\`ema=false\`): **${q.sin_registro_ema}**`);
+        L.push(`- …sin registro EMA (\`ema=false\`): **${q.sin_registro_ema}** — biosimilares nacionales, no errores`);
         L.push(`- …fuera de la lista «Biológicos» de no sustituibles (\`nosustituible.id ≠ 1\`): **${q.fuera_lista_biologicos_aemps}**`);
         L.push('');
         L.push(`> ${q.nota}`);
