@@ -43,6 +43,17 @@ const sandbox = {
     Date, Math, JSON, Promise, Map, Set, RegExp, URL, URLSearchParams,
     navigator: { onLine: true },
     location: { search: '', href: '' },
+    // `findStaticATCCategory` lee este árbol; en producción lo aporta cima-api.js, que se
+    // carga antes. Aquí basta un stub de tres niveles para ejercitar la miga de pan.
+    CimaAPI: {
+        ATC_CATEGORIES: [{
+            code: 'N', name: 'Sistema nervioso',
+            subcategories: [{
+                code: 'N02', name: 'Analgésicos',
+                subcategories: [{ code: 'N02B', name: 'Otros analgésicos y antipiréticos' }],
+            }],
+        }],
+    },
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
@@ -247,6 +258,64 @@ check('buscador e Indicaciones usan el mismo serializador de facetas',
     JSON.stringify(ind._facetURLParams()),
     JSON.stringify(appWith({ biosimilar: true, form: 'SOLUCION INYECTABLE', pas: ['epoetina alfa'] })._facetURLParams()));
 
+// --- Ruta ATC: mismo serializador que el resto ---------------------------------
+// Antes `searchByATCCode` escribía `{view, atc, label}` a mano y descartaba las 8
+// facetas y la agrupación; y la rama de restauración de `params.atc` no llamaba a
+// `_restoreFiltersFromURL`, así que un enlace ATC con facetas las perdía en silencio.
+const atc = appWith({ biosimilar: true, form: 'SOLUCION INYECTABLE', doses: ['1000 UI'] });
+atc.currentView = 'indications';
+atc.lastATCCode = 'N02BE';
+atc.lastATCLabel = 'Anilidas';
+check('la ruta ATC serializa código, nombre y facetas',
+    Object.keys(atc._indicationURLParams()).sort(),
+    ['atc', 'biosimilar', 'dose', 'form', 'label', 'view']);
+atc.lastATCLabel = 'N02BE';
+check('el nombre no se emite si coincide con el código',
+    'label' in atc._indicationURLParams(), false);
+
+// Miga de pan: los renderizadores leen `item.name`; la restauración construía `{code,label}`
+// y por eso el breadcrumb restaurado salía sin nombres.
+const bc = atc._atcBreadcrumbFromCode('N02BE', 'Anilidas');
+check('la miga usa `name`, nunca `label`',
+    bc.every((x) => 'name' in x && !('label' in x)), true);
+check('el último nivel toma el nombre legible', bc[bc.length - 1].name, 'Anilidas');
+check('y los niveles son los esperados', bc.map((x) => x.code), ['N', 'N02', 'N02B', 'N02BE']);
+
+// --- Entrada a un universo nuevo: el P1 de la sugerencia -----------------------
+// Secuencia real que rompía: drill-down ATC → sugerencia del autocomplete → tocar una
+// faceta. El ATC viejo tiene precedencia en `_indicationURLParams()`, así que la URL
+// anunciaba un universo distinto del mostrado.
+const seq = appWith({ biosimilar: true, form: 'SOLUCION INYECTABLE', pas: ['epoetina alfa'] });
+seq.currentView = 'indications';
+seq._syncTopFilterCheckboxes = function () {};
+seq._enterIndicationUniverse({ atcCode: 'N02BE', label: 'Anilidas', query: 'Anilidas' });
+check('tras el drill-down la URL lleva el ATC', 'atc' in seq._indicationURLParams(), true);
+seq._enterIndicationUniverse({ atcCode: null, query: 'migraña' });
+const trasSugerencia = seq._indicationURLParams();
+check('tras la sugerencia la URL lleva la indicación y NO el ATC',
+    [trasSugerencia.indication, 'atc' in trasSugerencia], ['migraña', false]);
+// Se limpian las facetas del universo anterior (forma, lab, dosis, vía, PA), que sobre un
+// conjunto distinto producían ceros inexplicables. El ÁMBITO (tipo de producto, receta)
+// sobrevive, que es justo la distinción que fija `_resetResultFilters`.
+const trasSnap = seq._filterSnapshot();
+check('las facetas del universo ATC anterior quedaron limpias',
+    [trasSnap.form, trasSnap.lab, trasSnap.doses.size, trasSnap.routes.size, trasSnap.pas.size],
+    [null, null, 0, 0, 0]);
+check('…y el ámbito sobrevive al cambio de universo', trasSnap.biosimilar, true);
+// Autoverificación: el comportamiento antiguo (no limpiar el ATC) seguiría escribiéndolo.
+const viejo = appWith({});
+viejo.currentView = 'indications';
+viejo.lastATCCode = 'N02BE';
+viejo.lastIndicationQuery = 'migraña';
+check('el detector cazaría la regresión (ATC obsoleto con precedencia)',
+    'atc' in viejo._indicationURLParams(), true);
+
+// `preserveFilters` respeta lo que acaba de leerse del enlace.
+const preserva = appWith({ biosimilar: true, form: 'SOLUCION INYECTABLE' });
+preserva._syncTopFilterCheckboxes = function () {};
+preserva._enterIndicationUniverse({ atcCode: 'N02BE', label: 'Anilidas', preserveFilters: true });
+check('preserveFilters no limpia las facetas', preserva._activeFilterCount(), 2);
+
 // Round-trip cuando NO hay facetas: la URL no debe arrastrar claves vacías.
 const limpio = appWith({});
 limpio.currentView = 'search';
@@ -307,6 +376,14 @@ check('no vuelven los envoltorios muertos del contrato',
     /_apply(PA|Route)Filter\s*\(/.test(sinComentarios), false);
 check('no vuelve la paginación muerta',
     /loadMoreResults|resultsDisplayedCount/.test(sinComentarios), false);
+// La ruta ATC no puede volver a construir su URL a mano ni a perder la miga de pan.
+check('searchByATCCode no escribe la URL a mano',
+    /updateURL\(\{\s*view:\s*'indications'/.test(sinComentarios), false);
+check('no quedan onclick inline de searchByATCCode',
+    /onclick="app\.searchByATCCode/.test(sinComentarios), false);
+// Las tres ramas de restauración leen las facetas del enlace: buscador, indicación y ATC.
+check('las 3 ramas de restauración llaman a _restoreFiltersFromURL',
+    (fuente.match(/this\._restoreFiltersFromURL\(params\)/g) || []).length, 3);
 
 console.log('\n— Autoverificación: ¿los detectores cazan la regresión conocida? —');
 // Un detector que nunca ha demostrado detectar nada no es una red de seguridad, es

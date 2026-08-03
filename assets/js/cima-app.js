@@ -163,6 +163,9 @@ class MedCheckApp {
         // ATC navigation state for proper back navigation
         this.lastATCBreadcrumb = [];
         this.lastATCCode = '';
+        // Nombre legible del grupo ATC, simétrico de `lastATCCode`. Sin él, una URL de
+        // drill-down restaurada mostraba el código crudo ("N02BE") en la cabecera.
+        this.lastATCLabel = '';
 
         // Multi-drug lists
         this.interactionsDrugList = [];
@@ -2867,9 +2870,13 @@ class MedCheckApp {
         // Category card click handlers - clear search state when using ATC navigation
         document.querySelectorAll('.atc-category-card').forEach(card => {
             card.addEventListener('click', () => {
-                // Clear previous search state when navigating via ATC
+                // Clear previous search state when navigating via ATC. También el ATC
+                // anterior: si no, desde este panel (que aún no tiene resultados) un cierre
+                // de modal serializaría un `?atc=` obsoleto.
                 this.lastIndicationQuery = '';
                 this.lastIndicationResults = null;
+                this.lastATCCode = null;
+                this.lastATCLabel = '';
                 searchInput.value = '';
                 this.showATCSubcategories(card.dataset.atc);
             });
@@ -3087,12 +3094,17 @@ class MedCheckApp {
      */
     async _runIndicationSuggestion(match) {
         const label = match.label || match.term;
+        // `term` es la clave del diccionario; `label` es el rótulo farmacológico. Solo el
+        // primero sirve para el estado y la URL: verificado que 0 de las 168 entradas de
+        // clinical-ontology.json tienen un `label` que sea también clave, así que
+        // serializar el label producía `noMatch` al abrir el enlace.
+        const query = match.term || label;
         const atcCodes = Array.isArray(match.atc) ? match.atc : [match.atc];
         const hasSectionFilter = !!(match.section41Filter || match.sectionFilter);
 
         // Sin filtro 4.1: comportamiento previo (unión de grupos ATC).
         if (!hasSectionFilter) {
-            return this._searchMultipleATCs(atcCodes, label);
+            return this._searchMultipleATCs(atcCodes, label, query);
         }
 
         // Con filtro 4.1: mismo camino que teclear + Enter, para que el resultado sea coherente.
@@ -3104,14 +3116,17 @@ class MedCheckApp {
             </div>
         `;
 
+        // `atcCode: null` — una sugerencia NO es drill-down ATC. Sin esto, tras un
+        // drill-down el `lastATCCode` anterior sobrevivía y, como tiene precedencia en
+        // `_indicationURLParams()`, la URL anunciaba un universo distinto del mostrado.
+        this._enterIndicationUniverse({ atcCode: null, query });
+
         try {
             const data = await this.api._executeIndicationSearch(match, { comercializados: true });
-            this.groupingState.collapsedGroups.clear();
-            this.groupingState.expandedGroups.clear();
-            this.lastIndicationQuery = label;
             this.lastIndicationResults = data;
             this.displayIndicationResults(data, label);
             this._warnUnverifiedSectionFilter(data);
+            this._commitIndicationURL();
         } catch (error) {
             this.handleSearchError(resultsContainer, error);
         }
@@ -3134,7 +3149,17 @@ class MedCheckApp {
      * Used for clinical syndromes that span multiple ATCs
      * @private
      */
-    async _searchMultipleATCs(atcCodes, label) {
+    /**
+     * Unión de varios grupos ATC (sugerencia sin filtro 4.1).
+     *
+     * NO fija `lastATCCode` a propósito: una unión de varios grupos no es representable
+     * con el parámetro `atc`, que es singular. Fijarlo haría que la URL anunciase un
+     * universo MÁS ESTRECHO que el mostrado — la misma clase de mentira que este trabajo
+     * corrige. Se serializa como `indication=<término>`, que al restaurar re-ejecuta la
+     * misma ruta del diccionario.
+     */
+    async _searchMultipleATCs(atcCodes, label, query = null) {
+        this._enterIndicationUniverse({ atcCode: null, query: query || label });
         const resultsContainer = document.getElementById('indication-results');
         resultsContainer.innerHTML = `
             <div class="text-center p-xl">
@@ -3166,11 +3191,9 @@ class MedCheckApp {
                 matchedIndication: { label, atc: atcCodes }
             };
 
-            this.groupingState.collapsedGroups.clear();
-            this.groupingState.expandedGroups.clear();
-            this.lastIndicationQuery = label;
             this.lastIndicationResults = data;
             this.displayIndicationResults(data, label);
+            this._commitIndicationURL();
 
         } catch (error) {
             this.handleSearchError(resultsContainer, error);
@@ -3233,7 +3256,7 @@ class MedCheckApp {
                         ${breadcrumbHtml}
                     </div>
                     <div class="subcat-actions">
-                        <button class="btn btn-primary" onclick="app.searchByATCCode('${atcCode}', '${categoryName.replace(/'/g, "\\'")}')">
+                        <button class="btn btn-primary" class="subcat-search-all" data-atc="${atcCode}" data-name="${this._escapeHtml(categoryName)}">
                             <i class="fas fa-search"></i> Ver todos: ${categoryName}
                         </button>
                     </div>
@@ -3248,6 +3271,14 @@ class MedCheckApp {
             resultsContainer.querySelectorAll('.atc-subcategory-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     self.showATCSubcategories(btn.dataset.atc, currentBreadcrumb);
+                });
+            });
+            // "Ver todos": antes era un onclick inline que llamaba a searchByATCCode con el
+            // breadcrumb por defecto [], de modo que la miga de pan se perdía entera. Aquí
+            // `currentBreadcrumb` ya está en ámbito.
+            resultsContainer.querySelectorAll('.subcat-search-all').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    self.searchByATCCode(btn.dataset.atc, btn.dataset.name, currentBreadcrumb);
                 });
             });
             return;
@@ -3299,7 +3330,7 @@ class MedCheckApp {
                             ${breadcrumbHtml}
                         </div>
                         <div class="subcat-actions">
-                            <button class="btn btn-primary" onclick="app.searchByATCCode('${atcCode}', '${categoryName.replace(/'/g, "\\'")}')">
+                            <button class="btn btn-primary" class="subcat-search-all" data-atc="${atcCode}" data-name="${this._escapeHtml(categoryName)}">
                                 <i class="fas fa-search"></i> Ver medicamentos: ${categoryName}
                             </button>
                         </div>
@@ -3314,6 +3345,14 @@ class MedCheckApp {
                 resultsContainer.querySelectorAll('.atc-subcategory-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
                         self.showATCSubcategories(btn.dataset.atc, currentBreadcrumb);
+                    });
+                });
+                // "Ver todos": antes era un onclick inline que llamaba a searchByATCCode con el
+                // breadcrumb por defecto [], de modo que la miga de pan se perdía entera. Aquí
+                // `currentBreadcrumb` ya está en ámbito.
+                resultsContainer.querySelectorAll('.subcat-search-all').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        self.searchByATCCode(btn.dataset.atc, btn.dataset.name, currentBreadcrumb);
                     });
                 });
             } else {
@@ -3347,7 +3386,7 @@ class MedCheckApp {
                                 </div>
                                 <p class="text-muted text-xs mb-md">Subcategorías derivadas de ${searchResults.resultados.length} medicamentos encontrados</p>
                                 <div class="subcat-actions">
-                                    <button class="btn btn-primary" onclick="app.searchByATCCode('${atcCode}', '${categoryName.replace(/'/g, "\\'")}')">
+                                    <button class="btn btn-primary" class="subcat-search-all" data-atc="${atcCode}" data-name="${this._escapeHtml(categoryName)}">
                                         <i class="fas fa-search"></i> Ver todos: ${searchResults.resultados.length} medicamentos
                                     </button>
                                 </div>
@@ -3362,6 +3401,14 @@ class MedCheckApp {
                         resultsContainer.querySelectorAll('.atc-subcategory-btn').forEach(btn => {
                             btn.addEventListener('click', () => {
                                 self.showATCSubcategories(btn.dataset.atc, currentBreadcrumb);
+                            });
+                        });
+                        // "Ver todos": antes era un onclick inline que llamaba a searchByATCCode con el
+                        // breadcrumb por defecto [], de modo que la miga de pan se perdía entera. Aquí
+                        // `currentBreadcrumb` ya está en ámbito.
+                        resultsContainer.querySelectorAll('.subcat-search-all').forEach(btn => {
+                            btn.addEventListener('click', () => {
+                                self.searchByATCCode(btn.dataset.atc, btn.dataset.name, currentBreadcrumb);
                             });
                         });
                         return;
@@ -3430,10 +3477,86 @@ class MedCheckApp {
         </div>`;
     }
 
-    async searchByATCCode(atcCode, label, breadcrumb = []) {
-        // Save navigation state for back button
-        this.lastATCCode = atcCode;
-        this.lastATCBreadcrumb = breadcrumb;
+    // ============================================
+    // Entrada a un universo nuevo de la vista Indicaciones
+    // ============================================
+    //
+    // Hay ~19 caminos para llegar a un listado de Indicaciones (texto, chips rápidos,
+    // catálogo, autocomplete, drill-down ATC, breadcrumb, restauración desde URL). Cada
+    // uno declaraba su estado por su cuenta, y dos no lo declaraban en absoluto: las dos
+    // rutas del autocomplete no limpiaban `lastATCCode`, así que tras un drill-down ATC
+    // seguido de una sugerencia, la URL anunciaba el ATC anterior —un universo distinto
+    // del que se estaba viendo— y las facetas del ATC previo seguían aplicadas sobre
+    // resultados nuevos, con ceros inexplicables.
+    //
+    // Se parte en dos a propósito, y la separación es funcional, no estética:
+    //   `_enterIndicationUniverse` va ANTES de la petición, para que un fallo de red no
+    //   deje medio estado escrito.
+    //   `_commitIndicationURL` va DESPUÉS del render, para que la URL solo anuncie un
+    //   estado que se materializó. En la rama `catch` no se llama.
+
+    /**
+     * @param {Object} o
+     * @param {string|null} o.atcCode - código ATC si es drill-down; `null` si es indicación
+     * @param {string} [o.label] - nombre legible (cabecera). NO se usa como consulta.
+     * @param {string} [o.query] - término del diccionario que se serializa en la URL
+     * @param {Array} [o.breadcrumb]
+     * @param {boolean} [o.preserveFilters] - al restaurar desde un enlace
+     */
+    _enterIndicationUniverse({ atcCode = null, label = '', query = null, breadcrumb = [], preserveFilters = false } = {}) {
+        this.lastATCCode = atcCode || null;
+        this.lastATCLabel = atcCode ? (label || '') : '';
+        this.lastATCBreadcrumb = atcCode ? breadcrumb : [];
+        // `query` es lo que se serializa y lo que re-ejecuta la búsqueda al restaurar, así
+        // que tiene que ser un TÉRMINO del diccionario. Verificado contra
+        // clinical-ontology.json: 0 de las 168 entradas tienen un `label` que sea también
+        // clave, así que serializar el label daba `noMatch` al abrir el enlace.
+        this.lastIndicationQuery = query || label || '';
+        if (!preserveFilters) this._resetResultFilters();
+        this.groupingState?.collapsedGroups?.clear?.();
+        this.groupingState?.expandedGroups?.clear?.();
+    }
+
+    /** Escribe la URL de Indicaciones. Solo tras un render con éxito. */
+    _commitIndicationURL({ replace = false } = {}) {
+        if (this.isPopstateNavigation) return;
+        this.updateURL(this._indicationURLParams(), { replace });
+    }
+
+    /**
+     * Construye la miga de pan de un código ATC. Puro: es la pieza testeable sin DOM.
+     *
+     * Estandariza en `{code, name}`: la rama de restauración construía `{code, label}` y
+     * los dos renderizadores leen `item.name`, así que el breadcrumb restaurado salía sin
+     * nombres. De paso rellena los niveles intermedios desde el árbol estático, que antes
+     * tampoco aparecían.
+     */
+    _atcBreadcrumbFromCode(atcCode, label) {
+        const code = String(atcCode || '');
+        const out = [];
+        for (let i = 1; i <= code.length; i += 1) {
+            // Saltar códigos parciales intermedios sin significado (N0, N02B sin la E)
+            if (i !== 1 && i !== 3 && i !== 4 && i !== 5 && i < 7) continue;
+            const partial = code.slice(0, i);
+            const isLast = i === code.length;
+            const name = isLast
+                ? (label || partial)
+                : (this.findStaticATCCategory?.(partial)?.name || partial);
+            out.push({ code: partial, name });
+        }
+        return out;
+    }
+
+    /**
+     * @param {Object} [options]
+     * @param {boolean} [options.preserveFilters] - conservar las facetas (restauración)
+     * @param {boolean} [options.fromURL] - reemplazar la entrada de historial en vez de apilar
+     */
+    async searchByATCCode(atcCode, label, breadcrumb = [], options = {}) {
+        this._enterIndicationUniverse({
+            atcCode, label, query: label, breadcrumb,
+            preserveFilters: !!options.preserveFilters,
+        });
 
         const resultsContainer = document.getElementById('indication-results');
         resultsContainer.innerHTML = `
@@ -3449,17 +3572,14 @@ class MedCheckApp {
             // Create a synthetic matchedIndication for display
             data.matchedIndication = { label, atc: atcCode };
 
-            this.groupingState.collapsedGroups.clear();
-            this.groupingState.expandedGroups.clear();
-            this.lastIndicationQuery = label;
             this.lastIndicationResults = data;
 
             this.displayIndicationResults(data, label);
 
-            // Update URL with ATC code
-            if (!this.isPopstateNavigation) {
-                this.updateURL({ view: 'indications', atc: atcCode, label: label });
-            }
+            // Serializador único: antes esta ruta escribía `{view, atc, label}` a mano y
+            // descartaba las 8 facetas y la agrupación. Un drill-down es navegación, así
+            // que apila; una restauración desde enlace reemplaza, para no apilar sobre sí.
+            this._commitIndicationURL({ replace: !!options.fromURL });
         } catch (error) {
             this.handleSearchError(resultsContainer, error);
         }
@@ -3478,21 +3598,17 @@ class MedCheckApp {
             return;
         }
 
-        // Mismo criterio que el buscador: solo una consulta realmente nueva reinicia las
-        // facetas de resultado (ver `_resetResultFilters`).
-        if (query !== this.lastIndicationQuery && !options.preserveFilters) {
-            this._resetResultFilters();
-        }
-
         // Hide autocomplete
         document.getElementById('autocomplete-results').classList.add('hidden');
 
-        // Clear ATC navigation state when doing text search (not ATC drill-down)
-        this.lastATCCode = null;
-        this.lastATCBreadcrumb = [];
-
-        // Save query for persistence
-        this.lastIndicationQuery = query;
+        // Una búsqueda de texto entra en un universo nuevo y NO es drill-down ATC:
+        // `atcCode: null` limpia el estado de navegación ATC. Mismo criterio que el
+        // buscador: solo una consulta realmente nueva reinicia las facetas.
+        this._enterIndicationUniverse({
+            atcCode: null,
+            query,
+            preserveFilters: !!options.preserveFilters || query === this.lastIndicationQuery,
+        });
 
         const resultsContainer = document.getElementById('indication-results');
         resultsContainer.innerHTML = `
@@ -3509,6 +3625,10 @@ class MedCheckApp {
                 // Varios candidatos empatados con planes ATC/4.1 distintos: elige el usuario.
                 // Nunca se ejecuta una lista farmacológica en silencio sobre un término ambiguo.
                 this.lastIndicationResults = null;
+                // Sin resultados NO hay universo que anunciar: si `lastIndicationQuery`
+                // se quedara puesto, cerrar el modal después serializaría un término
+                // que no devuelve nada.  `_commitIndicationURL` no se llama aquí.
+                this.lastIndicationQuery = '';
                 resultsContainer.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-code-branch" style="color: var(--warning);"></i>
@@ -3551,6 +3671,10 @@ class MedCheckApp {
 
             if (!data.resultados || data.resultados.length === 0) {
                 this.lastIndicationResults = null;
+                // Sin resultados NO hay universo que anunciar: si `lastIndicationQuery`
+                // se quedara puesto, cerrar el modal después serializaría un término
+                // que no devuelve nada.  `_commitIndicationURL` no se llama aquí.
+                this.lastIndicationQuery = '';
                 resultsContainer.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-search-minus"></i>
@@ -3561,9 +3685,7 @@ class MedCheckApp {
                 return;
             }
 
-            // Save for persistence
-            this.groupingState.collapsedGroups.clear();
-            this.groupingState.expandedGroups.clear();
+            // Save for persistence (los grupos ya los limpió `_enterIndicationUniverse`)
             this.lastIndicationResults = data;
 
             this.displayIndicationResults(data, query);
@@ -3571,9 +3693,7 @@ class MedCheckApp {
 
             // La búsqueda por indicación pasa a tener URL propia: hasta ahora esta vista no
             // serializaba nada, así que ni se podía compartir ni sobrevivía a una recarga.
-            if (!this.isPopstateNavigation) {
-                this.updateURL(this._indicationURLParams());
-            }
+            this._commitIndicationURL();
 
         } catch (error) {
             console.error('Indication search error:', error);
@@ -8403,7 +8523,11 @@ class MedCheckApp {
 
 
     navigateToATCFromModal(atcCode, atcName) {
-        this.closeModal();
+        // Se cierra el modal SIN sincronizar la URL: `closeModal` escribe con push el
+        // estado viejo, y la línea siguiente ya va a escribir la URL correcta. Sin esto
+        // quedaba una entrada de historial espuria con el universo anterior.
+        this.modal.classList.add('hidden');
+        this.currentMed = null;
         this.loadView('indications').then(() => {
             this.searchByATCCode(atcCode, atcName, [{ code: atcCode, name: atcName }]);
         });
@@ -11687,8 +11811,15 @@ ${materialesPlaceholder}
      */
     _indicationURLParams() {
         const params = { view: 'indications' };
-        if (this.lastATCCode) params.atc = this.lastATCCode;
-        else if (this.lastIndicationQuery) params.indication = this.lastIndicationQuery;
+        if (this.lastATCCode) {
+            params.atc = this.lastATCCode;
+            // El nombre legible solo si aporta algo: `?atc=N02BE&label=N02BE` es ruido.
+            if (this.lastATCLabel && this.lastATCLabel !== this.lastATCCode) {
+                params.label = this.lastATCLabel;
+            }
+        } else if (this.lastIndicationQuery) {
+            params.indication = this.lastIndicationQuery;
+        }
         if (!params.atc && !params.indication) return { ...params, ...this._groupingURLParams() };
         return { ...params, ...this._facetURLParams(), ...this._groupingURLParams() };
     }
@@ -11898,24 +12029,19 @@ ${materialesPlaceholder}
         if (targetView === 'indications' && params.atc) {
             await this.loadView('indications', false);
 
-            // Build breadcrumb from ATC code levels
             const atcCode = params.atc.toUpperCase();
-            const breadcrumb = [];
+            // `params.label` viene de la URL y acaba en `innerHTML` a través de
+            // `data.matchedIndication.label`. Se sanea y se acota: es texto de terceros.
+            const label = this._escapeHtml(String(params.label || '').slice(0, 120))
+                || this.findStaticATCCategory?.(atcCode)?.name
+                || atcCode;
+            const breadcrumb = this._atcBreadcrumbFromCode(atcCode, label);
 
-            // Build breadcrumb progressively: N -> N02 -> N02B -> N02BE
-            for (let i = 1; i <= atcCode.length; i++) {
-                const partialCode = atcCode.substring(0, i);
-                // Skip intermediate partial codes (e.g., N0, N02B without E)
-                if (i === 1 || i === 3 || i === 4 || i === 5 || i >= 7) {
-                    breadcrumb.push({ code: partialCode, label: partialCode });
-                }
-            }
-
-            // Get label from params or use ATC code
-            const label = params.label || atcCode;
-
-            // Perform ATC search
-            this.searchByATCCode(atcCode, label, breadcrumb);
+            // Las facetas del enlace se restauran ANTES de buscar, y la búsqueda se lanza
+            // con `preserveFilters` para no borrarlas justo después de leerlas. Mismo orden
+            // que las otras dos ramas de restauración.
+            this._restoreFiltersFromURL(params);
+            this.searchByATCCode(atcCode, label, breadcrumb, { preserveFilters: true, fromURL: true });
             return;
         }
 
