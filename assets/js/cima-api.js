@@ -2732,6 +2732,41 @@ class CimaAPI {
         }
     }
 
+    /**
+     * Conteo y desglose de ClinicalTrials.gov (registro de EEUU, NIH/FDA).
+     * Pasa por el Worker porque la API v2 no manda cabeceras CORS (verificado 2026-08-17),
+     * igual que REec. El Worker devuelve { ok, count, desglose, publicUrl, desgloseOmitido }.
+     * @param {string} query - término, en inglés simple (el canónico del panel de evidencia)
+     */
+    async searchCtgovStudies(query, options = {}) {
+        const term = String(query || '').replace(/\s+/g, ' ').trim();
+        if (term.length < 2 || !this.cloudflareProxy) return null;
+
+        const endpoint = `/ctgov/search?${new URLSearchParams({ q: term }).toString()}`;
+        const cacheKey = `ctgov:${endpoint}`;
+        if (this._hasValidCache(cacheKey)) {
+            return this.cache.get(cacheKey).data;
+        }
+
+        try {
+            const response = await fetch(`${this.cloudflareProxy}${endpoint}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    ...(window._mcCurrentView ? { 'X-MC-View': window._mcCurrentView } : {}),
+                    ...(window._mcSource ? { 'X-MC-Source': window._mcSource } : {}),
+                    ...(options.autocomplete ? { 'X-MC-Autocomplete': '1' } : {}),
+                }
+            });
+            if (!response.ok) throw new Error(`ClinicalTrials.gov Error: ${response.status}`);
+            const data = await response.json();
+            this._setCache(cacheKey, data);
+            return data;
+        } catch (error) {
+            console.warn('⚠️ ClinicalTrials.gov no disponible:', error.message);
+            return null;
+        }
+    }
+
 
     // ============================================
     // MAESTROS / CATÁLOGOS

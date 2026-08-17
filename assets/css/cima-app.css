@@ -9466,7 +9466,9 @@ code {
     background: rgba(14, 165, 233, 0.05);
 }
 
-/* ── REec: chips de estadísticas y lista de estudios enlazados ── */
+/* ── Registros de ensayos: chips de estadísticas y lista de estudios enlazados ──
+   Las clases nacieron para REec y las comparte ClinicalTrials.gov desde 2026-08-17
+   (#evidence-ctgov-stats). El nombre se conserva para no tocar dos capas por estética. */
 .evidence-reec-stats {
     display: flex;
     flex-wrap: wrap;

@@ -15319,9 +15319,15 @@ ${materialesPlaceholder}
         ];
         const EV_RANGE_DEFAULT = 4;
 
-        const resetCounts = () => document.querySelectorAll('[id^="evcount-"]:not(#evcount-reec)').forEach(el => {
-            el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
-        });
+        // Solo se resetean los contadores de PubMed. REec y ClinicalTrials.gov quedan fijados al
+        // término canónico del render y NO reaccionan al campo editable ni al deslizador de fechas
+        // (ver comentario del campo, más abajo): resetearlos los dejaría girando para siempre,
+        // porque nadie los vuelve a cargar.
+        const resetCounts = () => document
+            .querySelectorAll('[id^="evcount-"]:not(#evcount-reec):not(#evcount-ct)')
+            .forEach(el => {
+                el.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
+            });
         const getCurrentTerm = () => document.getElementById('evidence-drug-input')?.value.trim() || pubmedTerm;
         const getCurrentDays = () => {
             const s = document.getElementById('evidence-date-slider');
@@ -15442,13 +15448,15 @@ ${materialesPlaceholder}
                     <a class="evidence-filter-item" id="evlink-ct" href="https://clinicaltrials.gov/search?term=${enc(canonicalEnTerm)}&viewType=Table" target="_blank" rel="noopener" title="Registro de ensayos de EEUU (FDA / NIH)">
                         <span class="evidence-filter-icon"><i class="fas fa-flag-usa"></i></span>
                         <span class="evidence-filter-label">ClinicalTrials.gov</span>
-                        <span class="evidence-filter-count evidence-filter-count--static"><span class="evidence-filter-badge-ext">EEUU · FDA/NIH</span></span>
+                        <span class="evidence-filter-info"><i class="fas fa-info-circle evidence-info-icon" title="Conteo de la API oficial del registro (NIH/FDA) con la MISMA consulta que abre el enlace, para que el número y lo que veas al pulsar coincidan. El desglose usa los valores del propio registro: tipo de estudio, fase declarada y estado de reclutamiento."></i></span>
+                        <span class="evidence-filter-count" id="evcount-ct"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
                         <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
                     </a>
-                    <a class="evidence-filter-item" id="evlink-who" href="https://trialsearch.who.int/?SearchTerm=${enc(canonicalEnTerm)}" target="_blank" rel="noopener" title="Registro Internacional de Ensayos Clínicos (OMS / ICTRP)">
+                    <div class="evidence-reec-stats" id="evidence-ctgov-stats"></div>
+                    <a class="evidence-filter-item" id="evlink-who" href="https://trialsearch.who.int/?SearchTerm=${enc(canonicalEnTerm)}" target="_blank" rel="noopener" title="Plataforma de la OMS que AGREGA los registros nacionales (ClinicalTrials.gov incluido). No expone API pública, así que aquí no lleva contador: se abre y se consulta en su web.">
                         <span class="evidence-filter-icon"><i class="fas fa-globe-europe"></i></span>
                         <span class="evidence-filter-label">WHO ICTRP</span>
-                        <span class="evidence-filter-count evidence-filter-count--static"><span class="evidence-filter-badge-ext">OMS · Internacional</span></span>
+                        <span class="evidence-filter-count evidence-filter-count--static"><span class="evidence-filter-badge-ext">Metarregistro · agrega otros</span></span>
                         <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
                     </a>
                 </div>
@@ -15469,6 +15477,7 @@ ${materialesPlaceholder}
         // Carga inicial con rango por defecto (5 años)
         this._loadEvidenceFiltersAndCount(pubmedTerm, filterDefs, EV_RANGES[EV_RANGE_DEFAULT].days);
         this._loadReecCount(canonicalEsTerm);
+        this._loadCtgovCount(canonicalEnTerm);
 
         const slider = document.getElementById('evidence-date-slider');
         const dateLabel = document.getElementById('evidence-date-label');
@@ -15670,6 +15679,98 @@ ${materialesPlaceholder}
             : '';
 
         studiesEl.innerHTML = orderNote + rows + footer;
+    }
+
+    /**
+     * Contador y desglose de ClinicalTrials.gov. Mismo patrón que _loadReecCount: si el registro
+     * no responde, se vuelve a la insignia estática — nunca se pinta un cero que no se ha medido.
+     *
+     * Las etiquetas del registro llegan en inglés y en MAYÚSCULAS (INTERVENTIONAL, PHASE3,
+     * ACTIVE_NOT_RECRUITING). Se traducen para leerlas, pero SIN reagrupar: cada valor del
+     * registro es un chip, y lo que el registro no define no se pinta.
+     */
+    async _loadCtgovCount(drugTerm) {
+        const query = String(drugTerm || '').replace(/\s+/g, ' ').trim();
+        const countEl = document.getElementById('evcount-ct');
+        const statsEl = document.getElementById('evidence-ctgov-stats');
+
+        const applyStaticFallback = () => {
+            if (countEl) countEl.innerHTML = '<span class="evidence-filter-badge-ext">EEUU · FDA/NIH</span>';
+            if (statsEl) statsEl.innerHTML = '';
+        };
+
+        if (!query || query.length < 2) { applyStaticFallback(); return; }
+
+        const cycleId = (this._ctgovCountCycle = (this._ctgovCountCycle || 0) + 1);
+        const data = await this.api.searchCtgovStudies(query);
+        if (this._ctgovCountCycle !== cycleId) return;
+
+        const n = Number.isFinite(data?.count) ? data.count : null;
+        if (n === null) { applyStaticFallback(); return; }
+
+        const clsTotal = n === 0 ? 'evidence-count-badge evidence-count-badge--zero' : 'evidence-count-badge';
+        if (countEl) {
+            countEl.innerHTML = `<span class="${clsTotal}" title="Estudios registrados en ClinicalTrials.gov para esta consulta.">${n.toLocaleString('es-ES')}</span>`;
+        }
+        if (!statsEl) return;
+
+        // Desglose ausente: o no hay estudios, o eran demasiados para contarlos sin muestrear.
+        // En el segundo caso se DICE, en vez de enseñar un desglose parcial junto a un total exacto.
+        if (!data.desglose) {
+            statsEl.innerHTML = data.desgloseOmitido
+                ? `<span class="evidence-reec-chip evidence-reec-chip--zero" title="${this._escapeHtml(data.desgloseOmitido)}">
+                       <i class="fas fa-circle-info"></i>Desglose no disponible para este volumen
+                   </span>`
+                : '';
+            return;
+        }
+
+        const TIPO = {
+            INTERVENTIONAL: 'Intervencionales',
+            OBSERVATIONAL: 'Observacionales',
+            EXPANDED_ACCESS: 'Acceso expandido',
+        };
+        const FASE = {
+            EARLY_PHASE1: 'Fase 1 temprana', PHASE1: 'Fase 1', PHASE2: 'Fase 2',
+            PHASE3: 'Fase 3', PHASE4: 'Fase 4', NA: 'Sin fase aplicable',
+        };
+        const ESTADO = {
+            RECRUITING: 'Reclutando', NOT_YET_RECRUITING: 'Aún sin reclutar',
+            ENROLLING_BY_INVITATION: 'Reclutando por invitación',
+            ACTIVE_NOT_RECRUITING: 'Activo sin reclutar', COMPLETED: 'Completados',
+            SUSPENDED: 'Suspendidos', TERMINATED: 'Interrumpidos', WITHDRAWN: 'Retirados',
+            UNKNOWN: 'Estado desconocido', AVAILABLE: 'Disponible',
+            NO_LONGER_AVAILABLE: 'Ya no disponible', APPROVED_FOR_MARKETING: 'Autorizado para comercialización',
+            WITHHELD: 'Retenido', TEMPORARILY_NOT_AVAILABLE: 'Temporalmente no disponible',
+        };
+        // Un valor que el registro añada mañana y no esté en las tablas se muestra tal cual,
+        // legible aunque en inglés. Nunca se descarta: silenciarlo sería perder un dato real.
+        const etiquetar = (dicc, clave) => dicc[clave]
+            || clave.toLowerCase().replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+
+        const chip = (icono, texto, valor, titulo = '') =>
+            `<span class="evidence-reec-chip ${valor === 0 ? 'evidence-reec-chip--zero' : ''}"${titulo ? ` title="${this._escapeHtml(titulo)}"` : ''}>
+                <i class="fas ${icono}"></i>${this._escapeHtml(texto)}: <strong>${valor.toLocaleString('es-ES')}</strong>
+            </span>`;
+
+        const d = data.desglose;
+        const chipsTipo = d.tipo.map(x => chip('fa-flask', etiquetar(TIPO, x.clave), x.n)).join('');
+        // Solo los intervencionales declaran fase, así que las fases NO suman el total: se dice
+        // en el tooltip en vez de dejar que el usuario deduzca que faltan estudios.
+        const notaFase = d.nota_fase || '';
+        const chipsFase = d.fase.map(x => chip('fa-layer-group', etiquetar(FASE, x.clave), x.n, notaFase)).join('');
+        // El estado tiene cola larga (14 valores posibles): se enseñan los 4 más frecuentes y el
+        // resto se agrupa en uno que dice cuántos son, sin ocultarlos.
+        const topEstado = d.estado.slice(0, 4);
+        const restoEstado = d.estado.slice(4);
+        const sumaResto = restoEstado.reduce((a, x) => a + x.n, 0);
+        const chipsEstado = topEstado.map(x => chip('fa-signal', etiquetar(ESTADO, x.clave), x.n)).join('')
+            + (sumaResto > 0
+                ? chip('fa-ellipsis', `Otros ${restoEstado.length} estados`, sumaResto,
+                    restoEstado.map(x => `${etiquetar(ESTADO, x.clave)}: ${x.n}`).join(' · '))
+                : '');
+
+        statsEl.innerHTML = chipsTipo + chipsFase + chipsEstado;
     }
 
     async _loadEvidenceFiltersAndCount(drugTerm, filterDefs, dateDays) {
