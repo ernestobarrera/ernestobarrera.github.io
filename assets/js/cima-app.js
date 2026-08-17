@@ -15708,9 +15708,14 @@ ${materialesPlaceholder}
         const n = Number.isFinite(data?.count) ? data.count : null;
         if (n === null) { applyStaticFallback(); return; }
 
-        const clsTotal = n === 0 ? 'evidence-count-badge evidence-count-badge--zero' : 'evidence-count-badge';
+        // El total NO se pinta como la insignia de los filtros de PubMed: allí el número cuenta
+        // una casilla que se marca aquí dentro, y aquí es un enlace que se va al registro. Dos
+        // cosas distintas no deben verse igual, o la insignia deja de significar nada.
+        const clsTotal = n === 0 ? 'evidence-count-open evidence-count-open--zero' : 'evidence-count-open';
         if (countEl) {
-            countEl.innerHTML = `<span class="${clsTotal}" title="Estudios registrados en ClinicalTrials.gov para esta consulta.">${n.toLocaleString('es-ES')}</span>`;
+            countEl.innerHTML = `<span class="${clsTotal}" title="Abre estos ${n.toLocaleString('es-ES')} estudios en ClinicalTrials.gov.">`
+                + `<span class="evidence-count-open-n">${n.toLocaleString('es-ES')}</span>`
+                + `<i class="fas fa-arrow-up-right-from-square evidence-count-open-ico"></i></span>`;
         }
         if (!statsEl) return;
 
@@ -15784,17 +15789,47 @@ ${materialesPlaceholder}
         };
 
         const d = data.desglose;
+
+        // Los chips se agrupan por EJE, cada uno con su denominador a la vista. En una sola fila
+        // corrida los tres ejes se leen como una lista y la suma sale muy por encima del total
+        // —12 chips para 16 estudios—, que es justo lo que hace desconfiar del número. Cada grupo
+        // dice sobre cuántos estudios está contando.
+        const grupo = (titulo, denominador, chips) => !chips ? '' :
+            `<div class="evidence-ctgov-group">
+                <div class="evidence-ctgov-group-head">
+                    <span class="evidence-ctgov-group-title">${this._escapeHtml(titulo)}</span>
+                    <span class="evidence-ctgov-group-of">${this._escapeHtml(denominador)}</span>
+                </div>
+                <div class="evidence-ctgov-group-chips">${chips}</div>
+            </div>`;
+
+        const plural = (v, sing, pl) => `${v.toLocaleString('es-ES')} ${v === 1 ? sing : pl}`;
+
         const chipsTipo = d.tipo.map(x =>
             chip('fa-flask', etiquetar(TIPO, x.clave), x.n, '', FILTRO_TIPO[x.clave] || null)).join('');
-        // Solo los intervencionales declaran fase, así que las fases NO suman el total: se dice
-        // en el tooltip en vez de dejar que el usuario deduzca que faltan estudios.
+
+        // Solo los intervencionales declaran fase: el denominador de este grupo NO es el total,
+        // y se dice con el número delante en vez de dejar que se deduzca restando.
+        const nInterv = (d.tipo.find(x => x.clave === 'INTERVENTIONAL') || {}).n ?? null;
+        const sumaFase = d.fase.reduce((a, x) => a + x.n, 0);
         const notaFase = d.nota_fase || '';
         const chipsFase = d.fase.map(x =>
             chip('fa-layer-group', etiquetar(FASE, x.clave), x.n, notaFase, FILTRO_FASE[x.clave] || null)).join('');
+        // Si la suma supera a los intervencionales es porque hay estudios con varias fases
+        // declaradas. Se dice ahí mismo: es la única explicación de un total que "no cuadra".
+        const denomFase = nInterv === null
+            ? 'solo los intervencionales declaran fase'
+            : (sumaFase > nInterv
+                ? `de ${plural(nInterv, 'intervencional', 'intervencionales')} · algunos declaran más de una fase`
+                : `de ${plural(nInterv, 'intervencional', 'intervencionales')}`);
+
         // El estado tiene cola larga (14 valores posibles): se enseñan los 4 más frecuentes y el
-        // resto se agrupa en uno que dice cuántos son, sin ocultarlos.
-        const topEstado = d.estado.slice(0, 4);
-        const restoEstado = d.estado.slice(4);
+        // resto se agrupa en uno que dice cuántos son, sin ocultarlos. Con UNO solo no se agrupa
+        // —«Otros 1 estados» no es agrupar, es esconder un nombre por nada— y ese además conserva
+        // su enlace, que el agrupado no puede tener.
+        const corte = d.estado.length === 5 ? 5 : 4;
+        const topEstado = d.estado.slice(0, corte);
+        const restoEstado = d.estado.slice(corte);
         const sumaResto = restoEstado.reduce((a, x) => a + x.n, 0);
         const chipsEstado = topEstado.map(x =>
             chip('fa-signal', etiquetar(ESTADO, x.clave), x.n, '', FILTRO_ESTADO[x.clave] || null)).join('')
@@ -15805,7 +15840,11 @@ ${materialesPlaceholder}
                     restoEstado.map(x => `${etiquetar(ESTADO, x.clave)}: ${x.n}`).join(' · '))
                 : '');
 
-        statsEl.innerHTML = chipsTipo + chipsFase + chipsEstado;
+        const deTotal = `de ${plural(n, 'estudio', 'estudios')}`;
+        statsEl.innerHTML =
+            grupo('Tipo de estudio', deTotal, chipsTipo) +
+            grupo('Fase', denomFase, chipsFase) +
+            grupo('Estado', deTotal, chipsEstado);
     }
 
     async _loadEvidenceFiltersAndCount(drugTerm, filterDefs, dateDays) {

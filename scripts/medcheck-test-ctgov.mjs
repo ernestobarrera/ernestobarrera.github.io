@@ -111,7 +111,7 @@ check('1b · error del registro → insignia estática, no un cero',
 app = nuevaApp({ ok: true, count: 0, desglose: { analizados: 0, tipo: [], fase: [], estado: [] } });
 await app._loadCtgovCount('zzzqqq');
 check('2 · cero medido → se pinta 0 y se marca como cero',
-    /evidence-count-badge--zero/.test(cuenta()) && />0</.test(cuenta()), cuenta());
+    /evidence-count-open--zero/.test(cuenta()) && />0</.test(cuenta()), cuenta());
 
 // 3 · desglose omitido por volumen → lo dice, no lo silencia ni lo aproxima
 app = nuevaApp({ ok: true, count: 12345, desglose: null, desgloseOmitido: 'más de 5000 estudios: el total es exacto, el desglose no se calcula sobre una muestra' });
@@ -184,6 +184,55 @@ check('10 · el chip agrupado se pinta como texto, NO como enlace',
     tagDelChip('Otros 2 estados') === 'span', `tag: ${tagDelChip('Otros 2 estados')}`);
 check('10b · y los que sí tienen token siguen siendo enlaces en la misma fila',
     tagDelChip('Completados') === 'a', `tag: ${tagDelChip('Completados')}`);
+
+// 10c · con UN solo estado sobrante no se agrupa: se muestra por su nombre y conserva su
+// enlace. «Otros 1 estados» no agrupa nada y además pierde el enlace que ese estado sí tiene.
+app = nuevaApp({ ok: true, count: 16, desglose: { ...desgloseBase, estado: [
+    { clave: 'COMPLETED', n: 8 }, { clave: 'UNKNOWN', n: 3 }, { clave: 'RECRUITING', n: 2 },
+    { clave: 'TERMINATED', n: 2 }, { clave: 'NOT_YET_RECRUITING', n: 1 },
+] } });
+await app._loadCtgovCount('lercanidipine');
+check('10c · un solo estado sobrante no se agrupa',
+    !/Otros 1 estado/.test(stats()) && /Aún sin reclutar/.test(stats()), stats());
+check('10d · y conserva su enlace',
+    tagDelChip('Aún sin reclutar') === 'a', `tag: ${tagDelChip('Aún sin reclutar')}`);
+
+// 11 · agrupación por eje. Nace de su observación al verlo en producción: en una fila corrida
+// los tres ejes se leen como una lista y «la suma es superior al total que se muestra». Cada
+// grupo tiene que decir sobre cuántos estudios cuenta.
+app = nuevaApp({ ok: true, count: 16, desglose: desgloseBase });
+await app._loadCtgovCount('lercanidipine');
+check('11 · hay tres grupos, uno por eje',
+    (stats().match(/evidence-ctgov-group-title/g) || []).length === 3,
+    `${(stats().match(/evidence-ctgov-group-title/g) || []).length} grupos`);
+check('11b · tipo y estado declaran el total (16 estudios)',
+    (stats().match(/de 16 estudios/g) || []).length === 2, stats());
+check('11c · la fase declara SU denominador, que no es el total',
+    /de 13 intervencionales/.test(stats()) && !/Fase[\s\S]{0,120}de 16 estudios/.test(stats()), stats());
+
+// 11d · si la suma de fases supera a los intervencionales, se explica ahí mismo: es la única
+// razón por la que un grupo puede "no cuadrar", y dejarlo mudo es lo que genera desconfianza.
+app = nuevaApp({ ok: true, count: 16, desglose: { ...desgloseBase,
+    fase: [{ clave: 'PHASE2', n: 9 }, { clave: 'PHASE3', n: 9 }] } });   // 18 > 13 intervencionales
+await app._loadCtgovCount('lercanidipine');
+check('11d · suma de fases > intervencionales → lo explica',
+    /algunos declaran más de una fase/.test(stats()), stats());
+
+// 11e · sin datos de tipo no se puede afirmar un denominador: se dice lo que se sabe.
+app = nuevaApp({ ok: true, count: 4, desglose: { ...desgloseBase,
+    tipo: [], fase: [{ clave: 'PHASE3', n: 4 }], estado: [] } });
+await app._loadCtgovCount('lercanidipine');
+check('11e · sin tipo conocido no inventa denominador',
+    /solo los intervencionales declaran fase/.test(stats()), stats());
+
+// 12 · el total se lee como acción, no como la insignia de los filtros de PubMed (que cuenta
+// una casilla que se marca DENTRO de la app). Dos cosas distintas no deben verse igual.
+app = nuevaApp({ ok: true, count: 16, desglose: desgloseBase });
+await app._loadCtgovCount('lercanidipine');
+check('12 · el total NO usa la insignia de los filtros de PubMed',
+    !/evidence-count-badge/.test(cuenta()), cuenta());
+check('12b · y lleva señal de que se abre fuera',
+    /evidence-count-open/.test(cuenta()) && /evidence-count-open-ico/.test(cuenta()), cuenta());
 
 // 7 · carrera: una respuesta tardía de una consulta ya sustituida no repinta
 app = nuevaApp(null);

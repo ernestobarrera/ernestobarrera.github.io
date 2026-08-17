@@ -9514,6 +9514,73 @@ a.evidence-reec-chip--link:focus-visible i {
     opacity: 1;
 }
 
+/* ── ClinicalTrials.gov: desglose agrupado por eje ──
+   Los tres ejes (tipo, fase, estado) cuentan sobre denominadores distintos. En una fila corrida
+   se leen como una lista única y la suma sale muy por encima del total, que es lo que hace
+   desconfiar del número. Cada grupo lleva su título y su denominador a la vista. */
+.evidence-ctgov-group {
+    padding: 0.3rem 0.75rem 0.1rem;
+}
+.evidence-ctgov-group + .evidence-ctgov-group {
+    border-top: 1px solid var(--border);
+    margin-top: 0.3rem;
+    padding-top: 0.4rem;
+}
+.evidence-ctgov-group-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin-bottom: 0.25rem;
+}
+.evidence-ctgov-group-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+.evidence-ctgov-group-of {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    opacity: 0.75;
+}
+.evidence-ctgov-group-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* ── Total del registro: se abre, no se marca ──
+   La insignia redonda de los filtros de PubMed cuenta una casilla que se marca DENTRO de la
+   app. Este número se va al registro externo. Con la misma forma, la insignia deja de
+   significar nada, así que aquí el número se lee como acción: cifra + flecha de salir. */
+.evidence-count-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+    line-height: 1.3;
+    border-bottom: 1px solid transparent;
+}
+.evidence-count-open-ico {
+    font-size: 0.62rem;
+    opacity: 0.75;
+}
+.evidence-filter-item:hover .evidence-count-open,
+.evidence-filter-item:focus-visible .evidence-count-open {
+    border-bottom-color: currentColor;
+}
+.evidence-filter-item:hover .evidence-count-open-ico {
+    opacity: 1;
+}
+/* Cero: gris, para no inducir a leer "encontrado". El enlace sigue abriendo la búsqueda. */
+.evidence-count-open--zero {
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
 .evidence-reec-studies {
     display: flex;
     flex-direction: column;
