@@ -15748,23 +15748,58 @@ ${materialesPlaceholder}
         const etiquetar = (dicc, clave) => dicc[clave]
             || clave.toLowerCase().replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
 
-        const chip = (icono, texto, valor, titulo = '') =>
-            `<span class="evidence-reec-chip ${valor === 0 ? 'evidence-reec-chip--zero' : ''}"${titulo ? ` title="${this._escapeHtml(titulo)}"` : ''}>
-                <i class="fas ${icono}"></i>${this._escapeHtml(texto)}: <strong>${valor.toLocaleString('es-ES')}</strong>
-            </span>`;
+        // Cada chip enlaza a ESA selección ya filtrada en ClinicalTrials.gov, con el mismo
+        // `term` que el contador. Los tokens de `aggFilters` NO se han deducido: se midieron
+        // uno a uno contra la API (2026-08-17, lercanidipine) comprobando que el filtro
+        // devuelve EXACTAMENTE el número que enseña el chip — 18 de 18. Un enlace que aterriza
+        // en otra cifra es peor que no tener enlace, así que **solo se enlaza lo verificado**.
+        // Ojo con `phase:NA`: es sensible a mayúsculas (`phase:na` devuelve 0).
+        const FILTRO_TIPO = {
+            INTERVENTIONAL: 'studyType:int', OBSERVATIONAL: 'studyType:obs',
+            EXPANDED_ACCESS: 'studyType:expa',
+        };
+        const FILTRO_FASE = {
+            EARLY_PHASE1: 'phase:0', PHASE1: 'phase:1', PHASE2: 'phase:2',
+            PHASE3: 'phase:3', PHASE4: 'phase:4', NA: 'phase:NA',
+        };
+        const FILTRO_ESTADO = {
+            RECRUITING: 'status:rec', NOT_YET_RECRUITING: 'status:not',
+            ACTIVE_NOT_RECRUITING: 'status:act', COMPLETED: 'status:com',
+            SUSPENDED: 'status:sus', TERMINATED: 'status:ter', WITHDRAWN: 'status:wit',
+            ENROLLING_BY_INVITATION: 'status:enr', UNKNOWN: 'status:unk',
+        };
+        const urlFiltrada = (token) => `https://clinicaltrials.gov/search?term=${encodeURIComponent(query)}`
+            + `&aggFilters=${encodeURIComponent(token)}&viewType=Table`;
+
+        // Sin token verificado (un valor que el registro añada mañana) el chip se pinta igual,
+        // pero como texto: se conserva el dato y no se promete un destino que no se ha medido.
+        const chip = (icono, texto, valor, titulo = '', token = null) => {
+            const clases = `evidence-reec-chip ${valor === 0 ? 'evidence-reec-chip--zero' : ''}`;
+            const cuerpo = `<i class="fas ${icono}"></i>${this._escapeHtml(texto)}: <strong>${valor.toLocaleString('es-ES')}</strong>`;
+            if (!token) {
+                return `<span class="${clases}"${titulo ? ` title="${this._escapeHtml(titulo)}"` : ''}>${cuerpo}</span>`;
+            }
+            const pista = `Abre esta selección en ClinicalTrials.gov${titulo ? ` · ${titulo}` : ''}`;
+            return `<a class="${clases} evidence-reec-chip--link" href="${urlFiltrada(token)}" target="_blank" rel="noopener" title="${this._escapeHtml(pista)}">${cuerpo}</a>`;
+        };
 
         const d = data.desglose;
-        const chipsTipo = d.tipo.map(x => chip('fa-flask', etiquetar(TIPO, x.clave), x.n)).join('');
+        const chipsTipo = d.tipo.map(x =>
+            chip('fa-flask', etiquetar(TIPO, x.clave), x.n, '', FILTRO_TIPO[x.clave] || null)).join('');
         // Solo los intervencionales declaran fase, así que las fases NO suman el total: se dice
         // en el tooltip en vez de dejar que el usuario deduzca que faltan estudios.
         const notaFase = d.nota_fase || '';
-        const chipsFase = d.fase.map(x => chip('fa-layer-group', etiquetar(FASE, x.clave), x.n, notaFase)).join('');
+        const chipsFase = d.fase.map(x =>
+            chip('fa-layer-group', etiquetar(FASE, x.clave), x.n, notaFase, FILTRO_FASE[x.clave] || null)).join('');
         // El estado tiene cola larga (14 valores posibles): se enseñan los 4 más frecuentes y el
         // resto se agrupa en uno que dice cuántos son, sin ocultarlos.
         const topEstado = d.estado.slice(0, 4);
         const restoEstado = d.estado.slice(4);
         const sumaResto = restoEstado.reduce((a, x) => a + x.n, 0);
-        const chipsEstado = topEstado.map(x => chip('fa-signal', etiquetar(ESTADO, x.clave), x.n)).join('')
+        const chipsEstado = topEstado.map(x =>
+            chip('fa-signal', etiquetar(ESTADO, x.clave), x.n, '', FILTRO_ESTADO[x.clave] || null)).join('')
+            // El agrupado NO se enlaza: ningún filtro único reproduce esa suma, y un enlace que
+            // aterriza en otra cifra rompe justo el contrato que sostiene a los demás.
             + (sumaResto > 0
                 ? chip('fa-ellipsis', `Otros ${restoEstado.length} estados`, sumaResto,
                     restoEstado.map(x => `${etiquetar(ESTADO, x.clave)}: ${x.n}`).join(' · '))

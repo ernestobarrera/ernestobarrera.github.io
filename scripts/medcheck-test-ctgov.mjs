@@ -72,6 +72,20 @@ function nuevaApp(respuesta) {
 const cuenta = () => nodos.get('evcount-ct').innerHTML;
 const stats = () => nodos.get('evidence-ctgov-stats').innerHTML;
 
+/**
+ * Devuelve el TAG del chip que contiene ese texto: 'a' si es enlace, 'span' si no, null si no
+ * existe. Nace de un fallo propio: la primera versión de estas aserciones usaba `/<a[^>]*TEXTO/`,
+ * y `[^>]*` no puede cruzar el `>` de cierre de la etiqueta, así que la comprobación NUNCA miraba
+ * dentro del chip y aprobaba con la guarda desactivada. El mutante no caía. Se compara el tag.
+ */
+function tagDelChip(texto) {
+    const re = /<(a|span)\b[^>]*class="[^"]*evidence-reec-chip[^"]*"[^>]*>([\s\S]*?)<\/\1>/g;
+    for (const m of stats().matchAll(re)) {
+        if (m[2].includes(texto)) return m[1];
+    }
+    return null;
+}
+
 const desgloseBase = {
     analizados: 16,
     tipo: [{ clave: 'INTERVENTIONAL', n: 13 }, { clave: 'OBSERVATIONAL', n: 3 }],
@@ -135,6 +149,41 @@ check('6 · agrupa la cola larga', /Otros 2 estados/.test(stats()), stats());
 check('6b · el grupo suma exactamente lo agrupado (2+1=3)', /Otros 2 estados: <strong>3<\/strong>/.test(stats()), stats());
 check('6c · y detalla en el tooltip qué agrupó',
     /Retirados: 2/.test(stats()) && /Suspendidos: 1/.test(stats()), stats());
+
+// 8 · enlaces por subtipo: cada chip abre ESA selección ya filtrada, con el mismo término.
+// Los tokens se midieron contra la API (18/18 reproducen el número del chip); el test fija
+// que se usan los verificados y solo esos.
+app = nuevaApp({ ok: true, count: 16, desglose: desgloseBase });
+await app._loadCtgovCount('lercanidipine');
+check('8 · el chip de intervencionales enlaza con studyType:int',
+    /href="[^"]*aggFilters=studyType%3Aint[^"]*"/.test(stats()), stats().slice(0, 300));
+check('8b · el enlace lleva el MISMO término que el contador',
+    /href="[^"]*term=lercanidipine[^"]*aggFilters/.test(stats()));
+check('8c · la fase enlaza con su token (phase:4)',
+    /aggFilters=phase%3A4/.test(stats()));
+check('8d · «sin fase aplicable» usa phase:NA en mayúsculas (phase:na devuelve 0)',
+    /aggFilters=phase%3ANA/.test(stats()), stats());
+check('8e · el estado enlaza con su token (status:com)',
+    /aggFilters=status%3Acom/.test(stats()));
+
+// 9 · un valor sin token verificado se pinta igual, pero SIN enlace: se conserva el dato y no
+// se promete un destino que no se ha medido.
+app = nuevaApp({ ok: true, count: 5, desglose: { ...desgloseBase,
+    tipo: [{ clave: 'NUEVO_TIPO_FUTURO', n: 5 }], fase: [], estado: [] } });
+await app._loadCtgovCount('farmaco');
+check('9 · valor sin token verificado → se muestra pero NO se enlaza',
+    tagDelChip('Nuevo tipo futuro') === 'span', `tag: ${tagDelChip('Nuevo tipo futuro')}`);
+
+// 10 · el chip agrupado NO se enlaza: ningún filtro único reproduce esa suma.
+app = nuevaApp({ ok: true, count: 30, desglose: { ...desgloseBase, estado: [
+    { clave: 'COMPLETED', n: 10 }, { clave: 'RECRUITING', n: 8 }, { clave: 'UNKNOWN', n: 5 },
+    { clave: 'TERMINATED', n: 4 }, { clave: 'WITHDRAWN', n: 2 }, { clave: 'SUSPENDED', n: 1 },
+] } });
+await app._loadCtgovCount('farmaco');
+check('10 · el chip agrupado se pinta como texto, NO como enlace',
+    tagDelChip('Otros 2 estados') === 'span', `tag: ${tagDelChip('Otros 2 estados')}`);
+check('10b · y los que sí tienen token siguen siendo enlaces en la misma fila',
+    tagDelChip('Completados') === 'a', `tag: ${tagDelChip('Completados')}`);
 
 // 7 · carrera: una respuesta tardía de una consulta ya sustituida no repinta
 app = nuevaApp(null);

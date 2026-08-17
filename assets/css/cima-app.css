@@ -9493,6 +9493,26 @@ code {
 .evidence-reec-chip--zero strong {
     color: var(--text-secondary);
 }
+/* Chip enlazado: abre esa misma selección ya filtrada en el registro. Se distingue por el
+   subrayado punteado al pasar por encima, no por color, para que la fila siga leyéndose como
+   datos y no como una barra de enlaces. */
+a.evidence-reec-chip--link {
+    text-decoration: none;
+    color: inherit;
+    border-radius: 4px;
+    padding: 0.05rem 0.2rem;
+    transition: background-color 0.15s ease;
+}
+a.evidence-reec-chip--link:hover,
+a.evidence-reec-chip--link:focus-visible {
+    background-color: var(--bg-hover, rgba(127, 127, 127, 0.15));
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+}
+a.evidence-reec-chip--link:hover i,
+a.evidence-reec-chip--link:focus-visible i {
+    opacity: 1;
+}
 
 .evidence-reec-studies {
     display: flex;
