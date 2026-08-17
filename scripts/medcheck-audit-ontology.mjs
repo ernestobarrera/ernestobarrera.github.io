@@ -18,6 +18,13 @@ const live = args.has('--live');
 const reconcile = args.has('--reconcile');
 const probeAnchors = args.has('--probe-anchors');
 const updateBaseline = args.has('--update-baseline');
+// --cobertura-atc[=J07] · ¿hay códigos ATC nuevos con producto comercializado que la ontología
+// no alcanza? El mapa término→ATC se automantiene solo a medias (ver checkAtcCoverage).
+const coverageArg = process.argv.slice(2).find(a => a === '--cobertura-atc' || a.startsWith('--cobertura-atc='));
+const coverageGroups = coverageArg
+  ? (coverageArg.includes('=') ? coverageArg.slice(coverageArg.indexOf('=') + 1) : 'J07')
+      .split(',').map(g => g.trim().toUpperCase()).filter(Boolean)
+  : null;
 // --baseline= permite apuntar a otro archivo (lo usan los tests de gates con baselines sintéticos).
 const baselineArg = readStringArg('--baseline');
 const baselinePath = baselineArg
@@ -218,6 +225,8 @@ let blockedGapCount = 0;
 let invalidReconcileCount = 0;
 let orphanAnchorCount = 0;
 let probeRows = [];
+let coverageRows = [];
+let uncoveredAtcCount = 0;
 const baseline = await loadBaseline();
 if (reconcile || updateBaseline) {
   if (typeof fetch !== 'function') {
@@ -261,6 +270,19 @@ if (probeAnchors) {
   orphanAnchorCount = probeRows.filter(r => (r.huerfanos || []).some(h => h.ciego)).length;
 }
 
+if (coverageGroups) {
+  for (const grupo of coverageGroups) {
+    try {
+      coverageRows.push(await checkAtcCoverage(grupo));
+    } catch (error) {
+      // Sin maestra o sin red no se puede afirmar cobertura. INCONCLUSO, nunca "limpio".
+      coverageRows.push({ grupo, inconcluso: error.message, leaves: [], uncovered: [] });
+      inconclusive.push(`cobertura-atc ${grupo}: ${error.message}`);
+    }
+  }
+  uncoveredAtcCount = coverageRows.reduce((a, r) => a + r.uncovered.length, 0);
+}
+
 printReport();
 // Gate pre-publicacion con salida ternaria (revision cruzada 2026-07-23):
 //   0 → cobertura completa y limpia.
@@ -272,7 +294,7 @@ printReport();
 //       certificado ni escribe baseline.
 // Ambos codigos bloquean publicacion.
 const deterministicBlock = problems.length > 0 || newGapCount > 0 || blockedGapCount > 0
-  || invalidReconcileCount > 0 || orphanAnchorCount > 0;
+  || invalidReconcileCount > 0 || orphanAnchorCount > 0 || uncoveredAtcCount > 0;
 if (deterministicBlock) process.exitCode = 1;
 else if (inconclusive.length > 0) process.exitCode = 2;
 
@@ -949,6 +971,88 @@ function toArray(value) {
   return Array.isArray(value) ? value : [value];
 }
 
+// ---- Cobertura ATC (--cobertura-atc) ----------------------------------------------------------
+// PREGUNTA QUE RESPONDE: ¿ha aparecido en CIMA algún código ATC de este grupo, con producto
+// comercializado, al que NINGÚN término específico de la ontología llega?
+//
+// Existe porque el mapa término→ATC se automantiene solo A MEDIAS, y la mitad que no se
+// automantiene es invisible:
+//   - Un PRODUCTO nuevo bajo un código ya cubierto aparece solo: la búsqueda va a CIMA en vivo,
+//     así que una gripe nueva bajo J07BB se ve sin tocar el JSON.
+//   - Un CÓDIGO nuevo no lo alcanza nadie. Y el riesgo crece cuando el término fija un ATC de 7
+//     caracteres para ganar precisión (J07BK03 aísla la vacuna del zóster de las de varicela):
+//     una futura J07BK04 quedaría fuera y nada avisaría.
+//
+// CONTRATO: la cobertura se calcula SOLO con términos específicos. Los `status: broad` (vacunas
+// → J07) son prefijo de todo el grupo y harían pasar la comprobación siempre — un gate que
+// aprueba por construcción es peor que no tenerlo, porque además da confianza.
+//
+// CONTRATO: solo se evalúan códigos HOJA (los que no tienen descendientes en la maestra). Un
+// padre cuyos hijos están todos cubiertos no es un hueco, y marcarlo sería ruido en cada pasada.
+//
+// LÍMITE CONOCIDO, escrito para que nadie lo descubra a la mala: un término con `section41Filter`
+// cuenta como cobertura del código entero aunque en la práctica solo devuelva su porción filtrada
+// (J07BX mezcla COVID, VRS y dengue). Si aparece una cuarta familia bajo un código así, esta
+// comprobación NO la ve. Cubrirlo exigiría comparar contra la 4.1, que es lo que hace --reconcile.
+async function checkAtcCoverage(grupo) {
+  // La maestra pagina a 200. Truncarla en silencio es la misma clase de fallo que ya costó dos
+  // bugs en este repo: se recorre entera y se comprueba que el total cuadra.
+  // OJO: la maestra busca por `nombre` y devuelve también códigos que casan por texto, no por
+  // prefijo. El control de truncatura se hace sobre las filas RECIBIDAS; el filtro por prefijo
+  // viene después. Compararlo contra el total ya filtrado daría un falso "truncada" siempre.
+  const recibidas = [];
+  let pagina = 1;
+  let totalFilas = null;
+  for (;;) {
+    const respuesta = await fetchCima('/maestras', { maestra: 7, nombre: grupo, pagina });
+    const lote = respuesta?.resultados || [];
+    if (totalFilas === null) totalFilas = Number(respuesta?.totalFilas ?? NaN);
+    recibidas.push(...lote);
+    if (!lote.length || recibidas.length >= totalFilas || pagina > 20) break;
+    pagina += 1;
+  }
+  if (Number.isFinite(totalFilas) && recibidas.length < totalFilas) {
+    throw new UnknownResultError(`maestra ATC truncada bajo ${grupo}: ${recibidas.length} de ${totalFilas}`);
+  }
+  const codigos = recibidas
+    .map(fila => ({ codigo: String(fila?.codigo || '').trim().toUpperCase(), nombre: fila?.nombre || '' }))
+    .filter(c => c.codigo.startsWith(grupo));
+  if (!codigos.length) throw new UnknownResultError(`la maestra ATC no devolvió ningún código bajo ${grupo}`);
+
+  // Hojas: sin ningún otro código de la maestra que las tenga por prefijo.
+  const todos = new Set(codigos.map(c => c.codigo));
+  const hojas = codigos.filter(c => ![...todos].some(otro => otro !== c.codigo && otro.startsWith(c.codigo)));
+
+  // Cobertura: SOLO términos específicos (los broad quedan fuera, ver contrato de arriba).
+  const especificos = [];
+  for (const [term, entry] of Object.entries(ontology.terms)) {
+    if (entry.status === 'broad') continue;
+    for (const atc of toAtcList(entry)) {
+      const codigo = String(atc || '').trim().toUpperCase();
+      if (codigo.startsWith(grupo)) especificos.push({ codigo, term });
+    }
+  }
+
+  // Solo se pregunta a CIMA por las hojas que NADIE alcanza: si no hay ninguna, la comprobación
+  // no gasta una sola petición extra, y si aparece un código nuevo cuesta una.
+  const huerfanas = hojas.filter(h => !especificos.some(e => h.codigo.startsWith(e.codigo)));
+  const uncovered = [];
+  for (const hoja of huerfanas) {
+    const respuesta = await fetchCima('/medicamentos', { atc: hoja.codigo, comerc: 1 });
+    const total = Number(respuesta?.totalFilas ?? 0);
+    if (total > 0) uncovered.push({ ...hoja, total });
+  }
+
+  return {
+    grupo,
+    inconcluso: null,
+    leaves: hojas,
+    especificos: especificos.length,
+    huerfanasSinProducto: huerfanas.length - uncovered.length,
+    uncovered
+  };
+}
+
 function printReport() {
   console.log('# MedCheck Ontology Audit');
   console.log('');
@@ -974,6 +1078,28 @@ function printReport() {
     printList(`## Live Broad Entries Over ${tooManyThreshold}`, tooMany);
     printList('## Live Biosimilar Signals', biosimilarRows);
     printList('## Section 4.1 Filters Returning Zero', zeroSection);
+  }
+
+  if (coverageGroups) {
+    console.log('## Cobertura ATC (¿códigos nuevos que la ontología no alcanza?)');
+    console.log('(Solo cuentan los términos ESPECÍFICOS: los `broad` son prefijo de todo el grupo');
+    console.log(' y aprobarían siempre. Solo se evalúan códigos hoja con producto comercializado.)');
+    console.log('');
+    for (const fila of coverageRows) {
+      if (fila.inconcluso) {
+        console.log(`- ${fila.grupo}: ?? INCONCLUSO — ${fila.inconcluso}`);
+        continue;
+      }
+      const estado = fila.uncovered.length ? `!! ${fila.uncovered.length} SIN CUBRIR (bloquea)` : 'ok';
+      console.log(`- ${fila.grupo}: ${fila.leaves.length} códigos hoja · ${fila.especificos} ATC en términos específicos · ${estado}`);
+      for (const u of fila.uncovered) {
+        console.log(`    !! ${u.codigo} — ${u.nombre} · ${u.total} comercializados y ningún término llega`);
+      }
+      if (!fila.uncovered.length && fila.huerfanasSinProducto > 0) {
+        console.log(`    ·  ${fila.huerfanasSinProducto} código(s) sin término y sin producto comercializado: no son hueco hoy`);
+      }
+    }
+    console.log('');
   }
 
   if (probeAnchors) {

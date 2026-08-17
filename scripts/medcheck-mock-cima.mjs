@@ -47,8 +47,21 @@ globalThis.fetch = async (input) => {
     if (n <= 2) return new Response('mock 429', { status: 429 });
   }
 
+  // Maestra ATC (maestra=7) — la consume --cobertura-atc. MC_MOCK_ATC es la lista de códigos
+  // que devuelve, y MC_MOCK_ATC_TOTAL permite fingir una respuesta TRUNCADA (totalFilas mayor
+  // que las filas servidas), que debe salir inconclusa y nunca limpia.
+  if (url.pathname.endsWith('/maestras') && url.searchParams.get('maestra') === '7') {
+    const codigos = (process.env.MC_MOCK_ATC || '').split(',').map(s => s.trim()).filter(Boolean);
+    const resultados = codigos.map(codigo => ({ codigo, nombre: `MOCK ${codigo}` }));
+    const total = Number(process.env.MC_MOCK_ATC_TOTAL || resultados.length);
+    return json({ totalFilas: total, pagina: 1, tamanioPagina: 200, resultados });
+  }
   if (url.pathname.endsWith('/medicamentos')) {
     const atc = url.searchParams.get('atc') || 'X00XX';
+    // MC_MOCK_ATC_SIN_PRODUCTO declara códigos sin comercializar: un código huérfano SIN
+    // producto no es un hueco hoy, y esa diferencia tiene que ser comprobable.
+    const vacios = (process.env.MC_MOCK_ATC_SIN_PRODUCTO || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (vacios.includes(atc)) return json({ totalFilas: 0, resultados: [] });
     const med = { ...baseMed('11111'), atcs: [{ codigo: atc }] };
     return json({ totalFilas: 1, resultados: [med] });
   }

@@ -2,7 +2,8 @@
 
 ## Cadence
 
-- Light refresh: monthly.
+- Light refresh: monthly. **Include `--cobertura-atc` (see below): it is the cheap sweep that
+  catches ATC codes nobody covers, and it is the only check that answers "is this self-maintaining?".**
 - Full refresh: quarterly.
 - Trigger an extra refresh after relevant EMA/AEMPS changes in biosimilars, oncology, biologics, CIMA schemas or financing sources.
 
@@ -39,6 +40,40 @@ The live audit reports:
 - section 4.1 filters returning zero matches;
 - areas where CIMA marks returned products as `biosimilar`;
 - candidate missing terms from the coverage checklist.
+
+## What self-maintains, and what does not (`--cobertura-atc`)
+
+```powershell
+node .\scripts\medcheck-audit-ontology.mjs --cobertura-atc          # defaults to J07
+node .\scripts\medcheck-audit-ontology.mjs --cobertura-atc=J07,L01
+```
+
+The `term -> ATC` mapping self-maintains **only halfway**, and the half that does not is invisible:
+
+- **A new PRODUCT under an already-covered code appears on its own.** The search hits CIMA live,
+  so a new flu vaccine under `J07BB` shows up without touching the JSON. This is most of the churn.
+- **A new CODE is reached by nobody.** Worse when an entry pins a 7-character ATC for precision
+  (`J07BK03` isolates the zoster vaccine from the varicella ones): a future `J07BK04` would be
+  invisible and nothing would say so.
+
+This mode sweeps the CIMA ATC master (`maestras?maestra=7`) for the group, keeps the **leaf** codes,
+and asks CIMA how many marketed products each orphan leaf has. Leaves with products and no owner
+**block the gate (exit 1)**; an empty/truncated master or a dead network is **exit 2 inconclusive** —
+finding nothing never approves.
+
+**Coverage is computed from SPECIFIC entries only.** `status: broad` entries (`vacunas -> J07`) are a
+prefix of the whole group and would make the check pass by construction — a gate that approves
+because of how it is built is worse than no gate, since it also grants confidence. `medcheck-test-atc-coverage.mjs`
+pins this with a mutation: delete the `broad` filter and the suite fails.
+
+**Known limit, written down so nobody finds it the hard way:** an entry with a `section41Filter`
+counts as covering the whole code even though in practice it only returns its filtered slice
+(`J07BX` mixes COVID, RSV and dengue in CIMA). If a fourth family appears under such a code, this
+check does not see it. Covering that would mean comparing against 4.1 — which is what `--reconcile` does.
+
+**It found a real gap on its first run (2026-08-17):** `J07BP` (chikungunya, VIMKUNYA marketed) did
+not exist in the vaccine family that had just been curated by hand. Hand-written subgroup lists go
+stale; the master does not.
 
 ## Sensitivity/specificity: SmPC 4.1 is the source of truth, ATC is a proxy
 
