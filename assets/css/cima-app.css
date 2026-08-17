@@ -9581,6 +9581,14 @@ a.evidence-reec-chip--link:focus-visible i {
     font-weight: 600;
 }
 
+/* Identidad sin traducir: no es un recuento bajo, es un recuento que no se puede hacer.
+   Ámbar y no gris, para que no se confunda con la insignia neutra de "registro externo". */
+.evidence-badge-warn {
+    color: var(--warning, #d97706);
+    border-color: currentColor;
+    font-style: italic;
+}
+
 .evidence-reec-studies {
     display: flex;
     flex-direction: column;

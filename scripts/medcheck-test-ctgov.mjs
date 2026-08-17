@@ -234,6 +234,30 @@ check('12 · el total NO usa la insignia de los filtros de PubMed',
 check('12b · y lleva señal de que se abre fuera',
     /evidence-count-open/.test(cuenta()) && /evidence-count-open-ico/.test(cuenta()), cuenta());
 
+// 13 · identidad no traducida: NO se muestra número. El registro indexa en inglés, y si el
+// nombre de sustancia de CIMA no está en el diccionario INN viaja el español y el recuento es
+// sobre otra consulta. Medido con Shingrix: «vacuna anti herpes zoster» → 0, «herpes zoster
+// vaccine» → 418. Un 0 ahí es indistinguible del cero real, que es lo que lo hace peligroso.
+let pedido = null;
+app = nuevaApp(null);
+app.api = { searchCtgovStudies: async (q) => { pedido = q; return { ok: true, count: 0, desglose: { analizados: 0, tipo: [], fase: [], estado: [] } }; } };
+await app._loadCtgovCount('vacuna anti herpes zoster', 'low');
+check('13 · identidad no traducida → no se pinta número',
+    !/evidence-count-open/.test(cuenta()) && !/>0</.test(cuenta()), cuenta());
+check('13b · lo dice, en vez de callarlo', /sin término en inglés/.test(cuenta()), cuenta());
+check('13c · y ni siquiera pregunta al registro (no se gasta una consulta que no sirve)',
+    pedido === null, `pidió: ${pedido}`);
+check('13d · tampoco pinta desglose', stats() === '', stats());
+
+// 13e · la confianza alta sigue funcionando igual: la guarda no puede tragarse el caso normal.
+app = nuevaApp({ ok: true, count: 16, desglose: desgloseBase });
+await app._loadCtgovCount('lercanidipine', 'high');
+check('13e · confianza alta → recuento normal', /evidence-count-open/.test(cuenta()) && /16/.test(cuenta()), cuenta());
+// 13f · por defecto se asume alta: no romper las llamadas que no pasan el parámetro.
+app = nuevaApp({ ok: true, count: 16, desglose: desgloseBase });
+await app._loadCtgovCount('lercanidipine');
+check('13f · sin parámetro se comporta como confianza alta', /16/.test(cuenta()), cuenta());
+
 // 7 · carrera: una respuesta tardía de una consulta ya sustituida no repinta
 app = nuevaApp(null);
 let resolver;

@@ -15477,7 +15477,9 @@ ${materialesPlaceholder}
         // Carga inicial con rango por defecto (5 años)
         this._loadEvidenceFiltersAndCount(pubmedTerm, filterDefs, EV_RANGES[EV_RANGE_DEFAULT].days);
         this._loadReecCount(canonicalEsTerm);
-        this._loadCtgovCount(canonicalEnTerm);
+        // Se pasa la confianza de la identidad: si el nombre de sustancia no se pudo traducir al
+        // inglés, el registro contaría sobre una consulta que no es la del fármaco (ver abajo).
+        this._loadCtgovCount(canonicalEnTerm, identity.confidence);
 
         const slider = document.getElementById('evidence-date-slider');
         const dateLabel = document.getElementById('evidence-date-label');
@@ -15689,7 +15691,7 @@ ${materialesPlaceholder}
      * ACTIVE_NOT_RECRUITING). Se traducen para leerlas, pero SIN reagrupar: cada valor del
      * registro es un chip, y lo que el registro no define no se pinta.
      */
-    async _loadCtgovCount(drugTerm) {
+    async _loadCtgovCount(drugTerm, confidence = 'high') {
         const query = String(drugTerm || '').replace(/\s+/g, ' ').trim();
         const countEl = document.getElementById('evcount-ct');
         const statsEl = document.getElementById('evidence-ctgov-stats');
@@ -15700,6 +15702,24 @@ ${materialesPlaceholder}
         };
 
         if (!query || query.length < 2) { applyStaticFallback(); return; }
+
+        // IDENTIDAD NO TRADUCIDA → NO SE ENSEÑA NÚMERO. ClinicalTrials.gov indexa en inglés; si el
+        // nombre de sustancia de CIMA no está en el diccionario INN, lo que viaja es el término
+        // español y el registro cuenta sobre una consulta que no es la de este fármaco. Medido el
+        // 2026-08-17 con Shingrix: CIMA lo llama «vacuna anti herpes Zóster», que devuelve 0,
+        // mientras «herpes zoster vaccine» devuelve 418. Un 0 ahí no dice «no hay ensayos», dice
+        // «he preguntado mal» — y es indistinguible del cero real, que es lo que lo hace peligroso.
+        // La señal ya existía (`confidence`) y no la usaba nadie.
+        if (confidence === 'low') {
+            if (countEl) {
+                countEl.innerHTML = '<span class="evidence-filter-badge-ext evidence-badge-warn" '
+                    + 'title="El nombre de sustancia de CIMA no tiene traducción al inglés en el diccionario, y este registro indexa en inglés. '
+                    + 'No se muestra recuento porque contaría sobre una consulta distinta a la de este fármaco. El enlace abre la búsqueda para que la ajustes tú.">'
+                    + 'sin término en inglés</span>';
+            }
+            if (statsEl) statsEl.innerHTML = '';
+            return;
+        }
 
         const cycleId = (this._ctgovCountCycle = (this._ctgovCountCycle || 0) + 1);
         const data = await this.api.searchCtgovStudies(query);
