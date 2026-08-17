@@ -9581,6 +9581,40 @@ a.evidence-reec-chip--link:focus-visible i {
     font-weight: 600;
 }
 
+/* Interruptores del registro: recalculan recuento y desglose CONTRA el registro, no filtran
+   en cliente. Van bajo la fila para que se lea "esto acota lo de abajo". */
+.evidence-ctgov-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.35rem 0.75rem 0.1rem;
+}
+.evidence-ctgov-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+.evidence-ctgov-toggle input {
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+.evidence-ctgov-toggle i {
+    font-size: 0.65rem;
+    opacity: 0.7;
+}
+.evidence-ctgov-toggle:has(input:checked) {
+    color: var(--primary);
+    font-weight: 600;
+}
+.evidence-ctgov-toggle:has(input:checked) i {
+    opacity: 1;
+}
+
 /* Identidad sin traducir: no es un recuento bajo, es un recuento que no se puede hacer.
    Ámbar y no gris, para que no se confunda con la insignia neutra de "registro externo". */
 .evidence-badge-warn {

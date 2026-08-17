@@ -2742,7 +2742,11 @@ class CimaAPI {
         const term = String(query || '').replace(/\s+/g, ' ').trim();
         if (term.length < 2 || !this.cloudflareProxy) return null;
 
-        const endpoint = `/ctgov/search?${new URLSearchParams({ q: term }).toString()}`;
+        const params = new URLSearchParams({ q: term });
+        // `pais` viaja como nombre en inglés («Spain»): es lo que acepta la API del registro.
+        if (options.pais) params.set('pais', options.pais);
+        if (options.reclutando) params.set('reclutando', '1');
+        const endpoint = `/ctgov/search?${params.toString()}`;
         const cacheKey = `ctgov:${endpoint}`;
         if (this._hasValidCache(cacheKey)) {
             return this.cache.get(cacheKey).data;

@@ -62,11 +62,15 @@ function check(name, cond, detail) {
 }
 
 // App mínima: solo lo que _loadCtgovCount usa de `this`.
-function nuevaApp(respuesta) {
+function nuevaApp(respuesta, { espana = false, reclutando = false } = {}) {
     const app = Object.create(MedCheckApp.prototype);
     app.api = { searchCtgovStudies: async () => respuesta };
     nodos.set('evcount-ct', nodo());
     nodos.set('evidence-ctgov-stats', nodo());
+    nodos.set('evidence-ctgov-toggles', { innerHTML: '', classList: { add() {}, remove() {} } });
+    nodos.set('evlink-ct', { innerHTML: '', href: '' });
+    nodos.set('evctgov-spain', { checked: espana });
+    nodos.set('evctgov-rec', { checked: reclutando });
     return app;
 }
 const cuenta = () => nodos.get('evcount-ct').innerHTML;
@@ -257,6 +261,36 @@ check('13e · confianza alta → recuento normal', /evidence-count-open/.test(cu
 app = nuevaApp({ ok: true, count: 16, desglose: desgloseBase });
 await app._loadCtgovCount('lercanidipine');
 check('13f · sin parámetro se comporta como confianza alta', /16/.test(cuenta()), cuenta());
+
+// 14 · interruptores (opción A). El número se recalcula CONTRA el registro, no filtrando en
+// cliente: el desglose tiene que ser el del conjunto filtrado. Y el enlace tiene que arrastrar
+// los mismos filtros, o aterrizaría en una cifra distinta de la que muestra.
+let pedidoOpts = null;
+app = nuevaApp(null, { espana: true, reclutando: true });
+app.api = {
+    searchCtgovStudies: async (q, opts) => {
+        pedidoOpts = opts;
+        return { ok: true, count: 6, publicUrl: 'https://clinicaltrials.gov/search?term=metformin&aggFilters=status%3Arec&country=Spain&viewType=Table',
+            filtros: { pais: 'Spain', reclutando: true },
+            desglose: { analizados: 6, tipo: [{ clave: 'INTERVENTIONAL', n: 5 }, { clave: 'OBSERVATIONAL', n: 1 }], fase: [], estado: [{ clave: 'RECRUITING', n: 6 }], nota_fase: '' } };
+    },
+};
+await app._loadCtgovCount('metformin', 'high');
+check('14 · los interruptores viajan a la consulta, no se filtra en cliente',
+    pedidoOpts && pedidoOpts.pais === 'Spain' && pedidoOpts.reclutando === true, JSON.stringify(pedidoOpts));
+check('14b · el recuento es el del conjunto filtrado', /\b6\b/.test(cuenta()), cuenta());
+check('14c · el enlace del chip arrastra el país',
+    /country=Spain/.test(stats()), stats().slice(0, 240));
+check('14d · y arrastra «reclutando» junto al token del chip',
+    /aggFilters=status%3Arec%2CstudyType%3Aint/.test(stats()), stats().slice(0, 300));
+check('14e · el enlace de la fila apunta al publicUrl filtrado que devuelve el Worker',
+    /country=Spain/.test(nodos.get('evlink-ct').href), nodos.get('evlink-ct').href);
+
+// 14f · sin interruptores, el enlace del chip no inventa filtros que nadie pidió.
+app = nuevaApp({ ok: true, count: 16, desglose: desgloseBase });
+await app._loadCtgovCount('lercanidipine', 'high');
+check('14f · sin filtros activos el enlace no añade país ni estado',
+    !/country=/.test(stats()) && !/status%3Arec%2C/.test(stats()), stats().slice(0, 200));
 
 // 7 · carrera: una respuesta tardía de una consulta ya sustituida no repinta
 app = nuevaApp(null);

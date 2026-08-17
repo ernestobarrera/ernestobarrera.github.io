@@ -15452,6 +15452,14 @@ ${materialesPlaceholder}
                         <span class="evidence-filter-count" id="evcount-ct"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
                         <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
                     </a>
+                    <div class="evidence-ctgov-toggles hidden" id="evidence-ctgov-toggles">
+                        <label class="evidence-ctgov-toggle" title="Restringe el recuento y el desglose a estudios con alguna sede en España.">
+                            <input type="checkbox" id="evctgov-spain"><i class="fas fa-location-dot"></i>Solo en España
+                        </label>
+                        <label class="evidence-ctgov-toggle" title="Restringe el recuento y el desglose a estudios que están reclutando ahora.">
+                            <input type="checkbox" id="evctgov-rec"><i class="fas fa-user-plus"></i>Solo reclutando
+                        </label>
+                    </div>
                     <div class="evidence-reec-stats" id="evidence-ctgov-stats"></div>
                     <a class="evidence-filter-item" id="evlink-who" href="https://trialsearch.who.int/?SearchTerm=${enc(canonicalEnTerm)}" target="_blank" rel="noopener" title="Plataforma de la OMS que AGREGA los registros nacionales (ClinicalTrials.gov incluido). No expone API pública, así que aquí no lleva contador: se abre y se consulta en su web.">
                         <span class="evidence-filter-icon"><i class="fas fa-globe-europe"></i></span>
@@ -15480,6 +15488,13 @@ ${materialesPlaceholder}
         // Se pasa la confianza de la identidad: si el nombre de sustancia no se pudo traducir al
         // inglés, el registro contaría sobre una consulta que no es la del fármaco (ver abajo).
         this._loadCtgovCount(canonicalEnTerm, identity.confidence);
+        // Los dos interruptores recalculan recuento y desglose contra el registro. No filtran en
+        // cliente: el desglose tiene que ser el del conjunto filtrado, no una porción del anterior.
+        ['evctgov-spain', 'evctgov-rec'].forEach(id => {
+            document.getElementById(id)?.addEventListener('change', () => {
+                this._loadCtgovCount(canonicalEnTerm, identity.confidence);
+            });
+        });
 
         const slider = document.getElementById('evidence-date-slider');
         const dateLabel = document.getElementById('evidence-date-label');
@@ -15695,10 +15710,14 @@ ${materialesPlaceholder}
         const query = String(drugTerm || '').replace(/\s+/g, ' ').trim();
         const countEl = document.getElementById('evcount-ct');
         const statsEl = document.getElementById('evidence-ctgov-stats');
+        const togglesEl = document.getElementById('evidence-ctgov-toggles');
+        const soloEspana = !!document.getElementById('evctgov-spain')?.checked;
+        const soloReclutando = !!document.getElementById('evctgov-rec')?.checked;
 
         const applyStaticFallback = () => {
             if (countEl) countEl.innerHTML = '<span class="evidence-filter-badge-ext">EEUU · FDA/NIH</span>';
             if (statsEl) statsEl.innerHTML = '';
+            togglesEl?.classList.add('hidden');
         };
 
         if (!query || query.length < 2) { applyStaticFallback(); return; }
@@ -15718,11 +15737,16 @@ ${materialesPlaceholder}
                     + 'sin término en inglés</span>';
             }
             if (statsEl) statsEl.innerHTML = '';
+            togglesEl?.classList.add('hidden');
             return;
         }
 
         const cycleId = (this._ctgovCountCycle = (this._ctgovCountCycle || 0) + 1);
-        const data = await this.api.searchCtgovStudies(query);
+        if (countEl) countEl.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
+        const data = await this.api.searchCtgovStudies(query, {
+            pais: soloEspana ? 'Spain' : null,
+            reclutando: soloReclutando,
+        });
         if (this._ctgovCountCycle !== cycleId) return;
 
         const n = Number.isFinite(data?.count) ? data.count : null;
@@ -15731,9 +15755,16 @@ ${materialesPlaceholder}
         // El total NO se pinta como la insignia de los filtros de PubMed: allí el número cuenta
         // una casilla que se marca aquí dentro, y aquí es un enlace que se va al registro. Dos
         // cosas distintas no deben verse igual, o la insignia deja de significar nada.
+        togglesEl?.classList.remove('hidden');
+        // El enlace de la fila sigue al filtro: si el número está filtrado, el destino también.
+        const filaEl = document.getElementById('evlink-ct');
+        if (filaEl && data.publicUrl) filaEl.href = data.publicUrl;
+
+        const activos = [soloEspana ? 'en España' : null, soloReclutando ? 'reclutando' : null].filter(Boolean);
+        const sufijo = activos.length ? ` (${activos.join(' y ')})` : '';
         const clsTotal = n === 0 ? 'evidence-count-open evidence-count-open--zero' : 'evidence-count-open';
         if (countEl) {
-            countEl.innerHTML = `<span class="${clsTotal}" title="Abre estos ${n.toLocaleString('es-ES')} estudios en ClinicalTrials.gov.">`
+            countEl.innerHTML = `<span class="${clsTotal}" title="Abre estos ${n.toLocaleString('es-ES')} estudios${sufijo} en ClinicalTrials.gov.">`
                 + `<span class="evidence-count-open-n">${n.toLocaleString('es-ES')}</span>`
                 + `<i class="fas fa-arrow-up-right-from-square evidence-count-open-ico"></i></span>`;
         }
@@ -15793,8 +15824,17 @@ ${materialesPlaceholder}
             SUSPENDED: 'status:sus', TERMINATED: 'status:ter', WITHDRAWN: 'status:wit',
             ENROLLING_BY_INVITATION: 'status:enr', UNKNOWN: 'status:unk',
         };
-        const urlFiltrada = (token) => `https://clinicaltrials.gov/search?term=${encodeURIComponent(query)}`
-            + `&aggFilters=${encodeURIComponent(token)}&viewType=Table`;
+        // El enlace del chip arrastra los interruptores activos: si el número del chip está
+        // calculado sobre «reclutando en España», el destino tiene que ir igual de filtrado, o
+        // el enlace aterrizaría en una cifra distinta de la que muestra.
+        const urlFiltrada = (token) => {
+            const tokens = [soloReclutando ? 'status:rec' : null, token].filter(Boolean);
+            const vistos = [...new Set(tokens)];
+            return `https://clinicaltrials.gov/search?term=${encodeURIComponent(query)}`
+                + `&aggFilters=${encodeURIComponent(vistos.join(','))}`
+                + (soloEspana ? `&country=${encodeURIComponent('Spain')}` : '')
+                + '&viewType=Table';
+        };
 
         // Sin token verificado (un valor que el registro añada mañana) el chip se pinta igual,
         // pero como texto: se conserva el dato y no se promete un destino que no se ha medido.
