@@ -2912,7 +2912,7 @@ class MedCheckApp {
             'Digestivo', 'Respiratorio', 'Otorrinolaringología', 'Alergología', 'Oftalmología', 'Dermatología',
             'Neurología', 'Salud mental y adicciones', 'Dolor y cuidados paliativos',
             'Reumatología y musculoesquelético', 'Inmunología, autoinmunes y trasplante',
-            'Infecciosas', 'Hematología y hemostasia', 'Oncología',
+            'Infecciosas', 'Vacunas', 'Hematología y hemostasia', 'Oncología',
             'Ginecología y obstetricia', 'Urología', 'Fármacos y clases'
         ];
         const orderIndex = (name) => {
