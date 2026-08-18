@@ -23,8 +23,15 @@ class MedCheckApp {
     // Hashes SHA-256 de códigos de acceso válidos.
     // Para añadir un código: await MedCheckApp._hashCode('NUEVO-CÓDIGO') en consola.
     // Para revocar: eliminar el hash correspondiente y subir nueva versión.
+    //
+    // NUNCA escribir el código en claro en el comentario, ni aquí ni en el mensaje
+    // de commit: este repo es público y el historial de git conserva la versión
+    // antigua de la línea aunque después se renombre el comentario. Los códigos
+    // antiguos con formato adivinable (patrón corto y con fecha) quedaron expuestos
+    // así. Etiqueta solo al destinatario, y genera el código con entropía suficiente
+    // para que el hash no sea atacable por fuerza bruta.
     static _ACCESS_HASHES = new Set([
-        '4f216deccb922820e9a887dde56f85f4804d6a073c206ce0e0359bc12cc90777', // autor
+        'cb830d4e5ec465f98c32ea4e703131e4024ed4730e55a8e1b8a3b8c5dc0e93c0', // autor (rotado 18-ago-2026)
         '92ae8e8c39b4ac5efc207837a0ac3fbe272b635e8514118b4d03ec9cb6c84360', // piloto A
         '65e247b6d35980132cfefc69263183b93b6c5d1a990837cca19ab61efb334d2e', // piloto B
         '60fb2ff4822021da8905de54b7809a393d64262a4872c225d2ee887b674a5a68', // ML 2026

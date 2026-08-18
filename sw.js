@@ -17,7 +17,7 @@
 // Es decir: subir el `?v=` del HTML garantiza la actualización ONLINE; subir esta VERSION
 // garantiza la OFFLINE. Hacen falta las dos. Lo cazó la revisión de Codex al preparar el
 // release 20260803a, cuando el `?v=` se había subido y esta VERSION seguía en 20260401a.
-const VERSION = '20260818b';
+const VERSION = '20260818c';
 const CACHE_NAME = `medcheck-${VERSION}`;
 
 // Install event — sin precache: NETWORK-FIRST ya cachea dinámicamente.
