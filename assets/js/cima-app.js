@@ -31,12 +31,9 @@ class MedCheckApp {
     // así. Etiqueta solo al destinatario, y genera el código con entropía suficiente
     // para que el hash no sea atacable por fuerza bruta.
     static _ACCESS_HASHES = new Set([
-        'cb830d4e5ec465f98c32ea4e703131e4024ed4730e55a8e1b8a3b8c5dc0e93c0', // autor (rotado 18-ago-2026)
-        '92ae8e8c39b4ac5efc207837a0ac3fbe272b635e8514118b4d03ec9cb6c84360', // piloto A
-        '65e247b6d35980132cfefc69263183b93b6c5d1a990837cca19ab61efb334d2e', // piloto B
+        '21681f70ffe03c4813eeeb6488a508439a03e88d30f2147b4d6f328a0e6d2245', // autor (corto a peticion, 18-ago-2026)
         '60fb2ff4822021da8905de54b7809a393d64262a4872c225d2ee887b674a5a68', // ML 2026
-        '169740e9adede4e29b7e4da5e350e9a9cb914c5dca886497eb2c9dd515c8535e', // EC revisor (revocar 31-jul-2026)
-        // Revocados 18-ago-2026: LR revisor, CB revisor (caducados 31-jul-2026)
+        // Revocados 18-ago-2026: LR revisor, CB revisor, piloto A, piloto B, EC revisor.
     ]);
 
     static async _hashCode(code) {
