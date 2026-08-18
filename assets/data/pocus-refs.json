@@ -233,5 +233,13 @@
     "doi": "10.55563/clinexprheumatol/pal3z7",
     "verified": "2026-06-02",
     "verifiedBy": "pubmed+crossref"
+  },
+  "fm_pocus_recommendations_paulus_2026": {
+    "citation": "Paulus R. Multiorganizational Recommendations for Point-of-Care Ultrasound in Family Medicine Residency Education. Fam Med. 2026;58(0):1-5.",
+    "url": "https://doi.org/10.22454/FamMed.2026.426882",
+    "doi": "10.22454/FamMed.2026.426882",
+    "pmid": "42546336",
+    "verified": "2026-08-18",
+    "verifiedBy": "pubmed+crossref"
   }
 }

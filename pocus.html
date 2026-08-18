@@ -1424,6 +1424,24 @@
                 </p>
               </div>
             </div>
+            <div
+              class="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-xl text-left"
+            >
+              <h4 class="text-sm font-semibold text-gray-700 mb-1">
+                Alcance del atlas
+              </h4>
+              <p class="text-sm text-gray-600">
+                La selección de aplicaciones se orienta por las recomendaciones
+                publicadas sobre qué exploraciones ecográficas deberían formar
+                parte de la formación en medicina de familia, adaptadas al
+                contexto de la consulta de atención primaria en España. No es
+                una lista exhaustiva ni un programa formativo.
+              </p>
+              <p
+                id="alcance-cita"
+                class="text-xs text-gray-500 mt-2 leading-relaxed"
+              ></p>
+            </div>
             <p class="text-xs text-gray-500 mt-8">
               Autor: Ernesto Barrera Linares. Médico de Familia · 2025
             </p>
@@ -1463,6 +1481,20 @@
           console.warn("No se pudieron cargar las referencias POCUS:", err);
           return {};
         });
+
+      // Cita general del alcance del atlas (tarjeta de bienvenida). Se toma de la
+      // MISMA fuente única de referencias en vez de escribirla en el HTML, para que
+      // no existan dos copias que puedan divergir. Si el fetch falla, la nota de
+      // alcance sigue leyéndose; solo se queda sin la cita formal.
+      _refsReady.then((data) => {
+        const ref = data["fm_pocus_recommendations_paulus_2026"];
+        const host = document.getElementById("alcance-cita");
+        if (!ref || !host) return;
+        host.innerHTML =
+          `${ref.citation} ` +
+          `<a href="${ref.url}" target="_blank" rel="noopener noreferrer" ` +
+          `class="text-blue-600 hover:text-blue-800 underline">Acceder al artículo</a>`;
+      });
 
       // Base de datos POCUS
       const pocusData = [
