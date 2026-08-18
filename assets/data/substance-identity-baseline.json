@@ -1,0 +1,1728 @@
+{
+  "version": "2026-08-18",
+  "note": "Baseline de identidad de sustancia. CANDIDATOS, no traducciones autorizadas: la incorporacion a inn-es-en.json es una decision humana. Estados: verified (una autoridad oficial lo resuelve; convergencia si ambas coinciden) · review (dos candidatos distintos: elegir seria juzgar) · unresolved (ninguna autoridad, o PubMed solo reconocio un fragmento) · manual (combinacion: pendiente de resolver por componentes estructurados) · inconclusive (no se pudo medir). Se guarda estado, termino y fecha; NUNCA recuentos historicos.",
+  "sources": {
+    "snomed": "CIMA vtm.id (SNOMED CT) -> RxNav idtype=SNOMEDCT (NLM)",
+    "pubmed": "eutils esearch querytranslation (concepto MeSH / Supplementary Concept)"
+  },
+  "terms": {
+    "efanesoctocog alfa": {
+      "products": 54,
+      "checked": "2026-08-18",
+      "sctid": "283501000140103",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ausente"
+      },
+      "status": "unresolved",
+      "reason": "ninguna autoridad lo resuelve"
+    },
+    "ácido ibandrónico": {
+      "products": 42,
+      "checked": "2026-08-18",
+      "sctid": "395271007",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ausente"
+      },
+      "status": "verified",
+      "en": "ibandronic acid",
+      "method": "snomed",
+      "evidence": [
+        "rxcui 115265 · SNOMEDCT 395271007"
+      ]
+    },
+    "eftrenonacog alfa": {
+      "products": 40,
+      "checked": "2026-08-18",
+      "sctid": "171791000140109",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "fragmento"
+      },
+      "status": "review",
+      "candidates": [
+        "factor ix fc fusion protein"
+      ],
+      "reason": "no cubre el nombre completo: factor ix fc fusion protein"
+    },
+    "darbepoetina alfa": {
+      "products": 39,
+      "checked": "2026-08-18",
+      "sctid": "385610007",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "darbepoetin alfa",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 283838 · SNOMEDCT 385610007",
+        "querytranslation: \"darbepoetin alfa\""
+      ]
+    },
+    "lonoctocog alfa": {
+      "products": 36,
+      "checked": "2026-08-18",
+      "sctid": "188981000140109",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ausente"
+      },
+      "status": "unresolved",
+      "reason": "ninguna autoridad lo resuelve"
+    },
+    "ácido alendrónico": {
+      "products": 32,
+      "checked": "2026-08-18",
+      "sctid": "421552005",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ausente"
+      },
+      "status": "verified",
+      "en": "alendronic acid",
+      "method": "snomed",
+      "evidence": [
+        "rxcui 236083 · SNOMEDCT 421552005"
+      ]
+    },
+    "ambrisentán": {
+      "products": 24,
+      "checked": "2026-08-18",
+      "sctid": "427735003",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "ambrisentan",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 358274 · SNOMEDCT 427735003",
+        "querytranslation: \"ambrisentan\""
+      ]
+    },
+    "everolimus": {
+      "products": 24,
+      "checked": "2026-08-18",
+      "sctid": "428127005",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "everolimus",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 141704 · SNOMEDCT 428127005",
+        "querytranslation: \"everolimus\""
+      ]
+    },
+    "almotriptán": {
+      "products": 21,
+      "checked": "2026-08-18",
+      "sctid": "134529000",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "almotriptan",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 279645 · SNOMEDCT 134529000",
+        "querytranslation: \"almotriptan\""
+      ]
+    },
+    "amisulprida": {
+      "products": 21,
+      "checked": "2026-08-18",
+      "sctid": "321636003",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "amisulpride",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 46303 · SNOMEDCT 321636003",
+        "querytranslation: \"amisulpride\""
+      ]
+    },
+    "abacavir + lamivudina": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 20,
+      "checked": "2026-08-18"
+    },
+    "abiraterona": {
+      "products": 20,
+      "checked": "2026-08-18",
+      "sctid": "138871000140109",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "abiraterone",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"abiraterone\""
+      ]
+    },
+    "ácido ursodeoxicólico": {
+      "products": 18,
+      "checked": "2026-08-18",
+      "sctid": "139231000140104",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "ursodeoxycholic acid",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"ursodeoxycholic acid\""
+      ]
+    },
+    "anastrozol": {
+      "products": 18,
+      "checked": "2026-08-18",
+      "sctid": "108774000",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "anastrozole",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 84857 · SNOMEDCT 108774000",
+        "querytranslation: \"anastrozole\""
+      ]
+    },
+    "riociguat": {
+      "products": 16,
+      "checked": "2026-08-18",
+      "sctid": "152081000140100",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "riociguat",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"riociguat\""
+      ]
+    },
+    "ácido alendrónico + colecalciferol": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 16,
+      "checked": "2026-08-18"
+    },
+    "salicilato de dietilamina + mirtecaína": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 16,
+      "checked": "2026-08-18"
+    },
+    "vacuna anti virus respiratorio sincitial": {
+      "products": 14,
+      "checked": "2026-08-18",
+      "sctid": "278111000140109",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "fragmento"
+      },
+      "status": "review",
+      "candidates": [
+        "viruses"
+      ],
+      "reason": "no cubre el nombre completo: viruses"
+    },
+    "ácido micofenólico": {
+      "products": 12,
+      "checked": "2026-08-18",
+      "sctid": "409331009",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "fragmento"
+      },
+      "status": "verified",
+      "en": "mycophenolic acid",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 7145 devuelve \"mycophenolic acid\", que no comparte raiz",
+        "no cubre el nombre completo: mycophenolic acid"
+      ]
+    },
+    "apremilast": {
+      "products": 12,
+      "checked": "2026-08-18",
+      "sctid": "157661000140102",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "apremilast",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"apremilast\""
+      ]
+    },
+    "hipromelosa + sodio cloruro": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 10,
+      "checked": "2026-08-18"
+    },
+    "almagato": {
+      "products": 10,
+      "checked": "2026-08-18",
+      "sctid": "139351000140100",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ausente"
+      },
+      "status": "unresolved",
+      "reason": "ninguna autoridad lo resuelve"
+    },
+    "entecavir": {
+      "products": 10,
+      "checked": "2026-08-18",
+      "sctid": "416248007",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "entecavir",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 306266 · SNOMEDCT 416248007",
+        "querytranslation: \"entecavir\""
+      ]
+    },
+    "ácido acetilsalicílico + paracetamol + cafeína": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 9,
+      "checked": "2026-08-18"
+    },
+    "alprostadil": {
+      "products": 9,
+      "checked": "2026-08-18",
+      "sctid": "109119001",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "alprostadil",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 598 · SNOMEDCT 109119001",
+        "querytranslation: \"alprostadil\""
+      ]
+    },
+    "bevacizumab": {
+      "products": 9,
+      "checked": "2026-08-18",
+      "sctid": "409405006",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "bevacizumab",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 253337 · SNOMEDCT 409405006",
+        "querytranslation: \"bevacizumab\""
+      ]
+    },
+    "amilorida + hidroclorotiazida": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 9,
+      "checked": "2026-08-18"
+    },
+    "fluorouracilo + ácido salicílico": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 8,
+      "checked": "2026-08-18"
+    },
+    "brentuximab vedotina": {
+      "products": 8,
+      "checked": "2026-08-18",
+      "sctid": "145331000140107",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "brentuximab vedotin",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"brentuximab vedotin\""
+      ]
+    },
+    "antazolina + nafazolina": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 8,
+      "checked": "2026-08-18"
+    },
+    "cabotegravir": {
+      "products": 8,
+      "checked": "2026-08-18",
+      "sctid": "262471000140103",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "cabotegravir",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"cabotegravir\""
+      ]
+    },
+    "paclitaxel": {
+      "products": 7,
+      "checked": "2026-08-18",
+      "sctid": "67735003",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "paclitaxel",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 56946 · SNOMEDCT 67735003",
+        "querytranslation: \"paclitaxel\""
+      ]
+    },
+    "insulina regular": {
+      "products": 7,
+      "checked": "2026-08-18",
+      "sctid": "417423002",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "insulin, regular, human",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 253182 · SNOMEDCT 417423002",
+        "querytranslation: \"insulin regular human\""
+      ]
+    },
+    "aflibercept": {
+      "products": 7,
+      "checked": "2026-08-18",
+      "sctid": "144931000140109",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "aflibercept",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"aflibercept\""
+      ]
+    },
+    "fulvestrant": {
+      "products": 7,
+      "checked": "2026-08-18",
+      "sctid": "404845006",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "fulvestrant",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 282357 · SNOMEDCT 404845006",
+        "querytranslation: \"fulvestrant\""
+      ]
+    },
+    "clorhexidina": {
+      "products": 7,
+      "checked": "2026-08-18",
+      "sctid": "96316004",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "fragmento"
+      },
+      "status": "verified",
+      "en": "chlorhexidine",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 2358 devuelve \"chlorhexidine\", que no comparte raiz",
+        "no cubre el nombre completo: chlorhexidine"
+      ]
+    },
+    "benzocaína + clorhexidina + enoxolona": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 7,
+      "checked": "2026-08-18"
+    },
+    "fluocinolona + ciprofloxacino": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 6,
+      "checked": "2026-08-18"
+    },
+    "acetilcolina cloruro": {
+      "products": 6,
+      "checked": "2026-08-18",
+      "sctid": "13525006",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "ausente"
+      },
+      "status": "review",
+      "candidates": [
+        "acetylcholine"
+      ],
+      "reason": "rxcui 194 devuelve \"acetylcholine\", que no comparte raiz · \"acetilcolina\"[All Fields] AND \"cloruro\"[All Fields]"
+    },
+    "alteplasa": {
+      "products": 6,
+      "checked": "2026-08-18",
+      "sctid": "27638005",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "fragmento"
+      },
+      "status": "verified",
+      "en": "alteplase",
+      "method": "snomed",
+      "evidence": [
+        "rxcui 8410 · SNOMEDCT 27638005"
+      ]
+    },
+    "alectinib": {
+      "products": 6,
+      "checked": "2026-08-18",
+      "sctid": "186731000140107",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "alectinib",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"alectinib\""
+      ]
+    },
+    "atogepant": {
+      "products": 6,
+      "checked": "2026-08-18",
+      "sctid": "279151000140102",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "atogepant",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"atogepant\""
+      ]
+    },
+    "hipromelosa": {
+      "products": 6,
+      "checked": "2026-08-18",
+      "sctid": "330769006",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "fragmento"
+      },
+      "status": "review",
+      "candidates": [
+        "hypromellose",
+        "hypromellose derivatives"
+      ],
+      "reason": "rxcui 27334 devuelve \"hypromellose\", que no comparte raiz · no cubre el nombre completo: hypromellose derivatives"
+    },
+    "tocoferol": {
+      "products": 6,
+      "checked": "2026-08-18",
+      "sctid": "63822004",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "fragmento"
+      },
+      "status": "review",
+      "candidates": [
+        "vitamin E",
+        "tocopherols"
+      ],
+      "reason": "rxcui 11256 devuelve \"vitamin E\", que no comparte raiz · no cubre el nombre completo: tocopherols"
+    },
+    "cinacalcet": {
+      "products": 6,
+      "checked": "2026-08-18",
+      "sctid": "409391006",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "cinacalcet",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 407990 · SNOMEDCT 409391006",
+        "querytranslation: \"cinacalcet\""
+      ]
+    },
+    "naproxeno sodico": {
+      "products": 5,
+      "checked": "2026-08-18",
+      "sctid": "416187001",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "fragmento"
+      },
+      "status": "review",
+      "candidates": [
+        "naproxen"
+      ],
+      "reason": "no cubre el nombre completo: naproxen"
+    },
+    "loxapina": {
+      "products": 5,
+      "checked": "2026-08-18",
+      "sctid": "59270007",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "loxapine",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 6475 · SNOMEDCT 59270007",
+        "querytranslation: \"loxapine\""
+      ]
+    },
+    "glicerol": {
+      "products": 5,
+      "checked": "2026-08-18",
+      "sctid": "404833002",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "ausente"
+      },
+      "status": "review",
+      "candidates": [
+        "glycerin"
+      ],
+      "reason": "rxcui 4910 devuelve \"glycerin\", que no comparte raiz · \"glicerol\"[All Fields]"
+    },
+    "orlistat": {
+      "products": 5,
+      "checked": "2026-08-18",
+      "sctid": "116093009",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "orlistat",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 37925 · SNOMEDCT 116093009",
+        "querytranslation: \"orlistat\""
+      ]
+    },
+    "nonacog alfa": {
+      "products": 5,
+      "checked": "2026-08-18",
+      "sctid": "415245003",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ausente"
+      },
+      "status": "verified",
+      "en": "nonacog alfa",
+      "method": "snomed",
+      "evidence": [
+        "rxcui 1300488 · SNOMEDCT 415245003"
+      ]
+    },
+    "vacuna anti hepatitis B": {
+      "products": 5,
+      "checked": "2026-08-18",
+      "sctid": "871822003",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "fragmento"
+      },
+      "status": "review",
+      "candidates": [
+        "hepatitis b"
+      ],
+      "reason": "no cubre el nombre completo: hepatitis b"
+    },
+    "melfalán": {
+      "products": 4,
+      "checked": "2026-08-18",
+      "sctid": "544002",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "fragmento"
+      },
+      "status": "verified",
+      "en": "melphalan",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 6718 devuelve \"melphalan\", que no comparte raiz",
+        "no cubre el nombre completo: melphalan"
+      ]
+    },
+    "levodropropizina": {
+      "products": 4,
+      "checked": "2026-08-18",
+      "sctid": "142041000140109",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "fragmento"
+      },
+      "status": "review",
+      "candidates": [
+        "dipropizine"
+      ],
+      "reason": "no cubre el nombre completo: dipropizine"
+    },
+    "zinc óxido + almidón maíz": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 4,
+      "checked": "2026-08-18"
+    },
+    "anidulafungina": {
+      "products": 4,
+      "checked": "2026-08-18",
+      "sctid": "421904007",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "anidulafungin",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 341018 · SNOMEDCT 421904007",
+        "querytranslation: \"anidulafungin\""
+      ]
+    },
+    "vacuna anti meningococo B": {
+      "products": 4,
+      "checked": "2026-08-18",
+      "sctid": "146731000140102",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ausente"
+      },
+      "status": "unresolved",
+      "reason": "ninguna autoridad lo resuelve"
+    },
+    "sugammadex": {
+      "products": 4,
+      "checked": "2026-08-18",
+      "sctid": "442379000",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "sugammadex",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 1726988 · SNOMEDCT 442379000",
+        "querytranslation: \"sugammadex\""
+      ]
+    },
+    "inhibidor C1 esterasa": {
+      "products": 4,
+      "checked": "2026-08-18",
+      "sctid": "441508005",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ausente"
+      },
+      "status": "verified",
+      "en": "C1 esterase inhibitor",
+      "method": "snomed",
+      "evidence": [
+        "rxcui 1599832 · SNOMEDCT 441508005"
+      ]
+    },
+    "alcohol etílico + clorhexidina": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 4,
+      "checked": "2026-08-18"
+    },
+    "atazanavir": {
+      "products": 4,
+      "checked": "2026-08-18",
+      "sctid": "413591007",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "review",
+      "candidates": [
+        "atazanavir",
+        "atazanavir sulfate"
+      ],
+      "evidence": [
+        "rxcui 343047 · SNOMEDCT 413591007",
+        "querytranslation: \"atazanavir sulfate\""
+      ]
+    },
+    "maraviroc": {
+      "products": 4,
+      "checked": "2026-08-18",
+      "sctid": "427805000",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "maraviroc",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 620216 · SNOMEDCT 427805000",
+        "querytranslation: \"maraviroc\""
+      ]
+    },
+    "darunavir": {
+      "products": 4,
+      "checked": "2026-08-18",
+      "sctid": "424096001",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "darunavir",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 460132 · SNOMEDCT 424096001",
+        "querytranslation: \"darunavir\""
+      ]
+    },
+    "hidrocortisona + benzocaína + neomicina + ácido tánico": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 3,
+      "checked": "2026-08-18"
+    },
+    "pegcetacoplán": {
+      "products": 3,
+      "checked": "2026-08-18",
+      "sctid": "268551000140108",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "pegcetacoplan",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"pegcetacoplan\""
+      ]
+    },
+    "belimumab": {
+      "products": 3,
+      "checked": "2026-08-18",
+      "sctid": "139571000140103",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "belimumab",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"belimumab\""
+      ]
+    },
+    "etonogestrel + etinilestradiol": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 3,
+      "checked": "2026-08-18"
+    },
+    "vacuna anti virus papiloma humano": {
+      "products": 3,
+      "checked": "2026-08-18",
+      "sctid": "836379009",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "fragmento"
+      },
+      "status": "review",
+      "candidates": [
+        "viruses"
+      ],
+      "reason": "no cubre el nombre completo: viruses"
+    },
+    "dimenhidrinato": {
+      "products": 3,
+      "checked": "2026-08-18",
+      "sctid": "81073007",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "dimenhydrinate",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 3444 · SNOMEDCT 81073007",
+        "querytranslation: \"dimenhydrinate\""
+      ]
+    },
+    "carteolol": {
+      "products": 3,
+      "checked": "2026-08-18",
+      "sctid": "108544005",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "carteolol",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 2116 · SNOMEDCT 108544005",
+        "querytranslation: \"carteolol\""
+      ]
+    },
+    "alcohol diclorobencílico + amilmetacresol + lidocaína": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 3,
+      "checked": "2026-08-18"
+    },
+    "rifabutina": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "108684009",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "rifabutin",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 55672 · SNOMEDCT 108684009",
+        "querytranslation: \"rifabutin\""
+      ]
+    },
+    "amorolfina": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "332998007",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "amorolfine",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 17804 · SNOMEDCT 332998007",
+        "querytranslation: \"amorolfine\""
+      ]
+    },
+    "anagrelida": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "108976008",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "anagrelide",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 596724 · SNOMEDCT 108976008",
+        "querytranslation: \"anagrelide\""
+      ]
+    },
+    "exemestano": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "116115004",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "exemestane",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 258494 · SNOMEDCT 116115004",
+        "querytranslation: \"exemestane\""
+      ]
+    },
+    "macrogol 3350 + electrolitos": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 2,
+      "checked": "2026-08-18"
+    },
+    "levocabastina": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "108863001",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "levocabastine",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 28627 · SNOMEDCT 108863001",
+        "querytranslation: \"levocabastine\""
+      ]
+    },
+    "vacuna anti difteria + tétanos + tos ferina": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 2,
+      "checked": "2026-08-18"
+    },
+    "bortezomib": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "398907002",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "bortezomib",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 358258 · SNOMEDCT 398907002",
+        "querytranslation: \"bortezomib\""
+      ]
+    },
+    "vacuna anti neumococo": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "836398006",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ausente"
+      },
+      "status": "unresolved",
+      "reason": "ninguna autoridad lo resuelve"
+    },
+    "dihidroergocristina + cinarizina": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 2,
+      "checked": "2026-08-18"
+    },
+    "ácido gadotérico": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "139151000140103",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ausente"
+      },
+      "status": "unresolved",
+      "reason": "ninguna autoridad lo resuelve"
+    },
+    "carbetocina": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "423594000",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "carbetocin",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"carbetocin\""
+      ]
+    },
+    "desmopresina": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "73454001",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "fragmento"
+      },
+      "status": "verified",
+      "en": "desmopressin",
+      "method": "snomed",
+      "evidence": [
+        "rxcui 3251 · SNOMEDCT 73454001"
+      ]
+    },
+    "parecoxib": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "395289008",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "parecoxib",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 279950 · SNOMEDCT 395289008",
+        "querytranslation: \"parecoxib\""
+      ]
+    },
+    "retinol + tocoferol": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 2,
+      "checked": "2026-08-18"
+    },
+    "cefotaxima": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "3334000",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "cefotaxime",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 2186 · SNOMEDCT 3334000",
+        "querytranslation: \"cefotaxime\""
+      ]
+    },
+    "lamivudina + zidovudina": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 2,
+      "checked": "2026-08-18"
+    },
+    "dalbavancina": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "160641000140108",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "dalbavancin",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"dalbavancin\""
+      ]
+    },
+    "manidipino": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "142191000140103",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "manidipine",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"manidipine\""
+      ]
+    },
+    "ácido acetilsalicílico + clorfenamina + fenilefrina": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 2,
+      "checked": "2026-08-18"
+    },
+    "ácido acetilsalicílico + cafeína": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 2,
+      "checked": "2026-08-18"
+    },
+    "atovacuona": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "108718008",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "atovaquone",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 60212 · SNOMEDCT 108718008",
+        "querytranslation: \"atovaquone\""
+      ]
+    },
+    "dexibuprofeno": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "418027007",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "dexibuprofen",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"dexibuprofen\""
+      ]
+    },
+    "bromuro ipratropio": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "108624006",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "ausente"
+      },
+      "status": "review",
+      "candidates": [
+        "ipratropium"
+      ],
+      "reason": "rxcui 7213 devuelve \"ipratropium\", que no comparte raiz · \"bromuro\"[All Fields] AND \"ipratropio\"[All Fields]"
+    },
+    "articaína + epinefrina": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 2,
+      "checked": "2026-08-18"
+    },
+    "alcohol diclorobencílico + amilmetacresol": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 2,
+      "checked": "2026-08-18"
+    },
+    "bupivacaína + epinefrina": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 2,
+      "checked": "2026-08-18"
+    },
+    "dextrometorfano + guaifenesina": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 2,
+      "checked": "2026-08-18"
+    },
+    "cinitaprida": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "140031000140102",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "cinitapride",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"cinitapride\""
+      ]
+    },
+    "deferasirox": {
+      "products": 2,
+      "checked": "2026-08-18",
+      "sctid": "417910004",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "deferasirox",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 614373 · SNOMEDCT 417910004",
+        "querytranslation: \"deferasirox\""
+      ]
+    },
+    "azelastina": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "108644000",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "azelastine",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 18603 · SNOMEDCT 108644000",
+        "querytranslation: \"azelastine\""
+      ]
+    },
+    "ketotifeno": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "354038002",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "ketotifen",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 6146 · SNOMEDCT 354038002",
+        "querytranslation: \"ketotifen\""
+      ]
+    },
+    "inotuzumab ozogamicina": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "194851000140104",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ausente"
+      },
+      "status": "unresolved",
+      "reason": "ninguna autoridad lo resuelve"
+    },
+    "carmelosa": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "350108002",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "fragmento"
+      },
+      "status": "review",
+      "candidates": [
+        "carboxymethylcellulose",
+        "carboxymethylcellulose sodium"
+      ],
+      "reason": "rxcui 2062 devuelve \"carboxymethylcellulose\", que no comparte raiz · no cubre el nombre completo: carboxymethylcellulose sodium"
+    },
+    "Lactobacillus acidophilus": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "398961004",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "lactobacillus acidophilus",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"lactobacillus acidophilus\""
+      ]
+    },
+    "macrogol 4000 + electrolitos": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 1,
+      "checked": "2026-08-18"
+    },
+    "macrogol 4000": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "421083001",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "fragmento"
+      },
+      "status": "verified",
+      "en": "polyethylene glycol 4000",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 1310594 devuelve \"polyethylene glycol 4000\", que no comparte raiz",
+        "no cubre el nombre completo: polyethylene glycol 4000"
+      ]
+    },
+    "nafazolina + metiltioninio": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 1,
+      "checked": "2026-08-18"
+    },
+    "producto con factor XIII": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "319930009",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "fragmento"
+      },
+      "status": "verified",
+      "en": "factor XIII",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 4271 devuelve \"factor XIII\", que no comparte raiz",
+        "no cubre el nombre completo: factor xiii"
+      ]
+    },
+    "bazedoxifeno": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "139511000140108",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "bazedoxifene",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"bazedoxifene\""
+      ]
+    },
+    "glatiramero acetato": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "108754007",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "ausente"
+      },
+      "status": "review",
+      "candidates": [
+        "glatiramer"
+      ],
+      "reason": "rxcui 214582 devuelve \"glatiramer\", que no comparte raiz · \"glatiramero\"[All Fields] AND \"acetato\"[All Fields]"
+    },
+    "ácido mefenámico": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "34364009",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ausente"
+      },
+      "status": "verified",
+      "en": "mefenamic acid",
+      "method": "snomed",
+      "evidence": [
+        "rxcui 6693 · SNOMEDCT 34364009"
+      ]
+    },
+    "Arctostaphylos uva-ursi + Betula sp + Solidago gigantea": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 1,
+      "checked": "2026-08-18"
+    },
+    "clonixino lisina": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "140151000140109",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "fragmento"
+      },
+      "status": "review",
+      "candidates": [
+        "clonixin"
+      ],
+      "reason": "no cubre el nombre completo: clonixin"
+    },
+    "avatrombopag": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "257991000140103",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "avatrombopag",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"avatrombopag\""
+      ]
+    },
+    "cabergolina": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "109139002",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "cabergoline",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 47579 · SNOMEDCT 109139002",
+        "querytranslation: \"cabergoline\""
+      ]
+    },
+    "dexpantenol": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "404842009",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "dexpanthenol",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 22701 · SNOMEDCT 404842009",
+        "querytranslation: \"dexpanthenol\""
+      ]
+    },
+    "bromhexina": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "139791000140106",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "bromhexine",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"bromhexine\""
+      ]
+    },
+    "hierro carboximaltosa": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "430819007",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "fragmento"
+      },
+      "status": "review",
+      "candidates": [
+        "ferric carboxymaltose",
+        "iron"
+      ],
+      "reason": "rxcui 1433693 devuelve \"ferric carboxymaltose\", que no comparte raiz · no cubre el nombre completo: iron"
+    },
+    "Hedera helix": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "141181000140109",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "fragmento"
+      },
+      "status": "review",
+      "candidates": [
+        "hedera"
+      ],
+      "reason": "no cubre el nombre completo: hedera"
+    },
+    "dimenhidrinato + cafeína": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 1,
+      "checked": "2026-08-18"
+    },
+    "nafazolina + tetracaína": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 1,
+      "checked": "2026-08-18"
+    },
+    "clorhexidina + alcohol isopropílico": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 1,
+      "checked": "2026-08-18"
+    },
+    "eculizumab": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "426801002",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "eculizumab",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 591781 · SNOMEDCT 426801002",
+        "querytranslation: \"eculizumab\""
+      ]
+    },
+    "vacuna anti difteria + tétanos + tos ferina + polio": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 1,
+      "checked": "2026-08-18"
+    },
+    "colistimetato de sodio": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "422267005",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "ausente"
+      },
+      "status": "review",
+      "candidates": [
+        "colistimethate"
+      ],
+      "reason": "rxcui 2708 devuelve \"colistimethate\", que no comparte raiz · \"colistimetato\"[All Fields] AND (\"drug effects\"[MeSH Subheading] OR (\"drug\"[All Fields] AND \"effects\"[All Fields]) OR \"d"
+    },
+    "vacuna anti difteria + tétanos": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 1,
+      "checked": "2026-08-18"
+    },
+    "rilpivirina": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "144061000140100",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "rilpivirine",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"rilpivirine\""
+      ]
+    },
+    "vismodegib": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "145481000140103",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "fragmento"
+      },
+      "status": "review",
+      "candidates": [
+        "hhantag691"
+      ],
+      "reason": "no cubre el nombre completo: hhantag691"
+    },
+    "atazanavir + cobicistat": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 1,
+      "checked": "2026-08-18"
+    },
+    "retinol": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "82156005",
+      "sources": {
+        "snomed": "ensancha",
+        "pubmed": "fragmento"
+      },
+      "status": "verified",
+      "en": "vitamin A",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 11246 devuelve \"vitamin A\", que no comparte raiz",
+        "no cubre el nombre completo: vitamin a"
+      ]
+    },
+    "avelumab": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "196391000140108",
+      "sources": {
+        "snomed": "ausente",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "avelumab",
+      "method": "pubmed",
+      "evidence": [
+        "querytranslation: \"avelumab\""
+      ]
+    },
+    "dextrometorfano + sulfoguayacolato potasio": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 1,
+      "checked": "2026-08-18"
+    },
+    "bupivacaína + glucosa": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 1,
+      "checked": "2026-08-18"
+    },
+    "vareniclina": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "420507002",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "varenicline",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 591622 · SNOMEDCT 420507002",
+        "querytranslation: \"varenicline\""
+      ]
+    },
+    "codeína + efedrina + sulfoguayacolato potasio": {
+      "status": "manual",
+      "reason": "combinacion: resolver por componentes estructurados de CIMA",
+      "products": 1,
+      "checked": "2026-08-18"
+    },
+    "deferoxamina": {
+      "products": 1,
+      "checked": "2026-08-18",
+      "sctid": "70702006",
+      "sources": {
+        "snomed": "ok",
+        "pubmed": "ok"
+      },
+      "status": "verified",
+      "en": "deferoxamine",
+      "method": "convergencia",
+      "evidence": [
+        "rxcui 3131 · SNOMEDCT 70702006",
+        "querytranslation: \"deferoxamine\""
+      ]
+    }
+  }
+}
