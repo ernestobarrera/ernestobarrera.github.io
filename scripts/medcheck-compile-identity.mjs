@@ -150,11 +150,20 @@ async function porPubmed(nombreEs) {
 const NO_INFORMATIVO = /^(multicomponente|varios|asociaciones|combinaciones)$/i;
 const LETRAS = ['A', 'B', 'C', 'D', 'G', 'H', 'J', 'L', 'M', 'N', 'P', 'R', 'S', 'V'];
 
+// CIMA PAGINA A 200, y el corpus es grande de verdad: solo la letra A tiene 15752 productos
+// comercializados. La primera version de esta funcion leia UNA pagina por letra —2800 de unos
+// 70.000— y por eso `esketamina` (SPRAVATO), que es el caso que origino todo este trabajo,
+// nunca entro en el barrido. Un compilador que muestrea deja justo los agujeros que existe para
+// cerrar. Se recorren todas las paginas.
 async function recolectar() {
     const pend = new Map();
     for (const L of LETRAS) {
-        const d = await pedir(`https://cima.aemps.es/cima/rest/medicamentos?atc=${L}&comerc=1`);
-        if (!d) continue;
+        let pagina = 1, total = null;
+        for (;;) {
+        const d = await pedir(`https://cima.aemps.es/cima/rest/medicamentos?atc=${L}&comerc=1&pagina=${pagina}`);
+        if (!d) break;
+        if (total === null) total = Number(d.totalFilas || 0);
+        if (!(d.resultados || []).length) break;
         for (const med of d.resultados || []) {
             const vtm = (med?.vtm?.nombre || '').trim();
             const sctid = med?.vtm?.id ? String(med.vtm.id) : null;
@@ -167,7 +176,12 @@ async function recolectar() {
             e.productos += 1;
             pend.set(vtm, e);
         }
-        await dormir(220);
+            pagina += 1;
+            if (total && pagina > Math.ceil(total / 200)) break;
+            if (pagina > 400) break;    // tope de seguridad ante una paginacion que no termine
+            await dormir(130);
+        }
+        process.stdout.write(`  ${L}: ${total ?? '?'} productos · acumulados ${pend.size} nombres sin verificar\n`);
     }
     return pend;
 }
@@ -177,8 +191,24 @@ console.log('# Compilador de identidad de sustancia\n');
 const pendientes = await recolectar();
 console.log(`nombres sin verificar recolectados: ${pendientes.size}`);
 
-const orden = [...pendientes.entries()].sort((a, b) => b[1].productos - a[1].productos).slice(0, MAX);
-const terms = {};
+// INCREMENTAL. A esta escala una pasada completa son miles de consultas a dos APIs: si el
+// compilador tuviera que rehacerlo todo cada vez, no se ejecutaria nunca. Lo ya resuelto en una
+// pasada anterior se conserva y no se vuelve a preguntar; se retoma por donde quedo, priorizando
+// siempre lo que mas productos arrastra. `--rehacer` fuerza la reconsulta de todo.
+const previoJson = existsSync(SALIDA) ? JSON.parse(readFileSync(SALIDA, 'utf8')) : { terms: {} };
+const rehacer = args.includes('--rehacer');
+const yaResuelto = new Set(rehacer ? [] : Object.entries(previoJson.terms || {})
+    .filter(([, v]) => v.status !== 'inconclusive')
+    .map(([k]) => k));
+
+const orden = [...pendientes.entries()]
+    .filter(([n]) => !yaResuelto.has(n))
+    .sort((a, b) => b[1].productos - a[1].productos)
+    .slice(0, MAX);
+console.log(`ya resueltos en pasadas anteriores: ${yaResuelto.size} · a consultar ahora: ${orden.length}`);
+
+// Se parte del baseline previo: una pasada acotada AMPLIA el ledger, no lo sustituye.
+const terms = rehacer ? {} : { ...(previoJson.terms || {}) };
 const cuenta = { verified: 0, review: 0, unresolved: 0, manual: 0, inconclusive: 0 };
 
 for (const [nombre, meta] of orden) {
@@ -262,12 +292,11 @@ if (seco) {
 } else if (inconcluso) {
     console.log('\nNO se escribe el baseline: una pasada inconclusa consolidaria como revisado lo que no se pudo medir.');
 } else {
-    const previo = existsSync(SALIDA) ? JSON.parse(readFileSync(SALIDA, 'utf8')) : null;
-    if (previo) {
-        // No se pierden veredictos humanos: lo curado a mano sobrevive a una recompilacion.
-        for (const [k, v] of Object.entries(previo.terms || {})) {
-            if (v.status === 'curated' || v.human) baseline.terms[k] = v;
-        }
+    // Los veredictos HUMANOS y lo ya promovido mandan siempre sobre lo que diga una recompilacion:
+    // una pasada automatica no puede deshacer una decision suya. Se restauran al final, incluso
+    // con `--rehacer`.
+    for (const [k, v] of Object.entries(previoJson.terms || {})) {
+        if (v.status === 'curated' || v.human || v.promoted) baseline.terms[k] = v;
     }
     writeFileSync(SALIDA, JSON.stringify(baseline, null, 2) + '\n', 'utf8');
     console.log(`\nescrito ${SALIDA.replace(ROOT, '.')}`);

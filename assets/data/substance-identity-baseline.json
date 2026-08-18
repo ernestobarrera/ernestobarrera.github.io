@@ -30,7 +30,14 @@
       "method": "snomed",
       "evidence": [
         "rxcui 115265 · SNOMEDCT 395271007"
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 861,
+        "ctgov_es": 91,
+        "ctgov_en": 91
+      }
     },
     "eftrenonacog alfa": {
       "products": 40,
@@ -60,7 +67,14 @@
       "evidence": [
         "rxcui 283838 · SNOMEDCT 385610007",
         "querytranslation: \"darbepoetin alfa\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1498,
+        "pubmed_en": 1498,
+        "ctgov_es": 259,
+        "ctgov_en": 252
+      }
     },
     "lonoctocog alfa": {
       "products": 36,
@@ -86,7 +100,14 @@
       "method": "snomed",
       "evidence": [
         "rxcui 236083 · SNOMEDCT 421552005"
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 3,
+        "pubmed_en": 2115,
+        "ctgov_es": 0,
+        "ctgov_en": 234
+      }
     },
     "ambrisentán": {
       "products": 24,
@@ -102,7 +123,14 @@
       "evidence": [
         "rxcui 358274 · SNOMEDCT 427735003",
         "querytranslation: \"ambrisentan\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 591,
+        "pubmed_en": 591,
+        "ctgov_es": 0,
+        "ctgov_en": 84
+      }
     },
     "everolimus": {
       "products": 24,
@@ -118,7 +146,14 @@
       "evidence": [
         "rxcui 141704 · SNOMEDCT 428127005",
         "querytranslation: \"everolimus\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 10060,
+        "pubmed_en": 10060,
+        "ctgov_es": 1287,
+        "ctgov_en": 1287
+      }
     },
     "almotriptán": {
       "products": 21,
@@ -134,7 +169,14 @@
       "evidence": [
         "rxcui 279645 · SNOMEDCT 134529000",
         "querytranslation: \"almotriptan\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 311,
+        "pubmed_en": 311,
+        "ctgov_es": 0,
+        "ctgov_en": 16
+      }
     },
     "amisulprida": {
       "products": 21,
@@ -150,7 +192,14 @@
       "evidence": [
         "rxcui 46303 · SNOMEDCT 321636003",
         "querytranslation: \"amisulpride\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1631,
+        "pubmed_en": 1631,
+        "ctgov_es": 88,
+        "ctgov_en": 88
+      }
     },
     "abacavir + lamivudina": {
       "status": "manual",
@@ -171,7 +220,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"abiraterone\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 4180,
+        "pubmed_en": 4180,
+        "ctgov_es": 546,
+        "ctgov_en": 546
+      }
     },
     "ácido ursodeoxicólico": {
       "products": 18,
@@ -186,7 +242,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"ursodeoxycholic acid\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 7917,
+        "pubmed_en": 7917,
+        "ctgov_es": 0,
+        "ctgov_en": 264
+      }
     },
     "anastrozol": {
       "products": 18,
@@ -202,7 +265,14 @@
       "evidence": [
         "rxcui 84857 · SNOMEDCT 108774000",
         "querytranslation: \"anastrozole\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 2756,
+        "pubmed_en": 2756,
+        "ctgov_es": 519,
+        "ctgov_en": 519
+      }
     },
     "riociguat": {
       "products": 16,
@@ -217,7 +287,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"riociguat\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 696,
+        "pubmed_en": 696,
+        "ctgov_es": 71,
+        "ctgov_en": 71
+      }
     },
     "ácido alendrónico + colecalciferol": {
       "status": "manual",
@@ -259,7 +336,14 @@
       "evidence": [
         "rxcui 7145 devuelve \"mycophenolic acid\", que no comparte raiz",
         "no cubre el nombre completo: mycophenolic acid"
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 11074,
+        "pubmed_en": 11074,
+        "ctgov_es": 0,
+        "ctgov_en": 1583
+      }
     },
     "apremilast": {
       "products": 12,
@@ -274,7 +358,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"apremilast\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1542,
+        "pubmed_en": 1542,
+        "ctgov_es": 174,
+        "ctgov_en": 174
+      }
     },
     "hipromelosa + sodio cloruro": {
       "status": "manual",
@@ -307,7 +398,14 @@
       "evidence": [
         "rxcui 306266 · SNOMEDCT 416248007",
         "querytranslation: \"entecavir\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 3777,
+        "pubmed_en": 3777,
+        "ctgov_es": 362,
+        "ctgov_en": 362
+      }
     },
     "ácido acetilsalicílico + paracetamol + cafeína": {
       "status": "manual",
@@ -329,7 +427,14 @@
       "evidence": [
         "rxcui 598 · SNOMEDCT 109119001",
         "querytranslation: \"alprostadil\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 7673,
+        "pubmed_en": 7673,
+        "ctgov_es": 325,
+        "ctgov_en": 325
+      }
     },
     "bevacizumab": {
       "products": 9,
@@ -345,7 +450,14 @@
       "evidence": [
         "rxcui 253337 · SNOMEDCT 409405006",
         "querytranslation: \"bevacizumab\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 27684,
+        "pubmed_en": 27684,
+        "ctgov_es": 3576,
+        "ctgov_en": 3576
+      }
     },
     "amilorida + hidroclorotiazida": {
       "status": "manual",
@@ -372,7 +484,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"brentuximab vedotin\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1883,
+        "pubmed_en": 1883,
+        "ctgov_es": 221,
+        "ctgov_en": 221
+      }
     },
     "antazolina + nafazolina": {
       "status": "manual",
@@ -393,7 +512,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"cabotegravir\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1033,
+        "pubmed_en": 1033,
+        "ctgov_es": 154,
+        "ctgov_en": 154
+      }
     },
     "paclitaxel": {
       "products": 7,
@@ -409,7 +535,14 @@
       "evidence": [
         "rxcui 56946 · SNOMEDCT 67735003",
         "querytranslation: \"paclitaxel\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 52183,
+        "pubmed_en": 52183,
+        "ctgov_es": 6385,
+        "ctgov_en": 6385
+      }
     },
     "insulina regular": {
       "products": 7,
@@ -425,7 +558,14 @@
       "evidence": [
         "rxcui 253182 · SNOMEDCT 417423002",
         "querytranslation: \"insulin regular human\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 2673,
+        "pubmed_en": 2647,
+        "ctgov_es": 20829,
+        "ctgov_en": 3041
+      }
     },
     "aflibercept": {
       "products": 7,
@@ -440,7 +580,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"aflibercept\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 4608,
+        "pubmed_en": 4608,
+        "ctgov_es": 630,
+        "ctgov_en": 630
+      }
     },
     "fulvestrant": {
       "products": 7,
@@ -456,7 +603,14 @@
       "evidence": [
         "rxcui 282357 · SNOMEDCT 404845006",
         "querytranslation: \"fulvestrant\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 4425,
+        "pubmed_en": 4425,
+        "ctgov_es": 640,
+        "ctgov_en": 640
+      }
     },
     "clorhexidina": {
       "products": 7,
@@ -472,7 +626,14 @@
       "evidence": [
         "rxcui 2358 devuelve \"chlorhexidine\", que no comparte raiz",
         "no cubre el nombre completo: chlorhexidine"
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 17153,
+        "pubmed_en": 17169,
+        "ctgov_es": 1701,
+        "ctgov_en": 1701
+      }
     },
     "benzocaína + clorhexidina + enoxolona": {
       "status": "manual",
@@ -513,7 +674,14 @@
       "method": "snomed",
       "evidence": [
         "rxcui 8410 · SNOMEDCT 27638005"
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 35633,
+        "pubmed_en": 36961,
+        "ctgov_es": 782,
+        "ctgov_en": 782
+      }
     },
     "alectinib": {
       "products": 6,
@@ -528,7 +696,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"alectinib\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1533,
+        "pubmed_en": 1533,
+        "ctgov_es": 102,
+        "ctgov_en": 102
+      }
     },
     "atogepant": {
       "products": 6,
@@ -543,7 +718,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"atogepant\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 209,
+        "pubmed_en": 209,
+        "ctgov_es": 35,
+        "ctgov_en": 35
+      }
     },
     "hipromelosa": {
       "products": 6,
@@ -589,7 +771,14 @@
       "evidence": [
         "rxcui 407990 · SNOMEDCT 409391006",
         "querytranslation: \"cinacalcet\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1832,
+        "pubmed_en": 1832,
+        "ctgov_es": 91,
+        "ctgov_en": 91
+      }
     },
     "naproxeno sodico": {
       "products": 5,
@@ -619,7 +808,14 @@
       "evidence": [
         "rxcui 6475 · SNOMEDCT 59270007",
         "querytranslation: \"loxapine\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 894,
+        "pubmed_en": 893,
+        "ctgov_es": 39,
+        "ctgov_en": 39
+      }
     },
     "glicerol": {
       "products": 5,
@@ -649,7 +845,14 @@
       "evidence": [
         "rxcui 37925 · SNOMEDCT 116093009",
         "querytranslation: \"orlistat\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 2787,
+        "pubmed_en": 2787,
+        "ctgov_es": 102,
+        "ctgov_en": 102
+      }
     },
     "nonacog alfa": {
       "products": 5,
@@ -664,7 +867,14 @@
       "method": "snomed",
       "evidence": [
         "rxcui 1300488 · SNOMEDCT 415245003"
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 30,
+        "pubmed_en": 30,
+        "ctgov_es": 38,
+        "ctgov_en": 38
+      }
     },
     "vacuna anti hepatitis B": {
       "products": 5,
@@ -694,7 +904,14 @@
       "evidence": [
         "rxcui 6718 devuelve \"melphalan\", que no comparte raiz",
         "no cubre el nombre completo: melphalan"
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 12502,
+        "pubmed_en": 12481,
+        "ctgov_es": 5,
+        "ctgov_en": 1054
+      }
     },
     "levodropropizina": {
       "products": 4,
@@ -730,7 +947,14 @@
       "evidence": [
         "rxcui 341018 · SNOMEDCT 421904007",
         "querytranslation: \"anidulafungin\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1401,
+        "pubmed_en": 1401,
+        "ctgov_es": 47,
+        "ctgov_en": 47
+      }
     },
     "vacuna anti meningococo B": {
       "products": 4,
@@ -757,7 +981,14 @@
       "evidence": [
         "rxcui 1726988 · SNOMEDCT 442379000",
         "querytranslation: \"sugammadex\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 2053,
+        "pubmed_en": 2053,
+        "ctgov_es": 376,
+        "ctgov_en": 376
+      }
     },
     "inhibidor C1 esterasa": {
       "products": 4,
@@ -772,7 +1003,14 @@
       "method": "snomed",
       "evidence": [
         "rxcui 1599832 · SNOMEDCT 441508005"
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 4,
+        "pubmed_en": 3120,
+        "ctgov_es": 0,
+        "ctgov_en": 120
+      }
     },
     "alcohol etílico + clorhexidina": {
       "status": "manual",
@@ -812,7 +1050,14 @@
       "evidence": [
         "rxcui 620216 · SNOMEDCT 427805000",
         "querytranslation: \"maraviroc\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1432,
+        "pubmed_en": 1432,
+        "ctgov_es": 174,
+        "ctgov_en": 174
+      }
     },
     "darunavir": {
       "products": 4,
@@ -828,7 +1073,14 @@
       "evidence": [
         "rxcui 460132 · SNOMEDCT 424096001",
         "querytranslation: \"darunavir\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 2201,
+        "pubmed_en": 2201,
+        "ctgov_es": 298,
+        "ctgov_en": 298
+      }
     },
     "hidrocortisona + benzocaína + neomicina + ácido tánico": {
       "status": "manual",
@@ -849,7 +1101,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"pegcetacoplan\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 344,
+        "pubmed_en": 344,
+        "ctgov_es": 0,
+        "ctgov_en": 35
+      }
     },
     "belimumab": {
       "products": 3,
@@ -864,7 +1123,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"belimumab\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1544,
+        "pubmed_en": 1544,
+        "ctgov_es": 123,
+        "ctgov_en": 123
+      }
     },
     "etonogestrel + etinilestradiol": {
       "status": "manual",
@@ -900,7 +1166,14 @@
       "evidence": [
         "rxcui 3444 · SNOMEDCT 81073007",
         "querytranslation: \"dimenhydrinate\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 679,
+        "pubmed_en": 679,
+        "ctgov_es": 340,
+        "ctgov_en": 340
+      }
     },
     "carteolol": {
       "products": 3,
@@ -916,7 +1189,14 @@
       "evidence": [
         "rxcui 2116 · SNOMEDCT 108544005",
         "querytranslation: \"carteolol\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 508,
+        "pubmed_en": 508,
+        "ctgov_es": 5,
+        "ctgov_en": 5
+      }
     },
     "alcohol diclorobencílico + amilmetacresol + lidocaína": {
       "status": "manual",
@@ -938,7 +1218,14 @@
       "evidence": [
         "rxcui 55672 · SNOMEDCT 108684009",
         "querytranslation: \"rifabutin\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 3117,
+        "pubmed_en": 3131,
+        "ctgov_es": 102,
+        "ctgov_en": 102
+      }
     },
     "amorolfina": {
       "products": 2,
@@ -954,7 +1241,14 @@
       "evidence": [
         "rxcui 17804 · SNOMEDCT 332998007",
         "querytranslation: \"amorolfine\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 363,
+        "pubmed_en": 365,
+        "ctgov_es": 16,
+        "ctgov_en": 16
+      }
     },
     "anagrelida": {
       "products": 2,
@@ -970,7 +1264,14 @@
       "evidence": [
         "rxcui 596724 · SNOMEDCT 108976008",
         "querytranslation: \"anagrelide\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 508,
+        "pubmed_en": 508,
+        "ctgov_es": 34,
+        "ctgov_en": 34
+      }
     },
     "exemestano": {
       "products": 2,
@@ -986,7 +1287,14 @@
       "evidence": [
         "rxcui 258494 · SNOMEDCT 116115004",
         "querytranslation: \"exemestane\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1874,
+        "pubmed_en": 1878,
+        "ctgov_es": 413,
+        "ctgov_en": 413
+      }
     },
     "macrogol 3350 + electrolitos": {
       "status": "manual",
@@ -1008,7 +1316,14 @@
       "evidence": [
         "rxcui 28627 · SNOMEDCT 108863001",
         "querytranslation: \"levocabastine\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 325,
+        "pubmed_en": 325,
+        "ctgov_es": 6,
+        "ctgov_en": 6
+      }
     },
     "vacuna anti difteria + tétanos + tos ferina": {
       "status": "manual",
@@ -1030,7 +1345,14 @@
       "evidence": [
         "rxcui 358258 · SNOMEDCT 398907002",
         "querytranslation: \"bortezomib\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 12787,
+        "pubmed_en": 12787,
+        "ctgov_es": 1172,
+        "ctgov_en": 1172
+      }
     },
     "vacuna anti neumococo": {
       "products": 2,
@@ -1073,7 +1395,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"carbetocin\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 446,
+        "pubmed_en": 446,
+        "ctgov_es": 107,
+        "ctgov_en": 107
+      }
     },
     "desmopresina": {
       "products": 2,
@@ -1088,7 +1417,14 @@
       "method": "snomed",
       "evidence": [
         "rxcui 3251 · SNOMEDCT 73454001"
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 4895,
+        "pubmed_en": 6773,
+        "ctgov_es": 154,
+        "ctgov_en": 154
+      }
     },
     "parecoxib": {
       "products": 2,
@@ -1104,7 +1440,14 @@
       "evidence": [
         "rxcui 279950 · SNOMEDCT 395289008",
         "querytranslation: \"parecoxib\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 773,
+        "pubmed_en": 773,
+        "ctgov_es": 92,
+        "ctgov_en": 92
+      }
     },
     "retinol + tocoferol": {
       "status": "manual",
@@ -1126,7 +1469,14 @@
       "evidence": [
         "rxcui 2186 · SNOMEDCT 3334000",
         "querytranslation: \"cefotaxime\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 21409,
+        "pubmed_en": 21561,
+        "ctgov_es": 125,
+        "ctgov_en": 344
+      }
     },
     "lamivudina + zidovudina": {
       "status": "manual",
@@ -1147,7 +1497,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"dalbavancin\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 905,
+        "pubmed_en": 904,
+        "ctgov_es": 39,
+        "ctgov_en": 39
+      }
     },
     "manidipino": {
       "products": 2,
@@ -1162,7 +1519,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"manidipine\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 291,
+        "pubmed_en": 291,
+        "ctgov_es": 6,
+        "ctgov_en": 6
+      }
     },
     "ácido acetilsalicílico + clorfenamina + fenilefrina": {
       "status": "manual",
@@ -1190,7 +1554,14 @@
       "evidence": [
         "rxcui 60212 · SNOMEDCT 108718008",
         "querytranslation: \"atovaquone\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1724,
+        "pubmed_en": 1723,
+        "ctgov_es": 62,
+        "ctgov_en": 62
+      }
     },
     "dexibuprofeno": {
       "products": 2,
@@ -1205,7 +1576,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"dexibuprofen\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 120,
+        "pubmed_en": 120,
+        "ctgov_es": 5,
+        "ctgov_en": 5
+      }
     },
     "bromuro ipratropio": {
       "products": 2,
@@ -1258,7 +1636,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"cinitapride\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 48,
+        "pubmed_en": 48,
+        "ctgov_es": 1,
+        "ctgov_en": 1
+      }
     },
     "deferasirox": {
       "products": 2,
@@ -1274,7 +1659,14 @@
       "evidence": [
         "rxcui 614373 · SNOMEDCT 417910004",
         "querytranslation: \"deferasirox\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1455,
+        "pubmed_en": 1455,
+        "ctgov_es": 119,
+        "ctgov_en": 119
+      }
     },
     "azelastina": {
       "products": 1,
@@ -1290,7 +1682,14 @@
       "evidence": [
         "rxcui 18603 · SNOMEDCT 108644000",
         "querytranslation: \"azelastine\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 872,
+        "pubmed_en": 876,
+        "ctgov_es": 53,
+        "ctgov_en": 68
+      }
     },
     "ketotifeno": {
       "products": 1,
@@ -1306,7 +1705,14 @@
       "evidence": [
         "rxcui 6146 · SNOMEDCT 354038002",
         "querytranslation: \"ketotifen\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1812,
+        "pubmed_en": 1812,
+        "ctgov_es": 42,
+        "ctgov_en": 42
+      }
     },
     "inotuzumab ozogamicina": {
       "products": 1,
@@ -1347,7 +1753,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"lactobacillus acidophilus\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 6138,
+        "pubmed_en": 6138,
+        "ctgov_es": 1705,
+        "ctgov_en": 1705
+      }
     },
     "macrogol 4000 + electrolitos": {
       "status": "manual",
@@ -1369,7 +1782,14 @@
       "evidence": [
         "rxcui 1310594 devuelve \"polyethylene glycol 4000\", que no comparte raiz",
         "no cubre el nombre completo: polyethylene glycol 4000"
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 582,
+        "pubmed_en": 562,
+        "ctgov_es": 92,
+        "ctgov_en": 854
+      }
     },
     "nafazolina + metiltioninio": {
       "status": "manual",
@@ -1391,7 +1811,14 @@
       "evidence": [
         "rxcui 4271 devuelve \"factor XIII\", que no comparte raiz",
         "no cubre el nombre completo: factor xiii"
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 5566,
+        "ctgov_es": 0,
+        "ctgov_en": 69
+      }
     },
     "bazedoxifeno": {
       "products": 1,
@@ -1406,7 +1833,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"bazedoxifene\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 594,
+        "pubmed_en": 594,
+        "ctgov_es": 55,
+        "ctgov_en": 55
+      }
     },
     "glatiramero acetato": {
       "products": 1,
@@ -1435,7 +1869,14 @@
       "method": "snomed",
       "evidence": [
         "rxcui 6693 · SNOMEDCT 34364009"
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 19,
+        "pubmed_en": 1970,
+        "ctgov_es": 22,
+        "ctgov_en": 23
+      }
     },
     "Arctostaphylos uva-ursi + Betula sp + Solidago gigantea": {
       "status": "manual",
@@ -1470,7 +1911,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"avatrombopag\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 261,
+        "pubmed_en": 261,
+        "ctgov_es": 63,
+        "ctgov_en": 63
+      }
     },
     "cabergolina": {
       "products": 1,
@@ -1486,7 +1934,14 @@
       "evidence": [
         "rxcui 47579 · SNOMEDCT 109139002",
         "querytranslation: \"cabergoline\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 2399,
+        "pubmed_en": 2407,
+        "ctgov_es": 91,
+        "ctgov_en": 91
+      }
     },
     "dexpantenol": {
       "products": 1,
@@ -1502,7 +1957,14 @@
       "evidence": [
         "rxcui 22701 · SNOMEDCT 404842009",
         "querytranslation: \"dexpanthenol\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 457,
+        "pubmed_en": 457,
+        "ctgov_es": 59,
+        "ctgov_en": 59
+      }
     },
     "bromhexina": {
       "products": 1,
@@ -1517,7 +1979,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"bromhexine\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1365,
+        "pubmed_en": 1372,
+        "ctgov_es": 32,
+        "ctgov_en": 32
+      }
     },
     "hierro carboximaltosa": {
       "products": 1,
@@ -1580,7 +2049,14 @@
       "evidence": [
         "rxcui 591781 · SNOMEDCT 426801002",
         "querytranslation: \"eculizumab\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 3545,
+        "pubmed_en": 3545,
+        "ctgov_es": 182,
+        "ctgov_en": 182
+      }
     },
     "vacuna anti difteria + tétanos + tos ferina + polio": {
       "status": "manual",
@@ -1621,7 +2097,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"rilpivirine\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1519,
+        "pubmed_en": 1519,
+        "ctgov_es": 193,
+        "ctgov_en": 193
+      }
     },
     "vismodegib": {
       "products": 1,
@@ -1651,13 +2134,20 @@
         "snomed": "ensancha",
         "pubmed": "fragmento"
       },
-      "status": "verified",
+      "status": "review",
       "en": "vitamin A",
       "method": "convergencia",
       "evidence": [
         "rxcui 11246 devuelve \"vitamin A\", que no comparte raiz",
         "no cubre el nombre completo: vitamin a"
-      ]
+      ],
+      "reason": "ensancha: multiplica resultados partiendo de un termino que ya funcionaba",
+      "retrieval": {
+        "pubmed_es": 71383,
+        "pubmed_en": 62821,
+        "ctgov_es": 1408,
+        "ctgov_en": 9308
+      }
     },
     "avelumab": {
       "products": 1,
@@ -1672,7 +2162,14 @@
       "method": "pubmed",
       "evidence": [
         "querytranslation: \"avelumab\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 1505,
+        "pubmed_en": 1505,
+        "ctgov_es": 315,
+        "ctgov_en": 315
+      }
     },
     "dextrometorfano + sulfoguayacolato potasio": {
       "status": "manual",
@@ -1700,7 +2197,14 @@
       "evidence": [
         "rxcui 591622 · SNOMEDCT 420507002",
         "querytranslation: \"varenicline\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 2794,
+        "pubmed_en": 2799,
+        "ctgov_es": 439,
+        "ctgov_en": 439
+      }
     },
     "codeína + efedrina + sulfoguayacolato potasio": {
       "status": "manual",
@@ -1722,7 +2226,14 @@
       "evidence": [
         "rxcui 3131 · SNOMEDCT 70702006",
         "querytranslation: \"deferoxamine\""
-      ]
+      ],
+      "promoted": "2026-08-18",
+      "retrieval": {
+        "pubmed_es": 9725,
+        "pubmed_en": 9734,
+        "ctgov_es": 50,
+        "ctgov_en": 92
+      }
     }
   }
 }
