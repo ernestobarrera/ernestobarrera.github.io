@@ -118,7 +118,7 @@ class InnDictionary {
     const raw = String(rawName ?? '').trim();
     const out = { raw, baseEs: this.norm(raw), en: null, variants: [], source: 'asis', confidence: 'high', warning: null };
     let n = this.norm(raw);
-    if (SUBST_NON_INFORMATIVE.has(n)) { out.confidence = 'low'; out.warning = 'no informativo'; out.variants = []; return out; }
+    if (SUBST_NON_INFORMATIVE.has(n)) { out.confidence = 'low'; out.warning = 'no informativo'; out.variants = []; return this._stampVerification(out); }
     if (this.map[n]) { out.en = this.map[n]; out.baseEs = n; out.source = 'dict'; return this._finishTerm(out); }
 
     // Retirar hidratos inequívocos y conectores ("de", "y"…).
@@ -172,6 +172,39 @@ class InnDictionary {
     const v = [out.baseEs, out.en, out._secondary].filter(Boolean);
     out.variants = [...new Set(v.map(s => s.trim()))];
     delete out._secondary;
+    return this._stampVerification(out);
+  }
+
+  /**
+   * CONTRATO DE VERIFICACION (paso 0, 2026-08-18). Nace del caso SPRAVATO.
+   *
+   * `source: 'asis'` significa que el nombre paso TAL CUAL porque nada parecia raro: ni entrada
+   * curada, ni regla aplicable, ni sal reconocida. Eso es NO COMPROBADO, no "fiable" — y hasta
+   * hoy se devolvia con `confidence: 'high'`, que es una fiabilidad que nunca se gano.
+   *
+   * Medido el 18/08/2026: de 3772 componentes de medicamentos comercializados, 929 (~25%)
+   * resolvian 'asis' con confianza alta. `esketamina` (SPRAVATO) es uno: ClinicalTrials.gov
+   * devuelve 0 para "esketamina" y 365 para "esketamine", y ese 0 se pintaba limpio y sin aviso.
+   *
+   * `verificationStatus` es el campo tipado que sustituira al proxy de la interfaz:
+   *   verified   comprobado contra una autoridad (lo escribira el compilador)
+   *   curated    entrada humana en el diccionario, o regla acotada
+   *   unverified paso tal cual; NADIE ha comprobado que recupere nada
+   *
+   * `confidence` se conserva por compatibilidad con lo que ya lo lee, pero deja de poder valer
+   * 'high' cuando no hay verificacion: una cosa no puede ser fiable y no comprobada a la vez.
+   */
+  _stampVerification(out) {
+    if (out.verificationStatus) return out;
+    if (out.source === 'asis') {
+      out.verificationStatus = 'unverified';
+      // No comprobado no puede seguir siendo 'high'. Solo afecta a como se PRESENTA un cero:
+      // los terminos 'asis' que si recuperan siguen mostrando su numero igual que antes.
+      if (out.confidence === 'high') out.confidence = 'low';
+      if (!out.warning) out.warning = 'termino sin verificar: paso tal cual';
+    } else {
+      out.verificationStatus = 'curated';
+    }
     return out;
   }
 }
