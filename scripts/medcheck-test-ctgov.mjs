@@ -242,16 +242,25 @@ check('12b · y lleva señal de que se abre fuera',
 // nombre de sustancia de CIMA no está en el diccionario INN viaja el español y el recuento es
 // sobre otra consulta. Medido con Shingrix: «vacuna anti herpes zoster» → 0, «herpes zoster
 // vaccine» → 418. Un 0 ahí es indistinguible del cero real, que es lo que lo hace peligroso.
-let pedido = null;
-app = nuevaApp(null);
-app.api = { searchCtgovStudies: async (q) => { pedido = q; return { ok: true, count: 0, desglose: { analizados: 0, tipo: [], fase: [], estado: [] } }; } };
+// Confianza baja + CERO: ambiguo, no se afirma nada.
+app = nuevaApp({ ok: true, count: 0, desglose: { analizados: 0, tipo: [], fase: [], estado: [] } });
 await app._loadCtgovCount('vacuna anti herpes zoster', 'low');
-check('13 · identidad no traducida → no se pinta número',
-    !/evidence-count-open/.test(cuenta()) && !/>0</.test(cuenta()), cuenta());
-check('13b · lo dice, en vez de callarlo', /sin término en inglés/.test(cuenta()), cuenta());
-check('13c · y ni siquiera pregunta al registro (no se gasta una consulta que no sirve)',
-    pedido === null, `pidió: ${pedido}`);
+check('13 · confianza baja y cero → no se afirma el cero',
+    /0 sin confirmar/.test(cuenta()), cuenta());
+check('13b · y explica por qué no se puede afirmar',
+    /no se puede distinguir/i.test(cuenta()), cuenta());
 check('13d · tampoco pinta desglose', stats() === '', stats());
+
+// 13g · REGRESIÓN MEDIDA EL 2026-08-18: confianza baja pero CON resultados. «No está en el
+// diccionario» no es «no se puede buscar»: `darbepoetina alfa` devuelve 259 y su inglés 252;
+// `ácido ibandrónico`, 91 y 91. La primera versión de la guarda escondía estos números —7 de 15
+// nombres frecuentes medidos eran falsa alarma—. Un número mayor que 0 demuestra por sí mismo
+// que la consulta encontró algo, así que se muestra.
+app = nuevaApp({ ok: true, count: 259, desglose: desgloseBase });
+await app._loadCtgovCount('darbepoetina alfa', 'low');
+check('13g · confianza baja PERO con resultados → se muestra el número',
+    /evidence-count-open/.test(cuenta()) && /259/.test(cuenta()), cuenta());
+check('13h · y su desglose', /evidence-ctgov-group-title/.test(stats()), stats().slice(0, 120));
 
 // 13e · la confianza alta sigue funcionando igual: la guarda no puede tragarse el caso normal.
 app = nuevaApp({ ok: true, count: 16, desglose: desgloseBase });

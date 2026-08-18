@@ -15722,24 +15722,18 @@ ${materialesPlaceholder}
 
         if (!query || query.length < 2) { applyStaticFallback(); return; }
 
-        // IDENTIDAD NO TRADUCIDA → NO SE ENSEÑA NÚMERO. ClinicalTrials.gov indexa en inglés; si el
-        // nombre de sustancia de CIMA no está en el diccionario INN, lo que viaja es el término
-        // español y el registro cuenta sobre una consulta que no es la de este fármaco. Medido el
-        // 2026-08-17 con Shingrix: CIMA lo llama «vacuna anti herpes Zóster», que devuelve 0,
-        // mientras «herpes zoster vaccine» devuelve 418. Un 0 ahí no dice «no hay ensayos», dice
-        // «he preguntado mal» — y es indistinguible del cero real, que es lo que lo hace peligroso.
-        // La señal ya existía (`confidence`) y no la usaba nadie.
-        if (confidence === 'low') {
-            if (countEl) {
-                countEl.innerHTML = '<span class="evidence-filter-badge-ext evidence-badge-warn" '
-                    + 'title="El nombre de sustancia de CIMA no tiene traducción al inglés en el diccionario, y este registro indexa en inglés. '
-                    + 'No se muestra recuento porque contaría sobre una consulta distinta a la de este fármaco. El enlace abre la búsqueda para que la ajustes tú.">'
-                    + 'sin término en inglés</span>';
-            }
-            if (statsEl) statsEl.innerHTML = '';
-            togglesEl?.classList.add('hidden');
-            return;
-        }
+        // NOTA IMPORTANTE sobre `confidence`, corregida el 2026-08-18 tras medirlo:
+        // «no está en el diccionario» NO es «no se puede buscar». La primera versión de esta
+        // guarda ocultaba el recuento en cuanto la confianza era baja, y eso escondía números
+        // que funcionaban: medido sobre 15 nombres frecuentes, **7 eran falsa alarma** —
+        // `darbepoetina alfa` devuelve 259 y su inglés 252; `ácido ibandrónico` 91 y 91;
+        // `brentuximab vedotina` 221 y 221. En castellano y en inglés se escriben casi igual.
+        // Los rotos de verdad son otros: `ácido alendrónico` 0 vs 234, las vacunas 0 vs cientos.
+        //
+        // La señal que de verdad distingue no es el diccionario, es el RESULTADO: con confianza
+        // baja, un 0 es ambiguo —no se puede separar «no hay ensayos» de «he preguntado mal»— y
+        // un número mayor que 0 demuestra por sí mismo que la consulta encontró algo. Así que la
+        // decisión se toma DESPUÉS de preguntar, no antes. Ver `avisoIdentidad` más abajo.
 
         const cycleId = (this._ctgovCountCycle = (this._ctgovCountCycle || 0) + 1);
         if (countEl) countEl.innerHTML = '<i class="fas fa-circle-notch fa-spin evidence-count-spin"></i>';
@@ -15751,6 +15745,21 @@ ${materialesPlaceholder}
 
         const n = Number.isFinite(data?.count) ? data.count : null;
         if (n === null) { applyStaticFallback(); return; }
+
+        // Confianza baja Y cero: los dos únicos casos que producen ese cero son «no hay ensayos»
+        // y «la consulta iba en español», y desde aquí no se pueden separar. No se afirma
+        // ninguna de las dos: se dice que no está confirmado y el enlace queda para ajustarlo.
+        if (confidence === 'low' && n === 0) {
+            if (countEl) {
+                countEl.innerHTML = '<span class="evidence-filter-badge-ext evidence-badge-warn" '
+                    + 'title="Sin resultados, pero el nombre de sustancia de CIMA no tiene traducción al inglés en el diccionario y este registro indexa en inglés. '
+                    + 'No se puede distinguir «no hay ensayos» de «la consulta fue en español», así que no se afirma ninguna de las dos. Abre el enlace para ajustar la búsqueda.">'
+                    + '0 sin confirmar</span>';
+            }
+            if (statsEl) statsEl.innerHTML = '';
+            togglesEl?.classList.add('hidden');
+            return;
+        }
 
         // El total NO se pinta como la insignia de los filtros de PubMed: allí el número cuenta
         // una casilla que se marca aquí dentro, y aquí es un enlace que se va al registro. Dos
