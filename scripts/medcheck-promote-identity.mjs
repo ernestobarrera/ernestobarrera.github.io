@@ -31,7 +31,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 // Mismo parentesco que usa el compilador: una regla en dos ficheros divergiria.
-import { comparteRaiz, normalizar } from './medcheck-identity-kin.mjs';
+import { comparteRaiz, normalizar, curarTermino } from './medcheck-identity-kin.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BASELINE = join(ROOT, 'assets', 'data', 'substance-identity-baseline.json');
@@ -77,8 +77,14 @@ console.log(`# Promoción de identidades verificadas\n`);
 console.log(`candidatos verificados y aún no en el diccionario: ${candidatos.length}\n`);
 console.log('  prod  término CIMA                        -> inglés                     PubMed ES/EN    CT ES/EN');
 
-const promover = [], bloqueados = [], mirar = [];
-for (const [es, v] of candidatos) {
+const promover = [], bloqueados = [], mirar = [], curados = [];
+for (const [es, vRaw] of candidatos) {
+    // El baseline guarda lo que dijo la autoridad (espejo). Aquí se aplica la curación acordada
+    // con el responsable —fuera los calificadores que CIMA no declara— y se MIDE el término
+    // curado, que es el que se va a incorporar. Medir uno e incorporar otro sería mentir.
+    const curado = curarTermino(es, vRaw.en);
+    const v = curado === normalizar(vRaw.en) ? vRaw : { ...vRaw, en: curado, en_autoridad: vRaw.en, curado: true };
+    if (v.curado) curados.push([es, vRaw.en, curado]);
     const [pEs, pEn, cEs, cEn] = [await enPubmed(es), await enPubmed(v.en), await enCtgov(es), await enCtgov(v.en)];
     await dormir(360);
     // Lo no medido (null) no cuenta ni a favor ni en contra: no se aprueba por no haber mirado.
@@ -135,6 +141,12 @@ if (bloqueados.length) {
             ? 'el español encontraba algo y el inglés nada'
             : 'multiplica los resultados partiendo de un término que ya funcionaba: puede nombrar una familia y no la sustancia'}`);
     }
+}
+if (curados.length) {
+    console.log(`
+CURADOS antes de incorporar (${curados.length}): se retira el calificador que CIMA no declara`);
+    for (const [es, orig, fin] of curados.slice(0, 20)) console.log(`  ${es}  ·  autoridad: "${orig}"  ->  se incorpora: "${fin}"`);
+    if (curados.length > 20) console.log(`  … y ${curados.length - 20} más`);
 }
 if (mirar.length) {
     console.log('\nSE PROMUEVEN, PERO MÍRALOS (el recuento cambia mucho: puede ser el estrechamiento buscado, un ensanchamiento, o un término peor):');
