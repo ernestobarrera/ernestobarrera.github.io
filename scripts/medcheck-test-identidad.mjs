@@ -116,6 +116,25 @@ dict._stampVerification = original;
 check('6 · el detector del invariante caza el defecto reintroducido',
     conDefecto.length > 0, 'el detector no vería la regresión');
 
+// 7 · EL DICCIONARIO PUBLICADO TIENE QUE SER EL QUE SE SIRVE. Aquí se perdió la sesión 46:
+// se incorporaron 756 identidades al JSON y se bumpó `dict` (el <script> de inn-dict.js),
+// pero NO `innjson` (la URL del JSON que vive DENTRO de inn-dict.js). El navegador siguió
+// pidiendo inn-es-en.json?v=20260624a y, como se pide con cache:'force-cache', sirvió la copia
+// de junio sin revalidar jamás: esketamina estaba en el repo Y en producción, y aun así no
+// llegaba a la pantalla. El fallo es invisible mirando el código y mirando el servidor.
+// La señal que lo caza: el token ?v= no puede ser ANTERIOR a la fecha que el propio JSON
+// declara en su campo `version`.
+const innSrc = readFileSync(join(ROOT, 'assets/js/inn-dict.js'), 'utf8');
+const tokenMatch = /inn-es-en\.json\?v=(\d{8})[a-z]?/.exec(innSrc);
+const dictVersion = JSON.parse(readFileSync(join(ROOT, 'assets/data/inn-es-en.json'), 'utf8')).version;
+const fechaJson = String(dictVersion || '').replace(/-/g, '');
+check('7 · inn-dict.js declara un cache-bust del JSON', !!tokenMatch, 'no se encontró ?v= en inn-dict.js');
+check('7b · el JSON declara su fecha de versión', /^\d{8}$/.test(fechaJson), String(dictVersion));
+check('7c · el cache-bust no es anterior al dato que sirve',
+    !!tokenMatch && /^\d{8}$/.test(fechaJson) && tokenMatch[1] >= fechaJson,
+    'v=' + (tokenMatch ? tokenMatch[1] : '?') + ' < version ' + fechaJson +
+    ' — falta: node scripts/medcheck-bump-version.mjs innjson');
+
 console.log('');
 if (failures) {
     console.log(`${failures} fallo(s) — el contrato de identidad no se sostiene.`);
