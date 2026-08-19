@@ -6,6 +6,9 @@
  * devolvía `source:'asis'` —pasó tal cual porque nada parecía raro— y la marcaba
  * `confidence:'high'`. ClinicalTrials.gov devuelve 0 para «esketamina» y 365 para «esketamine»,
  * así que la ficha pintaba un cero limpio, sin aviso, indistinguible de un cero real.
+ * Ese caso concreto se resolvió el 19/08 al incorporar la traducción, y el test lo fija para
+ * que no se deshaga; el INVARIANTE se sigue probando sobre un término aún sin resolver, tomado
+ * del baseline en vez de escrito a mano, para que la prueba no caduque al curarlo.
  *
  * EL CONTRATO QUE SE FIJA AQUÍ:
  *   source === 'asis'  ⇒  verificationStatus === 'unverified'  ⇒  confidence !== 'high'
@@ -48,15 +51,36 @@ const check = (name, cond, detail) => {
 
 const r = (t) => dict.toSearchTerm(t, { allowCounterionTrim: false });
 
-// 1 · El caso que lo origina.
+// 1 · EL CASO QUE LO ORIGINÓ, YA ARREGLADO. `esketamina` (SPRAVATO) devolvía 0 estudios en
+// ClinicalTrials.gov porque el término viajaba en español, y se presentaba como fiable. El
+// compilador la resolvió y se incorporó al diccionario el 19/08. Se fija aquí para que una
+// recompilación futura no pueda deshacerlo en silencio.
 const esk = r('esketamina');
-check('1 · esketamina (SPRAVATO) se marca sin verificar',
-    esk.source === 'asis' && esk.verificationStatus === 'unverified',
-    `source ${esk.source} · estado ${esk.verificationStatus}`);
-check('1b · y deja de declararse fiable', esk.confidence !== 'high', `confianza ${esk.confidence}`);
+check('1 · esketamina (SPRAVATO) ya está resuelta',
+    esk.source === 'dict' && esk.en === 'esketamine',
+    `source ${esk.source} · en ${esk.en}`);
+check('1b · y por tanto es curada y fiable',
+    esk.verificationStatus === 'curated' && esk.confidence === 'high',
+    `${esk.verificationStatus} · ${esk.confidence}`);
+
+// 1c · Y EL INVARIANTE SIGUE VIVO sobre un término que aún nadie ha resuelto. Se toma del
+// baseline en vez de fijar un nombre a mano: así el test no caduca cuando ese término se cure.
+const baseline = JSON.parse(readFileSync(join(ROOT, 'assets/data/substance-identity-baseline.json'), 'utf8'));
+const sinResolver = Object.entries(baseline.terms || {})
+    .filter(([, v]) => v.status === 'unresolved')
+    .map(([k]) => k)
+    .find(n => r(n).source === 'asis');
+check('1c · hay al menos un término sin resolver con el que probar el invariante',
+    Boolean(sinResolver), 'el baseline no tiene ninguno: revisa si el contrato sigue teniendo sentido');
+if (sinResolver) {
+    const x = r(sinResolver);
+    check(`1d · «${sinResolver}» sigue marcado sin verificar y no fiable`,
+        x.verificationStatus === 'unverified' && x.confidence !== 'high',
+        `${x.verificationStatus} · ${x.confidence}`);
+}
 
 // 2 · EL INVARIANTE, sobre el diccionario real y una muestra amplia de nombres reales de CIMA.
-const muestra = ['esketamina', 'ambrisentan', 'almagato', 'glicerol', 'abiraterona', 'riociguat',
+const muestra = ['ambrisentan', 'almagato', 'glicerol', 'abiraterona', 'riociguat',
     'alectinib', 'aflibercept', 'lercanidipino', 'omeprazol', 'acido folico', 'acido alendronico',
     'vacuna anti herpes zoster', 'multicomponente', 'insulina regular'];
 const rotos = muestra.map(r).filter(x =>
@@ -76,9 +100,9 @@ check('4 · una entrada curada sigue siendo fiable',
     `${ler.source} · ${ler.verificationStatus} · ${ler.confidence}`);
 check('4b · y conserva su traducción', ler.en === 'lercanidipine', String(ler.en));
 
-// 5 · NO SE ROMPE LO QUE FUNCIONABA. El término sigue siendo el mismo; lo único que cambia es
-// que deja de presentarse como verificado. Si esto se cayera, habríamos degradado la búsqueda.
-for (const [t, esperado] of [['ambrisentan', 'ambrisentan'], ['esketamina', 'esketamina']]) {
+// 5 · NO SE ROMPE LO QUE FUNCIONABA. Un termino 'asis' que ya recuperaba sigue enviandose
+// igual: el contrato solo cambia como se PRESENTA un cero, no lo que se consulta.
+for (const [t, esperado] of [['ambrisentan', 'ambrisentan'], ['almagato', 'almagato']]) {
     const x = r(t);
     check(`5 · ${t}: el término enviado NO cambia`, (x.en || x.baseEs) === esperado, `${x.en || x.baseEs}`);
 }
