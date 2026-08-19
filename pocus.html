@@ -1250,28 +1250,59 @@
                   />
                   <text x="215" y="158" class="anatomy-label">Hombro</text>
 
+                  <!-- Pierna: el orden anatómico manda, de arriba abajo y simétrico en ambos
+                       lados — muslo (TVP) · rodilla · pie. Antes la zona de TVP bajaba hasta
+                       y=410, es decir se comía el nivel de la articulación, y la de la rodilla
+                       quedaba por debajo, sobre la tibia y solo en una pierna. Además la de TVP
+                       derecha estaba en x=170, unos 17 px fuera del contorno de la pierna.
+                       Las x salen del trazado real de las piernas del `body-base`: centro ~126
+                       (izquierda) y ~158,5 (derecha) a la altura del muslo. -->
                   <rect
-                    x="118"
-                    y="350"
-                    width="12"
-                    height="60"
+                    x="119"
+                    y="336"
+                    width="13"
+                    height="26"
                     rx="6"
                     class="anatomy-segment"
                     data-segment="dvt"
-                    data-tooltip="TVP (Femoral/Poplítea)"
+                    data-tooltip="TVP (femoral y poplítea)"
                   />
-                  <text x="124" y="385" class="anatomy-label">TVP</text>
+                  <text x="125" y="353" class="anatomy-label">TVP</text>
                   <rect
-                    x="170"
-                    y="350"
-                    width="12"
-                    height="60"
+                    x="152"
+                    y="336"
+                    width="13"
+                    height="26"
                     rx="6"
                     class="anatomy-segment"
                     data-segment="dvt"
-                    data-tooltip="TVP (Femoral/Poplítea)"
+                    data-tooltip="TVP (femoral y poplítea)"
                   />
-                  <text x="176" y="385" class="anatomy-label">TVP</text>
+                  <text x="158" y="353" class="anatomy-label">TVP</text>
+
+                  <rect
+                    x="117"
+                    y="366"
+                    width="17"
+                    height="24"
+                    rx="8"
+                    class="anatomy-segment"
+                    data-segment="knee"
+                    data-tooltip="Rodilla (derrame, quiste de Baker)"
+                  />
+                  <rect
+                    x="151"
+                    y="366"
+                    width="17"
+                    height="24"
+                    rx="8"
+                    class="anatomy-segment"
+                    data-segment="knee"
+                    data-tooltip="Rodilla (derrame, quiste de Baker)"
+                  />
+                  <!-- Una sola etiqueta, centrada en el hueco entre ambas rodillas: repetirla a
+                       cada lado no cabe en 17 px de ancho de pierna. -->
+                  <text x="142" y="402" class="anatomy-label">Rodilla</text>
                   <rect
                     x="100"
                     y="55"
@@ -1283,16 +1314,6 @@
                     data-tooltip="Arteria Temporal (ACG)"
                   />
                   <text x="100" y="45" class="anatomy-label">A. Temporal</text>
-
-                  <circle
-                    cx="122"
-                    cy="425"
-                    r="11"
-                    class="anatomy-segment"
-                    data-segment="knee"
-                    data-tooltip="Rodilla (Derrame / Quiste de Baker)"
-                  />
-                  <text x="140" y="428" class="anatomy-label">Rodilla</text>
 
                   <circle
                     cx="120"

@@ -170,6 +170,72 @@ for (const app of data) {
   }
 }
 
+/* ── Solapes entre zonas del maniquí ───────────────────────────────────────────────────────
+   Dos zonas de segmentos distintos que se pisan se roban el clic: en SVG gana la última del
+   documento, así que una zona nueva puede dejar muda a otra sin que nada falle.
+
+   Se cazó así una regresión real el 19/08: al recolocar la pierna, la zona de TVP subió a y=300
+   y se metió bajo las de vejiga y escrotal, que llegan hasta y=335.
+
+   Los cuatro pares de abajo son ANTERIORES a esta comprobación, pequeños y deliberados (el
+   corazón entre los pulmones, el cuello lateral junto al tiroides, la vejiga sobre el escroto).
+   Se aceptan como base para que el comprobador no nazca en rojo — un gate siempre rojo se acaba
+   ignorando— pero cualquier par NUEVO bloquea. Si se corrige alguno, quítalo de aquí. */
+const SOLAPES_ACEPTADOS = new Set([
+  'cardiac|lung',
+  'neck|neck_lateral',
+  'scrotal|suprapubic'
+]);
+
+function cajasDeZonas(src) {
+  const ini = src.indexOf('<g id="interactive-zones">');
+  if (ini < 0) return null;
+  const bloque = src.slice(ini, src.indexOf('</g>', ini));
+  const num = (t, k) => {
+    const m = t.match(new RegExp(`${k}="(-?[\\d.]+)"`));
+    return m ? parseFloat(m[1]) : null;
+  };
+  const out = [];
+  for (const t of bloque.split(/(?=<rect|<circle|<ellipse|<path)/)) {
+    const seg = (t.match(/data-segment="([a-z_]+)"/) || [])[1];
+    if (!seg) continue;
+    let caja = null;
+    if (t.startsWith('<rect')) {
+      const x = num(t, 'x'), y = num(t, 'y'), w = num(t, 'width'), h = num(t, 'height');
+      if (x !== null && w !== null) caja = [x, y, x + w, y + h];
+    } else if (t.startsWith('<circle')) {
+      const cx = num(t, 'cx'), cy = num(t, 'cy'), r = num(t, 'r');
+      if (cx !== null && r !== null) caja = [cx - r, cy - r, cx + r, cy + r];
+    } else if (t.startsWith('<ellipse')) {
+      const cx = num(t, 'cx'), cy = num(t, 'cy'), rx = num(t, 'rx'), ry = num(t, 'ry');
+      if (cx !== null && rx !== null) caja = [cx - rx, cy - ry, cx + rx, cy + ry];
+    } else if (t.startsWith('<path')) {
+      const d = (t.match(/d="([^"]+)"/) || [])[1];
+      const ps = d ? [...d.matchAll(/(-?[\d.]+)\s+(-?[\d.]+)/g)].map((m) => [+m[1], +m[2]]) : [];
+      if (ps.length) caja = [Math.min(...ps.map((p) => p[0])), Math.min(...ps.map((p) => p[1])),
+                             Math.max(...ps.map((p) => p[0])), Math.max(...ps.map((p) => p[1]))];
+    }
+    if (caja) out.push({ seg, caja });
+  }
+  return out;
+}
+
+const cajas = cajasDeZonas(html);
+if (!cajas || !cajas.length) inconcluso('no consigo leer las cajas de las zonas del maniquí');
+
+const sePisan = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+const vistos = new Set();
+for (let i = 0; i < cajas.length; i++) {
+  for (let j = i + 1; j < cajas.length; j++) {
+    if (cajas[i].seg === cajas[j].seg) continue;
+    if (!sePisan(cajas[i].caja, cajas[j].caja)) continue;
+    const par = [cajas[i].seg, cajas[j].seg].sort().join('|');
+    if (SOLAPES_ACEPTADOS.has(par) || vistos.has(par)) { vistos.add(par); continue; }
+    vistos.add(par);
+    problemas.push(`las zonas «${cajas[i].seg}» y «${cajas[j].seg}» se solapan en el maniquí: una robará el clic a la otra`);
+  }
+}
+
 const verificadas = Object.values(refs).filter((r) => r.verified).length;
 
 console.log(`Atlas POCUS — ${data.length} fichas en ${conFicha.size} segmentos`);
