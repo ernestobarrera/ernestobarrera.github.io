@@ -288,5 +288,37 @@
     "pmid": "28948983",
     "verified": "2026-08-18",
     "verifiedBy": "pubmed+crossref"
+  },
+  "gb_polyps_foley_2022": {
+    "citation": "Foley KG, Lahaye MJ, Thoeni RF, et al. Management and follow-up of gallbladder polyps: updated joint guidelines between the ESGAR, EAES, EFISDS and ESGE. Eur Radiol. 2022;32(5):3358-3368.",
+    "url": "https://doi.org/10.1007/s00330-021-08384-w",
+    "doi": "10.1007/s00330-021-08384-w",
+    "pmid": "34918177",
+    "verified": "2026-08-19",
+    "verifiedBy": "pubmed+crossref"
+  },
+  "gb_polyps_szpakowski_2020": {
+    "citation": "Szpakowski JL, Tucker LY. Outcomes of Gallbladder Polyps and Their Association With Gallbladder Cancer in a 20-Year Cohort. JAMA Netw Open. 2020;3(5):e205143.",
+    "url": "https://doi.org/10.1001/jamanetworkopen.2020.5143",
+    "doi": "10.1001/jamanetworkopen.2020.5143",
+    "pmid": "32421183",
+    "verified": "2026-08-19",
+    "verifiedBy": "pubmed+crossref"
+  },
+  "gb_polyps_wennmacker_2018": {
+    "citation": "Wennmacker SZ, Lamberts MP, Di Martino M, et al. Transabdominal ultrasound and endoscopic ultrasound for diagnosis of gallbladder polyps. Cochrane Database Syst Rev. 2018;8(8):CD012233.",
+    "url": "https://doi.org/10.1002/14651858.CD012233.pub2",
+    "doi": "10.1002/14651858.CD012233.pub2",
+    "pmid": "30109701",
+    "verified": "2026-08-19",
+    "verifiedBy": "pubmed+crossref"
+  },
+  "gb_polyps_kamaya_2022": {
+    "citation": "Kamaya A, Fung C, Szpakowski JL, et al. Management of Incidentally Detected Gallbladder Polyps: Society of Radiologists in Ultrasound Consensus Conference Recommendations. Radiology. 2022;305(2):277-289.",
+    "url": "https://doi.org/10.1148/radiol.213079",
+    "doi": "10.1148/radiol.213079",
+    "pmid": "35787200",
+    "verified": "2026-08-19",
+    "verifiedBy": "pubmed+crossref"
   }
 }

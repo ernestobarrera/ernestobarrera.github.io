@@ -19,6 +19,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="POCUS Atlas" />
+    <!-- Icono propio de esta página: el resto del sitio usa /assets/images/icon.webp -->
+    <link rel="icon" href="assets/icons/pocus-favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/pocus-apple-touch-icon-180.png" />
     <title>POCUS-Clínic: Atlas Anatómico Interactivo Avanzado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
@@ -861,7 +864,19 @@
     >
       <div class="container mx-auto px-4 sm:px-6 py-4">
         <div class="flex justify-between items-center">
-          <div class="flex items-center space-x-4">
+          <!-- Cabecera clicable: vuelve al punto de partida sin recargar.
+               role/tabindex/onkeydown en vez de <a href>, porque un enlace real perdería
+               el ?code= del gate si el usuario abre en pestaña nueva, y un <h1> dentro de
+               <button> no es HTML válido. -->
+          <div
+            class="flex items-center space-x-4 cursor-pointer rounded-lg -m-1 p-1 transition hover:opacity-75 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            role="button"
+            tabindex="0"
+            title="Volver al inicio del atlas"
+            aria-label="Volver al inicio del atlas"
+            onclick="resetToWelcome()"
+            onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); resetToWelcome(); }"
+          >
             <div
               class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center"
             >
@@ -2314,9 +2329,135 @@ CONCLUSIÓN / RECOMENDACIÓN:
               },
             ],
             technique: `<ul><li><strong>Sonda:</strong> Convexa.</li><li><strong>Técnica:</strong> Exploración del cuadrante superior derecho, usando el hígado como ventana acústica.</li></ul>`,
-            findings: `<strong>Colelitiasis:</strong> Se ven focos hiperecogénicos (blancos, brillantes), móviles, que proyectan una <strong>sombra acústica posterior</strong> bien definida. <strong>Colecistitis:</strong> Se buscan signos secundarios: 1) Engrosamiento de la pared vesicular (>3mm). 2) Líquido pericolecístico (fina lámina anecoica). 3) <strong>Signo de Murphy ecográfico positivo</strong> (dolor máximo al presionar con la sonda sobre la vesícula). 4) Cálculo impactado en el cuello.`,
-            evidence: `<p>Precisión global del ~89% para colecistitis. La combinación de hallazgos tiene una especificidad muy alta.</p>`,
-            pearls: `<div class="pearls-section"><h5>Errores Comunes</h5><p>Confundir el duodeno con la vesícula. El duodeno tiene gas y peristaltismo. La sombra acústica de un cálculo puede ser sutil; mover al paciente ayuda a confirmar la movilidad del cálculo.</p><h5>Impacto Clínico</h5><p>El signo de Murphy ecográfico es más específico que el clínico. Un POCUS positivo puede acelerar la consulta quirúrgica y el tratamiento.</p></div>`,
+            findings: `<strong>Colelitiasis:</strong> Se ven focos hiperecogénicos (blancos, brillantes), móviles, que proyectan una <strong>sombra acústica posterior</strong> bien definida. <strong>Colecistitis:</strong> Se buscan signos secundarios: 1) Engrosamiento de la pared vesicular (>3mm). 2) Líquido pericolecístico (fina lámina anecoica). 3) <strong>Signo de Murphy ecográfico positivo</strong> (dolor máximo al presionar con la sonda sobre la vesícula). 4) Cálculo impactado en el cuello.
+
+    <div class="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+      <h4 class="text-base font-bold text-green-700 mb-2">El foco ecogénico que NO proyecta sombra</h4>
+      <p class="text-sm text-gray-600 mb-3">Ver un cálculo es lo fácil. Lo que de verdad aparece en consulta y no siempre se sabe leer es el foco que <em>no</em> da sombra. Se resuelve con <strong>dos preguntas y un artefacto</strong>, sin medir nada: ¿se mueve al girar al paciente? ¿proyecta sombra?</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs sm:text-sm border-collapse">
+          <thead>
+            <tr class="bg-green-100 text-green-800">
+              <th class="p-2 text-left font-bold">Lo que se ve</th>
+              <th class="p-2 text-center font-bold">¿Se mueve?</th>
+              <th class="p-2 text-center font-bold">¿Sombra?</th>
+              <th class="p-2 text-left font-bold">Qué es</th>
+            </tr>
+          </thead>
+          <tbody class="align-top">
+            <tr class="border-b border-green-200">
+              <td class="p-2">Foco brillante, declive</td>
+              <td class="p-2 text-center">Sí, cae rápido</td>
+              <td class="p-2 text-center font-bold">Sí</td>
+              <td class="p-2"><strong>Cálculo</strong></td>
+            </tr>
+            <tr class="border-b border-green-200">
+              <td class="p-2">Ecos finos de baja amplitud en la parte declive, con nivel líquido-líquido horizontal</td>
+              <td class="p-2 text-center">Sí, <strong>lentamente</strong></td>
+              <td class="p-2 text-center">No</td>
+              <td class="p-2"><strong>Barro biliar</strong></td>
+            </tr>
+            <tr class="border-b border-green-200">
+              <td class="p-2">Estructura adherida a la pared, con base ancha o pedículo</td>
+              <td class="p-2 text-center font-bold text-red-600">No</td>
+              <td class="p-2 text-center">No</td>
+              <td class="p-2"><strong>Pólipo</strong></td>
+            </tr>
+            <tr>
+              <td class="p-2">Focos brillantes <em>en el espesor de la pared</em>, con estela de reverberación</td>
+              <td class="p-2 text-center">—</td>
+              <td class="p-2 text-center">Cola de cometa</td>
+              <td class="p-2"><strong>Colesterolosis / adenomiomatosis</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-gray-600 mt-3"><strong>La cola de cometa es el hallazgo que más cierra la consulta:</strong> identifica colesterolosis o adenomiomatosis, benignas, que <strong>no requieren seguimiento ecográfico ni colecistectomía</strong> por sí mismas.</p>
+    </div>
+
+    <div class="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+      <h4 class="text-base font-bold text-amber-800 mb-2">Barro biliar (<em>sludge</em>)</h4>
+      <p class="text-sm text-gray-700 mb-2">Suspensión de cristales de colesterol y bilirrubinato cálcico en bilis espesa. Se distingue del cálculo porque <strong>no da sombra</strong>, y del pólipo porque <strong>sí se desplaza</strong> —aunque despacio: hay que girar al paciente y <em>esperar</em>, no mirar y concluir.</p>
+      <ul class="text-sm text-gray-700 space-y-1 list-disc list-inside">
+        <li><strong>Por qué aparece:</strong> ayuno prolongado, nutrición parenteral, embarazo, pérdida rápida de peso, ceftriaxona, enfermedad crítica. En muchos casos <strong>es reversible</strong> al retirar la causa.</li>
+        <li><strong>Por qué importa:</strong> puede dar cólico biliar y es causa reconocida de pancreatitis aguda mal llamada «idiopática».</li>
+        <li><strong>La trampa:</strong> el barro compactado (<em>sludge ball</em>, barro tumefacto) simula una masa. Lo que lo delata: <strong>no capta señal Doppler</strong> y cambia de forma o de posición al mover al paciente.</li>
+      </ul>
+    </div>
+
+    <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+      <h4 class="text-base font-bold text-blue-800 mb-2">Pólipo vesicular: qué hacer con el hallazgo</h4>
+      <p class="text-sm text-gray-700 mb-3">Hallazgo frecuente e incidental. Lo que viene después —derivar o seguir, y hasta cuándo— <strong>es competencia de atención primaria</strong>. Se recoge la guía conjunta europea (ESGAR / EAES / EFISDS / ESGE, 2022).</p>
+      <p class="text-sm text-gray-700 mb-2"><strong>Factores de riesgo</strong> que cambian la conducta: edad &gt; 60 años · colangitis esclerosante primaria · etnia asiática · <strong>pólipo sésil</strong>, incluido engrosamiento focal de la pared &gt; 4 mm.</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs sm:text-sm border-collapse">
+          <thead>
+            <tr class="bg-blue-100 text-blue-900">
+              <th class="p-2 text-left font-bold">Situación</th>
+              <th class="p-2 text-left font-bold">Conducta</th>
+            </tr>
+          </thead>
+          <tbody class="align-top">
+            <tr class="border-b border-blue-200">
+              <td class="p-2"><strong>&ge; 10 mm</strong></td>
+              <td class="p-2">Derivar para <strong>colecistectomía</strong></td>
+            </tr>
+            <tr class="border-b border-blue-200">
+              <td class="p-2"><strong>6&ndash;9 mm</strong> con <strong>&ge; 1 factor de riesgo</strong></td>
+              <td class="p-2">Derivar para <strong>colecistectomía</strong></td>
+            </tr>
+            <tr class="border-b border-blue-200">
+              <td class="p-2"><strong>6&ndash;9 mm</strong> sin factores de riesgo<br><span class="text-gray-600">o bien <strong>&le; 5 mm</strong> con factores de riesgo</span></td>
+              <td class="p-2">Ecografía a los <strong>6 meses, 1 año y 2 años</strong>.<br><strong>Si no ha crecido, se suspende el seguimiento a los 2 años.</strong></td>
+            </tr>
+            <tr class="border-b border-blue-200">
+              <td class="p-2"><strong>&le; 5 mm</strong> sin factores de riesgo</td>
+              <td class="p-2"><strong>No requiere seguimiento.</strong></td>
+            </tr>
+            <tr class="border-b border-blue-200">
+              <td class="p-2">Síntomas atribuibles a la vesícula, sin otra causa demostrada</td>
+              <td class="p-2">Valorar colecistectomía, informando de que los síntomas pueden persistir</td>
+            </tr>
+            <tr class="border-b border-blue-200">
+              <td class="p-2">En el seguimiento <strong>alcanza 10 mm</strong></td>
+              <td class="p-2">Colecistectomía</td>
+            </tr>
+            <tr class="border-b border-blue-200">
+              <td class="p-2">En el seguimiento <strong>crece &ge; 2 mm</strong></td>
+              <td class="p-2">Valorar tamaño actual y factores de riesgo; decisión multidisciplinar</td>
+            </tr>
+            <tr>
+              <td class="p-2"><strong>Desaparece</strong></td>
+              <td class="p-2">Se suspende el seguimiento</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-gray-600 mt-3"><strong>Hay divergencia entre guías y conviene saberlo:</strong> otras propuestas mantienen vigilancia de los pólipos &le; 5 mm hasta los 5 años. La guía europea no la recomienda, y la mayor cohorte disponible cuestiona el seguimiento proactivo como estrategia (ver <em>Evidencia</em>).</p>
+    </div>
+
+    <div class="mt-4 p-4 bg-red-50 rounded-lg border border-red-300">
+      <h4 class="text-base font-bold text-red-700 mb-2">Lo que el POCUS NO decide aquí</h4>
+      <p class="text-sm text-gray-700">Todo el algoritmo pivota sobre cortes de 5, 6 y 10 mm y sobre si el pólipo es sésil: <strong>1 mm cambia la conducta</strong>. Eso no se resuelve con una convexa en una exploración a pie de cama. El reparto honesto es: <strong>el POCUS levanta el hallazgo</strong>, la ecografía reglada mide y caracteriza, y <strong>la primaria lleva el calendario</strong> y la decisión de derivar. Anotar «pólipo de 6 mm» a partir de un POCUS de cribado es prestarle al dato una precisión que no tiene.</p>
+    </div>`,
+            evidence: `<p><strong>Colecistitis</strong> — Precisión global del ~89%. La combinación de hallazgos tiene una especificidad muy alta.</p>
+              <p class="mt-3"><strong>Wennmacker et al. (2018, <em>Cochrane Database Syst Rev</em>)</strong> — Revisión sistemática. Para <strong>detectar</strong> un pólipo, la ecografía transabdominal rinde <strong>S 0,84 (IC 95% 0,59–0,95) y E 0,96 (0,92–0,98)</strong> (6 estudios, 16.260 participantes). Para <strong>distinguir pólipo verdadero de pseudopólipo</strong> el rendimiento cae a <strong>S 0,68 (0,44–0,85) y E 0,79</strong> (6 estudios, 1.078 participantes). Los propios autores lo traducen a una cifra que conviene tener presente: en 1.000 personas con una prevalencia del 6,4%, esa precisión produce <strong>37 sobrediagnósticos y 7 pólipos no detectados</strong>. Todos los estudios con riesgo de sesgo alto o incierto. <a href="https://doi.org/10.1002/14651858.CD012233.pub2" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p class="mt-3"><strong>Szpakowski y Tucker (2020, <em>JAMA Netw Open</em>)</strong> — Cohorte de 20 años, 35.856 adultos con pólipo vesicular. El cáncer de vesícula apareció en <strong>19 (0,053%)</strong>, prácticamente lo mismo que en quienes no tenían pólipo (<strong>316 de 586.357; 0,054%</strong>). La tasa global fue de 11,3 por 100.000 personas-año, pero <strong>muy dependiente del tamaño: 1,3 (IC 95% 0–4,0) por debajo de 6 mm frente a 128,2 (39,4–217,0) a partir de 10 mm</strong>. Además, a 10 años el <strong>66,2%</strong> de los pólipos menores de 6 mm había crecido ≥ 2 mm: los autores concluyen que ese crecimiento <strong>forma parte de la historia natural</strong> y que los resultados «cuestionan la estrategia de seguir proactivamente los pólipos para detectar cáncer». <a href="https://doi.org/10.1001/jamanetworkopen.2020.5143" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p class="mt-3"><strong>Foley et al. (2022, <em>Eur Radiol</em>)</strong> — Guía conjunta ESGAR / EAES / EFISDS / ESGE, con metodología GRADE. Es la fuente del algoritmo de arriba. Recomienda la <strong>ecografía abdominal como prueba inicial</strong> y no el uso rutinario de otras técnicas de imagen. <a href="https://doi.org/10.1007/s00330-021-08384-w" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p class="mt-3"><strong>Sobre la divergencia entre guías</strong> — El consenso norteamericano de la Society of Radiologists in Ultrasound (Kamaya et al., 2022, <em>Radiology</em>) va en la misma dirección que la europea: constata que la gran mayoría de los pólipos menores de 10 mm son pólipos de colesterol sin potencial maligno y que la evidencia reciente «cuestiona el fundamento del seguimiento frecuente y prolongado». La discrepancia real está con las propuestas que mantienen vigilancia de los ≤ 5 mm hasta los 5 años. <strong>Este atlas sigue la guía europea</strong>, que es la operativa en nuestro entorno. <a href="https://doi.org/10.1148/radiol.213079" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p class="mt-3"><strong>Certeza: Alta</strong> para detectar un pólipo · <strong>Baja</strong> para caracterizarlo como neoplásico o no · <strong>Nula</strong> para excluir malignidad sin histología</p>`,
+            pearls: `<div class="pearls-section">
+              <h5>Errores Comunes</h5>
+              <p>Confundir el duodeno con la vesícula. El duodeno tiene gas y peristaltismo. La sombra acústica de un cálculo puede ser sutil; mover al paciente ayuda a confirmar la movilidad del cálculo.</p>
+              <h5>La maniobra que separa las cuatro entidades</h5>
+              <p><strong>Girar al paciente a decúbito lateral izquierdo y esperar unos segundos.</strong> El cálculo cae de inmediato; el barro se desplaza despacio y rehace su nivel; el pólipo no se mueve. Mirar sin esperar es lo que hace que el barro compactado pase por masa y que un pólipo pequeño pase por cálculo sin sombra.</p>
+              <h5>Impacto Clínico</h5>
+              <p>El signo de Murphy ecográfico es más específico que el clínico. Un POCUS positivo puede acelerar la consulta quirúrgica y el tratamiento.</p>
+              <h5>El pólipo no es una mala noticia por sí mismo</h5>
+              <p>Tener un pólipo vesicular <strong>no aumentó el riesgo absoluto de cáncer de vesícula</strong> frente a no tenerlo en la mayor cohorte publicada (0,053% frente a 0,054%). El riesgo vive en el tamaño, no en la existencia del pólipo. Merece la pena decírselo al paciente con esas palabras: el hallazgo genera más ansiedad que enfermedad.</p>
+              <h5>Lo que el POCUS no responde</h5>
+              <p>Ni mide con la precisión que exige el algoritmo, ni distingue pólipo neoplásico de no neoplásico (S 0,68). Su papel aquí es <strong>levantar el hallazgo y encaminarlo</strong>, no cerrarlo.</p>
+            </div>`,
           },
         },
         {
@@ -6253,6 +6394,28 @@ CONCLUSIÓN:`,
         }
       };
 
+      // Vuelta al punto de partida sin recargar la página
+      window.resetToWelcome = function() {
+        document.querySelectorAll('.nav-chip-dropdown.show').forEach(function(d) { d.classList.remove('show'); });
+        document.querySelectorAll('.anatomy-segment').forEach(function(s) { s.classList.remove('active'); });
+        // Parar los vídeos del segmento que se abandona, igual que hace renderSegmentContent
+        Object.values(window.POCUSApp.videoPlayers).forEach(function(player) {
+          try { player.pauseVideo(); } catch (e) {}
+        });
+        window.POCUSApp.videoPlayers = {};
+        var contentEl = document.getElementById('content-area');
+        if (contentEl) contentEl.innerHTML = '';
+        // Las referencias viven fuera de #content-area, así que se limpian aparte
+        var refsEl = document.getElementById('references-section');
+        if (refsEl) refsEl.innerHTML = '';
+        var welcome = window.POCUSApp.welcomeNode;
+        if (welcome && contentEl) {
+          welcome.style.display = '';
+          contentEl.appendChild(welcome);
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
       window.toggleNavDropdown = function(btn) {
         var wrapper = btn.parentElement;
         var dropdown = wrapper.querySelector('.nav-chip-dropdown');
@@ -6337,6 +6500,11 @@ CONCLUSIÓN:`,
         }
         const contentArea = document.getElementById("content-area");
         const welcomeMessage = document.getElementById("welcome-message");
+        // La tarjeta de bienvenida cuelga de #content-area, y renderSegmentContent
+        // vacía ese contenedor con innerHTML="". Guardamos aquí la referencia al nodo:
+        // queda desconectado del DOM, no destruido, y resetToWelcome() lo vuelve a
+        // insertar con su cita ya hidratada. Sin esto, volver al inicio exige recargar.
+        window.POCUSApp.welcomeNode = welcomeMessage;
         const tooltip = document.getElementById("tooltip");
         // El tooltip se posiciona con coordenadas de viewport (getBoundingClientRect),
         // así que debe ser position:fixed y colgar del <body> para que ningún ancestro
