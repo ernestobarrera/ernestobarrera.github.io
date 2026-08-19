@@ -42,6 +42,9 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
+// El parentesco y su normalizacion viven en un solo modulo: dos copias divergirian y dos pasos
+// del mismo pipeline acabarian clasificando distinto el mismo termino.
+import { comparteRaiz, normalizar as norm } from './medcheck-identity-kin.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SALIDA = join(ROOT, 'assets', 'data', 'substance-identity-baseline.json');
@@ -79,32 +82,6 @@ async function pedir(url, intentos = 3) {
     }
     inconcluso += 1;
     return undefined;   // undefined = no se pudo medir; null = medido y ausente
-}
-
-const norm = s => String(s || '').toLowerCase().normalize('NFD')
-    .replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
-
-// ---- Comprobación de PARENTESCO, comun a las dos autoridades ----
-// Una autoridad puede devolver una CLASE en vez de la sustancia: RxNav da `factor ix fc fusion
-// protein` para eftrenonacog alfa, y la propia API advierte de que algunas correspondencias son
-// categoricas. Buscar por la clase no es traducir: ensancha. Y PubMed mapea fragmentos.
-//
-// Regla: el termino ingles propuesto debe compartir RAIZ con algun token del nombre espanol
-// (>=5 caracteres) o coincidir en un token exacto (cubre `macrogol 4000` -> `polyethylene glycol
-// 4000`). Si no lo comparte NO se descarta y NO se acepta: pasa a `review`, porque puede ser un
-// sinonimo legitimo — `acetilsalicilico` -> `aspirin` lo es — y elegir seria juzgar.
-function comparteRaiz(es, en) {
-  const RUIDO = new Set(['de', 'del', 'la', 'el', 'y', 'con', 'anti', 'para', 'en', 'acido', 'acid', 'alfa', 'alpha', 'beta', 'human', 'humana']);
-  const tes = norm(es).split(' ').filter(t => t.length > 2 && !RUIDO.has(t));
-  const ten = norm(en).split(' ').filter(t => t.length > 2 && !RUIDO.has(t));
-  if (!tes.length || !ten.length) return false;
-  // TODOS los tokens significativos del espanol deben quedar cubiertos, no solo uno: un unico
-  // token coincidente es justo lo que parece un FRAGMENTO. `vacuna anti algo raro` -> `algo`
-  // compartia "algo" y se colaba como traduccion. (Correccion de Codex: ningun token
-  // significativo sin consumir.)
-  const cubierto = a => ten.some(b => a === b || (a.length >= 5 && b.length >= 5
-    && (a.startsWith(b.slice(0, 5)) || b.startsWith(a.slice(0, 5)))));
-  return tes.every(cubierto);
 }
 
 // ---- Autoridad A: SNOMED CT (vtm.id de CIMA) vía RxNav ----

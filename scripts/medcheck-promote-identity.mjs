@@ -30,6 +30,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+// Mismo parentesco que usa el compilador: una regla en dos ficheros divergiria.
+import { comparteRaiz, normalizar } from './medcheck-identity-kin.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BASELINE = join(ROOT, 'assets', 'data', 'substance-identity-baseline.json');
@@ -63,7 +65,7 @@ const enCtgov = t => contar(
 
 const baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
 const dicc = JSON.parse(readFileSync(DICCIONARIO, 'utf8'));
-const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+const norm = normalizar;
 
 const candidatos = Object.entries(baseline.terms)
     .filter(([, v]) => v.status === 'verified' && v.en)
@@ -101,9 +103,15 @@ for (const [es, v] of candidatos) {
     // YA FUNCIONABA. `ácido alendrónico` sube de 3 a 2115 porque estaba roto: eso es el arreglo.
     // `retinol` sube de 1408 a 9308 partiendo de un término que ya recuperaba: eso es ancho.
     // Por eso el umbral exige que el español recuperase de forma apreciable antes de bloquear.
+    // Y LA CONDICIÓN QUE FALTABA, medida sobre los 684: el recuento por sí solo no distingue el
+    // ensanchamiento de la traducción que por fin funciona. De 12 bloqueados, 10 eran
+    // traducciones correctas —`testosterona`→`testosterone`, `temozolomida`→`temozolomide`,
+    // `ketamina`→`ketamine`— cuyo salto en ClinicalTrials.gov ERA el arreglo que se buscaba.
+    // Lo que separa un caso del otro es si comparten RAÍZ: `retinol`→`vitamin A` no la comparte
+    // y nombra una familia; `testosterona`→`testosterone` es la misma palabra en otro idioma.
     const SUELO_APRECIABLE = 100;
-    const ensancha = (x, y) => x !== null && y !== null && x > SUELO_APRECIABLE && y > x * 3;
-    const ancho = ensancha(pEs, pEn) || ensancha(cEs, cEn);
+    const multiplica = (x, y) => x !== null && y !== null && x > SUELO_APRECIABLE && y > x * 3;
+    const ancho = !comparteRaiz(es, v.en) && (multiplica(pEs, pEn) || multiplica(cEs, cEn));
     const ojo = !regresion && !ancho && (caida(pEs, pEn) || caida(cEs, cEn));
     const fila = `  ${String(v.products || 0).padStart(4)}  ${es.slice(0, 34).padEnd(36)} -> ${String(v.en).slice(0, 26).padEnd(28)}`
         + `${String(pEs).padStart(6)}/${String(pEn).padEnd(8)}${String(cEs).padStart(5)}/${String(cEn)}`;
