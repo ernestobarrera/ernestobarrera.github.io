@@ -27,6 +27,20 @@
 export const normalizar = s => String(s || '').toLowerCase().normalize('NFD')
     .replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 
+/**
+ * Forma de comparación: además de lo anterior, COLAPSA LETRAS DOBLADAS.
+ *
+ * El español y el inglés doblan consonantes en sitios distintos dentro del mismo INN, y esa
+ * diferencia de una letra rompía la comparación de prefijos: `folitropina` frente a
+ * `follitropin` daba `folit` contra `folli` y el parentesco salía negativo, con lo que una
+ * traducción correcta se bloqueaba como si nombrara una familia.
+ *
+ * Colapsar dobles es seguro para lo que aquí se decide: no acerca `retinol` a `vitamin A` ni
+ * `eftrenonacog` a `factor ix fc fusion protein`, que es lo que la regla tiene que seguir
+ * rechazando.
+ */
+const paraComparar = s => normalizar(s).replace(/([a-z])\1+/g, '$1');
+
 // Palabras que no identifican sustancia y que, contadas, darían parentescos falsos.
 const RUIDO = new Set(['de', 'del', 'la', 'el', 'y', 'con', 'anti', 'para', 'en',
     'acido', 'acid', 'alfa', 'alpha', 'beta', 'human', 'humana', 'sodico', 'sodium']);
@@ -37,8 +51,8 @@ const RUIDO = new Set(['de', 'del', 'la', 'el', 'y', 'con', 'anti', 'para', 'en'
  * @returns {boolean}  true si TODOS los tokens significativos del español quedan cubiertos
  */
 export function comparteRaiz(es, en) {
-    const tes = normalizar(es).split(' ').filter(t => t.length > 2 && !RUIDO.has(t));
-    const ten = normalizar(en).split(' ').filter(t => t.length > 2 && !RUIDO.has(t));
+    const tes = paraComparar(es).split(' ').filter(t => t.length > 2 && !RUIDO.has(t));
+    const ten = paraComparar(en).split(' ').filter(t => t.length > 2 && !RUIDO.has(t));
     if (!tes.length || !ten.length) return false;
     // TODOS los tokens del español deben quedar cubiertos, no solo uno: un único token
     // coincidente es exactamente lo que parece un FRAGMENTO («vacuna anti algo raro» -> «algo»).
