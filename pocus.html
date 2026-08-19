@@ -940,6 +940,7 @@
             <button class="nav-chip nav-chip-has-dropdown" onclick="toggleNavDropdown(this)">MSK/Reuma ▾</button>
             <div class="nav-chip-dropdown">
               <button onclick="navigateToSegment('shoulder')">Hombro</button>
+              <button onclick="navigateToSegment('knee')">Rodilla</button>
               <button onclick="navigateToSegment('hand_wrist')">Mano / Muñeca</button>
               <button onclick="navigateToSegment('foot')">Pie (Gota)</button>
               <button onclick="navigateToSegment('temporal_artery')">A. Temporal (ACG)</button>
@@ -1284,6 +1285,16 @@
                   <text x="100" y="45" class="anatomy-label">A. Temporal</text>
 
                   <circle
+                    cx="122"
+                    cy="425"
+                    r="11"
+                    class="anatomy-segment"
+                    data-segment="knee"
+                    data-tooltip="Rodilla (Derrame / Quiste de Baker)"
+                  />
+                  <text x="140" y="428" class="anatomy-label">Rodilla</text>
+
+                  <circle
                     cx="120"
                     cy="460"
                     r="10"
@@ -1495,6 +1506,45 @@
           `<a href="${ref.url}" target="_blank" rel="noopener noreferrer" ` +
           `class="text-blue-600 hover:text-blue-800 underline">Acceder al artículo</a>`;
       });
+
+      /* ── Bloque de técnica común a los procedimientos ecoguiados ──────────────────────────
+         El atlas nació siendo diagnóstico: hasta la fase 3 de la ampliación, la única ficha
+         procedimental era la polea A1. Lo que cambia en un procedimiento no es la anatomía, es
+         que hay una aguja: asepsia, elección del eje, consentimiento y registro se repiten
+         idénticos en los cinco. Vive aquí, en una constante, y no copiado cinco veces, porque
+         una corrección de seguridad tiene que llegar a todos a la vez.
+
+         `CONTRATO:` este bloque describe la parte GENÉRICA. Lo específico de cada procedimiento
+         (qué se punciona, con qué aguja, qué se espera obtener) va en la propia ficha, después. */
+      const TECNICA_PROCEDIMIENTO_ECOGUIADO = `
+        <div class="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-300">
+          <h4 class="text-base font-bold text-slate-700 mb-2">Antes de la aguja — común a todo procedimiento ecoguiado</h4>
+          <ul class="text-sm space-y-1">
+            <li><strong>Consentimiento informado</strong> y comprobación de alergias, anticoagulación y coagulopatía.</li>
+            <li><strong>Estudio ecográfico previo SIN aguja:</strong> localizar la diana, medir su profundidad y, sobre todo, <strong>identificar con Doppler color qué hay debajo y al lado</strong> (vasos, nervio, pleura, asa intestinal). Este paso es el que evita la complicación, no la destreza con la aguja.</li>
+            <li><strong>Marcar el punto de entrada</strong> y elegir la trayectoria más corta que no atraviese estructuras nobles.</li>
+            <li><strong>Asepsia:</strong> antiséptico cutáneo, campo estéril, y <strong>funda estéril para la sonda con gel estéril</strong> siempre que la aguja vaya a cruzar el campo. El gel de exploración habitual no es estéril.</li>
+            <li><strong>Anestesia local</strong> de piel y del trayecto, que puede infiltrarse también bajo control ecográfico.</li>
+          </ul>
+          <h4 class="text-base font-bold text-slate-700 mt-4 mb-2">Los dos ejes, y cuándo elegir cada uno</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div class="bg-white p-3 rounded border border-slate-200">
+              <h5 class="font-semibold text-slate-700 mb-1">En plano (eje largo)</h5>
+              <p class="text-xs text-gray-600">La aguja entra paralela al haz y se ve <strong>en toda su longitud</strong>, punta incluida. Es la opción cuando hay algo que evitar en el trayecto. Exige alinear bien: si la aguja se sale del plano, se ve un fragmento y se confunde con la punta.</p>
+            </div>
+            <div class="bg-white p-3 rounded border border-slate-200">
+              <h5 class="font-semibold text-slate-700 mb-1">Fuera de plano (eje corto)</h5>
+              <p class="text-xs text-gray-600">La aguja cruza el haz y aparece como <strong>un punto hiperecogénico</strong>. Es más fácil de alinear y más rápido, pero <strong>ese punto no es necesariamente la punta</strong>: puede ser el cuerpo de la aguja. Se compensa avanzando poco a poco y deslizando la sonda para reencontrar el extremo.</p>
+            </div>
+          </div>
+          <p class="text-xs text-gray-600 mt-3"><strong>Regla de seguridad, la única que no se negocia:</strong> no avanzar la aguja mientras no se sepa dónde está la punta. Si se pierde, se para, se recupera la imagen y se sigue.</p>
+          <h4 class="text-base font-bold text-slate-700 mt-4 mb-2">Al terminar</h4>
+          <ul class="text-sm space-y-1">
+            <li>Comprobar el resultado con la sonda (cavidad colapsada, colección evacuada, ausencia de hematoma).</li>
+            <li><strong>Dejar constancia en la historia:</strong> indicación, consentimiento, técnica y eje empleados, material obtenido, incidencias y plan de seguimiento.</li>
+            <li>Instrucciones al paciente sobre signos de alarma y revisión.</li>
+          </ul>
+        </div>`;
 
       // Base de datos POCUS
       const pocusData = [
@@ -2857,7 +2907,397 @@ CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
           },
         },
         {
-          segment: "dvt",
+          segment: "soft_tissue",
+          system: "Procedimientos",
+          color: "orange",
+          title: "Drenaje Ecoguiado de Absceso",
+          refId: "abscess_drainage_gaspari_2018",
+          content: {
+            technique: `${TECNICA_PROCEDIMIENTO_ECOGUIADO}
+            <h4 class="text-base font-bold text-orange-700 mb-2">Específico del drenaje de absceso</h4>
+            <ul>
+              <li><strong>Sonda:</strong> Lineal de alta frecuencia. Para colecciones profundas o en pacientes obesos, valorar convexa.</li>
+              <li><strong>Antes de incidir, mapear la colección:</strong> extensión en dos planos perpendiculares, profundidad desde la piel, y <strong>Doppler color obligatorio</strong> para no confundir un absceso con un <strong>pseudoaneurisma</strong> o un ganglio hipervascularizado. Es el error con peores consecuencias de toda la ficha.</li>
+              <li><strong>Elegir el punto de máxima proximidad a la piel</strong> y el punto más declive, y marcar ambos.</li>
+              <li><strong>Incisión y drenaje:</strong> incidir sobre el punto marcado, romper los tabiques con pinza o dedo, y lavar. Los tabiques que la ecografía ha mostrado son los que hay que deshacer: un absceso multiloculado drenado por una sola cámara recidiva.</li>
+              <li><strong>Alternativa con aguja</strong> (colecciones pequeñas, zonas estéticamente delicadas): aspiración ecoguiada, habitualmente <strong>fuera de plano</strong> por ser colecciones superficiales, avanzando en pequeños incrementos.</li>
+              <li><strong>Comprobación final con la sonda:</strong> la cavidad debe verse colapsada. Si queda un resto anecoico significativo, el drenaje es incompleto.</li>
+            </ul>`,
+            findings: `<ul>
+              <li><strong>Confirmar que es un absceso antes de incidir:</strong> colección hipoecoica o anecoica organizada, con detritos internos, refuerzo acústico posterior y <strong>sin flujo interno en Doppler</strong>. La presión con la sonda puede provocar el remolino de los detritos.</li>
+              <li><strong>Celulitis sin absceso:</strong> aspecto en «adoquín» del tejido subcutáneo, sin colección drenable. <em>Incidir aquí no aporta nada y hace daño.</em></li>
+              <li><strong>Tabiques:</strong> bandas ecogénicas dentro de la colección. Cambian el procedimiento, porque obligan a romperlas.</li>
+              <li><strong>Profundidad y relación con estructuras nobles:</strong> es el dato que decide si el drenaje se hace en consulta o se deriva.</li>
+              <li><strong>Tras el drenaje:</strong> cavidad colapsada, sin colección residual, sin hematoma nuevo.</li>
+            </ul>
+            <div class="mt-4 p-4 bg-red-50 rounded-lg border border-red-300">
+              <h4 class="text-base font-bold text-red-700 mb-2">Cuándo NO drenar en consulta</h4>
+              <ul class="text-sm space-y-1">
+                <li>• Cualquier colección con <strong>flujo en Doppler</strong> en su interior o pulsátil: descartar pseudoaneurisma antes de tocar nada.</li>
+                <li>• Proximidad a un <strong>paquete vascular o nervioso</strong> que no se pueda evitar con una trayectoria segura.</li>
+                <li>• Localizaciones de riesgo: <strong>cara (triángulo peligroso), cuello, mano, región perianal y genital, mama</strong>.</li>
+                <li>• Sospecha de <strong>infección profunda o necrosante</strong>, afectación sistémica, o inmunodepresión relevante.</li>
+                <li>• Colección de gran tamaño o multiloculada que no se va a poder deshacer ni lavar adecuadamente.</li>
+              </ul>
+            </div>`,
+            evidence: `<p><strong>Gaspari y Sanseverino (2018, <em>J Ultrasound Med</em>)</strong> — Revisión retrospectiva multicéntrica en 4 servicios de urgencias, 377 niños con sospecha de absceso cutáneo; 239 fueron sometidos a incisión y drenaje, 90 con ecografía y 149 sin ella. <strong>Fracaso clínico 4,4% con ecografía frente a 15,6% sin ella (p &lt; 0,005)</strong>. <a href="https://doi.org/10.1002/jum.14318" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Qué NO demuestra ese estudio, y conviene decirlo:</strong> es <strong>retrospectivo</strong>, en <strong>población pediátrica</strong> y en <strong>urgencias hospitalarias</strong>. Muestra asociación, no causalidad, y la decisión de usar ecografía no fue aleatorizada, así que los dos grupos pueden diferir en cosas no medidas. Es un argumento sólido para usar la sonda, no una estimación transferible sin más a la consulta de un adulto en atención primaria.</p>
+              <p>Sobre el paso previo —decidir si hay absceso que drenar— la evidencia es más firme y está desarrollada en la ficha <strong>Celulitis vs. Absceso</strong>, con sensibilidad en torno al 96% y especificidad del 87% para esa distinción, que cambia el manejo en una proporción relevante de casos.</p>
+              <p><strong>Certeza: Alta</strong> para decidir si hay colección drenable · <strong>Moderada</strong> para el beneficio de guiar el drenaje · <strong>Baja</strong> para extrapolar la magnitud del efecto a adultos en atención primaria</p>`,
+            pearls: `<div class="pearls-section">
+              <h5>El Doppler antes que el bisturí</h5>
+              <p>Es la perla que justifica toda la ficha. Una masa fluctuante que late puede ser un <strong>pseudoaneurisma</strong>, y abrirlo con la idea de drenar un absceso convierte una consulta en una urgencia vascular. Dos segundos de Doppler color lo descartan.</p>
+              <h5>Los tabiques cambian el procedimiento</h5>
+              <p>Un absceso multiloculado drenado como si fuese una sola cavidad recidiva. La ecografía los muestra antes, y decide si esto se hace aquí o se deriva.</p>
+              <h5>El valor está también en el negativo</h5>
+              <p>Confirmar que <strong>no hay colección</strong> evita una incisión inútil sobre una celulitis. Ese es el resultado más frecuente y el menos comentado.</p>
+              <h5>Comprobar el final, no solo el principio</h5>
+              <p>Volver a poner la sonda tras el lavado convierte «creo que ha salido todo» en un dato: cavidad colapsada o resto anecoico. Es lo que permite decidir el seguimiento con criterio.</p>
+            </div>`,
+            reportChecklist: [
+              'Indicación anotada y consentimiento informado registrado',
+              'Alergias, anticoagulación y coagulopatía comprobadas',
+              'Estudio ecográfico previo sin aguja: extensión en dos planos y profundidad',
+              'Doppler color aplicado: pseudoaneurisma descartado',
+              'Estructuras nobles del trayecto identificadas',
+              'Localización de riesgo descartada (cara, cuello, mano, perianal, genital, mama)',
+              'Asepsia con funda y gel estériles',
+              'Anestesia local infiltrada',
+              'Tabiques deshechos y cavidad lavada',
+              'Comprobación ecográfica final: cavidad colapsada',
+              'Muestra para cultivo si procede',
+              'Plan de seguimiento e instrucciones de alarma entregadas'
+            ],
+            reportFields: [
+              {
+                id: 'localizacion', label: 'Localización', type: 'select',
+                options: [
+                  { value: 'baja', label: 'Zona de bajo riesgo (tronco, extremidad)', cls: 'badge-normal', badge: 'Bajo riesgo', interpretation: 'Abordable en consulta' },
+                  { value: 'riesgo', label: 'Zona de riesgo (cara, cuello, mano, perianal, genital, mama)', cls: 'badge-alert', badge: 'ZONA DE RIESGO', interpretation: 'Valorar derivación en lugar de drenaje en consulta' }
+                ]
+              },
+              { id: 'diametro_max', label: 'Diámetro máximo', type: 'number', unit: 'mm', step: 1, min: 0, max: 300 },
+              { id: 'profundidad_piel', label: 'Profundidad desde la piel', type: 'number', unit: 'mm', step: 0.5, min: 0, max: 150 },
+              {
+                id: 'doppler', label: 'Doppler: flujo interno', type: 'boolean', yesIsAlert: true,
+                yesLabel: 'PRESENTE — NO DRENAR', noLabel: 'Ausente',
+                yesInterpretation: 'Descartar pseudoaneurisma o lesión vascular antes de cualquier punción',
+                noInterpretation: 'Sin flujo interno: compatible con colección'
+              },
+              {
+                id: 'tabiques', label: 'Tabiques / multiloculado', type: 'boolean', yesIsAlert: true,
+                yesLabel: 'PRESENTES', noLabel: 'Cavidad única',
+                yesInterpretation: 'Hay que deshacerlos o el drenaje será incompleto',
+                noInterpretation: 'Cavidad única'
+              },
+              {
+                id: 'procedimiento', label: 'Procedimiento realizado', type: 'select',
+                options: [
+                  { value: 'incision', label: 'Incisión y drenaje', cls: 'badge-normal', badge: 'Incisión y drenaje', interpretation: 'Drenaje quirúrgico realizado' },
+                  { value: 'aspiracion', label: 'Aspiración con aguja ecoguiada', cls: 'badge-normal', badge: 'Aspiración', interpretation: 'Aspiración ecoguiada realizada' },
+                  { value: 'no_drenado', label: 'No drenado (derivado / sin colección)', cls: 'badge-warn', badge: 'No drenado', interpretation: 'Registrar el motivo en la conclusión' }
+                ]
+              },
+              {
+                id: 'eje', label: 'Eje de la aguja', type: 'select',
+                visibleWhen: { fieldId: 'procedimiento', equals: 'aspiracion' },
+                options: [
+                  { value: 'en_plano', label: 'En plano (eje largo)', cls: 'badge-normal', badge: 'En plano', interpretation: 'Aguja visualizada en toda su longitud' },
+                  { value: 'fuera_plano', label: 'Fuera de plano (eje corto)', cls: 'badge-normal', badge: 'Fuera de plano', interpretation: 'Avance en incrementos, reencontrando la punta' }
+                ]
+              },
+              {
+                id: 'cavidad_final', label: 'Comprobación final: cavidad colapsada', type: 'boolean',
+                yesLabel: 'Sí — drenaje completo', noLabel: 'No — resto anecoico',
+                yesInterpretation: 'Sin colección residual significativa',
+                noInterpretation: 'Drenaje incompleto: ajustar seguimiento o derivar'
+              },
+              {
+                id: 'cultivo', label: 'Muestra para cultivo', type: 'boolean',
+                yesLabel: 'Enviada', noLabel: 'No enviada',
+                yesInterpretation: 'Pendiente de resultado', noInterpretation: 'Sin cultivo'
+              }
+            ],
+            reportTemplate: `PROCEDIMIENTO — DRENAJE ECOGUIADO DE ABSCESO
+Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
+
+INDICACIÓN:
+[Colección de partes blandas con sospecha de absceso]
+
+CONSENTIMIENTO: Informado y aceptado por el paciente.
+Alergias / anticoagulación / coagulopatía: [texto libre]
+
+TÉCNICA:
+Sonda lineal alta frecuencia. Estudio previo sin aguja en dos planos.
+Doppler color aplicado antes de cualquier punción.
+Asepsia con funda y gel estériles. Anestesia local infiltrada.
+
+HALLAZGOS:
+Localización: [[localizacion]]
+Diámetro máximo: [[diametro_max]]
+Profundidad desde la piel: [[profundidad_piel]]
+Flujo interno en Doppler: [[doppler]]
+Tabiques / multiloculado: [[tabiques]]
+
+PROCEDIMIENTO:
+Realizado: [[procedimiento]]
+Eje de la aguja: [[eje]]
+Material obtenido: [texto libre]
+Muestra para cultivo: [[cultivo]]
+Incidencias: [ninguna / texto libre]
+
+COMPROBACIÓN ECOGRÁFICA FINAL:
+Cavidad colapsada: [[cavidad_final]]
+
+CONCLUSIÓN / PLAN:
+[Resultado, antibioterapia si procede, revisión y signos de alarma entregados]`,
+          },
+        },
+        {
+          segment: "knee",
+          system: "Musculoesquelético",
+          color: "indigo",
+          title: "Derrame Articular de Rodilla",
+          refId: "knee_effusion_liu_2024",
+          content: {
+            technique: `<ul>
+              <li><strong>Sonda:</strong> Lineal de alta frecuencia (7–12 MHz).</li>
+              <li><strong>Posición:</strong> Decúbito supino con la rodilla en <strong>flexión de unos 30°</strong> (almohada o toalla enrollada bajo el hueco poplíteo). La flexión desplaza el líquido hacia el receso suprarrotuliano y es lo que hace visible un derrame pequeño.</li>
+              <li><strong>Ventana principal:</strong> Receso suprarrotuliano, 2–3 cm proximal al polo superior de la rótula, entre el tendón del cuádriceps y la cortical femoral. Explorar en <strong>plano longitudinal y transversal</strong>.</li>
+              <li><strong>Ventanas complementarias:</strong> Recesos medial y lateral (parapatelares) y fosa poplítea, por si el líquido está tabicado o hay un quiste de Baker asociado.</li>
+              <li><strong>No comprimir:</strong> la presión de la sonda desplaza el líquido y hace desaparecer un derrame pequeño. Apoyar con gel abundante.</li>
+              <li><strong>Comparar siempre con la rodilla contralateral</strong> en el mismo plano y con la misma flexión.</li>
+            </ul>`,
+            findings: `<ul>
+              <li><strong>Derrame:</strong> Colección <strong>anecoica o hipoecoica</strong> en el receso suprarrotuliano, que <strong>se desplaza con la compresión</strong> y con la contracción del cuádriceps, y que cambia de forma al recolocar la rodilla. Ese desplazamiento es el criterio que lo define.</li>
+              <li><strong>Medir</strong> la profundidad anteroposterior máxima del receso en el plano longitudinal, sin comprimir.</li>
+              <li><strong>Sinovitis, que no es lo mismo:</strong> engrosamiento hipoecoico <strong>no desplazable ni compresible</strong>, que puede captar señal en Doppler potencia. El derrame no capta Doppler. Pueden coexistir.</li>
+              <li><strong>Contenido ecogénico, septos o detritos:</strong> orienta a hemartros, derrame inflamatorio de alta celularidad o material purulento. <em>No permite distinguir séptico de no séptico.</em></li>
+              <li><strong>Buscar además:</strong> quiste de Baker en la fosa poplítea, que puede acompañar al derrame y se comunica con la articulación.</li>
+              <li><strong>Dato accionable:</strong> confirmar el derrame y localizar el mayor acúmulo permite <strong>dirigir la artrocentesis</strong> cuando está indicada.</li>
+            </ul>
+            <div class="mt-4 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+              <h4 class="text-base font-bold text-indigo-700 mb-2">Gradación semicuantitativa</h4>
+              <p class="text-sm text-gray-600 mb-2">La escala de consenso EULAR-OMERACT gradúa la sinovitis de 0 a 3 (0 normal · 1 leve · 2 moderada · 3 grave), valorando por separado el componente de derrame y el de hipertrofia sinovial con Doppler. Se desarrolló y validó en <strong>artritis reumatoide</strong>: es útil como lenguaje común para describir y seguir un hallazgo, no como umbral diagnóstico en un paciente con dolor de rodilla no inflamatorio.</p>
+            </div>`,
+            evidence: `<p><strong>Liu et al. (2024, <em>Arthritis Care Res</em>)</strong> — Metanálisis, 14 estudios, 755 pacientes con dolor de rodilla, con RM como patrón de referencia. Para <strong>derrame sinovial: S 0,90 (IC 95% 0,81–0,95), E 0,86 (0,77–0,92), AUC 0,94 (0,91–0,96)</strong>. Para sinovitis el rendimiento es menor: S 0,88, E 0,70, AUC 0,81. <a href="https://doi.org/10.1002/acr.25205" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Draghi et al. (2015, <em>J Ultrasound</em>)</strong> — 158 pacientes con ecografía y RM: <strong>S 81,3%, E 100%, VPP 100%, VPN 77,5%</strong>. El perfil es asimétrico: cuando la ecografía dice que hay derrame, lo hay. <a href="https://doi.org/10.1007/s40477-015-0180-3" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Kane et al. (2003, <em>J Rheumatol</em>)</strong> — 44 rodillas de pacientes con artritis reumatoide: la ecografía detectó derrame en <strong>27 rodillas y la exploración clínica solo en 16 de ellas</strong>; quiste de Baker en 10 frente a 2. Conclusión de los autores: la exploración clínica es específica pero <strong>poco sensible</strong>, e infraestima la inflamación. <a href="https://pubmed.ncbi.nlm.nih.gov/12734890/" target="_blank" rel="noopener noreferrer">PubMed</a></p>
+              <p><strong>Certeza: Alta</strong> para detectar y descartar derrame · <strong>Moderada</strong> para caracterizar sinovitis · <strong>Nula</strong> para distinguir derrame séptico de no séptico</p>`,
+            pearls: `<div class="pearls-section">
+              <h5>El error que más cambia el resultado</h5>
+              <p><strong>Explorar con la rodilla extendida.</strong> Sin los 30° de flexión, el receso suprarrotuliano no se rellena y un derrame pequeño simplemente no está donde se busca. El segundo error es <strong>apoyar con fuerza</strong>: la propia sonda desplaza el líquido y hace desaparecer el hallazgo que se estaba midiendo.</p>
+              <h5>Derrame no es sinovitis</h5>
+              <p>Si la imagen hipoecoica <strong>no se desplaza</strong> al comprimir y capta señal en Doppler potencia, es sinovitis, no líquido. Es la distinción con más consecuencias, porque cambia la interpretación y la utilidad de aspirar.</p>
+              <h5>Lo que el POCUS no responde</h5>
+              <p>Un derrame con contenido ecogénico <strong>no es sinónimo de artritis séptica</strong>, y uno anecoico no la descarta. Ante sospecha clínica de infección articular, la ecografía sirve para confirmar que hay líquido y guiar la punción; <strong>el diagnóstico lo da el análisis del líquido</strong>.</p>
+              <h5>Impacto clínico en consulta</h5>
+              <p>Un derrame que no se palpa no es un derrame ausente: en el estudio de Kane, la exploración clínica pasó por alto 11 de 27 derrames. En una rodilla dolorosa sin traumatismo claro, confirmar líquido reorienta el diagnóstico y decide si merece la pena aspirar.</p>
+            </div>`,
+            reportChecklist: [
+              'Indicación anotada (dolor, tumefacción, traumatismo, sospecha de artritis)',
+              'Rodilla en flexión de ~30° con apoyo bajo el hueco poplíteo',
+              'Receso suprarrotuliano explorado en longitudinal y transversal',
+              'Explorado sin comprimir con la sonda',
+              'Recesos medial y lateral y fosa poplítea valorados',
+              'Comparación con la rodilla contralateral',
+              'Doppler potencia aplicado para diferenciar sinovitis de derrame',
+              'Conclusión y plan documentados'
+            ],
+            reportFields: [
+              {
+                id: 'lado', label: 'Rodilla explorada', type: 'select',
+                options: [
+                  { value: 'dcha', label: 'Derecha', cls: 'badge-empty', badge: 'Derecha' },
+                  { value: 'izda', label: 'Izquierda', cls: 'badge-empty', badge: 'Izquierda' },
+                  { value: 'ambas', label: 'Ambas', cls: 'badge-empty', badge: 'Ambas' }
+                ]
+              },
+              {
+                // Sin umbrales a propósito: no hay un punto de corte validado en milímetros
+                // para "derrame patológico" en atención primaria. El badge dice "Medido" y la
+                // interpretación se apoya en la comparación contralateral, que sí es defendible.
+                id: 'profundidad', label: 'Profundidad máx. receso suprarrotuliano', type: 'number', unit: 'mm', step: 0.5, min: 0, max: 60
+              },
+              {
+                id: 'comparacion', label: 'Comparación contralateral', type: 'select',
+                options: [
+                  { value: 'simetrico', label: 'Simétrica', cls: 'badge-normal', badge: 'Simétrica', interpretation: 'Sin asimetría relevante' },
+                  { value: 'mayor', label: 'Mayor en la rodilla sintomática', cls: 'badge-warn', badge: 'Asimétrica', interpretation: 'Asimetría a favor de derrame' },
+                  { value: 'no_valorada', label: 'No valorada', cls: 'badge-empty', badge: 'No valorada', interpretation: 'Sin comparación contralateral' }
+                ]
+              },
+              {
+                id: 'contenido', label: 'Contenido', type: 'select',
+                options: [
+                  { value: 'anecoico', label: 'Anecoico (simple)', cls: 'badge-normal', badge: 'Anecoico', interpretation: 'Derrame simple' },
+                  { value: 'ecogenico', label: 'Ecogénico / con detritos', cls: 'badge-warn', badge: 'Ecogénico', interpretation: 'Valorar hemartros o derrame inflamatorio; no distingue séptico' },
+                  { value: 'septado', label: 'Septado / tabicado', cls: 'badge-warn', badge: 'Septado', interpretation: 'Valorar derrame crónico o complicado' }
+                ]
+              },
+              {
+                id: 'desplazable', label: 'Se desplaza a la compresión', type: 'boolean',
+                yesLabel: 'Sí — líquido', noLabel: 'No — valorar sinovitis',
+                yesInterpretation: 'Compatible con derrame', noInterpretation: 'Sugiere hipertrofia sinovial, no líquido libre'
+              },
+              {
+                id: 'doppler', label: 'Doppler potencia sinovial', type: 'select',
+                options: [
+                  { value: 'ausente', label: 'Ausente', cls: 'badge-normal', badge: 'Sin señal', interpretation: 'Sin datos de sinovitis activa' },
+                  { value: 'presente', label: 'Presente', cls: 'badge-warn', badge: 'Señal presente', interpretation: 'Sugiere sinovitis activa asociada' },
+                  { value: 'no_valorado', label: 'No valorado', cls: 'badge-empty', badge: 'No valorado', interpretation: 'Doppler no aplicado' }
+                ]
+              },
+              {
+                id: 'baker', label: 'Quiste de Baker asociado', type: 'boolean', yesIsAlert: true,
+                yesLabel: 'PRESENTE', noLabel: 'Ausente',
+                yesInterpretation: 'Valorar en la ficha específica', noInterpretation: 'Fosa poplítea sin colección'
+              }
+            ],
+            reportTemplate: `POCUS RODILLA — DERRAME ARTICULAR
+Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
+
+INDICACIÓN:
+[Dolor / tumefacción / traumatismo / sospecha de artritis]
+
+TÉCNICA:
+Sonda lineal alta frecuencia. Rodilla en flexión de ~30°.
+Receso suprarrotuliano en longitudinal y transversal, sin compresión.
+Recesos medial y lateral y fosa poplítea valorados. Doppler potencia aplicado.
+Calidad imagen: Óptima / Subóptima
+
+HALLAZGOS:
+Rodilla explorada: [[lado]]
+Profundidad máx. receso suprarrotuliano: [[profundidad]]
+Comparación contralateral: [[comparacion]]
+Contenido: [[contenido]]
+Se desplaza a la compresión: [[desplazable]]
+Doppler potencia sinovial: [[doppler]]
+Quiste de Baker asociado: [[baker]]
+Otros hallazgos: [texto libre]
+
+CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
+[Con / sin derrame articular. Si procede: valorar artrocentesis diagnóstica.
+La ecografía no distingue derrame séptico de no séptico]`,
+          },
+        },
+        {
+          segment: "shoulder",
+          system: "Musculoesquelético",
+          color: "indigo",
+          title: "Derrame Articular Glenohumeral",
+          refId: "shoulder_effusion_zubler_2011",
+          content: {
+            technique: `<ul>
+              <li><strong>Sonda:</strong> Lineal de alta frecuencia (7–12 MHz).</li>
+              <li><strong>Ventana de elección — receso glenohumeral posterior:</strong> Paciente sentado, con la mano en el muslo contralateral. Sonda transversal por debajo de la espina de la escápula, identificando la glenoides, la cabeza humeral y el tendón del infraespinoso por encima. <strong>Explorar con el brazo en rotación externa</strong>, que es la maniobra que hace visible el líquido.</li>
+              <li><strong>Ventana complementaria — vaina del tendón del bíceps:</strong> Sonda transversal sobre la corredera bicipital, con el codo flexionado y el antebrazo en supinación.</li>
+              <li><strong>Comparar con el hombro contralateral</strong> en la misma posición.</li>
+              <li><strong>Sin utilidad práctica:</strong> el receso subescapular y las posiciones neutras rinden mal (ver evidencia); no merece la pena basar la decisión en ellas.</li>
+            </ul>`,
+            findings: `<ul>
+              <li><strong>Derrame glenohumeral:</strong> Colección <strong>anecoica</strong> que distiende el receso posterior entre el cartílago de la cabeza humeral y el tendón del infraespinoso. Medir la anchura en sentido anteroposterior.</li>
+              <li><strong>Vaina del bíceps:</strong> Halo anecoico que rodea el tendón en el plano transversal. Ojo: una lámina fina es <strong>normal</strong>; el líquido de la vaina comunica con la articulación y es un signo indirecto.</li>
+              <li><strong>Distribución circunferencial</strong> alrededor del tendón del bíceps, y no solo en un lado, apoya que sea derrame y no anisotropía.</li>
+              <li><strong>Contenido ecogénico o septos:</strong> valorar hemartros o derrame complicado. Igual que en la rodilla, <em>no distingue séptico de no séptico</em>.</li>
+              <li><strong>Dato accionable:</strong> confirmar líquido en un hombro doloroso agudo con sospecha de artritis dirige la derivación y, en su caso, la punción.</li>
+            </ul>`,
+            evidence: `<p><strong>Zubler et al. (2011, <em>Eur Radiol</em>)</strong> — 30 pacientes explorados antes y después de artrografía por RM, con el líquido inyectado (8–12 ml) como patrón de referencia. El derrame se vio de forma consistente en el <strong>receso glenohumeral posterior con el brazo en rotación externa (30/30, 100%)</strong> y en la <strong>vaina del bíceps (29/30, 97%)</strong>. <strong>En el resto de localizaciones la sensibilidad cayó al 7–17%</strong>. Anchura media en el receso posterior 7 mm (rango 3–18); en la vaina del bíceps 2 mm (rango 1–7). La correlación entre la anchura medida y el volumen inyectado fue <strong>solo moderada (R = 0,390; p = 0,033)</strong>. <a href="https://doi.org/10.1007/s00330-011-2127-1" target="_blank" rel="noopener noreferrer">DOI</a></p>
+              <p><strong>Qué se puede y qué no se puede concluir de ese estudio.</strong> Establece <em>dónde</em> mirar, y lo hace con solidez. No establece un punto de corte de normalidad, porque el líquido era inyectado y no patológico: por eso aquí no se ofrece ningún umbral en milímetros y la interpretación se apoya en la <strong>comparación con el hombro contralateral</strong>.</p>
+              <p><strong>Certeza: Moderada</strong> para detectar derrame en la ventana correcta · <strong>Baja</strong> para cuantificar volumen · <strong>Nula</strong> para distinguir séptico de no séptico</p>`,
+            pearls: `<div class="pearls-section">
+              <h5>La ventana lo es todo</h5>
+              <p>Es la lección más rentable de la evidencia disponible: en el receso posterior con rotación externa el derrame se ve prácticamente siempre, y en las demás localizaciones se escapa cuatro de cada cinco veces. <strong>Un hombro explorado en posición neutra y por delante puede dar un resultado negativo que no significa nada.</strong></p>
+              <h5>Errores comunes</h5>
+              <p>Confundir el <strong>cartílago hialino anecoico</strong> de la cabeza humeral con líquido: el cartílago es una banda de grosor uniforme pegada al hueso, no una colección que distienda el receso. Y en la corredera bicipital, la <strong>anisotropía</strong> del tendón simula líquido si el haz no incide perpendicular — corregir inclinando la sonda antes de dar por bueno el hallazgo.</p>
+              <h5>Sin umbral, con comparación</h5>
+              <p>No hay un punto de corte validado para «derrame patológico» en el receso posterior. La lectura útil en consulta es <strong>asimétrica respecto al lado sano</strong>, en la misma posición y con la misma sonda.</p>
+              <h5>Impacto clínico</h5>
+              <p>En un hombro doloroso agudo, distinguir el derrame articular verdadero de la patología periarticular —bursitis subacromial, tendinopatía del manguito— cambia la orientación por completo. Las dos entidades periarticulares tienen ficha propia en este atlas.</p>
+            </div>`,
+            reportChecklist: [
+              'Indicación anotada (dolor agudo, sospecha de artritis, traumatismo)',
+              'Receso glenohumeral posterior explorado CON rotación externa',
+              'Vaina del tendón del bíceps valorada en transversal',
+              'Anisotropía descartada inclinando la sonda',
+              'Comparación con el hombro contralateral',
+              'Conclusión y plan documentados'
+            ],
+            reportFields: [
+              {
+                id: 'lado', label: 'Hombro explorado', type: 'select',
+                options: [
+                  { value: 'dcho', label: 'Derecho', cls: 'badge-empty', badge: 'Derecho' },
+                  { value: 'izdo', label: 'Izquierdo', cls: 'badge-empty', badge: 'Izquierdo' },
+                  { value: 'ambos', label: 'Ambos', cls: 'badge-empty', badge: 'Ambos' }
+                ]
+              },
+              {
+                id: 'rotacion', label: 'Receso posterior explorado en rotación externa', type: 'boolean',
+                yesLabel: 'Sí', noLabel: 'No — exploración no concluyente',
+                yesInterpretation: 'Ventana adecuada', noInterpretation: 'Sin rotación externa la sensibilidad cae: un resultado negativo no descarta'
+              },
+              {
+                // Igual que en la rodilla: sin umbrales. El estudio de referencia usó líquido
+                // inyectado, así que no define un corte de normalidad.
+                id: 'receso_post', label: 'Anchura receso posterior', type: 'number', unit: 'mm', step: 0.5, min: 0, max: 40
+              },
+              {
+                id: 'biceps', label: 'Líquido en vaina del bíceps', type: 'select',
+                options: [
+                  { value: 'ausente', label: 'Ausente', cls: 'badge-normal', badge: 'Ausente', interpretation: 'Sin líquido en la vaina' },
+                  { value: 'lamina', label: 'Lámina fina (puede ser normal)', cls: 'badge-empty', badge: 'Lámina fina', interpretation: 'Hallazgo inespecífico' },
+                  { value: 'circunferencial', label: 'Circunferencial', cls: 'badge-warn', badge: 'Circunferencial', interpretation: 'Signo indirecto de derrame glenohumeral' }
+                ]
+              },
+              {
+                id: 'contenido', label: 'Contenido', type: 'select',
+                options: [
+                  { value: 'anecoico', label: 'Anecoico (simple)', cls: 'badge-normal', badge: 'Anecoico', interpretation: 'Derrame simple' },
+                  { value: 'ecogenico', label: 'Ecogénico / septado', cls: 'badge-warn', badge: 'Ecogénico', interpretation: 'Valorar hemartros o derrame complicado; no distingue séptico' }
+                ]
+              },
+              {
+                id: 'comparacion', label: 'Comparación contralateral', type: 'select',
+                options: [
+                  { value: 'simetrico', label: 'Simétrica', cls: 'badge-normal', badge: 'Simétrica', interpretation: 'Sin asimetría relevante' },
+                  { value: 'mayor', label: 'Mayor en el hombro sintomático', cls: 'badge-warn', badge: 'Asimétrica', interpretation: 'Asimetría a favor de derrame' },
+                  { value: 'no_valorada', label: 'No valorada', cls: 'badge-empty', badge: 'No valorada', interpretation: 'Sin comparación contralateral' }
+                ]
+              }
+            ],
+            reportTemplate: `POCUS HOMBRO — DERRAME GLENOHUMERAL
+Fecha: ${new Date().toLocaleDateString('es-ES')}    Explorador: ____________________
+
+INDICACIÓN:
+[Dolor agudo / sospecha de artritis / traumatismo]
+
+TÉCNICA:
+Sonda lineal alta frecuencia. Receso glenohumeral posterior con el brazo en
+rotación externa. Vaina del tendón del bíceps en transversal.
+Calidad imagen: Óptima / Subóptima
+
+HALLAZGOS:
+Hombro explorado: [[lado]]
+Receso posterior en rotación externa: [[rotacion]]
+Anchura receso posterior: [[receso_post]]
+Líquido en vaina del bíceps: [[biceps]]
+Contenido: [[contenido]]
+Comparación contralateral: [[comparacion]]
+Otros hallazgos: [texto libre]
+
+CONCLUSIÓN / IMPRESIÓN DIAGNÓSTICA:
+[Con / sin derrame glenohumeral. No hay umbral validado en milímetros: la
+lectura se apoya en la asimetría respecto al lado sano. La ecografía no
+distingue derrame séptico de no séptico]`,
+          },
+        },
+        {
+          // Movida de "dvt" a "knee" al crear el segmento de rodilla: estaba en el
+          // vascular solo porque "dvt" era, de hecho, toda la pierna. La ficha gemela
+          // "Quiste de Baker / Diagnóstico Diferencial TVP" SÍ se queda en "dvt",
+          // porque su razón de ser es el diferencial con la trombosis.
+          segment: "knee",
           system: "Musculoesquelético",
           color: "indigo",
           title: "Quiste de Baker",

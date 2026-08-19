@@ -241,5 +241,52 @@
     "pmid": "42546336",
     "verified": "2026-08-18",
     "verifiedBy": "pubmed+crossref"
+  },
+  "knee_effusion_liu_2024": {
+    "citation": "Liu K, Li X, Weng Q, et al. Diagnostic accuracy of ultrasound for assessment of synovial abnormalities among patients with knee pain: a meta-analysis. Arthritis Care Res (Hoboken). 2024;76(2):295-303.",
+    "url": "https://doi.org/10.1002/acr.25205",
+    "doi": "10.1002/acr.25205",
+    "pmid": "37522287",
+    "verified": "2026-08-18",
+    "verifiedBy": "pubmed+crossref"
+  },
+  "knee_effusion_draghi_2015": {
+    "citation": "Draghi F, Urciuoli L, Alessandrino F, Corti R, Scudeller L, Grassi R. Joint effusion of the knee: potentialities and limitations of ultrasonography. J Ultrasound. 2015;18(4):361-371.",
+    "url": "https://doi.org/10.1007/s40477-015-0180-3",
+    "doi": "10.1007/s40477-015-0180-3",
+    "pmid": "26550074",
+    "verified": "2026-08-18",
+    "verifiedBy": "pubmed+crossref"
+  },
+  "knee_effusion_kane_2003": {
+    "citation": "Kane D, Balint PV, Sturrock RD. Ultrasonography is superior to clinical examination in the detection and localization of knee joint effusion in rheumatoid arthritis. J Rheumatol. 2003;30(5):966-971.",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/12734890/",
+    "pmid": "12734890",
+    "verified": "2026-08-18",
+    "verifiedBy": "pubmed"
+  },
+  "shoulder_effusion_zubler_2011": {
+    "citation": "Zubler V, Mamisch-Saupe N, Pfirrmann CWA, Jost B, Zanetti M. Detection and quantification of glenohumeral joint effusion: reliability of ultrasound. Eur Radiol. 2011;21(9):1858-1864.",
+    "url": "https://doi.org/10.1007/s00330-011-2127-1",
+    "doi": "10.1007/s00330-011-2127-1",
+    "pmid": "21503835",
+    "verified": "2026-08-18",
+    "verifiedBy": "pubmed+crossref"
+  },
+  "abscess_drainage_gaspari_2018": {
+    "citation": "Gaspari RJ, Sanseverino A. Ultrasound-guided drainage for pediatric soft tissue abscesses decreases clinical failure rates compared to drainage without ultrasound: a retrospective study. J Ultrasound Med. 2018;37(1):131-136.",
+    "url": "https://doi.org/10.1002/jum.14318",
+    "doi": "10.1002/jum.14318",
+    "pmid": "28731535",
+    "verified": "2026-08-19",
+    "verifiedBy": "pubmed+crossref"
+  },
+  "synovitis_omeract_dagostino_2017": {
+    "citation": "D'Agostino MA, Terslev L, Aegerter P, et al. Scoring ultrasound synovitis in rheumatoid arthritis: a EULAR-OMERACT ultrasound taskforce — Part 1: definition and development of a standardised, consensus-based scoring system. RMD Open. 2017;3(1):e000428.",
+    "url": "https://doi.org/10.1136/rmdopen-2016-000428",
+    "doi": "10.1136/rmdopen-2016-000428",
+    "pmid": "28948983",
+    "verified": "2026-08-18",
+    "verifiedBy": "pubmed+crossref"
   }
 }
