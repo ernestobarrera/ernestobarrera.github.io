@@ -16011,7 +16011,7 @@ ${materialesPlaceholder}
         });
 
         // Lanzar todas las peticiones: el espaciado y los reintentos los gobierna la cola
-        // serial de _fetchPubmedCount (_enqueueNcbi). Encolarlas aquí, ANTES que la sparkline,
+        // compartida de _fetchPubmedCount (_enqueueNcbi). Encolarlas aquí, ANTES que la sparkline,
         // les da prioridad en la cola compartida.
         for (const req of countRequests) {
             if (this._evidenceCountCycle !== cycleId) break;
@@ -16135,7 +16135,7 @@ ${materialesPlaceholder}
         const counts = new Array(bins.length).fill(null);
         this._renderEvidenceSparkline(svg, meta, bins, counts);
 
-        // Sin retardos manuales: la cola serial compartida (_enqueueNcbi) ya espacia estas
+        // Sin retardos manuales: la cola compartida (_enqueueNcbi) ya espacia estas
         // peticiones tras las del grid, que se encolaron primero. Encolarlas todas seguidas.
         for (let i = 0; i < bins.length; i++) {
             if (this._evSparklineCycle !== cycleId) return;
@@ -16220,28 +16220,97 @@ ${materialesPlaceholder}
         }
     }
 
-    // Cola global SERIAL para TODAS las llamadas a NCBI E-utilities. El grid de filtros,
-    // la sparkline de bienios y la barra de combinación comparten esta cola: garantiza un
-    // único request en vuelo y un espaciado mínimo bajo el techo de NCBI sin API key
-    // (3 req/s por IP). Antes el grid y la sparkline corrían en dos bucles concurrentes que
-    // superaban ese límite → 429 → celdas en "–" que parecían datos vacíos pese a existir.
-    // isStillValid descarta tareas de un ciclo ya invalidado sin gastar el hueco de espaciado.
+    // Cola global para TODAS las llamadas a NCBI E-utilities. El grid de filtros, la sparkline
+    // de bienios y la barra de combinación la comparten. Existe porque antes el grid y la
+    // sparkline corrían en dos bucles concurrentes que superaban el techo de NCBI sin API key
+    // (3 req/s por IP) → 429 → celdas en "–" que parecían datos vacíos pese a existir.
+    //
+    // EL TECHO NO SE TOCA: siguen siendo 3 peticiones por segundo. Lo que cambia (2026-08-19)
+    // es que ahora ese techo se puede ALCANZAR cuando la latencia es alta.
+    //
+    // El diseño anterior era una cadena estrictamente serial: cada tarea esperaba a que la
+    // RESPUESTA de la anterior volviera, no a que se despachara. Con eso el ritmo real no era
+    // el techo sino 1/RTT, y el tiempo de la pestaña crecía LINEAL con la latencia. Medido:
+    // 23 llamadas por ficha (1 total + 12 filtros + 10 bienios) ⇒ ~8 s con los 210 ms de RTT
+    // de una red buena, pero ~16 s a 700 ms y ~28 s a 1,2 s, que es la red de la consulta.
+    // Y justo cuando más falta hacía, la cadena usaba 1 de los 3 req/s disponibles.
+    //
+    // Ahora: ventana deslizante de MAX_RATE despachos por WINDOW_MS —el mismo ritmo medio de
+    // 350 ms de antes— MÁS un tope de MAX_CONCURRENT peticiones en vuelo. Con red rápida manda
+    // la ventana y el comportamiento es idéntico al anterior; con red lenta manda la
+    // concurrencia y el tiempo deja de multiplicarse por la latencia. NCBI recibe exactamente
+    // el mismo número de peticiones por segundo en el peor caso que antes.
+    //
+    // FIFO estricto: el grid se encola antes que la sparkline y conserva su prioridad.
+    // isStillValid descarta tareas de un ciclo ya invalidado sin gastar hueco de ritmo.
     _enqueueNcbi(task, isStillValid = () => true) {
-        const MIN_GAP = 350; // ms entre dispatches ⇒ ~2,8 req/s, con margen sobre el techo de 3 req/s
-        const prev = this._ncbiChain || Promise.resolve();
-        const run = prev.then(async () => {
-            if (!isStillValid()) return null; // término/fecha cambiaron: saltar sin esperar
-            const since = this._ncbiLastDispatch ? Date.now() - this._ncbiLastDispatch : MIN_GAP;
-            if (since < MIN_GAP) await new Promise(r => setTimeout(r, MIN_GAP - since));
-            this._ncbiLastDispatch = Date.now();
-            return task();
+        if (!this._ncbiQueue) {
+            this._ncbiQueue = [];
+            this._ncbiInFlight = 0;
+            this._ncbiDispatches = [];
+        }
+        return new Promise((resolve, reject) => {
+            this._ncbiQueue.push({ task, isStillValid, resolve, reject });
+            this._pumpNcbi();
         });
-        // La cola no debe romperse si una tarea rechaza: la siguiente espera igual.
-        this._ncbiChain = run.then(() => {}, () => {});
-        return run;
     }
 
-    // Helper compartido: conteo a NCBI a través de la cola serial, con backoff exponencial
+    // Bombea la cola de NCBI hasta topar con uno de los dos frenos. Toda la política vive aquí;
+    // _enqueueNcbi solo encola.
+    _pumpNcbi() {
+        const MAX_CONCURRENT = 3;   // peticiones en vuelo
+        const MAX_RATE       = 3;   // despachos por ventana ⇒ el techo de NCBI sin API key
+        const WINDOW_MS      = 1050; // ventana deslizante, con margen sobre el segundo exacto
+
+        if (!this._ncbiQueue || this._ncbiQueue.length === 0) return;
+
+        const ahora = Date.now();
+        this._ncbiDispatches = this._ncbiDispatches.filter(t => ahora - t < WINDOW_MS);
+
+        // Enfriamiento global tras un 429 (lo fija _fetchPubmedCountAttempts). Mientras dure,
+        // no sale NADA hacia NCBI: reproduce a propósito la propiedad que la cadena serial
+        // daba gratis y la concurrencia se llevaría por delante.
+        const enfriando = this._ncbiCooldownUntil && ahora < this._ncbiCooldownUntil;
+
+        while (!enfriando
+               && this._ncbiQueue.length > 0
+               && this._ncbiInFlight < MAX_CONCURRENT
+               && this._ncbiDispatches.length < MAX_RATE) {
+            const job = this._ncbiQueue.shift();
+            // Ciclo invalidado (cambió término, fecha o selección): se resuelve a null sin
+            // gastar ni hueco de ritmo ni de concurrencia. Igual que hacía la cadena serial.
+            if (!job.isStillValid()) { job.resolve(null); continue; }
+
+            this._ncbiDispatches.push(Date.now());
+            this._ncbiInFlight += 1;
+            Promise.resolve()
+                .then(() => job.task())
+                .then(job.resolve, job.reject)   // un rechazo va al llamador, no rompe la cola
+                .then(() => {
+                    this._ncbiInFlight -= 1;
+                    this._pumpNcbi();
+                });
+        }
+
+        // Si queda cola y el freno es el RITMO (no la concurrencia), nadie va a volver a
+        // despertarla: las tareas en vuelo solo bombean al TERMINAR, y puede que no quede
+        // ninguna en vuelo. Hay que programar el despertar para cuando el despacho más
+        // antiguo salga de la ventana.
+        if (this._ncbiQueue.length > 0 && !this._ncbiPumpTimer) {
+            const masAntiguo = this._ncbiDispatches[0];
+            const porRitmo = masAntiguo ? WINDOW_MS - (Date.now() - masAntiguo) : 10;
+            // Si además hay enfriamiento por 429, manda el que acabe más tarde: despertar antes
+            // solo produciría una pasada en vacío.
+            const porEnfriado = enfriando ? this._ncbiCooldownUntil - Date.now() : 0;
+            const espera = Math.max(10, porRitmo, porEnfriado);
+            this._ncbiPumpTimer = setTimeout(() => {
+                this._ncbiPumpTimer = null;
+                this._pumpNcbi();
+            }, espera);
+        }
+    }
+
+    // Helper compartido: conteo a NCBI a través de la cola limitada, con backoff exponencial
     // ante rate limit (4 intentos: ~0,8 / 1,6 / 3,2 s). Usa POST (NCBI lo recomienda para
     // >200 chars/UIDs) — evita el límite ~8 KB de URL que rompía las queries combinadas con
     // varios filtros largos. Content-Type application/x-www-form-urlencoded no dispara CORS
@@ -16283,10 +16352,21 @@ ${materialesPlaceholder}
                 continue;
             }
             if (!result.rateLimited) return result.count;
-            // 429: backoff exponencial con jitter. Al estar dentro de la cola serial, este
-            // respiro frena TODO el tráfico a NCBI, dándole margen para recuperarse.
+            // 429: backoff exponencial con jitter.
+            //
+            // La cadena serial anterior daba GRATIS una propiedad valiosa: al haber una sola
+            // petición en vuelo, este respiro frenaba TODO el tráfico a NCBI y le daba margen
+            // para recuperarse. Con concurrencia eso se pierde —las otras dos ranuras seguirían
+            // disparando— así que se declara explícitamente: el 429 enfría la cola ENTERA.
+            //
+            // Importa más de lo que parece aquí: un 429 casi nunca significa que nos hayamos
+            // pasado nosotros (el limitador lo impide), sino que compartimos IP de salida con
+            // otros —exactamente lo que hace el NAT de una red corporativa—. Ante eso, frenar
+            // todo el tráfico propio es la respuesta correcta y la educada.
+            const espera = 800 * Math.pow(2, attempt) + Math.random() * 300;
+            this._ncbiCooldownUntil = Math.max(this._ncbiCooldownUntil || 0, Date.now() + espera);
             if (attempt >= MAX_ATTEMPTS - 1) throw new Error('rate-limit-persistent');
-            await new Promise(r => setTimeout(r, 800 * Math.pow(2, attempt) + Math.random() * 300));
+            await new Promise(r => setTimeout(r, espera));
             if (!isStillValid()) return null;
         }
         return null;
