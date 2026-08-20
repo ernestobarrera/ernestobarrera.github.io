@@ -1,6 +1,6 @@
 {
   "version": "2026-08-18",
-  "note": "Baseline de identidad de sustancia. CANDIDATOS, no traducciones autorizadas: la incorporacion a inn-es-en.json es una decision humana. Estados: verified (una autoridad oficial lo resuelve; convergencia si ambas coinciden) · review (dos candidatos distintos: elegir seria juzgar) · unresolved (ninguna autoridad, o PubMed solo reconocio un fragmento) · manual (combinacion: pendiente de resolver por componentes estructurados) · inconclusive (no se pudo medir). Se guarda estado, termino y fecha; NUNCA recuentos historicos.",
+  "note": "Baseline de identidad de sustancia. CANDIDATOS, no traducciones autorizadas: la incorporacion a inn-es-en.json es una decision humana. Estados: verified (una autoridad oficial lo resuelve; convergencia si ambas coinciden) · review (dos candidatos distintos: elegir seria juzgar) · unresolved (ninguna autoridad, o PubMed solo reconocio un fragmento) · manual (combinacion: pendiente de resolver por componentes estructurados) · inconclusive (no se pudo medir). Se guarda estado, termino y fecha; NUNCA recuentos historicos. · 2026-08-20: 63 veredictos reclasificados en local (parentesco con transliteracion y reposicion del sustantivo vaccine); las respuestas de las autoridades no se volvieron a pedir.",
   "sources": {
     "snomed": "CIMA vtm.id (SNOMED CT) -> RxNav idtype=SNOMEDCT (NLM)",
     "pubmed": "eutils esearch querytranslation (concepto MeSH / Supplementary Concept)"
@@ -655,11 +655,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "acetylcholine"
       ],
-      "reason": "rxcui 194 devuelve \"acetylcholine\", que no comparte raiz · \"acetilcolina\"[All Fields] AND \"cloruro\"[All Fields]"
+      "en": "acetylcholine",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "acetylcholine"
+      ],
+      "reason_previa": "rxcui 194 devuelve \"acetylcholine\", que no comparte raiz · \"acetilcolina\"[All Fields] AND \"cloruro\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 4,
+        "pubmed_en": 107187,
+        "ctgov_es": 0,
+        "ctgov_en": 657
+      }
     },
     "alteplasa": {
       "products": 6,
@@ -735,12 +747,25 @@
         "snomed": "ensancha",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "hypromellose",
         "hypromellose derivatives"
       ],
-      "reason": "rxcui 27334 devuelve \"hypromellose\", que no comparte raiz · no cubre el nombre completo: hypromellose derivatives"
+      "en": "hypromellose",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "hypromellose",
+        "hypromellose derivatives"
+      ],
+      "reason_previa": "rxcui 27334 devuelve \"hypromellose\", que no comparte raiz · no cubre el nombre completo: hypromellose derivatives",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 2797,
+        "pubmed_en": 3049,
+        "ctgov_es": 719,
+        "ctgov_en": 719
+      }
     },
     "tocoferol": {
       "products": 6,
@@ -750,12 +775,25 @@
         "snomed": "ensancha",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "vitamin E",
         "tocopherols"
       ],
-      "reason": "rxcui 11256 devuelve \"vitamin E\", que no comparte raiz · no cubre el nombre completo: tocopherols"
+      "en": "tocopherols",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "vitamin E",
+        "tocopherols"
+      ],
+      "reason_previa": "rxcui 11256 devuelve \"vitamin E\", que no comparte raiz · no cubre el nombre completo: tocopherols",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 11895,
+        "pubmed_en": 27919,
+        "ctgov_es": 37,
+        "ctgov_en": 168
+      }
     },
     "cinacalcet": {
       "products": 6,
@@ -788,11 +826,23 @@
         "snomed": "ausente",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "naproxen"
       ],
-      "reason": "no cubre el nombre completo: naproxen"
+      "en": "naproxen",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "naproxen"
+      ],
+      "reason_previa": "no cubre el nombre completo: naproxen",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 16,
+        "pubmed_en": 8411,
+        "ctgov_es": 0,
+        "ctgov_en": 432
+      }
     },
     "loxapina": {
       "products": 5,
@@ -825,11 +875,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "glycerin"
       ],
-      "reason": "rxcui 4910 devuelve \"glycerin\", que no comparte raiz · \"glicerol\"[All Fields]"
+      "en": "glycerin",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "glycerin"
+      ],
+      "reason_previa": "rxcui 4910 devuelve \"glycerin\", que no comparte raiz · \"glicerol\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 51,
+        "pubmed_en": 75679,
+        "ctgov_es": 0,
+        "ctgov_en": 272
+      }
     },
     "orlistat": {
       "products": 5,
@@ -884,11 +946,24 @@
         "snomed": "ausente",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "hepatitis b"
       ],
-      "reason": "no cubre el nombre completo: hepatitis b"
+      "en": "hepatitis b vaccine",
+      "method": "reclasificado: sustantivo vaccine repuesto",
+      "antigeno_autoridad": "hepatitis b",
+      "candidates_previos": [
+        "hepatitis b"
+      ],
+      "reason_previa": "no cubre el nombre completo: hepatitis b",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 34,
+        "pubmed_en": 12600,
+        "ctgov_es": 0,
+        "ctgov_en": 2896
+      }
     },
     "melfalán": {
       "products": 4,
@@ -1026,7 +1101,7 @@
         "snomed": "ok",
         "pubmed": "ok"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "atazanavir",
         "atazanavir sulfate"
@@ -1034,7 +1109,22 @@
       "evidence": [
         "rxcui 343047 · SNOMEDCT 413591007",
         "querytranslation: \"atazanavir sulfate\""
-      ]
+      ],
+      "en": "atazanavir",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "atazanavir",
+        "atazanavir sulfate"
+      ],
+      "en_autoridad": "atazanavir sulfate",
+      "curado": true,
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 2168,
+        "pubmed_en": 2168,
+        "ctgov_es": 272,
+        "ctgov_en": 272
+      }
     },
     "maraviroc": {
       "products": 4,
@@ -2072,11 +2162,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "colistimethate"
       ],
-      "reason": "rxcui 2708 devuelve \"colistimethate\", que no comparte raiz · \"colistimetato\"[All Fields] AND (\"drug effects\"[MeSH Subheading] OR (\"drug\"[All Fields] AND \"effects\"[All Fields]) OR \"d"
+      "en": "colistimethate",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "colistimethate"
+      ],
+      "reason_previa": "rxcui 2708 devuelve \"colistimethate\", que no comparte raiz · \"colistimetato\"[All Fields] AND (\"drug effects\"[MeSH Subheading] OR (\"drug\"[All Fields] AND \"effects\"[All Fields]) OR \"d",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 458,
+        "ctgov_es": 0,
+        "ctgov_en": 44
+      }
     },
     "vacuna anti difteria + tétanos": {
       "status": "manual",
@@ -2522,11 +2624,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "enoxaparin"
       ],
-      "reason": "rxcui 67108 devuelve \"enoxaparin\", que no comparte raiz · \"enoxaparina\"[All Fields] AND \"sodio\"[All Fields]"
+      "en": "enoxaparin",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "enoxaparin"
+      ],
+      "reason_previa": "rxcui 67108 devuelve \"enoxaparin\", que no comparte raiz · \"enoxaparina\"[All Fields] AND \"sodio\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 7342,
+        "ctgov_es": 0,
+        "ctgov_en": 525
+      }
     },
     "folitropina alfa": {
       "products": 144,
@@ -2605,11 +2719,24 @@
         "snomed": "ausente",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "rotavirus"
       ],
-      "reason": "no cubre el nombre completo: rotavirus"
+      "en": "rotavirus vaccine",
+      "method": "reclasificado: sustantivo vaccine repuesto",
+      "antigeno_autoridad": "rotavirus",
+      "candidates_previos": [
+        "rotavirus"
+      ],
+      "reason_previa": "no cubre el nombre completo: rotavirus",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 5,
+        "pubmed_en": 6782,
+        "ctgov_es": 0,
+        "ctgov_en": 282
+      }
     },
     "gestodeno + etinilestradiol": {
       "status": "manual",
@@ -3204,11 +3331,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "methoxy polyethylene glycol-epoetin beta"
       ],
-      "reason": "rxcui 729596 devuelve \"methoxy polyethylene glycol-epoetin beta\", que no comparte raiz · \"epoetina\"[All Fields] AND (\"beta\"[Journal] OR \"beta\"[All Fields]) AND \"metoxipolietilenglicol\"[All Fields]"
+      "en": "methoxy polyethylene glycol-epoetin beta",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "methoxy polyethylene glycol-epoetin beta"
+      ],
+      "reason_previa": "rxcui 729596 devuelve \"methoxy polyethylene glycol-epoetin beta\", que no comparte raiz · \"epoetina\"[All Fields] AND (\"beta\"[Journal] OR \"beta\"[All Fields]) AND \"metoxipolietilenglicol\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 281,
+        "ctgov_es": 0,
+        "ctgov_en": 121
+      }
     },
     "atomoxetina": {
       "products": 88,
@@ -3218,7 +3357,7 @@
         "snomed": "ok",
         "pubmed": "ok"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "atomoxetine",
         "atomoxetine hydrochloride"
@@ -3226,7 +3365,20 @@
       "evidence": [
         "rxcui 38400 · SNOMEDCT 407038000",
         "querytranslation: \"atomoxetine hydrochloride\""
-      ]
+      ],
+      "en": "atomoxetine",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "atomoxetine",
+        "atomoxetine hydrochloride"
+      ],
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 1603,
+        "pubmed_en": 2464,
+        "ctgov_es": 230,
+        "ctgov_en": 230
+      }
     },
     "epoetina alfa": {
       "products": 85,
@@ -3546,11 +3698,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "clorazepate"
       ],
-      "reason": "rxcui 2353 devuelve \"clorazepate\", que no comparte raiz · \"clorazepato\"[All Fields]"
+      "en": "clorazepate",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "clorazepate"
+      ],
+      "reason_previa": "rxcui 2353 devuelve \"clorazepate\", que no comparte raiz · \"clorazepato\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 12,
+        "pubmed_en": 492,
+        "ctgov_es": 0,
+        "ctgov_en": 5
+      }
     },
     "vacuna anti hepatitis B + H.influenzae b + difteria + tétanos + tos ferina + polio": {
       "status": "manual",
@@ -3646,7 +3810,7 @@
         "snomed": "ok",
         "pubmed": "ok"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "imatinib",
         "imatinib mesylate"
@@ -3654,7 +3818,20 @@
       "evidence": [
         "rxcui 282388 · SNOMEDCT 391634008",
         "querytranslation: \"imatinib mesylate\""
-      ]
+      ],
+      "en": "imatinib",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "imatinib",
+        "imatinib mesylate"
+      ],
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 19686,
+        "pubmed_en": 19686,
+        "ctgov_es": 869,
+        "ctgov_en": 869
+      }
     },
     "factor con Willebrand + factor VIII": {
       "status": "manual",
@@ -3670,11 +3847,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "oxymetazoline"
       ],
-      "reason": "rxcui 7812 devuelve \"oxymetazoline\", que no comparte raiz · \"oximetazolina\"[All Fields]"
+      "en": "oxymetazoline",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "oxymetazoline"
+      ],
+      "reason_previa": "rxcui 7812 devuelve \"oxymetazoline\", que no comparte raiz · \"oximetazolina\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 3,
+        "pubmed_en": 1249,
+        "ctgov_es": 0,
+        "ctgov_en": 1118
+      }
     },
     "glucosa + potasio cloruro": {
       "status": "manual",
@@ -3781,11 +3970,24 @@
         "snomed": "ausente",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "hepatitis a"
       ],
-      "reason": "no cubre el nombre completo: hepatitis a"
+      "en": "hepatitis a vaccine",
+      "method": "reclasificado: sustantivo vaccine repuesto",
+      "antigeno_autoridad": "hepatitis a",
+      "candidates_previos": [
+        "hepatitis a"
+      ],
+      "reason_previa": "no cubre el nombre completo: hepatitis a",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 4,
+        "pubmed_en": 2292,
+        "ctgov_es": 0,
+        "ctgov_en": 1054
+      }
     },
     "lovastatina": {
       "products": 66,
@@ -3870,7 +4072,7 @@
         "snomed": "ok",
         "pubmed": "ok"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "bendamustine",
         "bendamustine hydrochloride"
@@ -3878,7 +4080,20 @@
       "evidence": [
         "rxcui 134547 · SNOMEDCT 427812009",
         "querytranslation: \"bendamustine hydrochloride\""
-      ]
+      ],
+      "en": "bendamustine",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "bendamustine",
+        "bendamustine hydrochloride"
+      ],
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 1295,
+        "pubmed_en": 2351,
+        "ctgov_es": 470,
+        "ctgov_en": 470
+      }
     },
     "cloperastina": {
       "products": 63,
@@ -4063,11 +4278,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "nitric oxide"
       ],
-      "reason": "rxcui 7442 devuelve \"nitric oxide\", que no comparte raiz · \"oxido\"[All Fields] AND \"nitrico\"[All Fields]"
+      "en": "nitric oxide",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "nitric oxide"
+      ],
+      "reason_previa": "rxcui 7442 devuelve \"nitric oxide\", que no comparte raiz · \"oxido\"[All Fields] AND \"nitrico\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 257,
+        "pubmed_en": 211086,
+        "ctgov_es": 0,
+        "ctgov_en": 2566
+      }
     },
     "insulina asparta": {
       "products": 56,
@@ -4101,11 +4328,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "dalteparin"
       ],
-      "reason": "rxcui 67109 devuelve \"dalteparin\", que no comparte raiz · \"dalteparina\"[All Fields] AND \"sodio\"[All Fields]"
+      "en": "dalteparin",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "dalteparin"
+      ],
+      "reason_previa": "rxcui 67109 devuelve \"dalteparin\", que no comparte raiz · \"dalteparina\"[All Fields] AND \"sodio\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 1536,
+        "ctgov_es": 0,
+        "ctgov_en": 1101
+      }
     },
     "bromfenaco": {
       "products": 56,
@@ -5179,12 +5418,25 @@
         "snomed": "ensancha",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "urokinase",
         "urokinase type plasminogen activator"
       ],
-      "reason": "rxcui 11055 devuelve \"urokinase\", que no comparte raiz · no cubre el nombre completo: urokinase type plasminogen activator"
+      "en": "urokinase",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "urokinase",
+        "urokinase type plasminogen activator"
+      ],
+      "reason_previa": "rxcui 11055 devuelve \"urokinase\", que no comparte raiz · no cubre el nombre completo: urokinase type plasminogen activator",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 14596,
+        "pubmed_en": 20324,
+        "ctgov_es": 197,
+        "ctgov_en": 197
+      }
     },
     "nomegestrol + estradiol": {
       "status": "manual",
@@ -5411,11 +5663,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "lanthanum carbonate"
       ],
-      "reason": "rxcui 234416 devuelve \"lanthanum carbonate\", que no comparte raiz · \"lantano\"[All Fields] AND \"carbonato\"[All Fields]"
+      "en": "lanthanum carbonate",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "lanthanum carbonate"
+      ],
+      "reason_previa": "rxcui 234416 devuelve \"lanthanum carbonate\", que no comparte raiz · \"lantano\"[All Fields] AND \"carbonato\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 9,
+        "pubmed_en": 633,
+        "ctgov_es": 0,
+        "ctgov_en": 54
+      }
     },
     "tiotepa": {
       "products": 40,
@@ -5425,11 +5689,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "thiotepa"
       ],
-      "reason": "rxcui 10473 devuelve \"thiotepa\", que no comparte raiz · \"tiotepa\"[All Fields]"
+      "en": "thiotepa",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "thiotepa"
+      ],
+      "reason_previa": "rxcui 10473 devuelve \"thiotepa\", que no comparte raiz · \"tiotepa\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 23,
+        "pubmed_en": 3867,
+        "ctgov_es": 0,
+        "ctgov_en": 364
+      }
     },
     "abemaciclib": {
       "products": 40,
@@ -5461,7 +5737,7 @@
         "snomed": "ok",
         "pubmed": "ok"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "erlotinib",
         "erlotinib hydrochloride"
@@ -5469,7 +5745,20 @@
       "evidence": [
         "rxcui 337525 · SNOMEDCT 414122006",
         "querytranslation: \"erlotinib hydrochloride\""
-      ]
+      ],
+      "en": "erlotinib",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "erlotinib",
+        "erlotinib hydrochloride"
+      ],
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 8980,
+        "pubmed_en": 8980,
+        "ctgov_es": 940,
+        "ctgov_en": 940
+      }
     },
     "misoprostol": {
       "products": 39,
@@ -5614,11 +5903,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "bemiparin"
       ],
-      "reason": "rxcui 280611 devuelve \"bemiparin\", que no comparte raiz · \"bemiparina\"[All Fields] AND \"sodio\"[All Fields]"
+      "en": "bemiparin",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "bemiparin"
+      ],
+      "reason_previa": "rxcui 280611 devuelve \"bemiparin\", que no comparte raiz · \"bemiparina\"[All Fields] AND \"sodio\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 146,
+        "ctgov_es": 0,
+        "ctgov_en": 23
+      }
     },
     "damoctocog alfa pegol": {
       "products": 36,
@@ -6612,11 +6913,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "nitrous oxide"
       ],
-      "reason": "rxcui 7486 devuelve \"nitrous oxide\", que no comparte raiz · \"oxido\"[All Fields] AND (\"nitroso\"[All Fields] OR \"nitrosos\"[All Fields])"
+      "en": "nitrous oxide",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "nitrous oxide"
+      ],
+      "reason_previa": "rxcui 7486 devuelve \"nitrous oxide\", que no comparte raiz · \"oxido\"[All Fields] AND (\"nitroso\"[All Fields] OR \"nitrosos\"[All Fields])",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 50,
+        "pubmed_en": 26816,
+        "ctgov_es": 0,
+        "ctgov_en": 448
+      }
     },
     "crizotinib": {
       "products": 30,
@@ -6648,11 +6961,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "picosulfate sodium"
       ],
-      "reason": "rxcui 33688 devuelve \"picosulfate sodium\", que no comparte raiz · \"picosulfato\"[All Fields] AND (\"drug effects\"[MeSH Subheading] OR (\"drug\"[All Fields] AND \"effects\"[All Fields]) OR \"dru"
+      "en": "picosulfate sodium",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "picosulfate sodium"
+      ],
+      "reason_previa": "rxcui 33688 devuelve \"picosulfate sodium\", que no comparte raiz · \"picosulfato\"[All Fields] AND (\"drug effects\"[MeSH Subheading] OR (\"drug\"[All Fields] AND \"effects\"[All Fields]) OR \"dru",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 257,
+        "ctgov_es": 0,
+        "ctgov_en": 85
+      }
     },
     "lauromacrogol 400": {
       "products": 28,
@@ -6858,11 +7183,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "hydroxocobalamin"
       ],
-      "reason": "rxcui 5514 devuelve \"hydroxocobalamin\", que no comparte raiz · \"hidroxocobalamina\"[All Fields]"
+      "en": "hydroxocobalamin",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "hydroxocobalamin"
+      ],
+      "reason_previa": "rxcui 5514 devuelve \"hydroxocobalamin\", que no comparte raiz · \"hidroxocobalamina\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 12,
+        "pubmed_en": 1544,
+        "ctgov_es": 0,
+        "ctgov_en": 1349
+      }
     },
     "ramucirumab": {
       "products": 28,
@@ -7267,7 +7604,7 @@
         "snomed": "ok",
         "pubmed": "ok"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "triptorelin",
         "triptorelin pamoate"
@@ -7275,7 +7612,20 @@
       "evidence": [
         "rxcui 38782 · SNOMEDCT 327370004",
         "querytranslation: \"triptorelin pamoate\""
-      ]
+      ],
+      "en": "triptorelin",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "triptorelin",
+        "triptorelin pamoate"
+      ],
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 2095,
+        "pubmed_en": 2469,
+        "ctgov_es": 308,
+        "ctgov_en": 308
+      }
     },
     "fosaprepitant": {
       "products": 25,
@@ -7454,11 +7804,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "hydroquinone"
       ],
-      "reason": "rxcui 5509 devuelve \"hydroquinone\", que no comparte raiz · \"hidroquinona\"[All Fields]"
+      "en": "hydroquinone",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "hydroquinone"
+      ],
+      "reason_previa": "rxcui 5509 devuelve \"hydroquinone\", que no comparte raiz · \"hidroquinona\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 3,
+        "pubmed_en": 10073,
+        "ctgov_es": 0,
+        "ctgov_en": 67
+      }
     },
     "citarabina": {
       "products": 24,
@@ -7734,7 +8096,7 @@
         "snomed": "ok",
         "pubmed": "ok"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "pamidronic acid",
         "pamidronate"
@@ -7742,7 +8104,20 @@
       "evidence": [
         "rxcui 1546406 · SNOMEDCT 772820008",
         "querytranslation: \"pamidronate\""
-      ]
+      ],
+      "en": "pamidronic acid",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "pamidronic acid",
+        "pamidronate"
+      ],
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 3457,
+        "pubmed_en": 3493,
+        "ctgov_es": 0,
+        "ctgov_en": 1
+      }
     },
     "plerixafor": {
       "products": 24,
@@ -8432,7 +8807,7 @@
         "snomed": "ok",
         "pubmed": "ok"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "olopatadine",
         "olopatadine hydrochloride"
@@ -8440,7 +8815,20 @@
       "evidence": [
         "rxcui 135391 · SNOMEDCT 108845001",
         "querytranslation: \"olopatadine hydrochloride\""
-      ]
+      ],
+      "en": "olopatadine",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "olopatadine",
+        "olopatadine hydrochloride"
+      ],
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 369,
+        "pubmed_en": 468,
+        "ctgov_es": 68,
+        "ctgov_en": 68
+      }
     },
     "Serenoa repens": {
       "products": 21,
@@ -8682,11 +9070,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "hydrogen peroxide"
       ],
-      "reason": "rxcui 5499 devuelve \"hydrogen peroxide\", que no comparte raiz · \"peroxido\"[All Fields] AND (\"drug effects\"[MeSH Subheading] OR (\"drug\"[All Fields] AND \"effects\"[All Fields]) OR \"drug e"
+      "en": "hydrogen peroxide",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "hydrogen peroxide"
+      ],
+      "reason_previa": "rxcui 5499 devuelve \"hydrogen peroxide\", que no comparte raiz · \"peroxido\"[All Fields] AND (\"drug effects\"[MeSH Subheading] OR (\"drug\"[All Fields] AND \"effects\"[All Fields]) OR \"drug e",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 26,
+        "pubmed_en": 120293,
+        "ctgov_es": 0,
+        "ctgov_en": 522
+      }
     },
     "fenilbutirato de sodio": {
       "products": 21,
@@ -9005,11 +9405,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "xylometazoline"
       ],
-      "reason": "rxcui 39841 devuelve \"xylometazoline\", que no comparte raiz · \"xilometazolina\"[All Fields]"
+      "en": "xylometazoline",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "xylometazoline"
+      ],
+      "reason_previa": "rxcui 39841 devuelve \"xylometazoline\", que no comparte raiz · \"xilometazolina\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 372,
+        "ctgov_es": 0,
+        "ctgov_en": 62
+      }
     },
     "paracetamol + cafeína + propifenazona": {
       "status": "manual",
@@ -9508,7 +9920,7 @@
         "snomed": "ok",
         "pubmed": "ok"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "insulin glulisine, human",
         "insulin glulisine"
@@ -9516,7 +9928,22 @@
       "evidence": [
         "rxcui 400008 · SNOMEDCT 411532008",
         "querytranslation: \"insulin glulisine\""
-      ]
+      ],
+      "en": "insulin glulisine",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "insulin glulisine, human",
+        "insulin glulisine"
+      ],
+      "en_autoridad": "insulin glulisine, human",
+      "curado": true,
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 276,
+        "pubmed_en": 276,
+        "ctgov_es": 119,
+        "ctgov_en": 127
+      }
     },
     "erdafitinib": {
       "products": 18,
@@ -10112,11 +10539,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "cromolyn"
       ],
-      "reason": "rxcui 42612 devuelve \"cromolyn\", que no comparte raiz · \"cromoglicato\"[All Fields] AND \"sodio\"[All Fields]"
+      "en": "cromolyn",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "cromolyn"
+      ],
+      "reason_previa": "rxcui 42612 devuelve \"cromolyn\", que no comparte raiz · \"cromoglicato\"[All Fields] AND \"sodio\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 7,
+        "pubmed_en": 4843,
+        "ctgov_es": 0,
+        "ctgov_en": 42
+      }
     },
     "apraclonidina": {
       "products": 16,
@@ -10274,11 +10713,23 @@
         "snomed": "ausente",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "cystine"
       ],
-      "reason": "no cubre el nombre completo: cystine"
+      "en": "cystine",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "cystine"
+      ],
+      "reason_previa": "no cubre el nombre completo: cystine",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 15150,
+        "pubmed_en": 15329,
+        "ctgov_es": 93,
+        "ctgov_en": 92
+      }
     },
     "hidrocortisona + cloranfenicol": {
       "status": "manual",
@@ -10479,11 +10930,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "methylnaltrexone"
       ],
-      "reason": "rxcui 29899 devuelve \"methylnaltrexone\", que no comparte raiz · metilnaltrexona"
+      "en": "methylnaltrexone",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "methylnaltrexone"
+      ],
+      "reason_previa": "rxcui 29899 devuelve \"methylnaltrexone\", que no comparte raiz · metilnaltrexona",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 527,
+        "ctgov_es": 0,
+        "ctgov_en": 63
+      }
     },
     "lenacapavir": {
       "products": 16,
@@ -10515,12 +10978,25 @@
         "snomed": "ensancha",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "pentosan polysulfate",
         "pentosan sulfuric polyester"
       ],
-      "reason": "rxcui 155046 devuelve \"pentosan polysulfate\", que no comparte raiz · no cubre el nombre completo: pentosan sulfuric polyester"
+      "en": "pentosan polysulfate",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "pentosan polysulfate",
+        "pentosan sulfuric polyester"
+      ],
+      "reason_previa": "rxcui 155046 devuelve \"pentosan polysulfate\", que no comparte raiz · no cubre el nombre completo: pentosan sulfuric polyester",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 1099,
+        "ctgov_es": 0,
+        "ctgov_en": 21
+      }
     },
     "ytrio cloruro (90Y)": {
       "products": 16,
@@ -11613,12 +12089,25 @@
         "snomed": "ensancha",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "amphotericin",
         "amphotericin b"
       ],
-      "reason": "rxcui 42527 devuelve \"amphotericin\", que no comparte raiz · no cubre el nombre completo: amphotericin b"
+      "en": "amphotericin b",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "amphotericin",
+        "amphotericin b"
+      ],
+      "reason_previa": "rxcui 42527 devuelve \"amphotericin\", que no comparte raiz · no cubre el nombre completo: amphotericin b",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 29211,
+        "pubmed_en": 29210,
+        "ctgov_es": 243,
+        "ctgov_en": 237
+      }
     },
     "Vitex agnus castus": {
       "products": 14,
@@ -12134,11 +12623,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "thiopental"
       ],
-      "reason": "rxcui 10493 devuelve \"thiopental\", que no comparte raiz · \"tiopental\"[All Fields] AND \"sodio\"[All Fields]"
+      "en": "thiopental",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "thiopental"
+      ],
+      "reason_previa": "rxcui 10493 devuelve \"thiopental\", que no comparte raiz · \"tiopental\"[All Fields] AND \"sodio\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 10549,
+        "ctgov_es": 0,
+        "ctgov_en": 81
+      }
     },
     "noscapina": {
       "products": 14,
@@ -12194,11 +12695,23 @@
         "snomed": "ausente",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "tocophersolan"
       ],
-      "reason": "no cubre el nombre completo: tocophersolan"
+      "en": "tocophersolan",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "tocophersolan"
+      ],
+      "reason_previa": "no cubre el nombre completo: tocophersolan",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 725,
+        "pubmed_en": 718,
+        "ctgov_es": 0,
+        "ctgov_en": 13
+      }
     },
     "patirómero": {
       "products": 14,
@@ -12283,11 +12796,24 @@
         "snomed": "ausente",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "haemophilus influenzae"
       ],
-      "reason": "no cubre el nombre completo: haemophilus influenzae"
+      "en": "haemophilus influenzae vaccine",
+      "method": "reclasificado: sustantivo vaccine repuesto",
+      "antigeno_autoridad": "haemophilus influenzae",
+      "candidates_previos": [
+        "haemophilus influenzae"
+      ],
+      "reason_previa": "no cubre el nombre completo: haemophilus influenzae",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 5,
+        "pubmed_en": 6883,
+        "ctgov_es": 0,
+        "ctgov_en": 406
+      }
     },
     "Silybum marianum": {
       "products": 13,
@@ -12319,11 +12845,23 @@
         "snomed": "ausente",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "silybin"
       ],
-      "reason": "no cubre el nombre completo: silybin"
+      "en": "silybin",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "silybin"
+      ],
+      "reason_previa": "no cubre el nombre completo: silybin",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 1929,
+        "pubmed_en": 1940,
+        "ctgov_es": 41,
+        "ctgov_en": 41
+      }
     },
     "elvitegravir + cobicistat + emtricitabina + tenofovir": {
       "status": "manual",
@@ -12590,11 +13128,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "caffeine"
       ],
-      "reason": "rxcui 1886 devuelve \"caffeine\", que no comparte raiz · \"cafeina\"[All Fields]"
+      "en": "caffeine",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "caffeine"
+      ],
+      "reason_previa": "rxcui 1886 devuelve \"caffeine\", que no comparte raiz · \"cafeina\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 56,
+        "pubmed_en": 42894,
+        "ctgov_es": 1919,
+        "ctgov_en": 1919
+      }
     },
     "letermovir": {
       "products": 12,
@@ -13236,11 +13786,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "dihydrocodeine"
       ],
-      "reason": "rxcui 23088 devuelve \"dihydrocodeine\", que no comparte raiz · \"dihidrocodeina\"[All Fields]"
+      "en": "dihydrocodeine",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "dihydrocodeine"
+      ],
+      "reason_previa": "rxcui 23088 devuelve \"dihydrocodeine\", que no comparte raiz · \"dihidrocodeina\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 2,
+        "pubmed_en": 547,
+        "ctgov_es": 0,
+        "ctgov_en": 14
+      }
     },
     "ziconotida": {
       "products": 12,
@@ -13879,11 +14441,24 @@
         "snomed": "ausente",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "dengue"
       ],
-      "reason": "no cubre el nombre completo: dengue"
+      "en": "dengue vaccine",
+      "method": "reclasificado: sustantivo vaccine repuesto",
+      "antigeno_autoridad": "dengue",
+      "candidates_previos": [
+        "dengue"
+      ],
+      "reason_previa": "no cubre el nombre completo: dengue",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 5813,
+        "ctgov_es": 0,
+        "ctgov_en": 185
+      }
     },
     "furosemida + triamtereno": {
       "status": "manual",
@@ -14115,11 +14690,24 @@
         "snomed": "ausente",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "herpes zoster"
       ],
-      "reason": "no cubre el nombre completo: herpes zoster"
+      "en": "herpes zoster vaccine",
+      "method": "reclasificado: sustantivo vaccine repuesto",
+      "antigeno_autoridad": "herpes zoster",
+      "candidates_previos": [
+        "herpes zoster"
+      ],
+      "reason_previa": "no cubre el nombre completo: herpes zoster",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 3,
+        "pubmed_en": 3531,
+        "ctgov_es": 0,
+        "ctgov_en": 418
+      }
     },
     "vacuna anti fiebre amarilla": {
       "products": 10,
@@ -16435,11 +17023,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "sodium glycerophosphate"
       ],
-      "reason": "rxcui 1595589 devuelve \"sodium glycerophosphate\", que no comparte raiz · \"glicerofosfato\"[All Fields] AND \"sodio\"[All Fields]"
+      "en": "sodium glycerophosphate",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "sodium glycerophosphate"
+      ],
+      "reason_previa": "rxcui 1595589 devuelve \"sodium glycerophosphate\", que no comparte raiz · \"glicerofosfato\"[All Fields] AND \"sodio\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 6,
+        "pubmed_en": 701,
+        "ctgov_es": 0,
+        "ctgov_en": 11
+      }
     },
     "oxidronato sodio": {
       "products": 8,
@@ -16460,11 +17060,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "hyaluronic acid"
       ],
-      "reason": "rxcui 5463 devuelve \"hyaluronic acid\", que no comparte raiz · \"acido\"[All Fields] AND \"hialuronico\"[All Fields]"
+      "en": "hyaluronic acid",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "hyaluronic acid"
+      ],
+      "reason_previa": "rxcui 5463 devuelve \"hyaluronic acid\", que no comparte raiz · \"acido\"[All Fields] AND \"hialuronico\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 73,
+        "pubmed_en": 45739,
+        "ctgov_es": 0,
+        "ctgov_en": 2009
+      }
     },
     "decitabina + cedazuridina": {
       "status": "manual",
@@ -16587,12 +17199,25 @@
         "snomed": "ensancha",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "pyridostigmine",
         "pyridostigmine bromide"
       ],
-      "reason": "rxcui 9000 devuelve \"pyridostigmine\", que no comparte raiz · no cubre el nombre completo: pyridostigmine bromide"
+      "en": "pyridostigmine",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "pyridostigmine",
+        "pyridostigmine bromide"
+      ],
+      "reason_previa": "rxcui 9000 devuelve \"pyridostigmine\", que no comparte raiz · no cubre el nombre completo: pyridostigmine bromide",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 2077,
+        "pubmed_en": 3050,
+        "ctgov_es": 63,
+        "ctgov_en": 63
+      }
     },
     "metirapona": {
       "products": 8,
@@ -16858,11 +17483,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "spiramycin"
       ],
-      "reason": "rxcui 9991 devuelve \"spiramycin\", que no comparte raiz · \"espiramicina\"[All Fields]"
+      "en": "spiramycin",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "spiramycin"
+      ],
+      "reason_previa": "rxcui 9991 devuelve \"spiramycin\", que no comparte raiz · \"espiramicina\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 14,
+        "pubmed_en": 1744,
+        "ctgov_es": 0,
+        "ctgov_en": 6
+      }
     },
     "mepivacaína + epinefrina": {
       "status": "manual",
@@ -17282,11 +17919,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "trospium"
       ],
-      "reason": "rxcui 236778 devuelve \"trospium\", que no comparte raiz · \"trospio\"[All Fields] AND \"cloruro\"[All Fields]"
+      "en": "trospium",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "trospium"
+      ],
+      "reason_previa": "rxcui 236778 devuelve \"trospium\", que no comparte raiz · \"trospio\"[All Fields] AND \"cloruro\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 544,
+        "ctgov_es": 0,
+        "ctgov_en": 73
+      }
     },
     "nedocromilo": {
       "products": 8,
@@ -18547,7 +19196,7 @@
         "snomed": "ok",
         "pubmed": "ok"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "bromelains",
         "fruit bromelain"
@@ -18555,7 +19204,20 @@
       "evidence": [
         "rxcui 1752 · SNOMEDCT 40430000",
         "querytranslation: \"fruit bromelain\""
-      ]
+      ],
+      "en": "bromelains",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "bromelains",
+        "fruit bromelain"
+      ],
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 1728,
+        "pubmed_en": 2772,
+        "ctgov_es": 0,
+        "ctgov_en": 62
+      }
     },
     "nitroprusiato sódico": {
       "products": 7,
@@ -18565,11 +19227,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "nitroprusside"
       ],
-      "reason": "rxcui 7476 devuelve \"nitroprusside\", que no comparte raiz · \"nitroprusiato\"[All Fields] AND \"sodico\"[All Fields]"
+      "en": "nitroprusside",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "nitroprusside"
+      ],
+      "reason_previa": "rxcui 7476 devuelve \"nitroprusside\", que no comparte raiz · \"nitroprusiato\"[All Fields] AND \"sodico\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 12,
+        "pubmed_en": 20282,
+        "ctgov_es": 0,
+        "ctgov_en": 212
+      }
     },
     "fluocinonida + gentamicina": {
       "status": "manual",
@@ -18882,11 +19556,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "thyrotropin alfa"
       ],
-      "reason": "rxcui 4952 devuelve \"thyrotropin alfa\", que no comparte raiz · \"tirotrofina\"[All Fields] AND \"alfa\"[All Fields]"
+      "en": "thyrotropin alfa",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "thyrotropin alfa"
+      ],
+      "reason_previa": "rxcui 4952 devuelve \"thyrotropin alfa\", que no comparte raiz · \"tirotrofina\"[All Fields] AND \"alfa\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 151,
+        "ctgov_es": 0,
+        "ctgov_en": 140
+      }
     },
     "tuberculina PPD": {
       "products": 7,
@@ -18896,12 +19582,25 @@
         "snomed": "ensancha",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "purified protein derivative of tuberculin",
         "tuberculin"
       ],
-      "reason": "rxcui 8948 devuelve \"purified protein derivative of tuberculin\", que no comparte raiz · no cubre el nombre completo: tuberculin"
+      "en": "tuberculin",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "purified protein derivative of tuberculin",
+        "tuberculin"
+      ],
+      "reason_previa": "rxcui 8948 devuelve \"purified protein derivative of tuberculin\", que no comparte raiz · no cubre el nombre completo: tuberculin",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 24783,
+        "pubmed_en": 24850,
+        "ctgov_es": 0,
+        "ctgov_en": 236
+      }
     },
     "oxihidróxido sucroférrico": {
       "products": 7,
@@ -19537,11 +20236,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "danaparoid"
       ],
-      "reason": "rxcui 78484 devuelve \"danaparoid\", que no comparte raiz · \"danaparoide\"[All Fields] AND \"sodio\"[All Fields]"
+      "en": "danaparoid",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "danaparoid"
+      ],
+      "reason_previa": "rxcui 78484 devuelve \"danaparoid\", que no comparte raiz · \"danaparoide\"[All Fields] AND \"sodio\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 680,
+        "ctgov_es": 0,
+        "ctgov_en": 17
+      }
     },
     "flavoxato": {
       "products": 6,
@@ -19747,7 +20458,7 @@
         "snomed": "ok",
         "pubmed": "ok"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "colesevelam",
         "colesevelam hydrochloride"
@@ -19755,7 +20466,20 @@
       "evidence": [
         "rxcui 141626 · SNOMEDCT 441851004",
         "querytranslation: \"colesevelam hydrochloride\""
-      ]
+      ],
+      "en": "colesevelam",
+      "method": "reclasificado: elegido entre 2",
+      "candidates_previos": [
+        "colesevelam",
+        "colesevelam hydrochloride"
+      ],
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 382,
+        "pubmed_en": 382,
+        "ctgov_es": 58,
+        "ctgov_en": 58
+      }
     },
     "ytrio citrato (90Y)": {
       "products": 6,
@@ -19813,11 +20537,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "alanylglutamine"
       ],
-      "reason": "rxcui 1359422 devuelve \"alanylglutamine\", que no comparte raiz · \"alanilglutamina\"[All Fields]"
+      "en": "alanylglutamine",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "alanylglutamine"
+      ],
+      "reason_previa": "rxcui 1359422 devuelve \"alanylglutamine\", que no comparte raiz · \"alanilglutamina\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 372,
+        "ctgov_es": 0,
+        "ctgov_en": 40
+      }
     },
     "xipamida": {
       "products": 6,
@@ -20005,11 +20741,23 @@
         "snomed": "ausente",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "clothiapine"
       ],
-      "reason": "no cubre el nombre completo: clothiapine"
+      "en": "clothiapine",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "clothiapine"
+      ],
+      "reason_previa": "no cubre el nombre completo: clothiapine",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 83,
+        "pubmed_en": 82,
+        "ctgov_es": 2,
+        "ctgov_en": 2
+      }
     },
     "evinacumab": {
       "products": 6,
@@ -20512,11 +21260,23 @@
         "snomed": "ausente",
         "pubmed": "fragmento"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "methyl 5 aminolevulinate"
       ],
-      "reason": "no cubre el nombre completo: methyl 5 aminolevulinate"
+      "en": "methyl 5 aminolevulinate",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "methyl 5 aminolevulinate"
+      ],
+      "reason_previa": "no cubre el nombre completo: methyl 5 aminolevulinate",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 560,
+        "pubmed_en": 563,
+        "ctgov_es": 81,
+        "ctgov_en": 81
+      }
     },
     "minociclina": {
       "products": 6,
@@ -20743,11 +21503,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "methacholine"
       ],
-      "reason": "rxcui 155080 devuelve \"methacholine\", que no comparte raiz · \"metacolina\"[All Fields]"
+      "en": "methacholine",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "methacholine"
+      ],
+      "reason_previa": "rxcui 155080 devuelve \"methacholine\", que no comparte raiz · \"metacolina\"[All Fields]",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 26,
+        "pubmed_en": 11537,
+        "ctgov_es": 0,
+        "ctgov_en": 343
+      }
     },
     "alcohol isopropílico + iodo": {
       "status": "manual",
@@ -22184,11 +22956,23 @@
         "snomed": "ensancha",
         "pubmed": "ausente"
       },
-      "status": "review",
+      "status": "verified",
       "candidates": [
         "sodium thiosulfate"
       ],
-      "reason": "rxcui 36726 devuelve \"sodium thiosulfate\", que no comparte raiz · \"tiosulfato\"[All Fields] AND (\"drug effects\"[MeSH Subheading] OR (\"drug\"[All Fields] AND \"effects\"[All Fields]) OR \"drug"
+      "en": "sodium thiosulfate",
+      "method": "reclasificado: parentesco",
+      "candidates_previos": [
+        "sodium thiosulfate"
+      ],
+      "reason_previa": "rxcui 36726 devuelve \"sodium thiosulfate\", que no comparte raiz · \"tiosulfato\"[All Fields] AND (\"drug effects\"[MeSH Subheading] OR (\"drug\"[All Fields] AND \"effects\"[All Fields]) OR \"drug",
+      "promoted": "2026-08-20",
+      "retrieval": {
+        "pubmed_es": 6,
+        "pubmed_en": 2496,
+        "ctgov_es": 0,
+        "ctgov_en": 84
+      }
     },
     "melfalán flufenamida": {
       "products": 5,

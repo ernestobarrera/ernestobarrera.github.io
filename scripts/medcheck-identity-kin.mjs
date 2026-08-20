@@ -19,9 +19,15 @@
  * guarda de ensanchamiento bloqueaba `testosterona -> testosterone`, que es justo lo que se
  * quería incorporar.
  *
- * LÍMITE CONOCIDO: la transliteración ES/EN puede romper la raíz aunque la traducción sea
- * correcta (`micofenolico` / `mycophenolic`: mi->my, f->ph). Por eso el parentesco NUNCA decide
- * solo: la coincidencia de dos autoridades independientes manda sobre él.
+ * LÍMITE CERRADO EL 2026-08-20: la transliteración ES/EN rompía la raíz aunque la traducción
+ * fuera correcta (`micofenolico` / `mycophenolic`: mi->my, f->ph). Costaba 57 veredictos y 1458
+ * productos atascados en `review`. Lo cierra `canon()`, más abajo. Aun así el parentesco SIGUE
+ * sin decidir solo: la coincidencia de dos autoridades independientes manda sobre él.
+ *
+ * LÍMITE QUE QUEDA ABIERTO: `canon()` normaliza colas, y una raíz corta puede quedarse por
+ * debajo del umbral de 5 caracteres que exige la comparación de prefijos. Medido: `polio` frente
+ * a `poliomyelitis` no casa, y `vacuna anti polio` se queda en `review`. Es un falso negativo, o
+ * sea el lado seguro: deja trabajo para un humano en vez de afirmar algo que no se ha probado.
  */
 
 export const normalizar = s => String(s || '').toLowerCase().normalize('NFD')
@@ -89,7 +95,7 @@ function canon(tok) {
 // Es seguro ignorarlos AQUÍ, que solo decide parentesco: qué calificador se conserva en el
 // término que se incorpora lo decide `curarTermino`, más abajo, y ese sí respeta lo que el
 // español declara.
-const RUIDO = new Set(['de', 'del', 'la', 'el', 'y', 'con', 'anti', 'para', 'en',
+export const RUIDO = new Set(['de', 'del', 'la', 'el', 'y', 'con', 'anti', 'para', 'en',
     'acido', 'acid', 'alfa', 'alpha', 'beta', 'human', 'humana', 'sodico', 'sodium',
     'sodio', 'potasio', 'dipotasio', 'calcio', 'magnesio', 'zinc', 'aluminio', 'bario',
     'sulfato', 'sulfate', 'cloruro', 'chloride', 'carbonato', 'carbonate']);
