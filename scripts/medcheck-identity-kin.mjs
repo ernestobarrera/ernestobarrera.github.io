@@ -41,9 +41,58 @@ export const normalizar = s => String(s || '').toLowerCase().normalize('NFD')
  */
 const paraComparar = s => normalizar(s).replace(/([a-z])\1+/g, '$1');
 
+/**
+ * CANONICALIZACIÓN DE TRANSLITERACIÓN (2026-08-20). Cierra el «LÍMITE CONOCIDO» que esta misma
+ * cabecera declaraba desde el principio: la grafía cruda rompía el parentesco de traducciones
+ * CORRECTAS, y esos casos se quedaban en `review` esperando un criterio clínico que no hacía
+ * falta, porque no había nada clínico que decidir — solo dos alfabetos escribiendo el mismo étimo.
+ *
+ * Medido sobre el baseline completo antes de escribir esto: **32 nombres (666 productos
+ * comercializados) atascados en `review` con la traducción correcta ya propuesta por una
+ * autoridad**. `tiotepa`/`thiotepa`, `espiramicina`/`spiramycin`, `hidroquinona`/`hydroquinone`,
+ * `oximetazolina`/`oxymetazoline`, `xilometazolina`/`xylometazoline`… Los 32 se revisaron uno a
+ * uno: los 32 eran correctos.
+ *
+ * Solo reglas de GRAFÍA del mismo étimo, nunca de significado. Esto NO acerca `retinol` a
+ * `vitamin A` ni `eftrenonacog` a `factor ix fc fusion protein`, que es lo que la regla debe
+ * seguir rechazando, ni `barnidipino` a `mepirodipine`, que son fármacos distintos.
+ */
+function canon(tok) {
+    let t = tok;
+    t = t.replace(/^es([bcdfghjklmnpqrstvwxyz])/, 's$1'); // espiramicina -> spiramicina
+    t = t.replace(/ph/g, 'f');                            // mycophenolic -> mycofenolic
+    t = t.replace(/th/g, 't');                            // thiotepa     -> tiotepa
+    t = t.replace(/y/g, 'i');                             // mycofenolic  -> micofenolic
+    t = t.replace(/qu/g, 'k').replace(/[cq]/g, 'k');      // uroquinasa   -> urokinasa
+    t = t.replace(/z/g, 's');
+    t = t.replace(/(ae|oe)/g, 'e');
+    t = t.replace(/([a-z])\1+/g, '$1');
+    // El mismo INN cambia de cola al cruzar el idioma. Se marcan en MAYÚSCULA para que una cola
+    // normalizada no pueda colisionar por accidente con letras reales del interior de la palabra.
+    t = t.replace(/(ina|ine|in)$/, 'IN');
+    t = t.replace(/(ato|ate)$/, 'AT');
+    t = t.replace(/(ida|ide|ido)$/, 'ID');   // oxido -> oxide
+    t = t.replace(/(ium|io)$/, 'I');
+    t = t.replace(/(ol|ole)$/, 'OL');
+    t = t.replace(/(ona|one)$/, 'ON');
+    t = t.replace(/(ico|ic)$/, 'IK');
+    return t;
+}
+
 // Palabras que no identifican sustancia y que, contadas, darían parentescos falsos.
+//
+// Las sales y contraiones se añadieron el 2026-08-20 al medir que el conjunto tenía `sodico` y
+// `sodium` pero **no `sodio`**, que es como los escribe CIMA. Por esa sola palabra se quedaban en
+// `review` `enoxaparina sodio -> enoxaparin` (165 productos), `dalteparina sodio -> dalteparin`
+// (56) y `clorazepato dipotasio -> clorazepate` (72), con la traducción correcta ya delante.
+//
+// Es seguro ignorarlos AQUÍ, que solo decide parentesco: qué calificador se conserva en el
+// término que se incorpora lo decide `curarTermino`, más abajo, y ese sí respeta lo que el
+// español declara.
 const RUIDO = new Set(['de', 'del', 'la', 'el', 'y', 'con', 'anti', 'para', 'en',
-    'acido', 'acid', 'alfa', 'alpha', 'beta', 'human', 'humana', 'sodico', 'sodium']);
+    'acido', 'acid', 'alfa', 'alpha', 'beta', 'human', 'humana', 'sodico', 'sodium',
+    'sodio', 'potasio', 'dipotasio', 'calcio', 'magnesio', 'zinc', 'aluminio', 'bario',
+    'sulfato', 'sulfate', 'cloruro', 'chloride', 'carbonato', 'carbonate']);
 
 /**
  * CURACIÓN DEL TÉRMINO INCORPORADO — criterio del responsable (19/08/2026), literal:
@@ -103,8 +152,11 @@ export function curarTermino(es, en) {
  * @returns {boolean}  true si TODOS los tokens significativos del español quedan cubiertos
  */
 export function comparteRaiz(es, en) {
-    const tes = paraComparar(es).split(' ').filter(t => t.length > 2 && !RUIDO.has(t));
-    const ten = paraComparar(en).split(' ').filter(t => t.length > 2 && !RUIDO.has(t));
+    const preparar = s => paraComparar(s).split(' ')
+        .filter(t => t.length > 2 && !RUIDO.has(t))
+        .map(canon);
+    const tes = preparar(es);
+    const ten = preparar(en);
     if (!tes.length || !ten.length) return false;
     // TODOS los tokens del español deben quedar cubiertos, no solo uno: un único token
     // coincidente es exactamente lo que parece un FRAGMENTO («vacuna anti algo raro» -> «algo»).
