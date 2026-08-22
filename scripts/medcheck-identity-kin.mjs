@@ -68,10 +68,15 @@ function canon(tok) {
     t = t.replace(/^es([bcdfghjklmnpqrstvwxyz])/, 's$1'); // espiramicina -> spiramicina
     t = t.replace(/ph/g, 'f');                            // mycophenolic -> mycofenolic
     t = t.replace(/th/g, 't');                            // thiotepa     -> tiotepa
+    t = t.replace(/ch/g, 'c');                            // chondroitin  -> condroitin
     t = t.replace(/y/g, 'i');                             // mycofenolic  -> micofenolic
     t = t.replace(/qu/g, 'k').replace(/[cq]/g, 'k');      // uroquinasa   -> urokinasa
     t = t.replace(/z/g, 's');
     t = t.replace(/(ae|oe)/g, 'e');
+    // El español escribe `nm` donde el inglés dobla la `m`: inmunoglobulina / immunoglobulin.
+    // Sin esta línea, el nombre que MÁS productos arrastra de todo el corpus (546) se quedaba
+    // fuera por dos letras.
+    t = t.replace(/nm/g, 'm');
     t = t.replace(/([a-z])\1+/g, '$1');
     // El mismo INN cambia de cola al cruzar el idioma. Se marcan en MAYÚSCULA para que una cola
     // normalizada no pueda colisionar por accidente con letras reales del interior de la palabra.
@@ -98,7 +103,8 @@ function canon(tok) {
 export const RUIDO = new Set(['de', 'del', 'la', 'el', 'y', 'con', 'anti', 'para', 'en',
     'acido', 'acid', 'alfa', 'alpha', 'beta', 'human', 'humana', 'sodico', 'sodium',
     'sodio', 'potasio', 'dipotasio', 'calcio', 'magnesio', 'zinc', 'aluminio', 'bario',
-    'sulfato', 'sulfate', 'cloruro', 'chloride', 'carbonato', 'carbonate']);
+    'sulfato', 'sulfate', 'cloruro', 'chloride', 'carbonato', 'carbonate',
+    'bromuro', 'bromide', 'acetato', 'acetate', 'fosfato', 'phosphate']);
 
 /**
  * CURACIÓN DEL TÉRMINO INCORPORADO — criterio del responsable (19/08/2026), literal:
@@ -135,7 +141,11 @@ export function curarTermino(es, en) {
     const esNorm = normalizar(es);
     const fuera = new Set();
     for (const [cal, equivalentes] of Object.entries(CALIFICADORES)) {
-        const loDiceElEspanol = equivalentes.some(w => esNorm.split(' ').includes(w));
+        // SUBCADENA, no token entero. El espanol PEGA el calificador al nombre:
+        // `dimetilfumarato` es una sola palabra y `esNorm.split(' ')` nunca encontraba `fumarato`,
+        // asi que se retiraba `fumarate` y se incorporaba `dimethyl` a secas — un termino que no
+        // nombra ningun farmaco. Medido el 20/08 al incorporarlo.
+        const loDiceElEspanol = equivalentes.some(w => esNorm.includes(w));
         if (!loDiceElEspanol) fuera.add(cal);
     }
     const tokens = normalizar(en).split(' ').filter(t => t && !fuera.has(t));

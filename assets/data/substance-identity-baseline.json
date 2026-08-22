@@ -1,6 +1,6 @@
 {
   "version": "2026-08-18",
-  "note": "Baseline de identidad de sustancia. CANDIDATOS, no traducciones autorizadas: la incorporacion a inn-es-en.json es una decision humana. Estados: verified (una autoridad oficial lo resuelve; convergencia si ambas coinciden) · review (dos candidatos distintos: elegir seria juzgar) · unresolved (ninguna autoridad, o PubMed solo reconocio un fragmento) · manual (combinacion: pendiente de resolver por componentes estructurados) · inconclusive (no se pudo medir). Se guarda estado, termino y fecha; NUNCA recuentos historicos. · 2026-08-20: 63 veredictos reclasificados en local (parentesco con transliteracion y reposicion del sustantivo vaccine); las respuestas de las autoridades no se volvieron a pedir.",
+  "note": "Baseline de identidad de sustancia. CANDIDATOS, no traducciones autorizadas: la incorporacion a inn-es-en.json es una decision humana. Estados: verified (una autoridad oficial lo resuelve; convergencia si ambas coinciden) · review (dos candidatos distintos: elegir seria juzgar) · unresolved (ninguna autoridad, o PubMed solo reconocio un fragmento) · manual (combinacion: pendiente de resolver por componentes estructurados) · inconclusive (no se pudo medir). Se guarda estado, termino y fecha; NUNCA recuentos historicos. · 2026-08-20: 63 veredictos reclasificados en local (parentesco con transliteracion y reposicion del sustantivo vaccine); las respuestas de las autoridades no se volvieron a pedir. · 2026-08-20: 72 unresolved resueltos por emparejamiento aproximado de RxNav (la autoridad propone, el parentesco y el derrumbe filtran).",
   "sources": {
     "snomed": "CIMA vtm.id (SNOMED CT) -> RxNav idtype=SNOMEDCT (NLM)",
     "pubmed": "eutils esearch querytranslation (concepto MeSH / Supplementary Concept)"
@@ -82,10 +82,23 @@
       "sctid": "188981000140109",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "lonoctocog alfa",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 11,
+        "pubmed_en": 11,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      }
     },
     "ácido alendrónico": {
       "products": 32,
@@ -1467,10 +1480,24 @@
       "sctid": "139151000140103",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "review",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 7402,
+        "pubmed_en": 680,
+        "ctgov_es": 0,
+        "ctgov_en": 22
+      },
+      "human": true,
+      "reason": "VETO humano 20/08: RxNav aproximado propuso \"gadoteridol\", que es OTRO medio de contraste (ProHance) y no el acido gadoterico (Dotarem). El parentesco no puede separar dos INN que comparten prefijo: lo caza la lista MIRALOS del promotor."
     },
     "carbetocina": {
       "products": 2,
@@ -1810,10 +1837,23 @@
       "sctid": "194851000140104",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "inotuzumab ozogamicin",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 561,
+        "ctgov_es": 0,
+        "ctgov_en": 78
+      }
     },
     "carmelosa": {
       "products": 1,
@@ -2343,10 +2383,23 @@
       "sctid": "333711001",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "immunoglobulin G, human",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 4,
+        "pubmed_en": 142576,
+        "ctgov_es": 0,
+        "ctgov_en": 1533
+      }
     },
     "lenalidomida": {
       "products": 345,
@@ -2611,10 +2664,23 @@
       "sctid": "109131004",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "mycophenolate mofetil",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 21,
+        "pubmed_en": 18053,
+        "ctgov_es": 0,
+        "ctgov_en": 1464
+      }
     },
     "enoxaparina sodio": {
       "products": 165,
@@ -2773,10 +2839,25 @@
       "sctid": "147881000140109",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "dimethyl fumarate",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "en_autoridad": "dimethyl fumarate",
+      "curado": true,
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 9,
+        "pubmed_en": 102475,
+        "ctgov_es": 0,
+        "ctgov_en": 388
+      }
     },
     "glucosa + sodio cloruro": {
       "status": "manual",
@@ -3134,10 +3215,23 @@
       "sctid": "164301000140108",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "efmoroctocog alfa",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 55,
+        "pubmed_en": 55,
+        "ctgov_es": 24,
+        "ctgov_en": 24
+      }
     },
     "octocog alfa": {
       "products": 99,
@@ -3506,10 +3600,23 @@
       "sctid": "1003560003",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "chondroitin sulfates",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 17,
+        "pubmed_en": 10038,
+        "ctgov_es": 130,
+        "ctgov_en": 42
+      }
     },
     "ciclosporina": {
       "products": 79,
@@ -3752,10 +3859,23 @@
       "sctid": "245821000140102",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "cytisine",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 4,
+        "pubmed_en": 1131,
+        "ctgov_es": 0,
+        "ctgov_en": 37
+      }
     },
     "flurbiprofeno": {
       "products": 72,
@@ -5927,10 +6047,23 @@
       "sctid": "249201000140106",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "damoctocog alfa pegol",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 39,
+        "pubmed_en": 39,
+        "ctgov_es": 12,
+        "ctgov_en": 12
+      }
     },
     "trifluridina + tipiracilo": {
       "status": "manual",
@@ -7391,10 +7524,23 @@
       "sctid": "152491000140105",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "umeclidinium",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 499,
+        "ctgov_es": 0,
+        "ctgov_en": 118
+      }
     },
     "doxilamina + piridoxina": {
       "status": "manual",
@@ -7857,10 +8003,23 @@
       "sctid": "249191000140108",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "apalutamide",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 5,
+        "pubmed_en": 890,
+        "ctgov_es": 0,
+        "ctgov_en": 193
+      }
     },
     "fampridina": {
       "products": 24,
@@ -8083,10 +8242,23 @@
       "sctid": "271561000140106",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "enfortumab vedotin",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 886,
+        "ctgov_es": 0,
+        "ctgov_en": 110
+      }
     },
     "ácido pamidrónico": {
       "products": 24,
@@ -9236,10 +9408,23 @@
       "sctid": "274991000140106",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "spesolimab",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 239,
+        "ctgov_es": 0,
+        "ctgov_en": 35
+      }
     },
     "faricimab": {
       "products": 21,
@@ -9269,10 +9454,23 @@
       "sctid": "268841000140108",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "vosoritide",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 124,
+        "ctgov_es": 0,
+        "ctgov_en": 18
+      }
     },
     "palopegteriparatida": {
       "products": 21,
@@ -9280,10 +9478,23 @@
       "sctid": "283481000140109",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "palopegteriparatide",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 44,
+        "ctgov_es": 0,
+        "ctgov_en": 9
+      }
     },
     "interferon beta-1a": {
       "products": 20,
@@ -9357,10 +9568,23 @@
       "sctid": "141891000140101",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "icatibant",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 1555,
+        "ctgov_es": 0,
+        "ctgov_en": 44
+      }
     },
     "ketazolam": {
       "products": 20,
@@ -9629,10 +9853,23 @@
       "sctid": "201051000140106",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "cariprazine",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 7,
+        "pubmed_en": 644,
+        "ctgov_es": 0,
+        "ctgov_en": 60
+      }
     },
     "ibrutinib": {
       "products": 20,
@@ -9907,10 +10144,23 @@
       "sctid": "145501000140109",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "ceftaroline fosamil",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1115,
+        "pubmed_en": 1115,
+        "ctgov_es": 62,
+        "ctgov_en": 62
+      }
     },
     "insulina glulisina": {
       "products": 18,
@@ -10064,10 +10314,23 @@
       "sctid": "145841000140108",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "methylene blue",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 30862,
+        "ctgov_es": 0,
+        "ctgov_en": 400
+      }
     },
     "vacuna anti COVID-19 (Pfizer/BioNTech) ARNm para LP.8.1 (provisional)": {
       "status": "manual",
@@ -10821,10 +11084,23 @@
       "sctid": "144191000140105",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "sennosides, USP",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 2,
+        "pubmed_en": 492,
+        "ctgov_es": 0,
+        "ctgov_en": 34
+      }
     },
     "aceite de soja purificado + triglicéridos de cadena media": {
       "status": "manual",
@@ -10867,10 +11143,23 @@
       "sctid": "144521000140104",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "tetrofosmin",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 14,
+        "pubmed_en": 1839,
+        "ctgov_es": 21,
+        "ctgov_en": 21
+      }
     },
     "albúmina nanocoloides para Tecnecio (99mTc)": {
       "products": 16,
@@ -10917,10 +11206,23 @@
       "sctid": "256611000140100",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "polatuzumab vedotin",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 355,
+        "ctgov_es": 0,
+        "ctgov_en": 106
+      }
     },
     "metilnaltrexona": {
       "products": 16,
@@ -11089,10 +11391,23 @@
       "sctid": "274841000140107",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "gozetotide",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 2044,
+        "ctgov_es": 0,
+        "ctgov_en": 34
+      }
     },
     "difenhidramina": {
       "products": 15,
@@ -11338,10 +11653,23 @@
       "sctid": "142821000140107",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "piketoprofen",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 8,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      }
     },
     "cefoxitina": {
       "products": 15,
@@ -12719,10 +13047,23 @@
       "sctid": "201341000140106",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "patiromer",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 344,
+        "ctgov_es": 0,
+        "ctgov_en": 32
+      }
     },
     "vacuna anti virus chikungunya": {
       "products": 14,
@@ -12875,10 +13216,23 @@
       "sctid": "260441000140108",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "belantamab mafodotin",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 270,
+        "ctgov_es": 0,
+        "ctgov_en": 78
+      }
     },
     "esmolol": {
       "products": 12,
@@ -13244,10 +13598,23 @@
       "sctid": "264981000140104",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "oritavancin",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 2,
+        "pubmed_en": 552,
+        "ctgov_es": 0,
+        "ctgov_en": 21
+      }
     },
     "fibrinógeno humano + aprotinina + trombina humana + calcio cloruro": {
       "status": "manual",
@@ -13604,10 +13971,23 @@
       "sctid": "285251000140100",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "sparsentan",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 132,
+        "ctgov_es": 0,
+        "ctgov_en": 12
+      }
     },
     "elvitegravir + cobicistat + emtricitabina + tenofovir alafenamida": {
       "status": "manual",
@@ -14156,10 +14536,23 @@
       "sctid": "272311000140105",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "olipudase alfa",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 25066,
+        "pubmed_en": 62,
+        "ctgov_es": 0,
+        "ctgov_en": 7
+      }
     },
     "linzagolix": {
       "products": 12,
@@ -14574,10 +14967,23 @@
       "sctid": "270381000140101",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "finerenone",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 6,
+        "pubmed_en": 1198,
+        "ctgov_es": 0,
+        "ctgov_en": 107
+      }
     },
     "mianserina": {
       "products": 10,
@@ -15312,10 +15718,23 @@
       "sctid": "267341000140100",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "atidarsagene autotemcel",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 15,
+        "ctgov_es": 0,
+        "ctgov_en": 1
+      }
     },
     "zopiclona": {
       "products": 10,
@@ -15614,10 +16033,23 @@
       "sctid": "259741000140102",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "onasemnogene abeparvovec",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 6,
+        "pubmed_en": 477,
+        "ctgov_es": 0,
+        "ctgov_en": 31
+      }
     },
     "dihidroergocristina + piracetam": {
       "status": "manual",
@@ -15637,10 +16069,23 @@
       "sctid": "144681000140101",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "trimebutine",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 6,
+        "pubmed_en": 283,
+        "ctgov_es": 1,
+        "ctgov_en": 20
+      }
     },
     "magnesio glutamato hidrobromuro + prometazina": {
       "status": "manual",
@@ -15812,10 +16257,25 @@
       "sctid": "143081000140109",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "eschscholzia californica",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "en_autoridad": "Eschscholzia californica extract",
+      "curado": true,
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 58,
+        "pubmed_en": 157,
+        "ctgov_es": 2,
+        "ctgov_en": 6
+      }
     },
     "paracetamol + cafeína + codeína": {
       "status": "manual",
@@ -15932,10 +16392,23 @@
       "sctid": "420773001",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "argipressin",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 21343,
+        "ctgov_es": 0,
+        "ctgov_en": 678
+      }
     },
     "Crataegus monogyna": {
       "products": 9,
@@ -15991,10 +16464,23 @@
       "sctid": "275911000140104",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "etranacogene dezaparvovec",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 60,
+        "pubmed_en": 60,
+        "ctgov_es": 0,
+        "ctgov_en": 6
+      }
     },
     "inmunoglobulina antirrábica humana": {
       "products": 9,
@@ -16046,10 +16532,23 @@
       "sctid": "273341000140103",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "voclosporin",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 2,
+        "pubmed_en": 229,
+        "ctgov_es": 0,
+        "ctgov_en": 29
+      }
     },
     "samario-lexidronam (Sm-153)": {
       "products": 9,
@@ -16404,10 +16903,23 @@
       "sctid": "268861000140107",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "idecabtagene vicleucel",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 3,
+        "pubmed_en": 262,
+        "ctgov_es": 0,
+        "ctgov_en": 39
+      }
     },
     "vamorolona": {
       "products": 8,
@@ -16415,10 +16927,23 @@
       "sctid": "282641000140106",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "vamorolone",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 90,
+        "ctgov_es": 0,
+        "ctgov_en": 13
+      }
     },
     "ciclesonida": {
       "products": 8,
@@ -16623,10 +17148,23 @@
       "sctid": "252581000140108",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "cerliponase alfa",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 25066,
+        "pubmed_en": 67,
+        "ctgov_es": 0,
+        "ctgov_en": 7
+      }
     },
     "Althaea officinalis + Tilia sp + Plantago lanceolata": {
       "status": "manual",
@@ -16788,10 +17326,23 @@
       "sctid": "140621000140107",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "dihydroergocristine",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 5,
+        "pubmed_en": 193,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      }
     },
     "flurazepam": {
       "products": 8,
@@ -16840,10 +17391,23 @@
       "sctid": "277911000140107",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "pegunigalsidase alfa",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 25066,
+        "pubmed_en": 33,
+        "ctgov_es": 0,
+        "ctgov_en": 16
+      }
     },
     "galcanezumab": {
       "products": 8,
@@ -17047,10 +17611,23 @@
       "sctid": "142581000140108",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "oxidronate",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1421,
+        "pubmed_en": 37,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      }
     },
     "ácido hialurónico": {
       "products": 8,
@@ -17141,10 +17718,23 @@
       "sctid": "281491000140108",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "pegzilarginase",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 18,
+        "ctgov_es": 0,
+        "ctgov_en": 5
+      }
     },
     "voretigén neparvovec": {
       "products": 8,
@@ -17152,10 +17742,23 @@
       "sctid": "250391000140100",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "voretigene neparvovec",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 5,
+        "pubmed_en": 191,
+        "ctgov_es": 0,
+        "ctgov_en": 7
+      }
     },
     "biotina": {
       "products": 8,
@@ -17186,10 +17789,23 @@
       "sctid": "245981000140106",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "vestronidase alfa",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 25066,
+        "pubmed_en": 23,
+        "ctgov_es": 0,
+        "ctgov_en": 8
+      }
     },
     "piridostigmina": {
       "products": 8,
@@ -17294,10 +17910,23 @@
       "sctid": "272931000140102",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "avalglucosidase alfa",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 25066,
+        "pubmed_en": 74,
+        "ctgov_es": 0,
+        "ctgov_en": 11
+      }
     },
     "iodometilnorcolesterol (131I)": {
       "products": 8,
@@ -17375,10 +18004,23 @@
       "sctid": "276471000140105",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "cipaglucosidase alfa",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 25066,
+        "pubmed_en": 42,
+        "ctgov_es": 0,
+        "ctgov_en": 6
+      }
     },
     "arginina aspartato": {
       "products": 8,
@@ -18284,10 +18926,23 @@
       "sctid": "249211000140109",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "doravirine",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 340,
+        "ctgov_es": 0,
+        "ctgov_en": 75
+      }
     },
     "idarucizumab": {
       "products": 7,
@@ -18363,10 +19018,23 @@
       "sctid": "196881000140103",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "midostaurin",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 2,
+        "pubmed_en": 1044,
+        "ctgov_es": 0,
+        "ctgov_en": 63
+      }
     },
     "tezepelumab": {
       "products": 7,
@@ -18894,10 +19562,23 @@
       "sctid": "267531000140104",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "bulevirtide",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 250,
+        "ctgov_es": 0,
+        "ctgov_en": 27
+      }
     },
     "serplulimab": {
       "products": 7,
@@ -18930,10 +19611,23 @@
       "sctid": "141781000140105",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "hydroquinidine",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 195,
+        "ctgov_es": 0,
+        "ctgov_en": 2
+      }
     },
     "interferon gamma-1b": {
       "products": 7,
@@ -19021,10 +19715,23 @@
       "sctid": "245841000140105",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "velmanase alfa",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 25066,
+        "pubmed_en": 20,
+        "ctgov_es": 0,
+        "ctgov_en": 11
+      }
     },
     "metildigoxina": {
       "products": 7,
@@ -19537,10 +20244,23 @@
       "sctid": "262461000140106",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "brexucabtagene autoleucel",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 181,
+        "ctgov_es": 0,
+        "ctgov_en": 22
+      }
     },
     "hidrocortisona + oxitetraciclina + polimixina B": {
       "status": "manual",
@@ -19608,10 +20328,23 @@
       "sctid": "156251000140100",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "sucroferric oxyhydroxide",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 2,
+        "pubmed_en": 127,
+        "ctgov_es": 0,
+        "ctgov_en": 9
+      }
     },
     "vinblastina": {
       "products": 7,
@@ -20048,10 +20781,23 @@
       "sctid": "261911000140105",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "bempedoic acid",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 20,
+        "pubmed_en": 761,
+        "ctgov_es": 0,
+        "ctgov_en": 57
+      }
     },
     "catridecacog": {
       "products": 6,
@@ -20445,10 +21191,23 @@
       "sctid": "271901000140100",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "ciltacabtagene autoleucel",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 240,
+        "ctgov_es": 0,
+        "ctgov_en": 32
+      }
     },
     "colesevelam": {
       "products": 6,
@@ -21005,10 +21764,23 @@
       "sctid": "245511000140109",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "prasterone",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 18852,
+        "ctgov_es": 0,
+        "ctgov_en": 403
+      }
     },
     "difelicefalina": {
       "products": 6,
@@ -21016,10 +21788,23 @@
       "sctid": "272281000140108",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "difelikefalin",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 134,
+        "ctgov_es": 0,
+        "ctgov_en": 23
+      }
     },
     "tebentafusp": {
       "products": 6,
@@ -21049,10 +21834,23 @@
       "sctid": "266431000140100",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "tirbanibulin",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 4,
+        "pubmed_en": 143,
+        "ctgov_es": 0,
+        "ctgov_en": 20
+      }
     },
     "tisagenlecleucel": {
       "products": 6,
@@ -21389,10 +22187,23 @@
       "sctid": "139161000140101",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "niflumic acid",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 12,
+        "pubmed_en": 1316,
+        "ctgov_es": 0,
+        "ctgov_en": 2
+      }
     },
     "cloranfenicol": {
       "products": 6,
@@ -21599,10 +22410,23 @@
       "sctid": "252841000140104",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "naldemedine",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 186,
+        "ctgov_es": 0,
+        "ctgov_en": 12
+      }
     },
     "rozanolixizumab": {
       "products": 6,
@@ -21660,10 +22484,23 @@
       "sctid": "185451000140102",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "edotreotride",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 0,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      }
     },
     "hexafluoruro de azufre": {
       "products": 6,
@@ -21906,10 +22743,23 @@
       "sctid": "245521000140100",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "axicabtagene ciloleucel",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 788,
+        "ctgov_es": 1,
+        "ctgov_en": 60
+      }
     },
     "ibritumomab": {
       "products": 6,
@@ -22342,10 +23192,23 @@
       "sctid": "417495000",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "gadoxetate disodium",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 15,
+        "pubmed_en": 2157,
+        "ctgov_es": 0,
+        "ctgov_en": 39
+      }
     },
     "lidocaína + dióxido titanio + Rodoficea": {
       "status": "manual",
@@ -22505,10 +23368,23 @@
       "sctid": "142831000140105",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "pinaverium",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 3,
+        "pubmed_en": 186,
+        "ctgov_es": 0,
+        "ctgov_en": 9
+      }
     },
     "cetuximab": {
       "products": 5,
@@ -23088,10 +23964,23 @@
       "sctid": "281601000140103",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "omaveloxolone",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 163,
+        "ctgov_es": 0,
+        "ctgov_en": 26
+      }
     },
     "trimipramina": {
       "products": 5,
@@ -23280,10 +24169,23 @@
       "sctid": "268021000140106",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "diroximel fumarate",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 83,
+        "ctgov_es": 0,
+        "ctgov_en": 26
+      }
     },
     "goma guar": {
       "products": 5,
@@ -23507,10 +24409,23 @@
       "sctid": "280261000140108",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "fusidate",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 2,
+        "pubmed_en": 3027,
+        "ctgov_es": 0,
+        "ctgov_en": 31
+      }
     },
     "futibatinib": {
       "products": 4,
@@ -23584,10 +24499,23 @@
       "sctid": "257771000140101",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "trifarotene",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 86,
+        "ctgov_es": 0,
+        "ctgov_en": 14
+      }
     },
     "eliglustat": {
       "products": 4,
@@ -23821,10 +24749,23 @@
       "sctid": "158591000140106",
       "sources": {
         "snomed": "ausente",
-        "pubmed": "ausente"
+        "pubmed": "ausente",
+        "rxnav_aproximado": "ok"
       },
-      "status": "unresolved",
-      "reason": "ninguna autoridad lo resuelve"
+      "status": "verified",
+      "en": "elosulfase alfa",
+      "method": "rxnav-aproximado",
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason_previa": "ninguna autoridad lo resuelve",
+      "promoted": "2026-08-21",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 222,
+        "ctgov_es": 0,
+        "ctgov_en": 7
+      }
     },
     "Rhodiola rosea": {
       "products": 4,

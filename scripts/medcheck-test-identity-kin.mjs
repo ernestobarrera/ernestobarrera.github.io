@@ -100,6 +100,26 @@ check('3 · sustancias ajenas NO se vuelven parientes por la canonicalización',
 check('4 · la sal se conserva al incorporar si el español la dice',
     curarTermino('ferroglicina sulfato', 'ferroglycine sulfate').includes('sulfate'),
     curarTermino('ferroglicina sulfato', 'ferroglycine sulfate'));
+// 5 · EL CALIFICADOR PEGADO. El español no siempre separa la sal: `dimetilfumarato` es una
+// sola palabra. La comprobación por token entero no la veía, se retiraba `fumarate` y se
+// incorporaba `dimethyl` a secas, que no nombra ningún fármaco. Medido al incorporarlo el 20/08.
+check('5 · el calificador PEGADO al nombre también cuenta como declarado',
+    curarTermino('dimetilfumarato', 'dimethyl fumarate') === 'dimethyl fumarate',
+    curarTermino('dimetilfumarato', 'dimethyl fumarate'));
+check('5b · y separado por preposición igual',
+    curarTermino('fumarato de diroximel', 'diroximel fumarate').includes('fumarate'),
+    curarTermino('fumarato de diroximel', 'diroximel fumarate'));
+
+// 6 · LÍMITE DECLARADO, NO DISIMULADO. El parentesco NO puede separar dos INN distintos que
+// comparten prefijo: `acido gadoterico` (Dotarem) y `gadoteridol` (ProHance) son dos medios de
+// contraste diferentes, y el sondeo aproximado de RxNav propuso el segundo para el primero.
+// Ninguna regla ortográfica los distingue —`glicerol`/`glycerin` diverge igual y SÍ es correcto—,
+// así que aquí solo se deja constancia de que el parentesco los acepta. Lo que los caza es la
+// lista MÍRALOS del promotor, que compara recuperación, y un humano mirándola.
+check('6 · el parentesco NO distingue dos INN de prefijo común (límite conocido)',
+    comparteRaiz('acido gadoterico', 'gadoteridol'),
+    'si esto empieza a fallar, la guarda se ha vuelto más fina y hay que revisar el comentario');
+
 check('4b · y se retira si el español NO la dice',
     !curarTermino('rimegepant', 'rimegepant sulfate').includes('sulfate'),
     curarTermino('rimegepant', 'rimegepant sulfate'));
