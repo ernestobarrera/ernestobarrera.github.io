@@ -6676,11 +6676,24 @@ CONCLUSIÓN:`,
         }
       });
 
-      // === Gate de acceso (?code=POCUS-2026-EB) — disuasorio, no seguridad real ===
+      // === Gate de acceso (?code=…) — disuasorio, no seguridad real ===
       // GitHub Pages sirve el HTML entero; esto solo evita el acceso casual a una
       // página no enlazada. Para añadir/rotar códigos: editar _POCUS_ACCESS_HASHES.
+      //
+      // `CONTRATO:` (el mismo que rige el gate de MedCheck en assets/js/cima-app.js)
+      // NUNCA escribir el código en claro, ni en el comentario ni en el mensaje de
+      // commit: este repo es público y el historial de git conserva la línea antigua
+      // aunque después se cambie. Etiqueta solo al destinatario, y genera el código
+      // con entropía suficiente para que el hash no sea atacable por fuerza bruta.
+      //
+      // El primer código de esta página se escribió en claro aquí al lado y con un
+      // patrón corto y adivinable (nombre-año-iniciales). Quitarlo del fuente reduce
+      // la exposición de hoy —quien abra la página bloqueada ya no lo lee— pero NO lo
+      // desexpone: sigue en el historial. Lo único que lo cierra es rotarlo, y eso
+      // invalida los enlaces ya repartidos, así que es decisión del autor.
       const _POCUS_ACCESS_HASHES = new Set([
-        "053fb841ff59480bf2cf44d58acb42393bd0c197bbe6bbfa96906b4b86eb5b73", // POCUS-2026-EB
+        "053fb841ff59480bf2cf44d58acb42393bd0c197bbe6bbfa96906b4b86eb5b73", // autor (pendiente de rotar)
+        "287e1c35c07450ab95850b8ebcdddf081f02decdc0f221fdc91c308722a6b5e6", // ML 2026
       ]);
       async function _pocusHash(code) {
         const buf = await crypto.subtle.digest(
