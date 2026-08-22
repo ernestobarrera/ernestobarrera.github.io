@@ -124,6 +124,18 @@ check('4b · y se retira si el español NO la dice',
     !curarTermino('rimegepant', 'rimegepant sulfate').includes('sulfate'),
     curarTermino('rimegepant', 'rimegepant sulfate'));
 
+// 7 · LA PARTE DE LA PLANTA es formulación, no identidad. RxNorm califica los botánicos con
+// la porción usada y CIMA casi nunca la declara: dice el binomio latino y ya. Medido el 22/08
+// al incorporarlos: `rheum officinale root` recupera 465 registros frente a los 48.146 de
+// `Rheum officinale`, y `coriandrum sativum whole` 22 frente a 14.008. Mismo caso que
+// `rifamycin sv`, mismo precio.
+check('7 · la parte de la planta se retira si el español no la dice',
+    curarTermino('Rheum officinale', 'rheum officinale root') === 'rheum officinale',
+    curarTermino('Rheum officinale', 'rheum officinale root'));
+check('7b · pero se conserva si el español SÍ la dice',
+    curarTermino('Valeriana raíz', 'valerian root').includes('root'),
+    curarTermino('Valeriana raíz', 'valerian root'));
+
 console.log('');
 if (failures) {
     console.log(`${failures} fallo(s) — el parentesco de sustancia no se sostiene.`);

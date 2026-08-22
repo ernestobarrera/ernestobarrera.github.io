@@ -76,17 +76,76 @@ async function nombreRxcui(rxcui) {
     return n;
 }
 
-const pendientes = Object.entries(baseline.terms)
-    .filter(([, v]) => v.status === 'unresolved' && !v.human)
+// ── De dónde salen los nombres a sondear ────────────────────────────────────────────────────
+//
+// Por defecto, los `unresolved`: nombres de sustancia completos que ninguna autoridad resolvió.
+//
+// Con --componentes, los COMPONENTES de las combinaciones. Y esto merece explicación, porque
+// deshace un supuesto que el propio CHANGELOG arrastraba: las 304 combinaciones NO necesitan
+// «los componentes estructurados de CIMA». El runtime ya las resuelve solo —`_substanceIdentity`
+// parte el nombre por `[+,/]` y traduce componente a componente—, así que las 304 fichas
+// `manual` del baseline son contabilidad, no un fallo de la aplicación.
+//
+// Lo que SÍ falla es que muchos de esos componentes nunca tuvieron ficha propia, porque solo
+// aparecen dentro de una combinación y el compilador recorre nombres completos. Medido con el
+// resolutor REAL (no con el diccionario a pelo, que se salta las reglas de sufijo y las sales
+// metálicas): 250 componentes distintos viajan en español, y afectan a 208 combinaciones y 3245
+// productos. `clorfenamina` sola aparece en 12 combinaciones y arrastra 426.
+const sondearComponentes = args.includes('--componentes');
+
+function cosecharComponentes() {
+    const vistos = new Map();
+    for (const [es, v] of Object.entries(baseline.terms)) {
+        if (v.status !== 'manual') continue;
+        for (const parte of es.split(/[+,/]/).map(s => s.trim()).filter(Boolean)) {
+            // Un token de una o dos letras no es una sustancia: sale de partir por `+` una lista
+            // de serogrupos (`vacuna anti meningococo A + C + W135 + Y`). No es vocabulario que
+            // falte, es una separación que no significa lo que parece.
+            if (parte.replace(/[^a-záéíóúñ0-9]/gi, '').length < 3) continue;
+            const clave = parte;
+            if (baseline.terms[clave]) continue;            // ya tiene ficha propia
+            const e = vistos.get(clave) || { products: 0, combinaciones: 0 };
+            e.products += v.products || 0; e.combinaciones += 1;
+            vistos.set(clave, e);
+        }
+    }
+    return [...vistos.entries()].map(([es, e]) => [es, { ...e, origen: 'componente de combinacion' }]);
+}
+
+const pendientes = (sondearComponentes
+    ? cosecharComponentes()
+    : Object.entries(baseline.terms).filter(([, v]) => v.status === 'unresolved' && !v.human))
     .sort((a, c) => (c[1].products || 0) - (a[1].products || 0))
     .slice(0, max);
 
 console.log(`unresolved a sondear: ${pendientes.length}\n`);
 
-const aciertos = [], rechazados = [], enEspanol = [], mudos = [];
+// ── Coherencia con lo ya incorporado ────────────────────────────────────────────────────────
+//
+// CIMA escribe la misma sal de dos maneras: `picosulfato de sodio` y `picosulfato sodio`. La
+// primera ya estaba en el diccionario como `picosulfate sodium`; para la segunda, el
+// emparejamiento aproximado propuso `picosulfurate`. Dos ingleses distintos para la misma
+// sustancia es peor que no tener ninguno: el recuento cambia según cómo escriba CIMA ese día, y
+// nada lo señala.
+//
+// Antes de preguntar a nadie se comprueba si ya existe una grafía HERMANA —los mismos tokens
+// salvo conectores— y, si existe, se reutiliza SU término. No se gasta consulta y no se abre
+// divergencia.
+const diccionario = JSON.parse(readFileSync(join(ROOT, 'assets', 'data', 'inn-es-en.json'), 'utf8')).map;
+const CONECTORES = new Set(['de', 'del', 'la', 'el', 'y', 'con']);
+const esqueleto = s => normalizar(s).split(' ').filter(t => t && !CONECTORES.has(t)).sort().join(' ');
+const porEsqueleto = new Map();
+for (const [k, en] of Object.entries(diccionario)) {
+    const e = esqueleto(k);
+    if (e && !porEsqueleto.has(e)) porEsqueleto.set(e, en);
+}
+
+const aciertos = [], rechazados = [], enEspanol = [], hermanos = [], mudos = [];
 let n = 0;
 for (const [es, v] of pendientes) {
     n += 1;
+    const gemelo = porEsqueleto.get(esqueleto(es));
+    if (gemelo) { hermanos.push([es, v, gemelo]); continue; }
     const ap = await pedir(`https://rxnav.nlm.nih.gov/REST/approximateTerm.json?term=${encodeURIComponent(es)}&maxEntries=4`);
     await dormir(120);
     const rxcuis = [...new Set((ap?.approximateGroup?.candidate || []).map(c => c.rxcui))].slice(0, 4);
@@ -110,6 +169,7 @@ const prods = l => l.reduce((s, [, v]) => s + (v.products || 0), 0);
 console.log(`RESUELTOS (RxNav propone y el parentesco lo acepta): ${aciertos.length} (${prods(aciertos)} productos)`);
 console.log(`rechazados por parentesco: ${rechazados.length} (${prods(rechazados)} productos)`);
 console.log(`descartados por venir EN ESPAÑOL: ${enEspanol.length} (${prods(enEspanol)} productos)`);
+console.log(`reutilizan una grafía HERMANA ya incorporada: ${hermanos.length} (${prods(hermanos)} productos)`);
 console.log(`RxNav no propone nada: ${mudos.length}`);
 if (inconclusas) console.log(`consultas inconclusas (red): ${inconclusas}`);
 console.log('');
@@ -133,7 +193,7 @@ if (!aplicar) {
     process.exit(0);
 }
 
-for (const [es, v, en] of aciertos) {
+for (const [es, v, en] of [...aciertos, ...hermanos.map(h => [h[0], h[1], h[2]])]) {
     baseline.terms[es] = {
         ...v, status: 'verified', en, method: 'rxnav-aproximado',
         sources: { ...(v.sources || {}), rxnav_aproximado: 'ok' },

@@ -1,6 +1,6 @@
 {
   "version": "2026-08-18",
-  "note": "Baseline de identidad de sustancia. CANDIDATOS, no traducciones autorizadas: la incorporacion a inn-es-en.json es una decision humana. Estados: verified (una autoridad oficial lo resuelve; convergencia si ambas coinciden) · review (dos candidatos distintos: elegir seria juzgar) · unresolved (ninguna autoridad, o PubMed solo reconocio un fragmento) · manual (combinacion: pendiente de resolver por componentes estructurados) · inconclusive (no se pudo medir). Se guarda estado, termino y fecha; NUNCA recuentos historicos. · 2026-08-20: 63 veredictos reclasificados en local (parentesco con transliteracion y reposicion del sustantivo vaccine); las respuestas de las autoridades no se volvieron a pedir. · 2026-08-20: 72 unresolved resueltos por emparejamiento aproximado de RxNav (la autoridad propone, el parentesco y el derrumbe filtran).",
+  "note": "Baseline de identidad de sustancia. CANDIDATOS, no traducciones autorizadas: la incorporacion a inn-es-en.json es una decision humana. Estados: verified (una autoridad oficial lo resuelve; convergencia si ambas coinciden) · review (dos candidatos distintos: elegir seria juzgar) · unresolved (ninguna autoridad, o PubMed solo reconocio un fragmento) · manual (combinacion: pendiente de resolver por componentes estructurados) · inconclusive (no se pudo medir). Se guarda estado, termino y fecha; NUNCA recuentos historicos. · 2026-08-20: 63 veredictos reclasificados en local (parentesco con transliteracion y reposicion del sustantivo vaccine); las respuestas de las autoridades no se volvieron a pedir. · 2026-08-20: 72 unresolved resueltos por emparejamiento aproximado de RxNav (la autoridad propone, el parentesco y el derrumbe filtran). · 2026-08-20: 145 unresolved resueltos por emparejamiento aproximado de RxNav (la autoridad propone, el parentesco y el derrumbe filtran).",
   "sources": {
     "snomed": "CIMA vtm.id (SNOMED CT) -> RxNav idtype=SNOMEDCT (NLM)",
     "pubmed": "eutils esearch querytranslation (concepto MeSH / Supplementary Concept)"
@@ -25125,6 +25125,4105 @@
         "ctgov_es": 12,
         "ctgov_en": 12
       }
+    },
+    "clorfenamina": {
+      "products": 426,
+      "combinaciones": 12,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "chlorpheniramine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 3097,
+        "pubmed_en": 3096,
+        "ctgov_es": 65,
+        "ctgov_en": 65
+      }
+    },
+    "gestodeno": {
+      "products": 133,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "gestodene",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 905,
+        "pubmed_en": 932,
+        "ctgov_es": 27,
+        "ctgov_en": 27
+      }
+    },
+    "ácido cítrico": {
+      "products": 90,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "citric acid",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 59,
+        "pubmed_en": 37587,
+        "ctgov_es": 2906,
+        "ctgov_en": 1070
+      }
+    },
+    "magnesio óxido": {
+      "products": 90,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "magnesium oxide",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 12,
+        "pubmed_en": 6279,
+        "ctgov_es": 0,
+        "ctgov_en": 213
+      }
+    },
+    "sodio bicarbonato": {
+      "products": 86,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "sodium bicarbonate",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 16264,
+        "pubmed_en": 16264,
+        "ctgov_es": 676,
+        "ctgov_en": 1470
+      }
+    },
+    "sodio alginato": {
+      "products": 77,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "alginate",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 4,
+        "pubmed_en": 36704,
+        "ctgov_es": 0,
+        "ctgov_en": 291
+      }
+    },
+    "tétanos": {
+      "products": 76,
+      "combinaciones": 4,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "tetanus toxoid vaccine, inactivated",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 750,
+        "pubmed_en": 16619,
+        "ctgov_es": 0,
+        "ctgov_en": 210
+      }
+    },
+    "lidocaína": {
+      "products": 73,
+      "combinaciones": 5,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "lidocaine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 38235,
+        "pubmed_en": 39536,
+        "ctgov_es": 4401,
+        "ctgov_en": 4400
+      }
+    },
+    "H.influenzae b": {
+      "products": 72,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "Haemophilus influenzae type b",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 8599,
+        "pubmed_en": 5480,
+        "ctgov_es": 4,
+        "ctgov_en": 461
+      }
+    },
+    "factor con Willebrand": {
+      "products": 70,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "von willebrand factor",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "von Willebrand factor, human",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 59,
+        "pubmed_en": 25585,
+        "ctgov_es": 401,
+        "ctgov_en": 436
+      }
+    },
+    "factor VIII": {
+      "products": 70,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "factor VIII",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 30333,
+        "pubmed_en": 30333,
+        "ctgov_es": 1045,
+        "ctgov_en": 1045
+      }
+    },
+    "polimixina B": {
+      "products": 66,
+      "combinaciones": 8,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "polymyxin B",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 8094,
+        "pubmed_en": 8094,
+        "ctgov_es": 83,
+        "ctgov_en": 91
+      }
+    },
+    "norelgestromina": {
+      "products": 63,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "norelgestromin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 137,
+        "pubmed_en": 137,
+        "ctgov_es": 48,
+        "ctgov_en": 48
+      }
+    },
+    "velpatasvir": {
+      "products": 48,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "velpatasvir",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 812,
+        "pubmed_en": 812,
+        "ctgov_es": 131,
+        "ctgov_en": 131
+      }
+    },
+    "nomegestrol": {
+      "products": 42,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "nomegestrol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 305,
+        "pubmed_en": 305,
+        "ctgov_es": 22,
+        "ctgov_en": 22
+      }
+    },
+    "cilastatina": {
+      "products": 42,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "cilastatin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 2063,
+        "pubmed_en": 2063,
+        "ctgov_es": 76,
+        "ctgov_en": 76
+      }
+    },
+    "lipasa": {
+      "products": 40,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "lipase",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 41,
+        "pubmed_en": 58531,
+        "ctgov_es": 0,
+        "ctgov_en": 894
+      }
+    },
+    "proteasa": {
+      "products": 40,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "protease",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 85,
+        "pubmed_en": 734092,
+        "ctgov_es": 0,
+        "ctgov_en": 3543
+      }
+    },
+    "tezacaftor": {
+      "products": 40,
+      "combinaciones": 3,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "tezacaftor",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1403,
+        "pubmed_en": 1403,
+        "ctgov_es": 128,
+        "ctgov_en": 128
+      }
+    },
+    "propifenazona": {
+      "products": 39,
+      "combinaciones": 3,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "propyphenazone",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 379,
+        "pubmed_en": 379,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      }
+    },
+    "trifluridina": {
+      "products": 36,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "trifluridine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1236,
+        "pubmed_en": 1236,
+        "ctgov_es": 211,
+        "ctgov_en": 211
+      }
+    },
+    "tipiracilo": {
+      "products": 36,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "tipiracil",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 745,
+        "pubmed_en": 745,
+        "ctgov_es": 204,
+        "ctgov_en": 204
+      }
+    },
+    "proguanilo": {
+      "products": 36,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "proguanil",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1807,
+        "pubmed_en": 1807,
+        "ctgov_es": 52,
+        "ctgov_en": 52
+      }
+    },
+    "parotiditis": {
+      "products": 36,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "review",
+      "en": "Bos taurus parotid gland preparation",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason": "derrumbe: el espanol encontraba algo y el ingles nada",
+      "retrieval": {
+        "pubmed_es": 8001,
+        "pubmed_en": 13,
+        "ctgov_es": 88,
+        "ctgov_en": 0
+      }
+    },
+    "benzocaína": {
+      "products": 35,
+      "combinaciones": 5,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "benzocaine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1701,
+        "pubmed_en": 1700,
+        "ctgov_es": 0,
+        "ctgov_en": 15739
+      }
+    },
+    "avibactam": {
+      "products": 33,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "avibactam",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 3275,
+        "pubmed_en": 3275,
+        "ctgov_es": 97,
+        "ctgov_en": 97
+      }
+    },
+    "ergotamina": {
+      "products": 33,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "ergotamine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 3153,
+        "pubmed_en": 13537,
+        "ctgov_es": 101,
+        "ctgov_en": 101
+      }
+    },
+    "lumacaftor": {
+      "products": 30,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "lumacaftor",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 732,
+        "pubmed_en": 732,
+        "ctgov_es": 58,
+        "ctgov_en": 58
+      }
+    },
+    "hesperidina": {
+      "products": 29,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "hesperidin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 4390,
+        "pubmed_en": 4410,
+        "ctgov_es": 63,
+        "ctgov_en": 63
+      }
+    },
+    "acetileno": {
+      "products": 27,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "acetylene",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 43560,
+        "ctgov_es": 0,
+        "ctgov_en": 1
+      }
+    },
+    "ascorbato": {
+      "products": 27,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "sodium ascorbate",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 42,
+        "pubmed_en": 71900,
+        "ctgov_es": 0,
+        "ctgov_en": 1581
+      }
+    },
+    "meglumina": {
+      "products": 27,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "meglumine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 9307,
+        "pubmed_en": 9333,
+        "ctgov_es": 3,
+        "ctgov_en": 158
+      }
+    },
+    "elvitegravir": {
+      "products": 25,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "elvitegravir",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 974,
+        "pubmed_en": 974,
+        "ctgov_es": 102,
+        "ctgov_en": 102
+      }
+    },
+    "clioquinol": {
+      "products": 24,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "clioquinol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1299,
+        "pubmed_en": 1299,
+        "ctgov_es": 7,
+        "ctgov_en": 7
+      }
+    },
+    "glecaprevir": {
+      "products": 22,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "glecaprevir",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 659,
+        "pubmed_en": 659,
+        "ctgov_es": 78,
+        "ctgov_en": 78
+      }
+    },
+    "pibrentasvir": {
+      "products": 22,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "pibrentasvir",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 637,
+        "pubmed_en": 637,
+        "ctgov_es": 78,
+        "ctgov_en": 78
+      }
+    },
+    "bictegravir": {
+      "products": 22,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "bictegravir",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 811,
+        "pubmed_en": 811,
+        "ctgov_es": 150,
+        "ctgov_en": 150
+      }
+    },
+    "benserazida": {
+      "products": 22,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "benserazide",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1648,
+        "pubmed_en": 1648,
+        "ctgov_es": 45,
+        "ctgov_en": 45
+      }
+    },
+    "lopinavir": {
+      "products": 21,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "lopinavir",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 4618,
+        "pubmed_en": 4618,
+        "ctgov_es": 488,
+        "ctgov_en": 488
+      }
+    },
+    "ruscogenina": {
+      "products": 21,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "ruscogenin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 161,
+        "ctgov_es": 0,
+        "ctgov_en": 2
+      }
+    },
+    "Fucus vesiculosus": {
+      "products": 21,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "fucus vesiculosus",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "Fucus vesiculosus extract",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1323,
+        "pubmed_en": 1323,
+        "ctgov_es": 5,
+        "ctgov_en": 5
+      }
+    },
+    "ácido láctico": {
+      "products": 20,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "lactic acid",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 36,
+        "pubmed_en": 101703,
+        "ctgov_es": 5241,
+        "ctgov_en": 5332
+      }
+    },
+    "bromfeniramina": {
+      "products": 20,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "brompheniramine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 765,
+        "pubmed_en": 765,
+        "ctgov_es": 7,
+        "ctgov_en": 8
+      }
+    },
+    "elexacaftor": {
+      "products": 20,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "elexacaftor",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1278,
+        "pubmed_en": 1278,
+        "ctgov_es": 79,
+        "ctgov_en": 79
+      }
+    },
+    "Althaea officinalis": {
+      "products": 20,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "review",
+      "en": "althaea officinalis root",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "Althaea officinalis root extract",
+      "curado": true,
+      "reason": "derrumbe: el espanol encontraba algo y el ingles nada",
+      "retrieval": {
+        "pubmed_es": 167,
+        "pubmed_en": 47,
+        "ctgov_es": 2,
+        "ctgov_en": 0
+      }
+    },
+    "arginina": {
+      "products": 20,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "arginine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 152160,
+        "pubmed_en": 153038,
+        "ctgov_es": 1158,
+        "ctgov_en": 1158
+      }
+    },
+    "nafazolina": {
+      "products": 18,
+      "combinaciones": 4,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "naphazoline",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 585,
+        "pubmed_en": 587,
+        "ctgov_es": 20,
+        "ctgov_en": 20
+      }
+    },
+    "clocinizina": {
+      "products": 18,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "clocinizine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 3,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      }
+    },
+    "fenilpropanolamina": {
+      "products": 18,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "phenylpropanolamine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 3545,
+        "pubmed_en": 3547,
+        "ctgov_es": 218,
+        "ctgov_en": 322
+      }
+    },
+    "trombina humana": {
+      "products": 18,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "thrombin, human",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 4,
+        "pubmed_en": 45953,
+        "ctgov_es": 53,
+        "ctgov_en": 534
+      }
+    },
+    "colagenasa de Clostridium hystolyticum": {
+      "products": 18,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "collagenase Clostridium histolyticum",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 0,
+        "pubmed_en": 6322,
+        "ctgov_es": 0,
+        "ctgov_en": 88
+      }
+    },
+    "ácido tartárico": {
+      "products": 18,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "tartaric acid",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 5,
+        "pubmed_en": 3281,
+        "ctgov_es": 0,
+        "ctgov_en": 35
+      }
+    },
+    "uridina": {
+      "products": 17,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "uridine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 57356,
+        "pubmed_en": 57656,
+        "ctgov_es": 399,
+        "ctgov_en": 399
+      }
+    },
+    "Primula veris": {
+      "products": 17,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "primula veris",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "Primula veris extract",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 599,
+        "pubmed_en": 599,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      }
+    },
+    "mirtecaína": {
+      "products": 16,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "myrtecaine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 18,
+        "pubmed_en": 18,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      }
+    },
+    "medazepam": {
+      "products": 16,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "medazepam",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 257,
+        "pubmed_en": 257,
+        "ctgov_es": 2,
+        "ctgov_en": 2
+      }
+    },
+    "framicetina": {
+      "products": 16,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "framycetin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 599,
+        "pubmed_en": 599,
+        "ctgov_es": 3,
+        "ctgov_en": 3
+      }
+    },
+    "benzalconio cloruro": {
+      "products": 16,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "benzalkonium",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 18,
+        "pubmed_en": 4725,
+        "ctgov_es": 0,
+        "ctgov_en": 172
+      }
+    },
+    "gramicidina": {
+      "products": 15,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "gramicidin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 4364,
+        "pubmed_en": 4397,
+        "ctgov_es": 10,
+        "ctgov_en": 10
+      }
+    },
+    "netarsudil": {
+      "products": 14,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "netarsudil",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 241,
+        "pubmed_en": 241,
+        "ctgov_es": 47,
+        "ctgov_en": 47
+      }
+    },
+    "estreptoquinasa": {
+      "products": 14,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "streptokinase",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 11618,
+        "pubmed_en": 11621,
+        "ctgov_es": 64,
+        "ctgov_en": 64
+      }
+    },
+    "estreptodornasa": {
+      "products": 14,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "streptodornase",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 17,
+        "pubmed_en": 9799,
+        "ctgov_es": 0,
+        "ctgov_en": 1
+      }
+    },
+    "alcohol diclorobencílico": {
+      "products": 13,
+      "combinaciones": 3,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "dichlorobenzyl alcohol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1170744,
+        "pubmed_en": 42,
+        "ctgov_es": 1,
+        "ctgov_en": 1
+      }
+    },
+    "amilmetacresol": {
+      "products": 13,
+      "combinaciones": 3,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "amylmetacresol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 23,
+        "pubmed_en": 23,
+        "ctgov_es": 1,
+        "ctgov_en": 1
+      }
+    },
+    "heparinoide": {
+      "products": 13,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "heparinoids",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 55,
+        "pubmed_en": 1577,
+        "ctgov_es": 1,
+        "ctgov_en": 9
+      }
+    },
+    "bacitracina": {
+      "products": 13,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "bacitracin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 4993,
+        "pubmed_en": 4996,
+        "ctgov_es": 74,
+        "ctgov_en": 74
+      }
+    },
+    "relebactam": {
+      "products": 12,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "relebactam",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 682,
+        "pubmed_en": 682,
+        "ctgov_es": 22,
+        "ctgov_en": 22
+      }
+    },
+    "aprotinina": {
+      "products": 12,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "aprotinin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 8383,
+        "pubmed_en": 8414,
+        "ctgov_es": 62,
+        "ctgov_en": 62
+      }
+    },
+    "deutivacaftor": {
+      "products": 12,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "deutivacaftor",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 2339,
+        "pubmed_en": 2339,
+        "ctgov_es": 19,
+        "ctgov_en": 19
+      }
+    },
+    "vanzacaftor": {
+      "products": 12,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "vanzacaftor",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 36,
+        "pubmed_en": 36,
+        "ctgov_es": 11,
+        "ctgov_en": 11
+      }
+    },
+    "enmetazobactam": {
+      "products": 12,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "enmetazobactam",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 109,
+        "pubmed_en": 109,
+        "ctgov_es": 7,
+        "ctgov_en": 7
+      }
+    },
+    "vaborbactam": {
+      "products": 11,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "vaborbactam",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 658,
+        "pubmed_en": 658,
+        "ctgov_es": 15,
+        "ctgov_en": 15
+      }
+    },
+    "ceftolozano": {
+      "products": 11,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "ceftolozane",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1182,
+        "pubmed_en": 1180,
+        "ctgov_es": 44,
+        "ctgov_en": 44
+      }
+    },
+    "foslevodopa": {
+      "products": 11,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "foslevodopa",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 154,
+        "pubmed_en": 154,
+        "ctgov_es": 13,
+        "ctgov_en": 13
+      }
+    },
+    "foscarbidopa": {
+      "products": 11,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "foscarbidopa",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 142,
+        "pubmed_en": 142,
+        "ctgov_es": 13,
+        "ctgov_en": 13
+      }
+    },
+    "Melissa officinalis": {
+      "products": 11,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "melissa officinalis",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "Melissa officinalis extract",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 6194,
+        "pubmed_en": 6194,
+        "ctgov_es": 779,
+        "ctgov_en": 779
+      }
+    },
+    "triamtereno": {
+      "products": 11,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "triamterene",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1464,
+        "pubmed_en": 1470,
+        "ctgov_es": 0,
+        "ctgov_en": 8
+      }
+    },
+    "tetracaína": {
+      "products": 10,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "tetracaine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 9,
+        "pubmed_en": 3587,
+        "ctgov_es": 49,
+        "ctgov_en": 161
+      }
+    },
+    "ácido aspártico": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "aspartic acid",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 14,
+        "pubmed_en": 63377,
+        "ctgov_es": 5383,
+        "ctgov_en": 5383
+      }
+    },
+    "Centaurium erythraea": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "centaurium erythraea",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 139,
+        "pubmed_en": 139,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      },
+      "en_autoridad": "Centaurium erythraea preparation",
+      "curado": true
+    },
+    "Levisticum officinale": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "Levisticum officinale",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 69,
+        "pubmed_en": 69,
+        "ctgov_es": 7,
+        "ctgov_en": 7
+      }
+    },
+    "ácido acético": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "acetic acid",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 121,
+        "pubmed_en": 217681,
+        "ctgov_es": 513,
+        "ctgov_en": 548
+      }
+    },
+    "Pimpinella anisum": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "pimpinella anisum",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "Pimpinella anisum extract",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 535,
+        "pubmed_en": 535,
+        "ctgov_es": 18,
+        "ctgov_en": 18
+      }
+    },
+    "Glycyrrhiza glabra": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "glycyrrhiza glabra",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "Glycyrrhiza glabra extract",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 5412,
+        "pubmed_en": 5412,
+        "ctgov_es": 46,
+        "ctgov_en": 46
+      }
+    },
+    "dihidroartemisinina": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": ".alpha.-dihydroartemisinin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 2,
+        "pubmed_en": 5,
+        "ctgov_es": 0,
+        "ctgov_en": 3
+      }
+    },
+    "Rheum officinale": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "rheum officinale",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "rheum officinale root",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 48146,
+        "pubmed_en": 48146,
+        "ctgov_es": 42,
+        "ctgov_en": 42
+      }
+    },
+    "Gentiana lutea": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "gentiana lutea",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "gentiana lutea root",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 960,
+        "pubmed_en": 960,
+        "ctgov_es": 2,
+        "ctgov_en": 2
+      }
+    },
+    "Rumex crispus": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "rumex crispus",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "rumex crispus top",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1076,
+        "pubmed_en": 1076,
+        "ctgov_es": 1,
+        "ctgov_en": 1
+      }
+    },
+    "Sambucus nigra": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "sambucus nigra",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "sambucus nigra flower",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1142,
+        "pubmed_en": 1142,
+        "ctgov_es": 14,
+        "ctgov_en": 14
+      }
+    },
+    "Verbena officinalis": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "verbena officinalis",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "Verbena officinalis extract",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 127,
+        "pubmed_en": 127,
+        "ctgov_es": 1,
+        "ctgov_en": 1
+      }
+    },
+    "salicilamida": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "salicylamide",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 665,
+        "pubmed_en": 6463,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      }
+    },
+    "amilorida": {
+      "products": 9,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "amiloride",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 12590,
+        "pubmed_en": 12604,
+        "ctgov_es": 90,
+        "ctgov_en": 90
+      }
+    },
+    "subcitrato bismuto": {
+      "products": 9,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "bismuth subcitrate",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 6,
+        "pubmed_en": 1111,
+        "ctgov_es": 0,
+        "ctgov_en": 68
+      }
+    },
+    "ácido glutámico": {
+      "products": 9,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "glutamic acid",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 34,
+        "pubmed_en": 73636,
+        "ctgov_es": 1248,
+        "ctgov_en": 1340
+      }
+    },
+    "alanina": {
+      "products": 9,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "alanine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 154168,
+        "pubmed_en": 155326,
+        "ctgov_es": 5877,
+        "ctgov_en": 5877
+      }
+    },
+    "glicina": {
+      "products": 9,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "glycine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 125764,
+        "pubmed_en": 126967,
+        "ctgov_es": 398,
+        "ctgov_en": 398
+      }
+    },
+    "tiocolchicósido": {
+      "products": 9,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "thiocolchicoside",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 3,
+        "pubmed_en": 208,
+        "ctgov_es": 0,
+        "ctgov_en": 15
+      }
+    },
+    "netupitant": {
+      "products": 9,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "netupitant",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 226,
+        "pubmed_en": 226,
+        "ctgov_es": 30,
+        "ctgov_en": 30
+      }
+    },
+    "proteasas": {
+      "products": 9,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "protease",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 38,
+        "pubmed_en": 734092,
+        "ctgov_es": 0,
+        "ctgov_en": 3543
+      }
+    },
+    "Coriandro sativum": {
+      "products": 9,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "coriandrum sativum",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "coriandrum sativum whole",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 14008,
+        "pubmed_en": 841,
+        "ctgov_es": 0,
+        "ctgov_en": 2
+      }
+    },
+    "resorcinol": {
+      "products": 9,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "resorcinol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 9653,
+        "pubmed_en": 9653,
+        "ctgov_es": 9,
+        "ctgov_en": 9
+      }
+    },
+    "antazolina": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "antazoline",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 326,
+        "pubmed_en": 326,
+        "ctgov_es": 3,
+        "ctgov_en": 3
+      }
+    },
+    "triprolidina": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "triprolidine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 420,
+        "pubmed_en": 420,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      }
+    },
+    "Ruscus aculeatus": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "review",
+      "en": "ruscus aculeatus root",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "Ruscus aculeatus root extract",
+      "curado": true,
+      "reason": "derrumbe: el espanol encontraba algo y el ingles nada",
+      "retrieval": {
+        "pubmed_es": 164,
+        "pubmed_en": 24,
+        "ctgov_es": 5,
+        "ctgov_en": 0
+      }
+    },
+    "dimeticona": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "dimethicone",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 290,
+        "pubmed_en": 294,
+        "ctgov_es": 42,
+        "ctgov_en": 42
+      }
+    },
+    "ascorbato sodio": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "sodium ascorbate",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 18,
+        "pubmed_en": 71900,
+        "ctgov_es": 0,
+        "ctgov_en": 1581
+      }
+    },
+    "Tilia sp": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "tilia",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "Tilia extract",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 57,
+        "pubmed_en": 870,
+        "ctgov_es": 133,
+        "ctgov_en": 674
+      }
+    },
+    "Plantago lanceolata": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "plantago lanceolata",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "plantago lanceolata whole",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 2259,
+        "pubmed_en": 2259,
+        "ctgov_es": 3,
+        "ctgov_en": 3
+      }
+    },
+    "dicicloverina": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "dicyclomine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 564,
+        "pubmed_en": 564,
+        "ctgov_es": 10,
+        "ctgov_en": 10
+      }
+    },
+    "melitraceno": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "melitracen",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 25,
+        "pubmed_en": 129,
+        "ctgov_es": 14,
+        "ctgov_en": 14
+      }
+    },
+    "flupentixol": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "flupenthixol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1628,
+        "pubmed_en": 1382,
+        "ctgov_es": 29,
+        "ctgov_en": 29
+      }
+    },
+    "estetrol": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "estetrol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 309,
+        "pubmed_en": 309,
+        "ctgov_es": 35,
+        "ctgov_en": 35
+      }
+    },
+    "salicilato dietilamina": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "diethylamine salicylate",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 14,
+        "ctgov_es": 0,
+        "ctgov_en": 1
+      }
+    },
+    "cedazuridina": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "cedazuridine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 94,
+        "ctgov_es": 0,
+        "ctgov_en": 79
+      }
+    },
+    "cilazapril": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "cilazapril",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 650,
+        "pubmed_en": 650,
+        "ctgov_es": 5,
+        "ctgov_en": 5
+      }
+    },
+    "lactobacillus gasseri": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "Lactobacillus gasseri",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1333,
+        "pubmed_en": 1333,
+        "ctgov_es": 61,
+        "ctgov_en": 61
+      }
+    },
+    "Hamamelis virginiana": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "review",
+      "en": "hamamelis virginiana top",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "Hamamelis virginiana top extract",
+      "curado": true,
+      "reason": "derrumbe: el espanol encontraba algo y el ingles nada",
+      "retrieval": {
+        "pubmed_es": 168,
+        "pubmed_en": 1,
+        "ctgov_es": 4,
+        "ctgov_en": 0
+      }
+    },
+    "mepivacaína": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "mepivacaine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 2892,
+        "pubmed_en": 2904,
+        "ctgov_es": 0,
+        "ctgov_en": 180
+      }
+    },
+    "voxilaprevir": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "voxilaprevir",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 199,
+        "pubmed_en": 199,
+        "ctgov_es": 33,
+        "ctgov_en": 33
+      }
+    },
+    "fenilbutazona": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "phenylbutazone",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 9052,
+        "pubmed_en": 9052,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      }
+    },
+    "alcohol isopropílico": {
+      "products": 7,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "isopropyl alcohol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 2,
+        "pubmed_en": 8728,
+        "ctgov_es": 170,
+        "ctgov_en": 177
+      }
+    },
+    "vincamina": {
+      "products": 7,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "vincamine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 523,
+        "pubmed_en": 525,
+        "ctgov_es": 0,
+        "ctgov_en": 0
+      }
+    },
+    "elatior": {
+      "products": 7,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "review",
+      "en": "etlingera elatior whole",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "Etlingera elatior whole extract",
+      "curado": true,
+      "reason": "derrumbe: el espanol encontraba algo y el ingles nada",
+      "retrieval": {
+        "pubmed_es": 192,
+        "pubmed_en": 2,
+        "ctgov_es": 1,
+        "ctgov_en": 0
+      }
+    },
+    "tolnaftato": {
+      "products": 7,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "tolnaftate",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 314,
+        "pubmed_en": 314,
+        "ctgov_es": 705,
+        "ctgov_en": 705
+      }
+    },
+    "Linum usitatissimum": {
+      "products": 7,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "linum usitatissimum",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "linum usitatissimum whole",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 5181,
+        "pubmed_en": 5181,
+        "ctgov_es": 5,
+        "ctgov_en": 5
+      }
+    },
+    "pentetreotida": {
+      "products": 7,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "pentetreotide",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 759,
+        "pubmed_en": 759,
+        "ctgov_es": 41,
+        "ctgov_en": 41
+      }
+    },
+    "nirmatrelvir": {
+      "products": 7,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "nirmatrelvir",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1827,
+        "pubmed_en": 1827,
+        "ctgov_es": 78,
+        "ctgov_en": 78
+      }
+    },
+    "dronabinol": {
+      "products": 7,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "dronabinol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 9652,
+        "pubmed_en": 9652,
+        "ctgov_es": 514,
+        "ctgov_en": 514
+      }
+    },
+    "Aloe ferox": {
+      "products": 7,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "aloe ferox",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 86,
+        "pubmed_en": 86,
+        "ctgov_es": 124,
+        "ctgov_en": 124
+      },
+      "en_autoridad": "Aloe ferox leaf preparation",
+      "curado": true
+    },
+    "norgestimato": {
+      "products": 6,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "norgestimate",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 433,
+        "pubmed_en": 433,
+        "ctgov_es": 47,
+        "ctgov_en": 47
+      }
+    },
+    "Betula pendula": {
+      "products": 6,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "review",
+      "en": "Betula pendula tar oil",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason": "derrumbe: el espanol encontraba algo y el ingles nada",
+      "retrieval": {
+        "pubmed_es": 819,
+        "pubmed_en": 0,
+        "ctgov_es": 10,
+        "ctgov_en": 0
+      }
+    },
+    "Betula pubescens": {
+      "products": 6,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "review",
+      "en": "Betula pubescens resin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "reason": "derrumbe: el espanol encontraba algo y el ingles nada",
+      "retrieval": {
+        "pubmed_es": 260,
+        "pubmed_en": 2,
+        "ctgov_es": 1,
+        "ctgov_en": 0
+      }
+    },
+    "Cynara scolymus": {
+      "products": 6,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "cynara scolymus",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "en_autoridad": "cynara scolymus whole",
+      "curado": true,
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 677,
+        "pubmed_en": 677,
+        "ctgov_es": 20,
+        "ctgov_en": 20
+      }
+    },
+    "Sylibum marianum": {
+      "products": 6,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "silybum marianum oil",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 15,
+        "pubmed_en": 75,
+        "ctgov_es": 0,
+        "ctgov_en": 2
+      },
+      "en_autoridad": "silybum marianum seed oil",
+      "curado": true
+    },
+    "norgestrel": {
+      "products": 6,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "norgestrel",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 7329,
+        "pubmed_en": 7329,
+        "ctgov_es": 220,
+        "ctgov_en": 220
+      }
+    },
+    "ácido flufenámico": {
+      "products": 5,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "flufenamic acid",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 13,
+        "pubmed_en": 1647,
+        "ctgov_es": 2,
+        "ctgov_en": 2
+      }
+    },
+    "dióxido titanio": {
+      "products": 5,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "titanium dioxide",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 2,
+        "pubmed_en": 25120,
+        "ctgov_es": 0,
+        "ctgov_en": 134
+      }
+    },
+    "hexetidina": {
+      "products": 5,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "hexetidine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 179,
+        "pubmed_en": 179,
+        "ctgov_es": 4,
+        "ctgov_en": 5
+      }
+    },
+    "tirotricina": {
+      "products": 5,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "tyrothricin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 3605,
+        "pubmed_en": 3602,
+        "ctgov_es": 6,
+        "ctgov_en": 6
+      }
+    },
+    "gluconato de calcio": {
+      "products": 5,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "calcium gluconate",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 16,
+        "pubmed_en": 2947,
+        "ctgov_es": 0,
+        "ctgov_en": 10677
+      }
+    },
+    "zinc óxido": {
+      "products": 4,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "zinc oxide",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 79,
+        "pubmed_en": 28171,
+        "ctgov_es": 306,
+        "ctgov_en": 342
+      }
+    },
+    "ácido tánico": {
+      "products": 3,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "tannic acid",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 25958,
+        "ctgov_es": 15739,
+        "ctgov_en": 15739
+      }
+    },
+    "bupivacaína": {
+      "products": 3,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "bupivacaine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 20384,
+        "pubmed_en": 20415,
+        "ctgov_es": 1,
+        "ctgov_en": 4847
+      }
+    },
+    "articaína": {
+      "products": 2,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "articaine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 2,
+        "pubmed_en": 1048,
+        "ctgov_es": 260,
+        "ctgov_en": 260
+      }
+    },
+    "metiltioninio": {
+      "products": 1,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "methylene blue",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 30862,
+        "ctgov_es": 0,
+        "ctgov_en": 400
+      }
+    },
+    "paracetamol": {
+      "products": 558,
+      "combinaciones": 19,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "acetaminophen",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "levodopa": {
+      "products": 334,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "levodopa",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "carbidopa": {
+      "products": 312,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "carbidopa",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "etinilestradiol": {
+      "products": 205,
+      "combinaciones": 4,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "ethinyl estradiol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "dextrometorfano": {
+      "products": 166,
+      "combinaciones": 9,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "dextromethorphan",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "picosulfato sodio": {
+      "products": 110,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "picosulfate sodium",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 2,
+        "pubmed_en": 257,
+        "ctgov_es": 0,
+        "ctgov_en": 85
+      }
+    },
+    "emtricitabina": {
+      "products": 89,
+      "combinaciones": 6,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "emtricitabine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "ácido ascórbico": {
+      "products": 71,
+      "combinaciones": 6,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "ascorbic acid",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "piridoxina": {
+      "products": 69,
+      "combinaciones": 5,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "pyridoxine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "hidrocortisona": {
+      "products": 65,
+      "combinaciones": 7,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "hydrocortisone",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "hidroclorotiazida": {
+      "products": 63,
+      "combinaciones": 5,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "hydrochlorothiazide",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "dexametasona": {
+      "products": 63,
+      "combinaciones": 6,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "dexamethasone",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "estradiol": {
+      "products": 57,
+      "combinaciones": 3,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "estradiol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "óxido nitroso": {
+      "products": 56,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "nitrous oxide",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "sulfametoxazol": {
+      "products": 53,
+      "combinaciones": 3,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "sulfamethoxazole",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "sofosbuvir": {
+      "products": 48,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "sofosbuvir",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "ácido acetilsalicílico": {
+      "products": 46,
+      "combinaciones": 6,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "acetylsalicylic acid",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "ácido fólico": {
+      "products": 46,
+      "combinaciones": 3,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "folic acid",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "lamivudina": {
+      "products": 44,
+      "combinaciones": 3,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "lamivudine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "codeína": {
+      "products": 42,
+      "combinaciones": 5,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "codeine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "imipenem": {
+      "products": 42,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "imipenem",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "cianocobalamina": {
+      "products": 38,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "cyanocobalamin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "ibuprofeno": {
+      "products": 38,
+      "combinaciones": 3,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "ibuprofen",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "betametasona": {
+      "products": 38,
+      "combinaciones": 4,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "betamethasone",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "beclometasona": {
+      "products": 33,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "beclometasone",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "gentamicina": {
+      "products": 29,
+      "combinaciones": 4,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "gentamicin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "nistatina": {
+      "products": 27,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "nystatin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "salbutamol": {
+      "products": 24,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "salbutamol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "cetirizina": {
+      "products": 23,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "cetirizine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "dolutegravir": {
+      "products": 22,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "dolutegravir",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "ceftazidima": {
+      "products": 22,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "ceftazidime",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "loratadina": {
+      "products": 18,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "loratadine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "ebastina": {
+      "products": 18,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "ebastine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "metronidazol": {
+      "products": 18,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "metronidazole",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "colecalciferol": {
+      "products": 16,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "cholecalciferol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "timolol": {
+      "products": 16,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "timolol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "buprenorfina": {
+      "products": 16,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "buprenorphine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "amitriptilina": {
+      "products": 16,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "amitriptyline",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "tiamina": {
+      "products": 16,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "thiamine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "diazepam": {
+      "products": 16,
+      "combinaciones": 2,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "diazepam",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "latanoprost": {
+      "products": 14,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "latanoprost",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "ergocalciferol": {
+      "products": 14,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "ergocalciferol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "tenofovir": {
+      "products": 13,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "tenofovir",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "cefepima": {
+      "products": 12,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "cefepime",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "tadalafilo": {
+      "products": 12,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "tadalafil",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "meropenem": {
+      "products": 11,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "meropenem",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "tazobactam": {
+      "products": 11,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "tazobactam",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "aztreonam": {
+      "products": 11,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "aztreonam",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "furosemida": {
+      "products": 11,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "furosemide",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "metamizol": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "metamizole",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "nitroglicerina": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "nitroglycerin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "verapamilo": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "verapamil",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "lactobacillus acidophilus": {
+      "products": 10,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "lactobacillus acidophilus",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "tetraciclina": {
+      "products": 9,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "tetracycline",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "noretisterona": {
+      "products": 9,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "norethindrone",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "ramipril": {
+      "products": 9,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "ramipril",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "fluorouracilo": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "fluorouracil",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "mometasona": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "mometasone",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "pentosano polisulfato sodio": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "pentosan polysulfate",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ],
+      "promoted": "2026-08-22",
+      "retrieval": {
+        "pubmed_es": 1,
+        "pubmed_en": 1099,
+        "ctgov_es": 0,
+        "ctgov_en": 21
+      }
+    },
+    "diclofenaco": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "diclofenac",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "colchicina": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "colchicine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "drospirenona": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "drospirenone",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "Salvia officinalis": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "salvia officinalis",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "terbutalina": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "terbutaline",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "metoprolol": {
+      "products": 8,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "metoprolol",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "prednisona": {
+      "products": 7,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "prednisone",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "carbocisteína": {
+      "products": 7,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "carbocisteine",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "simeticona": {
+      "products": 7,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "simethicone",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "ciprofloxacino": {
+      "products": 6,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "ciprofloxacin",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "ezetimiba": {
+      "products": 6,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "ezetimibe",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
+    },
+    "calcio": {
+      "products": 5,
+      "combinaciones": 1,
+      "origen": "componente de combinacion",
+      "status": "verified",
+      "en": "calcium",
+      "method": "rxnav-aproximado",
+      "sources": {
+        "rxnav_aproximado": "ok"
+      },
+      "evidence": [
+        "RxNav approximateTerm sobre el nombre español; parentesco verificado"
+      ]
     }
   }
 }

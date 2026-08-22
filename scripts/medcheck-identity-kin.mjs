@@ -135,6 +135,16 @@ const CALIFICADORES = {
     tartrate: ['tartrato'], citrate: ['citrato'], acetate: ['acetato'],
     fumarate: ['fumarato'], succinate: ['succinato'], phosphate: ['fosfato'],
     carbonate: ['carbonato'], bromide: ['bromuro'], chloride: ['cloruro'],
+    // PARTE DE LA PLANTA (añadido 2026-08-22). RxNorm califica los botánicos con la porción
+    // usada —`Rheum officinale root`, `Sambucus nigra flower`, `Cynara scolymus whole`— y CIMA
+    // casi nunca la declara: dice el binomio latino y ya. Es el mismo caso que `rifamycin sv`,
+    // y el precio medido es el mismo o peor: `rheum officinale root` recupera 465 registros
+    // frente a los 48.146 de `Rheum officinale`, y `coriandrum sativum whole` 22 frente a 14.008.
+    // Para un botánico la identidad ES el binomio; la porción es formulación.
+    root: ['raiz', 'raíz'], flower: ['flor', 'flores'], leaf: ['hoja', 'hojas'],
+    seed: ['semilla', 'semillas'], fruit: ['fruto', 'frutos'], bark: ['corteza'],
+    top: ['sumidad', 'sumidades'], whole: ['entera', 'entero', 'planta entera'],
+    preparation: ['preparacion', 'preparación'],
 };
 
 export function curarTermino(es, en) {
