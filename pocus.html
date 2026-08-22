@@ -6687,12 +6687,12 @@ CONCLUSIÓN:`,
       // con entropía suficiente para que el hash no sea atacable por fuerza bruta.
       //
       // El primer código de esta página se escribió en claro aquí al lado y con un
-      // patrón corto y adivinable (nombre-año-iniciales). Quitarlo del fuente reduce
-      // la exposición de hoy —quien abra la página bloqueada ya no lo lee— pero NO lo
-      // desexpone: sigue en el historial. Lo único que lo cierra es rotarlo, y eso
-      // invalida los enlaces ya repartidos, así que es decisión del autor.
+      // patrón corto y adivinable (nombre-año-iniciales). Retirarlo del fuente no lo
+      // desexponía —el historial de git lo conserva—, así que el 22/08 se ROTÓ, que es
+      // lo único que de verdad lo cierra. El hash viejo ya no abre nada; el código que
+      // sigue en el historial es, desde entonces, papel mojado.
       const _POCUS_ACCESS_HASHES = new Set([
-        "053fb841ff59480bf2cf44d58acb42393bd0c197bbe6bbfa96906b4b86eb5b73", // autor (pendiente de rotar)
+        "be18ac45264c4513234f2c19ab7f4ba1dff438e424bb6eb5b5583cfbdad63c05", // autor (rotado 22-ago-2026; el anterior estuvo en claro en el repo)
         "287e1c35c07450ab95850b8ebcdddf081f02decdc0f221fdc91c308722a6b5e6", // ML 2026
       ]);
       async function _pocusHash(code) {
