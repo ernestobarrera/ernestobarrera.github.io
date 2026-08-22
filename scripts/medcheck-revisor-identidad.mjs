@@ -24,17 +24,20 @@
  *      resto del pipeline. 36 términos cubren la mitad; 103, el 80 %.
  *
  * DOS TAREAS DISTINTAS, y por eso se pueden generar por separado:
- *   --con-candidato (147)  aceptar o rechazar lo que propuso una autoridad. Un vistazo.
- *   --sin-candidato (71)   escribir el término desde cero. Mucho más lento.
+ *   (por defecto)   aceptar o rechazar lo que propuso una autoridad. Un vistazo.
+ *   --sin-candidato escribir el término desde cero. Mucho más lento.
+ *
+ * Y UNA TERCERA COSA, añadida el 22/08 y la más importante: `--solo-ceros`. Ver más abajo.
  *
  * Uso:
+ *   node scripts/medcheck-revisor-identidad.mjs --solo-ceros
  *   node scripts/medcheck-revisor-identidad.mjs --max=36
  *   node scripts/medcheck-revisor-identidad.mjs --sin-candidato --max=20
  *
  * Salida: docs/medcheck/private/revisor-identidad.html (zona privada, gitignorada).
  * Los veredictos vuelven con medcheck-aplicar-veredictos.mjs.
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -48,13 +51,30 @@ const sinMedir = args.includes('--sin-medir');
 
 const baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
 
-const pendientes = Object.entries(baseline.terms)
+// SOLO CEROS (2026-08-22). El revisor nació para 218 veredictos y eso lo convertía en una tarea
+// sin final. Pero no todos hacen daño: la mayoría de los nombres españoles YA recuperan, porque
+// PubMed mapea solo muchos de ellos y porque la ficha no depende de la traducción para existir.
+// El caso que engaña de verdad —el que abrió todo esto con la vacuna del herpes zóster— es el
+// CERO: un recuento vacío es indistinguible de «no hay evidencia».
+//
+// Con `--solo-ceros` se mide todo y se deja en la cola únicamente aquello donde el español
+// devuelve 0 en algún registro. Eso convierte una tarea abierta en una lista corta y acabable,
+// que es la diferencia entre revisar y no revisar nunca.
+const soloCeros = args.includes('--solo-ceros');
+
+const todosPendientes = Object.entries(baseline.terms)
     .filter(([, v]) => (v.status === 'review' || v.status === 'unresolved') && !v.human)
     .filter(([, v]) => (sinCandidato ? !(v.candidates || []).length : (v.candidates || []).length))
-    .sort((a, b) => (b[1].products || 0) - (a[1].products || 0))
-    .slice(0, max);
+    .sort((a, b) => (b[1].products || 0) - (a[1].products || 0));
+const pendientes = soloCeros ? todosPendientes : todosPendientes.slice(0, max);
 
 console.log(`${sinCandidato ? 'SIN' : 'CON'} candidato · ${pendientes.length} términos · ${pendientes.reduce((s, [, v]) => s + (v.products || 0), 0)} productos`);
+
+// Caché en disco de las mediciones: sin ella, cada regeneración vuelve a pedir ~700 recuentos a
+// NCBI y a ClinicalTrials para enseñar lo mismo.
+const CACHE = join(SALIDA_DIR, 'cache-revisor-medidas.json');
+mkdirSync(SALIDA_DIR, { recursive: true });
+const medidas = existsSync(CACHE) ? JSON.parse(readFileSync(CACHE, 'utf8')) : {};
 
 // ── Medición de recuperación (la misma que usa la promoción) ────────────────────────────────
 const dormir = ms => new Promise(r => setTimeout(r, ms));
@@ -79,20 +99,35 @@ async function ctgov(q) {
     } catch { return null; }
 }
 
-const fichas = [];
+let fichas = [];
 let i = 0;
 for (const [es, v] of pendientes) {
     i += 1;
     const cand = (v.candidates || [])[0] || null;
-    let m = { pEs: null, pEn: null, cEs: null, cEn: null };
-    if (!sinMedir) {
+    let m = medidas[es] || { pEs: null, pEn: null, cEs: null, cEn: null };
+    if (!sinMedir && !medidas[es]) {
         m.pEs = await pubmed(es);
         m.cEs = await ctgov(es);
         if (cand) { m.pEn = await pubmed(cand); m.cEn = await ctgov(cand); }
+        medidas[es] = m;
+        if (i % 10 === 0) writeFileSync(CACHE, JSON.stringify(medidas));
     }
     fichas.push({ es, products: v.products || 0, status: v.status, candidates: v.candidates || [],
         sources: v.sources || {}, reason: v.reason || '', sctid: v.sctid || null, m });
     if (i % 10 === 0) console.error(`  … ${i}/${pendientes.length}`);
+}
+writeFileSync(CACHE, JSON.stringify(medidas));
+
+if (soloCeros) {
+    const cero = f => (f.m.pEs === 0 || f.m.cEs === 0);
+    const dañinos = fichas.filter(cero);
+    const inocuos = fichas.filter(f => !cero(f));
+    const suma = l => l.reduce((s, f) => s + f.products, 0);
+    console.log(`\nde ${fichas.length} pendientes (${suma(fichas)} productos):`);
+    console.log(`  el español devuelve CERO en algún registro: ${dañinos.length} (${suma(dañinos)} productos)  <- la cola real`);
+    console.log(`  el español ya recupera en los dos:           ${inocuos.length} (${suma(inocuos)} productos)  <- no engañan a nadie`);
+    fichas = dañinos.slice(0, max);
+    console.log(`\nse generan ${fichas.length} fichas.`);
 }
 
 // ── La página ───────────────────────────────────────────────────────────────────────────────

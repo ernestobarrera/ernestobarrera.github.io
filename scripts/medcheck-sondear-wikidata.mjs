@@ -61,6 +61,34 @@ const volcarClases = args.includes('--clases');
 // acierto por un hueco de Wikidata en español. Se mide para poder comparar las dos cifras; la
 // decisión de cuál se usa no es de este script.
 const sinExacto = args.includes('--sin-exacto');
+const aplicar = args.includes('--aplicar');
+
+/**
+ * AVALES HUMANOS SOBRE EL PARENTESCO (2026-08-22). Cuatro términos que Wikidata propone, que
+ * `comparteRaiz` rechaza, y que la medición demuestra que son correctos y que ganan.
+ *
+ * POR QUÉ ESTO NO ROMPE «ESPEJO, NO JUEZ». No se escribe aquí ninguna traducción: el término lo
+ * propuso Wikidata, igual que RxNav o PubMed proponen los suyos. Lo que se anula es una
+ * heurística NUESTRA —el parentesco, que compara grafías— en los casos en que compara mal porque
+ * el español y el inglés usan palabras distintas para la misma cosa (`esencia`/`oil`), no
+ * grafías distintas del mismo étimo. La guarda de derrumbe del promotor sigue en pie: si alguno
+ * recuperase peor, se bloquea igual.
+ *
+ * Se anotan con la medición que los justifica, y con `human: true` para que una recompilación no
+ * los vuelva a tirar. Los cuatro se midieron en los DOS registros, porque no dicen lo mismo:
+ * PubMed mapea solo muchos nombres españoles y ClinicalTrials no.
+ *
+ * NO entran aquí, y es deliberado: `alcohol etílico -> ethanol` (PubMed 61 -> 230.129, que es el
+ * ensanchamiento de `retinol -> vitamin A` con otra cara), `fitomenadiona -> (E)-phytonadione`
+ * (2.015 -> 215, el estereodescriptor estrecha), `octocog alfa` (nombre de clase) y los seis en
+ * los que los dos registros ya mapean el español y la traducción no cambia nada.
+ */
+const AVALES = {
+    'bencilpenicilina benzatina': { en: 'benzathine benzylpenicillin', medida: 'PubMed 22 -> 2194 · ensayos 0 -> 65' },
+    'esencia de lavanda': { en: 'lavender oil', medida: 'PubMed 0 -> 698 · ensayos 0 -> 224' },
+    'hexafluoruro de azufre': { en: 'sulfur hexafluoride', medida: 'PubMed 2 -> 3846 · ensayos 0 -> 246' },
+    'Ioflupano (123I)': { en: 'ioflupane I-123', medida: 'PubMed 419 = 419 · ensayos 0 -> 54' },
+};
 
 const UA = 'MedCheck-identity/1.0 (https://ernestobarrera.github.io/medcheck.html)';
 const dormir = ms => new Promise(r => setTimeout(r, ms));
@@ -324,4 +352,59 @@ if (rech.length) {
 }
 
 writeFileSync(SALIDA, JSON.stringify({ generado: new Date().toISOString().slice(0, 10), fichas }, null, 2) + '\n');
-console.log(`\nNada escrito en el baseline ni en el diccionario. Detalle en ${SALIDA.replace(ROOT, '.')}`);
+
+// ── 7 · Aplicación al baseline (opcional) ───────────────────────────────────────────────────
+//
+// Marca `verified` con su término. NO escribe el diccionario: eso es de
+// `medcheck-promote-identity.mjs`, que mide la recuperación y aplica la guarda de derrumbe.
+// Por eso aquí NO hay lista negra de falsos positivos: `almagato -> almagate dihydrate` se
+// aplica como los demás y lo para el promotor, que es quien tiene la medición delante. Una
+// exclusión escrita a mano aquí sería una decisión sin medida, que es lo que este proyecto
+// evita.
+if (!aplicar) {
+    console.log(`\nNada escrito en el baseline ni en el diccionario. Detalle en ${SALIDA.replace(ROOT, '.')}`);
+    console.log('Repite con --aplicar para marcarlos verified en el baseline.');
+} else {
+    const HOY = new Date().toISOString().slice(0, 10);
+    let n1 = 0, n2 = 0, n3 = 0;
+    for (const f of cand) {
+        baseline.terms[f.es] = {
+            ...baseline.terms[f.es], status: 'verified', en: f.en, method: 'wikidata',
+            sources: { ...(baseline.terms[f.es].sources || {}), wikidata: f.qid },
+            evidence: [`Wikidata ${f.qid} · coincidencia exacta ${f.via} · tipo ${f.clase} · ids ${f.ids.join(',')}`],
+            reason_previa: baseline.terms[f.es].reason,
+        };
+        delete baseline.terms[f.es].reason;
+        n1 += 1;
+    }
+    // Los que ya están en inglés se anotan con su propio término. Parece redundante y no lo es:
+    // deja escrito que la pregunta SE HIZO y se contestó, y los saca de la cola del revisor, que
+    // es donde estaban ocupando sitio sin tener nada que decidir.
+    for (const f of yaIngles) {
+        baseline.terms[f.es] = {
+            ...baseline.terms[f.es], status: 'verified', en: f.es.toLowerCase(), method: 'wikidata-identico',
+            sources: { ...(baseline.terms[f.es].sources || {}), wikidata: f.qid },
+            evidence: [`Wikidata ${f.qid}: la etiqueta inglesa es la misma cadena que escribe CIMA; no hay traducción que hacer`],
+            reason_previa: baseline.terms[f.es].reason,
+        };
+        delete baseline.terms[f.es].reason;
+        n2 += 1;
+    }
+    for (const [es, av] of Object.entries(AVALES)) {
+        const v = baseline.terms[es];
+        if (!v) { console.error(`  [aviso] aval sin ficha en el baseline: ${es}`); continue; }
+        baseline.terms[es] = {
+            ...v, status: 'verified', en: av.en, method: 'wikidata-aval-humano', human: true,
+            evidence: [`Wikidata propone "${av.en}"; el parentesco lo rechaza y la medición lo desmiente: ${av.medida}`],
+            veredicto: `revisión asistida ${HOY}, medida en PubMed y ClinicalTrials`,
+            reason_previa: v.reason,
+        };
+        delete baseline.terms[es].reason;
+        n3 += 1;
+    }
+    baseline.note = (baseline.note || '') +
+        ` · ${HOY}: pasada abierta de Wikidata (CC0) con filtros estrictos — ${n1} candidatos, ${n2} términos que ya estaban en inglés y ${n3} avales humanos sobre el parentesco, medidos en los dos registros.`;
+    writeFileSync(BASELINE, JSON.stringify(baseline, null, 2) + '\n');
+    console.log(`\nBaseline actualizado: ${n1} candidatos + ${n2} ya-en-inglés + ${n3} avales = ${n1 + n2 + n3} pasan a verified.`);
+    console.log('El diccionario NO se ha tocado: eso es de medcheck-promote-identity.mjs.');
+}

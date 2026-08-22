@@ -135,6 +135,23 @@ check('7c · el cache-bust no es anterior al dato que sirve',
     'v=' + (tokenMatch ? tokenMatch[1] : '?') + ' < version ' + fechaJson +
     ' — falta: node scripts/medcheck-bump-version.mjs innjson');
 
+// ── 8 · el baseline público no republica identificadores de SNOMED CT ───────────────────────
+//
+// El compilador vuelve a escribir el `sctid` en cada pasada, porque lo lee de CIMA. Retirarlo
+// del fichero público es un paso aparte (`medcheck-despublicar-sctid.mjs`), y un paso que hay
+// que recordar es un paso que se olvida — este proyecto ya lo pagó con el cache-bust. La guarda
+// no avisa nunca salvo en el caso real: solo salta si el fichero que se publica trae SCTID.
+//
+// POR QUÉ importa: `assets/data/*.json` se sirve en abierto desde Pages (la contraseña de
+// MedCheck no lo protege) bajo una licencia que concede a terceros el derecho a adaptar, y
+// SNOMED CT tiene régimen propio. El resto del fichero no: RxNorm por API y MeSH son de dominio
+// público y Wikidata es CC0.
+const baselinePublico = readFileSync(join(ROOT, 'assets/data/substance-identity-baseline.json'), 'utf8');
+const sctidSueltos = (baselinePublico.match(/"sctid"\s*:\s*"/g) || []).length
+    + (baselinePublico.match(/SNOMEDCT\s+\d+/gi) || []).length;
+check('8 · el baseline público no republica identificadores SNOMED CT', sctidSueltos === 0,
+    sctidSueltos + ' referencias — falta: node scripts/medcheck-despublicar-sctid.mjs --aplicar');
+
 console.log('');
 if (failures) {
     console.log(`${failures} fallo(s) — el contrato de identidad no se sostiene.`);
