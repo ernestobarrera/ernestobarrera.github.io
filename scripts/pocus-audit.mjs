@@ -15,6 +15,7 @@
  *      Un comprobador que aprueba por no encontrar nada es peor que no tenerlo.
  *
  *   node scripts/pocus-audit.mjs
+ *   node scripts/pocus-audit.mjs --enlaces   (imprime además el enlace ?ficha= de cada ficha)
  */
 
 import fs from 'fs';
@@ -123,6 +124,43 @@ for (const app of data)
 const titulos = data.map((a) => a.title);
 for (const t of new Set(titulos))
   if (titulos.filter((x) => x === t).length > 1) problemas.push(`título duplicado: «${t}»`);
+
+/* ── Enlaces profundos (?ficha=) ───────────────────────────────────────────────────────────
+   El slug de cada ficha se DERIVA del título en la propia página; no hay campo que mantener.
+   Eso hace que dos títulos distintos puedan colapsar en el mismo slug —«Lipoma» y «lipoma.»,
+   por ejemplo— y entonces uno de los dos enlaces abre la ficha equivocada, en silencio. Aquí
+   se reproduce la misma normalización que usa `pocusSlug()` en pocus.html: si las dos dejan de
+   coincidir, esta comprobación deja de valer, así que van juntas. */
+const slugDe = (t) =>
+  String(t || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const slugs = data.map((a) => slugDe(a.title));
+for (const s of new Set(slugs)) {
+  if (slugs.filter((x) => x === s).length > 1)
+    problemas.push(
+      `slug duplicado «${s}»: ${data.filter((a) => slugDe(a.title) === s).map((a) => `«${a.title}»`).join(' y ')} ` +
+      `comparten enlace ?ficha=, y uno de los dos abrirá la ficha equivocada`
+    );
+}
+data.forEach((a, i) => {
+  if (!slugs[i]) problemas.push(`«${a.title}» produce un slug vacío: no se puede enlazar con ?ficha=`);
+});
+
+/* Un slug de ficha no puede coincidir con un id de zona, porque el resolutor prueba primero
+   como ficha y la zona quedaría inalcanzable por ?zona=. */
+for (const s of slugs)
+  if (conFicha.has(s.replace(/-/g, '_')))
+    problemas.push(`el slug «${s}» choca con la zona «${s.replace(/-/g, '_')}»: ?zona= dejaría de alcanzarla`);
+
+// Contrato de la página: si desaparece el resolutor, todos los enlaces repartidos mueren.
+for (const simbolo of ['function pocusSlug', 'window.abrirFicha', 'window.aplicarEnlaceProfundo'])
+  if (!html.includes(simbolo))
+    problemas.push(`pocus.html ya no define \`${simbolo}\`: los enlaces profundos ?ficha= dejarían de resolver`);
 
 for (const app of data) {
   const falta = ['technique', 'findings', 'evidence', 'pearls'].filter((k) => !(app.content || {})[k]);
@@ -241,6 +279,22 @@ const verificadas = Object.values(refs).filter((r) => r.verified).length;
 console.log(`Atlas POCUS — ${data.length} fichas en ${conFicha.size} segmentos`);
 console.log(`Referencias: ${Object.keys(refs).length} (${verificadas} verificadas)`);
 console.log('');
+
+/* Con `--enlaces` sale el mapa completo de enlaces profundos, listo para pegar donde haga
+   falta. Se imprime aparte del informe de problemas para que la salida normal siga siendo
+   corta: cincuenta líneas de slugs esconderían el único aviso que importa. */
+if (process.argv.includes('--enlaces')) {
+  const BASE = 'https://ernestobarrera.github.io/pocus.html?ficha=';
+  const ancho = Math.max(...data.map((a) => a.title.length));
+  console.log('Enlaces profundos por ficha:');
+  data
+    .map((a, i) => ({ titulo: a.title, seg: a.segment, slug: slugs[i] }))
+    .sort((a, b) => a.seg.localeCompare(b.seg) || a.titulo.localeCompare(b.titulo))
+    .forEach((f) => console.log(`  ${f.titulo.padEnd(ancho)}  ${BASE}${f.slug}`));
+  console.log('');
+  console.log(`Zonas completas: ${[...conFicha].sort().map((z) => '?zona=' + z).join(' · ')}`);
+  console.log('');
+}
 
 if (problemas.length) {
   console.log(`${problemas.length} problema(s):`);
