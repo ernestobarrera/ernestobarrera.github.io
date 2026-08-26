@@ -35,7 +35,7 @@ import urllib.request
 from datetime import datetime, timezone
 
 # Fuentes vigiladas. max_age_days = cadencia esperada + margen.
-#   biomarkers -> diaria; sns-catalog y bifimed -> mensual.
+#   biomarkers -> diaria; sns-catalog, bifimed y packs -> mensual.
 SOURCES = [
     {
         "key": "biomarkers:meta",
@@ -53,6 +53,12 @@ SOURCES = [
         "key": "bifimed:meta",
         "label": "BIFIMED financiacion (SNS)",
         "date_fields": ["generated_at", "download_date"],
+        "max_age_days": 40,
+    },
+    {
+        "key": "packs:meta",
+        "label": "Indice de envases (CIMA)",
+        "date_fields": ["generated_at"],
         "max_age_days": 40,
     },
 ]

@@ -1,0 +1,109 @@
+name: ETL índice de envases (CIMA)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 04:43 UTC el día 5 de cada mes. Después de sns-catalog (día 2) y bifimed (día 3):
+    # las tres tocan fuentes distintas, pero escalonarlas deja el fallo de cada una aislado.
+    - cron: '43 4 5 * *'
+
+permissions:
+  # A diferencia de las otras ETL, esta COMMITEA: `packs-index.json` es un asset estático
+  # que sirve GitHub Pages, no una clave de KV. A KV solo va el meta, para que lo vea el
+  # watchdog de frescura, que lee KV y no ficheros del repo.
+  contents: write
+
+concurrency:
+  group: etl-packs
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Construir índice de envases
+        id: build
+        run: |
+          node scripts/etl-packs/build-packs-index.mjs --out /tmp/packs-index.json
+          {
+            echo "generated_at=$(jq -r '._meta.generated_at' /tmp/packs-index.json)"
+            echo "presentaciones=$(jq -r '._meta.presentaciones' /tmp/packs-index.json)"
+            echo "nregistros=$(jq -r '._meta.nregistros' /tmp/packs-index.json)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: ¿Ha cambiado el contenido?
+        id: diff
+        run: |
+          # Se compara SOLO `.packs`. `_meta.generated_at` cambia en cada pasada, así que
+          # comparar el fichero entero commitearía 600 KB y bumparía el `?v=` cada mes
+          # aunque no hubiera cambiado un solo envase — invalidando la caché de todos los
+          # navegadores sin motivo.
+          if jq -S -c '.packs' /tmp/packs-index.json > /tmp/nuevo.packs.json \
+             && jq -S -c '.packs' assets/data/packs-index.json > /tmp/viejo.packs.json \
+             && cmp -s /tmp/nuevo.packs.json /tmp/viejo.packs.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Sin cambios en los envases; no se commitea."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Envases cambiados; se commiteará el índice."
+          fi
+
+      - name: Commitear índice y subir el cache-bust
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          cp /tmp/packs-index.json assets/data/packs-index.json
+          # Obligatorio: sin esto el índice se publica y NO llega al navegador, porque
+          # `_loadPacksIndex` lo pide con `cache: 'force-cache'`. Es el fallo de la sesión 47.
+          # `packs` arrastra `app` por el mapa IMPLICA (el `?v=` vive dentro de cima-app.js).
+          node scripts/medcheck-bump-version.mjs packs
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Rutas explícitas, nunca `-A`: hay sesiones humanas en paralelo sobre el mismo árbol.
+          git add assets/data/packs-index.json assets/js/cima-app.js medcheck.html
+          git commit -m "Actualiza el índice de envases (CIMA, ${{ steps.build.outputs.generated_at }})
+
+          ${{ steps.build.outputs.presentaciones }} presentaciones · ${{ steps.build.outputs.nregistros }} nregistros.
+          Generado por .github/workflows/etl-packs.yml."
+          git push
+
+      - name: Publicar meta a Cloudflare KV
+        # Se publica SIEMPRE, cambie o no el contenido: el watchdog vigila que la ETL siga
+        # corriendo, no que los envases cambien. Un mes sin cambios es normal; un mes sin
+        # ejecución, no.
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+        run: |
+          jq -c '._meta + {changed: ${{ steps.diff.outputs.changed }}}' /tmp/packs-index.json > /tmp/packs-meta.json
+          cat /tmp/packs-meta.json
+          response=$(curl -sS -w "\n%{http_code}" -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${CF_KV_NAMESPACE_ID}/values/packs%3Ameta" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary @/tmp/packs-meta.json)
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "HTTP ${status}"
+          echo "$body" | jq .
+          test "$status" = "200" || exit 1
+
+      - name: Resumen
+        run: |
+          {
+            echo "## ETL índice de envases (CIMA)"
+            echo ""
+            echo "- Generado: ${{ steps.build.outputs.generated_at }}"
+            echo "- Presentaciones: ${{ steps.build.outputs.presentaciones }}"
+            echo "- Nregistros: ${{ steps.build.outputs.nregistros }}"
+            echo "- Contenido cambiado: ${{ steps.diff.outputs.changed }}"
+          } >> "$GITHUB_STEP_SUMMARY"
