@@ -15251,6 +15251,113 @@ ${materialesPlaceholder}
         };
     }
 
+    /**
+     * Índice de rutas de MedyNut (SENPE), generado por scripts/etl-medynut.mjs.
+     *
+     * MedyNut recoge los efectos de los fármacos sobre el estado nutricional —apetito,
+     * peso, gusto, xerostomía, disfagia, mucositis, digestivo, micronutrientes—, un eje
+     * que la ficha técnica sí contiene pero disuelto en una 4.8 larguísima.
+     *
+     * Aquí solo se ENLAZA. No se descarga, ni se parsea, ni se reproduce su contenido.
+     *
+     * El índice es imprescindible porque sus slugs NO son derivables del nombre:
+     * `ceftriaxona` vive en `/cefotaxima-copia` y `cloxacilina` en
+     * `/amoxicilina-clavulanico-copia-8e00cb28-…`, restos de duplicar registros en su
+     * gestor. Construir la URL a mano mandaría al médico a la ficha de OTRO fármaco.
+     * Y en vivo no se puede: su API no manda CORS.
+     *
+     * Falla en abierto: si no carga, la sección no aparece y el resto de la pestaña
+     * queda intacta. Nunca al revés.
+     */
+    _loadMedynutIndex(url = 'assets/data/medynut-index.json?v=20260826a') {
+        if (this._medynutIndex) return Promise.resolve(this._medynutIndex);
+        if (this._medynutPromise) return this._medynutPromise;
+        this._medynutPromise = fetch(url, { cache: 'force-cache' })
+            .then(r => (r.ok ? r.json() : null))
+            .then(data => {
+                this._medynutMeta = data?._meta || null;
+                this._medynutIndex = (data && typeof data.indice === 'object' && data.indice) || {};
+                return this._medynutIndex;
+            })
+            .catch(() => {
+                this._medynutIndex = {};
+                return this._medynutIndex;
+            });
+        return this._medynutPromise;
+    }
+
+    /**
+     * Revela la sección de MedyNut si el índice resuelve algún principio activo.
+     *
+     * La unidad de enlace es el PRINCIPIO ACTIVO, no el producto: MedyNut indexa
+     * moléculas, así que una asociación se resuelve componente a componente. De ahí que
+     * baste con `_substanceIdentity`, que ya devuelve los componentes resueltos.
+     *
+     * Con cobertura parcial se dice el cociente ("2 de 4"), porque callarlo dejaría creer
+     * que se ha mirado todo el producto. Con cobertura cero la sección NO se pinta: una
+     * fila vacía permanente en la mayoría de fichas es ruido, y nada en la interfaz da a
+     * entender que se haya consultado MedyNut, así que el silencio no afirma nada.
+     */
+    _hydrateMedynut(identity) {
+        const seccion = document.getElementById('medynut-section');
+        if (!seccion || !Array.isArray(identity?.components) || identity.components.length === 0) return;
+
+        this._loadMedynutIndex().then(indice => {
+            if (!seccion.isConnected) return;
+            const base = this._medynutMeta?.base_url || '';
+            // El host y la ruta se fijan aquí también, no solo en el generador: un índice
+            // corrupto o manipulado no debe poder producir un enlace a cualquier sitio.
+            if (!base.startsWith('https://www.medynut.com/medicamentos/')) return;
+
+            const norm = window.innDict ? s => window.innDict.norm(s) : s => String(s || '').toLowerCase().trim();
+            const resueltos = [];
+            for (const c of identity.components) {
+                const slug = indice[norm(c.baseEs)];
+                if (slug) resueltos.push({ nombre: c.baseEs, slug });
+            }
+            if (resueltos.length === 0) return;   // sección oculta; ver comentario de arriba
+
+            const total = identity.components.length;
+            const cobertura = document.getElementById('medynut-cobertura');
+            if (cobertura && total > 1) {
+                cobertura.innerHTML = `<span class="evidence-filter-badge-ext">${resueltos.length} de ${total} principios activos</span>`;
+            }
+
+            const lista = document.getElementById('medynut-lista');
+            if (lista) {
+                lista.innerHTML = resueltos.map(r => {
+                    const etiqueta = r.nombre.charAt(0).toUpperCase() + r.nombre.slice(1);
+                    const href = base + encodeURIComponent(r.slug);
+                    return `
+            <a class="evidence-filter-item" href="${href}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"
+               title="Ficha de ${this._escapeHtml(etiqueta)} en MedyNut: efectos sobre el estado nutricional. Recurso externo del Grupo de Farmacia en Nutrición Artificial de SENPE.">
+                <span class="evidence-filter-icon"><i class="fas fa-utensils"></i></span>
+                <span class="evidence-filter-label">${this._escapeHtml(etiqueta)}</span>
+                <span class="evidence-filter-count evidence-filter-count--static"><span class="evidence-filter-badge-ext">efectos nutricionales</span></span>
+                <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
+            </a>`;
+                }).join('');
+            }
+
+            // Nota VISIBLE, no en `title`: el aviso que vive solo en un tooltip es
+            // invisible en móvil, y aquí lo que se advierte importa — que MedyNut sea una
+            // selección y no un censo significa que su silencio no prueba ausencia.
+            const nota = document.getElementById('medynut-nota');
+            if (nota) {
+                const fecha = this._medynutMeta?.generated_at;
+                const faltan = total - resueltos.length;
+                nota.innerHTML = `
+            <i class="fas fa-info-circle"></i>
+            Recurso externo del <strong>Grupo de Farmacia en Nutrición Artificial de SENPE</strong>, sobre una
+            selección de principios activos${faltan > 0 ? `; ${faltan === 1 ? 'un componente de este medicamento no figura' : `${faltan} componentes de este medicamento no figuran`} en ella` : ''}.
+            <strong>Que algo no aparezca ahí no significa que no tenga efecto nutricional.</strong>
+            La ficha técnica (AEMPS) sigue siendo la fuente regulatoria${fecha ? ` · índice de rutas consultado el ${fecha}` : ''}.`;
+            }
+
+            seccion.hidden = false;
+        });
+    }
+
     // ─── PESTAÑA EVIDENCIA ────────────────────────────────────────────────────
 
     renderEvidenceTab(med) {
@@ -15430,6 +15537,22 @@ ${materialesPlaceholder}
                 </div>
             </div>
 
+            <!-- Repercusión nutricional (MedyNut · SENPE). Nace OCULTA y solo se revela si
+                 el índice resuelve al menos un principio activo — misma convención que las
+                 pestañas PGx y Alertas, que no existen cuando no hay contenido. -->
+            <div class="evidence-section" id="medynut-section" hidden>
+                <div class="evidence-section-header">
+                    <i class="fas fa-utensils"></i>
+                    <div class="evidence-section-header-text">
+                        <h4 class="evidence-section-title">Repercusión nutricional</h4>
+                        <p class="evidence-section-subtitle">MedyNut · SENPE</p>
+                    </div>
+                    <span class="evidence-filter-count evidence-filter-count--static" id="medynut-cobertura"></span>
+                </div>
+                <div class="evidence-filter-list" id="medynut-lista"></div>
+                <p class="evidence-note" id="medynut-nota"></p>
+            </div>
+
             <div class="evidence-section">
                 <div class="evidence-section-header">
                     <i class="fas fa-vials"></i>
@@ -15488,6 +15611,8 @@ ${materialesPlaceholder}
         // Carga inicial con rango por defecto (5 años)
         this._loadEvidenceFiltersAndCount(pubmedTerm, filterDefs, EV_RANGES[EV_RANGE_DEFAULT].days);
         this._loadReecCount(canonicalEsTerm);
+        // MedyNut llega async y se revela sola si hay cobertura; no bloquea el render.
+        this._hydrateMedynut(identity);
         // Se pasa la confianza de la identidad: si el nombre de sustancia no se pudo traducir al
         // inglés, el registro contaría sobre una consulta que no es la del fármaco (ver abajo).
         this._loadCtgovCount(canonicalEnTerm, identity.confidence);
