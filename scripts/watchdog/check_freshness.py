@@ -33,6 +33,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+from pathlib import Path
 
 # Fuentes vigiladas. max_age_days = cadencia esperada + margen.
 #   biomarkers -> diaria; sns-catalog, bifimed y packs -> mensual.
@@ -62,6 +63,97 @@ SOURCES = [
         "max_age_days": 40,
     },
 ]
+
+# ---------------------------------------------------------------------------
+# Segunda capa: los ficheros de datos del repo.
+#
+# La lista SOURCES de arriba cubre lo que vive en KV. Pero los indices que sirve
+# GitHub Pages (assets/data/*.json) no estaban vigilados por NADIE, y no por
+# descuido: el watchdog llevaba sus fuentes escritas dentro, asi que un fichero
+# nuevo era invisible hasta que alguien se acordaba de inscribirlo. Eso es lo que
+# dejo packs-index.json 27 dias a la deriva sin que nada avisara.
+#
+# Aqui no hay lista. Se RECORRE el directorio y se contrasta contra el manifiesto
+# assets/data/_fuentes.json. Un fichero sin declarar es un AVISO, no un silencio:
+# la red informa de sus propios agujeros en vez de exigir que se los tapen.
+REPO = Path(__file__).resolve().parents[2]
+DATA_DIR = REPO / "assets" / "data"
+MANIFEST = DATA_DIR / "_fuentes.json"
+
+
+def _dig(obj, ruta):
+    """Lee 'a.b.c' dentro de un dict; None si falta cualquier tramo."""
+    for parte in ruta.split("."):
+        if not isinstance(obj, dict) or parte not in obj:
+            return None
+        obj = obj[parte]
+    return obj
+
+
+def check_repo_data(now):
+    """Devuelve (problemas, lineas) de los ficheros de assets/data."""
+    problems: list[str] = []
+    lines: list[str] = []
+
+    if not MANIFEST.exists():
+        return ([f"No existe el manifiesto {MANIFEST.relative_to(REPO)}"],
+                ["[ERROR]   falta assets/data/_fuentes.json"])
+
+    manifiesto = json.loads(MANIFEST.read_text(encoding="utf-8")).get("ficheros", {})
+    en_disco = {p.name for p in DATA_DIR.glob("*.json") if p.name != "_fuentes.json"}
+
+    # (a) Ficheros que existen y nadie ha declarado. Este es el aviso que no habia.
+    for nombre in sorted(en_disco - set(manifiesto)):
+        problems.append(
+            f"{nombre}: existe en assets/data y NO esta declarado en _fuentes.json "
+            f"(nadie sabe de donde sale ni cada cuanto caduca)"
+        )
+        lines.append(f"[SIN DECLARAR] {nombre}")
+
+    # (b) Declarados que ya no existen: el manifiesto miente.
+    for nombre in sorted(set(manifiesto) - en_disco):
+        problems.append(f"{nombre}: declarado en _fuentes.json pero el fichero no existe")
+        lines.append(f"[FALTA]   {nombre}: declarado y ausente")
+
+    # (c) Edad de los que declaran umbral.
+    for nombre in sorted(en_disco & set(manifiesto)):
+        decl = manifiesto[nombre] or {}
+        umbral = decl.get("max_age_days")
+        campo = decl.get("campo_fecha")
+
+        if umbral is None:
+            # Declarar que no se vigila es una AFIRMACION, no un olvido: queda escrita.
+            lines.append(f"[NO VIGILADO] {nombre}: {decl.get('mantenimiento', '?')}")
+            continue
+
+        if not campo:
+            problems.append(f"{nombre}: declara max_age_days={umbral} pero no dice en que campo esta la fecha")
+            lines.append(f"[ERROR]   {nombre}: umbral sin campo_fecha")
+            continue
+
+        try:
+            contenido = json.loads((DATA_DIR / nombre).read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001
+            problems.append(f"{nombre}: no se pudo leer ({exc})")
+            lines.append(f"[ERROR]   {nombre}: ilegible")
+            continue
+
+        dt = parse_date(_dig(contenido, campo))
+        if dt is None:
+            problems.append(f"{nombre}: sin fecha valida en '{campo}'")
+            lines.append(f"[ERROR]   {nombre}: falta o no parsea {campo}")
+            continue
+
+        age_days = (now - dt).total_seconds() / 86400
+        if age_days > umbral:
+            problems.append(f"{nombre}: {age_days:.1f} dias (umbral {umbral}; {campo})")
+            estado = "OBSOLETO"
+        else:
+            estado = "OK"
+        lines.append(f"[{estado}] {nombre}: {age_days:.1f} dias (umbral {umbral}, campo {campo})")
+
+    return problems, lines
+
 
 CF_API = "https://api.cloudflare.com/client/v4"
 RESEND_API = "https://api.resend.com/emails"
@@ -205,8 +297,40 @@ def main() -> int:
             f"(umbral {src['max_age_days']}, campo {used_field})"
         )
 
+    # Segunda capa: los ficheros del repo, por descubrimiento (ver check_repo_data).
+    lines.insert(0, "== Fuentes en Cloudflare KV ==")
+    repo_problems, repo_lines = check_repo_data(now)
+    problems.extend(repo_problems)
+    lines.append("")
+    lines.append("== Ficheros de datos del repo (assets/data) ==")
+    lines.extend(repo_lines)
+
     report = "\n".join(lines)
     print(report)
+
+    # El informe completo va tambien al resumen del run: asi la frescura de TODAS las
+    # fuentes se ve de un vistazo en la pagina del workflow, sin abrir el log y sin
+    # esperar a que algo falle. Es la unica superficie donde estas fechas estan escritas.
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        try:
+            with open(summary, "a", encoding="utf-8") as fh:
+                print("## Frescura de las fuentes", file=fh)
+                print("", file=fh)
+                print("Comprobado: " + now.isoformat(timespec="seconds"), file=fh)
+                print("", file=fh)
+                print("```", file=fh)
+                print(report, file=fh)
+                print("```", file=fh)
+                if problems:
+                    print("", file=fh)
+                    print("### Problemas", file=fh)
+                    print("", file=fh)
+                    for prob in problems:
+                        print("- " + prob, file=fh)
+        except Exception as exc:  # noqa: BLE001
+            print("::warning::No se pudo escribir el resumen: " + str(exc), file=sys.stderr)
+
 
     if not problems:
         print("Todas las fuentes dentro de su ventana de frescura.")

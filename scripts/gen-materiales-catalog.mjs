@@ -1,4 +1,10 @@
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const argv = process.argv.slice(2);
+const outIdx = argv.indexOf('--out');
+const outArg = outIdx >= 0 ? argv[outIdx + 1] : null;
 
 const BASE = 'https://cima.aemps.es/cima/rest';
 const DELAY = 600;
@@ -99,9 +105,29 @@ for (const item of items) {
   };
 }
 
-const outDir = '/c/Users/ebarr/Documentos/GitHub/ernestobarrera.github.io/assets/data';
-mkdirSync(outDir, { recursive: true });
-writeFileSync(`${outDir}/materiales-catalog.json`, JSON.stringify(catalog));
+// La salida se resuelve DESDE EL SCRIPT, nunca por ruta absoluta: la versión anterior
+// apuntaba a `Documentos\GitHub` (el árbol paralelo) en vez de a `Documents\GitHub`, así que
+// ejecutarlo desde el repo canónico escribía en el otro árbol y el cambio no llegaba nunca
+// a producción. El `--out` es lo que permite además generarlo a un temporal en CI y
+// comparar antes de commitear.
+const OUT = outArg || join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'data', 'materiales-catalog.json');
+mkdirSync(dirname(OUT), { recursive: true });
+
+// `_meta` va DENTRO del fichero para que su frescura sea medible sin consultar git. No
+// colisiona con el mapa: la app solo hace `catalogMap[item.medicamento]`, y no hay ningún
+// medicamento que se llame `_meta`.
+const payload = {
+  _meta: {
+    source: 'CIMA REST /materiales + /medicamentos + /medicamento',
+    generated_at: new Date().toISOString().slice(0, 10),
+    entradas: Object.keys(catalog).length,
+    con_nregistro: Object.values(catalog).filter(v => v.nregistro).length,
+    con_atc: Object.values(catalog).filter(v => v.atcCodigo).length,
+  },
+  ...catalog,
+};
+writeFileSync(OUT, JSON.stringify(payload));
+console.log(`Escrito ${OUT}`);
 
 // Stats
 const conNreg = Object.values(catalog).filter(v=>v.nregistro).length;

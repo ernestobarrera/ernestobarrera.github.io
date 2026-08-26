@@ -1,0 +1,100 @@
+name: ETL catálogo de materiales informativos (AEMPS)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 05:29 UTC el día 6 de cada mes. Escalonado tras etl-packs (día 5).
+    - cron: '29 5 6 * *'
+
+permissions:
+  # Commitea, como etl-packs: el catálogo es un asset estático de Pages. A KV va solo el
+  # meta, que es lo que lee el watchdog.
+  contents: write
+
+concurrency:
+  group: etl-materiales
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Construir catálogo de materiales
+        id: build
+        run: |
+          node scripts/gen-materiales-catalog.mjs --out /tmp/materiales-catalog.json
+          {
+            echo "generated_at=$(jq -r '._meta.generated_at' /tmp/materiales-catalog.json)"
+            echo "entradas=$(jq -r '._meta.entradas' /tmp/materiales-catalog.json)"
+            echo "con_nregistro=$(jq -r '._meta.con_nregistro' /tmp/materiales-catalog.json)"
+            echo "con_atc=$(jq -r '._meta.con_atc' /tmp/materiales-catalog.json)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: ¿Ha cambiado el contenido?
+        id: diff
+        run: |
+          # Se compara todo MENOS `_meta`, que cambia de fecha en cada pasada.
+          if jq -S -c 'del(._meta)' /tmp/materiales-catalog.json > /tmp/nuevo.json \
+             && jq -S -c 'del(._meta)' assets/data/materiales-catalog.json > /tmp/viejo.json \
+             && cmp -s /tmp/nuevo.json /tmp/viejo.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Sin cambios en el catálogo; no se commitea."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Catálogo cambiado; se commiteará."
+          fi
+
+      - name: Commitear catálogo
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          cp /tmp/materiales-catalog.json assets/data/materiales-catalog.json
+          # Sin bump de `?v=`: la app lo pide sin cache-bust y sin force-cache
+          # (cima-app.js), así que la caché HTTP normal de Pages ya lo renueva.
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/data/materiales-catalog.json
+          git commit -m "Actualiza el catálogo de materiales informativos (AEMPS, ${{ steps.build.outputs.generated_at }})
+
+          ${{ steps.build.outputs.entradas }} entradas · ${{ steps.build.outputs.con_nregistro }} con nregistro · ${{ steps.build.outputs.con_atc }} con ATC.
+          Generado por .github/workflows/etl-materiales.yml."
+          git push
+
+      - name: Publicar meta a Cloudflare KV
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+        run: |
+          jq -c '._meta + {changed: ${{ steps.diff.outputs.changed }}}' /tmp/materiales-catalog.json > /tmp/materiales-meta.json
+          cat /tmp/materiales-meta.json
+          response=$(curl -sS -w "\n%{http_code}" -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${CF_KV_NAMESPACE_ID}/values/materiales%3Ameta" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary @/tmp/materiales-meta.json)
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "HTTP ${status}"
+          echo "$body" | jq .
+          test "$status" = "200" || exit 1
+
+      - name: Resumen
+        run: |
+          {
+            echo "## ETL catálogo de materiales informativos (AEMPS)"
+            echo ""
+            echo "- Generado: ${{ steps.build.outputs.generated_at }}"
+            echo "- Entradas: ${{ steps.build.outputs.entradas }}"
+            echo "- Con nregistro: ${{ steps.build.outputs.con_nregistro }}"
+            echo "- Con ATC: ${{ steps.build.outputs.con_atc }}"
+            echo "- Contenido cambiado: ${{ steps.diff.outputs.changed }}"
+          } >> "$GITHUB_STEP_SUMMARY"

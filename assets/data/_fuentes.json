@@ -1,0 +1,61 @@
+{
+  "_nota": "Declaración de los ficheros de datos de MedCheck. Lo lee scripts/watchdog/check_freshness.py, que NO tiene lista propia: recorre assets/data/*.json y contrasta contra este manifiesto. Un fichero que exista y no esté declarado aquí se AVISA como problema; no queda invisible. Esa es la razón de que este manifiesto exista: la versión anterior del watchdog llevaba las fuentes escritas dentro, así que un índice nuevo era invisible hasta que alguien se acordaba de inscribirlo, y packs-index.json estuvo 27 días a la deriva por eso.",
+  "_campos": {
+    "mantenimiento": "auto = lo regenera un workflow · humano = lo decide una persona y no envejece contra una fuente externa",
+    "campo_fecha": "ruta del campo con la fecha dentro del propio fichero; null si no declara",
+    "max_age_days": "umbral de aviso; null = no se vigila por edad (declararlo así es una afirmación, no un olvido)"
+  },
+  "ficheros": {
+    "packs-index.json": {
+      "fuente": "CIMA REST /medicamentos + /presentaciones (comerc=1)",
+      "mantenimiento": "auto",
+      "workflow": ".github/workflows/etl-packs.yml",
+      "campo_fecha": "_meta.generated_at",
+      "max_age_days": 40
+    },
+    "materiales-catalog.json": {
+      "fuente": "CIMA REST /materiales (+ nregistro y ATC por medicamento)",
+      "mantenimiento": "auto",
+      "workflow": ".github/workflows/etl-materiales.yml",
+      "campo_fecha": "_meta.generated_at",
+      "max_age_days": 40
+    },
+    "clinical-ontology.json": {
+      "fuente": "Ontología indicación→ATC, curada a mano",
+      "mantenimiento": "humano",
+      "campo_fecha": "version",
+      "max_age_days": null
+    },
+    "inn-es-en.json": {
+      "fuente": "Diccionario INN ES→EN; altas por veredicto humano",
+      "mantenimiento": "humano",
+      "campo_fecha": "version",
+      "max_age_days": null
+    },
+    "substance-identity-baseline.json": {
+      "fuente": "Baseline de identidad de sustancia; candidatos de máquina, alta humana",
+      "mantenimiento": "humano",
+      "campo_fecha": "version",
+      "max_age_days": null
+    },
+    "reconcile-baseline.json": {
+      "fuente": "Baseline de GAPS revisados del reconcile de ontología",
+      "mantenimiento": "humano",
+      "campo_fecha": "version",
+      "max_age_days": null
+    },
+    "eml.json": {
+      "fuente": "WHO Model List of Essential Medicines (eEML), 23ª lista, 2023",
+      "mantenimiento": "humano",
+      "campo_fecha": null,
+      "max_age_days": null,
+      "nota": "Atado a las ediciones de la OMS, que salen cada dos años. No envejece solo: hay que comprobar si existe una lista posterior a la 23ª y decidir si se sube."
+    },
+    "pocus-refs.json": {
+      "fuente": "Referencias POCUS, curadas a mano",
+      "mantenimiento": "humano",
+      "campo_fecha": null,
+      "max_age_days": null
+    }
+  }
+}
