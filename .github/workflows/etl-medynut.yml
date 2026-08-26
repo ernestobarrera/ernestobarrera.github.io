@@ -1,0 +1,107 @@
+name: ETL índice de MedyNut (SENPE)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 06:11 UTC el día 7 de cada mes. Escalonado tras packs (día 5) y materiales (día 6).
+    - cron: '11 6 7 * *'
+
+permissions:
+  # Commitea, como las otras dos ETL de asset estático. A KV va solo el meta, para el watchdog.
+  contents: write
+
+concurrency:
+  group: etl-medynut
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Construir índice de MedyNut
+        id: build
+        run: |
+          node scripts/etl-medynut.mjs --out /tmp/medynut-index.json 2>/tmp/medynut.log
+          tail -40 /tmp/medynut.log
+          {
+            echo "generated_at=$(jq -r '._meta.generated_at' /tmp/medynut-index.json)"
+            echo "catalogo=$(jq -r '._meta.catalogo_remoto' /tmp/medynut-index.json)"
+            echo "aceptadas=$(jq -r '._meta.aceptadas' /tmp/medynut-index.json)"
+            echo "revision=$(jq -r '._meta.en_revision' /tmp/medynut-index.json)"
+            echo "colisiones=$(jq -r '._meta.colisiones' /tmp/medynut-index.json)"
+            echo "inconclusos=$(jq -r '._meta.inconclusos' /tmp/medynut-index.json)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: ¿Ha cambiado el contenido?
+        id: diff
+        run: |
+          # Solo `.indice`: `_meta.generated_at` cambia en cada pasada.
+          if jq -S -c '.indice' /tmp/medynut-index.json > /tmp/nuevo.json \
+             && jq -S -c '.indice' assets/data/medynut-index.json > /tmp/viejo.json \
+             && cmp -s /tmp/nuevo.json /tmp/viejo.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commitear índice
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          cp /tmp/medynut-index.json assets/data/medynut-index.json
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/data/medynut-index.json
+          git commit -m "Actualiza el índice de MedyNut (${{ steps.build.outputs.generated_at }})
+
+          ${{ steps.build.outputs.aceptadas }} rutas aceptadas de ${{ steps.build.outputs.catalogo }} del catálogo.
+          ${{ steps.build.outputs.revision }} en revisión y ${{ steps.build.outputs.colisiones }} colisiones, que NO se publican.
+          Generado por .github/workflows/etl-medynut.yml."
+          git push
+
+      - name: Publicar meta a Cloudflare KV
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+        run: |
+          jq -c '._meta + {changed: ${{ steps.diff.outputs.changed }}}' /tmp/medynut-index.json > /tmp/medynut-meta.json
+          cat /tmp/medynut-meta.json
+          response=$(curl -sS -w "\n%{http_code}" -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${CF_KV_NAMESPACE_ID}/values/medynut%3Ameta" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary @/tmp/medynut-meta.json)
+          status=$(echo "$response" | tail -n 1)
+          echo "HTTP ${status}"
+          test "$status" = "200" || exit 1
+
+      - name: Resumen
+        run: |
+          {
+            echo "## ETL índice de MedyNut (SENPE)"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Generado | ${{ steps.build.outputs.generated_at }} |"
+            echo "| Catálogo remoto | ${{ steps.build.outputs.catalogo }} |"
+            echo "| **Aceptadas** (avaladas por CIMA) | **${{ steps.build.outputs.aceptadas }}** |"
+            echo "| En revisión (no publicadas) | ${{ steps.build.outputs.revision }} |"
+            echo "| Colisiones (clave retirada) | ${{ steps.build.outputs.colisiones }} |"
+            echo "| Inconclusos | ${{ steps.build.outputs.inconclusos }} |"
+            echo "| Índice cambiado | ${{ steps.diff.outputs.changed }} |"
+            echo ""
+            echo "### Cola de revisión humana"
+            echo ""
+            echo '```'
+            grep -A400 "Muestra de candidatos" /tmp/medynut.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

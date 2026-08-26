@@ -20,6 +20,13 @@
       "campo_fecha": "_meta.generated_at",
       "max_age_days": 40
     },
+    "medynut-index.json": {
+      "fuente": "medynut.com (SENPE) — rutas de ficha, avaladas por igualdad exacta contra la maestra de principios activos de CIMA. No contiene NINGUNA asociacion farmaco-efecto suya",
+      "mantenimiento": "auto",
+      "workflow": ".github/workflows/etl-medynut.yml",
+      "campo_fecha": "_meta.generated_at",
+      "max_age_days": 40
+    },
     "clinical-ontology.json": {
       "fuente": "Ontología indicación→ATC, curada a mano",
       "mantenimiento": "humano",
