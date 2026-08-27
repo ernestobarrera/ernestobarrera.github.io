@@ -99,6 +99,23 @@ check('8 · exactitud gana a contención (glicerol, no glicerol-enema)',
 check('9 · dexametasona no enlaza a una variante de vía elegida al azar',
     idx.indice['dexametasona'] === undefined, `da ${idx.indice['dexametasona']}`);
 
+// 10 · Una clave con TRES candidatas se resuelve mirándolas todas, no de dos en dos.
+// `hidrocortisona` tenía /imiquimod-via-topica-copia, /hidrocortisona y
+// /hidrocortisona-oftalmologico. Resolviendo por pares ganaba la última escrita y un
+// producto sistémico acababa enlazando al colirio. Se retira entera.
+check('10 · hidrocortisona (3 candidatas, una oftálmica) se retira',
+    idx.indice['hidrocortisona'] === undefined, `da ${idx.indice['hidrocortisona']}`);
+
+// 11 · Las rutas con calificador de vía SIGUEN publicándose cuando son la única ficha de
+// MedyNut para esa sustancia — retirarlas perdería enlaces correctos (bimatoprost solo
+// existe oftálmico). Lo que no puede pasar es que la vía quede oculta: la interfaz la
+// muestra en la etiqueta. Esto fija que el caso existe y que no se ha "limpiado" el
+// índice a espaldas de la interfaz que lo advierte.
+const VIA_EN_SLUG = /-(oftalmolog\w*|oftalmic\w*|iny|oral|topic\w*|enema|nasal|rectal)$/i;
+const conVia = Object.values(idx.indice).filter(s => VIA_EN_SLUG.test(s));
+check('11 · hay rutas con vía y se publican (la interfaz las etiqueta)',
+    conVia.length > 0, 'ninguna: si se han retirado, la etiqueta de vía sobra');
+
 // 1-3 · Claves directas del índice (no dependen de red).
 check('1 · metformina resuelve', idx.indice['metformina'] === 'metformina', `da ${idx.indice['metformina']}`);
 check('2 · losartan resuelve bajo la clave sin contraión',

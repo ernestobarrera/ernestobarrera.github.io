@@ -15269,7 +15269,7 @@ ${materialesPlaceholder}
      * Falla en abierto: si no carga, la sección no aparece y el resto de la pestaña
      * queda intacta. Nunca al revés.
      */
-    _loadMedynutIndex(url = 'assets/data/medynut-index.json?v=20260827a') {
+    _loadMedynutIndex(url = 'assets/data/medynut-index.json?v=20260827b') {
         if (this._medynutIndex) return Promise.resolve(this._medynutIndex);
         if (this._medynutPromise) return this._medynutPromise;
         this._medynutPromise = fetch(url, { cache: 'force-cache' })
@@ -15325,14 +15325,24 @@ ${materialesPlaceholder}
 
             const lista = document.getElementById('medynut-lista');
             if (lista) {
+                // MedyNut califica algunas fichas por vía en el propio slug
+                // (`moxifloxacino-oftalmologico`, `budesonida-oral`). Cuando esa es su
+                // ÚNICA ficha de la sustancia, el enlace es correcto pero puede no ser la
+                // vía que el médico está mirando — y la repercusión nutricional de un
+                // colirio no es la de un comprimido. No se retira el enlace ni se decide
+                // por él: se enseña la vía y que juzgue. Espejo, no juez.
+                const VIAS = { oftalmologico: 'oftálmica', oftalmologica: 'oftálmica', oftalmica: 'oftálmica', oral: 'oral', iny: 'inyectable', inhalado: 'inhalada', inhalada: 'inhalada', topico: 'tópica', topica: 'tópica', nasal: 'nasal', rectal: 'rectal', enema: 'enema' };
+                const viaDe = slug => VIAS[slug.split('-').pop().toLowerCase()] || null;
+
                 lista.innerHTML = resueltos.map(r => {
                     const etiqueta = r.nombre.charAt(0).toUpperCase() + r.nombre.slice(1);
+                    const via = viaDe(r.slug);
                     const href = base + encodeURIComponent(r.slug);
                     return `
             <a class="evidence-filter-item" href="${href}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"
-               title="Ficha de ${this._escapeHtml(etiqueta)} en MedyNut: efectos sobre el estado nutricional. Recurso externo del Grupo de Farmacia en Nutrición Artificial de SENPE.">
+               title="Ficha de ${this._escapeHtml(etiqueta)} en MedyNut: efectos sobre el estado nutricional.${via ? ` Es su ficha de vía ${via}; comprueba que sea la del medicamento que estás consultando.` : ''} Recurso externo del Grupo de Farmacia en Nutrición Artificial de SENPE.">
                 <span class="evidence-filter-icon"><i class="fas fa-utensils"></i></span>
-                <span class="evidence-filter-label">${this._escapeHtml(etiqueta)}</span>
+                <span class="evidence-filter-label">${this._escapeHtml(etiqueta)}${via ? ` <span class="evidence-filter-via">· vía ${via}</span>` : ''}</span>
                 <span class="evidence-filter-count evidence-filter-count--static"><span class="evidence-filter-badge-ext">efectos nutricionales</span></span>
                 <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
             </a>`;

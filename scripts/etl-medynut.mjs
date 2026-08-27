@@ -180,6 +180,7 @@ if (cat.length < MINIMO_CATALOGO) {
     process.exit(1);
 }
 
+const candidatos = new Map();  // clave -> [{slug, via, cima, medynut}] antes de decidir
 const indice = {};          // clave (baseEs normalizado) -> slug
 const procedencia = {};     // clave -> nombre CIMA que la avaló (para el informe)
 const revision = [];        // no coinciden exacto con la maestra: decisión humana
@@ -253,57 +254,59 @@ for (const d of cat) {
     const clave = norm(dict.toSearchTerm(oficial.nombre, { allowCounterionTrim: true }).baseEs);
     if (!clave) { revision.push({ ...d, motivo: 'clave vacía tras resolver' }); continue; }
 
-    if (indice[clave] && indice[clave] !== d.slug) {
-        const previa = procedencia[clave];
-        // La EXACTITUD GANA. Sin esto, la segunda pasada destruye aciertos de la primera:
-        // `/glicerol` casaba exacto y `/glicerol-enema` entraba por contención, y la
-        // colisión tumbaba las dos. Una contención nunca desplaza ni empata a una igualdad.
-        if (previa.via === 'exacta' && via === 'contencion-unica') continue;
-        if (previa.via === 'contencion-unica' && via === 'exacta') {
-            indice[clave] = d.slug;
-            procedencia[clave] = { cima: oficial.nombre, medynut: d.nombre || d.slug, via };
-            continue;
-        }
-        colisiones.push({ clave, a: indice[clave], b: d.slug });
-        continue;
-    }
-    indice[clave] = d.slug;
-    procedencia[clave] = { cima: oficial.nombre, medynut: d.nombre || d.slug, via };
+    // Se ACUMULAN todas las candidatas de la clave y se decide DESPUES, una sola vez.
+    // Resolverlo por pares aqui dentro era un fallo real: `hidrocortisona` tenia tres
+    // candidatas —/imiquimod-via-topica-copia, /hidrocortisona y
+    // /hidrocortisona-oftalmologico— y, comparadas de dos en dos, ganaba la ultima
+    // escrita: un producto sistemico acababa enlazando al colirio. Una clave no se puede
+    // decidir mirando dos de sus tres candidatas.
+    if (!candidatos.has(clave)) candidatos.set(clave, []);
+    const yaEsta = candidatos.get(clave).some(c => c.slug === d.slug);
+    if (!yaEsta) candidatos.get(clave).push({ slug: d.slug, via, cima: oficial.nombre, medynut: d.nombre || d.slug });
 }
 
 /**
- * Dos rutas para la misma clave no siempre son un empate real.
+ * Resolucion de cada clave con TODAS sus candidatas delante, en dos criterios.
  *
- * MedyNut duplica registros al crearlos, y el duplicado arrastra el slug del original:
- * `/misoprostol` junto a `/misoprostol-9d96fdb3-…`, o `/hidrocortisona` junto a
- * `/imiquimod-via-topica-copia`. Ahí las DOS páginas son de la misma sustancia, así que
- * enlazar a cualquiera es igual de correcto y quedarse sin enlace es peor: se toma la
- * ruta limpia. No es un juicio clínico, es higiene de sus datos.
+ * 1 · LA EXACTITUD GANA. Si alguna candidata caso por igualdad, las de contencion se
+ *     descartan sin mas: `/glicerol` (exacta) no puede quedar empatada por
+ *     `/glicerol-enema` (contencion), que es lo que antes tumbaba las dos.
  *
- * Distinto es `/dexametasona` frente a `/dexametasona-oftalmologico`, o
- * `/magnesio-hidroxido-antiacido` frente a `/magnesio-hidroxido-laxante`: ahí el
- * calificador dice algo (vía, uso) y elegir SÍ sería decidir qué quiso consultar el
- * médico. Esas se retiran enteras.
+ * 2 · Entre las que quedan, los DUPLICADOS DEL GESTOR de MedyNut no son un empate.
+ *     `/misoprostol` junto a `/misoprostol-9d96fdb3-…` son la MISMA sustancia: se toma la
+ *     ruta limpia, porque enlazar a cualquiera es igual de correcto y quedarse sin enlace
+ *     es peor. No es juicio clinico, es higiene de sus datos.
+ *
+ *     Distinto es `/dexametasona` frente a `/dexametasona-oftalmologico`, o
+ *     `/magnesio-hidroxido-antiacido` frente a `/magnesio-hidroxido-laxante`: ahi el
+ *     calificador dice la via o el uso, la repercusion nutricional de un corticoide
+ *     sistemico no es la de un colirio, y elegir seria decidir que quiso consultar el
+ *     medico. Si quedan DOS o mas rutas limpias, la clave se retira entera.
  */
 const raizSlug = s => s
     .replace(/-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, '')
     .replace(/-copia$/i, '');
 const sucio = s => s !== raizSlug(s);
 
-const empatesReales = [];
-for (const c of colisiones) {
-    const limpias = [c.a, c.b].filter(s => !sucio(s));
-    if (limpias.length === 1) {
-        // Una es duplicado del gestor y la otra no: se queda la limpia.
-        indice[c.clave] = limpias[0];
+for (const [clave, todas] of candidatos) {
+    const exactas = todas.filter(c => c.via === 'exacta');
+    const finalistas = exactas.length > 0 ? exactas : todas;
+
+    let elegida = null;
+    if (finalistas.length === 1) {
+        elegida = finalistas[0];
+    } else {
+        const limpias = finalistas.filter(c => !sucio(c.slug));
+        if (limpias.length === 1) elegida = limpias[0];
+    }
+
+    if (!elegida) {
+        colisiones.push({ clave, rutas: finalistas.map(c => c.slug) });
         continue;
     }
-    empatesReales.push(c);
-    delete indice[c.clave];
-    delete procedencia[c.clave];
+    indice[clave] = elegida.slug;
+    procedencia[clave] = { cima: elegida.cima, medynut: elegida.medynut, via: elegida.via };
 }
-colisiones.length = 0;
-colisiones.push(...empatesReales);
 
 const payload = {
     _meta: {
@@ -328,7 +331,7 @@ console.error(`[medynut] ACEPTADAS   ${Object.keys(indice).length}  (${payload._
 console.error(`[medynut] REVISION    ${revision.length}   (no se publican)`);
 console.error(`[medynut] COLISIONES  ${colisiones.length}   (clave retirada: dos rutas, elegir sería azar)`);
 console.error(`[medynut] INCONCLUSOS ${inconclusos}   (CIMA no respondió; no se aprueban ni se descartan)`);
-for (const c of colisiones) console.error(`    colisión "${c.clave}": /${c.a}  vs  /${c.b}`);
+for (const c of colisiones) console.error(`    colision "${c.clave}": ${c.rutas.map(r => "/" + r).join("  vs  ")}`);
 
 console.error('');
 console.error('Muestra de candidatos a revisión humana:');
