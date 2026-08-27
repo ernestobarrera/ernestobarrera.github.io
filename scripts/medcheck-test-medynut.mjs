@@ -116,6 +116,19 @@ const conVia = Object.values(idx.indice).filter(s => VIA_EN_SLUG.test(s));
 check('11 · hay rutas con vía y se publican (la interfaz las etiqueta)',
     conVia.length > 0, 'ninguna: si se han retirado, la etiqueta de vía sobra');
 
+// 12 · PUERTA DE VÍA en la interfaz. Etiquetar la vía no bastaba: los dos moxifloxacinos
+// intravenosos seguían enlazando al colirio, y para un moxifloxacino IV la ficha oftálmica
+// no es la misma información por otra vía, es el recurso equivocado. La app compara
+// `med.viasAdministracion` (CIMA) con el calificador del slug (MedyNut) y descarta el
+// enlace si no concuerdan. Comprobado sobre productos reales: IV no, oral no, colirio sí.
+//
+// Esto es un detector de RETIRADA, no de comportamiento: si alguien quita la puerta, el
+// enlace equivocado vuelve en silencio y no hay otra prueba que lo cace.
+const appSrc = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+check('12 · la interfaz conserva la puerta de vía (viasAdministracion vs slug)',
+    /viasProducto/.test(appSrc) && /via\.cima\.some/.test(appSrc),
+    'falta la comparación de vía en _hydrateMedynut: un producto IV volvería a enlazar al colirio');
+
 // 1-3 · Claves directas del índice (no dependen de red).
 check('1 · metformina resuelve', idx.indice['metformina'] === 'metformina', `da ${idx.indice['metformina']}`);
 check('2 · losartan resuelve bajo la clave sin contraión',

@@ -15298,7 +15298,7 @@ ${materialesPlaceholder}
      * fila vacía permanente en la mayoría de fichas es ruido, y nada en la interfaz da a
      * entender que se haya consultado MedyNut, así que el silencio no afirma nada.
      */
-    _hydrateMedynut(identity) {
+    _hydrateMedynut(identity, med) {
         const seccion = document.getElementById('medynut-section');
         if (!seccion || !Array.isArray(identity?.components) || identity.components.length === 0) return;
 
@@ -15310,10 +15310,46 @@ ${materialesPlaceholder}
             if (!base.startsWith('https://www.medynut.com/medicamentos/')) return;
 
             const norm = window.innDict ? s => window.innDict.norm(s) : s => String(s || '').toLowerCase().trim();
+
+            // ── Puerta de VÍA ────────────────────────────────────────────────────────
+            // MedyNut califica algunas fichas por vía en el propio slug
+            // (`moxifloxacino-oftalmologico`, `budesonida-oral`). Cuando esa es su única
+            // ficha de la sustancia, un producto de OTRA vía acababa enlazando ahí: los
+            // dos moxifloxacinos intravenosos llevaban al colirio. Etiquetar la vía no
+            // basta — para un moxifloxacino IV la ficha oftálmica no es la misma
+            // información por otra vía, es el recurso equivocado.
+            //
+            // Esto no exige juicio: CIMA declara la vía del producto
+            // (`viasAdministracion`) y MedyNut declara la de su ficha. Se comparan. Si no
+            // coinciden, no se ofrece el enlace — y si el producto no declara vía, tampoco
+            // (fail-closed: un enlace equivocado es peor que ninguno).
+            //
+            // Las fichas SIN calificador no pasan por aquí: son las genéricas de la
+            // sustancia y valen para cualquier vía.
+            const VIAS = {
+                oftalmologico: { etiqueta: 'oftálmica', cima: ['oftalmica'] },
+                oftalmologica: { etiqueta: 'oftálmica', cima: ['oftalmica'] },
+                oftalmica: { etiqueta: 'oftálmica', cima: ['oftalmica'] },
+                oral: { etiqueta: 'oral', cima: ['oral', 'bucal', 'sublingual'] },
+                iny: { etiqueta: 'inyectable', cima: ['intravenosa', 'intramuscular', 'subcutanea', 'perfusion', 'parenteral', 'intraarticular'] },
+                topico: { etiqueta: 'tópica', cima: ['cutanea', 'topica', 'transdermica'] },
+                topica: { etiqueta: 'tópica', cima: ['cutanea', 'topica', 'transdermica'] },
+                inhalado: { etiqueta: 'inhalada', cima: ['inhalatoria', 'inhalacion'] },
+                inhalada: { etiqueta: 'inhalada', cima: ['inhalatoria', 'inhalacion'] },
+                nasal: { etiqueta: 'nasal', cima: ['nasal'] },
+                rectal: { etiqueta: 'rectal', cima: ['rectal'] },
+                enema: { etiqueta: 'enema', cima: ['rectal'] },
+            };
+            const viasProducto = (med?.viasAdministracion || []).map(v => norm(v.nombre));
+            const viaDe = slug => VIAS[slug.split('-').pop().toLowerCase()] || null;
+
             const resueltos = [];
             for (const c of identity.components) {
                 const slug = indice[norm(c.baseEs)];
-                if (slug) resueltos.push({ nombre: c.baseEs, slug });
+                if (!slug) continue;
+                const via = viaDe(slug);
+                if (via && !via.cima.some(v => viasProducto.some(p => p.includes(v)))) continue;
+                resueltos.push({ nombre: c.baseEs, slug, via: via?.etiqueta || null });
             }
             if (resueltos.length === 0) return;   // sección oculta; ver comentario de arriba
 
@@ -15325,22 +15361,16 @@ ${materialesPlaceholder}
 
             const lista = document.getElementById('medynut-lista');
             if (lista) {
-                // MedyNut califica algunas fichas por vía en el propio slug
-                // (`moxifloxacino-oftalmologico`, `budesonida-oral`). Cuando esa es su
-                // ÚNICA ficha de la sustancia, el enlace es correcto pero puede no ser la
-                // vía que el médico está mirando — y la repercusión nutricional de un
-                // colirio no es la de un comprimido. No se retira el enlace ni se decide
-                // por él: se enseña la vía y que juzgue. Espejo, no juez.
-                const VIAS = { oftalmologico: 'oftálmica', oftalmologica: 'oftálmica', oftalmica: 'oftálmica', oral: 'oral', iny: 'inyectable', inhalado: 'inhalada', inhalada: 'inhalada', topico: 'tópica', topica: 'tópica', nasal: 'nasal', rectal: 'rectal', enema: 'enema' };
-                const viaDe = slug => VIAS[slug.split('-').pop().toLowerCase()] || null;
-
+                // Aquí ya solo llegan fichas cuya vía CONCUERDA con la del producto (o que
+                // no declaran vía). La etiqueta se conserva como confirmación de cuál es
+                // la ficha, no como advertencia: la puerta de vía la puso antes.
                 lista.innerHTML = resueltos.map(r => {
                     const etiqueta = r.nombre.charAt(0).toUpperCase() + r.nombre.slice(1);
-                    const via = viaDe(r.slug);
+                    const via = r.via;
                     const href = base + encodeURIComponent(r.slug);
                     return `
             <a class="evidence-filter-item" href="${href}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"
-               title="Ficha de ${this._escapeHtml(etiqueta)} en MedyNut: efectos sobre el estado nutricional.${via ? ` Es su ficha de vía ${via}; comprueba que sea la del medicamento que estás consultando.` : ''} Recurso externo del Grupo de Farmacia en Nutrición Artificial de SENPE.">
+               title="Ficha de ${this._escapeHtml(etiqueta)} en MedyNut: efectos sobre el estado nutricional.${via ? ` Es su ficha de vía ${via}, que concuerda con la del medicamento que estás consultando.` : ''} Recurso externo del Grupo de Farmacia en Nutrición Artificial de SENPE.">
                 <span class="evidence-filter-icon"><i class="fas fa-utensils"></i></span>
                 <span class="evidence-filter-label">${this._escapeHtml(etiqueta)}${via ? ` <span class="evidence-filter-via">· vía ${via}</span>` : ''}</span>
                 <span class="evidence-filter-count evidence-filter-count--static"><span class="evidence-filter-badge-ext">efectos nutricionales</span></span>
@@ -15622,7 +15652,7 @@ ${materialesPlaceholder}
         this._loadEvidenceFiltersAndCount(pubmedTerm, filterDefs, EV_RANGES[EV_RANGE_DEFAULT].days);
         this._loadReecCount(canonicalEsTerm);
         // MedyNut llega async y se revela sola si hay cobertura; no bloquea el render.
-        this._hydrateMedynut(identity);
+        this._hydrateMedynut(identity, med);
         // Se pasa la confianza de la identidad: si el nombre de sustancia no se pudo traducir al
         // inglés, el registro contaría sobre una consulta que no es la del fármaco (ver abajo).
         this._loadCtgovCount(canonicalEnTerm, identity.confidence);
