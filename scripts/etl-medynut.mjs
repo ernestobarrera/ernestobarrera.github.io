@@ -21,14 +21,25 @@
  *
  * ── Quién decide el emparejamiento: CIMA, no nosotros ─────────────────────────────────
  * El nombre de MedyNut se contrasta contra la MAESTRA OFICIAL de principios activos de la
- * AEMPS (`/maestras?maestra=1`) y solo se acepta la **igualdad exacta** tras normalizar.
- * Ni parecidos, ni distancias, ni "el primer resultado".
+ * AEMPS (`/maestras?maestra=1`), en dos pasadas y ninguna por parecido:
  *
- * Esto no es celo: el repo tiene su escarmiento. `ácido gadotérico` se emparejó con
- * `gadoteridol` por parecido, y son DOS medios de contraste distintos (Dotarem vs
- * ProHance). Y aquí un emparejamiento por parecido propondría cosas como
- * `Citrato sodio` -> `citrato erbio (169Er)`, que es un radiofármaco, o
- * `Insulina Glargina` -> `insulina regular`. Lo que no coincide exacto NO se publica.
+ *   1. IGUALDAD EXACTA tras normalizar.
+ *   2. CONTENCIÓN EN FRONTERA DE PALABRA, y solo si la maestra ofrece UNA sola
+ *      candidata: `carglumico` -> `CARGLUMICO ACIDO`. Con dos o más, se descarta.
+ *
+ * La regla de la segunda pasada es que **lo peligroso no es la inexactitud, es la
+ * AMBIGÜEDAD**. El repo tiene su escarmiento: `ácido gadotérico` se emparejó con
+ * `gadoteridol`, que es OTRO medio de contraste (Dotarem vs ProHance). Ese caso no pasa
+ * por aquí, porque ninguno de los dos nombres contiene al otro en frontera de palabra;
+ * son dos palabras distintas que solo comparten prefijo. Tampoco pasan
+ * `Citrato sodio` -> `citrato erbio (169Er)` (radiofármaco) ni
+ * `Insulina Glargina` -> `insulina regular`.
+ *
+ * Cuando quedan DOS o más candidatas, elegir sería un juicio — y el juicio no se
+ * automatiza ni se delega en el usuario: se descarta y se deja registrado.
+ *
+ * Las páginas de COMBINACIÓN de MedyNut (nombre con comas) nunca entran por la segunda
+ * pasada: colgar un principio activo suelto de una página de combinación es engañoso.
  *
  * La clave del índice es el `baseEs` que produce el resolutor real del repo sobre el
  * nombre de CIMA — es decir, exactamente lo que la app buscará en tiempo de ejecución.
@@ -86,6 +97,20 @@ dict.loaded = true;
 const norm = s => dict.norm(s);
 /** Quita la anotación de uso que MedyNut añade entre paréntesis: "(Antiácido)", "(oral)". */
 const sinParentesis = s => String(s || '').replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+
+/**
+ * ¿Uno de los dos nombres contiene al otro EN FRONTERA DE PALABRA?
+ *
+ * En frontera, no por subcadena: `metformina` no debe emparejar con `metforminaX`, y
+ * `nifedipino` no debe emparejar con `nimodipino`. Solo cuenta que un nombre sea el otro
+ * más palabras enteras a la derecha: `carglumico` ⊂ `carglumico acido`.
+ */
+function contieneEnFrontera(a, b) {
+    if (!a || !b || a === b) return false;
+    const [corto, largo] = a.length <= b.length ? [a, b] : [b, a];
+    if (corto.length < 5) return false;
+    return largo.startsWith(corto + ' ');
+}
 
 async function pedirJson(url, intentos = 3) {
     for (let i = 1; i <= intentos; i += 1) {
@@ -185,9 +210,42 @@ for (const d of cat) {
     // conjetura semántica, y con dos tokens no puede llevar a otra sustancia.
     const invertir = s => { const p = norm(s).split(' '); return p.length === 2 ? `${p[1]} ${p[0]}` : null; };
     const objetivo = new Set([norm(limpio), norm(desdeSlug), invertir(limpio), invertir(desdeSlug)].filter(Boolean));
-    const oficial = maestra.find(pa => objetivo.has(norm(pa.nombre)));
+    let oficial = maestra.find(pa => objetivo.has(norm(pa.nombre)));
+    let via = 'exacta';
+
     if (!oficial) {
-        revision.push({ ...d, motivo: 'sin igualdad exacta en la maestra de CIMA', vistos: maestra.slice(0, 3).map(p => p.nombre) });
+        // ── Segunda pasada: contención ÚNICA en la maestra ────────────────────────────
+        // Lo que hace peligroso a un emparejamiento no es que sea inexacto: es que sea
+        // AMBIGUO. `ácido gadotérico` -> `gadoteridol` fue grave porque gadoteridol es
+        // OTRA sustancia parecida; y ese caso no pasaría por aquí, porque ninguno de los
+        // dos nombres contiene al otro en frontera de palabra.
+        //
+        // Se acepta solo cuando la maestra oficial ofrece EXACTAMENTE UNA candidata que
+        // contiene al nombre de MedyNut, o que él contiene, en frontera. Con una sola
+        // candidata no hay nada que elegir: `carglumico` -> `CARGLUMICO ACIDO`. Con dos o
+        // más, elegir sería juicio, y el juicio no se automatiza: queda en revisión.
+        //
+        // Y nunca para nombres con coma: son páginas de COMBINACIÓN de MedyNut, y colgar
+        // un principio activo suelto de una página de combinación es engañoso.
+        const esCombinacion = /,/.test(d.nombre || '');
+        if (!esCombinacion) {
+            const candidatas = maestra.filter(pa => [...objetivo].some(o => contieneEnFrontera(o, norm(pa.nombre))));
+            const unicas = [...new Map(candidatas.map(p => [norm(p.nombre), p])).values()];
+            if (unicas.length === 1) { oficial = unicas[0]; via = 'contencion-unica'; }
+            else if (unicas.length > 1) {
+                revision.push({ ...d, motivo: `${unicas.length} candidatas en CIMA: elegir seria juicio`, vistos: unicas.slice(0, 3).map(p => p.nombre) });
+                continue;
+            }
+        }
+    }
+
+    if (!oficial) {
+        revision.push({
+            ...d,
+            motivo: /,/.test(d.nombre || '') ? 'pagina de combinacion de MedyNut; no se cuelga de un PA suelto'
+                : 'sin igualdad exacta ni contencion unica en la maestra de CIMA',
+            vistos: maestra.slice(0, 3).map(p => p.nombre),
+        });
         continue;
     }
 
@@ -196,15 +254,56 @@ for (const d of cat) {
     if (!clave) { revision.push({ ...d, motivo: 'clave vacía tras resolver' }); continue; }
 
     if (indice[clave] && indice[clave] !== d.slug) {
+        const previa = procedencia[clave];
+        // La EXACTITUD GANA. Sin esto, la segunda pasada destruye aciertos de la primera:
+        // `/glicerol` casaba exacto y `/glicerol-enema` entraba por contención, y la
+        // colisión tumbaba las dos. Una contención nunca desplaza ni empata a una igualdad.
+        if (previa.via === 'exacta' && via === 'contencion-unica') continue;
+        if (previa.via === 'contencion-unica' && via === 'exacta') {
+            indice[clave] = d.slug;
+            procedencia[clave] = { cima: oficial.nombre, medynut: d.nombre || d.slug, via };
+            continue;
+        }
         colisiones.push({ clave, a: indice[clave], b: d.slug });
         continue;
     }
     indice[clave] = d.slug;
-    procedencia[clave] = oficial.nombre;
+    procedencia[clave] = { cima: oficial.nombre, medynut: d.nombre || d.slug, via };
 }
 
-// Una colisión invalida la clave entera: publicar una de las dos rutas sería elegir al azar.
-for (const c of colisiones) delete indice[c.clave];
+/**
+ * Dos rutas para la misma clave no siempre son un empate real.
+ *
+ * MedyNut duplica registros al crearlos, y el duplicado arrastra el slug del original:
+ * `/misoprostol` junto a `/misoprostol-9d96fdb3-…`, o `/hidrocortisona` junto a
+ * `/imiquimod-via-topica-copia`. Ahí las DOS páginas son de la misma sustancia, así que
+ * enlazar a cualquiera es igual de correcto y quedarse sin enlace es peor: se toma la
+ * ruta limpia. No es un juicio clínico, es higiene de sus datos.
+ *
+ * Distinto es `/dexametasona` frente a `/dexametasona-oftalmologico`, o
+ * `/magnesio-hidroxido-antiacido` frente a `/magnesio-hidroxido-laxante`: ahí el
+ * calificador dice algo (vía, uso) y elegir SÍ sería decidir qué quiso consultar el
+ * médico. Esas se retiran enteras.
+ */
+const raizSlug = s => s
+    .replace(/-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, '')
+    .replace(/-copia$/i, '');
+const sucio = s => s !== raizSlug(s);
+
+const empatesReales = [];
+for (const c of colisiones) {
+    const limpias = [c.a, c.b].filter(s => !sucio(s));
+    if (limpias.length === 1) {
+        // Una es duplicado del gestor y la otra no: se queda la limpia.
+        indice[c.clave] = limpias[0];
+        continue;
+    }
+    empatesReales.push(c);
+    delete indice[c.clave];
+    delete procedencia[c.clave];
+}
+colisiones.length = 0;
+colisiones.push(...empatesReales);
 
 const payload = {
     _meta: {
@@ -214,16 +313,18 @@ const payload = {
         avalado_por: 'AEMPS CIMA /maestras?maestra=1 (principios activos), igualdad exacta',
         catalogo_remoto: cat.length,
         aceptadas: Object.keys(indice).length,
+        aceptadas_exactas: Object.values(procedencia).filter(p => p.via === 'exacta').length,
+        aceptadas_contencion_unica: Object.values(procedencia).filter(p => p.via === 'contencion-unica').length,
         en_revision: revision.length,
         colisiones: colisiones.length,
         inconclusos,
-        criterio: 'fail-closed: sin igualdad exacta contra la maestra de CIMA no se publica',
+        criterio: 'fail-closed contra la maestra de PA de CIMA: igualdad exacta, o contencion en frontera de palabra cuando la maestra ofrece UNA sola candidata. Dos o mas candidatas = ambiguo = no se publica',
     },
     indice,
 };
 
 console.error('');
-console.error(`[medynut] ACEPTADAS   ${Object.keys(indice).length}`);
+console.error(`[medynut] ACEPTADAS   ${Object.keys(indice).length}  (${payload._meta.aceptadas_exactas} exactas + ${payload._meta.aceptadas_contencion_unica} por contencion unica)`);
 console.error(`[medynut] REVISION    ${revision.length}   (no se publican)`);
 console.error(`[medynut] COLISIONES  ${colisiones.length}   (clave retirada: dos rutas, elegir sería azar)`);
 console.error(`[medynut] INCONCLUSOS ${inconclusos}   (CIMA no respondió; no se aprueban ni se descartan)`);

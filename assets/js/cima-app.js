@@ -15269,7 +15269,7 @@ ${materialesPlaceholder}
      * Falla en abierto: si no carga, la sección no aparece y el resto de la pestaña
      * queda intacta. Nunca al revés.
      */
-    _loadMedynutIndex(url = 'assets/data/medynut-index.json?v=20260826a') {
+    _loadMedynutIndex(url = 'assets/data/medynut-index.json?v=20260827a') {
         if (this._medynutIndex) return Promise.resolve(this._medynutIndex);
         if (this._medynutPromise) return this._medynutPromise;
         this._medynutPromise = fetch(url, { cache: 'force-cache' })

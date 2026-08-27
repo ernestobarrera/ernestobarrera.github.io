@@ -79,6 +79,26 @@ const sucios = Object.entries(idx.indice).filter(([, s]) => typeof s !== 'string
 check('6b · ningún slug lleva barra, esquema ni espacios', sucios.length === 0,
     sucios.slice(0, 3).map(([k, s]) => `${k}=${s}`).join(', '));
 
+// 7 · La segunda pasada (contención única) NO puede reabrir la puerta al fallo conocido.
+// `ácido gadotérico` y `gadoteridol` son dos medios de contraste distintos que solo
+// comparten prefijo: ninguno contiene al otro en frontera de palabra, así que la regla no
+// los junta. Si alguien relaja `contieneEnFrontera` a subcadena, esto se pone en rojo.
+const gado = idx.indice['acido gadoterico'];
+check('7 · gadotérico no acaba en una ruta de gadoteridol',
+    !gado || !/gadoteridol/i.test(gado), `da ${gado}`);
+
+// 8 · La exactitud gana a la contención. `/glicerol` casa exacto y `/glicerol-enema`
+// entra por contención: sin esta regla la colisión tumbaba las dos y se perdía el enlace
+// bueno. Fija que una contención nunca desplace ni empate a una igualdad.
+check('8 · exactitud gana a contención (glicerol, no glicerol-enema)',
+    idx.indice['glicerol'] === 'glicerol', `da ${idx.indice['glicerol']}`);
+
+// 9 · Las variantes de VÍA no se resuelven al azar: la repercusión nutricional de un
+// corticoide sistémico y la de un colirio no son la misma, así que elegir sería decidir
+// por el médico. Esas claves se retiran enteras.
+check('9 · dexametasona no enlaza a una variante de vía elegida al azar',
+    idx.indice['dexametasona'] === undefined, `da ${idx.indice['dexametasona']}`);
+
 // 1-3 · Claves directas del índice (no dependen de red).
 check('1 · metformina resuelve', idx.indice['metformina'] === 'metformina', `da ${idx.indice['metformina']}`);
 check('2 · losartan resuelve bajo la clave sin contraión',
