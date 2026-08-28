@@ -4643,6 +4643,73 @@ body {
     text-decoration-thickness: 1px;
 }
 
+/* Registros repetidos del mismo medicamento (el nacional y sus importaciones paralelas).
+   Se pliegan, NO se fusionan: la tarjeta visible sigue siendo un registro concreto con sus
+   datos, y los hermanos quedan a un clic. El grupo se marca con un filete lateral para que
+   se lea como una unidad sin encerrarla en una caja que compita con la tarjeta. */
+.dup-cluster {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    position: relative;
+}
+
+.dup-cluster.open {
+    padding-left: var(--space-sm);
+    border-left: 2px solid var(--border-hover);
+}
+
+.dup-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    width: 100%;
+    padding: 0.3rem 0.6rem;
+    background: var(--bg-dark);
+    border: 1px dashed var(--border-default);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.72rem;
+    text-align: left;
+    cursor: pointer;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.dup-toggle:hover {
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+    border-style: solid;
+}
+
+.dup-toggle:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+}
+
+.dup-toggle i {
+    font-size: 0.85em;
+    flex-shrink: 0;
+}
+
+/* Si los registros plegados NO son idénticos, se dice aquí mismo. Es la condición para que
+   plegar sea honesto: CARDYL 20 mg tiene problema de suministro en el registro nacional y
+   no en sus siete importaciones paralelas. */
+.dup-warn {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--warning);
+    font-size: 0.95em;
+    text-align: right;
+}
+
+.results-count-sub {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
 /* Insignia informativa, no de seguridad: el medicamento existe y se dispensa; lo que falta
    es el documento del que MedCheck extrae las secciones clínicas. Por eso va en gris
    neutro y no en el ámbar de las alertas. */

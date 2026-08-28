@@ -2338,6 +2338,7 @@ class MedCheckApp {
         // Banda de dosis (misma semántica que vía y PA: Ctrl+clic para varias)
         this._wireDoseChips(document, applyFacet);
         this._wireGalenicChips(document, applyFacet);
+        this._wireDuplicateToggles(document, () => this.displaySearchResults(data));
 
         // Casillas de tipo de producto y receta cuando la barra las muestra (misma
         // dimensión y mismo estado que las casillas superiores del buscador).
@@ -10876,7 +10877,9 @@ ${materialesPlaceholder}
             routeFilters: new Set(),              // Set of selected route names (empty = show all)
             activeIngredientFilters: new Set(),   // Set of selected PA names (OR dentro de la dimensión)
             collapsedGroups: new Set(),           // Set of collapsed group IDs
-            expandedGroups: new Set()             // Set of expanded group IDs (for "Ver más")
+            expandedGroups: new Set(),            // Set of expanded group IDs (for "Ver más")
+            dedupe: true,                         // pliega los registros del mismo medicamento
+            expandedDuplicates: new Set()         // claves de duplicado desplegadas por el usuario
         };
     }
 
@@ -11367,6 +11370,14 @@ ${materialesPlaceholder}
         // Filtros activos — debe coincidir exactamente con lo que limpia "Limpiar N".
         const activeFilters = this._activeFilterCount(snap);
 
+        // Registros repetidos del mismo medicamento en lo que se está viendo. La casilla
+        // solo aparece si hay alguno, y el contador sigue diciendo cuántos RESULTADOS hay
+        // —que es la verdad— añadiendo cuántos medicamentos distintos son.
+        const visibles = filteredData?.resultados || [];
+        const clusters = visibles.length ? this._clusterDuplicates(visibles) : [];
+        const plegables = clusters.reduce((a, c) => a + c.otros.length, 0);
+        const plegados = this._dedupeOn ? plegables : 0;
+
         // Forma farmacéutica y dosis son discriminadores clínicos de primer nivel ("quiero
         // sobres, efervescente…", "quiero los de 20 mg") → visibles sin desplegar nada. En
         // "Más filtros" queda solo el laboratorio, que es criterio administrativo.
@@ -11422,8 +11433,14 @@ ${materialesPlaceholder}
                         </div>
                     </details>
                     ` : ''}
+                    ${plegables > 0 ? `
+                    <label class="search-option" title="Un mismo medicamento puede tener varios números de registro —el nacional y sus importaciones paralelas—. Plegados se ve uno por medicamento; los demás quedan a un clic, sin fusionar sus datos.">
+                        <input type="checkbox" id="dedupe-toggle" ${this._dedupeOn ? 'checked' : ''}>
+                        <span>Plegar duplicados <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${plegables}</span></span>
+                    </label>
+                    ` : ''}
                     <div class="control-section results-info">
-                        <span class="results-count"><strong>${totalResults}</strong> resultados</span>
+                        <span class="results-count" ${plegados > 0 ? `title="${plegados} registros repetidos plegados"` : ''}><strong>${totalResults}</strong> resultados${plegados > 0 ? ` <span class="results-count-sub">· ${totalResults - plegados} medicamentos</span>` : ''}</span>
                         ${activeFilters > 0 ? `
                         <button id="clear-filters-btn" class="clear-btn" title="Limpiar ${activeFilters} filtro${activeFilters > 1 ? 's' : ''}">
                             <i class="fas fa-times"></i> Limpiar ${activeFilters}
@@ -11734,6 +11751,154 @@ ${materialesPlaceholder}
     /**
      * Renders grouped results with collapsible sections
      */
+    // ============================================
+    // REGISTROS DUPLICADOS DEL MISMO MEDICAMENTO
+    // ============================================
+    // Buscar OMNIC devuelve doce registros del mismo medicamento; EZETROL 10 mg, catorce.
+    // Son autorizaciones administrativas distintas —el nacional y sus importaciones
+    // paralelas— del mismo producto. Para un regulador son doce entidades; para quien
+    // prescribe es un medicamento. Medido sobre los 16.103 comercializados: 550 grupos,
+    // 1.943 registros, el 12,1 % del catálogo.
+    //
+    // NO se fusionan datos. Se pliegan los registros bajo uno visible y **cualquier
+    // divergencia entre ellos se anuncia en la línea de plegado**, porque fusionarlos sería
+    // afirmar algo que ningún registro dice por separado. El caso que lo demuestra:
+    // `CARDYL 20 mg` tiene problema de suministro en el registro nacional y NO lo tiene en
+    // sus siete importaciones paralelas. Colapsar mostrando el nacional habría ocultado que
+    // hay siete registros disponibles — justo lo contrario de lo que hace falta en consulta.
+
+    /** Clave de duplicado: el nombre oficial, salvando mayúsculas, acentos, puntuación y EFG. */
+    _duplicateKey(med) {
+        return String(med?.nombre || '')
+            .normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .toUpperCase()
+            .replace(/\bEFG\b/g, '')
+            .replace(/[^A-Z0-9]+/g, ' ')
+            .trim();
+    }
+
+    /**
+     * Elige qué registro representa al grupo. Por orden: el que tiene ficha técnica
+     * seccionada —si no, los accesos clínicos de la tarjeta no llevarían a ninguna parte—,
+     * el comercializado, y el que no arrastra problema de suministro.
+     */
+    _pickRepresentative(meds) {
+        const puntos = (m) => (this._hasFichaTecnicaSeccionada(m) ? 4 : 0)
+            + (m.comerc ? 2 : 0)
+            + (m.psum ? 0 : 1);
+        return meds.reduce((mejor, m) => (puntos(m) > puntos(mejor) ? m : mejor), meds[0]);
+    }
+
+    /**
+     * Agrupa registros del mismo medicamento conservando el orden de entrada.
+     * @returns {Array<{key, rep, otros, divergencias}>}
+     */
+    _clusterDuplicates(meds) {
+        const porClave = new Map();
+        for (const m of meds) {
+            const k = this._duplicateKey(m);
+            if (!porClave.has(k)) porClave.set(k, []);
+            porClave.get(k).push(m);
+        }
+        return [...porClave.entries()].map(([key, grupo]) => {
+            const rep = grupo.length > 1 ? this._pickRepresentative(grupo) : grupo[0];
+            return {
+                key,
+                rep,
+                otros: grupo.filter(m => m !== rep),
+                divergencias: grupo.length > 1 ? this._clusterDivergences(grupo) : [],
+            };
+        });
+    }
+
+    /**
+     * Qué difiere entre los registros de un grupo, de lo que un clínico necesita saber.
+     * Es lo que impide fusionarlos en silencio: si algo diverge, se dice.
+     */
+    _clusterDivergences(grupo) {
+        const out = [];
+        const distintos = (f) => new Set(grupo.map(f)).size > 1;
+        const conSum = grupo.filter(m => m.psum).length;
+        if (conSum > 0 && conSum < grupo.length) {
+            out.push(`${conSum} con problema de suministro y ${grupo.length - conSum} sin él`);
+        }
+        if (distintos(m => !!m.notas)) out.push('alertas de la AEMPS solo en algunos');
+        if (distintos(m => !!m.triangulo)) out.push('triángulo negro solo en algunos');
+        // El laboratorio titular difiere en el 41 % de los grupos —es lo normal en una
+        // importación paralela— así que NO se anuncia como aviso: saturaría la línea y
+        // dejaría de leerse la que sí importa. Va en el tooltip, como contexto.
+        // El índice de envases llega async (`_loadPacksIndex`). Si aún no está, esta
+        // divergencia no se anuncia en el primer pintado: se calla, no se inventa. Las que
+        // de verdad importan —suministro, alertas, triángulo— salen de la propia respuesta
+        // y están disponibles siempre.
+        const envases = new Set(grupo.map(m => (this._packsIndex?.[m.nregistro] || []).join('|')).filter(Boolean));
+        if (envases.size > 1) out.push('distintos formatos de envase');
+        return out;
+    }
+
+    /** Línea que pliega los registros hermanos. Nunca oculta una divergencia. */
+    _renderDuplicateToggle(cluster) {
+        if (!cluster.otros.length) return '';
+        const abierto = this.groupingState?.expandedDuplicates?.has(cluster.key);
+        const n = cluster.otros.length;
+        const aviso = cluster.divergencias.length
+            ? `<span class="dup-warn"><i class="fas fa-circle-info"></i> ${this._escapeHtml(cluster.divergencias[0])}</span>`
+            : '';
+        const labs = [...new Set([cluster.rep, ...cluster.otros].map(m => m.labtitular).filter(Boolean))];
+        const tip = [
+            'Mismo nombre oficial, distinto número de registro: el nacional y sus importaciones paralelas.',
+            labs.length > 1 ? `Titulares: ${labs.join(' · ')}.` : '',
+            cluster.divergencias.length ? `No son idénticos: ${cluster.divergencias.join('; ')}.` : '',
+            'No se fusionan sus datos: se despliegan tal cual.',
+        ].filter(Boolean).join(' ');
+        return `
+            <button type="button" class="dup-toggle${abierto ? ' open' : ''}" data-dup-key="${this._escapeHtml(cluster.key)}"
+                    aria-expanded="${!!abierto}" title="${this._escapeHtml(tip)}">
+                <i class="fas fa-chevron-${abierto ? 'up' : 'down'}"></i>
+                ${abierto ? 'Ocultar' : `${n} registro${n > 1 ? 's' : ''} más`} del mismo medicamento
+                ${aviso}
+            </button>`;
+    }
+
+    /** ¿Está activado el plegado de duplicados? Por defecto sí. */
+    get _dedupeOn() {
+        return this.groupingState?.dedupe !== false;
+    }
+
+    /** Cablea el desplegable de cada grupo de registros y la casilla que apaga el plegado. */
+    _wireDuplicateToggles(container, onChange) {
+        const raiz = container || document;
+        raiz.querySelectorAll('.dup-toggle[data-dup-key]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const k = btn.dataset.dupKey;
+                if (!this.groupingState.expandedDuplicates) this.groupingState.expandedDuplicates = new Set();
+                const set = this.groupingState.expandedDuplicates;
+                if (set.has(k)) set.delete(k); else set.add(k);
+                onChange();
+            });
+        });
+        raiz.querySelector('#dedupe-toggle')?.addEventListener('change', (e) => {
+            this.groupingState.dedupe = e.target.checked;
+            this.groupingState.expandedDuplicates?.clear?.();
+            onChange();
+        });
+    }
+
+    /** Pinta una lista de medicamentos aplicando el plegado de duplicados si procede. */
+    _renderMedList(meds, searchQuery) {
+        if (!this._dedupeOn) return meds.map(m => this.renderIndicationMedCard(m, searchQuery)).join('');
+        return this._clusterDuplicates(meds).map(c => {
+            const cards = [this.renderIndicationMedCard(c.rep, searchQuery)];
+            const abierto = this.groupingState?.expandedDuplicates?.has(c.key);
+            if (abierto) cards.push(...c.otros.map(m => this.renderIndicationMedCard(m, searchQuery)));
+            const toggle = this._renderDuplicateToggle(c);
+            return toggle
+                ? `<div class="dup-cluster${abierto ? ' open' : ''}">${cards.join('')}${toggle}</div>`
+                : cards[0];
+        }).join('');
+    }
+
     renderGroupedResults(groups, searchQuery) {
         if (this.groupingState.groupBy === 'none') {
             // No grouping - just render as flat grid
@@ -11751,7 +11916,7 @@ ${materialesPlaceholder}
 
             return `
                 <div class="results-grid">
-                    ${medsToShow.map(med => this.renderIndicationMedCard(med, searchQuery)).join('')}
+                    ${this._renderMedList(medsToShow, searchQuery)}
                 </div>
                 ${!isExpanded && remainingCount > 0 ? `
                     <button type="button" class="view-more-btn" data-group-id="${flatId}">
@@ -11772,9 +11937,7 @@ ${materialesPlaceholder}
             const hasMore = group.meds.length > initialShow && !isExpanded;
             const remainingCount = group.meds.length - initialShow;
 
-            const cardsHtml = medsToShow.map(med =>
-                this.renderIndicationMedCard(med, searchQuery)
-            ).join('');
+            const cardsHtml = this._renderMedList(medsToShow, searchQuery);
 
             const viewMoreBtn = hasMore ? `
                 <button type="button" class="view-more-btn" data-group-id="${groupId}">
@@ -12004,6 +12167,7 @@ ${materialesPlaceholder}
         // Banda de dosis (misma semántica que vía y PA: Ctrl+clic para varias)
         this._wireDoseChips(document, () => this._applyIndicationFacet(data, searchQuery));
         this._wireGalenicChips(document, () => this._applyIndicationFacet(data, searchQuery));
+        this._wireDuplicateToggles(document, () => this._applyIndicationFacet(data, searchQuery));
 
         // EFG toggle
         document.getElementById('efg-filter')?.addEventListener('change', (e) => {

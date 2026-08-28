@@ -305,6 +305,68 @@ console.log('\n— Accesos que dependen de la ficha técnica —');
     ok(src.includes('badge-sin-ft'), 'la tarjeta avisa antes de pulsar');
 }
 
+console.log('\n— Registros duplicados del mismo medicamento —');
+{
+    const app2 = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+    app2.groupingState = { dedupe: true, expandedDuplicates: new Set() };
+    app2._packsIndex = {};
+
+    const reg = (nregistro, extra = {}) => ({
+        nregistro,
+        nombre: 'CARDYL 20 mg COMPRIMIDOS RECUBIERTOS CON PELICULA',
+        docs: [], labtitular: 'Lab', ...extra,
+    });
+
+    ok(app2._duplicateKey({ nombre: 'OMNIC OCAS 0,4 mg COMPRIMIDOS' })
+        === app2._duplicateKey({ nombre: 'OMNIC OCAS, 0,4 MG, COMPRIMIDOS' }),
+        'mayúsculas y comas no separan dos registros del mismo medicamento');
+    ok(app2._duplicateKey({ nombre: 'X 20 mg COMPRIMIDOS EFG' }) === app2._duplicateKey({ nombre: 'X 20 mg COMPRIMIDOS' }),
+        'el sufijo EFG tampoco');
+    ok(app2._duplicateKey({ nombre: 'OMNIC OCAS 0,4 mg COMPRIMIDOS' })
+        !== app2._duplicateKey({ nombre: 'OMNIC 0,4 mg CAPSULAS' }),
+        'productos distintos NO se agrupan');
+    ok(app2._duplicateKey({ nombre: 'AMGEVITA 40 MG SOLUCION INYECTABLE EN JERINGA PRECARGADA' })
+        !== app2._duplicateKey({ nombre: 'AMGEVITA 40 MG SOLUCION INYECTABLE EN PLUMA PRECARGADA' }),
+        'jeringa y pluma son dispositivos distintos y no se agrupan');
+
+    // Representante: manda tener ficha, porque sin ella los accesos clínicos no funcionan.
+    const conFicha = reg('A', { docs: [{ tipo: 1, secc: true }], comerc: true, psum: true });
+    const sinFicha = reg('B', { comerc: true });
+    const [c] = app2._clusterDuplicates([sinFicha, conFicha]);
+    ok(c.rep === conFicha, 'representa el grupo el registro que sí tiene ficha técnica');
+    ok(c.otros.length === 1, 'el hermano queda plegado, no eliminado');
+
+    // El caso CARDYL: el representante arrastra un problema de suministro que los otros no
+    // tienen. Plegar sin decirlo ocultaría que hay siete registros disponibles.
+    ok(c.divergencias.some(d => /suministro/.test(d)),
+        'una divergencia de suministro SIEMPRE se anuncia en la línea de plegado');
+    const html = app2._renderDuplicateToggle(c);
+    ok(/dup-warn/.test(html) && /suministro/.test(html), 'y sale en el HTML del desplegable');
+    ok(/aria-expanded="false"/.test(html), 'el desplegable declara su estado');
+
+    // El titular difiere en el 41 % de los grupos: no debe competir con los avisos reales.
+    const soloLab = app2._clusterDuplicates([
+        reg('C', { labtitular: 'Uno', docs: [{ tipo: 1, secc: true }] }), reg('D', { labtitular: 'Otro' }),
+    ])[0];
+    ok(soloLab.divergencias.length === 0, 'un titular distinto no genera aviso ámbar');
+    ok(/Titulares/.test(app2._renderDuplicateToggle(soloLab)), 'pero sí aparece en el tooltip');
+
+    // Nada se pierde: apagar el plegado devuelve la lista entera.
+    app2.groupingState.dedupe = false;
+    ok(app2._dedupeOn === false, 'el plegado se puede apagar');
+    const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    ok(src.includes('dedupe-toggle'), 'la casilla para apagarlo está en la barra');
+    ok(/_renderMedList\(medsToShow, searchQuery\)/.test(src), 'las dos rutas de render pasan por el plegado');
+    // Invariante duro: plegar no pierde registros. Todo lo que entra sale, como
+    // representante o como hermano, y sin duplicarse.
+    const entrada = [reg('E'), reg('F'), reg('G', { docs: [{ tipo: 1, secc: true }] }),
+        { nregistro: 'H', nombre: 'OTRA COSA 5 mg COMPRIMIDOS', docs: [] }];
+    const salida = app2._clusterDuplicates(entrada).flatMap(x => [x.rep, ...x.otros]);
+    ok(salida.length === entrada.length && new Set(salida).size === entrada.length,
+        'plegar no pierde ni duplica ningún registro');
+    ok(entrada.every(m => salida.includes(m)), 'todos los registros de entrada siguen presentes');
+}
+
 console.log('\n— Filtro de forma del modal de alternativas —');
 {
     const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
