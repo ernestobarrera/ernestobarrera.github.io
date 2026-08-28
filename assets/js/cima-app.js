@@ -4022,8 +4022,8 @@ class MedCheckApp {
                     <span class="result-card-lab" title="${this._escapeHtml(med.labtitular || 'Laboratorio desconocido')}">
                         <i class="fas fa-building"></i> ${med.labtitular || 'Laboratorio desconocido'}
                     </span>
-                    ${this._renderCardActions(med.nregistro)}
                 </div>
+                ${this._renderCardActions(med.nregistro)}
             </div>
         `;
     }
@@ -4042,20 +4042,37 @@ class MedCheckApp {
      * en un paciente concreto.
      */
     _renderCardActions(nregistro) {
-        const acciones = [
-            ['docs', 'file-medical', 'Ficha Técnica', 'Ficha Técnica (PDF oficial)'],
-            ['indications', 'stethoscope', 'Indicaciones', 'Indicaciones autorizadas (sección 4.1)'],
-            ['posology', 'pills', 'Posología', 'Posología y dosificación'],
-            ['interactions', 'random', 'Interacciones', 'Interacciones medicamentosas'],
-            ['evidence', 'book-medical', 'Evidencia', 'Evidencia: PubMed y ensayos clínicos'],
-            ['safety', 'shield-alt', 'Seguridad', 'Seguridad: embarazo, lactancia, conducción…'],
-        ];
-        return `<div class="result-card-actions">${acciones.map(([tab, icono, etiqueta, ayuda]) => `
+        return `<div class="result-card-actions">${MedCheckApp.CARD_ACTIONS.map(([tab, icono, sigla, etiqueta, ayuda]) => `
                     <button type="button" class="card-act${tab === 'safety' ? ' card-act--primary' : ''}"
                             onclick="event.stopPropagation(); app.openMedDetails('${nregistro}', '${tab}')"
                             title="${this._escapeHtml(ayuda)}" aria-label="${this._escapeHtml(etiqueta)}">
-                        <i class="fas fa-${icono}"></i>
+                        <i class="fas fa-${icono}"></i><span class="card-act-sigla">${sigla}</span>
                     </button>`).join('')}</div>`;
+    }
+
+    /**
+     * Los seis accesos, con su sigla. `[pestaña, icono, sigla, nombre, ayuda]`.
+     *
+     * La sigla existe porque el icono solo NO era reconocible —probado en producción: un
+     * libro médico y un estetoscopio no dicen "Evidencia" e "Indicaciones" a nadie que no
+     * los haya pulsado antes—. `FT` es además la sigla que se usa de verdad en España para
+     * la ficha técnica.
+     *
+     * `IND` e `INT` se parecen, así que van separadas por `POS` en el orden, que es el de
+     * las pestañas del modal al que llevan.
+     */
+    static get CARD_ACTIONS() {
+        if (!MedCheckApp._CARD_ACTIONS) {
+            MedCheckApp._CARD_ACTIONS = Object.freeze([
+                ['docs', 'file-medical', 'FT', 'Ficha Técnica', 'Ficha Técnica (PDF oficial)'],
+                ['indications', 'stethoscope', 'IND', 'Indicaciones', 'Indicaciones autorizadas (sección 4.1)'],
+                ['posology', 'pills', 'POS', 'Posología', 'Posología y dosificación'],
+                ['interactions', 'random', 'INT', 'Interacciones', 'Interacciones medicamentosas'],
+                ['evidence', 'book-medical', 'EVI', 'Evidencia', 'Evidencia: PubMed y ensayos clínicos'],
+                ['safety', 'shield-alt', 'SEG', 'Seguridad', 'Seguridad: embarazo, lactancia, conducción…'],
+            ].map(a => Object.freeze(a)));
+        }
+        return MedCheckApp._CARD_ACTIONS;
     }
 
 

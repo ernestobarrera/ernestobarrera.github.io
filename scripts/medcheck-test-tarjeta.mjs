@@ -51,6 +51,7 @@ const ok = (cond, nombre, detalle = '') => {
 };
 
 const MedCheckAppDims = () => sandbox.window.__MedCheckAppClass.FILTER_DIMENSIONS;
+const MedCheckAppActions = () => sandbox.window.__MedCheckAppClass.CARD_ACTIONS;
 
 const med = (nombre, dosis, ff, ffs = 'COMPRIMIDO') => ({
     nombre, dosis,
@@ -251,7 +252,11 @@ console.log('\n— Accesos de la tarjeta —');
     for (const tab of ['docs', 'indications', 'posology', 'interactions', 'evidence', 'safety']) {
         ok(html.includes(`'${tab}')`), `acceso a la pestaña ${tab}`);
     }
-    ok((html.match(/aria-label=/g) || []).length === 6, 'los seis llevan aria-label (van sin texto)');
+    ok((html.match(/aria-label=/g) || []).length === 6, 'los seis llevan aria-label');
+    for (const sig of ['FT', 'IND', 'POS', 'INT', 'EVI', 'SEG']) {
+        ok(html.includes('>' + sig + '<'), 'lleva la sigla visible ' + sig);
+    }
+    ok(new Set(MedCheckAppActions().map(a => a[2])).size === 6, 'las seis siglas son distintas entre sí');
     ok((html.match(/title=/g) || []).length === 6, 'los seis llevan tooltip');
     ok(html.includes('card-act--primary'), 'Seguridad queda destacada');
     ok(!/btn-sm/.test(html), 'ya no usan el botón grande con texto');

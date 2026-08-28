@@ -4545,28 +4545,52 @@ body {
     border-top: 1px solid var(--border-default);
 }
 
+/* Barra de accesos: seis columnas iguales, icono + sigla.
+   El icono solo no bastaba —un libro médico y un estetoscopio no dicen "Evidencia" e
+   "Indicaciones" a quien no los ha pulsado antes—, y sigla + icono no cabe en la línea del
+   laboratorio: a 290 px quedan 179 px para seis accesos, y este par necesita 269 px. Así
+   que ocupa fila propia de ~26 px, que sigue siendo 68 px menos que la rejilla 2×3 de
+   botones con texto que había antes. Columnas iguales para que la fila lea como una regla
+   y la posición de cada acceso se aprenda una sola vez. */
 .result-card-actions {
-    display: flex;
-    gap: 1px;
-    flex-shrink: 0;
-    margin-left: auto;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 2px;
+    margin-top: var(--space-xs);
 }
 
-/* Botón de acción: solo icono. El nombre viaja en `title` y en `aria-label`. */
 .card-act {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 27px;
-    height: 27px;
-    padding: 0;
-    background: transparent;
+    gap: 0.25rem;
+    min-width: 0;
+    height: 24px;
+    padding: 0 0.15rem;
+    background: var(--bg-dark);
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
-    font-size: 0.82rem;
+    font-family: inherit;
+    font-size: 0.68rem;
     cursor: pointer;
     transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.card-act i {
+    font-size: 0.72em;
+    opacity: 0.75;
+    flex-shrink: 0;
+}
+
+.card-act-sigla {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.card-act:hover i {
+    opacity: 1;
 }
 
 .card-act:hover {
@@ -4583,12 +4607,25 @@ body {
 /* Seguridad: la única acción que cambia la conducta ante un paciente concreto. */
 .card-act--primary {
     color: var(--primary);
+    border-color: rgba(14, 165, 233, 0.35);
+}
+
+.card-act--primary i {
+    opacity: 1;
 }
 
 .card-act--primary:hover {
     background: var(--primary-light);
     border-color: var(--primary);
     color: var(--primary);
+}
+
+/* Por debajo de ~250 px de tarjeta la sigla y el icono ya no caben juntos en la sexta
+   columna. Cede el icono, no la sigla: la sigla es lo que identifica el acceso. */
+@media (max-width: 420px) {
+    .card-act i {
+        display: none;
+    }
 }
 
 .w-full {
@@ -7271,10 +7308,9 @@ code {
     /* Los accesos son ya una fila de iconos: en pantalla estrecha lo que cede es el nombre
        del laboratorio, que se recorta, no los botones. La zona táctil se mantiene en 30 px
        (recomendación mínima de acierto con el dedo). */
+    /* Zona táctil algo mayor en móvil; el ancho lo reparte la rejilla de seis columnas. */
     .card-act {
-        width: 30px;
-        height: 30px;
-        font-size: 0.86rem;
+        height: 28px;
     }
 
     /* Footer status bar */
