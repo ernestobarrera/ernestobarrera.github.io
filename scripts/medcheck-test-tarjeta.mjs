@@ -247,7 +247,9 @@ console.log('\n— Filtro por familia galénica —');
 console.log('\n— Accesos de la tarjeta —');
 {
     const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
-    const html = app._renderCardActions('12345');
+    // Con ficha seccionada: es el caso en que los seis accesos deben estar operativos.
+    const conFicha = { nregistro: '12345', docs: [{ tipo: 1, secc: true }] };
+    const html = app._renderCardActions('12345', conFicha);
     ok((html.match(/<button/g) || []).length === 6, 'siguen siendo seis accesos');
     for (const tab of ['docs', 'indications', 'posology', 'interactions', 'evidence', 'safety']) {
         ok(html.includes(`'${tab}')`), `acceso a la pestaña ${tab}`);
@@ -261,6 +263,46 @@ console.log('\n— Accesos de la tarjeta —');
     ok(html.includes('card-act--primary'), 'Seguridad queda destacada');
     ok(!/btn-sm/.test(html), 'ya no usan el botón grande con texto');
     ok(src.includes('.card-act, .btn'), 'el clic en un acceso no abre además la ficha general');
+}
+
+console.log('\n— Accesos que dependen de la ficha técnica —');
+{
+    // OMNIC OCAS tiene ocho registros del mismo producto entre importaciones paralelas y el
+    // nacional. Solo el nacional publica ficha técnica SECCIONADA; en el resto, pulsar
+    // Posología abría un modal vacío y había que ir probando hasta dar con el que responde.
+    const conFicha = {
+        nregistro: '66678', nombre: 'OMNIC OCAS 0,4 mg COMPRIMIDOS DE LIBERACION PROLONGADA',
+        docs: [{ tipo: 1, secc: true }, { tipo: 2, secc: true }],
+    };
+    const importacionParalela = {
+        nregistro: '11429IP2', nombre: 'OMNIC OCAS 0,4 MG COMPRIMIDOS DE LIBERACION PROLONGADA',
+        docs: [{ tipo: 2, secc: false }],
+    };
+    const fichaSinSecciones = { nregistro: 'X', nombre: 'X', docs: [{ tipo: 1, secc: false }] };
+    const antiguoSinDocs = { nregistro: '54341', nombre: 'GOBEMICINA 1g INYECTABLE', docs: [] };
+
+    ok(app._hasFichaTecnicaSeccionada(conFicha), 'el registro nacional tiene ficha seccionada');
+    ok(!app._hasFichaTecnicaSeccionada(importacionParalela), 'la importación paralela, no');
+    ok(!app._hasFichaTecnicaSeccionada(fichaSinSecciones),
+        'una ficha SIN secciones tampoco vale: el modal pide secciones, no el PDF');
+    ok(!app._hasFichaTecnicaSeccionada(antiguoSinDocs), 'un medicamento antiguo sin documentos, tampoco');
+    ok(!app._hasFichaTecnicaSeccionada({}), 'sin `docs` no revienta');
+
+    const inertes = (m) => (app._renderCardActions(m.nregistro, m).match(/card-act--inerte/g) || []).length;
+    ok(inertes(conFicha) === 0, 'con ficha, los seis accesos quedan activos');
+    ok(inertes(importacionParalela) === 4, 'sin ficha se apagan exactamente cuatro: IND, POS, INT y SEG');
+
+    const html = app._renderCardActions(importacionParalela.nregistro, importacionParalela);
+    ok(!/card-act--inerte[^>]*>\s*<i class="fas fa-file-medical"/.test(html) && html.includes('fa-file-medical'),
+        'Documentos sigue activo: ofrece el prospecto aunque no haya ficha');
+    ok((html.match(/disabled/g) || []).length === 4, 'los apagados van `disabled`, no solo atenuados');
+    ok(!/onclick[^"]*'posology'/.test(html), 'un acceso apagado no conserva su onclick');
+    ok(/no disponible/.test(html), 'el tooltip explica por qué está apagado');
+
+    // La cuenta debe hacerse con el dato que YA viene en la lista, sin pedir el detalle.
+    const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    ok(/_hasFichaTecnicaSeccionada\(med\)/.test(src), 'la tarjeta lo decide con el `med` de la lista');
+    ok(src.includes('badge-sin-ft'), 'la tarjeta avisa antes de pulsar');
 }
 
 console.log('\n— Filtro de forma del modal de alternativas —');

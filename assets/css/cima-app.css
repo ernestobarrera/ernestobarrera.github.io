@@ -4620,6 +4620,38 @@ body {
     color: var(--primary);
 }
 
+/* Acceso inerte: el registro no tiene ficha técnica seccionada, así que esa sección no
+   existe. Se deja VISIBLE y en su sitio —para que la fila siga leyéndose igual en todas
+   las tarjetas y la posición de cada acceso no cambie— pero apagado y no pulsable. Antes
+   había que pulsar para descubrir que no había nada, y con ocho registros del mismo
+   producto eso era ir probando. */
+.card-act--inerte {
+    opacity: 0.32;
+    cursor: not-allowed;
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.card-act--inerte:hover {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-muted);
+}
+
+.card-act--inerte .card-act-sigla {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+}
+
+/* Insignia informativa, no de seguridad: el medicamento existe y se dispensa; lo que falta
+   es el documento del que MedCheck extrae las secciones clínicas. Por eso va en gris
+   neutro y no en el ámbar de las alertas. */
+.badge-sin-ft {
+    background: rgba(148, 163, 184, 0.14);
+    color: var(--text-secondary);
+    border: 1px dashed rgba(148, 163, 184, 0.35);
+}
+
 /* Por debajo de ~250 px de tarjeta la sigla y el icono ya no caben juntos en la sexta
    columna. Cede el icono, no la sigla: la sigla es lo que identifica el acceso. */
 @media (max-width: 420px) {

@@ -3893,6 +3893,10 @@ class MedCheckApp {
         // construyen de verdad las insignias.
         // Notas de seguridad AEMPS
         if (med.notas) badges.push(`<span class="badge badge-warning badge-clickable" title="Ver alertas de seguridad de la AEMPS" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'alerts')"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>`);
+        // Aviso ANTES de pulsar: sin ficha seccionada, cuatro de los seis accesos no
+        // pueden llevar a ninguna parte. Es informativo y neutro —el medicamento existe y se
+        // dispensa—, no una advertencia de seguridad.
+        if (!this._hasFichaTecnicaSeccionada(med)) badges.push('<span class="badge badge-sin-ft" title="CIMA no publica ficha técnica con secciones para este registro, así que no hay Indicaciones, Posología, Interacciones ni Seguridad que mostrar. Ocurre en importaciones paralelas y en medicamentos antiguos; la información clínica está en el registro principal del mismo producto."><i class="fas fa-file-circle-xmark"></i> Sin ficha técnica</span>');
         if (med.materialesInf) badges.push(`<span class="badge badge-material badge-clickable" title="Ver materiales informativos de seguridad (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
 
         // Alertas según contexto del paciente - AÑADIDO
@@ -4023,7 +4027,7 @@ class MedCheckApp {
                         <i class="fas fa-building"></i> ${med.labtitular || 'Laboratorio desconocido'}
                     </span>
                 </div>
-                ${this._renderCardActions(med.nregistro)}
+                ${this._renderCardActions(med.nregistro, med)}
             </div>
         `;
     }
@@ -4041,13 +4045,53 @@ class MedCheckApp {
      * aprenda una sola vez. Seguridad va destacada por ser la única que cambia la conducta
      * en un paciente concreto.
      */
-    _renderCardActions(nregistro) {
-        return `<div class="result-card-actions">${MedCheckApp.CARD_ACTIONS.map(([tab, icono, sigla, etiqueta, ayuda]) => `
-                    <button type="button" class="card-act${tab === 'safety' ? ' card-act--primary' : ''}"
-                            onclick="event.stopPropagation(); app.openMedDetails('${nregistro}', '${tab}')"
-                            title="${this._escapeHtml(ayuda)}" aria-label="${this._escapeHtml(etiqueta)}">
+    /**
+     * ¿Tiene este medicamento ficha técnica SECCIONADA en CIMA?
+     *
+     * Es la condición que decide si los accesos a Indicaciones (4.1), Posología (4.2),
+     * Interacciones (4.5) y Seguridad (4.4/4.6/4.7) pueden llevar a algún sitio: el modal
+     * los sirve pidiendo secciones con `getDocSeccion`, y sin `secc: true` no hay secciones
+     * que pedir. **1.473 productos comercializados (9,15 %) no la tienen.**
+     *
+     * Dos poblaciones distintas, un mismo síntoma: importaciones paralelas —que publican
+     * solo el prospecto, sin seccionar— y medicamentos antiguos que nunca digitalizaron su
+     * ficha (`GOBEMICINA`, `NUCLEO CMP FORTE`, `CASENFILUS`). Por eso la condición se define
+     * sobre `docs`, que es el hecho verificable, y NO sobre el patrón `IP` del número de
+     * registro: eso sería inferir el tipo de registro por la forma de su identificador, y
+     * además solo cubriría la mitad de los casos.
+     *
+     * `docs` llega ya en `/medicamentos`, con su `secc`: no cuesta ninguna petición extra.
+     */
+    _hasFichaTecnicaSeccionada(med) {
+        return (med?.docs || []).some(d => d.tipo === 1 && d.secc === true);
+    }
+
+    /**
+     * Accesos de la tarjeta. Los que dependen de una sección de la ficha técnica se
+     * desactivan cuando no hay ficha seccionada, en vez de abrir un modal vacío.
+     *
+     * Antes había que **pulsar para descubrir que no había nada**, y con ocho registros del
+     * mismo producto —OMNIC OCAS tiene ocho, entre importaciones paralelas y el nacional—
+     * eso significaba ir probando hasta dar con el que sí responde. El dato para evitarlo
+     * ya venía en la respuesta; solo no se estaba mirando.
+     *
+     * `FT` y `EVI` siguen activos: la pestaña de documentos ofrece el prospecto aunque no
+     * haya ficha, y la evidencia no sale de la ficha sino de PubMed.
+     */
+    _renderCardActions(nregistro, med) {
+        const conFT = this._hasFichaTecnicaSeccionada(med);
+        return `<div class="result-card-actions">${MedCheckApp.CARD_ACTIONS.map(([tab, icono, sigla, etiqueta, ayuda, necesitaFT]) => {
+            const inerte = necesitaFT && !conFT;
+            const titulo = inerte
+                ? `${etiqueta} no disponible: CIMA no publica ficha técnica con secciones para este registro`
+                : ayuda;
+            return `
+                    <button type="button" class="card-act${tab === 'safety' ? ' card-act--primary' : ''}${inerte ? ' card-act--inerte' : ''}"
+                            ${inerte ? 'disabled' : `onclick="event.stopPropagation(); app.openMedDetails('${nregistro}', '${tab}')"`}
+                            title="${this._escapeHtml(titulo)}" aria-label="${this._escapeHtml(etiqueta)}">
                         <i class="fas fa-${icono}"></i><span class="card-act-sigla">${sigla}</span>
-                    </button>`).join('')}</div>`;
+                    </button>`;
+        }).join('')}</div>`;
     }
 
     /**
@@ -4063,13 +4107,15 @@ class MedCheckApp {
      */
     static get CARD_ACTIONS() {
         if (!MedCheckApp._CARD_ACTIONS) {
+            // El último campo dice si el acceso depende de una SECCIÓN de la ficha técnica.
+            // Documentos sirve el prospecto aunque no haya ficha, y Evidencia sale de PubMed.
             MedCheckApp._CARD_ACTIONS = Object.freeze([
-                ['docs', 'file-medical', 'FT', 'Ficha Técnica', 'Ficha Técnica (PDF oficial)'],
-                ['indications', 'stethoscope', 'IND', 'Indicaciones', 'Indicaciones autorizadas (sección 4.1)'],
-                ['posology', 'pills', 'POS', 'Posología', 'Posología y dosificación'],
-                ['interactions', 'random', 'INT', 'Interacciones', 'Interacciones medicamentosas'],
-                ['evidence', 'book-medical', 'EVI', 'Evidencia', 'Evidencia: PubMed y ensayos clínicos'],
-                ['safety', 'shield-alt', 'SEG', 'Seguridad', 'Seguridad: embarazo, lactancia, conducción…'],
+                ['docs', 'file-medical', 'FT', 'Ficha Técnica', 'Ficha técnica y prospecto (PDF oficial)', false],
+                ['indications', 'stethoscope', 'IND', 'Indicaciones', 'Indicaciones autorizadas (sección 4.1)', true],
+                ['posology', 'pills', 'POS', 'Posología', 'Posología y dosificación (sección 4.2)', true],
+                ['interactions', 'random', 'INT', 'Interacciones', 'Interacciones medicamentosas (sección 4.5)', true],
+                ['evidence', 'book-medical', 'EVI', 'Evidencia', 'Evidencia: PubMed y ensayos clínicos', false],
+                ['safety', 'shield-alt', 'SEG', 'Seguridad', 'Seguridad: embarazo, lactancia, conducción…', true],
             ].map(a => Object.freeze(a)));
         }
         return MedCheckApp._CARD_ACTIONS;
