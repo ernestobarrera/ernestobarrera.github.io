@@ -27,7 +27,10 @@ import vm from 'node:vm';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const sandbox = {
-    window: {}, document: { addEventListener() {} },
+    window: {},
+    // DOM mínimo: `_restoreFiltersFromURL` sincroniza las casillas del buscador, que aquí
+    // no existen. Devolver null/vacío es suficiente y mantiene el test sin navegador.
+    document: { addEventListener() {}, getElementById: () => null, querySelectorAll: () => [] },
     console: { log() {}, warn() {}, error() {} },
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     fetch: () => Promise.reject(new Error('sin red en tests')),
@@ -46,6 +49,8 @@ const ok = (cond, nombre, detalle = '') => {
     fallos += 1;
     console.log(`✗ ${nombre}${detalle ? `\n    ${detalle}` : ''}`);
 };
+
+const MedCheckAppDims = () => sandbox.window.__MedCheckAppClass.FILTER_DIMENSIONS;
 
 const med = (nombre, dosis, ff, ffs = 'COMPRIMIDO') => ({
     nombre, dosis,
@@ -187,6 +192,70 @@ console.log('\n— Iconos de vía: el desconocido se abstiene —');
     ok(app.getRouteIcon('VÍA SUBCUTÁNEA') === '💉', 'subcutánea es parenteral');
     ok(app.getRouteIcon('USO CUTÁNEO') === '🧴', 'cutánea no cae en parenteral por "subcutánea"');
     ok(app.getRouteIcon('OTRA VÍA') === '❔', 'lo desconocido no afirma una vía');
+}
+
+console.log('\n— Artículos intercalados en la forma —');
+{
+    // El nombre dice "EN UNA JERINGA" y la forma declarada "EN JERINGA". Exigir contigüidad
+    // dejaba sin cortar los 11 BINOCRIT y los NOVORAPID: un grupo entero de resultados.
+    const binocrit = med('BINOCRIT, 10.000 UI/1 ml, SOLUCION INYECTABLE EN UNA JERINGA PRECARGADA',
+        '10000 UI', 'SOLUCIÓN INYECTABLE EN JERINGA PRECARGADA', 'INYECTABLE');
+    const s = app._splitOfficialName(binocrit);
+    ok(s.cortado, 'BINOCRIT: un artículo intercalado no impide el corte', `cabeza: "${s.cabeza}"`);
+    ok(s.cabeza === 'BINOCRIT, 10.000 UI/1 ml', 'la cabeza queda limpia de la coma final');
+    ok(/UNA JERINGA/i.test(s.forma), 'la cola conserva el literal con el artículo');
+
+    // Pero una palabra CON contenido sí corta el intento.
+    const falso = med('ALGO 10 mg SOLUCION INYECTABLE ESTERIL JERINGA PRECARGADA',
+        '10 mg', 'SOLUCIÓN INYECTABLE EN JERINGA PRECARGADA', 'INYECTABLE');
+    ok(!app._splitOfficialName(falso).cortado,
+        'una palabra con contenido intercalada NO se salta');
+}
+
+console.log('\n— Filtro por familia galénica —');
+{
+    const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    ok(MedCheckAppDims().includes('galenic'), 'la familia galénica es una dimensión del contrato');
+
+    const app2 = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+    app2.filterState = app2._emptyFilterState();
+    app2.groupingState = { routeFilters: new Set(), activeIngredientFilters: new Set() };
+    ok(app2._filterSnapshot().galenics instanceof Set, 'el snapshot expone `galenics`');
+    ok(app2._activeFilterCount(app2._filterSnapshot()) === 0, 'sin filtros, el contador es 0');
+
+    app2.filterState.galenics = new Set(['inhalado']);
+    const snap = app2._filterSnapshot();
+    ok(app2._activeFilterCount(snap) === 1, '«Limpiar N» cuenta también la familia galénica');
+
+    const pred = app2._filterPredicate('galenic', snap);
+    const inhalador = { formaFarmaceuticaSimplificada: { nombre: 'INHALACIÓN PULMONAR' } };
+    const comprimido = { formaFarmaceuticaSimplificada: { nombre: 'COMPRIMIDO' } };
+    ok(pred(inhalador) === true && pred(comprimido) === false, 'el predicado filtra por familia');
+
+    ok(app2._facetURLParams(snap).galenic === 'inhalado', 'se serializa en la URL');
+    app2._restoreFiltersFromURL({ galenic: 'inhalado|nasal' });
+    ok(app2.filterState.galenics.size === 2, 'se restaura desde la URL');
+    app2._clearAllResultFilters();
+    ok(app2.filterState.galenics.size === 0, '«Limpiar» la vacía');
+
+    ok(/data-galenic="\$\{familia\.id\}"/.test(src), 'el icono de la tarjeta lleva la familia');
+    ok(src.includes('_wireGalenicIcons'), 'los iconos están cableados');
+    ok(src.includes('renderGalenicFilterChips'), 'hay chip para retirar el filtro cuando está activo');
+}
+
+console.log('\n— Accesos de la tarjeta —');
+{
+    const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const html = app._renderCardActions('12345');
+    ok((html.match(/<button/g) || []).length === 6, 'siguen siendo seis accesos');
+    for (const tab of ['docs', 'indications', 'posology', 'interactions', 'evidence', 'safety']) {
+        ok(html.includes(`'${tab}')`), `acceso a la pestaña ${tab}`);
+    }
+    ok((html.match(/aria-label=/g) || []).length === 6, 'los seis llevan aria-label (van sin texto)');
+    ok((html.match(/title=/g) || []).length === 6, 'los seis llevan tooltip');
+    ok(html.includes('card-act--primary'), 'Seguridad queda destacada');
+    ok(!/btn-sm/.test(html), 'ya no usan el botón grande con texto');
+    ok(src.includes('.card-act, .btn'), 'el clic en un acceso no abre además la ficha general');
 }
 
 console.log('\n— Filtro de forma del modal de alternativas —');

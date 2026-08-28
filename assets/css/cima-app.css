@@ -4232,6 +4232,91 @@ body {
     flex-shrink: 0;
 }
 
+/* El icono galénico ES el filtro de familia: pulsarlo deja solo los inhalados, los
+   cutáneos, los inyectables… Es un filtro sin superficie —no ocupa nada en la barra hasta
+   que se usa— y sin equivalencia que aprender, porque lo que se ve y lo que se filtra son
+   el mismo dato. Se anuncia con el cursor y el borde al pasar por encima; cuando está
+   activo, el chip de la banda superior permite quitarlo. */
+.med-icon-wrapper--filter {
+    padding: 0;
+    border: 1px solid transparent;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.med-icon-wrapper--filter:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+}
+
+.med-icon-wrapper--filter:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.med-icon-wrapper--filter.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+/* Banda de la familia galénica activa. Solo aparece cuando filtra: su superficie normal es
+   el icono de la tarjeta, no la barra. */
+.galenic-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    align-items: center;
+    padding: var(--space-xs) 0 var(--space-sm);
+    border-top: 1px solid rgba(14, 165, 233, 0.18);
+}
+
+.galenic-filter-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    white-space: nowrap;
+    opacity: 0.85;
+    padding-right: var(--space-xs);
+}
+
+.galenic-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 0.3rem 0.65rem;
+    background: var(--primary);
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-xl);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.galenic-chip:hover {
+    background: var(--danger);
+    border-color: var(--danger);
+}
+
+.galenic-chip:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.galenic-chip-x {
+    font-size: 0.68em;
+    opacity: 0.8;
+}
+
 .med-info-content {
     flex: 1;
     min-width: 0;
@@ -4429,19 +4514,81 @@ body {
     gap: var(--space-xs);
 }
 
-/* Card Actions - 2x2 quick-jump grid */
-.result-card-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-xs);
-    margin-top: auto;
-}
-
-.result-card-actions .btn {
-    justify-content: center;
-    white-space: nowrap;
+/* Dentro del pie, el borde y el espacio los pone el propio pie (si no, saldrían dos
+   líneas) y el nombre del laboratorio es lo que cede sitio a los iconos.
+   Va acotado a `.result-card-foot` a propósito: `.result-card-lab` se reutiliza suelto en
+   la vista de Alertas ("N. registro: …") y allí un `flex: 1 1 auto` lo estiraría a lo alto. */
+.result-card-foot .result-card-lab {
+    padding-top: 0;
+    border-top: 0;
+    min-width: 0;
+    flex: 1 1 auto;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.result-card-foot .result-card-lab i {
+    flex-shrink: 0;
+}
+
+/* Pie de tarjeta: laboratorio + accesos directos EN LA MISMA LÍNEA.
+   Los seis accesos eran una rejilla 2×3 de botones con texto que ocupaba ~110 px, más que
+   el contenido informativo de la tarjeta. Aquí comparten la línea del laboratorio, que
+   estaba medio vacía: las seis acciones pasan a costar 0 px de altura. */
+.result-card-foot {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: auto;
+    padding-top: var(--space-xs);
+    border-top: 1px solid var(--border-default);
+}
+
+.result-card-actions {
+    display: flex;
+    gap: 1px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+/* Botón de acción: solo icono. El nombre viaja en `title` y en `aria-label`. */
+.card-act {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 27px;
+    height: 27px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.card-act:hover {
+    background: var(--bg-surface-hover);
+    border-color: var(--border-hover);
+    color: var(--text-primary);
+}
+
+.card-act:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+}
+
+/* Seguridad: la única acción que cambia la conducta ante un paciente concreto. */
+.card-act--primary {
+    color: var(--primary);
+}
+
+.card-act--primary:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
 .w-full {
@@ -7121,9 +7268,13 @@ code {
         font-size: 0.7rem;
     }
 
-    /* Card action buttons - single column on very small screens */
-    .result-card-actions {
-        grid-template-columns: 1fr;
+    /* Los accesos son ya una fila de iconos: en pantalla estrecha lo que cede es el nombre
+       del laboratorio, que se recorta, no los botones. La zona táctil se mantiene en 30 px
+       (recomendación mínima de acierto con el dedo). */
+    .card-act {
+        width: 30px;
+        height: 30px;
+        font-size: 0.86rem;
     }
 
     /* Footer status bar */

@@ -1558,6 +1558,7 @@ class MedCheckApp {
         this.filterState.form = null;
         this.filterState.lab = null;
         this.filterState.doses = new Set();
+        this.filterState.galenics = new Set();
         this.groupingState?.routeFilters?.clear?.();
         this.groupingState?.activeIngredientFilters?.clear?.();
     }
@@ -2246,6 +2247,7 @@ class MedCheckApp {
             ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data)}
             ${this.renderRouteFilterChips(routes)}
             ${this.renderPAFilterChips(paList)}
+            ${this.renderGalenicFilterChips()}
             ${this.renderDoseFilterChips(universe, snap)}
             <div id="grouped-results">
                 ${this.renderGroupedResults(groups, this.lastSearchQuery)}
@@ -2260,12 +2262,15 @@ class MedCheckApp {
         // de repintado que el índice de suministro, S29).
         this._hydratePackTags(resultsContainer);
 
+        // El icono galénico de cada tarjeta es la superficie del filtro de familia.
+        this._wireGalenicIcons(resultsContainer, () => { this.displaySearchResults(data); this.updateURLWithCurrentState({ replace: true }); });
+
         // Add click handlers for cards
         resultsContainer.querySelectorAll('.result-card').forEach(card => {
             card.addEventListener('click', (e) => {
                 const tabTarget = e.target.closest('[data-open-tab]');
                 if (tabTarget) { this.openMedDetails(card.dataset.nregistro, tabTarget.dataset.openTab); return; }
-                if (e.target.closest('.badge-clickable, .fav-star-btn, .med-detail-tag--clickable, .atc-clinical-chip--clickable, .btn')) return;
+                if (e.target.closest('.badge-clickable, .fav-star-btn, .med-detail-tag--clickable, .atc-clinical-chip--clickable, .med-icon-wrapper--filter, .card-act, .btn')) return;
                 this.openMedDetails(card.dataset.nregistro);
             });
         });
@@ -2332,6 +2337,7 @@ class MedCheckApp {
 
         // Banda de dosis (misma semántica que vía y PA: Ctrl+clic para varias)
         this._wireDoseChips(document, applyFacet);
+        this._wireGalenicChips(document, applyFacet);
 
         // Casillas de tipo de producto y receta cuando la barra las muestra (misma
         // dimensión y mismo estado que las casillas superiores del buscador).
@@ -3674,6 +3680,19 @@ class MedCheckApp {
         return { id, ...families[id] };
     }
 
+    /**
+     * Palabras VACÍAS que el nombre puede intercalar dentro de la forma farmacéutica sin
+     * cambiar lo que dice. Lista CERRADA: solo artículos y nexos. Ninguna aporta contenido,
+     * así que saltarlas no puede hacer que se empareje una forma con otra distinta.
+     * Ya normalizadas por `_galenicToken` (sin acentos, sin plural).
+     */
+    static get NAME_FILLER() {
+        if (!MedCheckApp._FILLER) {
+            MedCheckApp._FILLER = new Set(['UN', 'UNA', 'EL', 'LA', 'LO', 'DE', 'DEL', 'AL']);
+        }
+        return MedCheckApp._FILLER;
+    }
+
     /** Normaliza una palabra para comparar nombre y forma: sin acentos, sin plural, sin puntuación. */
     _galenicToken(word) {
         return String(word || '')
@@ -3715,11 +3734,20 @@ class MedCheckApp {
         const fStem = fTok.map(w => this._galenicToken(w));
 
         for (let i = nTok.length - fStem.length; i >= 1; i--) {
-            let casa = true;
-            for (let j = 0; j < fStem.length; j++) {
-                if (nStem[i + j] !== fStem[j]) { casa = false; break; }
+            // La secuencia de la forma puede llevar ARTÍCULOS intercalados en el nombre y no
+            // en la forma declarada: `BINOCRIT … SOLUCION INYECTABLE EN **UNA** JERINGA
+            // PRECARGADA` frente a `SOLUCIÓN INYECTABLE EN JERINGA PRECARGADA`. Exigir
+            // contigüidad dejaba sin cortar los 11 BINOCRIT y los NOVORAPID: son 15
+            // productos en total, pero se agrupan por familia, así que un grupo entero de
+            // resultados se veía sin partir. Solo se saltan palabras de `NAME_FILLER`
+            // —lista cerrada de vacías—; cualquier palabra con contenido corta el intento.
+            let j = 0, k = i, saltos = 0;
+            while (j < fStem.length && k < nStem.length) {
+                if (nStem[k] === fStem[j]) { k++; j++; }
+                else if (MedCheckApp.NAME_FILLER.has(nStem[k]) && saltos < 3) { k++; saltos++; }
+                else break;
             }
-            if (!casa) continue;
+            if (j !== fStem.length) continue;
 
             const cabeza = nTok.slice(0, i).join(' ').replace(/[,;·\-\s]+$/, '').trim();
             if (!cabeza) break;
@@ -3937,10 +3965,16 @@ class MedCheckApp {
             ? `<span class="med-detail-tag med-detail-tag--dose" title="${this._escapeHtml(dose.title)}"><span class="med-detail-tag__text">${this._escapeHtml(dose.text)}</span></span>`
             : '';
 
-        // Icono por familia galénica sobre vocabulario cerrado (ver `_galenicFamily`).
+        // Icono por familia galénica sobre vocabulario cerrado (ver `_galenicFamily`). El
+        // icono ES el filtro: pulsarlo filtra por su familia. Un filtro sin superficie —no
+        // ocupa nada en la barra hasta que se usa— y sin equivalencia que aprender, porque
+        // lo que se ve y lo que se filtra son el mismo dato.
         const familia = this._galenicFamily(med);
         const medIcon = familia.icon;
-        const iconTitle = split.formaDeclarada ? `${familia.label} · ${split.formaDeclarada}` : familia.label;
+        const familiaActiva = !!this.filterState?.galenics?.has(familia.id);
+        const iconTitle = (split.formaDeclarada ? `${familia.label} · ${split.formaDeclarada}` : familia.label)
+            + (familiaActiva ? ' · filtro activo, pulsa para quitarlo' : ` · pulsa para ver solo ${familia.label.toLowerCase()}`)
+            + ' (Ctrl+clic para varias)';
 
         this._medRenderCache.set(med.nregistro, med);
         const isFav = this.isFavorite(med.nregistro);
@@ -3952,9 +3986,11 @@ class MedCheckApp {
         return `
             <div class="result-card${!med.comerc ? ' result-card--no-comerc' : ''}" data-nregistro="${med.nregistro}">
                 <div class="result-card-main">
-                    <div class="med-icon-wrapper indication" title="${this._escapeHtml(iconTitle)}">
+                    <button type="button" class="med-icon-wrapper indication med-icon-wrapper--filter${familiaActiva ? ' active' : ''}"
+                            data-galenic="${familia.id}" title="${this._escapeHtml(iconTitle)}"
+                            aria-pressed="${familiaActiva}" aria-label="${this._escapeHtml(`Filtrar por ${familia.label}`)}">
                         <i class="fas fa-${medIcon}"></i>
-                    </div>
+                    </button>
                     <div class="med-info-content">
                         <div class="result-card-header">
                             <span class="result-card-title" title="${this._escapeHtml(med.nombre)}">${cardTitle}</span>
@@ -3982,32 +4018,44 @@ class MedCheckApp {
                     ${badges.join('')}
                 </div>` : ''}
 
-                <div class="result-card-lab">
-                    <i class="fas fa-building"></i> ${med.labtitular || 'Laboratorio desconocido'}
-                </div>
-
-                <div class="result-card-actions">
-                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')" title="Ficha Técnica (PDF oficial)">
-                        <i class="fas fa-file-medical"></i> Ficha Técnica
-                    </button>
-                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'posology')" title="Posología y dosificación">
-                        <i class="fas fa-pills"></i> Posología
-                    </button>
-                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'interactions')" title="Interacciones medicamentosas">
-                        <i class="fas fa-random"></i> Interacciones
-                    </button>
-                    <button class="btn btn-sm btn-primary-outline" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')" title="Seguridad: embarazo, lactancia, conducción...">
-                        <i class="fas fa-shield-alt"></i> Seguridad
-                    </button>
-                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'indications')" title="Indicaciones autorizadas (sección 4.1 de la ficha técnica)">
-                        <i class="fas fa-stethoscope"></i> Indicaciones
-                    </button>
-                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'evidence')" title="Evidencia científica: PubMed y registros de ensayos clínicos">
-                        <i class="fas fa-book-medical"></i> Evidencia
-                    </button>
+                <div class="result-card-foot">
+                    <span class="result-card-lab" title="${this._escapeHtml(med.labtitular || 'Laboratorio desconocido')}">
+                        <i class="fas fa-building"></i> ${med.labtitular || 'Laboratorio desconocido'}
+                    </span>
+                    ${this._renderCardActions(med.nregistro)}
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Accesos directos a las pestañas del detalle, como barra de iconos en el pie.
+     *
+     * Antes eran seis botones con texto en una rejilla 2×3 que ocupaba ~110 px, más que el
+     * contenido informativo de la tarjeta: con 11 productos en pantalla, la mayor parte de
+     * lo que se veía eran botones repetidos. Aquí comparten la línea del laboratorio, que
+     * estaba medio vacía, así que las seis acciones **no cuestan altura ninguna**.
+     *
+     * El texto no se pierde: cada botón lleva `title` (tooltip) y `aria-label`. El orden es
+     * el mismo que el de las pestañas del modal al que llevan, para que la posición se
+     * aprenda una sola vez. Seguridad va destacada por ser la única que cambia la conducta
+     * en un paciente concreto.
+     */
+    _renderCardActions(nregistro) {
+        const acciones = [
+            ['docs', 'file-medical', 'Ficha Técnica', 'Ficha Técnica (PDF oficial)'],
+            ['indications', 'stethoscope', 'Indicaciones', 'Indicaciones autorizadas (sección 4.1)'],
+            ['posology', 'pills', 'Posología', 'Posología y dosificación'],
+            ['interactions', 'random', 'Interacciones', 'Interacciones medicamentosas'],
+            ['evidence', 'book-medical', 'Evidencia', 'Evidencia: PubMed y ensayos clínicos'],
+            ['safety', 'shield-alt', 'Seguridad', 'Seguridad: embarazo, lactancia, conducción…'],
+        ];
+        return `<div class="result-card-actions">${acciones.map(([tab, icono, etiqueta, ayuda]) => `
+                    <button type="button" class="card-act${tab === 'safety' ? ' card-act--primary' : ''}"
+                            onclick="event.stopPropagation(); app.openMedDetails('${nregistro}', '${tab}')"
+                            title="${this._escapeHtml(ayuda)}" aria-label="${this._escapeHtml(etiqueta)}">
+                        <i class="fas fa-${icono}"></i>
+                    </button>`).join('')}</div>`;
     }
 
 
@@ -10993,7 +11041,7 @@ ${materialesPlaceholder}
 
     /** Dimensiones del contrato, en el orden en que se aplican. */
     static get FILTER_DIMENSIONS() {
-        return ['productType', 'receta', 'form', 'lab', 'dose', 'route', 'pa'];
+        return ['productType', 'receta', 'form', 'lab', 'dose', 'galenic', 'route', 'pa'];
     }
 
     /**
@@ -11010,6 +11058,7 @@ ${materialesPlaceholder}
             form: fs.form || null,
             lab: fs.lab || null,
             doses: new Set(fs.doses || []),
+            galenics: new Set(fs.galenics || []),
             routes: new Set(gs.routeFilters || []),
             pas: new Set(gs.activeIngredientFilters || []),
         };
@@ -11060,6 +11109,11 @@ ${materialesPlaceholder}
                 return snap.lab ? (med) => (med.labtitular || 'Sin laboratorio') === snap.lab : null;
             case 'dose':
                 return snap.doses.size ? (med) => !!med.dosis && snap.doses.has(this.normalizeDosis(med.dosis)) : null;
+            case 'galenic':
+                // Familia galénica: la misma dimensión que pinta el icono de la tarjeta, para
+                // que pulsar el icono y filtrar sean literalmente lo mismo. OR dentro de la
+                // dimensión, como vía y principio activo.
+                return snap.galenics.size ? (med) => snap.galenics.has(this._galenicFamily(med).id) : null;
             case 'route':
                 return snap.routes.size
                     ? (med) => { for (const r of snap.routes) if (this._medMatchesRoute(med, r)) return true; return false; }
@@ -11113,13 +11167,14 @@ ${materialesPlaceholder}
             + (snap.form ? 1 : 0)
             + (snap.lab ? 1 : 0)
             + snap.doses.size
+            + snap.galenics.size
             + snap.routes.size
             + snap.pas.size;
     }
 
     /** Estado limpio de filtros de cliente. Un solo sitio donde se define el "vacío". */
     _emptyFilterState() {
-        return { form: null, lab: null, doses: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false };
+        return { form: null, lab: null, doses: new Set(), galenics: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false };
     }
 
     /**
@@ -11526,6 +11581,71 @@ ${materialesPlaceholder}
      * clic sobre el único activo = quitar. Antes, escondida en "Más filtros", acumulaba
      * sin Ctrl; tres bandas contiguas con dos comportamientos distintos serían una trampa.
      */
+    /**
+     * Cablea los iconos galénicos de las tarjetas como filtro. Misma semántica que las
+     * bandas de chips (clic = una, Ctrl/Cmd+clic = añadir, clic sobre la única activa =
+     * quitar), porque es la misma clase de dimensión aunque su superficie sea otra.
+     */
+    _wireGalenicIcons(container, onChange) {
+        (container || document).querySelectorAll('.med-icon-wrapper--filter[data-galenic]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = btn.dataset.galenic;
+                if (!id) return;
+                if (!this.filterState.galenics) this.filterState.galenics = new Set();
+                const set = this.filterState.galenics;
+
+                if (e.ctrlKey || e.metaKey) {
+                    if (set.has(id)) set.delete(id); else set.add(id);
+                } else if (set.size === 1 && set.has(id)) {
+                    set.clear();
+                } else {
+                    set.clear();
+                    set.add(id);
+                }
+                onChange();
+            });
+        });
+    }
+
+    /**
+     * Chip de la familia galénica activa. La dimensión no ocupa sitio en la barra mientras
+     * no se usa —su superficie es el icono de la tarjeta—, pero en cuanto filtra tiene que
+     * poder verse y quitarse desde el mismo sitio que las demás: un filtro que no se ve es
+     * un filtro del que el usuario no puede salir.
+     */
+    renderGalenicFilterChips() {
+        const activas = this.filterState?.galenics;
+        if (!activas || activas.size === 0) return '';
+        const { families } = MedCheckApp.GALENIC_FAMILIES;
+        const chips = [...activas].map(id => {
+            const f = families[id] || families.otros;
+            return `
+                <button class="galenic-chip active" data-galenic-off="${id}" title="Quitar el filtro ${this._escapeHtml(f.label)}">
+                    <i class="fas fa-${f.icon}"></i> ${this._escapeHtml(f.label)}
+                    <i class="fas fa-times galenic-chip-x"></i>
+                </button>`;
+        }).join('');
+        return `
+            <div class="route-filter-chips galenic-filter-chips">
+                <span class="galenic-filter-label">Forma:</span>
+                ${chips}
+                <span class="pa-filter-hint">se elige pulsando el icono de una tarjeta</span>
+            </div>
+        `;
+    }
+
+    /** Cablea el aspa de los chips de familia galénica. */
+    _wireGalenicChips(container, onChange) {
+        (container || document).querySelectorAll('[data-galenic-off]').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.filterState?.galenics?.delete(chip.dataset.galenicOff);
+                onChange();
+            });
+        });
+    }
+
     _wireDoseChips(container, onChange) {
         (container || document).querySelectorAll('.dose-chip[data-dose]').forEach(chip => {
             chip.addEventListener('click', (e) => {
@@ -11736,6 +11856,7 @@ ${materialesPlaceholder}
             ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data, { showDoses: false, showEFG: true })}
             ${this.renderRouteFilterChips(routes)}
             ${this.renderPAFilterChips(paList)}
+            ${this.renderGalenicFilterChips()}
             ${this.renderDoseFilterChips(universe, snap, { requireSinglePA: true, visibleResults: filteredResults })}
             <div id="grouped-results">
                 ${this.renderGroupedResults(groups, searchQuery)}
@@ -11750,12 +11871,15 @@ ${materialesPlaceholder}
         // de repintado que el índice de suministro, S29).
         this._hydratePackTags(resultsContainer);
 
+        // El icono galénico de cada tarjeta es la superficie del filtro de familia.
+        this._wireGalenicIcons(resultsContainer, () => this._applyIndicationFacet(data, searchQuery));
+
         // Add click handlers for cards
         resultsContainer.querySelectorAll('.result-card').forEach(card => {
             card.addEventListener('click', (e) => {
                 const tabTarget = e.target.closest('[data-open-tab]');
                 if (tabTarget) { this.openMedDetails(card.dataset.nregistro, tabTarget.dataset.openTab); return; }
-                if (e.target.closest('.badge-clickable, .fav-star-btn, .med-detail-tag--clickable, .atc-clinical-chip--clickable, .btn')) return;
+                if (e.target.closest('.badge-clickable, .fav-star-btn, .med-detail-tag--clickable, .atc-clinical-chip--clickable, .med-icon-wrapper--filter, .card-act, .btn')) return;
                 this.openMedDetails(card.dataset.nregistro);
             });
         });
@@ -11816,6 +11940,7 @@ ${materialesPlaceholder}
 
         // Banda de dosis (misma semántica que vía y PA: Ctrl+clic para varias)
         this._wireDoseChips(document, () => this._applyIndicationFacet(data, searchQuery));
+        this._wireGalenicChips(document, () => this._applyIndicationFacet(data, searchQuery));
 
         // EFG toggle
         document.getElementById('efg-filter')?.addEventListener('change', (e) => {
@@ -12060,6 +12185,7 @@ ${materialesPlaceholder}
         if (snap.form) params.form = snap.form;
         if (snap.lab) params.lab = snap.lab;
         if (snap.doses.size) params.dose = [...snap.doses].join('|');
+        if (snap.galenics.size) params.galenic = [...snap.galenics].join('|');
         if (snap.routes.size) params.route = [...snap.routes].join('|');
         if (snap.pas.size) params.pa = [...snap.pas].join('|');
         return params;
@@ -12074,6 +12200,7 @@ ${materialesPlaceholder}
         this.filterState.form = params.form || null;
         this.filterState.lab = params.lab || null;
         this.filterState.doses = new Set(params.dose ? params.dose.split('|').filter(Boolean) : []);
+        this.filterState.galenics = new Set(params.galenic ? params.galenic.split('|').filter(Boolean) : []);
         if (!this.groupingState) this.initGroupingState();
         this.groupingState.routeFilters = new Set(params.route ? params.route.split('|').filter(Boolean) : []);
         this.groupingState.activeIngredientFilters = new Set(params.pa ? params.pa.split('|').filter(Boolean) : []);
