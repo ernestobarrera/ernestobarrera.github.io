@@ -2246,6 +2246,7 @@ class MedCheckApp {
             ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data)}
             ${this.renderRouteFilterChips(routes)}
             ${this.renderPAFilterChips(paList)}
+            ${this.renderDoseFilterChips(universe, snap)}
             <div id="grouped-results">
                 ${this.renderGroupedResults(groups, this.lastSearchQuery)}
             </div>
@@ -2329,20 +2330,8 @@ class MedCheckApp {
             });
         }
 
-        // Dose chips (multi-select)
-        document.querySelectorAll('.filter-chip[data-dose]').forEach(chip => {
-            chip.addEventListener('click', () => {
-                const dose = chip.dataset.dose;
-                if (!this.filterState.doses) this.filterState.doses = new Set();
-
-                if (this.filterState.doses.has(dose)) {
-                    this.filterState.doses.delete(dose);
-                } else {
-                    this.filterState.doses.add(dose);
-                }
-                applyFacet();
-            });
-        });
+        // Banda de dosis (misma semántica que vía y PA: Ctrl+clic para varias)
+        this._wireDoseChips(document, applyFacet);
 
         // Casillas de tipo de producto y receta cuando la barra las muestra (misma
         // dimensión y mismo estado que las casillas superiores del buscador).
@@ -2636,140 +2625,6 @@ class MedCheckApp {
         // Fecha/ventana en una 2ª línea dentro del badge (estilos en línea para que se vea aunque el CSS esté cacheado).
         const dateLine = s.suffix ? `<span style="font-size:0.82em;opacity:0.78;font-weight:400;">${this._escapeHtml(s.suffix)}</span>` : '';
         return `<span class="badge ${s.badgeClass} badge-clickable" title="${this._escapeHtml(s.tooltip)}" onclick="event.stopPropagation(); app.showSupplyAlternativesByNregistro('${med.nregistro}', '${safeName}')"><i class="fas ${s.icon}"></i> <span style="display:inline-flex;flex-direction:column;line-height:1.15;text-align:left;"><span>${s.label}</span>${dateLine}</span></span>`;
-    }
-
-    renderMedCard(med) {
-        // Badges de estado — tipología de producto centralizada
-        const badges = [...this._renderProductTypeBadges(med)];
-        if (!med.comerc) badges.unshift('<span class="badge badge-no-comerc" title="Sin presentaciones comercializadas actualmente">No comercializado</span>');
-        if (med.receta) badges.push('<span class="badge badge-info">Receta</span>');
-        if (med.triangulo) badges.push('<span class="badge badge-danger" title="Triángulo negro - Vigilancia adicional">▲ Vigilancia</span>');
-        const supplyBadge = this._supplyBadgeHtml(med);
-        if (supplyBadge) badges.push(supplyBadge);
-        // RETIRADAS 2026-08-03 — insignias "⚠ Estupef." (med.estupiTemp) y "€ Económico"
-        // (med.precioMenor). Verificado en vivo contra CIMA el 2026-08-03: ninguno de los
-        // dos campos existe en /medicamentos, /medicamento ni /presentaciones, así que las
-        // condiciones eran inalcanzables y las insignias nunca podían renderizarse.
-        // El "precio menor" SÍ existe como concepto oficial (agrupaciones homogéneas del
-        // Nomenclátor); lo que falta es integrarlo en MedCheck desde esa fuente. No se
-        // reintroduce ninguna insignia económica hasta consumir esa fuente y poder decir
-        // exactamente qué afirma ("precio menor del conjunto"), no "opción eficiente".
-        // Notas de seguridad oficiales de la AEMPS
-        if (med.notas) badges.push(`<span class="badge badge-warning badge-clickable" title="Ver alertas de seguridad de la AEMPS" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'alerts')"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>`);
-        if (med.materialesInf) badges.push(`<span class="badge badge-material badge-clickable" title="Ver materiales informativos de seguridad (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
-
-        // Alertas según contexto del paciente
-        const contextAlerts = [];
-        if (this.patientContext.driving && med.conduc) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Afecta a la conducción" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-car"></i> Conducción</div>`);
-        }
-        if (this.patientContext.elderly) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Paciente mayor de 65 años - Ver precauciones" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-user-clock"></i> Revisar >65</div>`);
-        }
-        if (this.patientContext.pregnancy || this.patientContext.lactation) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Ver sección 4.6 - Fertilidad, embarazo y lactancia" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-baby"></i> Revisar Emb/Lact</div>`);
-        }
-        if (this.patientContext.renal) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Insuficiencia renal - Ver ajuste de dosis" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-droplet"></i> Revisar Renal</div>`);
-        }
-        if (this.patientContext.hepatic) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Insuficiencia hepática - Ver ajuste de dosis" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-disease"></i> Revisar Hepático</div>`);
-        }
-
-        // Información principal - Principio activo desde la API
-        // Solo usar campos oficiales de la API, no intentar extraer del nombre comercial
-        let pActivo = '';
-        if (med.pactivos) {
-            pActivo = med.pactivos;
-        } else if (med.vtm?.nombre) {
-            pActivo = med.vtm.nombre;
-        } else if (med.principiosActivos && med.principiosActivos.length > 0) {
-            pActivo = med.principiosActivos.map(pa => pa.nombre).join(', ');
-        }
-
-        // Evitar mostrar pActivo si es igual o muy similar al título (redundante)
-        if (pActivo) {
-            const nombreLower = med.nombre.toLowerCase();
-            const pActivoLower = pActivo.toLowerCase();
-            // Si el nombre contiene el principio activo completo, es redundante
-            if (nombreLower.includes(pActivoLower) || pActivoLower.includes(nombreLower.split(' ')[0])) {
-                pActivo = ''; // No mostrar para evitar redundancia
-            }
-        }
-        const dosis = med.dosis || '';
-        const formaFarm = med.formaFarmaceutica?.nombre || '';
-        const presentationSummary = this._formatPresentationSummary(med);
-
-        // Icono según forma farmacéutica (aproximación simple)
-        let medIcon = 'pills';
-        if (formaFarm.toLowerCase().includes('inyec') || formaFarm.toLowerCase().includes('solu')) medIcon = 'syringe';
-        if (formaFarm.toLowerCase().includes('jarabe') || formaFarm.toLowerCase().includes('susp')) medIcon = 'flask';
-        if (formaFarm.toLowerCase().includes('crema') || formaFarm.toLowerCase().includes('pomada')) medIcon = 'hand-holding-medical';
-
-        // Get ATC clinical info
-        const atcInfo = this.getATCClinicalInfo(med);
-        const atcCode = med.atcs?.[0]?.codigo || null;
-        const atcChip = atcInfo ? `
-            <div class="atc-clinical-chip${atcCode ? ' atc-clinical-chip--clickable' : ''}" style="background: ${atcInfo.color}15; border-color: ${atcInfo.color}40;" title="${atcCode ? 'Ver medicamentos con ATC ' + atcCode : atcInfo.tip}"${atcCode ? ` data-atc-code="${atcCode}" data-atc-name="${atcInfo.class.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); app.navigateToATCFromModal(this.dataset.atcCode, this.dataset.atcName);"` : ''}>
-                <i class="fas fa-${atcInfo.icon}" style="color: ${atcInfo.color};"></i>
-                <span style="color: ${atcInfo.color};">${atcInfo.class}</span>
-                ${atcInfo.tip ? `<span class="atc-tip">· ${atcInfo.tip}</span>` : ''}
-            </div>
-        ` : '';
-
-        // Cache med object so onclick can look it up by nregistro (avoids JSON in HTML attributes)
-        this._medRenderCache.set(med.nregistro, med);
-        const isFav = this.isFavorite(med.nregistro);
-        return `
-            <div class="result-card${!med.comerc ? ' result-card--no-comerc' : ''}" data-nregistro="${med.nregistro}" title="Ver información general">
-                <div class="result-card-main">
-                    <div class="med-icon-wrapper">
-                        <i class="fas fa-${medIcon}"></i>
-                    </div>
-                    <div class="med-info-content">
-                        <div class="result-card-header">
-                            <span class="result-card-title">${med.nombre}</span>
-                            <button class="fav-star-btn ${isFav ? 'active' : ''}"
-                                onclick="event.stopPropagation(); app.toggleFavoriteById('${med.nregistro}', this); app.updateFavoritesBadge();"
-                                title="${isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}">
-                                <i class="fas fa-star"></i>
-                            </button>
-                        </div>
-                        <div class="med-details-inline">
-                            ${pActivo ? `<span class="med-detail-tag med-detail-tag--clickable" data-pa="${pActivo.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); app.searchByPA(this.dataset.pa);" title="Buscar otros medicamentos con ${pActivo.replace(/"/g, '&quot;')}"><i class="fas fa-flask"></i> ${pActivo}</span>` : ''}
-                            ${dosis ? `<span class="med-detail-tag">${dosis}</span>` : ''}
-                            ${presentationSummary ? `<span class="med-detail-tag" title="Formatos de envase">${presentationSummary}</span>` : ''}
-                        </div>
-                        ${atcChip}
-                    </div>
-                </div>
-
-                ${(badges.length > 0 || contextAlerts.length > 0) ? `
-                <div class="result-card-badges">
-                    ${contextAlerts.join('')}
-                    ${badges.join('')}
-                </div>` : ''}
-
-                <div class="result-card-lab">
-                    <i class="fas fa-building"></i> ${med.labtitular || 'Laboratorio desconocido'}
-                </div>
-
-                <div class="result-card-actions">
-                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')" title="Ficha Técnica (PDF oficial)">
-                        <i class="fas fa-file-medical"></i> Ficha Técnica
-                    </button>
-                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'posology')" title="Posología y dosificación">
-                        <i class="fas fa-pills"></i> Posología
-                    </button>
-                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'interactions')" title="Interacciones medicamentosas">
-                        <i class="fas fa-random"></i> Interacciones
-                    </button>
-                    <button class="btn btn-sm btn-primary-outline" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')" title="Seguridad: embarazo, lactancia, conducción...">
-                        <i class="fas fa-shield-alt"></i> Seguridad
-                    </button>
-                </div>
-            </div>
-        `;
     }
 
 
@@ -3730,6 +3585,262 @@ class MedCheckApp {
         this.displayGroupedIndicationResults(data, searchQuery);
     }
 
+    // ============================================
+    // IDENTIDAD GALÉNICA DE LA TARJETA
+    // ============================================
+    // El nombre oficial de CIMA es una frase con estructura fija —marca + dosis + forma
+    // farmacéutica (+ EFG)— y la tarjeta lo trataba como un bloque opaco: lo recortaba a dos
+    // líneas por el final, que es justo donde vive lo que discrimina. A la vez, el icono se
+    // decidía con seis `includes()` sobre `formaFarmaceutica.nombre`, que es texto libre con
+    // 240 valores: `includes('solu')` marcaba con jeringuilla las soluciones cutáneas,
+    // rectales, óticas, nasales y bucales. Medido sobre los 16.103 comercializados el
+    // 2026-08-27: 1.365 iconos discordantes, de los cuales 721 eran jeringuillas falsas.
+    //
+    // Las dos correcciones salen del MISMO sitio: campos que CIMA ya entrega separados.
+
+    /**
+     * Vocabulario cerrado de `formaFarmaceuticaSimplificada` (67 valores medidos en el
+     * catálogo completo) agrupado en 12 familias con icono propio.
+     *
+     * Es un mapa EXPLÍCITO a propósito, no una lista de `includes`: una lista cerrada se
+     * escribe una vez, se audita y no puede fallar en silencio con un valor nuevo. Lo que
+     * no esté mapeado cae en `otros` con icono neutro —nunca hereda el icono de otra
+     * familia—, que es el modo de fallo correcto si la AEMPS amplía el vocabulario.
+     *
+     * El icono es una pista de vía, no una afirmación galénica: la afirmación exacta la
+     * hace la línea de forma farmacéutica de la tarjeta, en texto y literal de la fuente.
+     */
+    static get GALENIC_FAMILIES() {
+        if (!MedCheckApp._GAL_FAM) {
+            const F = {
+                'oral-solido':    { label: 'Oral sólido',        icon: 'pills' },
+                'oral-liquido':   { label: 'Oral líquido',       icon: 'bottle-droplet' },
+                'bucal':          { label: 'Bucal / sublingual', icon: 'tooth' },
+                'inyectable':     { label: 'Inyectable',         icon: 'syringe' },
+                'inhalado':       { label: 'Inhalado',           icon: 'lungs' },
+                'nasal':          { label: 'Nasal',              icon: 'spray-can' },
+                'oftalmico':      { label: 'Oftálmico',          icon: 'eye' },
+                'otico':          { label: 'Ótico',              icon: 'ear-listen' },
+                'topico':         { label: 'Cutáneo',            icon: 'hand-holding-droplet' },
+                'transdermico':   { label: 'Transdérmico',       icon: 'bandage' },
+                'rectal-vaginal': { label: 'Rectal / vaginal',   icon: 'capsules' },
+                'otros':          { label: 'Otra vía',           icon: 'prescription-bottle-medical' },
+            };
+            const M = {
+                'COMPRIMIDO': 'oral-solido', 'CAPSULA': 'oral-solido',
+                'COMPRIMIDO LIBERACION MODIFICADA': 'oral-solido', 'CAPSULA LIBERACION MODIFICADA': 'oral-solido',
+                'COMPRIMIDO BUCODISPERSABLE/LIOTAB': 'oral-solido', 'COMPRIMIDO MASTICABLE': 'oral-solido',
+                'COMPRIMIDO EFERVESCENTE': 'oral-solido', 'CHICLE': 'oral-solido',
+                'POLVO/GRANULADO LIBERACION MODIFICADA': 'oral-solido',
+                'SOLUCIÓN/SUSPENSIÓN ORAL': 'oral-liquido', 'SOLUCION/SUSPENSION GOTAS ORALES': 'oral-liquido',
+                'SOLUCIÓN/SUSPENSIÓN ORAL EFERVESCENTE': 'oral-liquido', 'LIQUIDO GASTROENTERICO': 'oral-liquido',
+                'SOLUCIÓN/SUSPENSIÓN ORAL/RECTAL': 'oral-liquido', 'SOLUCIÓN/SUSPENSIÓN ORAL/INYECTABLE': 'oral-liquido',
+                'SOLUCIÓN/SUSPENSIÓN ORAL/INYECTABLE PERFUSIÓN': 'oral-liquido',
+                'SOLUCIÓN/SUSPENSIÓN ORAL/INHALACIÓN PULMONAR': 'oral-liquido', 'GEL INTESTINAL': 'oral-liquido',
+                'COMPRIMIDO SUBLINGUAL': 'bucal', 'COMPRIMIDO BUCAL/PARA CHUPAR': 'bucal',
+                'PULVERIZACION BUCAL': 'bucal', 'PULVERIZACION SUBLINGUAL': 'bucal',
+                'GEL/PASTA/LIQUIDO BUCAL': 'bucal', 'PRODUCTO USO BUCAL TOPICO': 'bucal',
+                'INYECTABLE': 'inyectable', 'INYECTABLE PERFUSION': 'inyectable',
+                'INYECTABLE/INTRAVESICAL': 'inyectable', 'HEMOFILTRACION': 'inyectable',
+                'DIALISIS PERITONEAL': 'inyectable', 'RADIOFARMACO': 'inyectable',
+                'CONSERVACION ORGANOS': 'inyectable', 'IMPLANTE': 'inyectable',
+                'PREPARADO IRRIGACION VESICAL': 'inyectable', 'PRUEBA ALERGIA': 'inyectable',
+                'SOLUCIÓN PARA MODIFICACIÓN DE LAS FRACCIONES SANGUÍNEAS': 'inyectable',
+                'INHALACIÓN PULMONAR': 'inhalado', 'INHALACION ENDOTRAQUEOPULMONAR': 'inhalado',
+                'PRODUCTO USO NASAL': 'nasal',
+                'COLIRIO': 'oftalmico', 'COLIRIO DE LIBERACION PROLONGADA': 'oftalmico',
+                'POMADA OFTALMICA': 'oftalmico', 'GEL OFTALMICO': 'oftalmico', 'IMPLANTE OFTALMICO': 'oftalmico',
+                'LÍQUIDO OTICO': 'otico', 'POMADA OFTÁLMICA/ÓTICA': 'otico',
+                'CREMA': 'topico', 'POMADA': 'topico', 'GEL': 'topico', 'EMULSION': 'topico', 'PASTA': 'topico',
+                'LIQUIDO USO TOPICO': 'topico', 'SOLIDO USO TOPICO': 'topico', 'CHAMPU': 'topico',
+                'BARNIZ DE UÑAS': 'topico', 'ADHESIVO TISULAR': 'topico', 'SOLUCIÓN TRANSDÉRMICA': 'topico',
+                'PARCHE TRANSDERMICO': 'transdermico', 'APÓSITO': 'transdermico',
+                'SUPOSITORIO': 'rectal-vaginal', 'LIQUIDO RECTAL': 'rectal-vaginal',
+                'SEMISOLIDO RECTAL': 'rectal-vaginal', 'OVULO/CAPSULA/COMPRIMIDO VAGINAL': 'rectal-vaginal',
+                'SEMISOLIDO VAGINAL': 'rectal-vaginal', 'LIQUIDO VAGINAL': 'rectal-vaginal',
+                'DISPOSITIVO VAGINAL': 'rectal-vaginal', 'DISPOSITIVO INTRAUTERINO': 'rectal-vaginal',
+                'GEL INTRAUTERINO': 'rectal-vaginal',
+            };
+            MedCheckApp._GAL_FAM = Object.freeze({ families: Object.freeze(F), map: new Map(Object.entries(M)) });
+        }
+        return MedCheckApp._GAL_FAM;
+    }
+
+    /** Familia galénica de un medicamento. Nunca devuelve null: el desconocido es `otros`. */
+    _galenicFamily(med) {
+        const { families, map } = MedCheckApp.GALENIC_FAMILIES;
+        const key = (med?.formaFarmaceuticaSimplificada?.nombre || '').trim().toUpperCase();
+        const id = map.get(key) || 'otros';
+        return { id, ...families[id] };
+    }
+
+    /** Normaliza una palabra para comparar nombre y forma: sin acentos, sin plural, sin puntuación. */
+    _galenicToken(word) {
+        return String(word || '')
+            .normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .toUpperCase().replace(/[^A-Z0-9]+/g, '')
+            .replace(/S$/, '');
+    }
+
+    /**
+     * Parte el nombre oficial en cabeza clínica y cola galénica, guiado por
+     * `formaFarmaceutica.nombre` — nunca por una expresión regular sobre el nombre.
+     *
+     * Se busca la ÚLTIMA aparición de la secuencia de palabras de la forma farmacéutica y
+     * se corta ahí. Tolera acentos, mayúsculas y el plural español (`COMPRIMIDOS` ≡
+     * `COMPRIMIDO`); la última aparición, y no la coincidencia exacta al final, es lo que
+     * recoge el acondicionamiento que CIMA añade detrás ("… SOLUCION INYECTABLE EN JERINGA
+     * PRECARGADA"). Medido sobre los 16.103 comercializados: corta en el 95,1 %.
+     *
+     * Dos guardas, ambas de fallo en abierto —si no se puede demostrar el corte, el nombre
+     * se muestra íntegro y no se inventa nada—:
+     *   1. Si la forma no aparece, no se corta. Es el 4,9 %: erratas de origen
+     *      (`COMPRIMDOS`) y divergencias reales (`AMBROXOL … SOLUCION ORAL` con
+     *      `formaFarmaceutica = JARABE`).
+     *   2. Si la cabeza se quedara sin ninguna cifra que el nombre sí tenía, tampoco se
+     *      corta: son 6 productos que escriben la dosis DETRÁS de la forma
+     *      (`LOITIN CAPSULAS DURAS 100 mg`).
+     *
+     * @returns {{cabeza: string, marca: string, dosisNombre: string, forma: string, cortado: boolean}}
+     */
+    _splitOfficialName(med) {
+        const nombre = String(med?.nombre || '').replace(/\s+/g, ' ').trim();
+        const vacio = { cabeza: nombre, marca: nombre, dosisNombre: '', forma: '', formaDeclarada: '', cortado: false };
+        const formaLiteral = med?.formaFarmaceutica?.nombre || '';
+        const fTok = formaLiteral.split(/\s+/).filter(Boolean);
+        const nTok = nombre.split(' ');
+        if (!fTok.length || fTok.length >= nTok.length) return vacio;
+
+        const nStem = nTok.map(w => this._galenicToken(w));
+        const fStem = fTok.map(w => this._galenicToken(w));
+
+        for (let i = nTok.length - fStem.length; i >= 1; i--) {
+            let casa = true;
+            for (let j = 0; j < fStem.length; j++) {
+                if (nStem[i + j] !== fStem[j]) { casa = false; break; }
+            }
+            if (!casa) continue;
+
+            const cabeza = nTok.slice(0, i).join(' ').replace(/[,;·\-\s]+$/, '').trim();
+            if (!cabeza) break;
+            if (!/\d/.test(cabeza) && /\d/.test(nombre)) break;   // guarda 2
+
+            // La cola es el TEXTO LITERAL del nombre a partir del corte, no
+            // `formaFarmaceutica.nombre`. En 616 productos (3,83 %) el nombre añade detrás
+            // de la forma información que la forma declarada no recoge y que es clínica:
+            // "PARCHE TRANSDÉRMICO 96 HORAS", "GAS COMPRIMIDO MEDICINAL 300 BAR",
+            // "SOLUCIÓN INYECTABLE EN PLUMA PRECARGADA", "GRANULADO SABOR MENTA". Mostrar
+            // solo la forma declarada las perdía. Lo cazó el contraste con Codex del
+            // 2026-08-28. Del literal solo se descuenta `EFG`, que ya viaja como insignia.
+            const cola = nTok.slice(i).join(' ').replace(/[\s,]+EFG[.,]?$/i, '').trim();
+
+            // Dentro de la cabeza, la marca es lo anterior a la primera cifra.
+            const cTok = cabeza.split(' ');
+            const corte = cTok.findIndex(t => /^\d/.test(t));
+            return {
+                cabeza,
+                marca: corte > 0 ? cTok.slice(0, corte).join(' ') : cabeza,
+                dosisNombre: corte > 0 ? cTok.slice(corte).join(' ') : '',
+                forma: cola || formaLiteral,
+                formaDeclarada: formaLiteral,
+                cortado: true,
+            };
+        }
+        return vacio;
+    }
+
+    /**
+     * Denominadores CUALITATIVOS: dicen "por unidad de administración", no una magnitud.
+     * Que el nombre lleve "/inhalación" y el campo no —o al revés— no cambia la potencia,
+     * así que no debe impedir que la dosis baje al subtítulo. Lista CERRADA a propósito:
+     * `/ml`, `/g` y `/2 ml` NO están, porque esos sí convierten una cantidad en una
+     * concentración y perderlos cambiaría la lectura.
+     */
+    static get DOSE_QUALITATIVE_DENOM() {
+        if (!MedCheckApp._DOSE_QD) {
+            MedCheckApp._DOSE_QD = /\/\s*(dosis|inhalacion|pulsacion|pulverizacion|aplicacion|comprimido|capsula|parche|sobre|nebulizacion|actuacion|vial|unidosis)\b/g;
+        }
+        return MedCheckApp._DOSE_QD;
+    }
+
+    /**
+     * Firma léxica de una dosis: minúsculas, sin acentos, unidades llevadas a su forma
+     * canónica y espacios/puntos fuera. Sirve para comparar DOS textos de dosis, no para
+     * mostrarlos —de eso se ocupa `_canonicalDose`—.
+     *
+     * Reutiliza `DOSE_UNITS`, el mismo vocabulario del canonicalizador, y le añade los
+     * denominadores de volumen (`ml`, `l`) que aquel excluye a propósito: aquí SÍ hacen
+     * falta, porque son justo lo que distingue "500 mg" de "500 mg/2 ml".
+     */
+    /** Vocabulario y expresión de la firma, compilados una vez. */
+    static _fingerprintUnits() {
+        if (!MedCheckApp._FP) {
+            const pares = [
+                ...MedCheckApp.DOSE_UNITS,
+                ['mililitros', 'ml'], ['mililitro', 'ml'], ['ml', 'ml'],
+                ['litros', 'l'], ['litro', 'l'],
+            ].map(([raw, canon]) => [raw.toLowerCase(), canon]);
+            // La alternancia va de más larga a más corta (`DOSE_UNITS` ya lo garantiza) y
+            // lleva el mismo lookahead que `_doseRegexes`: sin él, la entrada `u` de
+            // `DOSE_UNITS` convertiría la "u" de cualquier palabra, y `g` partiría `gramos`.
+            // El único carácter especial del vocabulario es el punto de `u.i.`.
+            const alternancia = pares
+                .map(([raw]) => raw.split('.').join('[.]'))
+                .join('|');
+            MedCheckApp._FP = {
+                map: new Map(pares),
+                re: new RegExp(`(?:${alternancia})(?![a-z0-9])`, 'g'),
+            };
+        }
+        return MedCheckApp._FP;
+    }
+
+    _doseFingerprint(texto) {
+        let s = String(texto ?? '').toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, ' ').trim();
+        if (!s) return '';
+        s = s.replace(MedCheckApp.DOSE_QUALITATIVE_DENOM, '');
+        const { map, re } = MedCheckApp._fingerprintUnits();
+        s = s.replace(re, (m) => map.get(m) || m);
+        return s.replace(/[\s.]/g, '').replace(/,/g, '.');
+    }
+
+    /**
+     * ¿Dice el chip de dosis EXACTAMENTE lo mismo que la dosis escrita en el nombre?
+     *
+     * Es la condición para que el título pueda soltar la dosis, y tiene que ser estricta
+     * porque un falso positivo sustituye visualmente una dosis por otra.
+     *
+     * Comparar solo las cifras NO basta, y el contraste con Codex del 2026-08-28 lo
+     * demostró con un caso real: `DAXAS 500 MICROGRAMOS COMPRIMIDOS` declara
+     * `dosis = "500 mg"` —errata de la fuente, la ficha técnica dice microgramos—. Las
+     * cifras coinciden, así que la regla anterior bajaba la dosis y la tarjeta mostraba
+     * **500 mg en lugar de 500 microgramos**: un error de 1000× introducido por la interfaz
+     * sobre un dato que la fuente ya traía mal. Es exactamente el modo de fallo contra el
+     * que el canonicalizador de dosis ya se protege ("nunca se inventa una unidad").
+     * El sentido contrario también existe: `BACTROBAN NASAL 20 mg/g` declara `20 µg/g`.
+     *
+     * Ahora se comparan las firmas léxicas completas —cifra, unidad y denominador—, así que
+     * también se queda arriba lo que perdería estructura: `AMOXICILINA NORMON 250 MG/5 ML`
+     * frente a `dosis = "250 mg"` conserva su concentración en el título.
+     *
+     * Cobertura medida sobre los 16.103 comercializados: baja del 84,0 % (regla insegura)
+     * al 67,3 %. El resto no pierde nada: la dosis sigue en el título, como hasta ahora.
+     */
+    _doseIsInName(med, dosisNombre) {
+        if (!dosisNombre) return false;
+        const campo = this._doseFingerprint(med?.dosis);
+        if (!campo) return false;
+        return campo === this._doseFingerprint(dosisNombre);
+    }
+
+    /** Forma farmacéutica en caja de frase para la línea visible ("Polvo para inhalación"). */
+    _formaFarmaceuticaTexto(literal) {
+        const s = String(literal || '').trim().toLowerCase();
+        return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+    }
+
     renderIndicationMedCard(med, searchQuery) {
         // Badges de estado — tipología de producto centralizada
         const badges = [...this._renderProductTypeBadges(med)];
@@ -3739,9 +3850,19 @@ class MedCheckApp {
         // Badge de suministro (modelo central; neutro, fiel al nomenclátor)
         const supplyBadgeInd = this._supplyBadgeHtml(med);
         if (supplyBadgeInd) badges.push(supplyBadgeInd);
-        // RETIRADAS 2026-08-03 — "⚠ Estupef." y "€ Económico": los campos `estupiTemp` y
-        // `precioMenor` no existen en ningún endpoint de CIMA que MedCheck consuma
-        // (verificado en vivo). Ver la nota extensa en `renderMedCard`.
+        // RETIRADAS 2026-08-03 — insignias "⚠ Estupef." (med.estupiTemp) y "€ Económico"
+        // (med.precioMenor). Verificado en vivo contra CIMA el 2026-08-03: ninguno de los dos
+        // campos existe en /medicamentos, /medicamento ni /presentaciones, así que las
+        // condiciones eran inalcanzables y las insignias nunca podían renderizarse.
+        // El "precio menor" SÍ existe como concepto oficial (agrupaciones homogéneas del
+        // Nomenclátor); lo que falta es integrarlo en MedCheck desde esa fuente. No se
+        // reintroduce ninguna insignia económica hasta consumir esa fuente y poder decir
+        // exactamente qué afirma ("precio menor del conjunto"), no "opción eficiente".
+        // `medcheck-test-filters` vigila que ninguna de las dos vuelva.
+        //
+        // Esta nota vivía en `renderMedCard`, un segundo renderizador de tarjeta que ninguna
+        // vista llamaba y que se retiró el 2026-08-28. Se muda aquí, que es donde se
+        // construyen de verdad las insignias.
         // Notas de seguridad AEMPS
         if (med.notas) badges.push(`<span class="badge badge-warning badge-clickable" title="Ver alertas de seguridad de la AEMPS" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'alerts')"><i class="fas fa-exclamation-circle"></i> Alertas AEMPS</span>`);
         if (med.materialesInf) badges.push(`<span class="badge badge-material badge-clickable" title="Ver materiales informativos de seguridad (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
@@ -3783,28 +3904,43 @@ class MedCheckApp {
             }
         }
 
-        // Dosis normalizada cuando es potencia simple; literal oficial en el tooltip.
-        // El texto va en un span propio: `text-overflow` no actúa sobre el ítem anónimo de
-        // un contenedor flex, y `.med-detail-tag` es `inline-flex` (icono + texto).
+        // Identidad galénica: el nombre oficial se parte en cabeza clínica y cola galénica
+        // (ver `_splitOfficialName`), y la cola pasa a una línea propia bajo el título. La
+        // forma farmacéutica NO se mostraba en ninguna parte de la tarjeta pese a gobernar
+        // un filtro: lo que se recortaba y lo que faltaba eran el mismo texto.
+        const split = this._splitOfficialName(med);
         const dose = this._displayDose(med.dosis);
-        const doseTag = dose.text
+
+        // La dosis sale del título solo si el chip la cubre —mismas cifras—, y al bajar usa
+        // la forma CANÓNICA, que es la que agrupan los chips de filtro: así la tarjeta y el
+        // filtro no pueden divergir. Si no la cubre, la dosis se queda arriba tal como la
+        // escribe CIMA y el chip aparece igualmente, porque informa de otra magnitud.
+        const doseBajaAlSubtitulo = split.cortado && this._doseIsInName(med, split.dosisNombre) && !!dose.text;
+        const cardTitle = doseBajaAlSubtitulo ? split.marca : split.cabeza;
+        const subDose = doseBajaAlSubtitulo ? dose.text : '';
+        const formaTexto = split.cortado ? this._formaFarmaceuticaTexto(split.forma) : '';
+
+        // Línea galénica: "160 mcg/4,5 mcg · Polvo para inhalación (unidosis)". Los dos
+        // literales oficiales viven en el tooltip, sin canonicalizar.
+        const subTip = [dose.title, split.formaDeclarada ? `Forma farmacéutica: ${split.formaDeclarada}` : '']
+            .filter(Boolean).join(' · ');
+        const subParts = [
+            subDose ? `<span class="med-sub-dose">${this._escapeHtml(subDose)}</span>` : '',
+            formaTexto ? this._escapeHtml(formaTexto) : '',
+        ].filter(Boolean);
+        const subLine = subParts.length
+            ? `<span class="med-sub-galenic" title="${this._escapeHtml(subTip)}">${subParts.join(' · ')}</span>`
+            : '';
+
+        // El chip solo sobrevive cuando dice algo que el título ya no dice.
+        const doseTag = (!doseBajaAlSubtitulo && dose.text)
             ? `<span class="med-detail-tag med-detail-tag--dose" title="${this._escapeHtml(dose.title)}"><span class="med-detail-tag__text">${this._escapeHtml(dose.text)}</span></span>`
             : '';
 
-        // Extraer código ATC principal para mostrar
-        let atcCode = '';
-        if (med.atcs && med.atcs.length > 0) {
-            atcCode = med.atcs[0].codigo || '';
-        }
-
-        // Icon based on forma farmacéutica
-        let medIcon = 'pills';
-        const formaFarm = med.formaFarmaceutica?.nombre || '';
-        if (formaFarm.toLowerCase().includes('inyec') || formaFarm.toLowerCase().includes('solu')) medIcon = 'syringe';
-        if (formaFarm.toLowerCase().includes('jarabe') || formaFarm.toLowerCase().includes('susp')) medIcon = 'flask';
-        if (formaFarm.toLowerCase().includes('crema') || formaFarm.toLowerCase().includes('pomada')) medIcon = 'hand-holding-medical';
-        if (formaFarm.toLowerCase().includes('colirio') || formaFarm.toLowerCase().includes('ocular')) medIcon = 'eye-dropper';
-        if (formaFarm.toLowerCase().includes('inhal')) medIcon = 'wind';
+        // Icono por familia galénica sobre vocabulario cerrado (ver `_galenicFamily`).
+        const familia = this._galenicFamily(med);
+        const medIcon = familia.icon;
+        const iconTitle = split.formaDeclarada ? `${familia.label} · ${split.formaDeclarada}` : familia.label;
 
         this._medRenderCache.set(med.nregistro, med);
         const isFav = this.isFavorite(med.nregistro);
@@ -3816,18 +3952,19 @@ class MedCheckApp {
         return `
             <div class="result-card${!med.comerc ? ' result-card--no-comerc' : ''}" data-nregistro="${med.nregistro}">
                 <div class="result-card-main">
-                    <div class="med-icon-wrapper indication">
+                    <div class="med-icon-wrapper indication" title="${this._escapeHtml(iconTitle)}">
                         <i class="fas fa-${medIcon}"></i>
                     </div>
                     <div class="med-info-content">
                         <div class="result-card-header">
-                            <span class="result-card-title">${med.nombre}</span>
+                            <span class="result-card-title" title="${this._escapeHtml(med.nombre)}">${cardTitle}</span>
                             <button class="fav-star-btn ${isFav ? 'active' : ''}"
                                 onclick="event.stopPropagation(); app.toggleFavoriteById('${med.nregistro}', this); app.updateFavoritesBadge();"
                                 title="${isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}">
                                 <i class="fas fa-star"></i>
                             </button>
                         </div>
+                        ${subLine}
                     </div>
                 </div>
 
@@ -3861,6 +3998,12 @@ class MedCheckApp {
                     </button>
                     <button class="btn btn-sm btn-primary-outline" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')" title="Seguridad: embarazo, lactancia, conducción...">
                         <i class="fas fa-shield-alt"></i> Seguridad
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'indications')" title="Indicaciones autorizadas (sección 4.1 de la ficha técnica)">
+                        <i class="fas fa-stethoscope"></i> Indicaciones
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'evidence')" title="Evidencia científica: PubMed y registros de ensayos clínicos">
+                        <i class="fas fa-book-medical"></i> Evidencia
                     </button>
                 </div>
             </div>
@@ -10316,7 +10459,11 @@ ${materialesPlaceholder}
                             const cardForm = card.dataset.forma || '';
                             const cardGenerico = card.dataset.generico === 'true';
 
-                            const matchesForm = !selectedForm || cardForm.includes(selectedForm);
+                            // Igualdad, no `includes`: los dos lados salen del mismo
+                            // vocabulario cerrado (`formaFarmaceuticaSimplificada`), donde 29
+                            // pares son prefijo unos de otros — elegir "COMPRIMIDO" arrastraba
+                            // "COMPRIMIDO MASTICABLE", "COMPRIMIDO SUBLINGUAL" y otros cinco.
+                            const matchesForm = !selectedForm || cardForm === selectedForm;
                             const matchesEfg = !onlyEfg || cardGenerico;
 
                             card.style.display = (matchesForm && matchesEfg) ? 'block' : 'none';
@@ -10342,39 +10489,6 @@ ${materialesPlaceholder}
                 </div>
             `;
         }
-    }
-
-    /**
-     * Renders a compact card for an alternative medication
-     * @param {Object} med - Medication object from API
-     * @param {boolean} isAvailable - Whether the medication is in stock
-     * @returns {string} HTML string for the card
-     */
-    renderAlternativeCard(med, isAvailable = true) {
-        const formaSimp = med.formaFarmaceuticaSimplificada?.nombre || '';
-        const lab = (med.labtitular || med.labcomercializador || '').split(' ')[0];
-        const isGenerico = med.generico || false;
-
-        return `
-            <div class="alternative-card ${isAvailable ? '' : 'alternative-card-unavailable'}" 
-                 data-nregistro="${med.nregistro}"
-                 data-forma="${formaSimp}"
-                 data-generico="${isGenerico}"
-                 style="padding: 0.6rem; border-radius: 6px; background: var(--card-bg); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-pills" style="color: ${isAvailable ? 'var(--color-success)' : 'var(--color-danger)'}; font-size: 0.9rem;"></i>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 500; font-size: 0.85rem; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            ${med.nombre.split(' ')[0]}
-                        </div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">
-                            ${formaSimp} · ${lab}
-                        </div>
-                    </div>
-                    ${isGenerico ? '<span class="badge badge-success" style="font-size: 0.65rem; padding: 0.15rem 0.3rem;">EFG</span>' : ''}
-                </div>
-            </div>
-        `;
     }
 
     /**
@@ -10513,15 +10627,29 @@ ${materialesPlaceholder}
     }
 
     /**
-     * Renders a compact card for an alternative medication
+     * Tarjeta compacta de una alternativa de suministro.
+     *
+     * Había DOS métodos con este nombre en la clase (2026-08-28). En JavaScript el segundo
+     * pisa al primero en silencio, así que el que se ejecutaba era este y el otro —que sí
+     * emitía `data-forma` y `data-generico`— nunca llegó a pintarse. Consecuencia visible:
+     * los filtros "Todas las formas" y "Solo EFG" del modal leen esos atributos en
+     * `applyFilters`, no los encontraban, y al usarlos **ocultaban todas las tarjetas**.
+     * Se retiró el método muerto y este emite ahora los dos atributos.
+     *
+     * `data-forma` sale de `formaFarmaceuticaSimplificada` porque es lo que llena el
+     * desplegable de formas (`uniqueForms`): si se tomara de `formaFarmaceutica`, el
+     * literal del filtro y el de la tarjeta no coincidirían y el filtro volvería a vaciar
+     * la lista.
      */
     renderAlternativeCard(med, isAvailable) {
         const dosis = med.dosis || '';
         const forma = med.formaFarmaceutica?.nombre || '';
+        const formaSimp = med.formaFarmaceuticaSimplificada?.nombre || '';
         const lab = med.labtitular?.split(' ')[0] || '';
 
         return `
-            <div class="alternative-card ${isAvailable ? 'available' : 'unavailable'}" data-nregistro="${med.nregistro}">
+            <div class="alternative-card ${isAvailable ? 'available' : 'unavailable'}" data-nregistro="${med.nregistro}"
+                 data-forma="${this._escapeHtml(formaSimp)}" data-generico="${med.generico === true}">
                 <div class="alternative-card-header">
                     <span class="alternative-name">${med.nombre}</span>
                     ${med.generico ? '<span class="badge badge-success badge-xs">EFG</span>' : ''}
@@ -11037,16 +11165,36 @@ ${materialesPlaceholder}
      * Gets icon class for a route
      */
     getRouteIcon(route) {
-        const routeLower = route.toLowerCase();
-        if (routeLower.includes('oral')) return '💊';
-        if (routeLower.includes('transdérm') || routeLower.includes('parche')) return '🩹';
-        if (routeLower.includes('parenteral') || routeLower.includes('intraveno') || routeLower.includes('intramus') || routeLower.includes('subcután')) return '💉';
-        if (routeLower.includes('inhalad') || routeLower.includes('respirat')) return '💨';
-        if (routeLower.includes('tópic') || routeLower.includes('cutánea')) return '🧴';
-        if (routeLower.includes('oftálm') || routeLower.includes('ocular')) return '👁️';
-        if (routeLower.includes('nasal')) return '👃';
-        if (routeLower.includes('rectal') || routeLower.includes('vaginal')) return '🔘';
-        return '💊';
+        // Las vías que no encajaban caían al `return '💊'` final y se pintaban con icono de
+        // pastilla: "VÍA ÓTICA" salía indistinguible de "VÍA ORAL" en los chips. Mismo modo
+        // de fallo que tenía el icono de la tarjeta —un cajón de sastre que AFIRMA en vez de
+        // abstenerse—, así que aquí el desconocido es explícito y neutro.
+        const r = route.toLowerCase();
+        if (r.includes('oral') || r.includes('bucodisper')) return '💊';
+        if (r.includes('transdérm') || r.includes('transderm') || r.includes('parche')) return '🩹';
+        if (r.includes('parenteral') || r.includes('intraveno') || r.includes('intramus')
+            || r.includes('subcután') || r.includes('subcutan') || r.includes('intraarter')
+            || r.includes('intratecal') || r.includes('epidural') || r.includes('perineural')
+            || r.includes('infiltra') || r.includes('hemodiálisis') || r.includes('hemodialisis')
+            || r.includes('intraperitoneal') || r.includes('intravítrea') || r.includes('intravitrea')
+            || r.includes('intravesical') || r.includes('intraarticular') || r.includes('periarticular')
+            || r.includes('intracardiac') || r.includes('intraóse') || r.includes('intraose')
+            || r.includes('perióse') || r.includes('periose') || r.includes('intralesional')
+            || r.includes('epilesional') || r.includes('intracavernos') || r.includes('intraglandular')
+            || r.includes('retrobulbar') || r.includes('intracameral')) return '💉';
+        // `inhal`, no `inhalad`: la vía oficial se llama "VÍA INHALATORIA" (329 productos) y
+        // con el prefijo largo no encajaba ninguna — caía al cajón de sastre.
+        if (r.includes('inhal') || r.includes('respirat') || r.includes('endotraqueo')) return '💨';
+        if (r.includes('oftálm') || r.includes('oftalm') || r.includes('ocular')) return '👁️';
+        if (r.includes('ótic') || r.includes('otic') || r.includes('auricular')) return '👂';
+        if (r.includes('nasal')) return '👃';
+        if (r.includes('sublingual') || r.includes('bucal') || r.includes('bucofar')
+            || r.includes('buccal') || r.includes('gingival') || r.includes('periodont')
+            || r.includes('dental')) return '🦷';
+        if (r.includes('rectal') || r.includes('vaginal') || r.includes('uterina') || r.includes('intrauterin')) return '🔘';
+        if (r.includes('tópic') || r.includes('topic') || r.includes('cutánea')
+            || r.includes('cutaneo') || r.includes('cutáneo') || r.includes('dérmic')) return '🧴';
+        return '❔';
     }
 
     /**
@@ -11073,11 +11221,9 @@ ${materialesPlaceholder}
         const labs = this._facetCounts(
             this._extractUniqueLabs(sourceForFilters),
             this._extractUniqueLabs(this._applyResultFilters(sourceForFilters, snap, { exclude: 'lab' })));
-        const doses = showDoses
-            ? this._facetCounts(
-                this._extractUniqueDoses(sourceForFilters),
-                this._extractUniqueDoses(this._applyResultFilters(sourceForFilters, snap, { exclude: 'dose' })))
-            : [];
+        // La dosis ya NO se calcula aquí: es una banda de chips propia, hermana de vía y
+        // principio activo (ver `renderDoseFilterChips`). El parámetro `showDoses` se
+        // conserva por compatibilidad de firma pero la barra no lo usa.
 
         // Tipo de producto (genérico | biosimilar) es UNA dimensión: ambos valores se
         // cuentan excluyéndola entera, para que marcar uno no borre el número del otro.
@@ -11100,19 +11246,14 @@ ${materialesPlaceholder}
         const formOptions = buildSelectOptions(forms, this.filterState.form);
         const labOptions = buildSelectOptions(labs, this.filterState.lab);
 
-        // Build dose chips - most common first, max 8; active ones survive even at 0
-        const doseChipsHtml = doses.filter(d => d.count > 0 || this.filterState.doses?.has(d.name)).slice(0, 8).map(d => {
-            const isActive = this.filterState.doses?.has(d.name);
-            return `<button class="filter-chip ${isActive ? 'active' : ''}" data-dose="${d.name}">${d.name} <span class="chip-count">${d.count}</span></button>`;
-        }).join('');
-
         // Filtros activos — debe coincidir exactamente con lo que limpia "Limpiar N".
         const activeFilters = this._activeFilterCount(snap);
 
-        // Forma farmacéutica es discriminador clínico de primer nivel ("quiero sobres,
-        // efervescente...") → siempre visible. Lab y dosis quedan en "Más filtros".
-        const secondaryActive = (this.filterState.lab ? 1 : 0) + (this.filterState.doses?.size || 0);
-        const hasSecondary = labs.length > 1 || doses.length > 1;
+        // Forma farmacéutica y dosis son discriminadores clínicos de primer nivel ("quiero
+        // sobres, efervescente…", "quiero los de 20 mg") → visibles sin desplegar nada. En
+        // "Más filtros" queda solo el laboratorio, que es criterio administrativo.
+        const secondaryActive = (this.filterState.lab ? 1 : 0);
+        const hasSecondary = labs.length > 1;
 
         return `
             <div class="results-control-bar">
@@ -11160,7 +11301,6 @@ ${materialesPlaceholder}
                                 <option value="">🏭 Lab</option>
                                 ${labOptions}
                             </select>` : ''}
-                            ${doses.length > 1 ? `<div class="dose-row">${doseChipsHtml}</div>` : ''}
                         </div>
                     </details>
                     ` : ''}
@@ -11313,6 +11453,99 @@ ${materialesPlaceholder}
                 ${hint}
             </div>
         `;
+    }
+
+    /**
+     * Banda de chips de dosis, hermana de las de vía y principio activo.
+     *
+     * Estaba plegada dentro de "Más filtros" desde la sesión 20, donde entró junto a Forma
+     * y Lab por limpieza de la barra. Forma salió después por ser discriminador clínico de
+     * primer nivel; la dosis es exactamente el mismo tipo de discriminador ("quiero los de
+     * 20 mg") y se quedó dentro por inercia. Aquí sale. No cuesta cómputo: el facetado ya
+     * se hacía en cada repintado y el HTML ya se pintaba, solo que oculto por el `details`.
+     *
+     * En Indicaciones NO se muestra salvo excepción: los resultados atraviesan varios
+     * principios activos y un chip "10 mg" agruparía enalapril 10 mg con amlodipino 10 mg,
+     * que no es un conjunto clínicamente comparable (commit 803f01c). La excepción es que
+     * el conjunto visible haya quedado reducido a UN principio activo: entonces el eje
+     * vuelve a ser legítimo (enalapril 5 / 10 / 20 mg) y la banda aparece.
+     *
+     * @param {Array} universe - resultados sin filtrar (base estable del facetado)
+     * @param {Object} snap - instantánea de filtros
+     * @param {{requireSinglePA?: boolean, visibleResults?: Array}} options
+     */
+    renderDoseFilterChips(universe, snap = this._filterSnapshot(), options = {}) {
+        const { requireSinglePA = false, visibleResults = null } = options;
+        const source = Array.isArray(universe) ? universe : [];
+        if (source.length === 0) return '';
+
+        if (requireSinglePA) {
+            const pas = this.extractUniquePrincipiosActivos(visibleResults || source);
+            if (pas.length !== 1) return '';
+        }
+
+        // Facetado disyuntivo, igual que el resto de dimensiones: se excluye la propia.
+        const doses = this._facetCounts(
+            this._extractUniqueDoses(source),
+            this._extractUniqueDoses(this._applyResultFilters(source, snap, { exclude: 'dose' })));
+        if (doses.length <= 1) return '';
+
+        const active = snap.doses || new Set();
+        const visible = doses.filter(d => d.count > 0 || active.has(d.name)).slice(0, 8);
+        if (visible.length === 0) return '';
+
+        const chipsHtml = visible.map(d => `
+                <button class="dose-chip${active.has(d.name) ? ' active' : ''}" data-dose="${this._escapeHtml(d.name)}" title="Ctrl+clic para seleccionar varias dosis (OR)">
+                    ${this._escapeHtml(d.name)}
+                    <span class="route-count">${d.count}</span>
+                </button>`).join('');
+
+        const clearBtn = active.size > 0
+            ? `<button class="dose-chip dose-chip-clear" data-dose=""><i class="fas fa-times"></i> Limpiar${active.size > 1 ? ` (${active.size})` : ''}</button>`
+            : '';
+        const label = active.size > 1
+            ? `<span class="dose-filter-label">Dosis activas (OR):</span>`
+            : `<span class="dose-filter-label">Dosis:</span>`;
+        const hint = active.size === 0
+            ? `<span class="pa-filter-hint"><kbd>Ctrl</kbd>+clic para seleccionar varias (OR)</span>`
+            : '';
+
+        return `
+            <div class="route-filter-chips dose-filter-chips">
+                ${label}
+                ${chipsHtml}
+                ${clearBtn}
+                ${hint}
+            </div>
+        `;
+    }
+
+    /**
+     * Cablea la banda de dosis. Misma semántica que vía y principio activo, con la que
+     * ahora convive visualmente: clic = selección única, Ctrl/Cmd+clic = añadir (OR),
+     * clic sobre el único activo = quitar. Antes, escondida en "Más filtros", acumulaba
+     * sin Ctrl; tres bandas contiguas con dos comportamientos distintos serían una trampa.
+     */
+    _wireDoseChips(container, onChange) {
+        (container || document).querySelectorAll('.dose-chip[data-dose]').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                const dose = chip.dataset.dose;
+                if (!this.filterState.doses) this.filterState.doses = new Set();
+                const set = this.filterState.doses;
+
+                if (!dose) {
+                    set.clear();
+                } else if (e.ctrlKey || e.metaKey) {
+                    if (set.has(dose)) set.delete(dose); else set.add(dose);
+                } else if (set.size === 1 && set.has(dose)) {
+                    set.clear();
+                } else {
+                    set.clear();
+                    set.add(dose);
+                }
+                onChange();
+            });
+        });
     }
 
     /**
@@ -11503,6 +11736,7 @@ ${materialesPlaceholder}
             ${this.renderResultsControlBar(filteredResults.length, { resultados: filteredResults }, data, { showDoses: false, showEFG: true })}
             ${this.renderRouteFilterChips(routes)}
             ${this.renderPAFilterChips(paList)}
+            ${this.renderDoseFilterChips(universe, snap, { requireSinglePA: true, visibleResults: filteredResults })}
             <div id="grouped-results">
                 ${this.renderGroupedResults(groups, searchQuery)}
             </div>
@@ -11580,19 +11814,8 @@ ${materialesPlaceholder}
             });
         }
 
-        // Dose chips (multi-select)
-        document.querySelectorAll('.filter-chip[data-dose]').forEach(chip => {
-            chip.addEventListener('click', () => {
-                const dose = chip.dataset.dose;
-                if (!this.filterState.doses) this.filterState.doses = new Set();
-                if (this.filterState.doses.has(dose)) {
-                    this.filterState.doses.delete(dose);
-                } else {
-                    this.filterState.doses.add(dose);
-                }
-                this._applyIndicationFacet(data, searchQuery);
-            });
-        });
+        // Banda de dosis (misma semántica que vía y PA: Ctrl+clic para varias)
+        this._wireDoseChips(document, () => this._applyIndicationFacet(data, searchQuery));
 
         // EFG toggle
         document.getElementById('efg-filter')?.addEventListener('change', (e) => {

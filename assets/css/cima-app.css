@@ -781,9 +781,14 @@ body {
 /* ============================================
    Results Cards
    ============================================ */
+/* 290 px es el ancho mínimo que deja caber los seis accesos de la tarjeta en 2×3 CON
+   texto: por debajo, "Interacciones" e "Indicaciones" se recortan a elipsis y el botón
+   deja de decir a dónde lleva. `results-grid` (sin agrupar) y `result-group-grid`
+   (agrupado) comparten el valor a propósito: eran 260 y 240, y la misma tarjeta cambiaba
+   de anchura según el desplegable de agrupación. */
 .results-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
     gap: var(--space-sm);
 }
 
@@ -4240,6 +4245,34 @@ body {
     line-height: 1.2;
 }
 
+/* Línea galénica bajo el título: "160 mcg/4,5 mcg · Polvo para inhalación (unidosis)".
+   Es la cola que antes se recortaba del nombre, ahora en su sitio y con su peso. La dosis
+   va destacada porque, al salir del título, seis de cada diez tarjetas comparten título con
+   otra y ella es el único discriminador visible.
+
+   Envuelve hasta DOS líneas antes de recortar (mismo criterio que el título y que las
+   etiquetas de dosis/envase): partir es mejor que cortar una concentración a media cifra,
+   y los dos literales oficiales siguen íntegros en el `title`. */
+.med-sub-galenic {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    font-weight: 400;
+    line-height: 1.3;
+    color: var(--text-secondary);
+}
+
+.med-sub-dose {
+    color: #7dd3fc;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
 .med-details-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -6086,6 +6119,104 @@ body {
     opacity: 0.9;
 }
 
+/* Dose Filter Chips — banda hermana de vía y PA. La dosis salió de "Más filtros" por ser
+   discriminador clínico de primer nivel, igual que la forma farmacéutica. Mismo esqueleto
+   que `.pa-filter-chips`, distinto color de dimensión para que las tres bandas contiguas
+   se distingan de un vistazo (vía = neutra, PA = índigo, dosis = cian del primario). */
+.dose-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    align-items: center;
+    padding: var(--space-xs) 0 var(--space-sm);
+    border-top: 1px solid rgba(14, 165, 233, 0.18);
+    margin-top: 0;
+}
+
+.dose-filter-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    white-space: nowrap;
+    opacity: 0.85;
+    padding-right: var(--space-xs);
+}
+
+.dose-filter-label::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary);
+    flex-shrink: 0;
+    opacity: 0.9;
+}
+
+.dose-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 0.3rem 0.65rem;
+    background: var(--bg-surface-hover);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-variant-numeric: tabular-nums;
+}
+
+.dose-chip:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.dose-chip:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.dose-chip.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+.dose-chip .route-count {
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.1rem 0.35rem;
+    border-radius: var(--radius-sm);
+}
+
+.dose-chip.active .route-count {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.dose-chip-clear {
+    background: transparent;
+    border: 1px dashed var(--border-default);
+    color: var(--text-muted);
+}
+
+.dose-chip-clear:hover {
+    background: var(--danger-light);
+    border-color: var(--danger);
+    border-style: solid;
+    color: var(--danger);
+}
+
 .pa-chip {
     display: inline-flex;
     align-items: center;
@@ -6170,8 +6301,10 @@ body {
 }
 
 @media (max-width: 640px) {
-    .pa-filter-chips { gap: var(--space-xs); padding-top: var(--space-xs); }
-    .pa-filter-label { display: none; }
+    .pa-filter-chips,
+    .dose-filter-chips { gap: var(--space-xs); padding-top: var(--space-xs); }
+    .pa-filter-label,
+    .dose-filter-label { display: none; }
     .pa-filter-hint { display: none; }
 }
 
@@ -6263,9 +6396,10 @@ body {
     padding-bottom: 0;
 }
 
+/* Mismo ancho mínimo que `.results-grid`; ver la nota allí. */
 .result-group-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
     gap: var(--space-sm);
 }
 
