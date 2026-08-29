@@ -15963,7 +15963,7 @@ ${materialesPlaceholder}
 
         const enc = q => encodeURIComponent(q);
         const reecTerm = q => this._buildReecSearchTerm(q);
-        const reecUrl = q => `https://reec.aemps.es/reec/list/search=${enc(reecTerm(q))}&filter=0`;
+        const reecUrl = q => `https://reec.aemps.es/reec/list?search=${enc(reecTerm(q))}&filter=0`;
         const referenceTerm = q => reecTerm(q);
         const referenceLinks = q => {
             const term = referenceTerm(q);
@@ -16300,7 +16300,7 @@ ${materialesPlaceholder}
     }
 
     _buildReecSearchUrl(term) {
-        return `https://reec.aemps.es/reec/list/search=${encodeURIComponent(this._buildReecSearchTerm(term))}&filter=0`;
+        return `https://reec.aemps.es/reec/list?search=${encodeURIComponent(this._buildReecSearchTerm(term))}&filter=0`;
     }
 
     async _loadReecCount(drugTerm) {
@@ -16384,7 +16384,7 @@ ${materialesPlaceholder}
             const titulo  = s.titulo || s.identificador || '—';
             const fecha   = formatReecDate(s.fecha_autorizacion);
             const href    = s.identificador
-                ? `https://reec.aemps.es/reec/list/search=${enc(s.identificador)}&filter=0`
+                ? `https://reec.aemps.es/reec/estudio/${enc(s.identificador)}`
                 : baseUrl;
             return `<a class="evidence-reec-study-item" href="${href}" target="_blank" rel="noopener" title="${this._escapeHtml(titulo)}">
                 <span class="evidence-reec-study-status evidence-reec-study-status--${css}">${this._escapeHtml(estado || '?')}</span>
