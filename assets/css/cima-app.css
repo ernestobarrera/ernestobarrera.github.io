@@ -4211,7 +4211,7 @@ body {
     flex-direction: column;
     padding: var(--space-sm);
     gap: var(--space-sm);
-    background: var(--bg-surface);
+    background: var(--bg-elevated);
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: var(--radius-md);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
