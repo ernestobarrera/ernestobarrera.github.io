@@ -1574,6 +1574,7 @@ class MedCheckApp {
         this.filterState.lab = null;
         this.filterState.doses = new Set();
         this.filterState.galenics = new Set();
+        //  NO se reinicia aquí: es ámbito de consulta, como Comercializado.
         this.groupingState?.routeFilters?.clear?.();
         this.groupingState?.activeIngredientFilters?.clear?.();
     }
@@ -2366,6 +2367,11 @@ class MedCheckApp {
         });
         document.getElementById('biosimilar-filter')?.addEventListener('change', (e) => {
             this.filterState.biosimilarOnly = e.target.checked;
+            applyFacet();
+        });
+        // Importaciones paralelas: la casilla las INCLUYE (por defecto están fuera).
+        document.getElementById('paralelas-filter')?.addEventListener('change', (e) => {
+            this.filterState.paralelas = e.target.checked;
             applyFacet();
         });
 
@@ -4079,6 +4085,27 @@ class MedCheckApp {
      */
     _hasFichaTecnicaSeccionada(med) {
         return (med?.docs || []).some(d => d.tipo === 1 && d.secc === true);
+    }
+
+    /**
+     * ¿Es este registro una importación paralela?
+     *
+     * La AEMPS marca las importaciones paralelas en el propio número de registro, con el
+     * sufijo `IP` (`11429IP`, `6775-2014-01IP`, `LT1983805025IP3`). No es una inferencia
+     * sobre el producto: es leer cómo la agencia identifica el tipo de autorización.
+     *
+     * Se apoya en un contraste independiente: de los **993 registros con ese sufijo, 992 no
+     * publican ficha técnica propia**, que es exactamente lo que caracteriza a una
+     * importación paralela —comercializa un medicamento ya autorizado y se remite a su
+     * ficha—. Un patrón que coincide al 99,9 % con un hecho verificable no es una
+     * coincidencia del formato.
+     *
+     * La API REST **no expone** el filtro que la web de CIMA sí ofrece («Imp. Paralelas»,
+     * desmarcado por defecto): comprobado el 2026-08-29 con seis variantes de parámetro,
+     * todas devuelven el catálogo entero. Por eso hay que reconocerlas aquí.
+     */
+    _isParallelImport(med) {
+        return /IP\d*$/i.test(String(med?.nregistro || ''));
     }
 
     /**
@@ -11119,7 +11146,7 @@ ${materialesPlaceholder}
 
     /** Dimensiones del contrato, en el orden en que se aplican. */
     static get FILTER_DIMENSIONS() {
-        return ['productType', 'receta', 'form', 'lab', 'dose', 'galenic', 'route', 'pa'];
+        return ['productType', 'receta', 'parallel', 'form', 'lab', 'dose', 'galenic', 'route', 'pa'];
     }
 
     /**
@@ -11137,6 +11164,8 @@ ${materialesPlaceholder}
             lab: fs.lab || null,
             doses: new Set(fs.doses || []),
             galenics: new Set(fs.galenics || []),
+            // Por defecto NO se incluyen: es el comportamiento de la web de CIMA.
+            paralelas: fs.paralelas === true,
             routes: new Set(gs.routeFilters || []),
             pas: new Set(gs.activeIngredientFilters || []),
         };
@@ -11187,6 +11216,10 @@ ${materialesPlaceholder}
                 return snap.lab ? (med) => (med.labtitular || 'Sin laboratorio') === snap.lab : null;
             case 'dose':
                 return snap.doses.size ? (med) => !!med.dosis && snap.doses.has(this.normalizeDosis(med.dosis)) : null;
+            case 'parallel':
+                // Excluir importaciones paralelas es el estado POR DEFECTO, así que el
+                // predicado existe cuando la casilla está desmarcada, al revés que las demás.
+                return snap.paralelas ? null : (med) => !this._isParallelImport(med);
             case 'galenic':
                 // Familia galénica: la misma dimensión que pinta el icono de la tarjeta, para
                 // que pulsar el icono y filtrar sean literalmente lo mismo. OR dentro de la
@@ -11245,6 +11278,7 @@ ${materialesPlaceholder}
             + (snap.form ? 1 : 0)
             + (snap.lab ? 1 : 0)
             + snap.doses.size
+            + (snap.paralelas ? 1 : 0)
             + snap.galenics.size
             + snap.routes.size
             + snap.pas.size;
@@ -11252,7 +11286,7 @@ ${materialesPlaceholder}
 
     /** Estado limpio de filtros de cliente. Un solo sitio donde se define el "vacío". */
     _emptyFilterState() {
-        return { form: null, lab: null, doses: new Set(), galenics: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false };
+        return { form: null, lab: null, doses: new Set(), galenics: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false, paralelas: false };
     }
 
     /**
@@ -11382,6 +11416,23 @@ ${materialesPlaceholder}
         // Filtros activos — debe coincidir exactamente con lo que limpia "Limpiar N".
         const activeFilters = this._activeFilterCount(snap);
 
+        // Importaciones paralelas. Se excluyen POR DEFECTO, igual que hace la web de CIMA
+        // —cuya API, en cambio, no ofrece el filtro—: son autorizaciones de un medicamento
+        // que ya está en la lista, casi nunca publican ficha propia y multiplican los
+        // resultados justo cuando hay prisa. La casilla las devuelve.
+        //
+        // Salvaguarda contra el cero silencioso: 39 medicamentos del catálogo SOLO existen
+        // comercializados como importación paralela (ALMOGRAN, CITRAFLEET, MICRODIOL,
+        // APIDRA SOLOSTAR…). Si al excluirlas no quedara nada que enseñar, la casilla se
+        // marca en ámbar y lo dice: nunca se devuelve una lista vacía sin explicar por qué.
+        const paralelasEnUniverso = sourceForFilters.filter(m => this._isParallelImport(m)).length;
+        const soloQuedanParalelas = !snap.paralelas && paralelasEnUniverso > 0
+            && sourceForFilters.length > 0
+            && sourceForFilters.every(m => this._isParallelImport(m));
+        const tipParalelas = soloQuedanParalelas
+            ? `Todos los resultados de esta búsqueda son importaciones paralelas. Marca la casilla para verlos: este medicamento solo se comercializa así.`
+            : `Autorizaciones de importación paralela: el mismo medicamento, comercializado por otro distribuidor. Se ocultan por defecto —como en la web de CIMA— porque casi ninguna publica ficha técnica propia. Márcala para incluirlas.`;
+
         // Forma farmacéutica y dosis son discriminadores clínicos de primer nivel ("quiero
         // sobres, efervescente…", "quiero los de 20 mg") → visibles sin desplegar nada. En
         // "Más filtros" queda solo el laboratorio, que es criterio administrativo.
@@ -11409,19 +11460,23 @@ ${materialesPlaceholder}
                             ${formOptions}
                         </select>` : ''}
                     </div>
-                    ${showEFG && (efgCount > 0 || recetaCount > 0 || biosimilarCount > 0 || snap.generic || snap.receta || snap.biosimilar) ? `
+                    ${(showEFG && (efgCount > 0 || recetaCount > 0 || biosimilarCount > 0 || snap.generic || snap.receta || snap.biosimilar)) || paralelasEnUniverso > 0 ? `
                     <div class="control-section" style="gap:var(--space-md);">
-                        ${(efgCount > 0 || snap.generic) ? `<label class="search-option" title="Solo genéricos">
+                        ${showEFG && (efgCount > 0 || snap.generic) ? `<label class="search-option" title="Solo genéricos">
                             <input type="checkbox" id="efg-filter" ${snap.generic ? 'checked' : ''}>
                             <span>Genérico <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${efgCount}</span></span>
                         </label>` : ''}
-                        ${(recetaCount > 0 || snap.receta) ? `<label class="search-option" title="Solo con receta">
+                        ${showEFG && (recetaCount > 0 || snap.receta) ? `<label class="search-option" title="Solo con receta">
                             <input type="checkbox" id="receta-filter" ${snap.receta ? 'checked' : ''}>
                             <span>Receta <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${recetaCount}</span></span>
                         </label>` : ''}
-                        ${(biosimilarCount > 0 || snap.biosimilar) ? `<label class="search-option" title="Solo biosimilares">
+                        ${showEFG && (biosimilarCount > 0 || snap.biosimilar) ? `<label class="search-option" title="Solo biosimilares">
                             <input type="checkbox" id="biosimilar-filter" ${snap.biosimilar ? 'checked' : ''}>
                             <span>Biosimilar <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${biosimilarCount}</span></span>
+                        </label>` : ''}
+                        ${paralelasEnUniverso > 0 ? `<label class="search-option${soloQuedanParalelas ? ' search-option--alerta' : ''}" title="${this._escapeHtml(tipParalelas)}">
+                            <input type="checkbox" id="paralelas-filter" ${snap.paralelas ? 'checked' : ''}>
+                            <span>Imp. paralelas <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${paralelasEnUniverso}</span></span>
                         </label>` : ''}
                     </div>
                     ` : ''}
@@ -12033,6 +12088,11 @@ ${materialesPlaceholder}
             this.filterState.biosimilarOnly = e.target.checked;
             this._applyIndicationFacet(data, searchQuery);
         });
+        // Importaciones paralelas: la casilla las INCLUYE (por defecto están fuera).
+        document.getElementById('paralelas-filter')?.addEventListener('change', (e) => {
+            this.filterState.paralelas = e.target.checked;
+            this._applyIndicationFacet(data, searchQuery);
+        });
 
         // Clear filters button — limpia exactamente lo que cuenta "Limpiar N".
         const clearBtn = document.getElementById('clear-filters-btn');
@@ -12263,6 +12323,7 @@ ${materialesPlaceholder}
         if (snap.form) params.form = snap.form;
         if (snap.lab) params.lab = snap.lab;
         if (snap.doses.size) params.dose = [...snap.doses].join('|');
+        if (snap.paralelas) params.paralelas = '1';
         if (snap.galenics.size) params.galenic = [...snap.galenics].join('|');
         if (snap.routes.size) params.route = [...snap.routes].join('|');
         if (snap.pas.size) params.pa = [...snap.pas].join('|');
@@ -12279,6 +12340,7 @@ ${materialesPlaceholder}
         this.filterState.lab = params.lab || null;
         this.filterState.doses = new Set(params.dose ? params.dose.split('|').filter(Boolean) : []);
         this.filterState.galenics = new Set(params.galenic ? params.galenic.split('|').filter(Boolean) : []);
+        this.filterState.paralelas = params.paralelas === '1';
         if (!this.groupingState) this.initGroupingState();
         this.groupingState.routeFilters = new Set(params.route ? params.route.split('|').filter(Boolean) : []);
         this.groupingState.activeIngredientFilters = new Set(params.pa ? params.pa.split('|').filter(Boolean) : []);

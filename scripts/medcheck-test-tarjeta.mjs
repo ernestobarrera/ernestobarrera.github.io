@@ -351,6 +351,56 @@ console.log('\n— Orden: el registro con ficha va delante de sus hermanos —')
     ok(!src.includes('dedupe-toggle'), 'ni su casilla');
 }
 
+console.log('\n— Importaciones paralelas: fuera por defecto, como en CIMA —');
+{
+    const app2 = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+    app2.filterState = app2._emptyFilterState();
+    app2.groupingState = { routeFilters: new Set(), activeIngredientFilters: new Set() };
+
+    ok(app2._isParallelImport({ nregistro: '11429IP' }), 'reconoce el sufijo IP');
+    ok(app2._isParallelImport({ nregistro: '6775201401IP2' }), 'y el sufijo IP con número');
+    ok(!app2._isParallelImport({ nregistro: '66678' }), 'un registro nacional no lo es');
+    ok(!app2._isParallelImport({}), 'sin nregistro no revienta');
+
+    const ip = { nregistro: '11429IP', nombre: 'OMNIC OCAS 0,4 mg', docs: [] };
+    const nac = { nregistro: '66678', nombre: 'OMNIC OCAS 0,4 mg', docs: [{ tipo: 1, secc: true }] };
+
+    // Por defecto quedan fuera; la casilla las devuelve. Es el estado inverso al de las
+    // demás dimensiones, donde el filtro nace apagado.
+    const fuera = app2._applyResultFilters([ip, nac], app2._filterSnapshot());
+    ok(fuera.length === 1 && fuera[0] === nac, 'por defecto solo se ve el registro nacional');
+
+    app2.filterState.paralelas = true;
+    const dentro = app2._applyResultFilters([ip, nac], app2._filterSnapshot());
+    ok(dentro.length === 2, 'marcando la casilla vuelven a verse');
+
+    // El contador de "Limpiar N" solo cuenta cuando se sale del estado por defecto.
+    ok(app2._activeFilterCount(app2._filterSnapshot()) === 1, 'marcada cuenta como filtro activo');
+    app2.filterState.paralelas = false;
+    ok(app2._activeFilterCount(app2._filterSnapshot()) === 0, 'en su estado por defecto no cuenta');
+
+    // Estado compartible y reversible.
+    app2.filterState.paralelas = true;
+    ok(app2._facetURLParams().paralelas === '1', 'se serializa en la URL');
+    app2._restoreFiltersFromURL({ paralelas: '1' });
+    ok(app2.filterState.paralelas === true, 'se restaura desde la URL');
+    app2._restoreFiltersFromURL({});
+    ok(app2.filterState.paralelas === false, 'sin parámetro vuelve al estado por defecto');
+    app2.filterState.paralelas = true;
+    app2._clearAllResultFilters();
+    ok(app2.filterState.paralelas === false, '«Limpiar» la devuelve a su estado por defecto');
+
+    // Una búsqueda nueva NO debe reactivarlas: es ámbito, como Comercializado.
+    app2.filterState.paralelas = true;
+    app2._resetResultFilters();
+    ok(app2.filterState.paralelas === true, 'una búsqueda nueva respeta la elección del usuario');
+
+    const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    ok(src.includes("'parallel'"), 'es una dimensión del contrato, no un caso aparte');
+    ok(src.includes('soloQuedanParalelas'), 'existe la salvaguarda contra la lista vacía');
+    ok(src.includes('paralelas-filter'), 'la casilla está en la barra');
+}
+
 console.log('\n— Filtro de forma del modal de alternativas —');
 {
     const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');

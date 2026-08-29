@@ -4647,6 +4647,21 @@ body {
     text-decoration-thickness: 1px;
 }
 
+/* Casilla en ámbar cuando el filtro por defecto dejaría la lista vacía: 39 medicamentos del
+   catálogo solo se comercializan como importación paralela. Nunca un cero silencioso. */
+.search-option--alerta {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.search-option--alerta::after {
+    content: "· todos los resultados";
+    margin-left: 0.35rem;
+    font-weight: 400;
+    font-size: 0.72rem;
+    opacity: 0.85;
+}
+
 /* Insignia informativa, no de seguridad: el medicamento existe y se dispensa; lo que falta
    es el documento del que MedCheck extrae las secciones clínicas. Por eso va en gris
    neutro y no en el ámbar de las alertas. */
