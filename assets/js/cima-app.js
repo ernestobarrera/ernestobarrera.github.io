@@ -1423,7 +1423,7 @@ class MedCheckApp {
                             <input type="checkbox" id="filter-biosimilar" ${biosimilarChecked}>
                             <span>Biosimilar <span id="cnt-biosimilar" class="chip-count" style="font-size:0.7rem;opacity:0.7;"></span></span>
                         </label>
-                        <label class="search-option" id="opt-paralelas" title="Registros del mismo medicamento que no publican ficha técnica propia: casi siempre importaciones paralelas. Se dejan fuera porque no añaden información clínica y el registro que sí trae la ficha ya está en la lista. Nunca se oculta el único registro de un medicamento.">
+                        <label class="search-option" id="opt-paralelas" title="Otros registros del mismo medicamento que no publican ficha técnica propia en CIMA. Se dejan fuera porque la información clínica está en el registro que sí la publica, y ese ya aparece en la lista. Nunca se oculta el único registro de un medicamento.">
                             <input type="checkbox" id="filter-paralelas" ${this.filterState?.paralelas ? 'checked' : ''}>
                             <span>Incluir duplicados <span id="cnt-paralelas" class="chip-count" style="font-size:0.7rem;opacity:0.7;"></span></span>
                         </label>
@@ -11480,7 +11480,7 @@ ${materialesPlaceholder}
         // La regla exige un hermano CON ficha para ocultar, así que nunca puede vaciar la
         // lista. La salvaguarda que hacía falta con la detección por sufijo ya no aplica.
         const soloQuedanParalelas = false;
-        const tipParalelas = 'Registros del mismo medicamento que no publican ficha técnica propia: casi siempre importaciones paralelas. Se dejan fuera porque no añaden información clínica y el registro que sí trae la ficha ya está en la lista. Nunca se oculta el único registro de un medicamento.';
+        const tipParalelas = 'Otros registros del mismo medicamento que no publican ficha técnica propia en CIMA. Se dejan fuera porque la información clínica está en el registro que sí la publica, y ese ya aparece en la lista. Nunca se oculta el único registro de un medicamento.';
 
         // Forma farmacéutica y dosis son discriminadores clínicos de primer nivel ("quiero
         // sobres, efervescente…", "quiero los de 20 mg") → visibles sin desplegar nada. En

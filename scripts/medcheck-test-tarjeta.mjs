@@ -425,6 +425,14 @@ console.log('\n— Registros duplicados sin ficha: fuera por defecto —');
     ok(!src.includes('_isParallelImport'),
         'no queda la detección por sufijo IP, que solo cubría 718 de 931');
     ok(src.includes('Incluir duplicados'), 'la etiqueta dice lo que hace la casilla');
+    // El texto visible no puede afirmar lo que la regla no comprueba. No se ha verificado
+    // en la documentación de la API que estos registros sean importaciones paralelas, y
+    // decirlo en la interfaz sería atribuir una condición regulatoria a productos de
+    // terceros sin respaldo documental.
+    ok(!/casi siempre importaciones paralelas/.test(src),
+        'el tooltip no atribuye una condición regulatoria sin verificar');
+    ok(!/no añaden información clínica/.test(src),
+        'ni emite un juicio sobre el producto de un laboratorio');
     ok(!/como en la web de CIMA|igual que hace la web de CIMA/.test(src),
         'no se afirma que CIMA los excluya por defecto: no lo hace');
 }
