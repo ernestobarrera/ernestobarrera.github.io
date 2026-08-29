@@ -789,7 +789,7 @@ body {
 .results-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
-    gap: var(--space-sm);
+    gap: 0.625rem;
 }
 
 .result-card {
@@ -4202,15 +4202,19 @@ body {
 /* ============================================
    Enhanced Visual Richness - Cards & Actions
    ============================================ */
+/* El borde sube de `--border-default` (0,08 de alfa) a 0,14: sobre el lienzo hundido del
+   grupo es lo que dibuja el contorno de cada tarjeta cuando hay veinte en pantalla. La
+   sombra se refuerza un poco pero no es la que hace el trabajo —en oscuro apenas se ve—;
+   está para despegar el borde inferior. */
 .result-card {
     display: flex;
     flex-direction: column;
     padding: var(--space-sm);
     gap: var(--space-sm);
     background: var(--bg-surface);
-    border: 1px solid var(--border-default);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .result-card-main {
@@ -4641,73 +4645,6 @@ body {
 .card-act--inerte .card-act-sigla {
     text-decoration: line-through;
     text-decoration-thickness: 1px;
-}
-
-/* Registros repetidos del mismo medicamento (el nacional y sus importaciones paralelas).
-   Se pliegan, NO se fusionan: la tarjeta visible sigue siendo un registro concreto con sus
-   datos, y los hermanos quedan a un clic. El grupo se marca con un filete lateral para que
-   se lea como una unidad sin encerrarla en una caja que compita con la tarjeta. */
-.dup-cluster {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
-    position: relative;
-}
-
-.dup-cluster.open {
-    padding-left: var(--space-sm);
-    border-left: 2px solid var(--border-hover);
-}
-
-.dup-toggle {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
-    width: 100%;
-    padding: 0.3rem 0.6rem;
-    background: var(--bg-dark);
-    border: 1px dashed var(--border-default);
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
-    font-family: inherit;
-    font-size: 0.72rem;
-    text-align: left;
-    cursor: pointer;
-    transition: color var(--transition-fast), border-color var(--transition-fast);
-}
-
-.dup-toggle:hover {
-    color: var(--text-primary);
-    border-color: var(--border-hover);
-    border-style: solid;
-}
-
-.dup-toggle:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 1px;
-}
-
-.dup-toggle i {
-    font-size: 0.85em;
-    flex-shrink: 0;
-}
-
-/* Si los registros plegados NO son idénticos, se dice aquí mismo. Es la condición para que
-   plegar sea honesto: CARDYL 20 mg tiene problema de suministro en el registro nacional y
-   no en sus siete importaciones paralelas. */
-.dup-warn {
-    margin-left: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    color: var(--warning);
-    font-size: 0.95em;
-    text-align: right;
-}
-
-.results-count-sub {
-    color: var(--text-muted);
-    font-weight: 400;
 }
 
 /* Insignia informativa, no de seguridad: el medicamento existe y se dispensa; lo que falta
@@ -6665,8 +6602,19 @@ body {
     box-shadow: 0 2px 4px rgba(14, 165, 233, 0.3);
 }
 
+/* La bandeja del grupo se HUNDE al color del lienzo para que las tarjetas floten sobre
+   ella. Antes usaba `--bg-surface`, el mismo color exacto que `.result-card`: la tarjeta y
+   su contenedor eran indistinguibles y solo las separaba un borde de 0,08 de alfa, así que
+   con muchos resultados la rejilla se leía como una masa. En la vista "Sin agrupar" no
+   pasaba —ahí las tarjetas caen sobre el fondo de la página— y esa incoherencia entre las
+   dos vistas era el síntoma.
+
+   En interfaz oscura la elevación se expresa con COLOR, no con sombra: una sombra sobre
+   fondo oscuro apenas se percibe. El padding baja de 16 a 8 px porque ya no hace falta
+   separar por espacio lo que ahora separa el contraste: se gana sitio y se distingue mejor. */
 .result-group-content {
-    padding: var(--space-md);
+    padding: var(--space-sm);
+    background: var(--bg-dark);
     max-height: none;
     overflow: visible;
     transition: padding 0.3s ease;
@@ -6683,7 +6631,7 @@ body {
 .result-group-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
-    gap: var(--space-sm);
+    gap: 0.625rem;
 }
 
 /* View More Button for expanded groups */

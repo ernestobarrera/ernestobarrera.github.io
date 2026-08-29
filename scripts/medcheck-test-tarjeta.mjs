@@ -305,66 +305,50 @@ console.log('\n— Accesos que dependen de la ficha técnica —');
     ok(src.includes('badge-sin-ft'), 'la tarjeta avisa antes de pulsar');
 }
 
-console.log('\n— Registros duplicados del mismo medicamento —');
+console.log('\n— Orden: el registro con ficha va delante de sus hermanos —');
 {
+    // Un mismo medicamento puede tener varios registros —el nacional y sus importaciones
+    // paralelas— y solo algunos publican ficha con secciones. En vez de agruparlos, que
+    // introduce un "medicamento" agregado que la fuente no define y rompe la
+    // correspondencia tarjeta↔nregistro sobre la que se apoyan el índice de envases, el de
+    // PGx y el de suministro, se ORDENA: el registro útil arriba. No se oculta nada.
     const app2 = Object.create(sandbox.window.__MedCheckAppClass.prototype);
-    app2.groupingState = { dedupe: true, expandedDuplicates: new Set() };
-    app2._packsIndex = {};
-
-    const reg = (nregistro, extra = {}) => ({
-        nregistro,
-        nombre: 'CARDYL 20 mg COMPRIMIDOS RECUBIERTOS CON PELICULA',
-        docs: [], labtitular: 'Lab', ...extra,
+    app2.groupingState = { sortBy: 'nameAsc' };
+    const r = (nregistro, nombre, conFicha) => ({
+        nregistro, nombre, docs: conFicha ? [{ tipo: 1, secc: true }] : [],
     });
 
-    ok(app2._duplicateKey({ nombre: 'OMNIC OCAS 0,4 mg COMPRIMIDOS' })
-        === app2._duplicateKey({ nombre: 'OMNIC OCAS, 0,4 MG, COMPRIMIDOS' }),
-        'mayúsculas y comas no separan dos registros del mismo medicamento');
-    ok(app2._duplicateKey({ nombre: 'X 20 mg COMPRIMIDOS EFG' }) === app2._duplicateKey({ nombre: 'X 20 mg COMPRIMIDOS' }),
-        'el sufijo EFG tampoco');
-    ok(app2._duplicateKey({ nombre: 'OMNIC OCAS 0,4 mg COMPRIMIDOS' })
-        !== app2._duplicateKey({ nombre: 'OMNIC 0,4 mg CAPSULAS' }),
-        'productos distintos NO se agrupan');
-    ok(app2._duplicateKey({ nombre: 'AMGEVITA 40 MG SOLUCION INYECTABLE EN JERINGA PRECARGADA' })
-        !== app2._duplicateKey({ nombre: 'AMGEVITA 40 MG SOLUCION INYECTABLE EN PLUMA PRECARGADA' }),
-        'jeringa y pluma son dispositivos distintos y no se agrupan');
+    const lista = [
+        r('11429IP', 'OMNIC OCAS 0,4 mg COMPRIMIDOS DE LIBERACION PROLONGADA', false),
+        r('66678', 'OMNIC OCAS 0,4 mg COMPRIMIDOS DE LIBERACION PROLONGADA', true),
+        r('11429IP2', 'OMNIC OCAS 0,4 MG COMPRIMIDOS DE LIBERACION PROLONGADA', false),
+    ];
+    app2._applySortState(lista);
+    ok(lista[0].nregistro === '66678', 'el registro con ficha encabeza el bloque');
+    ok(lista.length === 3, 'y los otros dos siguen ahí: ordenar no oculta');
 
-    // Representante: manda tener ficha, porque sin ella los accesos clínicos no funcionan.
-    const conFicha = reg('A', { docs: [{ tipo: 1, secc: true }], comerc: true, psum: true });
-    const sinFicha = reg('B', { comerc: true });
-    const [c] = app2._clusterDuplicates([sinFicha, conFicha]);
-    ok(c.rep === conFicha, 'representa el grupo el registro que sí tiene ficha técnica');
-    ok(c.otros.length === 1, 'el hermano queda plegado, no eliminado');
+    // La diferencia de caja no debe partir el bloque: "0,4 mg" y "0,4 MG" son el mismo
+    // medicamento escrito por dos titulares.
+    ok(lista.every(m => /OMNIC OCAS/.test(m.nombre)), 'el bloque queda contiguo pese a mayúsculas distintas');
 
-    // El caso CARDYL: el representante arrastra un problema de suministro que los otros no
-    // tienen. Plegar sin decirlo ocultaría que hay siete registros disponibles.
-    ok(c.divergencias.some(d => /suministro/.test(d)),
-        'una divergencia de suministro SIEMPRE se anuncia en la línea de plegado');
-    const html = app2._renderDuplicateToggle(c);
-    ok(/dup-warn/.test(html) && /suministro/.test(html), 'y sale en el HTML del desplegable');
-    ok(/aria-expanded="false"/.test(html), 'el desplegable declara su estado');
+    // Ni la puntuación: AVAMYS difiere solo en una coma; MICRALAX, en un espacio.
+    const avamys = [
+        r('07434003IP4', 'AVAMYS 27,5 MICROGRAMOS/PULVERIZACION SUSPENSION PARA PULVERIZACION NASAL', false),
+        r('07434003', 'AVAMYS 27,5 MICROGRAMOS/PULVERIZACION, SUSPENSION PARA PULVERIZACION NASAL', true),
+    ];
+    app2._applySortState(avamys);
+    ok(avamys[0].nregistro === '07434003', 'una coma de más tampoco parte el bloque');
 
-    // El titular difiere en el 41 % de los grupos: no debe competir con los avisos reales.
-    const soloLab = app2._clusterDuplicates([
-        reg('C', { labtitular: 'Uno', docs: [{ tipo: 1, secc: true }] }), reg('D', { labtitular: 'Otro' }),
-    ])[0];
-    ok(soloLab.divergencias.length === 0, 'un titular distinto no genera aviso ámbar');
-    ok(/Titulares/.test(app2._renderDuplicateToggle(soloLab)), 'pero sí aparece en el tooltip');
+    // El orden tiene que seguir siendo reproducible: una URL compartida debe dar lo mismo.
+    const base = [r('C', 'X 10 mg COMPRIMIDOS', false), r('A', 'X 10 mg COMPRIMIDOS', true), r('B', 'Y 5 mg COMPRIMIDOS', false)];
+    const uno = base.slice(); app2._applySortState(uno);
+    const otro = base.slice().reverse(); app2._applySortState(otro);
+    ok(uno.every((m, i) => m.nregistro === otro[i].nregistro), 'el orden es determinista, venga como venga la entrada');
 
-    // Nada se pierde: apagar el plegado devuelve la lista entera.
-    app2.groupingState.dedupe = false;
-    ok(app2._dedupeOn === false, 'el plegado se puede apagar');
+    // Y no se ha reintroducido el plegado, que se retiró por crear un agregado inexistente.
     const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
-    ok(src.includes('dedupe-toggle'), 'la casilla para apagarlo está en la barra');
-    ok(/_renderMedList\(medsToShow, searchQuery\)/.test(src), 'las dos rutas de render pasan por el plegado');
-    // Invariante duro: plegar no pierde registros. Todo lo que entra sale, como
-    // representante o como hermano, y sin duplicarse.
-    const entrada = [reg('E'), reg('F'), reg('G', { docs: [{ tipo: 1, secc: true }] }),
-        { nregistro: 'H', nombre: 'OTRA COSA 5 mg COMPRIMIDOS', docs: [] }];
-    const salida = app2._clusterDuplicates(entrada).flatMap(x => [x.rep, ...x.otros]);
-    ok(salida.length === entrada.length && new Set(salida).size === entrada.length,
-        'plegar no pierde ni duplica ningún registro');
-    ok(entrada.every(m => salida.includes(m)), 'todos los registros de entrada siguen presentes');
+    ok(!src.includes('_clusterDuplicates'), 'no vuelve el plegado de duplicados');
+    ok(!src.includes('dedupe-toggle'), 'ni su casilla');
 }
 
 console.log('\n— Filtro de forma del modal de alternativas —');
