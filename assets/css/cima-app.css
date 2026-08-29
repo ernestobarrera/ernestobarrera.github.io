@@ -2274,6 +2274,75 @@ body {
 .combo-list-box {
     border-color: rgba(59, 130, 246, 0.28);
 }
+
+/* "Últimos medicamentos": recientes de la sesión, con selección humana por casilla.
+   Recencia pura, sin criterio clínico: solo evita volver a teclear lo ya buscado. */
+.combo-recent {
+    margin-top: var(--space-sm);
+    padding-top: var(--space-sm);
+    border-top: 1px dashed rgba(148, 163, 184, 0.25);
+}
+.combo-recent-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    margin-bottom: 0.4rem;
+}
+.combo-recent-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-secondary);
+}
+.combo-recent-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    max-height: 190px;
+    overflow-y: auto;
+}
+.combo-recent-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.22rem 0.4rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+.combo-recent-item:hover {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--text-primary);
+}
+.combo-recent-item input {
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+.combo-recent-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.combo-recent-foot {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-top: 0.5rem;
+}
+.combo-recent-note {
+    font-size: 0.75rem;
+    font-style: italic;
+    color: var(--text-muted);
+}
 .combo-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

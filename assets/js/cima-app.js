@@ -4669,6 +4669,83 @@ class MedCheckApp {
     }
 
     // ============================================
+    // RECIENTES (últimos fármacos abiertos, solo esta sesión del navegador)
+    // ============================================
+
+    RECENT_MEDS_KEY = 'medcheck_recent_meds_v1';
+    RECENT_MEDS_MAX = 10;
+
+    /**
+     * Últimos fármacos ABIERTOS o añadidos, del más reciente al más antiguo. Recencia pura:
+     * no hay ningún criterio clínico en el orden ni en la inclusión (espejo, no juez).
+     */
+    getRecentMeds() {
+        if (!this._recentMeds) {
+            try {
+                const raw = sessionStorage.getItem(this.RECENT_MEDS_KEY);
+                const list = raw ? JSON.parse(raw) : [];
+                this._recentMeds = Array.isArray(list) ? list.filter(r => r && r.nregistro && r.nombre) : [];
+            } catch (_) {
+                this._recentMeds = [];
+            }
+        }
+        return this._recentMeds;
+    }
+
+    /** Memoria como fuente viva; sessionStorage es espejo (puede fallar en modo privado). */
+    _saveRecentMeds(list) {
+        this._recentMeds = list;
+        try { sessionStorage.setItem(this.RECENT_MEDS_KEY, JSON.stringify(list)); } catch (_) { /* storage no disponible */ }
+    }
+
+    /**
+     * Registra un fármaco en recientes (dedupe por nregistro, tope RECENT_MEDS_MAX).
+     * sessionStorage a propósito, NO localStorage: la lista de la vista Fármacos es temporal por
+     * diseño (no es el botiquín de un paciente), y un historial que sobreviviese a la sesión en un
+     * PC compartido de consulta sería, de hecho, un rastro de lo visto con cada paciente. Lo que sí
+     * debe persistir son los favoritos, que son curación humana explícita.
+     */
+    rememberRecentMed(med) {
+        if (!med || !med.nregistro || !med.nombre) return;
+        const entry = {
+            nregistro: String(med.nregistro),
+            nombre: med.nombre,
+            pactivos: med.pactivos || med.vtm?.nombre || ''
+        };
+        const list = this.getRecentMeds().filter(r => String(r.nregistro) !== entry.nregistro);
+        list.unshift(entry);
+        this._saveRecentMeds(list.slice(0, this.RECENT_MEDS_MAX));
+    }
+
+    clearRecentMeds() {
+        this._saveRecentMeds([]);
+        try { sessionStorage.removeItem(this.RECENT_MEDS_KEY); } catch (_) { /* storage no disponible */ }
+        if (['combo', 'interactions', 'adverse'].includes(this.currentView)) this.renderCombination();
+    }
+
+    /**
+     * Cadena completa: historial → selección humana → prompt. Añade a la lista SOLO lo marcado.
+     * Se añade en silencio y se repinta una vez: encadenar N re-renders robaba el foco y apilaba
+     * N toasts.
+     */
+    async addRecentSelection() {
+        const box = document.getElementById('combo-recent');
+        if (!box) return;
+        const picked = Array.from(box.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.dataset.nregistro);
+        if (!picked.length) return;
+        const recents = this.getRecentMeds();
+        const meds = picked.map(nr => recents.find(r => String(r.nregistro) === nr)).filter(Boolean);
+        let added = 0;
+        for (const med of meds) {
+            const before = this.comboDrugList.length;
+            await this.addDrugToComboList(med, { silent: true });
+            if (this.comboDrugList.length > before) added++;
+        }
+        this.renderCombination();
+        if (added) this.showToast(`${added} fármaco${added > 1 ? 's' : ''} añadido${added > 1 ? 's' : ''}`, 'success');
+    }
+
+    // ============================================
     // FÁRMACOS (lista compartida: Interacciones 4.5 + Síntoma 4.8)
     // ============================================
 
@@ -4688,6 +4765,30 @@ class MedCheckApp {
                 <span>${med.nombre}</span>
                 <i class="fas fa-times" onclick="app.removeComboDrug(${i})"></i>
             </div>`).join('');
+        // "Últimos medicamentos": recientes de la sesión que aún NO están en la lista, para no
+        // volver a teclear lo ya buscado. Orden = recencia pura; la inclusión la decide él marcando
+        // casillas (historial → selección humana → prompt). MedCheck no infiere nada de aquí.
+        const recentPending = this.getRecentMeds()
+            .filter(r => !this.comboDrugList.some(m => String(m.nregistro) === String(r.nregistro)));
+        const recentHtml = recentPending.length ? `
+                <div class="combo-recent" id="combo-recent">
+                    <div class="combo-recent-head">
+                        <span class="combo-recent-title"><i class="fas fa-clock-rotate-left"></i> Últimos medicamentos</span>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="app.clearRecentMeds()" title="Vacía la lista de recientes de este navegador"><i class="fas fa-eraser"></i> Borrar</button>
+                    </div>
+                    <div class="combo-recent-items">
+                        ${recentPending.map(r => `
+                        <label class="combo-recent-item" title="${this._escapeHtml(r.nombre)}">
+                            <input type="checkbox" data-nregistro="${this._escapeHtml(String(r.nregistro))}">
+                            <span class="combo-recent-name">${this._escapeHtml(r.nombre)}</span>
+                        </label>`).join('')}
+                    </div>
+                    <div class="combo-recent-foot">
+                        <button type="button" id="combo-recent-add" class="btn btn-sm btn-primary" disabled><i class="fas fa-plus"></i> Añadir seleccionados</button>
+                        <span class="combo-recent-note">Los que has abierto en esta sesión, por orden de uso. Solo entran los que marques.</span>
+                    </div>
+                </div>` : '';
+
         // Síntomas acumulativos (chips), se unen por OR en detective 4.8, IA y Evidencia.
         const symptomChips = this._comboSymptoms.map((s, i) => `
             <span class="drug-chip combo-symptom-chip">
@@ -4769,6 +4870,7 @@ class MedCheckApp {
                     </div>
                     <div class="drug-chips">${chips || '<span class="text-muted">Ninguno</span>'}</div>
                 </div>
+                ${recentHtml}
             </div>
 
             <div class="search-box combo-ai-hero">
@@ -4931,6 +5033,19 @@ class MedCheckApp {
 
         const input = document.getElementById('combo-drug-search');
         document.getElementById('combo-add-btn').addEventListener('click', () => this.addComboDrug());
+
+        // "Últimos medicamentos": el botón refleja cuántas casillas hay marcadas y solo se
+        // habilita con al menos una (nada entra en la lista sin marcarlo).
+        const recentBox = document.getElementById('combo-recent');
+        if (recentBox) {
+            const recentAddBtn = document.getElementById('combo-recent-add');
+            recentBox.addEventListener('change', () => {
+                const marked = recentBox.querySelectorAll('input[type="checkbox"]:checked').length;
+                recentAddBtn.disabled = marked === 0;
+                recentAddBtn.innerHTML = `<i class="fas fa-plus"></i> Añadir seleccionados${marked ? ` (${marked})` : ''}`;
+            });
+            recentAddBtn.addEventListener('click', () => this.addRecentSelection());
+        }
         // Navegación con teclado idéntica al buscador principal: ↑/↓ mueven el resaltado
         // (.autocomplete-item.active) y Enter añade el ítem resaltado (o busca el texto si no hay).
         input.addEventListener('keydown', (e) => {
@@ -5119,9 +5234,14 @@ class MedCheckApp {
         }
     }
 
-    async addDrugToComboList(med) {
+    /**
+     * @param {Object} [opts]
+     * @param {boolean} [opts.silent=false] - No repinta ni avisa: lo hace quien añade en lote
+     *   (ver addRecentSelection).
+     */
+    async addDrugToComboList(med, { silent = false } = {}) {
         if (this.comboDrugList.some(m => m.nregistro === med.nregistro)) {
-            this.showToast('Este medicamento ya está en la lista', 'warning');
+            if (!silent) this.showToast('Este medicamento ya está en la lista', 'warning');
             return;
         }
         // Conservar vtm y principiosActivos (Codex): los usa _substanceIdentity para los términos de búsqueda.
@@ -5146,6 +5266,8 @@ class MedCheckApp {
             }
         }
         this.comboDrugList.push({ nregistro: med.nregistro, nombre: med.nombre, pactivos, vtm, principiosActivos });
+        this.rememberRecentMed(med);
+        if (silent) return;
         // Re-render: vacía los contenedores de resultados → la lista cambió, hay que reanalizar.
         this.renderCombination();
         this.showToast(`${med.nombre.split(' ')[0]} añadido`, 'success');
@@ -8046,6 +8168,8 @@ class MedCheckApp {
             this.currentMed = med;
             // Save as selected medication for banner persistence
             this.setSelectedMedication(med);
+            // Recientes de la sesión: abrir la ficha es el acto humano explícito que cuenta.
+            this.rememberRecentMed(med);
             // Increment view count if this is a favorite
             this.incrementFavoriteViewCount(nregistro);
 
