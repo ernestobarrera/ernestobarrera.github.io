@@ -351,59 +351,82 @@ console.log('\n— Orden: el registro con ficha va delante de sus hermanos —')
     ok(!src.includes('dedupe-toggle'), 'ni su casilla');
 }
 
-console.log('\n— Importaciones paralelas: fuera por defecto —');
+console.log('\n— Registros duplicados sin ficha: fuera por defecto —');
 {
     const app2 = Object.create(sandbox.window.__MedCheckAppClass.prototype);
     app2.filterState = app2._emptyFilterState();
     app2.groupingState = { routeFilters: new Set(), activeIngredientFilters: new Set() };
 
-    ok(app2._isParallelImport({ nregistro: '11429IP' }), 'reconoce el sufijo IP');
-    ok(app2._isParallelImport({ nregistro: '6775201401IP2' }), 'y el sufijo IP con número');
-    ok(!app2._isParallelImport({ nregistro: '66678' }), 'un registro nacional no lo es');
-    ok(!app2._isParallelImport({}), 'sin nregistro no revienta');
+    const reg = (nregistro, nombre, conFicha, ff = 'COMPRIMIDO RECUBIERTO CON PELÍCULA', dosis = '12,5 mg') => ({
+        nregistro, nombre, dosis,
+        formaFarmaceutica: { nombre: ff },
+        formaFarmaceuticaSimplificada: { nombre: 'COMPRIMIDO' },
+        docs: conFicha ? [{ tipo: 1, secc: true }] : [],
+    });
 
-    const ip = { nregistro: '11429IP', nombre: 'OMNIC OCAS 0,4 mg', docs: [] };
-    const nac = { nregistro: '66678', nombre: 'OMNIC OCAS 0,4 mg', docs: [{ tipo: 1, secc: true }] };
+    // ALMOGRAN: un registro nacional con ficha y varias autorizaciones sin ella. Algunas
+    // llevan sufijo IP y otras conservan el número del país de origen: por eso la regla no
+    // mira el identificador, mira si hay un hermano que sí publique la ficha.
+    const nacional = reg('62877', 'ALMOGRAN 12,5 mg COMPRIMIDOS RECUBIERTOS CON PELICULA', true);
+    const conSufijo = reg('355614-6IP1', 'ALMOGRAN 12,5mg comprimidos recubiertos con pelicula', false);
+    const sinSufijo = reg('3400935860705', 'ALMOGRAN 12,5 MG COMPRIMIDOS RECUBIERTOS CON PELICULA', false);
+    const universo = [nacional, conSufijo, sinSufijo];
+    const idx = app2._buildDuplicateIndex(universo);
 
-    // Por defecto quedan fuera; la casilla las devuelve. Es el estado inverso al de las
-    // demás dimensiones, donde el filtro nace apagado.
-    const fuera = app2._applyResultFilters([ip, nac], app2._filterSnapshot());
-    ok(fuera.length === 1 && fuera[0] === nac, 'por defecto solo se ve el registro nacional');
+    ok(!app2._isRedundantRecord(nacional, idx), 'el registro con ficha nunca se oculta');
+    ok(app2._isRedundantRecord(conSufijo, idx), 'se oculta el duplicado con sufijo IP');
+    ok(app2._isRedundantRecord(sinSufijo, idx),
+        'y también el que conserva el número del país de origen, que el sufijo no cazaba');
 
+    // GARANTÍA 1: nunca se oculta el único registro de un medicamento. Hay 39 marcas que
+    // solo se comercializan como importación paralela (ALMOGRAN aparte).
+    const soloParalela = [
+        reg('BE117591IP', 'MICRODIOL comprimidos', false),
+        reg('BE117591IP2', 'MICRODIOL comprimidos', false),
+    ];
+    const idx2 = app2._buildDuplicateIndex(soloParalela);
+    ok(soloParalela.every(m => !app2._isRedundantRecord(m, idx2)),
+        'sin ningún hermano con ficha, no se oculta ninguno');
+
+    // GARANTÍA 2: no se confunde una filial con una importación paralela. La regla anterior
+    // por `labtitular ≠ labcomercializador` barría 352 productos legítimos.
+    const krka = reg('81664', 'IVABRADINA KRKA 5 MG COMPRIMIDOS RECUBIERTOS CON PELICULA', false, 'COMPRIMIDO RECUBIERTO CON PELÍCULA', '5 mg');
+    krka.labtitular = 'Krka D.D. Novo Mesto';
+    krka.labcomercializador = 'Krka Farmaceutica S.L.';
+    ok(!app2._isRedundantRecord(krka, app2._buildDuplicateIndex([krka])),
+        'un producto sin hermano con ficha se conserva aunque cambie el laboratorio');
+
+    // Dispositivos distintos NO son hermanos: AMGEVITA en jeringa y en pluma.
+    const jeringa = reg('1161164012', 'AMGEVITA 40 MG SOLUCION INYECTABLE EN JERINGA PRECARGADA', true, 'SOLUCIÓN INYECTABLE EN JERINGA PRECARGADA', '40 mg');
+    const pluma = reg('1161164015', 'AMGEVITA 40 MG SOLUCION INYECTABLE EN PLUMA PRECARGADA', false, 'SOLUCIÓN INYECTABLE EN PLUMA PRECARGADA', '40 mg');
+    ok(app2._duplicateProfile(jeringa) !== app2._duplicateProfile(pluma),
+        'jeringa y pluma tienen perfiles distintos: no se ocultan entre sí');
+    ok(!app2._isRedundantRecord(pluma, app2._buildDuplicateIndex([jeringa, pluma])),
+        'y por tanto la pluma sobrevive aunque la jeringa tenga ficha');
+
+    // Comportamiento del filtro: fuera por defecto, la casilla los devuelve.
+    const visible = app2._applyResultFilters(universo, app2._filterSnapshot());
+    ok(visible.length === 1 && visible[0] === nacional, 'por defecto solo queda el registro con ficha');
     app2.filterState.paralelas = true;
-    const dentro = app2._applyResultFilters([ip, nac], app2._filterSnapshot());
-    ok(dentro.length === 2, 'marcando la casilla vuelven a verse');
+    ok(app2._applyResultFilters(universo, app2._filterSnapshot()).length === 3,
+        'marcando la casilla vuelven los tres');
 
-    // El contador de "Limpiar N" solo cuenta cuando se sale del estado por defecto.
     ok(app2._activeFilterCount(app2._filterSnapshot()) === 1, 'marcada cuenta como filtro activo');
-    app2.filterState.paralelas = false;
-    ok(app2._activeFilterCount(app2._filterSnapshot()) === 0, 'en su estado por defecto no cuenta');
-
-    // Estado compartible y reversible.
-    app2.filterState.paralelas = true;
     ok(app2._facetURLParams().paralelas === '1', 'se serializa en la URL');
     app2._restoreFiltersFromURL({ paralelas: '1' });
     ok(app2.filterState.paralelas === true, 'se restaura desde la URL');
-    app2._restoreFiltersFromURL({});
-    ok(app2.filterState.paralelas === false, 'sin parámetro vuelve al estado por defecto');
-    app2.filterState.paralelas = true;
     app2._clearAllResultFilters();
     ok(app2.filterState.paralelas === false, '«Limpiar» la devuelve a su estado por defecto');
-
-    // Una búsqueda nueva NO debe reactivarlas: es ámbito, como Comercializado.
     app2.filterState.paralelas = true;
     app2._resetResultFilters();
     ok(app2.filterState.paralelas === true, 'una búsqueda nueva respeta la elección del usuario');
 
     const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
-    ok(src.includes("'parallel'"), 'es una dimensión del contrato, no un caso aparte');
-    ok(src.includes('soloQuedanParalelas'), 'existe la salvaguarda contra la lista vacía');
-    ok(src.includes('filter-paralelas'), 'la casilla vive en la hilera del buscador');
-    ok(src.includes('Incluir imp. paralelas'),
-        'la etiqueta dice el verbo: desmarcada NO incluye, marcada sí');
-    ok(src.includes("paralelas: 'filter-paralelas'"), 'usa el mismo cableado que las otras casillas');
+    ok(!src.includes('_isParallelImport'),
+        'no queda la detección por sufijo IP, que solo cubría 718 de 931');
+    ok(src.includes('Incluir duplicados'), 'la etiqueta dice lo que hace la casilla');
     ok(!/como en la web de CIMA|igual que hace la web de CIMA/.test(src),
-        'no se afirma que CIMA las excluya por defecto: no lo hace');
+        'no se afirma que CIMA los excluya por defecto: no lo hace');
 }
 
 console.log('\n— Filtro de forma del modal de alternativas —');

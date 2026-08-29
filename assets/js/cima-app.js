@@ -1423,9 +1423,9 @@ class MedCheckApp {
                             <input type="checkbox" id="filter-biosimilar" ${biosimilarChecked}>
                             <span>Biosimilar <span id="cnt-biosimilar" class="chip-count" style="font-size:0.7rem;opacity:0.7;"></span></span>
                         </label>
-                        <label class="search-option" id="opt-paralelas" title="Autorizaciones de importación paralela: el mismo medicamento comercializado por otro distribuidor. Se dejan fuera por defecto porque casi ninguna publica ficha técnica propia y multiplican los resultados.">
+                        <label class="search-option" id="opt-paralelas" title="Registros del mismo medicamento que no publican ficha técnica propia: casi siempre importaciones paralelas. Se dejan fuera porque no añaden información clínica y el registro que sí trae la ficha ya está en la lista. Nunca se oculta el único registro de un medicamento.">
                             <input type="checkbox" id="filter-paralelas" ${this.filterState?.paralelas ? 'checked' : ''}>
-                            <span>Incluir imp. paralelas <span id="cnt-paralelas" class="chip-count" style="font-size:0.7rem;opacity:0.7;"></span></span>
+                            <span>Incluir duplicados <span id="cnt-paralelas" class="chip-count" style="font-size:0.7rem;opacity:0.7;"></span></span>
                         </label>
                     </div>
                     <button id="search-btn" class="search-btn">Buscar</button>
@@ -4095,29 +4095,57 @@ class MedCheckApp {
     }
 
     /**
-     * ¿Es este registro una importación paralela?
+     * Registros REDUNDANTES: no publican ficha técnica propia y hay otro registro, con el
+     * mismo perfil, que sí la publica.
      *
-     * La AEMPS marca las importaciones paralelas en el propio número de registro, con el
-     * sufijo `IP` (`11429IP`, `6775-2014-01IP`, `LT1983805025IP3`). No es una inferencia
-     * sobre el producto: es leer cómo la agencia identifica el tipo de autorización.
+     * Es lo que multiplica los resultados: buscar `omnic` devuelve nueve comercializados y
+     * `almogran`, nueve más, casi todos autorizaciones distintas del mismo medicamento.
      *
-     * Se apoya en un contraste independiente: de los **993 registros con ese sufijo, 992 no
-     * publican ficha técnica propia**, que es exactamente lo que caracteriza a una
-     * importación paralela —comercializa un medicamento ya autorizado y se remite a su
-     * ficha—. Un patrón que coincide al 99,9 % con un hecho verificable no es una
-     * coincidencia del formato.
+     * **No se clasifica qué ES cada registro; se comprueba si APORTA algo que otro no dé
+     * ya.** Los dos intentos de clasificarlo fallaron al medirlos, y por eso se descartaron:
      *
-     * La web de CIMA ofrece un filtro «Imp. Paralelas» de tres estados (nada / Sí / No) que
-     * **por defecto NO las excluye**: buscar `omnic` allí sin tocar nada devuelve las nueve,
-     * importaciones paralelas incluidas. MedCheck sí las deja fuera de entrada, y eso es una
-     * decisión propia, no un calco de la fuente: quien consulta aquí trae una duda clínica y
-     * poco tiempo, no un número de registro que verificar.
+     * - Por el sufijo `IP` del número de registro: solo cubre 718 de los 931. La AEMPS deja
+     *   a muchas importaciones paralelas el número del país de origen (`355614-6`,
+     *   `3400935860705`, `034996037`), sin marca alguna que las distinga.
+     * - Por `labtitular ≠ labcomercializador`: barría 352 productos legítimos donde la
+     *   diferencia es matriz extranjera y filial española del mismo grupo — IVABRADINA KRKA
+     *   (Krka D.D. → Krka Farmacéutica), ALBUREX (CSL Behring GmbH → CSL Behring S.A.),
+     *   MEGEFREN (Teva B.V. → Teva Pharma). Ninguno es importación paralela.
      *
-     * La API REST **no expone** ese filtro —comprobado el 2026-08-29 con seis variantes de
-     * parámetro, todas devuelven el catálogo entero— así que hay que reconocerlas aquí.
+     * La regla relacional no tiene esos falsos positivos porque no adivina: exige que exista
+     * un hermano concreto con ficha. De ahí se siguen dos garantías, ambas verificadas sobre
+     * los 16.103 comercializados y fijadas en `medcheck-test-tarjeta`:
+     *   1. **nunca oculta el único registro de un medicamento** — las 39 marcas que solo se
+     *      comercializan como importación paralela siguen apareciendo;
+     *   2. **nunca oculta un registro con ficha**, porque la condición empieza por no tenerla.
+     *
+     * El perfil es marca + dosis canónica + forma farmacéutica DECLARADA (la de 240 valores,
+     * no la simplificada): así AMGEVITA en jeringa no se considera hermano de AMGEVITA en
+     * pluma. Ante la duda, no se oculta.
      */
-    _isParallelImport(med) {
-        return /IP\d*$/i.test(String(med?.nregistro || ''));
+    _duplicateProfile(med) {
+        const s = this._splitOfficialName(med);
+        const norm = (x) => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
+        return [norm(s.marca), this._doseFingerprint(med?.dosis), norm(med?.formaFarmaceutica?.nombre)].join('|');
+    }
+
+    /** Índice perfil → registros, para poder preguntar por los hermanos en O(1). */
+    _buildDuplicateIndex(universe) {
+        const idx = new Map();
+        for (const m of (universe || [])) {
+            const k = this._duplicateProfile(m);
+            if (!idx.has(k)) idx.set(k, []);
+            idx.get(k).push(m);
+        }
+        return idx;
+    }
+
+    /** ¿Sobra este registro porque otro con el mismo perfil sí trae la ficha? */
+    _isRedundantRecord(med, indice) {
+        if (this._hasFichaTecnicaSeccionada(med)) return false;
+        const hermanos = indice.get(this._duplicateProfile(med));
+        return !!hermanos && hermanos.some(o => o !== med && this._hasFichaTecnicaSeccionada(o));
     }
 
     /**
@@ -11213,7 +11241,7 @@ ${materialesPlaceholder}
      * Predicado por dimensión. Una dimensión sin selección devuelve `null` (no filtra),
      * lo que permite distinguir "sin filtrar" de "filtra y no pasa nadie".
      */
-    _filterPredicate(dim, snap) {
+    _filterPredicate(dim, snap, universe = null) {
         switch (dim) {
             case 'productType': {
                 if (!snap.generic && !snap.biosimilar) return null;
@@ -11228,10 +11256,13 @@ ${materialesPlaceholder}
                 return snap.lab ? (med) => (med.labtitular || 'Sin laboratorio') === snap.lab : null;
             case 'dose':
                 return snap.doses.size ? (med) => !!med.dosis && snap.doses.has(this.normalizeDosis(med.dosis)) : null;
-            case 'parallel':
-                // Excluir importaciones paralelas es el estado POR DEFECTO, así que el
-                // predicado existe cuando la casilla está desmarcada, al revés que las demás.
-                return snap.paralelas ? null : (med) => !this._isParallelImport(med);
+            case 'parallel': {
+                // Excluir los duplicados es el estado POR DEFECTO, así que el predicado existe
+                // cuando la casilla está DESMARCADA, al revés que en las demás dimensiones.
+                if (snap.paralelas || !Array.isArray(universe)) return null;
+                const indice = this._buildDuplicateIndex(universe);
+                return (med) => !this._isRedundantRecord(med, indice);
+            }
             case 'galenic':
                 // Familia galénica: la misma dimensión que pinta el icono de la tarjeta, para
                 // que pulsar el icono y filtrar sean literalmente lo mismo. OR dentro de la
@@ -11265,7 +11296,7 @@ ${materialesPlaceholder}
             : MedCheckApp.FILTER_DIMENSIONS.filter(d => d !== exclude);
         let out = Array.isArray(universe) ? universe : [];
         for (const dim of dims) {
-            const pred = this._filterPredicate(dim, snap);
+            const pred = this._filterPredicate(dim, snap, universe);
             if (pred) out = out.filter(pred);
         }
         return out;
@@ -11325,11 +11356,13 @@ ${materialesPlaceholder}
         setCount('cnt-biosimilar', this._disjunctiveCount(base, snap, 'productType', m => m.biosimilar === true));
         setCount('cnt-receta', this._disjunctiveCount(base, snap, 'receta', m => m.receta === true));
         // Cuántas importaciones paralelas aparecerían si se marcase la casilla.
-        setCount('cnt-paralelas', base.filter(m => this._isParallelImport(m)).length);
+        // Cuántos registros redundantes aparecerían si se marcase la casilla.
+        const idxDup = this._buildDuplicateIndex(base);
+        setCount('cnt-paralelas', base.filter(m => this._isRedundantRecord(m, idxDup)).length);
         // Comercializado es dimensión de servidor: su contador solo informa cuando el
         // filtro está desactivado (si está activo, todo el universo ya es comercializado).
         const optP = document.getElementById('opt-paralelas');
-        if (optP) optP.hidden = base.every(m => !this._isParallelImport(m)) && !snap.paralelas;
+        if (optP) optP.hidden = !base.some(m => this._isRedundantRecord(m, idxDup)) && !snap.paralelas;
         setCount('cnt-comerc', this.lastSearchFilters?.comerc
             ? 0
             : this._applyResultFilters(base, snap).filter(m => m.comerc).length);
@@ -11442,13 +11475,12 @@ ${materialesPlaceholder}
         // comercializados como importación paralela (ALMOGRAN, CITRAFLEET, MICRODIOL,
         // APIDRA SOLOSTAR…). Si al excluirlas no quedara nada que enseñar, la casilla se
         // marca en ámbar y lo dice: nunca se devuelve una lista vacía sin explicar por qué.
-        const paralelasEnUniverso = sourceForFilters.filter(m => this._isParallelImport(m)).length;
-        const soloQuedanParalelas = !snap.paralelas && paralelasEnUniverso > 0
-            && sourceForFilters.length > 0
-            && sourceForFilters.every(m => this._isParallelImport(m));
-        const tipParalelas = soloQuedanParalelas
-            ? `Todos los resultados de esta búsqueda son importaciones paralelas. Marca la casilla para verlos: este medicamento solo se comercializa así.`
-            : `Autorizaciones de importación paralela: el mismo medicamento, comercializado por otro distribuidor. Se dejan fuera por defecto porque casi ninguna publica ficha técnica propia y multiplican los resultados. Márcala para incluirlas.`;
+        const idxDuplicados = this._buildDuplicateIndex(sourceForFilters);
+        const paralelasEnUniverso = sourceForFilters.filter(m => this._isRedundantRecord(m, idxDuplicados)).length;
+        // La regla exige un hermano CON ficha para ocultar, así que nunca puede vaciar la
+        // lista. La salvaguarda que hacía falta con la detección por sufijo ya no aplica.
+        const soloQuedanParalelas = false;
+        const tipParalelas = 'Registros del mismo medicamento que no publican ficha técnica propia: casi siempre importaciones paralelas. Se dejan fuera porque no añaden información clínica y el registro que sí trae la ficha ya está en la lista. Nunca se oculta el único registro de un medicamento.';
 
         // Forma farmacéutica y dosis son discriminadores clínicos de primer nivel ("quiero
         // sobres, efervescente…", "quiero los de 20 mg") → visibles sin desplegar nada. En
@@ -11493,7 +11525,7 @@ ${materialesPlaceholder}
                         </label>` : ''}
                         ${showEFG && paralelasEnUniverso > 0 ? `<label class="search-option${soloQuedanParalelas ? ' search-option--alerta' : ''}" title="${this._escapeHtml(tipParalelas)}">
                             <input type="checkbox" id="paralelas-filter" ${snap.paralelas ? 'checked' : ''}>
-                            <span>Incluir imp. paralelas <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${paralelasEnUniverso}</span></span>
+                            <span>Incluir duplicados <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${paralelasEnUniverso}</span></span>
                         </label>` : ''}
                     </div>
                     ` : ''}
