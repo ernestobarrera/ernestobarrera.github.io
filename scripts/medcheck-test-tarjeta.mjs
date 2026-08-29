@@ -351,7 +351,7 @@ console.log('\n— Orden: el registro con ficha va delante de sus hermanos —')
     ok(!src.includes('dedupe-toggle'), 'ni su casilla');
 }
 
-console.log('\n— Importaciones paralelas: fuera por defecto, como en CIMA —');
+console.log('\n— Importaciones paralelas: fuera por defecto —');
 {
     const app2 = Object.create(sandbox.window.__MedCheckAppClass.prototype);
     app2.filterState = app2._emptyFilterState();
@@ -398,7 +398,12 @@ console.log('\n— Importaciones paralelas: fuera por defecto, como en CIMA —'
     const src = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
     ok(src.includes("'parallel'"), 'es una dimensión del contrato, no un caso aparte');
     ok(src.includes('soloQuedanParalelas'), 'existe la salvaguarda contra la lista vacía');
-    ok(src.includes('paralelas-filter'), 'la casilla está en la barra');
+    ok(src.includes('filter-paralelas'), 'la casilla vive en la hilera del buscador');
+    ok(src.includes('Incluir imp. paralelas'),
+        'la etiqueta dice el verbo: desmarcada NO incluye, marcada sí');
+    ok(src.includes("paralelas: 'filter-paralelas'"), 'usa el mismo cableado que las otras casillas');
+    ok(!/como en la web de CIMA|igual que hace la web de CIMA/.test(src),
+        'no se afirma que CIMA las excluya por defecto: no lo hace');
 }
 
 console.log('\n— Filtro de forma del modal de alternativas —');

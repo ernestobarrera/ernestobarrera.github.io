@@ -1423,6 +1423,10 @@ class MedCheckApp {
                             <input type="checkbox" id="filter-biosimilar" ${biosimilarChecked}>
                             <span>Biosimilar <span id="cnt-biosimilar" class="chip-count" style="font-size:0.7rem;opacity:0.7;"></span></span>
                         </label>
+                        <label class="search-option" id="opt-paralelas" title="Autorizaciones de importación paralela: el mismo medicamento comercializado por otro distribuidor. Se dejan fuera por defecto porque casi ninguna publica ficha técnica propia y multiplican los resultados.">
+                            <input type="checkbox" id="filter-paralelas" ${this.filterState?.paralelas ? 'checked' : ''}>
+                            <span>Incluir imp. paralelas <span id="cnt-paralelas" class="chip-count" style="font-size:0.7rem;opacity:0.7;"></span></span>
+                        </label>
                     </div>
                     <button id="search-btn" class="search-btn">Buscar</button>
                 </div>
@@ -1518,6 +1522,7 @@ class MedCheckApp {
                 efgOnly: 'filter-generic',
                 recetaOnly: 'filter-receta',
                 biosimilarOnly: 'filter-biosimilar',
+                paralelas: 'filter-paralelas',
             }[key])?.checked;
             this.displaySearchResults(this._lastSearchData);
             // replace: la URL refleja el estado visible, pero marcar una casilla no es
@@ -1530,6 +1535,8 @@ class MedCheckApp {
         filterGeneric.addEventListener('change', () => applyClientToggle('efgOnly'));
         document.getElementById('filter-receta')?.addEventListener('change', () => applyClientToggle('recetaOnly'));
         document.getElementById('filter-biosimilar')?.addEventListener('change', () => applyClientToggle('biosimilarOnly'));
+        // Importaciones paralelas: filtro de cliente, como los tres anteriores.
+        document.getElementById('filter-paralelas')?.addEventListener('change', () => applyClientToggle('paralelas'));
         // Sin listener de `#filter-show-brands`: ese control no existe en ninguna plantilla.
 
         // Restore previous results if available
@@ -4100,9 +4107,14 @@ class MedCheckApp {
      * ficha—. Un patrón que coincide al 99,9 % con un hecho verificable no es una
      * coincidencia del formato.
      *
-     * La API REST **no expone** el filtro que la web de CIMA sí ofrece («Imp. Paralelas»,
-     * desmarcado por defecto): comprobado el 2026-08-29 con seis variantes de parámetro,
-     * todas devuelven el catálogo entero. Por eso hay que reconocerlas aquí.
+     * La web de CIMA ofrece un filtro «Imp. Paralelas» de tres estados (nada / Sí / No) que
+     * **por defecto NO las excluye**: buscar `omnic` allí sin tocar nada devuelve las nueve,
+     * importaciones paralelas incluidas. MedCheck sí las deja fuera de entrada, y eso es una
+     * decisión propia, no un calco de la fuente: quien consulta aquí trae una duda clínica y
+     * poco tiempo, no un número de registro que verificar.
+     *
+     * La API REST **no expone** ese filtro —comprobado el 2026-08-29 con seis variantes de
+     * parámetro, todas devuelven el catálogo entero— así que hay que reconocerlas aquí.
      */
     _isParallelImport(med) {
         return /IP\d*$/i.test(String(med?.nregistro || ''));
@@ -11312,8 +11324,12 @@ ${materialesPlaceholder}
         setCount('cnt-generic', this._disjunctiveCount(base, snap, 'productType', m => m.generico === true));
         setCount('cnt-biosimilar', this._disjunctiveCount(base, snap, 'productType', m => m.biosimilar === true));
         setCount('cnt-receta', this._disjunctiveCount(base, snap, 'receta', m => m.receta === true));
+        // Cuántas importaciones paralelas aparecerían si se marcase la casilla.
+        setCount('cnt-paralelas', base.filter(m => this._isParallelImport(m)).length);
         // Comercializado es dimensión de servidor: su contador solo informa cuando el
         // filtro está desactivado (si está activo, todo el universo ya es comercializado).
+        const optP = document.getElementById('opt-paralelas');
+        if (optP) optP.hidden = base.every(m => !this._isParallelImport(m)) && !snap.paralelas;
         setCount('cnt-comerc', this.lastSearchFilters?.comerc
             ? 0
             : this._applyResultFilters(base, snap).filter(m => m.comerc).length);
@@ -11326,6 +11342,7 @@ ${materialesPlaceholder}
         set('filter-generic', snap.generic);
         set('filter-receta', snap.receta);
         set('filter-biosimilar', snap.biosimilar);
+        set('filter-paralelas', snap.paralelas);
     }
 
     /**
@@ -11416,10 +11433,10 @@ ${materialesPlaceholder}
         // Filtros activos — debe coincidir exactamente con lo que limpia "Limpiar N".
         const activeFilters = this._activeFilterCount(snap);
 
-        // Importaciones paralelas. Se excluyen POR DEFECTO, igual que hace la web de CIMA
-        // —cuya API, en cambio, no ofrece el filtro—: son autorizaciones de un medicamento
-        // que ya está en la lista, casi nunca publican ficha propia y multiplican los
-        // resultados justo cuando hay prisa. La casilla las devuelve.
+        // Importaciones paralelas. Se excluyen POR DEFECTO: son autorizaciones de un
+        // medicamento que ya está en la lista, casi nunca publican ficha propia y multiplican
+        // los resultados justo cuando hay prisa. La web de CIMA las incluye por defecto y
+        // deja excluirlas a mano; aquí se invierte el reglaje, no el mecanismo.
         //
         // Salvaguarda contra el cero silencioso: 39 medicamentos del catálogo SOLO existen
         // comercializados como importación paralela (ALMOGRAN, CITRAFLEET, MICRODIOL,
@@ -11431,7 +11448,7 @@ ${materialesPlaceholder}
             && sourceForFilters.every(m => this._isParallelImport(m));
         const tipParalelas = soloQuedanParalelas
             ? `Todos los resultados de esta búsqueda son importaciones paralelas. Marca la casilla para verlos: este medicamento solo se comercializa así.`
-            : `Autorizaciones de importación paralela: el mismo medicamento, comercializado por otro distribuidor. Se ocultan por defecto —como en la web de CIMA— porque casi ninguna publica ficha técnica propia. Márcala para incluirlas.`;
+            : `Autorizaciones de importación paralela: el mismo medicamento, comercializado por otro distribuidor. Se dejan fuera por defecto porque casi ninguna publica ficha técnica propia y multiplican los resultados. Márcala para incluirlas.`;
 
         // Forma farmacéutica y dosis son discriminadores clínicos de primer nivel ("quiero
         // sobres, efervescente…", "quiero los de 20 mg") → visibles sin desplegar nada. En
@@ -11460,7 +11477,7 @@ ${materialesPlaceholder}
                             ${formOptions}
                         </select>` : ''}
                     </div>
-                    ${(showEFG && (efgCount > 0 || recetaCount > 0 || biosimilarCount > 0 || snap.generic || snap.receta || snap.biosimilar)) || paralelasEnUniverso > 0 ? `
+                    ${showEFG && (efgCount > 0 || recetaCount > 0 || biosimilarCount > 0 || snap.generic || snap.receta || snap.biosimilar || paralelasEnUniverso > 0) ? `
                     <div class="control-section" style="gap:var(--space-md);">
                         ${showEFG && (efgCount > 0 || snap.generic) ? `<label class="search-option" title="Solo genéricos">
                             <input type="checkbox" id="efg-filter" ${snap.generic ? 'checked' : ''}>
@@ -11474,9 +11491,9 @@ ${materialesPlaceholder}
                             <input type="checkbox" id="biosimilar-filter" ${snap.biosimilar ? 'checked' : ''}>
                             <span>Biosimilar <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${biosimilarCount}</span></span>
                         </label>` : ''}
-                        ${paralelasEnUniverso > 0 ? `<label class="search-option${soloQuedanParalelas ? ' search-option--alerta' : ''}" title="${this._escapeHtml(tipParalelas)}">
+                        ${showEFG && paralelasEnUniverso > 0 ? `<label class="search-option${soloQuedanParalelas ? ' search-option--alerta' : ''}" title="${this._escapeHtml(tipParalelas)}">
                             <input type="checkbox" id="paralelas-filter" ${snap.paralelas ? 'checked' : ''}>
-                            <span>Imp. paralelas <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${paralelasEnUniverso}</span></span>
+                            <span>Incluir imp. paralelas <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${paralelasEnUniverso}</span></span>
                         </label>` : ''}
                     </div>
                     ` : ''}
