@@ -673,6 +673,7 @@ class MedCheckApp {
                 case 'adverse': this.renderCombination(); break;
                 case 'equivalences': this.renderEquivalences(); break;
                 case 'pharmacogenomics': await this.renderPharmacogenomics(); break;
+                case 'utilization': await this.renderUtilizacionView(); break;
                 case 'supply': await this.renderSupply(); break;
                 case 'alerts': await this.renderAlerts(); break;
                 case 'materials': await this.renderMaterials(); break;
@@ -2791,7 +2792,7 @@ class MedCheckApp {
         await this.api._loadClinicalOntology();
         const dict = CimaAPI.CLINICAL_DICTIONARY || {};
         const norm = (s) => (s || '').toString().toLowerCase()
-            .normalize('NFD').replace(/[̀-ͯ]/g, '');
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const esc = (s) => (s || '').toString().replace(/"/g, '&quot;');
 
         // Agrupar por DOMINIO CLÍNICO curado (catalogGroup). El ATC clasifica el órgano diana
@@ -8212,6 +8213,12 @@ class MedCheckApp {
             const isFinancingActive = initialTab === 'financing';
             // Mostrar tab SNS si el medicamento tiene presentaciones con CN o siempre (se carga async)
             const hasCns = Array.isArray(med.presentaciones) && med.presentaciones.some(p => p.cn);
+            // Utilización observada — SIEMPRE por nivel 5. CIMA devuelve la cadena completa
+            // ({R03A,3},{R03AK,4},{R03AK07,5}), así que `atcs[0]` es el nivel 3 y no sirve aquí:
+            // el dataset del Ministerio está indexado por principio activo o asociación.
+            const atc5Util = med.atcs?.find(a => a.nivel === 5)?.codigo || '';
+            const hasUtil = !!atc5Util;
+            const isUtilActive = initialTab === 'utilizacion' && hasUtil;
 
             // Get medication images for thumbnail and lightbox
             const medFotos = med.fotos || [];
@@ -8287,6 +8294,7 @@ class MedCheckApp {
                     <button class="modal-tab modal-tab-evidence ${isEvidenceActive ? 'active' : ''}" data-tab="evidence" title="Evidencia científica: PubMed y registros de ensayos clínicos"><i class="fas fa-book-medical"></i> Evidencia</button>
                     <button class="modal-tab modal-tab-consult ${isConsultActive ? 'active' : ''}" data-tab="consult" title="Preparar una consulta a una IA externa (fuera de ficha técnica)"><i class="fas fa-robot"></i> Consultar IA</button>
                     ${hasCns ? `<button class="modal-tab modal-tab-financing ${isFinancingActive ? 'active' : ''}" data-tab="financing" title="Financiación SNS: aportación, estado, precio"><i class="fas fa-receipt"></i> Financiación</button>` : ''}
+                    ${hasUtil ? `<button class="modal-tab modal-tab-util ${isUtilActive ? 'active' : ''}" data-tab="utilizacion" title="Utilización observada en recetas del SNS dispensadas en oficina de farmacia"><i class="fas fa-chart-column"></i> Utilización</button>` : ''}
                 </div>
 
                 <div id="tab-info" class="tab-content ${isInfoActive ? 'active' : ''}">
@@ -8356,6 +8364,13 @@ class MedCheckApp {
                         <div class="loading-spinner"></div>
                     </div>
                 </div>` : ''}
+
+                ${hasUtil ? `
+                <div id="tab-utilizacion" class="tab-content ${isUtilActive ? 'active' : ''}">
+                    <div id="utilizacion-content" data-atc5="${atc5Util}">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>` : ''}
 `;
 
             // Load AEMPS alerts asynchronously if present
@@ -8417,11 +8432,18 @@ class MedCheckApp {
                     if (tab.dataset.tab === 'financing' && !document.getElementById('financing-content')?.dataset.loaded) {
                         this.loadSnsFinancing(this._pendingSnsFinancing || med);
                     }
+                    // Utilización observada — carga diferida al pulsar la pestaña
+                    if (tab.dataset.tab === 'utilizacion' && !document.getElementById('utilizacion-content')?.dataset.loaded) {
+                        this.loadUtilizacion(atc5Util, med.cpresc);
+                    }
                 });
             });
 
             // Resumen de financiación en la ficha Información (vistazo rápido; carga diferida + caché 24h)
             if (hasCns) this._hydrateFinancingSummary(med);
+
+            // Utilización si el modal se abre directamente en esa pestaña
+            if (isUtilActive) this.loadUtilizacion(atc5Util, med.cpresc);
 
         } catch (error) {
             if (error.code === 'NO_CONTENT') {
@@ -10210,8 +10232,8 @@ ${materialesPlaceholder}
         try {
             const med = this.currentMed;
             const activePrinciple = (med?.principiosActivos?.[0]?.nombre || '').toLowerCase()
-                .normalize('NFD').replace(/[̀-ͯ]/g, '');
-            const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const normalize = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             const cls = CimaAPI.QT_RISK_CLASSIFICATION;
 
             // Clasificación previa: ¿está este fármaco en la lista AZCERT/CredibleMeds?
@@ -10258,9 +10280,9 @@ ${materialesPlaceholder}
         // Resolver clasificación de riesgo por principio activo (fuente: AZCERT/CredibleMeds)
         const med = this.currentMed;
         const activePrinciple = (med?.principiosActivos?.[0]?.nombre || '').toLowerCase()
-            .normalize('NFD').replace(/[̀-ͯ]/g, '');
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-        const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        const normalize = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const cls = CimaAPI.QT_RISK_CLASSIFICATION;
 
         let riskLevel = null;
@@ -13827,6 +13849,517 @@ ${materialesPlaceholder}
         return (eml._medByName && eml._medByName[name]) || { name, indications: [] };
     }
 
+    // ─── Utilización observada ───────────────────────────────────────────────
+    //
+    // Espejo, no juez: se muestra qué se dispensa, con su unidad y su perímetro, y nada más.
+    // Sin umbrales, sin etiquetas «muy/poco utilizado», sin semáforos y sin percentiles: cualquiera
+    // de esas cosas exigiría decidir dónde está la raya, que es precisamente el juicio que MedCheck
+    // no emite.
+
+    /** «7,13» · «<0,01» si la fuente redondeó a cero. Nunca imprime «0,00» a secas. */
+    _utilDhd(valor, ceroRedondeado) {
+        if (ceroRedondeado) return '&lt;0,01';
+        if (typeof valor !== 'number') return '—';
+        return valor.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    /**
+     * Canal de dispensación según `cpresc` de CIMA. Devuelve 'H', 'DH' o null.
+     *
+     * Los dos NO son lo mismo y confundirlos hace afirmar de más:
+     *   H  «Uso Hospitalario»        → se dispensa dentro del hospital. Esta fuente, que solo ve
+     *                                  receta facturada en oficina de farmacia, es ciega a él.
+     *   DH «Diagnóstico Hospitalario» → exige prescripción de origen hospitalario, pero puede
+     *                                  dispensarse en oficina de farmacia. Que falte o que la
+     *                                  cifra sea parcial es posible, no seguro.
+     *
+     * Importa porque comprobado contra el fichero de 2025 no aparecen pembrolizumab, nivolumab,
+     * adalimumab, infliximab, etanercept, evolocumab ni alirocumab. Presentar eso como «sin dato»
+     * invita a leer «no se usa», que es lo contrario de la verdad para un antineoplásico.
+     */
+    _utilCanal(cpresc) {
+        const t = String(cpresc || '');
+        if (/uso hospitalario/i.test(t)) return 'H';
+        if (/diagn[óo]stico hospitalario/i.test(t)) return 'DH';
+        return null;
+    }
+
+    async loadUtilizacion(atc5, cpresc) {
+        const slot = document.getElementById('utilizacion-content');
+        if (!slot || slot.dataset.loaded) return;
+        slot.dataset.loaded = '1';
+        const data = await this.api.getUtilizacionNodo(atc5);
+        slot.innerHTML = this.renderUtilizacionHtml(atc5, data, cpresc);
+    }
+
+    // ─── Vista principal «Utilización» ───────────────────────────────────────
+    //
+    // Una vista propia, al nivel de Buscar, y no solo una pestaña dentro de la ficha. Son dos
+    // preguntas distintas y la segunda es la que da contexto clínico:
+    //
+    //   ficha  → «¿cuánto se usa este medicamento?»
+    //   vista  → «¿cómo se reparte el uso en este grupo, y qué alternativas hay?»
+    //
+    // La segunda solo se puede hacer navegando por la jerarquía, comparando hermanos y bajando
+    // donde el uso se concentra. Todo se resuelve contra el árbol ya descargado: cero peticiones
+    // mientras se navega.
+
+    async renderUtilizacionView() {
+        this.content.innerHTML = '<div class="loading-spinner"></div>';
+        if (!this._utilVista) this._utilVista = { nodo: null, query: '' };
+
+        const arbol = await this.api.getUtilizacionArbol();
+        if (!arbol?.nodos) {
+            this.content.innerHTML = `
+                <div class="view-container">
+                    <div class="empty-state">
+                        <i class="fas fa-chart-column" style="font-size:3rem;color:var(--text-muted);opacity:.4;"></i>
+                        <h3>Datos de utilización no disponibles</h3>
+                        <p class="text-muted">No se ha podido cargar el árbol de consumo del Ministerio
+                        de Sanidad. El resto de MedCheck funciona con normalidad.</p>
+                    </div>
+                </div>`;
+            return;
+        }
+        this._utilArbolVista = arbol;
+        this._pintarUtilizacionView();
+    }
+
+    /** Camino desde la raíz hasta un nodo, para el breadcrumb. */
+    _utilCamino(cod) {
+        const nodos = this._utilArbolVista?.nodos || {};
+        const camino = [];
+        let c = cod;
+        while (c && nodos[c]) { camino.unshift(c); c = nodos[c].p; }
+        return camino;
+    }
+
+    _pintarUtilizacionView() {
+        const arbol = this._utilArbolVista;
+        const nodos = arbol.nodos;
+        const meta = arbol.meta || {};
+        const esc = (s) => this._escapeHtml(String(s ?? ''));
+        const st = this._utilVista;
+        const actual = st.nodo && nodos[st.nodo] ? st.nodo : null;
+
+        // ── raíz: los 14 grupos anatómicos, ordenados por uso ──
+        const raices = Object.keys(nodos).filter(k => nodos[k].niv === 1)
+            .sort((a, b) => (nodos[b].dhd ?? 0) - (nodos[a].dhd ?? 0));
+
+        const migas = actual ? this._utilCamino(actual) : [];
+        const breadcrumb = `
+            <nav class="util-crumbs" aria-label="Jerarquía ATC">
+                <button class="util-crumb" data-util-ir="">Todos los grupos</button>
+                ${migas.map((c, i) => `<span class="util-crumb-sep">›</span>
+                    ${i === migas.length - 1
+        ? `<span class="util-crumb is-current">${esc(c)}</span>`
+        : `<button class="util-crumb" data-util-ir="${esc(c)}">${esc(c)}</button>`}`).join('')}
+            </nav>`;
+
+        // ── cuerpo ──
+        let cuerpo;
+        if (!actual) {
+            const filas = raices.map((k) => {
+                const v = nodos[k];
+                const max = nodos[raices[0]].dhd || 1;
+                const ancho = Math.max(2, ((v.dhd ?? 0) / max) * 100);
+                return `<li class="util-bar-row">
+                    <span class="util-bar-label">
+                        <button class="util-bar-link" data-util-ir="${esc(k)}">
+                            <span class="util-bar-code">${esc(k)}</span> ${esc(v.n)}
+                        </button>
+                    </span>
+                    <span class="util-bar-track"><i style="width:${ancho.toFixed(1)}%"></i></span>
+                    <span class="util-bar-val">${this._utilDhd(v.dhd, v.z === 1)}</span>
+                    <span class="util-bar-pct"></span>
+                </li>`;
+            }).join('');
+            cuerpo = `
+                <p class="util-note">Elige un grupo anatómico para bajar por la clasificación ATC
+                hasta el principio activo.</p>
+                <ul class="util-bars">${filas}</ul>`;
+        } else {
+            const v = nodos[actual];
+            const d = { ...meta, atc: actual };
+            const reparto = this._utilRepartoDeNodo(actual);
+            const hoja = v.niv === 5;
+
+            cuerpo = `
+                <div class="util-node-head">
+                    <h3>${esc(actual)} · ${esc(v.n)}</h3>
+                    <p class="util-node-figure">
+                        <strong>${this._utilDhd(v.dhd, v.z === 1)}</strong> DHD
+                        <span class="util-unit-long">DDD por 1.000 habitantes y día</span>
+                    </p>
+                    ${typeof v.env === 'number' ? `<p class="util-env">
+                        <strong>${Math.round(v.env * 1000).toLocaleString('es-ES')}</strong> envases facturados
+                    </p>` : ''}
+                </div>
+                ${reparto
+        ? `<section class="util-nav">${this.renderUtilizacionRepartoHtml(d, reparto, { navegable: true })}</section>`
+        : `<p class="util-note">${hoja
+            ? 'Es un principio activo: no tiene subniveles. Busca su nombre para ver los medicamentos que lo contienen.'
+            : 'Este grupo no tiene reparto publicado con DHD.'}</p>`}
+                ${hoja ? `<div class="util-node-actions">
+                    <button class="btn btn-primary" data-util-medicamentos="${esc(actual)}">
+                        <i class="fas fa-pills"></i> Ver medicamentos con ${esc(actual)}
+                    </button>
+                </div>` : ''}`;
+        }
+
+        const fecha = meta.fuente_actualizada_en
+            ? new Date(meta.fuente_actualizada_en).toLocaleDateString('es-ES') : null;
+
+        this.content.innerHTML = `
+            <div class="view-container util-view">
+                <header class="util-view-header">
+                    <h2><i class="fas fa-chart-column"></i> Utilización observada</h2>
+                    <p class="text-muted util-view-intro">
+                        Cuánto se dispensa realmente de cada grupo y principio activo, según las tablas
+                        de consumo del Ministerio de Sanidad. Sirve para situar un fármaco entre sus
+                        alternativas; <strong>no dice cuál conviene prescribir</strong>.
+                    </p>
+                    <div class="util-head">
+                        <span class="util-scope">${esc(meta.perimetro_corto)}</span>
+                        <span class="util-year">${esc(meta.periodo)}</span>
+                    </div>
+                </header>
+
+                <div class="util-search">
+                    <input type="search" id="util-buscar" class="form-input"
+                        placeholder="Código ATC o principio activo (p. ej. R03AK07, omeprazol)"
+                        value="${esc(st.query)}" autocomplete="off">
+                </div>
+                <div id="util-sugerencias" class="util-suggest"></div>
+
+                ${breadcrumb}
+                <div class="util-body">${cuerpo}</div>
+
+                <section class="util-limits">
+                    <h4>Qué no dice este dato</h4>
+                    <ul>
+                        <li><strong>No dice cuántas personas</strong> lo toman: la DDD es una unidad de
+                        dosis, y un paciente puede recibir más o menos de una al día.</li>
+                        <li><strong>No dice si es la mejor opción.</strong> El reparto describe qué se
+                        dispensa, no qué conviene prescribir.</li>
+                        <li><strong>No cubre todo el consumo:</strong> queda fuera la dispensación
+                        hospitalaria, la receta privada y lo no financiado. Los medicamentos de uso
+                        hospitalario —antineoplásicos, biológicos— no aparecen en absoluto.</li>
+                        <li><strong>No siempre cubre todas las vías</strong> de un mismo principio
+                        activo: la DHD solo suma las presentaciones con DDD asignada por la OMS.</li>
+                    </ul>
+                </section>
+
+                <section class="util-source">
+                    <p class="util-meta">
+                        ${esc(meta.fuente)}${fecha ? ` · publicado el ${fecha}` : ''}
+                        · <a href="${esc(meta.metodologia_url)}" target="_blank" rel="noopener">Nota metodológica</a>
+                        · <a href="${esc(meta.fuente_url)}" target="_blank" rel="noopener">Fuente</a>
+                    </p>
+                    <p class="util-disclaimer">Describe utilización observada. No implica eficacia
+                    comparativa, seguridad ni preferencia terapéutica.</p>
+                </section>
+            </div>`;
+
+        this._engancharUtilizacionView();
+    }
+
+    /** Reparto de un nodo entre sus hijos, resuelto en local contra el árbol. */
+    _utilRepartoDeNodo(cod) {
+        const nodos = this._utilArbolVista?.nodos || {};
+        const n = nodos[cod];
+        if (!n || typeof n.dhd !== 'number' || n.dhd <= 0 || n.den === 'nulo' || !n.h?.length) return null;
+        return {
+            atc: cod,
+            nombre: n.n,
+            nivel: n.niv,
+            dhd: n.dhd,
+            denominador: n.den,
+            sin_ddd: (n.sin_ddd || []).map(k => ({
+                atc: k, nombre: nodos[k]?.n ?? null, envases_miles: nodos[k]?.env ?? null,
+            })),
+            miembros: n.h.map(k => ({
+                atc: k,
+                nombre: nodos[k]?.n ?? null,
+                nivel: nodos[k]?.niv ?? null,
+                dhd: nodos[k]?.dhd ?? null,
+                dhd_cero_redondeado: nodos[k]?.z === 1,
+                cuota: nodos[k]?.dhd != null ? nodos[k].dhd / n.dhd : null,
+            })),
+        };
+    }
+
+    _engancharUtilizacionView() {
+        const ir = (cod) => {
+            this._utilVista.nodo = cod || null;
+            this._pintarUtilizacionView();
+            this.content.querySelector('.util-body')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        };
+        this.content.querySelectorAll('[data-util-ir]').forEach(el =>
+            el.addEventListener('click', () => ir(el.dataset.utilIr)));
+        this.content.querySelectorAll('[data-util-baja]').forEach(el =>
+            el.addEventListener('click', () => ir(el.dataset.utilBaja)));
+
+        // Desde un principio activo, saltar a los medicamentos que lo contienen. Es el puente
+        // natural entre «esto se usa mucho» y «qué hay en la farmacia».
+        this.content.querySelectorAll('[data-util-medicamentos]').forEach(el =>
+            el.addEventListener('click', () => {
+                const cod = el.dataset.utilMedicamentos;
+                const nombre = this._utilArbolVista?.nodos?.[cod]?.n || cod;
+                this.searchByATCCode(cod, nombre, this._utilCamino(cod).map(c => ({
+                    code: c, name: this._utilArbolVista.nodos[c]?.n || c,
+                })));
+            }));
+
+        const input = this.content.querySelector('#util-buscar');
+        const caja = this.content.querySelector('#util-sugerencias');
+        if (!input || !caja) return;
+
+        const buscar = () => {
+            const q = input.value.trim();
+            this._utilVista.query = q;
+            if (q.length < 2) { caja.innerHTML = ''; return; }
+            const nodos = this._utilArbolVista.nodos;
+            const norm = (s) => String(s || '').toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const nq = norm(q);
+            const hits = Object.keys(nodos)
+                .filter(k => k.toLowerCase().startsWith(nq) || norm(nodos[k].n).includes(nq))
+                .sort((a, b) => (nodos[b].dhd ?? 0) - (nodos[a].dhd ?? 0))
+                .slice(0, 12);
+            caja.innerHTML = hits.length
+                ? hits.map(k => `<button class="util-suggest-item" data-util-ir="${this._escapeHtml(k)}">
+                        <span class="util-bar-code">${this._escapeHtml(k)}</span>
+                        ${this._escapeHtml(nodos[k].n)}
+                        <span class="util-suggest-dhd">${this._utilDhd(nodos[k].dhd, nodos[k].z === 1)}</span>
+                    </button>`).join('')
+                : '<p class="util-note">Sin coincidencias en las tablas de consumo.</p>';
+            caja.querySelectorAll('[data-util-ir]').forEach(el =>
+                el.addEventListener('click', () => { caja.innerHTML = ''; ir(el.dataset.utilIr); }));
+        };
+        input.addEventListener('input', buscar);
+    }
+
+    /**
+     * Reparto de un nodo entre sus hijos. Lo comparten la ficha y la navegación para que la misma
+     * cifra no se cuente de dos maneras distintas según dónde se mire.
+     */
+    renderUtilizacionRepartoHtml(d, g, { navegable = false, destacado = null } = {}) {
+        const esc = (s) => this._escapeHtml(String(s ?? ''));
+        const max = Math.max(...g.miembros.map(m => m.dhd || 0));
+        const parcial = g.denominador === 'parcial';
+
+        const filas = g.miembros.map((m) => {
+            const pct = m.cuota != null ? (m.cuota * 100) : null;
+            const ancho = max > 0 && m.dhd ? Math.max(2, (m.dhd / max) * 100) : 2;
+            const esEste = m.atc === destacado;
+            const etiqueta = esc(m.nombre || m.atc);
+            // Solo los nodos con hijos son navegables; un ATC5 es hoja y no lleva a ningún sitio.
+            const bajable = navegable && m.nivel < 5;
+            return `<li class="util-bar-row ${esEste ? 'is-current' : ''}">
+                <span class="util-bar-label" title="${esc(m.atc)} · ${etiqueta}">${
+    bajable
+        ? `<button class="util-bar-link" data-util-baja="${esc(m.atc)}"><span class="util-bar-code">${esc(m.atc)}</span> ${etiqueta}</button>`
+        : `<span class="util-bar-code">${esc(m.atc)}</span> ${etiqueta}`
+}</span>
+                <span class="util-bar-track"><i style="width:${ancho.toFixed(1)}%"></i></span>
+                <span class="util-bar-val">${this._utilDhd(m.dhd, m.dhd_cero_redondeado)}</span>
+                <span class="util-bar-pct">${pct != null ? pct.toFixed(1).replace('.', ',') + '&nbsp;%' : '—'}</span>
+            </li>`;
+        }).join('');
+
+        const leyenda = parcial
+            ? `Porcentaje sobre la <strong>DHD publicada</strong> de ${esc(g.atc)}. Quedan fuera
+               ${g.sin_ddd.length} ${g.sin_ddd.length === 1 ? 'principio activo con consumo real y sin DDD asignada'
+        : 'principios activos con consumo real y sin DDD asignada'}:
+               ${g.sin_ddd.map(s => `<em>${esc(s.nombre || s.atc)}</em>`).join(', ')}.`
+            : `Porcentaje sobre la <strong>DHD publicada</strong> de ${esc(g.atc)}.`;
+
+        const cabecera = navegable ? `
+            <div class="util-head">
+                <span class="util-scope">${esc(d.perimetro_corto)}</span>
+                <span class="util-year">${esc(d.periodo)}</span>
+            </div>
+            <h4>${esc(g.atc)} · ${this._utilDhd(g.dhd, false)} DHD en total</h4>
+            <p class="util-group-name">${esc(g.nombre || '')}</p>` : `
+            <h4>Dentro del grupo ${esc(g.atc)}</h4>
+            <p class="util-group-name">${esc(g.nombre || '')}</p>`;
+
+        return `${cabecera}
+            <ul class="util-bars ${parcial ? 'is-partial' : ''}">${filas}</ul>
+            <p class="util-note">${leyenda}</p>
+            <p class="util-note">${esc(d.nota_denominador)}</p>
+            ${navegable ? `<p class="util-note">${esc(d.nota_dhd)}</p>
+            <p class="util-disclaimer">Describe utilización observada. No implica eficacia
+            comparativa, seguridad ni preferencia terapéutica.</p>` : ''}`;
+    }
+
+    renderUtilizacionHtml(atc5, d, cpresc) {
+        const esc = (s) => this._escapeHtml(String(s ?? ''));
+        const canal = this._utilCanal(cpresc);
+
+        if (!d) {
+            return `<div class="util-empty">
+                <i class="fas fa-plug-circle-xmark"></i>
+                <p>La fuente de utilización no está disponible en este momento. El resto de la ficha
+                no se ve afectado.</p>
+            </div>`;
+        }
+
+        // Enlace al ranking hospitalario, que es lo único que publica España a nivel de principio
+        // activo para estos medicamentos. Se ofrece siempre que el caso lo justifica, para no
+        // dejar al prescriptor con la impresión de que no existe nada.
+        const pistaHospital = d.donde_esta_el_hospitalario ? `
+            <p class="util-note">${esc(d.donde_esta_el_hospitalario)}
+            ${d.donde_esta_el_hospitalario_url
+        ? `<a href="${esc(d.donde_esta_el_hospitalario_url)}" target="_blank" rel="noopener">Ver el informe anual</a>.`
+        : ''}</p>` : '';
+
+        if (d.found === false) {
+            // Tres motivos distintos para el mismo hueco. Confundirlos es el error clínico.
+            if (canal === 'H') {
+                return `<div class="util-outofscope">
+                    <span class="util-state util-state--out"><i class="fas fa-hospital"></i> Fuera del alcance de esta fuente</span>
+                    <h4>Medicamento de uso hospitalario</h4>
+                    <p>Se dispensa dentro del hospital, no en oficina de farmacia, así que esta
+                    fuente no lo ve. Su ausencia aquí
+                    <strong>no significa que se use poco</strong>.</p>
+                    ${pistaHospital}
+                    <p class="util-meta">Perímetro de esta pestaña: ${esc(d.perimetro_corto)} · ${esc(d.periodo)}</p>
+                </div>`;
+            }
+            if (canal === 'DH') {
+                return `<div class="util-outofscope">
+                    <span class="util-state util-state--out"><i class="fas fa-user-doctor"></i> Sin dato en esta fuente</span>
+                    <h4>Medicamento de diagnóstico hospitalario</h4>
+                    <p>Requiere prescripción de origen hospitalario. Puede dispensarse en oficina de
+                    farmacia o en el hospital según la comunidad autónoma, y no figura en las tablas
+                    de ${esc(d.periodo || '')}. <strong>No debe leerse como ausencia de uso.</strong></p>
+                    ${pistaHospital}
+                    <p class="util-meta">Perímetro de esta pestaña: ${esc(d.perimetro_corto)} · ${esc(d.periodo)}</p>
+                </div>`;
+            }
+            return `<div class="util-outofscope">
+                <span class="util-state util-state--out"><i class="fas fa-circle-info"></i> Sin dato en esta fuente</span>
+                <h4>${esc(atc5)} no figura en las tablas de ${esc(d.periodo || '')}</h4>
+                <p>Puede deberse a un consumo muy bajo en receta del SNS, o a que su dispensación
+                ocurra fuera de la oficina de farmacia. <strong>No debe leerse como ausencia de
+                uso.</strong></p>
+                ${pistaHospital}
+                <p class="util-meta">Perímetro de esta pestaña: ${esc(d.perimetro_corto)} · el
+                desglose por principio activo se publica desde ${esc(d.atc5_desde || '2025')}</p>
+            </div>`;
+        }
+
+        // ── cabecera: el perímetro va SIEMPRE, nunca «España · 2025» a secas ──
+        const cabecera = `
+            <div class="util-head">
+                <span class="util-scope">${esc(d.perimetro_corto)}</span>
+                <span class="util-year">${esc(d.periodo)}</span>
+            </div>`;
+
+        // Un fármaco con canal hospitalario que SÍ aparece en las tablas está apareciendo solo con
+        // su parte de oficina de farmacia. La cifra es real pero incompleta.
+        //
+        // H y DH llevan avisos distintos a propósito: en un uso hospitalario se puede afirmar que
+        // lo que falta es la mayor parte; en un diagnóstico hospitalario no, porque puede
+        // dispensarse en farmacia comunitaria y la cifra podría estar casi completa. Decir de más
+        // en DH sería el mismo error, en espejo, que callar en H.
+        const avisoParcial = canal === 'H' ? `
+            <div class="util-caveat">
+                <i class="fas fa-hospital"></i>
+                <div>
+                    <strong>Solo la parte de oficina de farmacia.</strong>
+                    Es un medicamento de uso hospitalario: la mayor parte de su dispensación ocurre
+                    en el hospital y no entra en esta cifra. ${esc(d.donde_esta_el_hospitalario || '')}
+                </div>
+            </div>` : canal === 'DH' ? `
+            <div class="util-caveat">
+                <i class="fas fa-user-doctor"></i>
+                <div>
+                    <strong>Puede faltar parte del consumo.</strong>
+                    Es un medicamento de diagnóstico hospitalario: según la comunidad autónoma se
+                    dispensa en oficina de farmacia o en el hospital, y esta cifra solo recoge lo
+                    primero.
+                </div>
+            </div>` : '';
+
+        // ── cifra principal ──
+        // La DHD cuenta dosis, no personas. No se traduce a «X de cada 1.000 personas toman…»:
+        // una persona puede consumir más o menos de una DDD, así que esa frase afirmaría algo
+        // que el dato no dice.
+        let principal;
+        if (d.sin_ddd_asignada) {
+            principal = `
+            <div class="util-figure util-figure--nodhd">
+                <p class="util-nodhd">Sin DHD: la OMS no ha asignado DDD a este principio activo o
+                asociación, así que no entra en ningún cálculo de dosis.</p>
+                ${typeof d.envases_miles === 'number' ? `<p class="util-env">
+                    <strong>${(d.envases_miles * 1000).toLocaleString('es-ES')}</strong> envases facturados
+                </p>` : ''}
+            </div>`;
+        } else {
+            principal = `
+            <div class="util-figure">
+                <span class="util-value">${this._utilDhd(d.dhd, d.dhd_cero_redondeado)}</span>
+                <span class="util-unit">DHD</span>
+                <p class="util-unit-long">DDD por 1.000 habitantes y día</p>
+                <p class="util-note">${esc(d.nota_dhd)}</p>
+                ${typeof d.envases_miles === 'number' ? `<p class="util-env">
+                    <strong>${(d.envases_miles * 1000).toLocaleString('es-ES')}</strong> envases facturados en el año
+                </p>` : ''}
+            </div>`;
+        }
+
+        // ── reparto dentro del grupo ──
+        // El reparto lo pinta el mismo método que usa la navegación jerárquica, para que un
+        // 36 % signifique exactamente lo mismo en los dos sitios.
+        let grupo = '';
+        if (d.grupo && Array.isArray(d.grupo.miembros) && d.grupo.miembros.length > 1) {
+            grupo = `<section class="util-group ${d.grupo.denominador === 'parcial' ? 'is-partial' : ''}">${this.renderUtilizacionRepartoHtml(d, d.grupo, { destacado: d.atc })}</section>`;
+        }
+
+        // ── procedencia y límites ──
+        const fechaFuente = d.fuente_actualizada_en
+            ? new Date(d.fuente_actualizada_en).toLocaleDateString('es-ES')
+            : null;
+
+        const procedencia = `
+            <section class="util-source">
+                <h4>Procedencia y alcance</h4>
+                <p>${esc(d.cobertura)}</p>
+                <p class="util-note">${esc(d.nota_hospital)}</p>
+                <p class="util-meta">
+                    ${esc(d.fuente)}${fechaFuente ? ` · publicado el ${fechaFuente}` : ''}
+                    · <a href="${esc(d.metodologia_url)}" target="_blank" rel="noopener">Nota metodológica</a>
+                    · <a href="${esc(d.fuente_url)}" target="_blank" rel="noopener">Fuente</a>
+                </p>
+                <p class="util-disclaimer">Describe utilización observada. No implica eficacia
+                comparativa, seguridad ni preferencia terapéutica.</p>
+            </section>`;
+
+        // ── qué NO dice esta cifra ──
+        // Va antes de la procedencia y en positivo-negativo explícito. El riesgo de esta capa no
+        // está en el número: está en las tres lecturas que un lector con prisa hace de él.
+        const limites = `
+            <section class="util-limits">
+                <h4>Qué no dice este dato</h4>
+                <ul>
+                    <li><strong>No dice cuántas personas</strong> lo toman: la DDD es una unidad de
+                    dosis, y un paciente puede recibir más o menos de una al día.</li>
+                    <li><strong>No dice si es la mejor opción.</strong> El reparto dentro del grupo
+                    describe qué se dispensa, no qué conviene prescribir.</li>
+                    <li><strong>No cubre todo el consumo:</strong> queda fuera la dispensación
+                    hospitalaria, la receta privada y lo no financiado.</li>
+                    <li><strong>No siempre cubre todas las vías</strong> de un mismo principio
+                    activo: la DHD solo suma las presentaciones con DDD asignada por la OMS, y
+                    algunas vías no la tienen.</li>
+                </ul>
+            </section>`;
+
+        return `<div class="util-tab">${cabecera}${avisoParcial}${principal}${grupo}${limites}${procedencia}</div>`;
+    }
+
     /** HTML del badge "Esencial OMS". opts.compact para tarjetas. '' si no aplica o no cargado. */
     _emlBadgeHtml(atcCode, opts = {}) {
         const med = this._emlMatchByAtc(atcCode);
@@ -14047,7 +14580,7 @@ ${materialesPlaceholder}
 
     /** Normaliza texto: minúsculas + sin acentos (para emparejar principios activos). */
     _normTxt(s) {
-        return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     }
 
     /** Preferencias de captura de esenciales (genérico/biosimilar), en localStorage. */
@@ -17513,6 +18046,7 @@ MedCheckApp._VIEW_ANALYTICS_MAP = {
     adverse:      'reacciones',
     equivalences: 'equivalencias',
     pharmacogenomics: 'farmacogenomica',
+    utilization:  'utilizacion',
     supply:       'suministro',
     alerts:       'alertas',
     materials:    'materiales',

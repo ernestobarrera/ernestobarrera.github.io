@@ -1,0 +1,143 @@
+name: ETL utilización observada (Min. Sanidad)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 05:41 UTC el día 3 de cada mes. La fuente publica la tabla anual hacia abril y las mensuales
+    # con ~4 meses de retraso: una comprobación diaria solo gastaría peticiones.
+    - cron: '41 5 3 * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: etl-utilizacion
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: HEAD del fichero anual ATC5
+        id: head
+        run: |
+          set +e
+          node scripts/etl-utilizacion/build-utilizacion.mjs --head-only > head.json
+          st=$?
+          set -e
+          if [ "$st" -ne 0 ] || ! jq -e . head.json >/dev/null 2>&1; then
+            echo "::warning::No se pudo consultar HEAD del Ministerio; se intentará la descarga directa"
+            printf '{"status":"unreachable","etag":"","lastModified":""}\n' > head.json
+          fi
+          cat head.json
+          echo "etag=$(jq -r '.etag // empty' head.json)" >> "$GITHUB_OUTPUT"
+          echo "anio=$(jq -r '.anio // empty' head.json)" >> "$GITHUB_OUTPUT"
+
+      # El JSON del run anterior es la línea base contra la que se mide la deriva. Sin él, las
+      # validaciones de "desaparición masiva de códigos" y "el periodo retrocede" no pueden correr.
+      - name: Recuperar el dataset anterior
+        uses: actions/cache@v5
+        with:
+          path: utilizacion.json
+          key: utilizacion-${{ steps.head.outputs.etag || github.run_id }}
+          restore-keys: |
+            utilizacion-
+
+      - name: Construir y validar
+        id: build
+        run: |
+          node scripts/etl-utilizacion/build-utilizacion.mjs --out utilizacion.json | tee build.log
+          {
+            echo "bytes=$(stat -c%s utilizacion.json)"
+            echo "kb=$(awk "BEGIN{printf \"%.1f\", $(stat -c%s utilizacion.json)/1024}")"
+            echo "periodo=$(jq -r '.meta.periodo' utilizacion.json)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Resumen
+        if: always()
+        run: |
+          {
+            echo "## ETL utilización observada"
+            echo ""
+            echo "- ETag remoto: \`${{ steps.head.outputs.etag }}\`"
+            echo "- Periodo: \`${{ steps.build.outputs.periodo }}\`"
+            echo "- JSON: \`${{ steps.build.outputs.kb }} KB\`"
+            echo ""
+            if [ -f build.log ]; then
+              echo '```'
+              cat build.log
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Subir artefacto (retención 30 días)
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: utilizacion-${{ steps.build.outputs.periodo }}
+          path: utilizacion.json
+          retention-days: 30
+          if-no-files-found: error
+
+      # Solo se llega aquí si `build` no falló. Si las validaciones bloquearon, el paso anterior
+      # salió con código 1 y KV conserva la última versión buena: eso es deliberado.
+      - name: Publicar a Cloudflare KV
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+        run: |
+          resp=$(curl -sS -w "\n%{http_code}" -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${CF_KV_NAMESPACE_ID}/values/utilizacion%3Afull" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary @utilizacion.json)
+          status=$(echo "$resp" | tail -n 1)
+          echo "HTTP ${status}"
+          echo "$resp" | head -n -1 | jq .
+          test "$status" = "200" || exit 1
+
+      - name: Publicar meta a Cloudflare KV
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+        run: |
+          jq -c '.meta' utilizacion.json > utilizacion_meta.json
+          resp=$(curl -sS -w "\n%{http_code}" -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${CF_KV_NAMESPACE_ID}/values/utilizacion%3Ameta" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary @utilizacion_meta.json)
+          status=$(echo "$resp" | tail -n 1)
+          echo "HTTP ${status}"
+          test "$status" = "200" || exit 1
+
+      - name: Verificar el endpoint del Worker
+        run: |
+          # Verificación posterior a la publicación: los datos ya están en KV (PUT 200). Un fallo
+          # de red aquí NO debe marcar el run como fallido.
+          set +e
+          meta=$(curl -sS --connect-timeout 20 --max-time 60 --retry 4 --retry-delay 10 --retry-all-errors \
+            "https://medcheck-proxy.medtools.workers.dev/utilizacion/meta")
+          st=$?
+          set -e
+          if [ "$st" -ne 0 ]; then
+            echo "::warning::No se pudo verificar el Worker (curl ${st}); los datos ya se publicaron en KV."
+            exit 0
+          fi
+          echo "$meta" | jq .
+          w=$(echo "$meta" | jq -r '.periodo')
+          l=$(jq -r '.meta.periodo' utilizacion.json)
+          echo "Worker: $w | Local: $l"
+          test "$w" = "$l" || { echo "El Worker aún sirve la versión anterior (caché de isolate ~30 min)"; exit 0; }
+          echo "✓ Worker sirviendo la versión recién publicada"

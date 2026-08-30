@@ -2836,6 +2836,110 @@ class CimaAPI {
         }
     }
     /**
+     * Árbol de utilización observada ATC1–ATC5 (consumo en recetas del SNS, Min. de Sanidad).
+     *
+     * UNA sola petición para todo. 1.575 nodos pesan ~41 KB gzip: menos de lo que costaría ir
+     * pidiendo nodo a nodo mientras el médico navega por la jerarquía, y a partir de la primera
+     * carga tanto la ficha del medicamento como todo el descenso por el árbol se resuelven en
+     * local, sin volver a la red.
+     *
+     * Lazy de verdad: no se llama hasta que se abre la pestaña «Utilización» o el panel de
+     * navegación ATC. Si el médico nunca usa la función, son cero bytes.
+     *
+     * Efecto colateral que conviene conocer: al servirse entero, el Worker deja de saber qué código
+     * concreto se consulta. Se pierde esa analítica y se gana superficie de datos menor, que es la
+     * dirección correcta para una herramienta clínica.
+     *
+     * Devuelve `{ meta, nodos }` o `null`. Nunca lanza: la capa es secundaria y no puede tumbar la
+     * ficha del medicamento.
+     */
+    async getUtilizacionArbol() {
+        const KEY = 'medcheck_util_arbol_v1';
+        const TTL_MS = 7 * 24 * 3600 * 1000;
+        if (this._utilArbol) return this._utilArbol;
+        if (this._utilArbolPromesa) return this._utilArbolPromesa;
+
+        try {
+            const cached = JSON.parse(localStorage.getItem(KEY) || 'null');
+            if (cached && (Date.now() - cached.t) < TTL_MS && cached.d?.nodos) {
+                this._utilArbol = cached.d;
+                return this._utilArbol;
+            }
+        } catch (_) {}
+
+        // Una promesa compartida: si la ficha y el panel de navegación piden a la vez, una sola
+        // petición sale a la red.
+        this._utilArbolPromesa = (async () => {
+            try {
+                const r = await fetch(`${this.cloudflareProxy}/utilizacion/tree`);
+                if (!r.ok) return null;
+                const data = await r.json();
+                if (!data?.nodos) return null;
+                try { localStorage.setItem(KEY, JSON.stringify({ t: Date.now(), d: data })); } catch (_) {}
+                this._utilArbol = data;
+                return data;
+            } catch (_) {
+                return null;
+            } finally {
+                this._utilArbolPromesa = null;
+            }
+        })();
+        return this._utilArbolPromesa;
+    }
+
+    /**
+     * Un nodo del árbol con lo que la UI necesita: su cifra, el reparto de su padre (dónde encaja
+     * entre sus hermanos) y su propio desglose (en qué se descompone). Todo resuelto en local.
+     */
+    async getUtilizacionNodo(atc) {
+        if (!atc) return null;
+        const code = String(atc).toUpperCase();
+        const arbol = await this.getUtilizacionArbol();
+        if (!arbol) return null;
+
+        const nodo = arbol.nodos[code];
+        const base = { atc: code, ...arbol.meta };
+        if (!nodo) return { ...base, found: false };
+
+        const reparto = (cod) => {
+            const n = arbol.nodos[cod];
+            if (!n || typeof n.dhd !== 'number' || n.dhd <= 0 || n.den === 'nulo' || !n.h?.length) return null;
+            return {
+                atc: cod,
+                nombre: n.n,
+                nivel: n.niv,
+                dhd: n.dhd,
+                denominador: n.den,
+                sin_ddd: (n.sin_ddd || []).map(k => ({
+                    atc: k, nombre: arbol.nodos[k]?.n ?? null, envases_miles: arbol.nodos[k]?.env ?? null,
+                })),
+                miembros: n.h.map(k => ({
+                    atc: k,
+                    nombre: arbol.nodos[k]?.n ?? null,
+                    nivel: arbol.nodos[k]?.niv ?? null,
+                    dhd: arbol.nodos[k]?.dhd ?? null,
+                    dhd_cero_redondeado: arbol.nodos[k]?.z === 1,
+                    cuota: arbol.nodos[k]?.dhd != null ? arbol.nodos[k].dhd / n.dhd : null,
+                })),
+            };
+        };
+
+        return {
+            ...base,
+            found: true,
+            sustancia: nodo.n ?? null,
+            nivel: nodo.niv,
+            dhd: nodo.dhd ?? null,
+            dhd_cero_redondeado: nodo.z === 1,
+            envases_miles: nodo.env ?? null,
+            sin_ddd_asignada: nodo.dhd === null,
+            padre: nodo.p ?? null,
+            grupo: nodo.p ? reparto(nodo.p) : null,
+            desglose: reparto(code),
+        };
+    }
+
+    /**
      * Lista compacta de todos los medicamentos con biomarcador (sin descripción larga).
      * Para la vista de navegación Farmacogenómica. ~50 KB gzip.
      * Cache en localStorage 24h con la fecha del Nomenclátor como sello.

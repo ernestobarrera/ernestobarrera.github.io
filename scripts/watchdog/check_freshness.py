@@ -62,6 +62,19 @@ SOURCES = [
         "date_fields": ["generated_at"],
         "max_age_days": 40,
     },
+    # Cadencia anual: el Ministerio publico la tabla de 2025 el 1 de abril de 2026. 400 dias deja
+    # margen para un retraso de un par de meses sin ruido; mas alla de eso hay que mirarlo.
+    #
+    # `fuente_fecha` va PRIMERO y `generated_at` NO esta en la lista, a diferencia del resto de
+    # fuentes. El motivo: el ETL corre cada mes y refresca `generated_at` aunque siga publicando el
+    # mismo periodo, asi que vigilar esa fecha seria vigilar nuestro propio reloj y el watchdog
+    # seguiria verde para siempre aunque el Ministerio dejase de publicar años nuevos.
+    {
+        "key": "utilizacion:meta",
+        "label": "Utilizacion observada (recetas SNS por ATC)",
+        "date_fields": ["fuente_fecha"],
+        "max_age_days": 400,
+    },
 ]
 
 # ---------------------------------------------------------------------------
