@@ -55,7 +55,13 @@ jobs:
       - name: Construir y validar
         id: build
         run: |
+          # pipefail: sin esto, el estado del pipe es el de `tee` y un ETL que falla se reporta
+          # como éxito. Pasó en el primer run real: node salió sin escribir nada y el paso quedó
+          # en verde hasta que reventó la subida del artefacto tres pasos después.
+          set -o pipefail
           node scripts/etl-utilizacion/build-utilizacion.mjs --out utilizacion.json | tee build.log
+          # Y una comprobación explícita: que el fichero exista y no esté vacío antes de seguir.
+          test -s utilizacion.json || { echo "::error::El ETL no ha escrito utilizacion.json"; exit 1; }
           {
             echo "bytes=$(stat -c%s utilizacion.json)"
             echo "kb=$(awk "BEGIN{printf \"%.1f\", $(stat -c%s utilizacion.json)/1024}")"

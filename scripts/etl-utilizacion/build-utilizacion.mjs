@@ -31,6 +31,7 @@
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { leerZip, leerHoja } from './lib/xlsx-min.mjs';
 import { validar } from './validaciones.mjs';
@@ -431,8 +432,12 @@ async function main() {
   console.log(`\nEscrito ${o.out} — ${(Buffer.byteLength(JSON.stringify(doc)) / 1024).toFixed(1)} KB`);
 }
 
+// `pathToFileURL` y no concatenar «file:///» + la ruta. La versión concatenada solo funcionaba en
+// Windows: en Linux `process.argv[1]` ya empieza por «/», así que salía `file:////home/...` con
+// cuatro barras, nunca casaba con `import.meta.url`, y el ETL terminaba con éxito **sin hacer
+// nada**. Pasó en el primer run real del workflow: node salió en 48 ms, sin salida y sin fichero.
 const ejecutadoDirectamente = process.argv[1]
-  && import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}`;
+  && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (ejecutadoDirectamente) {
   main().catch((e) => { console.error('fallo:', e.message); process.exit(1); });
 }

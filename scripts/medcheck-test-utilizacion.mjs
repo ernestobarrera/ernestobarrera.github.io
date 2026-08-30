@@ -23,7 +23,9 @@
  *
  * Uso: node scripts/medcheck-test-utilizacion.mjs
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -498,6 +500,39 @@ console.log('\n12) «Utilización» es una vista principal, al nivel de Buscar')
   // Y la inyección duplicada en Indicaciones se retiró: dos navegaciones para lo mismo confunden.
   ok('MUTANTE: ya no se inyecta el panel en la vista Indicaciones',
     !/inyectarUtilizacionEnNavegacion/.test(app));
+}
+
+// ── 13. el ETL arranca de verdad al invocarlo ──────────────────────────────
+console.log('\n13) el ETL se ejecuta cuando se le llama, en cualquier sistema operativo');
+{
+  const etl = readFileSync(join(RAIZ, 'scripts', 'etl-utilizacion', 'build-utilizacion.mjs'), 'utf8');
+
+  // Nace de un fallo real en el primer run del workflow: el guard de módulo principal comparaba
+  // `import.meta.url` con «file:///» + process.argv[1] concatenado. En Windows casaba; en Linux
+  // la ruta ya empieza por «/», así que salía `file:////home/...` con cuatro barras, nunca casaba
+  // y node terminaba con éxito SIN HACER NADA. 48 ms, cero salida, cero fichero, paso en verde.
+  ok('el guard usa pathToFileURL, no concatenación de cadenas',
+    /import\.meta\.url === pathToFileURL\(process\.argv\[1\]\)\.href/.test(etl));
+  ok('MUTANTE: ya no se concatena «file:///» con argv[1]',
+    !/file:\/\/\/\$\{process\.argv\[1\]/.test(etl));
+
+  // La prueba que de verdad lo caza: invocarlo como proceso y exigir que diga algo. Si el guard
+  // vuelve a romperse, `main()` no corre y la salida es exactamente vacía.
+  const dirVacio = mkdtempSync(join(tmpdir(), 'medcheck-etl-'));
+  const r = spawnSync(process.execPath, [
+    join(RAIZ, 'scripts', 'etl-utilizacion', 'build-utilizacion.mjs'),
+    '--from-dir', dirVacio, '--anio', '2025', '--out', join(dirVacio, 'salida.json'),
+  ], { encoding: 'utf8' });
+  const salida = (r.stdout || '') + (r.stderr || '');
+  ok('invocado como proceso, produce salida', salida.trim().length > 0,
+    `stdout=${(r.stdout || '').length}B stderr=${(r.stderr || '').length}B status=${r.status}`);
+  ok('y con un directorio vacío BLOQUEA en vez de fingir que fue bien',
+    r.status === 1, `status=${r.status}`);
+  ok('el motivo del bloqueo se explica', /ERRORES|nodos en el árbol|No hay ni un nodo/.test(salida),
+    salida.slice(0, 160));
+
+  // `--head-only` sí toca la red; se prueba solo el contrato de que la opción existe.
+  ok('la opción --head-only sigue declarada', /--head-only/.test(etl));
 }
 
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);
