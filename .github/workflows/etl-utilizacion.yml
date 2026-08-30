@@ -141,6 +141,14 @@ jobs:
             echo "::warning::No se pudo verificar el Worker (curl ${st}); los datos ya se publicaron en KV."
             exit 0
           fi
+          # El Worker puede devolver HTML en vez de JSON: pasa mientras la versión desplegada aún no
+          # conoce la ruta /utilizacion/. Es exactamente el caso del primer despliegue, y NO debe
+          # tumbar un run cuyo trabajo real —publicar en KV— ya salió bien.
+          if ! echo "$meta" | jq -e . >/dev/null 2>&1; then
+            echo "::warning::El Worker no devuelve JSON en /utilizacion/meta. ¿Está desplegada la versión con esa ruta? Los datos ya están en KV."
+            echo "$meta" | head -c 200
+            exit 0
+          fi
           echo "$meta" | jq .
           w=$(echo "$meta" | jq -r '.periodo')
           l=$(jq -r '.meta.periodo' utilizacion.json)
