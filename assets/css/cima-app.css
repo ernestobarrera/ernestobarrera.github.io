@@ -12212,6 +12212,56 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-node-figure .util-unit-long { display: block; font-size: 0.8rem; color: var(--text-muted); }
 .util-node-actions { margin: var(--space-md) 0; }
 
+/* El badge de esencial OMS hereda el tamaño del h3 del nodo si no se acota; se baja al de la
+   tarjeta para que acompañe al título en vez de competir con él. */
+.util-node-head h3 .badge-eml {
+    font-size: 0.62rem;
+    vertical-align: 0.28em;
+    margin-left: 0.4rem;
+}
+
+/* «Se llega aquí buscando: asma · EPOC». Va PEGADO al título del nodo y antes de la cifra:
+   pone nombre clínico al código antes de que se lea el número, que es el orden en que hace
+   falta. Después de la DHD llegaría tarde. */
+.util-node-inds {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0.4rem 0 0.6rem;
+}
+.util-ind-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    cursor: help;
+}
+.util-ind-chip {
+    /* Con fallback a propósito: `--surface-raised` se usa en cinco sitios de esta hoja y no está
+       definida en ninguna parte, así que resuelve a transparente. Aquí no se repite el fallo. */
+    background: var(--surface-raised, var(--bg-secondary));
+    border: 1px solid var(--border-default);
+    border-radius: 999px;
+    padding: 0.1rem 0.6rem;
+    font: inherit;
+    font-size: 0.78rem;
+    color: var(--primary);
+    cursor: pointer;
+}
+.util-ind-chip:hover { border-color: var(--primary); }
+.util-ind-chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* Marcador de esencial OMS dentro de una fila del reparto. Un punto, no una etiqueta: la celda
+   del nombre tiene elipsis y cualquier texto extra se comería el principio activo. */
+.util-eml-dot {
+    color: var(--success, #16a34a);
+    font-size: 0.62em;
+    vertical-align: 0.22em;
+    margin-left: 0.22rem;
+}
+.util-note-eml .util-eml-dot { margin: 0 0.2rem 0 0; }
+
 /* Salida de la pestaña de la ficha hacia la vista completa. Van juntas y con el mismo peso:
    son dos destinos del mismo gesto («llévame al árbol»), no una acción y su alternativa. */
 .util-tab-actions {

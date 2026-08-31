@@ -60,6 +60,63 @@ class CimaAPI {
     }
 
     /**
+     * Índice inverso de la ontología clínica: código ATC → términos desde los que se llega a él.
+     *
+     * La ontología se escribió para ir en un solo sentido (indicación → códigos ATC, para buscar
+     * medicamentos). Leerla al revés responde la pregunta contraria, que es la que le falta a la
+     * capa de utilización: delante de un código ATC, qué se busca cuando se busca esto.
+     *
+     * QUÉ AFIRMA, y es menos de lo que parece. Un término aparece aquí porque su universo de
+     * búsqueda INCLUYE este código, no porque el código esté indicado para ese cuadro. La
+     * indicación autorizada vive en la sección 4.1 de la ficha técnica y no se sustituye desde
+     * aquí. Por eso la UI lo rotula «se llega aquí buscando», nunca «indicado para».
+     *
+     * Se excluyen los términos `needsSection41Filter`: en esos el código ATC por sí solo NO
+     * delimita la indicación —hace falta además filtrar por el texto de la 4.1—, así que
+     * atribuirlos a un grupo entero afirmaría de más justo donde la propia ontología avisa de
+     * que no puede.
+     *
+     * La herencia va solo hacia abajo: C10AA05 hereda los términos de C10 y de C10AA, pero C10
+     * no recoge los de sus hijos. Al revés, un nodo alto acumularía decenas de términos y el
+     * resultado sería ruido, no contexto.
+     */
+    indicacionesDeATC(atc, { max = 6 } = {}) {
+        const code = String(atc || '').trim().toUpperCase();
+        if (!code) return [];
+
+        if (!this._ontologiaInversa) {
+            const porPrefijo = new Map();
+            for (const [termino, datos] of Object.entries(CimaAPI.CLINICAL_DICTIONARY || {})) {
+                if (datos?.status === 'needsSection41Filter') continue;
+                const codigos = Array.isArray(datos?.atc) ? datos.atc : (datos?.atc ? [datos.atc] : []);
+                for (const prefijo of codigos) {
+                    const p = String(prefijo).toUpperCase();
+                    if (!porPrefijo.has(p)) porPrefijo.set(p, []);
+                    porPrefijo.get(p).push(termino);
+                }
+            }
+            this._ontologiaInversa = porPrefijo;
+        }
+
+        const vistos = new Set();
+        const hits = [];
+        // De lo más específico a lo más general: `C10AA` antes que `C10`. El primer término que
+        // menciona un grupo estrecho describe mejor para qué se usa que el que abarca la clase.
+        const prefijos = [...this._ontologiaInversa.keys()]
+            .filter(p => code.startsWith(p))
+            .sort((a, b) => b.length - a.length);
+        for (const p of prefijos) {
+            for (const termino of this._ontologiaInversa.get(p)) {
+                if (vistos.has(termino)) continue;
+                vistos.add(termino);
+                hits.push({ termino, prefijo: p, exacto: p === code });
+                if (hits.length >= max) return hits;
+            }
+        }
+        return hits;
+    }
+
+    /**
      * Obtiene la URL base con proxy si es necesario
      */
     get baseURL() {

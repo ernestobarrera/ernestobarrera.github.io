@@ -596,5 +596,79 @@ console.log('\n14) la capa se puede enlazar, compartir y recorrer');
   ok('la salida de la ficha tiene estilo propio', /\.util-tab-actions\s*\{/.test(css));
 }
 
+// ── 15. el código ATC lleva su nombre clínico ──────────────────────────────
+//
+// La ontología se escribió para ir en un solo sentido (indicación → ATC, para buscar). Leerla al
+// revés responde la pregunta que le faltaba a esta capa: delante de `R03AK07`, qué se busca
+// cuando se busca esto. El método se EJECUTA contra la ontología real del repo, no se comprueba
+// por regex: lo que importa aquí es el resultado, no que exista la función.
+console.log('\n15) la ontología, leída al revés, pone nombre clínico a cada nodo');
+{
+  const api = readFileSync(join(RAIZ, 'assets', 'js', 'cima-api.js'), 'utf8');
+  const ont = JSON.parse(readFileSync(join(RAIZ, 'assets', 'data', 'clinical-ontology.json'), 'utf8'));
+
+  const cuerpo = api.slice(api.indexOf('indicacionesDeATC(atc, {'), api.indexOf('    /**\n     * Obtiene la URL base'));
+  const CimaAPI = { CLINICAL_DICTIONARY: ont.terms };
+  const metodo = new Function('CimaAPI', `return function(){ const o = { ${cuerpo.trimEnd()} }; return o.indicacionesDeATC; }`)(CimaAPI)();
+  const ctx = {};
+  const inds = (atc, o) => metodo.call(ctx, atc, o).map(h => h.termino);
+
+  ok('R03AK07 se busca como asma y EPOC', inds('R03AK07').includes('asma'));
+  ok('A02BC01 se busca como reflujo', inds('A02BC01').includes('reflujo'));
+  ok('C10AA05 se busca como dislipemia', inds('C10AA05').includes('dislipemia'));
+
+  // Un ATC inventado no puede inventarse un contexto clínico.
+  ok('un código que no existe no devuelve nada', metodo.call(ctx, 'Z99ZZ99').length === 0);
+  ok('entrada vacía no revienta', metodo.call(ctx, '').length === 0 && metodo.call(ctx, null).length === 0);
+  ok('respeta el tope de términos', metodo.call(ctx, 'C09AA02', { max: 2 }).length <= 2);
+
+  // La herencia va SOLO hacia abajo. Al revés, «C» acumularía todos los términos
+  // cardiovasculares del diccionario y el resultado sería ruido, no contexto.
+  ok('un grupo anatómico no acumula los términos de sus hijos',
+    metodo.call(ctx, 'C').length <= metodo.call(ctx, 'C10AA05').length);
+
+  // Los términos que la propia ontología marca como insuficientes sin filtro por la sección 4.1
+  // no pueden atribuirse a un grupo ATC entero: ahí el código no delimita la indicación.
+  const conFiltro41 = Object.entries(ont.terms)
+    .filter(([, v]) => v.status === 'needsSection41Filter').map(([k]) => k);
+  const atribuidos = new Set();
+  for (const [, v] of Object.entries(ont.terms)) {
+    const codigos = Array.isArray(v.atc) ? v.atc : (v.atc ? [v.atc] : []);
+    for (const c of codigos) metodo.call(ctx, c, { max: 99 }).forEach(h => atribuidos.add(h.termino));
+  }
+  ok(`MUTANTE: ninguno de los ${conFiltro41.length} términos con filtro 4.1 se cuela`,
+    conFiltro41.every(t => !atribuidos.has(t)),
+    conFiltro41.filter(t => atribuidos.has(t)).join(', '));
+
+  // Y el rótulo, que es donde está el riesgo de afirmar de más: la ontología dice qué búsquedas
+  // incluyen este código, NO que el grupo tenga esa indicación autorizada.
+  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const bloque = app.slice(app.indexOf('_utilIndicacionesHtml(atc) {'), app.indexOf('async irAIndicacion(termino)'));
+  const emitido = bloque.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+  ok('el rótulo dice «se llega aquí buscando»', /Se llega aquí buscando/.test(emitido));
+  ok('MUTANTE: no dice «indicado para» ni «sirve para»',
+    !/indicado para|sirve para|tratamiento de/i.test(emitido));
+  ok('y remite a la sección 4.1 para la indicación autorizada',
+    /secci[óo]n 4\.1/i.test(emitido));
+
+  ok('los términos abren la búsqueda por indicación', /async irAIndicacion\(termino\)/.test(app)
+    && /data-util-indicacion/.test(app));
+  ok('y están enganchados en la vista', /querySelectorAll\('\[data-util-indicacion\]'\)/.test(app));
+
+  // Esencial OMS: marcador, no juicio. Si el pie apareciera siempre, en un grupo sin ninguno
+  // sugeriría lo contrario de lo que dice.
+  ok('el marcador de esencial OMS está en el reparto', /util-eml-dot/.test(app));
+  ok('la leyenda solo se pinta si hay alguno', /hayEml\s*\n?\s*\?/.test(app) || /const leyendaEml = hayEml/.test(app));
+  ok('la leyenda cita la licencia de la OMS', /CC BY-NC-SA 3\.0 IGO/.test(app));
+  ok('y aclara que no es un juicio de preferencia',
+    /no qué se prescribe\s*\n?\s*más ni qué es mejor/.test(app));
+
+  const css = readFileSync(join(RAIZ, 'assets', 'css', 'cima-app.css'), 'utf8');
+  ok('los términos y el marcador tienen estilo propio',
+    /\.util-ind-chip\s*\{/.test(css) && /\.util-eml-dot\s*\{/.test(css));
+  ok('el chip no repite el fallo de `--surface-raised` sin fallback',
+    /--surface-raised, var\(--bg-secondary\)\)/.test(css));
+}
+
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);
 process.exit(fallos === 0 ? 0 : 1);

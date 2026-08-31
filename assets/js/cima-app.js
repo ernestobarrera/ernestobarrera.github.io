@@ -13930,6 +13930,14 @@ ${materialesPlaceholder}
         }
         this._utilArbolVista = arbol;
 
+        // Las dos capas que ponen nombre clínico a un código ATC. Ninguna sale a la red: la
+        // ontología ya se pidió al arrancar y la lista de la OMS es un JSON local. Se esperan
+        // antes de pintar para no dejar el contexto apareciendo a destiempo sobre la cifra.
+        await Promise.all([
+            this._loadEml(),
+            this.api._loadClinicalOntology?.(),
+        ].filter(Boolean));
+
         // La URL manda al ENTRAR en la vista. `?view=utilization&atc=R03AK` abre ese nodo; pulsar
         // la pestaña limpia el parámetro y devuelve a la raíz. Así el enlace compartido, la
         // recarga y el botón Atrás ven los tres el mismo estado, sin un segundo sitio donde
@@ -13953,6 +13961,50 @@ ${materialesPlaceholder}
         if (!this._utilVista) this._utilVista = { nodo: null, query: '' };
         this.updateURL(cod ? { view: 'utilization', atc: cod } : { view: 'utilization' });
         await this.loadView('utilization', false);
+    }
+
+    /**
+     * «Se llega aquí buscando: asma · EPOC». El puente que le faltaba a esta capa.
+     *
+     * Un código ATC no dice nada por sí solo a quien no lo tiene memorizado, y la utilización se
+     * navega precisamente por códigos. La ontología clínica de MedCheck ya relaciona 195 términos
+     * con sus grupos ATC; leída al revés, pone nombre clínico a cada nodo del árbol sin añadir un
+     * solo dato nuevo.
+     *
+     * El rótulo importa tanto como el dato. Dice «se llega aquí buscando» y no «indicado para»:
+     * lo que se afirma es que el término incluye este código en su universo de búsqueda, no que
+     * el grupo tenga esa indicación autorizada. Esa vive en la sección 4.1 de la ficha técnica,
+     * y a ella se llega desde la ficha, no desde aquí.
+     */
+    _utilIndicacionesHtml(atc) {
+        const hits = this.api.indicacionesDeATC?.(atc) || [];
+        if (!hits.length) return '';
+        const esc = (s) => this._escapeHtml(String(s ?? ''));
+        const chips = hits.map(h => `<button class="util-ind-chip" data-util-indicacion="${esc(h.termino)}"
+            title="Buscar medicamentos por la indicación «${esc(h.termino)}»${h.exacto ? '' : ` (asociada al grupo ${esc(h.prefijo)})`}">${esc(h.termino)}</button>`).join('');
+        return `<p class="util-node-inds">
+            <span class="util-ind-label" title="Términos del índice de búsqueda por indicación de MedCheck que incluyen este código ATC. No es la indicación autorizada: esa está en la sección 4.1 de la ficha técnica de cada medicamento.">Se llega aquí buscando</span>
+            ${chips}
+        </p>`;
+    }
+
+    /**
+     * Salta a la vista Indicaciones con el término ya buscado. Puerta inversa del puente.
+     *
+     * La URL NO se escribe aquí. Indicaciones tiene un serializador único
+     * (`_enterIndicationUniverse` antes de la petición, `_commitIndicationURL` después del
+     * render) y `performIndicationSearch` ya pasa por los dos. Escribirla a mano metería una
+     * segunda voz en el mismo sitio, que es exactamente el fallo que el test de filtros vigila:
+     * la URL acabaría anunciando un universo distinto del que se está viendo.
+     *
+     * Por eso `loadView` va con `updateURL:false`: la vista se monta sin tocar el historial y la
+     * búsqueda escribe la entrada buena, una sola.
+     */
+    async irAIndicacion(termino) {
+        await this.loadView('indications', false);
+        const input = document.getElementById('indication-input');
+        if (input) input.value = termino;
+        this.performIndicationSearch();
     }
 
     /** Camino desde la raíz hasta un nodo, para el breadcrumb. */
@@ -14016,7 +14068,8 @@ ${materialesPlaceholder}
 
             cuerpo = `
                 <div class="util-node-head">
-                    <h3>${esc(actual)} · ${esc(v.n)}</h3>
+                    <h3>${esc(actual)} · ${esc(v.n)}${this._emlBadgeHtml(actual)}</h3>
+                    ${this._utilIndicacionesHtml(actual)}
                     <p class="util-node-figure">
                         <strong>${this._utilDhd(v.dhd, v.z === 1)}</strong> DHD
                         <span class="util-unit-long">DDD por 1.000 habitantes y día</span>
@@ -14134,6 +14187,12 @@ ${materialesPlaceholder}
         this.content.querySelectorAll('[data-util-baja]').forEach(el =>
             el.addEventListener('click', () => ir(el.dataset.utilBaja)));
 
+        // Puerta inversa del puente con la ontología: desde «esto se dispensa» a «para qué se
+        // busca esto». Cierra el circuito con la vista Indicaciones, que hasta ahora solo iba
+        // en el sentido contrario.
+        this.content.querySelectorAll('[data-util-indicacion]').forEach(el =>
+            el.addEventListener('click', () => this.irAIndicacion(el.dataset.utilIndicacion)));
+
         // Desde un principio activo, saltar a los medicamentos que lo contienen. Es el puente
         // natural entre «esto se usa mucho» y «qué hay en la farmacia».
         this.content.querySelectorAll('[data-util-medicamentos]').forEach(el =>
@@ -14182,6 +14241,8 @@ ${materialesPlaceholder}
         const esc = (s) => this._escapeHtml(String(s ?? ''));
         const max = Math.max(...g.miembros.map(m => m.dhd || 0));
         const parcial = g.denominador === 'parcial';
+        const esEml = (cod) => this._emlMatchByAtc(cod);
+        let hayEml = false;
 
         const filas = g.miembros.map((m) => {
             const pct = m.cuota != null ? (m.cuota * 100) : null;
@@ -14202,11 +14263,19 @@ ${materialesPlaceholder}
             const pista = navegable
                 ? (m.nivel < 5 ? 'Ver el reparto de este grupo' : 'Ver este principio activo')
                 : 'Abrir en la vista Utilización';
+            // Marcador de esencial OMS, no badge: la celda del nombre tiene 90 px y elipsis, y una
+            // etiqueta con texto se comería el principio activo, que es el dato primario. Un punto
+            // con su leyenda al pie deja comparar el grupo entero de un vistazo sin robar espacio.
+            const eml = esEml(m.atc);
+            if (eml) hayEml = true;
+            const marca = eml
+                ? `<span class="util-eml-dot" role="img" aria-label="Medicamento esencial OMS" title="En la Lista Modelo de Medicamentos Esenciales de la OMS (${esc(eml.name)})">&#9679;</span>`
+                : '';
             return `<li class="util-bar-row ${esEste ? 'is-current' : ''}">
                 <span class="util-bar-label" title="${esc(m.atc)} · ${etiqueta}">${
     esEste && !navegable
-        ? `<span class="util-bar-code">${esc(m.atc)}</span> ${etiqueta}`
-        : `<button class="util-bar-link" data-${accion}="${esc(m.atc)}" title="${esc(pista)}: ${esc(m.atc)}"><span class="util-bar-code">${esc(m.atc)}</span> ${etiqueta}</button>`
+        ? `<span class="util-bar-code">${esc(m.atc)}</span>${marca} ${etiqueta}`
+        : `<button class="util-bar-link" data-${accion}="${esc(m.atc)}" title="${esc(pista)}: ${esc(m.atc)}"><span class="util-bar-code">${esc(m.atc)}</span>${marca} ${etiqueta}</button>`
 }</span>
                 <span class="util-bar-track"><i style="width:${ancho.toFixed(1)}%"></i></span>
                 <span class="util-bar-val">${this._utilDhd(m.dhd, m.dhd_cero_redondeado)}</span>
@@ -14231,8 +14300,19 @@ ${materialesPlaceholder}
             <h4>Dentro del grupo ${esc(g.atc)}</h4>
             <p class="util-group-name">${esc(g.nombre || '')}</p>`;
 
+        // La leyenda solo aparece si hay algo que leer. Un pie fijo explicando un símbolo que no
+        // está en la lista es ruido, y en un grupo sin ningún esencial sugeriría lo contrario.
+        const leyendaEml = hayEml
+            ? `<p class="util-note util-note-eml"><span class="util-eml-dot">&#9679;</span>
+               En la <a href="https://list.essentialmeds.org/" target="_blank" rel="noopener">Lista
+               Modelo de Medicamentos Esenciales</a> de la OMS (23.ª lista, CC BY-NC-SA 3.0 IGO).
+               Marca qué se considera imprescindible en un sistema de salud, no qué se prescribe
+               más ni qué es mejor aquí.</p>`
+            : '';
+
         return `${cabecera}
             <ul class="util-bars ${parcial ? 'is-partial' : ''}">${filas}</ul>
+            ${leyendaEml}
             <p class="util-note">${leyenda}</p>
             <p class="util-note">${esc(d.nota_denominador)}</p>
             ${navegable ? `<p class="util-note">${esc(d.nota_dhd)}</p>
