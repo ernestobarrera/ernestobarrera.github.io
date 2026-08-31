@@ -12589,6 +12589,7 @@ ${materialesPlaceholder}
             'adverse',
             'equivalences',
             'pharmacogenomics',
+            'utilization',
             'supply',
             'alerts',
             'materials',
@@ -12639,7 +12640,7 @@ ${materialesPlaceholder}
             // First load the base view without URL update
             await this.loadView(targetView, false);
             // Then open the medication detail
-            const validModalTabs = ['info', 'indications', 'posology', 'interactions', 'adverse', 'safety', 'docs', 'alerts', 'qt', 'pgx', 'evidence'];
+            const validModalTabs = ['info', 'indications', 'posology', 'interactions', 'adverse', 'safety', 'docs', 'alerts', 'qt', 'pgx', 'evidence', 'utilizacion'];
             const modalTab = validModalTabs.includes(params.tab) ? params.tab : 'info';
             this.openMedDetails(params.nregistro, modalTab);
             return;
@@ -13890,6 +13891,12 @@ ${materialesPlaceholder}
         slot.dataset.loaded = '1';
         const data = await this.api.getUtilizacionNodo(atc5);
         slot.innerHTML = this.renderUtilizacionHtml(atc5, data, cpresc);
+
+        // La pestaña deja de ser una imagen fija: cada principio activo del reparto y el propio
+        // grupo abren la vista completa en ese nodo. Antes el único puente salía a Buscar y no
+        // tenía vuelta, así que comparar con un hermano obligaba a empezar de cero.
+        slot.querySelectorAll('[data-util-vista]').forEach(el =>
+            el.addEventListener('click', () => this.irAUtilizacion(el.dataset.utilVista)));
     }
 
     // ─── Vista principal «Utilización» ───────────────────────────────────────
@@ -13922,7 +13929,30 @@ ${materialesPlaceholder}
             return;
         }
         this._utilArbolVista = arbol;
+
+        // La URL manda al ENTRAR en la vista. `?view=utilization&atc=R03AK` abre ese nodo; pulsar
+        // la pestaña limpia el parámetro y devuelve a la raíz. Así el enlace compartido, la
+        // recarga y el botón Atrás ven los tres el mismo estado, sin un segundo sitio donde
+        // guardarlo. El código se valida contra el árbol: un `atc` inventado cae en la raíz.
+        const pedido = String(this.getURLParams().atc || '').toUpperCase();
+        this._utilVista.nodo = arbol.nodos[pedido] ? pedido : null;
+
         this._pintarUtilizacionView();
+    }
+
+    /**
+     * Abre la vista «Utilización» en un nodo concreto, venga de donde venga la llamada.
+     *
+     * Cierra el modal SIN pasar por `closeModal`, por la misma razón que
+     * `navigateToATCFromModal`: `closeModal` empuja con push el estado viejo y dejaría una
+     * entrada de historial espuria justo antes de la buena.
+     */
+    async irAUtilizacion(cod) {
+        this.modal.classList.add('hidden');
+        this.currentMed = null;
+        if (!this._utilVista) this._utilVista = { nodo: null, query: '' };
+        this.updateURL(cod ? { view: 'utilization', atc: cod } : { view: 'utilization' });
+        await this.loadView('utilization', false);
     }
 
     /** Camino desde la raíz hasta un nodo, para el breadcrumb. */
@@ -14090,8 +14120,12 @@ ${materialesPlaceholder}
     }
 
     _engancharUtilizacionView() {
+        // Bajar o subir un nivel es NAVEGACIÓN, no un cambio de faceta: apila historial. Así
+        // Atrás sube un nivel en vez de expulsar de la vista entera, y cualquier nodo del árbol
+        // es un enlace que se puede copiar y compartir.
         const ir = (cod) => {
             this._utilVista.nodo = cod || null;
+            this.updateURL(cod ? { view: 'utilization', atc: cod } : { view: 'utilization' });
             this._pintarUtilizacionView();
             this.content.querySelector('.util-body')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         };
@@ -14154,13 +14188,25 @@ ${materialesPlaceholder}
             const ancho = max > 0 && m.dhd ? Math.max(2, (m.dhd / max) * 100) : 2;
             const esEste = m.atc === destacado;
             const etiqueta = esc(m.nombre || m.atc);
-            // Solo los nodos con hijos son navegables; un ATC5 es hoja y no lleva a ningún sitio.
-            const bajable = navegable && m.nivel < 5;
+            // Todos los miembros llevan a algún sitio, incluidos los ATC5.
+            //
+            // Un ATC5 es hoja de la jerarquía, pero no es un callejón: su nodo es justo donde vive
+            // el botón «Ver medicamentos con…», que es el único puente de esta capa hacia CIMA.
+            // Cortar el enlace un nivel antes dejaba el principio activo —lo que el médico busca—
+            // como texto muerto.
+            //
+            // En la ficha (no navegable) el destino es la vista completa abierta en ese nodo: la
+            // pestaña del modal no puede repintarse a sí misma como un árbol, pero sí ceder el
+            // paso al sitio donde esa navegación existe.
+            const accion = navegable ? 'util-baja' : 'util-vista';
+            const pista = navegable
+                ? (m.nivel < 5 ? 'Ver el reparto de este grupo' : 'Ver este principio activo')
+                : 'Abrir en la vista Utilización';
             return `<li class="util-bar-row ${esEste ? 'is-current' : ''}">
                 <span class="util-bar-label" title="${esc(m.atc)} · ${etiqueta}">${
-    bajable
-        ? `<button class="util-bar-link" data-util-baja="${esc(m.atc)}"><span class="util-bar-code">${esc(m.atc)}</span> ${etiqueta}</button>`
-        : `<span class="util-bar-code">${esc(m.atc)}</span> ${etiqueta}`
+    esEste && !navegable
+        ? `<span class="util-bar-code">${esc(m.atc)}</span> ${etiqueta}`
+        : `<button class="util-bar-link" data-${accion}="${esc(m.atc)}" title="${esc(pista)}: ${esc(m.atc)}"><span class="util-bar-code">${esc(m.atc)}</span> ${etiqueta}</button>`
 }</span>
                 <span class="util-bar-track"><i style="width:${ancho.toFixed(1)}%"></i></span>
                 <span class="util-bar-val">${this._utilDhd(m.dhd, m.dhd_cero_redondeado)}</span>
@@ -14319,6 +14365,22 @@ ${materialesPlaceholder}
             grupo = `<section class="util-group ${d.grupo.denominador === 'parcial' ? 'is-partial' : ''}">${this.renderUtilizacionRepartoHtml(d, d.grupo, { destacado: d.atc })}</section>`;
         }
 
+        // Salida hacia la vista completa. La ficha responde «cuánto se usa este medicamento»; la
+        // vista responde «cómo se reparte el uso en su grupo y qué alternativas hay». Sin este
+        // enlace la segunda pregunta obligaba a salir de la ficha y volver a empezar.
+        //
+        // El grupo va primero a propósito: quien abre esta pestaña ya sabe qué fármaco tiene
+        // delante; lo que no sabe es cómo se sitúa entre sus alternativas.
+        const salida = `
+            <div class="util-tab-actions">
+                ${d.padre ? `<button class="btn btn-secondary" data-util-vista="${esc(d.padre)}">
+                    <i class="fas fa-layer-group"></i> Ver el grupo ${esc(d.padre)} completo
+                </button>` : ''}
+                <button class="btn btn-secondary" data-util-vista="${esc(d.atc)}">
+                    <i class="fas fa-sitemap"></i> Ver ${esc(d.atc)} en el árbol
+                </button>
+            </div>`;
+
         // ── procedencia y límites ──
         const fechaFuente = d.fuente_actualizada_en
             ? new Date(d.fuente_actualizada_en).toLocaleDateString('es-ES')
@@ -14357,7 +14419,7 @@ ${materialesPlaceholder}
                 </ul>
             </section>`;
 
-        return `<div class="util-tab">${cabecera}${avisoParcial}${principal}${grupo}${limites}${procedencia}</div>`;
+        return `<div class="util-tab">${cabecera}${avisoParcial}${principal}${grupo}${salida}${limites}${procedencia}</div>`;
     }
 
     /** HTML del badge "Esencial OMS". opts.compact para tarjetas. '' si no aplica o no cargado. */

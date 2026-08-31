@@ -535,5 +535,66 @@ console.log('\n13) el ETL se ejecuta cuando se le llama, en cualquier sistema op
   ok('la opción --head-only sigue declarada', /--head-only/.test(etl));
 }
 
+// ── 14. la capa es enlazable y navegable ───────────────────────────────────
+//
+// Nace de un fallo real: la vista se publicó funcionando y el enlace
+// `medcheck.html?view=utilization` aterrizaba en Buscar. La causa no estaba en la vista sino en
+// una lista blanca de OTRO módulo que nadie tocó al añadirla, y por eso ningún test la vio.
+//
+// Las dos listas se comprueban aquí porque son el patrón de fallo que se repite: cada vista o
+// pestaña nueva exige una entrada en una lista que vive lejos de ella y no da ningún error
+// cuando falta. Simplemente cae al valor por defecto, en silencio.
+console.log('\n14) la capa se puede enlazar, compartir y recorrer');
+{
+  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+
+  const listaVistas = app.slice(app.indexOf('const validViews = ['), app.indexOf('const targetView'));
+  ok('`?view=utilization` está en la lista blanca de vistas', /'utilization'/.test(listaVistas));
+  ok('MUTANTE: si se cae de la lista, el enlace aterrizaría en Buscar',
+    /validViews\.includes\(view\) \? view : 'search'/.test(app));
+
+  const listaTabs = (app.match(/const validModalTabs = \[[^\]]*\]/) || [''])[0];
+  ok('`&tab=utilizacion` está en la lista blanca de pestañas de ficha', /'utilizacion'/.test(listaTabs));
+  ok('y la ficha sabe abrirse en esa pestaña', /initialTab === 'utilizacion'/.test(app));
+
+  // Los cortes se hacen por la FIRMA de cada método, no por su nombre: el nombre aparece antes
+  // en las llamadas y el trozo analizado saldría desplazado, dando por buena una comprobación
+  // que en realidad mira otro sitio.
+  const desde = (firma) => app.indexOf(firma);
+  const FIRMA_REPARTO = 'renderUtilizacionRepartoHtml(d, g, {';
+  const sinComentarios = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+
+  // El nodo del árbol viaja en la URL. Sin esto no se puede compartir un grupo concreto, Atrás
+  // expulsa de la vista entera en vez de subir un nivel, y recargar devuelve a la raíz.
+  const entrada = sinComentarios(app.slice(desde('async renderUtilizacionView()'), desde('async irAUtilizacion(cod)')));
+  ok('la vista lee el nodo pedido en la URL', /getURLParams\(\)\.atc/.test(entrada));
+  ok('y lo valida contra el árbol antes de abrirlo',
+    /arbol\.nodos\[pedido\] \? pedido : null/.test(entrada));
+
+  const enganche = sinComentarios(app.slice(desde('_engancharUtilizacionView() {'), desde(FIRMA_REPARTO)));
+  ok('navegar por el árbol escribe el nodo en la URL',
+    /updateURL\(cod \? \{ view: 'utilization', atc: cod \}/.test(enganche));
+
+  // Un ATC5 es hoja de la jerarquía pero NO un callejón: su nodo es donde vive el único puente
+  // hacia CIMA. El corte anterior dejaba el principio activo —lo que el médico busca— sin enlace.
+  const reparto = app.slice(desde(FIRMA_REPARTO), desde('renderUtilizacionHtml(atc5, d, cpresc) {'));
+  ok('MUTANTE: el reparto ya no corta el enlace en el nivel 5',
+    !/navegable && m\.nivel < 5/.test(reparto));
+  ok('todos los miembros del reparto llevan a algún sitio',
+    /data-\$\{accion\}="\$\{esc\(m\.atc\)\}"/.test(reparto));
+  ok('en la ficha el destino es la vista completa',
+    /navegable \? 'util-baja' : 'util-vista'/.test(reparto));
+
+  // La pestaña de la ficha tenía el reparto pintado y ninguna salida: no se podía ni saltar a un
+  // principio activo hermano ni volver a la vista con ese grupo abierto.
+  ok('existe el salto a la vista desde cualquier punto', /async irAUtilizacion\(cod\)/.test(app));
+  ok('la ficha ofrece salida hacia el árbol', /util-tab-actions/.test(app));
+  ok('y los enlaces de la ficha están enganchados',
+    /querySelectorAll\('\[data-util-vista\]'\)/.test(app));
+
+  const css = readFileSync(join(RAIZ, 'assets', 'css', 'cima-app.css'), 'utf8');
+  ok('la salida de la ficha tiene estilo propio', /\.util-tab-actions\s*\{/.test(css));
+}
+
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);
 process.exit(fallos === 0 ? 0 : 1);

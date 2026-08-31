@@ -12212,5 +12212,15 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-node-figure .util-unit-long { display: block; font-size: 0.8rem; color: var(--text-muted); }
 .util-node-actions { margin: var(--space-md) 0; }
 
+/* Salida de la pestaña de la ficha hacia la vista completa. Van juntas y con el mismo peso:
+   son dos destinos del mismo gesto («llévame al árbol»), no una acción y su alternativa. */
+.util-tab-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin: var(--space-md) 0;
+}
+.util-tab-actions .btn { font-size: 0.85rem; }
+
 .util-body { margin-bottom: var(--space-lg); }
 .util-view .util-limits { margin-top: var(--space-lg); }
