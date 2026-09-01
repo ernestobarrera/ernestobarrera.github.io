@@ -13865,6 +13865,139 @@ ${materialesPlaceholder}
     }
 
     /**
+     * La DHD dicha en la lengua en que se piensa, no en la que se publica.
+     *
+     * «96,24 DHD» no significa nada para quien no maneja la unidad a diario, y la respuesta a eso
+     * no es más cautela: es decir el número como una FRECUENCIA NATURAL, con su denominador a la
+     * vista. Es la forma en que se entiende un riesgo o una proporción sin hacer aritmética
+     * mental, y la DHD ya viene expresada así —por 1.000 habitantes—; solo hace falta decirlo.
+     *
+     * QUÉ AUTORIZA ESTA LECTURA, y por qué se abandona la prudencia anterior de no traducir a
+     * personas. La nota metodológica del Ministerio, que es la fuente de este dato, la formula
+     * ella misma, literalmente: «Dosis Habitante Día (DHD): nº de dosis diarias definidas (DDD)
+     * por 1.000 habitantes y día. Este parámetro nos proporciona la estimación de cuántas
+     * personas de cada 1.000 están recibiendo al día una DDD.» El WHO Collaborating Centre dice
+     * lo mismo —«may provide a rough estimate of the proportion of the study population treated
+     * daily»— con dos condiciones que aquí se pintan al lado: vale sobre todo en tratamientos
+     * crónicos y cuando la dosis prescrita real se parece a la DDD.
+     *
+     * Lo que sí sigue prohibido es el salto que la fuente NO da: decir que N personas «toman» el
+     * fármaco. La frase termina siempre en «una DDD», que es lo que se cuenta. Una persona con
+     * media dosis y otra con dos dosis suman lo mismo que dos personas con una.
+     *
+     * El denominador se queda fijo en 1.000 aunque la cifra sea pequeña. Cambiarlo a 10.000 para
+     * que salga un entero más bonito destruye lo único que hace comparables dos fármacos leídos
+     * uno detrás de otro, que es justamente para lo que sirve esta capa.
+     */
+    _utilLecturaDhd(dhd, ceroRedondeado, sustancia) {
+        if (typeof dhd !== 'number') return '';
+        const esc = (s) => this._escapeHtml(String(s ?? ''));
+        const de = sustancia ? ` de ${esc(String(sustancia).toLowerCase())}` : '';
+        let frase;
+        if (ceroRedondeado || dhd < 1) frase = 'menos de una recibe';
+        else if (Math.round(dhd) === 1) frase = 'una recibe';
+        else frase = `${Math.round(dhd).toLocaleString('es-ES')} reciben`;
+        return `De cada 1.000 personas, <strong>${frase}</strong> cada día una dosis diaria
+            definida (DDD)${de}.`;
+    }
+
+    /**
+     * El reparto dicho en una frase, para los grupos donde hay competencia real de prescripción.
+     *
+     * Una lista de barras con porcentajes se mira; una frase se entiende. Y la frase es aritmética
+     * directa sobre la cuota que ya se está pintando: no hay ningún salto interpretativo nuevo.
+     * Se dice sobre 100 dosis —no sobre 100 pacientes— porque es la cuota de DHD lo que se
+     * reparte, y esa distinción es justamente la que se pierde al leer un tanto por ciento a
+     * ojo dentro de una tabla clínica.
+     *
+     * Dos guardas para que la frase aparezca solo cuando dice algo:
+     *
+     *   - Hace falta más de un miembro. Un grupo con un solo principio activo no tiene reparto.
+     *   - Si uno solo se lleva el 95 % o más, la frase sobra: la barra ya lo grita, y escribirlo
+     *     en prosa solo añade ruido donde no hay decisión que tomar.
+     *
+     * Y cuando el denominador es parcial cambia el sujeto: no son «las dosis dispensadas» del
+     * grupo sino «las que tienen DDD asignada», porque hay principios activos con consumo real
+     * fuera de ese 100. Decirlo igual en los dos casos sería el error de siempre, en una frase
+     * que además se lee más rápido y se recuerda mejor.
+     */
+    _utilFraseReparto(g) {
+        if (!g || !Array.isArray(g.miembros) || g.miembros.length < 2) return '';
+        const esc = (s) => this._escapeHtml(String(s ?? ''));
+        const conCuota = g.miembros.filter(m => typeof m.cuota === 'number' && m.cuota > 0);
+        if (conCuota.length < 2) return '';
+
+        const pct = (m) => Math.round(m.cuota * 100);
+        if (pct(conCuota[0]) >= 95) return '';
+
+        // Se nombran los que llegan al 10 %, hasta tres. Por debajo de ahí la cifra redondeada
+        // deja de distinguir y la enumeración se alarga sin informar.
+        const nombrados = conCuota.filter(m => pct(m) >= 10).slice(0, 3);
+        if (nombrados.length < 2) return '';
+
+        const partes = nombrados.map((m, i) => {
+            const nombre = esc(String(m.nombre || m.atc).toLowerCase());
+            return i === 0 ? `<strong>${pct(m)} son de ${nombre}</strong>` : `${pct(m)} de ${nombre}`;
+        });
+        const lista = partes.length > 1
+            ? `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`
+            : partes[0];
+        const sujeto = g.denominador === 'parcial'
+            ? `dosis con DDD asignada de ${esc(g.atc)}`
+            : `dosis dispensadas en ${esc(g.atc)}`;
+
+        return `<p class="util-frase">De cada 100 ${sujeto}, ${lista}.</p>`;
+    }
+
+    /**
+     * Los límites del dato, en un solo sitio y plegados.
+     *
+     * Estaban escritos dos veces, con palabras distintas, y desplegados en las dos superficies:
+     * ocho advertencias en letra pequeña antes de que nadie hubiera explicado qué significaba la
+     * cifra. Un lector con prisa no lee ocho cautelas; las salta, y con ellas se salta la que
+     * sí importaba.
+     *
+     * Ahora son cuatro, con titular propio, y detrás de un desplegable. Plegar no es esconder:
+     * el titular sigue a la vista y el detalle está a un clic. Lo que antes competía con el dato
+     * ahora lo acompaña.
+     */
+    _utilLimitesHtml() {
+        return `<details class="util-limits">
+            <summary>Qué <em>no</em> dice este dato</summary>
+            <ul>
+                <li><strong>No cuenta pacientes, cuenta dosis.</strong> Una persona con media dosis
+                y otra con dos suman lo mismo que dos personas con una.</li>
+                <li><strong>No dice qué conviene prescribir.</strong> Describe lo que se dispensa;
+                el reparto no ordena por preferencia terapéutica.</li>
+                <li><strong>No cubre todo el consumo.</strong> Quedan fuera el hospital, la receta
+                privada y lo no financiado. Los medicamentos de uso hospitalario —antineoplásicos,
+                biológicos— no aparecen en absoluto.</li>
+                <li><strong>No cubre todas las vías.</strong> Solo suman las presentaciones con DDD
+                asignada por la OMS, y algunas vías no la tienen.</li>
+            </ul>
+        </details>`;
+    }
+
+    /**
+     * Qué es una DDD y hasta dónde llega la lectura de arriba. Dos frases, escritas una sola vez
+     * y compartidas por la ficha y la vista: si cada superficie explica la unidad con sus propias
+     * palabras, acaban diciendo cosas ligeramente distintas del mismo número.
+     *
+     * Va DESPUÉS de la lectura en personas y no antes. El orden es deliberado: primero qué
+     * significa el dato, después qué le falta. Al revés —que es como estaba— el lector se topa
+     * con tres advertencias antes de haber entendido qué le están contando.
+     */
+    _utilNotaDdd() {
+        return `<p class="util-note util-note-ddd">
+            La <strong>DDD</strong> es la dosis diaria de mantenimiento que la OMS toma como
+            referencia para la indicación principal en adultos: <strong>no es la dosis que se
+            prescribe</strong>. Por eso lo de arriba es una estimación y no un recuento de
+            pacientes, y se sostiene mejor en tratamientos crónicos y cuando la dosis real se
+            parece a la de referencia.
+        </p>`;
+    }
+
+    /**
      * Canal de dispensación según `cpresc` de CIMA. Devuelve 'H', 'DH' o null.
      *
      * Los dos NO son lo mismo y confundirlos hace afirmar de más:
@@ -14074,6 +14207,8 @@ ${materialesPlaceholder}
                         <strong>${this._utilDhd(v.dhd, v.z === 1)}</strong> DHD
                         <span class="util-unit-long">DDD por 1.000 habitantes y día</span>
                     </p>
+                    <p class="util-lectura">${this._utilLecturaDhd(v.dhd, v.z === 1, hoja ? v.n : null)}</p>
+                    ${this._utilNotaDdd()}
                     ${typeof v.env === 'number' ? `<p class="util-env">
                         <strong>${Math.round(v.env * 1000).toLocaleString('es-ES')}</strong> envases facturados
                     </p>` : ''}
@@ -14118,20 +14253,7 @@ ${materialesPlaceholder}
                 ${breadcrumb}
                 <div class="util-body">${cuerpo}</div>
 
-                <section class="util-limits">
-                    <h4>Qué no dice este dato</h4>
-                    <ul>
-                        <li><strong>No dice cuántas personas</strong> lo toman: la DDD es una unidad de
-                        dosis, y un paciente puede recibir más o menos de una al día.</li>
-                        <li><strong>No dice si es la mejor opción.</strong> El reparto describe qué se
-                        dispensa, no qué conviene prescribir.</li>
-                        <li><strong>No cubre todo el consumo:</strong> queda fuera la dispensación
-                        hospitalaria, la receta privada y lo no financiado. Los medicamentos de uso
-                        hospitalario —antineoplásicos, biológicos— no aparecen en absoluto.</li>
-                        <li><strong>No siempre cubre todas las vías</strong> de un mismo principio
-                        activo: la DHD solo suma las presentaciones con DDD asignada por la OMS.</li>
-                    </ul>
-                </section>
+                ${this._utilLimitesHtml()}
 
                 <section class="util-source">
                     <p class="util-meta">
@@ -14195,13 +14317,20 @@ ${materialesPlaceholder}
 
         // Desde un principio activo, saltar a los medicamentos que lo contienen. Es el puente
         // natural entre «esto se usa mucho» y «qué hay en la farmacia».
+        //
+        // El `await loadView` NO es adorno: `searchByATCCode` escribe en `#indication-results`,
+        // que solo existe una vez montada la vista Indicaciones. Llamarlo desde aquí reventaba
+        // con un TypeError sobre `null` y el botón no hacía absolutamente nada, sin error
+        // visible. Mismo orden que `navigateToATCFromModal`, que sí carga la vista primero.
         this.content.querySelectorAll('[data-util-medicamentos]').forEach(el =>
-            el.addEventListener('click', () => {
+            el.addEventListener('click', async () => {
                 const cod = el.dataset.utilMedicamentos;
                 const nombre = this._utilArbolVista?.nodos?.[cod]?.n || cod;
-                this.searchByATCCode(cod, nombre, this._utilCamino(cod).map(c => ({
+                const migas = this._utilCamino(cod).map(c => ({
                     code: c, name: this._utilArbolVista.nodos[c]?.n || c,
-                })));
+                }));
+                await this.loadView('indications', false);
+                this.searchByATCCode(cod, nombre, migas);
             }));
 
         const input = this.content.querySelector('#util-buscar');
@@ -14283,12 +14412,24 @@ ${materialesPlaceholder}
             </li>`;
         }).join('');
 
+        // El denominador, dicho con su cifra y no solo con su nombre. Un porcentaje cuyo 100 % no
+        // aparece en ninguna parte obliga a sumar mentalmente para saber sobre qué se calcula, y
+        // en un reparto con tres cifras eso es justo lo que nadie hace. Se nombra además lo que
+        // el porcentaje NO es: aquí conviven tres magnitudes —DHD, envases e importe— y la
+        // costumbre es leer cualquier tanto por ciento como si fuera de pacientes.
+        const total = `<strong>${this._utilDhd(g.dhd, false)} DHD</strong>`;
+        const fueraEnv = g.sin_ddd?.reduce((s, x) => s + (x.envases_miles || 0), 0) || 0;
         const leyenda = parcial
-            ? `Porcentaje sobre la <strong>DHD publicada</strong> de ${esc(g.atc)}. Quedan fuera
+            ? `Los porcentajes se calculan sobre la <strong>DHD publicada</strong> de
+               ${esc(g.atc)}, que son ${total} — no sobre envases, ni sobre gasto, ni sobre
+               pacientes. Quedan fuera de ese total
                ${g.sin_ddd.length} ${g.sin_ddd.length === 1 ? 'principio activo con consumo real y sin DDD asignada'
         : 'principios activos con consumo real y sin DDD asignada'}:
-               ${g.sin_ddd.map(s => `<em>${esc(s.nombre || s.atc)}</em>`).join(', ')}.`
-            : `Porcentaje sobre la <strong>DHD publicada</strong> de ${esc(g.atc)}.`;
+               ${g.sin_ddd.map(s => `<em>${esc(s.nombre || s.atc)}</em>`).join(', ')}${
+    fueraEnv > 0 ? `, que suman ${Math.round(fueraEnv * 1000).toLocaleString('es-ES')} envases` : ''}.`
+            : `Los porcentajes se calculan sobre la <strong>DHD publicada</strong> de
+               ${esc(g.atc)}, que son ${total} — no sobre envases, ni sobre gasto, ni sobre
+               pacientes.`;
 
         const cabecera = navegable ? `
             <div class="util-head">
@@ -14297,7 +14438,7 @@ ${materialesPlaceholder}
             </div>
             <h4>${esc(g.atc)} · ${this._utilDhd(g.dhd, false)} DHD en total</h4>
             <p class="util-group-name">${esc(g.nombre || '')}</p>` : `
-            <h4>Dentro del grupo ${esc(g.atc)}</h4>
+            <h4>Dentro del grupo ${esc(g.atc)} · ${this._utilDhd(g.dhd, false)} DHD en total</h4>
             <p class="util-group-name">${esc(g.nombre || '')}</p>`;
 
         // La leyenda solo aparece si hay algo que leer. Un pie fijo explicando un símbolo que no
@@ -14311,6 +14452,7 @@ ${materialesPlaceholder}
             : '';
 
         return `${cabecera}
+            ${this._utilFraseReparto(g)}
             <ul class="util-bars ${parcial ? 'is-partial' : ''}">${filas}</ul>
             ${leyendaEml}
             <p class="util-note">${leyenda}</p>
@@ -14430,7 +14572,8 @@ ${materialesPlaceholder}
                 <span class="util-value">${this._utilDhd(d.dhd, d.dhd_cero_redondeado)}</span>
                 <span class="util-unit">DHD</span>
                 <p class="util-unit-long">DDD por 1.000 habitantes y día</p>
-                <p class="util-note">${esc(d.nota_dhd)}</p>
+                <p class="util-lectura">${this._utilLecturaDhd(d.dhd, d.dhd_cero_redondeado, d.sustancia)}</p>
+                ${this._utilNotaDdd()}
                 ${typeof d.envases_miles === 'number' ? `<p class="util-env">
                     <strong>${(d.envases_miles * 1000).toLocaleString('es-ES')}</strong> envases facturados en el año
                 </p>` : ''}
@@ -14481,23 +14624,11 @@ ${materialesPlaceholder}
             </section>`;
 
         // ── qué NO dice esta cifra ──
-        // Va antes de la procedencia y en positivo-negativo explícito. El riesgo de esta capa no
-        // está en el número: está en las tres lecturas que un lector con prisa hace de él.
-        const limites = `
-            <section class="util-limits">
-                <h4>Qué no dice este dato</h4>
-                <ul>
-                    <li><strong>No dice cuántas personas</strong> lo toman: la DDD es una unidad de
-                    dosis, y un paciente puede recibir más o menos de una al día.</li>
-                    <li><strong>No dice si es la mejor opción.</strong> El reparto dentro del grupo
-                    describe qué se dispensa, no qué conviene prescribir.</li>
-                    <li><strong>No cubre todo el consumo:</strong> queda fuera la dispensación
-                    hospitalaria, la receta privada y lo no financiado.</li>
-                    <li><strong>No siempre cubre todas las vías</strong> de un mismo principio
-                    activo: la DHD solo suma las presentaciones con DDD asignada por la OMS, y
-                    algunas vías no la tienen.</li>
-                </ul>
-            </section>`;
+        // Va antes de la procedencia y plegado. El riesgo de esta capa no está en el número: está
+        // en las lecturas que un lector con prisa hace de él. Pero una advertencia que nadie lee
+        // por larga no protege de nada, así que ahora son cuatro titulares tras un desplegable
+        // y la explicación de la unidad ha subido a donde está la cifra.
+        const limites = this._utilLimitesHtml();
 
         return `<div class="util-tab">${cabecera}${avisoParcial}${principal}${grupo}${salida}${limites}${procedencia}</div>`;
     }

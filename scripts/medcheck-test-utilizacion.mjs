@@ -288,17 +288,48 @@ console.log('\n7-9) contrato de la interfaz');
   ok('la DHD redondeada a cero se pinta como «<0,01», nunca como «0,00»',
     /_utilDhd\([\s\S]{0,200}&lt;0,01/.test(app));
 
-  // La equivalencia DHD → personas es el error clásico: una DDD no es una persona. Si alguien la
-  // reintroduce, este test la caza en el sitio donde reaparecería, que es el texto de la pestaña.
   const bloqueUtil = app.slice(app.indexOf('renderUtilizacionHtml'), app.indexOf('_emlBadgeHtml(atcCode'));
   // Se miran solo las cadenas que la página puede emitir: los comentarios explican por qué NO se
-  // escribe esa frase y nombrarla ahí es legítimo. La primera versión de este test se cazó a sí
+  // escribe una frase y nombrarla ahí es legítimo. La primera versión de este test se cazó a sí
   // misma por ese motivo.
   const emitido = bloqueUtil.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
-  ok('la pestaña NO traduce DHD a número de personas',
-    !/de cada 1\.?000 personas|personas (reciben|toman)|pacientes tratados al d/i.test(emitido));
-  ok('la pestaña sí declara que la DDD no es una persona',
-    /nota_dhd/.test(bloqueUtil) && /no equivale al número de pacientes|no equivale a la dosis|no cuenta personas|dosis diarias definidas, no personas/i.test(PERIMETRO.nota_dhd));
+
+  // ── CAMBIO DE POLÍTICA (01/09/2026) ──────────────────────────────────────────────────────
+  //
+  // Hasta hoy la regla era «la DHD no se traduce a personas, nunca», y este test la vigilaba.
+  // Se cambia con base documental, no por comodidad: la nota metodológica del Ministerio —que es
+  // LA FUENTE de este dato— hace ella misma esa lectura, literalmente: «Dosis Habitante Día
+  // (DHD): nº de dosis diarias definidas (DDD) por 1.000 habitantes y día. Este parámetro nos
+  // proporciona la estimación de cuántas personas de cada 1.000 están recibiendo al día una
+  // DDD». El WHO Collaborating Centre dice lo mismo: «may provide a rough estimate of the
+  // proportion of the study population treated daily», válido sobre todo en tratamientos
+  // crónicos y con buena concordancia entre la dosis prescrita real y la DDD.
+  //
+  // Callar una lectura que la propia fuente publica no era prudencia: era dejar la cifra en una
+  // unidad que casi nadie maneja. Lo que este test vigila ahora es la frontera exacta: se puede
+  // decir «personas que RECIBEN UNA DDD», que es lo que se cuenta; no se puede decir «personas
+  // que TOMAN el fármaco», que es el salto que la fuente no da.
+  //
+  // Se busca en TODO el fichero y no en un recorte: la versión anterior de esta comprobación
+  // seguía en verde después del cambio porque el texto se había movido a otro método, fuera del
+  // slice. Un detector que deja de mirar donde está el texto no protege de nada.
+  const emitidoTodo = app.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+  ok('la lectura en personas existe y usa el denominador de la fuente',
+    /De cada 1\.000 personas/.test(emitidoTodo));
+  ok('y termina en «una dosis diaria definida», que es lo que de verdad se cuenta',
+    /dosis diaria\s*\n?\s*definida \(DDD\)/.test(emitidoTodo));
+  ok('MUTANTE: nunca dice que esas personas «toman» o «consumen» el fármaco',
+    !/personas?\s+(toman|consumen|est[áa]n tomando)|pacientes tratados al d/i.test(emitidoTodo));
+  ok('el denominador no se reescala para que salga un entero más bonito',
+    !/de cada 10\.000 personas|de cada 100 personas/i.test(emitidoTodo));
+  ok('la cifra va acompañada de qué es una DDD y de que no es la dosis prescrita',
+    /_utilNotaDdd\(\)/.test(app) && /no es la dosis que se\s*\n?\s*prescribe/i.test(emitidoTodo));
+  ok('y de que es una estimación, no un recuento de pacientes',
+    /estimación y no un recuento de\s*\n?\s*pacientes/i.test(emitidoTodo));
+  ok('con las dos condiciones que pone la OMS: crónicos y dosis parecida a la DDD',
+    /tratamientos crónicos y cuando la dosis real se\s*\n?\s*parece/i.test(emitidoTodo));
+  ok('el perímetro sigue declarando que la DDD no es la dosis prescrita',
+    /no equivale al número de pacientes|no equivale a la dosis|no cuenta personas|dosis diarias definidas, no personas/i.test(PERIMETRO.nota_dhd));
 
   ok('el porcentaje parcial se etiqueta como «DHD publicada»',
     /DHD publicada/.test(bloqueUtil) && /denominador === 'parcial'/.test(bloqueUtil));
@@ -352,11 +383,23 @@ console.log('\n10) medicamentos de uso hospitalario: la fuente es ciega, no inco
     /avisoParcial/.test(emitido) && /Solo la parte de oficina de farmacia/.test(emitido));
   ok('el aviso parcial se inyecta en el render', /\$\{cabecera\}\$\{avisoParcial\}/.test(emitido));
 
-  ok('existe el bloque «Qué no dice este dato»', /Qué no dice este dato/.test(emitido));
-  ok('y niega las tres lecturas peligrosas: personas, preferencia y cobertura total',
-    /No dice cuántas personas/.test(emitido)
-    && /No dice si es la mejor opción/.test(emitido)
-    && /No cubre todo el consumo/.test(emitido));
+  // Los límites ya no se escriben dentro de cada render. Estaban duplicados con palabras
+  // distintas y desplegados en las dos superficies: ocho advertencias en letra pequeña antes de
+  // que nadie hubiera explicado qué significaba la cifra. Ahora hay UNO, plegado, y las dos
+  // superficies lo llaman — que es lo que garantiza que digan lo mismo.
+  ok('la ficha llama al bloque único de límites', /\$\{this\._utilLimitesHtml\(\)\}/.test(emitido));
+
+  const limpio = (t) => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+  const limites = limpio(app.slice(app.indexOf('_utilLimitesHtml() {'), app.indexOf('_utilNotaDdd() {')));
+  ok('existe el bloque «Qué no dice este dato»', /Qué <em>no<\/em> dice este dato/.test(limites));
+  ok('está plegado, no compitiendo con la cifra', /<details class="util-limits">/.test(limites));
+  ok('y niega las cuatro lecturas peligrosas: pacientes, preferencia, cobertura y vías',
+    /No cuenta pacientes, cuenta dosis/.test(limites)
+    && /No dice qué conviene prescribir/.test(limites)
+    && /No cubre todo el consumo/.test(limites)
+    && /No cubre todas las vías/.test(limites));
+  ok('MUTANTE: el texto no vuelve a duplicarse en los renders',
+    (app.match(/Qué <em>no<\/em> dice este dato/g) || []).length === 1);
 }
 
 // ── 10 bis. lo que corrigió la revisión de Codex ────────────────────────────
@@ -382,8 +425,8 @@ console.log('\n10 bis) correcciones de la revisión cruzada');
     (emitido.match(/DHD publicada/g) || []).length >= 2);
   ok('MUTANTE: ya no se afirma «todos sus principios activos con consumo tienen DDD»',
     !/Todos sus principios activos con consumo tienen DDD/i.test(emitido));
-  ok('la cautela de vías de administración está en «Qué no dice»',
-    /No siempre cubre todas las vías/.test(emitido));
+  ok('la cautela de vías de administración sigue en «Qué no dice»',
+    /No cubre todas las vías/.test(app));
 
   // (c) La nota del consumo hospitalario ya no es absoluta.
   ok('nota_hospital acota la afirmación a la serie mensual',
@@ -487,9 +530,9 @@ console.log('\n12) «Utilización» es una vista principal, al nivel de Buscar')
   ok('la vista tiene miga de pan para subir', /util-crumbs/.test(emitido) && /data-util-ir/.test(emitido));
   ok('y buscador por código o principio activo', /util-buscar/.test(emitido));
   ok('el perímetro se pinta también aquí', /util-scope[\s\S]{0,80}perimetro_corto/.test(emitido));
-  ok('lleva el bloque «Qué no dice este dato»', /Qué no dice este dato/.test(emitido));
-  ok('y avisa de que los hospitalarios no aparecen en absoluto',
-    /uso\s*\n?\s*hospitalario[\s\S]{0,80}no aparecen en absoluto/.test(emitido));
+  ok('la vista llama al mismo bloque único de límites', /\$\{this\._utilLimitesHtml\(\)\}/.test(emitido));
+  ok('y ese bloque avisa de que los hospitalarios no aparecen en absoluto',
+    /uso hospitalario[\s\S]{0,60}no aparecen en absoluto/.test(app));
   ok('dice explícitamente que no indica qué prescribir',
     /no dice cuál conviene prescribir/i.test(emitido));
   ok('no hay etiquetas de juicio en la vista',
@@ -592,8 +635,23 @@ console.log('\n14) la capa se puede enlazar, compartir y recorrer');
   ok('y los enlaces de la ficha están enganchados',
     /querySelectorAll\('\[data-util-vista\]'\)/.test(app));
 
+  // «Ver medicamentos con X» no hacía absolutamente nada. `searchByATCCode` escribe en
+  // `#indication-results`, que solo existe una vez montada la vista Indicaciones; llamado desde
+  // Utilización reventaba con un TypeError sobre `null`, sin error visible y sin efecto. Es el
+  // único puente de esta capa hacia CIMA, así que el fallo se llevaba por delante la función.
+  const puente = sinComentarios(app.slice(app.indexOf("querySelectorAll('[data-util-medicamentos]')"),
+    app.indexOf("const input = this.content.querySelector('#util-buscar')")));
+  ok('el salto a los medicamentos monta antes la vista que va a escribir',
+    /await this\.loadView\('indications', false\)/.test(puente));
+  ok('MUTANTE: y lo hace ANTES de llamar a searchByATCCode',
+    puente.indexOf("loadView('indications'") < puente.indexOf('searchByATCCode('));
+
   const css = readFileSync(join(RAIZ, 'assets', 'css', 'cima-app.css'), 'utf8');
   ok('la salida de la ficha tiene estilo propio', /\.util-tab-actions\s*\{/.test(css));
+  // Solo `.util-meta a` y `.util-outofscope a` declaraban color; cualquier enlace en una nota
+  // caía al azul por defecto del navegador, invisible sobre el fondo oscuro de MedCheck.
+  ok('todos los enlaces de la capa tienen color declarado',
+    /\.util-note a,[\s\S]{0,80}\{ color: var\(--primary\) \}|\.util-note a,/.test(css));
 }
 
 // ── 15. el código ATC lleva su nombre clínico ──────────────────────────────
@@ -668,6 +726,45 @@ console.log('\n15) la ontología, leída al revés, pone nombre clínico a cada 
     /\.util-ind-chip\s*\{/.test(css) && /\.util-eml-dot\s*\{/.test(css));
   ok('el chip no repite el fallo de `--surface-raised` sin fallback',
     /--surface-raised, var\(--bg-secondary\)\)/.test(css));
+}
+
+// ── 16. el denominador de los porcentajes está a la vista ──────────────────
+//
+// Nace de una confusión real leyendo la pestaña: en A10BJ se ven 6,68 · 2,21 · 0,17 con sus
+// 73,7 % · 24,4 % · 1,9 %, y arriba del todo la cifra del fármaco abierto. Ninguna de las cuatro
+// es el 100 %. La aritmética era correcta (6,68+2,21+0,17 = 9,06, el total del grupo), pero ese
+// 9,06 no se pintaba en la ficha —solo en la vista navegable—, así que había que sumar
+// mentalmente para saber sobre qué se calculaba el porcentaje. Un porcentaje cuyo denominador
+// no aparece obliga a un cálculo que nadie hace, y entonces se lee como si fuera de pacientes.
+console.log('\n16) el 100 % se puede ver, no hay que calcularlo');
+{
+  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const reparto = app.slice(app.indexOf('renderUtilizacionRepartoHtml(d, g, {'),
+    app.indexOf('renderUtilizacionHtml(atc5, d, cpresc) {'));
+
+  ok('el total del grupo se pinta en las DOS superficies, no solo en la vista',
+    (reparto.match(/DHD en total/g) || []).length === 2);
+  ok('la leyenda dice sobre qué se calculan los porcentajes, con su cifra',
+    /Los porcentajes se calculan sobre la <strong>DHD publicada<\/strong>/.test(reparto)
+    && /que son \$\{total\}/.test(reparto));
+  ok('y nombra las magnitudes que NO son, que es donde está el error de lectura',
+    (reparto.match(/no sobre envases, ni sobre gasto, ni sobre\s*\n?\s*pacientes/g) || []).length === 2);
+  ok('cuando el denominador es parcial, cuantifica lo que queda fuera en envases',
+    /fueraEnv > 0 \? `, que suman \$\{Math\.round\(fueraEnv \* 1000\)/.test(reparto));
+  ok('MUTANTE: sigue sin llamarlo «% del grupo»', !/% del grupo/.test(reparto));
+
+  // El reparto dicho en una frase, para los grupos con competencia real de prescripción. Es
+  // aritmética directa sobre la cuota que ya se pinta, así que no añade interpretación; lo que
+  // sí añade es el sujeto correcto: son DOSIS las que se reparten, no pacientes.
+  const frase = app.slice(app.indexOf('_utilFraseReparto(g) {'), app.indexOf('_utilLimitesHtml() {'));
+  ok('la frase reparte DOSIS, nunca pacientes',
+    /De cada 100 \$\{sujeto\}/.test(frase)
+    && /dosis dispensadas en/.test(frase) && !/pacientes|personas/.test(frase.replace(/\/\*[\s\S]*?\*\//g, ' ')));
+  ok('y cambia el sujeto cuando el denominador es parcial',
+    /denominador === 'parcial'[\s\S]{0,90}dosis con DDD asignada/.test(frase));
+  ok('no aparece si un solo principio activo lo copa', /pct\(conCuota\[0\]\) >= 95\) return ''/.test(frase));
+  ok('ni si no hay al menos dos por encima del 10 %',
+    /pct\(m\) >= 10/.test(frase) && /nombrados\.length < 2\) return ''/.test(frase));
 }
 
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);

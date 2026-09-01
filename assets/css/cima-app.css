@@ -12066,8 +12066,31 @@ a.fin-cn:hover { text-decoration: underline; }
     padding: 0.85rem 1rem;
     border: 1px solid var(--border-default);
     border-radius: var(--radius-sm, 4px);
-    background: var(--surface-raised);
+    background: var(--surface-raised, var(--bg-elevated));
 }
+/* Ahora es <details>. El titular sigue a la vista y el detalle está a un clic: plegar no es
+   esconder, es dejar de competir con la cifra que el lector vino a ver. */
+.util-limits > summary {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    cursor: pointer;
+    list-style: none;
+}
+.util-limits > summary::-webkit-details-marker { display: none; }
+.util-limits > summary::before {
+    content: "B8";
+    display: inline-block;
+    margin-right: 0.45rem;
+    transition: transform 0.15s ease;
+}
+.util-limits[open] > summary::before { transform: rotate(90deg); }
+.util-limits > summary:hover { color: var(--text-secondary); }
+.util-limits > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.util-limits[open] > summary { margin-bottom: 0.5rem; }
 .util-limits h4 {
     margin: 0 0 0.5rem;
     font-size: 0.78rem;
@@ -12219,6 +12242,40 @@ a.fin-cn:hover { text-decoration: underline; }
     vertical-align: 0.28em;
     margin-left: 0.4rem;
 }
+
+/* El reparto dicho en una frase, encima de las barras. Va ANTES de la lista y no después:
+   se lee primero lo que la lista tarda en decir, y luego se comprueba en las barras. */
+.util-frase {
+    margin: 0.5rem 0 0.7rem;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    max-width: 62ch;
+}
+.util-frase strong { color: var(--text-primary); font-weight: 600; }
+
+/* Los enlaces de toda la capa. Antes solo `.util-meta a` y `.util-outofscope a` declaraban
+   color, así que cualquier enlace en una nota o en los límites caía al azul por defecto del
+   navegador —#0000EE— que sobre el fondo oscuro de MedCheck es prácticamente invisible. */
+.util-tab a,
+.util-view a,
+.util-nav a,
+.util-note a,
+.util-limits a,
+.util-figure a { color: var(--primary); }
+
+/* La cifra dicha en frecuencia natural, justo debajo del número y antes de cualquier cautela.
+   Tiene el tamaño del cuerpo de texto, no el de una nota al pie: es la lectura del dato, no una
+   advertencia sobre él. */
+.util-lectura {
+    margin: 0.55rem 0 0;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    max-width: 62ch;
+}
+.util-lectura strong { color: var(--text-primary); font-weight: 600; }
+.util-note-ddd { max-width: 62ch; }
 
 /* «Se llega aquí buscando: asma · EPOC». Va PEGADO al título del nodo y antes de la cifra:
    pone nombre clínico al código antes de que se lea el número, que es el orden en que hace
