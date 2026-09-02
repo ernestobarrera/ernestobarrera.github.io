@@ -742,8 +742,18 @@ console.log('\n16) el 100 % se puede ver, no hay que calcularlo');
   const reparto = app.slice(app.indexOf('renderUtilizacionRepartoHtml(d, g, {'),
     app.indexOf('renderUtilizacionHtml(atc5, d, cpresc) {'));
 
-  ok('el total del grupo se pinta en las DOS superficies, no solo en la vista',
-    (reparto.match(/DHD en total/g) || []).length === 2);
+  // El total del grupo tiene que estar en las dos superficies, pero no DOS VECES en la misma.
+  // En la ficha el reparto es el del grupo PADRE —otro código, otra cifra—, así que su cabecera
+  // lo enuncia. En la vista el reparto es el del nodo que ya está pintado justo encima, con su
+  // código, su nombre y su cifra: repetirlo era duplicación pura. Quien sostiene el denominador
+  // en las dos es la LEYENDA, y por eso se exige que lo lleve en las dos ramas.
+  ok('la ficha dice el total del grupo en su cabecera, porque allí es otro código',
+    (reparto.match(/DHD en total/g) || []).length === 1
+    && /Dentro del grupo \$\{esc\(g\.atc\)\}/.test(reparto));
+  ok('la vista no lo repite: su reparto es el del nodo ya pintado arriba',
+    /navegable \? `\s*\n\s*<h4 class="util-reparto-titulo">C[óo]mo se reparte<\/h4>`/.test(reparto));
+  ok('el denominador nunca queda implícito: la leyenda lo lleva en las DOS ramas',
+    (reparto.match(/que son \$\{total\}/g) || []).length === 2);
   ok('la leyenda dice sobre qué se calculan los porcentajes, con su cifra',
     /Los porcentajes se calculan sobre la <strong>DHD publicada<\/strong>/.test(reparto)
     && /que son \$\{total\}/.test(reparto));
@@ -901,6 +911,50 @@ console.log('\n18) medida de lectura: la vista no se estira con la ventana');
 
   // El override de móvil sigue existiendo y sigue siendo más específico por media query.
   ok('la variante estrecha sigue declarada', /@media[^{]*560px[\s\S]{0,400}\.util-bar-row \{ grid-template-columns:/.test(css));
+}
+
+// ── 19. cada cautela, una sola vez ──────────────────────────────────────────
+// Medido sobre el render de G03AC: el 72 % de los caracteres de la pantalla eran cautelas, y
+// cada hecho se decía tres o cuatro veces con palabras distintas. La causa no era descuido de
+// redacción sino estructura: había CUATRO emisores que no se conocían entre sí —`_utilNotaDdd`,
+// las notas del meta del ETL (`nota_dhd`, `nota_denominador`), el disclaimer de la fuente y el
+// desplegable—, cada uno escrito en una sesión distinta y cada uno diciendo lo suyo completo.
+// Ahora hay un emisor con dos niveles. Este bloque existe para que no vuelvan a aparecer los
+// otros tres: la duplicación se cuela sola, un párrafo cada vez, y nadie la ve hasta que la
+// pantalla es tres cuartas partes advertencia.
+console.log('\n19) las cautelas no vuelven a duplicarse');
+{
+  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+
+  ok('el emisor de cautelas es UNO y tiene dos niveles',
+    (app.match(/util-limits-lead/g) || []).length === 1
+    && (app.match(/<details class="util-limits">/g) || []).length === 1);
+  ok('el nivel visible dice lo que cambia la lectura: dosis, cobertura y espejo-no-juez',
+    /dosis dispensadas, no pacientes/.test(app)
+    && /no incluye hospital, receta privada/.test(app)
+    && /no dice qué conviene prescribir<\/strong>/.test(app));
+
+  // Los tres emisores retirados. Si alguno vuelve, vuelve la duplicación.
+  ok('MUTANTE: el render ya no reemite `nota_denominador`', !/\$\{esc\(d\.nota_denominador\)\}/.test(app));
+  ok('MUTANTE: el render ya no reemite `nota_dhd`', !/\$\{esc\(d\.nota_dhd\)\}/.test(app));
+  ok('MUTANTE: no queda ningún `util-disclaimer` suelto', !/util-disclaimer/.test(app));
+
+  // La nota de la DDD se queda con la DEFINICIÓN y la negación esencial; su matiz sobre crónicos
+  // baja al pliegue. «Definir antes de negar»: debajo del número va qué es el dato, no una lista
+  // de lo que no es.
+  const notaDdd = app.slice(app.indexOf('_utilNotaDdd() {'), app.indexOf('_utilNotaDdd() {') + 700);
+  ok('la nota de la DDD define antes de negar', /es la dosis diaria de mantenimiento/.test(notaDdd));
+  ok('y conserva la negación que cambia la lectura', /no es la dosis que se[\s\S]{0,20}prescribe/.test(notaDdd));
+  ok('pero ya no arrastra el matiz de los crónicos, que vive en el pliegue',
+    !/sostiene mejor en tratamientos crónicos/.test(notaDdd));
+  ok('ese matiz no se ha perdido: está en el desplegable',
+    /sostiene mejor en tratamientos crónicos/.test(app));
+
+  // Y el conteo que resume todo: cada hecho, una vez.
+  const veces = (re) => (app.match(re) || []).length;
+  ok('«no cuenta pacientes» se dice una vez en el pliegue', veces(/No cuenta pacientes, cuenta dosis/g) === 1);
+  ok('«no cubre todo el consumo» se dice una vez', veces(/No cubre todo el consumo/g) === 1);
+  ok('«no cubre todas las vías» se dice una vez', veces(/No cubre todas las vías/g) === 1);
 }
 
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);

@@ -13970,21 +13970,42 @@ ${materialesPlaceholder}
      * el titular sigue a la vista y el detalle está a un clic. Lo que antes competía con el dato
      * ahora lo acompaña.
      */
+    /**
+     * Las cautelas de la capa, en DOS NIVELES y en un solo sitio.
+     *
+     * Medido sobre el render de G03AC antes de este cambio: el 72 % de los caracteres de la
+     * pantalla eran cautelas, y cada hecho se decía tres o cuatro veces con palabras distintas
+     * porque había cuatro emisores que no se conocían entre sí — esta función, `_utilNotaDdd()`,
+     * las notas del meta del ETL (`nota_dhd`, `nota_denominador`) y el disclaimer de la fuente.
+     *
+     * Nivel 1, visible: solo lo que CAMBIA la lectura del número. Que cuenta dosis y no
+     * pacientes, y que falta el hospital y la receta privada. Quien lea únicamente esa línea no
+     * se lleva una idea equivocada de la cifra.
+     * Nivel 2, plegado: el detalle de cada límite, una vez cada uno.
+     */
     _utilLimitesHtml() {
-        return `<details class="util-limits">
-            <summary>Qué <em>no</em> dice este dato</summary>
-            <ul>
-                <li><strong>No cuenta pacientes, cuenta dosis.</strong> Una persona con media dosis
-                y otra con dos suman lo mismo que dos personas con una.</li>
-                <li><strong>No dice qué conviene prescribir.</strong> Describe lo que se dispensa;
-                el reparto no ordena por preferencia terapéutica.</li>
-                <li><strong>No cubre todo el consumo.</strong> Quedan fuera el hospital, la receta
-                privada y lo no financiado. Los medicamentos de uso hospitalario —antineoplásicos,
-                biológicos— no aparecen en absoluto.</li>
-                <li><strong>No cubre todas las vías.</strong> Solo suman las presentaciones con DDD
-                asignada por la OMS, y algunas vías no la tienen.</li>
-            </ul>
-        </details>`;
+        return `<div class="util-limits-wrap">
+            <p class="util-limits-lead">Cuenta <strong>dosis dispensadas, no pacientes</strong>, y
+            no incluye hospital, receta privada ni medicamentos no financiados. Describe lo que se
+            dispensa: <strong>no dice qué conviene prescribir</strong>.</p>
+            <details class="util-limits">
+                <summary>Qué <em>no</em> dice este dato</summary>
+                <ul>
+                    <li><strong>No cuenta pacientes, cuenta dosis.</strong> Una persona con media
+                    dosis y otra con dos suman lo mismo que dos personas con una. La estimación se
+                    sostiene mejor en tratamientos crónicos y cuando la dosis real se parece a la
+                    de referencia.</li>
+                    <li><strong>No dice qué conviene prescribir.</strong> Describe lo que se
+                    dispensa; el reparto no ordena por preferencia terapéutica y no implica
+                    eficacia comparativa ni seguridad.</li>
+                    <li><strong>No cubre todo el consumo.</strong> Quedan fuera el hospital, la
+                    receta privada y lo no financiado. Los medicamentos de uso hospitalario
+                    —antineoplásicos, biológicos— no aparecen en absoluto.</li>
+                    <li><strong>No cubre todas las vías.</strong> La DHD de un grupo solo suma las
+                    presentaciones con DDD asignada por la OMS, y algunas vías no la tienen.</li>
+                </ul>
+            </details>
+        </div>`;
     }
 
     /**
@@ -14001,8 +14022,7 @@ ${materialesPlaceholder}
             La <strong>DDD</strong> es la dosis diaria de mantenimiento que la OMS toma como
             referencia para la indicación principal en adultos: <strong>no es la dosis que se
             prescribe</strong>. Por eso lo de arriba es una estimación y no un recuento de
-            pacientes, y se sostiene mejor en tratamientos crónicos y cuando la dosis real se
-            parece a la de referencia.
+            pacientes.
         </p>`;
     }
 
@@ -14270,8 +14290,6 @@ ${materialesPlaceholder}
                         · <a href="${esc(meta.metodologia_url)}" target="_blank" rel="noopener">Nota metodológica</a>
                         · <a href="${esc(meta.fuente_url)}" target="_blank" rel="noopener">Fuente</a>
                     </p>
-                    <p class="util-disclaimer">Describe utilización observada. No implica eficacia
-                    comparativa, seguridad ni preferencia terapéutica.</p>
                 </section>
             </div>`;
 
@@ -14480,13 +14498,13 @@ ${materialesPlaceholder}
                ${esc(g.atc)}, que son ${total} — no sobre envases, ni sobre gasto, ni sobre
                pacientes.`;
 
+        // En la VISTA el reparto es el del nodo que ya está pintado justo encima: `g.atc` es el
+        // mismo código, `g.dhd` la misma cifra y `g.nombre` el mismo nombre. La cabecera repetía
+        // ahí el perímetro, el código y el total — tres líneas que el lector acaba de leer.
+        // En la FICHA no es duplicación: el nodo es un ATC5 y el reparto es el de su grupo padre,
+        // otro código con otra cifra, así que allí se conserva entera.
         const cabecera = navegable ? `
-            <div class="util-head">
-                <span class="util-scope">${esc(d.perimetro_corto)}</span>
-                <span class="util-year">${esc(d.periodo)}</span>
-            </div>
-            <h4>${esc(g.atc)} · ${this._utilDhd(g.dhd, false)} DHD en total</h4>
-            <p class="util-group-name">${esc(g.nombre || '')}</p>` : `
+            <h4 class="util-reparto-titulo">Cómo se reparte</h4>` : `
             <h4>Dentro del grupo ${esc(g.atc)} · ${this._utilDhd(g.dhd, false)} DHD en total</h4>
             <p class="util-group-name">${esc(g.nombre || '')}</p>`;
 
@@ -14505,11 +14523,7 @@ ${materialesPlaceholder}
             ${this._utilFraseReparto(g)}
             <ul class="util-bars ${parcial ? 'is-partial' : ''}">${filas}</ul>
             ${leyendaEml}
-            <p class="util-note">${leyenda}</p>
-            <p class="util-note">${esc(d.nota_denominador)}</p>
-            ${navegable ? `<p class="util-note">${esc(d.nota_dhd)}</p>
-            <p class="util-disclaimer">Describe utilización observada. No implica eficacia
-            comparativa, seguridad ni preferencia terapéutica.</p>` : ''}`;
+            <p class="util-note">${leyenda}</p>`;
     }
 
     renderUtilizacionHtml(atc5, d, cpresc) {
@@ -14669,8 +14683,6 @@ ${materialesPlaceholder}
                     · <a href="${esc(d.metodologia_url)}" target="_blank" rel="noopener">Nota metodológica</a>
                     · <a href="${esc(d.fuente_url)}" target="_blank" rel="noopener">Fuente</a>
                 </p>
-                <p class="util-disclaimer">Describe utilización observada. No implica eficacia
-                comparativa, seguridad ni preferencia terapéutica.</p>
             </section>`;
 
         // ── qué NO dice esta cifra ──
