@@ -1003,5 +1003,60 @@ console.log('\n20) la marca se nombra y el denominador va junto');
     !/<\/ul>[\s\S]{0,40}<p class="util-note">\$\{leyenda\}/.test(reparto));
 }
 
+
+// ── 21. la capa tiene UNA escala tipográfica ────────────────────────────────
+// Medido antes de este cambio: 22 tamaños de fuente distintos en la capa, 14 de ellos entre
+// 0,70 y 0,95rem. Nadie distingue 0,78 de 0,79rem, así que eso no era jerarquía: era el
+// sedimento de nueve sesiones, en las que el mismo rol recibía un tamaño distinto según el día.
+// La cifra principal llegó a medir 2,6rem en la ficha y 1,9rem en la vista — el mismo dato con
+// dos tamaños según la superficie.
+//
+// Y `max-width: 62ch` repetido a cuatro tamaños de fuente distintos daba cuatro anchos en
+// píxeles distintos, porque `ch` se mide sobre la fuente del PROPIO elemento: tres párrafos
+// seguidos rompían línea en tres sitios diferentes. Eso es lo que se veía como saltos
+// arbitrarios. La medida pasa a ser una sola, en rem.
+console.log('\n21) una escala, no 22 tamaños sueltos');
+{
+  const css = readFileSync(join(RAIZ, 'assets', 'css', 'cima-app.css'), 'utf8');
+  const capa = css.slice(css.indexOf('═══ Utilización observada'));
+
+  const sueltos = [...capa.matchAll(/font-size:\s*([0-9.]+rem)/g)].map((m) => m[1]);
+  // Los tres que quedan fuera de la escala a propósito: el h2 de la pantalla, el icono del
+  // estado vacío y el badge EML, cuyo tamaño es relativo al h3 que lo contiene.
+  const PERMITIDOS = new Set(['1.3rem', '1.5rem', '0.62rem']);
+  const intrusos = sueltos.filter((v) => !PERMITIDOS.has(v));
+  ok(`no quedan tamaños fuera de la escala (encontrados: ${intrusos.join(', ') || 'ninguno'})`,
+    intrusos.length === 0);
+
+  const tokens = ['cifra', 'titulo', 'cuerpo', 'nota', 'credito'];
+  // Extracción sin RegExp dinámica: el nombre del token lleva guiones y el valor va detrás.
+  const decl = (t) => {
+    const clave = '--util-fs-' + t + ':';
+    const i = capa.indexOf(clave);
+    return i < 0 ? null : capa.slice(i + clave.length, i + clave.length + 60);
+  };
+  ok('los cinco pasos están declarados y cada uno tiene su rol escrito',
+    tokens.every((t) => { const d = decl(t); return d !== null && /^\s*[0-9.]+rem;\s*\/\*/.test(d); }));
+  ok('y los cinco se usan', tokens.every((t) => capa.includes(`var(--util-fs-${t})`)));
+
+  // El orden de la escala es lo que la hace jerarquía y no cinco números sueltos.
+  const val = (t) => { const d = decl(t); return d === null ? NaN : parseFloat(d.match(/[0-9.]+/)[0]); };
+  ok('la escala es monótona: cifra > titulo > cuerpo > nota > credito',
+    val('cifra') > val('titulo') && val('titulo') > val('cuerpo')
+    && val('cuerpo') > val('nota') && val('nota') > val('credito'));
+
+  ok('una sola medida de lectura, y en rem para no depender del tamaño de fuente',
+    /--util-medida:\s*[0-9.]+rem;/.test(capa));
+  ok('MUTANTE: ya no queda ninguna medida en `ch`, que daba un ancho por tamaño de fuente',
+    !/max-width:\s*[0-9]+ch/.test(capa));
+
+  // La negrita marca la CANTIDAD. Era el único sitio donde caía sobre un verbo.
+  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const lectura = app.slice(app.indexOf('_utilLecturaDhd(dhd'), app.indexOf('_utilFraseReparto'));
+  ok('la negrita de la lectura envuelve la cantidad, no el verbo',
+    /<strong>\$\{cantidad\}<\/strong> \$\{verbo\}/.test(lectura));
+  ok('MUTANTE: el verbo ya no viaja dentro del resalte',
+    !/frase = 'una recibe'/.test(lectura) && !/reciben`;[\s\S]{0,80}<strong>\$\{frase\}/.test(lectura));
+}
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);
 process.exit(fallos === 0 ? 0 : 1);

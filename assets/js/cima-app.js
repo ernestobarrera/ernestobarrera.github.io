@@ -13902,12 +13902,16 @@ ${materialesPlaceholder}
         if (typeof dhd !== 'number') return '';
         const esc = (s) => this._escapeHtml(String(s ?? ''));
         const de = sustancia ? ` de ${esc(String(sustancia).toLowerCase())}` : '';
-        let frase;
-        if (ceroRedondeado || dhd < 1) frase = 'menos de una recibe';
-        else if (Math.round(dhd) === 1) frase = 'una recibe';
-        else frase = `${Math.round(dhd).toLocaleString('es-ES')} reciben`;
-        return `De cada 1.000 personas, <strong>${frase}</strong> cada día una dosis diaria
-            definida (DDD)${de}.`;
+        // La negrita marca la CANTIDAD, no el verbo. Antes envolvía «una recibe» entera, que es
+        // el único sitio de la capa donde el resalte caía sobre una acción en vez de sobre una
+        // cifra: el ojo busca números y encontraba una conjugación.
+        let cantidad;
+        if (ceroRedondeado || dhd < 1) cantidad = 'menos de una';
+        else if (Math.round(dhd) === 1) cantidad = 'una';
+        else cantidad = Math.round(dhd).toLocaleString('es-ES');
+        const verbo = (!ceroRedondeado && dhd >= 1 && Math.round(dhd) > 1) ? 'reciben' : 'recibe';
+        return `De cada 1.000 personas, <strong>${cantidad}</strong> ${verbo} cada día una
+            dosis diaria definida (DDD)${de}.`;
     }
 
     /**

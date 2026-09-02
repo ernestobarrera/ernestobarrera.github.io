@@ -11916,6 +11916,23 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-view,
 .util-tab {
     --text-muted: #7b8ba0;
+    /* Una escala, cinco pasos. Antes había 22 tamaños distintos, 14 de ellos entre 0,70 y
+       0,95rem: nadie distingue 0,78 de 0,79rem, así que no eran jerarquía sino el sedimento
+       de nueve sesiones — el mismo rol recibía un tamaño distinto según el día. Cada paso
+       tiene ahora un ROL, y es el rol lo que se elige al escribir CSS nuevo, no un número.
+       La cifra principal medía 2,6rem en la ficha y 1,9rem en la vista: el mismo dato con
+       dos tamaños según la superficie. */
+    --util-fs-cifra: 2.1rem;    /* el dato, una vez por pantalla */
+    --util-fs-titulo: 0.95rem;  /* rótulo de sección */
+    --util-fs-cuerpo: 0.88rem;  /* lectura del dato, frases */
+    --util-fs-nota: 0.78rem;    /* apoyo: leyendas, filas, migas */
+    --util-fs-credito: 0.72rem; /* atribución y códigos */
+
+    /* Una sola medida de lectura, en rem y no en `ch`. `ch` depende del tamaño de fuente del
+       PROPIO elemento, así que el mismo `62ch` producía cuatro anchos en píxeles distintos y
+       tres párrafos seguidos rompían línea en tres sitios diferentes. Eso era lo que se veía
+       como saltos de línea arbitrarios. */
+    --util-medida: 34rem;
 }
 
 .util-head {
@@ -11929,50 +11946,50 @@ a.fin-cn:hover { text-decoration: underline; }
     border-bottom: 1px solid var(--border-default);
 }
 .util-scope {
-    font-size: 0.78rem;
+    font-size: var(--util-fs-nota);
     font-weight: 600;
     letter-spacing: 0.02em;
     color: var(--text-secondary);
 }
 .util-year {
-    font-size: 0.78rem;
+    font-size: var(--util-fs-nota);
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
 }
 
 .util-figure { margin-bottom: var(--space-lg); }
 .util-value {
-    font-size: 2.6rem;
+    font-size: var(--util-fs-cifra);
     font-weight: 600;
     line-height: 1.05;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
 }
 .util-unit {
-    font-size: 1rem;
+    font-size: var(--util-fs-titulo);
     font-weight: 600;
     color: var(--text-secondary);
     margin-left: 0.4rem;
 }
 .util-unit-long {
     margin: 0.15rem 0 0;
-    font-size: 0.85rem;
+    font-size: var(--util-fs-cuerpo);
     color: var(--text-secondary);
 }
 .util-env {
     margin: 0.55rem 0 0;
-    font-size: 0.85rem;
+    font-size: var(--util-fs-cuerpo);
     color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
 }
 .util-nodhd {
     margin: 0 0 0.4rem;
-    font-size: 0.88rem;
+    font-size: var(--util-fs-cuerpo);
     color: var(--text-secondary);
 }
 .util-note {
     margin: 0.45rem 0 0;
-    font-size: 0.76rem;
+    font-size: var(--util-fs-nota);
     line-height: 1.5;
     color: var(--text-muted);
 }
@@ -11980,13 +11997,13 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-group { margin-bottom: var(--space-lg); }
 .util-group h4 {
     margin: 0 0 0.15rem;
-    font-size: 0.9rem;
+    font-size: var(--util-fs-titulo);
     font-weight: 600;
     color: var(--text-primary);
 }
 .util-group-name {
     margin: 0 0 0.75rem;
-    font-size: 0.78rem;
+    font-size: var(--util-fs-nota);
     color: var(--text-muted);
 }
 .util-bars { list-style: none; margin: 0; padding: 0; }
@@ -12001,7 +12018,7 @@ a.fin-cn:hover { text-decoration: underline; }
     gap: 0.6rem;
     align-items: center;
     padding: 0.28rem 0;
-    font-size: 0.8rem;
+    font-size: var(--util-fs-nota);
 }
 .util-bar-row.is-current { font-weight: 600; }
 .util-bar-label {
@@ -12028,7 +12045,7 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-bar-pct {
     text-align: right;
     font-variant-numeric: tabular-nums;
-    font-size: 0.78rem;
+    font-size: var(--util-fs-nota);
 }
 .util-bar-pct { color: var(--text-muted); }
 .util-group.is-partial .util-bar-pct { font-style: italic; }
@@ -12039,17 +12056,17 @@ a.fin-cn:hover { text-decoration: underline; }
 }
 .util-source h4 {
     margin: 0 0 0.4rem;
-    font-size: 0.82rem;
+    font-size: var(--util-fs-nota);
     font-weight: 600;
     color: var(--text-secondary);
 }
 .util-source p {
     margin: 0 0 0.45rem;
-    font-size: 0.78rem;
+    font-size: var(--util-fs-nota);
     line-height: 1.55;
     color: var(--text-secondary);
 }
-.util-meta { color: var(--text-muted) !important; font-size: 0.74rem !important; }
+.util-meta { color: var(--text-muted) !important; font-size: var(--util-fs-credito) !important; }
 .util-meta a { color: var(--primary); text-decoration: none; }
 .util-meta a:hover { text-decoration: underline; }
 .util-disclaimer {
@@ -12057,7 +12074,7 @@ a.fin-cn:hover { text-decoration: underline; }
     padding: 0.55rem 0.75rem;
     border-left: 2px solid var(--border-hover, var(--border-default));
     background: var(--surface-raised);
-    font-size: 0.76rem !important;
+    font-size: var(--util-fs-nota) !important;
     color: var(--text-muted) !important;
 }
 
@@ -12067,12 +12084,12 @@ a.fin-cn:hover { text-decoration: underline; }
     color: var(--text-muted);
 }
 .util-empty i { font-size: 1.5rem; opacity: 0.5; margin-bottom: 0.5rem; }
-.util-empty p { margin: 0 0 0.4rem; font-size: 0.85rem; }
+.util-empty p { margin: 0 0 0.4rem; font-size: var(--util-fs-cuerpo); }
 
 @media (max-width: 560px) {
     .util-bar-row { grid-template-columns: minmax(70px, 1.3fr) minmax(40px, 1.6fr) 3.2rem; }
     .util-bar-pct { display: none; }
-    .util-value { font-size: 2.1rem; }
+    .util-value { font-size: var(--util-fs-cifra); }
 }
 
 /* ── Estados de alcance de la fuente ──────────────────────────────────────
@@ -12084,7 +12101,7 @@ a.fin-cn:hover { text-decoration: underline; }
     gap: 0.4rem;
     padding: 0.2rem 0.55rem;
     border-radius: 999px;
-    font-size: 0.7rem;
+    font-size: var(--util-fs-credito);
     font-weight: 600;
     letter-spacing: 0.02em;
     text-transform: uppercase;
@@ -12099,17 +12116,17 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-outofscope { padding: 0.25rem 0 0.5rem; }
 .util-outofscope h4 {
     margin: 0 0 0.5rem;
-    font-size: 1rem;
+    font-size: var(--util-fs-titulo);
     font-weight: 600;
     color: var(--text-primary);
 }
 .util-outofscope p {
     margin: 0 0 0.55rem;
-    font-size: 0.85rem;
+    font-size: var(--util-fs-cuerpo);
     line-height: 1.6;
     color: var(--text-secondary);
 }
-.util-outofscope .util-meta { font-size: 0.74rem; color: var(--text-muted); }
+.util-outofscope .util-meta { font-size: var(--util-fs-credito); color: var(--text-muted); }
 .util-outofscope a { color: var(--primary); }
 
 /* Aviso de cifra parcial. Sin color de alarma: no es un riesgo clínico, es un límite del dato. */
@@ -12122,7 +12139,7 @@ a.fin-cn:hover { text-decoration: underline; }
     border-radius: var(--radius-sm, 4px);
     background: var(--surface-raised);
     border-left: 3px solid var(--text-muted);
-    font-size: 0.8rem;
+    font-size: var(--util-fs-nota);
     line-height: 1.55;
     color: var(--text-secondary);
 }
@@ -12140,7 +12157,7 @@ a.fin-cn:hover { text-decoration: underline; }
    esconder, es dejar de competir con la cifra que el lector vino a ver. */
 .util-limits > summary {
     margin: 0;
-    font-size: 0.78rem;
+    font-size: var(--util-fs-nota);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -12161,7 +12178,7 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-limits[open] > summary { margin-bottom: 0.5rem; }
 .util-limits h4 {
     margin: 0 0 0.5rem;
-    font-size: 0.78rem;
+    font-size: var(--util-fs-nota);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -12170,7 +12187,7 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-limits ul { margin: 0; padding-left: 1.1rem; }
 .util-limits li {
     margin-bottom: 0.35rem;
-    font-size: 0.79rem;
+    font-size: var(--util-fs-nota);
     line-height: 1.55;
     color: var(--text-secondary);
 }
@@ -12188,7 +12205,7 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-nav .util-head { margin-bottom: var(--space-sm); }
 .util-nav h4 {
     margin: 0 0 0.15rem;
-    font-size: 0.95rem;
+    font-size: var(--util-fs-titulo);
     font-weight: 600;
     color: var(--text-primary);
 }
@@ -12198,7 +12215,7 @@ a.fin-cn:hover { text-decoration: underline; }
     padding: 0.55rem 0.75rem;
     border-left: 2px solid var(--border-hover, var(--border-default));
     background: var(--surface-raised);
-    font-size: 0.76rem;
+    font-size: var(--util-fs-nota);
     color: var(--text-muted);
 }
 
@@ -12220,7 +12237,7 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-bar-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 2px; }
 .util-bar-code {
     font-variant-numeric: tabular-nums;
-    font-size: 0.72rem;
+    font-size: var(--util-fs-credito);
     color: var(--text-muted);
     margin-right: 0.3rem;
 }
@@ -12251,7 +12268,7 @@ a.fin-cn:hover { text-decoration: underline; }
     align-items: center;
     gap: 0.55rem;
 }
-.util-view-intro { margin: 0 0 0.9rem; font-size: 0.88rem; max-width: 70ch; line-height: 1.6; }
+.util-view-intro { margin: 0 0 0.9rem; font-size: var(--util-fs-cuerpo); max-width: var(--util-medida); line-height: 1.6; }
 
 .util-search { margin-bottom: 0.5rem; }
 .util-search input { width: 100%; }
@@ -12267,7 +12284,7 @@ a.fin-cn:hover { text-decoration: underline; }
     border-radius: var(--radius-sm, 4px);
     margin-bottom: 3px;
     cursor: pointer;
-    font-size: 0.83rem;
+    font-size: var(--util-fs-cuerpo);
     color: var(--text-secondary);
     text-align: left;
 }
@@ -12275,7 +12292,7 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-suggest-dhd {
     margin-left: auto;
     font-variant-numeric: tabular-nums;
-    font-size: 0.78rem;
+    font-size: var(--util-fs-nota);
     color: var(--text-muted);
 }
 
@@ -12286,7 +12303,7 @@ a.fin-cn:hover { text-decoration: underline; }
     align-items: center;
     gap: 0.3rem;
     margin: var(--space-sm) 0;
-    font-size: 0.8rem;
+    font-size: var(--util-fs-nota);
 }
 .util-crumb {
     background: none;
@@ -12303,19 +12320,19 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-node-head { margin: var(--space-md) 0 var(--space-sm); }
 .util-node-head h3 {
     margin: 0 0 0.35rem;
-    font-size: 1.02rem;
+    font-size: var(--util-fs-titulo);
     font-weight: 600;
     color: var(--text-primary);
 }
-.util-node-figure { margin: 0; font-size: 0.9rem; color: var(--text-secondary); }
+.util-node-figure { margin: 0; font-size: var(--util-fs-titulo); color: var(--text-secondary); }
 .util-node-figure strong {
-    font-size: 1.9rem;
+    font-size: var(--util-fs-cifra);
     font-weight: 600;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
     margin-right: 0.25rem;
 }
-.util-node-figure .util-unit-long { display: block; font-size: 0.8rem; color: var(--text-muted); }
+.util-node-figure .util-unit-long { display: block; font-size: var(--util-fs-nota); color: var(--text-muted); }
 .util-node-actions { margin: var(--space-md) 0; }
 
 /* El badge de esencial OMS hereda el tamaño del h3 del nodo si no se acota; se baja al de la
@@ -12343,10 +12360,10 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-limits-wrap { margin-top: var(--space-lg); }
 .util-limits-lead {
     margin: 0 0 0.5rem;
-    font-size: 0.82rem;
+    font-size: var(--util-fs-nota);
     line-height: 1.55;
     color: var(--text-secondary);
-    max-width: 62ch;
+    max-width: var(--util-medida);
 }
 .util-limits-lead strong { color: var(--text-primary); font-weight: 600; }
 
@@ -12354,24 +12371,24 @@ a.fin-cn:hover { text-decoration: underline; }
    pintados justo encima en la vista. */
 .util-reparto-titulo {
     margin: 0 0 0.15rem;
-    font-size: 0.95rem;
+    font-size: var(--util-fs-titulo);
     font-weight: 600;
     color: var(--text-primary);
 }
 .util-cobertura {
     margin: 0.5rem 0 0.2rem;
-    font-size: 0.88rem;
+    font-size: var(--util-fs-cuerpo);
     line-height: 1.5;
     color: var(--text-secondary);
-    max-width: 62ch;
+    max-width: var(--util-medida);
 }
 .util-cobertura strong { color: var(--text-primary); font-weight: 600; }
 .util-frase {
     margin: 0.5rem 0 0.7rem;
-    font-size: 0.88rem;
+    font-size: var(--util-fs-cuerpo);
     line-height: 1.5;
     color: var(--text-secondary);
-    max-width: 62ch;
+    max-width: var(--util-medida);
 }
 .util-frase strong { color: var(--text-primary); font-weight: 600; }
 
@@ -12390,13 +12407,13 @@ a.fin-cn:hover { text-decoration: underline; }
    advertencia sobre él. */
 .util-lectura {
     margin: 0.55rem 0 0;
-    font-size: 0.92rem;
+    font-size: var(--util-fs-cuerpo);
     line-height: 1.5;
     color: var(--text-secondary);
-    max-width: 62ch;
+    max-width: var(--util-medida);
 }
 .util-lectura strong { color: var(--text-primary); font-weight: 600; }
-.util-note-ddd { max-width: 62ch; }
+.util-note-ddd { max-width: var(--util-medida); }
 
 /* «Se llega aquí buscando: asma · EPOC». Va PEGADO al título del nodo y antes de la cifra:
    pone nombre clínico al código antes de que se lea el número, que es el orden en que hace
@@ -12409,7 +12426,7 @@ a.fin-cn:hover { text-decoration: underline; }
     margin: 0.4rem 0 0.6rem;
 }
 .util-ind-label {
-    font-size: 0.72rem;
+    font-size: var(--util-fs-credito);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-muted);
@@ -12423,7 +12440,7 @@ a.fin-cn:hover { text-decoration: underline; }
     border-radius: 999px;
     padding: 0.1rem 0.6rem;
     font: inherit;
-    font-size: 0.78rem;
+    font-size: var(--util-fs-nota);
     color: var(--primary);
     cursor: pointer;
 }
@@ -12445,7 +12462,7 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-eml-cred {
     display: block;
     margin-top: 0.15rem;
-    font-size: 0.72rem;
+    font-size: var(--util-fs-credito);
     opacity: 0.75;
 }
 
@@ -12457,7 +12474,7 @@ a.fin-cn:hover { text-decoration: underline; }
     gap: var(--space-sm);
     margin: var(--space-md) 0;
 }
-.util-tab-actions .btn { font-size: 0.85rem; }
+.util-tab-actions .btn { font-size: var(--util-fs-cuerpo); }
 
 .util-body { margin-bottom: var(--space-lg); }
 .util-view .util-limits { margin-top: var(--space-lg); }
