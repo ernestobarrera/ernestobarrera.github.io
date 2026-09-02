@@ -762,24 +762,48 @@ console.log('\n16) el 100 % se puede ver, no hay que calcularlo');
   const cobSrc = reparto.slice(reparto.indexOf('const envDentro = g.miembros.reduce'),
     reparto.indexOf('const leyenda = parcial'));
   ok('el bloque de cobertura es aislable y ejecutable', cobSrc.length > 0);
-  const cobertura = new Function('g', `${cobSrc} return { cobertura, coberturaTxt };`);
+  // Se ejecuta con `parcial` y `esc` inyectados: así se comprueba también el HTML que sale,
+  // no solo el número. La frase es el producto; el número es un paso intermedio.
+  const cobertura = new Function('g', 'parcial', 'esc',
+    `${cobSrc} return { cobertura, coberturaTxt, coberturaHtml };`);
   const grupoDe = (dentro, fuera) => ({
+    atc: 'X00',
     miembros: dentro.map((e, i) => ({ atc: `X0${i}`, dhd: 1, envases_miles: e })),
     sin_ddd: fuera.map((e, i) => ({ atc: `Y0${i}`, envases_miles: e })),
   });
+  const corre = (dentro, fuera, esParcial = true) => cobertura(grupoDe(dentro, fuera), esParcial, (s) => s);
 
   ok('la cobertura se dice en proporción del volumen, no como absoluto suelto',
-    cobertura(grupoDe([25], [75])).coberturaTxt === 'el 25 %');
+    corre([25], [75]).coberturaTxt === 'el 25 %');
   ok('un grupo parcial nunca dice «el 100 %»: se contradiría en la misma frase',
-    cobertura(grupoDe([9990], [10])).coberturaTxt === 'más del 99 %');
+    corre([9990], [10]).coberturaTxt === 'más del 99 %');
   ok('ni «el 0 %», que negaría el reparto que está pintando',
-    cobertura(grupoDe([1], [9999])).coberturaTxt === 'menos del 1 %');
+    corre([1], [9999]).coberturaTxt === 'menos del 1 %');
   ok('sin dato de envases no se inventa cobertura: la frase se calla',
-    cobertura(grupoDe([null], [null])).coberturaTxt === null);
+    corre([null], [null]).coberturaTxt === null);
+
+  // La frase, no el número. Va ARRIBA porque condiciona cómo se leen los porcentajes: saber
+  // que el reparto describe el 2 % del volumen sirve antes de mirarlos, no cuatro párrafos
+  // después. Estuvo en la cola de la leyenda y no se encontraba.
+  const htmlParcial = corre([2], [98]).coberturaHtml;
   ok('la frase se enuncia en positivo, sobre lo que el reparto SÍ describe',
-    /Este reparto describe así <strong>\$\{coberturaTxt\}<\/strong> de los envases/.test(reparto));
+    /Este reparto describe/.test(htmlParcial) && /de los envases dispensados en/.test(htmlParcial));
+  ok('y nombra el grupo, para que el denominador no quede implícito', /en X00\./.test(htmlParcial));
+  ok('lleva su propia clase, no la de nota al pie', /class="util-cobertura"/.test(htmlParcial));
+  ok('un grupo NO parcial no emite la frase', corre([100], [], false).coberturaHtml === '');
+  ok('sin cobertura calculable tampoco', corre([null], [null]).coberturaHtml === '');
+
+  // El orden importa tanto como el texto: si vuelve a caer detrás de las barras, deja de avisar.
+  const orden = (t) => reparto.indexOf(t);
+  ok('la frase va DESPUÉS de la cabecera y ANTES de las barras',
+    orden('${coberturaHtml}') > orden('${cabecera}')
+    && orden('${coberturaHtml}') < orden('<ul class="util-bars'));
+  ok('MUTANTE: ya no cuelga de la cola de la leyenda',
+    !/dispensados en el grupo\.` : ''/.test(reparto));
   ok('MUTANTE: ya no se cierra con el absoluto sin denominador',
     !/que suman \$\{Math\.round\(fueraEnv \* 1000\)/.test(reparto));
+  ok('la leyenda conserva lo que sí es letra pequeña: QUÉ queda fuera',
+    /principios? activos? con consumo real y sin DDD asignada/.test(reparto));
   ok('los miembros del reparto llevan sus envases en las DOS superficies',
     /envases_miles: nodos\[k\]\?\.env \?\? null/.test(app)
     && /envases_miles: arbol\.nodos\[k\]\?\.env \?\? null/.test(
