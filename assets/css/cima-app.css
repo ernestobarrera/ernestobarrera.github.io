@@ -11945,7 +11945,12 @@ a.fin-cn:hover { text-decoration: underline; }
 .util-bars { list-style: none; margin: 0; padding: 0; }
 .util-bar-row {
     display: grid;
-    grid-template-columns: minmax(90px, 1.4fr) minmax(60px, 2.2fr) 3.6rem 3.4rem;
+    /* El nombre se dimensiona por su contenido, con tope; NO por una fracción del ancho.
+       Con `1.4fr` la columna del nombre crecía con la ventana: en un monitor ancho,
+       «Enalapril» recibía ~600 px y su cifra quedaba a 1.700 px de distancia. El tope de
+       14rem cabe el caso peor medido en el árbol (`Mepiramina teofilinacetato`, con elipsis)
+       y deja el resto del ancho a la barra, que es lo único que gana con ser más larga. */
+    grid-template-columns: minmax(90px, 14rem) minmax(60px, 1fr) 3.6rem 3.4rem;
     gap: 0.6rem;
     align-items: center;
     padding: 0.28rem 0;
@@ -12176,6 +12181,21 @@ a.fin-cn:hover { text-decoration: underline; }
 /* ══ Vista principal «Utilización» ════════════════════════════════════════
    Navegación por el árbol ATC. Sobria a propósito: es la única capa sin
    fuente normativa detrás y no debe leerse como una clasificación. */
+
+/* La columna de lectura de la capa.
+   Era la única vista de exploración sin límite de ancho —`.pgx-view` se topa en 1200px y el
+   shell en 1400px—, así que se estiraba con la ventana mientras su propia prosa seguía
+   acotada a 62–70ch. Eso dejaba dos medidas de lectura en la misma pantalla: los párrafos
+   rompían línea sobre los 600 px y las barras corrían hasta el borde, con el nombre y su
+   cifra separados por más de 1.000 px de vacío.
+   720px es una medida de documento: cerca de los 70ch del texto introductorio, y deja a la
+   barra unos 355 px una vez descontados el nombre (14rem), las dos cifras (7rem) y los
+   huecos. Una barra de proporción no necesita ser larga; necesita ser comparable entre filas.
+   Esta capa es explicativa antes que gráfica, y su ritmo de lectura debe ser uno solo. */
+.util-view {
+    max-width: 720px;
+    margin: 0 auto;
+}
 .util-view-header { margin-bottom: var(--space-md); }
 .util-view-header h2 {
     margin: 0 0 0.4rem;

@@ -849,5 +849,35 @@ console.log('\n17) contraste: los números y sus leyendas se leen');
   ok(`MUTANTE: el token global NO bastaba — da ${rGlobal.toFixed(2)}:1`, rGlobal < 4.5);
 }
 
+// ── 18. la capa tiene una sola medida de lectura ────────────────────────────
+// La vista era la única de exploración sin tope de ancho (`.pgx-view` se topa en 1200px, el
+// shell en 1400px), mientras su propia prosa iba acotada a 62–70ch. En un monitor ancho eso
+// producía dos ritmos de lectura: párrafos que rompían línea sobre los 600 px y barras que
+// corrían hasta el borde, con el nombre del principio activo y su cifra separados por más de
+// 1.000 px. La columna del nombre era la culpable: al ser fraccional (`1.4fr`) crecía con la
+// ventana en vez de ceder el espacio a la barra, que es lo único que gana con ser más larga.
+console.log('\n18) medida de lectura: la vista no se estira con la ventana');
+{
+  const css = readFileSync(join(RAIZ, 'assets', 'css', 'cima-app.css'), 'utf8');
+  const bloqueVista = css.slice(css.indexOf('.util-view {'), css.indexOf('.util-view-header {'));
+  ok('la vista declara un tope de ancho', /max-width:\s*\d+px/.test(bloqueVista), bloqueVista.slice(0, 80));
+  ok('y se centra, como .pgx-view', /margin:\s*0 auto/.test(bloqueVista));
+
+  const fila = css.slice(css.indexOf('.util-bar-row {'), css.indexOf('.util-bar-row.is-current'));
+  const grid = (fila.match(/grid-template-columns:[^;]+;/) || [''])[0];
+  ok('la fila del reparto declara su rejilla', grid.length > 0);
+
+  // Lo que importa no es que exista la regla, sino que el NOMBRE no crezca con la ventana.
+  const cols = grid.replace('grid-template-columns:', '').replace(';', '').trim();
+  const primera = (cols.match(/^minmax\([^)]*\)/) || [''])[0];
+  ok('el tope de la columna del nombre es una longitud absoluta, no una fracción',
+    /(rem|px)\)\s*$/.test(primera) && !/fr\)\s*$/.test(primera), primera);
+  ok('MUTANTE: la columna del nombre ya no es fraccional', !/1\.4fr/.test(grid), grid);
+  ok('la barra sí toma el espacio sobrante', /minmax\(60px,\s*1fr\)/.test(grid));
+
+  // El override de móvil sigue existiendo y sigue siendo más específico por media query.
+  ok('la variante estrecha sigue declarada', /@media[^{]*560px[\s\S]{0,400}\.util-bar-row \{ grid-template-columns:/.test(css));
+}
+
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);
 process.exit(fallos === 0 ? 0 : 1);
