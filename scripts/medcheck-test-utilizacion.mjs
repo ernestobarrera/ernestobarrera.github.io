@@ -774,14 +774,16 @@ console.log('\n16) el 100 % se puede ver, no hay que calcularlo');
   ok('el bloque de cobertura es aislable y ejecutable', cobSrc.length > 0);
   // Se ejecuta con `parcial` y `esc` inyectados: así se comprueba también el HTML que sale,
   // no solo el número. La frase es el producto; el número es un paso intermedio.
-  const cobertura = new Function('g', 'parcial', 'esc',
+  const cobertura = new Function('g', 'parcial', 'esc', 'navegable',
     `${cobSrc} return { cobertura, coberturaTxt, coberturaHtml };`);
   const grupoDe = (dentro, fuera) => ({
     atc: 'X00',
+    nombre: 'GRUPO DE PRUEBA',
     miembros: dentro.map((e, i) => ({ atc: `X0${i}`, dhd: 1, envases_miles: e })),
     sin_ddd: fuera.map((e, i) => ({ atc: `Y0${i}`, envases_miles: e })),
   });
-  const corre = (dentro, fuera, esParcial = true) => cobertura(grupoDe(dentro, fuera), esParcial, (s) => s);
+  const corre = (dentro, fuera, esParcial = true, esNavegable = true) =>
+    cobertura(grupoDe(dentro, fuera), esParcial, (s) => s, esNavegable);
 
   ok('la cobertura se dice en proporción del volumen, no como absoluto suelto',
     corre([25], [75]).coberturaTxt === 'el 25 %');
@@ -798,8 +800,15 @@ console.log('\n16) el 100 % se puede ver, no hay que calcularlo');
   const htmlParcial = corre([2], [98]).coberturaHtml;
   ok('la frase se enuncia en positivo, sobre lo que el reparto SÍ describe',
     /Este reparto describe/.test(htmlParcial) && /de los envases dispensados en/.test(htmlParcial));
-  ok('y nombra el grupo, para que el denominador no quede implícito', /en X00\./.test(htmlParcial));
-  ok('lleva su propia clase, no la de nota al pie', /class="util-cobertura"/.test(htmlParcial));
+  // El grupo, con su nombre. Un código ATC suelto no le dice nada a quien no se lo sabe de
+  // memoria, que es casi todo el mundo; y el enlace solo existe donde lleva a alguna parte.
+  ok('nombra el grupo, no solo su código, para que el denominador no quede implícito',
+    /X00, grupo de prueba/.test(htmlParcial));
+  const htmlFicha = corre([2], [98], true, false).coberturaHtml;
+  ok('en la FICHA el grupo es enlazable: allí es otro nodo',
+    /data-util-vista="X00"/.test(htmlFicha) && /X00, grupo de prueba/.test(htmlFicha));
+  ok('en la VISTA no se enlaza: sería un enlace a la página que ya se está mirando',
+    !/data-util-vista/.test(htmlParcial));
   ok('un grupo NO parcial no emite la frase', corre([100], [], false).coberturaHtml === '');
   ok('sin cobertura calculable tampoco', corre([null], [null]).coberturaHtml === '');
 
@@ -955,6 +964,43 @@ console.log('\n19) las cautelas no vuelven a duplicarse');
   ok('«no cuenta pacientes» se dice una vez en el pliegue', veces(/No cuenta pacientes, cuenta dosis/g) === 1);
   ok('«no cubre todo el consumo» se dice una vez', veces(/No cubre todo el consumo/g) === 1);
   ok('«no cubre todas las vías» se dice una vez', veces(/No cubre todas las vías/g) === 1);
+}
+
+// ── 20. el punto verde se explica, y lo del denominador va junto ────────────
+// Dos cosas que él encontró leyendo G03AC en producción.
+//
+// (a) El punto de esencial OMS se anunciaba sin nombrarse: «● En la Lista Modelo…» es una frase
+//     sin sujeto, y el lector tenía que deducir que el punto significaba eso. Ahora arranca con
+//     el rótulo «Esencial OMS», el MISMO que usa `_emlBadgeHtml()` en el resto de la app, para
+//     que el punto del reparto y el badge de la ficha se lean como la misma cosa.
+// (b) La leyenda del denominador estaba debajo de las barras y la frase de cobertura encima:
+//     dos piezas del mismo asunto a cuatro párrafos de distancia.
+console.log('\n20) la marca se nombra y el denominador va junto');
+{
+  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const reparto = app.slice(app.indexOf('renderUtilizacionRepartoHtml(d, g, {'),
+    app.indexOf('renderUtilizacionHtml(atc5, d, cpresc) {'));
+
+  ok('la leyenda del punto empieza NOMBRANDO la marca',
+    /<strong>Esencial OMS<\/strong>:/.test(reparto));
+  ok('y usa el mismo rótulo que el badge del resto de la app',
+    /Esencial OMS/.test(app.slice(app.indexOf('_emlBadgeHtml(atcCode'))));
+  ok('MUTANTE: ya no es una frase sin sujeto que empieza en «En la Lista»',
+    !/util-eml-dot"><\/span>\s*\n?\s*En la <a/.test(reparto));
+  ok('la licencia sigue citada, pero al final y sin cortar la explicación',
+    /util-eml-cred">23\.ª lista, CC BY-NC-SA 3\.0 IGO/.test(reparto));
+  ok('y sigue aclarando que no es un juicio de preferencia',
+    /no qué se prescribe\s*\n?\s*más ni qué es mejor/.test(reparto));
+
+  // El orden del render, que es lo que agrupa o dispersa el contenido.
+  const pos = (t) => reparto.indexOf(t);
+  ok('la cobertura y la leyenda del denominador van JUNTAS y antes de las barras',
+    pos('${coberturaHtml}') < pos('<p class="util-note">${leyenda}</p>')
+    && pos('<p class="util-note">${leyenda}</p>') < pos('<ul class="util-bars'));
+  ok('la leyenda del punto se queda DEBAJO: explica una marca que vive en las barras',
+    pos('${leyendaEml}') > pos('<ul class="util-bars'));
+  ok('MUTANTE: la leyenda del denominador ya no cuelga tras las barras',
+    !/<\/ul>[\s\S]{0,40}<p class="util-note">\$\{leyenda\}/.test(reparto));
 }
 
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);

@@ -14483,9 +14483,19 @@ ${materialesPlaceholder}
         //
         // Sin umbral: aparece siempre que el denominador es parcial, diga «el 2 %» o «más del
         // 99 %». Que el número diga cuánto pesa, no una regla que decida cuándo alarmar.
+        // El grupo, dicho con su nombre y no solo con su código.
+        //
+        // «…dispensados en G03AC» no le dice nada a quien no se sabe la ATC de memoria, que son
+        // casi todos. Se nombra el grupo. Y el destino del enlace depende de la superficie: en la
+        // FICHA el grupo es el padre del principio activo que se está mirando, así que lleva a su
+        // reparto; en la VISTA el grupo ES la página actual y un enlace a sí misma no lleva a
+        // ninguna parte, así que ahí va en texto plano.
+        const grupoDicho = `${esc(g.atc)}${g.nombre ? `, ${esc(String(g.nombre).toLowerCase())}` : ''}`;
         const coberturaHtml = parcial && coberturaTxt
             ? `<p class="util-cobertura">Este reparto describe <strong>${coberturaTxt}</strong>
-               de los envases dispensados en ${esc(g.atc)}.</p>`
+               de los envases dispensados en ${navegable
+        ? grupoDicho
+        : `<button class="util-bar-link" data-util-vista="${esc(g.atc)}">${grupoDicho}</button>`}.</p>`
             : '';
         const leyenda = parcial
             ? `Los porcentajes se calculan sobre la <strong>DHD publicada</strong> de
@@ -14510,20 +14520,38 @@ ${materialesPlaceholder}
 
         // La leyenda solo aparece si hay algo que leer. Un pie fijo explicando un símbolo que no
         // está en la lista es ruido, y en un grupo sin ningún esencial sugeriría lo contrario.
+        //
+        // Empieza NOMBRANDO la marca. Antes era un punto suelto seguido de «En la Lista Modelo…»:
+        // una frase sin sujeto, en la que el lector tenía que deducir por su cuenta que el punto
+        // significaba eso. Y la licencia iba metida en mitad de la explicación, cortándola. Ahora
+        // el rótulo es «Esencial OMS» —el mismo que usa `_emlBadgeHtml()` en el resto de la app,
+        // para que el punto y el badge se lean como la misma cosa— y la atribución va al final,
+        // donde cumple la obligación de CC BY-NC-SA sin interrumpir el significado.
         const leyendaEml = hayEml
             ? `<p class="util-note util-note-eml"><span class="util-eml-dot">&#9679;</span>
-               En la <a href="https://list.essentialmeds.org/" target="_blank" rel="noopener">Lista
-               Modelo de Medicamentos Esenciales</a> de la OMS (23.ª lista, CC BY-NC-SA 3.0 IGO).
-               Marca qué se considera imprescindible en un sistema de salud, no qué se prescribe
-               más ni qué es mejor aquí.</p>`
+               <strong>Esencial OMS</strong>: figura en la
+               <a href="https://list.essentialmeds.org/" target="_blank" rel="noopener">Lista
+               Modelo de Medicamentos Esenciales</a> — lo que se considera imprescindible en un
+               sistema de salud, no qué se prescribe más ni qué es mejor aquí.
+               <span class="util-eml-cred">23.ª lista, CC BY-NC-SA 3.0 IGO</span></p>`
             : '';
 
+        // Orden: primero de qué va el reparto y sobre qué se calcula, después el reparto.
+        //
+        // La leyenda del denominador estaba DEBAJO de las barras, separada de la frase de
+        // cobertura que dice lo mismo desde otro ángulo. Eran dos piezas del mismo asunto —sobre
+        // qué se calculan estos porcentajes y cuánto del grupo describen— a cuatro párrafos de
+        // distancia. Juntas y antes, condicionan la lectura de las barras, que es su función; al
+        // final solo la corregían a posteriori.
+        //
+        // La leyenda EML se queda debajo porque explica una marca que vive DENTRO de las barras:
+        // antes de verlas no hay nada que explicar.
         return `${cabecera}
             ${coberturaHtml}
+            <p class="util-note">${leyenda}</p>
             ${this._utilFraseReparto(g)}
             <ul class="util-bars ${parcial ? 'is-partial' : ''}">${filas}</ul>
-            ${leyendaEml}
-            <p class="util-note">${leyenda}</p>`;
+            ${leyendaEml}`;
     }
 
     renderUtilizacionHtml(atc5, d, cpresc) {

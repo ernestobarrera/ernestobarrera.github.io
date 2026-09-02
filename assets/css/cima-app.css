@@ -12440,6 +12440,15 @@ a.fin-cn:hover { text-decoration: underline; }
 }
 .util-note-eml .util-eml-dot { margin: 0 0.2rem 0 0; }
 
+/* La atribución obligatoria de CC BY-NC-SA, al final y en un peso menor: cumple la licencia
+   sin cortar la explicación por la mitad, que es donde estaba antes. */
+.util-eml-cred {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.72rem;
+    opacity: 0.75;
+}
+
 /* Salida de la pestaña de la ficha hacia la vista completa. Van juntas y con el mismo peso:
    son dos destinos del mismo gesto («llévame al árbol»), no una acción y su alternativa. */
 .util-tab-actions {
