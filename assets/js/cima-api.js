@@ -2976,6 +2976,7 @@ class CimaAPI {
                     nivel: arbol.nodos[k]?.niv ?? null,
                     dhd: arbol.nodos[k]?.dhd ?? null,
                     dhd_cero_redondeado: arbol.nodos[k]?.z === 1,
+                envases_miles: arbol.nodos[k]?.env ?? null,
                     cuota: arbol.nodos[k]?.dhd != null ? arbol.nodos[k].dhd / n.dhd : null,
                 })),
             };

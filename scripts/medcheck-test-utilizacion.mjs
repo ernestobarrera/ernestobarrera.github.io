@@ -749,8 +749,41 @@ console.log('\n16) el 100 % se puede ver, no hay que calcularlo');
     && /que son \$\{total\}/.test(reparto));
   ok('y nombra las magnitudes que NO son, que es donde está el error de lectura',
     (reparto.match(/no sobre envases, ni sobre gasto, ni sobre\s*\n?\s*pacientes/g) || []).length === 2);
-  ok('cuando el denominador es parcial, cuantifica lo que queda fuera en envases',
-    /fueraEnv > 0 \? `, que suman \$\{Math\.round\(fueraEnv \* 1000\)/.test(reparto));
+  // Cobertura del indicador: qué parte del VOLUMEN dispensado del grupo describe el reparto.
+  //
+  // Antes esto se cerraba con el absoluto que queda fuera («…que suman 1.068.960 envases»). Un
+  // absoluto sin denominador no se puede juzgar, que es justo el defecto que esta leyenda existe
+  // para corregir en los porcentajes de arriba. Y daba el mismo aviso, con el mismo peso visual,
+  // a G03AC —donde el reparto describe el 2 % del volumen— y a A10BJ, donde describe el 99,9 %.
+  //
+  // El bloque se EJECUTA, no se comprueba por regex: lo que protege es el número que sale, y
+  // sobre todo sus dos extremos. Un grupo parcial que dijera «el 100 %» se contradiría con la
+  // frase que lo acompaña, y uno que dijera «el 0 %» negaría el reparto que está pintando.
+  const cobSrc = reparto.slice(reparto.indexOf('const envDentro = g.miembros.reduce'),
+    reparto.indexOf('const leyenda = parcial'));
+  ok('el bloque de cobertura es aislable y ejecutable', cobSrc.length > 0);
+  const cobertura = new Function('g', `${cobSrc} return { cobertura, coberturaTxt };`);
+  const grupoDe = (dentro, fuera) => ({
+    miembros: dentro.map((e, i) => ({ atc: `X0${i}`, dhd: 1, envases_miles: e })),
+    sin_ddd: fuera.map((e, i) => ({ atc: `Y0${i}`, envases_miles: e })),
+  });
+
+  ok('la cobertura se dice en proporción del volumen, no como absoluto suelto',
+    cobertura(grupoDe([25], [75])).coberturaTxt === 'el 25 %');
+  ok('un grupo parcial nunca dice «el 100 %»: se contradiría en la misma frase',
+    cobertura(grupoDe([9990], [10])).coberturaTxt === 'más del 99 %');
+  ok('ni «el 0 %», que negaría el reparto que está pintando',
+    cobertura(grupoDe([1], [9999])).coberturaTxt === 'menos del 1 %');
+  ok('sin dato de envases no se inventa cobertura: la frase se calla',
+    cobertura(grupoDe([null], [null])).coberturaTxt === null);
+  ok('la frase se enuncia en positivo, sobre lo que el reparto SÍ describe',
+    /Este reparto describe así <strong>\$\{coberturaTxt\}<\/strong> de los envases/.test(reparto));
+  ok('MUTANTE: ya no se cierra con el absoluto sin denominador',
+    !/que suman \$\{Math\.round\(fueraEnv \* 1000\)/.test(reparto));
+  ok('los miembros del reparto llevan sus envases en las DOS superficies',
+    /envases_miles: nodos\[k\]\?\.env \?\? null/.test(app)
+    && /envases_miles: arbol\.nodos\[k\]\?\.env \?\? null/.test(
+      readFileSync(join(RAIZ, 'assets', 'js', 'cima-api.js'), 'utf8')));
   ok('MUTANTE: sigue sin llamarlo «% del grupo»', !/% del grupo/.test(reparto));
 
   // El reparto dicho en una frase, para los grupos con competencia real de prescripción. Es

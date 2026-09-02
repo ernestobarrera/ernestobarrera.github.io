@@ -14289,6 +14289,7 @@ ${materialesPlaceholder}
                 nivel: nodos[k]?.niv ?? null,
                 dhd: nodos[k]?.dhd ?? null,
                 dhd_cero_redondeado: nodos[k]?.z === 1,
+                envases_miles: nodos[k]?.env ?? null,
                 cuota: nodos[k]?.dhd != null ? nodos[k].dhd / n.dhd : null,
             })),
         };
@@ -14418,15 +14419,38 @@ ${materialesPlaceholder}
         // el porcentaje NO es: aquí conviven tres magnitudes —DHD, envases e importe— y la
         // costumbre es leer cualquier tanto por ciento como si fuera de pacientes.
         const total = `<strong>${this._utilDhd(g.dhd, false)} DHD</strong>`;
-        const fueraEnv = g.sin_ddd?.reduce((s, x) => s + (x.envases_miles || 0), 0) || 0;
+
+        // Cobertura del reparto sobre el VOLUMEN dispensado del grupo.
+        //
+        // Antes esto cerraba con el absoluto que queda fuera («…que suman 1.068.960 envases»).
+        // Un absoluto sin su denominador no se puede juzgar — que es exactamente el defecto que
+        // esta leyenda existe para corregir en los porcentajes de arriba. Y trataba igual dos
+        // casos opuestos: en G03AC el reparto describe el 2 % del volumen del grupo, y en 28 de
+        // los 68 grupos parciales pasa del 95 %, con el mismo aviso y el mismo peso visual.
+        //
+        // La proporción diferencia sin umbral ni semáforo: se dice el número y se calla. Se
+        // enuncia en positivo —lo que el reparto SÍ describe— porque la negación ya la lleva la
+        // frase anterior.
+        const envDentro = g.miembros.reduce((s, m) => s + (m.envases_miles || 0), 0);
+        const envFuera = g.sin_ddd?.reduce((s, x) => s + (x.envases_miles || 0), 0) || 0;
+        const envTotal = envDentro + envFuera;
+        const cobertura = envTotal > 0 ? envDentro / envTotal : null;
+        // Ni «0 %» ni «100 %»: en un grupo parcial los dos extremos son falsos por redondeo, y el
+        // segundo contradiría la propia frase a la que acompaña.
+        const coberturaTxt = cobertura == null ? null
+            : cobertura < 0.01 ? 'menos del 1 %'
+                : cobertura > 0.99 ? 'más del 99 %'
+                    : `el ${Math.round(cobertura * 100)} %`;
+
         const leyenda = parcial
             ? `Los porcentajes se calculan sobre la <strong>DHD publicada</strong> de
                ${esc(g.atc)}, que son ${total} — no sobre envases, ni sobre gasto, ni sobre
                pacientes. Quedan fuera de ese total
                ${g.sin_ddd.length} ${g.sin_ddd.length === 1 ? 'principio activo con consumo real y sin DDD asignada'
         : 'principios activos con consumo real y sin DDD asignada'}:
-               ${g.sin_ddd.map(s => `<em>${esc(s.nombre || s.atc)}</em>`).join(', ')}${
-    fueraEnv > 0 ? `, que suman ${Math.round(fueraEnv * 1000).toLocaleString('es-ES')} envases` : ''}.`
+               ${g.sin_ddd.map(s => `<em>${esc(s.nombre || s.atc)}</em>`).join(', ')}.${
+    coberturaTxt ? ` Este reparto describe así <strong>${coberturaTxt}</strong> de los envases
+               dispensados en el grupo.` : ''}`
             : `Los porcentajes se calculan sobre la <strong>DHD publicada</strong> de
                ${esc(g.atc)}, que son ${total} — no sobre envases, ni sobre gasto, ni sobre
                pacientes.`;
