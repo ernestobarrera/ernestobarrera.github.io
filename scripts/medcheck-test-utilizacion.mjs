@@ -800,5 +800,54 @@ console.log('\n16) el 100 % se puede ver, no hay que calcularlo');
     /pct\(m\) >= 10/.test(frase) && /nombrados\.length < 2\) return ''/.test(frase));
 }
 
+// ── 17. la capa se puede leer ───────────────────────────────────────────────
+// El contraste no es preferencia estética: es el suelo por debajo del cual el dato deja de
+// estar. `--text-muted` global da 3,75:1 sobre `--bg-dark` y en esta capa sostiene los
+// porcentajes del reparto y todas las leyendas —incluida la que dice sobre qué se calcula
+// cada cifra—. Se comprueba calculando el ratio WCAG real desde los tokens declarados, no
+// mirando si el color «parece» claro: si alguien reajusta la paleta, esto tiene que caerse.
+console.log('\n17) contraste: los números y sus leyendas se leen');
+{
+  const css = readFileSync(join(RAIZ, 'assets', 'css', 'cima-app.css'), 'utf8');
+  // Extracción sin RegExp dinámica: el nombre del token lleva guiones y el valor va justo detrás.
+  const token = (nombre, ambito = css) => {
+    const i = ambito.indexOf(nombre + ':');
+    if (i < 0) return undefined;
+    const m = ambito.slice(i, i + 60).match(/#[0-9a-fA-F]{6}/);
+    return m ? m[0] : undefined;
+  };
+
+  const lin = (c) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+  const lum = (hex) => {
+    const [r, g, b] = hex.slice(1).match(/../g).map((x) => lin(parseInt(x, 16)));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => {
+    const [l1, l2] = [lum(a), lum(b)].sort((x, y) => y - x);
+    return (l1 + 0.05) / (l2 + 0.05);
+  };
+
+  const fondo = token('--bg-dark');
+  ok('el fondo de la capa está declarado', !!fondo, String(fondo));
+
+  // El bloque que redefine el token dentro de las dos raíces de la capa.
+  const ambito = css.slice(css.indexOf('.util-view,\n.util-tab {'), css.indexOf('.util-head {'));
+  const mutedCapa = token('--text-muted', ambito);
+  ok('la capa redefine --text-muted en sus dos raíces', !!mutedCapa, String(mutedCapa));
+  ok('y lo hace para .util-view Y .util-tab, no solo para una',
+    /\.util-view,\s*\n\s*\.util-tab\s*\{/.test(ambito));
+
+  const rCapa = mutedCapa ? ratio(fondo, mutedCapa) : 0;
+  ok(`el texto de apoyo de la capa pasa WCAG AA (4,5:1) — mide ${rCapa.toFixed(2)}:1`, rCapa >= 4.5);
+
+  const secundario = token('--text-secondary');
+  ok('sigue por debajo de --text-secondary: la jerarquía dato/apoyo se mantiene',
+    rCapa < ratio(fondo, secundario));
+
+  // MUTANTE: si la redefinición desapareciera, se heredaría el global y esto volvería a fallar.
+  const rGlobal = ratio(fondo, token('--text-muted'));
+  ok(`MUTANTE: el token global NO bastaba — da ${rGlobal.toFixed(2)}:1`, rGlobal < 4.5);
+}
+
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);
 process.exit(fallos === 0 ? 0 : 1);

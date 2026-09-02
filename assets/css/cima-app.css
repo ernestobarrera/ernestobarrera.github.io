@@ -11855,6 +11855,22 @@ a.fin-cn:hover { text-decoration: underline; }
 
 .util-tab { padding: 0.25rem 0 0.5rem; }
 
+/* Suelo de contraste de la capa.
+   `--text-muted` global (#64748b) da 3,75:1 sobre `--bg-dark`, por debajo del mínimo
+   WCAG AA para texto normal (4,5:1). En el resto de MedCheck se usa en textos de apoyo
+   grandes, pero aquí sostiene cosas que son el dato: los porcentajes del reparto
+   (`.util-bar-pct`, 0,78rem) y TODAS las leyendas (`.util-note`, 0,76rem), que es donde
+   se explica sobre qué se calcula cada cifra. Un denominador que no se puede leer no
+   cumple su función.
+   Se redefine el token dentro de las dos raíces de la capa —vista y pestaña— en vez de
+   tocar las 19 reglas que lo usan, y sin alterar el token global del resto de la app.
+   #7b8ba0 da 5,14:1: pasa AA y sigue por debajo de `--text-secondary` (6,96:1), así que
+   la jerarquía visual entre dato y apoyo se mantiene. */
+.util-view,
+.util-tab {
+    --text-muted: #7b8ba0;
+}
+
 .util-head {
     display: flex;
     align-items: baseline;
