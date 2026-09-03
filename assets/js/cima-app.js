@@ -13955,9 +13955,15 @@ ${materialesPlaceholder}
         const lista = partes.length > 1
             ? `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`
             : partes[0];
-        const sujeto = g.denominador === 'parcial'
-            ? `dosis con DDD asignada de ${esc(g.atc)}`
-            : `dosis dispensadas en ${esc(g.atc)}`;
+        // El sujeto es lo que de verdad se reparte, y son tres cosas distintas: envases
+        // cuando el grupo no tiene DDD, dosis con DDD asignada cuando el denominador es parcial,
+        // y dosis dispensadas cuando es completo. Decir «dosis» en un reparto de envases sería
+        // afirmar exactamente lo que la magnitud no sostiene.
+        const sujeto = g.magnitud === 'envases'
+            ? `envases dispensados en ${esc(g.atc)}`
+            : g.denominador === 'parcial'
+                ? `dosis con DDD asignada de ${esc(g.atc)}`
+                : `dosis dispensadas en ${esc(g.atc)}`;
 
         return `<p class="util-frase">De cada 100 ${sujeto}, ${lista}.</p>`;
     }
@@ -14270,7 +14276,7 @@ ${materialesPlaceholder}
         ? `<section class="util-nav">${this.renderUtilizacionRepartoHtml(d, reparto, { navegable: true })}</section>`
         : `<p class="util-note">${hoja
             ? 'Es un principio activo: no tiene subniveles. Busca su nombre para ver los medicamentos que lo contienen.'
-            : 'Este grupo no tiene reparto publicado con DHD.'}</p>`}
+            : 'Este grupo no tiene reparto publicado: ni DHD, ni un desglose de envases que cuadre con el total.'}</p>`}
                 ${hoja ? `<div class="util-node-actions">
                     <button class="btn btn-primary" data-util-medicamentos="${esc(actual)}">
                         <i class="fas fa-pills"></i> Ver medicamentos con ${esc(actual)}
@@ -14320,32 +14326,69 @@ ${materialesPlaceholder}
         this._engancharUtilizacionView();
     }
 
-    /** Reparto de un nodo entre sus hijos, resuelto en local contra el árbol. */
+    /**
+     * Reparto de un nodo entre sus hijos, resuelto en local contra el árbol.
+     *
+     * Devuelve SIEMPRE una magnitud declarada. Un reparto de dosis y uno de envases no se
+     * pueden leer en la misma escala —un envase no equivale a otro en cantidad de tratamiento,
+     * que es justo lo que la DDD normaliza—, así que ningún nodo tiene los dos: el ETL escribe
+     * `h` para el de dosis y `he` para el de envases, y sus puertas garantizan que son
+     * excluyentes. Aquí no se decide nada, solo se lee lo que el ETL ya cerró.
+     */
     _utilRepartoDeNodo(cod) {
         const nodos = this._utilArbolVista?.nodos || {};
         const n = nodos[cod];
-        if (!n || typeof n.dhd !== 'number' || n.dhd <= 0 || n.den === 'nulo' || !n.h?.length) return null;
-        return {
-            atc: cod,
-            nombre: n.n,
-            nivel: n.niv,
-            dhd: n.dhd,
-            denominador: n.den,
-            sin_ddd: (n.sin_ddd || []).map(k => ({
-                atc: k, nombre: nodos[k]?.n ?? null, envases_miles: nodos[k]?.env ?? null,
-            })),
-            miembros: n.h.map(k => ({
-                atc: k,
-                nombre: nodos[k]?.n ?? null,
-                nivel: nodos[k]?.niv ?? null,
-                dhd: nodos[k]?.dhd ?? null,
-                dhd_cero_redondeado: nodos[k]?.z === 1,
-                envases_miles: nodos[k]?.env ?? null,
-                cuota: nodos[k]?.dhd != null ? nodos[k].dhd / n.dhd : null,
-            })),
-        };
-    }
+        if (!n) return null;
+        const comun = { atc: cod, nombre: n.n, nivel: n.niv };
 
+        if (typeof n.dhd === 'number' && n.dhd > 0 && n.den !== 'nulo' && n.h?.length) {
+            return {
+                ...comun,
+                magnitud: 'dhd',
+                total: n.dhd,
+                dhd: n.dhd,
+                denominador: n.den,
+                sin_ddd: (n.sin_ddd || []).map(k => ({
+                    atc: k, nombre: nodos[k]?.n ?? null, envases_miles: nodos[k]?.env ?? null,
+                })),
+                miembros: n.h.map(k => ({
+                    atc: k,
+                    nombre: nodos[k]?.n ?? null,
+                    nivel: nodos[k]?.niv ?? null,
+                    dhd: nodos[k]?.dhd ?? null,
+                    dhd_cero_redondeado: nodos[k]?.z === 1,
+                    envases_miles: nodos[k]?.env ?? null,
+                    cuota: nodos[k]?.dhd != null ? nodos[k].dhd / n.dhd : null,
+                })),
+            };
+        }
+
+        // Reparto por envases. `mag === 'env'` solo existe si el ETL pasó las cinco puertas, y
+        // una de ellas es que la suma de los hijos cuadre con el padre: el denominador de estos
+        // porcentajes está comprobado contra la fuente, no supuesto.
+        if (n.mag === 'env' && n.he?.length && n.env > 0) {
+            const total = n.he.reduce((s, k) => s + (nodos[k]?.env || 0), 0);
+            return {
+                ...comun,
+                magnitud: 'envases',
+                total,
+                dhd: null,
+                envases_miles: total,
+                denominador: 'completo',
+                sin_ddd: [],
+                miembros: n.he.map(k => ({
+                    atc: k,
+                    nombre: nodos[k]?.n ?? null,
+                    nivel: nodos[k]?.niv ?? null,
+                    dhd: null,
+                    dhd_cero_redondeado: false,
+                    envases_miles: nodos[k]?.env ?? null,
+                    cuota: total > 0 ? (nodos[k]?.env || 0) / total : null,
+                })),
+            };
+        }
+        return null;
+    }
     _engancharUtilizacionView() {
         // Bajar o subir un nivel es NAVEGACIÓN, no un cambio de faceta: apila historial. Así
         // Atrás sube un nivel en vez de expulsar de la vista entera, y cualquier nodo del árbol
@@ -14420,14 +14463,18 @@ ${materialesPlaceholder}
      */
     renderUtilizacionRepartoHtml(d, g, { navegable = false, destacado = null } = {}) {
         const esc = (s) => this._escapeHtml(String(s ?? ''));
-        const max = Math.max(...g.miembros.map(m => m.dhd || 0));
+        // La magnitud del reparto gobierna qué se pinta en la columna de valor, sobre qué se
+        // escala la barra y qué dice la leyenda. Viene decidida por el ETL, no se infiere aquí.
+        const esEnv = g.magnitud === 'envases';
+        const valorDe = (m) => (esEnv ? (m.envases_miles || 0) : (m.dhd || 0));
+        const max = Math.max(...g.miembros.map(valorDe));
         const parcial = g.denominador === 'parcial';
         const esEml = (cod) => this._emlMatchByAtc(cod);
         let hayEml = false;
 
         const filas = g.miembros.map((m) => {
             const pct = m.cuota != null ? (m.cuota * 100) : null;
-            const ancho = max > 0 && m.dhd ? Math.max(2, (m.dhd / max) * 100) : 2;
+            const ancho = max > 0 && valorDe(m) ? Math.max(2, (valorDe(m) / max) * 100) : 2;
             const esEste = m.atc === destacado;
             const etiqueta = esc(m.nombre || m.atc);
             // Todos los miembros llevan a algún sitio, incluidos los ATC5.
@@ -14459,18 +14506,34 @@ ${materialesPlaceholder}
         : `<button class="util-bar-link" data-${accion}="${esc(m.atc)}" title="${esc(pista)}: ${esc(m.atc)}"><span class="util-bar-code">${esc(m.atc)}</span>${marca} ${etiqueta}</button>`
 }</span>
                 <span class="util-bar-track"><i style="width:${ancho.toFixed(1)}%"></i></span>
-                <span class="util-bar-val">${this._utilDhd(m.dhd, m.dhd_cero_redondeado)}</span>
+                <span class="util-bar-val">${esEnv
+        ? Math.round((m.envases_miles || 0) * 1000).toLocaleString('es-ES')
+        : this._utilDhd(m.dhd, m.dhd_cero_redondeado)}</span>
                 <span class="util-bar-pct">${pct != null ? pct.toFixed(1).replace('.', ',') + '&nbsp;%' : '—'}</span>
             </li>`;
         }).join('');
 
-        // El denominador, dicho con su cifra y no solo con su nombre. Un porcentaje cuyo 100 % no
-        // aparece en ninguna parte obliga a sumar mentalmente para saber sobre qué se calcula, y
-        // en un reparto con tres cifras eso es justo lo que nadie hace. Se nombra además lo que
-        // el porcentaje NO es: aquí conviven tres magnitudes —DHD, envases e importe— y la
-        // costumbre es leer cualquier tanto por ciento como si fuera de pacientes.
-        const total = `<strong>${this._utilDhd(g.dhd, false)} DHD</strong>`;
+        // LA MAGNITUD, DECLARADA SIEMPRE Y ARRIBA.
+        //
+        // Desde que hay dos tipos de reparto —dosis y envases—, dejar uno sin marcar lo
+        // convertiría en el «normal» y al otro en la excepción: el lector que pasa de C10AA a
+        // D07AC leería dos porcentajes seguidos como si midieran lo mismo, y no lo miden. Así
+        // que los DOS lo dicen, con el mismo formato y en el mismo sitio.
+        //
+        // Y lleva su denominador con la cifra dentro. Ese era el defecto que arrastraba la
+        // leyenda desde A10BJ: un porcentaje cuyo 100 % no aparece en pantalla obliga a sumar
+        // mentalmente, y entonces se lee como si fuera de pacientes. Ahora el 100 % es lo
+        // primero que se ve del reparto, no la última cláusula de un párrafo en letra pequeña.
+        const totalTxt = esEnv
+            ? `<strong>${Math.round((g.envases_miles || 0) * 1000).toLocaleString('es-ES')}</strong> envases`
+            : `<strong>${this._utilDhd(g.dhd, false)} DHD</strong>`;
+        const magnitudHtml = `<p class="util-magnitud${esEnv ? ' es-envases' : ''}">
+            <span class="util-magnitud-rotulo">Reparto por ${esEnv ? 'envases' : 'dosis'}</span>
+            <span class="util-magnitud-den">el 100 % son ${totalTxt} de ${esc(g.atc)}</span></p>`;
 
+        // La leyenda conserva el nombre de la magnitud para quien lea solo este párrafo, pero ya
+        // no repite la cifra: la lleva la cabecera de arriba.
+        const total = totalTxt;
         // Cobertura del reparto sobre el VOLUMEN dispensado del grupo.
         //
         // Antes esto cerraba con el absoluto que queda fuera («…que suman 1.068.960 envases»).
@@ -14521,17 +14584,27 @@ ${materialesPlaceholder}
         ? grupoDicho
         : `<button class="util-bar-link" data-util-vista="${esc(g.atc)}">${grupoDicho}</button>`}.</p>`
             : '';
-        const leyenda = parcial
-            ? `Los porcentajes se calculan sobre la <strong>DHD publicada</strong> de
-               ${esc(g.atc)}, que son ${total} — no sobre envases, ni sobre gasto, ni sobre
-               pacientes. Quedan fuera de ese total
+        // La leyenda dice qué NO es el porcentaje, y eso cambia con la magnitud.
+        //
+        // En un reparto de dosis el error de lectura es confundirlo con envases, gasto o
+        // pacientes. En uno de envases el error es el contrario y es más grave: creer que
+        // reparte tratamiento. Un envase no equivale a otro en cantidad de fármaco —un frasco
+        // de 5 ml y uno de 10 ml cuentan igual—, y normalizar eso es exactamente para lo que
+        // existe la DDD. Aquí no la hay, así que el reparto es de envases o no es nada; pero
+        // eso hay que decirlo, no dejarlo implícito.
+        const leyenda = esEnv
+            ? `Es un reparto de <strong>envases dispensados</strong>, no de dosis: un envase no
+               equivale a otro en cantidad de tratamiento. Los medicamentos de ${esc(g.atc)} no
+               tienen DDD asignada por la OMS, así que su consumo no puede expresarse en DHD y
+               esto es lo que la fuente publica de ellos.`
+            : parcial
+                ? `Los porcentajes se calculan sobre la <strong>DHD publicada</strong> —no sobre
+               envases, ni sobre gasto, ni sobre pacientes—. Quedan fuera de ese total
                ${g.sin_ddd.length} ${g.sin_ddd.length === 1 ? 'principio activo con consumo real y sin DDD asignada'
         : 'principios activos con consumo real y sin DDD asignada'}:
                ${g.sin_ddd.map(s => `<em>${esc(s.nombre || s.atc)}</em>`).join(', ')}.`
-            : `Los porcentajes se calculan sobre la <strong>DHD publicada</strong> de
-               ${esc(g.atc)}, que son ${total} — no sobre envases, ni sobre gasto, ni sobre
-               pacientes.`;
-
+                : `Los porcentajes se calculan sobre la <strong>DHD publicada</strong> —no sobre
+               envases, ni sobre gasto, ni sobre pacientes—.`;
         // En la VISTA el reparto es el del nodo que ya está pintado justo encima: `g.atc` es el
         // mismo código, `g.dhd` la misma cifra y `g.nombre` el mismo nombre. La cabecera repetía
         // ahí el perímetro, el código y el total — tres líneas que el lector acaba de leer.
@@ -14571,10 +14644,11 @@ ${materialesPlaceholder}
         // La leyenda EML se queda debajo porque explica una marca que vive DENTRO de las barras:
         // antes de verlas no hay nada que explicar.
         return `${cabecera}
+            ${magnitudHtml}
             ${coberturaHtml}
             <p class="util-note">${leyenda}</p>
             ${this._utilFraseReparto(g)}
-            <ul class="util-bars ${parcial ? 'is-partial' : ''}">${filas}</ul>
+            <ul class="util-bars${parcial ? ' is-partial' : ''}${esEnv ? ' is-envases' : ''}">${filas}</ul>
             ${leyendaEml}`;
     }
 

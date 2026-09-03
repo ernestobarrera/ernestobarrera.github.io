@@ -2958,30 +2958,59 @@ class CimaAPI {
         const base = { atc: code, ...arbol.meta };
         if (!nodo) return { ...base, found: false };
 
+        // Un reparto declara SIEMPRE su magnitud. Uno de dosis y uno de envases no se leen en la
+        // misma escala, así que el ETL los escribe en claves excluyentes —`h` y `he`— y aquí
+        // solo se lee la que exista. Ver `construirArbol` para las cinco puertas.
         const reparto = (cod) => {
             const n = arbol.nodos[cod];
-            if (!n || typeof n.dhd !== 'number' || n.dhd <= 0 || n.den === 'nulo' || !n.h?.length) return null;
-            return {
-                atc: cod,
-                nombre: n.n,
-                nivel: n.niv,
-                dhd: n.dhd,
-                denominador: n.den,
-                sin_ddd: (n.sin_ddd || []).map(k => ({
-                    atc: k, nombre: arbol.nodos[k]?.n ?? null, envases_miles: arbol.nodos[k]?.env ?? null,
-                })),
-                miembros: n.h.map(k => ({
-                    atc: k,
-                    nombre: arbol.nodos[k]?.n ?? null,
-                    nivel: arbol.nodos[k]?.niv ?? null,
-                    dhd: arbol.nodos[k]?.dhd ?? null,
-                    dhd_cero_redondeado: arbol.nodos[k]?.z === 1,
-                envases_miles: arbol.nodos[k]?.env ?? null,
-                    cuota: arbol.nodos[k]?.dhd != null ? arbol.nodos[k].dhd / n.dhd : null,
-                })),
-            };
-        };
+            if (!n) return null;
+            const comun = { atc: cod, nombre: n.n, nivel: n.niv };
 
+            if (typeof n.dhd === 'number' && n.dhd > 0 && n.den !== 'nulo' && n.h?.length) {
+                return {
+                    ...comun,
+                    magnitud: 'dhd',
+                    total: n.dhd,
+                    dhd: n.dhd,
+                    denominador: n.den,
+                    sin_ddd: (n.sin_ddd || []).map(k => ({
+                        atc: k, nombre: arbol.nodos[k]?.n ?? null, envases_miles: arbol.nodos[k]?.env ?? null,
+                    })),
+                    miembros: n.h.map(k => ({
+                        atc: k,
+                        nombre: arbol.nodos[k]?.n ?? null,
+                        nivel: arbol.nodos[k]?.niv ?? null,
+                        dhd: arbol.nodos[k]?.dhd ?? null,
+                        dhd_cero_redondeado: arbol.nodos[k]?.z === 1,
+                        envases_miles: arbol.nodos[k]?.env ?? null,
+                        cuota: arbol.nodos[k]?.dhd != null ? arbol.nodos[k].dhd / n.dhd : null,
+                    })),
+                };
+            }
+
+            if (n.mag === 'env' && n.he?.length && n.env > 0) {
+                const total = n.he.reduce((s, k) => s + (arbol.nodos[k]?.env || 0), 0);
+                return {
+                    ...comun,
+                    magnitud: 'envases',
+                    total,
+                    dhd: null,
+                    envases_miles: total,
+                    denominador: 'completo',
+                    sin_ddd: [],
+                    miembros: n.he.map(k => ({
+                        atc: k,
+                        nombre: arbol.nodos[k]?.n ?? null,
+                        nivel: arbol.nodos[k]?.niv ?? null,
+                        dhd: null,
+                        dhd_cero_redondeado: false,
+                        envases_miles: arbol.nodos[k]?.env ?? null,
+                        cuota: total > 0 ? (arbol.nodos[k]?.env || 0) / total : null,
+                    })),
+                };
+            }
+            return null;
+        };
         return {
             ...base,
             found: true,

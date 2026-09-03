@@ -13,6 +13,9 @@
 
 /** Umbrales. Aquí arriba para que se vean y se discutan, no enterrados en el código. */
 export const UMBRALES = Object.freeze({
+  // Misma tolerancia que aplica `construirArbol` al descuadre de la DHD: el redondeo de la
+  // fuente mueve las últimas cifras, un descuadre real las mueve mucho más.
+  TOLERANCIA_SUMA: 0.02,
   MIN_ATC5: 700,              // 2025 trae 951; una caída a 700 ya es anómala
   MIN_ATC4: 300,              // 2025 trae 366
   MIN_NODOS: 1200,            // 2025 trae 1.575 en los cinco niveles
@@ -34,6 +37,47 @@ export function validar(doc, previo) {
   const codigos = Object.keys(nodos);
   const hojas = codigos.filter((k) => nodos[k].niv === 5);
   const conHijos = codigos.filter((k) => nodos[k].h?.length);
+
+
+  // ── reparto por envases: las cinco puertas, revalidadas sobre el documento construido ─────
+  //
+  // `construirArbol` ya las aplica al crear el árbol, pero una validación que confía en que el
+  // productor hizo bien su trabajo no valida nada: si alguien relaja una puerta allí, esto tiene
+  // que caerse. Son BLOQUEANTES, no avisos: un reparto de envases que mezclase magnitudes o cuyo
+  // denominador no cuadrase con la fuente publicaría un porcentaje que no se sostiene.
+  const porEnvases = codigos.filter((k) => nodos[k].mag === 'env');
+  for (const k of porEnvases) {
+    const v = nodos[k];
+    if (typeof v.dhd === 'number') {
+      errores.push(`${k}: reparto por envases en un nodo que SÍ tiene DHD (${v.dhd}). Son magnitudes distintas y no pueden convivir.`);
+    }
+    if (!Array.isArray(v.he) || v.he.length < 2) {
+      errores.push(`${k}: reparto por envases con ${v.he?.length ?? 0} miembros. Con menos de dos no hay reparto que mostrar.`);
+    }
+    if (v.h?.length) {
+      errores.push(`${k}: tiene reparto por DHD y por envases a la vez.`);
+    }
+    const conDhd = (v.he ?? []).filter((c) => typeof nodos[c]?.dhd === 'number');
+    if (conDhd.length) {
+      errores.push(`${k}: reparto por envases con hijos que tienen DHD (${conDhd.join(', ')}). Mezclaría dos escalas en la misma barra.`);
+    }
+    // La única comprobación que puede desmentir el dato contra la fuente.
+    const suma = (v.he ?? []).reduce((acc, c) => acc + (nodos[c]?.env ?? 0), 0);
+    if (!(v.env > 0) || Math.abs(suma - v.env) / v.env > UMBRALES.TOLERANCIA_SUMA) {
+      errores.push(`${k}: la suma de envases de sus hijos (${suma}) no cuadra con la del grupo (${v.env}).`);
+    }
+  }
+  // Y a la inversa: un `he` sin su marca, o una marca sin su `he`, es un árbol a medio construir.
+  for (const k of codigos) {
+    const v = nodos[k];
+    if (v.he?.length && v.mag !== 'env') errores.push(`${k}: tiene reparto por envases sin declarar la magnitud.`);
+    if (v.mag === 'env' && !v.he?.length) errores.push(`${k}: declara magnitud de envases y no trae reparto.`);
+  }
+  // Si la cifra se desploma, la fuente ha cambiado algo en las filas sin DDD. No es un error:
+  // es un cambio que merece una mirada humana antes de publicar.
+  if (previo?.meta?.n_grupos_envases > 0 && porEnvases.length < previo.meta.n_grupos_envases * 0.7) {
+    avisos.push(`Los grupos con reparto por envases caen de ${previo.meta.n_grupos_envases} a ${porEnvases.length}. ¿Ha cambiado el diseño del fichero?`);
+  }
 
   // ── 1. volumen mínimo ────────────────────────────────────────────────────
   if (codigos.length < UMBRALES.MIN_NODOS) {

@@ -12378,6 +12378,58 @@ a.fin-cn:hover { text-decoration: underline; }
     font-weight: 600;
     color: var(--text-primary);
 }
+
+/* La magnitud del reparto, declarada arriba y en los dos tipos.
+   Desde que hay repartos de dosis y de envases, dejar uno sin marcar convertiría a ese en el
+   «normal» y al otro en la excepción: quien pasa de C10AA a D07AC leería dos porcentajes
+   seguidos como si midieran lo mismo. El rótulo va en versalitas —es una etiqueta, no una
+   frase— y el denominador al lado, con su cifra, en cuerpo de lectura. */
+.util-magnitud {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem 0.55rem;
+    margin: 0.45rem 0 0.55rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border-default);
+}
+.util-magnitud-rotulo {
+    font-size: var(--util-fs-credito);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-secondary);
+}
+.util-magnitud-den {
+    font-size: var(--util-fs-cuerpo);
+    color: var(--text-secondary);
+}
+.util-magnitud-den strong { color: var(--text-primary); font-weight: 600; }
+
+/* Las barras de un reparto de ENVASES se distinguen por textura, no por color.
+   Un tono distinto se leería como escala de mérito —mejor/peor, alerta/normal— y esta capa no
+   juzga; el rayado dice «otra unidad de medida» sin decir nada más. La columna del valor se
+   ensancha porque un recuento de envases tiene siete dígitos y la DHD dos decimales. */
+.util-bars.is-envases .util-bar-row {
+    grid-template-columns: minmax(90px, 14rem) minmax(60px, 1fr) 5.6rem 3.4rem;
+}
+.util-bars.is-envases .util-bar-track i {
+    background: repeating-linear-gradient(
+        135deg,
+        var(--text-muted) 0 3px,
+        transparent 3px 6px
+    );
+    border: 1px solid var(--text-muted);
+    box-sizing: border-box;
+}
+.util-bars.is-envases .util-bar-row.is-current .util-bar-track i {
+    background: repeating-linear-gradient(
+        135deg,
+        var(--primary) 0 3px,
+        transparent 3px 6px
+    );
+    border-color: var(--primary);
+}
 .util-cobertura {
     margin: 0.5rem 0 0.2rem;
     font-size: var(--util-fs-cuerpo);

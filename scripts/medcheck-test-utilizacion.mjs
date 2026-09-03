@@ -752,13 +752,21 @@ console.log('\n16) el 100 % se puede ver, no hay que calcularlo');
     && /Dentro del grupo \$\{esc\(g\.atc\)\}/.test(reparto));
   ok('la vista no lo repite: su reparto es el del nodo ya pintado arriba',
     /navegable \? `\s*\n\s*<h4 class="util-reparto-titulo">C[óo]mo se reparte<\/h4>`/.test(reparto));
-  ok('el denominador nunca queda implícito: la leyenda lo lleva en las DOS ramas',
-    (reparto.match(/que son \$\{total\}/g) || []).length === 2);
-  ok('la leyenda dice sobre qué se calculan los porcentajes, con su cifra',
-    /Los porcentajes se calculan sobre la <strong>DHD publicada<\/strong>/.test(reparto)
-    && /que son \$\{total\}/.test(reparto));
-  ok('y nombra las magnitudes que NO son, que es donde está el error de lectura',
-    (reparto.match(/no sobre envases, ni sobre gasto, ni sobre\s*\n?\s*pacientes/g) || []).length === 2);
+  // El denominador dejó de estar en la leyenda y pasó a la cabecera de magnitud, que va la
+  // primera y en cuerpo de lectura. Es más fuerte que antes: el 100 % es ahora lo primero que
+  // se ve del reparto, no una cláusula dentro de un párrafo en letra pequeña.
+  ok('el 100 % se declara con su cifra, arriba y en las DOS magnitudes',
+    /el 100 % son \$\{totalTxt\} de \$\{esc\(g\.atc\)\}/.test(reparto)
+    && /esEnv[\s\S]{0,180}envases[\s\S]{0,120}_utilDhd\(g\.dhd, false\)\} DHD/.test(reparto));
+  ok('y la cabecera declara de qué magnitud es el reparto, siempre',
+    /Reparto por \$\{esEnv \? 'envases' : 'dosis'\}/.test(reparto));
+  ok('el reparto de dosis sigue nombrando las magnitudes que NO es',
+    (reparto.match(/no sobre\s*\n?\s*envases, ni sobre gasto, ni sobre pacientes/g) || []).length === 2);
+  ok('y el de envases dice lo que SÍ es, y por qué no puede ser dosis',
+    /Es un reparto de <strong>envases dispensados<\/strong>, no de dosis/.test(reparto)
+    && /equivale a otro en cantidad de tratamiento/.test(reparto)
+    && /tienen DDD asignada por la OMS/.test(reparto)
+    && /no puede expresarse en DHD/.test(reparto));
   // Cobertura del indicador: qué parte del VOLUMEN dispensado del grupo describe el reparto.
   //
   // Antes esto se cerraba con el absoluto que queda fuera («…que suman 1.068.960 envases»). Un
@@ -770,7 +778,7 @@ console.log('\n16) el 100 % se puede ver, no hay que calcularlo');
   // sobre todo sus dos extremos. Un grupo parcial que dijera «el 100 %» se contradiría con la
   // frase que lo acompaña, y uno que dijera «el 0 %» negaría el reparto que está pintando.
   const cobSrc = reparto.slice(reparto.indexOf('const envDentro = g.miembros.reduce'),
-    reparto.indexOf('const leyenda = parcial'));
+    reparto.indexOf('const leyenda = esEnv'));
   ok('el bloque de cobertura es aislable y ejecutable', cobSrc.length > 0);
   // Se ejecuta con `parcial` y `esc` inyectados: así se comprueba también el HTML que sale,
   // no solo el número. La frase es el producto; el número es un paso intermedio.
@@ -1062,6 +1070,162 @@ console.log('\n21) una escala, no 22 tamaños sueltos');
     /<strong>\$\{cantidad\}<\/strong> \$\{verbo\}/.test(lectura));
   ok('MUTANTE: el verbo ya no viaja dentro del resalte',
     !/frase = 'una recibe'/.test(lectura) && !/reciben`;[\s\S]{0,80}<strong>\$\{frase\}/.test(lectura));
+}
+
+// ── 22. reparto por envases: las cinco puertas ──────────────────────────────
+// Hay 156 nodos con volumen dispensado y sin DHD —los tópicos, sobre todo: dermatológicos,
+// óticos, oftálmicos—, cuyas presentaciones no tienen DDD asignada por la OMS. La capa decía de
+// ellos «no tiene reparto publicado» sentada sobre el 7,7 % del volumen del país, cuyo reparto
+// SÍ está publicado.
+//
+// Esto NO es una derivación como sería «DDD por envase», que exigiría población y días y daría
+// una cifra imposible de contrastar. Es la misma división que ya se hace para la DHD, sobre dos
+// números de la misma fila del mismo fichero, y su resultado se puede desmentir: la suma de los
+// hijos tiene que dar el padre. Esa comprobación es la que decide si se publica.
+//
+// Lo que un porcentaje de envases NO es: un reparto de tratamiento. Un envase no equivale a otro
+// en cantidad de fármaco, y normalizar eso es justo para lo que existe la DDD. De ahí las cinco
+// puertas, y de ahí que la magnitud viaje en el DATO (`mag`, `he`) y no solo en el texto.
+console.log('\n22) reparto por envases, y sus cinco puertas');
+{
+  const arbol = construirArbol({
+    1: new Map([['X', { n: 'ANATOMICO', env: 100 }]]),
+    2: new Map([['X01', { n: 'GRUPO SIN DDD', env: 100 }]]),
+    3: new Map(),
+    4: new Map(),
+    5: new Map(),
+  });
+  ok('un nodo sin hijos no gana reparto por envases', !arbol.X01.mag);
+
+  // Fábrica de casos: un padre con volumen y sus hijos, todos sin DDD salvo lo que se pida.
+  const caso = (hijos, envPadre) => construirArbol({
+    1: new Map([['X', { n: 'RAIZ', env: envPadre }]]),
+    2: new Map([['X01', { n: 'GRUPO', env: envPadre }]]),
+    3: new Map(hijos.map((h, i) => [`X01${"ABCDEFG"[i]}`, { n: 'H' + i, ...h }])),
+    4: new Map(), 5: new Map(),
+  });
+
+  const sano = caso([{ env: 60 }, { env: 30 }, { env: 10 }], 100);
+  ok('el caso sano produce reparto por envases', sano.X01.mag === 'env' && sano.X01.he.length === 3);
+  ok('y lo ordena de mayor a menor', sano.X01.he.join() === 'X01A,X01B,X01C');
+  ok('el reparto de envases y el de DHD viven en claves distintas',
+    !sano.X01.h?.length && Array.isArray(sano.X01.he));
+
+  // PUERTA 1 — el nodo no puede tener DHD propia.
+  const conDhd = caso([{ env: 60 }, { env: 40 }], 100);
+  conDhd.X01.dhd = 5;
+  const rehecho = construirArbol({
+    1: new Map([['X', { n: 'RAIZ', env: 100 }]]),
+    2: new Map([['X01', { n: 'GRUPO', env: 100, dhd: 5 }]]),
+    3: new Map([['X01A', { n: 'H0', env: 60 }], ['X01B', { n: 'H1', env: 40 }]]),
+    4: new Map(), 5: new Map(),
+  });
+  ok('PUERTA 1: un nodo con DHD propia no recibe reparto por envases', !rehecho.X01.mag);
+
+  // PUERTA 2 — sin volumen no hay nada que repartir.
+  const sinVol = construirArbol({
+    1: new Map([['X', { n: 'RAIZ' }]]),
+    2: new Map([['X01', { n: 'GRUPO' }]]),
+    3: new Map([['X01A', { n: 'H0', env: 60 }], ['X01B', { n: 'H1', env: 40 }]]),
+    4: new Map(), 5: new Map(),
+  });
+  ok('PUERTA 2: sin envases en el nodo, no hay reparto', !sinVol.X01.mag);
+
+  // PUERTA 3 — ningún hijo puede tener DHD: mezclaría dos escalas en la misma barra.
+  const mixto = construirArbol({
+    1: new Map([['X', { n: 'RAIZ', env: 100 }]]),
+    2: new Map([['X01', { n: 'GRUPO', env: 100 }]]),
+    3: new Map([['X01A', { n: 'H0', env: 60, dhd: 2 }], ['X01B', { n: 'H1', env: 40 }]]),
+    4: new Map(), 5: new Map(),
+  });
+  ok('PUERTA 3: si algún hijo tiene DHD, no se reparte por envases', !mixto.X01.mag);
+
+  // PUERTA 4 — un solo miembro al 100 % no reparte nada.
+  const uno = caso([{ env: 100 }], 100);
+  ok('PUERTA 4: con un solo miembro no hay reparto', !uno.X01.mag);
+
+  // PUERTA 5 — la suma tiene que cuadrar. Es lo único que puede desmentir el dato.
+  const descuadra = caso([{ env: 30 }, { env: 20 }], 100);
+  ok('PUERTA 5: si la suma de los hijos no cuadra, no se publica', !descuadra.X01.mag);
+  const roza = caso([{ env: 60 }, { env: 38.5 }], 100);
+  ok('y la tolerancia es la misma que la de la DHD: 1,5 % pasa', roza.X01.mag === 'env');
+  const pasa = caso([{ env: 60 }, { env: 37 }], 100);
+  ok('MUTANTE: 3 % no pasa', !pasa.X01.mag);
+
+  // Las validaciones son BLOQUEANTES y revalidan las puertas sobre el documento ya construido.
+  const doc = (nodos) => ({ meta: { n_nodos: Object.keys(nodos).length }, nodos });
+  const errsDe = (nodos) => validar(doc(nodos), null).errores.filter((e) => /envases|escalas|cuadra|magnitud/i.test(e));
+  const base = JSON.parse(JSON.stringify(sano));
+  ok('el árbol sano no dispara ningún error de reparto por envases', errsDe(base).length === 0);
+
+  const rompe = (f) => { const n = JSON.parse(JSON.stringify(sano)); f(n); return errsDe(n).length > 0; };
+  ok('la validación caza un nodo con las dos magnitudes', rompe((n) => { n.X01.h = ['X01A']; }));
+  ok('caza un hijo con DHD dentro del reparto', rompe((n) => { n.X01A.dhd = 1; }));
+  ok('caza el reparto de un solo miembro', rompe((n) => { n.X01.he = ['X01A']; }));
+  ok('caza el descuadre de la suma', rompe((n) => { n.X01A.env = 5; }));
+  ok('caza un `he` sin magnitud declarada', rompe((n) => { delete n.X01.mag; }));
+  ok('caza una magnitud declarada sin `he`', rompe((n) => { delete n.X01.he; }));
+  ok('y bloquean, no avisan', validar(doc((() => { const n = JSON.parse(JSON.stringify(sano)); n.X01A.env = 5; return n; })()), null).bloquea);
+}
+
+// ── 23. la magnitud se declara en pantalla, siempre ─────────────────────────
+// Con dos tipos de reparto en la misma capa, dejar uno sin marcar convertiría a ese en el
+// «normal» y al otro en la excepción: quien pasa de C10AA a D07AC leería dos porcentajes
+// seguidos como si midieran lo mismo, y no lo miden. Así que lo dicen los DOS, con el mismo
+// formato y en el mismo sitio, y el reparto de envases se distingue además por TEXTURA y no por
+// color — un tono distinto se leería como escala de mérito, y esta capa no juzga.
+console.log('\n23) la magnitud, declarada en pantalla y en el dato');
+{
+  const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+  const api = readFileSync(join(RAIZ, 'assets', 'js', 'cima-api.js'), 'utf8');
+  const css = readFileSync(join(RAIZ, 'assets', 'css', 'cima-app.css'), 'utf8');
+  const reparto = app.slice(app.indexOf('renderUtilizacionRepartoHtml(d, g, {'),
+    app.indexOf('renderUtilizacionHtml(atc5, d, cpresc) {'));
+
+  ok('el render declara la magnitud de los dos tipos',
+    /Reparto por \$\{esEnv \? 'envases' : 'dosis'\}/.test(reparto));
+  ok('y con ella el 100 %, con su cifra',
+    /el 100 % son \$\{totalTxt\} de \$\{esc\(g\.atc\)\}/.test(reparto));
+  ok('la escala de la barra usa la magnitud del reparto, no siempre la DHD',
+    /const valorDe = \(m\) => \(esEnv \? \(m\.envases_miles \|\| 0\) : \(m\.dhd \|\| 0\)\)/.test(reparto)
+    && /valorDe\(m\) \/ max/.test(reparto));
+  ok('MUTANTE: la barra ya no se escala siempre sobre m.dhd',
+    !/\(m\.dhd \/ max\) \* 100/.test(reparto));
+
+  // El sujeto de la frase es lo que de verdad se reparte. Decir «dosis» en un reparto de
+  // envases sería afirmar exactamente lo que la magnitud no sostiene.
+  const frase = app.slice(app.indexOf('_utilFraseReparto(g) {'), app.indexOf('_utilLimitesHtml() {'));
+  ok('la frase dice «envases dispensados» cuando el reparto es de envases',
+    /magnitud === 'envases'[\s\S]{0,90}envases dispensados en/.test(frase));
+  ok('y sigue diciendo «dosis» cuando lo es', /dosis dispensadas en/.test(frase));
+
+  // La magnitud viaja en el DATO, en los tres productores, para que un consumidor que no lea
+  // el texto tampoco pueda confundirlas.
+  ok('los dos constructores del cliente declaran la magnitud',
+    (app.match(/magnitud: 'envases'/g) || []).length === 1
+    && (app.match(/magnitud: 'dhd'/g) || []).length === 1
+    && (api.match(/magnitud: 'envases'/g) || []).length === 1
+    && (api.match(/magnitud: 'dhd'/g) || []).length === 1);
+  ok('y ambos leen `he` solo con la marca `mag` puesta',
+    (app.match(/n\.mag === 'env' && n\.he\?\.length && n\.env > 0/g) || []).length === 1
+    && (api.match(/n\.mag === 'env' && n\.he\?\.length && n\.env > 0/g) || []).length === 1);
+
+  // Distinción visual sin color semántico.
+  ok('las barras de envases se distinguen por textura', /\.util-bars\.is-envases \.util-bar-track i/.test(css)
+    && /repeating-linear-gradient/.test(css));
+  ok('y ensanchan la columna del valor, que ahí tiene siete dígitos',
+    /\.util-bars\.is-envases \.util-bar-row \{[^}]*grid-template-columns/.test(css));
+  ok('la lista se marca en el HTML', /\$\{esEnv \? ' is-envases' : ''\}/.test(reparto));
+  ok('MUTANTE: la distinción no introduce un color nuevo con significado',
+    !/\.util-bars\.is-envases[\s\S]{0,300}(--danger|--warning|--success|#f[0-9a-f]{2}[0-9a-f]{3})/i.test(css));
+
+  // La cautela propia de esta magnitud, que es la que sostiene todo lo demás.
+  ok('el reparto de envases dice que no es un reparto de tratamiento',
+    /equivale a otro en cantidad de tratamiento/.test(reparto));
+  ok('y por qué no puede expresarse en DHD',
+    /tienen DDD asignada por la OMS/.test(reparto) && /no puede expresarse en DHD/.test(reparto));
+  ok('el mensaje de ausencia ya no dice que solo falte la DHD',
+    /ni DHD, ni un desglose de envases que cuadre/.test(app));
 }
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);
 process.exit(fallos === 0 ? 0 : 1);

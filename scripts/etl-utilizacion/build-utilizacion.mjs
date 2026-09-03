@@ -294,6 +294,49 @@ export function construirArbol(niveles) {
     nodo.h = conDhd.sort((a, b) => nodos.get(b).dhd - nodos.get(a).dhd);
   }
 
+
+  // ── Reparto por ENVASES, solo donde no existe DDD en absoluto ──────────────
+  //
+  // Hay 156 nodos con volumen dispensado y sin DHD: los tópicos, sobre todo — dermatológicos,
+  // óticos, oftálmicos —, cuyas presentaciones no tienen DDD asignada por la OMS. Hasta ahora
+  // la capa decía de ellos «este grupo no tiene reparto publicado con DHD» sentada sobre el
+  // 7,7 % del volumen dispensado del país, cuyo reparto SÍ está publicado.
+  //
+  // Esto no es una derivación como lo sería «DDD por envase», que exigiría población y días y
+  // produciría una cifra que no se puede verificar contra nada. Es la MISMA división que ya se
+  // hace para la DHD, sobre dos números de la misma fila del mismo fichero, y su resultado se
+  // puede comprobar: la suma de los hijos tiene que dar el padre.
+  //
+  // Lo que un porcentaje de envases NO es: un reparto de tratamiento. Un envase no equivale a
+  // otro en cantidad de fármaco —un frasco de 5 ml y uno de 10 ml cuentan igual—, y normalizar
+  // eso es justamente para lo que existe la DDD. Por eso las cinco puertas de abajo, y por eso
+  // la magnitud viaja en el dato (`mag`) y no solo en el texto: un consumidor que no la mire
+  // no puede confundir un reparto con el otro, porque los miembros viven en claves distintas
+  // (`h` para DHD, `he` para envases) y ningún nodo tiene las dos.
+  for (const [cod, nodo] of nodos) {
+    const hijos = hijosDe.get(cod);
+    if (!hijos?.length) continue;
+
+    // 1. El nodo NO tiene DHD publicada. `typeof` y no `> 0`: un nodo con DHD 0,00 sí tiene DDD
+    //    asignada, solo que redondea a cero, y su reparto es el de dosis aunque salga diminuto.
+    if (typeof nodo.dhd === 'number') continue;
+    // 2. Tiene volumen propio sobre el que repartir.
+    if (!(nodo.env > 0)) continue;
+    // 3. NINGÚN hijo tiene DHD. Si alguno la tuviera, el reparto mezclaría dos magnitudes en la
+    //    misma escala y eso es exactamente lo que no se puede hacer.
+    if (hijos.some((k) => typeof nodos.get(k).dhd === 'number')) continue;
+    // 4. Hay reparto real. Un único miembro al 100 % no reparte nada y ocupa una pantalla.
+    const conEnv = hijos.filter((k) => (nodos.get(k).env ?? 0) > 0);
+    if (conEnv.length < 2) continue;
+    // 5. La suma de los hijos cuadra con el padre, con la misma tolerancia que ya se aplica al
+    //    descuadre de la DHD. Es la única comprobación que puede desmentir el dato, así que es
+    //    la que decide si se publica.
+    const suma = conEnv.reduce((s, k) => s + nodos.get(k).env, 0);
+    if (Math.abs(suma - nodo.env) / nodo.env > 0.02) continue;
+
+    nodo.he = conEnv.sort((a, b) => nodos.get(b).env - nodos.get(a).env);
+    nodo.mag = 'env';
+  }
   return Object.fromEntries(nodos);
 }
 
@@ -319,6 +362,9 @@ export function construir({ niveles, anio, procedencia }) {
       n_atc4: porNivel(4),
       n_grupos_completo: conHijos.filter((x) => x.den === 'completo').length,
       n_grupos_parcial: conHijos.filter((x) => x.den === 'parcial').length,
+      // Grupos cuyo reparto es de ENVASES porque no existe DDD. Si esta cifra se desploma de
+      // un mes a otro, la fuente ha cambiado algo en las filas sin DDD y hay que mirarlo.
+      n_grupos_envases: Object.values(nodos).filter((x) => x.mag === 'env').length,
       avisos: [],
     },
     nodos,
