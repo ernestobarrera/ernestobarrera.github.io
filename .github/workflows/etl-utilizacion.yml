@@ -2,6 +2,22 @@ name: ETL utilización observada (Min. Sanidad)
 
 on:
   workflow_dispatch:
+  # El dato se regenera cuando cambia el CÓDIGO que lo produce, no solo cuando pasa el mes.
+  #
+  # Sin esto, tocar el ETL dejaba el árbol de KV desfasado hasta el día 3 siguiente: el código
+  # nuevo estaba publicado y el dato que servía seguía siendo el que produjo el código viejo,
+  # en silencio y sin que nada lo señalara. Pasó con el reparto por envases (03/09/2026) y
+  # habría vuelto a pasar en cada cambio del ETL. La alternativa era lanzar el workflow a mano
+  # cada vez, que es exactamente el trabajo manual que este entorno existe para no hacer.
+  #
+  # No hay riesgo de disparos en cascada: el filtro es estrecho, la concurrencia está agrupada
+  # más abajo, las validaciones bloquean antes de publicar y, si bloquean, KV conserva la última
+  # versión buena.
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/etl-utilizacion/**'
+      - '.github/workflows/etl-utilizacion.yml'
   schedule:
     # 05:41 UTC el día 3 de cada mes. La fuente publica la tabla anual hacia abril y las mensuales
     # con ~4 meses de retraso: una comprobación diaria solo gastaría peticiones.
