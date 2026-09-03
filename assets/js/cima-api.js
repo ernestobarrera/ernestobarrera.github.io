@@ -2911,10 +2911,37 @@ class CimaAPI {
      * ficha del medicamento.
      */
     async getUtilizacionArbol() {
-        const KEY = 'medcheck_util_arbol_v1';
-        const TTL_MS = 7 * 24 * 3600 * 1000;
+        // CONTRATO DE LECTURA: los campos del nodo que este cliente usa. La clave del caché se
+        // deriva de aquí, así que añadir o quitar uno invalida solo los cachés guardados por
+        // versiones anteriores.
+        //
+        // Sin esto, un cliente nuevo puede pasarse días leyendo un árbol viejo de `localStorage`.
+        // Es lo que pasó al publicar el reparto por envases (03/09/2026): el ETL ya emitía
+        // `he`/`mag`, el JS desplegado ya sabía leerlos, y la pantalla seguía diciendo «este
+        // grupo no tiene reparto publicado» porque el árbol del navegador era de antes. El modo
+        // de fallo es el peor: todo parece desplegado y correcto, y un Ctrl+F5 no lo arregla
+        // porque recarga los assets y no toca `localStorage`.
+        const CAMPOS_NODO = ['n', 'niv', 'dhd', 'env', 'z', 'p', 'den', 'sin_ddd', 'h', 'he', 'mag'];
+        // Huella corta y determinista del contrato (djb2). No es criptografía: solo tiene que
+        // cambiar cuando cambie la lista.
+        const huella = CAMPOS_NODO.join(',').split('')
+            .reduce((h, c) => ((h * 33) ^ c.charCodeAt(0)) >>> 0, 5381).toString(36);
+        const KEY = `medcheck_util_arbol_${huella}`;
+        // 24 h y no 7 días: desde que el ETL se dispara también al cambiar su código, el árbol
+        // puede regenerarse cualquier día. Una semana de caché eran hasta siete días sirviendo
+        // un dato que ya no era el publicado. Son 41 KB comprimidos una vez al día.
+        const TTL_MS = 24 * 3600 * 1000;
         if (this._utilArbol) return this._utilArbol;
         if (this._utilArbolPromesa) return this._utilArbolPromesa;
+
+        // Los cachés de contratos anteriores se borran: 41 KB por versión abandonada en el
+        // almacenamiento del navegador no los reclama nadie.
+        try {
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('medcheck_util_arbol') && k !== KEY) localStorage.removeItem(k);
+            }
+        } catch (_) {}
 
         try {
             const cached = JSON.parse(localStorage.getItem(KEY) || 'null');

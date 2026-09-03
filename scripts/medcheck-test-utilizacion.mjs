@@ -343,8 +343,15 @@ console.log('\n7-9) contrato de la interfaz');
   ok('el ATC de la pestaña se toma del nivel 5', /atcs\?\.find\(a => a\.nivel === 5\)/.test(app));
   ok('MUTANTE: la pestaña NO usa atcs[0]', !/atc5Util\s*=\s*med\.atcs\?\.\[0\]/.test(app));
 
-  ok('el cliente descarga el árbol una sola vez y lo cachea',
-    /getUtilizacionArbol/.test(api) && /medcheck_util_arbol_v1/.test(api) && /_utilArbolPromesa/.test(api));
+  // Una descarga por sesión, compartida entre la ficha y la vista, y guardada bajo una clave
+  // DERIVADA del contrato de lectura. La versión anterior de esta guarda exigía la clave literal
+  // `medcheck_util_arbol_v1`, así que protegía justo el defecto: una clave fija que sobrevive a
+  // los cambios de esquema y deja al navegador leyendo un árbol viejo durante días.
+  ok('el cliente descarga el árbol una sola vez y comparte la promesa',
+    /getUtilizacionArbol/.test(api) && /_utilArbolPromesa/.test(api));
+  ok('y lo cachea bajo una clave derivada del contrato, no fija',
+    /const KEY = `medcheck_util_arbol_\$\{huella\}`/.test(api)
+    && !/medcheck_util_arbol_v\d/.test(api));
   ok('y nunca lanza: devuelve null ante cualquier fallo',
     /catch \(_\) \{\s*return null;\s*\}/.test(api.slice(api.indexOf('getUtilizacionArbol'))));
 
@@ -1226,6 +1233,52 @@ console.log('\n23) la magnitud, declarada en pantalla y en el dato');
     /tienen DDD asignada por la OMS/.test(reparto) && /no puede expresarse en DHD/.test(reparto));
   ok('el mensaje de ausencia ya no dice que solo falte la DHD',
     /ni DHD, ni un desglose de envases que cuadre/.test(app));
+}
+
+// ── 24. el caché no puede servir un árbol que el código ya no espera ────────
+// Al publicar el reparto por envases, el ETL ya emitía `he`/`mag`, el JS desplegado ya sabía
+// leerlos, y la pantalla seguía diciendo «este grupo no tiene reparto publicado»: el navegador
+// servía un árbol de `localStorage` guardado días antes, con TTL de 7 días y una clave fija que
+// no cambiaba nunca. El modo de fallo es el peor de todos —todo parece desplegado y correcto, y
+// un Ctrl+F5 no lo arregla porque recarga los assets y no toca `localStorage`—, y es hermano del
+// que se cerró en el workflow del ETL: el dato nuevo existe y algo intermedio sirve el viejo.
+//
+// La clave se deriva ahora del CONTRATO DE LECTURA: la lista de campos del nodo que el cliente
+// usa. Cambiarla invalida sola los cachés de versiones anteriores.
+console.log('\n24) el caché del árbol caduca con el contrato, no solo con el reloj');
+{
+  const api = readFileSync(join(RAIZ, 'assets', 'js', 'cima-api.js'), 'utf8');
+  const bloque = api.slice(api.indexOf('async getUtilizacionArbol()'), api.indexOf('async getUtilizacionNodo('));
+
+  ok('el contrato de lectura está declarado', /const CAMPOS_NODO = \[/.test(bloque));
+  ok('e incluye los campos del reparto por envases',
+    /'he'/.test(bloque) && /'mag'/.test(bloque));
+  ok('la clave del caché se DERIVA del contrato, no es una constante',
+    /const KEY = `medcheck_util_arbol_\$\{huella\}`/.test(bloque));
+  ok('MUTANTE: ya no hay una clave fija que sobreviva a los cambios de esquema',
+    !/medcheck_util_arbol_v1/.test(api));
+  ok('los cachés de contratos anteriores se borran', /startsWith\('medcheck_util_arbol'\)/.test(bloque)
+    && /removeItem\(k\)/.test(bloque));
+
+  // El TTL. Desde que el ETL corre al cambiar su código, una semana de caché eran hasta siete
+  // días sirviendo un dato que ya no era el publicado.
+  const ttl = (bloque.match(/const TTL_MS = (\d+) \* 3600 \* 1000/) || [])[1];
+  ok(`el TTL baja a un día (son ${ttl} h)`, Number(ttl) <= 24);
+
+  // La huella tiene que cambiar de verdad al cambiar el contrato: si no, no protege de nada.
+  const h = (campos) => campos.join(',').split('')
+    .reduce((a, c) => ((a * 33) ^ c.charCodeAt(0)) >>> 0, 5381).toString(36);
+  const base = ['n', 'niv', 'dhd', 'env', 'z', 'p', 'den', 'sin_ddd', 'h', 'he', 'mag'];
+  ok('la huella cambia si se AÑADE un campo al contrato', h(base) !== h([...base, 'nuevo']));
+  ok('cambia si se QUITA uno', h(base) !== h(base.slice(0, -1)));
+  ok('cambia si se REORDENA', h(base) !== h([...base].reverse()));
+  ok('y es estable para el mismo contrato', h(base) === h([...base]));
+
+  // El esquema del ETL sube cuando el árbol gana campos: un consumidor tiene que poder saber
+  // que hay algo nuevo que leer.
+  const etl = readFileSync(join(RAIZ, 'scripts', 'etl-utilizacion', 'build-utilizacion.mjs'), 'utf8');
+  const ver = Number((etl.match(/schema_version: (\d+)/) || [])[1]);
+  ok(`el esquema del árbol sube al ganar \`he\`/\`mag\` (va por ${ver})`, ver >= 3);
 }
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);
 process.exit(fallos === 0 ? 0 : 1);

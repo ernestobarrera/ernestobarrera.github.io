@@ -347,7 +347,10 @@ export function construir({ niveles, anio, procedencia }) {
   const conHijos = Object.values(nodos).filter((x) => x.h?.length);
   return {
     meta: {
-      schema_version: 2,
+      // Sube a 3 el 03/09/2026: los nodos ganan `he` y `mag` (reparto por envases). Los campos
+      // anteriores no cambian, pero el esquema no es el mismo y decir que sí lo es impediría a
+      // cualquier consumidor saber que hay algo nuevo que leer.
+      schema_version: 3,
       generated_at: new Date().toISOString(),
       // Fecha de la FUENTE, no de la ejecución. Es la que debe vigilar el watchdog: si el
       // Ministerio deja de publicar años nuevos, `generated_at` se refresca cada mes igual y el
