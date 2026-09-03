@@ -903,8 +903,13 @@ console.log('\n18) medida de lectura: la vista no se estira con la ventana');
 {
   const css = readFileSync(join(RAIZ, 'assets', 'css', 'cima-app.css'), 'utf8');
   const bloqueVista = css.slice(css.indexOf('.util-view {'), css.indexOf('.util-view-header {'));
-  ok('la vista declara un tope de ancho', /max-width:\s*\d+px/.test(bloqueVista), bloqueVista.slice(0, 80));
-  ok('y se centra, como .pgx-view', /margin:\s*0 auto/.test(bloqueVista));
+  // El contenedor y los párrafos comparten UNA anchura. Cuando no la compartían, el buscador y
+  // la línea del perímetro llegaban al borde y el texto rompía al 75 % del ancho: la misma doble
+  // medida que el token venía a eliminar, reintroducida un paso después con otro número.
+  ok('la vista se topa con la MISMA medida que usan los párrafos',
+    /max-width:\s*var\(--util-medida\)/.test(bloqueVista));
+  ok('y no queda ningún ancho suelto en píxeles en la capa (la media query no cuenta)',
+    !/max-width:\s*\d+px;/.test(css.slice(css.indexOf('═══ Utilización observada'))));
 
   const fila = css.slice(css.indexOf('.util-bar-row {'), css.indexOf('.util-bar-row.is-current'));
   const grid = (fila.match(/grid-template-columns:[^;]+;/) || [''])[0];

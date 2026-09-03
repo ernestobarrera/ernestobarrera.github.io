@@ -11932,7 +11932,7 @@ a.fin-cn:hover { text-decoration: underline; }
        PROPIO elemento, así que el mismo `62ch` producía cuatro anchos en píxeles distintos y
        tres párrafos seguidos rompían línea en tres sitios diferentes. Eso era lo que se veía
        como saltos de línea arbitrarios. */
-    --util-medida: 34rem;
+    --util-medida: 42rem;
 }
 
 .util-head {
@@ -12167,7 +12167,10 @@ a.fin-cn:hover { text-decoration: underline; }
 }
 .util-limits > summary::-webkit-details-marker { display: none; }
 .util-limits > summary::before {
-    content: "B8";
+    /* Carácter LITERAL, no el escape CSS de cuatro dígitos: ese escape se corrompió al
+       escribirse (quedó como el control 0x15 más «B8») y el marcador llevaba dos días
+       pintando basura. Un literal no puede volver a romperse así. */
+    content: "▸";
     display: inline-block;
     margin-right: 0.45rem;
     transition: transform 0.15s ease;
@@ -12257,7 +12260,7 @@ a.fin-cn:hover { text-decoration: underline; }
    huecos. Una barra de proporción no necesita ser larga; necesita ser comparable entre filas.
    Esta capa es explicativa antes que gráfica, y su ritmo de lectura debe ser uno solo. */
 .util-view {
-    max-width: 720px;
+    max-width: var(--util-medida);
     margin: 0 auto;
 }
 .util-view-header { margin-bottom: var(--space-md); }

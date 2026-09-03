@@ -14232,19 +14232,39 @@ ${materialesPlaceholder}
             const reparto = this._utilRepartoDeNodo(actual);
             const hoja = v.niv === 5;
 
-            cuerpo = `
-                <div class="util-node-head">
-                    <h3>${esc(actual)} · ${esc(v.n)}${this._emlBadgeHtml(actual)}</h3>
-                    ${this._utilIndicacionesHtml(actual)}
-                    <p class="util-node-figure">
+            // Cuál es EL dato depende del nodo, y hasta ahora no lo era.
+            //
+            // Un grupo sin DDD asignada —los tópicos, casi todos: dermatológicos, óticos,
+            // oftálmicos— pintaba una raya de 2,1rem junto a la palabra «DHD» y relegaba a
+            // letra pequeña el único número que sí existe, sus envases facturados. La pantalla
+            // resaltaba la ausencia y escondía el dato.
+            //
+            // Ahora la cifra principal es la DHD cuando la hay y los envases cuando no. La
+            // ausencia se dice en una línea, sin ocupar el sitio del dato.
+            const tieneDhd = typeof v.dhd === 'number';
+            const envases = typeof v.env === 'number'
+                ? Math.round(v.env * 1000).toLocaleString('es-ES') : null;
+            const figura = tieneDhd
+                ? `<p class="util-node-figure">
                         <strong>${this._utilDhd(v.dhd, v.z === 1)}</strong> DHD
                         <span class="util-unit-long">DDD por 1.000 habitantes y día</span>
                     </p>
                     <p class="util-lectura">${this._utilLecturaDhd(v.dhd, v.z === 1, hoja ? v.n : null)}</p>
                     ${this._utilNotaDdd()}
-                    ${typeof v.env === 'number' ? `<p class="util-env">
-                        <strong>${Math.round(v.env * 1000).toLocaleString('es-ES')}</strong> envases facturados
-                    </p>` : ''}
+                    ${envases ? `<p class="util-env"><strong>${envases}</strong> envases facturados</p>` : ''}`
+                : `<p class="util-node-figure">
+                        <strong>${envases ?? '—'}</strong> envases
+                        <span class="util-unit-long">envases facturados en ${esc(meta.periodo)}</span>
+                    </p>
+                    <p class="util-nodhd">Sin <strong>DDD</strong> asignada por la OMS, así que no
+                    tiene DHD: de este grupo se publica cuántos envases se dispensan, no cuántas
+                    dosis diarias equivalen.</p>`;
+
+            cuerpo = `
+                <div class="util-node-head">
+                    <h3>${esc(actual)} · ${esc(v.n)}${this._emlBadgeHtml(actual)}</h3>
+                    ${this._utilIndicacionesHtml(actual)}
+                    ${figura}
                 </div>
                 ${reparto
         ? `<section class="util-nav">${this.renderUtilizacionRepartoHtml(d, reparto, { navegable: true })}</section>`
