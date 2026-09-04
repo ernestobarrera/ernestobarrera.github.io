@@ -1459,7 +1459,10 @@ class MedCheckApp {
                 if (hasVisibleItems) {
                     const activeItem = dropdown.querySelector('.autocomplete-item.active');
                     if (activeItem) {
-                        this.openMedDetails(activeItem.dataset.nregistro);
+                        // Una fila de sustancia no tiene nregistro: con el `openMedDetails` de
+                        // antes, Enter sobre ella habría abierto `undefined` en silencio.
+                        if (activeItem.dataset.substance) this.searchBySubstance(activeItem.dataset.substance);
+                        else this.openMedDetails(activeItem.dataset.nregistro);
                         return;
                     }
                 }
@@ -2005,14 +2008,28 @@ class MedCheckApp {
                     return;
                 }
 
-                dropdown.innerHTML = this._renderAutocompleteMedItems(allResults, 14);
+                // Bloque de sustancias en cabeza. Sale de agrupar por `vtm` lo que YA se ha
+                // descargado: cero peticiones nuevas y cero ficheros que mantener. Solo en el
+                // buscador general — las otras tres superficies que comparten
+                // `_renderAutocompleteMedItems` (equivalencias, interacciones, adversos) piden
+                // un medicamento concreto, no un conjunto, y romperían con una fila sin
+                // nregistro. Por eso el bloque se compone aquí y no en el render común.
+                const subs = this._extractSubstanceSuggestions(allResults, query, {
+                    truncated: this._lastAutocompleteTruncated
+                });
+                dropdown.innerHTML = subs.length
+                    ? this._renderSubstanceItems(subs)
+                        + '<div class="autocomplete-section">Medicamentos</div>'
+                        + this._renderAutocompleteMedItems(allResults, 12)
+                    : this._renderAutocompleteMedItems(allResults, 14);
                 dropdown.classList.remove('hidden');
 
                 // Click handlers for selection
                 dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
                     item.addEventListener('click', () => {
-                        this.openMedDetails(item.dataset.nregistro);
                         dropdown.classList.add('hidden');
+                        if (item.dataset.substance) this.searchBySubstance(item.dataset.substance);
+                        else this.openMedDetails(item.dataset.nregistro);
                     });
                 });
             } catch (e) {
@@ -2056,8 +2073,16 @@ class MedCheckApp {
         // Combinar y deduplicar resultados (por nregistro)
         const seen = new Set();
         const allResults = [];
+        // CIMA corta la página en 200 (medido: paracetamol, 264 totales y 200 devueltos). Si
+        // alguna de las peticiones vino cortada, los recuentos por sustancia que se deriven de
+        // aquí son un MÍNIMO y hay que decirlo. Campo de instancia y no valor de retorno para
+        // no cambiar la firma que consumen las otras tres superficies.
+        this._lastAutocompleteTruncated = false;
         for (const result of results) {
             if (result.status !== 'fulfilled') continue;
+            const total = Number(result.value?.totalFilas);
+            const devueltos = (result.value?.resultados || []).length;
+            if (Number.isFinite(total) && total > devueltos) this._lastAutocompleteTruncated = true;
             for (const med of (result.value?.resultados || [])) {
                 if (!seen.has(med.nregistro)) {
                     seen.add(med.nregistro);
@@ -2075,10 +2100,17 @@ class MedCheckApp {
     _renderAutocompleteMedItems(meds, limit = 14) {
         return meds.slice(0, limit).map(med => {
             const atcInfo = this.getATCClinicalInfo(med);
-            const pactivos = med.pactivos || '';
+            // `pactivos` NO viene en el listado de CIMA. Medido el 04/09/2026 sobre cuatro
+            // consultas reales: 0 de 592 registros lo traían y los 592 traían `vtm`. Sin este
+            // respaldo la fila caía al laboratorio, de modo que el desplegable del buscador de
+            // medicamentos no enseñaba ni un principio activo — que es justo lo que se le pide.
+            // Ya estaba escrito en el changelog de la sesión 25 ("la lista de búsqueda no trae
+            // pactivos") y este render seguía sin enterarse.
+            const pactivos = med.pactivos || med.vtm?.nombre || '';
 
-            // Detectar si es una combinación (contiene / o ,)
-            const isCombination = pactivos.includes('/') || pactivos.includes(',');
+            // Combinación: CIMA la escribe con `+` en `vtm.nombre` y con `/` o `,` en
+            // `pactivos`. Con solo `/` y `,` la insignia no aparecía nunca en los listados.
+            const isCombination = /[+/,]/.test(pactivos);
             const combinationBadge = isCombination
                 ? '<span class="autocomplete-combo-badge"><i class="fas fa-layer-group"></i> Comb</span>'
                 : '';
@@ -2107,6 +2139,123 @@ class MedCheckApp {
         }).join('');
     }
 
+    /**
+     * Clave canónica de sustancia de un medicamento.
+     *
+     * `vtm` es el concepto —SNOMED CT— que CIMA da ya limpio de sal, dosis y laboratorio, y es
+     * el único de los cuatro campos posibles que llega SIEMPRE en los listados (medido: 592/592).
+     * Verificado también que colapsa la sal: `practiv1=bisoprolol fumarato` devuelve registros
+     * cuyo `vtm.nombre` es `bisoprolol` a secas.
+     *
+     * Las asociaciones NO se parten. CIMA las publica como entidad propia con su propio código
+     * (`amoxicilina + ácido clavulánico`, SCTID 734844004, distinto del de `amoxicilina`), y
+     * partirlas por el primer componente metía la asociación dentro del monocomponente: dos
+     * decisiones clínicas distintas en el mismo grupo.
+     */
+    _substanceKey(med) {
+        const vtm = (med?.vtm?.nombre || '').trim();
+        if (vtm) return vtm;
+        const pa = (med?.pactivos || '').trim();
+        if (pa) return pa;
+        const list = (med?.principiosActivos || []).map(p => p?.nombre).filter(Boolean);
+        return list.length ? list.join(' + ') : '';
+    }
+
+    /**
+     * Sustancias presentes en un conjunto de resultados, para ofrecerlas como ENTIDAD en el
+     * autocompletado del buscador general.
+     *
+     * Doctrina, la misma que el matcher de indicaciones ya aplica a la subcadena interior: se
+     * OFRECE con generosidad y se EJECUTA con exactitud. Aquí eso significa que toda sustancia
+     * que aparezca se propone —tecleando "omepra" salen omeprazol Y esomeprazol, que es lo que
+     * el médico necesita ver— y que la criba fina llega al elegir (`searchBySubstance`), no al
+     * sugerir. Ninguna se descarta por no empezar por lo tecleado: el umbral no es el lexema,
+     * es haber aparecido.
+     *
+     * Con una sola sustancia no se pinta nada: sin elección que ofrecer, el bloque solo roba
+     * sitio a los medicamentos.
+     *
+     * @param {Array} meds - resultados ya deduplicados del autocompletado
+     * @param {string} query - lo tecleado
+     * @param {{truncated?: boolean, limit?: number}} options - `truncated`: CIMA cortó la página
+     * @returns {Array<{name: string, count: number, truncated: boolean}>}
+     */
+    _extractSubstanceSuggestions(meds, query, { truncated = false, limit = 4 } = {}) {
+        const counts = new Map();
+        for (const med of (meds || [])) {
+            const key = this._substanceKey(med);
+            if (!key) continue;
+            counts.set(key, (counts.get(key) || 0) + 1);
+        }
+        if (counts.size < 2) return [];
+
+        const q = this._normalizeDrugSearchText(query);
+
+        // Desempate por lo que ESTE médico ha abierto en la sesión. Popularidad personal, no
+        // poblacional: no induce prescripción y no arrastra el sesgo de la DHD, que solo ve
+        // receta del SNS en oficina de farmacia y es ciega a todo lo hospitalario. Es una
+        // señal aproximada —`pactivos` de recientes puede traer dosis— y por eso solo deshace
+        // empates, nunca decide.
+        const recientes = (this.getRecentMeds?.() || [])
+            .map(r => this._normalizeDrugSearchText(r?.pactivos || ''))
+            .filter(Boolean);
+
+        const subs = [...counts.entries()].map(([name, count]) => {
+            const n = this._normalizeDrugSearchText(name);
+            // Orden R5: coincidencia primero. Nunca alfabético — pondría esomeprazol delante
+            // de omeprazol, que es exactamente el defecto que se viene a corregir.
+            let score = 10;
+            if (n === q) score = 100;
+            else if (n.startsWith(q)) score = 80;
+            else if (n.split(/\s+/).some(w => w.startsWith(q))) score = 60;
+            else if (n.includes(q)) score = 40;
+            const reciente = recientes.some(r => r === n || r.startsWith(n + ' ') || n.startsWith(r + ' '));
+            return { name, count, score, reciente, truncated };
+        });
+
+        // A igualdad de coincidencia manda el nombre MÁS CORTO, no el catálogo más grande.
+        // Tecleando "amoxi" las dos empiezan igual, pero la asociación tiene casi el doble de
+        // presentaciones (58 frente a 44) y ordenar por tamaño la pondría delante del
+        // monocomponente. Lo que acerca un nombre a un fragmento es su longitud, no cuántas
+        // cajas haya de él; quien busca la asociación teclea más. El tamaño solo desempata
+        // cuando ni la coincidencia ni la longitud deciden.
+        subs.sort((a, b) =>
+            b.score - a.score ||
+            (a.reciente === b.reciente ? 0 : (a.reciente ? -1 : 1)) ||
+            a.name.length - b.name.length ||
+            b.count - a.count ||
+            a.name.localeCompare(b.name, 'es'));
+
+        return subs.slice(0, limit);
+    }
+
+    /**
+     * Filas de sustancia del autocompletado.
+     *
+     * Comparten la clase `.autocomplete-item` a propósito: el recorrido con flechas lee esa
+     * clase y debe seguir siendo UNA sola lista de arriba abajo. Lo que las separa es
+     * `data-substance`, que es lo que decide si Enter y el clic buscan un conjunto o abren
+     * una ficha. La cabecera de sección NO la lleva, así que el teclado no se detiene en ella.
+     */
+    _renderSubstanceItems(subs) {
+        if (!subs?.length) return '';
+        const rows = subs.map(s => {
+            const unidad = s.count === 1 ? 'medicamento' : 'medicamentos';
+            // Recuento truncado: CIMA corta la página en 200 y entonces esto es un mínimo, no
+            // un total. Se dice, no se redondea en silencio.
+            const cuenta = s.truncated ? `${s.count}+ ${unidad}` : `${s.count} ${unidad}`;
+            const title = s.truncated
+                ? `Ver los medicamentos con ${s.name} (CIMA devolvió la página cortada: hay al menos ${s.count})`
+                : `Ver los ${s.count} ${unidad} con ${s.name}`;
+            return `
+                <button class="autocomplete-item autocomplete-item--substance" data-substance="${this._escapeHtml(s.name)}" title="${this._escapeHtml(title)}">
+                    <span class="autocomplete-substance-name">${this._escapeHtml(s.name)}</span>
+                    <span class="autocomplete-substance-count">${this._escapeHtml(cuenta)}</span>
+                </button>
+            `;
+        }).join('');
+        return `<div class="autocomplete-section">Sustancias</div>${rows}`;
+    }
 
     /**
      * Get clinical info based on medication's ATC code
@@ -6773,6 +6922,50 @@ class MedCheckApp {
         }, 100);
     }
 
+    /**
+     * Ejecuta una sustancia elegida en el autocompletado.
+     *
+     * Aquí es donde se paga la deuda de la subcadena, y solo aquí. La búsqueda de texto sigue
+     * siendo generosa —CIMA casa `practiv1` por subcadena, así que "omeprazol" arrastra los 91
+     * esomeprazol de los 174 que devuelve— y encima se aplica la faceta de principio activo con
+     * igualdad exacta sobre la misma clave que se ofreció. El médico ve 81 omeprazol, no 174
+     * mezclados, y esomeprazol sigue estando a un clic en su propio chip: se acota, no se oculta.
+     *
+     * Se reutiliza la faceta que ya existe (`activeIngredientFilters`) en lugar de abrir una
+     * ruta de búsqueda nueva: así el contrato único de filtrado, los contadores disyuntivos, el
+     * round-trip por URL y el botón "Limpiar N" siguen valiendo sin tocarlos. Y encaja porque
+     * `_medPrincipiosActivos` cae al mismo `vtm.nombre` que `_substanceKey`: la faceta compara
+     * exactamente la clave que se ofreció.
+     *
+     * NO se reescribe la caja de búsqueda con el nombre de la sustancia, y esto no es pereza:
+     * el nombre del concepto NO siempre es buscable. Medido el 04/09/2026 — `practiv1` con el
+     * nombre entero de una asociación (`amoxicilina + ácido clavulánico`) devuelve 0, porque
+     * CIMA escribe ahí otra cosa; y `ácido acetilsalicílico` también devuelve 0, porque en el
+     * campo de principio activo va invertido (`ACETILSALICILICO ACIDO`). Sustituir el texto
+     * habría dejado en cero justo las asociaciones y los ácidos. Se conserva la consulta que
+     * trajo los resultados y se acota sobre ella, de modo que el recuento que se ofreció en el
+     * desplegable es por construcción el que aparece: los dos salen del mismo universo.
+     *
+     * @param {string} sustancia - clave tal cual la devuelve `_substanceKey`
+     */
+    async searchBySubstance(sustancia) {
+        if (!sustancia) return;
+        document.getElementById('search-autocomplete')?.classList.add('hidden');
+        clearTimeout(this.autocompleteTimer);
+        if (this.autocompleteAbortController) this.autocompleteAbortController.abort();
+
+        await this.performSearch();
+
+        // Después de `performSearch`, nunca antes: una consulta nueva empieza por
+        // `_resetResultFilters()`, que vaciaría la faceta recién puesta.
+        if (this.groupingState && this._lastSearchData) {
+            this.groupingState.activeIngredientFilters.clear();
+            this.groupingState.activeIngredientFilters.add(sustancia);
+            this.displaySearchResults(this._lastSearchData);
+            this.updateURLWithCurrentState({ replace: true });
+        }
+    }
+
     searchByPA(pa) {
         this.closeModal();
         document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -11179,13 +11372,15 @@ ${materialesPlaceholder}
             let subtitle = '';
 
             switch (field) {
-                case 'activeIngredient':
-                    if (med.pactivos) {
-                        key = med.pactivos.split(/\s*[+/;]\s*/)[0].trim().toUpperCase();
-                    } else if (med.principiosActivos?.[0]?.nombre) {
-                        key = med.principiosActivos[0].nombre.toUpperCase();
-                    } else if (med.vtm?.nombre) {
-                        key = med.vtm.nombre.toUpperCase();
+                case 'activeIngredient': {
+                    // Clave canónica compartida con el desplegable y con la faceta. Antes esto
+                    // hacía `pactivos.split(/[+/;]/)[0]`, es decir, agrupaba por el PRIMER
+                    // componente y tiraba el resto: amoxicilina sola y amoxicilina + ácido
+                    // clavulánico caían en el mismo grupo, que son dos decisiones clínicas
+                    // distintas. CIMA publica la asociación como entidad propia; se respeta.
+                    const canon = this._substanceKey(med);
+                    if (canon) {
+                        key = canon.toUpperCase();
                     } else if (med.nombre) {
                         // Extract from medication name
                         const labPatterns = /\s+(EFG|STADA|TEVA|NORMON|CINFA|SANDOZ|RATIOPHARM|MYLAN|KERN|AUROVITAS|ZENTIVA|ACCORD|SUN|VIATRIS|RANBAXY|GLENMARK|ARISTO|QUALIGEN|PENSA|ALTER|FARMALIDER|ALMUS|MEDCHEMAX|APOTEX|PHARMAKERN|DAVUR|FLAS|NOVO NORDISK|LILLY|BOEHRINGER|SANOFI)[\s,]?/gi;
@@ -11197,6 +11392,7 @@ ${materialesPlaceholder}
                         }
                     }
                     break;
+                }
                 case 'route':
                     if (med.viasAdministracion?.[0]?.nombre) {
                         key = med.viasAdministracion[0].nombre;
