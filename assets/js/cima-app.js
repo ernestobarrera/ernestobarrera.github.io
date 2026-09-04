@@ -1828,10 +1828,32 @@ class MedCheckApp {
      * Estrategia: Primero buscar query completo (+ versión con sinónimos), luego expandir solo si necesario
      */
     /**
-     * Diccionario compartido de expansiones PA: mapea un término parcial al PA
-     * completo. Necesario porque la API de CIMA hace matching por PREFIJO:
-     * "glargina" no encuentra "insulina glargina". Lo consumen
-     * _performSmartSearch y _fetchAutocompleteMeds.
+     * Diccionario compartido de expansiones PA: mapea un término parcial al PA completo, para
+     * los casos en que la palabra que el médico teclea NO es la que CIMA escribe en el campo
+     * de principio activo. Lo consumen `_performSmartSearch` y `_fetchAutocompleteMeds`, que
+     * AÑADEN una petición con la expansión y deduplican; nunca sustituyen la original.
+     *
+     * El motivo que estaba escrito aquí —«la API de CIMA hace matching por PREFIJO: glargina
+     * no encuentra insulina glargina»— ES FALSO HOY, y por eso se retiró el bloque entero de
+     * insulinas. Medido el 04/09/2026 contra CIMA, `practiv1` casa por subcadena en cualquier
+     * posición:
+     *
+     *   glargina 8 = insulina glargina 8 · lispro 5 = 5 · degludec 3 = 3 · glulisina 3 = 3
+     *   aspart 39 > insulina aspart 9   → la expansión RESTABA, no sumaba
+     *   detemir 2 = 2 (solo sin `comerc`) · nph 0 = 0 · bifasica 0 = 0, con y sin `comerc`
+     *
+     * Nueve entradas que no aportaban ni una presentación y sí una petición por tecleo. El
+     * centinela 8 de SENTINELS.md («glargina sigue encontrando insulina glargina») es
+     * justamente el guardián de esta retirada: si CIMA volviera a exigir el prefijo, falla ahí.
+     *
+     * Los iones se quedan porque SÍ aportan, y mucho — misma medición, con `comerc=1`,
+     * término solo frente a término expandido:
+     *
+     *   calcico 3 → 190 · potasico 99 → 190 · magnesico 53 → 125 · sodico 315 → 468
+     *   ferroso 0 → 16 · ferrico 1 → 16
+     *
+     * Aquí el problema no es de prefijo sino de vocabulario: CIMA nombra la sal por el ion
+     * ("HIERRO SULFATO"), no por el adjetivo que se usa al hablar ("sulfato ferroso").
      */
     get _paSynonyms() {
         return {
@@ -1843,16 +1865,6 @@ class MedCheckApp {
             'calcico': 'calcio',
             'magnésico': 'magnesio',
             'magnesico': 'magnesio',
-            // Insulinas: el PA en CIMA siempre empieza por "insulina"
-            'glargina': 'insulina glargina',
-            'lispro': 'insulina lispro',
-            'aspart': 'insulina aspart',
-            'detemir': 'insulina detemir',
-            'degludec': 'insulina degludec',
-            'glulisina': 'insulina glulisina',
-            'nph': 'insulina nph',
-            'bifasica': 'insulina bifasica',
-            'bifásica': 'insulina bifasica',
         };
     }
 
@@ -2115,8 +2127,14 @@ class MedCheckApp {
                 ? '<span class="autocomplete-combo-badge"><i class="fas fa-layer-group"></i> Comb</span>'
                 : '';
 
-            // Badge de retirado para medicamentos no comercializados
-            const retiradoBadge = med._retirado
+            // Badge de retirado para medicamentos no comercializados.
+            // `_retirado` es un campo que NADIE asigna: se leía aquí y en la clase de la fila,
+            // y no se escribe en ningún sitio del código, así que esta insignia no se ha
+            // pintado nunca. El campo real de CIMA es `comerc`, y viene en el 100 % de los
+            // registros del listado. Se conserva `_retirado` por delante por si alguna ruta
+            // llega a marcarlo, pero quien decide es el dato oficial.
+            const noComercializado = med._retirado || med.comerc === false;
+            const retiradoBadge = noComercializado
                 ? '<span class="autocomplete-retirado-badge">No comercializado</span>'
                 : '';
 
@@ -2126,7 +2144,7 @@ class MedCheckApp {
                 : (med.labtitular ? `<span class="autocomplete-lab">${med.labtitular}</span>` : '');
 
             return `
-                <button class="autocomplete-item ${isCombination ? 'has-combination' : ''} ${med._retirado ? 'is-retirado' : ''}" data-nregistro="${med.nregistro}" data-nombre="${med.nombre.replace(/"/g, '&quot;')}">
+                <button class="autocomplete-item ${isCombination ? 'has-combination' : ''} ${noComercializado ? 'is-retirado' : ''}" data-nregistro="${med.nregistro}" data-nombre="${med.nombre.replace(/"/g, '&quot;')}">
                     <div class="autocomplete-main">
                         ${combinationBadge}
                         <span class="autocomplete-term">${med.nombre}</span>
@@ -2181,11 +2199,20 @@ class MedCheckApp {
      * @returns {Array<{name: string, count: number, truncated: boolean}>}
      */
     _extractSubstanceSuggestions(meds, query, { truncated = false, limit = 4 } = {}) {
+        // Se cuentan dos cosas por sustancia: el total y cuántos NO están comercializados.
+        // Con la casilla "Comercializado" marcada —que es lo normal— el segundo número es
+        // siempre 0 y no se pinta. Al desmarcarla, CIMA devuelve las dos poblaciones
+        // mezcladas y la diferencia importa: `esomeprazol + naproxeno` tiene 6 registros y
+        // solo 2 se pueden dispensar hoy. Un recuento que las sume sin decirlo cuenta como
+        // disponible lo que no lo está.
         const counts = new Map();
         for (const med of (meds || [])) {
             const key = this._substanceKey(med);
             if (!key) continue;
-            counts.set(key, (counts.get(key) || 0) + 1);
+            const acc = counts.get(key) || { count: 0, noComerc: 0 };
+            acc.count += 1;
+            if (med._retirado || med.comerc === false) acc.noComerc += 1;
+            counts.set(key, acc);
         }
         if (counts.size < 2) return [];
 
@@ -2200,7 +2227,7 @@ class MedCheckApp {
             .map(r => this._normalizeDrugSearchText(r?.pactivos || ''))
             .filter(Boolean);
 
-        const subs = [...counts.entries()].map(([name, count]) => {
+        const subs = [...counts.entries()].map(([name, { count, noComerc }]) => {
             const n = this._normalizeDrugSearchText(name);
             // Orden R5: coincidencia primero. Nunca alfabético — pondría esomeprazol delante
             // de omeprazol, que es exactamente el defecto que se viene a corregir.
@@ -2210,7 +2237,7 @@ class MedCheckApp {
             else if (n.split(/\s+/).some(w => w.startsWith(q))) score = 60;
             else if (n.includes(q)) score = 40;
             const reciente = recientes.some(r => r === n || r.startsWith(n + ' ') || n.startsWith(r + ' '));
-            return { name, count, score, reciente, truncated };
+            return { name, count, noComerc, score, reciente, truncated };
         });
 
         // A igualdad de coincidencia manda el nombre MÁS CORTO, no el catálogo más grande.
@@ -2244,13 +2271,21 @@ class MedCheckApp {
             // Recuento truncado: CIMA corta la página en 200 y entonces esto es un mínimo, no
             // un total. Se dice, no se redondea en silencio.
             const cuenta = s.truncated ? `${s.count}+ ${unidad}` : `${s.count} ${unidad}`;
-            const title = s.truncated
-                ? `Ver los medicamentos con ${s.name} (CIMA devolvió la página cortada: hay al menos ${s.count})`
-                : `Ver los ${s.count} ${unidad} con ${s.name}`;
+            const noComerc = s.noComerc > 0
+                ? `<span class="autocomplete-substance-off">${s.noComerc} sin comercializar</span>`
+                : '';
+            const partes = [
+                s.truncated
+                    ? `Ver los medicamentos con ${s.name} (CIMA devolvió la página cortada: hay al menos ${s.count})`
+                    : `Ver los ${s.count} ${unidad} con ${s.name}`,
+                s.noComerc > 0
+                    ? `${s.noComerc} de ellos no están comercializados hoy: aparecen porque la casilla «Comercializado» está desmarcada.`
+                    : ''
+            ].filter(Boolean);
             return `
-                <button class="autocomplete-item autocomplete-item--substance" data-substance="${this._escapeHtml(s.name)}" title="${this._escapeHtml(title)}">
+                <button class="autocomplete-item autocomplete-item--substance" data-substance="${this._escapeHtml(s.name)}" title="${this._escapeHtml(partes.join(' '))}">
                     <span class="autocomplete-substance-name">${this._escapeHtml(s.name)}</span>
-                    <span class="autocomplete-substance-count">${this._escapeHtml(cuenta)}</span>
+                    <span class="autocomplete-substance-count">${this._escapeHtml(cuenta)}${noComerc}</span>
                 </button>
             `;
         }).join('');

@@ -2061,6 +2061,17 @@ body {
     font-variant-numeric: tabular-nums;
     color: var(--text-secondary);
     white-space: nowrap;
+    text-align: right;
+}
+
+/* Cuántos de esos no se pueden dispensar hoy. Solo aparece con la casilla
+   "Comercializado" desmarcada, que es cuando CIMA mezcla las dos poblaciones. En línea
+   propia para que la cifra principal siga leyéndose de un vistazo. */
+.autocomplete-substance-off {
+    display: block;
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    font-weight: 400;
 }
 
 

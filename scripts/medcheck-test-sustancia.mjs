@@ -191,6 +191,43 @@ check('singular cuando hay un solo medicamento',
         app._extractSubstanceSuggestions([...lista('a', 3, 'A'), ...lista('b', 1, 'B')], 'a'))),
     true);
 
+console.log('\n=== No comercializados ===\n');
+
+// Medido el 04/09/2026: `practiv1=omeprazol` SIN `comerc=1` devuelve las dos poblaciones
+// mezcladas — omeprazol 69/30, esomeprazol 65/30, esomeprazol + naproxeno 2/4. La última es la
+// que enseña por qué importa: 6 registros y solo 2 dispensables.
+const MEZCLA = [
+    ...lista('omeprazol', 69, 'OMEPRAZOL CINFA'),
+    ...lista('omeprazol', 30, 'OMEPRAZOL VIEJO').map(m => ({ ...m, comerc: false })),
+    ...lista('esomeprazol + naproxeno', 2, 'VIMOVO'),
+    ...lista('esomeprazol + naproxeno', 4, 'VIMOVO RETIRADO').map(m => ({ ...m, comerc: false })),
+];
+
+const sMezcla = app._extractSubstanceSuggestions(MEZCLA, 'omepra');
+check('cada sustancia cuenta aparte los no comercializados',
+    sMezcla.map(s => [s.name, s.count, s.noComerc]),
+    [['omeprazol', 99, 30], ['esomeprazol + naproxeno', 6, 4]]);
+
+const htmlMezcla = app._renderSubstanceItems(sMezcla);
+check('la fila avisa de cuántos no se pueden dispensar',
+    /99 medicamentos<span class="autocomplete-substance-off">30 sin comercializar<\/span>/.test(htmlMezcla),
+    true);
+
+check('el caso engañoso queda a la vista: 6 registros, 4 sin comercializar',
+    /6 medicamentos<span class="autocomplete-substance-off">4 sin comercializar<\/span>/.test(htmlMezcla),
+    true);
+
+check('sin mezcla no se pinta el aviso: el dato decide, no el estado de la casilla',
+    /autocomplete-substance-off/.test(app._renderSubstanceItems(sOmepra)),
+    false);
+
+check('`_retirado` también cuenta, para las rutas que lo marquen',
+    app._extractSubstanceSuggestions([
+        ...lista('a', 2, 'A'),
+        ...lista('b', 2, 'B').map(m => ({ ...m, _retirado: true })),
+    ], 'a').map(s => [s.name, s.noComerc]),
+    [['a', 0], ['b', 2]]);
+
 console.log('\n=== Render: contrato con el teclado y con el clic ===\n');
 
 const html = app._renderSubstanceItems(sOmepra);
@@ -225,6 +262,26 @@ check('dos sales del mismo fármaco son UN grupo, no dos',
         { nregistro: '2', nombre: 'BISOPROLOL CINFA 5 mg', vtm: { nombre: 'bisoprolol' }, pactivos: 'BISOPROLOL HEMIFUMARATO 5 mg' },
     ], 'activeIngredient')),
     [['BISOPROLOL', 2]]);
+
+console.log('\n=== Expansiones de principio activo ===\n');
+
+// El diccionario existe para un problema de VOCABULARIO, no de prefijo: CIMA nombra la sal por
+// el ion ("HIERRO SULFATO") y el médico la dice por el adjetivo ("sulfato ferroso"). Las
+// insulinas se retiraron el 04/09/2026 tras medir que `practiv1` casa por subcadena y que las
+// nueve entradas no aportaban ni una presentación. Quien vuelva a añadirlas debería medirlo
+// antes; el centinela 8 (glargina) es el guardián en vivo.
+const syn = app._paSynonyms;
+check('conserva los iones, que sí aportan cobertura',
+    Object.keys(syn).sort(),
+    ['calcico', 'ferrico', 'ferroso', 'magnesico', 'magnésico', 'potasico', 'sodico'].sort());
+
+check('ninguna clave de insulina: practiv1 ya las encuentra sola',
+    Object.keys(syn).filter(k => ['glargina', 'lispro', 'aspart', 'detemir', 'degludec', 'glulisina', 'nph', 'bifasica', 'bifásica'].includes(k)),
+    []);
+
+check('toda expansión apunta al ion, que es como CIMA lo escribe',
+    [...new Set(Object.values(syn))].sort(),
+    ['calcio', 'hierro', 'magnesio', 'potasio', 'sodio']);
 
 console.log('\n=== Invariante: lo ofrecido es lo que sale ===\n');
 
