@@ -90,10 +90,25 @@ would make the gate pass by construction. The side effect had never been written
 broad prefix nobody watches what comes in.** A new ATC code is "covered" automatically and silently.
 It is not a CAR-T problem: 28 entries and 56 prefixes (`J01`, `J05`, `L04`, `N05`…) all behave this way.
 
-This mode closes that half. For each watched prefix it sweeps the ATC master (same
-`atcLeavesUnder` helper as `--cobertura-atc`, so both share one definition of "leaf" and one
-truncation contract), keeps the **leaves with marketed product**, and compares them against an
-adjudicated baseline in `assets/data/broad-watch-baseline.json`:
+**The universe is the ONTOLOGY, not the baseline.** Every `broad` prefix declared in
+`clinical-ontology.json` must be adjudicated in `assets/data/broad-watch-baseline.json`; an
+unadjudicated prefix — or one left in the file that no entry claims any more — **blocks**. The first
+version derived the universe from the baseline's own keys, so an incomplete baseline approved
+itself: the gate defined its own work and then passed it. Found by Codex (P1, 2026-09-05) and pinned
+by the scenario that had never been exercised, because every test forced `--vigilar-broad=L01XL`.
+
+Two watch levels, because the cost gap is 40x (measured 2026-09-05: 63 prefixes, 2.326 leaves):
+
+| `watch` | what it does | cost | catches |
+|---|---|---|---|
+| `watched` | queries every leaf for marketed product; per-leaf adjudication in `leaves` | one call per leaf | an **old** leaf gaining its first product |
+| `codigos` | compares the set of leaf codes against the `codes` inventory | one master call | the classification **growing** under the umbrella |
+| `waived` | nothing; explicit renunciation, requires `reason` + `reviewedBy` | none | nothing |
+
+Today `L01XL` is `watched` and the other 62 are `codigos`: the whole gate runs in **~2 s**. Putting
+all 63 on `watched` would cost ~2.400 calls. Any other `watch` value blocks by schema.
+
+Leaf states under `watched`:
 
 - a leaf that is **not** in the baseline **blocks (exit 1)**, naming the code and its product count;
 - `review` blocks — being in the file is not having reviewed it;
@@ -103,6 +118,9 @@ adjudicated baseline in `assets/data/broad-watch-baseline.json`:
 
 **Only leaves WITH a marketed product count.** A leaf with no product changes nothing for anyone,
 which is exactly why its arrival is the signal worth firing on.
+
+**`--vigilar-broad=PREFIJO` is a focused pass, NOT the gate**: it sweeps what you name without
+checking anybody's adjudication, and the report says so in capitals. The gate is the bare form.
 
 **The case that motivated it (2026-09-05).** The entry `terapia génica y celular antineoplásica` is
 the prefix `L01XL`, which today returns exactly the 6 marketed CAR-T — because `L01XL02` (talimogén
@@ -114,9 +132,27 @@ ATC's own concept and not "CAR-T" — but the arrival must be *seen*, not discov
 is ~10 calls for `L01XL` and ~200 for a wide prefix like `J01`. Watching all 56 by default would be
 expensive enough to stop being run, and a gate nobody runs protects nothing.
 
-Pinned by `medcheck-test-vigilar-broad.mjs` (22 assertions). Its mutation is the regression itself:
+Pinned by `medcheck-test-vigilar-broad.mjs` (38 assertions). Its mutation is the regression itself:
 a new leaf **with** product must block, and its complement — a new leaf **without** product must
-not — so the gate can neither be weakened into silence nor "fixed" into crying wolf every pass.
+not — so the gate can neither be weakened into silence nor "fixed" into crying wolf every pass. The
+second half exercises the bare gate against the real ontology's prefix list: an incomplete or empty
+baseline must never come back green.
+
+### What the master sweep now refuses to certify
+
+Three ways `atcLeavesUnder` used to certify a universe it had not measured, all found in the same
+cross-review and all shared by `--cobertura-atc`:
+
+- **Duplicates counted as progress.** Completeness was `recibidas.length >= totalFilas` over raw
+  rows, so a CIMA that repeats a page reached the total with duplicates. Progress is now measured in
+  **unique codes**, and a page that adds none while the total is still short is a hard failure.
+- **A master with no `totalFilas`** produced `NaN`, and `Number.isFinite(NaN)` skipped the whole
+  check — any truncation passed as complete. Now it is inconclusive: without a declared count you
+  cannot claim completeness.
+- **A product response with no `totalFilas`** read as zero via `Number(undefined ?? 0)`, so an
+  incomplete answer became "no marketed product" — which is precisely the value that decides a leaf
+  is not a gap and not an event. Both call sites now go through `contarComercializados`, which
+  rejects an absent count and a `totalFilas: 0` that contradicts the `resultados` it ships.
 
 ## Sensitivity/specificity: SmPC 4.1 is the source of truth, ATC is a proxy
 

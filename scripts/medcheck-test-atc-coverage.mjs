@@ -43,15 +43,20 @@ function check(name, cond, detail) {
     else { failures += 1; console.log(`✗ ${name}${detail ? ` — ${detail}` : ''}`); }
 }
 
-function runCoverage({ atc, total, sinProducto = '', mode = 'ok', grupo = 'J07' }) {
+function runCoverage({ atc, total, sinProducto = '', mode = 'ok', grupo = 'J07',
+                       unaPagina = false, sinTotal = false, medsSinTotal = '', medsCeroConFilas = '' }) {
     const args = ['--import', MOCK, AUDIT, `--cobertura-atc=${grupo}`];
     const env = {
         ...process.env,
         MC_MOCK_MODE: mode,
         MC_MOCK_ATC: atc,
         MC_MOCK_ATC_SIN_PRODUCTO: sinProducto,
+        MC_MOCK_MEDS_SIN_TOTAL: medsSinTotal,
+        MC_MOCK_MEDS_CERO_CON_FILAS: medsCeroConFilas,
         MC_AUDIT_BACKOFF_MS: '1'
     };
+    if (unaPagina) env.MC_MOCK_ATC_UNA_PAGINA = '1'; else delete env.MC_MOCK_ATC_UNA_PAGINA;
+    if (sinTotal) env.MC_MOCK_ATC_SIN_TOTAL = '1'; else delete env.MC_MOCK_ATC_SIN_TOTAL;
     if (total !== undefined) env.MC_MOCK_ATC_TOTAL = String(total);
     else delete env.MC_MOCK_ATC_TOTAL;
     const r = spawnSync(process.execPath, args, { encoding: 'utf8', env });
@@ -99,12 +104,38 @@ check('3 · código hoja bajo un término específico → exit 0',
 check('8 · un padre con hijos no se evalúa como hoja',
     cubierto.code === 0 && !/!! J07BB —/.test(cubierto.out), 'el padre se está evaluando');
 
-// 5 · maestra truncada: totalFilas dice más de lo servido → INCONCLUSO
-const truncada = runCoverage({ atc: 'J07,J07Z,J07Z99', total: 999 });
+// 5 · maestra TRUNCADA de verdad: la página 1 trae filas, las siguientes vienen vacías y el
+// totalFilas declarado es mayor. Es el caso que el nombre siempre prometió.
+const truncada = runCoverage({ atc: 'J07,J07Z,J07Z99', total: 999, unaPagina: true });
 check('5 · maestra truncada → exit 2 inconcluso (nunca 0)',
     truncada.code === 2, `exit ${truncada.code}`);
 check('5b · lo dice, no lo silencia',
     /truncada/i.test(truncada.out), 'no explica por qué es inconcluso');
+
+// 5c · maestra que REPITE PÁGINA: sirve siempre las mismas filas. Medir el progreso en filas
+// acumuladas dejaba que los duplicados alcanzaran totalFilas y certificaba un universo
+// incompleto; el progreso se mide en códigos únicos. (Codex, 2026-09-05: la prueba anterior
+// usaba este mock y pasaba por el motivo equivocado, sin ejercitar nunca esta defensa.)
+const repetida = runCoverage({ atc: 'J07,J07Z,J07Z99', total: 5 });
+check('5c · maestra que repite página → exit 2 (los duplicados no son progreso)',
+    repetida.code === 2, `exit ${repetida.code}`);
+check('5d · y lo dice por su nombre',
+    /repite página/i.test(repetida.out), 'no distingue repetición de truncatura');
+
+// 5e · maestra SIN totalFilas: antes daba NaN y desactivaba la comprobación entera, así que
+// cualquier recorte pasaba como universo completo. Sin recuento declarado no se puede afirmar nada.
+const sinRecuento = runCoverage({ atc: 'J07,J07Z,J07Z99', sinTotal: true });
+check('5e · maestra sin totalFilas → exit 2 (no se puede afirmar completitud)',
+    sinRecuento.code === 2, `exit ${sinRecuento.code}`);
+
+// 5f/5g · recuento de productos ilegible o contradictorio. Un 0 decide que el código "no es un
+// hueco": tiene que ser un 0 MEDIDO, no la lectura de una respuesta incompleta.
+const medsSinTotal = runCoverage({ atc: 'J07,J07Z,J07Z99', medsSinTotal: 'J07Z99' });
+check('5f · /medicamentos sin totalFilas → exit 2, no "sin producto"',
+    medsSinTotal.code === 2, `exit ${medsSinTotal.code}`);
+const medsContradictorio = runCoverage({ atc: 'J07,J07Z,J07Z99', medsCeroConFilas: 'J07Z99' });
+check('5g · /medicamentos con totalFilas 0 y productos dentro → exit 2',
+    medsContradictorio.code === 2, `exit ${medsContradictorio.code}`);
 
 // 6 · maestra vacía: no encontrar nada NO es aprobar
 const vacia = runCoverage({ atc: '' });

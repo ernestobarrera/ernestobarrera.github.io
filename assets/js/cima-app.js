@@ -4070,6 +4070,14 @@ class MedCheckApp {
     _doseFingerprint(texto) {
         let s = String(texto ?? '').toLowerCase()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            // El signo de multiplicar tipogr\u00e1fico (\u00d7, U+00D7) y la equis ASCII son el MISMO
+            // operador escrito de dos formas, y CIMA usa una en cada campo: `dosis` trae
+            // "260 - 500 \u00d7 10e6 c\u00e9lulas" y `nombre` trae "260-500 x 10e6 CELULAS". La firma sal\u00eda
+            // distinta por ese \u00fanico car\u00e1cter y el t\u00edtulo se quedaba con la dosis puesta. No
+            // relaja nada: unifica dos graf\u00edas del mismo s\u00edmbolo, igual que se hace con los
+            // acentos. Es rareza de las terapias celulares \u2014 0 casos de \u00d7 en una muestra de 2.400
+            // comercializados el 2026-09-05 \u2014, y arregla ABECMA y CARVYKTI.
+            .replace(/\u00d7/g, 'x')
             .replace(/\s+/g, ' ').trim();
         if (!s) return '';
         s = s.replace(MedCheckApp.DOSE_QUALITATIVE_DENOM, '');

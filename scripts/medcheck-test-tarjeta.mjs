@@ -108,6 +108,30 @@ console.log('\n— Denominador cualitativo: no es una magnitud —');
         'la firma distingue microgramos de miligramos');
 }
 
+console.log('\n— Terapias celulares: la × tipográfica y la x ASCII son el mismo operador —');
+{
+    // CIMA escribe el mismo número de dos formas según el campo: `dosis` con × (U+00D7) y
+    // `nombre` con x ASCII. La firma salía distinta por ese carácter y el título de los CAR-T
+    // arrastraba toda la dosis ("ABECMA 260-500 x 10e6 CELULAS" en vez de "ABECMA").
+    const abecma = med('ABECMA 260-500 x 10e6 CELULAS DISPERSION PARA PERFUSION',
+        '260 - 500 × 10e6 células', 'DISPERSIÓN PARA PERFUSIÓN', 'INYECTABLE PERFUSION');
+    ok(bajaLaDosis(abecma), 'ABECMA: la dosis baja al subtítulo y el título queda en la marca');
+    ok(app._splitOfficialName(abecma).marca === 'ABECMA', 'y la marca es solo "ABECMA"');
+
+    ok(app._doseFingerprint('3,2 × 10e6') === app._doseFingerprint('3,2 x 10e6'),
+        'la firma unifica × y x (CARVYKTI)');
+
+    // La unificación NO relaja la guarda: donde la fuente dice cosas distintas, sigue sin bajar.
+    // Son los otros cuatro CAR-T, y cada uno por un motivo real de la fuente.
+    const yescarta = med('YESCARTA 0,4 - 2 x 10e8 CELULAS DISPERSION PARA PERFUSION',
+        '2 x 10e8 células inyectable 68 ml', 'DISPERSIÓN PARA PERFUSIÓN', 'INYECTABLE PERFUSION');
+    ok(!bajaLaDosis(yescarta), 'YESCARTA: el campo dice más que el nombre, la dosis se queda arriba');
+
+    const kymriah = med('KYMRIAH 1,2 x 10e6 - 6,0 x 10e8 celulas dispersion para perfusion',
+        '1,2 × 10e6 - 6 × 10e8 células', 'DISPERSIÓN PARA PERFUSIÓN', 'INYECTABLE PERFUSION');
+    ok(!bajaLaDosis(kymriah), 'KYMRIAH: 6 frente a 6,0 no se adivina, la dosis se queda arriba');
+}
+
 console.log('\n— Autoverificación: ¿caza el detector la regresión conocida? —');
 {
     // La regla ANTERIOR comparaba solo cifras. Se reconstruye aquí para comprobar que el

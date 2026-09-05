@@ -29,6 +29,13 @@ const TARGETS = {
     innjson:  { file: 'assets/js/inn-dict.js',  pattern: /(inn-es-en\.json\?v=)(\d{8}[a-z]?)/g },
     packs:    { file: 'assets/js/cima-app.js',  pattern: /(packs-index\.json\?v=)(\d{8}[a-z]?)/g },
     medynut:  { file: 'assets/js/cima-app.js',  pattern: /(medynut-index\.json\?v=)(\d{8}[a-z]?)/g },
+    // El service worker no lleva `?v=`: lleva su propia VERSION, que nombra el caché. Subir el
+    // `?v=` arregla la actualización ONLINE; subir esta VERSION arregla la OFFLINE, porque el
+    // fallback usa `ignoreSearch: true` y devuelve la primera entrada insertada, que es la ANTIGUA
+    // (ver la nota larga en sw.js). Faltaba en esta tabla, y por eso derivó 21 commits sin subir:
+    // el script que existe para que no se olvide un bump no cubría el bump que sw.js llama
+    // "ni opcional ni cosmético". Hallado el 2026-09-05.
+    sw:       { file: 'sw.js',                  pattern: /(const VERSION = ')(\d{8}[a-z]?)/g },
 };
 
 // Dependencias de cache-bust: bumpar el objetivo de la izquierda obliga a bumpar el de la
@@ -40,7 +47,13 @@ const IMPLICA = { packs: 'app', medynut: 'app', ontology: 'api', innjson: 'dict'
 const args = process.argv.slice(2).filter(a => a !== '--dry');
 const dry = process.argv.includes('--dry');
 const pedidos = args.includes('all') ? Object.keys(TARGETS) : args;
-const keys = [...new Set(pedidos.flatMap(k => (IMPLICA[k] ? [k, IMPLICA[k]] : [k])))];
+const conDependencias = [...new Set(pedidos.flatMap(k => (IMPLICA[k] ? [k, IMPLICA[k]] : [k])))];
+// `sw` lo arrastra CUALQUIER bump, no un objetivo concreto: la VERSION del service worker nombra
+// el caché entero, así que renovar un solo recurso versionado ya obliga a renovarla. Va aparte de
+// IMPLICA (que es 1:1) justamente porque no depende de cuál se bumpe, sino de que se bumpe algo.
+const keys = conDependencias.some(k => k !== 'sw') && !conDependencias.includes('sw')
+    ? [...conDependencias, 'sw']
+    : conDependencias;
 const arrastrados = keys.filter(k => !pedidos.includes(k));
 if (arrastrados.length) {
     console.log(`Se añaden por dependencia de caché: ${arrastrados.join(', ')}\n`);

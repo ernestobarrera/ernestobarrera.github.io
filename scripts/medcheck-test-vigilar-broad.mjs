@@ -166,6 +166,107 @@ const TRES_HOJAS = 'L01XL,L01XL03,L01XL04,L01XL09';
     check('y aun así la pasada bloquea', r.code === 1, `exit ${r.code}`);
 }
 
+// ---------------------------------------------------------------------------------------------
+// EL GATE COMPLETO (--vigilar-broad a secas). Todo lo de arriba usa --vigilar-broad=L01XL, que es
+// una pasada FOCALIZADA y no comprueba adjudicación: por esa rama nunca se pasaba, y era el
+// hallazgo P1 de Codex (2026-09-05). El universo del gate lo fija la ONTOLOGÍA, no la línea base.
+// ---------------------------------------------------------------------------------------------
+const ONTOLOGIA = JSON.parse(readFileSync(join(__dirname, '..', 'assets', 'data', 'clinical-ontology.json'), 'utf8'));
+const PREFIJOS_BROAD = [...new Set(Object.values(ONTOLOGIA.terms)
+    .filter((e) => e.status === 'broad')
+    .flatMap((e) => (Array.isArray(e.atc) ? e.atc : [e.atc]))
+    .map((a) => String(a || '').trim().toUpperCase())
+    .filter(Boolean))].sort();
+
+function runGate({ prefixes, mode = 'ok' }) {
+    const file = join(workDir, `gate-${Math.random().toString(36).slice(2)}.json`);
+    writeFileSync(file, JSON.stringify({ version: '2026-09-01', prefixes }, null, 2), 'utf8');
+    const r = spawnSync(process.execPath, ['--import', MOCK, AUDIT, '--vigilar-broad', `--broad-baseline=${file}`], {
+        encoding: 'utf8',
+        env: { ...process.env, MC_MOCK_MODE: mode, MC_MOCK_ATC_ECO: '1', MC_AUDIT_BACKOFF_MS: '1' }
+    });
+    return { code: r.status, out: `${r.stdout}\n${r.stderr}`, file };
+}
+
+// Adjudicación completa y coherente: cada prefijo broad vigilado por códigos, con su inventario ya
+// sembrado (la maestra en modo eco devuelve `<P>` y `<P>01`, y la hoja es `<P>01`).
+const todoAdjudicado = () => Object.fromEntries(PREFIJOS_BROAD.map((p) => [p, {
+    watch: 'codigos', codes: [`${p}01`], owners: ['x']
+}]));
+
+check('premisa: la ontología declara varios prefijos broad', PREFIJOS_BROAD.length > 10, `${PREFIJOS_BROAD.length}`);
+
+// 12. LA REGRESIÓN P1: línea base incompleta → el gate NO puede salir verde
+{
+    const r = runGate({ prefixes: { L01XL: { watch: 'codigos', codes: ['L01XL01'], owners: ['x'] } } });
+    check('línea base incompleta → exit 1 (no puede aprobar lo que no vigila)', r.code === 1, `exit ${r.code}`);
+    check('nombra los prefijos sin adjudicar', /SIN-ADJUDICAR/.test(r.out));
+    check('y dice qué entrada los declara', /lo declaran /.test(r.out));
+}
+
+// 13. Línea base vacía: el caso extremo del mismo fallo (antes: "none" + exit 0)
+{
+    const r = runGate({ prefixes: {} });
+    check('línea base vacía → exit 1, jamás verde', r.code === 1, `exit ${r.code}`);
+}
+
+// 14. Adjudicación completa y coherente → verde
+{
+    const r = runGate({ prefixes: todoAdjudicado() });
+    check('todos los prefijos adjudicados e inventariados → exit 0', r.code === 0, `exit ${r.code}`);
+}
+
+// 15. Un código nuevo bajo un paraguas vigilado por códigos → bloquea
+{
+    const prefixes = todoAdjudicado();
+    prefixes[PREFIJOS_BROAD[0]].codes = [];
+    const r = runGate({ prefixes });
+    check('código nuevo bajo un prefijo broad → exit 1', r.code === 1, `exit ${r.code}`);
+    check('lo nombra como código nuevo', /código nuevo bajo este paraguas/.test(r.out));
+}
+
+// 16. Prefijo en la línea base que ya no reclama nadie → bloquea (la ontología cambió)
+{
+    const prefixes = todoAdjudicado();
+    prefixes.ZZZ9 = { watch: 'codigos', codes: [], owners: [] };
+    const r = runGate({ prefixes });
+    check('prefijo huérfano en la línea base → exit 1', r.code === 1, `exit ${r.code}`);
+    check('lo llama huérfano', /HUÉRFANO/i.test(r.out));
+}
+
+// 17. La renuncia es un estado legítimo, pero solo firmada
+{
+    const conMotivo = todoAdjudicado();
+    conMotivo[PREFIJOS_BROAD[1]] = { watch: 'waived', reason: 'coste', reviewedBy: 'test', owners: ['x'] };
+    check('renuncia con motivo y responsable → exit 0', runGate({ prefixes: conMotivo }).code === 0);
+
+    const sinMotivo = todoAdjudicado();
+    sinMotivo[PREFIJOS_BROAD[1]] = { watch: 'waived', reason: '', reviewedBy: 'test', owners: ['x'] };
+    const r = runGate({ prefixes: sinMotivo });
+    check('renuncia sin motivo → exit 1', r.code === 1, `exit ${r.code}`);
+    check('lo dice explícitamente', /renuncia sin motivo escrito/.test(r.out));
+
+    const sinQuien = todoAdjudicado();
+    sinQuien[PREFIJOS_BROAD[1]] = { watch: 'waived', reason: 'coste', reviewedBy: '', owners: ['x'] };
+    check('renuncia sin responsable → exit 1', runGate({ prefixes: sinQuien }).code === 1);
+}
+
+// 18. Un `watch` desconocido no se interpreta con buena fe
+{
+    const prefixes = todoAdjudicado();
+    prefixes[PREFIJOS_BROAD[2]].watch = 'un poco';
+    const r = runGate({ prefixes });
+    check('watch desconocido → exit 1', r.code === 1, `exit ${r.code}`);
+    check('lo llama problema de esquema', /watch desconocido/.test(r.out));
+}
+
+// 19. La pasada focalizada se declara como lo que es, para que no se confunda con el gate
+{
+    const b = makeBaseline('focal.json', { L01XL03: aceptada('A'), L01XL04: aceptada('B') });
+    const r = runAudit({ codigos: DOS_HOJAS, baseline: b });
+    check('--vigilar-broad=X avisa de que NO es el gate', /PASADA FOCALIZADA/.test(r.out));
+}
+
 console.log('');
 if (failures) {
     console.log(`${failures} comprobación(es) fallida(s)`);
