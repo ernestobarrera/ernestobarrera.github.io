@@ -1,0 +1,63 @@
+{
+  "version": "2026-09-05",
+  "generatedBy": "medcheck-audit-ontology --update-vigilancia-broad",
+  "prefixes": {
+    "L01XL": {
+      "owners": [
+        "terapia génica y celular antineoplásica"
+      ],
+      "leaves": {
+        "L01XL03": {
+          "status": "accepted",
+          "nombre": "Axicabtagen ciloleucel",
+          "reason": "Axicabtagén ciloleucel (Yescarta). CAR-T anti-CD19 autólogo, uso hospitalario. Pertenece al concepto que rotula la entrada.",
+          "detectedAt": "2026-09-05",
+          "reviewedAt": "2026-09-05",
+          "reviewedBy": "Ernesto Barrera"
+        },
+        "L01XL04": {
+          "status": "accepted",
+          "nombre": "Tisagenlecleucel",
+          "reason": "Tisagenlecleucel (Kymriah). CAR-T anti-CD19 autólogo, uso hospitalario. Pertenece al concepto que rotula la entrada.",
+          "detectedAt": "2026-09-05",
+          "reviewedAt": "2026-09-05",
+          "reviewedBy": "Ernesto Barrera"
+        },
+        "L01XL05": {
+          "status": "accepted",
+          "nombre": "Ciltacabtagen autoleucel",
+          "reason": "Ciltacabtagén autoleucel (Carvykti). CAR-T anti-BCMA autólogo, uso hospitalario. Pertenece al concepto que rotula la entrada.",
+          "detectedAt": "2026-09-05",
+          "reviewedAt": "2026-09-05",
+          "reviewedBy": "Ernesto Barrera"
+        },
+        "L01XL06": {
+          "status": "accepted",
+          "nombre": "Brexucabtagen autoleucel",
+          "reason": "Brexucabtagén autoleucel (Tecartus). CAR-T anti-CD19 autólogo, uso hospitalario. Pertenece al concepto que rotula la entrada.",
+          "detectedAt": "2026-09-05",
+          "reviewedAt": "2026-09-05",
+          "reviewedBy": "Ernesto Barrera"
+        },
+        "L01XL07": {
+          "status": "accepted",
+          "nombre": "Idecabtagen vicleucel",
+          "reason": "Idecabtagén vicleucel (Abecma). CAR-T anti-BCMA autólogo, uso hospitalario. Pertenece al concepto que rotula la entrada.",
+          "detectedAt": "2026-09-05",
+          "reviewedAt": "2026-09-05",
+          "reviewedBy": "Ernesto Barrera"
+        },
+        "L01XL08": {
+          "status": "accepted",
+          "nombre": "Lisocabtagen maraleucel",
+          "reason": "Lisocabtagén maraleucel (Breyanzi). CAR-T anti-CD19 autólogo, uso hospitalario. Pertenece al concepto que rotula la entrada. OJO: CIMA le pone nosustituible id 0 (N/A) pese a ser biológico — segunda excepción conocida tras los alérgenos V01AA; no derivar de ese campo una insignia \"Biológico\" sin matiz.",
+          "detectedAt": "2026-09-05",
+          "reviewedAt": "2026-09-05",
+          "reviewedBy": "Ernesto Barrera"
+        }
+      },
+      "note": "Los NO comercializados hoy quedan fuera a propósito y son el objeto de la vigilancia: L01XL02 (talimogén laherparepvec, virus oncolítico) y L01XL09 (tabelecleucel, linfocitos T alogénicos anti-VEB) NO son CAR-T. Si alguno se comercializa, este gate se pone rojo y hay que decidir si la entrada sigue valiendo tal cual (su rótulo es el del ATC, así que sí) o necesita afinarse."
+    }
+  },
+  "_doc": "Vigilancia de los prefijos ATC declarados `broad` en clinical-ontology.json. Responde a una pregunta que --cobertura-atc no puede hacerse: bajo un prefijo broad, ¿ha empezado a comercializarse un código que no estaba cuando se revisó la entrada? --cobertura-atc excluye los broad por contrato (un prefijo aprobaría siempre), y el efecto lateral es que bajo un prefijo nadie vigila lo que entra. Solo se registran hojas CON producto comercializado: una hoja sin producto no cambia lo que ve nadie, y por eso su llegada es justo el aviso. Estados: 'review' = pendiente de decisión humana, BLOQUEA siempre (estar aquí no es haber revisado); 'accepted' = revisado y pertenece, ÚNICO estado que silencia y solo con reason y reviewedBy no vacíos; status ausente o desconocido bloquea por esquema. Aceptar es siempre un acto humano sobre este JSON: --update-vigilancia-broad solo crea 'review' y NUNCA escribe tras una pasada inconclusa (exit 2). Dar de alta un prefijo: node scripts/medcheck-audit-ontology.mjs --vigilar-broad=PREFIJO --update-vigilancia-broad."
+}

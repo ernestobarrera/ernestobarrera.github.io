@@ -25,11 +25,24 @@ const coverageGroups = coverageArg
   ? (coverageArg.includes('=') ? coverageArg.slice(coverageArg.indexOf('=') + 1) : 'J07')
       .split(',').map(g => g.trim().toUpperCase()).filter(Boolean)
   : null;
+// --vigilar-broad[=L01XL] · ¿ha aparecido un código ATC nuevo, con producto comercializado, BAJO
+// un prefijo `broad`? Es el punto ciego que --cobertura-atc deja abierto por contrato (ver
+// checkBroadWatch). Sin lista, vigila los prefijos que ya tienen ficha en el baseline.
+const broadWatchArg = process.argv.slice(2).find(a => a === '--vigilar-broad' || a.startsWith('--vigilar-broad='));
+const broadWatch = Boolean(broadWatchArg);
+const broadWatchRequested = broadWatchArg && broadWatchArg.includes('=')
+  ? broadWatchArg.slice(broadWatchArg.indexOf('=') + 1).split(',').map(g => g.trim().toUpperCase()).filter(Boolean)
+  : null;
+const updateBroadWatch = args.has('--update-vigilancia-broad');
 // --baseline= permite apuntar a otro archivo (lo usan los tests de gates con baselines sintéticos).
 const baselineArg = readStringArg('--baseline');
 const baselinePath = baselineArg
   ? path.resolve(baselineArg)
   : path.join(repoRoot, 'assets', 'data', 'reconcile-baseline.json');
+const broadWatchArgPath = readStringArg('--broad-baseline');
+const broadWatchPath = broadWatchArgPath
+  ? path.resolve(broadWatchArgPath)
+  : path.join(repoRoot, 'assets', 'data', 'broad-watch-baseline.json');
 // Antigüedad máxima de un 'accepted' antes de exigir re-revisión humana.
 const ACCEPTED_MAX_AGE_DAYS = 180;
 // Base de los backoffs de reintento (1-3-8 × base). MC_AUDIT_BACKOFF_MS=1 en tests.
@@ -227,7 +240,10 @@ let orphanAnchorCount = 0;
 let probeRows = [];
 let coverageRows = [];
 let uncoveredAtcCount = 0;
+let broadWatchRows = [];
+let broadWatchBlockCount = 0;
 const baseline = await loadBaseline();
+const broadWatchBaseline = broadWatch || updateBroadWatch ? await loadBroadWatchBaseline() : null;
 if (reconcile || updateBaseline) {
   if (typeof fetch !== 'function') {
     throw new Error('Este Node no expone fetch global. Usa Node 18+ para --reconcile.');
@@ -283,6 +299,35 @@ if (coverageGroups) {
   uncoveredAtcCount = coverageRows.reduce((a, r) => a + r.uncovered.length, 0);
 }
 
+if (broadWatch) {
+  // Sin lista explícita se vigila lo que YA está bajo vigilancia: dar de alta un prefijo es un
+  // acto deliberado (--vigilar-broad=PREFIJO --update-vigilancia-broad), no un efecto colateral
+  // de correr el auditor. Ese contrato es además el que acota el coste: una llamada por hoja.
+  const objetivo = broadWatchRequested?.length
+    ? broadWatchRequested
+    : Object.keys(broadWatchBaseline?.prefixes || {}).sort();
+  if (!objetivo.length) {
+    warnings.push('--vigilar-broad sin prefijos: el baseline no vigila ninguno todavía (usa --vigilar-broad=L01XL --update-vigilancia-broad para dar de alta)');
+  }
+  for (const prefijo of objetivo) {
+    try {
+      broadWatchRows.push(await checkBroadWatch(prefijo));
+    } catch (error) {
+      // Sin maestra o sin red no se puede afirmar que no ha entrado nada. INCONCLUSO, nunca limpio.
+      broadWatchRows.push({ prefijo, inconcluso: error.message, owners: [], hojas: 0, vivas: [], nuevas: [], bloqueadas: [], conocidas: [], desaparecidas: [] });
+      inconclusive.push(`vigilar-broad ${prefijo}: ${error.message}`);
+    }
+  }
+  broadWatchBlockCount = broadWatchRows.reduce((a, r) => a + r.nuevas.length + r.bloqueadas.length, 0);
+  if (updateBroadWatch) {
+    if (inconclusive.length) {
+      console.log('\n[broad-watch] NO escrito: ejecución inconclusa (repite la pasada cuando la red/maestra estén completas).');
+    } else {
+      await writeBroadWatchBaseline(broadWatchRows);
+    }
+  }
+}
+
 printReport();
 // Gate pre-publicacion con salida ternaria (revision cruzada 2026-07-23):
 //   0 → cobertura completa y limpia.
@@ -294,7 +339,8 @@ printReport();
 //       certificado ni escribe baseline.
 // Ambos codigos bloquean publicacion.
 const deterministicBlock = problems.length > 0 || newGapCount > 0 || blockedGapCount > 0
-  || invalidReconcileCount > 0 || orphanAnchorCount > 0 || uncoveredAtcCount > 0;
+  || invalidReconcileCount > 0 || orphanAnchorCount > 0 || uncoveredAtcCount > 0
+  || broadWatchBlockCount > 0;
 if (deterministicBlock) process.exitCode = 1;
 else if (inconclusive.length > 0) process.exitCode = 2;
 
@@ -994,7 +1040,10 @@ function toArray(value) {
 // cuenta como cobertura del código entero aunque en la práctica solo devuelva su porción filtrada
 // (J07BX mezcla COVID, VRS y dengue). Si aparece una cuarta familia bajo un código así, esta
 // comprobación NO la ve. Cubrirlo exigiría comparar contra la 4.1, que es lo que hace --reconcile.
-async function checkAtcCoverage(grupo) {
+// Hojas ATC bajo un prefijo, leidas de la maestra. Compartido por --cobertura-atc y
+// --vigilar-broad para que las dos comprobaciones tengan UNA sola definicion de "hoja" y UN solo
+// contrato de truncatura: si la maestra viene recortada, ninguna de las dos puede certificar nada.
+async function atcLeavesUnder(grupo) {
   // La maestra pagina a 200. Truncarla en silencio es la misma clase de fallo que ya costó dos
   // bugs en este repo: se recorre entera y se comprueba que el total cuadra.
   // OJO: la maestra busca por `nombre` y devuelve también códigos que casan por texto, no por
@@ -1022,6 +1071,11 @@ async function checkAtcCoverage(grupo) {
   // Hojas: sin ningún otro código de la maestra que las tenga por prefijo.
   const todos = new Set(codigos.map(c => c.codigo));
   const hojas = codigos.filter(c => ![...todos].some(otro => otro !== c.codigo && otro.startsWith(c.codigo)));
+  return { codigos, hojas };
+}
+
+async function checkAtcCoverage(grupo) {
+  const { hojas } = await atcLeavesUnder(grupo);
 
   // Cobertura: SOLO términos específicos (los broad quedan fuera, ver contrato de arriba).
   const especificos = [];
@@ -1051,6 +1105,132 @@ async function checkAtcCoverage(grupo) {
     huerfanasSinProducto: huerfanas.length - uncovered.length,
     uncovered
   };
+}
+
+// ---- Vigilancia de entradas broad (--vigilar-broad) --------------------------------------------
+// PREGUNTA QUE RESPONDE: bajo un prefijo declarado `broad`, ¿ha empezado a comercializarse algún
+// código ATC que no estaba cuando se revisó la entrada?
+//
+// Existe porque --cobertura-atc deja ESE punto ciego abierto por contrato: excluye las entradas
+// `broad` del cálculo de cobertura (un prefijo aprobaría siempre, y un gate que aprueba por
+// construcción es peor que no tenerlo). El efecto lateral es que bajo un prefijo `broad` NADIE
+// vigila lo que entra: un código nuevo queda "cubierto" automáticamente y en silencio.
+//
+// Caso que lo motivó (2026-09-05): la entrada `terapia génica y celular antineoplásica` es el
+// prefijo L01XL, que hoy devuelve exactamente los 6 CAR-T porque L01XL02 (talimogén laherparepvec,
+// virus oncolítico) y L01XL09 (tabelecleucel) NO están comercializados. El día que lo estén entran
+// solos. El rótulo de la entrada sigue siendo cierto —por eso se titula con el concepto del ATC y
+// no "CAR-T"—, pero la llegada debe VERSE, no descubrirse por casualidad.
+//
+// CONTRATO: solo se comparan hojas CON producto comercializado. Una hoja sin producto no es un
+// suceso: no cambia lo que ve nadie. Por eso la línea base no las guarda y su llegada, el día que
+// se comercialicen, es exactamente lo que dispara el aviso.
+//
+// CONTRATO: `accepted` es el único estado que silencia, y exige motivo escrito y responsable —
+// igual que en reconcile-baseline.json. `review` bloquea: estar en el archivo no es haber revisado.
+// Aceptar es siempre un acto humano sobre el JSON; --update-vigilancia-broad solo crea 'review'.
+//
+// COSTE: una llamada a la maestra por prefijo más una llamada por hoja. Para L01XL son ~10; para
+// un prefijo ancho como J01 son ~200. Es la razón de que la vigilancia sea opt-in por prefijo y no
+// se aplique de oficio a las 28 entradas broad.
+async function checkBroadWatch(prefijo) {
+  const { hojas } = await atcLeavesUnder(prefijo);
+
+  // Quién dice que este prefijo es suyo. Si no lo reclama ninguna entrada broad, vigilarlo no está
+  // mal, pero conviene decirlo: probablemente el prefijo se quedó en el baseline tras un cambio.
+  const owners = Object.entries(ontology.terms)
+    .filter(([, entry]) => entry.status === 'broad'
+      && toAtcList(entry).some(atc => String(atc || '').trim().toUpperCase() === prefijo))
+    .map(([term]) => term);
+
+  const registro = broadWatchBaseline?.prefixes?.[prefijo] || null;
+  const vivas = [];
+  for (const hoja of hojas) {
+    const respuesta = await fetchCima('/medicamentos', { atc: hoja.codigo, comerc: 1 });
+    const total = Number(respuesta?.totalFilas ?? 0);
+    if (total > 0) vivas.push({ ...hoja, total });
+  }
+
+  const nuevas = [];
+  const bloqueadas = []; // [hoja, motivo]
+  const conocidas = [];
+  for (const viva of vivas) {
+    const rec = registro?.leaves?.[viva.codigo];
+    if (!rec) { nuevas.push(viva); continue; }
+    if (rec.status === 'accepted') {
+      if (!String(rec.reason || '').trim()) bloqueadas.push([viva, 'accepted sin motivo escrito (reason)']);
+      else if (!String(rec.reviewedBy || '').trim()) bloqueadas.push([viva, 'accepted sin responsable (reviewedBy)']);
+      else conocidas.push(viva);
+    } else if (rec.status === 'review') {
+      bloqueadas.push([viva, 'pendiente de revisión humana (review): estar en el baseline no lo silencia']);
+    } else {
+      bloqueadas.push([viva, `status desconocido "${rec.status}" (esquema)`]);
+    }
+  }
+  // Un código que deja de tener producto comercializado NO bloquea: es una retirada, no una
+  // entrada. Se informa porque explica una lista que encoge, y nada más.
+  const desaparecidas = Object.keys(registro?.leaves || {})
+    .filter(codigo => !vivas.some(v => v.codigo === codigo));
+
+  return { prefijo, inconcluso: null, owners, hojas: hojas.length, vivas, nuevas, bloqueadas, conocidas, desaparecidas };
+}
+
+async function loadBroadWatchBaseline() {
+  // Misma distinción crítica que loadBaseline: "no existe" es primera vez legítima; "existe y no
+  // se puede leer" jamás puede tratarse como vacío, o --update-vigilancia-broad borraría la
+  // curación humana en silencio.
+  let raw;
+  try {
+    raw = await fs.readFile(broadWatchPath, 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return { version: null, prefixes: {} };
+    inconclusive.push(`broad-watch ilegible (${path.relative(repoRoot, broadWatchPath)}): ${error.message}`);
+    return { version: null, prefixes: {}, _loadError: true };
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    inconclusive.push(`broad-watch corrupto, no es JSON válido (${path.relative(repoRoot, broadWatchPath)}): ${error.message}`);
+    return { version: null, prefixes: {}, _loadError: true };
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)
+      || (parsed.prefixes != null && typeof parsed.prefixes !== 'object')) {
+    inconclusive.push(`broad-watch con esquema inválido (${path.relative(repoRoot, broadWatchPath)}): se esperaba un objeto con "prefixes"`);
+    return { version: null, prefixes: {}, _loadError: true };
+  }
+  return parsed;
+}
+
+async function writeBroadWatchBaseline(rows) {
+  if (broadWatchBaseline?._loadError) {
+    throw new Error('broad-watch no cargado (corrupto/ilegible): se aborta la escritura para no destruir la curación');
+  }
+  const next = {
+    version: today(),
+    generatedBy: 'medcheck-audit-ontology --update-vigilancia-broad',
+    ...(broadWatchBaseline?._doc ? { _doc: broadWatchBaseline._doc } : {}),
+    prefixes: { ...(broadWatchBaseline?.prefixes || {}) }
+  };
+  for (const row of rows) {
+    if (row.inconcluso) continue;
+    const prev = next.prefixes[row.prefijo] || {};
+    const leaves = { ...(prev.leaves || {}) };
+    for (const viva of row.vivas) {
+      if (leaves[viva.codigo]) {
+        // Solo se refresca lo descriptivo. El status curado a mano NUNCA se toca aquí.
+        if (!leaves[viva.codigo].nombre) leaves[viva.codigo].nombre = viva.nombre;
+        continue;
+      }
+      leaves[viva.codigo] = { status: 'review', nombre: viva.nombre, reason: '', detectedAt: today() };
+    }
+    // `owners` se refresca siempre (es dato derivado de la ontología, no curación); todo lo demás
+    // que hubiera a mano en el registro —una `note`— sobrevive.
+    next.prefixes[row.prefijo] = { ...prev, owners: row.owners, leaves };
+  }
+  const ordenado = { ...next, prefixes: Object.fromEntries(Object.entries(next.prefixes).sort(([a], [b]) => a.localeCompare(b))) };
+  await fs.writeFile(broadWatchPath, `${JSON.stringify(ordenado, null, 2)}\n`, 'utf8');
+  console.log(`\n[broad-watch] escrito ${path.relative(repoRoot, broadWatchPath)} (los códigos nuevos entran como 'review' y BLOQUEAN hasta que un humano escriba motivo y responsable).`);
 }
 
 function printReport() {
@@ -1098,6 +1278,45 @@ function printReport() {
       if (!fila.uncovered.length && fila.huerfanasSinProducto > 0) {
         console.log(`    ·  ${fila.huerfanasSinProducto} código(s) sin término y sin producto comercializado: no son hueco hoy`);
       }
+    }
+    console.log('');
+  }
+
+  if (broadWatch) {
+    console.log('## Vigilancia de entradas broad (¿ha entrado un código ATC nuevo bajo un prefijo?)');
+    console.log('(--cobertura-atc excluye los `broad` por contrato, así que bajo un prefijo nadie');
+    console.log(' vigila lo que entra. Solo cuentan las hojas CON producto comercializado: una hoja');
+    console.log(' sin producto no cambia lo que ve nadie, y por eso su llegada es el aviso.)');
+    console.log('');
+    if (!broadWatchRows.length) {
+      console.log('- none');
+      console.log('');
+    }
+    for (const fila of broadWatchRows) {
+      if (fila.inconcluso) {
+        console.log(`- ${fila.prefijo}: ?? INCONCLUSO — ${fila.inconcluso}`);
+        continue;
+      }
+      const dueños = fila.owners.length ? fila.owners.join(' | ') : '!! ningún término broad reclama este prefijo';
+      const estado = (fila.nuevas.length + fila.bloqueadas.length)
+        ? `!! ${fila.nuevas.length} NUEVA(S) + ${fila.bloqueadas.length} BLOQUEADA(S)`
+        : 'ok';
+      console.log(`- ${fila.prefijo} [${dueños}] ${fila.hojas} hojas · ${fila.vivas.length} con producto · ${fila.conocidas.length} aceptadas · ${estado}`);
+      for (const n of fila.nuevas) {
+        console.log(`    !! ${n.codigo} — ${n.nombre} · ${n.total} comercializado(s), SIN clasificar en el baseline`);
+      }
+      for (const [b, motivo] of fila.bloqueadas) {
+        console.log(`    !! ${b.codigo} — ${b.nombre}: ${motivo}`);
+      }
+      for (const d of fila.desaparecidas) {
+        console.log(`    ·  ${d} ya no tiene producto comercializado (retirada: informativo, no bloquea)`);
+      }
+    }
+    if (broadWatchBlockCount > 0 && !updateBroadWatch) {
+      console.log('');
+      console.log(`>> ${broadWatchBlockCount} código(s) sin clasificar bajo un prefijo broad: decide si PERTENECEN`);
+      console.log("   (acéptalos en broad-watch-baseline.json con reason y reviewedBy) o si la entrada necesita");
+      console.log('   afinarse. Para darlos de alta como "review": --vigilar-broad=PREFIJO --update-vigilancia-broad.');
     }
     console.log('');
   }

@@ -99,6 +99,32 @@ check('suggest "micosis": candidiasis (70) por delante de onicomicosis (60)',
     s.find((m) => m.term === 'onicomicosis')?.score === 60,
     JSON.stringify(s.map((m) => `${m.term}=${m.score}`)));
 
+// --- Entradas de modalidad por prefijo ATC (2026-09-05) ---
+// La entrada de L01XL se titula con el concepto del ATC, NO con "CAR-T": el prefijo incluye
+// L01XL02 (virus oncolítico) y L01XL09 (linfocitos T anti-VEB), que no son CAR-T. Eso hace que el
+// rótulo no pueda volverse falso, pero deja la DESCUBRIBILIDAD colgando de los sinónimos: si
+// alguien los recorta, "car-t" deja de llegar a ningún sitio y nada más lo notaría.
+const TGC = 'terapia génica y celular antineoplásica';
+r = real('car-t');
+check('real "car-t" → terapia génica y celular (sinónimo, 70)', r[0]?.term === TGC && r[0]?.score === 70, top(r));
+
+r = real('CAR T');
+check('real "CAR T" → misma entrada (mayúsculas y guion son lo mismo)', r[0]?.term === TGC, top(r));
+
+r = real('kymriah');
+check('real "kymriah" → misma entrada (marca como sinónimo)', r[0]?.term === TGC, top(r));
+
+s = sug('cart');
+check('suggest "cart" propone la entrada (autocomplete desde 4 letras)', has(s, TGC), top(s));
+
+r = real('anticuerpos monoclonales');
+check('real "anticuerpos monoclonales" → término exacto (100)',
+    r[0]?.term === 'anticuerpos monoclonales' && r[0]?.score === 100, top(r));
+
+r = real('policlonales');
+check('real "policlonales" → inmunoglobulinas (la contrapartida policlonal)',
+    r[0]?.term === 'inmunoglobulinas' && r[0]?.score === 70, top(r));
+
 // --- Invariantes estructurales sobre TODA la ontología ---
 // 1. Cada término se encuentra a sí mismo como top con 100.
 let selfTopFails = 0;

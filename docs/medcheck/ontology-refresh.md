@@ -3,7 +3,9 @@
 ## Cadence
 
 - Light refresh: monthly. **Include `--cobertura-atc` (see below): it is the cheap sweep that
-  catches ATC codes nobody covers, and it is the only check that answers "is this self-maintaining?".**
+  catches ATC codes nobody covers, and it is the only check that answers "is this self-maintaining?".
+  Include `--vigilar-broad` too: it answers the same question for the half `--cobertura-atc`
+  excludes by contract.**
 - Full refresh: quarterly.
 - Trigger an extra refresh after relevant EMA/AEMPS changes in biosimilars, oncology, biologics, CIMA schemas or financing sources.
 
@@ -74,6 +76,47 @@ check does not see it. Covering that would mean comparing against 4.1 — which 
 **It found a real gap on its first run (2026-08-17):** `J07BP` (chikungunya, VIMKUNYA marketed) did
 not exist in the vaccine family that had just been curated by hand. Hand-written subgroup lists go
 stale; the master does not.
+
+### The other half: `--vigilar-broad` (what walks in UNDER a broad prefix)
+
+```powershell
+node .\scripts\medcheck-audit-ontology.mjs --vigilar-broad                 # the prefixes already under watch
+node .\scripts\medcheck-audit-ontology.mjs --vigilar-broad=L01XL           # force a specific one
+node .\scripts\medcheck-audit-ontology.mjs --vigilar-broad=L01XL --update-vigilancia-broad
+```
+
+`--cobertura-atc` excludes `broad` entries from the coverage computation **on purpose** — a prefix
+would make the gate pass by construction. The side effect had never been written down: **under a
+broad prefix nobody watches what comes in.** A new ATC code is "covered" automatically and silently.
+It is not a CAR-T problem: 28 entries and 56 prefixes (`J01`, `J05`, `L04`, `N05`…) all behave this way.
+
+This mode closes that half. For each watched prefix it sweeps the ATC master (same
+`atcLeavesUnder` helper as `--cobertura-atc`, so both share one definition of "leaf" and one
+truncation contract), keeps the **leaves with marketed product**, and compares them against an
+adjudicated baseline in `assets/data/broad-watch-baseline.json`:
+
+- a leaf that is **not** in the baseline **blocks (exit 1)**, naming the code and its product count;
+- `review` blocks — being in the file is not having reviewed it;
+- `accepted` is the only silencing state, and only with a non-empty `reason` **and** `reviewedBy`;
+- a leaf that **loses** its marketed product is informational (a withdrawal is not an arrival);
+- a truncated master or a dead network is **exit 2 inconclusive** and never writes the baseline.
+
+**Only leaves WITH a marketed product count.** A leaf with no product changes nothing for anyone,
+which is exactly why its arrival is the signal worth firing on.
+
+**The case that motivated it (2026-09-05).** The entry `terapia génica y celular antineoplásica` is
+the prefix `L01XL`, which today returns exactly the 6 marketed CAR-T — because `L01XL02` (talimogén
+laherparepvec, an oncolytic virus) and `L01XL09` (tabelecleucel) are **not marketed**. The day
+either is, it walks in on its own. The entry's label stays true — that is why it is titled with the
+ATC's own concept and not "CAR-T" — but the arrival must be *seen*, not discovered by accident.
+
+**Cost, and why it is opt-in per prefix:** one master call per prefix plus one call per leaf. That
+is ~10 calls for `L01XL` and ~200 for a wide prefix like `J01`. Watching all 56 by default would be
+expensive enough to stop being run, and a gate nobody runs protects nothing.
+
+Pinned by `medcheck-test-vigilar-broad.mjs` (22 assertions). Its mutation is the regression itself:
+a new leaf **with** product must block, and its complement — a new leaf **without** product must
+not — so the gate can neither be weakened into silence nor "fixed" into crying wolf every pass.
 
 ## Sensitivity/specificity: SmPC 4.1 is the source of truth, ATC is a proxy
 
