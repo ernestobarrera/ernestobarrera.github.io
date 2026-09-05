@@ -15039,11 +15039,13 @@ ${materialesPlaceholder}
         // una persona puede consumir más o menos de una DDD, así que esa frase afirmaría algo
         // que el dato no dice.
         let principal;
-        if (d.sin_ddd_asignada) {
+        if (d.sin_dhd_publicada) {
             principal = `
             <div class="util-figure util-figure--nodhd">
-                <p class="util-nodhd">Sin DHD: la OMS no ha asignado DDD a este principio activo o
-                asociación, así que no entra en ningún cálculo de dosis.</p>
+                <p class="util-nodhd">Sin DHD: la tabla del Ministerio no publica dosis por 1.000
+                habitantes y día para este código, así que no entra en ningún cálculo de dosis.
+                <span class="util-nodhd-nota">Suele deberse a que la OMS no asigna DDD —lo habitual
+                en tópicos, oftálmicos, vitaminas y minerales—, pero la fuente no dice el motivo.</span></p>
                 ${typeof d.envases_miles === 'number' ? `<p class="util-env">
                     <strong>${(d.envases_miles * 1000).toLocaleString('es-ES')}</strong> envases facturados
                 </p>` : ''}

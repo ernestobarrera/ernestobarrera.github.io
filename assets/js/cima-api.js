@@ -3046,7 +3046,15 @@ class CimaAPI {
             dhd: nodo.dhd ?? null,
             dhd_cero_redondeado: nodo.z === 1,
             envases_miles: nodo.env ?? null,
-            sin_ddd_asignada: nodo.dhd === null,
+            // Lo que consta es que la celda viene vacía; el MOTIVO no consta en ninguna parte.
+            // Se llamaba `sin_ddd_asignada` y la ficha afirmaba «la OMS no ha asignado DDD»,
+            // que es una inferencia nuestra a partir de una ausencia. Medido el 05/09/2026
+            // sobre la fuente real: de los 224 códigos ATC5 sin DHD, 207 tienen envases
+            // facturados y 88 de esos no son tópicos ni oftálmicos ni vitaminas —entre ellos
+            // `J01EE01` sulfametoxazol/trimetoprima, con 685.390 envases y DDD conocida en el
+            // índice de la OMS—. La afirmación no solo no estaba verificada: en algunos casos
+            // es falsa. Aquí se dice la ausencia, no la causa.
+            sin_dhd_publicada: nodo.dhd === null || nodo.dhd === undefined,
             padre: nodo.p ?? null,
             grupo: nodo.p ? reparto(nodo.p) : null,
             desglose: reparto(code),

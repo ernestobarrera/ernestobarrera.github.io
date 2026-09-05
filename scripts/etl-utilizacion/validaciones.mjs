@@ -20,6 +20,13 @@ export const UMBRALES = Object.freeze({
   MIN_ATC4: 300,              // 2025 trae 366
   MIN_NODOS: 1200,            // 2025 trae 1.575 en los cinco niveles
   CAIDA_CODIGOS: 0.05,        // >5 % de códigos desaparecidos respecto al anterior
+  // Cuántos nodos traen DHD numérica. En 2025 son 1.222 de 1.575 (77,6 %); el resto viene con la
+  // celda vacía en origen. Si esa proporción se desploma, no es que el Ministerio haya dejado de
+  // calcular dosis: es que hemos dejado de saber leerlas, y cada código perdido se publicaría como
+  // «sin DHD», indistinguible de una ausencia legítima. `parsear` ya bloquea si una celda trae algo
+  // no numérico; esto cubre el caso en que la columna venga vacía o el mapeo apunte a otra parte.
+  MIN_COBERTURA_DHD: 0.60,
+  CAIDA_COBERTURA_DHD: 0.10,  // >10 puntos menos que la pasada anterior
   VARIACION_ATC5: 0.5,        // >50 % interanual en un ATC5: mirar, no bloquear
   DESCUADRE_GRUPO: 0.02,      // suma de hijos vs total del padre
   // La DHD mas alta del fichero de 2025 es 96,24 (omeprazol); el ATC4 mas alto, 127,88 (IBP), y el
@@ -113,6 +120,31 @@ export function validar(doc, previo) {
   // Y que la fecha de la fuente viaje: sin ella el watchdog vigila su propio reloj.
   if (!doc.meta?.fuente_fecha && doc.meta?.procedencia?.atc5) {
     avisos.push('El dataset no lleva `fuente_fecha`: el watchdog no podrá distinguir «la fuente no publica» de «el ETL no corre».');
+  }
+
+  // ── 3 bis. cobertura de la DHD ───────────────────────────────────────────
+  // Una desaparición masiva de cifras no rompe nada: el árbol sigue completo, los recuentos
+  // cuadran y todo sale verde. Lo único que cambia es que cientos de fichas pasan a decir que
+  // no hay DHD, que es una afirmación sobre el mundo. Por eso se mide y bloquea.
+  const conDhd = codigos.filter((k) => typeof nodos[k].dhd === 'number').length;
+  const cobertura = codigos.length ? conDhd / codigos.length : 0;
+  if (cobertura < UMBRALES.MIN_COBERTURA_DHD) {
+    errores.push(
+      `Solo ${conDhd} de ${codigos.length} nodos (${(cobertura * 100).toFixed(1)} %) traen DHD numérica, `
+      + `por debajo del mínimo ${(UMBRALES.MIN_COBERTURA_DHD * 100).toFixed(0)} %. `
+      + 'O la fuente ha cambiado de formato o el mapeo de columnas apunta a otro sitio.',
+    );
+  }
+  const nodosAnt = previo?.nodos ? Object.keys(previo.nodos) : [];
+  if (nodosAnt.length) {
+    const covAnt = nodosAnt.filter((k) => typeof previo.nodos[k].dhd === 'number').length / nodosAnt.length;
+    if (covAnt - cobertura > UMBRALES.CAIDA_COBERTURA_DHD) {
+      errores.push(
+        `La cobertura de DHD cae de ${(covAnt * 100).toFixed(1)} % a ${(cobertura * 100).toFixed(1)} %, `
+        + `más de ${(UMBRALES.CAIDA_COBERTURA_DHD * 100).toFixed(0)} puntos. Cada código perdido se `
+        + 'publicaría como «sin DHD», que en la ficha se lee como que la fuente no la trae.',
+      );
+    }
   }
 
   // ── 4. integridad del árbol ──────────────────────────────────────────────

@@ -112,6 +112,9 @@ export function padreDe(codigo) {
 }
 const norm = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
 
+/** Celda sin contenido: el estado normal de un c\u00f3digo al que la fuente no publica cifra. */
+const esVacia = (v) => v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
+
 // ── descubrimiento ──────────────────────────────────────────────────────────
 export async function descubrirFicheros(anio, fetchImpl = fetch) {
   const r = await fetchImpl(`${BASE}${anio}.htm`, { headers: { 'User-Agent': UA } });
@@ -194,6 +197,7 @@ export function parsear(buffer, anio, nivel) {
   const re = RE_NIVEL[nivel];
   if (!re) throw new Error(`Nivel ATC no soportado: ${nivel}`);
   const out = new Map();
+  const ilegibles = [];
   for (const f of filas) {
     if (f.n <= cab.fila) continue;
     const cod = f.celdas[cab.mapa.codigo];
@@ -216,6 +220,24 @@ export function parsear(buffer, anio, nivel) {
     if (typeof env === 'number') reg.env = env;
     if (typeof dhd === 'number') { reg.dhd = dhd; if (dhd === 0) reg.z = 1; }
     out.set(clave, reg);
+
+    // Celda VACÍA y celda ILEGIBLE no son lo mismo, y hasta aquí acababan igual: sin `dhd`.
+    // La vacía es el estado normal de la fuente —medido el 05/09/2026 sobre los cinco niveles:
+    // 353 de 1.575 códigos sin DHD, TODAS vacías, ninguna con texto—. La ilegible significa que
+    // el formato ha cambiado y que se están perdiendo cifras que nadie echará en falta: el
+    // código acabaría publicado como «sin DHD», indistinguible de una ausencia legítima.
+    if (!esVacia(dhd) && typeof dhd !== 'number') ilegibles.push(`${clave} DHD=${JSON.stringify(dhd).slice(0, 40)}`);
+    if (!esVacia(env) && typeof env !== 'number') ilegibles.push(`${clave} envases=${JSON.stringify(env).slice(0, 40)}`);
+  }
+
+  // Se lanza aquí, igual que con un duplicado o una cabecera irreconocible: son los tres la
+  // misma clase de suceso —el fichero ya no es el que sabemos leer— y ninguno debe publicarse.
+  if (ilegibles.length) {
+    throw new Error(
+      `España ${anio} ATC${nivel}: ${ilegibles.length} celda(s) con contenido que no es numérico. `
+      + 'El formato de la fuente ha cambiado y esas cifras se perderían en silencio, publicadas '
+      + `como si la tabla no las trajera. Primeras: ${ilegibles.slice(0, 5).join(' · ')}`,
+    );
   }
   return out;
 }

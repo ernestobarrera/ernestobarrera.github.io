@@ -889,7 +889,13 @@ console.log('\n17) contraste: los números y sus leyendas se leen');
   ok('el fondo de la capa está declarado', !!fondo, String(fondo));
 
   // El bloque que redefine el token dentro de las dos raíces de la capa.
-  const ambito = css.slice(css.indexOf('.util-view,\n.util-tab {'), css.indexOf('.util-head {'));
+  // El fichero se busca por posición, así que no puede asumir el final de línea: con
+  // `core.autocrlf=input` git guarda LF pero el working copy de Windows queda en CRLF en cuanto
+  // alguien edita el CSS, `indexOf('...\n...')` devuelve -1 y las TRES aserciones de contraste
+  // fallaban sin que nada estuviera mal — un rojo permanente en la suite, que es la mejor manera
+  // de que nadie vuelva a mirarla. El CSS siempre estuvo bien: #7b8ba0 da 5,14:1.
+  const inicio = css.search(/\.util-view,\s*\r?\n\s*\.util-tab\s*\{/);
+  const ambito = inicio === -1 ? '' : css.slice(inicio, css.indexOf('.util-head {'));
   const mutedCapa = token('--text-muted', ambito);
   ok('la capa redefine --text-muted en sus dos raíces', !!mutedCapa, String(mutedCapa));
   ok('y lo hace para .util-view Y .util-tab, no solo para una',
