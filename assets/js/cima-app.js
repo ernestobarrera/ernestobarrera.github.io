@@ -8929,7 +8929,7 @@ class MedCheckApp {
      * Falla en abierto: si no carga, la tarjeta queda exactamente como antes. El modal
      * sigue siendo la autoridad (lee el detalle en vivo, no este índice).
      */
-    _loadPacksIndex(url = 'assets/data/packs-index.json?v=20260826a') {
+    _loadPacksIndex(url = 'assets/data/packs-index.json?v=20260905a') {
         if (this._packsIndex) return Promise.resolve(this._packsIndex);
         if (this._packsIndexPromise) return this._packsIndexPromise;
         this._packsIndexPromise = fetch(url, { cache: 'force-cache' })
