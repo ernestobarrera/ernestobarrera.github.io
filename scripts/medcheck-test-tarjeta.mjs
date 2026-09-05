@@ -132,6 +132,29 @@ console.log('\n— Terapias celulares: la × tipográfica y la x ASCII son el mi
     ok(!bajaLaDosis(kymriah), 'KYMRIAH: 6 frente a 6,0 no se adivina, la dosis se queda arriba');
 }
 
+console.log('\n— El campo `dosis` tiene DOS lecturas, y ninguna domina a la otra —');
+{
+    // CIMA mete a veces el principio activo dentro de `dosis`. El display ya lo quita; la firma lo
+    // arrastraba, así que "10 mg ezetimiba" no casaba con el "10 mg" del nombre y el título se
+    // quedaba largo por un texto QUE NUNCA SE MUESTRA. ~1.200 comercializados.
+    const absorcol = med('ABSORCOL 10 mg COMPRIMIDOS', '10 mg ezetimiba', 'COMPRIMIDO');
+    ok(bajaLaDosis(absorcol), 'ABSORCOL: el principio activo dentro de `dosis` ya no impide bajar');
+
+    // Y el sentido contrario: donde el canonicalizador reescribe lo que el nombre escribe igual,
+    // manda el campo crudo. Si solo se mirara la canónica, estos ~58 dejarían de bajar.
+    const alprazolam = med('ALPRAZOLAM SANDOZ 0,50 mg COMPRIMIDOS EFG', '0,50 mg', 'COMPRIMIDO');
+    ok(bajaLaDosis(alprazolam), 'ALPRAZOLAM 0,50: la canónica dice "0,5 mg" pero el crudo casa');
+
+    const botox = med('BOTOX 200 UNIDADES ALLERGAN, POLVO PARA SOLUCIÓN INYECTABLE',
+        '200 UNIDADES ALLERGAN', 'POLVO PARA SOLUCIÓN INYECTABLE', 'INYECTABLE');
+    ok(bajaLaDosis(botox), 'BOTOX: la canónica dice "200 U" pero el crudo casa con el nombre');
+
+    // La guarda que no puede romperse: ninguna de las dos lecturas casa con DAXAS.
+    const daxasBis = med('DAXAS 500 MICROGRAMOS COMPRIMIDOS RECUBIERTOS CON PELICULA', '500 mg',
+        'COMPRIMIDO RECUBIERTO CON PELÍCULA');
+    ok(!bajaLaDosis(daxasBis), 'DAXAS sigue protegido con las dos lecturas, no solo con una');
+}
+
 console.log('\n— Autoverificación: ¿caza el detector la regresión conocida? —');
 {
     // La regla ANTERIOR comparaba solo cifras. Se reconstruye aquí para comprobar que el

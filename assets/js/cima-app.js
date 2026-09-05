@@ -4110,9 +4110,30 @@ class MedCheckApp {
      */
     _doseIsInName(med, dosisNombre) {
         if (!dosisNombre) return false;
-        const campo = this._doseFingerprint(med?.dosis);
-        if (!campo) return false;
-        return campo === this._doseFingerprint(dosisNombre);
+        const enNombre = this._doseFingerprint(dosisNombre);
+        if (!enNombre) return false;
+
+        // Se compara contra las DOS lecturas del campo, y basta con que una coincida. Ninguna
+        // domina a la otra, medido sobre los 16.122 comercializados (2026-09-05):
+        //
+        //  - El campo CRUDO gana donde el canonicalizador reescribe algo que el nombre escribe
+        //    igual: `ALPRAZOLAM 0,50 mg` (canónica "0,5 mg"), `BOTOX 200 UNIDADES ALLERGAN`
+        //    (canónica "200 U"), `CANDESARTAN 16/12,5 mg` (canónica "16 mg/12,5 mg"). Son ~58.
+        //  - La CANÓNICA gana donde CIMA mete cosas en `dosis` que no son la dosis: el principio
+        //    activo, sobre todo (`"10 mg ezetimiba"` en ABSORCOL, `"120 mg etoricoxib"` en
+        //    ACOXXEL). El display ya lo quita; la firma lo arrastraba. Son ~1.200.
+        //
+        // Comparar solo contra el crudo preguntaba por un texto QUE NUNCA SE MUESTRA. La pregunta
+        // que importa es si lo que se va a pintar dice lo mismo que el título, y eso se responde
+        // mirando las dos. Cobertura: 67,7% → 75,4% de los comercializados.
+        //
+        // La guarda de DAXAS sigue intacta, que es lo que no puede romperse: `500 mg` en el campo
+        // frente a `500 MICROGRAMOS` en el nombre no coincide ni en crudo ni en canónica, así que
+        // la dosis se queda en el título y la interfaz no cambia una unidad por otra.
+        const crudo = this._doseFingerprint(med?.dosis);
+        if (crudo && crudo === enNombre) return true;
+        const canonica = this._doseFingerprint(this._displayDose(med?.dosis).text);
+        return Boolean(canonica) && canonica === enNombre;
     }
 
     /** Forma farmacéutica en caja de frase para la línea visible ("Polvo para inhalación"). */
