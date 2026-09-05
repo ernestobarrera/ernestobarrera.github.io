@@ -340,6 +340,109 @@ check('elegir omeprazol deja 0 esomeprazol dentro',
     0);
 app.groupingState.activeIngredientFilters.clear();
 
+console.log('\n=== Duplicados: el recuento cuenta lo que la lista deja ver ===\n');
+
+// Defecto real cazado por Codex y reproducido contra el catálogo: `insulina glargina` ofrecía 8
+// y salían 7, porque uno de los registros es paralelo (sin ficha técnica seccionada) y la lista
+// final lo excluye — «Incluir duplicados» viene desmarcada por defecto. El autocompletado
+// aplicaba genérico/biosimilar/receta pero NO esa dimensión, que vive en el núcleo de filtrado.
+const conFicha = (m) => ({ ...m, docs: [{ tipo: 1, secc: true }] });
+const PARALELO = [
+    ...lista('insulina glargina', 7, 'ABASAGLAR').map(conFicha),
+    // Mismo perfil que uno de los anteriores, pero sin ficha seccionada: es el paralelo.
+    { nregistro: 'PAR-1', nombre: 'ABASAGLAR 0 20 mg', vtm: { nombre: 'insulina glargina' }, docs: [] },
+    ...lista('insulina lispro', 3, 'HUMALOG').map(conFicha),
+];
+
+app.filterState = app._emptyFilterState();
+app.initGroupingState();
+const snapPar = app._filterSnapshot();
+const universoVisible = app._applyResultFilters(PARALELO, snapPar, { only: 'parallel' });
+
+check('el filtro de duplicados sí retira el registro paralelo',
+    [PARALELO.length, universoVisible.length],
+    [11, 10]);
+
+for (const sug of app._extractSubstanceSuggestions(universoVisible, 'insulina')) {
+    app.groupingState.activeIngredientFilters = new Set([sug.name]);
+    const salen = app._applyResultFilters(universoVisible, app._filterSnapshot()).length;
+    check(`con duplicados fuera, ${sug.name}: ofrece ${sug.count} y salen ${salen}`, salen, sug.count);
+}
+app.groupingState.activeIngredientFilters.clear();
+
+// Y la prueba de que el orden ya no depende de quién busque.
+check('el orden no consulta el historial: mismas cifras con y sin recientes',
+    (() => {
+        const sinHist = app._extractSubstanceSuggestions(OMEPRA, 'omepra').map(s => s.name);
+        app._recentMeds = [{ nregistro: '1', nombre: 'AXIAGO', pactivos: 'esomeprazol' }];
+        const conHist = app._extractSubstanceSuggestions(OMEPRA, 'omepra').map(s => s.name);
+        app._recentMeds = [];
+        return JSON.stringify(sinHist) === JSON.stringify(conHist);
+    })(),
+    true);
+
+console.log('\n=== El gesto completo: elegir no puede reutilizar la búsqueda anterior ===\n');
+
+// El fallo que señaló Codex: `performSearch` hace `return` sin tocar `_lastSearchData` cuando no
+// hay resultados o salta una excepción. Comprobar solo que ese campo existe repintaba el
+// universo ANTERIOR bajo la sustancia recién elegida: resultados de otra consulta presentados
+// como si fueran de esta.
+function gesto({ searchOutcome }) {
+    const a = Object.create(MedCheckApp.prototype);
+    a.filterState = a._emptyFilterState();
+    a.initGroupingState();
+    a._lastSearchData = { resultados: OMEPRA, marca: 'BÚSQUEDA ANTERIOR' };
+    a.lastSearchResults = { resultados: OMEPRA };
+    a.autocompleteTimer = null;
+    let pintado = null;
+    a.displaySearchResults = (d) => { pintado = d; };
+    a.updateURLWithCurrentState = () => {};
+    a.performSearch = async () => {
+        if (searchOutcome === 'vacio') { a.lastSearchResults = null; return; }        // `return` seco
+        if (searchOutcome === 'excepcion') return;                                    // catch silencioso
+        a._lastSearchData = { resultados: AMOXI, marca: 'BÚSQUEDA NUEVA' };
+        a.lastSearchResults = { resultados: AMOXI };
+    };
+    return { app: a, run: () => a.searchBySubstance('omeprazol'), pintado: () => pintado };
+}
+
+for (const [caso, esperado] of [['vacio', null], ['excepcion', null], ['ok', 'BÚSQUEDA NUEVA']]) {
+    const g = gesto({ searchOutcome: caso });
+    await g.run();
+    check(`búsqueda ${caso}: ${esperado ? 'repinta la nueva' : 'NO repinta nada'}`,
+        g.pintado()?.marca ?? null, esperado);
+}
+
+const gOk = gesto({ searchOutcome: 'ok' });
+await gOk.run();
+check('cuando va bien, la faceta queda puesta con la sustancia elegida',
+    [...gOk.app.groupingState.activeIngredientFilters],
+    ['omeprazol']);
+
+const gVacio = gesto({ searchOutcome: 'vacio' });
+await gVacio.run();
+check('cuando no hay resultados, tampoco se ensucia la faceta',
+    [...gVacio.app.groupingState.activeIngredientFilters],
+    []);
+
+console.log('\n=== Identidad: la clave ofrecida es una clave que la faceta reconoce ===\n');
+
+// `_medPrincipiosActivos` prefiere `principiosActivos` y parte `pactivos`; `_substanceKey`
+// prefiere `vtm` y no parte nunca. En los listados coinciden, pero un registro enriquecido
+// ofrecía una clave que la faceta no reconocía y el clic no filtraba nada.
+const ENRIQUECIDO = {
+    nregistro: 'E1', nombre: 'AUGMENTINE 875/125 mg',
+    vtm: { nombre: 'amoxicilina + ácido clavulánico' },
+    principiosActivos: [{ nombre: 'amoxicilina' }, { nombre: 'ácido clavulánico' }],
+};
+check('la faceta reconoce la clave canónica que ofrece el desplegable',
+    app._medFacetKeys(ENRIQUECIDO).has(app._substanceKey(ENRIQUECIDO)),
+    true);
+
+check('y sigue reconociendo cada componente suelto, que es otro contrato',
+    ['amoxicilina', 'ácido clavulánico'].every(p => app._medFacetKeys(ENRIQUECIDO).has(p)),
+    true);
+
 // ─── Autoverificación: reintroducir el defecto y comprobar que se caza ────────
 console.log('\n=== Autoverificación (reintroduce el defecto) ===\n');
 

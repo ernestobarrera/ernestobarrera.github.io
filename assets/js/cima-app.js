@@ -1839,12 +1839,18 @@ class MedCheckApp {
      * posición:
      *
      *   glargina 8 = insulina glargina 8 · lispro 5 = 5 · degludec 3 = 3 · glulisina 3 = 3
-     *   aspart 39 > insulina aspart 9   → la expansión RESTABA, no sumaba
-     *   detemir 2 = 2 (solo sin `comerc`) · nph 0 = 0 · bifasica 0 = 0, con y sin `comerc`
+     *   aspart 39 frente a insulina aspart 9 · detemir 2 = 2 (sin `comerc`) · nph 0 = 0
      *
      * Nueve entradas que no aportaban ni una presentación y sí una petición por tecleo. El
      * centinela 8 de SENTINELS.md («glargina sigue encontrando insulina glargina») es
      * justamente el guardián de esta retirada: si CIMA volviera a exigir el prefijo, falla ahí.
+     *
+     * Dos precisiones que puso Codex y que corrigen la redacción anterior: el caso `aspart` NO
+     * demuestra que la expansión «restara» —el motor UNE los conjuntos y conserva la consulta
+     * original, así que a lo sumo era redundante—, y `nph 0 = 0` demuestra doble ausencia, no
+     * que la palabra sobre. De hecho **existen cuatro productos de `insulina isófana (NPH)`
+     * comercializados y `practiv1=nph` devuelve 0**: ese agujero de búsqueda sigue abierto y no
+     * lo tapaba el sinónimo retirado, que también daba 0. Queda anotado, sin arreglar aquí.
      *
      * Los iones se quedan porque SÍ aportan, y mucho — misma medición, con `comerc=1`,
      * término solo frente a término expandido:
@@ -2013,6 +2019,13 @@ class MedCheckApp {
                         this._filterMedsBySearchScope(allResults, scope),
                         query
                     );
+                    // Y la exclusión de duplicados, que es ÁMBITO por defecto y vive en el
+                    // núcleo único de filtrado, no en `_filterMedsBySearchScope`. Sin esto el
+                    // recuento de la fila cuenta registros que la lista final elimina: medido
+                    // sobre el catálogo real, `insulina glargina` ofrecía 8 y salían 7, porque
+                    // uno es un registro paralelo sin ficha seccionada. Una fila que promete
+                    // un número que no se cumple es peor que no dar número.
+                    allResults = this._applyResultFilters(allResults, this._filterSnapshot(), { only: 'parallel' });
                 }
 
                 if (!allResults.length) {
@@ -2091,7 +2104,9 @@ class MedCheckApp {
         // no cambiar la firma que consumen las otras tres superficies.
         this._lastAutocompleteTruncated = false;
         for (const result of results) {
-            if (result.status !== 'fulfilled') continue;
+            // Una petición rechazada también deja el conjunto incompleto, y hasta ahora se
+            // omitía en silencio: el recuento salía limpio sobre datos a medias.
+            if (result.status !== 'fulfilled') { this._lastAutocompleteTruncated = true; continue; }
             const total = Number(result.value?.totalFilas);
             const devueltos = (result.value?.resultados || []).length;
             if (Number.isFinite(total) && total > devueltos) this._lastAutocompleteTruncated = true;
@@ -2224,14 +2239,13 @@ class MedCheckApp {
 
         const q = this._normalizeDrugSearchText(query);
 
-        // Desempate por lo que ESTE médico ha abierto en la sesión. Popularidad personal, no
-        // poblacional: no induce prescripción y no arrastra el sesgo de la DHD, que solo ve
-        // receta del SNS en oficina de farmacia y es ciega a todo lo hospitalario. Es una
-        // señal aproximada —`pactivos` de recientes puede traer dosis— y por eso solo deshace
-        // empates, nunca decide.
-        const recientes = (this.getRecentMeds?.() || [])
-            .map(r => this._normalizeDrugSearchText(r?.pactivos || ''))
-            .filter(Boolean);
+        // Aquí hubo un desempate por lo que ESTE médico había abierto en la sesión, defendido
+        // como «popularidad personal, no poblacional». RETIRADO tras el contraste con Codex, y
+        // el argumento en contra es mejor que el mío: el desempate actúa ANTES del corte a
+        // cuatro, así que decide qué sustancias se ven; es invisible, no se puede explicar, y
+        // hace que dos médicos con la misma consulta vean cosas distintas sin saber por qué.
+        // A cambio de reforzar un hábito propio. En un buscador clínico, una señal oculta que
+        // cambia lo visible no compensa un beneficio marginal: el orden debe ser reproducible.
 
         const subs = [...counts.entries()].map(([name, { count, noComerc }]) => {
             const n = this._normalizeDrugSearchText(name);
@@ -2242,12 +2256,12 @@ class MedCheckApp {
             else if (n.startsWith(q)) score = 80;
             else if (n.split(/\s+/).some(w => w.startsWith(q))) score = 60;
             else if (n.includes(q)) score = 40;
-            const reciente = recientes.some(r => r === n || r.startsWith(n + ' ') || n.startsWith(r + ' '));
             // `total` viaja en cada fila para que la cabecera pueda declarar cuántas sustancias
             // hay de verdad. El corte a 4 es una decisión de UX —un bloque más largo deja de
             // ser un atajo—, pero un corte que no se anuncia es una ocultación: tecleando
-            // "insulina" hay DIEZ sustancias y se ven cuatro.
-            return { name, count, noComerc, score, reciente, truncated, total: counts.size };
+            // "insulina" hay DIEZ sustancias y se ven cuatro. El total cuenta las sustancias
+            // DETECTADAS EN LO DESCARGADO, no las que existan en CIMA.
+            return { name, count, noComerc, score, truncated, total: counts.size };
         });
 
         // A igualdad de coincidencia manda el nombre MÁS CORTO, no el catálogo más grande.
@@ -2258,7 +2272,6 @@ class MedCheckApp {
         // cuando ni la coincidencia ni la longitud deciden.
         subs.sort((a, b) =>
             b.score - a.score ||
-            (a.reciente === b.reciente ? 0 : (a.reciente ? -1 : 1)) ||
             a.name.length - b.name.length ||
             b.count - a.count ||
             a.name.localeCompare(b.name, 'es'));
@@ -7007,11 +7020,22 @@ class MedCheckApp {
         clearTimeout(this.autocompleteTimer);
         if (this.autocompleteAbortController) this.autocompleteAbortController.abort();
 
+        // Testigo para distinguir «la búsqueda ha ido bien» de «la búsqueda no ha dejado nada
+        // nuevo». `performSearch` no devuelve valor y, cuando no hay resultados o salta una
+        // excepción, hace `return` sin tocar `_lastSearchData`: comprobar solo que ese campo
+        // existe habría repintado el universo de la búsqueda ANTERIOR bajo la sustancia recién
+        // elegida — resultados de otra consulta presentados como si fueran de esta. Es el peor
+        // fallo posible aquí, y lo señaló Codex al revisar.
+        const universoPrevio = this._lastSearchData;
+
         await this.performSearch();
 
         // Después de `performSearch`, nunca antes: una consulta nueva empieza por
         // `_resetResultFilters()`, que vaciaría la faceta recién puesta.
-        if (this.groupingState && this._lastSearchData) {
+        const busquedaValida = this._lastSearchData
+            && this._lastSearchData !== universoPrevio
+            && this.lastSearchResults;
+        if (this.groupingState && busquedaValida) {
             this.groupingState.activeIngredientFilters.clear();
             this.groupingState.activeIngredientFilters.add(sustancia);
             this.displaySearchResults(this._lastSearchData);
@@ -11629,6 +11653,25 @@ ${materialesPlaceholder}
         return new Set();
     }
 
+    /**
+     * Conjunto de claves con las que la faceta de principio activo reconoce a un medicamento.
+     *
+     * Existe porque `_medPrincipiosActivos` y `_substanceKey` NO priorizan igual: la primera
+     * prefiere `principiosActivos` y parte `pactivos` por componentes; la segunda prefiere
+     * `vtm` y nunca parte una asociación. En los listados de CIMA da igual —no llega ninguno de
+     * los dos primeros campos y ambas caen en `vtm`—, pero en cuanto un registro llegue
+     * enriquecido, la fila del desplegable ofrecería una clave que la faceta no reconoce y el
+     * clic no filtraría nada. Se añade la clave canónica al conjunto en vez de unificar las dos
+     * funciones: la faceta debe seguir casando por componente suelto (elegir «amoxicilina»
+     * desde un chip incluye la asociación), y eso es otro contrato.
+     */
+    _medFacetKeys(med) {
+        const keys = this._medPrincipiosActivos(med);
+        const canon = this._substanceKey(med);
+        if (canon) keys.add(canon);
+        return keys;
+    }
+
     /** ¿Encaja `med` en la vía `filterRoute`? (incluye los respaldos por forma farmacéutica) */
     _medMatchesRoute(med, filterRoute) {
         const route = med.viasAdministracion?.[0]?.nombre || '';
@@ -11678,7 +11721,7 @@ ${materialesPlaceholder}
                     : null;
             case 'pa':
                 return snap.pas.size
-                    ? (med) => { const medPAs = this._medPrincipiosActivos(med); for (const p of snap.pas) if (medPAs.has(p)) return true; return false; }
+                    ? (med) => { const medPAs = this._medFacetKeys(med); for (const p of snap.pas) if (medPAs.has(p)) return true; return false; }
                     : null;
             default:
                 return null;
