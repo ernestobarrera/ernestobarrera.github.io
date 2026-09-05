@@ -2190,8 +2190,14 @@ class MedCheckApp {
      * sugerir. Ninguna se descarta por no empezar por lo tecleado: el umbral no es el lexema,
      * es haber aparecido.
      *
-     * Con una sola sustancia no se pinta nada: sin elección que ofrecer, el bloque solo roba
-     * sitio a los medicamentos.
+     * Se pinta también con UNA sola sustancia. La primera versión exigía dos —«sin elección que
+     * ofrecer, el bloque solo roba sitio»— y era un error de bulto que él cazó en producción:
+     * `denos` mostraba tres sustancias y `denosu`, con una letra más, no mostraba ninguna,
+     * porque solo quedaba denosumab. Un autocompletado en el que teclear más letras hace
+     * DESAPARECER información está roto, y además se perdía justo donde más valía: cuando la
+     * consulta ya es inequívoca es cuando la fila da lo que se busca —los 28 denosumab de una
+     * pieza— y confirma de paso la identidad de lo que se está mirando. La fila no está solo
+     * para desambiguar; está para llegar al conjunto.
      *
      * @param {Array} meds - resultados ya deduplicados del autocompletado
      * @param {string} query - lo tecleado
@@ -2214,7 +2220,7 @@ class MedCheckApp {
             if (med._retirado || med.comerc === false) acc.noComerc += 1;
             counts.set(key, acc);
         }
-        if (counts.size < 2) return [];
+        if (!counts.size) return [];
 
         const q = this._normalizeDrugSearchText(query);
 
@@ -2237,7 +2243,11 @@ class MedCheckApp {
             else if (n.split(/\s+/).some(w => w.startsWith(q))) score = 60;
             else if (n.includes(q)) score = 40;
             const reciente = recientes.some(r => r === n || r.startsWith(n + ' ') || n.startsWith(r + ' '));
-            return { name, count, noComerc, score, reciente, truncated };
+            // `total` viaja en cada fila para que la cabecera pueda declarar cuántas sustancias
+            // hay de verdad. El corte a 4 es una decisión de UX —un bloque más largo deja de
+            // ser un atajo—, pero un corte que no se anuncia es una ocultación: tecleando
+            // "insulina" hay DIEZ sustancias y se ven cuatro.
+            return { name, count, noComerc, score, reciente, truncated, total: counts.size };
         });
 
         // A igualdad de coincidencia manda el nombre MÁS CORTO, no el catálogo más grande.
@@ -2289,7 +2299,15 @@ class MedCheckApp {
                 </button>
             `;
         }).join('');
-        return `<div class="autocomplete-section">Sustancias</div>${rows}`;
+        // La cabecera dice cuántas sustancias hay y cuántas se ven. Sin esto, el corte a 4
+        // escondía seis de las diez sustancias de "insulina" sin dejar rastro, que es
+        // precisamente lo que un buscador clínico no puede hacer: acotar es legítimo, acotar
+        // en silencio no. Cuando caben todas, el número informa; cuando no, avisa.
+        const total = subs[0]?.total ?? subs.length;
+        const rotulo = total > subs.length
+            ? `Sustancias · ${subs.length} de ${total}`
+            : `Sustancias · ${total}`;
+        return `<div class="autocomplete-section">${this._escapeHtml(rotulo)}</div>${rows}`;
     }
 
     /**

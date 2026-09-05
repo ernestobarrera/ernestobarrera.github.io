@@ -139,11 +139,33 @@ check('tecleando "esome", esomeprazol pasa a primero',
     app._extractSubstanceSuggestions(OMEPRA, 'esome')[0].name,
     'esomeprazol');
 
-console.log('\n=== Sugerencias: cuándo NO se ofrecen ===\n');
+console.log('\n=== Monotonía: teclear más nunca quita información ===\n');
 
-check('una sola sustancia no es una elección: bloque vacío',
-    app._extractSubstanceSuggestions(lista('omeprazol', 30, 'OMEPRAZOL CINFA'), 'omeprazol'),
-    []);
+// El caso que él cazó en producción: `denos` daba tres sustancias y `denosu` ninguna, porque
+// la primera versión exigía dos para pintar el bloque. Cifras reales del 04/09/2026.
+const DENOS = [
+    ...lista('denosumab', 28, 'WYOST'),
+    ...lista('adenosina', 5, 'ADENOSINA ALTAN'),
+    ...lista('regadenosón', 1, 'RAPISCAN'),
+];
+check('"denos" ofrece las tres sustancias que contienen esa cadena',
+    app._extractSubstanceSuggestions(DENOS, 'denos').map(s => [s.name, s.count]),
+    [['denosumab', 28], ['adenosina', 5], ['regadenosón', 1]]);
+
+check('"denosu" sigue ofreciendo denosumab: una letra más no borra la sustancia',
+    app._extractSubstanceSuggestions(DENOS.filter(m => m.vtm.nombre === 'denosumab'), 'denosu')
+        .map(s => [s.name, s.count]),
+    [['denosumab', 28]]);
+
+// Mismo defecto, otra cara: con Biosimilar marcado, "insulina" deja una sola sustancia
+// (insulina glargina, 3 de las 10 familias tiene biosimilar comercializado) y el bloque
+// desaparecía entero.
+check('un subconjunto de una sola sustancia sigue mostrando su fila',
+    app._extractSubstanceSuggestions(lista('insulina glargina', 3, 'ABASAGLAR'), 'insulina')
+        .map(s => [s.name, s.count]),
+    [['insulina glargina', 3]]);
+
+console.log('\n=== Sugerencias: cuándo NO se ofrecen ===\n');
 
 check('sin resultados, bloque vacío',
     app._extractSubstanceSuggestions([], 'omeprazol'),
@@ -236,8 +258,19 @@ check('las filas llevan .autocomplete-item: el recorrido con flechas es UNA list
     3);
 
 check('la cabecera de sección NO es .autocomplete-item: el teclado no se para en ella',
-    /<div class="autocomplete-section">Sustancias<\/div>/.test(html) &&
+    /<div class="autocomplete-section">Sustancias[^<]*<\/div>/.test(html) &&
     !/autocomplete-section[^>]*autocomplete-item/.test(html),
+    true);
+
+// Integridad: acotar es legítimo, acotar en silencio no.
+check('la cabecera declara cuántas sustancias hay cuando caben todas',
+    /<div class="autocomplete-section">Sustancias · 3<\/div>/.test(html),
+    true);
+
+const DIEZ = Array.from({ length: 10 }, (_, i) => lista(`insulina ${'abcdefghij'[i]}`, i + 1, `INS${i}`)).flat();
+check('con más sustancias que sitio, la cabecera dice cuántas se ven y cuántas hay',
+    /<div class="autocomplete-section">Sustancias · 4 de 10<\/div>/.test(
+        app._renderSubstanceItems(app._extractSubstanceSuggestions(DIEZ, 'insulina'))),
     true);
 
 check('cada fila lleva data-substance y ninguna lleva data-nregistro',
