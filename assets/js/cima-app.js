@@ -4083,7 +4083,23 @@ class MedCheckApp {
         s = s.replace(MedCheckApp.DOSE_QUALITATIVE_DENOM, '');
         const { map, re } = MedCheckApp._fingerprintUnits();
         s = s.replace(re, (m) => map.get(m) || m);
-        return s.replace(/[\s.]/g, '').replace(/,/g, '.');
+
+        // Separador decimal: el barrido de abajo borra los puntos (los trata como MILLAR, que es
+        // la convenci\u00f3n espa\u00f1ola) y convierte la coma en punto. Pero CIMA escribe el decimal de
+        // las dos formas y a veces una en cada campo: "METOJECT PEN 17.5 MG" con `dosis = 17,5 mg`,
+        // "ENTECAVIR NORMON 0.5 MG" con `0,5 mg`. As\u00ed que un punto que NO PUEDE ser millar \u2014el que
+        // no va seguido de exactamente tres cifras\u2014 se pasa a coma antes del barrido. El caso
+        // ambiguo ("1.000") se deja como estaba: no se adivina.
+        s = s.replace(/(\d)\.(\d{1,2})(?!\d)/g, '$1,$2')
+             .replace(/(\d)\.(\d{4,})/g, '$1,$2');
+
+        s = s.replace(/[\s.]/g, '').replace(/,/g, '.');
+
+        // Ceros decimales no significativos: "0,50" y "0,5" son el mismo n\u00famero, y "6,0" y "6"
+        // tambi\u00e9n. CIMA los escribe indistintamente entre el nombre y el campo (ALPRAZOLAM 0,50,
+        // KYMRIAH 6,0). Solo se tocan los ceros DETR\u00c1S del separador decimal: un entero conserva
+        // los suyos, porque ah\u00ed s\u00ed cambian la magnitud.
+        return s.replace(/(\d+\.\d*?)0+(?!\d)/g, '$1').replace(/(\d+)\.(?!\d)/g, '$1');
     }
 
     /**

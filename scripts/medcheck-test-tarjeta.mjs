@@ -127,9 +127,86 @@ console.log('\n— Terapias celulares: la × tipográfica y la x ASCII son el mi
         '2 x 10e8 células inyectable 68 ml', 'DISPERSIÓN PARA PERFUSIÓN', 'INYECTABLE PERFUSION');
     ok(!bajaLaDosis(yescarta), 'YESCARTA: el campo dice más que el nombre, la dosis se queda arriba');
 
+    // KYMRIAH escribe "6,0" en el nombre y "6" en el campo: es el MISMO número, y un cero
+    // decimal no significativo sí es una equivalencia demostrable (a diferencia de las tres de
+    // abajo). Se resolvió afinando la firma, no relajando la guarda.
     const kymriah = med('KYMRIAH 1,2 x 10e6 - 6,0 x 10e8 celulas dispersion para perfusion',
         '1,2 × 10e6 - 6 × 10e8 células', 'DISPERSIÓN PARA PERFUSIÓN', 'INYECTABLE PERFUSION');
-    ok(!bajaLaDosis(kymriah), 'KYMRIAH: 6 frente a 6,0 no se adivina, la dosis se queda arriba');
+    ok(bajaLaDosis(kymriah), 'KYMRIAH: 6,0 y 6 son el mismo número, la dosis baja');
+
+    // Y los tres donde la fuente se contradice DE VERDAD, cada uno a su manera. Los tres tienen
+    // que quedarse con la dosis en el título: aquí no hay equivalencia que demostrar.
+    const tecartus = med('TECARTUS 0,4 - 2 x 10e8 CELULAS DISPERSION PARA PERFUSION',
+        '0,4 - 2 x 10e8 células inyectable 68 ml', 'DISPERSIÓN PARA PERFUSIÓN', 'INYECTABLE PERFUSION');
+    ok(!bajaLaDosis(tecartus), 'TECARTUS: el campo añade un volumen que el nombre no tiene');
+
+    const breyanzi = med('BREYANZI 1,1-70 × 10E6 CELULAS/ML / 1,1-70 × 10E6 CELULAS/ML DISPERSION PARA PERFUSION',
+        '1,1-70 x 10e6/1,1-70 x 10e6 celulas/ml', 'DISPERSIÓN PARA PERFUSIÓN', 'INYECTABLE PERFUSION');
+    ok(!bajaLaDosis(breyanzi), 'BREYANZI: el componente se reparte distinto, no se da por igual');
+}
+
+console.log('\n— Contrato del RENDER, no de la condición replicada —');
+{
+    // `bajaLaDosis()` replica la condición del render, así que podría seguir en verde aunque
+    // renderIndicationMedCard dejara de llamar a _doseIsInName (Codex, 2026-09-06). Esto
+    // comprueba el HTML que sale de verdad: qué dice el título y qué dice el subtítulo.
+    const render = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+    render._medRenderCache = new Map();
+    render.filterState = { galenics: new Set() };
+    render.favorites = [];
+    render.patientContext = {};
+    const pinta = (nombre, dosis, ff) => {
+        const html = render.renderIndicationMedCard(
+            { nregistro: 'test', nombre, dosis, comerc: true, atcs: [],
+              formaFarmaceutica: { nombre: ff }, formaFarmaceuticaSimplificada: { nombre: 'INYECTABLE' } }, '');
+        return {
+            titulo: (/class="result-card-title"[^>]*>([^<]*)</.exec(html) || [])[1] ?? null,
+            sub: (/class="med-sub-dose">([^<]*)</.exec(html) || [])[1] ?? null,
+        };
+    };
+
+    // DAXAS: la regresión que no puede volver. Da igual por qué ruta — el HTML no puede decir
+    // "500 mg" cuando el nombre oficial dice microgramos.
+    const daxas = pinta('DAXAS 500 MICROGRAMOS COMPRIMIDOS RECUBIERTOS CON PELICULA', '500 mg',
+        'COMPRIMIDO RECUBIERTO CON PELÍCULA');
+    ok(daxas.titulo === 'DAXAS 500 MICROGRAMOS', 'DAXAS: el título conserva la unidad oficial', JSON.stringify(daxas));
+    ok(daxas.sub !== '500 mg', 'DAXAS: el subtítulo NO sustituye microgramos por mg', JSON.stringify(daxas));
+
+    const abecma = pinta('ABECMA 260-500 x 10e6 CELULAS DISPERSION PARA PERFUSION',
+        '260 - 500 × 10e6 células', 'DISPERSIÓN PARA PERFUSIÓN');
+    ok(abecma.titulo === 'ABECMA', 'ABECMA: el título es solo la marca', JSON.stringify(abecma));
+    ok(/10e6/.test(abecma.sub || ''), 'ABECMA: y la dosis está en el subtítulo', JSON.stringify(abecma));
+
+    // GARDASIL 9: el contraejemplo que descartó mostrar el literal del nombre como dosis. El 9 es
+    // la valencia de la vacuna —una dosis son 0,5 ml—, así que el título NO puede quedarse en
+    // "GARDASIL" con un "9" debajo haciendo de dosis. Lo pinta aquí para que nadie reintroduzca
+    // aquella idea sin toparse con este caso. Misma familia: PNEUMOVAX 23, CAPD/DPCA 17.
+    const gardasil = pinta('GARDASIL 9 SUSPENSION INYECTABLE EN JERINGA PRECARGADA', '0,5 ml',
+        'SUSPENSIÓN INYECTABLE');
+    ok(gardasil.titulo === 'GARDASIL 9', 'GARDASIL 9: la valencia se queda en el título', JSON.stringify(gardasil));
+    ok(gardasil.sub !== '9', 'GARDASIL 9: el "9" no se pinta nunca como si fuera la dosis', JSON.stringify(gardasil));
+}
+
+console.log('\n— Equivalencias numéricas demostrables, y solo esas —');
+{
+    // El punto decimal: CIMA lo escribe de las dos formas y a veces una en cada campo.
+    ok(app._doseFingerprint('17.5 mg') === app._doseFingerprint('17,5 mg'),
+        'punto y coma decimales son el mismo número (METOJECT PEN)');
+    ok(app._doseFingerprint('0.25 mg') === app._doseFingerprint('0,25 mg'),
+        'idem con cifra inicial 0 (ALPRAZOLAM KRKA)');
+
+    // El caso AMBIGUO no se adivina: tres cifras detrás del punto pueden ser un millar.
+    ok(app._doseFingerprint('1.000 mg') !== app._doseFingerprint('1,000 mg'),
+        'un punto con tres cifras detrás puede ser millar: NO se normaliza');
+
+    // Ceros decimales no significativos, en los dos sentidos.
+    ok(app._doseFingerprint('0,50 mg') === app._doseFingerprint('0,5 mg'), '0,50 y 0,5 son el mismo número');
+    ok(app._doseFingerprint('6,0') === app._doseFingerprint('6'), '6,0 y 6 son el mismo número');
+
+    // Y lo que NO puede colapsar: un cero de un ENTERO cambia la magnitud.
+    ok(app._doseFingerprint('50 mg') !== app._doseFingerprint('5 mg'), 'un entero conserva sus ceros');
+    ok(app._doseFingerprint('100 mg') !== app._doseFingerprint('10 mg'), 'idem con 100 frente a 10');
+    ok(app._doseFingerprint('0,05 mg') !== app._doseFingerprint('0,5 mg'), '0,05 no se colapsa a 0,5');
 }
 
 console.log('\n— El campo `dosis` tiene DOS lecturas, y ninguna domina a la otra —');
