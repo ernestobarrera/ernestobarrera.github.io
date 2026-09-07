@@ -175,5 +175,16 @@ check('la nota hospitalaria exige marcadores de ámbito hospitalario (UH/DH/ECM)
 check('bifimedHospitalario se deriva de uh/dh/ecm del registro BIFIMED',
     /bifimedHospitalario\s*=\s*!!\(bifimedDrugRecord\?\.uh\s*\|\|\s*bifimedDrugRecord\?\.dh\s*\|\|\s*bifimedDrugRecord\?\.ecm\)/.test(fuente), true);
 
+// El enlace a la ficha oficial de BIFIMED se construía dentro del bloque de indicaciones
+// centralizadas, así que faltaba en la mayoría de medicamentos —los que no las tienen—, que son
+// justo aquellos en los que la ficha no puede enseñar precio ni aportación.
+const iLink = fuente.indexOf('const bifimedLink');
+const iSection = fuente.indexOf('let bifimedSection');
+check('el enlace a BIFIMED se construye fuera del bloque de indicaciones', iLink > -1 && iLink < iSection, true);
+check('la nota de financiación lo incluye', /notaTexto\}\$\{bifimedLink\}/.test(fuente), true);
+check('la sección del Nomenclátor también lo incluye', /Ver ficha en Nomenclátor<\/a>\$\{bifimedLink\}/.test(fuente), true);
+check('el enlace usa ?cn= y no el ?prod= del Nomenclátor',
+    /medicamentos\.do\?metodo=verDetalle&cn=\$\{cnToProd\(bifimedCn\)\}/.test(fuente), true);
+
 console.log(failures === 0 ? '\nOK — todas las aserciones pasan' : `\nFALLOS: ${failures}`);
 process.exit(failures === 0 ? 0 : 1);

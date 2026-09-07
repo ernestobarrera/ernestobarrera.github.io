@@ -10285,14 +10285,24 @@ ${materialesPlaceholder}
                 return '<span class="bifimed-badge bifimed-badge-none">Estado: no determinado</span>';
             };
 
+            // Enlace a la ficha de BIFIMED: usa ?cn= (distinto del Nomenclátor, que usa ?prod=).
+            //
+            // Vive FUERA del bloque de indicaciones a propósito. Antes se construía dentro, así que
+            // solo aparecía en los medicamentos con indicaciones centralizadas —una minoría— y
+            // faltaba justo donde más se necesita: en las fichas sin datos de Nomenclátor, donde la
+            // única salida a la fuente oficial es este enlace. Lo detectó Ernesto llegando a mano a
+            // la ficha BIFIMED de YASMIN DIARIO, que la app no le ofrecía.
+            const bifimedCn = bifimedResults.find(r => r.found)?.cn;
+            const bifimedUrl = bifimedCn
+                ? `https://www.sanidad.gob.es/profesionales/medicamentos.do?metodo=verDetalle&cn=${cnToProd(bifimedCn)}`
+                : 'https://www.sanidad.gob.es/profesionales/medicamentos.do';
+            const bifimedLink = bifimedCn
+                ? ` <a href="${bifimedUrl}" target="_blank" rel="noopener">Ver ficha en BIFIMED</a>`
+                : '';
+
             let bifimedSection = '';
             if (allIndicaciones.length) {
                 const bifimedDate = bifimedResults.find(r => r._meta?.download_date)?._meta?.download_date || '';
-                // Enlace BIFIMED: usa ?cn= (distinto del Nomenclátor que usa ?prod=)
-                const bifimedCn = bifimedResults.find(r => r.found)?.cn;
-                const bifimedUrl = bifimedCn
-                    ? `https://www.sanidad.gob.es/profesionales/medicamentos.do?metodo=verDetalle&cn=${cnToProd(bifimedCn)}`
-                    : 'https://www.sanidad.gob.es/profesionales/medicamentos.do';
 
                 const indRows = allIndicaciones.map(ind => {
                     const rest = ind.restriccion || '';
@@ -10355,7 +10365,7 @@ ${materialesPlaceholder}
                     <div class="fin-disclaimer">
                         <i class="fas fa-info-circle"></i>
                         Los precios son orientativos. Fuente: Nomenclátor — Ministerio de Sanidad.
-                        <a href="${nomenclatorUrlPrimary}" target="_blank" rel="noopener">Ver ficha en Nomenclátor</a>
+                        <a href="${nomenclatorUrlPrimary}" target="_blank" rel="noopener">Ver ficha en Nomenclátor</a>${bifimedLink}
                     </div>
                    </div>`;
             } else {
@@ -10388,8 +10398,10 @@ ${materialesPlaceholder}
                 } else {
                     notaIcon = null;
                 }
+                // El enlace acompaña SIEMPRE a la nota: es una afirmación sobre la financiación de
+                // este medicamento y quien la lee tiene que poder contrastarla en la fuente.
                 snsSection = notaIcon
-                    ? `<div class="fin-nota-estado ${notaClass}"><i class="fas ${notaIcon}"></i> ${notaTexto}</div>`
+                    ? `<div class="fin-nota-estado ${notaClass}"><i class="fas ${notaIcon}"></i><span>${notaTexto}${bifimedLink}</span></div>`
                     : `<div class="sns-empty" style="padding:1.5rem">
                         <i class="fas fa-receipt" style="font-size:2rem;color:var(--muted);display:block;margin-bottom:0.5rem"></i>
                         <div class="sns-empty-title">Sin datos de financiación SNS</div>
