@@ -1,12 +1,12 @@
 [
   {
     "kind": "min_medicamentos",
-    "label": "Total filas MEDICAMENTOS (5 Excel, sin dedup) ≥ 28000",
-    "min_count": 28000
+    "label": "Total filas MEDICAMENTOS (6 Excel, sin dedup) ≥ 45000",
+    "min_count": 45000
   },
   {
     "kind": "min_indicaciones",
-    "label": "Total filas INDICACIONES CENTRALIZADOS (5 Excel) ≥ 9500",
+    "label": "Total filas INDICACIONES CENTRALIZADOS (6 Excel) ≥ 9500",
     "min_count": 9500
   },
   {
@@ -18,6 +18,18 @@
     "kind": "cn_exists",
     "label": "CN 0603082 (Xarelto 10mg) existe",
     "cn": "0603082"
+  },
+  {
+    "kind": "cn_situacion_contiene",
+    "label": "CN 0671388 (Yasmin) conserva la situación del estado 666 — prueba que esa lista se descargó y que la precedencia no la pisó",
+    "cn": "0671388",
+    "contiene": "estudio"
+  },
+  {
+    "kind": "cn_situacion_contiene",
+    "label": "CN 0603082 (Xarelto 10mg) sigue financiado — prueba que el estado 666 no degradó a los financiados",
+    "cn": "0603082",
+    "contiene": "si"
   },
   {
     "kind": "cn_has_indicaciones",

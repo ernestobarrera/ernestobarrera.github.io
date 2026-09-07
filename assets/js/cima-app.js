@@ -10075,15 +10075,30 @@ ${materialesPlaceholder}
     }
 
     /**
-     * Clasifica la situación de financiación cruda de BIFIMED en 'fin' | 'cond' | 'nofin' | 'sindato'.
+     * Clasifica la situación de financiación cruda de BIFIMED en
+     * 'fin' | 'cond' | 'nofin' | 'estudio_sin_peticion' | 'sindato'.
      * Se apoya en marcadores ASCII (no en igualdad exacta) porque el dataset trae valores compuestos
      * ("Sí para determinadas indicaciones/condiciones") y con mojibake por doble UTF-8 (los acentos no
      * son fiables). 'cond' = financiado pero con visado/por indicación (dabigatrán, etc.).
+     *
+     * 'estudio_sin_peticion' es el estado oficial "Estudio o sin petición financiación" (BIFIMED
+     * financiado=666, 22.116 presentaciones). Se separa de 'nofin' porque no hay resolución
+     * denegatoria, y sobre todo de 'sindato', que significa "no sabemos". Antes del 2026-09-06 ni
+     * siquiera se descargaba, y marcas corrientes como YASMIN o NUVARING aparecían como "sin datos
+     * de financiación": un agujero nuestro disfrazado de dato.
+     *
+     * El nombre conserva la disyunción a propósito. La categoría del Ministerio agrupa dos
+     * situaciones distintas —"en estudio" (expediente de financiación y precio en evaluación) y "sin
+     * petición" (ni siquiera iniciado)— y el Excel agregado NO permite saber cuál corresponde a cada
+     * registro. Llamarlo solo "sin petición" elegiría una de las dos por nuestra cuenta.
      */
     _classifyFinSit(sit, found) {
         if (!found) return 'sindato';
         const s = (sit || '').trim().toLowerCase();
         if (!s) return 'sindato';
+        // Primero, porque es el único estado que describe la ausencia de expediente y no debe
+        // caer en ninguna de las reglas siguientes. Marcadores sin acentos por el mojibake.
+        if (s.includes('estudio') || s.includes('sin petici')) return 'estudio_sin_peticion';
         if (s.includes('no incluid') || s.includes('no financiad') || s.includes('excluid')) return 'nofin';
         if (s.includes('determinad') || s.includes('condicion') || s.includes('restring') || s.includes('restricci')) return 'cond';
         if (s.startsWith('si') || s.includes('financiad')) return 'fin';
@@ -10096,22 +10111,45 @@ ${materialesPlaceholder}
      * cuenta como financiada pero se muestra aparte, no como "sin datos". Mezcla financiada/no → parcial.
      */
     _computeFinancingSummary(map) {
-        let fin = 0, cond = 0, nofin = 0;
+        let fin = 0, cond = 0, nofin = 0, estudio = 0, sindato = 0;
         for (const d of map.values()) {
             const c = this._classifyFinSit(d.sit, d.found);
             if (c === 'fin') fin++;
             else if (c === 'cond') cond++;
             else if (c === 'nofin') nofin++;
+            else if (c === 'estudio_sin_peticion') estudio++;
+            else sindato++;
         }
+        // El denominador es SIEMPRE el total de presentaciones consultadas, incluidas las que no
+        // sabemos clasificar. Hasta el 2026-09-06 se calculaba sobre `fin + cond + nofin`, así que
+        // un medicamento con dos CN financiados y uno sin dato se anunciaba como "Financiado por el
+        // SNS" a secas: la fracción desconocida desaparecía del cálculo en vez de mostrarse.
+        const total = fin + cond + nofin + estudio + sindato;
         const financiadas = fin + cond;
-        const conDato = financiadas + nofin;
-        if (conDato === 0) return { estado: 'sindato', label: 'Sin datos de financiación', icon: 'fa-circle-question', color: 'var(--text-secondary)' };
-        if (nofin === 0) {
+        const sinCobertura = nofin + estudio;
+        const pendientes = sindato ? ` · ${sindato} sin dato` : '';
+        const gris = 'var(--text-secondary)';
+
+        if (total === 0 || sindato === total) return { estado: 'sindato', label: 'Sin datos de financiación', icon: 'fa-circle-question', color: gris };
+        if (financiadas === total) {
             if (cond === 0) return { estado: 'si', label: 'Financiado por el SNS', icon: 'fa-check-circle', color: 'var(--success)' };
             return { estado: 'cond', label: 'Financiado (condicionado: visado / por indicación)', icon: 'fa-circle-check', color: 'var(--warning)' };
         }
-        if (financiadas === 0) return { estado: 'no', label: 'No financiado por el SNS', icon: 'fa-times-circle', color: 'var(--text-secondary)' };
-        return { estado: 'parcial', label: `Financiación parcial (${financiadas} de ${conDato} presentaciones)`, icon: 'fa-circle-half-stroke', color: 'var(--warning)' };
+        // Sin ninguna presentación con cobertura. "No financiado" se reserva a los tres estados
+        // negativos (no incluido, excluido, denegado por resolución): son resoluciones del
+        // Ministerio. "En estudio o sin petición" no lo es, así que se nombra por separado y, en las
+        // mezclas, se descompone en vez de colapsar ambas cosas en una etiqueta que no es cierta.
+        if (financiadas === 0) {
+            if (estudio === 0) {
+                return { estado: 'no', label: sindato ? `No financiado por el SNS (${nofin} de ${total} presentaciones${pendientes})` : 'No financiado por el SNS', icon: 'fa-times-circle', color: gris };
+            }
+            if (nofin === 0) {
+                return { estado: 'estudio_sin_peticion', label: sindato ? `En estudio o sin petición de financiación (${estudio} de ${total} presentaciones${pendientes})` : 'En estudio o sin petición de financiación', icon: 'fa-hourglass-half', color: gris };
+            }
+            const plural = nofin > 1 ? 's' : '';
+            return { estado: 'sin_cobertura', label: `Sin cobertura SNS actual: ${nofin} no financiada${plural} · ${estudio} en estudio/sin petición${pendientes}`, icon: 'fa-times-circle', color: gris };
+        }
+        return { estado: 'parcial', label: `Financiación parcial (${financiadas} de ${total} presentaciones${pendientes})`, icon: 'fa-circle-half-stroke', color: 'var(--warning)' };
     }
 
     /** HTML del valor de la línea Financiación (icono + estado + enlace al detalle en la pestaña). */
@@ -10297,7 +10335,12 @@ ${materialesPlaceholder}
             }
 
             // Estado a nivel de medicamento desde BIFIMED (primer resultado con datos)
-            const bifimedDrugStatus = bifimedResults.find(r => r.found)?.situacion_financiacion || null;
+            const bifimedDrugRecord = bifimedResults.find(r => r.found) || null;
+            const bifimedDrugStatus = bifimedDrugRecord?.situacion_financiacion || null;
+            // Marcadores de ámbito hospitalario del propio BIFIMED: uso hospitalario, diagnóstico
+            // hospitalario, especial control médico. Son los únicos que autorizan a decir que la
+            // financiación se gestiona por farmacia hospitalaria (ver la nota de abajo).
+            const bifimedHospitalario = !!(bifimedDrugRecord?.uh || bifimedDrugRecord?.dh || bifimedDrugRecord?.ecm);
 
             // Sección SNS: tarjetas si hay datos; nota contextual según estado BIFIMED si no
             let snsSection;
@@ -10327,9 +10370,21 @@ ${materialesPlaceholder}
                 } else if (st.includes('no incluido')) {
                     notaIcon = 'fa-minus-circle'; notaClass = 'fin-nota-no-incluido';
                     notaTexto = 'No incluido en la financiación SNS — el medicamento no fue incorporado a la cobertura pública.';
-                } else if (bifimedDrugStatus) {
+                } else if (st.includes('estudio') || st.includes('sin petici')) {
+                    // Rama propia para el estado 666. Sin ella caía en la nota hospitalaria de abajo,
+                    // y MedCheck afirmaba que la financiación se gestionaba por farmacia de hospital:
+                    // falso, y para un prescriptor peor que no decir nada.
+                    notaIcon = 'fa-hourglass-half'; notaClass = 'fin-nota-estudio';
+                    notaTexto = 'En estudio o sin petición de financiación — no consta expediente resuelto. BIFIMED agrupa ambas situaciones y no permite distinguirlas.';
+                } else if (bifimedDrugStatus && bifimedHospitalario) {
                     notaIcon = 'fa-hospital'; notaClass = 'fin-nota-hospitalario';
                     notaTexto = 'Este medicamento no factura en farmacia de oficina — su financiación SNS se gestiona a través de farmacia hospitalaria.';
+                } else if (bifimedDrugStatus) {
+                    // Hay situación en BIFIMED, pero ni es reconocible ni el registro trae marcadores
+                    // de ámbito hospitalario (UH/DH/ECM). Se dice lo que consta y nada más: deducir el
+                    // canal de dispensación a partir de un estado desconocido fue el defecto anterior.
+                    notaIcon = 'fa-circle-info'; notaClass = 'fin-nota-hospitalario';
+                    notaTexto = `Sin datos en el Nomenclátor de Facturación. Situación en BIFIMED: «${esc(bifimedDrugStatus)}».`;
                 } else {
                     notaIcon = null;
                 }
