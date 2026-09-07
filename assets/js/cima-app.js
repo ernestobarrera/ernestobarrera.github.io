@@ -10075,15 +10075,25 @@ ${materialesPlaceholder}
     }
 
     /**
-     * Clasifica la situación de financiación cruda de BIFIMED en 'fin' | 'cond' | 'nofin' | 'sindato'.
+     * Clasifica la situación de financiación cruda de BIFIMED en
+     * 'fin' | 'cond' | 'nofin' | 'nopedida' | 'sindato'.
      * Se apoya en marcadores ASCII (no en igualdad exacta) porque el dataset trae valores compuestos
      * ("Sí para determinadas indicaciones/condiciones") y con mojibake por doble UTF-8 (los acentos no
      * son fiables). 'cond' = financiado pero con visado/por indicación (dabigatrán, etc.).
+     *
+     * 'nopedida' es el estado oficial "Estudio o sin petición financiación" (BIFIMED financiado=666,
+     * 22.116 presentaciones). Se separa de 'nofin' porque no hay resolución denegatoria —nadie ha
+     * pedido la financiación— y sobre todo de 'sindato', que significa "no sabemos". Antes del
+     * 2026-09-06 ni siquiera se descargaba, y marcas corrientes como YASMIN o NUVARING aparecían
+     * como "sin datos de financiación": un agujero nuestro disfrazado de dato.
      */
     _classifyFinSit(sit, found) {
         if (!found) return 'sindato';
         const s = (sit || '').trim().toLowerCase();
         if (!s) return 'sindato';
+        // Primero, porque es el único estado que describe la ausencia de expediente y no debe
+        // caer en ninguna de las reglas siguientes. Marcadores sin acentos por el mojibake.
+        if (s.includes('estudio') || s.includes('sin petici')) return 'nopedida';
         if (s.includes('no incluid') || s.includes('no financiad') || s.includes('excluid')) return 'nofin';
         if (s.includes('determinad') || s.includes('condicion') || s.includes('restring') || s.includes('restricci')) return 'cond';
         if (s.startsWith('si') || s.includes('financiad')) return 'fin';
@@ -10096,22 +10106,38 @@ ${materialesPlaceholder}
      * cuenta como financiada pero se muestra aparte, no como "sin datos". Mezcla financiada/no → parcial.
      */
     _computeFinancingSummary(map) {
-        let fin = 0, cond = 0, nofin = 0;
+        let fin = 0, cond = 0, nofin = 0, nopedida = 0, sindato = 0;
         for (const d of map.values()) {
             const c = this._classifyFinSit(d.sit, d.found);
             if (c === 'fin') fin++;
             else if (c === 'cond') cond++;
             else if (c === 'nofin') nofin++;
+            else if (c === 'nopedida') nopedida++;
+            else sindato++;
         }
+        // El denominador es SIEMPRE el total de presentaciones consultadas, incluidas las que no
+        // sabemos clasificar. Hasta el 2026-09-06 se calculaba sobre `fin + cond + nofin`, así que
+        // un medicamento con dos CN financiados y uno sin dato se anunciaba como "Financiado por el
+        // SNS" a secas: la fracción desconocida desaparecía del cálculo en vez de mostrarse.
+        const total = fin + cond + nofin + nopedida + sindato;
         const financiadas = fin + cond;
-        const conDato = financiadas + nofin;
-        if (conDato === 0) return { estado: 'sindato', label: 'Sin datos de financiación', icon: 'fa-circle-question', color: 'var(--text-secondary)' };
-        if (nofin === 0) {
+        const noFinanciadas = nofin + nopedida;
+        const pendientes = sindato ? ` · ${sindato} sin dato` : '';
+
+        if (total === 0 || sindato === total) return { estado: 'sindato', label: 'Sin datos de financiación', icon: 'fa-circle-question', color: 'var(--text-secondary)' };
+        if (financiadas === total) {
             if (cond === 0) return { estado: 'si', label: 'Financiado por el SNS', icon: 'fa-check-circle', color: 'var(--success)' };
             return { estado: 'cond', label: 'Financiado (condicionado: visado / por indicación)', icon: 'fa-circle-check', color: 'var(--warning)' };
         }
-        if (financiadas === 0) return { estado: 'no', label: 'No financiado por el SNS', icon: 'fa-times-circle', color: 'var(--text-secondary)' };
-        return { estado: 'parcial', label: `Financiación parcial (${financiadas} de ${conDato} presentaciones)`, icon: 'fa-circle-half-stroke', color: 'var(--warning)' };
+        if (noFinanciadas === total) {
+            // "Sin petición" no es una denegación, pero para prescribir el efecto es el mismo: no
+            // hay financiación. Se nombra aparte para no atribuir al Ministerio una resolución que
+            // no existe.
+            if (nofin === 0) return { estado: 'nopedida', label: 'Sin petición de financiación (no financiado)', icon: 'fa-circle-minus', color: 'var(--text-secondary)' };
+            return { estado: 'no', label: 'No financiado por el SNS', icon: 'fa-times-circle', color: 'var(--text-secondary)' };
+        }
+        if (financiadas === 0) return { estado: 'no', label: `No financiado por el SNS (${noFinanciadas} de ${total} presentaciones${pendientes})`, icon: 'fa-times-circle', color: 'var(--text-secondary)' };
+        return { estado: 'parcial', label: `Financiación parcial (${financiadas} de ${total} presentaciones${pendientes})`, icon: 'fa-circle-half-stroke', color: 'var(--warning)' };
     }
 
     /** HTML del valor de la línea Financiación (icono + estado + enlace al detalle en la pestaña). */

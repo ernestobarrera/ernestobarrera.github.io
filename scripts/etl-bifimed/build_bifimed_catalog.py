@@ -7,12 +7,13 @@ Atribución: "Fuente: Ministerio de Sanidad - Gobierno de España"
 
 El flujo de descarga es session-based (JSESSIONID):
   1. GET base_url   -> establece sesión
-  2. GET buscarMedicamentos?financiado=1 -> fija búsqueda en sesión
+  2. GET buscarMedicamentos?financiado=N -> fija búsqueda en sesión
   3. GET descargar  -> descarga el Excel de la búsqueda en sesión
-  4. Repetir con financiado=2
+  4. Repetir para cada estado de `DESCARGAS` (seis: 1, 2, 5, 6, 7 y 666)
 
 Hojas por Excel:
   MEDICAMENTOS            — 30 columnas; ~19.4K filas (financiado=1) / ~1.4K (financiado=2)
+                            / ~22.1K filas (financiado=666)
   INDICACIONES CENTRALIZADOS — 5 columnas; ~5.9K filas / ~2.5K filas
 
 Output JSON por CN:
@@ -68,13 +69,23 @@ SEARCH_PARAMS_BASE = {
     "sinImportacionesParalelas": "1",
 }
 
-# Todos los estados de financiación disponibles en BIFIMED
+# Los seis estados de financiación que ofrece el buscador de BIFIMED.
+#
+# El orden importa: `parse_xls_pair` construye `by_cn` con "la primera aparición gana", así que
+# `estudio_sin_peticion` va DELIBERADAMENTE EL ÚLTIMO. Un CN que aparezca en dos listas conserva
+# así la situación más informativa (financiado) y nunca queda degradado a "sin petición".
+#
+# `estudio_sin_peticion` (financiado=666) se añadió el 2026-09-06: faltaba, y sus 22.116
+# presentaciones llegaban al cliente como "sin datos de financiación", confundiendo una categoría
+# administrativa real ("nadie ha pedido financiación para esto") con un fallo de cobertura nuestro.
+# Afecta a marcas de uso corriente — YASMIN (CN 0671388) y NUVARING (CN 0823989) están en esta lista.
 DESCARGAS = [
     {"nombre": "si",                      "financiado": "1", "label": "Financiado: Sí"},
     {"nombre": "si_determinadas",         "financiado": "2", "label": "Financiado: Sí para determinadas indicaciones/condiciones"},
     {"nombre": "no_incluido",             "financiado": "5", "label": "No incluido"},
     {"nombre": "excluido",                "financiado": "6", "label": "Excluido"},
     {"nombre": "no_financiado_resolucion","financiado": "7", "label": "No financiado por resolución"},
+    {"nombre": "estudio_sin_peticion",    "financiado": "666", "label": "En estudio o sin petición de financiación"},
 ]
 
 
@@ -300,8 +311,21 @@ def parse_medicamentos_sheet(ws: Any) -> list[dict]:
             "laboratorio_ofertante": _cell_str(ws, r, col["lab_ofertante"]),
             "centralizado":   _cell_bool(ws, r, col["centralizado"]),
         }
-        # Strip None values to compact JSON
-        item = {k: v for k, v in item.items() if v is not None}
+        # Compactado del registro. El catálogo entero viaja como UN valor de Cloudflare KV, y el
+        # límite duro es 25 MiB: al incorporar el estado 666 (22.116 presentaciones) el JSON llegó a
+        # 29,2 MiB y el ETL habría fallado al publicar. Se recorta lo que no aporta:
+        #
+        #   - None      → campo ausente en el Excel.
+        #   - False     → es el valor por defecto de todos los flags (visado, uh, dh, ecm, genérico,
+        #                 biosimilar, biológico, huérfano, centralizado). Ausente y `false` se leen
+        #                 igual en el cliente; nadie los compara con `=== false`.
+        #   - "nombre"  → redundante. CIMA es la fuente canónica del nombre del medicamento y ya lo
+        #                 sirve la tarjeta; duplicarlo aquí solo abre la puerta a que diverjan.
+        #
+        # Resultado: 19,0 MiB, con margen para años de crecimiento. Si algún día hace falta el
+        # nombre para depurar, está en el artefacto del workflow (retención 14 días).
+        item = {k: v for k, v in item.items()
+                if v is not None and v is not False and k != "nombre"}
         items.append(item)
 
     print(f"[etl]   Medicamentos: {len(items)}", file=sys.stderr)
