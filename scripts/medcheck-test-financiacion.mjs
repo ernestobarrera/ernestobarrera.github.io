@@ -77,12 +77,12 @@ check('financiado=5 "No incluido"', clasificar('No incluido'), 'nofin');
 check('financiado=6 "Excluido"', clasificar('Excluido'), 'nofin');
 check('financiado=7 "No financiado por resolución"', clasificar('No financiado por resolución'), 'nofin');
 check('financiado=666 "Estudio o sin petición financiación"',
-    clasificar('Estudio o sin petición financiación'), 'nopedida');
+    clasificar('Estudio o sin petición financiación'), 'estudio_sin_peticion');
 
 // El Ministerio sirve el Excel con doble codificación UTF-8. La clasificación no puede depender
 // de los acentos ni de que el ETL haya corregido el mojibake.
 check('666 con mojibake sigue clasificando igual',
-    clasificar('Estudio o sin peticiÃ³n financiaciÃ³n'), 'nopedida');
+    clasificar('Estudio o sin peticiÃ³n financiaciÃ³n'), 'estudio_sin_peticion');
 check('estado 2 con mojibake sigue clasificando igual',
     clasificar('Si para determinadas indicaciones/condiciones'), 'cond');
 
@@ -93,8 +93,10 @@ check('situación vacía → sindato', clasificar(''), 'sindato');
 console.log('\n— El denominador incluye las presentaciones sin dato —');
 check('todas financiadas → si', resumen(['Si', 'Si']).estado, 'si');
 check('todas no financiadas → no', resumen(['Excluido', 'No financiado por resolución']).estado, 'no');
-check('todas sin petición → nopedida',
-    resumen(['Estudio o sin petición financiación', 'Estudio o sin petición financiación']).estado, 'nopedida');
+check('todas en el estado 666 → estudio_sin_peticion',
+    resumen(['Estudio o sin petición financiación', 'Estudio o sin petición financiación']).estado, 'estudio_sin_peticion');
+check('...y conserva literalmente la disyunción oficial, sin elegir una de las dos ramas',
+    resumen(['Estudio o sin petición financiación']).label, 'En estudio o sin petición de financiación');
 check('ninguna con dato → sindato', resumen([null, null]).estado, 'sindato');
 
 // El defecto corregido el 2026-09-06: dos CN financiados y uno sin dato NO son "Financiado por el
@@ -108,13 +110,21 @@ check('mezcla financiada/no financiada → parcial sobre el total',
     resumen(['Si', 'Excluido']).label, 'Financiación parcial (1 de 2 presentaciones)');
 check('condicionada cuenta como financiada pero se nombra aparte',
     resumen(['Si para determinadas indicaciones/condiciones', 'Si']).estado, 'cond');
-check('"sin petición" mezclada con denegación se presenta como no financiado',
-    resumen(['Estudio o sin petición financiación', 'Excluido']).estado, 'no');
+// "No financiado" se reserva a los tres estados negativos, que son resoluciones del Ministerio.
+// El 666 no lo es: en la mezcla se descompone en vez de colapsar ambas cosas bajo una etiqueta falsa.
+check('666 mezclado con una denegación no se llama "no financiado"',
+    resumen(['Estudio o sin petición financiación', 'Excluido']).estado, 'sin_cobertura');
+check('...y la etiqueta dice de qué se compone',
+    resumen(['Estudio o sin petición financiación', 'Excluido']).label,
+    'Sin cobertura SNS actual: 1 no financiada · 1 en estudio/sin petición');
 
-// --- Autoverificación: ¿los detectores cazan las regresiones conocidas? -------
+// --- Contraste con el algoritmo anterior --------------------------------------
 // Un detector que nunca ha demostrado detectar nada no es una red de seguridad, es decoración
-// (lección de S39). Se reintroducen aquí, en memoria, los dos defectos corregidos.
-console.log('\n— Autoverificación: ¿el test vería volver los defectos? —');
+// (lección de S39). ALCANCE REAL de esta sección, para que no prometa de más: NO es una prueba de
+// mutación sobre el código de producción. Ejecuta reimplementaciones de los algoritmos viejos y
+// comprueba que producían el defecto, es decir, que las aserciones de arriba distinguen de verdad
+// una versión correcta de una incorrecta. Quien caza la regresión si vuelve son esas aserciones.
+console.log('\n— Contraste: los algoritmos anteriores producían el defecto —');
 
 // 1. Denominador viejo: conDato = fin + cond + nofin, dejando fuera las presentaciones sin dato.
 const resumenViejo = (sits) => {
@@ -144,6 +154,26 @@ const clasificarViejo = (sit) => {
 };
 check('el clasificador viejo degradaba el estado 666 a "sindato"',
     clasificarViejo('Estudio o sin petición financiación'), 'sindato');
+
+// --- La nota del modal cuando no hay Nomenclátor ------------------------------
+// `loadSnsFinancing` toca DOM y red, así que esta parte se comprueba sobre el fuente: es un
+// detector ESTRUCTURAL, no funcional, y se declara como tal.
+//
+// El defecto que vigila: la cadena de `else if` terminaba en `else if (bifimedDrugStatus)` con el
+// texto de farmacia hospitalaria. Al incorporar las 22.116 presentaciones del estado 666, un
+// medicamento sin datos en el Nomenclátor habría caído ahí y MedCheck habría afirmado que su
+// financiación se gestiona por farmacia de hospital. Es falso y clínicamente peor que callar.
+console.log('\n— Nota del modal sin Nomenclátor (detector estructural) —');
+const fuente = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+
+const iEstudio = fuente.indexOf("st.includes('estudio')");
+const iHosp = fuente.indexOf('su financiación SNS se gestiona a través de farmacia hospitalaria');
+check('existe una rama propia para el estado 666 en la nota del modal', iEstudio > -1, true);
+check('esa rama se evalúa ANTES que la nota hospitalaria', iEstudio > -1 && iEstudio < iHosp, true);
+check('la nota hospitalaria exige marcadores de ámbito hospitalario (UH/DH/ECM)',
+    /bifimedDrugStatus\s*&&\s*bifimedHospitalario/.test(fuente), true);
+check('bifimedHospitalario se deriva de uh/dh/ecm del registro BIFIMED',
+    /bifimedHospitalario\s*=\s*!!\(bifimedDrugRecord\?\.uh\s*\|\|\s*bifimedDrugRecord\?\.dh\s*\|\|\s*bifimedDrugRecord\?\.ecm\)/.test(fuente), true);
 
 console.log(failures === 0 ? '\nOK — todas las aserciones pasan' : `\nFALLOS: ${failures}`);
 process.exit(failures === 0 ? 0 : 1);

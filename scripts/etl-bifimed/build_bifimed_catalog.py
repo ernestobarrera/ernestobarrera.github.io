@@ -21,7 +21,7 @@ Output JSON por CN:
     "meta": { schema_version, download_date, source, attribution, totales... },
     "by_cn": {
       "XXXXXXX": {
-        "cn", "nombre", "principio_activo", "situacion_financiacion",
+        "cn", "principio_activo", "situacion_financiacion",
         "condiciones_especiales", "indicaciones_financiadas", "visado",
         "uh", "dh", "ecm", "aportacion", "atc", "laboratorio_titular",
         "centralizado", ...
@@ -31,6 +31,22 @@ Output JSON por CN:
       }
     }
   }
+
+CONTRATO DEL ESQUEMA (schema_version 2, desde 2026-09-06) — es un ESQUEMA DISPERSO:
+
+  * La AUSENCIA de un campo booleano significa `false`, no "desconocido". Los indicadores
+    (`visado`, `uh`, `dh`, `ecm`, `generico`, `biosimilar`, `biologico`, `huerfano`,
+    `centralizado`) solo se emiten cuando son verdaderos. Las columnas de origen son
+    obligatorias: si el Excel dejara de traerlas, `_find_col` fallaría en vez de emitir
+    silenciosamente un catálogo sin indicadores.
+  * El campo `nombre` NO se emite. La fuente canónica del nombre del medicamento es CIMA, que ya
+    lo sirve en la tarjeta; duplicarlo aquí solo permitía que divergieran.
+  * Motivo del cambio: el catálogo viaja como UN valor de Cloudflare KV (límite duro 25 MiB) y al
+    incorporar el estado 666 llegó a 29,2 MiB. Compacto queda en 19,0 MiB.
+
+  El consumidor de este JSON es el Worker `medcheck-worker/index.js`, que devuelve cada registro
+  casi literalmente (`...item`) en `/bifimed/by-cn/{cn}`. Cualquier cambio de este contrato es
+  observable desde fuera: súbele la versión.
 
 Uso:
     python build_bifimed_catalog.py --out bifimed_catalog.json
@@ -50,7 +66,14 @@ from typing import Any
 
 import xlrd
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+
+# Aviso de tamaño antes de publicar. El catálogo viaja como UN valor de Cloudflare KV y el límite
+# duro es 25 MiB; el workflow lo sube crudo (`--data-binary`), sin comprimir. Se corta en 23 MiB
+# para enterarnos aquí, con mensaje, y no con un HTTP 413 en el paso de publicación. Si se alcanza,
+# la salida no es subir el umbral: es particionar por prefijo de CN o comprimir (y entonces hay que
+# tocar el Worker, que hoy lee con `type: 'json'`).
+MAX_JSON_MIB = 23
 BASE_URL = "https://www.sanidad.gob.es/profesionales/medicamentos.do"
 UA = "Mozilla/5.0 (compatible; MedCheck-ETL/1.0; +https://ernestobarrera.github.io)"
 
@@ -92,7 +115,7 @@ DESCARGAS = [
 # ── Descarga ─────────────────────────────────────────────────────────────────
 
 def download_bifimed_files(out_dir: Path) -> list[Path]:
-    """Descarga los dos Excel BIFIMED usando requests.Session y devuelve las rutas."""
+    """Descarga los seis Excel BIFIMED usando requests.Session y devuelve las rutas."""
     try:
         import requests
     except ImportError:
@@ -322,8 +345,11 @@ def parse_medicamentos_sheet(ws: Any) -> list[dict]:
         #   - "nombre"  → redundante. CIMA es la fuente canónica del nombre del medicamento y ya lo
         #                 sirve la tarjeta; duplicarlo aquí solo abre la puerta a que diverjan.
         #
-        # Resultado: 19,0 MiB, con margen para años de crecimiento. Si algún día hace falta el
-        # nombre para depurar, está en el artefacto del workflow (retención 14 días).
+        # Resultado: 19,0 MiB, con margen para años de crecimiento. El contrato completo (esquema
+        # disperso: ausencia de booleano == false) está en el docstring del módulo.
+        #
+        # Para depurar por nombre hay que volver al Excel de origen: el artefacto que sube el
+        # workflow es este mismo JSON compacto, no el crudo.
         item = {k: v for k, v in item.items()
                 if v is not None and v is not False and k != "nombre"}
         items.append(item)
@@ -375,7 +401,7 @@ def parse_indicaciones_sheet(ws: Any) -> list[dict]:
 
 def parse_xls_pair(rutas: list[Path]) -> dict[str, Any]:
     """
-    Parsea los dos XLS BIFIMED y combina en un dict by_cn.
+    Parsea los XLS BIFIMED (uno por estado de financiación) y combina en un dict by_cn.
     Cada entrada: { ...campos_med..., "indicaciones": [...] }
     """
     all_meds: list[dict] = []
@@ -464,6 +490,16 @@ def validate_sentinels(parsed: dict[str, Any], sentinels: list[dict[str, Any]]) 
             cn = str(s["cn"]).zfill(7)
             ok = cn in by_cn
             actual = 1 if ok else 0
+        elif kind == "cn_situacion_contiene":
+            # Más fuerte que `cn_exists`: comprueba el VALOR. Un CN puede existir en el catálogo
+            # porque lo trajo otra lista, así que su mera presencia no prueba que la descarga que
+            # nos interesa se haya hecho. Esto sí verifica las tres cosas a la vez: que esa lista se
+            # descargó, que el CN conserva su situación y que la precedencia entre listas no la
+            # pisó. El marcador va sin acentos: el Excel llega con mojibake por doble UTF-8.
+            cn = str(s["cn"]).zfill(7)
+            sit = by_cn.get(cn, {}).get("situacion_financiacion") or ""
+            actual = sit or "(sin situación)"
+            ok = str(s["contiene"]).lower() in sit.lower()
         elif kind == "cn_has_indicaciones":
             cn = str(s["cn"]).zfill(7)
             entry = by_cn.get(cn, {})
@@ -528,6 +564,17 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"\n[etl] JSON: {len(compact)/1024:.0f} KB (gzip {gz_size/1024:.0f} KB)", file=sys.stderr)
     print(f"[etl] Escrito: {args.out}", file=sys.stderr)
+
+    # El valor que se publica en KV es este JSON crudo, así que el tamaño en bytes es el que cuenta.
+    bytes_json = len(compact.encode("utf-8"))
+    mib = bytes_json / 1048576
+    if mib > MAX_JSON_MIB:
+        print(f"[etl] FALLO: el catálogo ocupa {mib:.1f} MiB y el máximo admitido aquí es "
+              f"{MAX_JSON_MIB} MiB (límite duro de un valor en Cloudflare KV: 25 MiB). "
+              f"No subas el umbral: particiona por prefijo de CN o publica comprimido "
+              f"(el Worker tendría que dejar de leer con type: 'json').", file=sys.stderr)
+        return 3
+    print(f"[etl] Tamaño OK: {mib:.1f} MiB de {MAX_JSON_MIB} MiB admitidos", file=sys.stderr)
 
     return 0 if sentinels_ok else 2
 

@@ -11947,6 +11947,8 @@ mark.ecg-highlight {
 .fin-nota-excluido    { background: rgba(239,68,68,0.07); color: #b91c1c; border-color: rgba(239,68,68,0.25); }
 .fin-nota-denegado    { background: rgba(245,158,11,0.08); color: #92400e; border-color: rgba(245,158,11,0.25); }
 .fin-nota-no-incluido { background: var(--surface-raised); color: var(--text-muted); }
+/* Estado 666 de BIFIMED: expediente no resuelto. Neutro a propósito — no es una denegación. */
+.fin-nota-estudio     { background: var(--surface-raised); color: var(--text-muted); }
 /* Enlace CN → Nomenclátor */
 a.fin-cn {
     color: var(--primary);
