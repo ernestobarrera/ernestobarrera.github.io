@@ -51,6 +51,13 @@
       "campo_fecha": "version",
       "max_age_days": null
     },
+    "broad-watch-baseline.json": {
+      "fuente": "Vigilancia de los prefijos ATC declarados broad en clinical-ontology.json: inventario de códigos por máquina, alta humana con reason y reviewedBy. Lo siembra `medcheck-audit-ontology.mjs --update-vigilancia-broad`, a mano",
+      "mantenimiento": "humano",
+      "campo_fecha": "version",
+      "max_age_days": 180,
+      "nota": "Único caso con umbral pese a ser 'humano', y es deliberado: lo que caduca no es el fichero, es la REVISIÓN. Si nadie pasa el gate `--vigilar-broad`, un código ATC nuevo entra bajo un prefijo amplio sin que lo vea nadie, que es justo el agujero para el que se creó esto el 2026-09-05. La OMS actualiza el índice ATC una vez al año: 180 días avisan dos veces, una de ellas después de la actualización anual. Para silenciarlo hay que pasar la revisión y refrescar la fecha con --update-vigilancia-broad, no subir el umbral."
+    },
     "eml.json": {
       "fuente": "WHO Model List of Essential Medicines (eEML), 23ª lista, 2023",
       "mantenimiento": "humano",
