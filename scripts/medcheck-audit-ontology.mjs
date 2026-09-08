@@ -18,6 +18,11 @@ const live = args.has('--live');
 const reconcile = args.has('--reconcile');
 const probeAnchors = args.has('--probe-anchors');
 const updateBaseline = args.has('--update-baseline');
+// --solo-perimetro · recorta la pasada a las indicaciones YA ADJUDICADAS (perimetro.bloqueante del
+// baseline). Es el gate de release: barato y bloqueante. Sin él, --reconcile recorre además la
+// deuda, que hoy son 23 indicaciones y varios minutos de red. Recortar la ENTRADA no relaja nada:
+// lo que se mira se mira con el mismo criterio, y la salida dice explícitamente qué NO se miró.
+const soloPerimetro = args.has('--solo-perimetro');
 // --cobertura-atc[=J07] · ¿hay códigos ATC nuevos con producto comercializado que la ontología
 // no alcanza? El mapa término→ATC se automantiene solo a medias (ver checkAtcCoverage).
 const coverageArg = process.argv.slice(2).find(a => a === '--cobertura-atc' || a.startsWith('--cobertura-atc='));
@@ -248,6 +253,8 @@ if (live) {
 let reconcileRows = [];
 let newGapCount = 0;
 let blockedGapCount = 0;
+// Deuda declarada: se cuenta y se imprime, pero NO bloquea. Ver `perimetroDe`.
+let deudaGapCount = 0;
 let invalidReconcileCount = 0;
 let orphanAnchorCount = 0;
 let probeRows = [];
@@ -256,6 +263,7 @@ let uncoveredAtcCount = 0;
 let broadWatchRows = [];
 let broadWatchBlockCount = 0;
 const baseline = await loadBaseline();
+const perimetro = perimetroDe(baseline);
 const broadWatchBaseline = broadWatch || updateBroadWatch ? await loadBroadWatchBaseline() : null;
 if (reconcile || updateBaseline) {
   if (typeof fetch !== 'function') {
@@ -267,12 +275,50 @@ if (reconcile || updateBaseline) {
   const source = requestedSet.size > 0
     ? entries.filter(([term]) => requestedSet.has(normalize(term)))
     : entries.filter(([, entry]) => entry.section41Filter || entry.sectionFilter || entry.reconcileTerms || entry.reconcileAnchor);
-  const recEntries = source.slice(0, Number.isFinite(maxTerms) ? maxTerms : source.length);
+
+  // El UNIVERSO del gate son las entradas con fraseología curada; el PERÍMETRO es qué parte de ese
+  // universo detiene una publicación. Las dos comprobaciones de abajo son la ratchet, y se hacen
+  // sobre el universo COMPLETO aunque la pasada se recorte con --solo-perimetro o con --terms: si
+  // no, recortar la entrada apagaría la vigilancia, que es justo lo que no puede pasar.
+  if (perimetro.declarado) {
+    const universo = entries
+      .filter(([, e]) => e.section41Filter || e.sectionFilter || e.reconcileTerms || e.reconcileAnchor)
+      .map(([t]) => normalize(t));
+    const enUniverso = new Set(universo);
+    for (const [term] of entries) {
+      if (!enUniverso.has(normalize(term))) continue;
+      const ambito = ambitoDe(term, perimetro);
+      if (ambito === 'sin-declarar') {
+        problems.push(`perímetro: "${term}" entra en el universo del gate y no está declarada ni en "bloqueante" ni en "deudaConocida" del baseline`);
+      } else if (ambito === 'contradictorio') {
+        problems.push(`perímetro: "${term}" está a la vez en "bloqueante" y en "deudaConocida"`);
+      }
+    }
+    // Una adjudicada que se cae del universo (perdió su ancla o su filtro 4.1) no se puede
+    // reconciliar, así que NO se puede certificar. Inconcluso, jamás aprobada por ausencia.
+    for (const n of perimetro.bloqueante) {
+      if (!enUniverso.has(n)) {
+        inconclusive.push(`perímetro: "${n}" está en "bloqueante" pero ya no tiene ancla ni filtro 4.1 en la ontología: no hay forma de reconciliarla`);
+      }
+    }
+  }
+
+  const filtrada = soloPerimetro && perimetro.declarado
+    ? source.filter(([term]) => ambitoDe(term, perimetro) === 'bloqueante')
+    : source;
+  const recEntries = filtrada.slice(0, Number.isFinite(maxTerms) ? maxTerms : filtrada.length);
   for (const [term, entry] of recEntries) {
     const row = await reconcileEntry(term, entry);
     classifyGapsAgainstBaseline(row, entry);
-    newGapCount += row.newGaps.length;
-    blockedGapCount += row.blockedGaps.length;
+    row.ambito = ambitoDe(term, perimetro);
+    // Solo lo adjudicado detiene la publicación. La deuda se cuenta aparte y se imprime bajo su
+    // propio epígrafe: reportarla mezclada con lo bloqueante es lo que hacía ilegible el gate.
+    if (row.ambito === 'deuda') {
+      deudaGapCount += row.newGaps.length + row.blockedGaps.length;
+    } else {
+      newGapCount += row.newGaps.length;
+      blockedGapCount += row.blockedGaps.length;
+    }
     invalidReconcileCount += row.anchorErrors.length ? 1 : 0;
     for (const motivo of row.inconcluso) inconclusive.push(`reconcile "${term}": ${motivo}`);
     reconcileRows.push(row);
@@ -719,7 +765,52 @@ async function loadBaseline() {
     inconclusive.push(`baseline con esquema inválido (${path.relative(repoRoot, baselinePath)}): se esperaba un objeto con "terms"`);
     return { version: null, terms: {}, _loadError: true };
   }
+  // El perímetro es OPCIONAL —un baseline sin él se comporta como antes: todo bloquea—, pero si
+  // está, tiene que ser legible. Un perímetro medio roto interpretado como "no hay perímetro"
+  // convertiría en silencio un gate acotado en un gate que bloquea por todo, o al revés: eso es
+  // exactamente el guardián que decide sin poder mirar. Se declara INCONCLUSO.
+  if (parsed.perimetro != null) {
+    const p = parsed.perimetro;
+    const listaOk = (x) => x == null || (Array.isArray(x) && x.every(t => typeof t === 'string'));
+    if (typeof p !== 'object' || Array.isArray(p) || !listaOk(p.bloqueante) || !listaOk(p.deudaConocida)) {
+      inconclusive.push(`baseline con "perimetro" inválido (${path.relative(repoRoot, baselinePath)}): se esperaban listas de texto en "bloqueante" y "deudaConocida"`);
+      return { version: null, terms: {}, _loadError: true };
+    }
+  }
   return parsed;
+}
+
+// ---- Perímetro del gate (ratchet) --------------------------------------------------------------
+// PREGUNTA QUE RESPONDE: de las indicaciones que el gate sabe reconciliar, ¿cuáles DETIENEN una
+// publicación y cuáles son deuda declarada que solo se reporta?
+//
+// Nace del diagnóstico del 08/09/2026: el gate salía 1 con 2.200 GAPS y llevaba así desde antes.
+// Medido, la causa no era decadencia de lo curado sino DERIVA DE PERÍMETRO — 23 de las 28
+// indicaciones del universo entraron en la ontología después de construirse el baseline y no se
+// reconciliaron nunca; las 5 adjudicadas dan CERO gaps nuevos. Un gate bloqueante que nadie puede
+// poner en verde deja de ser un gate: se publica por encima, que es lo que estaba pasando.
+//
+// La ratchet es de una sola dirección: de `deudaConocida` se sale hacia `bloqueante` al triar esa
+// indicación, y de `bloqueante` no se sale (`medcheck-test-perimetro.mjs` fija la lista mínima).
+// Promover es un acto HUMANO sobre el JSON, igual que aceptar un gap: --update-baseline registra
+// `review` pero NUNCA mueve una indicación entre listas.
+function perimetroDe(base) {
+  const p = base?.perimetro;
+  return {
+    declarado: !!p,
+    bloqueante: new Set((p?.bloqueante || []).map(normalize)),
+    deuda: new Set((p?.deudaConocida || []).map(normalize))
+  };
+}
+
+// Sin perímetro declarado, TODO bloquea: es el contrato anterior, intacto.
+function ambitoDe(term, per) {
+  if (!per.declarado) return 'bloqueante';
+  const n = normalize(term);
+  if (per.bloqueante.has(n) && per.deuda.has(n)) return 'contradictorio';
+  if (per.bloqueante.has(n)) return 'bloqueante';
+  if (per.deuda.has(n)) return 'deuda';
+  return 'sin-declarar';
 }
 
 function baselineEntryFor(term) {
@@ -826,6 +917,10 @@ async function writeBaseline(rows) {
     generatedBy: 'medcheck-audit-ontology --update-baseline',
     // Preserva la documentación editada a mano (si no, se perdería en cada regeneración).
     ...(baseline._doc ? { _doc: baseline._doc } : {}),
+    // El perímetro se PRESERVA TAL CUAL, nunca se recalcula: promover una indicación de deuda a
+    // bloqueante es un acto humano, igual que aceptar un gap. Si --update-baseline la moviera sola,
+    // registrar gaps equivaldría a adjudicarlos y la ratchet sería decorativa.
+    ...(baseline.perimetro ? { perimetro: baseline.perimetro } : {}),
     terms: { ...(baseline.terms || {}) }
   };
   for (const row of rows) {
@@ -1552,15 +1647,30 @@ function printReport() {
   if (reconcile || updateBaseline) {
     console.log('## Reconciliation: ATC vs ficha tecnica 4.1');
     console.log('(GAPS = farmacos con la indicacion en su 4.1 que el ATC NO captura. NEW = no clasificados');
-    console.log(' en el baseline (bloquean el gate); KNOWN = ya revisados/aceptados en reconcile-baseline.json.)');
+    console.log(' en el baseline; KNOWN = ya revisados/aceptados en reconcile-baseline.json.)');
+    if (perimetro.declarado) {
+      console.log('');
+      console.log(`PERIMETRO: ${perimetro.bloqueante.size} indicacion(es) ADJUDICADA(s) — sus GAPS bloquean la publicacion.`);
+      console.log(`           ${perimetro.deuda.size} en DEUDA declarada — se reportan marcadas [deuda] y NO bloquean.`);
+      if (soloPerimetro) {
+        console.log('           --solo-perimetro: la deuda NO se ha mirado en esta pasada. Corre --reconcile a secas');
+        console.log('           para verla; sus GAPS siguen sin contarse como bloqueo en cualquier caso.');
+      }
+    }
     console.log('');
     if (!reconcileRows.length) {
       console.log('- none');
       console.log('');
     }
-    for (const r of reconcileRows) {
+    // Lo bloqueante primero: es lo que hay que arreglar antes de publicar. La deuda va detrás y
+    // marcada, para que no se lea como si detuviera nada.
+    const ordenadas = [...reconcileRows].sort(
+      (a, b) => (a.ambito === 'deuda' ? 1 : 0) - (b.ambito === 'deuda' ? 1 : 0)
+    );
+    for (const r of ordenadas) {
       const mode = r.anchor ? 'ancla+texto real' : 'buscarEnFichaTecnica';
-      console.log(`- ${r.term} [${r.source} · ${mode}] ATC=${r.atc} 4.1=${r.ft} extra(ATC sin 4.1)=${r.extra}`);
+      const marca = r.ambito === 'deuda' ? ' [deuda · no bloquea]' : '';
+      console.log(`- ${r.term}${marca} [${r.source} · ${mode}] ATC=${r.atc} 4.1=${r.ft} extra(ATC sin 4.1)=${r.extra}`);
       console.log(`    terms: ${r.perTerm.join(', ')}`);
       if (r.inconcluso.length) {
         // Una fila inconclusa nunca certifica un "0": ni GAPS NUEVOS = 0 ni universo completo.
@@ -1617,6 +1727,18 @@ function printReport() {
       console.log('');
       console.log(`>> ${blockedGapCount} GAP(s) bloqueado(s) por el baseline: revisa los 'review' pendientes, las`);
       console.log("   curas reaparecidas ('curated') y los 'accepted' caducados o con huella desfasada.");
+    }
+    if (deudaGapCount > 0) {
+      console.log('');
+      console.log(`>> DEUDA: ${deudaGapCount} GAP(s) en indicaciones declaradas en "deudaConocida". NO bloquean.`);
+      console.log('   Es auditoria pendiente, no un fallo de esta release. Se salda triando una indicacion');
+      console.log('   entera y promoviendola a "bloqueante" en reconcile-baseline.json (la ratchet no da');
+      console.log('   marcha atras: de "bloqueante" no se sale).');
+    }
+    if (newGapCount === 0 && blockedGapCount === 0 && !inconclusive.length && perimetro.declarado) {
+      console.log('');
+      console.log('>> Perimetro bloqueante LIMPIO. Ojo con lo que esto significa y lo que no: dice que las');
+      console.log(`   ${perimetro.bloqueante.size} indicaciones adjudicadas siguen cuadrando, no que la ontologia entera este reconciliada.`);
     }
     console.log('');
   }

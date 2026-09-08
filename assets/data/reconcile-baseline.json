@@ -2,6 +2,41 @@
   "version": "2026-07-20",
   "generatedBy": "medcheck-audit-ontology --update-baseline",
   "_doc": "Memoria de GAPS de reconciliacion ya revisados. Maquina de estados (revision cruzada 2026-07-23), para un GAP aun presente: 'review' = pendiente de decision humana, BLOQUEA siempre (estar aqui no es revision); 'accepted' = revisado, fuera de alcance o falso positivo, UNICO estado que silencia, y solo vigente (reason no vacio + reviewedAt <= 180 dias + reviewedBy y huellas configHash/hash41 coherentes en registros nuevos; los legacy sin huella valen hasta caducar contando desde la version del archivo); 'curated' = ya cubierto por ATC/filtro, BLOQUEA si reaparece (la cura fallo); status ausente o desconocido = bloquea por esquema. Aceptar es siempre un acto humano sobre este JSON: --update-baseline solo crea 'review' (o reabre como 'review' aceptaciones caducadas o con huella desfasada) y NUNCA escribe tras una pasada inconclusa (exit 2). Anadir nuevos: node scripts/medcheck-audit-ontology.mjs --update-baseline --terms=indicacion.",
+  "perimetro": {
+    "_doc": "Reparto del universo del gate en DOS conjuntos, con ratchet. `bloqueante`: indicaciones ya adjudicadas; sus GAPS nuevos o bloqueados detienen la publicacion (exit 1). `deudaConocida`: indicaciones que entraron en el universo despues de construirse el baseline y nunca se reconciliaron; sus GAPS se REPORTAN pero NO bloquean, bajo el epigrafe de deuda. Una indicacion del universo que no este en ninguna de las dos listas BLOQUEA: entrar sin declararse es la deriva que dejo el gate rojo. Una de `bloqueante` que ya no este en el universo (perdio su ancla o su filtro) deja la pasada INCONCLUSA (exit 2): no poder mirar nunca aprueba. La ratchet es de una sola direccion — de `deudaConocida` se sale hacia `bloqueante` cuando esa indicacion queda triada, y de `bloqueante` no se sale: medcheck-test-perimetro.mjs fija la lista minima y quitar un nombre obliga a editar el test y decir por que. Promover es un acto HUMANO sobre este JSON, igual que aceptar un gap: --update-baseline registra gaps como `review` pero NUNCA mueve una indicacion entre listas.",
+    "bloqueante": [
+      "depresión",
+      "enfermedad renal crónica",
+      "fibrilación auricular",
+      "insuficiencia cardiaca",
+      "obesidad"
+    ],
+    "deudaConocida": [
+      "cáncer colorrectal",
+      "cáncer de cuello uterino",
+      "cáncer de mama",
+      "cáncer de ovario",
+      "cáncer de páncreas",
+      "cáncer de próstata",
+      "cáncer de pulmón",
+      "cáncer de vejiga",
+      "cáncer gástrico",
+      "cáncer hepatocelular",
+      "cáncer renal",
+      "dermatitis seborreica",
+      "fibrosis pulmonar",
+      "hipertensión pulmonar",
+      "leucemia",
+      "linfoma",
+      "melanoma",
+      "mieloma múltiple",
+      "rosácea",
+      "tabaquismo",
+      "vacuna COVID-19",
+      "vacuna dengue",
+      "vasculitis"
+    ]
+  },
   "terms": {
     "enfermedad renal crónica": {
       "anchor": "enfermedad renal",

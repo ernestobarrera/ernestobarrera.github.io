@@ -43,6 +43,57 @@ The live audit reports:
 - areas where CIMA marks returned products as `biosimilar`;
 - candidate missing terms from the coverage checklist.
 
+## The reconciliation gate has a PERIMETER (since 2026-09-08)
+
+```powershell
+node .\scripts\medcheck-audit-ontology.mjs --reconcile --solo-perimetro   # release gate: adjudicated only
+node .\scripts\medcheck-audit-ontology.mjs --reconcile                    # + declared-debt sweep (reports, does NOT block)
+```
+
+**Why it exists, measured on 2026-09-08.** `--reconcile` had been exiting 1 with **2,200 new GAPs**,
+and it had been red for a while. The cause was not decay of curated work — it was **perimeter
+drift**: of the 28 indications the gate knows how to reconcile, **23 entered the ontology after the
+baseline was built and were never reconciled**, while the 5 adjudicated ones produce **zero** new
+gaps. A blocking gate nobody can turn green stops being a gate: releases go out over it, which is
+exactly what was happening.
+
+The fix is **not** whitewashing the 2,200 as `accepted`, and **not** living with a documented red.
+`reconcile-baseline.json` declares the split:
+
+| list | meaning | effect |
+|---|---|---|
+| `perimetro.bloqueante` | adjudicated indications | new/blocked GAPs **stop the release** (exit 1) |
+| `perimetro.deudaConocida` | entered later, never reconciled | GAPs are **reported** marked `[deuda]`, they do **not** block |
+
+**The three guards, and none of them is optional:**
+
+- An indication in the gate's universe declared in **neither** list **blocks**. That is precisely the
+  drift that produced the red: entering without declaring.
+- An indication in `bloqueante` that **lost its anchor or 4.1 filter** leaves the run **inconclusive
+  (exit 2)**. It cannot be reconciled, so it cannot be certified — not being able to look never
+  approves.
+- A malformed `perimetro` is **inconclusive**, never silently read as "no perimeter": that would turn
+  a scoped gate into a different one without saying so.
+
+**The ratchet turns one way only.** Out of `deudaConocida` and into `bloqueante` when that indication
+is fully triaged; out of `bloqueante`, never — `medcheck-test-perimetro.mjs` pins the minimum list, so
+removing a name means editing that test and saying why in the commit. **Promoting is a human act on
+the JSON**, like accepting a gap: `--update-baseline` records `review` entries but never moves an
+indication between lists. If it promoted on its own, recording a gap would equal adjudicating it and
+the ratchet would be decorative.
+
+**Where the debt goes from here.** Triage by indication, not by gap: the 2,200 are concentrated —
+oncology is **1,870 of them (85%)**, and **lung cancer (711) plus renal cancer (519) alone are 56%**.
+Before classifying, check whether that concentration reveals an anchor that is too broad: the
+`vacuna COVID-19` entry reports gaps that are *COVID treatments* (dexamethasone, tocilizumab,
+anakinra, Paxlovid, remdesivir) caught by a vaccine entry's 4.1 phrasing. That is an anchor defect,
+not coverage debt. Several entries also report more 4.1 hits than their own ATC universe (lung cancer
+815 vs 319), which is the signature of the same problem.
+
+Tests: `medcheck-test-perimetro.mjs` (25 assertions, runs the real auditor as a subprocess against
+synthetic baselines; mutation run: 8 mutants, 8 die). `medcheck-test-audit-gates.mjs` still passes
+unchanged — a baseline **without** `perimetro` behaves exactly as before, everything blocking.
+
 ## What self-maintains, and what does not (`--cobertura-atc`)
 
 ```powershell
