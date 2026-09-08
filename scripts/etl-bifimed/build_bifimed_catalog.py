@@ -58,6 +58,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import gzip
+import hashlib
 import json
 import sys
 import time
@@ -497,8 +498,20 @@ def parse_xls_pair(rutas: list[Path]) -> dict[str, Any]:
     print(f"[etl] Total indicaciones: {len(all_inds)}", file=sys.stderr)
 
     suma_listas = sum(len(c) for c in cns_por_lista.values())
+
+    # Identidad del CONTENIDO, no del momento. `download_date` es la fecha de ejecución y dos
+    # reconstrucciones del mismo día la comparten; `generated_at` cambia aunque el dato sea
+    # idéntico. Este hash es lo que permite al cliente comprobar que el índice de financiación
+    # que ha descargado y el catálogo que sirve el Worker son la MISMA generación, y apagar la
+    # faceta si no lo son. Se calcula sobre la procedencia porque es la proyección exacta que
+    # consume el índice.
+    catalog_id = hashlib.sha256(
+        json.dumps(procedencia, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
     print(f"[etl] Procedencia: {len(procedencia)} CN en {len(cns_por_lista)} listas "
           f"(suma de listas: {suma_listas})", file=sys.stderr)
+    print(f"[etl] catalog_id: {catalog_id[:16]}…", file=sys.stderr)
 
     return {
         "by_cn": by_cn,
@@ -508,6 +521,7 @@ def parse_xls_pair(rutas: list[Path]) -> dict[str, Any]:
         "procedencia": procedencia,
         "conteo_por_lista": {k: len(v) for k, v in cns_por_lista.items()},
         "suma_listas": suma_listas,
+        "catalog_id": catalog_id,
     }
 
 
@@ -611,6 +625,12 @@ def main(argv: list[str] | None = None) -> int:
             "total_cn": parsed["total_cn"],
             "total_medicamentos": parsed["total_medicamentos"],
             "total_indicaciones": parsed["total_indicaciones"],
+            # Identidad del contenido. Aditivo: `schema_version` no sube porque el esquema de
+            # `by_cn` no cambia. Lo sirve `/bifimed/meta` sin tocar el Worker, y es lo que el
+            # cliente compara contra el `catalog_id` del índice de financiación antes de
+            # habilitar la faceta. Sin esta comprobación, una lista podría filtrarse con un
+            # índice de una generación distinta de la que responde el Worker.
+            "catalog_id": parsed["catalog_id"],
         },
         "by_cn": parsed["by_cn"],
     }
@@ -636,6 +656,7 @@ def main(argv: list[str] | None = None) -> int:
                            "Dato de la fuente, no clasificación propia.",
             "download_date": download_date,
             "generated_at": out["meta"]["generated_at"],
+            "catalog_id": parsed["catalog_id"],
             "conteo_por_lista": parsed["conteo_por_lista"],
             "suma_listas": parsed["suma_listas"],
             "total_cn_con_procedencia": len(parsed["procedencia"]),
