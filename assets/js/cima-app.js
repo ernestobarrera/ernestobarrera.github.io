@@ -4332,9 +4332,14 @@ class MedCheckApp {
         // cuesta ninguna petición extra — el coste que se temía no existe. Sin esto había
         // que abrir las fichas una a una para averiguarlo: medido en lercanidipino, 16 de
         // 36 registros tienen imagen. No dice qué imagen es ni la trae: solo que existe.
+        // El icono ABRE la imagen: es el mismo visor de la ficha, sin pasar por ella. Marcar quién
+        // tiene foto y luego obligar a abrir el modal para verla dejaría el trabajo a medias.
         const nFotos = Array.isArray(med.fotos) ? med.fotos.length : 0;
         const fotoTag = nFotos
-            ? `<span class="med-detail-tag med-detail-tag--foto" title="${nFotos === 1 ? 'CIMA publica 1 imagen' : `CIMA publica ${nFotos} imágenes`} de este registro (envase o forma farmacéutica). Se ven al abrir la ficha."><i class="fas fa-camera"></i></span>`
+            ? `<button type="button" class="med-detail-tag med-detail-tag--foto"
+                    onclick="event.stopPropagation(); app.openMedImages('${med.nregistro}')"
+                    aria-label="Ver ${nFotos === 1 ? 'la imagen' : `las ${nFotos} imágenes`} de este medicamento"
+                    title="Ver ${nFotos === 1 ? 'la imagen' : `las ${nFotos} imágenes`} que publica CIMA de este registro (envase o forma farmacéutica)."><i class="fas fa-camera"></i></button>`
             : '';
 
         this._medRenderCache.set(med.nregistro, med);
@@ -8618,12 +8623,9 @@ class MedCheckApp {
             const thumbnailUrl = medFotos.find(f => f.tipo === 'materialas')?.url
                 || medFotos.find(f => f.tipo === 'formafarmac')?.url;
 
-            // Build image data for lightbox
-            const lightboxImages = medFotos.map(f => ({
-                url: f.url.replace('/thumbnails/', '/full/'),
-                thumbUrl: f.url,
-                caption: f.tipo === 'materialas' ? 'Envase / Acondicionamiento' : 'Forma farmacéutica'
-            }));
+            // Build image data for lightbox — misma función que usa la tarjeta, para que las dos
+            // superficies no puedan divergir en qué imagen abren ni en cómo la titulan.
+            const lightboxImages = this._lightboxImages(med);
 
             // Create badge text for images
             const imageCount = lightboxImages.length;
@@ -13249,6 +13251,42 @@ ${materialesPlaceholder}
     // ============================================
     // IMAGE LIGHTBOX
     // ============================================
+
+    /**
+     * Las imágenes de un registro, en la forma que espera el visor.
+     *
+     * Vive aquí y no dentro del modal porque la abren DOS superficies —la miniatura de la ficha y
+     * el icono de cámara de la tarjeta— y duplicar el mapeo es cómo acaban abriendo cosas
+     * distintas: `thumbnails` frente a `full`, o un pie que dice «envase» sobre la forma
+     * farmacéutica. Un solo sitio, un solo contrato.
+     */
+    _lightboxImages(med) {
+        return (med?.fotos || [])
+            .filter(f => f && f.url)
+            .map(f => ({
+                url: String(f.url).replace('/thumbnails/', '/full/'),
+                thumbUrl: f.url,
+                caption: f.tipo === 'materialas' ? 'Envase / Acondicionamiento' : 'Forma farmacéutica'
+            }));
+    }
+
+    /**
+     * Abre las imágenes de un registro DESDE LA TARJETA, sin pasar por la ficha.
+     *
+     * Lee de `_medRenderCache`, que la propia tarjeta acaba de rellenar al pintarse. Por eso no
+     * hace falta incrustar el JSON de las fotos en el `onclick` de cada tarjeta: con 50 tarjetas
+     * en pantalla serían decenas de miles de caracteres de HTML repetido.
+     *
+     * Si no hay imágenes no hace nada: el icono solo se pinta cuando las hay, así que llegar aquí
+     * sin fotos significa que el estado cambió bajo los pies, y abrir un visor vacío sería peor
+     * que no responder.
+     */
+    openMedImages(nregistro) {
+        const med = this._medRenderCache.get(nregistro) ?? this._medRenderCache.get(+nregistro);
+        const imagenes = this._lightboxImages(med);
+        if (!imagenes.length) return;
+        this.openImageLightbox(imagenes, 0);
+    }
 
     /**
      * Opens a lightbox to display medication images

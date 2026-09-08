@@ -4584,17 +4584,33 @@ body {
     flex-shrink: 0;
 }
 
-/* Indicador de imagen: solo el icono, sin texto. Es una marca de presencia, no un dato
-   que se lea — su trabajo es que se distinga de un vistazo cuál de veinte tarjetas tiene
-   foto, sin abrirlas una a una. Por eso no lleva cifra visible: el número está en el
-   tooltip y añadirlo a la fila robaría sitio a la dosis y al envase, que sí se leen. */
+/* Indicador de imagen: solo el icono, sin texto. Es una marca de presencia Y el acceso —
+   pulsarlo abre el visor sin pasar por la ficha. No lleva cifra visible: el número está en
+   el tooltip, y añadirlo a la fila robaría sitio a la dosis y al envase, que sí se leen.
+   Es un <button> de verdad, así que se alcanza tabulando y responde a Intro. */
 .med-detail-tag--foto {
     flex-shrink: 0;
-    cursor: help;
+    cursor: pointer;
+    border: 0;
+    font: inherit;
+    line-height: inherit;
 }
 
 .med-detail-tag--foto i {
     color: var(--text-secondary);
+}
+
+/* El realce va por `box-shadow` y no por `border`: un borde de 1 px sumaría 2 px al chip
+   y lo desalinearía de sus vecinos, que son `<span>` sin borde. Así no cambia el hueco. */
+.med-detail-tag--foto:hover,
+.med-detail-tag--foto:focus-visible {
+    box-shadow: inset 0 0 0 1px var(--primary);
+    outline: none;
+}
+
+.med-detail-tag--foto:hover i,
+.med-detail-tag--foto:focus-visible i {
+    color: var(--primary);
 }
 
 /* Guarda final contra el desbordamiento. Va en un span interno porque `text-overflow`
