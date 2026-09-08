@@ -16690,7 +16690,7 @@ ${materialesPlaceholder}
                         body: `
                             <p>Empieza por nombre comercial, principio activo o código nacional.</p>
                             <p>Cada tarjeta lleva seis accesos con su sigla —<span class="guide-key">FT</span> ficha y prospecto, <span class="guide-key">IND</span> indicaciones, <span class="guide-key">POS</span> posología, <span class="guide-key">INT</span> interacciones, <span class="guide-key">EVI</span> evidencia, <span class="guide-key">SEG</span> seguridad— que abren la ficha ya en esa pestaña. Los que salen apagados es porque CIMA no publica esa sección para ese registro: así no hay que pulsar para descubrir que no hay nada.</p>
-                            <p>Un icono de cámara <i class="fas fa-camera"></i> junto a la dosis marca los registros de los que CIMA publica imagen del envase o de la forma farmacéutica. Solo lo llevan los que la tienen, así que no hay que abrir las fichas una a una para averiguarlo.</p>
+                            <p>Un icono de cámara <i class="fas fa-camera"></i> junto a la dosis aparece solo en los registros de los que CIMA publica imagen del envase o de la forma farmacéutica, y <span class="guide-highlight">pulsarlo la abre ahí mismo</span>, sin entrar en la ficha. Así no hay que abrirlas una a una para averiguar cuáles tienen foto.</p>
                             <p class="guide-case"><strong>Caso</strong>El paciente trae la caja y pregunta para qué es. Buscas el nombre y pulsas <span class="guide-key">IND</span>: la indicación autorizada, sin abrir el PDF de la ficha técnica.</p>
                         `,
                         position: 'bottom',
