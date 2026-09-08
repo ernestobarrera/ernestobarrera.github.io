@@ -140,8 +140,21 @@ for (const [term, entry] of entries) {
   if (!entry.label) problems.push(`${term}: falta label`);
   if (!entry.status) problems.push(`${term}: falta status`);
   if (entry.status && !allowedStatuses.has(entry.status)) problems.push(`${term}: status desconocido "${entry.status}"`);
-  if (!entry.catalogGroup) warnings.push(`${term}: sin catalogGroup (caería al fallback ATC en el catálogo)`);
-  else if (!allowedCatalogGroups.has(entry.catalogGroup)) problems.push(`${term}: catalogGroup desconocido "${entry.catalogGroup}"`);
+  // `catalogGroup` admite UNO o VARIOS dominios: hay conceptos que cruzan aparatos y el catálogo
+  // es un índice de navegación, no una partición (probióticos = Digestivo + Ginecología). Se
+  // valida CADA elemento: una lista con un dominio inventado dentro es tan rota como una cadena
+  // inventada, y aceptarla porque "es una lista" sería el guardián que aprueba por no mirar.
+  const catalogGroups = Array.isArray(entry.catalogGroup)
+    ? entry.catalogGroup.filter(g => g !== undefined && g !== null && g !== '')
+    : (entry.catalogGroup ? [entry.catalogGroup] : []);
+  if (!catalogGroups.length) warnings.push(`${term}: sin catalogGroup (caería al fallback ATC en el catálogo)`);
+  for (const grupo of catalogGroups) {
+    if (typeof grupo !== 'string') problems.push(`${term}: catalogGroup no textual ${JSON.stringify(grupo)}`);
+    else if (!allowedCatalogGroups.has(grupo)) problems.push(`${term}: catalogGroup desconocido "${grupo}"`);
+  }
+  if (Array.isArray(entry.catalogGroup) && new Set(catalogGroups).size !== catalogGroups.length) {
+    warnings.push(`${term}: catalogGroup con dominios repetidos`);
+  }
   if ((entry.status === 'broad' || entry.status === 'needsSection41Filter') && entry.matchMode !== 'exact') {
     warnings.push(`${term}: estado ${entry.status} sin matchMode exact`);
   }

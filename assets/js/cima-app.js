@@ -3054,6 +3054,31 @@ class MedCheckApp {
     }
 
     /**
+     * En qué dominios clínicos del catálogo aparece una entrada. Devuelve SIEMPRE una lista.
+     *
+     * `catalogGroup` admite varios dominios porque hay conceptos que cruzan aparatos, y el
+     * catálogo es un índice de navegación, no una partición: «probióticos» vive en Digestivo
+     * (A07F, orales) y en Ginecología (G01AX14, vaginales), y quien lo busca puede entrar por
+     * cualquiera de las dos. El pie del catálogo ya decía «una indicación puede pertenecer a
+     * varias»; hasta hoy eso era falso en la práctica, porque cada término se pintaba una sola vez.
+     *
+     * CONSECUENCIA QUE HAY QUE SABER: la suma de los contadores por grupo puede superar el total
+     * del catálogo. El total sigue contando TÉRMINOS ÚNICOS, que es lo que significa; los
+     * contadores de grupo cuentan apariciones. No es una discrepancia, son dos magnitudes.
+     *
+     * Sin `catalogGroup` cae a la letra del ATC, igual que antes (el auditor avisa de ese caso).
+     */
+    _catalogGroupsOf(entry) {
+        const declarados = Array.isArray(entry?.catalogGroup)
+            ? entry.catalogGroup.filter(Boolean)
+            : (entry?.catalogGroup ? [entry.catalogGroup] : []);
+        if (declarados.length) return [...new Set(declarados)];
+        const atc = Array.isArray(entry?.atc) ? entry.atc[0] : entry?.atc;
+        const letter = String(atc || '').trim().charAt(0).toUpperCase();
+        return [this.api.getATCCategoryName(letter) || 'Otros'];
+    }
+
+    /**
      * Catálogo completo de indicaciones: índice navegable generado EN VIVO desde la
      * ontología (clinical-ontology.json), agrupado por sistema ATC y con filtro de texto.
      * No se mantiene a mano: cada término que se añada al JSON aparece automáticamente,
@@ -3087,14 +3112,10 @@ class MedCheckApp {
         const groups = new Map();
         for (const term of Object.keys(dict)) {
             const entry = dict[term] || {};
-            let groupName = entry.catalogGroup;
-            if (!groupName) {
-                const atc = Array.isArray(entry.atc) ? entry.atc[0] : entry.atc;
-                const letter = String(atc || '').trim().charAt(0).toUpperCase();
-                groupName = this.api.getATCCategoryName(letter) || 'Otros';
+            for (const groupName of this._catalogGroupsOf(entry)) {
+                if (!groups.has(groupName)) groups.set(groupName, []);
+                groups.get(groupName).push({ term, entry });
             }
-            if (!groups.has(groupName)) groups.set(groupName, []);
-            groups.get(groupName).push({ term, entry });
         }
         const total = Object.keys(dict).length;
         const sortedGroups = [...groups.keys()].sort(
