@@ -595,7 +595,26 @@ class MedCheckApp {
                 this.loadView(tab.dataset.view);
             });
         });
+        // La marca ES el botón de inicio. Convención universal de cabecera: el logo vuelve
+        // al principio. Hasta ahora `.header-brand` era texto inerte, así que desde
+        // cualquier resultado no había ninguna vía de un clic para volver al estado limpio.
+        document.getElementById('brand-home')?.addEventListener('click', () => this.goHome());
         this.setupSearchScope();
+    }
+
+    /**
+     * Estado de entrada de la app: buscador de medicamentos, sin universo ATC heredado.
+     *
+     * Los tres `lastATC*` se limpian a propósito: son el universo de la vista Indicaciones
+     * y, si sobreviven, la siguiente búsqueda hereda facetas de un ATC que ya no se ve
+     * (mismo fallo que documenta `_enterIndicationUniverse`).
+     */
+    goHome() {
+        this._resetSearchScopeToMeds();
+        this.lastATCBreadcrumb = [];
+        this.lastATCCode = '';
+        this.lastATCLabel = '';
+        this.loadView('search');
     }
 
     /**
@@ -2321,6 +2340,44 @@ class MedCheckApp {
             ? `Sustancias · ${subs.length} de ${total}`
             : `Sustancias · ${total}`;
         return `<div class="autocomplete-section">${this._escapeHtml(rotulo)}</div>${rows}`;
+    }
+
+    /**
+     * Descriptor legible de un código ATC, para escribirlo AL LADO del código.
+     *
+     * Sale del árbol curado `CimaAPI.ATC_CATEGORIES`, que es local: no cuesta ninguna
+     * petición ni depende de que la maestra de CIMA haya terminado de precargarse (el
+     * breadcrumb se pinta síncrono, así que una fuente async no serviría aquí).
+     *
+     * Degrada por PREFIJO, y eso no puede mentir: el ATC es jerárquico, así que el nombre
+     * de un ancestro es cierto para todos sus descendientes — se pierde detalle, nunca
+     * exactitud. Medido sobre `clinical-ontology.json` (254 códigos distintos): 83 exactos,
+     * 162 por ancestro de nivel ≥2, 9 se quedan en la letra del grupo anatómico.
+     *
+     * Si ni siquiera la letra resuelve (el `atc` de un `matchedIndication` puede ser texto
+     * libre en la rama de fallback), devuelve cadena vacía: mejor sin descriptor que con
+     * uno que repita el propio código.
+     */
+    _describeATCCode(code) {
+        const c = String(code || '').toUpperCase().trim();
+        if (!c) return '';
+        if (!this._atcNameIndex) {
+            const idx = new Map();
+            (function walk(nodes) {
+                for (const n of nodes || []) {
+                    if (n.code) idx.set(String(n.code).toUpperCase(), n.name);
+                    if (n.subcategories) walk(n.subcategories);
+                }
+            })(CimaAPI.ATC_CATEGORIES || []);
+            this._atcNameIndex = idx;
+        }
+        if (this._atcNameIndex.has(c)) return this._atcNameIndex.get(c);
+        for (let len = c.length - 1; len >= 2; len--) {
+            const ancestro = this._atcNameIndex.get(c.slice(0, len));
+            if (ancestro) return ancestro;
+        }
+        const letra = this.api?.getATCCategoryName?.(c[0]) || '';
+        return letra === c[0] ? '' : letra;
     }
 
     /**
@@ -4269,6 +4326,17 @@ class MedCheckApp {
             + (familiaActiva ? ' · filtro activo, pulsa para quitarlo' : ` · pulsa para ver solo ${familia.label.toLowerCase()}`)
             + ' (Ctrl+clic para varias)';
 
+        // Indicador de imagen. `fotos` YA VIENE en la respuesta de `/medicamentos`
+        // (verificado en vivo contra CIMA el 2026-09-08: está en la lista de campos del
+        // ítem de lista, no solo en el detalle), así que marcar quién tiene imagen NO
+        // cuesta ninguna petición extra — el coste que se temía no existe. Sin esto había
+        // que abrir las fichas una a una para averiguarlo: medido en lercanidipino, 16 de
+        // 36 registros tienen imagen. No dice qué imagen es ni la trae: solo que existe.
+        const nFotos = Array.isArray(med.fotos) ? med.fotos.length : 0;
+        const fotoTag = nFotos
+            ? `<span class="med-detail-tag med-detail-tag--foto" title="${nFotos === 1 ? 'CIMA publica 1 imagen' : `CIMA publica ${nFotos} imágenes`} de este registro (envase o forma farmacéutica). Se ven al abrir la ficha."><i class="fas fa-camera"></i></span>`
+            : '';
+
         this._medRenderCache.set(med.nregistro, med);
         const isFav = this.isFavorite(med.nregistro);
 
@@ -4303,6 +4371,7 @@ class MedCheckApp {
                         ${doseTag}
                         <span class="med-detail-tag med-detail-tag--packs" data-packs-nreg="${med.nregistro}" hidden></span>
                     </span>
+                    ${fotoTag}
                 </div>
 
                 ${(badges.length > 0 || contextAlerts.length > 0) ? `
@@ -12575,7 +12644,16 @@ ${materialesPlaceholder}
         // Build breadcrumb (H18: transparencia de la selección — qué ATC se consultan
         // y, si hubo filtro 4.1, cuántos candidatos superaron la verificación en ficha)
         const mi = data.matchedIndication;
-        const miAtcList = mi ? (Array.isArray(mi.atc) ? mi.atc : [mi.atc]).join(' · ') : '';
+        // Cada código lleva su descriptor al lado. Antes la cabecera decía "D01 · J02" a
+        // secas y había que saberse el ATC de memoria para leerla: buscando "onicomicosis"
+        // se veían dos grupos y el único modo de saber cuál era el tópico y cuál el
+        // sistémico era deducirlo. El nombre no cuesta ninguna petición (árbol curado local).
+        const miAtcCodes = mi ? (Array.isArray(mi.atc) ? mi.atc : [mi.atc]).filter(Boolean) : [];
+        const miAtcList = miAtcCodes.map((code) => {
+            const desc = this._describeATCCode(code);
+            return `<span class="match-atc-code">${this._escapeHtml(String(code))}</span>`
+                + (desc ? `<span class="match-atc-name">${this._escapeHtml(desc)}</span>` : '');
+        }).join('<span class="match-atc-sep">·</span>');
         const miFs = mi?.filterSummary;
         const miFilterNote = miFs
             ? ` <span class="match-filter" title="Esta indicación lleva criba adicional por ficha técnica: de ${miFs.candidates} candidatos por grupo ATC se muestran los ${miFs.matched} cuya sección 4.1 (indicaciones autorizadas) recoge este uso. Solo algunas indicaciones sensibles llevan esta criba.">verificados en ficha (4.1): ${miFs.matched} de ${miFs.candidates}</span>`
@@ -16563,7 +16641,7 @@ ${materialesPlaceholder}
                         icon: 'fa-pills',
                         body: `
                             <p>MedCheck reúne en un sitio lo que hoy obliga a abrir cinco pestañas: <span class="guide-highlight">ficha técnica, financiación, desabastecimientos, alertas de seguridad, evidencia y utilización real</span>, más tu propia colección de medicamentos.</p>
-                            <p>El flujo canónico es: buscar, abrir ficha, guardar lo relevante y revisar tu vademécum desde distintos ejes clínicos.</p>
+                            <p>El flujo canónico es: buscar, abrir ficha, guardar lo relevante y revisar tu vademécum desde distintos ejes clínicos. Desde cualquier punto, <span class="guide-highlight">el logo «MedCheck» de arriba a la izquierda vuelve al inicio</span>.</p>
                             <p>Todo sale de fuentes oficiales (CIMA/AEMPS, Nomenclátor del SNS, Ministerio de Sanidad). MedCheck <span class="guide-highlight">no emite juicios clínicos</span>: los reúne para que decidas tú.</p>
                         `,
                     },
@@ -16574,6 +16652,7 @@ ${materialesPlaceholder}
                         body: `
                             <p>Empieza por nombre comercial, principio activo o código nacional.</p>
                             <p>Cada tarjeta lleva seis accesos con su sigla —<span class="guide-key">FT</span> ficha y prospecto, <span class="guide-key">IND</span> indicaciones, <span class="guide-key">POS</span> posología, <span class="guide-key">INT</span> interacciones, <span class="guide-key">EVI</span> evidencia, <span class="guide-key">SEG</span> seguridad— que abren la ficha ya en esa pestaña. Los que salen apagados es porque CIMA no publica esa sección para ese registro: así no hay que pulsar para descubrir que no hay nada.</p>
+                            <p>Un icono de cámara <i class="fas fa-camera"></i> junto a la dosis marca los registros de los que CIMA publica imagen del envase o de la forma farmacéutica. Solo lo llevan los que la tienen, así que no hay que abrir las fichas una a una para averiguarlo.</p>
                             <p class="guide-case"><strong>Caso</strong>El paciente trae la caja y pregunta para qué es. Buscas el nombre y pulsas <span class="guide-key">IND</span>: la indicación autorizada, sin abrir el PDF de la ficha técnica.</p>
                         `,
                         position: 'bottom',

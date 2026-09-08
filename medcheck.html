@@ -29,7 +29,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/medcheck-apple-touch-icon-180.png">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="assets/css/cima-app.css?v=20260907b" />
+    <link rel="stylesheet" href="assets/css/cima-app.css?v=20260908a" />
 </head>
 
 <body>
@@ -37,8 +37,10 @@
         <!-- Top Header with Logo and Patient Context -->
         <header class="app-header">
             <div class="header-brand">
-                <i class="fas fa-pills"></i>
-                <span class="brand-name">MedCheck</span>
+                <button type="button" class="brand-home" id="brand-home" title="Volver al inicio de MedCheck" aria-label="Volver al inicio de MedCheck">
+                    <i class="fas fa-pills"></i>
+                    <span class="brand-name">MedCheck</span>
+                </button>
                 <span class="brand-tag">BETA</span>
                 <button class="header-help-btn" id="start-guide-btn" title="Guia interactiva">
                     <i class="fas fa-question"></i>
@@ -227,7 +229,7 @@
     <!-- Scripts -->
     <script src="assets/js/inn-dict.js?v=20260822c"></script>
     <script src="assets/js/cima-api.js?v=20260905b"></script>
-    <script src="assets/js/cima-app.js?v=20260907b"></script>
+    <script src="assets/js/cima-app.js?v=20260908a"></script>
 
     <!-- Service Worker Registration -->
     <script>

@@ -130,6 +130,29 @@ body {
     font-size: 1.5rem;
 }
 
+/* La marca es el botón de inicio: se comporta como botón (foco, cursor) sin parecerlo. */
+.brand-home {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+.brand-home:hover .brand-name {
+    text-decoration: underline;
+}
+
+.brand-home:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
+}
+
 .brand-tag {
     font-size: 0.65rem;
     font-weight: 600;
@@ -4561,6 +4584,19 @@ body {
     flex-shrink: 0;
 }
 
+/* Indicador de imagen: solo el icono, sin texto. Es una marca de presencia, no un dato
+   que se lea — su trabajo es que se distinga de un vistazo cuál de veinte tarjetas tiene
+   foto, sin abrirlas una a una. Por eso no lleva cifra visible: el número está en el
+   tooltip y añadirlo a la fila robaría sitio a la dosis y al envase, que sí se leen. */
+.med-detail-tag--foto {
+    flex-shrink: 0;
+    cursor: help;
+}
+
+.med-detail-tag--foto i {
+    color: var(--text-secondary);
+}
+
 /* Guarda final contra el desbordamiento. Va en un span interno porque `text-overflow`
    NO actúa sobre el ítem anónimo de un contenedor flex, y `.med-detail-tag` es
    `inline-flex` — por eso un literal largo se cortaba a media palabra y sin elipsis.
@@ -5395,6 +5431,24 @@ body {
     background: var(--bg-dark);
     padding: 0.1rem 0.4rem;
     border-radius: var(--radius-sm);
+}
+
+/* Código + descriptor. El código manda (es lo que se copia y lo que casa con la ficha);
+   el nombre va detrás, más apagado, para que se lea sin competir. Envuelve por pares:
+   una indicación puede consultar seis grupos ATC y la línea tiene que poder partirse. */
+.match-atc-code {
+    font-weight: 600;
+}
+
+.match-atc-name {
+    margin-left: 0.3rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.match-atc-sep {
+    margin: 0 0.35rem;
+    opacity: 0.5;
 }
 
 /* H18: transparencia del filtro 4.1 en el breadcrumb de Indicaciones */
