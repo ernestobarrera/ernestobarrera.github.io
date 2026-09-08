@@ -399,13 +399,35 @@ def parse_indicaciones_sheet(ws: Any) -> list[dict]:
     return items
 
 
+def _descarga_de_ruta(ruta: Path) -> dict[str, Any] | None:
+    """
+    Descarga de `DESCARGAS` a la que corresponde un XLS, por el nombre con el que lo guarda
+    `download_bifimed_files` (`bifimed_<nombre>.xls`). Devuelve None si no se reconoce —con
+    `--from-files` las rutas son libres—, y entonces el fichero no aporta procedencia.
+    """
+    stem = ruta.stem
+    nombre = stem[len("bifimed_"):] if stem.startswith("bifimed_") else stem
+    for d in DESCARGAS:
+        if d["nombre"] == nombre:
+            return d
+    return None
+
+
 def parse_xls_pair(rutas: list[Path]) -> dict[str, Any]:
     """
     Parsea los XLS BIFIMED (uno por estado de financiación) y combina en un dict by_cn.
     Cada entrada: { ...campos_med..., "indicaciones": [...] }
+
+    Registra además la PROCEDENCIA de cada CN: de cuál de las seis listas oficiales vino. Es
+    dato de la fuente, no interpretación nuestra, y por eso viaja aparte del catálogo (sidecar,
+    no KV). El índice de financiación de la lista de resultados se construye con esto en vez de
+    releer `situacion_financiacion`, que obligaría a reimplementar en Python la clasificación de
+    texto sucio que vive en el cliente (`_classifyFinSit`) y a arriesgar que las dos diverjan.
     """
     all_meds: list[dict] = []
     all_inds: list[dict] = []
+    procedencia: dict[str, str] = {}       # cn -> código `financiado` de su lista
+    cns_por_lista: dict[str, set[str]] = {}
 
     for ruta in rutas:
         print(f"\n[etl] Leyendo {ruta.name}...", file=sys.stderr)
@@ -413,15 +435,31 @@ def parse_xls_pair(rutas: list[Path]) -> dict[str, Any]:
         sheet_names = wb.sheet_names()
         print(f"[etl]   Hojas: {sheet_names}", file=sys.stderr)
 
+        desc = _descarga_de_ruta(ruta)
+        meds_de_esta: list[dict] = []
+
         for sn in sheet_names:
             ws = wb.sheet_by_name(sn)
             sn_low = sn.lower()
             if "indicac" in sn_low:
                 all_inds.extend(parse_indicaciones_sheet(ws))
             elif "medicamento" in sn_low:
-                all_meds.extend(parse_medicamentos_sheet(ws))
+                meds_de_esta.extend(parse_medicamentos_sheet(ws))
             else:
                 print(f"[etl]   SKIP hoja desconocida: '{sn}'", file=sys.stderr)
+
+        all_meds.extend(meds_de_esta)
+
+        if desc is not None:
+            cns = cns_por_lista.setdefault(desc["nombre"], set())
+            for med in meds_de_esta:
+                cns.add(med["cn"])
+                # Misma regla que `by_cn`: la primera aparición gana, para que catálogo y
+                # procedencia no puedan contar cosas distintas del mismo CN.
+                procedencia.setdefault(med["cn"], desc["financiado"])
+        else:
+            print(f"[etl]   AVISO: {ruta.name} no corresponde a ninguna lista conocida; "
+                  f"no aporta procedencia", file=sys.stderr)
 
     # Build by_cn — medicamentos primero
     by_cn: dict[str, dict] = {}
@@ -458,11 +496,18 @@ def parse_xls_pair(rutas: list[Path]) -> dict[str, Any]:
     print(f"[etl] Total medicamentos: {len(all_meds)}", file=sys.stderr)
     print(f"[etl] Total indicaciones: {len(all_inds)}", file=sys.stderr)
 
+    suma_listas = sum(len(c) for c in cns_por_lista.values())
+    print(f"[etl] Procedencia: {len(procedencia)} CN en {len(cns_por_lista)} listas "
+          f"(suma de listas: {suma_listas})", file=sys.stderr)
+
     return {
         "by_cn": by_cn,
         "total_medicamentos": len(all_meds),
         "total_indicaciones": len(all_inds),
         "total_cn": len(by_cn),
+        "procedencia": procedencia,
+        "conteo_por_lista": {k: len(v) for k, v in cns_por_lista.items()},
+        "suma_listas": suma_listas,
     }
 
 
@@ -500,6 +545,16 @@ def validate_sentinels(parsed: dict[str, Any], sentinels: list[dict[str, Any]]) 
             sit = by_cn.get(cn, {}).get("situacion_financiacion") or ""
             actual = sit or "(sin situación)"
             ok = str(s["contiene"]).lower() in sit.lower()
+        elif kind == "listas_disjuntas":
+            # Medido el 2026-09-08: las seis listas de BIFIMED no comparten ni un solo CN
+            # (19.447 + 1.493 + 2.058 + 710 + 5.391 + 22.116 = 51.215, el total exacto). Sobre
+            # ese hecho se apoya el índice de financiación, que cuenta cada CN una vez por su
+            # lista de origen. Si un mes dejara de cumplirse, el denominador se inflaría en
+            # silencio y ninguna otra comprobación lo vería: por eso es centinela y no comentario.
+            suma = parsed.get("suma_listas", 0)
+            unicos = len(parsed.get("procedencia", {}))
+            ok = suma == unicos and unicos > 0
+            actual = f"{suma} en listas / {unicos} CN únicos"
         elif kind == "cn_has_indicaciones":
             cn = str(s["cn"]).zfill(7)
             entry = by_cn.get(cn, {})
@@ -524,6 +579,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", default="bifimed_catalog.json", help="Ruta del JSON de salida")
     ap.add_argument("--tmp-dir", default="/tmp/bifimed_etl", help="Directorio temporal para descarga")
     ap.add_argument("--sentinels", default=None, help="Ruta a sentinels.json")
+    ap.add_argument("--procedencia-out", default=None,
+                    help="Ruta del sidecar CN→lista de origen (por defecto, junto a --out)")
     args = ap.parse_args(argv)
 
     download_date = datetime.date.today().isoformat()
@@ -564,6 +621,33 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"\n[etl] JSON: {len(compact)/1024:.0f} KB (gzip {gz_size/1024:.0f} KB)", file=sys.stderr)
     print(f"[etl] Escrito: {args.out}", file=sys.stderr)
+
+    # ── Sidecar de procedencia ────────────────────────────────────────────────
+    # NO se publica en KV ni lo sirve el Worker: viaja solo en el artefacto del run, para que el
+    # generador del índice de financiación sepa de qué lista oficial viene cada CN sin reinterpretar
+    # el texto de `situacion_financiacion`. El contrato del catálogo no cambia, y por eso
+    # `schema_version` sigue en 2: nada de lo que se publica es distinto.
+    proc_out = Path(args.procedencia_out) if args.procedencia_out else \
+        Path(args.out).with_name(Path(args.out).stem + "_procedencia.json")
+    proc = {
+        "meta": {
+            "schema_version": 1,
+            "descripcion": "CN -> código `financiado` de la lista BIFIMED de la que procede. "
+                           "Dato de la fuente, no clasificación propia.",
+            "download_date": download_date,
+            "generated_at": out["meta"]["generated_at"],
+            "conteo_por_lista": parsed["conteo_por_lista"],
+            "suma_listas": parsed["suma_listas"],
+            "total_cn_con_procedencia": len(parsed["procedencia"]),
+            "total_cn_catalogo": parsed["total_cn"],
+        },
+        "por_cn": parsed["procedencia"],
+    }
+    proc_compact = json.dumps(proc, ensure_ascii=False, separators=(",", ":"))
+    proc_out.write_text(proc_compact, encoding="utf-8")
+    print(f"[etl] Procedencia: {len(proc_compact)/1024:.0f} KB "
+          f"(gzip {len(gzip.compress(proc_compact.encode('utf-8')))/1024:.0f} KB) → {proc_out}",
+          file=sys.stderr)
 
     # El valor que se publica en KV es este JSON crudo, así que el tamaño en bytes es el que cuenta.
     bytes_json = len(compact.encode("utf-8"))

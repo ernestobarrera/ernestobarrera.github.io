@@ -64,8 +64,13 @@ jobs:
       - name: Subir artefacto (retención 14 días)
         uses: actions/upload-artifact@v7
         with:
+          # El sidecar de procedencia (CN → lista BIFIMED de origen) viaja con el catálogo pero
+          # NO se publica en KV: lo consume el generador del índice de financiación, para no
+          # reinterpretar el texto de situación y arriesgarse a clasificar distinto que la app.
           name: bifimed-catalog-${{ steps.build.outputs.download_date }}
-          path: bifimed_catalog.json
+          path: |
+            bifimed_catalog.json
+            bifimed_catalog_procedencia.json
           retention-days: 14
           if-no-files-found: error
 
