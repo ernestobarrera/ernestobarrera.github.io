@@ -1,0 +1,148 @@
+name: ETL índice de financiación (BIFIMED × CIMA)
+
+on:
+  # Encadenado al ETL de BIFIMED en vez de a un día del calendario. El índice cruza el catálogo
+  # de ese run concreto con CIMA, así que esperar al día 5 abriría una ventana en la que el
+  # catálogo ya es nuevo y el índice todavía viejo — y el cliente, que compara la generación de
+  # ambos, apagaría la faceta durante esos dos días sin que nadie supiera por qué.
+  workflow_run:
+    workflows: ["ETL BIFIMED (Financiación de Medicamentos SNS)"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Run de etl-bifimed del que tomar el artefacto (vacío = el último con éxito)"
+        required: false
+
+permissions:
+  # `contents: write` porque esto COMMITEA: el índice es un asset estático que sirve GitHub
+  # Pages. `actions: read` para poder descargar el artefacto del run de BIFIMED.
+  contents: write
+  actions: read
+
+concurrency:
+  group: etl-financiacion
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # Un BIFIMED fallido no publica catálogo, así que cruzar contra él daría un índice sellado
+    # con una generación que nadie sirve. No poder construir nunca es peor que construir mal.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Descargar el sidecar de procedencia del run de BIFIMED
+        id: artefacto
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID="${{ github.event.workflow_run.id }}"
+          if [ -z "$RUN_ID" ]; then RUN_ID="${{ github.event.inputs.run_id }}"; fi
+          if [ -z "$RUN_ID" ]; then
+            RUN_ID=$(gh run list --workflow=etl-bifimed.yml --status=success --limit 1 \
+              --json databaseId --jq '.[0].databaseId')
+          fi
+          test -n "$RUN_ID" || { echo "sin run de BIFIMED del que partir"; exit 1; }
+          echo "Tomando el artefacto del run ${RUN_ID}"
+          mkdir -p /tmp/bifimed-art
+          gh run download "$RUN_ID" --dir /tmp/bifimed-art
+          RUTA=$(find /tmp/bifimed-art -name 'bifimed_catalog_procedencia.json' | head -n 1)
+          # Un run anterior al sidecar no lo trae. Abortar es lo correcto: construir el índice
+          # releyendo el texto de situación duplicaría la clasificación que vive en el cliente.
+          test -n "$RUTA" || { echo "ese run no trae sidecar de procedencia; relanza etl-bifimed"; exit 1; }
+          echo "ruta=${RUTA}" >> "$GITHUB_OUTPUT"
+          echo "run_id=${RUN_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Construir el índice
+        id: build
+        run: |
+          node scripts/etl-financiacion/build-financiacion-index.mjs \
+            --procedencia "${{ steps.artefacto.outputs.ruta }}" \
+            --out /tmp/financiacion-index.json
+          {
+            echo "generated_at=$(jq -r '._meta.generated_at' /tmp/financiacion-index.json)"
+            echo "nregistros=$(jq -r '._meta.nregistros' /tmp/financiacion-index.json)"
+            echo "con_dato=$(jq -r '._meta.con_algun_dato' /tmp/financiacion-index.json)"
+            echo "catalog_id=$(jq -r '._meta.catalog_id' /tmp/financiacion-index.json)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: ¿Ha cambiado el contenido?
+        id: diff
+        run: |
+          # Se compara SOLO `.fin`. `_meta.generated_at` cambia en cada pasada, así que comparar
+          # el fichero entero commitearía 640 KB y renovaría el `?v=` cada mes aunque no hubiera
+          # cambiado la financiación de nada — invalidando la caché de todos los navegadores.
+          if [ -f assets/data/financiacion-index.json ] \
+             && jq -S -c '.fin' /tmp/financiacion-index.json > /tmp/nuevo.fin.json \
+             && jq -S -c '.fin' assets/data/financiacion-index.json > /tmp/viejo.fin.json \
+             && cmp -s /tmp/nuevo.fin.json /tmp/viejo.fin.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Sin cambios en la financiación; no se commitea."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Financiación cambiada; se commiteará el índice."
+          fi
+
+      - name: Commitear índice y subir el cache-bust
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          cp /tmp/financiacion-index.json assets/data/financiacion-index.json
+          # Obligatorio: sin esto el índice se publica y NO llega al navegador, porque se pide con
+          # `cache: 'force-cache'`. `financiacion` arrastra `app` (el `?v=` vive dentro de
+          # cima-app.js) y cualquier bump arrastra `sw`.
+          node scripts/medcheck-bump-version.mjs financiacion
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Rutas explícitas, nunca `-A`: hay sesiones humanas en paralelo sobre el mismo árbol.
+          git add assets/data/financiacion-index.json assets/js/cima-app.js medcheck.html sw.js
+          git commit -m "Actualiza el índice de financiación (BIFIMED × CIMA, ${{ steps.build.outputs.generated_at }})
+
+          ${{ steps.build.outputs.nregistros }} medicamentos · ${{ steps.build.outputs.con_dato }} con dato.
+          Cruzado con el run ${{ steps.artefacto.outputs.run_id }} de etl-bifimed.
+          Generado por .github/workflows/etl-financiacion.yml."
+          git push
+
+      - name: Publicar meta a Cloudflare KV
+        # Se publica SIEMPRE, cambie o no el contenido: el watchdog vigila que la ETL siga
+        # corriendo, no que la financiación cambie. Un mes sin cambios es normal; un mes sin
+        # ejecución, no.
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
+        run: |
+          jq -c '._meta + {changed: ${{ steps.diff.outputs.changed }}}' /tmp/financiacion-index.json > /tmp/fin-meta.json
+          cat /tmp/fin-meta.json
+          response=$(curl -sS -w "\n%{http_code}" -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${CF_KV_NAMESPACE_ID}/values/financiacion%3Ameta" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary @/tmp/fin-meta.json)
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "HTTP ${status}"
+          echo "$body" | jq .
+          test "$status" = "200" || exit 1
+
+      - name: Resumen
+        run: |
+          {
+            echo "## ETL índice de financiación"
+            echo ""
+            echo "- Medicamentos: \`${{ steps.build.outputs.nregistros }}\`"
+            echo "- Con dato en BIFIMED: \`${{ steps.build.outputs.con_dato }}\`"
+            echo "- Sello de generación: \`${{ steps.build.outputs.catalog_id }}\`"
+            echo "- Run de BIFIMED: \`${{ steps.artefacto.outputs.run_id }}\`"
+            echo "- ¿Commiteado?: \`${{ steps.diff.outputs.changed }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

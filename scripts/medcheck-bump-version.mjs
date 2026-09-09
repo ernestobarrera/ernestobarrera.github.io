@@ -29,6 +29,7 @@ const TARGETS = {
     innjson:  { file: 'assets/js/inn-dict.js',  pattern: /(inn-es-en\.json\?v=)(\d{8}[a-z]?)/g },
     packs:    { file: 'assets/js/cima-app.js',  pattern: /(packs-index\.json\?v=)(\d{8}[a-z]?)/g },
     medynut:  { file: 'assets/js/cima-app.js',  pattern: /(medynut-index\.json\?v=)(\d{8}[a-z]?)/g },
+    financiacion: { file: 'assets/js/cima-app.js', pattern: /(financiacion-index\.json\?v=)(\d{8}[a-z]?)/g },
     // El service worker no lleva `?v=`: lleva su propia VERSION, que nombra el caché. Subir el
     // `?v=` arregla la actualización ONLINE; subir esta VERSION arregla la OFFLINE, porque el
     // fallback usa `ignoreSearch: true` y devuelve la primera entrada insertada, que es la ANTIGUA
@@ -42,7 +43,7 @@ const TARGETS = {
 // derecha. El `?v=` de packs-index.json vive DENTRO de cima-app.js, así que renovar solo
 // `packs` no llega al navegador: seguiría sirviendo el cima-app.js cacheado, con la URL
 // antigua del JSON. Misma cadena que ontology→api e innjson→dict.
-const IMPLICA = { packs: 'app', medynut: 'app', ontology: 'api', innjson: 'dict' };
+const IMPLICA = { packs: 'app', medynut: 'app', financiacion: 'app', ontology: 'api', innjson: 'dict' };
 
 const args = process.argv.slice(2).filter(a => a !== '--dry');
 const dry = process.argv.includes('--dry');

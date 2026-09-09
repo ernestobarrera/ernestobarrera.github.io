@@ -6,6 +6,14 @@
     "max_age_days": "umbral de aviso; null = no se vigila por edad (declararlo así es una afirmación, no un olvido)"
   },
   "ficheros": {
+    "financiacion-index.json": {
+      "fuente": "CIMA REST /presentaciones (censo completo) cruzado con el sidecar de procedencia de BIFIMED (CN → lista oficial de financiación)",
+      "mantenimiento": "auto",
+      "workflow": ".github/workflows/etl-financiacion.yml",
+      "campo_fecha": "_meta.generated_at",
+      "max_age_days": 40,
+      "nota": "Se genera encadenado al ETL de BIFIMED (workflow_run), no por calendario: el índice cruza el catálogo de ese run concreto, y esperar a un día fijo abriría una ventana con el catálogo nuevo y el índice viejo. Que envejezca no hace que filtre mal: el cliente compara el `catalog_id` del índice con el que devuelve /bifimed/meta y apaga la faceta si no coinciden, así que un índice rancio deja de filtrar en vez de esconder resultados. El watchdog avisa antes de llegar ahí."
+    },
     "packs-index.json": {
       "fuente": "CIMA REST /medicamentos + /presentaciones (comerc=1)",
       "mantenimiento": "auto",
