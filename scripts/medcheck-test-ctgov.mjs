@@ -161,8 +161,14 @@ app = nuevaApp({ ok: true, count: 16, desglose: desgloseBase });
 await app._loadCtgovCount('lercanidipine');
 check('8 · el chip de intervencionales enlaza con studyType:int',
     /href="[^"]*aggFilters=studyType%3Aint[^"]*"/.test(stats()), stats().slice(0, 300));
-check('8b · el enlace lleva el MISMO término que el contador',
-    /href="[^"]*term=lercanidipine[^"]*aggFilters/.test(stats()));
+// Desde el 2026-09-09 el área es INTERVENCIÓN en los dos lados. Antes se usaba `term=` porque se
+// creyó que el enlace público no sabía hacer otra cosa; sí sabe (`?intr=`), así que precisión y
+// coherencia dejaron de estar enfrentadas. La aserción sigue vigilando lo mismo — que el enlace y
+// el contador consultan LO MISMO — pero ahora también que no se ha vuelto al área ancha.
+check('8b · el enlace lleva el MISMO término y la MISMA área que el contador',
+    /href="[^"]*intr=lercanidipine[^"]*aggFilters/.test(stats()));
+check('8b-bis · y no ha vuelto al área ancha, que contaba menciones en título y descripciones',
+    !/href="[^"]*[?&]term=lercanidipine/.test(stats()), stats().slice(0, 200));
 check('8c · la fase enlaza con su token (phase:4)',
     /aggFilters=phase%3A4/.test(stats()));
 check('8d · «sin fase aplicable» usa phase:NA en mayúsculas (phase:na devuelve 0)',
@@ -279,7 +285,7 @@ app = nuevaApp(null, { espana: true, reclutando: true });
 app.api = {
     searchCtgovStudies: async (q, opts) => {
         pedidoOpts = opts;
-        return { ok: true, count: 6, publicUrl: 'https://clinicaltrials.gov/search?term=metformin&aggFilters=status%3Arec&country=Spain&viewType=Table',
+        return { ok: true, count: 6, publicUrl: 'https://clinicaltrials.gov/search?intr=metformin&aggFilters=status%3Arec&country=Spain&viewType=Table',
             filtros: { pais: 'Spain', reclutando: true },
             desglose: { analizados: 6, tipo: [{ clave: 'INTERVENTIONAL', n: 5 }, { clave: 'OBSERVATIONAL', n: 1 }], fase: [], estado: [{ clave: 'RECRUITING', n: 6 }], nota_fase: '' } };
     },

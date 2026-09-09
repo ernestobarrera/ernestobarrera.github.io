@@ -18230,10 +18230,10 @@ ${materialesPlaceholder}
                     </a>
                     <div class="evidence-reec-stats" id="evidence-reec-stats"></div>
                     <div class="evidence-reec-studies" id="evidence-reec-studies"></div>
-                    <a class="evidence-filter-item" id="evlink-ct" href="https://clinicaltrials.gov/search?term=${enc(canonicalEnTerm)}&viewType=Table" target="_blank" rel="noopener" title="Registro de ensayos de EEUU (FDA / NIH)">
+                    <a class="evidence-filter-item" id="evlink-ct" href="https://clinicaltrials.gov/search?intr=${enc(canonicalEnTerm)}&viewType=Table" target="_blank" rel="noopener" title="Registro de ensayos de EEUU (FDA / NIH)">
                         <span class="evidence-filter-icon"><i class="fas fa-flag-usa"></i></span>
                         <span class="evidence-filter-label">ClinicalTrials.gov</span>
-                        <span class="evidence-filter-info"><i class="fas fa-info-circle evidence-info-icon" title="Conteo de la API oficial del registro (NIH/FDA) con la MISMA consulta que abre el enlace, para que el número y lo que veas al pulsar coincidan. El desglose usa los valores del propio registro: tipo de estudio, fase declarada y estado de reclutamiento."></i></span>
+                        <span class="evidence-filter-info"><i class="fas fa-info-circle evidence-info-icon" title="Estudios que registran el fármaco en el área de INTERVENCIÓN, contados con la API oficial del registro (NIH/FDA) y con la MISMA consulta que abre el enlace, para que el número y lo que veas al pulsar coincidan. Ojo: el fármaco puede figurar como tratamiento en estudio o como comparador, así que el número no equivale a «ensayos que prueban este fármaco». El desglose usa los valores del propio registro: tipo de estudio, fase declarada y estado de reclutamiento."></i></span>
                         <span class="evidence-filter-count" id="evcount-ct"><i class="fas fa-circle-notch fa-spin evidence-count-spin"></i></span>
                         <span class="evidence-filter-ext"><i class="fas fa-external-link-alt"></i></span>
                     </a>
@@ -18626,7 +18626,7 @@ ${materialesPlaceholder}
         const urlFiltrada = (token) => {
             const tokens = [soloReclutando ? 'status:rec' : null, token].filter(Boolean);
             const vistos = [...new Set(tokens)];
-            return `https://clinicaltrials.gov/search?term=${encodeURIComponent(query)}`
+            return `https://clinicaltrials.gov/search?intr=${encodeURIComponent(query)}`
                 + `&aggFilters=${encodeURIComponent(vistos.join(','))}`
                 + (soloEspana ? `&country=${encodeURIComponent('Spain')}` : '')
                 + '&viewType=Table';
