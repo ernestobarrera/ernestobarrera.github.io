@@ -10354,28 +10354,44 @@ ${materialesPlaceholder}
     _financingTagFromRow(fila, nregistro) {
         const resumen = this._financingSummaryFromIndexRow(fila);
         if (!resumen) return null;
+        // Los dos casos particulares comparten la etiqueta "Sin datos" con el resto de la
+        // incertidumbre —una tarjeta no es sitio para explicar por qué falta un dato— pero cada
+        // uno conserva su motivo en el `title`, que es donde alguien que se lo pregunta va a mirar.
         if (fila[0] === 0) {
             return {
-                short: 'Sin envases comercializados', icon: 'fa-circle-question',
+                short: 'Sin datos', icon: 'fa-circle-question',
                 color: 'var(--text-secondary)',
                 title: 'Este medicamento no tiene ninguna presentación comercializada, así que no procede hablar de su financiación actual',
             };
         }
         if (resumen.estado === 'sindato' && this._esImportacionParalela(nregistro)) {
             return {
-                short: 'Financiación no publicada', icon: 'fa-circle-question',
+                short: 'Sin datos', icon: 'fa-circle-question',
                 color: 'var(--text-secondary)',
                 title: 'Importación paralela: el Ministerio no publica la situación de financiación de estos registros en BIFIMED. No significa que no esté financiado',
             };
         }
+        // DOS GRISES, NO SEIS. La tarjeta responde "¿lo cubre el SNS?" y la ficha "¿por qué?".
+        // Las cuatro variantes negativas (no incluido, excluido, denegado por resolución, en
+        // estudio o sin petición) son distintas administrativamente —y la ficha las conserva
+        // enteras— pero para quien mira una lista significan lo mismo: hoy lo paga el paciente.
+        // Seis grises distintos en una pantalla no informaban, estorbaban.
+        //
+        // "Sin cobertura del SNS" se elige justamente porque describe el EFECTO y no la causa: es
+        // cierto tanto del que tiene resolución denegatoria como del que no tiene expediente, así
+        // que agrupa sin atribuir a nadie una resolución que no existe.
+        //
+        // Lo que NO se agrupa, y es la línea que no se cruza: "sin datos" nunca cae en el gris de
+        // "sin cobertura". Son 1.331 medicamentos visibles cuya financiación el Ministerio no
+        // publica; decir de ellos que no están cubiertos sería inventarnos el dato.
         const cortos = {
             si: 'Financiado por el SNS',
             cond: 'Financiado con visado',
             parcial: 'Financiado en parte',
-            no: 'No financiado',
-            estudio_sin_peticion: 'Sin petición de financiación',
-            sin_cobertura: 'Sin cobertura SNS',
-            sindato: 'Sin datos de financiación',
+            no: 'Sin cobertura del SNS',
+            estudio_sin_peticion: 'Sin cobertura del SNS',
+            sin_cobertura: 'Sin cobertura del SNS',
+            sindato: 'Sin datos',
         };
         return {
             short: cortos[resumen.estado] || resumen.label,

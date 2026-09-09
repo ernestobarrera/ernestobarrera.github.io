@@ -120,12 +120,31 @@ check('un nregistro ordinario no', app._esImportacionParalela('63575'), false);
 check('la heurística vieja por prefijo 24 ya no decide',
     app._esImportacionParalela('2490401'), false);
 const tagIP = app._financingTagFromRow(fila(2, 0, 0, 0, 0, 0, 0), '04276007IP1');
-check('su etiqueta dice que no está publicada, no que no esté financiada',
-    tagIP.short, 'Financiación no publicada');
-check('y el detalle lo explica', /no publica/.test(tagIP.title), true);
+check('su etiqueta corta es la misma "Sin datos" que el resto de la incertidumbre',
+    tagIP.short, 'Sin datos');
+check('pero el detalle explica el motivo, que es donde se mira si interesa',
+    /no publica/.test(tagIP.title), true);
+check('y NUNCA dice que no esté cubierto', /Sin cobertura/.test(tagIP.short), false);
 const tagSinEnvases = app._financingTagFromRow(fila(0, 0, 0, 0, 0, 0, 0), '63575');
-check('sin envases comercializados tiene mensaje propio',
-    tagSinEnvases.short, 'Sin envases comercializados');
+check('sin envases comercializados también cae en "Sin datos"',
+    tagSinEnvases.short, 'Sin datos');
+check('con su motivo propio en el detalle',
+    /no tiene ninguna presentación comercializada/.test(tagSinEnvases.title), true);
+
+console.log('\n— Dos grises, no seis: la tarjeta agrupa, la ficha conserva —');
+const corto = (f) => app._financingTagFromRow(f, '63575').short;
+check('no financiado por resolución', corto(fila(1, 0, 0, 0, 0, 1, 0)), 'Sin cobertura del SNS');
+check('no incluido', corto(fila(1, 0, 0, 1, 0, 0, 0)), 'Sin cobertura del SNS');
+check('excluido', corto(fila(1, 0, 0, 0, 1, 0, 0)), 'Sin cobertura del SNS');
+check('en estudio o sin petición', corto(fila(1, 0, 0, 0, 0, 0, 1)), 'Sin cobertura del SNS');
+check('la mezcla de negativas también', corto(fila(2, 0, 0, 0, 0, 1, 1)), 'Sin cobertura del SNS');
+check('sin dato NO cae en el gris de "sin cobertura"', corto(fila(1, 0, 0, 0, 0, 0, 0)), 'Sin datos');
+// El detalle sigue distinguiendo lo que la etiqueta agrupa: es la mitad del trato.
+check('el detalle conserva la categoría oficial que la etiqueta agrupa',
+    app._financingTagFromRow(fila(2, 0, 0, 0, 0, 1, 1), '63575').title,
+    'Sin cobertura SNS actual: 1 no financiada · 1 en estudio/sin petición');
+check('y distingue "en estudio" de una resolución denegatoria',
+    /[Ee]n estudio/.test(app._financingTagFromRow(fila(1, 0, 0, 0, 0, 0, 1), '63575').title), true);
 
 // --- Filas que no se pueden interpretar ---------------------------------------
 console.log('\n— Una fila ilegible no produce marca —');
