@@ -4584,6 +4584,20 @@ body {
     flex-shrink: 0;
 }
 
+/* Financiación SNS. Va en TODAS las tarjetas con dato, no solo en las excepciones: está medido
+   que en anticonceptivos lo mayoritario es NO estar financiado (73 de 117), así que "sin marca =
+   financiado" sería falso, y además "sin marca" se confundiría con "aún no ha cargado".
+   El color lo pone el icono en línea, porque depende del estado y es el mismo criterio que ya usa
+   la línea "Financiación SNS" de la ficha. */
+.med-detail-tag--fin {
+    max-width: 100%;
+    min-width: 0;
+}
+
+.med-detail-tag--fin i {
+    flex-shrink: 0;
+}
+
 /* Indicador de imagen: solo el icono, sin texto. Es una marca de presencia Y el acceso —
    pulsarlo abre el visor sin pasar por la ficha. No lleva cifra visible: el número está en
    el tooltip, y añadirlo a la fila robaría sitio a la dosis y al envase, que sí se leen.

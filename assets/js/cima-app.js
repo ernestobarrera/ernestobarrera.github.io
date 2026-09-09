@@ -1757,6 +1757,12 @@ class MedCheckApp {
         this.filterState.recetaOnly = document.getElementById('filter-receta')?.checked || false;
         this.filterState.biosimilarOnly = document.getElementById('filter-biosimilar')?.checked || false;
 
+        // Se lanza AQUÍ, en paralelo con la consulta a CIMA, y no en el arranque de la app: así no
+        // penaliza a quien abre MedCheck y no busca, y casi siempre ha llegado antes que los
+        // resultados (84 KB con `force-cache` contra una búsqueda que cruza la red). Si llegara
+        // tarde, la casilla aparece en el siguiente repintado; nunca filtra sin dato.
+        this._loadFinancingIndex();
+
         const resultsContainer = document.getElementById('search-results');
         resultsContainer.innerHTML = '<div class="loading-spinner"></div>';
 
@@ -2557,6 +2563,7 @@ class MedCheckApp {
         // El índice de envases llega async: rellena los huecos ya pintados (mismo patrón
         // de repintado que el índice de suministro, S29).
         this._hydratePackTags(resultsContainer);
+        this._hydrateFinancingTags(resultsContainer);
 
         // El icono galénico de cada tarjeta es la superficie del filtro de familia.
         this._wireGalenicIcons(resultsContainer, () => { this.displaySearchResults(data); this.updateURLWithCurrentState({ replace: true }); });
@@ -2652,6 +2659,13 @@ class MedCheckApp {
         // Importaciones paralelas: la casilla las INCLUYE (por defecto están fuera).
         document.getElementById('paralelas-filter')?.addEventListener('change', (e) => {
             this.filterState.paralelas = e.target.checked;
+            applyFacet();
+        });
+        // Financiación SNS. La casilla solo existe si el índice es utilizable, así que aquí no
+        // hace falta reconfirmarlo; el predicado vuelve a comprobarlo de todos modos, porque el
+        // índice podría dejar de serlo entre el render y el clic.
+        document.getElementById('financiado-filter')?.addEventListener('change', (e) => {
+            this.filterState.financiadoOnly = e.target.checked;
             applyFacet();
         });
 
@@ -4397,6 +4411,7 @@ class MedCheckApp {
                         ${doseTag}
                         <span class="med-detail-tag med-detail-tag--packs" data-packs-nreg="${med.nregistro}" hidden></span>
                     </span>
+                    <span class="med-detail-tag med-detail-tag--fin" data-fin-nreg="${med.nregistro}" hidden></span>
                     ${fotoTag}
                 </div>
 
@@ -10212,6 +10227,20 @@ ${materialesPlaceholder}
             else if (c === 'estudio_sin_peticion') estudio++;
             else sindato++;
         }
+        return this._financingSummaryFromCounts({ fin, cond, nofin, estudio, sindato });
+    }
+
+    /**
+     * Núcleo del veredicto, separado de CÓMO se contaron las presentaciones.
+     *
+     * Existe porque hay dos caminos hasta aquí y no puede haber dos verdades: la ficha cuenta
+     * consultando el Worker CN a CN (texto de BIFIMED → `_classifyFinSit`), y la lista de
+     * resultados cuenta leyendo `financiacion-index.json` (código de lista oficial →
+     * `_financingSummaryFromIndexRow`). Si cada uno resolviera el veredicto por su cuenta, la
+     * tarjeta y la ficha del mismo medicamento podrían acabar diciendo cosas distintas — que es
+     * exactamente lo que este diseño existe para impedir.
+     */
+    _financingSummaryFromCounts({ fin = 0, cond = 0, nofin = 0, estudio = 0, sindato = 0 }) {
         // El denominador es SIEMPRE el total de presentaciones consultadas, incluidas las que no
         // sabemos clasificar. Hasta el 2026-09-06 se calculaba sobre `fin + cond + nofin`, así que
         // un medicamento con dos CN financiados y uno sin dato se anunciaba como "Financiado por el
@@ -10248,6 +10277,184 @@ ${materialesPlaceholder}
     _financingSummaryValueHtml(summary) {
         const link = `<a href="#" onclick="event.preventDefault(); app.openModalTab('financing');" style="margin-left:0.5rem; font-size:0.85em; color:var(--primary); font-weight:500;">Ver detalle →</a>`;
         return `<i class="fas ${summary.icon}" style="color:${summary.color}"></i> ${this._escapeHtml(summary.label)}${link}`;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Financiación en la LISTA de resultados (índice estático)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Código de lista oficial de BIFIMED → categoría del cliente.
+     *
+     * Es un mapa de PROCEDENCIA, no una clasificación de texto: `_classifyFinSit` traduce lo que
+     * escribe el Excel (sucio, con mojibake) y esto traduce de qué fichero oficial vino el CN. Son
+     * capas distintas y `medcheck-test-financiacion-index.mjs` comprueba que coinciden, porque el
+     * día que discrepen la tarjeta y la ficha dirían cosas distintas del mismo medicamento.
+     */
+    static get FIN_CODE_TO_CLASS() {
+        return { '1': 'fin', '2': 'cond', '5': 'nofin', '6': 'nofin', '7': 'nofin', '666': 'estudio' };
+    }
+
+    /** Orden de las columnas del índice. Debe ser el mismo que `CODIGOS` en el ETL. */
+    static get FIN_INDEX_CODES() {
+        return ['1', '2', '5', '6', '7', '666'];
+    }
+
+    /**
+     * Resumen de financiación de un medicamento a partir de su fila del índice.
+     * `fila` = [total comercializadas, si, si_determinadas, no_incluido, excluido, no_fin_resolucion, estudio].
+     * Devuelve `null` si la fila no es utilizable: sin fila no hay marca, y la AUSENCIA DE MARCA
+     * NUNCA puede leerse como "financiado".
+     */
+    _financingSummaryFromIndexRow(fila) {
+        if (!Array.isArray(fila) || fila.length !== 7) return null;
+        const total = fila[0];
+        if (!Number.isFinite(total) || total < 0) return null;
+        const counts = { fin: 0, cond: 0, nofin: 0, estudio: 0, sindato: 0 };
+        const mapa = MedCheckApp.FIN_CODE_TO_CLASS;
+        let clasificadas = 0;
+        MedCheckApp.FIN_INDEX_CODES.forEach((codigo, i) => {
+            const n = fila[i + 1] || 0;
+            counts[mapa[codigo]] += n;
+            clasificadas += n;
+        });
+        // Lo que el catálogo no cubre es "sin dato", nunca "no financiado". Son 1.331 medicamentos
+        // visibles (medido 2026-09-08), 993 de ellos importaciones paralelas que el Ministerio
+        // sencillamente no publica.
+        counts.sindato = Math.max(0, total - clasificadas);
+        return this._financingSummaryFromCounts(counts);
+    }
+
+    /**
+     * ¿El medicamento tiene alguna presentación comercializada con cobertura del SNS?
+     * Es el predicado de la faceta. Agrupa financiación ordinaria y condicionada (visado / por
+     * indicación) porque, para la pregunta "¿lo cubre el SNS?", ambas responden que sí; el matiz
+     * lo conserva la etiqueta de la tarjeta, que sí las distingue.
+     */
+    _financingRowHasCoverage(fila) {
+        if (!Array.isArray(fila) || fila.length !== 7) return false;
+        return (fila[1] || 0) > 0 || (fila[2] || 0) > 0;
+    }
+
+    /**
+     * Registro de comercio paralelo. El marcador es el sufijo `IP`/`IP1`/`IP2`… del nregistro,
+     * no un prefijo numérico (una heurística previa por `24xxxxx` detectaba 2 de 993).
+     * Importa porque BIFIMED no cubre NINGUNA de las 993 visibles: no es cobertura irregular, es
+     * una regla, y por eso su tarjeta puede dar una razón en vez de un hueco.
+     */
+    _esImportacionParalela(nregistro) {
+        return /IP\d*\s*$/i.test(String(nregistro || '').trim());
+    }
+
+    /**
+     * Etiqueta corta para la tarjeta. La larga (con el desglose) va en el `title`: en una tarjeta
+     * no cabe "Sin cobertura SNS actual: 1 no financiada · 1 en estudio/sin petición", pero esa
+     * frase es la que no miente, así que se conserva al pasar el ratón y en la ficha.
+     */
+    _financingTagFromRow(fila, nregistro) {
+        const resumen = this._financingSummaryFromIndexRow(fila);
+        if (!resumen) return null;
+        if (fila[0] === 0) {
+            return {
+                short: 'Sin envases comercializados', icon: 'fa-circle-question',
+                color: 'var(--text-secondary)',
+                title: 'Este medicamento no tiene ninguna presentación comercializada, así que no procede hablar de su financiación actual',
+            };
+        }
+        if (resumen.estado === 'sindato' && this._esImportacionParalela(nregistro)) {
+            return {
+                short: 'Financiación no publicada', icon: 'fa-circle-question',
+                color: 'var(--text-secondary)',
+                title: 'Importación paralela: el Ministerio no publica la situación de financiación de estos registros en BIFIMED. No significa que no esté financiado',
+            };
+        }
+        const cortos = {
+            si: 'Financiado por el SNS',
+            cond: 'Financiado con visado',
+            parcial: 'Financiado en parte',
+            no: 'No financiado',
+            estudio_sin_peticion: 'Sin petición de financiación',
+            sin_cobertura: 'Sin cobertura SNS',
+            sindato: 'Sin datos de financiación',
+        };
+        return {
+            short: cortos[resumen.estado] || resumen.label,
+            icon: resumen.icon,
+            color: resumen.color,
+            title: resumen.label,
+        };
+    }
+
+    /**
+     * Índice de financiación por nregistro, generado con el ETL de BIFIMED
+     * (scripts/etl-financiacion). Existe para que la financiación se vea en la LISTA: hasta ahora
+     * había que abrir la ficha de uno en uno, y con 117 resultados de etinilestradiol eso no lo
+     * hace nadie.
+     *
+     * FALLA EN CERRADO PARA EL FILTRO, EN ABIERTO PARA LA LISTA. Si el índice no carga, o si su
+     * generación no es la misma que la del catálogo que responde el Worker, la lista se muestra
+     * entera y la faceta se desactiva. Filtrar con un índice de otra generación que la ficha es la
+     * forma silenciosa de mentir, y mostrar de menos sin avisar es peor que no filtrar.
+     */
+    _loadFinancingIndex(url = 'assets/data/financiacion-index.json?v=20260909a') {
+        if (this._financingIndexPromise) return this._financingIndexPromise;
+        this._financingIndexPromise = fetch(url, { cache: 'force-cache' })
+            .then(r => (r.ok ? r.json() : null))
+            .then(async (data) => {
+                const fin = (data && typeof data.fin === 'object' && data.fin) || null;
+                if (!fin || !data?._meta?.catalog_id) throw new Error('índice ausente o sin sello');
+                // El sello se comprueba contra la MISMA fuente que sirve la ficha. Si el ETL del
+                // índice y el del catálogo se desincronizan (un mes salta, un rerun a medias), esto
+                // lo ve; comparar fechas no bastaría, porque `download_date` es el día de ejecución
+                // y dos reconstrucciones del mismo día lo comparten.
+                const meta = await fetch(`${this.api.cloudflareProxy}/bifimed/meta`, {
+                    signal: AbortSignal.timeout(8000),
+                    headers: { 'X-MC-Autocomplete': '1' },
+                }).then(r => (r.ok ? r.json() : null)).catch(() => null);
+                if (!meta?.catalog_id) throw new Error('el Worker no declara catalog_id');
+                if (meta.catalog_id !== data._meta.catalog_id) {
+                    throw new Error('índice y catálogo son de generaciones distintas');
+                }
+                this._financingIndexMeta = data._meta;
+                this._financingIndex = fin;
+                this._financingIndexUsable = true;
+                return fin;
+            })
+            .catch((err) => {
+                console.warn('[financiación] índice no utilizable:', err.message);
+                this._financingIndex = {};
+                this._financingIndexUsable = false;
+                return this._financingIndex;
+            });
+        return this._financingIndexPromise;
+    }
+
+    /**
+     * Rellena las marcas de financiación de las tarjetas ya pintadas. El índice llega async, así
+     * que el render deja el hueco oculto y esto lo revela cuando hay dato — mismo patrón que las
+     * etiquetas de envase.
+     *
+     * La marca va en TODAS las tarjetas con dato, no solo en las excepciones: está medido que en
+     * anticonceptivos lo mayoritario es NO estar financiado (73 de 117), así que la regla "sin
+     * marca = financiado" sería falsa, y además "sin marca" se confundiría con "aún no ha cargado".
+     */
+    _hydrateFinancingTags(container) {
+        const slots = container?.querySelectorAll?.('[data-fin-nreg]');
+        if (!slots || slots.length === 0) return;
+        this._loadFinancingIndex().then((fin) => {
+            if (!this._financingIndexUsable) return;
+            const fecha = this._financingIndexMeta?.bifimed_download_date;
+            slots.forEach((slot) => {
+                if (!slot.isConnected || !slot.hidden) return;
+                const nreg = slot.dataset.finNreg;
+                const tag = this._financingTagFromRow(fin[nreg], nreg);
+                if (!tag) return;
+                slot.innerHTML = `<i class="fas ${tag.icon}" style="color:${tag.color}"></i>`
+                    + `<span class="med-detail-tag__text">${this._escapeHtml(tag.short)}</span>`;
+                slot.title = `${tag.title}${fecha ? ` · BIFIMED, ${fecha}` : ''}`;
+                slot.hidden = false;
+            });
+        });
     }
 
     /**
@@ -11818,7 +12025,12 @@ ${materialesPlaceholder}
 
     /** Dimensiones del contrato, en el orden en que se aplican. */
     static get FILTER_DIMENSIONS() {
-        return ['productType', 'receta', 'parallel', 'form', 'lab', 'dose', 'galenic', 'route', 'pa'];
+        // `financiacion` es la primera dimensión cuyo dato NO vive en el objeto `med`, sino en un
+        // índice que llega async. Está siempre en la lista y su predicado devuelve `null` mientras
+        // el índice no sea utilizable: así el contrato sigue siendo síncrono y la lista falla en
+        // abierto. Sacarla y meterla dinámicamente haría que el número de dimensiones dependiera
+        // del momento, y con él los contadores disyuntivos.
+        return ['productType', 'receta', 'parallel', 'form', 'lab', 'dose', 'galenic', 'route', 'pa', 'financiacion'];
     }
 
     /**
@@ -11838,6 +12050,9 @@ ${materialesPlaceholder}
             galenics: new Set(fs.galenics || []),
             // Por defecto NO se incluyen: es el comportamiento de la web de CIMA.
             paralelas: fs.paralelas === true,
+            // Apagada por defecto: la financiación es un dato administrativo y encenderla sola
+            // convertiría un filtro en un criterio implícito de preferencia terapéutica.
+            financiado: fs.financiadoOnly === true,
             routes: new Set(gs.routeFilters || []),
             pas: new Set(gs.activeIngredientFilters || []),
         };
@@ -11914,6 +12129,13 @@ ${materialesPlaceholder}
                 const indice = this._buildDuplicateIndex(universe);
                 return (med) => !this._isRedundantRecord(med, indice);
             }
+            case 'financiacion':
+                // `null` cuando la casilla está apagada Y TAMBIÉN cuando el índice no es
+                // utilizable: sin dato fiable no se filtra, se muestra todo y la casilla se
+                // desactiva. Nunca al revés — filtrar con un índice ausente o de otra generación
+                // escondería resultados sin que nadie pueda notarlo.
+                if (!snap.financiado || !this._financingIndexUsable) return null;
+                return (med) => this._financingRowHasCoverage(this._financingIndex?.[med.nregistro]);
             case 'galenic':
                 // Familia galénica: la misma dimensión que pinta el icono de la tarjeta, para
                 // que pulsar el icono y filtrar sean literalmente lo mismo. OR dentro de la
@@ -11973,6 +12195,7 @@ ${materialesPlaceholder}
             + (snap.lab ? 1 : 0)
             + snap.doses.size
             + (snap.paralelas ? 1 : 0)
+            + (snap.financiado ? 1 : 0)
             + snap.galenics.size
             + snap.routes.size
             + snap.pas.size;
@@ -11980,7 +12203,7 @@ ${materialesPlaceholder}
 
     /** Estado limpio de filtros de cliente. Un solo sitio donde se define el "vacío". */
     _emptyFilterState() {
-        return { form: null, lab: null, doses: new Set(), galenics: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false, paralelas: false };
+        return { form: null, lab: null, doses: new Set(), galenics: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false, paralelas: false, financiadoOnly: false };
     }
 
     /**
@@ -12098,6 +12321,19 @@ ${materialesPlaceholder}
         const efgCount = showEFG ? this._disjunctiveCount(sourceForFilters, snap, 'productType', m => m.generico === true) : 0;
         const biosimilarCount = showEFG ? this._disjunctiveCount(sourceForFilters, snap, 'productType', m => m.biosimilar === true) : 0;
         const recetaCount = showEFG ? this._disjunctiveCount(sourceForFilters, snap, 'receta', m => m.receta === true) : 0;
+        // La casilla solo se pinta si el índice es utilizable, así que este conteo nunca se
+        // muestra sobre un índice ausente (que daría 0 y parecería "no hay financiados").
+        const financiadoCount = (showEFG && this._financingIndexUsable)
+            ? this._disjunctiveCount(sourceForFilters, snap, 'financiacion',
+                m => this._financingRowHasCoverage(this._financingIndex?.[m.nregistro]))
+            : 0;
+        // El nombre de la casilla es el que usa un médico, pero agrupa la financiación ordinaria y
+        // la condicionada a visado o indicación. El matiz no se pierde: la marca de cada tarjeta
+        // distingue "Financiado por el SNS" de "Financiado con visado", y esta aclaración lo dice
+        // en el propio control para quien pase el ratón.
+        const tipFinanciado = 'Medicamentos con alguna presentación comercializada cubierta por el SNS. '
+            + 'Incluye la financiación condicionada a visado o a indicación concreta, que la marca de cada '
+            + 'tarjeta distingue. Fuente: BIFIMED (Ministerio de Sanidad)';
 
         // Opciones de los selectores: top 10 con resultados; la seleccionada se
         // conserva siempre aunque quede a cero (para poder deseleccionarla).
@@ -12177,6 +12413,10 @@ ${materialesPlaceholder}
                         ${showEFG && paralelasEnUniverso > 0 ? `<label class="search-option${soloQuedanParalelas ? ' search-option--alerta' : ''}" title="${this._escapeHtml(tipParalelas)}">
                             <input type="checkbox" id="paralelas-filter" ${snap.paralelas ? 'checked' : ''}>
                             <span>Incluir duplicados <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${paralelasEnUniverso}</span></span>
+                        </label>` : ''}
+                        ${showEFG && this._financingIndexUsable ? `<label class="search-option" title="${this._escapeHtml(tipFinanciado)}">
+                            <input type="checkbox" id="financiado-filter" ${snap.financiado ? 'checked' : ''}>
+                            <span>Financiado por el SNS <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${financiadoCount}</span></span>
                         </label>` : ''}
                     </div>
                     ` : ''}
@@ -12712,6 +12952,7 @@ ${materialesPlaceholder}
         // El índice de envases llega async: rellena los huecos ya pintados (mismo patrón
         // de repintado que el índice de suministro, S29).
         this._hydratePackTags(resultsContainer);
+        this._hydrateFinancingTags(resultsContainer);
 
         // El icono galénico de cada tarjeta es la superficie del filtro de familia.
         this._wireGalenicIcons(resultsContainer, () => this._applyIndicationFacet(data, searchQuery));
@@ -12800,6 +13041,10 @@ ${materialesPlaceholder}
         // Importaciones paralelas: la casilla las INCLUYE (por defecto están fuera).
         document.getElementById('paralelas-filter')?.addEventListener('change', (e) => {
             this.filterState.paralelas = e.target.checked;
+            this._applyIndicationFacet(data, searchQuery);
+        });
+        document.getElementById('financiado-filter')?.addEventListener('change', (e) => {
+            this.filterState.financiadoOnly = e.target.checked;
             this._applyIndicationFacet(data, searchQuery);
         });
 
