@@ -185,11 +185,14 @@ check('excluye al que no está en el índice (ausencia ≠ financiado)',
 console.log('\n— La dimensión pertenece al contrato de filtros —');
 check('financiacion es una dimensión declarada',
     MedCheckApp.FILTER_DIMENSIONS.includes('financiacion'), true);
-check('"Limpiar N" la cuenta', app._activeFilterCount({
-    generic: false, biosimilar: false, receta: false, form: null, lab: null,
-    doses: new Set(), paralelas: false, financiado: true, galenics: new Set(),
-    routes: new Set(), pas: new Set(),
-}), 1);
+// El snapshot se DERIVA del real en vez de escribirse a mano: un snapshot sintético se queda
+// incompleto en cuanto se añade una dimensión, y entonces el test falla por su propia omisión en
+// vez de por un defecto del código. Pasó al añadir el filtro hospitalario.
+const snapDe = (filterState) => app._filterSnapshot.call({ filterState, groupingState: {} });
+check('"Limpiar N" cuenta la faceta de financiación',
+    app._activeFilterCount(snapDe({ financiadoOnly: true })), 1);
+check('y el estado limpio no cuenta ninguna',
+    app._activeFilterCount(snapDe(app._emptyFilterState())), 0);
 check('el estado vacío la apaga', app._emptyFilterState().financiadoOnly, false);
 check('el snapshot la lee de financiadoOnly',
     app._filterSnapshot.call({ filterState: { financiadoOnly: true }, groupingState: {} }).financiado, true);

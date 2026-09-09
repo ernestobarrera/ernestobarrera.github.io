@@ -1607,6 +1607,10 @@ class MedCheckApp {
         //  NO se reinicia aquí: es ámbito de consulta, como Comercializado.
         this.groupingState?.routeFilters?.clear?.();
         this.groupingState?.activeIngredientFilters?.clear?.();
+        // El ámbito hospitalario tampoco se reinicia: es una preferencia del usuario sobre QUÉ
+        // quiere ver, no una faceta de esta búsqueda concreta. Se relee de la memoria en cada
+        // búsqueda nueva, y sigue anunciándose mientras esconda algo.
+        this._hospPrefApply();
     }
 
     _normalizeDrugSearchText(value) {
@@ -2668,6 +2672,21 @@ class MedCheckApp {
             this.filterState.financiadoOnly = e.target.checked;
             applyFacet();
         });
+        // Ámbito hospitalario. Es aquí, en el cambio explícito, donde nace la memoria: se guarda
+        // porque el usuario lo ha elegido, nunca por inercia.
+        const cambioHosp = (campo) => (e) => {
+            this.filterState[campo] = e.target.checked;
+            this._hospPrefWrite();
+            applyFacet();
+        };
+        document.getElementById('mostrar-h-filter')?.addEventListener('change', cambioHosp('mostrarH'));
+        document.getElementById('mostrar-dh-filter')?.addEventListener('change', cambioHosp('mostrarDH'));
+        document.getElementById('mostrar-hosp-todos')?.addEventListener('click', () => {
+            this.filterState.mostrarH = true;
+            this.filterState.mostrarDH = true;
+            this._hospPrefWrite();
+            applyFacet();
+        });
 
         // Clear filters button — limpia exactamente lo que cuenta "Limpiar N".
         const clearBtn = document.getElementById('clear-filters-btn');
@@ -2754,14 +2773,15 @@ class MedCheckApp {
         }
         // Registro centralizado EMA
         if (med.ema) badges.push('<span class="badge badge-ema" title="Autorizado por procedimiento centralizado de la EMA"><i class="fas fa-globe-europe"></i> EMA</span>');
-        // Condiciones de prescripción (cpresc)
-        if (med.cpresc) {
-            const cp = med.cpresc.toLowerCase();
-            if (cp.includes('uso hospitalario')) {
-                badges.push('<span class="badge badge-hospital" title="Uso Hospitalario — Solo dispensable en farmacia hospitalaria"><i class="fas fa-hospital"></i> H</span>');
-            } else if (cp.includes('diagnóstico hospitalario') || cp.includes('diagnostico hospitalario')) {
-                badges.push('<span class="badge badge-hospital" title="Diagnóstico Hospitalario — Prescripción iniciada en hospital"><i class="fas fa-hospital-alt"></i> DH</span>');
-            }
+        // Condiciones de prescripción (cpresc). Se deriva de `_utilCanal`, que es la MISMA función
+        // que usa el filtro de ámbito hospitalario: si la insignia y el filtro clasificaran por su
+        // cuenta, un medicamento podría enseñar la insignia H y no desaparecer al desmarcar
+        // «Mostrar H» — o al revés, que es peor.
+        const canalHosp = this._utilCanal(med.cpresc);
+        if (canalHosp === 'H') {
+            badges.push('<span class="badge badge-hospital" title="Uso Hospitalario — Solo dispensable en farmacia hospitalaria"><i class="fas fa-hospital"></i> H</span>');
+        } else if (canalHosp === 'DH') {
+            badges.push('<span class="badge badge-hospital" title="Diagnóstico Hospitalario — Prescripción iniciada en hospital"><i class="fas fa-hospital-alt"></i> DH</span>');
         }
         if (med.huerfano) badges.push('<span class="badge badge-info" title="Medicamento huérfano — indicación rara"><i class="fas fa-star"></i> Huérfano</span>');
         // Farmacogenómica AEMPS: la ficha técnica menciona un biomarcador relevante
@@ -12046,7 +12066,7 @@ ${materialesPlaceholder}
         // el índice no sea utilizable: así el contrato sigue siendo síncrono y la lista falla en
         // abierto. Sacarla y meterla dinámicamente haría que el número de dimensiones dependiera
         // del momento, y con él los contadores disyuntivos.
-        return ['productType', 'receta', 'parallel', 'form', 'lab', 'dose', 'galenic', 'route', 'pa', 'financiacion'];
+        return ['productType', 'receta', 'parallel', 'form', 'lab', 'dose', 'galenic', 'route', 'pa', 'financiacion', 'hospital'];
     }
 
     /**
@@ -12069,6 +12089,12 @@ ${materialesPlaceholder}
             // Apagada por defecto: la financiación es un dato administrativo y encenderla sola
             // convertiría un filtro en un criterio implícito de preferencia terapéutica.
             financiado: fs.financiadoOnly === true,
+            // Ámbito hospitalario. En POSITIVO y encendidos por defecto: «Mostrar H» / «Mostrar DH»
+            // en vez de «Ocultar», para que la casilla marcada signifique siempre «lo veo» y no
+            // haya que resolver una doble negación. `!== false` y no `=== true` porque el valor por
+            // defecto es MOSTRAR: un estado sin inicializar no puede esconder resultados.
+            mostrarH: fs.mostrarH !== false,
+            mostrarDH: fs.mostrarDH !== false,
             routes: new Set(gs.routeFilters || []),
             pas: new Set(gs.activeIngredientFilters || []),
         };
@@ -12145,6 +12171,23 @@ ${materialesPlaceholder}
                 const indice = this._buildDuplicateIndex(universe);
                 return (med) => !this._isRedundantRecord(med, indice);
             }
+            case 'hospital': {
+                // Al revés que las demás: el predicado existe cuando la casilla está DESMARCADA,
+                // porque lo que hace es EXCLUIR. Con las dos marcadas —el estado por defecto— no
+                // filtra nada y nadie pierde resultados sin haberlo pedido.
+                //
+                // H y DH van separados a propósito y no se funden en un «hospitalarios»: el
+                // Nomenclátor publica dos indicadores distintos y significan cosas distintas para
+                // quien prescribe. Un uso hospitalario no se dispensa en oficina de farmacia; un
+                // diagnóstico hospitalario sí, solo que la prescripción se inicia en el hospital.
+                if (snap.mostrarH && snap.mostrarDH) return null;
+                return (med) => {
+                    const canal = this._utilCanal(med.cpresc);
+                    if (canal === 'H') return snap.mostrarH;
+                    if (canal === 'DH') return snap.mostrarDH;
+                    return true;
+                };
+            }
             case 'financiacion':
                 // `null` cuando la casilla está apagada Y TAMBIÉN cuando el índice no es
                 // utilizable: sin dato fiable no se filtra, se muestra todo y la casilla se
@@ -12212,14 +12255,61 @@ ${materialesPlaceholder}
             + snap.doses.size
             + (snap.paralelas ? 1 : 0)
             + (snap.financiado ? 1 : 0)
+            // Cuentan cuando están DESMARCADAS, porque es entonces cuando filtran. "Limpiar N"
+            // tiene que contar exactamente lo que limpia, y limpiar aquí es volver a mostrarlos.
+            + (snap.mostrarH ? 0 : 1)
+            + (snap.mostrarDH ? 0 : 1)
             + snap.galenics.size
             + snap.routes.size
             + snap.pas.size;
     }
 
+    /**
+     * Preferencia de ámbito hospitalario, recordada entre búsquedas.
+     *
+     * Solo se escribe cuando el usuario toca una casilla: una preferencia que se guardara sola
+     * acabaría escondiendo resultados sin que nadie la hubiera elegido, y eso es precisamente lo
+     * que no puede pasar con un filtro que oculta. Por eso tampoco hay valor por defecto guardado:
+     * si no hay nada escrito, se muestra todo.
+     *
+     * Y por eso el aviso del desglose es obligatorio mientras haya exclusión: sin él, una elección
+     * de hace tres semanas sería indistinguible de un catálogo incompleto.
+     */
+    _hospPrefRead() {
+        try {
+            const raw = localStorage.getItem('medcheck:hosp-pref');
+            if (!raw) return null;
+            const p = JSON.parse(raw);
+            if (typeof p?.mostrarH !== 'boolean' || typeof p?.mostrarDH !== 'boolean') return null;
+            return p;
+        } catch {
+            return null;
+        }
+    }
+
+    _hospPrefWrite() {
+        try {
+            const fs = this.filterState || {};
+            localStorage.setItem('medcheck:hosp-pref', JSON.stringify({
+                mostrarH: fs.mostrarH !== false,
+                mostrarDH: fs.mostrarDH !== false,
+            }));
+        } catch { /* modo privado o cuota llena: la preferencia se pierde, no se rompe nada */ }
+    }
+
+    /** Aplica la preferencia guardada, si la hay. Sin preferencia, se muestra todo. */
+    _hospPrefApply() {
+        const p = this._hospPrefRead();
+        if (!p || !this.filterState) return;
+        this.filterState.mostrarH = p.mostrarH;
+        this.filterState.mostrarDH = p.mostrarDH;
+    }
+
     /** Estado limpio de filtros de cliente. Un solo sitio donde se define el "vacío". */
     _emptyFilterState() {
-        return { form: null, lab: null, doses: new Set(), galenics: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false, paralelas: false, financiadoOnly: false };
+        // `mostrarH`/`mostrarDH` en `true`: el estado limpio MUESTRA todo. Si el vacío escondiera
+        // algo, "Limpiar filtros" dejaría una exclusión puesta sin que nadie la hubiera pedido.
+        return { form: null, lab: null, doses: new Set(), galenics: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false, paralelas: false, financiadoOnly: false, mostrarH: true, mostrarDH: true };
     }
 
     /**
@@ -12230,6 +12320,10 @@ ${materialesPlaceholder}
         this.filterState = this._emptyFilterState();
         this.groupingState?.routeFilters?.clear?.();
         this.groupingState?.activeIngredientFilters?.clear?.();
+        // Limpiar cuenta las exclusiones hospitalarias, así que también las limpia DE VERDAD: sin
+        // reescribir la preferencia, volverían solas en la búsqueda siguiente y el botón habría
+        // mentido. Es la contrapartida de que sean memoria y no faceta de una búsqueda.
+        this._hospPrefWrite();
         this._syncTopFilterCheckboxes();
     }
 
@@ -12313,9 +12407,12 @@ ${materialesPlaceholder}
         // Universo de opciones: datos originales, para que las opciones no desaparezcan al filtrar
         const sourceForFilters = originalData?.resultados || filteredData?.resultados || [];
 
-        // Initialize filter state if needed
+        // Initialize filter state if needed. Sale de `_emptyFilterState()` y no de un objeto
+        // escrito aquí: este llevaba su propia lista de campos y se quedaba corto cada vez que
+        // nacía una dimensión — le faltaban ya `paralelas`, `galenics` y las dos hospitalarias.
+        // Un solo sitio define el vacío.
         if (!this.filterState) {
-            this.filterState = { form: null, lab: null, doses: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false };
+            this.filterState = this._emptyFilterState();
         }
 
         // Contadores facetados (faceting disyuntivo, §"Contrato único de filtrado"):
@@ -12343,6 +12440,18 @@ ${materialesPlaceholder}
             ? this._disjunctiveCount(sourceForFilters, snap, 'financiacion',
                 m => this._financingRowHasCoverage(this._financingIndex?.[m.nregistro]))
             : 0;
+        // Ámbito hospitalario. Se cuenta sobre el universo con las DEMÁS dimensiones aplicadas
+        // (faceting disyuntivo), para que el número diga cuántos hay realmente en juego ahora.
+        const baseHosp = this._applyResultFilters(sourceForFilters, snap, { exclude: 'hospital' });
+        const nH = baseHosp.filter(m => this._utilCanal(m.cpresc) === 'H').length;
+        const nDH = baseHosp.filter(m => this._utilCanal(m.cpresc) === 'DH').length;
+        // Cuántos está escondiendo AHORA MISMO cada casilla desmarcada. Es lo que se anuncia: sin
+        // esta cifra, una exclusión recordada de otra sesión sería invisible y el usuario creería
+        // que el catálogo no tiene esos medicamentos.
+        const ocultosH = snap.mostrarH ? 0 : nH;
+        const ocultosDH = snap.mostrarDH ? 0 : nDH;
+        const hayOcultosHosp = ocultosH + ocultosDH > 0;
+
         // El nombre de la casilla es el que usa un médico, pero agrupa la financiación ordinaria y
         // la condicionada a visado o indicación. El matiz no se pierde: la marca de cada tarjeta
         // distingue "Financiado por el SNS" de "Financiado con visado", y esta aclaración lo dice
@@ -12434,7 +12543,24 @@ ${materialesPlaceholder}
                             <input type="checkbox" id="financiado-filter" ${snap.financiado ? 'checked' : ''}>
                             <span>Financiado por el SNS <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${financiadoCount}</span></span>
                         </label>` : ''}
+                        ${showEFG && (nH > 0 || !snap.mostrarH) ? `<label class="search-option" title="Uso hospitalario: solo se dispensa en farmacia de hospital. Desmárcalo para quitarlos de la lista.">
+                            <input type="checkbox" id="mostrar-h-filter" ${snap.mostrarH ? 'checked' : ''}>
+                            <span>Mostrar H <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${nH}</span></span>
+                        </label>` : ''}
+                        ${showEFG && (nDH > 0 || !snap.mostrarDH) ? `<label class="search-option" title="Diagnóstico hospitalario: la prescripción se inicia en el hospital, pero SÍ puede dispensarse en oficina de farmacia. Es distinto del uso hospitalario.">
+                            <input type="checkbox" id="mostrar-dh-filter" ${snap.mostrarDH ? 'checked' : ''}>
+                            <span>Mostrar DH <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${nDH}</span></span>
+                        </label>` : ''}
                     </div>
+                    ${hayOcultosHosp ? `
+                    <div class="filtro-oculto-aviso" role="status">
+                        <i class="fas fa-eye-slash"></i>
+                        <span>Ocultos en estos resultados: ${[
+                            ocultosH ? `<strong>${ocultosH}</strong> de uso hospitalario` : null,
+                            ocultosDH ? `<strong>${ocultosDH}</strong> de diagnóstico hospitalario` : null,
+                        ].filter(Boolean).join(' · ')}</span>
+                        <button type="button" class="filtro-oculto-aviso__btn" id="mostrar-hosp-todos">Mostrar todos</button>
+                    </div>` : ''}
                     ` : ''}
                     ${hasSecondary ? `
                     <details class="more-filters" ${secondaryActive > 0 ? 'open' : ''}>
@@ -13061,6 +13187,19 @@ ${materialesPlaceholder}
         });
         document.getElementById('financiado-filter')?.addEventListener('change', (e) => {
             this.filterState.financiadoOnly = e.target.checked;
+            this._applyIndicationFacet(data, searchQuery);
+        });
+        const cambioHospInd = (campo) => (e) => {
+            this.filterState[campo] = e.target.checked;
+            this._hospPrefWrite();
+            this._applyIndicationFacet(data, searchQuery);
+        };
+        document.getElementById('mostrar-h-filter')?.addEventListener('change', cambioHospInd('mostrarH'));
+        document.getElementById('mostrar-dh-filter')?.addEventListener('change', cambioHospInd('mostrarDH'));
+        document.getElementById('mostrar-hosp-todos')?.addEventListener('click', () => {
+            this.filterState.mostrarH = true;
+            this.filterState.mostrarDH = true;
+            this._hospPrefWrite();
             this._applyIndicationFacet(data, searchQuery);
         });
 

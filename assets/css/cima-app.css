@@ -4584,6 +4584,39 @@ body {
     flex-shrink: 0;
 }
 
+/* Aviso de exclusión hospitalaria. Es OBLIGATORIO mientras haya algo oculto, y por eso no se
+   pinta como un mensaje discreto: una preferencia elegida hace semanas, si no se anuncia, es
+   indistinguible de un catálogo que no tiene esos medicamentos. El botón devuelve todo en un clic:
+   deshacer tiene que costar menos que descubrir qué falta. */
+.filtro-oculto-aviso {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: var(--space-sm);
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: var(--warning-light, var(--bg-dark));
+    border-left: 3px solid var(--warning);
+    border-radius: var(--radius-sm);
+}
+
+.filtro-oculto-aviso i {
+    color: var(--warning);
+}
+
+.filtro-oculto-aviso__btn {
+    margin-left: auto;
+    border: 0;
+    background: transparent;
+    color: var(--primary);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
 /* Financiación SNS. Va en TODAS las tarjetas con dato, no solo en las excepciones: está medido
    que en anticonceptivos lo mayoritario es NO estar financiado (73 de 117), así que "sin marca =
    financiado" sería falso, y además "sin marca" se confundiría con "aún no ha cargado".
