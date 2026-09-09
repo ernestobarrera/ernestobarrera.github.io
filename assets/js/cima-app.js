@@ -12436,7 +12436,7 @@ ${materialesPlaceholder}
         const recetaCount = showEFG ? this._disjunctiveCount(sourceForFilters, snap, 'receta', m => m.receta === true) : 0;
         // La casilla solo se pinta si el índice es utilizable, así que este conteo nunca se
         // muestra sobre un índice ausente (que daría 0 y parecería "no hay financiados").
-        const financiadoCount = (showEFG && this._financingIndexUsable)
+        const financiadoCount = this._financingIndexUsable
             ? this._disjunctiveCount(sourceForFilters, snap, 'financiacion',
                 m => this._financingRowHasCoverage(this._financingIndex?.[m.nregistro]))
             : 0;
@@ -12494,6 +12494,16 @@ ${materialesPlaceholder}
         const soloQuedanParalelas = false;
         const tipParalelas = 'Otros registros del mismo medicamento que no publican ficha técnica propia en CIMA. Se dejan fuera porque la información clínica está en el registro que sí la publica, y ese ya aparece en la lista. Nunca se oculta el único registro de un medicamento.';
 
+        // `showEFG` NO significa "pinta las casillas": significa "REPITE aquí las de genérico,
+        // receta y biosimilar", y está apagada en la búsqueda normal porque allí esas casillas ya
+        // viven arriba, en el propio buscador. Financiación y ámbito hospitalario no tienen
+        // equivalente arriba, así que colgarlas de esa bandera las hacía aparecer SOLO en la vista
+        // de indicaciones — que es justo lo que Ernesto encontró el 2026-09-09: un filtro de
+        // financiación que existía en una pantalla y no en la otra, sin que nadie lo hubiera
+        // decidido. Los filtros no pueden variar por pantalla sin una razón dicha en voz alta.
+        const hayCasillasPropias = this._financingIndexUsable
+            || nH > 0 || nDH > 0 || !snap.mostrarH || !snap.mostrarDH;
+
         // Forma farmacéutica y dosis son discriminadores clínicos de primer nivel ("quiero
         // sobres, efervescente…", "quiero los de 20 mg") → visibles sin desplegar nada. En
         // "Más filtros" queda solo el laboratorio, que es criterio administrativo.
@@ -12521,7 +12531,8 @@ ${materialesPlaceholder}
                             ${formOptions}
                         </select>` : ''}
                     </div>
-                    ${showEFG && (efgCount > 0 || recetaCount > 0 || biosimilarCount > 0 || snap.generic || snap.receta || snap.biosimilar || paralelasEnUniverso > 0) ? `
+                    ${(showEFG && (efgCount > 0 || recetaCount > 0 || biosimilarCount > 0 || snap.generic || snap.receta || snap.biosimilar || paralelasEnUniverso > 0))
+                      || hayCasillasPropias ? `
                     <div class="control-section" style="gap:var(--space-md);">
                         ${showEFG && (efgCount > 0 || snap.generic) ? `<label class="search-option" title="Solo genéricos">
                             <input type="checkbox" id="efg-filter" ${snap.generic ? 'checked' : ''}>
@@ -12539,15 +12550,15 @@ ${materialesPlaceholder}
                             <input type="checkbox" id="paralelas-filter" ${snap.paralelas ? 'checked' : ''}>
                             <span>Incluir duplicados <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${paralelasEnUniverso}</span></span>
                         </label>` : ''}
-                        ${showEFG && this._financingIndexUsable ? `<label class="search-option" title="${this._escapeHtml(tipFinanciado)}">
+                        ${this._financingIndexUsable ? `<label class="search-option" title="${this._escapeHtml(tipFinanciado)}">
                             <input type="checkbox" id="financiado-filter" ${snap.financiado ? 'checked' : ''}>
                             <span>Financiado por el SNS <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${financiadoCount}</span></span>
                         </label>` : ''}
-                        ${showEFG && (nH > 0 || !snap.mostrarH) ? `<label class="search-option" title="Uso hospitalario: solo se dispensa en farmacia de hospital. Desmárcalo para quitarlos de la lista.">
+                        ${(nH > 0 || !snap.mostrarH) ? `<label class="search-option" title="Uso hospitalario: solo se dispensa en farmacia de hospital. Desmárcalo para quitarlos de la lista.">
                             <input type="checkbox" id="mostrar-h-filter" ${snap.mostrarH ? 'checked' : ''}>
                             <span>Mostrar H <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${nH}</span></span>
                         </label>` : ''}
-                        ${showEFG && (nDH > 0 || !snap.mostrarDH) ? `<label class="search-option" title="Diagnóstico hospitalario: la prescripción se inicia en el hospital, pero SÍ puede dispensarse en oficina de farmacia. Es distinto del uso hospitalario.">
+                        ${(nDH > 0 || !snap.mostrarDH) ? `<label class="search-option" title="Diagnóstico hospitalario: la prescripción se inicia en el hospital, pero SÍ puede dispensarse en oficina de farmacia. Es distinto del uso hospitalario.">
                             <input type="checkbox" id="mostrar-dh-filter" ${snap.mostrarDH ? 'checked' : ''}>
                             <span>Mostrar DH <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${nDH}</span></span>
                         </label>` : ''}

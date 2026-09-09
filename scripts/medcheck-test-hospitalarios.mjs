@@ -168,5 +168,23 @@ check('el aviso desglosa H y DH por separado',
 check('y ofrece deshacerlo en un clic',
     /mostrar-hosp-todos/.test(fuente), true);
 
+// --- Los filtros no cambian según la pantalla --------------------------------
+// Ernesto encontró el 2026-09-09 un filtro de financiación que existía en la búsqueda por
+// indicación y no en la búsqueda normal, sin que nadie lo hubiera decidido. La causa: las casillas
+// colgaban de `showEFG`, que NO significa "pinta las casillas" sino "repite aquí las de genérico,
+// receta y biosimilar" — y está apagada en la búsqueda normal porque allí ya viven arriba, en el
+// buscador. Las casillas sin equivalente arriba deben aparecer en las dos pantallas.
+console.log('\n— Las mismas casillas en las dos pantallas —');
+check('la casilla de financiación no cuelga de showEFG',
+    /showEFG && this\._financingIndexUsable/.test(fuente), false);
+check('la de «Mostrar H» tampoco',
+    /showEFG && \(nH/.test(fuente), false);
+check('la de «Mostrar DH» tampoco',
+    /showEFG && \(nDH/.test(fuente), false);
+check('su contador tampoco, o marcaría 0 en la pantalla donde sí se pinta',
+    /showEFG && this\._financingIndexUsable\)\s*\n?\s*\?/.test(fuente), false);
+check('y el contenedor de casillas las tiene en cuenta para pintarse',
+    /hayCasillasPropias/.test(fuente), true);
+
 console.log(failures === 0 ? '\nOK — todas las aserciones pasan' : `\nFALLOS: ${failures}`);
 process.exit(failures === 0 ? 0 : 1);
