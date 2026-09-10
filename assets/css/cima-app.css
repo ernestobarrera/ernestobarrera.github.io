@@ -11961,6 +11961,40 @@ mark.ecg-highlight {
 }
 .fin-disclaimer a { color: var(--primary); }
 
+/* Leyenda de «Aportación del beneficiario». Plegada por defecto: es una explicación que se
+   consulta una vez, no información que haga falta en cada consulta. Va desplegable y no en un
+   tooltip porque en móvil no existe el `hover`. */
+.fin-aportacion-leyenda {
+    margin-top: 0.85rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    background: var(--surface-sunken);
+}
+.fin-aportacion-leyenda > summary {
+    cursor: pointer;
+    padding: 0.45rem 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    list-style: none;
+}
+.fin-aportacion-leyenda > summary::-webkit-details-marker { display: none; }
+.fin-aportacion-leyenda > summary:hover { color: var(--primary); }
+.fin-aportacion-leyenda ul {
+    margin: 0;
+    padding: 0 0.9rem 0.35rem 1.9rem;
+    line-height: 1.55;
+}
+.fin-aportacion-leyenda li { margin-bottom: 0.4rem; }
+.fin-aportacion-nota {
+    margin: 0;
+    padding: 0 0.9rem 0.6rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+.badge-aportacion { cursor: help; }
+
 @media (max-width: 600px) {
     .fin-header { flex-direction: column; align-items: flex-start; }
     .fin-row { gap: 0.5rem; }

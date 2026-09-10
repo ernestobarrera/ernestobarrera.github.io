@@ -181,6 +181,68 @@ check('excluye al que no tiene cobertura', pred({ nregistro: '63575' }), false);
 check('excluye al que no está en el índice (ausencia ≠ financiado)',
     pred({ nregistro: '99999999' }), false);
 
+// --- Esquema 2: el Nomenclátor como segunda fuente (2026-09-10) ----------------
+//
+// EL CASO QUE LO MOTIVA, con sus datos reales: JENTADUETO 2,5/850 mg de importación paralela
+// (nregistro 12780006IP3, CN 763083). BIFIMED no lo conoce —`found:false`—, así que la lista lo
+// pintaba «Sin datos»; el Nomenclátor lo tiene de ALTA con aportación ESPECIAL, y por eso al
+// abrir la ficha SÍ se veía financiación. El mismo medicamento decía dos cosas según por dónde
+// se mirara. Lo trajo Ernesto el 2026-09-10.
+//
+// Medido ese día: BIFIMED deja 1.331 medicamentos comercializados sin ningún dato (993 son
+// importaciones paralelas) y el Nomenclátor cubre 1.017 de ellos, todos de alta.
+console.log('\n— El Nomenclátor cubre lo que BIFIMED no publica —');
+const filaN = (...v) => v; // [total, 1, 2, 5, 6, 7, 666, nomenclator]
+check('la fila de 8 columnas se acepta (esquema 2)',
+    estadoDesdeIndice(filaN(1, 0, 0, 0, 0, 0, 0, 1)), 'si_nom');
+check('el caso JENTADUETO deja de ser "sin datos"',
+    estadoDesdeIndice(filaN(1, 0, 0, 0, 0, 0, 0, 1)) === 'sindato', false);
+check('y se dice de dónde sale, sin ascenderlo a resolución de BIFIMED',
+    app._financingSummaryFromIndexRow(filaN(1, 0, 0, 0, 0, 0, 0, 1)).label,
+    'Financiado (consta de alta en el Nomenclátor)');
+check('en la tarjeta responde la misma pregunta que el resto',
+    app._financingTagFromRow(filaN(1, 0, 0, 0, 0, 0, 0, 1), '12780006IP3').short, 'Financiado por el SNS');
+check('y el tooltip nombra la fuente que lo respalda',
+    /Nomenclátor de facturación/.test(app._financingTagFromRow(filaN(1, 0, 0, 0, 0, 0, 0, 1), '12780006IP3').title), true);
+check('cuenta como cobertura para la faceta',
+    app._financingRowHasCoverage(filaN(1, 0, 0, 0, 0, 0, 0, 1)), true);
+
+// La columna nueva NO puede tapar una negativa: si BIFIMED dice que no, sigue diciendo que no.
+check('una negativa de BIFIMED no la borra el Nomenclátor',
+    estadoDesdeIndice(filaN(2, 0, 0, 0, 0, 1, 0, 1)), 'parcial');
+check('con todo negativo, el veredicto no cambia',
+    estadoDesdeIndice(filaN(1, 0, 0, 0, 0, 1, 0, 0)), 'no');
+
+// Retrocompatibilidad: el esquema 1 tiene que seguir leyéndose EXACTAMENTE igual. Si el ETL del
+// Nomenclátor falla un día, el índice vuelve a 7 columnas y la lista no puede quedarse muda.
+console.log('\n— El esquema 1 sigue leyéndose igual (el ETL nuevo puede fallar) —');
+for (const [nombre, f7] of [
+    ['financiado', fila(1, 1, 0, 0, 0, 0, 0)],
+    ['sin dato', fila(2, 0, 0, 0, 0, 0, 0)],
+    ['no financiado', fila(1, 0, 0, 0, 0, 1, 0)],
+    ['parcial', fila(3, 1, 0, 0, 0, 2, 0)],
+]) {
+    check(`${nombre} — mismo veredicto con 7 columnas que antes`,
+        estadoDesdeIndice(f7), estadoDesdeIndice([...f7, 0]));
+}
+// Y un ancho que no es ni 7 ni 8 sigue sin producir marca: una fila que no se entiende no se
+// interpreta a medias.
+check('9 columnas no se interpretan', app._financingSummaryFromIndexRow([1, 0, 0, 0, 0, 0, 0, 0, 1]), null);
+check('6 columnas tampoco', app._financingSummaryFromIndexRow([1, 0, 0, 0, 0, 0]), null);
+
+// El predicado de la faceta y la etiqueta salen del MISMO resolutor. Sin esto, la casilla "solo
+// financiados" escondería medicamentos que la tarjeta acaba de anunciar como financiados.
+console.log('\n— Etiqueta y faceta no pueden discrepar —');
+for (const f of [
+    filaN(1, 0, 0, 0, 0, 0, 0, 1), filaN(2, 1, 0, 0, 0, 0, 0, 1), filaN(1, 0, 0, 0, 0, 1, 0, 0),
+    filaN(2, 0, 0, 0, 0, 0, 0, 0), filaN(3, 1, 0, 0, 0, 2, 0, 0), fila(1, 0, 1, 0, 0, 0, 0),
+]) {
+    const tag = app._financingTagFromRow(f, '63575');
+    const cubre = app._financingRowHasCoverage(f);
+    const anuncia = /^Financiado/.test(tag?.short || '');
+    check(`[${f.join(',')}] la faceta coincide con lo que anuncia la tarjeta`, cubre, anuncia);
+}
+
 // --- La dimensión está en el contrato -----------------------------------------
 console.log('\n— La dimensión pertenece al contrato de filtros —');
 check('financiacion es una dimensión declarada',
