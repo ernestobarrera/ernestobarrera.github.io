@@ -1,41 +1,139 @@
 {
-  "_nota": "Centinelas del índice de financiación. Comprueban VALORES, no existencia: un índice lleno de ceros no rompe nada visible y convertiría toda la lista en 'sin datos'. Cada entrada es [totalComercializadas, si(1), si_determinadas(2), no_incluido(5), excluido(6), no_financiado_resolucion(7), estudio_sin_peticion(666)].",
+  "_nota": "Centinelas del índice de financiación. Comprueban VALORES, no existencia: un índice lleno de ceros no rompe nada visible y convertiría toda la lista en 'sin datos'. Cada entrada es [totalComercializadas, si(1), si_determinadas(2), no_incluido(5), excluido(6), no_financiado_resolucion(7), estudio_sin_peticion(666)] y, en el esquema 2, una octava posición con las presentaciones que BIFIMED no cubre y constan de alta en el Nomenclátor, declarada aparte en `expect_nom`. Un centinela sin `expect_nom` FALLA cuando el índice trae esa columna: no se aprueba por omisión.",
   "checks": [
     {
       "kind": "entrada",
       "nregistro": "63575",
-      "expect": [2, 0, 0, 0, 0, 1, 1],
-      "note": "YASMIN DIARIO — verificado contra la ficha de BIFIMED el 2026-09-08: CN 669903 'No financiado por resolución' y CN 669911 'Estudio o sin petición financiación'. Es el caso que prueba que las dos categorías negativas NO se colapsan en una"
+      "expect": [
+        2,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1
+      ],
+      "note": "YASMIN DIARIO — verificado contra la ficha de BIFIMED el 2026-09-08: CN 669903 'No financiado por resolución' y CN 669911 'Estudio o sin petición financiación'. Es el caso que prueba que las dos categorías negativas NO se colapsan en una",
+      "expect_nom": 0
     },
     {
       "kind": "entrada",
       "nregistro": "63576",
-      "expect": [2, 0, 0, 0, 0, 1, 1],
-      "note": "YASMIN — mismos dos estados que YASMIN DIARIO (CN 671271 y 671388), verificados contra el Worker el 2026-09-08"
+      "expect": [
+        2,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1
+      ],
+      "note": "YASMIN — mismos dos estados que YASMIN DIARIO (CN 671271 y 671388), verificados contra el Worker el 2026-09-08",
+      "expect_nom": 0
     },
     {
       "kind": "entrada",
       "nregistro": "08472008",
-      "expect": [1, 1, 0, 0, 0, 0, 0],
-      "note": "Xarelto 10 mg (CN 0603082) sigue financiado — el mismo CN que vigila el centinela del ETL de BIFIMED, para que un fallo de cruce se vea en los dos sitios"
+      "expect": [
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "Xarelto 10 mg (CN 0603082) sigue financiado — el mismo CN que vigila el centinela del ETL de BIFIMED, para que un fallo de cruce se vea en los dos sitios",
+      "expect_nom": 0
     },
     {
       "kind": "entrada",
       "nregistro": "42991",
-      "expect": [1, 1, 0, 0, 0, 0, 0],
-      "note": "A.A.S. 100 mg — tiene DOS presentaciones (CN 686580 comercializada y CN 614537 no) y el total debe ser 1. Es el centinela de la partición: si alguien contase el censo entero, aquí saldría 2 y el índice diría de este medicamento algo distinto de lo que dice su ficha"
+      "expect": [
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "A.A.S. 100 mg — tiene DOS presentaciones (CN 686580 comercializada y CN 614537 no) y el total debe ser 1. Es el centinela de la partición: si alguien contase el censo entero, aquí saldría 2 y el índice diría de este medicamento algo distinto de lo que dice su ficha",
+      "expect_nom": 0
     },
     {
       "kind": "entrada",
       "nregistro": "2490401",
-      "expect": [2, 0, 0, 0, 0, 0, 0],
-      "note": "YASMIN de importación paralela (Bayer Hellas, CN 764312 y 764313): dos presentaciones comercializadas y CERO dato en BIFIMED. Vigila que la ausencia de dato se conserve como ausencia y no se rellene con un cero interpretable como 'no financiado'"
+      "expect": [
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "YASMIN de importación paralela (Bayer Hellas, CN 764312 y 764313): dos presentaciones comercializadas y CERO dato en BIFIMED. Vigila que la ausencia de dato se conserve como ausencia y no se rellene con un cero interpretable como 'no financiado'",
+      "expect_nom": 0
     },
-    { "kind": "columna_min", "pos": 1, "min": 9000, "note": "financiados (código 1)" },
-    { "kind": "columna_min", "pos": 2, "min": 700, "note": "financiados para determinadas indicaciones (código 2)" },
-    { "kind": "columna_min", "pos": 3, "min": 650, "note": "no incluidos (código 5)" },
-    { "kind": "columna_min", "pos": 4, "min": 300, "note": "excluidos (código 6)" },
-    { "kind": "columna_min", "pos": 5, "min": 550, "note": "no financiados por resolución (código 7)" },
-    { "kind": "columna_min", "pos": 6, "min": 750, "note": "en estudio o sin petición (código 666)" }
+    {
+      "kind": "entrada",
+      "nregistro": "12780006IP3",
+      "expect": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "expect_nom": 1,
+      "note": "JENTADUETO 2,5/850 mg de importación paralela (CN 763083) — EL CASO QUE MOTIVÓ LA SEGUNDA FUENTE (2026-09-10). BIFIMED no lo conoce (por eso los seis ceros) y el Nomenclátor lo tiene de ALTA con aportación ESPECIAL. Vigila que la columna del Nomenclátor se rellene de verdad: si saliera 0, el índice volvería a decir «Sin datos» de un medicamento que la ficha muestra financiado, que es exactamente el defecto que se estaba corrigiendo",
+      "solo_esquema": 2
+    },
+    {
+      "kind": "columna_min",
+      "pos": 1,
+      "min": 9000,
+      "note": "financiados (código 1)"
+    },
+    {
+      "kind": "columna_min",
+      "pos": 2,
+      "min": 700,
+      "note": "financiados para determinadas indicaciones (código 2)"
+    },
+    {
+      "kind": "columna_min",
+      "pos": 3,
+      "min": 650,
+      "note": "no incluidos (código 5)"
+    },
+    {
+      "kind": "columna_min",
+      "pos": 4,
+      "min": 300,
+      "note": "excluidos (código 6)"
+    },
+    {
+      "kind": "columna_min",
+      "pos": 5,
+      "min": 550,
+      "note": "no financiados por resolución (código 7)"
+    },
+    {
+      "kind": "columna_min",
+      "pos": 6,
+      "min": 750,
+      "note": "en estudio o sin petición (código 666)"
+    },
+    {
+      "kind": "columna_min",
+      "pos": 7,
+      "min": 800,
+      "note": "cubiertos SOLO por el Nomenclátor (columna del esquema 2). Medido el 2026-09-10: 1.017 medicamentos, 993 de ellos importaciones paralelas. El mínimo va holgado porque esa cifra la mueve el propio catálogo, pero un desplome a cero significa que el sidecar no llegó y que hemos vuelto a dejar «Sin datos» a mil medicamentos",
+      "solo_esquema": 2
+    }
   ]
 }

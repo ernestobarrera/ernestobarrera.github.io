@@ -64,17 +64,58 @@ jobs:
           echo "ruta=${RUTA}" >> "$GITHUB_OUTPUT"
           echo "run_id=${RUN_ID}" >> "$GITHUB_OUTPUT"
 
+      - name: Descargar el sidecar del Nomenclátor (segunda fuente, opcional)
+        id: nomenclator
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # BIFIMED deja 1.331 medicamentos comercializados sin ningún dato de financiación —993
+          # son importaciones paralelas— y el Nomenclátor cubre 1.017 de ellos. Sin este paso, la
+          # lista sigue diciendo «Sin datos» de medicamentos que la propia ficha muestra
+          # financiados (el caso JENTADUETO, 2026-09-10).
+          #
+          # ES OPCIONAL A PROPÓSITO, y esta es la diferencia con el sidecar de BIFIMED: aquel es la
+          # materia prima del índice y sin él no hay nada que construir; este solo AÑADE cobertura.
+          # Abortar por su ausencia dejaría a la lista sin ninguna marca de financiación para
+          # ganar unas cuantas: cambiar un dato incompleto por ninguno.
+          #
+          # Cadencia distinta a propósito también: el Nomenclátor es mensual y BIFIMED también,
+          # pero no el mismo día. Se toma el último run con éxito, sea de cuando sea; su
+          # `catalog_id` viaja en el índice, así que siempre se puede saber de qué generación es.
+          RUN_ID=$(gh run list --workflow=etl-sns-catalog.yml --status=success --limit 1 \
+            --json databaseId --jq '.[0].databaseId' || true)
+          RUTA=""
+          if [ -n "$RUN_ID" ]; then
+            mkdir -p /tmp/sns-art
+            gh run download "$RUN_ID" --dir /tmp/sns-art || true
+            RUTA=$(find /tmp/sns-art -name 'sns_catalog_procedencia.json' | head -n 1)
+          fi
+          if [ -n "$RUTA" ]; then
+            echo "Nomenclátor: sidecar del run ${RUN_ID}"
+          else
+            echo "::warning::sin sidecar del Nomenclátor; el índice saldrá en esquema 1 (solo BIFIMED)"
+          fi
+          echo "ruta=${RUTA}" >> "$GITHUB_OUTPUT"
+
       - name: Construir el índice
         id: build
         run: |
+          NOM=""
+          if [ -n "${{ steps.nomenclator.outputs.ruta }}" ]; then
+            NOM="--nomenclator ${{ steps.nomenclator.outputs.ruta }}"
+          fi
+          # shellcheck disable=SC2086
           node scripts/etl-financiacion/build-financiacion-index.mjs \
             --procedencia "${{ steps.artefacto.outputs.ruta }}" \
+            $NOM \
             --out /tmp/financiacion-index.json
           {
             echo "generated_at=$(jq -r '._meta.generated_at' /tmp/financiacion-index.json)"
             echo "nregistros=$(jq -r '._meta.nregistros' /tmp/financiacion-index.json)"
             echo "con_dato=$(jq -r '._meta.con_algun_dato' /tmp/financiacion-index.json)"
             echo "catalog_id=$(jq -r '._meta.catalog_id' /tmp/financiacion-index.json)"
+            echo "schema=$(jq -r '._meta.schema_version' /tmp/financiacion-index.json)"
+            echo "solo_nomenclator=$(jq -r '._meta.presentaciones_solo_en_nomenclator // 0' /tmp/financiacion-index.json)"
           } >> "$GITHUB_OUTPUT"
 
       - name: ¿Ha cambiado el contenido?

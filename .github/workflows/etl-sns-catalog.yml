@@ -52,9 +52,13 @@ jobs:
       - name: Construir JSON del catálogo SNS
         id: build
         run: |
+          # `--out-procedencia` emite la proyección `cn -> A|B` que consume el ETL del índice de
+          # financiación. Se hace aquí, y no en un script aparte, porque el .xls ya está descargado
+          # y parseado: un segundo lector del mismo fichero sería un segundo criterio de alta/baja.
           python scripts/etl-sns-catalog/build_sns_catalog.py \
             --from-file nomenclator.xls \
-            --out sns_catalog.json
+            --out sns_catalog.json \
+            --out-procedencia sns_catalog_procedencia.json
           {
             echo "size_kb=$(awk "BEGIN{printf \"%.0f\", $(stat -c%s sns_catalog.json)/1024}")"
             echo "total=$(python -c "import json; d=json.load(open('sns_catalog.json')); print(d['meta']['total_products'])")"
@@ -82,7 +86,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: sns-catalog-${{ steps.build.outputs.download_date }}
-          path: sns_catalog.json
+          path: |
+            sns_catalog.json
+            sns_catalog_procedencia.json
           retention-days: 14
           if-no-files-found: error
 

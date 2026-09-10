@@ -19,9 +19,23 @@ Campos derivados (no nativos):
 Nota: pvp_iva y precio_referencia se capturan pero NO se exponen en UI fase 1.
       El Worker decide qué devuelve en cada endpoint.
 
+Sidecar de procedencia (--out-procedencia):
+  Proyección mínima `cn -> estado` para que el ETL del índice de financiación pueda saber si un
+  CN consta en el Nomenclátor de facturación **sin cargar los 20.000 productos enteros**. Copia
+  deliberada del contrato que ya usa BIFIMED (`bifimed_catalog_procedencia.json`): un dato de la
+  fuente, no una interpretación nuestra.
+
+  POR QUÉ HACE FALTA, medido el 2026-09-10: 1.331 medicamentos comercializados no tienen ningún
+  CN en BIFIMED —993 son importaciones paralelas— y MedCheck los mostraba como «Sin datos» de
+  financiación. **El Nomenclátor cubre 1.017 de esos 1.331 (76 %)**, todos con estado de alta.
+  Es decir: el dato existía, en una fuente que la ficha ya consultaba, y la lista no lo miraba.
+  Lo detectó Ernesto el 2026-09-10 con JENTADUETO: veía «Sin datos» en la lista y financiación
+  al abrir la ficha del CN 763083.
+
 Uso:
     python build_sns_catalog.py --out sns_catalog.json
     python build_sns_catalog.py --from-file ./nomenclator.xls --out sns_catalog.json
+    python build_sns_catalog.py --out sns_catalog.json --out-procedencia sns_procedencia.json
     python build_sns_catalog.py --head-only
 """
 from __future__ import annotations
@@ -235,6 +249,46 @@ def parse_xls(data: bytes, download_date: str) -> dict[str, Any]:
     }
 
 
+# Estado del Nomenclátor -> letra del sidecar. `A` = consta de alta hoy; `B` = cualquier otra
+# cosa (baja, suspensión temporal, exclusión individualizada, estado ausente).
+#
+# NO SE COLAPSA A BOOLEANO Y EL MOTIVO IMPORTA: «baja» y «no aparece» son hechos distintos —el
+# primero es una resolución, el segundo es que no lo sabemos— y quien consuma esto tiene que
+# poder distinguirlos. Un CN que no está en el sidecar no está de baja: está ausente.
+def estado_a_letra(estado: str) -> str:
+    return "A" if (estado or "").strip().upper() == "ALTA" else "B"
+
+
+def construir_procedencia(parsed: dict[str, Any], source: str) -> dict[str, Any]:
+    """Proyección `cn -> A|B` del Nomenclátor, con su sello de generación.
+
+    Es el equivalente exacto del sidecar de BIFIMED, y existe por lo mismo: para que el ETL del
+    índice de financiación no tenga que arrastrar el catálogo entero ni volver a bajar un .xls
+    que Node no sabe leer.
+    """
+    por_cn = {cn: estado_a_letra(item.get("estado", "")) for cn, item in parsed["by_cn"].items()}
+    altas = sum(1 for v in por_cn.values() if v == "A")
+    # El sello es sobre la proyección EXACTA que se publica, no sobre el catálogo entero: es lo
+    # que permite comprobar que índice y sidecar hablan de la misma generación.
+    import hashlib
+    catalog_id = hashlib.sha256(
+        json.dumps(por_cn, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return {
+        "meta": {
+            "schema_version": 1,
+            "source": source,
+            "attribution": "Fuente: Ministerio de Sanidad - Gobierno de España · www.sanidad.gob.es",
+            "download_date": parsed["download_date"],
+            "catalog_id": catalog_id,
+            "total_cn": len(por_cn),
+            "cn_de_alta": altas,
+            "leyenda": {"A": "consta de alta en el Nomenclátor de facturación", "B": "consta, pero no de alta"},
+        },
+        "por_cn": por_cn,
+    }
+
+
 def validate_sentinels(parsed: dict[str, Any], sentinels: list[dict[str, Any]]) -> bool:
     items = parsed["items"]
     stats_tipo = parsed["stats_tipo"]
@@ -275,6 +329,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--from-file", help="Ruta a un .xls local (modo dev/Actions con cache)")
     ap.add_argument("--out", default="sns_catalog.json", help="Ruta del JSON de salida")
+    ap.add_argument("--out-procedencia", default=None,
+                    help="Ruta del sidecar `cn -> A|B` para el ETL del índice de financiación")
     ap.add_argument("--head-only", action="store_true", help="Solo imprime cabeceras HTTP y termina")
     ap.add_argument("--sentinels", default=None, help="Ruta a sentinels.json")
     args = ap.parse_args(argv)
@@ -324,6 +380,20 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"[etl] json: {len(compact)/1024:.0f} KB (gzip {gz_size/1024:.0f} KB)", file=sys.stderr)
     print(f"[etl] escrito: {args.out}", file=sys.stderr)
+
+    if args.out_procedencia:
+        proc = construir_procedencia(parsed, source)
+        # Escribir un sidecar de un catálogo que no ha pasado sus centinelas sería propagar un
+        # catálogo dudoso a un segundo consumidor, y con su propio sello encima: la marca de
+        # generación diría «esto está certificado» sobre algo que no lo está.
+        if not sentinels_ok:
+            print("[etl] centinelas fallidos: NO se escribe el sidecar de procedencia", file=sys.stderr)
+            return 2
+        Path(args.out_procedencia).write_text(
+            json.dumps(proc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        m = proc["meta"]
+        print(f"[etl] sidecar: {m['total_cn']} CN ({m['cn_de_alta']} de alta) · "
+              f"catalog_id {m['catalog_id'][:16]}… → {args.out_procedencia}", file=sys.stderr)
 
     return 0 if sentinels_ok else 2
 
