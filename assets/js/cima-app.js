@@ -1269,9 +1269,37 @@ class MedCheckApp {
         return this._doseMemo(String(dosisStr ?? ''), '_doseCache', () => this._computeCanonicalDose(dosisStr));
     }
 
+    /**
+     * Anotación de trabajo de la AEMPS publicada dentro del campo `dosis` de CIMA: literales
+     * como `40 - REVISAR mg` (RYEQO), `50 - REVISAR mg` (JULUCA) o
+     * `Delivered Dose: UMECLIDINIUM (BROMIDE)55 - REVISAR µg` (LAVENTAIR ELLIPTA).
+     *
+     * NO ES NUESTRA, y esa es la única razón por la que se toca: MedCheck la mostraba tal cual y
+     * se lee como si la aplicación estuviera pidiendo revisar algo. Lo preguntó Ernesto el
+     * 2026-09-07 con el CN 764427 delante — «¿qué es eso de revisar, junto a la dosis?».
+     *
+     * Medido el 2026-09-10 sobre el catálogo de comercializados (16.101 productos): son **18**,
+     * los mismos 18 que el 2026-08-02, así que no es un estado transitorio de la fuente. En 16 de
+     * ellos el número que precede a la anotación es SOLO EL PRIMER COMPONENTE de una combinación
+     * o de un envase de titulación (RYEQO es 40 mg/1 mg/0,5 mg), de modo que quitar la coletilla y
+     * dejar «40 mg» convertiría un dato sucio en un dato FALSO. Por eso no se reconstruye ninguna
+     * dosis: se dice que la fuente no publica un valor único y se conserva el literal en el
+     * tooltip. La dosis completa está en el nombre del producto, justo encima en la tarjeta.
+     */
+    static get DOSE_SOURCE_SENTINEL() { return /\bREVISAR\b/i; }
+
+    /** Etiqueta única para ese caso. Es un valor de agrupación además de un texto: los 18 caen en
+     *  el mismo chip de filtro en vez de crear 18 chips distintos con la anotación dentro. */
+    static get DOSE_SOURCE_SENTINEL_LABEL() { return 'Dosis sin unificar'; }
+
     _computeCanonicalDose(dosisStr) {
         const literal = String(dosisStr ?? '').replace(/\s+/g, ' ').trim();
         if (!literal) return 'Sin dosis';
+
+        // Antes de intentar leer una potencia: si la fuente dejó dentro su anotación de trabajo,
+        // no hay valor único que canonicalizar. Va lo primero para que ninguna rama posterior
+        // pueda extraer un número parcial de una cadena que la propia AEMPS marcó como pendiente.
+        if (MedCheckApp.DOSE_SOURCE_SENTINEL.test(literal)) return MedCheckApp.DOSE_SOURCE_SENTINEL_LABEL;
 
         // Las regex van compiladas una sola vez (ver `_doseRegexes`). El `FIN` de no-letra
         // pegada detrás —que evita que la "g" case con la de "glicerol"— vive ya dentro.
@@ -5499,6 +5527,10 @@ class MedCheckApp {
                 symptomInput.value = '';
             }
         });
+        // Teclear ya habilita: el chip sigue siendo la forma canónica de acumular varios síntomas
+        // (OR), pero no es el peaje para poder pulsar. Solo cambia el atributo `disabled` de cuatro
+        // botones; no re-renderiza, para no destruir lo que se está escribiendo.
+        symptomInput.addEventListener('input', () => this._syncComboSymptomButtons());
         const ctxEl = document.getElementById('combo-ai-context');
         const ctxCount = document.getElementById('combo-ai-context-count');
         if (ctxEl) ctxEl.addEventListener('input', () => {
@@ -5566,9 +5598,23 @@ class MedCheckApp {
         setTimeout(() => document.getElementById(focusId)?.focus(), 60);
     }
 
+    /**
+     * Texto tecleado en el campo de síntoma que TODAVÍA no es chip (sin Enter).
+     *
+     * Existe porque los dos lados de esta pantalla contaban los síntomas de forma distinta y solo
+     * uno de los dos era alcanzable: `_validateComboAi` y `performSymptomAnalysis` ya recogían este
+     * texto pendiente al pulsar —"incluir texto pendiente en el input como un síntoma más"—, pero
+     * el habilitado exigía chip, así que el botón estaba `disabled` y esa recogida no se ejecutaba
+     * nunca. Escribir "tos" y no pulsar Enter dejaba los cuatro botones apagados sin decir por qué.
+     */
+    _pendingComboSymptom() {
+        return (document.getElementById('symptom-search')?.value || '').trim();
+    }
+
     /** Habilita/deshabilita el botón 4.8 y los de IA-síntoma según haya ≥1 fármaco y ≥1 síntoma. */
     _syncComboSymptomButtons() {
-        const enabled = this.comboDrugList.length > 0 && (this._comboSymptoms?.length > 0);
+        const enabled = this.comboDrugList.length > 0
+            && ((this._comboSymptoms?.length > 0) || !!this._pendingComboSymptom());
         ['combo-symptom-btn', 'combo-ai-symptom-perplexity', 'combo-ai-symptom-chatgpt', 'combo-ai-symptom-copy'].forEach(id => {
             const btn = document.getElementById(id);
             if (btn) btn.disabled = !enabled;
@@ -8412,16 +8458,94 @@ class MedCheckApp {
         return `<span class="badge badge-neutral">${this._escapeHtml(tipo || '—')}</span>`;
     }
 
+    /**
+     * Qué significa cada valor de «Aportación del beneficiario» del Nomenclátor.
+     *
+     * EXISTE PORQUE LA FUENTE NO PUBLICA LEYENDA. Comprobado el 2026-09-10 abriendo la ficha de un
+     * producto en la web del Ministerio: el campo aparece con su valor y sin ninguna nota que lo
+     * explique. Lo preguntó Ernesto ese día —«¿hay algún diccionario oficial de estos términos?»—.
+     * La respuesta es que diccionario del fichero no hay; definición normativa sí, y es esta.
+     *
+     * LOS VALORES REALES SON TRES, medidos sobre el Nomenclátor del 2026-09-10 (20.547 productos):
+     * NORMAL (11.372), ESPECIAL (9.173) y SIN APORTACION (2). **«REDUCIDA» no aparece como valor**,
+     * aunque sea el nombre que le da la ley: el fichero la llama ESPECIAL.
+     *
+     * QUÉ ES INFERENCIA Y QUÉ NO, porque la diferencia importa en una pantalla pública. La norma
+     * (art. 102.6.a) habla de «medicamentos pertenecientes a los grupos ATC de aportación
+     * reducida»; el fichero no dice a cuál de las dos figuras corresponde cada valor. Que ESPECIAL
+     * sea esa aportación reducida se comprobó, no se supuso: en una muestra de 182 medicamentos
+     * (97 ESPECIAL, 85 NORMAL) la partición resultó ser **función exacta del subgrupo ATC**, con
+     * CERO solapes a nivel de 5 caracteres — que es justo la forma que tendría si la decide una
+     * lista de grupos ATC. Y los grupos que salen son los previsibles: ESPECIAL cae en A10A/A10B
+     * (insulinas y antidiabéticos), C07A, C09A/C09C, N03A, N04B, R03A…; NORMAL en A02B, C10A, J01,
+     * M01A, N05B/N05C. Aun así, el texto que se muestra dice «así llama el Nomenclátor a», no
+     * «esto es»: la equivalencia la sostiene nuestra medición, no una leyenda oficial.
+     */
+    static get SNS_APORTACION_GLOSARIO() {
+        // Cifra y régimen: art. 102 del texto refundido (RDLeg 1/2015) en su redacción vigente,
+        // dada por el RD-ley 11/2026, de 12 de mayo (en vigor desde el 14/05/2026). El tope de la
+        // aportación reducida es MENSUAL, no por envase: hasta esa reforma el límite conocido era
+        // por envase (4,26 €), y arrastrar la formulación vieja sería un error de fondo, no de
+        // estilo. Literal del 102.6.a: «Un 10 % del PVP en los medicamentos pertenecientes a los
+        // grupos ATC de aportación reducida, con una aportación máxima mensual de 4,98 euros».
+        const NORMA = 'art. 102 del RD Legislativo 1/2015, redacción del RD-ley 11/2026';
+        return {
+            normal: `Aportación normal: el usuario paga un porcentaje del PVP que depende de su tramo de renta `
+                + `y de si es activo o pensionista (del 10 % al 60 %), con topes mensuales por tramo (${NORMA}). `
+                + `No es una característica del medicamento: es el régimen general.`,
+            especial: `Así llama el Nomenclátor a los medicamentos de APORTACIÓN REDUCIDA: 10 % del PVP con un `
+                + `máximo de 4,98 € al mes, sea cual sea el tramo de renta (${NORMA}). Se aplica por pertenecer `
+                + `a los grupos ATC de aportación reducida, pensados para tratamientos crónicos.`,
+            sin: 'Sin aportación: el usuario no paga nada por este producto.',
+            desconocido: 'El Nomenclátor no publica leyenda de este campo; los valores que usa hoy son '
+                + 'NORMAL, ESPECIAL y SIN APORTACIÓN.',
+        };
+    }
+
+    /** Clasifica el literal del Nomenclátor en una de las claves del glosario. */
+    _snsAportacionClase(ap) {
+        const a = String(ap || '').toLowerCase();
+        if (!a) return 'desconocido';
+        if (a.includes('sin aportaci') || a.includes('exento') || a.includes('exenta')) return 'sin';
+        // «reducida» se acepta además de «especial» porque es el nombre de la ley: si el Ministerio
+        // alineara alguna vez el fichero con la norma, esto ya lo entiende.
+        if (a.includes('especial') || a.includes('reducida')) return 'especial';
+        if (a.includes('normal')) return 'normal';
+        return 'desconocido';
+    }
+
+    /**
+     * Leyenda visible del campo «Aportación del beneficiario», bajo las tarjetas del Nomenclátor.
+     *
+     * NO BASTA CON EL TOOLTIP, y por dos motivos: en móvil no hay `hover`, y un significado que
+     * solo aparece si aciertas a pasar el ratón por encima es un significado que casi nadie lee.
+     * Se muestran únicamente los valores QUE ESTÁN EN PANTALLA: una leyenda que explica las tres
+     * figuras siempre es un párrafo que se aprende a saltar.
+     */
+    _aportacionLeyendaHtml(items) {
+        const clases = [...new Set((items || []).map(i => this._snsAportacionClase(i.aportacion))
+            .filter(c => c && c !== 'desconocido'))];
+        if (!clases.length) return '';
+        const glos = MedCheckApp.SNS_APORTACION_GLOSARIO;
+        const etiqueta = { normal: 'NORMAL', especial: 'ESPECIAL', sin: 'SIN APORTACIÓN' };
+        const filas = clases.map(c =>
+            `<li><strong>${etiqueta[c]}</strong> — ${this._escapeHtml(glos[c])}</li>`).join('');
+        return `<details class="fin-aportacion-leyenda">
+                    <summary><i class="fas fa-circle-question"></i> Qué significa la aportación del beneficiario</summary>
+                    <ul>${filas}</ul>
+                    <p class="fin-aportacion-nota">${this._escapeHtml(glos.desconocido)} La aportación es del USUARIO,
+                       no del medicamento: quién paga qué depende además de su situación (activo o pensionista, tramo de
+                       renta, exenciones).</p>
+                </details>`;
+    }
+
     _snsBadgeAportacion(ap) {
         if (!ap) return '';
-        const a = ap.toLowerCase();
-        if (a.includes('sin aportaci') || a.includes('exento') || a.includes('exenta'))
-            return `<span class="badge badge-success"><i class="fas fa-star"></i> ${this._escapeHtml(ap)}</span>`;
-        if (a.includes('reducida'))
-            return `<span class="badge badge-success">${this._escapeHtml(ap)}</span>`;
-        if (a.includes('normal'))
-            return `<span class="badge badge-info">${this._escapeHtml(ap)}</span>`;
-        return `<span class="badge badge-neutral">${this._escapeHtml(ap)}</span>`;
+        const clase = this._snsAportacionClase(ap);
+        const tip = this._escapeHtml(MedCheckApp.SNS_APORTACION_GLOSARIO[clase]);
+        const estilo = { sin: 'badge-success', especial: 'badge-success', normal: 'badge-info', desconocido: 'badge-neutral' }[clase];
+        const icono = clase === 'sin' ? '<i class="fas fa-star"></i> ' : '';
+        return `<span class="badge ${estilo} badge-aportacion" title="${tip}">${icono}${this._escapeHtml(ap)}</span>`;
     }
 
     // ============================================
@@ -9089,6 +9213,17 @@ class MedCheckApp {
     _displayDose(raw) {
         const literal = String(raw ?? '').replace(/\s+/g, ' ').trim();
         if (!literal) return { text: '', title: '' };
+        // La anotación de trabajo de la AEMPS necesita explicarse, no solo esconderse: sin el
+        // porqué, «Dosis sin unificar» sería otro texto opaco. El literal íntegro sigue aquí, que
+        // es la garantía de que no estamos tapando dato de la fuente.
+        if (MedCheckApp.DOSE_SOURCE_SENTINEL.test(literal)) {
+            return {
+                text: MedCheckApp.DOSE_SOURCE_SENTINEL_LABEL,
+                title: `CIMA no publica una dosis única para este producto: el campo trae una anotación de la AEMPS `
+                    + `("REVISAR"), habitual en combinaciones y envases de titulación. La dosis completa está en el `
+                    + `nombre del producto. Literal de CIMA: "${literal}"`,
+            };
+        }
         return { text: this._canonicalDose(literal), title: `Dosis según CIMA: ${literal}` };
     }
 
@@ -10260,19 +10395,31 @@ ${materialesPlaceholder}
      * tarjeta y la ficha del mismo medicamento podrían acabar diciendo cosas distintas — que es
      * exactamente lo que este diseño existe para impedir.
      */
-    _financingSummaryFromCounts({ fin = 0, cond = 0, nofin = 0, estudio = 0, sindato = 0 }) {
+    _financingSummaryFromCounts({ fin = 0, cond = 0, nofin = 0, estudio = 0, sindato = 0, nom = 0 }) {
         // El denominador es SIEMPRE el total de presentaciones consultadas, incluidas las que no
         // sabemos clasificar. Hasta el 2026-09-06 se calculaba sobre `fin + cond + nofin`, así que
         // un medicamento con dos CN financiados y uno sin dato se anunciaba como "Financiado por el
         // SNS" a secas: la fracción desconocida desaparecía del cálculo en vez de mostrarse.
-        const total = fin + cond + nofin + estudio + sindato;
-        const financiadas = fin + cond;
+        // `nom` = presentaciones que BIFIMED no cubre y que constan DE ALTA en el Nomenclátor de
+        // facturación. Cuenta como cobertura —estar de alta ahí es, literalmente, lo que se
+        // factura con cargo al SNS— pero conserva estado propio cuando es la ÚNICA fuente, para
+        // que la frase pueda decir de dónde sale. Es la diferencia entre "lo dice BIFIMED" y "lo
+        // dice el Nomenclátor", y en 1.017 medicamentos (medido 2026-09-10) solo lo dice el
+        // segundo: son casi todos importaciones paralelas, que BIFIMED no recoge.
+        const total = fin + cond + nofin + estudio + sindato + nom;
+        const financiadas = fin + cond + nom;
         const sinCobertura = nofin + estudio;
         const pendientes = sindato ? ` · ${sindato} sin dato` : '';
         const gris = 'var(--text-secondary)';
 
         if (total === 0 || sindato === total) return { estado: 'sindato', label: 'Sin datos de financiación', icon: 'fa-circle-question', color: gris };
         if (financiadas === total) {
+            // Solo el Nomenclátor lo respalda: se dice así, sin ascenderlo al mismo enunciado que
+            // los que tienen resolución de financiación en BIFIMED. Son dos grados de evidencia
+            // administrativa distintos y fundirlos sería afirmar más de lo que se sabe.
+            if (nom === total) {
+                return { estado: 'si_nom', label: 'Financiado (consta de alta en el Nomenclátor)', icon: 'fa-check-circle', color: 'var(--success)' };
+            }
             if (cond === 0) return { estado: 'si', label: 'Financiado por el SNS', icon: 'fa-check-circle', color: 'var(--success)' };
             return { estado: 'cond', label: 'Financiado (condicionado: visado / por indicación)', icon: 'fa-circle-check', color: 'var(--warning)' };
         }
@@ -10327,10 +10474,17 @@ ${materialesPlaceholder}
      * NUNCA puede leerse como "financiado".
      */
     _financingSummaryFromIndexRow(fila) {
-        if (!Array.isArray(fila) || fila.length !== 7) return null;
+        // Se admiten los DOS anchos a propósito: 7 = esquema 1 (solo BIFIMED), 8 = esquema 2 (con
+        // la columna del Nomenclátor). Si se exigiera solo el nuevo, el día que el ETL del
+        // Nomenclátor fallara la lista se quedaría entera sin marcas de financiación; y si se
+        // exigiera solo el viejo, la columna nueva se ignoraría en silencio. Cualquier otro ancho
+        // sigue siendo `null`: una fila que no se entiende NO produce marca.
+        if (!Array.isArray(fila)) return null;
+        const conNomenclator = fila.length === MedCheckApp.FIN_INDEX_CODES.length + 2;
+        if (fila.length !== MedCheckApp.FIN_INDEX_CODES.length + 1 && !conNomenclator) return null;
         const total = fila[0];
         if (!Number.isFinite(total) || total < 0) return null;
-        const counts = { fin: 0, cond: 0, nofin: 0, estudio: 0, sindato: 0 };
+        const counts = { fin: 0, cond: 0, nofin: 0, estudio: 0, sindato: 0, nom: 0 };
         const mapa = MedCheckApp.FIN_CODE_TO_CLASS;
         let clasificadas = 0;
         MedCheckApp.FIN_INDEX_CODES.forEach((codigo, i) => {
@@ -10338,9 +10492,14 @@ ${materialesPlaceholder}
             counts[mapa[codigo]] += n;
             clasificadas += n;
         });
-        // Lo que el catálogo no cubre es "sin dato", nunca "no financiado". Son 1.331 medicamentos
-        // visibles (medido 2026-09-08), 993 de ellos importaciones paralelas que el Ministerio
-        // sencillamente no publica.
+        if (conNomenclator) {
+            const n = fila[MedCheckApp.FIN_INDEX_CODES.length + 1] || 0;
+            counts.nom = n;
+            clasificadas += n;
+        }
+        // Lo que NINGUNA de las dos fuentes cubre es "sin dato", nunca "no financiado". Con solo
+        // BIFIMED eran 1.331 medicamentos visibles (medido 2026-09-08), 993 de ellos importaciones
+        // paralelas; el Nomenclátor resuelve 1.017 de esos 1.331 y quedan 312 realmente sin dato.
         counts.sindato = Math.max(0, total - clasificadas);
         return this._financingSummaryFromCounts(counts);
     }
@@ -10352,8 +10511,14 @@ ${materialesPlaceholder}
      * lo conserva la etiqueta de la tarjeta, que sí las distingue.
      */
     _financingRowHasCoverage(fila) {
-        if (!Array.isArray(fila) || fila.length !== 7) return false;
-        return (fila[1] || 0) > 0 || (fila[2] || 0) > 0;
+        // El predicado se deriva del MISMO resolutor que la etiqueta, en vez de volver a leer
+        // posiciones por su cuenta. Cuando eran dos lecturas independientes, añadir la columna del
+        // Nomenclátor obligaba a acordarse de tocar las dos, y olvidarse de una deja la faceta
+        // filtrando por un criterio distinto del que la tarjeta muestra: el medicamento diría
+        // "Financiado" y desaparecería al marcar "solo financiados".
+        const resumen = this._financingSummaryFromIndexRow(fila);
+        if (!resumen) return false;
+        return ['si', 'si_nom', 'cond', 'parcial'].includes(resumen.estado);
     }
 
     /**
@@ -10406,6 +10571,11 @@ ${materialesPlaceholder}
         // publica; decir de ellos que no están cubiertos sería inventarnos el dato.
         const cortos = {
             si: 'Financiado por el SNS',
+            // Misma etiqueta corta que `si` A PROPÓSITO: en una lista, la pregunta es "¿lo cubre el
+            // SNS?" y la respuesta es la misma. El matiz —que quien lo respalda es el Nomenclátor y
+            // no una resolución de BIFIMED— vive en el `title`, que es donde va a mirar quien se lo
+            // pregunte. Es la misma decisión que agrupó los seis grises en dos.
+            si_nom: 'Financiado por el SNS',
             cond: 'Financiado con visado',
             parcial: 'Financiado en parte',
             no: 'Sin cobertura del SNS',
@@ -10413,6 +10583,14 @@ ${materialesPlaceholder}
             sin_cobertura: 'Sin cobertura del SNS',
             sindato: 'Sin datos',
         };
+        if (resumen.estado === 'si_nom') {
+            return {
+                short: cortos.si_nom, icon: resumen.icon, color: resumen.color,
+                title: 'Consta de alta en el Nomenclátor de facturación del Ministerio de Sanidad, que es el '
+                    + 'listado de lo que se factura con cargo al SNS. BIFIMED no publica su situación de '
+                    + 'financiación, cosa habitual en las importaciones paralelas',
+            };
+        }
         return {
             short: cortos[resumen.estado] || resumen.label,
             icon: resumen.icon,
@@ -10432,7 +10610,7 @@ ${materialesPlaceholder}
      * entera y la faceta se desactiva. Filtrar con un índice de otra generación que la ficha es la
      * forma silenciosa de mentir, y mostrar de menos sin avisar es peor que no filtrar.
      */
-    _loadFinancingIndex(url = 'assets/data/financiacion-index.json?v=20260909c') {
+    _loadFinancingIndex(url = 'assets/data/financiacion-index.json?v=20260910a') {
         if (this._financingIndexPromise) return this._financingIndexPromise;
         this._financingIndexPromise = fetch(url, { cache: 'force-cache' })
             .then(r => (r.ok ? r.json() : null))
@@ -10697,6 +10875,7 @@ ${materialesPlaceholder}
                         ${downloadDateSns ? `<span class="fin-date">Datos: ${esc(downloadDateSns)}</span>` : ''}
                     </div>
                     ${rows}
+                    ${this._aportacionLeyendaHtml(found)}
                     <div class="fin-disclaimer">
                         <i class="fas fa-info-circle"></i>
                         Los precios son orientativos. Fuente: Nomenclátor — Ministerio de Sanidad.
@@ -11949,19 +12128,44 @@ ${materialesPlaceholder}
                 case 'lab':
                     key = med.labtitular || 'Sin laboratorio';
                     break;
-                case 'atc':
-                    // Group by ATC subgroup (level 3-5)
-                    if (med.atcs && med.atcs.length > 0) {
-                        const atc = med.atcs[0];
-                        const code = atc.codigo || '';
-                        // Use level 5 if available (5 chars), else level 4, else level 3
-                        const groupCode = code.length >= 5 ? code.substring(0, 5) :
-                            code.length >= 4 ? code.substring(0, 4) :
-                                code.length >= 3 ? code.substring(0, 3) : code;
-                        key = `${groupCode} - ${atc.nombre || 'Sin nombre'}`;
-                        subtitle = groupCode;
+                case 'atc': {
+                    // Se agrupa por el SUBGRUPO TERAPÉUTICO (nivel 4 del ATC), y el nombre que se
+                    // pinta es el de ESE nivel, no el del primero que venga.
+                    //
+                    // EL CÓDIGO ANTERIOR DECÍA HACER ESTO Y NO LO HACÍA. Tomaba `med.atcs[0]` y
+                    // recortaba el código a 5/4/3 caracteres, pero CIMA devuelve los niveles en
+                    // orden ascendente, así que `[0]` es SIEMPRE el nivel 3 y el recorte nunca
+                    // llegaba a bajar de ahí. Resultado medido el 2026-09-10: Dermosa
+                    // Hidrocortisona (D07AA02), Adventan (D07AC14) y Clovate (D07AD01) caían los
+                    // tres en el mismo grupo, «D07A - CORTICOSTEROIDES, MONOFARMACOS».
+                    //
+                    // POR QUÉ IMPORTA CLÍNICAMENTE, que es de donde sale el encargo (Ernesto,
+                    // 2026-09-10): en los corticoides tópicos el nivel 4 ES la potencia, y la
+                    // nombra la propia AEMPS — D07AA «Corticosteroides de baja potencia (grupo I)»,
+                    // D07AB «moderadamente potentes (grupo II)», D07AC «potentes (grupo III)»,
+                    // D07AD «muy potentes (grupo IV)». Agrupando por nivel 3 esa distinción no
+                    // existía; agrupando por nivel 4 aparece sola, SIN que MedCheck clasifique
+                    // nada: el criterio y las palabras son de la clasificación oficial.
+                    //
+                    // No es un arreglo solo para dermatología: el nivel 4 separa también IECA
+                    // monofármaco de IECA con diurético, o insulinas por duración de acción.
+                    //
+                    // Nivel 5 NO: es el principio activo, y agrupar por él es no agrupar.
+                    const atcs = Array.isArray(med.atcs) ? med.atcs : [];
+                    if (atcs.length > 0) {
+                        // Por `nivel` cuando CIMA lo declara —que es el dato, no una inferencia— y
+                        // por longitud del código solo como respaldo, para no quedarse sin grupo si
+                        // algún registro viniera sin ese campo.
+                        const porNivel = atcs.find(a => a?.nivel === 4)
+                            || atcs.filter(a => (a?.codigo || '').length === 5)[0]
+                            || atcs.find(a => a?.nivel === 3)
+                            || atcs[0];
+                        const code = porNivel?.codigo || '';
+                        key = `${code} - ${porNivel?.nombre || 'Sin nombre'}`;
+                        subtitle = code;
                     }
                     break;
+                }
                 default:
                     key = 'Todos';
             }
