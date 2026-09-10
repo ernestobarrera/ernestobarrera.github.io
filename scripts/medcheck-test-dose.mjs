@@ -60,6 +60,11 @@ function plain(name, got, expected) {
     if (got === expected) console.log(`✓ ${name}`);
     else fail(name, got, expected);
 }
+/** Aserción booleana: para lo que se expresa mejor como "esto NO puede pasar" que como igualdad. */
+function cierto(name, cond, detalle) {
+    if (cond) console.log(`✓ ${name}`);
+    else fail(name, detalle, 'que la condición se cumpliera');
+}
 
 // --- Las grafías del caso paracetamol de la captura ---------------------------
 console.log('--- caso real: las grafías de paracetamol 1 g ---');
@@ -368,6 +373,52 @@ plain('normalizada: el tooltip declara el literal de CIMA',
     app._displayDose('1 g paracetamol').title, 'Dosis según CIMA: 1 g paracetamol');
 plain('literal: el tooltip también lo declara',
     app._displayDose('650 mg').title, 'Dosis según CIMA: 650 mg');
+
+// --- Anotación de trabajo de la AEMPS dentro del campo `dosis` (2026-09-10) ----
+//
+// CIMA publica en 18 de los 16.101 comercializados un literal como `40 - REVISAR mg`. Es una
+// marca interna de la AEMPS, no una dosis, y MedCheck la pintaba tal cual: se lee como si la
+// aplicación pidiera revisar algo (lo preguntó Ernesto con el CN 764427, RYEQO).
+//
+// LO QUE ESTAS ASERCIONES PROTEGEN NO ES LA ETIQUETA, ES LA PROHIBICIÓN DE ADIVINAR. En 16 de los
+// 18 el número que precede a la anotación es solo el PRIMER componente (RYEQO es 40 mg/1 mg/0,5 mg),
+// así que «limpiar» la coletilla y dejar «40 mg» cambiaría un dato sucio por uno falso — que es
+// exactamente el error de 1000× que este fichero lleva vigilando desde S39.
+console.log('--- anotación "REVISAR" de la fuente ---');
+for (const [raw, quien] of [
+    ['40 - REVISAR mg', 'RYEQO 40/1/0,5'],
+    ['50 - REVISAR mg', 'JULUCA 50/25'],
+    ['  10 - REVISAR mg', 'EZETIMIBA/ATORVASTATINA 10/80'],
+    ['0.05218 - REVISAR mg/g', 'PSOTRIOL'],
+    ['Delivered Dose: UMECLIDINIUM (BROMIDE)55 - REVISAR µg', 'LAVENTAIR ELLIPTA'],
+    ['1200 - REVISAR mg', 'PHESGO 600/600'],
+]) {
+    // `dose` comprueba las DOS puertas a la vez: la tarjeta y el chip de filtro.
+    dose(`no se muestra la anotación (${quien})`, raw, 'Dosis sin unificar');
+    cierto(`no se inventa una dosis a partir del primer número (${quien})`,
+        !/^\s*[\d.,]+\s*(mg|g|µg|mcg|ui|u)\b/i.test(app._canonicalDose(raw)), app._canonicalDose(raw));
+}
+// Agrupan juntos: si cada uno conservara su literal, serían 18 chips de filtro distintos, todos
+// con la palabra REVISAR dentro. Es el mismo motivo por el que existe la canonicalización.
+plain('los 18 caen en la MISMA clave de agrupación',
+    String(new Set(['40 - REVISAR mg', '50 - REVISAR mg', '2 - REVISAR mg']
+        .map(d => app._canonicalDose(d))).size), '1');
+// El literal íntegro sobrevive en el tooltip: no se tapa dato de la fuente, se deja de fingir que
+// es una dosis. Y el tooltip explica de quién es la anotación, o «sin unificar» sería otro texto
+// opaco más.
+{
+    const t = app._displayDose('40 - REVISAR mg').title;
+    cierto('el tooltip conserva el literal íntegro de CIMA', t.includes('"40 - REVISAR mg"'), t);
+    cierto('el tooltip dice de quién es la anotación', /AEMPS/.test(t) && /CIMA no publica una dosis única/.test(t), t);
+    cierto('el tooltip dice dónde está la dosis completa', /nombre del producto/.test(t), t);
+}
+// La palabra tiene que ir aislada: un principio activo que la contuviera dentro no puede
+// disparar esto. No hay ninguno hoy, pero la guarda es gratis y el fallo sería mudo.
+// (aquí el resultado correcto es "500 mg", igual que en "1 g paracetamol": lo que se comprueba
+//  es que un principio activo que CONTUVIERA la palabra no cae en la rama del centinela)
+dose('la palabra pegada a otra no dispara el centinela', '500 mg REVISARINA', '500 mg');
+// Y lo normal sigue igual: esta rama no puede tocar nada más que sus 18 casos.
+plain('una dosis normal no se ve afectada', app._canonicalDose('1 g paracetamol'), '1 g');
 
 // --- Memoización --------------------------------------------------------------
 // El canonicalizador se memoiza porque era el coste dominante del repintado: medido
