@@ -121,18 +121,39 @@ jobs:
       - name: ¿Ha cambiado el contenido?
         id: diff
         run: |
-          # Se compara SOLO `.fin`. `_meta.generated_at` cambia en cada pasada, así que comparar
-          # el fichero entero commitearía 640 KB y renovaría el `?v=` cada mes aunque no hubiera
-          # cambiado la financiación de nada — invalidando la caché de todos los navegadores.
-          if [ -f assets/data/financiacion-index.json ] \
-             && jq -S -c '.fin' /tmp/financiacion-index.json > /tmp/nuevo.fin.json \
-             && jq -S -c '.fin' assets/data/financiacion-index.json > /tmp/viejo.fin.json \
-             && cmp -s /tmp/nuevo.fin.json /tmp/viejo.fin.json; then
+          # NO se compara el fichero entero: `_meta.generated_at` cambia en cada pasada, así que
+          # eso commitearía 640 KB y renovaría el `?v=` cada mes aunque no hubiera cambiado la
+          # financiación de nada, invalidando la caché de todos los navegadores.
+          #
+          # Se comparan DOS cosas, y la segunda no es cosmética. `.fin` son los conteos; pero el
+          # `catalog_id` puede cambiar SIN que cambie ningún conteo —basta un CN que cambie de
+          # lista en BIFIMED y no esté en ninguna presentación comercializada de CIMA—. Si solo
+          # se mirara `.fin`, ese mes no se commitearía nada, el índice publicado conservaría el
+          # sello VIEJO, el cliente vería que no coincide con el que devuelve /bifimed/meta y
+          # APAGARÍA LA FACETA INDEFINIDAMENTE, sin que nada avisara: el mecanismo que existe para
+          # fallar en cerrado acabaría apagando la función para siempre. Lo encontró Codex en la
+          # revisión del 2026-09-10.
+          #
+          # También se compara el esquema: pasar de 7 a 8 columnas cambia lo que el cliente lee.
+          nuevo_fin=$(jq -S -c '.fin' /tmp/financiacion-index.json)
+          nuevo_sello=$(jq -r '._meta.catalog_id, ._meta.schema_version' /tmp/financiacion-index.json)
+          if [ -f assets/data/financiacion-index.json ]; then
+            viejo_fin=$(jq -S -c '.fin' assets/data/financiacion-index.json)
+            viejo_sello=$(jq -r '._meta.catalog_id, ._meta.schema_version' assets/data/financiacion-index.json)
+          else
+            viejo_fin=""; viejo_sello=""
+          fi
+          if [ "$nuevo_fin" = "$viejo_fin" ] && [ "$nuevo_sello" = "$viejo_sello" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Sin cambios en la financiación; no se commitea."
+            echo "Sin cambios en la financiación ni en el sello; no se commitea."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "Financiación cambiada; se commiteará el índice."
+            if [ "$nuevo_fin" = "$viejo_fin" ]; then
+              echo "Los conteos no cambian, pero SÍ el sello o el esquema: se commitea igual, o la"
+              echo "faceta quedaría apagada al no coincidir con /bifimed/meta."
+            else
+              echo "Financiación cambiada; se commiteará el índice."
+            fi
           fi
 
       - name: Commitear índice y subir el cache-bust
