@@ -3370,7 +3370,7 @@ class MedCheckApp {
         this._enterIndicationUniverse({ atcCode: null, query });
 
         try {
-            const data = await this.api._executeIndicationSearch(match, { comercializados: true });
+            const data = await this.api._executeIndicationSearch(match, { comercializados: this._soloComercializados() });
             this.lastIndicationResults = data;
             this.displayIndicationResults(data, label);
             this._warnUnverifiedSectionFilter(data);
@@ -3419,7 +3419,7 @@ class MedCheckApp {
         try {
             let allResults = [];
             for (const atcCode of atcCodes) {
-                const results = await this.api.searchByATC(atcCode, { comercializados: true, noTrack: true });
+                const results = await this.api.searchByATC(atcCode, { comercializados: this._soloComercializados(), noTrack: true });
                 if (results.resultados && results.resultados.length > 0) {
                     allResults = allResults.concat(results.resultados);
                 }
@@ -3607,7 +3607,7 @@ class MedCheckApp {
                 // No subcategories from maestras - try dynamic derivation from search results
                 console.log(`🔄 No maestras subcodes for ${atcCode}, trying dynamic derivation...`);
 
-                const searchResults = await this.api.searchByATC(atcCode, { comercializados: true, noTrack: true });
+                const searchResults = await this.api.searchByATC(atcCode, { comercializados: this._soloComercializados(), noTrack: true });
 
                 if (searchResults.resultados && searchResults.resultados.length > 0) {
                     const derivedSubcodes = this.api.extractATCSubcodes(searchResults.resultados, atcCode);
@@ -3765,6 +3765,33 @@ class MedCheckApp {
         this.groupingState?.expandedGroups?.clear?.();
     }
 
+    /**
+     * Repite la búsqueda de Indicaciones que está en pantalla, conservando las facetas.
+     *
+     * Existe para la casilla «Comercializado», que cambia el UNIVERSO y no la vista: lo que no se
+     * pidió a CIMA no está en memoria, así que ninguna faceta puede devolverlo.
+     *
+     * Hay dos maneras de haber llegado a esta pantalla y **las dos tienen que volver por su
+     * propio camino**: por un término del diccionario, o bajando por el árbol ATC. Reejecutar
+     * siempre por término perdería la miga de pan y el código ATC; reejecutar siempre por ATC
+     * perdería el filtro de sección 4.1 que algunas indicaciones llevan. Por eso se bifurca aquí
+     * y no en el listener.
+     */
+    _relanzarIndicacion() {
+        if (this.lastATCCode) {
+            return this.searchByATCCode(
+                this.lastATCCode, this.lastATCLabel, this.lastATCBreadcrumb || [], { preserveFilters: true });
+        }
+        const input = document.getElementById('indication-input');
+        // El input puede estar vacío si se llegó por el catálogo o por un enlace compartido: sin
+        // esto, `performIndicationSearch` leería una caja en blanco y contestaría «introduce al
+        // menos 2 caracteres» a alguien que solo ha marcado una casilla.
+        if (input && !input.value.trim() && this.lastIndicationQuery) {
+            input.value = this.lastIndicationQuery;
+        }
+        return this.performIndicationSearch({ preserveFilters: true });
+    }
+
     /** Escribe la URL de Indicaciones. Solo tras un render con éxito. */
     _commitIndicationURL({ replace = false } = {}) {
         if (this.isPopstateNavigation) return;
@@ -3815,7 +3842,7 @@ class MedCheckApp {
         `;
 
         try {
-            const data = await this.api.searchByATC(atcCode, { comercializados: true, noTrack: true });
+            const data = await this.api.searchByATC(atcCode, { comercializados: this._soloComercializados(), noTrack: true });
 
             // Create a synthetic matchedIndication for display
             data.matchedIndication = { label, atc: atcCode };
@@ -3867,7 +3894,7 @@ class MedCheckApp {
         `;
 
         try {
-            const data = await this.api.searchByIndication(query, { comercializados: true });
+            const data = await this.api.searchByIndication(query, { comercializados: this._soloComercializados() });
 
             if (data.ambiguous) {
                 // Varios candidatos empatados con planes ATC/4.1 distintos: elige el usuario.
@@ -3927,7 +3954,9 @@ class MedCheckApp {
                     <div class="empty-state">
                         <i class="fas fa-search-minus"></i>
                         <h3>Sin resultados</h3>
-                        <p>No hay medicamentos comercializados para "${query}"</p>
+                        <p>${this._soloComercializados()
+                            ? `No hay medicamentos comercializados para "${query}". Prueba a desmarcar «Comercializado» para incluir los autorizados que no se comercializan.`
+                            : `No hay ningún medicamento, ni comercializado ni retirado, para "${query}"`}</p>
                     </div>
                 `;
                 return;
@@ -12274,6 +12303,30 @@ ${materialesPlaceholder}
     }
 
     /**
+     * ¿La búsqueda pide SOLO comercializados?
+     *
+     * Es un filtro de CONSULTA, no de cliente: viaja como `comerc=1` a CIMA, así que los no
+     * comercializados no llegan siquiera al navegador y ninguna faceta puede devolverlos. Por eso
+     * no vive en `filterState` con los demás, sino en `lastSearchFilters`, que es donde el
+     * buscador guarda lo que condiciona la petición.
+     *
+     * **Y es el MISMO estado para las dos pestañas, a propósito** (encargo de Ernesto, 2026-09-11:
+     * «la filosofía es que tenga los mismos filtros que la de búsqueda»). Dos casillas con el
+     * mismo nombre y distinta memoria serían dos criterios: marcar una y ver otra cosa en la
+     * pestaña de al lado es el defecto que este proyecto persigue desde que la lista y la ficha
+     * discreparon sobre la financiación.
+     *
+     * Hasta el 2026-09-11 la búsqueda por indicación lo llevaba FIJO a `true`, en cinco sitios
+     * distintos y sin decirlo en pantalla: esa pestaña solo mostraba comercializados, el usuario
+     * no podía saberlo y no tenía forma de ver lo demás. Lo detectó Ernesto al querer comprobar
+     * por sí mismo si un corticoide del grupo II estaba realmente comercializado — es decir, el
+     * filtro invisible le impedía verificar justo lo que un agente le había afirmado.
+     */
+    _soloComercializados() {
+        return this.lastSearchFilters?.comerc !== false;
+    }
+
+    /**
      * Instantánea normalizada del estado de filtros de cliente. Fuente única: lo que
      * lean el render, los contadores, la URL y las pruebas es siempre esto.
      */
@@ -12705,8 +12758,10 @@ ${materialesPlaceholder}
         // de indicaciones — que es justo lo que Ernesto encontró el 2026-09-09: un filtro de
         // financiación que existía en una pantalla y no en la otra, sin que nadie lo hubiera
         // decidido. Los filtros no pueden variar por pantalla sin una razón dicha en voz alta.
-        const hayCasillasPropias = this._financingIndexUsable
-            || nH > 0 || nDH > 0 || !snap.mostrarH || !snap.mostrarDH;
+        // (La bandera `hayCasillasPropias` que decidía si pintar este bloque se retiró el
+        // 2026-09-11: con «Comercializado» siempre visible, el contenedor también lo está
+        // siempre. Se quita en vez de dejarla sin uso, que es como se acumulan condiciones que
+        // nadie se atreve a tocar porque ya no se sabe qué decidían.)
 
         // Forma farmacéutica y dosis son discriminadores clínicos de primer nivel ("quiero
         // sobres, efervescente…", "quiero los de 20 mg") → visibles sin desplegar nada. En
@@ -12735,9 +12790,31 @@ ${materialesPlaceholder}
                             ${formOptions}
                         </select>` : ''}
                     </div>
-                    ${(showEFG && (efgCount > 0 || recetaCount > 0 || biosimilarCount > 0 || snap.generic || snap.receta || snap.biosimilar || paralelasEnUniverso > 0))
-                      || hayCasillasPropias ? `
+                    ${/*
+                        La condición era la lista de casillas que PODÍAN aparecer, y ahora hay una
+                        que aparece siempre —«Comercializado»—, así que el contenedor también. Si
+                        se dejara condicionado, en una búsqueda sin genéricos, sin receta y sin
+                        biosimilares el aviso de que se está filtrando desaparecería justo donde
+                        más falta hace: en un universo pequeño y aparentemente completo.
+                    */''}
+                    ${true ? `
                     <div class="control-section" style="gap:var(--space-md);">
+                        ${/*
+                            SIEMPRE VISIBLE, a diferencia de las demás casillas, que aparecen solo
+                            si su recuento es mayor que cero. Aquí el recuento no puede calcularse
+                            —los no comercializados no se han pedido a CIMA, así que no hay nada
+                            que contar— y justamente por eso tiene que verse: su trabajo no es
+                            ofrecer un filtro más, es DECLARAR que hay uno puesto. Una casilla que
+                            solo apareciera cuando ya está desmarcada nunca avisaría de nada.
+
+                            No lleva número por lo mismo: un contador exigiría traer el universo
+                            entero de antemano, que es justo el coste que esta casilla permite
+                            asumir solo cuando se pide.
+                        */''}
+                        <label class="search-option" title="Marcada (lo normal): solo se piden a CIMA los medicamentos comercializados hoy. Desmárcala para ver también los autorizados que no se comercializan — la búsqueda se repite y tarda más, porque trae muchos más productos.">
+                            <input type="checkbox" id="comerc-filter" ${this._soloComercializados() ? 'checked' : ''}>
+                            <span>Comercializado</span>
+                        </label>
                         ${showEFG && (efgCount > 0 || snap.generic) ? `<label class="search-option" title="Solo genéricos">
                             <input type="checkbox" id="efg-filter" ${snap.generic ? 'checked' : ''}>
                             <span>Genérico <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${efgCount}</span></span>
@@ -13381,6 +13458,22 @@ ${materialesPlaceholder}
         // Banda de dosis (misma semántica que vía y PA: Ctrl+clic para varias)
         this._wireDoseChips(document, () => this._applyIndicationFacet(data, searchQuery));
         this._wireGalenicChips(document, () => this._applyIndicationFacet(data, searchQuery));
+
+        // Comercializado: es el ÚNICO de este panel que NO es una faceta de cliente. Los no
+        // comercializados no están en `data` —no se pidieron a CIMA—, así que filtrarlos aquí no
+        // los haría aparecer: hay que REPETIR la consulta. De ahí que llame a la búsqueda y no a
+        // `_applyIndicationFacet` como todos sus vecinos.
+        //
+        // `preserveFilters: true` porque cambiar el universo no es cambiar de pregunta: las
+        // facetas que el usuario tuviera puestas (forma, dosis, vía…) siguen valiendo sobre el
+        // universo nuevo, y perderlas al marcar una casilla se leería como un fallo.
+        document.getElementById('comerc-filter')?.addEventListener('change', (e) => {
+            this.lastSearchFilters.comerc = e.target.checked;
+            if (!e.target.checked) {
+                this.showToast('Incluyendo también los NO comercializados: la búsqueda tarda más', 'info');
+            }
+            this._relanzarIndicacion();
+        });
 
         // EFG toggle
         document.getElementById('efg-filter')?.addEventListener('change', (e) => {
