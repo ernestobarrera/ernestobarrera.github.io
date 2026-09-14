@@ -9388,10 +9388,14 @@ class MedCheckApp {
             ? med.principiosActivos.map(pa => `${pa.nombre}${pa.cantidad ? ' ' + pa.cantidad : ''} `).join(', ')
             : '-';
 
+        // `a.nombre` puede faltar: desde que el índice ATC resuelve la jerarquía sin nomenclatura
+        // (2026-09-14), un ATC puede llegar aquí sin nombre, y `null.replace(...)` tumbaba la
+        // pestaña entera. Se cae al código, que siempre está, en vez de a una excepción.
         const atcs = med.atcs
-            ? med.atcs.map(a =>
-                `<button class="atc-nav-link" onclick="app.navigateToATCFromModal('${a.codigo}', '${a.nombre.replace(/'/g, "\\'")}')" title="Ver medicamentos con ${a.nombre}">${a.codigo} - ${a.nombre}</button>`
-              ).join('<br>')
+            ? med.atcs.map(a => {
+                const etiqueta = a.nombre || a.codigo;
+                return `<button class="atc-nav-link" onclick="app.navigateToATCFromModal('${a.codigo}', '${String(etiqueta).replace(/'/g, "\\'")}')" title="Ver medicamentos con ${etiqueta}">${a.codigo}${a.nombre ? ` - ${a.nombre}` : ''}</button>`;
+              }).join('<br>')
             : '-';
 
         const formaFarm = med.formaFarmaceutica?.nombre || '-';
@@ -12299,7 +12303,11 @@ ${materialesPlaceholder}
                             || atcs.find(a => a?.nivel === 3)
                             || atcs[0];
                         const code = porNivel?.codigo || '';
-                        key = `${code} - ${porNivel?.nombre || 'Sin nombre'}`;
+                        // Sin nomenclatura, el título es el CÓDIGO, no la frase «Sin nombre». El
+                        // código identifica el grupo y un médico lo reconoce; «Sin nombre» no
+                        // informa de nada y ocupa el sitio del dato. Se ve cuando CIMA no ha podido
+                        // dar el nombre (ver `hydrateAtcNames`), no como estado normal.
+                        key = porNivel?.nombre ? `${code} - ${porNivel.nombre}` : code;
                         subtitle = code;
                     }
                     break;

@@ -785,6 +785,137 @@ class CimaAPI {
      *
      * Contrato: docs/medcheck/private/2026-09-14_contrato-indices-precompilados.md
      */
+    /**
+     * Longitud del código ATC -> nivel de la clasificación. Es la inversa de `getNextATCLevel`,
+     * y la estructura es POSICIONAL por definición de la OMS: 1 letra (anatómico), 2 dígitos
+     * (terapéutico), 1 letra (farmacológico), 1 letra (químico), 2 dígitos (principio activo).
+     */
+    static get ATC_NIVEL_POR_LONGITUD() {
+        return { 1: 1, 3: 2, 4: 3, 5: 4, 7: 5 };
+    }
+
+    /**
+     * Reconstruye la jerarquía ATC tal y como la devuelve CIMA, a partir del código suelto que
+     * guarda el índice precompilado.
+     *
+     * POR QUÉ EXISTE, que es un defecto medido y no una precaución. El índice almacena un solo
+     * código —`A10BJ06`— mientras que el detalle de CIMA devuelve los tres niveles con su nombre
+     * y su `nivel`:
+     *
+     *     [{codigo:'A10B', nivel:3}, {codigo:'A10BJ', nivel:4}, {codigo:'A10BJ06', nivel:5}]
+     *
+     * Al resolver por índice se escribía `[{codigo:'A10BJ06'}]` a secas, y eso rompía a todo el que
+     * lee `med.atcs` esperando la forma de CIMA. Medido el 2026-09-14 sobre los 263 prefijos de la
+     * ontología clínica (17.996 medicamentos, 83,8 % resueltos por índice):
+     *
+     *   - la agrupación por ATC caía al nivel 5, que es el principio activo — «agrupar por él es
+     *     no agrupar», dice el propio comentario de `_groupResults`— y perdía el título: 1.475
+     *     claves distintas, TODAS «Sin nombre». Lo vio Ernesto en producción con los arGLP-1;
+     *   - `med.atcs[0]` cambiaba de significado según el camino: el nivel 3 por CIMA, el nivel 5
+     *     por índice. Lo leen la tarjeta, el badge EML y la ficha;
+     *   - `med.atcs.find(a => a.nivel === 5)` devolvía vacío, porque no había `nivel`: es el código
+     *     con el que se busca la utilización observada (DHD);
+     *   - las comparaciones exactas contra un código de nivel 4 no casaban nunca.
+     *
+     * La derivación es determinista y está VERIFICADA contra CIMA, no supuesta: en 54 medicamentos
+     * muestreados al azar, 53 devuelven exactamente `[3, 4, 5]` y el restante `[3, 4]` porque su
+     * código es de nivel 4 (`R05X_`). El nivel 5 de CIMA coincide con el código del índice en los
+     * 53 que lo tienen.
+     *
+     * El `nombre` NO se inventa: se deja `null` y lo rellena quien pueda (`hydrateAtcNames`).
+     * Derivar el código es aritmética sobre una estructura posicional; derivar el nombre sería
+     * escribir nosotros una nomenclatura oficial que no es nuestra.
+     */
+    static atcJerarquia(codigo) {
+        const code = String(codigo ?? '').trim().toUpperCase();
+        const nivel = CimaAPI.ATC_NIVEL_POR_LONGITUD[code.length];
+        // Un código que no encaja en ninguna longitud de la clasificación no se descompone: se
+        // devuelve tal cual y sin `nivel`, que es la forma de decir "esto no lo entiendo" sin
+        // perderlo. El Nomenclátor trae `XXXXXX` en 5 registros (medido 2026-09-14) y eso no es
+        // un ATC: inventarle una jerarquía sería fabricar un grupo terapéutico inexistente.
+        if (!nivel || !/^[A-Z][0-9A-Z_]*$/.test(code)) return code ? [{ codigo: code, nombre: null }] : [];
+        // De nivel 3 hacia abajo, que es lo que CIMA devuelve. Un código más corto que el nivel 3
+        // se emite solo a sí mismo en vez de inventarle ancestros que CIMA tampoco da.
+        const longitudes = [4, 5, 7].filter(l => l <= code.length);
+        const cadena = (longitudes.length ? longitudes : [code.length])
+            .map(l => ({ codigo: code.slice(0, l), nombre: null, nivel: CimaAPI.ATC_NIVEL_POR_LONGITUD[l] }));
+        return cadena;
+    }
+
+    /**
+     * Pone NOMBRE a los códigos ATC que el índice solo sabe numerar, preguntándoselo a CIMA, que
+     * es su autoridad. Rellena hasta el nivel 4 —el subgrupo terapéutico, que es el que agrupa y
+     * titula— y deja el nivel 5 sin nombre a propósito: es el principio activo, la ficha del
+     * medicamento recarga su detalle completo de CIMA al abrirse, y nombrarlos todos costaría
+     * justo la petición por medicamento que el índice existe para evitar.
+     *
+     * EL COSTE, medido sobre el índice el 2026-09-14 y no estimado: una búsqueda pide UNA petición
+     * por subgrupo distinto, no por medicamento. «Hipertensión» —el peor caso realista, 2.700
+     * medicamentos— tiene 38 subgrupos; «diabetes» 13; los arGLP-1, 1. Son 38 peticiones frente a
+     * las 2.428 de antes del índice, y a la segunda búsqueda son 0 porque la caché ya los tiene.
+     * Todo el índice reúne 667 subgrupos, así que con el uso normal la caché acaba completa.
+     *
+     * Una petición devuelve la jerarquía entera, así que nombrar un subgrupo nombra de paso a su
+     * grupo anatómico-terapéutico. Si CIMA no responde, el nombre se queda en `null` y se ve el
+     * código: degradar a un título más pobre, nunca a uno inventado.
+     */
+    async hydrateAtcNames(meds, { max = 60, batch = 10 } = {}) {
+        if (!Array.isArray(meds) || !meds.length) return;
+        const cache = this._atcNameCacheRead();
+
+        // Qué falta por nombrar, y con qué medicamento se puede preguntar.
+        const representante = new Map(); // codigo (nivel<=4) -> nregistro que lo lleva
+        for (const med of meds) {
+            for (const a of (Array.isArray(med?.atcs) ? med.atcs : [])) {
+                if (!a?.codigo || a.nombre || !(a.nivel <= 4)) continue;
+                if (cache[a.codigo]) { a.nombre = cache[a.codigo]; continue; }
+                if (!representante.has(a.codigo) && med.nregistro) representante.set(a.codigo, med.nregistro);
+            }
+        }
+        if (representante.size) {
+            // UNA petición por medicamento representante, no por código: el detalle devuelve la
+            // jerarquía entera, así que el mismo medicamento que nombra el subgrupo nombra también
+            // su grupo. Sin esta deduplicación, `D07AA` y `D07A` pedirían dos veces el mismo
+            // `nregistro` por ir en el mismo lote.
+            const porNregistro = [...new Set(representante.values())].slice(0, max);
+            for (let i = 0; i < porNregistro.length; i += batch) {
+                const lote = porNregistro.slice(i, i + batch);
+                await Promise.all(lote.map(async (nregistro) => {
+                    try {
+                        const full = await this.getMedicamento(nregistro, { headers: { 'X-MC-Autocomplete': '1' } });
+                        for (const a of (Array.isArray(full?.atcs) ? full.atcs : [])) {
+                            if (a?.codigo && a?.nombre) cache[a.codigo] = a.nombre;
+                        }
+                    } catch (e) { /* sin nombre se ve el código; no es motivo para romper la búsqueda */ }
+                }));
+            }
+            this._atcNameCacheWrite(cache);
+        }
+
+        // Aplicar a TODOS, incluidos los que ya venían de CIMA con su nombre puesto.
+        for (const med of meds) {
+            for (const a of (Array.isArray(med?.atcs) ? med.atcs : [])) {
+                if (a && !a.nombre && cache[a.codigo]) a.nombre = cache[a.codigo];
+            }
+        }
+    }
+
+    /** Caché de nombres ATC. Se guardan aparte de los medicamentos porque son una nomenclatura,
+     *  no un dato del medicamento: la OMS la revisa una vez al año. */
+    _atcNameCacheRead() {
+        try {
+            const raw = JSON.parse(localStorage.getItem('mc_atc_names') || '{}');
+            const TTL = 90 * 24 * 60 * 60 * 1000;
+            if (!raw || typeof raw !== 'object' || !raw.t || (Date.now() - raw.t) > TTL) return {};
+            return (raw.n && typeof raw.n === 'object') ? raw.n : {};
+        } catch (e) { return {}; }
+    }
+
+    _atcNameCacheWrite(nombres) {
+        try { localStorage.setItem('mc_atc_names', JSON.stringify({ t: Date.now(), n: nombres })); }
+        catch (e) { /* cuota llena o almacenamiento bloqueado: se vuelve a preguntar, nada se rompe */ }
+    }
+
     async loadAtcIndex(url = 'assets/data/atc-index.json') {
         if (this._atcIndexPromise) return this._atcIndexPromise;
         const MAX_DESFASE_DIAS = 3;
@@ -876,7 +1007,14 @@ class CimaAPI {
                         resueltos++;
                         const codigos = Array.isArray(entrada) ? entrada : [entrada];
                         if (codigos.some(c => c.toUpperCase().startsWith(upperCode))) {
-                            med.atcs = codigos.map(codigo => ({ codigo }));
+                            // La MISMA forma que devuelve CIMA, no un código suelto: si los dos
+                            // caminos no producen la misma estructura, todo lo que lee `med.atcs`
+                            // se comporta distinto según por dónde entró el medicamento. Ver
+                            // `atcJerarquia` para los cuatro defectos que eso causó.
+                            const vistos = new Set();
+                            med.atcs = codigos
+                                .flatMap(c => CimaAPI.atcJerarquia(c))
+                                .filter(a => !vistos.has(a.codigo) && vistos.add(a.codigo));
                             filtered.push(med);
                         } else {
                             rejected++;
@@ -930,6 +1068,11 @@ class CimaAPI {
             }
 
             allResults = filtered;
+
+            // Los resueltos por índice traen la jerarquía pero no la nomenclatura. Sin esto la
+            // agrupación por ATC titula con el código desnudo, que es lo que Ernesto encontró en
+            // producción el 2026-09-14: 1.475 grupos «Sin nombre».
+            await this.hydrateAtcNames(allResults);
         }
 
         // Deduplicar por nregistro
