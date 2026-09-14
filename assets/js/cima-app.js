@@ -5368,6 +5368,19 @@ class MedCheckApp {
 
                 <div class="combo-ai-primary">
                     <div class="combo-ai-action-head">
+                        <strong><i class="fas fa-diagram-project"></i> Cascadas de prescripción</strong>
+                        <span>Pares en los que un fármaco de la lista podría estar tratando el efecto adverso de otro, según cascadas descritas en la literatura. No evalúa a un paciente.</span>
+                    </div>
+                    <div class="combo-ai-buttons">
+                        <button class="btn btn-ai-perplexity" type="button" onclick="app.openComboEngine('cascada','perplexity')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre Perplexity (Ctrl+V si no se precarga)."><i class="fas fa-up-right-from-square"></i> Perplexity</button>
+                        <button class="btn btn-ai-chatgpt" type="button" onclick="app.openComboEngine('cascada','chatgpt')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt y abre ChatGPT (Ctrl+V si no se precarga)."><i class="fas fa-up-right-from-square"></i> ChatGPT</button>
+                        <button class="btn btn-secondary" type="button" onclick="app.copyComboPrompt('cascada')" ${n < 2 ? 'disabled' : ''} title="Copia el prompt para pegarlo en cualquier IA (Claude, Gemini, Copilot…)"><i class="fas fa-clipboard"></i> Copiar</button>
+                    </div>
+                    ${n < 2 ? '<p class="combo-ai-need">Añade al menos 2 fármacos para buscar cascadas.</p>' : ''}
+                </div>
+
+                <div class="combo-ai-primary">
+                    <div class="combo-ai-action-head">
                         <strong><i class="fas fa-user-md"></i> Fármaco–síntoma</strong>
                         <span>Posibles asociaciones entre la combinación y un síntoma (como reacción adversa).</span>
                     </div>
@@ -5794,7 +5807,7 @@ class MedCheckApp {
     }
 
     _validateComboAi(kind) {
-        if (kind === 'interactions' || kind === 'mapa') {
+        if (kind === 'interactions' || kind === 'mapa' || kind === 'cascada') {
             if (this.comboDrugList.length < 2) { this.showToast('Añade al menos 2 fármacos', 'warning'); return false; }
         } else {
             if (this.comboDrugList.length < 1) { this.showToast('Añade al menos 1 fármaco', 'warning'); return false; }
@@ -5864,6 +5877,12 @@ class MedCheckApp {
                 'Tarea: resume información referenciada sobre posibles INTERACCIONES entre estos fármacos, incluyendo las descritas por CLASE o grupo farmacológico (no solo por molécula).',
                 'Para cada par o grupo relevante: mecanismo descrito · posible relevancia clínica descrita · señales clínicas o parámetros que las fuentes mencionan · solidez de la evidencia, CITANDO FUENTES CONCRETAS (con URL cuando sea posible).'
             );
+        } else if (kind === 'cascada') {
+            lines.push(
+                'Tarea: revisa esta lista buscando PARES que coincidan con CASCADAS DE PRESCRIPCIÓN descritas en la literatura, es decir, un fármaco inicial cuyo efecto adverso se trata añadiendo otro fármaco que también está en la lista, en lugar de revisarse el primero. No asumas que existe un paciente concreto ni ordenes retirar ni cambiar nada.',
+                'Para cada par candidato: (1) fármaco inicial → efecto adverso descrito → fármaco subsecuente presente en la lista; (2) qué fuente describe esa cascada (lista PIPC del panel internacional, STOPP/START, Beers, estudios poblacionales de simetría de secuencia), CON URL y fecha; (3) qué frecuencia o fuerza de asociación da la fuente, si la da; (4) qué explicación alternativa legítima tiene esa combinación (indicación propia del segundo fármaco, comorbilidad esperable).',
+                'Señala explícitamente que el dato decisivo es la SECUENCIA —cuál de los dos se inició antes y cuánto tiempo medió—, porque es lo que separa una cascada de una comorbilidad tratada, y MedCheck no conoce esa secuencia. Enumera qué pares habría que comprobar por ese orden temporal. Si un par solo tiene plausibilidad farmacológica y ninguna fuente que lo describa como cascada, dilo en vez de presentarlo como descrito.'
+            );
         } else if (kind === 'mapa') {
             lines.push(
                 'Tarea: ORDENA documentalmente esta lista de fármacos por su estructura farmacológica, a partir de fuentes oficiales. No asumas que existe un paciente concreto ni ordenes retirar, cambiar o priorizar nada.',
@@ -5932,6 +5951,7 @@ class MedCheckApp {
             { id: 'comparacion', label: 'Comparación con la 1ª línea', desc: 'no solo frente a placebo' },
             { id: 'dosis', label: 'Dosis y administración', desc: 'posología, ajustes y detalles de prescripción' },
             { id: 'poem', label: '¿Cambia la práctica? (POEM)', desc: 'evidencia orientada al paciente, no a subrogados' },
+            { id: 'cascada', label: 'Cascadas de prescripción', desc: 'qué efecto adverso suyo se acaba tratando con otro fármaco' },
             { id: 'deprescripcion', label: 'Deprescripción (criterios de la clase)', desc: 'STOPP/START y Beers, como documentación' },
         ];
         const scenarios = [
@@ -6004,9 +6024,10 @@ class MedCheckApp {
             comparacion: 'COMPARACIÓN: cómo se compara con la alternativa de primera línea según las fuentes (eficacia en absolutos, seguridad, comodidad y coste si la fuente lo da), no solo frente a placebo.',
             dosis: 'DOSIS Y ADMINISTRACIÓN: posología, ajustes (renal/hepático/edad), forma de administración y los detalles de prescripción que habría que buscar en otra fuente, según ficha técnica (CIMA 4.2) y guías.',
             poem: '¿CAMBIA LA PRÁCTICA? (POEM): ¿la evidencia es patient-oriented (mortalidad, morbilidad, síntomas, calidad de vida, ingresos, efectos adversos relevantes) o solo orientada a enfermedad/subrogados? Clasifícala (POEM sólido / POEM limitado / orientada a enfermedad / señal de seguridad / recomendación de guía / evidencia insuficiente), indica qué desenlaces mide y en qué población se estudió, y, según las fuentes, si ese hallazgo confirmaría, cambiaría o no modificaría la práctica habitual y en qué población se sostiene. No dirijas la conducta de un paciente concreto.',
+            cascada: 'CASCADAS DE PRESCRIPCIÓN (documental): qué cascadas de prescripción describen las fuentes con este fármaco o su clase, en las DOS direcciones. (a) COMO FÁRMACO INICIAL: qué efectos adversos suyos suelen malinterpretarse como un problema nuevo y qué fármaco o clase se añade entonces para tratarlos, con la frecuencia o la fuerza de asociación que dé la fuente. (b) COMO FÁRMACO SUBSECUENTE: si este fármaco figura en cascadas descritas como el que se AÑADE, qué fármacos iniciales convendría mirar antes de darlo por indicado. Busca listas y estudios publicados de prescribing cascades (lista PIPC del panel internacional de expertos, STOPP/START, Beers, estudios poblacionales de simetría de secuencia) y cita cada una con enlace y fecha. Distingue la cascada DESCRITA en una fuente de la mera plausibilidad farmacológica, y señala en cada caso qué combinación puede ser legítima por indicación propia del segundo fármaco. Como documentación sobre la clase, no como evaluación de un paciente concreto.',
             deprescripcion: 'DEPRESCRIPCIÓN (documental): qué describen los criterios vigentes (STOPP/START, Beers) y las guías de deprescripción sobre este fármaco o su clase — en qué situaciones lo señalan como potencialmente inadecuado, y qué advertencias dan sobre su retirada (incluido si las fuentes describen retirada gradual y los efectos de retirada o reaparición a vigilar). Como documentación de las fuentes sobre la clase, no como pauta ni secuencia de retirada para un paciente concreto.'
         };
-        const order = ['eficacia', 'comparacion', 'poem', 'dosis', 'monitorizacion', 'seguridad', 'deprescripcion'];
+        const order = ['eficacia', 'comparacion', 'poem', 'dosis', 'monitorizacion', 'seguridad', 'cascada', 'deprescripcion'];
         const tasks = order.filter(id => selected.includes(id)).map((id, i) => `${i + 1}. ${BLOCKS[id]}`);
 
         const lines = [
