@@ -165,6 +165,70 @@ def check_repo_data(now):
             estado = "OK"
         lines.append(f"[{estado}] {nombre}: {age_days:.1f} dias (umbral {umbral}, campo {campo})")
 
+    # (d) Contrato de vistas materializadas (2026-09-14).
+    #
+    # `max_age_days` vigila la edad del FICHERO; esto vigila la del DATO que lleva dentro. Son
+    # cosas distintas: una vista regenerada hoy puede contener un snapshot de hace semanas, y
+    # vigilar la fecha de generacion propia es vigilar nuestro reloj, no el de la fuente. La
+    # leccion ya estaba aprendida para `utilizacion` —donde `fuente_fecha` va primero y
+    # `generated_at` esta fuera de la lista a proposito— y no se aplicaba en ningun otro sitio.
+    #
+    # Contrato: docs/medcheck/private/2026-09-14_contrato-indices-precompilados.md
+    for nombre in sorted(en_disco & set(manifiesto)):
+        decl = manifiesto[nombre] or {}
+        if decl.get("mantenimiento") != "auto":
+            continue
+
+        desfase = decl.get("desfase_dato_max_days")
+        campo_fuente = decl.get("campo_fecha_fuente")
+
+        if desfase is not None and not campo_fuente:
+            # Un umbral sin decir donde esta la fecha es un umbral que no vigila nada.
+            problems.append(
+                f"{nombre}: declara desfase_dato_max_days={desfase} pero no dice en que campo "
+                f"esta la fecha de la fuente (campo_fecha_fuente)"
+            )
+            lines.append(f"[ERROR]   {nombre}: desfase sin campo_fecha_fuente")
+        elif desfase is not None:
+            try:
+                contenido = json.loads((DATA_DIR / nombre).read_text(encoding="utf-8"))
+            except Exception as exc:  # noqa: BLE001
+                problems.append(f"{nombre}: no se pudo leer para el desfase del dato ({exc})")
+                lines.append(f"[ERROR]   {nombre}: ilegible")
+                contenido = None
+
+            if contenido is not None:
+                dt = parse_date(_dig(contenido, campo_fuente))
+                if dt is None:
+                    problems.append(f"{nombre}: sin fecha valida del dato en '{campo_fuente}'")
+                    lines.append(f"[ERROR]   {nombre}: falta o no parsea {campo_fuente}")
+                else:
+                    dias = (now - dt).total_seconds() / 86400
+                    if dias > desfase:
+                        problems.append(
+                            f"{nombre}: el DATO tiene {dias:.1f} dias "
+                            f"(desfase maximo {desfase}; {campo_fuente})"
+                        )
+                        estado_dato = "DATO VIEJO"
+                    else:
+                        estado_dato = "DATO OK"
+                    lines.append(
+                        f"[{estado_dato}] {nombre}: {dias:.1f} dias "
+                        f"(maximo {desfase}, campo {campo_fuente})"
+                    )
+
+        # Degradacion: se declara o se dice que no. Callarlo no vale, pero tampoco es un fallo
+        # que deba despertar a nadie de madrugada: es deuda visible en el informe.
+        if "degradacion" not in decl:
+            lines.append(f"[SIN CONTRATO] {nombre}: no declara degradacion")
+        elif decl.get("degradacion") is None:
+            lines.append(f"[SIN DEGRADACION] {nombre}: declarado sin degradacion")
+
+        # Un sello escrito y que nadie compara es el sello de un padre, no el de la vista.
+        for sello, contra in (decl.get("sellos") or {}).items():
+            if not contra:
+                lines.append(f"[SELLO SIN CONTRASTAR] {nombre}: {sello}")
+
     return problems, lines
 
 

@@ -31,6 +31,11 @@ jobs:
         with:
           python-version: '3.12'
 
+      # Antes de vigilar nada, comprobar que el vigilante sigue vigilando. Es barato (no toca red
+      # ni secretos) y evita el caso peor: un watchdog roto que sale en verde todas las mañanas.
+      - name: Banco de pruebas del watchdog
+        run: python scripts/watchdog/test_check_freshness.py
+
       - name: Comprobar frescura de las fuentes KV
         env:
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}

@@ -3,7 +3,11 @@
   "_campos": {
     "mantenimiento": "auto = lo regenera un workflow · humano = lo decide una persona y no envejece contra una fuente externa",
     "campo_fecha": "ruta del campo con la fecha dentro del propio fichero; null si no declara",
-    "max_age_days": "umbral de aviso; null = no se vigila por edad (declararlo así es una afirmación, no un olvido)"
+    "max_age_days": "umbral de aviso; null = no se vigila por edad (declararlo así es una afirmación, no un olvido)",
+    "desfase_dato_max_days": "dias de retraso que admite el DATO para su funcion, decidido por lo que afirma y no heredado de la cadencia. Distinto de max_age_days, que mide la edad del FICHERO: uno vigila el reloj de la fuente, el otro el nuestro. null = no se vigila el desfase del dato (es una afirmacion, no un olvido). Contrato: docs/medcheck/private/2026-09-14_contrato-indices-precompilados.md",
+    "campo_fecha_fuente": "ruta del campo con la fecha del DATO (la que publica la fuente), no la de generacion propia. Si coincide con campo_fecha es porque el crawl propio ES la captura y no hay fecha externa: declararlo asi es deliberado.",
+    "degradacion": "que hace el cliente cuando la vista no es confiable. null = sin declarar, y el watchdog lo dice: no degradar tambien es una afirmacion.",
+    "sellos": "sellos de linaje que escribe la vista. valor = contra que se contrasta; null = escrito y NO contrastado, que el watchdog avisa. Un sello que nadie compara es el sello de un padre, no el de la vista."
   },
   "ficheros": {
     "financiacion-index.json": {
@@ -12,28 +16,46 @@
       "workflow": ".github/workflows/etl-financiacion.yml",
       "campo_fecha": "_meta.generated_at",
       "max_age_days": 40,
-      "nota": "Se genera encadenado al ETL de BIFIMED (workflow_run), no por calendario: el índice cruza el catálogo de ese run concreto, y esperar a un día fijo abriría una ventana con el catálogo nuevo y el índice viejo. Que envejezca no hace que filtre mal: el cliente compara el `catalog_id` del índice con el que devuelve /bifimed/meta y apaga la faceta si no coinciden, así que un índice rancio deja de filtrar en vez de esconder resultados. El watchdog avisa antes de llegar ahí."
+      "nota": "Se genera encadenado al ETL de BIFIMED (workflow_run), no por calendario: el índice cruza el catálogo de ese run concreto, y esperar a un día fijo abriría una ventana con el catálogo nuevo y el índice viejo. Que envejezca no hace que filtre mal: el cliente compara el `catalog_id` del índice con el que devuelve /bifimed/meta y apaga la faceta si no coinciden, así que un índice rancio deja de filtrar en vez de esconder resultados. El watchdog avisa antes de llegar ahí.",
+      "desfase_dato_max_days": 40,
+      "campo_fecha_fuente": "_meta.bifimed_download_date",
+      "degradacion": "El filtro falla en cerrado y la lista en abierto: si el catalog_id del indice no coincide con el de /bifimed/meta, no se pinta la casilla y se muestran todos los resultados. Un indice rancio deja de filtrar, nunca esconde.",
+      "sellos": {
+        "catalog_id": "cliente contra /bifimed/meta (cima-app.js:10653)",
+        "nomenclator_catalog_id": null
+      }
     },
     "packs-index.json": {
       "fuente": "CIMA REST /medicamentos + /presentaciones (comerc=1)",
       "mantenimiento": "auto",
       "workflow": ".github/workflows/etl-packs.yml",
       "campo_fecha": "_meta.generated_at",
-      "max_age_days": 40
+      "max_age_days": 40,
+      "desfase_dato_max_days": 40,
+      "campo_fecha_fuente": "_meta.generated_at",
+      "degradacion": null,
+      "nota": "campo_fecha_fuente coincide con campo_fecha a proposito: la fuente (CIMA REST) no publica fecha de corte, asi que el crawl propio ES la captura del dato. No hay reloj externo que vigilar."
     },
     "materiales-catalog.json": {
       "fuente": "CIMA REST /materiales (+ nregistro y ATC por medicamento)",
       "mantenimiento": "auto",
       "workflow": ".github/workflows/etl-materiales.yml",
       "campo_fecha": "_meta.generated_at",
-      "max_age_days": 40
+      "max_age_days": 40,
+      "desfase_dato_max_days": 40,
+      "campo_fecha_fuente": "_meta.generated_at",
+      "degradacion": null,
+      "nota": "campo_fecha_fuente coincide con campo_fecha a proposito: la fuente (CIMA REST) no publica fecha de corte, asi que el crawl propio ES la captura del dato. No hay reloj externo que vigilar."
     },
     "medynut-index.json": {
       "fuente": "medynut.com (SENPE) — rutas de ficha, avaladas por igualdad exacta contra la maestra de principios activos de CIMA. No contiene NINGUNA asociacion farmaco-efecto suya",
       "mantenimiento": "auto",
       "workflow": ".github/workflows/etl-medynut.yml",
       "campo_fecha": "_meta.generated_at",
-      "max_age_days": 40
+      "max_age_days": 40,
+      "desfase_dato_max_days": 40,
+      "campo_fecha_fuente": "_meta.generated_at",
+      "degradacion": null
     },
     "clinical-ontology.json": {
       "fuente": "Ontología indicación→ATC, curada a mano",
