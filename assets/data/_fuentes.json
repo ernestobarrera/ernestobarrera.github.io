@@ -100,6 +100,21 @@
       "mantenimiento": "humano",
       "campo_fecha": null,
       "max_age_days": null
+    },
+    "atc-index.json": {
+      "fuente": "AEMPS — Nomenclator de prescripcion (prescripcion.zip / Prescripcion.xml). NO CIMA REST, que queda como vigilancia cruzada.",
+      "mantenimiento": "auto",
+      "workflow": ".github/workflows/etl-atc-index.yml",
+      "campo_fecha": "_meta.generated_at",
+      "max_age_days": 7,
+      "campo_fecha_fuente": "_meta.listprescriptiondate",
+      "desfase_dato_max_days": 3,
+      "degradacion": "Si el indice falta, caduca o no supera su contrato, la busqueda por indicacion vuelve al verificador en vivo contra CIMA (una peticion de detalle por medicamento). Si tampoco puede verificar, declara la busqueda exacta no disponible en vez de presentar candidatos aproximados como coincidencias.",
+      "sellos": {
+        "zip_sha256": "identidad del ZIP de origen",
+        "projection_sha256": "identidad de la vista publicada"
+      },
+      "nota": "Un nregistro AUSENTE no es un medicamento sin ATC: es un medicamento a verificar en vivo. El desfase de 3 dias es DECIDIDO (la fuente publica a diario), no heredado de una cadencia mensual. Vigilancia cruzada del sesgo de falso negativo: scripts/etl-atc-index/verificar_cruzado.py"
     }
   }
 }

@@ -1,0 +1,127 @@
+name: ETL índice ATC (Nomenclátor de prescripción AEMPS)
+
+on:
+  # DIARIO, y esa es la diferencia con los demás índices de este repo. La fuente se publica cada
+  # día y lo dice en su cabecera (`listprescriptiondate`), así que el desfase declarado en el
+  # contrato es de 3 días, no los 40 que heredaron las vistas de cadencia mensual.
+  schedule:
+    - cron: '37 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  # `contents: write` porque esto COMMITEA: el índice es un asset estático que sirve GitHub Pages.
+  contents: write
+
+concurrency:
+  group: etl-atc-index
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      # Antes de construir nada, comprobar que el constructor sigue sabiendo negarse. Es barato
+      # (no toca red) y evita el caso peor: un ETL roto que publica en verde todos los días.
+      - name: Banco de pruebas del ETL
+        run: python scripts/etl-atc-index/test_build_atc_index.py
+
+      - name: Construir el índice
+        id: build
+        run: |
+          python scripts/etl-atc-index/build_atc_index.py --out /tmp/atc-index.json
+          {
+            echo "fuente=$(jq -r '._meta.listprescriptiondate' /tmp/atc-index.json)"
+            echo "nregistros=$(jq -r '._meta.nregistros' /tmp/atc-index.json)"
+            echo "sello=$(jq -r '._meta.projection_sha256' /tmp/atc-index.json)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: ¿Ha cambiado el contenido?
+        id: diff
+        run: |
+          # NO se compara el fichero entero: `generated_at`, `download_date` y `zip_sha256` cambian
+          # cada día aunque no cambie ni un ATC, y eso commitearía 428 KB a diario para nada.
+          #
+          # Se compara la PROYECCIÓN (su sello) y el esquema, que es lo que el cliente lee. El
+          # `zip_sha256` queda deliberadamente fuera de esta comparación: la AEMPS republica el
+          # ZIP a diario y su hash cambia por campos que a este índice no le importan.
+          nuevo=$(jq -r '._meta.projection_sha256, ._meta.schema_version' /tmp/atc-index.json)
+          if [ -f assets/data/atc-index.json ]; then
+            viejo=$(jq -r '._meta.projection_sha256, ._meta.schema_version' assets/data/atc-index.json)
+          else
+            viejo=""
+          fi
+          if [ "$nuevo" = "$viejo" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Ningún ATC ha cambiado; no se commitea."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Vigilancia cruzada contra CIMA (falsos negativos)
+        id: cruzado
+        continue-on-error: true
+        run: |
+          # Comprueba que los DESCARTES del índice son correctos, que es la mitad del riesgo que
+          # el fallback no cubre: el fallback actúa sobre los ausentes, y un registro presente con
+          # un código equivocado borraría un medicamento real en silencio. Objeción de Codex en
+          # el contraste del 2026-09-14.
+          #
+          # exit 1 = falso negativo real (el índice borra medicamentos): el paso falla.
+          # exit 2 = no se pudo comprobar (red, CIMA caído): INCONCLUSO, avisa y no bloquea.
+          cp /tmp/atc-index.json /tmp/para-verificar.json
+          set +e
+          python scripts/etl-atc-index/verificar_cruzado.py --indice /tmp/para-verificar.json --max 25
+          codigo=$?
+          set -e
+          echo "codigo=${codigo}" >> "$GITHUB_OUTPUT"
+          if [ "$codigo" = "2" ]; then
+            echo "::warning::vigilancia cruzada INCONCLUSA (no se pudo consultar CIMA)"
+            exit 0
+          fi
+          exit "$codigo"
+
+      - name: Parar si el índice borraría medicamentos reales
+        if: steps.cruzado.outputs.codigo == '1'
+        run: |
+          echo "::error::la vigilancia cruzada encontró falsos negativos; no se publica el índice"
+          exit 1
+
+      - name: Commitear el índice
+        if: steps.diff.outputs.changed == 'true' && steps.cruzado.outputs.codigo != '1'
+        run: |
+          cp /tmp/atc-index.json assets/data/atc-index.json
+          # SIN cache-bust, a diferencia del índice de financiación, y es deliberado: este fichero
+          # cambia a diario y el `?v=` de financiación vive dentro de cima-app.js, así que un bump
+          # diario invalidaría el JS entero de todos los navegadores cada mañana para renovar un
+          # JSON. El cliente lo pide con revalidación normal y deja que el ETag de GitHub Pages
+          # haga su trabajo.
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Rutas explícitas, nunca `-A`: hay sesiones humanas en paralelo sobre el mismo árbol.
+          git add assets/data/atc-index.json
+          git commit -m "Actualiza el indice ATC (AEMPS, ${{ steps.build.outputs.fuente }})
+
+          ${{ steps.build.outputs.nregistros }} medicamentos con ATC.
+          Generado por .github/workflows/etl-atc-index.yml."
+          git push
+
+      - name: Resumen
+        run: |
+          {
+            echo "### Índice ATC"
+            echo ""
+            echo "- Fuente (listprescriptiondate): **${{ steps.build.outputs.fuente }}**"
+            echo "- Medicamentos con ATC: **${{ steps.build.outputs.nregistros }}**"
+            echo "- Sello de la proyección: \`${{ steps.build.outputs.sello }}\`"
+            echo "- ¿Commiteado?: **${{ steps.diff.outputs.changed }}**"
+            echo "- Vigilancia cruzada: código **${{ steps.cruzado.outputs.codigo }}** (0 limpio · 1 falsos negativos · 2 inconcluso)"
+          } >> "$GITHUB_STEP_SUMMARY"

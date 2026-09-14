@@ -1,0 +1,51 @@
+[
+  {
+    "kind": "fecha_fuente_presente",
+    "label": "la-fuente-se-fecha-a-si-misma",
+    "note": "Sin `listprescriptiondate` no hay reloj de la fuente que vigilar, y el índice quedaría vigilado solo por el nuestro. Medido el 2026-09-14: el XML la trae y coincide con el día de descarga."
+  },
+  {
+    "kind": "fecha_fuente_max_dias",
+    "label": "fuente-al-dia",
+    "max_days": 3,
+    "note": "La AEMPS publica a diario. Tres días es el desfase DECIDIDO para esta vista en el contrato (no heredado de una cadencia mensual): un ATC con tres días de retraso no cambia el grupo terapéutico de un medicamento."
+  },
+  {
+    "kind": "min_nregistros",
+    "label": "minimo-medicamentos-con-atc",
+    "min_count": 20000,
+    "note": "Medido el 2026-09-14: 22.606. Un desplome por debajo de 20.000 es fuente truncada, no una bajada real del censo."
+  },
+  {
+    "kind": "min_comercializadas",
+    "label": "minimo-presentaciones-comercializadas",
+    "min_count": 18000,
+    "note": "Medido el 2026-09-14: 20.661 presentaciones comercializadas con ATC. Vigila que no se publique un índice construido solo con el histórico."
+  },
+  {
+    "kind": "min_prefijo",
+    "label": "cardiovascular-C",
+    "prefix": "C",
+    "min_count": 2000,
+    "note": "Los tres prefijos de abajo son grupos anatómicos grandes y estables. Vigilan que la extracción no se coma una rama entera del árbol, que es el fallo que una cardinalidad total no ve."
+  },
+  {
+    "kind": "min_prefijo",
+    "label": "antiinfecciosos-J",
+    "prefix": "J",
+    "min_count": 800
+  },
+  {
+    "kind": "min_prefijo",
+    "label": "nervioso-N",
+    "prefix": "N",
+    "min_count": 2000
+  },
+  {
+    "kind": "min_prefijo",
+    "label": "corticoides-topicos-D07",
+    "prefix": "D07",
+    "min_count": 100,
+    "note": "Prefijo de nivel 3 concreto: es el caso con el que se destapó que la agrupación por ATC no agrupaba por donde decía, y el que más falsos positivos por subcadena produce (68 de 161)."
+  }
+]
