@@ -243,6 +243,114 @@ for (const f of [
     check(`[${f.join(',')}] la faceta coincide con lo que anuncia la tarjeta`, cubre, anuncia);
 }
 
+// --- La FICHA se alimenta del índice (2026-09-14) ------------------------------
+//
+// EL CASO QUE LO MOTIVA, con sus datos reales, verificados en vivo el 2026-09-14: A.A.S. 100 mg
+// COMPRIMIDOS (nregistro 42991). Tiene dos presentaciones —CN 686580 comercializada y CN 614537
+// retirada— y BIFIMED dice de ellas cosas OPUESTAS: "Si" (aportación NORMAL, estado ALTA) de la
+// primera y "Estudio o sin petición financiación" de la segunda. La tarjeta leía el índice, que
+// descarta `comerc === false`, y anunciaba «Financiado por el SNS»; la ficha consultaba el Worker
+// con LOS DOS CN y decía «Financiación parcial (1 de 2 presentaciones)». El mismo medicamento
+// diciendo dos cosas en la misma pantalla.
+//
+// No era un fallo de cálculo —ambos caminos desembocan en `_financingSummaryFromCounts` y ambos
+// contaban bien— sino DOS POBLACIONES sin declarar. Y no es un caso raro: de las 67.163
+// presentaciones del censo, 39.608 (59 %) están retiradas.
+console.log('\n— La ficha y la tarjeta cuentan la MISMA población —');
+
+// Las presentaciones tal y como las devuelve CIMA para 42991.
+const AAS_PRESENTACIONES = [
+    { cn: '686580', comerc: true },
+    { cn: '614537', comerc: false },
+];
+const AAS_FILA = filaN(1, 1, 0, 0, 0, 0, 0, 0); // la fila real del índice de producción
+
+check('el camino en vivo descarta la presentación retirada',
+    app._financingCnsForLiveSummary({ presentaciones: AAS_PRESENTACIONES }), ['686580']);
+check('y usa el mismo criterio que el ETL (`comerc !== false`, no `=== true`)',
+    app._financingCnsForLiveSummary({ presentaciones: [{ cn: '1' }, { cn: '2', comerc: false }] }), ['1']);
+check('sin presentaciones, ningún CN', app._financingCnsForLiveSummary({}), []);
+
+// El guardián del caso: SIN filtrar, los dos caminos discrepan. Esta aserción es la que caería si
+// alguien devolviera la población entera a la ficha, y por eso se expresa como la divergencia
+// original en vez de como su ausencia.
+const aasFichaSinFiltrar = estadoDesdeFicha(['Si', 'Estudio o sin petición financiación']);
+check('DIVERGENCIA ORIGINAL: contando la retirada, la ficha decía "parcial"', aasFichaSinFiltrar, 'parcial');
+check('mientras la tarjeta decía "financiado"', estadoDesdeIndice(AAS_FILA), 'si');
+check('…es decir, discrepaban', aasFichaSinFiltrar === estadoDesdeIndice(AAS_FILA), false);
+// Y con la población ya filtrada, coinciden. Es el criterio de hecho de todo el cambio.
+check('filtrada la población, los dos caminos dicen lo mismo',
+    estadoDesdeFicha(['Si']), estadoDesdeIndice(AAS_FILA));
+
+console.log('\n— La ficha resuelve desde el índice, que es la fila de la tarjeta —');
+app._financingIndex = {
+    42991: AAS_FILA,                                  // A.A.S.: financiado
+    4040: filaN(1, 0, 0, 0, 0, 0, 0, 1),              // LOBIVON: solo el Nomenclátor lo respalda
+    63575: filaN(2, 0, 0, 0, 0, 1, 1, 0),             // sin cobertura
+    8472008: filaN(0, 0, 0, 0, 0, 0, 0, 0),           // sin envases comercializados
+    '04276007IP1': filaN(2, 0, 0, 0, 0, 0, 0, 0),     // importación paralela sin dato
+};
+app._financingIndexUsable = true;
+const fichaEstado = (nreg) => app._financingSummaryFromIndex(nreg)?.resumen.estado ?? null;
+const fichaNota = (nreg) => app._financingSummaryFromIndex(nreg)?.nota ?? null;
+
+check('A.A.S. 42991: la ficha dice lo mismo que la tarjeta', fichaEstado('42991'), 'si');
+check('y el nregistro numérico también resuelve (la ficha lo trae como número)', fichaEstado(42991), 'si');
+
+// SEGUNDA DIVERGENCIA, medida el 2026-09-14 sobre el índice de producción: 1.015 medicamentos cuya
+// ÚNICA cobertura es el Nomenclátor de facturación. La ficha solo consultaba BIFIMED —nunca el
+// Nomenclátor— así que decía «Sin datos de financiación» de medicamentos que el SNS factura.
+// Verificado en vivo: LOBIVON 5 mg (4040), DELTIUS 10.000 UI (7547) y LIPOCOMB (22082) tienen
+// `found:false` en BIFIMED y constan ALTA en el Nomenclátor.
+check('LOBIVON 4040: deja de decir "sin datos" lo que el Nomenclátor respalda',
+    fichaEstado('4040'), 'si_nom');
+check('y NO se asciende a resolución de BIFIMED', fichaEstado('4040') === 'si', false);
+check('el camino viejo, solo con BIFIMED, decía "sin datos"', estadoDesdeFicha([null]), 'sindato');
+
+console.log('\n— El motivo del hueco llega también a la ficha, no solo al tooltip —');
+check('importación paralela: la ficha explica por qué falta el dato',
+    /no publica/.test(fichaNota('04276007IP1') || ''), true);
+check('sin envases comercializados: la ficha lo dice',
+    fichaNota('8472008'), MedCheckApp.FIN_NOTE_SIN_COMERCIALIZADAS);
+check('el Nomenclátor nombra su fuente',
+    /Nomenclátor de facturación/.test(fichaNota('4040') || ''), true);
+// La causa solo se atribuye cuando es cierta. Medido el 2026-09-14 sobre el índice: de los 1.015
+// medicamentos que solo respalda el Nomenclátor, 237 (23 %) NO son importación paralela — LOBIVON
+// (nebivolol), DELTIUS (colecalciferol), LIPOCOMB (rosuvastatina/ezetimiba)—, y a esos la frase les
+// explicaba el hueco con un motivo que no es el suyo.
+check('LOBIVON no es importación paralela: no se le atribuye esa causa',
+    /importaciones paralelas/.test(fichaNota('4040') || ''), false);
+check('pero la fuente que lo respalda sí se nombra igual',
+    /BIFIMED no publica su situación de financiación$/.test(fichaNota('4040') || ''), true);
+app._financingIndex['12780006IP3'] = filaN(1, 0, 0, 0, 0, 0, 0, 1);
+check('y en una importación paralela de verdad, la causa sí se da',
+    /cosa habitual en las importaciones paralelas$/.test(fichaNota('12780006IP3') || ''), true);
+check('y donde el veredicto se explica solo, no hay nota que estorbe', fichaNota('63575'), null);
+// La nota es LA MISMA frase en la tarjeta y en la ficha, no una copia que pueda divergir.
+for (const nreg of ['04276007IP1', '8472008', '4040']) {
+    check(`[${nreg}] tarjeta y ficha dan el mismo motivo`,
+        app._financingTagFromRow(app._financingIndex[nreg], nreg).title, fichaNota(nreg));
+}
+// Y va VISIBLE en la ficha, no en un `title` inalcanzable con el dedo o el teclado.
+const htmlIP = app._financingSummaryValueHtml(
+    app._financingSummaryFromIndex('04276007IP1').resumen, fichaNota('04276007IP1'));
+check('la nota se pinta como texto, no como atributo', /no publica/.test(htmlIP) && !/title=/.test(htmlIP), true);
+check('sin nota, la línea queda como estaba',
+    app._financingSummaryValueHtml(app._financingSummaryFromIndex('63575').resumen).includes('<div'), false);
+
+console.log('\n— Degradación: hacia lo lento, nunca hacia lo incorrecto —');
+app._financingIndexUsable = false;
+check('índice no utilizable → la ficha NO resuelve por él', app._financingSummaryFromIndex('42991'), null);
+app._financingIndexUsable = true;
+check('medicamento ausente del índice → tampoco (ausencia no es veredicto)',
+    app._financingSummaryFromIndex('99999999'), null);
+check('fila ilegible → tampoco', (app._financingIndex['99999998'] = [1, 2, 3],
+    app._financingSummaryFromIndex('99999998')), null);
+// Lo que se pierde al degradar queda dicho: sin índice no hay columna del Nomenclátor, así que el
+// caso LOBIVON vuelve a "sin datos". Es decir MENOS, no decir algo falso.
+check('degradado, lo del Nomenclátor vuelve a "sin datos", que NO es una negativa',
+    estadoDesdeFicha([null]) === 'no', false);
+
 // --- La dimensión está en el contrato -----------------------------------------
 console.log('\n— La dimensión pertenece al contrato de filtros —');
 check('financiacion es una dimensión declarada',

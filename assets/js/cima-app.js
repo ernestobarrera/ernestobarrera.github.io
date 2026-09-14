@@ -10469,10 +10469,20 @@ ${materialesPlaceholder}
         return { estado: 'parcial', label: `Financiación parcial (${financiadas} de ${total} presentaciones${pendientes})`, icon: 'fa-circle-half-stroke', color: 'var(--warning)' };
     }
 
-    /** HTML del valor de la línea Financiación (icono + estado + enlace al detalle en la pestaña). */
-    _financingSummaryValueHtml(summary) {
+    /**
+     * HTML del valor de la línea Financiación (icono + estado + enlace al detalle en la pestaña).
+     *
+     * La `nota` va VISIBLE, en segunda línea, no en un `title`. En la tarjeta el motivo cabe en el
+     * tooltip porque no hay sitio; en la ficha sí lo hay, y un tooltip es inalcanzable con el dedo
+     * y con el teclado. "Sin datos" a secas, sin decir que es una importación paralela o que no
+     * quedan envases comercializados, es justo el hueco en crudo que obliga al médico a
+     * reconstruir por su cuenta por qué falta el dato.
+     */
+    _financingSummaryValueHtml(summary, nota = null) {
         const link = `<a href="#" onclick="event.preventDefault(); app.openModalTab('financing');" style="margin-left:0.5rem; font-size:0.85em; color:var(--primary); font-weight:500;">Ver detalle →</a>`;
-        return `<i class="fas ${summary.icon}" style="color:${summary.color}"></i> ${this._escapeHtml(summary.label)}${link}`;
+        const linea = `<i class="fas ${summary.icon}" style="color:${summary.color}"></i> ${this._escapeHtml(summary.label)}${link}`;
+        if (!nota) return linea;
+        return `${linea}<div style="margin-top:0.25rem; font-size:0.85em; color:var(--text-secondary); line-height:1.35">${this._escapeHtml(nota)}</div>`;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -10565,26 +10575,51 @@ ${materialesPlaceholder}
      * no cabe "Sin cobertura SNS actual: 1 no financiada · 1 en estudio/sin petición", pero esa
      * frase es la que no miente, así que se conserva al pasar el ratón y en la ficha.
      */
+    /**
+     * Por qué el veredicto es el que es, cuando el veredicto solo no se explica a sí mismo.
+     *
+     * Vive aparte del resumen porque lo consumen DOS sitios: el `title` de la tarjeta y, desde el
+     * 2026-09-14, la línea de la ficha. Cuando estas frases estaban escritas dentro de
+     * `_financingTagFromRow`, la ficha no podía darlas sin copiarlas — y una frase copiada es una
+     * frase que un día dirá algo distinto en cada pantalla, que es el defecto que este módulo
+     * entero existe para no tener.
+     *
+     * Devuelve `null` cuando no hace falta nota: el propio `label` ya lo dice todo.
+     */
+    _financingNoteForRow(fila, nregistro, resumen) {
+        if (Array.isArray(fila) && fila[0] === 0) return MedCheckApp.FIN_NOTE_SIN_COMERCIALIZADAS;
+        if (resumen?.estado === 'si_nom') {
+            // La coletilla de la importación paralela SOLO cuando lo es. Se escribió el 2026-09-10
+            // pensando en JENTADUETO (`12780006IP3`), pero medido sobre el índice el 2026-09-14 son
+            // 237 de los 1.015 medicamentos que solo respalda el Nomenclátor —el 23 %— los que NO
+            // son importación paralela: nebivolol (LOBIVON), colecalciferol (DELTIUS),
+            // rosuvastatina/ezetimiba (LIPOCOMB)… marcas corrientes en primaria. Atribuirles esa
+            // causa es explicar el hueco con un motivo que no es el suyo, y en la ficha —donde
+            // ahora se lee entera, no en un tooltip— eso desorienta más que el silencio.
+            return 'Consta de alta en el Nomenclátor de facturación del Ministerio de Sanidad, que es el '
+                + 'listado de lo que se factura con cargo al SNS. BIFIMED no publica su situación de '
+                + 'financiación'
+                + (this._esImportacionParalela(nregistro) ? ', cosa habitual en las importaciones paralelas' : '');
+        }
+        if (resumen?.estado === 'sindato' && this._esImportacionParalela(nregistro)) {
+            return 'Importación paralela: el Ministerio no publica la situación de financiación de estos registros en BIFIMED. No significa que no esté financiado';
+        }
+        return null;
+    }
+
+    /** La frase del medicamento sin envases comercializados. Constante porque la usan la tarjeta,
+     *  la ficha desde el índice y la ficha degradada, y las tres tienen que decir lo mismo. */
+    static get FIN_NOTE_SIN_COMERCIALIZADAS() {
+        return 'Este medicamento no tiene ninguna presentación comercializada, así que no procede hablar de su financiación actual';
+    }
+
     _financingTagFromRow(fila, nregistro) {
         const resumen = this._financingSummaryFromIndexRow(fila);
         if (!resumen) return null;
-        // Los dos casos particulares comparten la etiqueta "Sin datos" con el resto de la
-        // incertidumbre —una tarjeta no es sitio para explicar por qué falta un dato— pero cada
-        // uno conserva su motivo en el `title`, que es donde alguien que se lo pregunta va a mirar.
-        if (fila[0] === 0) {
-            return {
-                short: 'Sin datos', icon: 'fa-circle-question',
-                color: 'var(--text-secondary)',
-                title: 'Este medicamento no tiene ninguna presentación comercializada, así que no procede hablar de su financiación actual',
-            };
-        }
-        if (resumen.estado === 'sindato' && this._esImportacionParalela(nregistro)) {
-            return {
-                short: 'Sin datos', icon: 'fa-circle-question',
-                color: 'var(--text-secondary)',
-                title: 'Importación paralela: el Ministerio no publica la situación de financiación de estos registros en BIFIMED. No significa que no esté financiado',
-            };
-        }
+        // Los casos particulares comparten la etiqueta corta con el resto de la incertidumbre —una
+        // tarjeta no es sitio para explicar por qué falta un dato— pero cada uno conserva su motivo
+        // en el `title`, que es donde alguien que se lo pregunta va a mirar.
+        const nota = this._financingNoteForRow(fila, nregistro, resumen);
         // DOS GRISES, NO SEIS. La tarjeta responde "¿lo cubre el SNS?" y la ficha "¿por qué?".
         // Las cuatro variantes negativas (no incluido, excluido, denegado por resolución, en
         // estudio o sin petición) son distintas administrativamente —y la ficha las conserva
@@ -10612,19 +10647,11 @@ ${materialesPlaceholder}
             sin_cobertura: 'Sin cobertura del SNS',
             sindato: 'Sin datos',
         };
-        if (resumen.estado === 'si_nom') {
-            return {
-                short: cortos.si_nom, icon: resumen.icon, color: resumen.color,
-                title: 'Consta de alta en el Nomenclátor de facturación del Ministerio de Sanidad, que es el '
-                    + 'listado de lo que se factura con cargo al SNS. BIFIMED no publica su situación de '
-                    + 'financiación, cosa habitual en las importaciones paralelas',
-            };
-        }
         return {
             short: cortos[resumen.estado] || resumen.label,
             icon: resumen.icon,
             color: resumen.color,
-            title: resumen.label,
+            title: nota || resumen.label,
         };
     }
 
@@ -10704,19 +10731,101 @@ ${materialesPlaceholder}
      * Hidrata la línea de financiación de la ficha Información al abrir el modal.
      * Carga diferida (no bloquea el render) con caché 24h. No repinta si el usuario cambió de medicamento.
      */
+    /**
+     * El veredicto de la ficha resuelto DESDE EL ÍNDICE, que es la misma fila que lee la tarjeta.
+     * Devuelve `null` cuando el índice no puede responder por este medicamento, y entonces manda
+     * el camino en vivo.
+     *
+     * Es puro a propósito —sin DOM, sin red— para que el banco de pruebas pueda fijar el caso que
+     * lo motiva sin levantar media aplicación.
+     */
+    _financingSummaryFromIndex(nregistro) {
+        if (!this._financingIndexUsable) return null;
+        const fila = this._financingIndex?.[String(nregistro ?? '')];
+        const resumen = this._financingSummaryFromIndexRow(fila);
+        if (!resumen) return null;
+        return { resumen, nota: this._financingNoteForRow(fila, nregistro, resumen) };
+    }
+
+    /**
+     * Los CN que el camino en vivo debe consultar: SOLO los comercializados, con el mismo criterio
+     * (`comerc !== false`) que el ETL aplica en `build-financiacion-index.mjs`.
+     *
+     * Aquí nació la divergencia de A.A.S. 100 mg (`42991`), medida el 2026-09-14: la tarjeta decía
+     * "Financiado por el SNS" y la ficha "Financiación parcial" para el mismo medicamento. No era
+     * un fallo de cálculo, eran DOS POBLACIONES sin declarar — la ficha sumaba el CN 614537, que
+     * está retirado y consta "en estudio o sin petición", y el índice no. No es un caso raro: de
+     * las 67.163 presentaciones del censo, 39.608 (59 %) están retiradas.
+     */
+    _financingCnsForLiveSummary(med) {
+        return [...new Set((med?.presentaciones || [])
+            .filter(p => p && p.comerc !== false)
+            .map(p => p.cn).filter(Boolean).map(String))];
+    }
+
+    /**
+     * Hidrata la línea de financiación de la ficha Información al abrir el modal.
+     *
+     * DESDE EL 2026-09-14 EL CAMINO PREFERENTE ES EL ÍNDICE, no el Worker CN a CN. La decisión es
+     * del acta `2026-09-14_acta-medcheck-contrato-indices.md` y cierra dos divergencias medidas
+     * entre lo que dice la tarjeta y lo que dice la ficha del mismo medicamento:
+     *
+     *   1. la POBLACIÓN (el caso A.A.S., ver `_financingCnsForLiveSummary`);
+     *   2. la FUENTE: el índice cruza BIFIMED con el Nomenclátor de facturación y este camino solo
+     *      consultaba BIFIMED. Medido sobre el índice de producción: 1.015 medicamentos cuya única
+     *      cobertura es el Nomenclátor: la lista los daba por financiados y la ficha decía "Sin
+     *      datos de financiación" de medicamentos que el SNS factura. Verificado en vivo en
+     *      LOBIVON 5 mg (`4040`), DELTIUS 10.000 UI (`7547`) y LIPOCOMB (`22082`).
+     *
+     * El Worker se conserva para el DETALLE literal por presentación, que es la pestaña
+     * Financiación (`loadSnsFinancing`): el índice agrega, y agregar no es enumerar.
+     *
+     * DEGRADACIÓN (garantía: hacia lo lento, nunca hacia lo incorrecto). Si el índice no carga o su
+     * sello no cuadra con el del catálogo que sirve el Worker, se vuelve al camino en vivo —pero ya
+     * con la población filtrada, para no reintroducir la divergencia 1 justo cuando menos se mira—.
+     * En degradado se pierde la cobertura del Nomenclátor y algún medicamento dirá "Sin datos"
+     * donde el índice diría "Financiado": es decir menos, no decir algo falso, y "sin datos" nunca
+     * se lee como una negativa.
+     */
     async _hydrateFinancingSummary(med) {
         const valueEl = document.getElementById('financing-summary-value');
         if (!valueEl) return;
-        const cns = [...new Set((med.presentaciones || []).map(p => p && p.cn).filter(Boolean).map(String))];
-        if (!cns.length) { valueEl.innerHTML = '<span class="text-muted" style="font-size:0.85em">Sin código nacional consultable</span>'; return; }
-        try {
-            const map = await this._fetchFinancingByCns(cns);
+        const pintar = (html) => {
             if (this.currentMed?.nregistro !== med.nregistro) return; // el modal cambió mientras cargaba
             const el = document.getElementById('financing-summary-value');
-            if (el) el.innerHTML = this._financingSummaryValueHtml(this._computeFinancingSummary(map));
+            if (el) el.innerHTML = html;
+        };
+        const discreto = (txt) => `<span class="text-muted" style="font-size:0.85em">${this._escapeHtml(txt)}</span>`;
+
+        // `_loadFinancingIndex` memoiza su promesa: en una lista ya pintada esto no añade ninguna
+        // petición, y ahorra las N del camino CN a CN.
+        try {
+            await this._loadFinancingIndex();
+            const desdeIndice = this._financingSummaryFromIndex(med.nregistro);
+            if (desdeIndice) {
+                pintar(this._financingSummaryValueHtml(desdeIndice.resumen, desdeIndice.nota));
+                return;
+            }
         } catch (e) {
-            const el = document.getElementById('financing-summary-value');
-            if (el) el.innerHTML = '<span class="text-muted" style="font-size:0.85em">Financiación no disponible ahora</span>';
+            console.warn('[financiación] ficha: índice no utilizable, se consulta en vivo:', e.message);
+        }
+
+        const cns = this._financingCnsForLiveSummary(med);
+        if (!cns.length) {
+            // Distinguir "no quedan envases comercializados" de "no hay CN que consultar". Antes
+            // eran la misma frase, y la primera es un hecho sobre el medicamento, no una limitación
+            // nuestra.
+            const tienePresentaciones = (med?.presentaciones || []).some(p => p && p.cn);
+            pintar(discreto(tienePresentaciones
+                ? MedCheckApp.FIN_NOTE_SIN_COMERCIALIZADAS
+                : 'Sin código nacional consultable'));
+            return;
+        }
+        try {
+            const map = await this._fetchFinancingByCns(cns);
+            pintar(this._financingSummaryValueHtml(this._computeFinancingSummary(map)));
+        } catch (e) {
+            pintar(discreto('Financiación no disponible ahora'));
         }
     }
 
