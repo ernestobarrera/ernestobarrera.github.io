@@ -770,6 +770,48 @@ class CimaAPI {
     }
 
     /**
+     * Índice `nregistro → ATC` precompilado, para no pedir el detalle de cada medicamento.
+     *
+     * POR QUÉ EXISTE: CIMA no devuelve el ATC en su listado, así que verificar el prefijo costaba
+     * UNA PETICIÓN POR MEDICAMENTO — 2.427 medidas para «hipertensión». El índice lo resuelve con
+     * una descarga de ~107 KB comprimidos que además se reutiliza en toda la sesión.
+     *
+     * SE VALIDA ANTES DE USARSE, y por eso esto no es un simple fetch. El contrato declara un
+     * desfase máximo de 3 días medido contra la fecha que publica la AEMPS
+     * (`listprescriptiondate`), NO contra la fecha en que nosotros lo generamos: vigilar el reloj
+     * propio deja el índice en verde para siempre aunque la fuente deje de publicar. Si el índice
+     * falta, no parsea o viene caducado, esto devuelve null y la búsqueda sigue por el camino de
+     * siempre. Degrada hacia lo lento, nunca hacia lo incorrecto.
+     *
+     * Contrato: docs/medcheck/private/2026-09-14_contrato-indices-precompilados.md
+     */
+    async loadAtcIndex(url = 'assets/data/atc-index.json') {
+        if (this._atcIndexPromise) return this._atcIndexPromise;
+        const MAX_DESFASE_DIAS = 3;
+        this._atcIndexPromise = fetch(url)
+            .then(r => (r.ok ? r.json() : null))
+            .then((data) => {
+                const atc = (data && typeof data.atc === 'object' && data.atc) || null;
+                const fechaFuente = data?._meta?.listprescriptiondate;
+                if (!atc || !fechaFuente) throw new Error('índice ausente o sin fecha de fuente');
+                const dias = (Date.now() - Date.parse(`${fechaFuente}T00:00:00Z`)) / 86400000;
+                if (!Number.isFinite(dias)) throw new Error(`fecha de fuente ilegible: ${fechaFuente}`);
+                if (dias > MAX_DESFASE_DIAS) {
+                    throw new Error(`la fuente tiene ${dias.toFixed(1)} días (máximo ${MAX_DESFASE_DIAS})`);
+                }
+                this._atcIndexMeta = data._meta;
+                this._atcIndex = atc;
+                return atc;
+            })
+            .catch((err) => {
+                console.warn('[atc] índice no utilizable, se verifica en vivo:', err.message);
+                this._atcIndex = null;
+                return null;
+            });
+        return this._atcIndexPromise;
+    }
+
+    /**
      * Búsqueda por código ATC - Con filtrado estricto y verificación de ATC
      * @param {string} atcCode - Código ATC (ej: "C09", "J01", "A07")
      * @param {Object} options - Opciones adicionales
@@ -817,6 +859,32 @@ class CimaAPI {
                 } else {
                     // Sin datos ATC en la respuesta: necesita verificación
                     needsVerification.push(med);
+                }
+            }
+
+            // El índice resuelve en local lo que antes costaba una petición por medicamento. Lo
+            // que NO resuelve se queda en la cola de siempre: un `nregistro` que no está en el
+            // índice no es un medicamento sin ATC, es uno que hay que ir a verificar.
+            if (needsVerification.length > 0) {
+                const indice = await this.loadAtcIndex();
+                if (indice) {
+                    const pendientes = [];
+                    let resueltos = 0;
+                    for (const med of needsVerification) {
+                        const entrada = indice[med.nregistro];
+                        if (entrada === undefined) { pendientes.push(med); continue; }
+                        resueltos++;
+                        const codigos = Array.isArray(entrada) ? entrada : [entrada];
+                        if (codigos.some(c => c.toUpperCase().startsWith(upperCode))) {
+                            med.atcs = codigos.map(codigo => ({ codigo }));
+                            filtered.push(med);
+                        } else {
+                            rejected++;
+                        }
+                    }
+                    console.log(`⚡ ${resueltos} resueltos por el índice ATC · ${pendientes.length} a verificar en vivo`);
+                    needsVerification.length = 0;
+                    needsVerification.push(...pendientes);
                 }
             }
 
