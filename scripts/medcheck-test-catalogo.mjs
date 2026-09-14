@@ -144,5 +144,89 @@ ok('las apariciones superan al número de términos (hay términos en varios dom
     apariciones > Object.keys(ontology.terms).length,
     `${apariciones} apariciones / ${Object.keys(ontology.terms).length} términos`);
 
+// --- Los chips de la vista por indicacion tienen que resolver (2026-09-14) ----------
+//
+// Lo encontro Ernesto en produccion: el chip «Anticoagulantes» devolvia CERO. No estaba en la
+// ontologia, asi que caia al paso 2 —buscar la palabra entre los nombres del catalogo ATC— y ahi
+// B01A se llama «ANTITROMBOTICOS»: la palabra «anticoagulante» no aparece en ninguna entrada.
+// Probados los 22 chips contra CIMA ese dia, era el unico roto.
+//
+// Este test NO consulta la red: comprueba que cada chip tiene con que resolverse, que es la
+// condicion que fallaba. Los chips se leen de cima-app.js, no se copian aqui, para que anadir uno
+// sin termino lo haga caer.
+{
+    const quickTerms = (() => {
+        const m = appSrc.match(/const quickTerms = \[([\s\S]*?)\];/);
+        return m ? [...m[1].matchAll(/'([^']+)'/g)].map(x => x[1]) : [];
+    })();
+    ok('los chips se leen del codigo, no de una copia', quickTerms.length >= 20, `${quickTerms.length} chips`);
+
+    const norm = (t) => t.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const resoluble = new Set();
+    for (const [clave, entrada] of Object.entries(ontology.terms)) {
+        resoluble.add(norm(clave));
+        for (const sin of (entrada.synonyms || [])) resoluble.add(norm(sin));
+    }
+    // Un chip resuelve por DOS vias, y hay que admitir las dos o el test miente: la ontologia
+    // (paso 1) o la coincidencia con un nombre del catalogo ATC (paso 2). «Ansioliticos»,
+    // «Diureticos», «Antiepilepticos», «Antidepresivos» e «Insulinas» no estan en la ontologia y
+    // funcionan perfectamente por la segunda —medido en vivo el 2026-09-14: 148, 147, 536, 530 y
+    // 37 medicamentos—. Exigirles entrada propia habria sido declarar rotos cinco chips que no lo
+    // estan. Lo que no vale es no resolver por NINGUNA, que es lo que le pasaba a «Anticoagulantes».
+    const apiSrc = readFileSync(join(ROOT, 'assets', 'js', 'cima-api.js'), 'utf8');
+    const nombresAtc = (() => {
+        const m = apiSrc.match(/static STATIC_ATC_FALLBACK = \[([\s\S]*?)\n    \];/);
+        if (!m) return [];
+        return [...m[1].matchAll(/\{\s*codigo:\s*'([^']+)',\s*nombre:\s*'([^']+)'\s*\}/g)]
+            .map(x => ({ codigo: x[1], nombre: x[2] }));
+    })();
+    ok('el catalogo ATC de emergencia se lee del codigo', nombresAtc.length > 40, `${nombresAtc.length} entradas`);
+
+    // Mismo criterio que `searchATCByName`: subcadena del nombre, con el codigo entre 3 y 5.
+    const porNombreAtc = (t) => nombresAtc.some(e =>
+        e.codigo.length >= 3 && e.codigo.length <= 5 && norm(e.nombre).includes(norm(t)));
+    const huerfanos = quickTerms.filter(t => !resoluble.has(norm(t)) && !porNombreAtc(t));
+    ok('ningun chip se queda sin ninguna via para resolver',
+        huerfanos.length === 0, `huerfanos: ${huerfanos.join(', ')}`);
+
+    // El mutante del caso real: sin su entrada en la ontologia, «Anticoagulantes» no resuelve por
+    // nombre tampoco, porque en el catalogo B01A se llama «ANTITROMBOTICOS».
+    ok('y «Anticoagulantes» NO resolvia por nombre: por eso hacia falta la entrada',
+        !porNombreAtc('Anticoagulantes'));
+
+    // El caso concreto, con su criterio clinico: un anticoagulante NO es un antiagregante. B01AC
+    // son los 230 antiagregantes (AAS, clopidogrel); meterlos aqui seria afirmar lo que nadie
+    // prescribe asi. Por eso es termino propio y no un sinonimo de `trombosis`, que si es B01A
+    // entero. Medido en vivo el 2026-09-14: 208 medicamentos comercializados, ninguno B01AC.
+    const anticoag = ontology.terms['anticoagulantes'];
+    ok('«anticoagulantes» existe como termino propio', !!anticoag);
+    const atcAnticoag = [].concat(anticoag?.atc || []);
+    ok('y cubre AVK, heparinas y ACOD',
+        ['B01AA', 'B01AB', 'B01AE', 'B01AF'].every(c => atcAnticoag.includes(c)), atcAnticoag.join(','));
+    ok('sin arrastrar los antiagregantes de B01AC',
+        !atcAnticoag.some(c => c.startsWith('B01AC')), atcAnticoag.join(','));
+    ok('ni el B01A entero, que los incluiria por la puerta de atras',
+        !atcAnticoag.includes('B01A'), atcAnticoag.join(','));
+    ok('`antiagregacion` sigue siendo su pareja, y sigue siendo B01AC',
+        JSON.stringify([].concat(ontology.terms['antiagregación']?.atc || [])) === '["B01AC"]');
+
+    // Y el sinonimo que NO puede tener: «anticoagulacion» ya resuelve a `trombosis`, y anadirlo
+    // aqui volvia ambiguo un termino que hoy responde solo. Comprobado en vivo ese dia.
+    const sinAnticoag = (anticoag?.synonyms || []).map(norm);
+    ok('no se le cuelga «anticoagulacion», que ya resuelve a trombosis',
+        !sinAnticoag.some(x => x.startsWith('anticoagulacion')), sinAnticoag.join(','));
+    ok('«anticoagulacion» sigue siendo sinonimo de trombosis, como antes',
+        (ontology.terms['trombosis']?.synonyms || []).map(norm).includes('anticoagulacion'));
+
+    // AINE: la clasificacion separa la via sistemica (M01A) de la topica (M02AA), pero quien
+    // escribe «AINE» espera ver tambien el diclofenaco en gel. Medido: 43 topicos comercializados
+    // que antes no salian. No se mezclan en pantalla porque la agrupacion por ATC los separa.
+    const aine = [].concat(ontology.terms['aine']?.atc || []);
+    ok('«AINE» cubre los sistemicos', aine.includes('M01A'), aine.join(','));
+    ok('y tambien los topicos, que es lo que faltaba', aine.includes('M02AA'), aine.join(','));
+    ok('sin colar capsaicina ni salicilatos, que no son AINE',
+        !aine.some(c => c === 'M02AB' || c === 'M02AC'), aine.join(','));
+}
+
 console.log(fallos ? `\n${fallos} fallo(s).` : '\nTODO OK — el catálogo agrupa por todos los dominios declarados.');
 process.exit(fallos ? 1 : 0);
