@@ -1,12 +1,12 @@
 {
   "version": "2026-09-05",
   "generatedBy": "medcheck-audit-ontology --update-vigilancia-broad",
-  "_doc": "Vigilancia de los prefijos ATC declarados `broad` en clinical-ontology.json. Responde a una pregunta que --cobertura-atc no puede hacerse: bajo un prefijo broad, ¿ha aparecido un código que no estaba cuando se revisó la entrada? --cobertura-atc excluye los broad por contrato (un prefijo aprobaría siempre) y el efecto lateral era que bajo un prefijo nadie vigilaba lo que entra. EL UNIVERSO LO FIJA LA ONTOLOGÍA, NO ESTE ARCHIVO: todo prefijo broad declarado tiene que estar adjudicado aquí, y uno sin adjudicar —o uno que sobra y ya no reclama ninguna entrada— BLOQUEA. Antes el universo salía de las claves de este mismo archivo, así que una línea base incompleta se aprobaba a sí misma (Codex, P1, 2026-09-05). Niveles de vigilancia (`watch`): 'watched' = COMPLETA, se consulta cada hoja y se adjudica en `leaves` cuál tiene producto comercializado; es la única que ve una hoja vieja estrenando producto, y cuesta una llamada por hoja. 'codigos' = BARATA, solo se compara el conjunto de códigos hoja contra el inventario `codes`; detecta que la clasificación crece bajo el paraguas por una sola llamada de maestra. 'waived' = renuncia explícita, exige `reason` y `reviewedBy`. Cualquier otro valor bloquea por esquema. Estados de hoja en 'watched': 'review' bloquea siempre (estar aquí no es haber revisado); 'accepted' es el único que silencia y solo con `reason` y `reviewedBy` no vacíos. El inventario `codes` sí es descriptivo (es lo que dice la maestra, no un juicio) y --update-vigilancia-broad lo absorbe; la firma humana es haber tecleado el flag DESPUÉS de leer el informe, que nombra uno a uno los códigos nuevos antes de absorberlos. Una pasada inconclusa (exit 2) nunca escribe. Coste medido 2026-09-05: 63 prefijos, 2.326 hojas; la pasada completa del gate tarda ~2 s porque solo L01XL va en 'watched'. Poner los 63 en 'watched' costaría ~2.400 llamadas. Comandos: `--vigilar-broad` (el gate) · `--vigilar-broad=PREFIJO` (pasada focalizada, NO es el gate) · `--update-vigilancia-broad` (siembra/refresca).",
+  "_doc": "Vigilancia de los prefijos ATC declarados `broad` en clinical-ontology.json. Responde a una pregunta que --cobertura-atc no puede hacerse: bajo un prefijo broad, ¿ha aparecido un código que no estaba cuando se revisó la entrada? --cobertura-atc excluye los broad por contrato (un prefijo aprobaría siempre) y el efecto lateral era que bajo un prefijo nadie vigilaba lo que entra. EL UNIVERSO LO FIJA LA ONTOLOGÍA, NO ESTE ARCHIVO: todo prefijo broad declarado tiene que estar adjudicado aquí, y uno sin adjudicar —o uno que sobra y ya no reclama ninguna entrada— BLOQUEA. Antes el universo salía de las claves de este mismo archivo, así que una línea base incompleta se aprobaba a sí misma (revisión cruzada, P1, 2026-09-05). Niveles de vigilancia (`watch`): 'watched' = COMPLETA, se consulta cada hoja y se adjudica en `leaves` cuál tiene producto comercializado; es la única que ve una hoja vieja estrenando producto, y cuesta una llamada por hoja. 'codigos' = BARATA, solo se compara el conjunto de códigos hoja contra el inventario `codes`; detecta que la clasificación crece bajo el paraguas por una sola llamada de maestra. 'waived' = renuncia explícita, exige `reason` y `reviewedBy`. Cualquier otro valor bloquea por esquema. Estados de hoja en 'watched': 'review' bloquea siempre (estar aquí no es haber revisado); 'accepted' es el único que silencia y solo con `reason` y `reviewedBy` no vacíos. El inventario `codes` sí es descriptivo (es lo que dice la maestra, no un juicio) y --update-vigilancia-broad lo absorbe; la firma humana es haber tecleado el flag DESPUÉS de leer el informe, que nombra uno a uno los códigos nuevos antes de absorberlos. Una pasada inconclusa (exit 2) nunca escribe. Coste medido 2026-09-05: 63 prefijos, 2.326 hojas; la pasada completa del gate tarda ~2 s porque solo L01XL va en 'watched'. Poner los 63 en 'watched' costaría ~2.400 llamadas. Comandos: `--vigilar-broad` (el gate) · `--vigilar-broad=PREFIJO` (pasada focalizada, NO es el gate) · `--update-vigilancia-broad` (siembra/refresca).",
   "prefixes": {
     "A04": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "cuidados paliativos"
       ],
@@ -39,7 +39,7 @@
     "A06": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "cuidados paliativos"
       ],
@@ -117,7 +117,7 @@
     "A06AD": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "cirrosis"
       ],
@@ -146,7 +146,7 @@
     "A07AA": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "cirrosis"
       ],
@@ -173,7 +173,7 @@
     "A07E": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "enfermedad inflamatoria intestinal"
       ],
@@ -197,7 +197,7 @@
     "A10BK": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "enfermedad renal crónica"
       ],
@@ -212,7 +212,7 @@
     "A11CC04": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "enfermedad renal crónica"
       ],
@@ -224,7 +224,7 @@
     "B01AC": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "cardiopatía isquémica"
       ],
@@ -263,7 +263,7 @@
     "B03A": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "anemia"
       ],
@@ -320,7 +320,7 @@
     "B03B": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "anemia"
       ],
@@ -340,7 +340,7 @@
     "B03X": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "anemia"
       ],
@@ -356,7 +356,7 @@
     "B03XA": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "enfermedad renal crónica"
       ],
@@ -372,7 +372,7 @@
     "B05D": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "enfermedad renal crónica"
       ],
@@ -387,7 +387,7 @@
     "B05Z": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "enfermedad renal crónica"
       ],
@@ -400,7 +400,7 @@
     "C01D": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "cardiopatía isquémica"
       ],
@@ -455,7 +455,7 @@
     "C03": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "cirrosis"
       ],
@@ -544,7 +544,7 @@
     "C03C": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "enfermedad renal crónica"
       ],
@@ -565,7 +565,7 @@
     "C03DA05": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "enfermedad renal crónica"
       ],
@@ -577,7 +577,7 @@
     "C07": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "cardiopatía isquémica"
       ],
@@ -655,7 +655,7 @@
     "C08": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "cardiopatía isquémica"
       ],
@@ -696,7 +696,7 @@
     "C10": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "cardiopatía isquémica"
       ],
@@ -819,7 +819,7 @@
     "D01": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "infección cutánea"
       ],
@@ -891,7 +891,7 @@
     "D05": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "psoriasis"
       ],
@@ -925,7 +925,7 @@
     "D06": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "infección cutánea"
       ],
@@ -981,7 +981,7 @@
     "D07": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "dermatitis atópica"
       ],
@@ -1083,7 +1083,7 @@
     "D11AH": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "dermatitis atópica"
       ],
@@ -1106,7 +1106,7 @@
     "H01AC01": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "enfermedad renal crónica"
       ],
@@ -1118,7 +1118,7 @@
     "H02": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "lupus",
         "trasplante",
@@ -1158,7 +1158,7 @@
     "H05BX": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "enfermedad renal crónica"
       ],
@@ -1174,7 +1174,7 @@
     "J01": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "infección urinaria",
         "infección respiratoria",
@@ -1466,7 +1466,7 @@
     "J02": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "profilaxis infecciosa"
       ],
@@ -1493,7 +1493,7 @@
     "J05": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "antivirales",
         "profilaxis infecciosa"
@@ -1623,7 +1623,7 @@
     "J05AF": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "hepatitis"
       ],
@@ -1652,7 +1652,7 @@
     "J05AP": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "hepatitis"
       ],
@@ -1678,7 +1678,7 @@
     "J06BA": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "inmunoglobulinas"
       ],
@@ -1691,7 +1691,7 @@
     "J06BB": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "inmunoglobulinas"
       ],
@@ -1721,7 +1721,7 @@
     "J06BC": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "anticuerpos monoclonales"
       ],
@@ -1736,7 +1736,7 @@
     "J06BD": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "anticuerpos monoclonales"
       ],
@@ -1758,7 +1758,7 @@
     "J07": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "vacunas"
       ],
@@ -1867,7 +1867,7 @@
     "J07CA": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "vacunas combinadas"
       ],
@@ -1892,7 +1892,7 @@
     "L01F": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "anticuerpos monoclonales"
       ],
@@ -1975,7 +1975,7 @@
     "L01FG": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "anti-vegf"
       ],
@@ -2047,7 +2047,7 @@
     "L03AB": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "hepatitis"
       ],
@@ -2075,7 +2075,7 @@
     "L03AX": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "esclerosis múltiple"
       ],
@@ -2110,7 +2110,7 @@
     "L04": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "enfermedad inflamatoria intestinal",
         "dermatitis atópica",
@@ -2271,7 +2271,7 @@
     "L04AA": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "esclerosis múltiple",
         "espondiloartritis",
@@ -2340,7 +2340,7 @@
     "L04AB": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "espondiloartritis",
         "artritis psoriásica"
@@ -2358,7 +2358,7 @@
     "L04AC": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "espondiloartritis",
         "artritis psoriásica"
@@ -2393,7 +2393,7 @@
     "L04AD": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "trasplante"
       ],
@@ -2407,7 +2407,7 @@
     "L04AG": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "anticuerpos monoclonales"
       ],
@@ -2436,7 +2436,7 @@
     "L04AX": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "trasplante"
       ],
@@ -2459,7 +2459,7 @@
     "M01A": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "dolor",
         "artritis reumatoide",
@@ -2562,7 +2562,7 @@
     "N02": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "dolor"
       ],
@@ -2717,7 +2717,7 @@
     "N02A": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "cuidados paliativos"
       ],
@@ -2780,7 +2780,7 @@
     "N05": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "cuidados paliativos"
       ],
@@ -2993,7 +2993,7 @@
     "N07B": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "adicciones"
       ],
@@ -3020,7 +3020,7 @@
     "N07XX": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "esclerosis múltiple"
       ],
@@ -3054,7 +3054,7 @@
     "P01B": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "profilaxis infecciosa"
       ],
@@ -3094,7 +3094,7 @@
     "P01BA": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "lupus"
       ],
@@ -3110,7 +3110,7 @@
     "R01A": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "sinusitis"
       ],
@@ -3178,7 +3178,7 @@
     "S01LA": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "anti-vegf"
       ],
@@ -3198,7 +3198,7 @@
     "V03AE": {
       "watch": "codigos",
       "watchReason": "Vigilancia de códigos (barata): se compara el conjunto de códigos hoja contra el inventario, una llamada de maestra por pasada. Detecta que la clasificación crece bajo el paraguas, que es la deriva que importa. NO detecta que una hoja vieja estrene producto: para eso hay que promover a 'watched', que cuesta una llamada por hoja (medido 2026-09-05: 2.326 hojas en los 63 prefijos).",
-      "reviewedBy": "sesión Claude Code 2026-09-05 (alta del mecanismo)",
+      "reviewedBy": "revisión asistida por agente, 2026-09-05 (alta del mecanismo)",
       "owners": [
         "enfermedad renal crónica"
       ],

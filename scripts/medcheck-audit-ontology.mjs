@@ -43,11 +43,11 @@ const updateBroadWatch = args.has('--update-vigilancia-broad');
 const baselineArg = readStringArg('--baseline');
 const baselinePath = baselineArg
   ? path.resolve(baselineArg)
-  : path.join(repoRoot, 'assets', 'data', 'reconcile-baseline.json');
+  : path.join(repoRoot, 'scripts', 'baselines', 'reconcile-baseline.json');
 const broadWatchArgPath = readStringArg('--broad-baseline');
 const broadWatchPath = broadWatchArgPath
   ? path.resolve(broadWatchArgPath)
-  : path.join(repoRoot, 'assets', 'data', 'broad-watch-baseline.json');
+  : path.join(repoRoot, 'scripts', 'baselines', 'broad-watch-baseline.json');
 // Antigüedad máxima de un 'accepted' antes de exigir re-revisión humana.
 const ACCEPTED_MAX_AGE_DAYS = 180;
 // Base de los backoffs de reintento (1-3-8 × base). MC_AUDIT_BACKOFF_MS=1 en tests.

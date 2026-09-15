@@ -34,7 +34,7 @@ import { dirname, join } from 'node:path';
 import { comparteRaiz, normalizar, curarTermino } from './medcheck-identity-kin.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const BASELINE = join(ROOT, 'assets', 'data', 'substance-identity-baseline.json');
+const BASELINE = join(ROOT, 'scripts', 'baselines', 'substance-identity-baseline.json');
 const DICCIONARIO = join(ROOT, 'assets', 'data', 'inn-es-en.json');
 const args = process.argv.slice(2);
 const aplicar = args.includes('--aplicar');

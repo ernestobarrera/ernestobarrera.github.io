@@ -4,7 +4,7 @@
  * Procesa el export CSV de la WHO Model List of Essential Medicines (eEML)
  * en un JSON compacto para enriquecer los favoritos de MedCheck.
  *
- * Entrada : assets/data/eml_export.csv  (separador ';', campos con comillas y saltos)
+ * Entrada : scripts/fuentes/eml_export.csv  (separador ';', campos con comillas y saltos)
  * Salida  : assets/data/eml.json
  *
  * Reglas:
@@ -22,7 +22,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const IN = path.join(__dirname, '..', 'assets', 'data', 'eml_export.csv');
+const IN = path.join(__dirname, '..', 'scripts', 'fuentes', 'eml_export.csv');
 const OUT = path.join(__dirname, '..', 'assets', 'data', 'eml.json');
 
 // Secciones que NO son de Atención Primaria española (ruido para el médico de familia).

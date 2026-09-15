@@ -40,7 +40,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const argBaseline = process.argv.slice(2).find(a => a.startsWith('--baseline='));
 const BASELINE = argBaseline
     ? resolve(argBaseline.slice('--baseline='.length))   // resolve, no join: la ruta puede venir absoluta
-    : join(ROOT, 'assets', 'data', 'substance-identity-baseline.json');
+    : join(ROOT, 'scripts', 'baselines', 'substance-identity-baseline.json');
 const comoJson = process.argv.includes('--json');
 const CADUCIDAD_DIAS = 180;
 

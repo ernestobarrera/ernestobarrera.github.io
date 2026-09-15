@@ -21,8 +21,8 @@ LO QUE AFIRMA Y LO QUE NO. Afirma `nregistro -> código ATC de nivel 5`. No afir
 comercialización, financiación ni indicación. **Un `nregistro` ausente NO es un medicamento sin
 ATC**: es un medicamento que hay que verificar en vivo, y el cliente debe caer a ese camino.
 
-NOTA OPERATIVA que costó un 403: el host rechaza `HEAD` sin `User-Agent` (WAF «BlasDeLezo») y
-sirve el `GET` sin problema.
+NOTA OPERATIVA que costó un 403: el host rechaza `HEAD` si la petición no envía `User-Agent`;
+el `GET` con un `User-Agent` identificativo va bien. Enviarlo es lo correcto de todos modos.
 
 Uso:
     python build_atc_index.py --out assets/data/atc-index.json

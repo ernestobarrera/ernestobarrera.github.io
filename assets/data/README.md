@@ -2,13 +2,23 @@
 
 Datos estáticos versionados que enriquecen la app. Patrón ETL: **fuente cruda → script determinista → JSON generado**. Los JSON no se editan a mano; se regeneran.
 
+**Esta carpeta contiene solo lo que el navegador descarga.** Es lo que sirve GitHub Pages, así que
+lo que esté aquí es, de hecho, parte del producto. Lo que no lo es vive fuera:
+
+| fuera de aquí | qué es |
+|---|---|
+| `scripts/baselines/` | líneas base de auditoría y gobierno (identidad de sustancia, perímetro de reconciliación, vigilancia de prefijos ATC amplios). Las leen los scripts de auditoría y los bancos de prueba; la app no. |
+| `scripts/fuentes/` | fuentes crudas de entrada a un ETL (`eml_export.csv`). Entran a un build, no salen a la red. |
+
+`_fuentes.json` declara únicamente los ficheros de esta carpeta, y `scripts/watchdog/check_freshness.py` avisa de cualquiera que exista aquí y no esté declarado.
+
 ## eml.json — WHO Essential Medicines List
 
 Capa de enriquecimiento de favoritos: marca si un fármaco está en la Lista Modelo de Medicamentos Esenciales de la OMS y con qué indicación/sección.
 
 | Pieza | Rol | ¿Editar a mano? |
 |---|---|---|
-| `eml_export.csv` | Fuente cruda oficial (entrada inmutable) | No. Se reemplaza entero por una edición nueva. |
+| `../../scripts/fuentes/eml_export.csv` | Fuente cruda oficial (entrada inmutable) | No. Se reemplaza entero por una edición nueva. |
 | `../../scripts/build-eml-essentials.js` | Transformación (parser, filtra `Added`, dedup, índice `byAtc`, centinelas) | Sí (es código versionado) |
 | `eml.json` | Artefacto generado que consume la app | **No.** Se regenera. |
 
@@ -25,7 +35,7 @@ El script **aborta sin escribir** (exit 1) si fallan los centinelas de integrida
 La eEML se actualiza ~cada 2 años. Para subir a una edición nueva:
 
 1. Descargar el export de <https://list.essentialmeds.org/> (Excel → Guardar como → CSV UTF-8, separador `;`).
-2. Reemplazar `eml_export.csv`.
+2. Reemplazar `scripts/fuentes/eml_export.csv`.
 3. `node scripts/build-eml-essentials.js` → revisar que los contadores y centinelas son razonables.
 4. Actualizar `source`/`generated` en `_meta` (lo hace el script salvo la edición, que está hardcodeada en el script: ajustarla).
 5. Commit de CSV + JSON juntos.

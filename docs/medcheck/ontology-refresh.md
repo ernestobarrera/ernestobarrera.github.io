@@ -142,7 +142,7 @@ broad prefix nobody watches what comes in.** A new ATC code is "covered" automat
 It is not a CAR-T problem: 28 entries and 56 prefixes (`J01`, `J05`, `L04`, `N05`…) all behave this way.
 
 **The universe is the ONTOLOGY, not the baseline.** Every `broad` prefix declared in
-`clinical-ontology.json` must be adjudicated in `assets/data/broad-watch-baseline.json`; an
+`clinical-ontology.json` must be adjudicated in `scripts/baselines/broad-watch-baseline.json`; an
 unadjudicated prefix — or one left in the file that no entry claims any more — **blocks**. The first
 version derived the universe from the baseline's own keys, so an incomplete baseline approved
 itself: the gate defined its own work and then passed it. Found by Codex (P1, 2026-09-05) and pinned

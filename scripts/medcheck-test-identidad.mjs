@@ -65,7 +65,7 @@ check('1b · y por tanto es curada y fiable',
 
 // 1c · Y EL INVARIANTE SIGUE VIVO sobre un término que aún nadie ha resuelto. Se toma del
 // baseline en vez de fijar un nombre a mano: así el test no caduca cuando ese término se cure.
-const baseline = JSON.parse(readFileSync(join(ROOT, 'assets/data/substance-identity-baseline.json'), 'utf8'));
+const baseline = JSON.parse(readFileSync(join(ROOT, 'scripts/baselines/substance-identity-baseline.json'), 'utf8'));
 const sinResolver = Object.entries(baseline.terms || {})
     .filter(([, v]) => v.status === 'unresolved')
     .map(([k]) => k)
@@ -146,7 +146,7 @@ check('7c · el cache-bust no es anterior al dato que sirve',
 // MedCheck no lo protege) bajo una licencia que concede a terceros el derecho a adaptar, y
 // SNOMED CT tiene régimen propio. El resto del fichero no: RxNorm por API y MeSH son de dominio
 // público y Wikidata es CC0.
-const baselinePublico = readFileSync(join(ROOT, 'assets/data/substance-identity-baseline.json'), 'utf8');
+const baselinePublico = readFileSync(join(ROOT, 'scripts/baselines/substance-identity-baseline.json'), 'utf8');
 const sctidSueltos = (baselinePublico.match(/"sctid"\s*:\s*"/g) || []).length
     + (baselinePublico.match(/SNOMEDCT\s+\d+/gi) || []).length;
 check('8 · el baseline público no republica identificadores SNOMED CT', sctidSueltos === 0,

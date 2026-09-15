@@ -30,7 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const BASELINE = join(ROOT, 'assets', 'data', 'substance-identity-baseline.json');
+const BASELINE = join(ROOT, 'scripts', 'baselines', 'substance-identity-baseline.json');
 const args = process.argv.slice(2);
 const aplicar = args.includes('--aplicar');
 const fichero = args.find(a => !a.startsWith('--'));

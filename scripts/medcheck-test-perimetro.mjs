@@ -28,7 +28,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const AUDIT = join(__dirname, 'medcheck-audit-ontology.mjs');
 const MOCK = pathToFileURL(join(__dirname, 'medcheck-mock-cima.mjs')).href;
-const BASELINE_REAL = join(__dirname, '..', 'assets', 'data', 'reconcile-baseline.json');
+const BASELINE_REAL = join(__dirname, '..', 'scripts', 'baselines', 'reconcile-baseline.json');
 const ONTOLOGY = join(__dirname, '..', 'assets', 'data', 'clinical-ontology.json');
 const TERM = 'depresión';
 const workDir = mkdtempSync(join(tmpdir(), 'mc-perim-'));

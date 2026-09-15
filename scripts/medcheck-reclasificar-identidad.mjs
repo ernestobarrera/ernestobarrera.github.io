@@ -43,7 +43,7 @@ import { dirname, join } from 'node:path';
 import { comparteRaiz, normalizar, RUIDO } from './medcheck-identity-kin.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const BASELINE = join(ROOT, 'assets', 'data', 'substance-identity-baseline.json');
+const BASELINE = join(ROOT, 'scripts', 'baselines', 'substance-identity-baseline.json');
 const aplicar = process.argv.includes('--aplicar');
 
 const baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));

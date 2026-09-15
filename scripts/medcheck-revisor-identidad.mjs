@@ -42,7 +42,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const BASELINE = join(ROOT, 'assets', 'data', 'substance-identity-baseline.json');
+const BASELINE = join(ROOT, 'scripts', 'baselines', 'substance-identity-baseline.json');
 const SALIDA_DIR = join(ROOT, 'docs', 'medcheck', 'private');
 const args = process.argv.slice(2);
 const max = Number((args.find(a => a.startsWith('--max=')) || '').split('=')[1]) || 40;

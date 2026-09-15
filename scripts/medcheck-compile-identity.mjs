@@ -34,7 +34,7 @@
  *   node scripts/medcheck-compile-identity.mjs --seco     # no escribe; imprime lo que haría
  *   node scripts/medcheck-compile-identity.mjs --max=20   # acota el barrido (pruebas)
  *
- * Salida: assets/data/substance-identity-baseline.json
+ * Salida: scripts/baselines/substance-identity-baseline.json
  * Contrato de salida: 0 compilación completa · 2 inconclusa (red/API). Nunca 1: proponer
  * candidatos no es un gate; el que bloquea es el auditor del paso 4.
  */
@@ -47,7 +47,7 @@ import vm from 'node:vm';
 import { comparteRaiz, normalizar as norm } from './medcheck-identity-kin.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SALIDA = join(ROOT, 'assets', 'data', 'substance-identity-baseline.json');
+const SALIDA = join(ROOT, 'scripts', 'baselines', 'substance-identity-baseline.json');
 const args = process.argv.slice(2);
 const seco = args.includes('--seco');
 const maxArg = args.find(a => a.startsWith('--max='));
