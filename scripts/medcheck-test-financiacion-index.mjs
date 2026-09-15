@@ -344,8 +344,8 @@ check('sin nota ni fecha, la línea queda como estaba',
 // con el dedo ni con el teclado.
 const htmlFecha = app._financingSummaryValueHtml(
     app._financingSummaryFromIndex('63575').resumen, null, '2026-09-09');
-check('la fecha del dato se pinta visible, en formato de aquí',
-    /Según BIFIMED de 09\/09\/2026\./.test(htmlFecha) && !/title=/.test(htmlFecha), true);
+check('la fecha se pinta visible, en formato de aquí y sin atribuirsela a la fuente',
+    /BIFIMED consultado el 09\/09\/2026\./.test(htmlFecha) && !/title=/.test(htmlFecha), true);
 check('con nota Y fecha, ambas caben en la misma segunda línea',
     (() => { const h = app._financingSummaryValueHtml(
         app._financingSummaryFromIndex('04276007IP1').resumen, fichaNota('04276007IP1'), '2026-09-09');

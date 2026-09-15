@@ -10526,15 +10526,27 @@ ${materialesPlaceholder}
      * tarjeta no hay sitio y la fecha ya viaja en su `title`; aquí sí lo hay, y un `title` es
      * inalcanzable con el dedo y con el teclado.
      *
+     * DICE «CONSULTADO EL» Y NO «DE», y la diferencia no es de estilo. `bifimed_download_date`
+     * es `date.today()` en el ETL (`build_bifimed_catalog.py:600`): es NUESTRO reloj de descarga,
+     * no el periodo que declara la fuente. Comprobado: el artefacto del 09/09 y el índice del
+     * 10/09 tienen fechas distintas y el MISMO `catalog_id`, o sea el mismo dato. Escribir
+     * «BIFIMED de» sería atribuirle a la fuente una fecha que es nuestra — el mismo error que el
+     * contrato de índices ya dejó escrito: vigilar la fecha de generación propia es vigilar
+     * nuestro reloj, no la fuente. Defecto que encontró Codex en el contraste del 2026-09-15.
+     *
+     * Cuando el ETL capture el periodo real que BIFIMED declara en su portada («Nomenclátor de
+     * SEPTIEMBRE - 2026»), esta línea debe pasar a decirlo y entonces sí podrá fechar el dato.
+     *
      * NO decide por él: no apaga ni degrada la afirmación al superar ningún umbral. Cuántos días
      * de retraso son tolerables para esta afirmación es una decisión aún abierta
      * (`2026-09-14_acta-medcheck-desfase-financiacion.md`), y adelantarla aquí sería tomarla sin
-     * decirlo. Mostrar la fecha no requiere ese umbral; apagar algo, sí.
+     * decirlo. Mostrar la fecha no requiere ese umbral; apagar algo, sí — y apagar por una fecha
+     * que no es la de la fuente sería apagar por el reloj equivocado.
      */
     _financingSourceLine(fechaDato) {
         const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(fechaDato ?? ''));
         if (!m) return null;   // sin fecha utilizable no se inventa ninguna
-        return `Según BIFIMED de ${m[3]}/${m[2]}/${m[1]}.`;
+        return `BIFIMED consultado el ${m[3]}/${m[2]}/${m[1]}.`;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

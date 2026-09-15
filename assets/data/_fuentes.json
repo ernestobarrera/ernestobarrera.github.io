@@ -17,13 +17,14 @@
       "campo_fecha": "_meta.generated_at",
       "max_age_days": 40,
       "nota": "Se genera encadenado al ETL de BIFIMED (workflow_run), no por calendario: el índice cruza el catálogo de ese run concreto, y esperar a un día fijo abriría una ventana con el catálogo nuevo y el índice viejo. Que envejezca no hace que filtre mal: el cliente compara el `catalog_id` del índice con el que devuelve /bifimed/meta y apaga la faceta si no coinciden, así que un índice rancio deja de filtrar en vez de esconder resultados. El watchdog avisa antes de llegar ahí.",
-      "desfase_dato_max_days": 40,
-      "campo_fecha_fuente": "_meta.bifimed_download_date",
+      "desfase_dato_max_days": null,
+      "campo_fecha_fuente": null,
       "degradacion": "El filtro falla en cerrado y la lista en abierto: si el catalog_id del indice no coincide con el de /bifimed/meta, no se pinta la casilla y se muestran todos los resultados. Un indice rancio deja de filtrar, nunca esconde.",
       "sellos": {
         "catalog_id": "cliente contra /bifimed/meta (cima-app.js:10653)",
         "nomenclator_catalog_id": null
-      }
+      },
+      "_nota_desfase": "BIFIMED no publica hoy ninguna fecha del DATO que este ETL capture: bifimed_download_date es date.today() en build_bifimed_catalog.py, o sea nuestro reloj de descarga. Medido el 2026-09-15: el artefacto del 09/09 y el indice del 10/09 declaran fechas distintas y el MISMO catalog_id. Declarar ese campo como campo_fecha_fuente era llamar fuente a nuestro reloj, y vigilar el desfase del dato contra el seria vigilar el reloj equivocado: si BIFIMED se congelara, el campo rejuveneceria en cada pasada. Van los dos a null a proposito (null es una afirmacion, no un olvido) hasta que el ETL capture el periodo que BIFIMED declara en su portada («Nomenclator de SEPTIEMBRE - 2026»). max_age_days sigue vigilando la edad del FICHERO, que si es nuestra y si tiene sentido. Defecto encontrado por Codex, contraste del 2026-09-15; acta 2026-09-14_acta-medcheck-desfase-financiacion.md."
     },
     "packs-index.json": {
       "fuente": "CIMA REST /medicamentos + /presentaciones (comerc=1)",
