@@ -335,8 +335,26 @@ for (const nreg of ['04276007IP1', '8472008', '4040']) {
 const htmlIP = app._financingSummaryValueHtml(
     app._financingSummaryFromIndex('04276007IP1').resumen, fichaNota('04276007IP1'));
 check('la nota se pinta como texto, no como atributo', /no publica/.test(htmlIP) && !/title=/.test(htmlIP), true);
-check('sin nota, la línea queda como estaba',
+check('sin nota ni fecha, la línea queda como estaba',
     app._financingSummaryValueHtml(app._financingSummaryFromIndex('63575').resumen).includes('<div'), false);
+
+// La fecha del DATO en la ficha. «Financiado por el SNS» es una afirmación sin tiempo y la sostiene
+// un espejo mensual; con la fecha delante el médico juzga por su cuenta si le sirve. Va en la ficha
+// y no en la tarjeta por el mismo criterio que la nota: aquí hay sitio y un `title` no se alcanza
+// con el dedo ni con el teclado.
+const htmlFecha = app._financingSummaryValueHtml(
+    app._financingSummaryFromIndex('63575').resumen, null, '2026-09-09');
+check('la fecha del dato se pinta visible, en formato de aquí',
+    /Según BIFIMED de 09\/09\/2026\./.test(htmlFecha) && !/title=/.test(htmlFecha), true);
+check('con nota Y fecha, ambas caben en la misma segunda línea',
+    (() => { const h = app._financingSummaryValueHtml(
+        app._financingSummaryFromIndex('04276007IP1').resumen, fichaNota('04276007IP1'), '2026-09-09');
+        return /no publica/.test(h) && /09\/09\/2026/.test(h) && (h.match(/<div/g) || []).length === 1; })(), true);
+// Una fecha que no se entiende NO se pinta: la procedencia no se inventa.
+for (const mala of [null, undefined, '', 'ayer', '9 de septiembre']) {
+    check(`fecha ilegible (${JSON.stringify(mala)}) → no se inventa procedencia`,
+        app._financingSummaryValueHtml(app._financingSummaryFromIndex('63575').resumen, null, mala).includes('<div'), false);
+}
 
 console.log('\n— Degradación: hacia lo lento, nunca hacia lo incorrecto —');
 app._financingIndexUsable = false;

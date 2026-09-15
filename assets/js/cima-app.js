@@ -10503,11 +10503,38 @@ ${materialesPlaceholder}
      * quedan envases comercializados, es justo el hueco en crudo que obliga al médico a
      * reconstruir por su cuenta por qué falta el dato.
      */
-    _financingSummaryValueHtml(summary, nota = null) {
+    _financingSummaryValueHtml(summary, nota = null, fechaDato = null) {
         const link = `<a href="#" onclick="event.preventDefault(); app.openModalTab('financing');" style="margin-left:0.5rem; font-size:0.85em; color:var(--primary); font-weight:500;">Ver detalle →</a>`;
         const linea = `<i class="fas ${summary.icon}" style="color:${summary.color}"></i> ${this._escapeHtml(summary.label)}${link}`;
-        if (!nota) return linea;
-        return `${linea}<div style="margin-top:0.25rem; font-size:0.85em; color:var(--text-secondary); line-height:1.35">${this._escapeHtml(nota)}</div>`;
+        const procedencia = this._financingSourceLine(fechaDato);
+        const segunda = [nota, procedencia].filter(Boolean).join(' ');
+        if (!segunda) return linea;
+        return `${linea}<div style="margin-top:0.25rem; font-size:0.85em; color:var(--text-secondary); line-height:1.35">${this._escapeHtml(segunda)}</div>`;
+    }
+
+    /**
+     * La fecha del DATO, en la ficha y solo en la ficha.
+     *
+     * «Financiado por el SNS» es una afirmación sin tiempo, y la vista que la sostiene es un
+     * espejo mensual: el índice se encadena a BIFIMED, que publica el día 3. Medido el 2026-09-15
+     * sobre el propio BIFIMED, unos 147 CN cambian de veredicto cada mes y ~71 de ellos SALEN de
+     * la financiación, que es el lado que importa: decir «financiado» de algo que dejó de estarlo.
+     * Con la fecha delante, el médico puede juzgar por su cuenta si el dato le sirve; sin ella
+     * tiene que fiarse.
+     *
+     * EN LA FICHA Y NO EN LA TARJETA, a propósito y por el mismo criterio que la `nota`: en la
+     * tarjeta no hay sitio y la fecha ya viaja en su `title`; aquí sí lo hay, y un `title` es
+     * inalcanzable con el dedo y con el teclado.
+     *
+     * NO decide por él: no apaga ni degrada la afirmación al superar ningún umbral. Cuántos días
+     * de retraso son tolerables para esta afirmación es una decisión aún abierta
+     * (`2026-09-14_acta-medcheck-desfase-financiacion.md`), y adelantarla aquí sería tomarla sin
+     * decirlo. Mostrar la fecha no requiere ese umbral; apagar algo, sí.
+     */
+    _financingSourceLine(fechaDato) {
+        const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(fechaDato ?? ''));
+        if (!m) return null;   // sin fecha utilizable no se inventa ninguna
+        return `Según BIFIMED de ${m[3]}/${m[2]}/${m[1]}.`;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -10828,7 +10855,8 @@ ${materialesPlaceholder}
             await this._loadFinancingIndex();
             const desdeIndice = this._financingSummaryFromIndex(med.nregistro);
             if (desdeIndice) {
-                pintar(this._financingSummaryValueHtml(desdeIndice.resumen, desdeIndice.nota));
+                pintar(this._financingSummaryValueHtml(desdeIndice.resumen, desdeIndice.nota,
+                    this._financingIndexMeta?.bifimed_download_date));
                 return;
             }
         } catch (e) {
