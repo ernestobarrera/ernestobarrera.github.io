@@ -2696,10 +2696,12 @@ class MedCheckApp {
         // Financiación SNS. La casilla solo existe si el índice es utilizable, así que aquí no
         // hace falta reconfirmarlo; el predicado vuelve a comprobarlo de todos modos, porque el
         // índice podría dejar de serlo entre el render y el clic.
-        document.getElementById('financiacion-filter')?.addEventListener('change', (e) => {
-            this.filterState.financiacion = e.target.value || null;
+        // Las dos casillas son UNA dimensión con OR dentro, así que comparten manejador y el
+        // estado es un conjunto, no un valor.
+        document.querySelectorAll('.financiacion-filter').forEach((cb) => cb.addEventListener('change', () => {
+            this._toggleFinanciacion(cb.value, cb.checked);
             applyFacet();
-        });
+        }));
         // Ámbito hospitalario. Es aquí, en el cambio explícito, donde nace la memoria: se guarda
         // porque el usuario lo ha elegido, nunca por inercia.
         const cambioHosp = (campo) => (e) => {
@@ -10632,20 +10634,28 @@ ${materialesPlaceholder}
      * nada que contar, y enseñar un cero sería peor que no enseñar nada — parecería que no hay
      * ningún financiado.
      */
+    /** Enciende o apaga uno de los dos valores de la dimensión de financiación. */
+    _toggleFinanciacion(valor, encendido) {
+        if (!this.filterState) this.filterState = this._emptyFilterState();
+        if (!(this.filterState.financiacion instanceof Set)) this.filterState.financiacion = new Set();
+        if (encendido) this.filterState.financiacion.add(valor);
+        else this.filterState.financiacion.delete(valor);
+    }
+
     _revelarFiltroFinanciacion(universo = null) {
         const wrap = document.getElementById('financiacion-filter-wrap');
-        const select = document.getElementById('financiacion-filter');
-        if (!wrap || !select || !this._financingIndexUsable) return;
+        if (!wrap || !this._financingIndexUsable) return;
         const universe = Array.isArray(universo) ? universo : this._lastSearchData?.resultados;
         if (Array.isArray(universe)) {
             const snap = this._filterSnapshot();
             const cuenta = (pred) => this._disjunctiveCount(universe, snap, 'financiacion',
                 m => pred.call(this, this._financingIndex?.[m.nregistro]));
-            const fin = cuenta(this._financingRowHasCoverage);
-            const nofin = cuenta(this._financingRowHasNoCoverage);
-            const opt = (v) => select.querySelector(`option[value="${v}"]`);
-            if (opt('fin')) opt('fin').textContent = `Financiado (${fin})`;
-            if (opt('nofin')) opt('nofin').textContent = `Sin cobertura (${nofin})`;
+            const poner = (clave, n) => {
+                const el = wrap.querySelector(`[data-fin-count="${clave}"]`);
+                if (el) el.textContent = n;
+            };
+            poner('fin', cuenta(this._financingRowHasCoverage));
+            poner('nofin', cuenta(this._financingRowHasNoCoverage));
         }
         wrap.hidden = false;
     }
@@ -12578,12 +12588,27 @@ ${materialesPlaceholder}
             paralelas: fs.paralelas === true,
             // Apagada por defecto: la financiación es un dato administrativo y encenderla sola
             // convertiría un filtro en un criterio implícito de preferencia terapéutica.
-            // TRI-ESTADO desde el 16/09: `null` (todos) · `'fin'` (con cobertura) · `'nofin'` (consta
-            // sin cobertura). Era un booleano «solo financiados», y por eso no había forma de
-            // aislar lo contrario — que es lo que Ernesto echó en falta buscando semaglutida, para
-            // comprobar si Wegovy estaba financiado. Cualquier otro valor cae a `null`: un estado
-            // que no se entiende no puede esconder resultados.
-            financiacion: (fs.financiacion === 'fin' || fs.financiacion === 'nofin') ? fs.financiacion : null,
+            // DOS CASILLAS EN UNA DIMENSIÓN, con OR dentro — como genérico y biosimilar.
+            //
+            // Nació como desplegable de tres posiciones y Ernesto objetó el mismo día: «¿no se
+            // podría poner en check como estamos haciendo con todo hasta ahora?». Tenía razón, y
+            // mi argumento para el desplegable era falso: dije que marcar las dos casillas
+            // significaría lo mismo que ninguna, y NO es así. Ninguna marcada = todo, incluidos los
+            // que no tienen dato. Las dos marcadas = solo los que SÍ tienen dato, en cualquiera de
+            // los dos sentidos. Son dos preguntas distintas, y la segunda es útil precisamente
+            // aquí, donde el tercer grupo —el que el Ministerio no publica— es el que siempre se
+            // cuela sin avisar.
+            //
+            // Se guarda como Set por lo mismo que `doses`, `galenics`, `routes` y `pas`: es una
+            // dimensión con varios valores y OR entre ellos. Solo se admiten los dos conocidos; lo
+            // demás se descarta, porque un valor que no se entiende no puede esconder resultados.
+            // Solo un Set o un array se leen; cualquier otra cosa —el booleano de la versión
+            // anterior, un valor suelto, basura de una URL vieja— sale como conjunto vacío. NO se
+            // intenta interpretar: esparcir un valor no iterable LANZA, y una excepción aquí deja
+            // la lista de resultados en blanco. Una faceta que no se entiende no filtra; no rompe.
+            financiacion: new Set(
+                (fs.financiacion instanceof Set || Array.isArray(fs.financiacion) ? [...fs.financiacion] : [])
+                    .filter(v => v === 'fin' || v === 'nofin')),
             // Ámbito hospitalario. En POSITIVO y encendidos por defecto: «Mostrar H» / «Mostrar DH»
             // en vez de «Ocultar», para que la casilla marcada signifique siempre «lo veo» y no
             // haya que resolver una doble negación. `!== false` y no `=== true` porque el valor por
@@ -12688,11 +12713,19 @@ ${materialesPlaceholder}
                 // utilizable: sin dato fiable no se filtra, se muestra todo y la casilla se
                 // desactiva. Nunca al revés — filtrar con un índice ausente o de otra generación
                 // escondería resultados sin que nadie pueda notarlo.
-                if (!snap.financiacion || !this._financingIndexUsable) return null;
-                if (snap.financiacion === 'nofin') {
-                    return (med) => this._financingRowHasNoCoverage(this._financingIndex?.[med.nregistro]);
+                if (!snap.financiacion.size || !this._financingIndexUsable) return null;
+                {
+                    // OR dentro de la dimensión. Con las dos marcadas el resultado NO es el
+                    // universo: quedan fuera los medicamentos de los que el Ministerio no publica
+                    // situación, que es justamente lo que esa combinación sirve para ver.
+                    const quiereFin = snap.financiacion.has('fin');
+                    const quiereNo = snap.financiacion.has('nofin');
+                    return (med) => {
+                        const fila = this._financingIndex?.[med.nregistro];
+                        return (quiereFin && this._financingRowHasCoverage(fila))
+                            || (quiereNo && this._financingRowHasNoCoverage(fila));
+                    };
                 }
-                return (med) => this._financingRowHasCoverage(this._financingIndex?.[med.nregistro]);
             case 'galenic':
                 // Familia galénica: la misma dimensión que pinta el icono de la tarjeta, para
                 // que pulsar el icono y filtrar sean literalmente lo mismo. OR dentro de la
@@ -12752,7 +12785,7 @@ ${materialesPlaceholder}
             + (snap.lab ? 1 : 0)
             + snap.doses.size
             + (snap.paralelas ? 1 : 0)
-            + (snap.financiacion ? 1 : 0)
+            + snap.financiacion.size
             // Cuentan cuando están DESMARCADAS, porque es entonces cuando filtran. "Limpiar N"
             // tiene que contar exactamente lo que limpia, y limpiar aquí es volver a mostrarlos.
             + (snap.mostrarH ? 0 : 1)
@@ -12807,7 +12840,7 @@ ${materialesPlaceholder}
     _emptyFilterState() {
         // `mostrarH`/`mostrarDH` en `true`: el estado limpio MUESTRA todo. Si el vacío escondiera
         // algo, "Limpiar filtros" dejaría una exclusión puesta sin que nadie la hubiera pedido.
-        return { form: null, lab: null, doses: new Set(), galenics: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false, paralelas: false, financiacion: null, mostrarH: true, mostrarDH: true };
+        return { form: null, lab: null, doses: new Set(), galenics: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false, paralelas: false, financiacion: new Set(), mostrarH: true, mostrarDH: true };
     }
 
     /**
@@ -13097,15 +13130,28 @@ ${materialesPlaceholder}
                             comentario de `performSearch` daba la carrera por aceptable citando
                             «84 KB»: eso era verdad cuando se escribió y hoy el índice pesa 723 KB.
                         */''}
-                        <label class="search-option search-option--select" id="financiacion-filter-wrap"
-                               title="${this._escapeHtml(tipFinanciado)}" ${this._financingIndexUsable ? '' : 'hidden'}>
-                            <span>Financiación SNS</span>
-                            <select id="financiacion-filter" class="control-select control-select--inline">
-                                <option value="">Todos</option>
-                                <option value="fin" ${snap.financiacion === 'fin' ? 'selected' : ''}>Financiado (${financiadoCount})</option>
-                                <option value="nofin" ${snap.financiacion === 'nofin' ? 'selected' : ''}>Sin cobertura (${sinCoberturaCount})</option>
-                            </select>
-                        </label>
+                        ${/*
+                            DOS CASILLAS, no un desplegable. La primera versión del 16/09 fue un
+                            `<select>` de tres posiciones y Ernesto objetó lo obvio: el resto de la
+                            barra son casillas. Y mi razón para el desplegable era falsa —dije que
+                            marcar las dos equivaldría a no marcar ninguna, y no: ninguna deja pasar
+                            también a los que NO tienen dato, y las dos juntas los dejan fuera—.
+                            Son dos preguntas distintas y la combinación es útil.
+
+                            Es la misma dimensión, con OR dentro, igual que genérico y biosimilar.
+                            Los dos recuentos no suman el total a propósito: lo que falta es el
+                            grupo del que el Ministerio no publica situación.
+                        */''}
+                        <span class="fin-filter-group" id="financiacion-filter-wrap" ${this._financingIndexUsable ? '' : 'hidden'}>
+                            <label class="search-option" title="${this._escapeHtml(tipFinanciado)}">
+                                <input type="checkbox" class="financiacion-filter" value="fin" ${snap.financiacion.has('fin') ? 'checked' : ''}>
+                                <span>Financiado <span class="chip-count" data-fin-count="fin" style="font-size:0.7rem;opacity:0.7;">${financiadoCount}</span></span>
+                            </label>
+                            <label class="search-option" title="${this._escapeHtml(tipFinanciado)}">
+                                <input type="checkbox" class="financiacion-filter" value="nofin" ${snap.financiacion.has('nofin') ? 'checked' : ''}>
+                                <span>Sin cobertura SNS <span class="chip-count" data-fin-count="nofin" style="font-size:0.7rem;opacity:0.7;">${sinCoberturaCount}</span></span>
+                            </label>
+                        </span>
                         ${(nH > 0 || !snap.mostrarH) ? `<label class="search-option" title="Uso hospitalario: solo se dispensa en farmacia de hospital. Desmárcalo para quitarlos de la lista.">
                             <input type="checkbox" id="mostrar-h-filter" ${snap.mostrarH ? 'checked' : ''}>
                             <span>Mostrar H <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${nH}</span></span>
@@ -13764,10 +13810,10 @@ ${materialesPlaceholder}
             this.filterState.paralelas = e.target.checked;
             this._applyIndicationFacet(data, searchQuery);
         });
-        document.getElementById('financiacion-filter')?.addEventListener('change', (e) => {
-            this.filterState.financiacion = e.target.value || null;
+        document.querySelectorAll('.financiacion-filter').forEach((cb) => cb.addEventListener('change', () => {
+            this._toggleFinanciacion(cb.value, cb.checked);
             this._applyIndicationFacet(data, searchQuery);
-        });
+        }));
         const cambioHospInd = (campo) => (e) => {
             this.filterState[campo] = e.target.checked;
             this._hospPrefWrite();
@@ -14014,7 +14060,7 @@ ${materialesPlaceholder}
         if (snap.paralelas) params.paralelas = '1';
         // La financiación no se serializaba cuando era booleana, así que un enlace compartido
         // llevaba la lista filtrada y el receptor no podía saberlo. Ahora viaja con su valor.
-        if (snap.financiacion) params.fin = snap.financiacion;
+        if (snap.financiacion.size) params.fin = [...snap.financiacion].join('|');
         if (snap.galenics.size) params.galenic = [...snap.galenics].join('|');
         if (snap.routes.size) params.route = [...snap.routes].join('|');
         if (snap.pas.size) params.pa = [...snap.pas].join('|');
@@ -14035,7 +14081,7 @@ ${materialesPlaceholder}
         // Se restaura SIEMPRE, también cuando el parámetro no viene: sin la rama del `else` un
         // enlace sin `fin=` conservaría el filtro de la búsqueda anterior y el selector diría
         // «Todos» mientras la lista estaría recortada. Solo se aceptan los dos valores conocidos.
-        this.filterState.financiacion = (params.fin === 'fin' || params.fin === 'nofin') ? params.fin : null;
+        this.filterState.financiacion = new Set((params.fin || '').split('|').filter(v => v === 'fin' || v === 'nofin'));
         if (!this.groupingState) this.initGroupingState();
         this.groupingState.routeFilters = new Set(params.route ? params.route.split('|').filter(Boolean) : []);
         this.groupingState.activeIngredientFilters = new Set(params.pa ? params.pa.split('|').filter(Boolean) : []);
@@ -18055,9 +18101,9 @@ ${materialesPlaceholder}
                         body: `
                             <p>Las casillas recortan el listado sobre la marcha y cada una lleva su recuento: comercializado, genérico, receta y <span class="guide-highlight">biosimilar</span>.</p>
                             <p>«Incluir duplicados» merece una frase: un mismo medicamento puede tener varios registros —el nacional y sus importaciones paralelas— y solo algunos publican ficha técnica con secciones. Por defecto se muestran los que sí la publican. Nunca se oculta el único registro de un medicamento.</p>
-                            <p><strong>Financiación SNS</strong> es un desplegable con tres posiciones, no una casilla, porque la pregunta tiene tres respuestas: <span class="guide-highlight">Financiado</span>, <span class="guide-highlight">Sin cobertura</span> y todo lo demás. Los dos números no suman el total, y es correcto: de una parte del catálogo el Ministerio no publica situación, y esos no entran en ninguno de los dos lados. No saber no es lo mismo que no.</p>
+                            <p><strong>Financiado</strong> y <strong>Sin cobertura SNS</strong> son dos casillas de la misma pregunta, y sus números <span class="guide-highlight">no suman el total</span>: de una parte del catálogo el Ministerio no publica situación, y esos no entran en ninguno de los dos lados. No saber no es lo mismo que no. Por eso marcar las dos no es lo mismo que no marcar ninguna: sin marcar sale todo; marcando las dos quedan solo aquellos sobre los que hay un pronunciamiento.</p>
                             <p class="guide-case"><strong>Caso</strong>Buscas OMNIC OCAS y aparecen ocho tarjetas casi idénticas. Con la casilla sin marcar queda la que trae la información clínica; si necesitas ver todos los registros, la marcas.</p>
-                            <p class="guide-case"><strong>Caso</strong>Buscas semaglutida y quieres saber qué no paga el SNS. Pones Financiación SNS en «Sin cobertura» y quedan las cinco plumas de Wegovy; Ozempic y Rybelsus se van, porque están financiados con visado.</p>
+                            <p class="guide-case"><strong>Caso</strong>Buscas semaglutida y quieres saber qué no paga el SNS. Marcas «Sin cobertura SNS» y quedan las cinco plumas de Wegovy; Ozempic y Rybelsus se van, porque están financiados con visado.</p>
                         `,
                         position: 'bottom',
                     },

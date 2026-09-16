@@ -168,14 +168,14 @@ check('fila ausente no cuenta como cobertura', app._financingRowHasCoverage(unde
 
 // TRI-ESTADO desde el 16/09: `null` (todos) · `'fin'` · `'nofin'`. Era un booleano y por eso no
 // había forma de aislar lo que NO está financiado.
-const snapOn = { financiacion: 'fin' };
+const snapOn = { financiacion: new Set(['fin']) };
 app._financingIndex = { 63575: fila(2, 0, 0, 0, 0, 1, 1), 8472008: fila(1, 1, 0, 0, 0, 0, 0) };
 app._financingIndexUsable = false;
 check('índice NO utilizable → el predicado no filtra (fail-open en la lista)',
     app._filterPredicate('financiacion', snapOn), null);
 app._financingIndexUsable = true;
 check('en «Todos» no filtra',
-    app._filterPredicate('financiacion', { financiacion: null }), null);
+    app._filterPredicate('financiacion', { financiacion: new Set() }), null);
 const pred = app._filterPredicate('financiacion', snapOn);
 check('«Financiado» e índice bueno → sí filtra', typeof pred, 'function');
 check('deja pasar al financiado', pred({ nregistro: '8472008' }), true);
@@ -206,7 +206,7 @@ app._financingIndex = {
     8472008: fila(1, 1, 0, 0, 0, 0, 0),      // financiado
     55555: fila(2, 0, 0, 0, 0, 0, 0),        // SIN DATO
 };
-const predNo = app._filterPredicate('financiacion', { financiacion: 'nofin' });
+const predNo = app._filterPredicate('financiacion', { financiacion: new Set(['nofin']) });
 check('«Sin cobertura» filtra', typeof predNo, 'function');
 check('deja pasar al que consta sin cobertura', predNo({ nregistro: '63575' }), true);
 check('excluye al financiado', predNo({ nregistro: '8472008' }), false);
@@ -215,6 +215,23 @@ check('y EXCLUYE al que no tiene dato: es el fallo que este predicado existe par
 check('los dos lados juntos NO cubren el universo, y es correcto',
     app._financingRowHasCoverage(fila(2, 0, 0, 0, 0, 0, 0))
     || app._financingRowHasNoCoverage(fila(2, 0, 0, 0, 0, 0, 0)), false);
+
+// --- Las DOS casillas marcadas no equivalen a ninguna ------------------------
+//
+// Es la afirmación con la que justifiqué un desplegable el 16/09, y era FALSA. Ernesto objetó
+// que el resto de la barra son casillas, y al comprobarlo resultó que la combinación tiene
+// significado propio: ninguna marcada deja pasar también a los que NO tienen dato; las dos
+// marcadas los dejan fuera. Es «enséñame solo aquello sobre lo que el Ministerio se ha
+// pronunciado», que en esta pantalla es una pregunta legítima y frecuente.
+console.log('\n— Las dos casillas marcadas ≠ ninguna marcada —');
+const predAmbas = app._filterPredicate('financiacion', { financiacion: new Set(['fin', 'nofin']) });
+check('con las dos marcadas SÍ hay predicado', typeof predAmbas, 'function');
+check('deja pasar al financiado', predAmbas({ nregistro: '8472008' }), true);
+check('deja pasar al que consta sin cobertura', predAmbas({ nregistro: '63575' }), true);
+check('y EXCLUYE al que no tiene dato — esto es lo que la hace distinta de no marcar nada',
+    predAmbas({ nregistro: '55555' }), false);
+check('sin ninguna marcada no hay predicado: pasa todo, incluido el que no tiene dato',
+    app._filterPredicate('financiacion', { financiacion: new Set() }), null);
 
 // --- Esquema 2: el Nomenclátor como segunda fuente (2026-09-10) ----------------
 //
@@ -413,20 +430,25 @@ check('financiacion es una dimensión declarada',
 // vez de por un defecto del código. Pasó al añadir el filtro hospitalario.
 const snapDe = (filterState) => app._filterSnapshot.call({ filterState, groupingState: {} });
 check('"Limpiar N" cuenta la faceta de financiación en «Financiado»',
-    app._activeFilterCount(snapDe({ financiacion: 'fin' })), 1);
+    app._activeFilterCount(snapDe({ financiacion: new Set(['fin']) })), 1);
 check('y también en «Sin cobertura»: los dos recortan la lista',
-    app._activeFilterCount(snapDe({ financiacion: 'nofin' })), 1);
+    app._activeFilterCount(snapDe({ financiacion: new Set(['nofin']) })), 1);
 check('y el estado limpio no cuenta ninguna',
     app._activeFilterCount(snapDe(app._emptyFilterState())), 0);
-check('el estado vacío nace en «Todos»', app._emptyFilterState().financiacion, null);
+check('el estado vacío nace sin ninguna casilla marcada', [...app._emptyFilterState().financiacion], []);
 const snapFS = (filterState) => app._filterSnapshot.call({ filterState, groupingState: {} });
-check('el snapshot lee el tri-estado', snapFS({ financiacion: 'nofin' }).financiacion, 'nofin');
-check('y por defecto está en «Todos»', snapFS({}).financiacion, null);
+check('el snapshot lee el conjunto', [...snapFS({ financiacion: new Set(['nofin']) }).financiacion], ['nofin']);
+check('y admite las dos a la vez: es una dimensión con OR dentro',
+    [...snapFS({ financiacion: new Set(['fin', 'nofin']) }).financiacion].sort(), ['fin', 'nofin']);
+check('y por defecto no hay ninguna marcada', [...snapFS({}).financiacion], []);
 // Un valor que no se entiende NO puede esconder resultados: cae a «Todos», no a un filtro.
-check('un valor desconocido cae a «Todos», no filtra',
-    snapFS({ financiacion: 'financiadisimo' }).financiacion, null);
-check('y el booleano viejo tampoco cuela',
-    snapFS({ financiacion: true }).financiacion, null);
+check('un valor desconocido dentro del conjunto se descarta',
+    [...snapFS({ financiacion: new Set(['fin', 'financiadisimo']) }).financiacion], ['fin']);
+// Un no-iterable reventaba el snapshot, y una excepcion aqui deja la lista EN BLANCO.
+check('un valor que no es conjunto ni array no lanza: sale vacio',
+    [...snapFS({ financiacion: 'financiadisimo' }).financiacion], []);
+check('y el booleano de la version anterior tampoco cuela',
+    [...snapFS({ financiacion: true }).financiacion], []);
 
 // --- EL CONTROL EXISTE AUNQUE EL ÍNDICE NO HAYA LLEGADO ----------------------
 //
@@ -452,12 +474,14 @@ console.log('\n— El control se pinta siempre; lo que espera al índice es su v
 
     appBar._financingIndexUsable = false;
     const sinIndice = appBar.renderResultsControlBar(1, { resultados: universo }, { resultados: universo });
-    check('el <select> está en el DOM aunque el índice no haya llegado',
-        /id="financiacion-filter"/.test(sinIndice), true);
+    check('las casillas están en el DOM aunque el índice no haya llegado',
+        (sinIndice.match(/class="financiacion-filter"/g) || []).length, 2);
     check('y nace OCULTO, porque sus cifras aún no se pueden calcular',
         /id="financiacion-filter-wrap"[^>]*hidden/.test(sinIndice), true);
-    check('con sus tres opciones ya puestas',
-        /value="fin"/.test(sinIndice) && /value="nofin"/.test(sinIndice) && /value=""/.test(sinIndice), true);
+    check('con sus dos valores ya puestos',
+        /value="fin"/.test(sinIndice) && /value="nofin"/.test(sinIndice), true);
+    check('y ninguna marcada de salida: sin marcar = todo, incluidos los que no tienen dato',
+        /checked/.test(sinIndice.slice(sinIndice.indexOf('financiacion-filter-wrap'), sinIndice.indexOf('financiacion-filter-wrap') + 900)), false);
 
     appBar._financingIndexUsable = true;
     const conIndice = appBar.renderResultsControlBar(1, { resultados: universo }, { resultados: universo });
