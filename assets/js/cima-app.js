@@ -4469,10 +4469,15 @@ class MedCheckApp {
         // Así que es un ACCESO, no un aviso: un icono neutro que, al pulsarlo, pide el detalle de
         // ESE registro y lo enseña anclado a la tarjeta. El coste se paga una vez por medicamento
         // preguntado, y queda en caché.
-        const excTag = `<button type="button" class="med-detail-tag med-detail-tag--exc"
+        // El ESTADO sale de la caché, no de una variable de este render: así lo ya consultado sigue
+        // marcado al facetar, reordenar o volver de la ficha. Un color que solo viviera en el botón
+        // pulsado desaparecería con el primer filtro.
+        const excEstado = this._excipientesEstadoChip(med.nregistro);
+        const excTag = `<button type="button" class="med-detail-tag med-detail-tag--exc${excEstado.clase}"
+                    data-exc-nreg="${med.nregistro}"
                     onclick="event.stopPropagation(); app.openMedExcipients('${med.nregistro}', this)"
                     aria-label="Ver los excipientes de declaración obligatoria de este medicamento"
-                    title="Excipientes de declaración obligatoria (CIMA). Se consultan al pulsar; no es la composición completa."><i class="fas fa-vial"></i></button>`;
+                    title="${this._escapeHtml(excEstado.titulo)}"><i class="fas fa-vial"></i>${excEstado.texto ? `<span class="med-detail-tag__text">${excEstado.texto}</span>` : ''}</button>`;
 
         this._medRenderCache.set(med.nregistro, med);
         const isFav = this.isFavorite(med.nregistro);
@@ -14205,6 +14210,21 @@ ${materialesPlaceholder}
             'trigo': { icon: 'fa-bread-slice', label: 'Almidón de trigo', color: '#ef4444' },
             'aspartamo': { icon: 'fa-exclamation', label: 'Aspartamo (fenilalanina)', color: '#f97316' },
             'sacarosa': { icon: 'fa-cube', label: 'Sacarosa', color: '#eab308' },
+            // LOS DOS ALCOHOLES QUE NO SON ETANOL, Y VAN ANTES QUE `alcohol` A PROPÓSITO.
+            //
+            // Hasta el 2026-09-16 «ALCOHOL BENCILICO» y «CETOESTEARILICO, ALCOHOL» casaban con la
+            // clave genérica `alcohol` y salían rotulados «Alcohol», con botella de vino y el rojo
+            // del etanol. No son etanol y su advertencia es otra: el bencílico es un conservante
+            // cuyo aviso es neonatal (síndrome del jadeo, acidosis metabólica a dosis altas) y el
+            // cetoestearílico es un excipiente tópico cuyo aviso es la reacción cutánea local.
+            // Rotularlos como bebida alcohólica no es un matiz de etiqueta: manda al lector a
+            // pensar en interacción con alcohol, que es justo lo que ahí no aplica.
+            //
+            // Medidos en una muestra aleatoria de 287 comercializados (16/09/2026): 4 y 2. Poco
+            // volumen, pero el error es de contenido, no de presentación — y se iba a pintar en
+            // color, que es lo que convierte un rótulo flojo en una afirmación.
+            'alcohol bencilico': { icon: 'fa-triangle-exclamation', label: 'Alcohol bencílico', color: '#dc2626' },
+            'cetoestearilico': { icon: 'fa-hand-dots', label: 'Alcohol cetoestearílico', color: '#94a3b8' },
             'etanol': { icon: 'fa-wine-bottle', label: 'Etanol', color: '#dc2626' },
             'alcohol': { icon: 'fa-wine-bottle', label: 'Alcohol', color: '#dc2626' },
             'soja': { icon: 'fa-seedling', label: 'Soja (lecitina)', color: '#f97316' },
@@ -14235,8 +14255,12 @@ ${materialesPlaceholder}
         const mapa = Object.entries(MedCheckApp.EXCIPIENTES_RIESGO);
         const riesgo = [];
         const otros = [];
+        // Se comparan SIN acentos. Las claves del mapa no llevan ninguno y los literales de CIMA
+        // casi nunca, pero «BENCÍLICO» y «BENCILICO» conviven en el censo y una clave que depende
+        // de cómo se acentuó un literal es una clave que falla en silencio.
+        const sinAcentos = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
         for (const e of todos) {
-            const nombre = (e.nombre || '').toLowerCase();
+            const nombre = sinAcentos(e.nombre || '');
             const hit = mapa.find(([clave]) => nombre.includes(clave));
             if (hit) {
                 riesgo.push({
@@ -14249,6 +14273,67 @@ ${materialesPlaceholder}
             }
         }
         return { todos, riesgo, otros, total: todos.length };
+    }
+
+    /**
+     * El estado visual del chip de un registro. TRES estados, y el que los separa es si ya se ha
+     * preguntado a CIMA por ese medicamento:
+     *
+     *   `desconocido` — todavía no se ha preguntado. Neutro. No puede colorearse porque no se
+     *                   sabe: `excipientes` no viene en la lista (ver `openMedExcipients`).
+     *   `riesgo`      — preguntado, y hay al menos un excipiente con advertencia. Se marca.
+     *   `sin-riesgo`  — preguntado, y no hay ninguno con advertencia (con EDO o sin ninguno).
+     *
+     * POR QUÉ EL COLOR LLEGA DESPUÉS Y NO ANTES, que es la pregunta de Ernesto del 16/09 («si es
+     * fiable, ¿no debería aparecer con color más marcado si hay contenido?»): sí, y por eso está.
+     * Lo que no puede hacerse es colorear ANTES de preguntar, que es el único momento en el que el
+     * argumento del 55 % manda — una marca en más de la mitad de las tarjetas, puesta sin saber,
+     * sería ruido. Una marca que aparece porque tú preguntaste por ESE medicamento es lo contrario:
+     * dice algo que acabas de averiguar, y se queda para que puedas repasar la lista.
+     *
+     * Lee de `_excipientesCache`, así que SOBREVIVE A LOS REPINTADOS: al facetar, reordenar o
+     * volver de la ficha, lo ya consultado sigue marcado. Si el color solo se pusiera al vuelo
+     * sobre el botón pulsado, el primer filtro lo borraría y el usuario creería que lo soñó.
+     */
+    _excipientesEstadoChip(nregistro) {
+        const datos = this._excipientesCache?.get(String(nregistro));
+        if (!datos) {
+            return {
+                estado: 'desconocido', clase: '', texto: '',
+                titulo: 'Excipientes de declaración obligatoria (CIMA). Se consultan al pulsar; no es la composición completa.',
+            };
+        }
+        if (datos.riesgo.length > 0) {
+            // El número SÍ se pinta, al revés que en el chip de la cámara: ahí la cifra era
+            // redundante (la foto se ve al abrirla) y aquí es el dato — «2» significa dos motivos
+            // distintos para mirar. Los nombres van en el título; el color es UNO solo, el de
+            // advertencia, y no el del excipiente concreto: el mapa tiene colores por excipiente
+            // pero NO son una escala de gravedad, así que pintar «el peor» sería inventarse una
+            // jerarquía clínica que no consta en ninguna fuente.
+            return {
+                estado: 'riesgo', clase: ' med-detail-tag--exc-riesgo', texto: String(datos.riesgo.length),
+                titulo: `Contiene ${datos.riesgo.length} excipiente${datos.riesgo.length > 1 ? 's' : ''} de declaración obligatoria con advertencia: `
+                    + `${datos.riesgo.map(e => e.label).join(', ')}. Pulsa para ver las cantidades.`,
+            };
+        }
+        return {
+            estado: 'sin-riesgo', clase: ' med-detail-tag--exc-visto', texto: '',
+            titulo: datos.total > 0
+                ? `Consultado: ${datos.total} excipiente${datos.total > 1 ? 's' : ''} de declaración obligatoria, ninguno de la lista de advertencia. Pulsa para verlos.`
+                : 'Consultado: CIMA no declara excipientes de declaración obligatoria para este registro.',
+        };
+    }
+
+    /** Repinta los chips de un registro tras conocer su respuesta. Puede haber más de uno en
+     *  pantalla —la misma búsqueda agrupada por ATC y por PA— así que se buscan todos. */
+    _refrescarChipsExcipientes(nregistro) {
+        const estado = this._excipientesEstadoChip(nregistro);
+        for (const chip of document.querySelectorAll(`[data-exc-nreg="${CSS.escape(String(nregistro))}"]`)) {
+            chip.classList.remove('med-detail-tag--exc-riesgo', 'med-detail-tag--exc-visto');
+            if (estado.clase.trim()) chip.classList.add(estado.clase.trim());
+            chip.title = estado.titulo;
+            chip.innerHTML = `<i class="fas fa-vial"></i>${estado.texto ? `<span class="med-detail-tag__text">${estado.texto}</span>` : ''}`;
+        }
     }
 
     /**
@@ -14290,8 +14375,12 @@ ${materialesPlaceholder}
             const med = await this.api.getMedicamento(nregistro, { headers: { 'X-MC-Autocomplete': '1' } });
             const datos = this._excipientesEDO(med);
             this._excipientesCache.set(clave, datos);
-            // El usuario pudo cerrarlo o abrir otro mientras viajaba la petición: pintar entonces
-            // sería contestar a una pregunta que ya no está hecha.
+            // El chip se marca SIEMPRE que llega la respuesta, aunque el popover ya se haya
+            // cerrado: lo que se averiguó no se pierde porque el usuario fuese rápido cerrando.
+            this._refrescarChipsExcipientes(clave);
+            // El popover, en cambio, solo se pinta si sigue siendo el suyo: el usuario pudo abrir
+            // otro medicamento mientras viajaba la petición, y contestar ahí sería responder a una
+            // pregunta que ya no está hecha.
             if (this._excPopoverNreg === clave) this._pintarPopoverExcipientes(ancla, datos, clave);
         } catch (err) {
             console.warn('[excipientes] no se pudo consultar', clave, err?.message);
@@ -17816,6 +17905,7 @@ ${materialesPlaceholder}
                             <p>Cada tarjeta lleva seis accesos con su sigla —<span class="guide-key">FT</span> ficha y prospecto, <span class="guide-key">IND</span> indicaciones, <span class="guide-key">POS</span> posología, <span class="guide-key">INT</span> interacciones, <span class="guide-key">EVI</span> evidencia, <span class="guide-key">SEG</span> seguridad— que abren la ficha ya en esa pestaña. Los que salen apagados es porque CIMA no publica esa sección para ese registro: así no hay que pulsar para descubrir que no hay nada.</p>
                             <p>Un icono de cámara <i class="fas fa-camera"></i> junto a la dosis aparece solo en los registros de los que CIMA publica imagen del envase o de la forma farmacéutica, y <span class="guide-highlight">pulsarlo la abre ahí mismo</span>, sin entrar en la ficha. Así no hay que abrirlas una a una para averiguar cuáles tienen foto.</p>
                             <p>El frasco <i class="fas fa-vial"></i> va en <strong>todas</strong> las tarjetas y abre los <span class="guide-highlight">excipientes de declaración obligatoria</span> sin entrar en la ficha. A diferencia de la cámara no adelanta si hay algo: la lista de CIMA no trae los excipientes, así que se consultan al pulsar. Son los de declaración obligatoria, no la composición completa.</p>
+                            <p>Al consultarlo, el frasco <span class="guide-highlight">se queda marcado</span>: en ámbar y con el número si hay excipientes con advertencia, atenuado si ya lo miraste y no había ninguno. La marca <strong>sobrevive a filtrar y reordenar</strong>, así que en una lista larga se ve de un vistazo qué has comprobado y qué no.</p>
                             <p class="guide-case"><strong>Caso</strong>El paciente trae la caja y pregunta para qué es. Buscas el nombre y pulsas <span class="guide-key">IND</span>: la indicación autorizada, sin abrir el PDF de la ficha técnica.</p>
                             <p class="guide-case"><strong>Caso</strong>Intolerancia a la lactosa y cinco genéricos en pantalla. Pulsas el frasco <i class="fas fa-vial"></i> de cada uno y descartas los que la llevan, sin abrir cinco fichas.</p>
                         `,

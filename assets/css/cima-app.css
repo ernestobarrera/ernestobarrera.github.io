@@ -4686,6 +4686,40 @@ body {
     color: var(--primary);
 }
 
+/* CONSULTADO Y CON ADVERTENCIA. El color llega DESPUÉS de preguntar, nunca antes: mientras no se
+   ha consultado no se sabe, y marcar sin saber sería la marca que llevaría más de la mitad de las
+   tarjetas. Un solo color de advertencia, no el del excipiente concreto: el mapa tiene un color
+   por excipiente pero NO es una escala de gravedad, y pintar «el peor» inventaría una jerarquía
+   clínica que no consta en ninguna fuente. Cuál es y cuánto lleva se lee en el popover. */
+.med-detail-tag--exc-riesgo {
+    background: var(--warning-light);
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.med-detail-tag--exc-riesgo i,
+.med-detail-tag--exc-riesgo:hover i,
+.med-detail-tag--exc-riesgo:focus-visible i {
+    color: var(--warning);
+}
+
+.med-detail-tag--exc-riesgo .med-detail-tag__text {
+    font-variant-numeric: tabular-nums;
+}
+
+/* CONSULTADO Y SIN ADVERTENCIA. Tiene que distinguirse de «sin consultar», que es lo que era antes
+   de pulsar: si los dos se vieran igual, repasar una lista larga obligaría a volver a pulsar para
+   saber cuáles ya habías mirado. Se marca por opacidad y no por otro color, porque «lo miré y no
+   había nada» no es una alerta y no debe competir con las que sí lo son. */
+.med-detail-tag--exc-visto {
+    opacity: 0.45;
+}
+
+.med-detail-tag--exc-visto:hover,
+.med-detail-tag--exc-visto:focus-visible {
+    opacity: 1;
+}
+
 /* ═══════════════════════════════════════════════════
    Popover de excipientes (anclado al chip de la tarjeta)
    ═══════════════════════════════════════════════════

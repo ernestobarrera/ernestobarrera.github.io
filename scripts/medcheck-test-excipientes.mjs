@@ -161,23 +161,89 @@ console.log('\n— 6 · El alcance del dato viaja siempre con el dato —');
         'y nombra el alcance real: solo los de declaración obligatoria');
 }
 
-console.log('\n— 7 · El chip de la tarjeta: botón de verdad, en todas, y sin afirmar nada —');
+console.log('\n— 7 · El chip de la tarjeta: botón de verdad y en todas —');
 {
-    ok(/class="med-detail-tag med-detail-tag--exc"/.test(FUENTE),
-        'el chip existe con su clase propia');
-    ok(/<button type="button" class="med-detail-tag med-detail-tag--exc"/.test(FUENTE),
-        'es un <button>, así que se alcanza tabulando y responde a Intro');
+    ok(/<button type="button" class="med-detail-tag med-detail-tag--exc\$\{excEstado\.clase\}"/.test(FUENTE),
+        'es un <button> con su clase base más la del estado: se alcanza tabulando y responde a Intro');
     ok(/aria-label="Ver los excipientes de declaración obligatoria/.test(FUENTE),
         'lleva aria-label: el icono solo no dice nada a un lector de pantalla');
     // No puede nacer condicionado a que HAYA excipientes: ese dato no existe al pintar la lista.
-    const bloque = FUENTE.slice(FUENTE.indexOf('const excTag'), FUENTE.indexOf('const excTag') + 900);
-    ok(!/\?\s*`<button/.test(bloque) && !/:\s*''/.test(bloque),
+    const bloque = FUENTE.slice(FUENTE.indexOf('const excTag'), FUENTE.indexOf('const excTag') + 700);
+    ok(!/\?\s*`<button/.test(bloque),
         'el chip NO es condicional: la lista de CIMA no trae excipientes, así que no se puede saber');
     ok(/app\.openMedExcipients\('\$\{med\.nregistro\}', this\)/.test(FUENTE),
         'pasa el propio botón como ancla, para poder colocar el popover junto a él');
+    ok(/data-exc-nreg="\$\{med\.nregistro\}"/.test(FUENTE),
+        'lleva su nregistro en el DOM: es lo que permite repintarlo cuando llega la respuesta');
 }
 
-console.log('\n— 8 · La petición del detalle es SECUNDARIA —');
+console.log('\n— 8 · El color llega DESPUÉS de preguntar, nunca antes —');
+{
+    app._excipientesCache = new Map();
+
+    const sinConsultar = app._excipientesEstadoChip('999');
+    ok(sinConsultar.estado === 'desconocido' && sinConsultar.clase === '' && sinConsultar.texto === '',
+        'sin consultar: ni color ni cifra — no se sabe, y marcar sin saber es el ruido que esto evita',
+        JSON.stringify(sinConsultar));
+
+    app._excipientesCache.set('A', app._excipientesEDO({ excipientes: [exc('LACTOSA MONOHIDRATO', '78,4', 'mg'), exc('MANITOL (E-421)')] }));
+    const conRiesgo = app._excipientesEstadoChip('A');
+    ok(conRiesgo.estado === 'riesgo' && /exc-riesgo/.test(conRiesgo.clase),
+        'consultado y con advertencia: se marca', JSON.stringify(conRiesgo));
+    ok(conRiesgo.texto === '1',
+        'y lleva la CIFRA de excipientes con advertencia, que es el dato', conRiesgo.texto);
+    ok(/Lactosa/.test(conRiesgo.titulo) && !/Manitol/i.test(conRiesgo.titulo),
+        'el título nombra los que tienen advertencia, no todos', conRiesgo.titulo);
+
+    app._excipientesCache.set('B', app._excipientesEDO({ excipientes: [exc('CROSCARMELOSA SODICA')] }));
+    const sinRiesgo = app._excipientesEstadoChip('B');
+    ok(sinRiesgo.estado === 'sin-riesgo' && /exc-visto/.test(sinRiesgo.clase),
+        'consultado y sin advertencia: se distingue de «sin consultar», o no se sabría qué ya miraste');
+    ok(sinRiesgo.clase !== conRiesgo.clase && sinRiesgo.clase !== sinConsultar.clase,
+        'los tres estados tienen apariencias distintas entre sí');
+
+    app._excipientesCache.set('C', app._excipientesEDO({ excipientes: [] }));
+    const ninguno = app._excipientesEstadoChip('C');
+    ok(ninguno.estado === 'sin-riesgo' && /no declara/i.test(ninguno.titulo),
+        '«CIMA no declara ninguno» se dice con esas palabras, no como «sin advertencias»', ninguno.titulo);
+
+    // El color no puede derivarse del excipiente concreto: el mapa tiene un color por excipiente
+    // pero no es una escala de gravedad, y elegir «el peor» inventaría una jerarquía clínica.
+    // Se acota al CUERPO del método, no a la primera mención de su nombre: la primera aparición
+    // está en el render de la tarjeta, miles de líneas antes, y el trozo intermedio incluye el
+    // popover —donde cada excipiente SÍ lleva su color, y con razón—. Una prueba que mira más
+    // de lo que dice vigilar falla por donde no toca, que es como se acaba borrando.
+    const ini = FUENTE.indexOf('_excipientesEstadoChip(nregistro) {');
+    const cuerpoChip = FUENTE.slice(ini, FUENTE.indexOf('_refrescarChipsExcipientes(nregistro) {', ini));
+    ok(ini > 0 && cuerpoChip.length > 0 && !/\.color/.test(cuerpoChip),
+        'el chip NO pinta el color del excipiente concreto: no hay escala de gravedad que sostenga «el peor»');
+}
+
+console.log('\n— 9 · Los dos alcoholes que no son etanol (regresión reparada el 16/09) —');
+{
+    const casos = [
+        ['ALCOHOL BENCILICO', 'Alcohol bencílico'],
+        ['ALCOHOL BENCÍLICO', 'Alcohol bencílico'],   // con acento: el censo tiene las dos grafías
+        ['CETOESTEARILICO, ALCOHOL', 'Alcohol cetoestearílico'],
+        ['ALCOHOL ETILICO (ETANOL)', 'Etanol'],
+        ['ETANOL ANHIDRO', 'Etanol'],
+    ];
+    for (const [literal, esperado] of casos) {
+        const r = app._excipientesEDO({ excipientes: [exc(literal)] });
+        ok(r.riesgo[0]?.label === esperado,
+            `«${literal}» se rotula «${esperado}»`, `salió «${r.riesgo[0]?.label}»`);
+    }
+    const benc = app._excipientesEDO({ excipientes: [exc('ALCOHOL BENCILICO')] }).riesgo[0];
+    ok(benc.icon !== 'fa-wine-bottle',
+        'y el bencílico NO lleva botella de vino: su advertencia es neonatal, no de bebida alcohólica',
+        benc.icon);
+    const claves = Object.keys(Clase.EXCIPIENTES_RIESGO);
+    ok(claves.indexOf('alcohol bencilico') < claves.indexOf('alcohol')
+        && claves.indexOf('cetoestearilico') < claves.indexOf('alcohol'),
+        'los dos específicos se evalúan ANTES que la clave genérica `alcohol`');
+}
+
+console.log('\n— 10 · La petición del detalle es SECUNDARIA —');
 {
     const i = FUENTE.indexOf('async openMedExcipients(');
     const cuerpo = FUENTE.slice(i, FUENTE.indexOf('_cuerpoPopoverExcipientes(datos)', i));
