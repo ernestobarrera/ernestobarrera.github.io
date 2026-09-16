@@ -4454,6 +4454,26 @@ class MedCheckApp {
                     title="Ver ${nFotos === 1 ? 'la imagen' : `las ${nFotos} imágenes`} que publica CIMA de este registro (envase o forma farmacéutica)."><i class="fas fa-camera"></i></button>`
             : '';
 
+        // Excipientes de declaración obligatoria. VA EN TODAS LAS TARJETAS Y NO AFIRMA NADA, al
+        // revés que el icono de cámara, que solo aparece cuando hay foto. Son dos casos distintos
+        // y conviene no copiar el patrón sin mirar:
+        //
+        //   · `fotos` viene en la respuesta de la lista, así que saber quién tiene imagen es
+        //     gratis. `excipientes` NO viene: solo lo devuelve `/medicamento?nregistro=`
+        //     (verificado contra CIMA el 2026-09-16). Pintar la marca solo donde la hay exigiría
+        //     una petición de detalle POR TARJETA antes de pintar.
+        //   · Y aunque fuese gratis, no debería alertar: medido sobre 58 comercializados al azar,
+        //     el 55 % casa con la lista de excipientes de riesgo. Una señal que llevan más de la
+        //     mitad de las filas se aprende a ignorar entera, y con ella la que sí traía algo.
+        //
+        // Así que es un ACCESO, no un aviso: un icono neutro que, al pulsarlo, pide el detalle de
+        // ESE registro y lo enseña anclado a la tarjeta. El coste se paga una vez por medicamento
+        // preguntado, y queda en caché.
+        const excTag = `<button type="button" class="med-detail-tag med-detail-tag--exc"
+                    onclick="event.stopPropagation(); app.openMedExcipients('${med.nregistro}', this)"
+                    aria-label="Ver los excipientes de declaración obligatoria de este medicamento"
+                    title="Excipientes de declaración obligatoria (CIMA). Se consultan al pulsar; no es la composición completa."><i class="fas fa-vial"></i></button>`;
+
         this._medRenderCache.set(med.nregistro, med);
         const isFav = this.isFavorite(med.nregistro);
 
@@ -4490,6 +4510,7 @@ class MedCheckApp {
                     </span>
                     <span class="med-detail-tag med-detail-tag--fin" data-fin-nreg="${med.nregistro}" hidden></span>
                     ${fotoTag}
+                    ${excTag}
                 </div>
 
                 ${(badges.length > 0 || contextAlerts.length > 0) ? `
@@ -9496,52 +9517,22 @@ class MedCheckApp {
             }
         }
 
-        // Excipientes de declaración obligatoria (EDO)
+        // Excipientes de declaración obligatoria (EDO).
+        //
+        // La CLASIFICACIÓN ya no vive aquí: la resuelve `_excipientesEDO`, que comparten la ficha
+        // y el chip de la tarjeta. Mientras el mapa de alérgenos estuvo escrito dentro de este
+        // método, la tarjeta no podía usarlo sin copiarlo — y una copia es cómo dos superficies
+        // acaban llamando "riesgo" a cosas distintas del mismo medicamento. Mismo motivo por el
+        // que `_lightboxImages` salió del modal cuando la tarjeta empezó a abrir imágenes.
+        const excEDO = this._excipientesEDO(med);
         let excipientesHtml = '';
-        if (med.excipientes && med.excipientes.length > 0) {
-            // Mapa de excipientes clínicamente relevantes (alérgenos / precauciones)
-            const ALLERGEN_KEYWORDS = {
-                'lactosa': { icon: 'fa-cheese', label: 'Lactosa', color: '#f59e0b' },
-                'gluten': { icon: 'fa-bread-slice', label: 'Gluten', color: '#ef4444' },
-                'trigo': { icon: 'fa-bread-slice', label: 'Almidón de trigo', color: '#ef4444' },
-                'aspartamo': { icon: 'fa-exclamation', label: 'Aspartamo (fenilalanina)', color: '#f97316' },
-                'sacarosa': { icon: 'fa-cube', label: 'Sacarosa', color: '#eab308' },
-                'etanol': { icon: 'fa-wine-bottle', label: 'Etanol', color: '#dc2626' },
-                'alcohol': { icon: 'fa-wine-bottle', label: 'Alcohol', color: '#dc2626' },
-                'soja': { icon: 'fa-seedling', label: 'Soja (lecitina)', color: '#f97316' },
-                'cacahuete': { icon: 'fa-seedling', label: 'Cacahuete', color: '#ef4444' },
-                'tartrazina': { icon: 'fa-palette', label: 'Tartrazina (E102)', color: '#f59e0b' },
-                'rojo allura': { icon: 'fa-palette', label: 'Rojo Allura (E129)', color: '#f59e0b' },
-                'parahidroxibenzoato': { icon: 'fa-flask', label: 'Parabenos', color: '#f59e0b' },
-                'sulfito': { icon: 'fa-lungs', label: 'Sulfitos', color: '#ef4444' },
-                'benzoato': { icon: 'fa-flask', label: 'Benzoato sódico', color: '#f59e0b' },
-                'laurilsulfato': { icon: 'fa-flask', label: 'Laurilsulfato sódico', color: '#94a3b8' }
-            };
+        if (excEDO.total > 0) {
+            const listaCompleta = excEDO.todos.map(e =>
+                `<span class="excipient-item">${e.nombre}${e.cantidad ? ' <small>' + e.cantidad + ' ' + (e.unidad || '') + '</small>' : ''}</span>`
+            ).join(', ');
 
-            const flaggedExcipients = [];
-            const otherExcipients = [];
-
-            for (const exc of med.excipientes) {
-                const name = (exc.nombre || '').toLowerCase();
-                let matched = false;
-                for (const [keyword, meta] of Object.entries(ALLERGEN_KEYWORDS)) {
-                    if (name.includes(keyword)) {
-                        flaggedExcipients.push({
-                            ...meta,
-                            fullName: exc.nombre,
-                            cantidad: exc.cantidad ? `${exc.cantidad} ${exc.unidad || ''}`.trim() : ''
-                        });
-                        matched = true;
-                        break;
-                    }
-                }
-                if (!matched) {
-                    otherExcipients.push(exc);
-                }
-            }
-
-            if (flaggedExcipients.length > 0) {
-                const flaggedChips = flaggedExcipients.map(e =>
+            if (excEDO.riesgo.length > 0) {
+                const flaggedChips = excEDO.riesgo.map(e =>
                     `<span class="badge-excipient" style="--exc-color: ${e.color}" title="${e.fullName}${e.cantidad ? ' — ' + e.cantidad : ''}">
                         <i class="fas ${e.icon}"></i> ${e.label}
                     </span>`
@@ -9554,20 +9545,20 @@ class MedCheckApp {
                 <div class="excipientes-flagged">
                     ${flaggedChips}
                 </div>
-                ${otherExcipients.length > 0 ? `
+                ${excEDO.otros.length > 0 ? `
                 <details class="excipientes-otros">
-                    <summary>Ver todos los excipientes (${med.excipientes.length})</summary>
+                    <summary>Ver todos los excipientes (${excEDO.total})</summary>
                     <div class="excipientes-list">
-                        ${med.excipientes.map(e => `<span class="excipient-item">${e.nombre}${e.cantidad ? ' <small>' + e.cantidad + ' ' + (e.unidad || '') + '</small>' : ''}</span>`).join(', ')}
+                        ${listaCompleta}
                     </div>
                 </details>` : ''}
                 `;
-            } else if (med.excipientes.length > 0) {
+            } else {
                 excipientesHtml = `
                 <details class="excipientes-otros mt-md">
-                    <summary><i class="fas fa-flask"></i> Excipientes EDO (${med.excipientes.length})</summary>
+                    <summary><i class="fas fa-flask"></i> Excipientes EDO (${excEDO.total})</summary>
                     <div class="excipientes-list">
-                        ${med.excipientes.map(e => `<span class="excipient-item">${e.nombre}${e.cantidad ? ' <small>' + e.cantidad + ' ' + (e.unidad || '') + '</small>' : ''}</span>`).join(', ')}
+                        ${listaCompleta}
                     </div>
                 </details>`;
             }
@@ -14195,6 +14186,232 @@ ${materialesPlaceholder}
         this.openImageLightbox(imagenes, 0);
     }
 
+    // ============================================
+    // EXCIPIENTES DE DECLARACIÓN OBLIGATORIA (EDO)
+    // ============================================
+
+    /**
+     * Excipientes clínicamente relevantes: la palabra que los reconoce en el literal de CIMA, cómo
+     * se llaman en pantalla y su color. El ORDEN importa: se queda con la primera que case, igual
+     * que hacía el bucle original de la ficha.
+     *
+     * Vive como estático y no dentro de un método porque lo leen DOS superficies —la ficha y el
+     * chip de la tarjeta— a través de `_excipientesEDO`. Ver el comentario de ese método.
+     */
+    static get EXCIPIENTES_RIESGO() {
+        return {
+            'lactosa': { icon: 'fa-cheese', label: 'Lactosa', color: '#f59e0b' },
+            'gluten': { icon: 'fa-bread-slice', label: 'Gluten', color: '#ef4444' },
+            'trigo': { icon: 'fa-bread-slice', label: 'Almidón de trigo', color: '#ef4444' },
+            'aspartamo': { icon: 'fa-exclamation', label: 'Aspartamo (fenilalanina)', color: '#f97316' },
+            'sacarosa': { icon: 'fa-cube', label: 'Sacarosa', color: '#eab308' },
+            'etanol': { icon: 'fa-wine-bottle', label: 'Etanol', color: '#dc2626' },
+            'alcohol': { icon: 'fa-wine-bottle', label: 'Alcohol', color: '#dc2626' },
+            'soja': { icon: 'fa-seedling', label: 'Soja (lecitina)', color: '#f97316' },
+            'cacahuete': { icon: 'fa-seedling', label: 'Cacahuete', color: '#ef4444' },
+            'tartrazina': { icon: 'fa-palette', label: 'Tartrazina (E102)', color: '#f59e0b' },
+            'rojo allura': { icon: 'fa-palette', label: 'Rojo Allura (E129)', color: '#f59e0b' },
+            'parahidroxibenzoato': { icon: 'fa-flask', label: 'Parabenos', color: '#f59e0b' },
+            'sulfito': { icon: 'fa-lungs', label: 'Sulfitos', color: '#ef4444' },
+            'benzoato': { icon: 'fa-flask', label: 'Benzoato sódico', color: '#f59e0b' },
+            'laurilsulfato': { icon: 'fa-flask', label: 'Laurilsulfato sódico', color: '#94a3b8' }
+        };
+    }
+
+    /**
+     * Los excipientes EDO de un registro, partidos en «de riesgo» y «el resto».
+     *
+     * FUENTE ÚNICA de las dos superficies que los enseñan: la ficha (sección Información) y el
+     * popover del chip de la tarjeta. Cuando esto vivía dentro del render de la ficha, el chip no
+     * podía reutilizarlo y habría nacido con una copia del mapa — que es exactamente cómo se llega
+     * a que la lista llame «riesgo» a algo que la ficha no, para el mismo medicamento.
+     *
+     * Devuelve listas SIEMPRE, nunca `undefined`: quien lo consuma puede hacer `.length` sin
+     * comprobar. Un registro sin `excipientes` sale con `total: 0`, que es una afirmación distinta
+     * de «no lo hemos consultado» y por eso el popover las dice con palabras distintas.
+     */
+    _excipientesEDO(med) {
+        const todos = Array.isArray(med?.excipientes) ? med.excipientes.filter(Boolean) : [];
+        const mapa = Object.entries(MedCheckApp.EXCIPIENTES_RIESGO);
+        const riesgo = [];
+        const otros = [];
+        for (const e of todos) {
+            const nombre = (e.nombre || '').toLowerCase();
+            const hit = mapa.find(([clave]) => nombre.includes(clave));
+            if (hit) {
+                riesgo.push({
+                    ...hit[1],
+                    fullName: e.nombre,
+                    cantidad: e.cantidad ? `${e.cantidad} ${e.unidad || ''}`.trim() : ''
+                });
+            } else {
+                otros.push(e);
+            }
+        }
+        return { todos, riesgo, otros, total: todos.length };
+    }
+
+    /**
+     * Abre los excipientes de un registro DESDE LA TARJETA, sin pasar por la ficha.
+     *
+     * POR QUÉ BAJO DEMANDA Y NO EN EL RENDER, que es la pregunta obvia: `excipientes` **no viene
+     * en la respuesta de `/medicamentos`** —verificado contra CIMA el 2026-09-16: el ítem de lista
+     * trae `fotos` pero no `excipientes`—, así que marcarlos en todas las tarjetas costaría una
+     * petición de detalle por tarjeta. No es el caso del icono de cámara, donde el dato ya venía
+     * gratis. Aquí se paga una petición, y solo del medicamento por el que se pregunta.
+     *
+     * Y POR QUÉ EL CHIP ES NEUTRO Y VA EN TODAS. Medido sobre una muestra aleatoria de 58
+     * comercializados (16/09/2026): el 83 % declara algún excipiente EDO y el **55 % casa con la
+     * lista de riesgo** —lactosa monohidrato y laurilsulfato de sodio se llevan la mayoría—. Una
+     * marca de alerta que llevara más de la mitad de las tarjetas se aprende a ignorar entera, así
+     * que el chip NO afirma nada: es un acceso. El color aparece dentro del popover, donde hay
+     * sitio para decir cuál es y cuánto lleva.
+     *
+     * La petición va con `X-MC-Autocomplete`, que es lo que la marca como secundaria: no infla la
+     * analítica de búsquedas y, a cambio, sí entra en la caché del cliente — así reabrir el mismo
+     * chip no vuelve a la red.
+     */
+    async openMedExcipients(nregistro, ancla = null) {
+        const clave = String(nregistro);
+        // Segundo clic sobre el mismo chip = cerrar. Un popover que solo se cierra pulsando fuera
+        // obliga a adivinar dónde es "fuera" cuando ocupa media pantalla en móvil.
+        if (this._excPopoverNreg === clave) { this._cerrarPopoverExcipientes(); return; }
+
+        this._excipientesCache = this._excipientesCache || new Map();
+        this._excPopoverNreg = clave;
+
+        if (this._excipientesCache.has(clave)) {
+            this._pintarPopoverExcipientes(ancla, this._excipientesCache.get(clave), clave);
+            return;
+        }
+
+        this._pintarPopoverExcipientes(ancla, null, clave);   // estado "consultando"
+        try {
+            const med = await this.api.getMedicamento(nregistro, { headers: { 'X-MC-Autocomplete': '1' } });
+            const datos = this._excipientesEDO(med);
+            this._excipientesCache.set(clave, datos);
+            // El usuario pudo cerrarlo o abrir otro mientras viajaba la petición: pintar entonces
+            // sería contestar a una pregunta que ya no está hecha.
+            if (this._excPopoverNreg === clave) this._pintarPopoverExcipientes(ancla, datos, clave);
+        } catch (err) {
+            console.warn('[excipientes] no se pudo consultar', clave, err?.message);
+            if (this._excPopoverNreg === clave) this._pintarPopoverExcipientes(ancla, 'error', clave);
+        }
+    }
+
+    /**
+     * El cuerpo del popover. Tres estados, y los tres se dicen con palabras distintas a propósito:
+     * `null` = aún no lo sabemos · `'error'` = no se ha podido consultar · `total: 0` = CIMA no
+     * declara ninguno. Fundir los dos últimos en «no hay» sería afirmar algo que no consta.
+     */
+    _cuerpoPopoverExcipientes(datos) {
+        const AVISO = '<div class="exc-popover__nota">Excipientes de declaración obligatoria que publica CIMA. '
+            + 'Es información orientativa y <strong>no es la composición completa</strong>: consulte la ficha técnica o el prospecto.</div>';
+
+        if (datos === null) {
+            return '<div class="exc-popover__cargando"><i class="fas fa-circle-notch fa-spin"></i> Consultando CIMA…</div>';
+        }
+        if (datos === 'error') {
+            return '<div class="exc-popover__cargando">No se ha podido consultar CIMA. Inténtalo de nuevo o abre la ficha.</div>';
+        }
+        if (datos.total === 0) {
+            return '<div class="exc-popover__cargando">CIMA no declara excipientes de declaración obligatoria para este registro.</div>' + AVISO;
+        }
+
+        const chips = datos.riesgo.map(e =>
+            `<span class="badge-excipient" style="--exc-color: ${e.color}" title="${this._escapeHtml(e.fullName + (e.cantidad ? ' — ' + e.cantidad : ''))}">`
+            + `<i class="fas ${e.icon}"></i> ${this._escapeHtml(e.label)}${e.cantidad ? ` <small>${this._escapeHtml(e.cantidad)}</small>` : ''}`
+            + '</span>'
+        ).join('');
+        const resto = datos.otros.map(e =>
+            `<span class="excipient-item">${this._escapeHtml(e.nombre || '')}`
+            + `${e.cantidad ? ` <small>${this._escapeHtml(`${e.cantidad} ${e.unidad || ''}`.trim())}</small>` : ''}</span>`
+        ).join(', ');
+
+        return (chips ? `<div class="excipientes-flagged">${chips}</div>` : '')
+            + (resto ? `<div class="excipientes-list exc-popover__resto">${resto}</div>` : '')
+            + AVISO;
+    }
+
+    /** Pinta (o repinta) el popover anclado al chip. Uno solo en todo el documento. */
+    _pintarPopoverExcipientes(ancla, datos, nregistro) {
+        let pop = document.getElementById('exc-popover');
+        if (!pop) {
+            pop = document.createElement('div');
+            pop.id = 'exc-popover';
+            pop.className = 'exc-popover';
+            pop.setAttribute('role', 'dialog');
+            pop.setAttribute('aria-label', 'Excipientes de declaración obligatoria');
+            document.body.appendChild(pop);
+        }
+        pop.innerHTML = `
+            <div class="exc-popover__head">
+                <span><i class="fas fa-vial"></i> Excipientes (EDO)</span>
+                <button type="button" class="exc-popover__close" aria-label="Cerrar">&times;</button>
+            </div>
+            ${this._cuerpoPopoverExcipientes(datos)}
+        `;
+        pop.querySelector('.exc-popover__close').addEventListener('click', () => this._cerrarPopoverExcipientes());
+        pop.hidden = false;
+        this._colocarPopoverExcipientes(pop, ancla);
+
+        if (!this._excPopoverCierre) {
+            // Se registran al abrir y se retiran al cerrar. Dejarlos puestos siempre significaría
+            // un listener de scroll vivo durante toda la sesión para algo que casi nunca está
+            // abierto — y el scroll de resultados es el más caliente de la aplicación.
+            this._excPopoverCierre = (ev) => {
+                if (ev.type === 'keydown' && ev.key !== 'Escape') return;
+                if (ev.type === 'pointerdown' && (pop.contains(ev.target) || ev.target.closest?.('.med-detail-tag--exc'))) return;
+                this._cerrarPopoverExcipientes();
+            };
+            document.addEventListener('keydown', this._excPopoverCierre, true);
+            document.addEventListener('pointerdown', this._excPopoverCierre, true);
+            window.addEventListener('resize', this._excPopoverCierre, true);
+            // `capture: true` para enterarse también del scroll de los contenedores internos, que
+            // no burbujea. Sin esto, el popover se queda flotando lejos de su chip al desplazar
+            // la lista de resultados.
+            window.addEventListener('scroll', this._excPopoverCierre, true);
+        }
+    }
+
+    /**
+     * Lo coloca bajo el chip y lo mete dentro del viewport. Usa coordenadas de documento
+     * (`rect` + `scroll`) porque el popover cuelga de `<body>`: anclarlo al contenedor de la
+     * tarjeta lo dejaría recortado por el `overflow` de la lista.
+     */
+    _colocarPopoverExcipientes(pop, ancla) {
+        const MARGEN = 8;
+        const r = ancla?.getBoundingClientRect?.();
+        if (!r) {   // sin ancla utilizable, centrado arriba: preferible a esconderlo en (0,0)
+            pop.style.left = `${window.scrollX + Math.max(MARGEN, (window.innerWidth - pop.offsetWidth) / 2)}px`;
+            pop.style.top = `${window.scrollY + MARGEN * 8}px`;
+            return;
+        }
+        const ancho = pop.offsetWidth;
+        const alto = pop.offsetHeight;
+        let left = r.left;
+        if (left + ancho > window.innerWidth - MARGEN) left = window.innerWidth - ancho - MARGEN;
+        if (left < MARGEN) left = MARGEN;
+        // Debajo del chip salvo que no quepa; entonces encima. Nunca tapando el propio chip.
+        const cabeDebajo = r.bottom + alto + MARGEN <= window.innerHeight;
+        const top = cabeDebajo ? r.bottom + 4 : Math.max(MARGEN, r.top - alto - 4);
+        pop.style.left = `${window.scrollX + left}px`;
+        pop.style.top = `${window.scrollY + top}px`;
+    }
+
+    _cerrarPopoverExcipientes() {
+        this._excPopoverNreg = null;
+        const pop = document.getElementById('exc-popover');
+        if (pop) pop.remove();
+        if (this._excPopoverCierre) {
+            document.removeEventListener('keydown', this._excPopoverCierre, true);
+            document.removeEventListener('pointerdown', this._excPopoverCierre, true);
+            window.removeEventListener('resize', this._excPopoverCierre, true);
+            window.removeEventListener('scroll', this._excPopoverCierre, true);
+            this._excPopoverCierre = null;
+        }
+    }
+
     /**
      * Opens a lightbox to display medication images
      * @param {Array} images - Array of {url, thumbUrl, caption} objects
@@ -17598,7 +17815,9 @@ ${materialesPlaceholder}
                             <p>Empieza por nombre comercial, principio activo o código nacional.</p>
                             <p>Cada tarjeta lleva seis accesos con su sigla —<span class="guide-key">FT</span> ficha y prospecto, <span class="guide-key">IND</span> indicaciones, <span class="guide-key">POS</span> posología, <span class="guide-key">INT</span> interacciones, <span class="guide-key">EVI</span> evidencia, <span class="guide-key">SEG</span> seguridad— que abren la ficha ya en esa pestaña. Los que salen apagados es porque CIMA no publica esa sección para ese registro: así no hay que pulsar para descubrir que no hay nada.</p>
                             <p>Un icono de cámara <i class="fas fa-camera"></i> junto a la dosis aparece solo en los registros de los que CIMA publica imagen del envase o de la forma farmacéutica, y <span class="guide-highlight">pulsarlo la abre ahí mismo</span>, sin entrar en la ficha. Así no hay que abrirlas una a una para averiguar cuáles tienen foto.</p>
+                            <p>El frasco <i class="fas fa-vial"></i> va en <strong>todas</strong> las tarjetas y abre los <span class="guide-highlight">excipientes de declaración obligatoria</span> sin entrar en la ficha. A diferencia de la cámara no adelanta si hay algo: la lista de CIMA no trae los excipientes, así que se consultan al pulsar. Son los de declaración obligatoria, no la composición completa.</p>
                             <p class="guide-case"><strong>Caso</strong>El paciente trae la caja y pregunta para qué es. Buscas el nombre y pulsas <span class="guide-key">IND</span>: la indicación autorizada, sin abrir el PDF de la ficha técnica.</p>
+                            <p class="guide-case"><strong>Caso</strong>Intolerancia a la lactosa y cinco genéricos en pantalla. Pulsas el frasco <i class="fas fa-vial"></i> de cada uno y descartas los que la llevan, sin abrir cinco fichas.</p>
                         `,
                         position: 'bottom',
                     },

@@ -4660,6 +4660,105 @@ body {
     color: var(--primary);
 }
 
+/* Excipientes EDO: mismo chip de icono suelto que la cámara, y a propósito con el mismo peso
+   visual apagado. No compite con la marca de financiación ni con la dosis porque no afirma nada:
+   es una puerta, no un dato. Hereda el realce de `--foto` en vez de repetirlo. */
+.med-detail-tag--exc {
+    flex-shrink: 0;
+    cursor: pointer;
+    border: 0;
+    font: inherit;
+    line-height: inherit;
+}
+
+.med-detail-tag--exc i {
+    color: var(--text-secondary);
+}
+
+.med-detail-tag--exc:hover,
+.med-detail-tag--exc:focus-visible {
+    box-shadow: inset 0 0 0 1px var(--primary);
+    outline: none;
+}
+
+.med-detail-tag--exc:hover i,
+.med-detail-tag--exc:focus-visible i {
+    color: var(--primary);
+}
+
+/* ═══════════════════════════════════════════════════
+   Popover de excipientes (anclado al chip de la tarjeta)
+   ═══════════════════════════════════════════════════
+   Cuelga de <body> y se posiciona en coordenadas de DOCUMENTO: dentro de la tarjeta lo recortaría
+   el `overflow` de la lista de resultados. Por eso `position: absolute` y no `fixed` — así
+   acompaña a la página si el scroll ocurre antes de que el listener lo cierre. */
+.exc-popover {
+    position: absolute;
+    z-index: 2000;
+    width: min(22rem, calc(100vw - 1rem));
+    max-height: min(60vh, 26rem);
+    overflow-y: auto;
+    padding: 0.6rem 0.75rem 0.7rem;
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 8px);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+    font-size: 0.78rem;
+    color: var(--text-primary);
+}
+
+.exc-popover__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.exc-popover__close {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0 0.15rem;
+    color: var(--text-muted);
+}
+
+.exc-popover__close:hover,
+.exc-popover__close:focus-visible {
+    color: var(--text-primary);
+}
+
+.exc-popover__cargando {
+    color: var(--text-secondary);
+    padding: 0.2rem 0;
+}
+
+/* El resto de excipientes se lee como una frase corrida, no como lista: son nombres químicos que
+   casi nunca importan uno a uno, y apilarlos daría al popover el alto de una ficha. */
+.exc-popover__resto {
+    margin-top: 0.45rem;
+    line-height: 1.5;
+}
+
+/* La cautela de CIMA («información orientativa, consulte la FT/P») va SIEMPRE y al pie, no en un
+   tooltip: quien mira excipientes suele estar decidiendo por una alergia, y el alcance real del
+   dato —solo los de declaración obligatoria— es parte del dato. */
+.exc-popover__nota {
+    margin-top: 0.55rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid var(--border-color, #e2e8f0);
+    font-size: 0.68rem;
+    line-height: 1.45;
+    color: var(--text-muted);
+}
+
 /* Guarda final contra el desbordamiento. Va en un span interno porque `text-overflow`
    NO actúa sobre el ítem anónimo de un contenedor flex, y `.med-detail-tag` es
    `inline-flex` — por eso un literal largo se cortaba a media palabra y sin elipsis.

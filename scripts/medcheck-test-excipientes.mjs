@@ -1,0 +1,204 @@
+#!/usr/bin/env node
+/**
+ * MedCheck — contrato de los excipientes de declaración obligatoria (EDO)
+ * (`EXCIPIENTES_RIESGO`, `_excipientesEDO`, `_cuerpoPopoverExcipientes`, chip de la tarjeta)
+ *
+ * Desde el 2026-09-16 los excipientes se ven DESDE LA LISTA, sin abrir la ficha. Lo que este
+ * banco fija no es el aspecto, son las tres decisiones que pueden degradar un dato clínico:
+ *
+ *   1. UNA SOLA CLASIFICACIÓN. La ficha y el chip de la tarjeta llaman a la MISMA función. El mapa
+ *      de excipientes de riesgo vivía dentro del render de la ficha; si alguien lo vuelve a
+ *      declarar ahí, las dos superficies pueden acabar diciendo cosas distintas del mismo
+ *      medicamento, que es el defecto que este proyecto persigue desde la divergencia de
+ *      financiación entre lista y ficha. Hay prueba de fuente que lo impide.
+ *
+ *   2. TRES ESTADOS, TRES FRASES. «aún no lo sé» (consultando), «no he podido preguntar» (error) y
+ *      «CIMA no declara ninguno» son afirmaciones distintas. Fundir las dos últimas en «no hay»
+ *      sería afirmar una ausencia que no consta — el mismo fail-open que en financiación obligó a
+ *      separar «sin datos» de «sin cobertura».
+ *
+ *   3. EL ALCANCE VIAJA CON EL DATO. CIMA publica solo los de declaración obligatoria y lo rotula
+ *      «información orientativa, consulte la FT/P». La cautela va SIEMPRE que haya respuesta, al
+ *      pie y visible, no en un tooltip: quien mira excipientes suele estar decidiendo por una
+ *      alergia.
+ *
+ * Y una decisión de coste que también se fija, porque es la que se va a querer «optimizar»: la
+ * petición del detalle va marcada como SECUNDARIA (`X-MC-Autocomplete`). Sin esa marca no entra en
+ * la caché del cliente y además infla la analítica de búsquedas con algo que no es una búsqueda.
+ *
+ * Uso: node scripts/medcheck-test-excipientes.mjs
+ */
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import vm from 'node:vm';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const FUENTE = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+
+const sandbox = {
+    window: {},
+    document: { addEventListener() {}, getElementById: () => null, querySelectorAll: () => [] },
+    console: { log() {}, warn() {}, error() {} },
+    localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+    fetch: () => Promise.reject(new Error('sin red en tests')),
+    setTimeout, clearTimeout, setInterval, clearInterval,
+    Date, Math, JSON, Promise, Map, Set, RegExp, URL, URLSearchParams,
+    navigator: { onLine: true }, location: { search: '', href: '' },
+};
+sandbox.globalThis = sandbox;
+vm.createContext(sandbox);
+vm.runInContext(`${FUENTE}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox);
+const Clase = sandbox.window.__MedCheckAppClass;
+const app = Object.create(Clase.prototype);
+
+let fallos = 0;
+const ok = (cond, nombre, detalle = '') => {
+    if (cond) { console.log(`✓ ${nombre}`); return; }
+    fallos += 1;
+    console.log(`✗ ${nombre}${detalle ? `\n    ${detalle}` : ''}`);
+};
+
+const exc = (nombre, cantidad = null, unidad = null) => ({ nombre, cantidad, unidad });
+
+console.log('\n— 1 · La clasificación: riesgo, resto y nada inventado —');
+{
+    // RYEQO, medido contra CIMA el 16/09/2026: lactosa (de riesgo) + manitol (no).
+    const r = app._excipientesEDO({
+        excipientes: [exc('MANITOL (E-421)', '51', 'mg'), exc('LACTOSA MONOHIDRATO', '78,4', 'mg')],
+    });
+    ok(r.total === 2, 'cuenta todos los EDO, no solo los de riesgo', `total=${r.total}`);
+    ok(r.riesgo.length === 1 && r.riesgo[0].label === 'Lactosa',
+        'la lactosa entra como excipiente de riesgo con su etiqueta clínica',
+        JSON.stringify(r.riesgo.map(e => e.label)));
+    ok(r.riesgo[0].cantidad === '78,4 mg',
+        'la cantidad se compone con su unidad: sin ella el dato no decide nada',
+        r.riesgo[0].cantidad);
+    ok(r.otros.length === 1 && r.otros[0].nombre === 'MANITOL (E-421)',
+        'lo que no es de riesgo se conserva íntegro, no se descarta',
+        JSON.stringify(r.otros));
+    ok(r.riesgo.length + r.otros.length === r.total,
+        'la partición es exhaustiva: ningún excipiente se pierde por el camino');
+}
+
+console.log('\n— 2 · Ausencia de dato ≠ lista rota —');
+{
+    for (const [caso, med] of [
+        ['sin campo excipientes', { nregistro: '1' }],
+        ['excipientes vacío', { excipientes: [] }],
+        ['med undefined', undefined],
+        ['excipientes con huecos', { excipientes: [null, undefined] }],
+    ]) {
+        const r = app._excipientesEDO(med);
+        ok(Array.isArray(r.riesgo) && Array.isArray(r.otros) && Array.isArray(r.todos) && r.total === 0,
+            `${caso}: devuelve listas vacías, nunca undefined`, JSON.stringify(r));
+    }
+}
+
+console.log('\n— 3 · El orden del mapa manda: primera coincidencia, como el bucle original —');
+{
+    // «ALCOHOL BENCÍLICO» casa con `alcohol` y con `benzoato`... no: con `alcohol` solamente.
+    // El caso real de solape es `etanol`/`alcohol`, ambos con la misma etiqueta de riesgo alto.
+    const claves = Object.keys(Clase.EXCIPIENTES_RIESGO);
+    ok(claves.indexOf('etanol') < claves.indexOf('alcohol'),
+        'etanol se evalúa antes que alcohol: el literal específico gana al genérico');
+    const r = app._excipientesEDO({ excipientes: [exc('ETANOL ANHIDRO')] });
+    ok(r.riesgo.length === 1 && r.riesgo[0].label === 'Etanol',
+        'ETANOL ANHIDRO se clasifica como Etanol, no como Alcohol', JSON.stringify(r.riesgo));
+    // Un excipiente corriente no puede colarse como riesgo por un parecido lejano.
+    const s = app._excipientesEDO({ excipientes: [exc('CROSCARMELOSA SODICA'), exc('CELULOSA MICROCRISTALINA')] });
+    ok(s.riesgo.length === 0 && s.otros.length === 2,
+        'excipientes corrientes NO se marcan como de riesgo', JSON.stringify(s.riesgo));
+}
+
+console.log('\n— 4 · Una sola clasificación para las dos superficies (prueba de fuente) —');
+{
+    // El mapa solo puede estar declarado una vez, como estático. Si reaparece dentro de un método
+    // —que es como estaba antes del 16/09— la ficha y la tarjeta pueden divergir.
+    const declaraciones = (FUENTE.match(/'parahidroxibenzoato':\s*\{/g) || []).length;
+    ok(declaraciones === 1,
+        'el mapa de excipientes de riesgo está declarado UNA sola vez en todo el fichero',
+        `encontradas ${declaraciones}`);
+    ok(/static get EXCIPIENTES_RIESGO\(\)/.test(FUENTE),
+        'y vive como estático de la clase, accesible desde cualquier superficie');
+    // La ficha tiene que CONSUMIR el clasificador, no reimplementarlo.
+    const usos = (FUENTE.match(/_excipientesEDO\(/g) || []).length;
+    ok(usos >= 3,
+        'la ficha y el popover llaman al mismo clasificador (definición + al menos dos usos)',
+        `apariciones=${usos}`);
+}
+
+console.log('\n— 5 · Tres estados y tres frases distintas —');
+{
+    app._escapeHtml = app._escapeHtml || (s => String(s));
+    const cargando = app._cuerpoPopoverExcipientes(null);
+    const error = app._cuerpoPopoverExcipientes('error');
+    const vacio = app._cuerpoPopoverExcipientes({ todos: [], riesgo: [], otros: [], total: 0 });
+
+    ok(cargando !== error && error !== vacio && cargando !== vacio,
+        'consultando, error y «CIMA no declara ninguno» NO dicen lo mismo');
+    ok(/no se ha podido consultar/i.test(error),
+        'el error dice que no se ha podido preguntar, no que no haya excipientes', error);
+    ok(/no declara/i.test(vacio) && !/no se ha podido/i.test(vacio),
+        'la ausencia declarada por CIMA se afirma como tal, sin mezclarla con el fallo de red', vacio);
+    ok(!/orientativa/i.test(cargando) && !/orientativa/i.test(error),
+        'mientras no hay respuesta NO se enseña el alcance del dato: no se ha consultado nada');
+}
+
+console.log('\n— 6 · El alcance del dato viaja siempre con el dato —');
+{
+    const conDato = app._cuerpoPopoverExcipientes({
+        todos: [exc('LACTOSA MONOHIDRATO', '78,4', 'mg')],
+        riesgo: [{ icon: 'fa-cheese', label: 'Lactosa', color: '#f59e0b', fullName: 'LACTOSA MONOHIDRATO', cantidad: '78,4 mg' }],
+        otros: [], total: 1,
+    });
+    const vacio = app._cuerpoPopoverExcipientes({ todos: [], riesgo: [], otros: [], total: 0 });
+    for (const [caso, html] of [['con excipientes', conDato], ['sin excipientes', vacio]]) {
+        ok(/no es la composición completa/i.test(html) && /ficha técnica/i.test(html),
+            `${caso}: dice que NO es la composición completa y remite a la ficha técnica`);
+    }
+    ok(/declaración obligatoria/i.test(conDato),
+        'y nombra el alcance real: solo los de declaración obligatoria');
+}
+
+console.log('\n— 7 · El chip de la tarjeta: botón de verdad, en todas, y sin afirmar nada —');
+{
+    ok(/class="med-detail-tag med-detail-tag--exc"/.test(FUENTE),
+        'el chip existe con su clase propia');
+    ok(/<button type="button" class="med-detail-tag med-detail-tag--exc"/.test(FUENTE),
+        'es un <button>, así que se alcanza tabulando y responde a Intro');
+    ok(/aria-label="Ver los excipientes de declaración obligatoria/.test(FUENTE),
+        'lleva aria-label: el icono solo no dice nada a un lector de pantalla');
+    // No puede nacer condicionado a que HAYA excipientes: ese dato no existe al pintar la lista.
+    const bloque = FUENTE.slice(FUENTE.indexOf('const excTag'), FUENTE.indexOf('const excTag') + 900);
+    ok(!/\?\s*`<button/.test(bloque) && !/:\s*''/.test(bloque),
+        'el chip NO es condicional: la lista de CIMA no trae excipientes, así que no se puede saber');
+    ok(/app\.openMedExcipients\('\$\{med\.nregistro\}', this\)/.test(FUENTE),
+        'pasa el propio botón como ancla, para poder colocar el popover junto a él');
+}
+
+console.log('\n— 8 · La petición del detalle es SECUNDARIA —');
+{
+    const i = FUENTE.indexOf('async openMedExcipients(');
+    const cuerpo = FUENTE.slice(i, FUENTE.indexOf('_cuerpoPopoverExcipientes(datos)', i));
+    ok(/getMedicamento\(nregistro, \{ headers: \{ 'X-MC-Autocomplete': '1' \} \}\)/.test(cuerpo),
+        'va marcada con X-MC-Autocomplete: entra en caché y no infla la analítica de búsquedas');
+    ok(/_excipientesCache/.test(cuerpo),
+        'y además cachea por nregistro, para que reabrir el mismo chip no vuelva a la red');
+    // SE CUENTAN LAS GUARDAS, no se busca la cadena. Después del `await` hay DOS caminos que
+    // pintan —la respuesta buena y el error— y los dos tienen que comprobar que el popover sigue
+    // siendo el de este medicamento. Buscar la cadena una sola vez aprobaba con una de las dos
+    // guardas quitada, porque la otra la seguía conteniendo: mutante M6, superviviente en la
+    // primera versión de este banco. Es el mismo defecto del 16/08 en la skill de Cabecera —una
+    // prueba que solo puede fallar por una cadena concreta tiene que comparar la cadena, y si hay
+    // varias instancias, contarlas.
+    const guardas = (cuerpo.match(/if \(this\._excPopoverNreg === clave\) this\._pintarPopoverExcipientes/g) || []).length;
+    ok(guardas === 2,
+        'los DOS caminos posteriores al await (respuesta y error) comprueban que el popover sigue siendo el suyo',
+        `guardas encontradas: ${guardas}`);
+}
+
+console.log(fallos === 0
+    ? '\nExcipientes en verde: una sola clasificación para ficha y tarjeta, tres estados que no se\nconfunden, el alcance del dato siempre a la vista y una petición por medicamento preguntado.'
+    : `\n${fallos} FALLO(S)`);
+process.exit(fallos === 0 ? 0 : 1);
