@@ -653,6 +653,31 @@ body {
     cursor: pointer;
 }
 
+/* Financiación SNS es un SELECTOR y no una casilla, porque la pregunta tiene tres respuestas y no
+   dos: financiado, sin cobertura, y el grupo del que el Ministerio no publica nada. Una casilla
+   solo sabe decir «sí» y «todo lo demás», y ese «todo lo demás» mezclaba «no está financiado» con
+   «no lo sabemos», que es justo lo que este módulo no hace. Dos casillas tampoco: marcarlas las
+   dos significaría lo mismo que ninguna.
+
+   Va oculto hasta que el índice llega (`[hidden]`), así que la regla de display tiene que ceder
+   ante él — igual que en `.med-detail-tag`, y por el mismo motivo: `display:flex` gana al
+   [hidden] del navegador y dejaría el control visible y vacío. */
+.search-option--select {
+    gap: 0.4rem;
+    cursor: default;
+}
+
+.search-option--select[hidden] {
+    display: none;
+}
+
+.control-select--inline {
+    padding: 0.2rem 1.4rem 0.2rem 0.4rem;
+    font-size: 0.78rem;
+    background-position: right 0.3rem center;
+    background-size: 0.8rem;
+}
+
 .search-option:hover {
     color: var(--text-primary);
 }

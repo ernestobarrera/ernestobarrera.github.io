@@ -187,25 +187,28 @@ console.log('\n— 8 · El color llega DESPUÉS de preguntar, nunca antes —');
         JSON.stringify(sinConsultar));
 
     app._excipientesCache.set('A', app._excipientesEDO({ excipientes: [exc('LACTOSA MONOHIDRATO', '78,4', 'mg'), exc('MANITOL (E-421)')] }));
-    const conRiesgo = app._excipientesEstadoChip('A');
-    ok(conRiesgo.estado === 'riesgo' && /exc-riesgo/.test(conRiesgo.clase),
-        'consultado y con advertencia: se marca', JSON.stringify(conRiesgo));
-    ok(conRiesgo.texto === '1',
-        'y lleva la CIFRA de excipientes con advertencia, que es el dato', conRiesgo.texto);
-    ok(/Lactosa/.test(conRiesgo.titulo) && !/Manitol/i.test(conRiesgo.titulo),
-        'el título nombra los que tienen advertencia, no todos', conRiesgo.titulo);
+    const destacado = app._excipientesEstadoChip('A');
+    ok(destacado.estado === 'destacado' && /exc-riesgo/.test(destacado.clase),
+        'consultado y con alguno de la lista curada: se marca en ámbar', JSON.stringify(destacado));
+    ok(destacado.texto === '2',
+        'la cifra es el TOTAL de EDO (2), no los destacados (1): todos llevan advertencia oficial',
+        destacado.texto);
+    ok(/Lactosa/.test(destacado.titulo),
+        'el título nombra los que sí tienen etiqueta curada', destacado.titulo);
 
     app._excipientesCache.set('B', app._excipientesEDO({ excipientes: [exc('CROSCARMELOSA SODICA')] }));
-    const sinRiesgo = app._excipientesEstadoChip('B');
-    ok(sinRiesgo.estado === 'sin-riesgo' && /exc-visto/.test(sinRiesgo.clase),
-        'consultado y sin advertencia: se distingue de «sin consultar», o no se sabría qué ya miraste');
-    ok(sinRiesgo.clase !== conRiesgo.clase && sinRiesgo.clase !== sinConsultar.clase,
-        'los tres estados tienen apariencias distintas entre sí');
+    const soloEdo = app._excipientesEstadoChip('B');
+    ok(soloEdo.estado === 'edo' && /exc-visto/.test(soloEdo.clase) && soloEdo.texto === '1',
+        'consultado y sin etiqueta curada: atenuado pero CON CIFRA, no mudo', JSON.stringify(soloEdo));
+    ok(soloEdo.clase !== destacado.clase && soloEdo.clase !== sinConsultar.clase,
+        'los estados tienen apariencias distintas entre sí');
 
     app._excipientesCache.set('C', app._excipientesEDO({ excipientes: [] }));
     const ninguno = app._excipientesEstadoChip('C');
-    ok(ninguno.estado === 'sin-riesgo' && /no declara/i.test(ninguno.titulo),
-        '«CIMA no declara ninguno» se dice con esas palabras, no como «sin advertencias»', ninguno.titulo);
+    ok(ninguno.estado === 'ninguno' && ninguno.texto === '0' && /no declara/i.test(ninguno.titulo),
+        '«CIMA no declara ninguno» lleva un 0 explícito y esas palabras', JSON.stringify(ninguno));
+    ok(ninguno.texto !== soloEdo.texto,
+        'un 0 y un 2 no pueden verse igual: antes los dos salían callados');
 
     // El color no puede derivarse del excipiente concreto: el mapa tiene un color por excipiente
     // pero no es una escala de gravedad, y elegir «el peor» inventaría una jerarquía clínica.
@@ -217,6 +220,30 @@ console.log('\n— 8 · El color llega DESPUÉS de preguntar, nunca antes —');
     const cuerpoChip = FUENTE.slice(ini, FUENTE.indexOf('_refrescarChipsExcipientes(nregistro) {', ini));
     ok(ini > 0 && cuerpoChip.length > 0 && !/\.color/.test(cuerpoChip),
         'el chip NO pinta el color del excipiente concreto: no hay escala de gravedad que sostenga «el peor»');
+}
+
+console.log('\n— 8b · EL FALSO NEGATIVO DE CINFAHELIX (regresión reparada el 16/09) —');
+{
+    // Caso REAL, tal y como lo devuelve CIMA para el nregistro 81847, que Ernesto tenía en
+    // pantalla cuando preguntó si esto daba falsos negativos. Sorbitol 708 mg: para una
+    // intolerancia hereditaria a la fructosa es EL dato. Ninguno de los dos está en la lista
+    // curada, así que el chip va atenuado — y eso está bien; lo que NO puede es decir que no
+    // hay advertencia, porque el campo de CIMA es el anexo de declaración obligatoria y todo
+    // lo que sale ahí la lleva.
+    app._excipientesCache = app._excipientesCache || new Map();
+    app._excipientesCache.set('81847', app._excipientesEDO({
+        excipientes: [exc('SORBITOL LIQUIDO NO CRISTALIZABLE  (E420)', '708,00', 'mg'), exc('SORBATO POTASICO', '1,775', 'mg')],
+    }));
+    const e = app._excipientesEstadoChip('81847');
+    ok(e.texto === '2',
+        'CINFAHELIX enseña «2», no queda mudo: el sorbitol se ve desde la lista', e.texto);
+    ok(!/ninguno de la lista de advertencia/i.test(e.titulo),
+        'y NO dice «ninguno de la lista de advertencia», que es la frase que lo hacía parecer limpio',
+        e.titulo);
+    ok(/advertencia oficial/i.test(e.titulo),
+        'el título afirma lo que sí es cierto: todos llevan advertencia oficial', e.titulo);
+    ok(/destaca por nombre los más habituales/i.test(e.titulo),
+        'y dice que lo que MedCheck destaca es un subconjunto, no el criterio de riesgo');
 }
 
 console.log('\n— 9 · Los dos alcoholes que no son etanol (regresión reparada el 16/09) —');

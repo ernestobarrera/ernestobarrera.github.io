@@ -2595,7 +2595,7 @@ class MedCheckApp {
         // El índice de envases llega async: rellena los huecos ya pintados (mismo patrón
         // de repintado que el índice de suministro, S29).
         this._hydratePackTags(resultsContainer);
-        this._hydrateFinancingTags(resultsContainer);
+        this._hydrateFinancingTags(resultsContainer, data?.resultados);
 
         // El icono galénico de cada tarjeta es la superficie del filtro de familia.
         this._wireGalenicIcons(resultsContainer, () => { this.displaySearchResults(data); this.updateURLWithCurrentState({ replace: true }); });
@@ -2696,8 +2696,8 @@ class MedCheckApp {
         // Financiación SNS. La casilla solo existe si el índice es utilizable, así que aquí no
         // hace falta reconfirmarlo; el predicado vuelve a comprobarlo de todos modos, porque el
         // índice podría dejar de serlo entre el render y el clic.
-        document.getElementById('financiado-filter')?.addEventListener('change', (e) => {
-            this.filterState.financiadoOnly = e.target.checked;
+        document.getElementById('financiacion-filter')?.addEventListener('change', (e) => {
+            this.filterState.financiacion = e.target.value || null;
             applyFacet();
         });
         // Ámbito hospitalario. Es aquí, en el cambio explícito, donde nace la memoria: se guarda
@@ -10621,6 +10621,58 @@ ${materialesPlaceholder}
     }
 
     /**
+     * Revela el control de financiación y le pone sus dos cifras, cuando el índice ya se puede usar.
+     *
+     * Se hace por MUTACIÓN del control existente y no repintando la barra entera, a propósito: la
+     * barra lleva listeners atados en el render (agrupar, ordenar, forma, laboratorio, las cinco
+     * casillas, «Limpiar N») y repintarla obligaría a volver a atarlos todos, con el riesgo de
+     * dejarlos duplicados. Aquí solo se toca lo que no se podía saber al pintar.
+     *
+     * Recalcula los contadores en ese momento porque en el render valían cero: sin índice no había
+     * nada que contar, y enseñar un cero sería peor que no enseñar nada — parecería que no hay
+     * ningún financiado.
+     */
+    _revelarFiltroFinanciacion(universo = null) {
+        const wrap = document.getElementById('financiacion-filter-wrap');
+        const select = document.getElementById('financiacion-filter');
+        if (!wrap || !select || !this._financingIndexUsable) return;
+        const universe = Array.isArray(universo) ? universo : this._lastSearchData?.resultados;
+        if (Array.isArray(universe)) {
+            const snap = this._filterSnapshot();
+            const cuenta = (pred) => this._disjunctiveCount(universe, snap, 'financiacion',
+                m => pred.call(this, this._financingIndex?.[m.nregistro]));
+            const fin = cuenta(this._financingRowHasCoverage);
+            const nofin = cuenta(this._financingRowHasNoCoverage);
+            const opt = (v) => select.querySelector(`option[value="${v}"]`);
+            if (opt('fin')) opt('fin').textContent = `Financiado (${fin})`;
+            if (opt('nofin')) opt('nofin').textContent = `Sin cobertura (${nofin})`;
+        }
+        wrap.hidden = false;
+    }
+
+    /**
+     * ¿Consta que NO tiene cobertura del SNS? Es el predicado de la mitad negativa de la faceta.
+     *
+     * NO ES LA NEGACIÓN DE `_financingRowHasCoverage`, Y ESA ES TODA LA CUESTIÓN. Hay un tercer
+     * grupo —`sindato`, y las filas que el índice no entiende— del que el Ministerio no publica
+     * nada. Si «sin cobertura» se implementara como «lo que no está cubierto», ese grupo entraría
+     * entero y el filtro afirmaría de ellos una resolución denegatoria que no existe. Son 312
+     * medicamentos comercializados sin dato en ninguna de las dos fuentes (medido 2026-09-08,
+     * tras cruzar el Nomenclátor).
+     *
+     * Así que se enumeran los TRES estados que sí son una afirmación negativa, que son exactamente
+     * los que la tarjeta agrupa bajo «Sin cobertura del SNS»: no incluido o excluido (`no`), en
+     * estudio o sin petición (`estudio_sin_peticion`) y la mezcla de ambos (`sin_cobertura`).
+     * Faceta y etiqueta salen del MISMO resolutor, para que marcar el filtro no pueda hacer
+     * desaparecer una tarjeta que dice justo eso.
+     */
+    _financingRowHasNoCoverage(fila) {
+        const resumen = this._financingSummaryFromIndexRow(fila);
+        if (!resumen) return false;
+        return ['no', 'estudio_sin_peticion', 'sin_cobertura'].includes(resumen.estado);
+    }
+
+    /**
      * Registro de comercio paralelo. El marcador es el sufijo `IP`/`IP1`/`IP2`… del nregistro,
      * no un prefijo numérico (una heurística previa por `24xxxxx` detectaba 2 de 993).
      * Importa porque BIFIMED no cubre NINGUNA de las 993 visibles: no es cobertura irregular, es
@@ -10768,11 +10820,18 @@ ${materialesPlaceholder}
      * anticonceptivos lo mayoritario es NO estar financiado (73 de 117), así que la regla "sin
      * marca = financiado" sería falsa, y además "sin marca" se confundiría con "aún no ha cargado".
      */
-    _hydrateFinancingTags(container) {
+    _hydrateFinancingTags(container, universo = null) {
         const slots = container?.querySelectorAll?.('[data-fin-nreg]');
         if (!slots || slots.length === 0) return;
         this._loadFinancingIndex().then((fin) => {
             if (!this._financingIndexUsable) return;
+            // EL CONTROL DE LA BARRA, ANTES QUE LAS TARJETAS. Es el que decidía si el usuario podía
+            // siquiera saber que existe el filtro: hasta el 16/09 se pintaba condicionado a que el
+            // índice YA estuviera, y como el índice casi siempre llega después de los resultados,
+            // en la primera búsqueda de la sesión no existía. Las marcas de las tarjetas ya se
+            // revelaban aquí; el control no, y nadie lo había notado porque a la segunda búsqueda
+            // aparece solo.
+            this._revelarFiltroFinanciacion(universo);
             const fecha = this._financingIndexMeta?.bifimed_download_date;
             slots.forEach((slot) => {
                 if (!slot.isConnected || !slot.hidden) return;
@@ -12519,7 +12578,12 @@ ${materialesPlaceholder}
             paralelas: fs.paralelas === true,
             // Apagada por defecto: la financiación es un dato administrativo y encenderla sola
             // convertiría un filtro en un criterio implícito de preferencia terapéutica.
-            financiado: fs.financiadoOnly === true,
+            // TRI-ESTADO desde el 16/09: `null` (todos) · `'fin'` (con cobertura) · `'nofin'` (consta
+            // sin cobertura). Era un booleano «solo financiados», y por eso no había forma de
+            // aislar lo contrario — que es lo que Ernesto echó en falta buscando semaglutida, para
+            // comprobar si Wegovy estaba financiado. Cualquier otro valor cae a `null`: un estado
+            // que no se entiende no puede esconder resultados.
+            financiacion: (fs.financiacion === 'fin' || fs.financiacion === 'nofin') ? fs.financiacion : null,
             // Ámbito hospitalario. En POSITIVO y encendidos por defecto: «Mostrar H» / «Mostrar DH»
             // en vez de «Ocultar», para que la casilla marcada signifique siempre «lo veo» y no
             // haya que resolver una doble negación. `!== false` y no `=== true` porque el valor por
@@ -12624,7 +12688,10 @@ ${materialesPlaceholder}
                 // utilizable: sin dato fiable no se filtra, se muestra todo y la casilla se
                 // desactiva. Nunca al revés — filtrar con un índice ausente o de otra generación
                 // escondería resultados sin que nadie pueda notarlo.
-                if (!snap.financiado || !this._financingIndexUsable) return null;
+                if (!snap.financiacion || !this._financingIndexUsable) return null;
+                if (snap.financiacion === 'nofin') {
+                    return (med) => this._financingRowHasNoCoverage(this._financingIndex?.[med.nregistro]);
+                }
                 return (med) => this._financingRowHasCoverage(this._financingIndex?.[med.nregistro]);
             case 'galenic':
                 // Familia galénica: la misma dimensión que pinta el icono de la tarjeta, para
@@ -12685,7 +12752,7 @@ ${materialesPlaceholder}
             + (snap.lab ? 1 : 0)
             + snap.doses.size
             + (snap.paralelas ? 1 : 0)
-            + (snap.financiado ? 1 : 0)
+            + (snap.financiacion ? 1 : 0)
             // Cuentan cuando están DESMARCADAS, porque es entonces cuando filtran. "Limpiar N"
             // tiene que contar exactamente lo que limpia, y limpiar aquí es volver a mostrarlos.
             + (snap.mostrarH ? 0 : 1)
@@ -12740,7 +12807,7 @@ ${materialesPlaceholder}
     _emptyFilterState() {
         // `mostrarH`/`mostrarDH` en `true`: el estado limpio MUESTRA todo. Si el vacío escondiera
         // algo, "Limpiar filtros" dejaría una exclusión puesta sin que nadie la hubiera pedido.
-        return { form: null, lab: null, doses: new Set(), galenics: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false, paralelas: false, financiadoOnly: false, mostrarH: true, mostrarDH: true };
+        return { form: null, lab: null, doses: new Set(), galenics: new Set(), efgOnly: false, recetaOnly: false, biosimilarOnly: false, paralelas: false, financiacion: null, mostrarH: true, mostrarDH: true };
     }
 
     /**
@@ -12871,6 +12938,13 @@ ${materialesPlaceholder}
             ? this._disjunctiveCount(sourceForFilters, snap, 'financiacion',
                 m => this._financingRowHasCoverage(this._financingIndex?.[m.nregistro]))
             : 0;
+        // Los dos números NO tienen por qué sumar el total, y es correcto que no sumen: lo que
+        // falta es el grupo «sin datos», del que el Ministerio no publica situación. Contarlo en
+        // cualquiera de los dos lados sería afirmar algo que no consta.
+        const sinCoberturaCount = this._financingIndexUsable
+            ? this._disjunctiveCount(sourceForFilters, snap, 'financiacion',
+                m => this._financingRowHasNoCoverage(this._financingIndex?.[m.nregistro]))
+            : 0;
         // Ámbito hospitalario. Se cuenta sobre el universo con las DEMÁS dimensiones aplicadas
         // (faceting disyuntivo), para que el número diga cuántos hay realmente en juego ahora.
         const baseHosp = this._applyResultFilters(sourceForFilters, snap, { exclude: 'hospital' });
@@ -12887,9 +12961,12 @@ ${materialesPlaceholder}
         // la condicionada a visado o indicación. El matiz no se pierde: la marca de cada tarjeta
         // distingue "Financiado por el SNS" de "Financiado con visado", y esta aclaración lo dice
         // en el propio control para quien pase el ratón.
-        const tipFinanciado = 'Medicamentos con alguna presentación comercializada cubierta por el SNS. '
-            + 'Incluye la financiación condicionada a visado o a indicación concreta, que la marca de cada '
-            + 'tarjeta distingue. Fuente: BIFIMED (Ministerio de Sanidad)';
+        const tipFinanciado = '«Financiado»: alguna presentación comercializada con cobertura del SNS, incluida la '
+            + 'condicionada a visado o a indicación concreta (la marca de cada tarjeta las distingue). '
+            + '«Sin cobertura»: consta resolución negativa, exclusión, o expediente en estudio o sin petición. '
+            + 'Los medicamentos de los que el Ministerio NO publica situación no entran en ninguna de las dos, '
+            + 'así que los números no suman el total: no sabemos no es lo mismo que no. '
+            + 'Fuentes: BIFIMED y Nomenclátor de facturación (Ministerio de Sanidad)';
 
         // Opciones de los selectores: top 10 con resultados; la seleccionada se
         // conserva siempre aunque quede a cero (para poder deseleccionarla).
@@ -13005,10 +13082,30 @@ ${materialesPlaceholder}
                             <input type="checkbox" id="paralelas-filter" ${snap.paralelas ? 'checked' : ''}>
                             <span>Incluir duplicados <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${paralelasEnUniverso}</span></span>
                         </label>` : ''}
-                        ${this._financingIndexUsable ? `<label class="search-option" title="${this._escapeHtml(tipFinanciado)}">
-                            <input type="checkbox" id="financiado-filter" ${snap.financiado ? 'checked' : ''}>
-                            <span>Financiado por el SNS <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${financiadoCount}</span></span>
-                        </label>` : ''}
+                        ${/*
+                            SE PINTA SIEMPRE, OCULTO SI EL ÍNDICE AÚN NO ESTÁ, y se revela cuando
+                            llega. Antes era `${usable ? …}` y desaparecía entero, con este efecto
+                            medido el 16/09: el índice se pide en paralelo con la búsqueda pero son
+                            DOS peticiones en serie —el JSON de 723 KB y después el sello contra el
+                            Worker—, 0,59 s + 0,15-0,77 s contra los 0,09-0,17 s que tarda CIMA en
+                            responder. Pierde casi siempre, así que en la PRIMERA búsqueda de la
+                            sesión el control no existía; aparecía al repintar, y quien no repintaba
+                            no lo veía nunca. Ernesto lo encontró buscando semaglutida.
+
+                            Las tarjetas ya resolvían esto revelando un hueco al llegar el índice
+                            (`_hydrateFinancingTags`); lo que faltaba era hacer lo mismo aquí. El
+                            comentario de `performSearch` daba la carrera por aceptable citando
+                            «84 KB»: eso era verdad cuando se escribió y hoy el índice pesa 723 KB.
+                        */''}
+                        <label class="search-option search-option--select" id="financiacion-filter-wrap"
+                               title="${this._escapeHtml(tipFinanciado)}" ${this._financingIndexUsable ? '' : 'hidden'}>
+                            <span>Financiación SNS</span>
+                            <select id="financiacion-filter" class="control-select control-select--inline">
+                                <option value="">Todos</option>
+                                <option value="fin" ${snap.financiacion === 'fin' ? 'selected' : ''}>Financiado (${financiadoCount})</option>
+                                <option value="nofin" ${snap.financiacion === 'nofin' ? 'selected' : ''}>Sin cobertura (${sinCoberturaCount})</option>
+                            </select>
+                        </label>
                         ${(nH > 0 || !snap.mostrarH) ? `<label class="search-option" title="Uso hospitalario: solo se dispensa en farmacia de hospital. Desmárcalo para quitarlos de la lista.">
                             <input type="checkbox" id="mostrar-h-filter" ${snap.mostrarH ? 'checked' : ''}>
                             <span>Mostrar H <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${nH}</span></span>
@@ -13560,7 +13657,7 @@ ${materialesPlaceholder}
         // El índice de envases llega async: rellena los huecos ya pintados (mismo patrón
         // de repintado que el índice de suministro, S29).
         this._hydratePackTags(resultsContainer);
-        this._hydrateFinancingTags(resultsContainer);
+        this._hydrateFinancingTags(resultsContainer, data?.resultados);
 
         // El icono galénico de cada tarjeta es la superficie del filtro de familia.
         this._wireGalenicIcons(resultsContainer, () => this._applyIndicationFacet(data, searchQuery));
@@ -13667,8 +13764,8 @@ ${materialesPlaceholder}
             this.filterState.paralelas = e.target.checked;
             this._applyIndicationFacet(data, searchQuery);
         });
-        document.getElementById('financiado-filter')?.addEventListener('change', (e) => {
-            this.filterState.financiadoOnly = e.target.checked;
+        document.getElementById('financiacion-filter')?.addEventListener('change', (e) => {
+            this.filterState.financiacion = e.target.value || null;
             this._applyIndicationFacet(data, searchQuery);
         });
         const cambioHospInd = (campo) => (e) => {
@@ -13915,6 +14012,9 @@ ${materialesPlaceholder}
         if (snap.lab) params.lab = snap.lab;
         if (snap.doses.size) params.dose = [...snap.doses].join('|');
         if (snap.paralelas) params.paralelas = '1';
+        // La financiación no se serializaba cuando era booleana, así que un enlace compartido
+        // llevaba la lista filtrada y el receptor no podía saberlo. Ahora viaja con su valor.
+        if (snap.financiacion) params.fin = snap.financiacion;
         if (snap.galenics.size) params.galenic = [...snap.galenics].join('|');
         if (snap.routes.size) params.route = [...snap.routes].join('|');
         if (snap.pas.size) params.pa = [...snap.pas].join('|');
@@ -13932,6 +14032,10 @@ ${materialesPlaceholder}
         this.filterState.doses = new Set(params.dose ? params.dose.split('|').filter(Boolean) : []);
         this.filterState.galenics = new Set(params.galenic ? params.galenic.split('|').filter(Boolean) : []);
         this.filterState.paralelas = params.paralelas === '1';
+        // Se restaura SIEMPRE, también cuando el parámetro no viene: sin la rama del `else` un
+        // enlace sin `fin=` conservaría el filtro de la búsqueda anterior y el selector diría
+        // «Todos» mientras la lista estaría recortada. Solo se aceptan los dos valores conocidos.
+        this.filterState.financiacion = (params.fin === 'fin' || params.fin === 'nofin') ? params.fin : null;
         if (!this.groupingState) this.initGroupingState();
         this.groupingState.routeFilters = new Set(params.route ? params.route.split('|').filter(Boolean) : []);
         this.groupingState.activeIngredientFilters = new Set(params.pa ? params.pa.split('|').filter(Boolean) : []);
@@ -14281,8 +14385,25 @@ ${materialesPlaceholder}
      *
      *   `desconocido` — todavía no se ha preguntado. Neutro. No puede colorearse porque no se
      *                   sabe: `excipientes` no viene en la lista (ver `openMedExcipients`).
-     *   `riesgo`      — preguntado, y hay al menos un excipiente con advertencia. Se marca.
-     *   `sin-riesgo`  — preguntado, y no hay ninguno con advertencia (con EDO o sin ninguno).
+     *   `destacado`   — preguntado, hay EDO y alguno está en la lista curada. Ámbar.
+     *   `edo`         — preguntado, hay EDO pero ninguno tiene etiqueta curada. Atenuado, CON CIFRA.
+     *   `ninguno`     — preguntado, y CIMA no declara ninguno.
+     *
+     * LA CIFRA ES EL TOTAL DE EDO, NO LOS DESTACADOS, y esto se corrigió el 16/09 tras un falso
+     * negativo real. Antes el estado `sin-riesgo` decía «N excipientes, ninguno de la lista de
+     * advertencia», y CINFAHELIX JARABE —que declara **sorbitol 708 mg**— salía así: para una
+     * intolerancia hereditaria a la fructosa, justo el dato que importa, presentado como si no
+     * hubiera nada. Lo vio Ernesto en su propia pantalla al preguntar si esto daba falsos
+     * negativos.
+     *
+     * LA CAUSA NO ERA LA LISTA CORTA, ERA LA FRASE. Medido el 16/09 sobre 287 comercializados:
+     * 116 nombres distintos de excipiente y **ni un solo relleno corriente** —ni celulosa
+     * microcristalina, ni estearato de magnesio, ni povidona, ni dióxido de titanio—. O sea que
+     * el campo `excipientes` de CIMA **no es la fórmula: es el anexo de declaración obligatoria**,
+     * y por tanto TODO lo que aparece ahí lleva ya advertencia oficial. La lista curada de 15
+     * palabras no separa «con advertencia» de «sin advertencia»: separa «le sabemos poner nombre
+     * en español» de «no». Decir lo primero era afirmar sobre el medicamento algo que solo era
+     * cierto sobre nuestra lista.
      *
      * POR QUÉ EL COLOR LLEGA DESPUÉS Y NO ANTES, que es la pregunta de Ernesto del 16/09 («si es
      * fiable, ¿no debería aparecer con color más marcado si hay contenido?»): sí, y por eso está.
@@ -14303,24 +14424,32 @@ ${materialesPlaceholder}
                 titulo: 'Excipientes de declaración obligatoria (CIMA). Se consultan al pulsar; no es la composición completa.',
             };
         }
-        if (datos.riesgo.length > 0) {
-            // El número SÍ se pinta, al revés que en el chip de la cámara: ahí la cifra era
-            // redundante (la foto se ve al abrirla) y aquí es el dato — «2» significa dos motivos
-            // distintos para mirar. Los nombres van en el título; el color es UNO solo, el de
-            // advertencia, y no el del excipiente concreto: el mapa tiene colores por excipiente
-            // pero NO son una escala de gravedad, así que pintar «el peor» sería inventarse una
-            // jerarquía clínica que no consta en ninguna fuente.
+        if (datos.total === 0) {
             return {
-                estado: 'riesgo', clase: ' med-detail-tag--exc-riesgo', texto: String(datos.riesgo.length),
-                titulo: `Contiene ${datos.riesgo.length} excipiente${datos.riesgo.length > 1 ? 's' : ''} de declaración obligatoria con advertencia: `
-                    + `${datos.riesgo.map(e => e.label).join(', ')}. Pulsa para ver las cantidades.`,
+                estado: 'ninguno', clase: ' med-detail-tag--exc-visto', texto: '0',
+                titulo: 'Consultado: CIMA no declara excipientes de declaración obligatoria para este registro.',
+            };
+        }
+        // El número SÍ se pinta, al revés que en el chip de la cámara: ahí la cifra era redundante
+        // (la foto se ve al abrirla) y aquí es el dato. Y es el TOTAL de EDO, no los destacados:
+        // ver la nota de arriba sobre CINFAHELIX. Un «0» y un «2» en gris dicen cosas muy
+        // distintas, y antes las dos salían igual de calladas.
+        const comun = `${datos.total} excipiente${datos.total > 1 ? 's' : ''} de declaración obligatoria`;
+        // La coletilla va en LOS DOS estados. Es la que impide volver a leer el gris como «limpio»:
+        // lo que no lleva etiqueta curada no es inocuo, es que no le sabemos poner nombre.
+        const coletilla = ' Todos llevan advertencia oficial; MedCheck solo destaca por nombre los más habituales. Pulsa para verlos.';
+        if (datos.riesgo.length > 0) {
+            // El color es UNO solo, el de advertencia, y no el del excipiente concreto: el mapa
+            // tiene colores por excipiente pero NO son una escala de gravedad, así que pintar «el
+            // peor» sería inventarse una jerarquía clínica que no consta en ninguna fuente.
+            return {
+                estado: 'destacado', clase: ' med-detail-tag--exc-riesgo', texto: String(datos.total),
+                titulo: `Contiene ${comun}, entre ellos ${datos.riesgo.map(e => e.label).join(', ')}.${coletilla}`,
             };
         }
         return {
-            estado: 'sin-riesgo', clase: ' med-detail-tag--exc-visto', texto: '',
-            titulo: datos.total > 0
-                ? `Consultado: ${datos.total} excipiente${datos.total > 1 ? 's' : ''} de declaración obligatoria, ninguno de la lista de advertencia. Pulsa para verlos.`
-                : 'Consultado: CIMA no declara excipientes de declaración obligatoria para este registro.',
+            estado: 'edo', clase: ' med-detail-tag--exc-visto', texto: String(datos.total),
+            titulo: `Contiene ${comun}, ninguno con etiqueta propia en MedCheck.${coletilla}`,
         };
     }
 
@@ -14394,8 +14523,16 @@ ${materialesPlaceholder}
      * declara ninguno. Fundir los dos últimos en «no hay» sería afirmar algo que no consta.
      */
     _cuerpoPopoverExcipientes(datos) {
-        const AVISO = '<div class="exc-popover__nota">Excipientes de declaración obligatoria que publica CIMA. '
-            + 'Es información orientativa y <strong>no es la composición completa</strong>: consulte la ficha técnica o el prospecto.</div>';
+        // DOS FRASES, Y LA PRIMERA ES LA QUE FALTABA. El popover destaca unos excipientes con color
+        // y deja los demás como texto corrido, y esa jerarquía se lee sola como «lo gris es
+        // inocuo». No lo es: CIMA publica aquí el anexo de declaración obligatoria —comprobado el
+        // 16/09: 116 nombres en 287 medicamentos y ningún relleno corriente—, así que TODO lo de
+        // esta lista lleva advertencia oficial. Lo que el color separa es qué sabemos nombrar en
+        // español, no qué es peligroso.
+        const AVISO = '<div class="exc-popover__nota">'
+            + '<strong>Todos los de esta lista son de declaración obligatoria y llevan advertencia oficial.</strong> El color solo destaca los más habituales; '
+            + 'los que van en texto corrido son igual de declarables.'
+            + '<br>Es información orientativa de CIMA y <strong>no es la composición completa</strong>: consulte la ficha técnica o el prospecto.</div>';
 
         if (datos === null) {
             return '<div class="exc-popover__cargando"><i class="fas fa-circle-notch fa-spin"></i> Consultando CIMA…</div>';
@@ -17918,7 +18055,9 @@ ${materialesPlaceholder}
                         body: `
                             <p>Las casillas recortan el listado sobre la marcha y cada una lleva su recuento: comercializado, genérico, receta y <span class="guide-highlight">biosimilar</span>.</p>
                             <p>«Incluir duplicados» merece una frase: un mismo medicamento puede tener varios registros —el nacional y sus importaciones paralelas— y solo algunos publican ficha técnica con secciones. Por defecto se muestran los que sí la publican. Nunca se oculta el único registro de un medicamento.</p>
+                            <p><strong>Financiación SNS</strong> es un desplegable con tres posiciones, no una casilla, porque la pregunta tiene tres respuestas: <span class="guide-highlight">Financiado</span>, <span class="guide-highlight">Sin cobertura</span> y todo lo demás. Los dos números no suman el total, y es correcto: de una parte del catálogo el Ministerio no publica situación, y esos no entran en ninguno de los dos lados. No saber no es lo mismo que no.</p>
                             <p class="guide-case"><strong>Caso</strong>Buscas OMNIC OCAS y aparecen ocho tarjetas casi idénticas. Con la casilla sin marcar queda la que trae la información clínica; si necesitas ver todos los registros, la marcas.</p>
+                            <p class="guide-case"><strong>Caso</strong>Buscas semaglutida y quieres saber qué no paga el SNS. Pones Financiación SNS en «Sin cobertura» y quedan las cinco plumas de Wegovy; Ozempic y Rybelsus se van, porque están financiados con visado.</p>
                         `,
                         position: 'bottom',
                     },

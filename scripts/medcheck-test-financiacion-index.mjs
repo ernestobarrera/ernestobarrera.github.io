@@ -166,20 +166,55 @@ check('sin dato NO cuenta como cobertura',
     app._financingRowHasCoverage(fila(2, 0, 0, 0, 0, 0, 0)), false);
 check('fila ausente no cuenta como cobertura', app._financingRowHasCoverage(undefined), false);
 
-const snapOn = { financiado: true };
+// TRI-ESTADO desde el 16/09: `null` (todos) · `'fin'` · `'nofin'`. Era un booleano y por eso no
+// había forma de aislar lo que NO está financiado.
+const snapOn = { financiacion: 'fin' };
 app._financingIndex = { 63575: fila(2, 0, 0, 0, 0, 1, 1), 8472008: fila(1, 1, 0, 0, 0, 0, 0) };
 app._financingIndexUsable = false;
 check('índice NO utilizable → el predicado no filtra (fail-open en la lista)',
     app._filterPredicate('financiacion', snapOn), null);
 app._financingIndexUsable = true;
-check('casilla apagada → no filtra',
-    app._filterPredicate('financiacion', { financiado: false }), null);
+check('en «Todos» no filtra',
+    app._filterPredicate('financiacion', { financiacion: null }), null);
 const pred = app._filterPredicate('financiacion', snapOn);
-check('casilla encendida e índice bueno → sí filtra', typeof pred, 'function');
+check('«Financiado» e índice bueno → sí filtra', typeof pred, 'function');
 check('deja pasar al financiado', pred({ nregistro: '8472008' }), true);
 check('excluye al que no tiene cobertura', pred({ nregistro: '63575' }), false);
 check('excluye al que no está en el índice (ausencia ≠ financiado)',
     pred({ nregistro: '99999999' }), false);
+
+// --- «Sin cobertura» NO es la negación de «Financiado» ------------------------
+//
+// Es la línea que no se cruza, y la razón de que exista `_financingRowHasNoCoverage` en vez de
+// un `!hasCoverage`: hay un TERCER grupo —el que el Ministerio no publica— y meterlo en el lado
+// negativo sería atribuirle una resolución denegatoria que no existe. Medido el 2026-09-08 tras
+// cruzar el Nomenclátor: 312 medicamentos comercializados sin dato en ninguna de las dos fuentes.
+console.log('\n— «Sin cobertura» no se traga a «sin datos» —');
+check('resolución negativa SÍ es sin cobertura',
+    app._financingRowHasNoCoverage(fila(2, 0, 0, 0, 0, 1, 1)), true);
+check('«en estudio o sin petición» SÍ, que también es una afirmación del Ministerio',
+    app._financingRowHasNoCoverage(fila(1, 0, 0, 0, 0, 0, 1)), true);
+check('SIN DATO no es sin cobertura',
+    app._financingRowHasNoCoverage(fila(2, 0, 0, 0, 0, 0, 0)), false);
+check('fila ausente tampoco: no saber no es negar',
+    app._financingRowHasNoCoverage(undefined), false);
+check('y un financiado, evidentemente, no',
+    app._financingRowHasNoCoverage(fila(1, 1, 0, 0, 0, 0, 0)), false);
+
+app._financingIndex = {
+    63575: fila(2, 0, 0, 0, 0, 1, 1),        // sin cobertura
+    8472008: fila(1, 1, 0, 0, 0, 0, 0),      // financiado
+    55555: fila(2, 0, 0, 0, 0, 0, 0),        // SIN DATO
+};
+const predNo = app._filterPredicate('financiacion', { financiacion: 'nofin' });
+check('«Sin cobertura» filtra', typeof predNo, 'function');
+check('deja pasar al que consta sin cobertura', predNo({ nregistro: '63575' }), true);
+check('excluye al financiado', predNo({ nregistro: '8472008' }), false);
+check('y EXCLUYE al que no tiene dato: es el fallo que este predicado existe para evitar',
+    predNo({ nregistro: '55555' }), false);
+check('los dos lados juntos NO cubren el universo, y es correcto',
+    app._financingRowHasCoverage(fila(2, 0, 0, 0, 0, 0, 0))
+    || app._financingRowHasNoCoverage(fila(2, 0, 0, 0, 0, 0, 0)), false);
 
 // --- Esquema 2: el Nomenclátor como segunda fuente (2026-09-10) ----------------
 //
@@ -377,15 +412,60 @@ check('financiacion es una dimensión declarada',
 // incompleto en cuanto se añade una dimensión, y entonces el test falla por su propia omisión en
 // vez de por un defecto del código. Pasó al añadir el filtro hospitalario.
 const snapDe = (filterState) => app._filterSnapshot.call({ filterState, groupingState: {} });
-check('"Limpiar N" cuenta la faceta de financiación',
-    app._activeFilterCount(snapDe({ financiadoOnly: true })), 1);
+check('"Limpiar N" cuenta la faceta de financiación en «Financiado»',
+    app._activeFilterCount(snapDe({ financiacion: 'fin' })), 1);
+check('y también en «Sin cobertura»: los dos recortan la lista',
+    app._activeFilterCount(snapDe({ financiacion: 'nofin' })), 1);
 check('y el estado limpio no cuenta ninguna',
     app._activeFilterCount(snapDe(app._emptyFilterState())), 0);
-check('el estado vacío la apaga', app._emptyFilterState().financiadoOnly, false);
-check('el snapshot la lee de financiadoOnly',
-    app._filterSnapshot.call({ filterState: { financiadoOnly: true }, groupingState: {} }).financiado, true);
-check('y por defecto está apagada',
-    app._filterSnapshot.call({ filterState: {}, groupingState: {} }).financiado, false);
+check('el estado vacío nace en «Todos»', app._emptyFilterState().financiacion, null);
+const snapFS = (filterState) => app._filterSnapshot.call({ filterState, groupingState: {} });
+check('el snapshot lee el tri-estado', snapFS({ financiacion: 'nofin' }).financiacion, 'nofin');
+check('y por defecto está en «Todos»', snapFS({}).financiacion, null);
+// Un valor que no se entiende NO puede esconder resultados: cae a «Todos», no a un filtro.
+check('un valor desconocido cae a «Todos», no filtra',
+    snapFS({ financiacion: 'financiadisimo' }).financiacion, null);
+check('y el booleano viejo tampoco cuela',
+    snapFS({ financiacion: true }).financiacion, null);
+
+// --- EL CONTROL EXISTE AUNQUE EL ÍNDICE NO HAYA LLEGADO ----------------------
+//
+// Es el defecto que Ernesto encontró el 16/09 buscando semaglutida: el control se pintaba
+// condicionado a `_financingIndexUsable`, y ese valor es FALSO mientras el índice viaja. El
+// índice se pide en paralelo con la búsqueda, pero son dos peticiones EN SERIE (el JSON de
+// 723 KB y después el sello contra el Worker): 0,59 s + 0,15-0,77 s medidos, contra los
+// 0,09-0,17 s que tarda CIMA. Pierde casi siempre, así que en la PRIMERA búsqueda de la sesión
+// el control no existía — y quien no repintaba no lo veía nunca.
+//
+// Se comprueba sobre el HTML que devuelve el render, no sobre una bandera: la bandera podía
+// estar bien y el control seguir sin pintarse, que es justo lo que pasaba.
+console.log('\n— El control se pinta siempre; lo que espera al índice es su visibilidad —');
+{
+    const appBar = Object.create(MedCheckApp.prototype);
+    Object.assign(appBar, {
+        filterState: appBar._emptyFilterState ? appBar._emptyFilterState() : null,
+        groupingState: { groupBy: 'atc', sortBy: 'nameAsc', routeFilters: new Set(), activeIngredientFilters: new Set() },
+        _financingIndex: {}, _medRenderCache: new Map(), lastSearchFilters: { comerc: true },
+    });
+    appBar.filterState = appBar._emptyFilterState();
+    const universo = [{ nregistro: '1', nombre: 'UNO', dosis: '1 mg', viasAdministracion: [{ nombre: 'VIA ORAL' }] }];
+
+    appBar._financingIndexUsable = false;
+    const sinIndice = appBar.renderResultsControlBar(1, { resultados: universo }, { resultados: universo });
+    check('el <select> está en el DOM aunque el índice no haya llegado',
+        /id="financiacion-filter"/.test(sinIndice), true);
+    check('y nace OCULTO, porque sus cifras aún no se pueden calcular',
+        /id="financiacion-filter-wrap"[^>]*hidden/.test(sinIndice), true);
+    check('con sus tres opciones ya puestas',
+        /value="fin"/.test(sinIndice) && /value="nofin"/.test(sinIndice) && /value=""/.test(sinIndice), true);
+
+    appBar._financingIndexUsable = true;
+    const conIndice = appBar.renderResultsControlBar(1, { resultados: universo }, { resultados: universo });
+    check('con el índice ya cargado se pinta visible',
+        /id="financiacion-filter-wrap"[^>]*hidden/.test(conIndice), false);
+    check('el aviso dice que los dos números no suman el total',
+        /no suman el total/.test(conIndice), true);
+}
 
 console.log(failures === 0 ? '\nOK — todas las aserciones pasan' : `\nFALLOS: ${failures}`);
 process.exit(failures === 0 ? 0 : 1);
