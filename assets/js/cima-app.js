@@ -2596,6 +2596,9 @@ class MedCheckApp {
         // de repintado que el índice de suministro, S29).
         this._hydratePackTags(resultsContainer);
         this._hydrateFinancingTags(resultsContainer, data?.resultados);
+        // Si la vista de excipientes está encendida, las tarjetas recién pintadas se consultan
+        // también: si no, al facetar quedarían mudas justo las que acaban de entrar.
+        this._consultarExcipientesVisibles(resultsContainer);
 
         // El icono galénico de cada tarjeta es la superficie del filtro de familia.
         this._wireGalenicIcons(resultsContainer, () => { this.displaySearchResults(data); this.updateURLWithCurrentState({ replace: true }); });
@@ -2702,6 +2705,10 @@ class MedCheckApp {
             this._toggleFinanciacion(cb.value, cb.checked);
             applyFacet();
         }));
+        // Modo de vista, no faceta: no repinta la lista ni toca los filtros.
+        document.getElementById('exc-vista-filter')?.addEventListener('change', (e) => {
+            this._toggleVistaExcipientes(e.target.checked);
+        });
         // Ámbito hospitalario. Es aquí, en el cambio explícito, donde nace la memoria: se guarda
         // porque el usuario lo ha elegido, nunca por inercia.
         const cambioHosp = (campo) => (e) => {
@@ -10634,6 +10641,124 @@ ${materialesPlaceholder}
      * nada que contar, y enseñar un cero sería peor que no enseñar nada — parecería que no hay
      * ningún financiado.
      */
+    // ─────────────────────────────────────────────────────────────────────────
+    // «Ver excipientes» sobre TODA la búsqueda (bajo demanda, sin índice)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Cuántas tarjetas se consultan de una vez, y por qué este número.
+     *
+     * Una búsqueda normal trae 100 (mediana de 12 búsquedas reales medidas el 16/09) y CIMA sirve
+     * 200 por página, pero `searchMedicamentosAll` pagina hasta 10 veces: una búsqueda por ATC o
+     * por indicación puede traer **2.000**. A concurrencia 4 medimos 174 peticiones en 2,3 s, o sea
+     * ~75/s: 2.000 serían casi medio minuto de espera por marcar una casilla, y eso ya no es una
+     * consulta, es un castigo.
+     *
+     * 300 es ~4 s en el peor caso y cubre entera cualquier búsqueda por principio activo. Por
+     * encima NO se calla: se consultan las 300 primeras y se DICE cuántas quedan, porque las
+     * tarjetas sin consultar se distinguen a simple vista de las consultadas (el chip neutro no se
+     * parece ni al ámbar ni al atenuado). Un resultado parcial que se ve parcial es honesto; uno
+     * que parece completo, no.
+     */
+    static get EXC_VISTA_TOPE() { return 300; }
+
+    /** Cuántas peticiones vuelan a la vez. Medido: 174 en 2,3 s y ningún error a este ritmo. */
+    static get EXC_VISTA_CONCURRENCIA() { return 4; }
+
+    /**
+     * Enciende o apaga la vista de excipientes de toda la lista.
+     *
+     * ES UN MODO, NO UN FILTRO, y por eso no vive en `filterState` ni lo cuenta «Limpiar N»: no
+     * esconde ni un solo resultado. Mientras está encendido, cada repintado consulta lo que haya
+     * aparecido nuevo —así al facetar o reordenar las tarjetas nuevas también se pintan—.
+     *
+     * Y al apagarlo NO se desmarcan los chips ya consultados: lo que se averiguó no se desaprende.
+     * Apagar significa «deja de consultar», no «olvida lo que sabes».
+     */
+    _toggleVistaExcipientes(activa) {
+        this._excVistaActiva = !!activa;
+        if (this._excVistaActiva) {
+            this._consultarExcipientesVisibles();
+        } else {
+            // Invalida el lote en vuelo: si estaba a medias, se para donde esté.
+            this._excVistaToken = null;
+            this._excVistaEstado('');
+        }
+    }
+
+    /** La línea de progreso, dentro de la propia etiqueta de la casilla. */
+    _excVistaEstado(texto) {
+        const el = document.getElementById('exc-vista-estado');
+        if (el) el.textContent = texto;
+    }
+
+    /**
+     * Consulta los excipientes de las tarjetas pintadas que aún no se conocen.
+     *
+     * NO PIDE LO QUE YA SABE: cruza contra `_excipientesCache`, que es la misma que llena el chip
+     * de una en una. Así, si ya has pulsado tres tarjetas, marcar la casilla solo pide el resto; y
+     * volver a la misma búsqueda después de filtrar no cuesta ninguna petición.
+     *
+     * Cada respuesta repinta SU chip en cuanto llega, sin esperar al lote entero: con 174 tarjetas
+     * la lista se va marcando durante los dos segundos, en vez de quedarse quieta y aparecer de
+     * golpe.
+     */
+    async _consultarExcipientesVisibles(container = document) {
+        if (!this._excVistaActiva) return;
+        this._excipientesCache = this._excipientesCache || new Map();
+
+        const raiz = container || document;
+        const pendientes = [...new Set([...raiz.querySelectorAll('[data-exc-nreg]')]
+            .map(c => c.dataset.excNreg).filter(Boolean))]
+            .filter(n => !this._excipientesCache.has(n));
+
+        if (!pendientes.length) { this._excVistaEstado(''); return; }
+
+        const tope = MedCheckApp.EXC_VISTA_TOPE;
+        const lote = pendientes.slice(0, tope);
+        const restantes = pendientes.length - lote.length;
+
+        // Un token por lote: si el usuario apaga la casilla o lanza otra búsqueda mientras vuelan
+        // las peticiones, las respuestas que lleguen tarde no pintan ni cuentan. Sin esto, apagar
+        // la casilla no detendría nada visible.
+        const token = {};
+        this._excVistaToken = token;
+        const vivo = () => this._excVistaToken === token && this._excVistaActiva;
+
+        let hechas = 0;
+        let fallos = 0;
+        const conc = MedCheckApp.EXC_VISTA_CONCURRENCIA;
+        this._excVistaEstado(`consultando 0/${lote.length}…`);
+
+        for (let i = 0; i < lote.length && vivo(); i += conc) {
+            await Promise.all(lote.slice(i, i + conc).map(async (nreg) => {
+                if (!vivo()) return;
+                try {
+                    const med = await this.api.getMedicamento(nreg, { headers: { 'X-MC-Autocomplete': '1' } });
+                    if (!vivo()) return;
+                    this._excipientesCache.set(nreg, this._excipientesEDO(med));
+                    this._refrescarChipsExcipientes(nreg);
+                } catch {
+                    fallos += 1;
+                }
+                hechas += 1;
+            }));
+            if (vivo()) this._excVistaEstado(`consultando ${hechas}/${lote.length}…`);
+            // ABANDONO ANTE FALLO SOSTENIDO. Si CIMA deja de responder, seguir lanzando peticiones
+            // no arregla nada y empeora lo que sea que le pase. Se para, se dice, y queda el chip
+            // de una en una, que es el camino que no depende de un lote.
+            if (fallos > 10 && fallos > hechas / 2) {
+                this._excVistaEstado('CIMA no responde; púlsalos de uno en uno');
+                return;
+            }
+        }
+
+        if (!vivo()) return;
+        this._excVistaEstado(restantes > 0
+            ? `${lote.length} consultados · faltan ${restantes}, afina la búsqueda`
+            : (fallos ? `${hechas - fallos} de ${lote.length}; ${fallos} sin respuesta` : ''));
+    }
+
     /** Enciende o apaga uno de los dos valores de la dimensión de financiación. */
     _toggleFinanciacion(valor, encendido) {
         if (!this.filterState) this.filterState = this._emptyFilterState();
@@ -13152,6 +13277,22 @@ ${materialesPlaceholder}
                                 <span>Sin cobertura SNS <span class="chip-count" data-fin-count="nofin" style="font-size:0.7rem;opacity:0.7;">${sinCoberturaCount}</span></span>
                             </label>
                         </span>
+                        ${/*
+                            NO ES UN FILTRO: es un modo de vista, y por eso no lo cuenta «Limpiar N»
+                            ni pasa por `_applyResultFilters`. No esconde ni un resultado.
+
+                            Va aquí y no como botón porque mientras está encendido sigue trabajando:
+                            al facetar o reordenar, las tarjetas que aparecen se consultan también.
+                            Un botón habría que volver a pulsarlo en cada repintado.
+
+                            Se pinta SIEMPRE, sin esperar a nada: a diferencia de la financiación,
+                            este control no necesita ningún índice para existir — lo que consulta lo
+                            pide en el momento, y solo si lo marcas.
+                        */''}
+                        <label class="search-option" title="Consulta a CIMA los excipientes de declaración obligatoria de los medicamentos que tienes en pantalla y los marca en cada tarjeta. No esconde ningún resultado. Cuesta una petición por medicamento no consultado antes; lo ya consultado no se vuelve a pedir.">
+                            <input type="checkbox" id="exc-vista-filter" ${this._excVistaActiva ? 'checked' : ''}>
+                            <span>Ver excipientes <span id="exc-vista-estado" class="exc-vista-estado"></span></span>
+                        </label>
                         ${(nH > 0 || !snap.mostrarH) ? `<label class="search-option" title="Uso hospitalario: solo se dispensa en farmacia de hospital. Desmárcalo para quitarlos de la lista.">
                             <input type="checkbox" id="mostrar-h-filter" ${snap.mostrarH ? 'checked' : ''}>
                             <span>Mostrar H <span class="chip-count" style="font-size:0.7rem;opacity:0.7;">${nH}</span></span>
@@ -13704,6 +13845,9 @@ ${materialesPlaceholder}
         // de repintado que el índice de suministro, S29).
         this._hydratePackTags(resultsContainer);
         this._hydrateFinancingTags(resultsContainer, data?.resultados);
+        // Si la vista de excipientes está encendida, las tarjetas recién pintadas se consultan
+        // también: si no, al facetar quedarían mudas justo las que acaban de entrar.
+        this._consultarExcipientesVisibles(resultsContainer);
 
         // El icono galénico de cada tarjeta es la superficie del filtro de familia.
         this._wireGalenicIcons(resultsContainer, () => this._applyIndicationFacet(data, searchQuery));
@@ -13814,6 +13958,9 @@ ${materialesPlaceholder}
             this._toggleFinanciacion(cb.value, cb.checked);
             this._applyIndicationFacet(data, searchQuery);
         }));
+        document.getElementById('exc-vista-filter')?.addEventListener('change', (e) => {
+            this._toggleVistaExcipientes(e.target.checked);
+        });
         const cambioHospInd = (campo) => (e) => {
             this.filterState[campo] = e.target.checked;
             this._hospPrefWrite();
@@ -18089,6 +18236,8 @@ ${materialesPlaceholder}
                             <p>Un icono de cámara <i class="fas fa-camera"></i> junto a la dosis aparece solo en los registros de los que CIMA publica imagen del envase o de la forma farmacéutica, y <span class="guide-highlight">pulsarlo la abre ahí mismo</span>, sin entrar en la ficha. Así no hay que abrirlas una a una para averiguar cuáles tienen foto.</p>
                             <p>El frasco <i class="fas fa-vial"></i> va en <strong>todas</strong> las tarjetas y abre los <span class="guide-highlight">excipientes de declaración obligatoria</span> sin entrar en la ficha. A diferencia de la cámara no adelanta si hay algo: la lista de CIMA no trae los excipientes, así que se consultan al pulsar. Son los de declaración obligatoria, no la composición completa.</p>
                             <p>Al consultarlo, el frasco <span class="guide-highlight">se queda marcado</span>: en ámbar y con el número si hay excipientes con advertencia, atenuado si ya lo miraste y no había ninguno. La marca <strong>sobrevive a filtrar y reordenar</strong>, así que en una lista larga se ve de un vistazo qué has comprobado y qué no.</p>
+                            <p>Y para no ir uno a uno, la casilla <strong>«Ver excipientes»</strong> de la barra de filtros los consulta <span class="guide-highlight">todos los que tengas en pantalla</span> de una vez. No esconde ningún resultado: solo marca. Mientras está encendida, las tarjetas que aparezcan al filtrar se consultan también, y lo ya consultado no se vuelve a pedir. En una búsqueda muy grande consulta las primeras y te dice cuántas quedan.</p>
+                            <p class="guide-case"><strong>Caso</strong>Un paciente celíaco y once jarabes de hedera helix en pantalla. Marcas «Ver excipientes» y en un segundo ves cuáles llevan algo que mirar, sin abrir once fichas.</p>
                             <p class="guide-case"><strong>Caso</strong>El paciente trae la caja y pregunta para qué es. Buscas el nombre y pulsas <span class="guide-key">IND</span>: la indicación autorizada, sin abrir el PDF de la ficha técnica.</p>
                             <p class="guide-case"><strong>Caso</strong>Intolerancia a la lactosa y cinco genéricos en pantalla. Pulsas el frasco <i class="fas fa-vial"></i> de cada uno y descartas los que la llevan, sin abrir cinco fichas.</p>
                         `,

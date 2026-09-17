@@ -270,6 +270,126 @@ console.log('\n— 9 · Los dos alcoholes que no son etanol (regresión reparada
         'los dos específicos se evalúan ANTES que la clave genérica `alcohol`');
 }
 
+console.log('\n— 9b · «Ver excipientes» es un MODO, no un filtro —');
+{
+    // La línea que no se cruza: este control NO puede esconder resultados. Si algún día alguien lo
+    // mete en el contrato de filtrado, la lista empezaría a recortarse por marcar una casilla que
+    // el usuario entiende como «enséñame más», que es la peor dirección posible para un fallo.
+    ok(!Clase.FILTER_DIMENSIONS.includes('excipientes') && !Clase.FILTER_DIMENSIONS.includes('excVista'),
+        'no es una dimensión del contrato de filtrado: no puede esconder resultados',
+        JSON.stringify(Clase.FILTER_DIMENSIONS));
+    const vacio = app._emptyFilterState();
+    ok(!('excVista' in vacio) && !('verExcipientes' in vacio),
+        'no vive en filterState, así que «Limpiar N» no lo cuenta ni lo apaga');
+    const snap = app._filterSnapshot.call({ filterState: vacio, groupingState: {} });
+    ok(app._activeFilterCount(snap) === 0,
+        'con el modo encendido o apagado, el recuento de filtros activos no cambia');
+
+    // Tope y concurrencia son contrato, no gusto: una búsqueda por ATC puede traer 2.000
+    // resultados (`searchMedicamentosAll` pagina 10 × 200) y a ~75 pet./s eso es medio minuto.
+    ok(Clase.EXC_VISTA_TOPE > 0 && Clase.EXC_VISTA_TOPE <= 400,
+        'hay tope de tarjetas por lote, y es del orden de la búsqueda más grande realista',
+        String(Clase.EXC_VISTA_TOPE));
+    ok(Clase.EXC_VISTA_CONCURRENCIA > 0 && Clase.EXC_VISTA_CONCURRENCIA <= 6,
+        'la concurrencia está acotada: medimos 174 peticiones sin un solo error a 4',
+        String(Clase.EXC_VISTA_CONCURRENCIA));
+
+    const cuerpo = FUENTE.slice(FUENTE.indexOf('async _consultarExcipientesVisibles('),
+        FUENTE.indexOf('_toggleFinanciacion(valor, encendido)'));
+    ok(/!this\._excipientesCache\.has\(n\)/.test(cuerpo),
+        'no vuelve a pedir lo que ya sabe: cruza contra la misma caché que llena el chip');
+    ok(/slice\(0, tope\)/.test(cuerpo),
+        'el lote se recorta al tope, no se lanza la lista entera');
+    ok(/restantes > 0/.test(cuerpo) && /faltan \$\{restantes\}/.test(cuerpo),
+        'y cuando recorta LO DICE, con cuántas quedan: un parcial mudo parecería completo');
+    ok(/X-MC-Autocomplete/.test(cuerpo),
+        'las peticiones del lote también son secundarias: no inflan la analítica de búsquedas');
+    ok((cuerpo.match(/vivo\(\)/g) || []).length >= 3,
+        'comprueba que el lote sigue vivo en cada paso: apagar la casilla tiene que parar de verdad',
+        `apariciones de vivo(): ${(cuerpo.match(/vivo\(\)/g) || []).length}`);
+    ok(/fallos > 10 && fallos > hechas \/ 2/.test(cuerpo),
+        'abandona ante fallo sostenido en vez de seguir martilleando a CIMA');
+
+    // Apagar no desaprende: el chip ya consultado conserva su marca.
+    const apagar = FUENTE.slice(FUENTE.indexOf('_toggleVistaExcipientes(activa)'),
+        FUENTE.indexOf('_excVistaEstado(texto)'));
+    ok(!/_excipientesCache\s*=\s*new Map|_excipientesCache\.clear/.test(apagar),
+        'apagar el modo NO vacía la caché: lo averiguado no se desaprende');
+}
+
+console.log('\n— 9c · El lote, EJECUTADO contra un CIMA de mentira —');
+{
+    // Análisis de fuente aparte, aquí se corre la ruta que usa el consumidor y se exige la
+    // postcondición: qué se pidió, qué quedó marcado y qué NO se pidió. Es la diferencia entre
+    // «el código dice que cachea» y «no volvió a pedirlo».
+    const chips = new Map();                       // nregistro -> objeto que imita al <button>
+    const hacerChip = (n) => {
+        const c = { dataset: { excNreg: n }, title: '', innerHTML: '', className: '',
+            classList: { add() {}, remove() {} } };
+        chips.set(n, c);
+        return c;
+    };
+    const nregs = ['A1', 'A2', 'A3', 'A4', 'A5'];
+    nregs.forEach(hacerChip);
+
+    const pedidos = [];
+    const lote = Object.create(Clase.prototype);
+    Object.assign(lote, {
+        _excVistaActiva: true,
+        _excipientesCache: new Map([['A3', app._excipientesEDO({ excipientes: [exc('LACTOSA')] })]]),
+        api: {
+            getMedicamento: async (n) => {
+                pedidos.push(n);
+                if (n === 'A4') throw new Error('204');
+                return { excipientes: n === 'A1' ? [exc('LACTOSA MONOHIDRATO', '10', 'mg')] : [exc('MANITOL')] };
+            },
+        },
+    });
+    // DOM mínimo: el lote busca los chips por `[data-exc-nreg]` y repinta por el mismo selector.
+    const doc = {
+        querySelectorAll: () => [...chips.values()],
+        getElementById: () => null,
+    };
+    lote._refrescarChipsExcipientes = function (n) {
+        const c = chips.get(String(n));
+        if (c) c.innerHTML = `pintado:${this._excipientesEstadoChip(n).estado}`;
+    };
+
+    await lote._consultarExcipientesVisibles(doc);
+
+    ok(!pedidos.includes('A3'),
+        'NO se pide el que ya estaba en caché — el chip pulsado antes no se vuelve a pagar',
+        JSON.stringify(pedidos));
+    ok(pedidos.length === 4 && ['A1','A2','A4','A5'].every(n => pedidos.includes(n)),
+        'se piden exactamente los cuatro que faltaban', JSON.stringify(pedidos));
+    ok(lote._excipientesCache.size === 4,
+        'los que respondieron entran en la caché; el que falló NO se guarda como «sin excipientes»',
+        String(lote._excipientesCache.size));
+    ok(!lote._excipientesCache.has('A4'),
+        'un fallo de red no se convierte en «CIMA no declara ninguno», que sería inventarse el dato');
+    ok(chips.get('A1').innerHTML === 'pintado:destacado',
+        'el que trae lactosa queda marcado', chips.get('A1').innerHTML);
+    ok(chips.get('A2').innerHTML === 'pintado:edo',
+        'el que trae solo manitol queda consultado y atenuado', chips.get('A2').innerHTML);
+    ok(chips.get('A4').innerHTML === '',
+        'y el que falló se queda NEUTRO: se distingue a simple vista de los consultados');
+
+    // Apagar a mitad tiene que parar de verdad.
+    const pedidos2 = [];
+    const abortar = Object.create(Clase.prototype);
+    Object.assign(abortar, {
+        _excVistaActiva: true,
+        _excipientesCache: new Map(),
+        _refrescarChipsExcipientes() {},
+        api: { getMedicamento: async (n) => { pedidos2.push(n); abortar._excVistaActiva = false; return { excipientes: [] }; } },
+    });
+    const muchos = Array.from({ length: 40 }, (_, i) => ({ dataset: { excNreg: `B${i}` } }));
+    await abortar._consultarExcipientesVisibles({ querySelectorAll: () => muchos, getElementById: () => null });
+    ok(pedidos2.length < 40,
+        'apagar la casilla a mitad detiene el lote en vez de terminarlo por inercia',
+        `peticiones lanzadas: ${pedidos2.length} de 40`);
+}
+
 console.log('\n— 10 · La petición del detalle es SECUNDARIA —');
 {
     const i = FUENTE.indexOf('async openMedExcipients(');

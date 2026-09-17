@@ -670,6 +670,20 @@ body {
     display: none;
 }
 
+/* El progreso de «Ver excipientes» vive DENTRO de su etiqueta, no en una barra flotante ni en un
+   aviso aparte: es información de ese control y de nadie más, y a cero no ocupa nada porque el
+   span va vacío. Mismo peso visual que los recuentos de las demás casillas, para que no compita
+   con ellas — no pide nada, solo cuenta lo que está haciendo. */
+.exc-vista-estado {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
+}
+
+.exc-vista-estado:not(:empty) {
+    margin-left: 0.15rem;
+}
+
 .search-option:hover {
     color: var(--text-primary);
 }
