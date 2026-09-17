@@ -23,7 +23,7 @@
  *
  * Uso: node scripts/medcheck-test-utilizacion.mjs
  */
-import { readFileSync, mkdtempSync } from 'node:fs';
+import { readFileSync, mkdtempSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -40,6 +40,25 @@ const ok = (nombre, cond, detalle = '') => {
   if (cond) { console.log(`  ok    ${nombre}`); return; }
   fallos++;
   console.log(`  FALLO ${nombre}${detalle ? ` — ${detalle}` : ''}`);
+};
+
+/**
+ * El Worker vive en OTRO repositorio (`ernestobarrera/medcheck-worker`, privado): aquí es una
+ * carpeta hermana y en CI no existe. Sus contratos se comprueban si está, y si no está se dice
+ * INCONCLUSO —en mayúsculas, que es lo que cuenta el workflow— en vez de darlos por buenos:
+ * aprobar lo que no se ha podido leer es el guardián que firma sin haber juzgado.
+ *
+ * Medido el 17/09/2026, en la primera ejecución del CI: sin esta guarda el `readFileSync`
+ * lanzaba ENOENT y se llevaba por delante 178 de las 270 aserciones del banco, no solo las 5
+ * que miran el Worker. El banco salía rojo por una ausencia, y las otras 173 no llegaban a correr.
+ */
+let inconclusos = 0;
+const leerWorker = () => {
+  const ruta = join(RAIZ, '..', 'medcheck-worker', 'index.js');
+  if (existsSync(ruta)) return readFileSync(ruta, 'utf8');
+  inconclusos++;
+  console.log('  INCONCLUSO  no está el repo hermano `medcheck-worker`: sus contratos NO se comprueban aquí');
+  return null;
 };
 
 // Los cinco diseños REALES medidos en las tablas anuales ATC4 del Ministerio (30/08/2026).
@@ -498,11 +517,13 @@ console.log('\n10 quater) el watchdog mira el reloj del Ministerio, no el nuestr
 // ── 10 quinquies. analítica del Worker ─────────────────────────────────────
 console.log('\n10 quinquies) el quick win se puede medir');
 {
-  const wk = readFileSync(join(RAIZ, '..', 'medcheck-worker', 'index.js'), 'utf8');
-  ok('«modal-utilizacion» es una vista válida', /'modal-utilizacion'/.test(wk));
-  ok('el Worker extrae el ATC de /utilizacion/by-atc/', /path\.startsWith\('\/utilizacion\/by-atc\/'\)/.test(wk));
-  ok('y devuelve el código en mayúsculas', /match\[1\]\.toUpperCase\(\)/.test(wk.slice(wk.indexOf("'/utilizacion/by-atc/'"))));
-  ok('/utilizacion/ sigue en los endpoints registrados', /'\/utilizacion\/',/.test(wk));
+  const wk = leerWorker();
+  if (wk) {
+    ok('«modal-utilizacion» es una vista válida', /'modal-utilizacion'/.test(wk));
+    ok('el Worker extrae el ATC de /utilizacion/by-atc/', /path\.startsWith\('\/utilizacion\/by-atc\/'\)/.test(wk));
+    ok('y devuelve el código en mayúsculas', /match\[1\]\.toUpperCase\(\)/.test(wk.slice(wk.indexOf("'/utilizacion/by-atc/'"))));
+    ok('/utilizacion/ sigue en los endpoints registrados', /'\/utilizacion\/',/.test(wk));
+  }
 }
 
 // ── 11. el perímetro lleva la pista del dato hospitalario ──────────────────
@@ -521,7 +542,7 @@ console.log('\n12) «Utilización» es una vista principal, al nivel de Buscar')
 {
   const html = readFileSync(join(RAIZ, 'medcheck.html'), 'utf8');
   const app = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
-  const wk = readFileSync(join(RAIZ, '..', 'medcheck-worker', 'index.js'), 'utf8');
+  const wk = leerWorker();
 
   ok('hay pestaña de navegación en el HTML', /data-view="utilization"/.test(html));
   ok('está entre las nav-tab, no dentro del modal',
@@ -529,7 +550,7 @@ console.log('\n12) «Utilización» es una vista principal, al nivel de Buscar')
   ok('el conmutador de vistas la resuelve', /case 'utilization': await this\.renderUtilizacionView\(\)/.test(app));
   ok('existe el render de la vista', /async renderUtilizacionView\(\)/.test(app));
   ok('la vista se pinta contra el árbol descargado', /this\._utilArbolVista/.test(app));
-  ok('la analítica la reconoce', /utilization:\s*'utilizacion'/.test(app) && /'utilizacion',/.test(wk));
+  if (wk) ok('la analítica la reconoce', /utilization:\s*'utilizacion'/.test(app) && /'utilizacion',/.test(wk));
 
   const vista = app.slice(app.indexOf('async renderUtilizacionView()'), app.indexOf('_engancharUtilizacionView() {'));
   const emitido = vista.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
@@ -1286,5 +1307,5 @@ console.log('\n24) el caché del árbol caduca con el contrato, no solo con el r
   const ver = Number((etl.match(/schema_version: (\d+)/) || [])[1]);
   ok(`el esquema del árbol sube al ganar \`he\`/\`mag\` (va por ${ver})`, ver >= 3);
 }
-console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);
+console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}${inconclusos ? ` · ${inconclusos} bloque(s) INCONCLUSO(S), no comprobados` : ''}`);
 process.exit(fallos === 0 ? 0 : 1);
