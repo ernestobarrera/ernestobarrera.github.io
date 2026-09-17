@@ -83,6 +83,10 @@ jobs:
             # PASAN («exit 2 inconcluso, nunca 0»): contarlas daría 12 avisos falsos por run.
             # Hoy el único banco que puede saltarse algo de verdad es medcheck-test-medynut, y lo
             # hace cuando no alcanza CIMA.
+            #
+            # CONVENCIÓN: una línea con el token = un aviso. El resumen final de un banco NO
+            # puede repetirlo en mayúsculas o se cuenta a sí mismo — medido el 17/09 en el
+            # segundo run: decía 3 avisos donde había 2.
             n=$(printf '%s\n' "$salida" | grep -c 'INCONCLUSO')
             [ -z "$n" ] && n=0
             saltos=$((saltos + n))
@@ -98,10 +102,10 @@ jobs:
           done
 
           echo
-          echo "${#BANCOS[@]} bancos · $fallos en rojo · $saltos aserción(es) inconclusa(s)"
+          echo "${#BANCOS[@]} bancos · $fallos en rojo · $saltos aviso(s) de INCONCLUSO"
           {
             echo
-            echo "**${#BANCOS[@]} bancos · $fallos en rojo · $saltos aserción(es) inconclusa(s)**"
+            echo "**${#BANCOS[@]} bancos · $fallos en rojo · $saltos aviso(s) de INCONCLUSO**"
           } >> "$GITHUB_STEP_SUMMARY"
 
           # Un inconcluso NO pinta rojo: no significa que algo esté mal, sino que no se ha podido
@@ -109,7 +113,7 @@ jobs:
           # pasar callado, que es el aprobado en falso: sale como aviso, y los avisos se ven en la
           # cabecera del run sin abrir nada.
           if [ "$saltos" -gt 0 ]; then
-            echo "::warning::$saltos aserción(es) quedaron INCONCLUSAS: no se pudieron comprobar. El verde de este run no las cubre."
+            echo "::warning::$saltos aviso(s) de INCONCLUSO: hay comprobaciones que no se han podido hacer. El verde de este run no las cubre."
           fi
 
           if [ "$fallos" -gt 0 ]; then

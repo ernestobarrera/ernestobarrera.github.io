@@ -1307,5 +1307,5 @@ console.log('\n24) el caché del árbol caduca con el contrato, no solo con el r
   const ver = Number((etl.match(/schema_version: (\d+)/) || [])[1]);
   ok(`el esquema del árbol sube al ganar \`he\`/\`mag\` (va por ${ver})`, ver >= 3);
 }
-console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}${inconclusos ? ` · ${inconclusos} bloque(s) INCONCLUSO(S), no comprobados` : ''}`);
+console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}${inconclusos ? ` · ${inconclusos} bloque(s) sin comprobar (ver arriba)` : ''}`);
 process.exit(fallos === 0 ? 0 : 1);
