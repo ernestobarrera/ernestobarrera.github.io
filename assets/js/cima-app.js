@@ -10678,11 +10678,16 @@ ${materialesPlaceholder}
     _toggleVistaExcipientes(activa) {
         this._excVistaActiva = !!activa;
         if (this._excVistaActiva) {
+            // Lo ya sabido se vuelve a ver AL INSTANTE, sin esperar al lote ni gastar una petición:
+            // es lo que hace que marcar y desmarcar sea gratis después de la primera vez.
+            this._refrescarTodosLosChipsExcipientes();
             this._consultarExcipientesVisibles();
         } else {
             // Invalida el lote en vuelo: si estaba a medias, se para donde esté.
             this._excVistaToken = null;
             this._excVistaEstado('');
+            // Y se deshace lo que el modo pintó. Los abiertos a mano se quedan: los pidió él.
+            this._refrescarTodosLosChipsExcipientes();
         }
     }
 
@@ -14610,8 +14615,17 @@ ${materialesPlaceholder}
      * sobre el botón pulsado, el primer filtro lo borraría y el usuario creería que lo soñó.
      */
     _excipientesEstadoChip(nregistro) {
-        const datos = this._excipientesCache?.get(String(nregistro));
-        if (!datos) {
+        const clave = String(nregistro);
+        const datos = this._excipientesCache?.get(clave);
+        // LA MARCA SE VE SI SIGUE PEDIDA. Al desmarcar «Ver excipientes» las marcas que puso el
+        // modo desaparecen, porque una casilla que no deshace lo que hizo no es una casilla.
+        // Ernesto lo notó el 17/09: «al desmarcar excipientes se siguen viendo salvo que refresque».
+        //
+        // Pero NO se olvida el dato: la caché se conserva, así que volver a marcarla no cuesta ni
+        // una petición. Y los que abrió A MANO conservan su marca, porque esos los pidió él uno a
+        // uno y no es el modo quien los puso — apagar el modo no puede deshacer sus clics.
+        const pedido = this._excVistaActiva || this._excAbiertosAMano?.has(clave);
+        if (!datos || !pedido) {
             return {
                 estado: 'desconocido', clase: '', texto: '',
                 titulo: 'Excipientes de declaración obligatoria (CIMA). Se consultan al pulsar; no es la composición completa.',
@@ -14644,6 +14658,15 @@ ${materialesPlaceholder}
             estado: 'edo', clase: ' med-detail-tag--exc-visto', texto: String(datos.total),
             titulo: `Contiene ${comun}, ninguno con etiqueta propia en MedCheck.${coletilla}`,
         };
+    }
+
+    /** Repinta TODOS los chips de la pantalla. Lo usa el interruptor del modo, en los dos sentidos:
+     *  al encender devuelve al instante lo ya sabido, y al apagar deshace lo que el modo pintó. */
+    _refrescarTodosLosChipsExcipientes() {
+        for (const nreg of new Set([...document.querySelectorAll('[data-exc-nreg]')]
+            .map(c => c.dataset.excNreg).filter(Boolean))) {
+            this._refrescarChipsExcipientes(nreg);
+        }
     }
 
     /** Repinta los chips de un registro tras conocer su respuesta. Puede haber más de uno en
@@ -14685,6 +14708,10 @@ ${materialesPlaceholder}
         if (this._excPopoverNreg === clave) { this._cerrarPopoverExcipientes(); return; }
 
         this._excipientesCache = this._excipientesCache || new Map();
+        // Lo que se abre a mano se recuerda: su marca sobrevive a apagar el modo (ver el estado
+        // del chip más arriba), porque ese clic es suyo y el modo no lo puso.
+        this._excAbiertosAMano = this._excAbiertosAMano || new Set();
+        this._excAbiertosAMano.add(clave);
         this._excPopoverNreg = clave;
 
         if (this._excipientesCache.has(clave)) {
@@ -14723,9 +14750,9 @@ ${materialesPlaceholder}
         // esta lista lleva advertencia oficial. Lo que el color separa es qué sabemos nombrar en
         // español, no qué es peligroso.
         const AVISO = '<div class="exc-popover__nota">'
-            + '<strong>Todos los de esta lista son de declaración obligatoria y llevan advertencia oficial.</strong> El color solo destaca los más habituales; '
-            + 'los que van en texto corrido son igual de declarables.'
-            + '<br>Es información orientativa de CIMA y <strong>no es la composición completa</strong>: consulte la ficha técnica o el prospecto.</div>';
+            + '<strong>Todos los de esta lista son de declaración obligatoria</strong> y cada uno lleva su advertencia oficial. '
+            + 'El color no marca cuáles importan más: marca los que MedCheck nombra en español.'
+            + '<br>CIMA publica aquí solo los declarables, <strong>no la composición completa</strong>. Para el resto, la ficha técnica (sección 6.1).</div>';
 
         if (datos === null) {
             return '<div class="exc-popover__cargando"><i class="fas fa-circle-notch fa-spin"></i> Consultando CIMA…</div>';
@@ -14737,19 +14764,27 @@ ${materialesPlaceholder}
             return '<div class="exc-popover__cargando">CIMA no declara excipientes de declaración obligatoria para este registro.</div>' + AVISO;
         }
 
-        const chips = datos.riesgo.map(e =>
-            `<span class="badge-excipient" style="--exc-color: ${e.color}" title="${this._escapeHtml(e.fullName + (e.cantidad ? ' — ' + e.cantidad : ''))}">`
-            + `<i class="fas ${e.icon}"></i> ${this._escapeHtml(e.label)}${e.cantidad ? ` <small>${this._escapeHtml(e.cantidad)}</small>` : ''}`
-            + '</span>'
-        ).join('');
-        const resto = datos.otros.map(e =>
-            `<span class="excipient-item">${this._escapeHtml(e.nombre || '')}`
-            + `${e.cantidad ? ` <small>${this._escapeHtml(`${e.cantidad} ${e.unidad || ''}`.trim())}</small>` : ''}</span>`
-        ).join(', ');
+        // TODOS EN LA MISMA LISTA Y CON LA MISMA FORMA. Antes los de la lista curada iban como
+        // chips de color y el resto como texto corrido separado por comas, y esa jerarquía se leía
+        // exactamente al revés de lo que dice el aviso: Ernesto la leyó como «no son obligatorios
+        // pero aparecen». Son todos obligatorios. Lo único que cambia es si MedCheck le sabe poner
+        // nombre en español, y eso no es una categoría clínica: no puede parecer una.
+        const cant = (e) => `${e.cantidad || ''} ${e.unidad || ''}`.trim();
+        const curados = new Map(datos.riesgo.map(e => [e.fullName, e]));
+        const items = datos.todos.map((e) => {
+            const c = curados.get(e.nombre);
+            const medida = c ? c.cantidad : cant(e);
+            const texto = c ? `${c.label} <small>${this._escapeHtml(e.nombre)}</small>` : this._escapeHtml(e.nombre || '');
+            return `<span class="badge-excipient${c ? '' : ' badge-excipient--llano'}"`
+                + (c ? ` style="--exc-color: ${c.color}"` : '')
+                + ` title="${this._escapeHtml(e.nombre || '')}${medida ? ' — ' + medida : ''}">`
+                + (c ? `<i class="fas ${c.icon}"></i> ` : '')
+                + texto
+                + (medida ? ` <small>${this._escapeHtml(medida)}</small>` : '')
+                + '</span>';
+        }).join('');
 
-        return (chips ? `<div class="excipientes-flagged">${chips}</div>` : '')
-            + (resto ? `<div class="excipientes-list exc-popover__resto">${resto}</div>` : '')
-            + AVISO;
+        return `<div class="excipientes-flagged">${items}</div>` + AVISO;
     }
 
     /** Pinta (o repinta) el popover anclado al chip. Uno solo en todo el documento. */

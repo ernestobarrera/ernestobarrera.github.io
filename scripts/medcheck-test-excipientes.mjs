@@ -154,7 +154,7 @@ console.log('\n— 6 · El alcance del dato viaja siempre con el dato —');
     });
     const vacio = app._cuerpoPopoverExcipientes({ todos: [], riesgo: [], otros: [], total: 0 });
     for (const [caso, html] of [['con excipientes', conDato], ['sin excipientes', vacio]]) {
-        ok(/no es la composición completa/i.test(html) && /ficha técnica/i.test(html),
+        ok(/no la composición completa/i.test(html) && /ficha técnica/i.test(html),
             `${caso}: dice que NO es la composición completa y remite a la ficha técnica`);
     }
     ok(/declaración obligatoria/i.test(conDato),
@@ -180,6 +180,7 @@ console.log('\n— 7 · El chip de la tarjeta: botón de verdad y en todas —')
 console.log('\n— 8 · El color llega DESPUÉS de preguntar, nunca antes —');
 {
     app._excipientesCache = new Map();
+    app._excVistaActiva = true;   // la marca solo se ve mientras siga pedida (ver bloque 8c)
 
     const sinConsultar = app._excipientesEstadoChip('999');
     ok(sinConsultar.estado === 'desconocido' && sinConsultar.clase === '' && sinConsultar.texto === '',
@@ -268,6 +269,94 @@ console.log('\n— 9 · Los dos alcoholes que no son etanol (regresión reparada
     ok(claves.indexOf('alcohol bencilico') < claves.indexOf('alcohol')
         && claves.indexOf('cetoestearilico') < claves.indexOf('alcohol'),
         'los dos específicos se evalúan ANTES que la clave genérica `alcohol`');
+}
+
+console.log('\n— 8d · Desmarcar DESHACE, pero no desaprende —');
+{
+    // Parte suyo del 17/09: «al desmarcar excipientes se siguen viendo salvo que refresque».
+    // Tenía razón: una casilla que no deshace lo que hizo no es una casilla.
+    const a = Object.create(Clase.prototype);
+    a._excipientesCache = new Map([
+        ['M1', app._excipientesEDO({ excipientes: [exc('LACTOSA')] })],      // lo pintó el modo
+        ['H1', app._excipientesEDO({ excipientes: [exc('LACTOSA')] })],      // lo abrió él a mano
+    ]);
+    a._excAbiertosAMano = new Set(['H1']);
+
+    a._excVistaActiva = true;
+    ok(a._excipientesEstadoChip('M1').estado === 'destacado',
+        'con el modo encendido, lo consultado se ve marcado');
+
+    a._excVistaActiva = false;
+    ok(a._excipientesEstadoChip('M1').estado === 'desconocido',
+        'al desmarcar, la marca que puso el MODO desaparece sin refrescar la página');
+    ok(a._excipientesEstadoChip('H1').estado === 'destacado',
+        'pero la del que abrió A MANO se queda: ese clic es suyo, no lo puso el modo');
+    ok(a._excipientesCache.size === 2,
+        'y el DATO no se pierde: volver a marcar no cuesta ninguna petición',
+        String(a._excipientesCache.size));
+
+    a._excVistaActiva = true;
+    ok(a._excipientesEstadoChip('M1').estado === 'destacado',
+        'al volver a marcar reaparece al instante, desde la caché');
+
+    // Y QUE EL CONJUNTO SE LLENE DE VERDAD AL ABRIR. La prueba de arriba lo rellena a mano, así
+    // que aprobaba con la línea que lo puebla borrada: mutante superviviente en la primera
+    // versión de este bloque. Aquí se EJECUTA la ruta del usuario y se exige la postcondición.
+    {
+        const b = Object.create(Clase.prototype);
+        Object.assign(b, {
+            _excipientesCache: new Map(),
+            _excVistaActiva: false,
+            api: { getMedicamento: async () => ({ excipientes: [exc('LACTOSA')] }) },
+            _pintarPopoverExcipientes() {},
+            _refrescarChipsExcipientes() {},
+        });
+        await b.openMedExcipients('X9', null);
+        ok(b._excAbiertosAMano instanceof Set && b._excAbiertosAMano.has('X9'),
+            'abrir un chip a mano lo registra como suyo',
+            JSON.stringify([...(b._excAbiertosAMano || [])]));
+        ok(b._excipientesEstadoChip('X9').estado === 'destacado',
+            'y su marca se ve aunque el modo esté apagado, que es para lo que sirve el registro');
+    }
+
+    // El interruptor tiene que repintar en los DOS sentidos, o el estado sería correcto por dentro
+    // y falso en pantalla — que es exactamente el defecto que se está arreglando.
+    const cuerpo = FUENTE.slice(FUENTE.indexOf('_toggleVistaExcipientes(activa)'),
+        FUENTE.indexOf('_excVistaEstado(texto)'));
+    ok((cuerpo.match(/_refrescarTodosLosChipsExcipientes\(\)/g) || []).length === 2,
+        'el interruptor repinta al encender Y al apagar',
+        `apariciones: ${(cuerpo.match(/_refrescarTodosLosChipsExcipientes\(\)/g) || []).length}`);
+}
+
+console.log('\n— 8e · En el popover no hay excipientes de segunda clase —');
+{
+    app._escapeHtml = app._escapeHtml || (s => String(s));
+    // Caso REAL: CINFATOS ANTITUSIVO 10 mg pastillas. Ninguno de sus cuatro está en la lista
+    // curada, así que antes salían los cuatro como texto corrido detrás de una fila de colores
+    // vacía — y eso se lee como «estos no cuentan». Son los cuatro declarables.
+    const cuatro = app._excipientesEDO({ excipientes: [
+        exc('MALTITOL (E965)', '1134,9', 'mg'), exc('SACARINA SODICA', '2,0', 'mg'),
+        exc('BETADEX', '168,5', 'mg'), exc('CICLAMATO DE SODIO', '20,0', 'mg')] });
+    const html = app._cuerpoPopoverExcipientes(cuatro);
+    ok((html.match(/<span class="badge-excipient/g) || []).length === 4,
+        'los cuatro salen como chip, ninguno como texto corrido',
+        `chips encontrados: ${(html.match(/<span class="badge-excipient/g) || []).length}`);
+    ok(!/excipientes-list|exc-popover__resto/.test(html),
+        'ya no existe la segunda lista de «los otros»');
+    ok(/1134,9 mg/.test(html) && /168,5 mg/.test(html),
+        'y cada uno lleva su cantidad, que es lo que permite juzgar');
+
+    // Mezcla: uno curado y uno no. Los dos tienen que estar, y el curado conserva su etiqueta.
+    const mezcla = app._cuerpoPopoverExcipientes(app._excipientesEDO({ excipientes: [
+        exc('LACTOSA MONOHIDRATO', '78,4', 'mg'), exc('MANITOL (E-421)', '51', 'mg')] }));
+    ok((mezcla.match(/<span class="badge-excipient/g) || []).length === 2,
+        'con uno curado y uno no, salen los dos y en la misma lista');
+    ok(/Lactosa/.test(mezcla) && /MANITOL/.test(mezcla),
+        'el curado conserva su nombre en español y el otro el de CIMA');
+    ok(/badge-excipient--llano/.test(mezcla),
+        'el no curado se distingue, pero por vocabulario: misma forma, sin color');
+    ok(/El color no marca cuáles importan más/.test(mezcla),
+        'y el aviso dice EXACTAMENTE qué significa el color, que es lo que se malinterpretó');
 }
 
 console.log('\n— 9b · «Ver excipientes» es un MODO, no un filtro —');

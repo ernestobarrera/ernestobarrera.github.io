@@ -1731,6 +1731,17 @@ body {
     border: 1px solid color-mix(in srgb, var(--exc-color) 30%, transparent);
 }
 
+/* El excipiente declarable que MedCheck no sabe nombrar en español. MISMA FORMA que los demás
+   —mismo alto, mismo borde, misma caja—, solo en gris: la diferencia es de vocabulario nuestro, no
+   de importancia clínica, y con un tratamiento distinto (texto corrido tras una fila de colores)
+   se leía como «estos no cuentan». Es literalmente lo que le pasó a Ernesto el 17/09. */
+.badge-excipient--llano {
+    background: var(--bg-dark);
+    color: var(--text-secondary);
+    border-color: var(--border-color, #e2e8f0);
+    font-weight: 500;
+}
+
 .badge-excipient i {
     font-size: 0.65rem;
 }
