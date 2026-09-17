@@ -1,0 +1,118 @@
+name: Bancos de pruebas de MedCheck
+
+# Los 32 bancos existían y no los ejecutaba nadie más que la máquina de casa: el repositorio tenía
+# nueve ETL programados y `grep -rn "medcheck-test" .github/` no devolvía nada. Esto cierra el
+# hueco del CÓDIGO.
+#
+# LO QUE ESTO NO CUBRE, y tiene que estar escrito para que nadie lo dé por cubierto: los ETL
+# commitean con el `GITHUB_TOKEN` por defecto, y GitHub NO dispara workflows con los push hechos
+# con ese token. Un índice nuevo publicado por `etl-atc-index` no pasa por aquí. El hueco del
+# DATO —correr los bancos sobre lo que acaba de producir un ETL— sigue abierto y se cierra aparte.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Solo lectura. Esto no commitea, no publica, no toca KV y no usa ningún secret. Con esto, el
+# token del run no podría escribir aunque alguien lo intentara.
+permissions:
+  contents: read
+
+concurrency:
+  group: pruebas-${{ github.ref }}
+  # Sin `cancel-in-progress`: un run cancelado se lee como rojo —`check-runs.mjs` cuenta como
+  # problema todo lo que no sea `success`— y un rojo que no significa nada enseña a ignorar los
+  # rojos. Cincuenta segundos de cola son más baratos que eso.
+  cancel-in-progress: false
+
+jobs:
+  bancos:
+    runs-on: ubuntu-latest
+    # Medido el 17/09/2026: los 32 en secuencial suman 46,3 s. El margen es para un CIMA lento,
+    # no para un banco que se cuelga.
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # El repo no tiene `package.json`: node puro, sin `npm ci` y sin caché que configurar.
+          node-version: '24'
+
+      - name: Ejecutar los bancos
+        shell: bash
+        run: |
+          # Actions corre los `run` con `-e`: sin esto, el primer banco en rojo abortaría el
+          # script y los demás no llegarían a ejecutarse. Los códigos se llevan a mano.
+          set +e
+          set -u
+
+          mapfile -t BANCOS < <(ls scripts/medcheck-test-*.mjs 2>/dev/null | sort)
+
+          # GUARDA DE ARRANQUE. Si el prefijo de los bancos cambia, el bucle se queda sin nada que
+          # hacer y este workflow saldría VERDE sin haber probado una línea. Es exactamente el
+          # fallo del guard de módulo que dejó un ETL terminando en verde sin ejecutarse.
+          MINIMO=32
+          if [ "${#BANCOS[@]}" -lt "$MINIMO" ]; then
+            echo "::error::Se esperaban al menos $MINIMO bancos y se han encontrado ${#BANCOS[@]}. Un verde aquí no significaría nada."
+            exit 1
+          fi
+
+          fallos=0
+          saltos=0
+          rojos=""
+
+          {
+            echo "## Bancos de pruebas de MedCheck"
+            echo
+            echo "| Banco | Salida | Inconclusos |"
+            echo "|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for f in "${BANCOS[@]}"; do
+            nombre=$(basename "$f" .mjs)
+            echo "::group::$nombre"
+            salida=$(node "$f" 2>&1)
+            codigo=$?
+            echo "$salida"
+            echo "::endgroup::"
+
+            # INCONCLUSO en MAYÚSCULAS, y solo ahí. En minúsculas es el nombre de aserciones que
+            # PASAN («exit 2 inconcluso, nunca 0»): contarlas daría 12 avisos falsos por run.
+            # Hoy el único banco que puede saltarse algo de verdad es medcheck-test-medynut, y lo
+            # hace cuando no alcanza CIMA.
+            n=$(printf '%s\n' "$salida" | grep -c 'INCONCLUSO')
+            [ -z "$n" ] && n=0
+            saltos=$((saltos + n))
+
+            if [ "$codigo" -eq 0 ]; then
+              estado="verde"
+            else
+              estado="ROJO ($codigo)"
+              fallos=$((fallos + 1))
+              rojos="$rojos $nombre"
+            fi
+            echo "| \`$nombre\` | $estado | $n |" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+          echo
+          echo "${#BANCOS[@]} bancos · $fallos en rojo · $saltos aserción(es) inconclusa(s)"
+          {
+            echo
+            echo "**${#BANCOS[@]} bancos · $fallos en rojo · $saltos aserción(es) inconclusa(s)**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Un inconcluso NO pinta rojo: no significa que algo esté mal, sino que no se ha podido
+          # comprobar (CIMA caído). Pintarlo rojo enseñaría a ignorar el rojo. Pero tampoco puede
+          # pasar callado, que es el aprobado en falso: sale como aviso, y los avisos se ven en la
+          # cabecera del run sin abrir nada.
+          if [ "$saltos" -gt 0 ]; then
+            echo "::warning::$saltos aserción(es) quedaron INCONCLUSAS: no se pudieron comprobar. El verde de este run no las cubre."
+          fi
+
+          if [ "$fallos" -gt 0 ]; then
+            echo "::error::$fallos banco(s) en rojo:$rojos"
+            exit 1
+          fi
