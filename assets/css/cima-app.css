@@ -4728,38 +4728,50 @@ body {
     color: var(--primary);
 }
 
-/* CONSULTADO Y CON ADVERTENCIA. El color llega DESPUÉS de preguntar, nunca antes: mientras no se
-   ha consultado no se sabe, y marcar sin saber sería la marca que llevaría más de la mitad de las
-   tarjetas. Un solo color de advertencia, no el del excipiente concreto: el mapa tiene un color
-   por excipiente pero NO es una escala de gravedad, y pintar «el peor» inventaría una jerarquía
-   clínica que no consta en ninguna fuente. Cuál es y cuánto lleva se lee en el popover. */
-.med-detail-tag--exc-riesgo {
-    background: var(--warning-light);
-    color: var(--warning);
+/* LOS TRES ESTADOS DEL CHIP CONSULTADO, y ninguno es una escala de gravedad.
+   Hasta el 17/09 había dos —ámbar si algún excipiente estaba en nuestra lista de nombres,
+   atenuado si no— y esa diferencia era de vocabulario, no clínica: en dextrometorfano ponía
+   42 de 47 tarjetas en ámbar mientras dejaba mudo el sorbitol. Se retiró.
+
+   Ahora el ámbar está reservado a lo único que de verdad pide atención: que NO CONSTE. Es la
+   regla que ordena el módulo — mejor una no señal que obligue a confirmar que una señal que
+   omita avisos. */
+
+/* Declara N. Informativo y uniforme: la cifra es el dato, y cuáles importan depende del
+   paciente, que la tarjeta no conoce. */
+.med-detail-tag--exc-datos {
     font-weight: 600;
 }
 
-.med-detail-tag--exc-riesgo i,
-.med-detail-tag--exc-riesgo:hover i,
-.med-detail-tag--exc-riesgo:focus-visible i {
-    color: var(--warning);
-}
-
-.med-detail-tag--exc-riesgo .med-detail-tag__text {
+.med-detail-tag--exc-datos .med-detail-tag__text {
     font-variant-numeric: tabular-nums;
 }
 
-/* CONSULTADO Y SIN ADVERTENCIA. Tiene que distinguirse de «sin consultar», que es lo que era antes
-   de pulsar: si los dos se vieran igual, repasar una lista larga obligaría a volver a pulsar para
-   saber cuáles ya habías mirado. Se marca por opacidad y no por otro color, porque «lo miré y no
-   había nada» no es una alerta y no debe competir con las que sí lo son. */
-.med-detail-tag--exc-visto {
-    opacity: 0.45;
+/* Cero CONFIRMADO contra la ficha técnica. Atenuado, porque no pide nada: el popover enseña la
+   sección 6.1 entera para que se pueda comprobar de un vistazo. */
+.med-detail-tag--exc-cero {
+    opacity: 0.5;
 }
 
-.med-detail-tag--exc-visto:hover,
-.med-detail-tag--exc-visto:focus-visible {
+.med-detail-tag--exc-cero:hover,
+.med-detail-tag--exc-cero:focus-visible {
     opacity: 1;
+}
+
+/* NO CONSTA: CIMA no declara ninguno y no hay ficha con qué contrastarlo. Es el ÚNICO estado que
+   se pinta en ámbar, y lleva interrogación en vez de cifra: un «0» aquí sería tranquilizar sin
+   base. Destaca a propósito — es el caso en el que la aplicación no puede ayudar y hay que ir a
+   la ficha técnica. */
+.med-detail-tag--exc-inconcluso {
+    background: var(--warning-light);
+    color: var(--warning);
+    font-weight: 700;
+}
+
+.med-detail-tag--exc-inconcluso i,
+.med-detail-tag--exc-inconcluso:hover i,
+.med-detail-tag--exc-inconcluso:focus-visible i {
+    color: var(--warning);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -4809,6 +4821,52 @@ body {
 .exc-popover__close:hover,
 .exc-popover__close:focus-visible {
     color: var(--text-primary);
+}
+
+/* El aviso de «no consta». Ámbar y con su icono: es la única cosa del popover que pide una
+   acción fuera de la aplicación. */
+.exc-popover__aviso {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: var(--radius-sm);
+    background: var(--warning-light);
+    color: var(--warning);
+    line-height: 1.45;
+}
+
+.exc-popover__aviso i {
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+}
+
+/* La sección 6.1 literal, que es lo que convierte un «0» en un cero comprobable. Va en monoespacio
+   discreto para que se lea como una CITA de la ficha y no como texto nuestro. */
+.exc-popover__ft61 {
+    margin-top: 0.5rem;
+    padding: 0.45rem 0.55rem;
+    border-left: 2px solid var(--border-color, #e2e8f0);
+    background: var(--bg-dark);
+    border-radius: var(--radius-sm);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.exc-popover__ft61-tit {
+    display: block;
+    margin-bottom: 0.2rem;
+    font-size: 0.64rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+}
+
+/* El nombre en español, cuando lo hay. Es apoyo de lectura, así que va detrás, pequeño y sin
+   color: «parabenos» se reconoce antes que «parahidroxibenzoato de metilo (E-218)», y nada más. */
+.exc-alias {
+    opacity: 0.75;
+    font-style: italic;
 }
 
 .exc-popover__cargando {

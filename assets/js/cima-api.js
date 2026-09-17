@@ -2237,9 +2237,13 @@ class CimaAPI {
      * @param {string} seccion - ej: "4.3", "4.4"
      * @param {number} tipo - 1=FT, 2=Prospecto
      */
-    async getDocSeccion(nregistro, seccion, tipo = 1) {
+    async getDocSeccion(nregistro, seccion, tipo = 1, options = {}) {
+        // `options` se aceptó el 17/09 para poder marcar la petición como SECUNDARIA
+        // (`X-MC-Autocomplete`) desde quien la use de apoyo: sin esa marca no entra en la caché del
+        // cliente y además cuenta como búsqueda en la analítica, que es lo que no es.
         const response = await this._request(
-            `/docSegmentado/contenido/${tipo}?nregistro=${nregistro}&seccion=${seccion}`
+            `/docSegmentado/contenido/${tipo}?nregistro=${nregistro}&seccion=${seccion}`,
+            options
         );
 
         // La API devuelve un array de objetos con {seccion, titulo, contenido, orden}

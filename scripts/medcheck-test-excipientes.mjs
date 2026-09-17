@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 /**
  * MedCheck — contrato de los excipientes de declaración obligatoria (EDO)
- * (`EXCIPIENTES_RIESGO`, `_excipientesEDO`, `_cuerpoPopoverExcipientes`, chip de la tarjeta)
+ * (`EXCIPIENTES_NOMBRE_ES`, `_excipientesEDO`, `_leerFT61`, `_cuerpoPopoverExcipientes`, chip)
+ *
+ * LA REGLA QUE ORDENA ESTE MÓDULO, en palabras de Ernesto (17/09/2026): «prefiero una no señal si
+ * obliga a confirmar que una señal que omite avisos». De ahí sale todo lo que vigila este banco.
  *
  * Desde el 2026-09-16 los excipientes se ven DESDE LA LISTA, sin abrir la ficha. Lo que este
  * banco fija no es el aspecto, son las tres decisiones que pueden degradar un dato clínico:
@@ -61,23 +64,23 @@ const ok = (cond, nombre, detalle = '') => {
 
 const exc = (nombre, cantidad = null, unidad = null) => ({ nombre, cantidad, unidad });
 
-console.log('\n— 1 · La clasificación: riesgo, resto y nada inventado —');
+console.log('\n— 1 · La clasificación: con nombre en español, resto, y nada inventado —');
 {
     // RYEQO, medido contra CIMA el 16/09/2026: lactosa (de riesgo) + manitol (no).
     const r = app._excipientesEDO({
         excipientes: [exc('MANITOL (E-421)', '51', 'mg'), exc('LACTOSA MONOHIDRATO', '78,4', 'mg')],
     });
     ok(r.total === 2, 'cuenta todos los EDO, no solo los de riesgo', `total=${r.total}`);
-    ok(r.riesgo.length === 1 && r.riesgo[0].label === 'Lactosa',
-        'la lactosa entra como excipiente de riesgo con su etiqueta clínica',
-        JSON.stringify(r.riesgo.map(e => e.label)));
-    ok(r.riesgo[0].cantidad === '78,4 mg',
+    ok(r.nombrados.length === 1 && r.nombrados[0].label === 'Lactosa',
+        'la lactosa recibe su nombre en español (apoyo de lectura, NO categoría de riesgo)',
+        JSON.stringify(r.nombrados.map(e => e.label)));
+    ok(r.nombrados[0].cantidad === '78,4 mg',
         'la cantidad se compone con su unidad: sin ella el dato no decide nada',
-        r.riesgo[0].cantidad);
-    ok(r.otros.length === 1 && r.otros[0].nombre === 'MANITOL (E-421)',
-        'lo que no es de riesgo se conserva íntegro, no se descarta',
-        JSON.stringify(r.otros));
-    ok(r.riesgo.length + r.otros.length === r.total,
+        r.nombrados[0].cantidad);
+    ok(r.resto.length === 1 && r.resto[0].nombre === 'MANITOL (E-421)',
+        'lo que no tiene nombre propio se conserva íntegro: también es declarable',
+        JSON.stringify(r.resto));
+    ok(r.nombrados.length + r.resto.length === r.total,
         'la partición es exhaustiva: ningún excipiente se pierde por el camino');
 }
 
@@ -90,7 +93,7 @@ console.log('\n— 2 · Ausencia de dato ≠ lista rota —');
         ['excipientes con huecos', { excipientes: [null, undefined] }],
     ]) {
         const r = app._excipientesEDO(med);
-        ok(Array.isArray(r.riesgo) && Array.isArray(r.otros) && Array.isArray(r.todos) && r.total === 0,
+        ok(Array.isArray(r.nombrados) && Array.isArray(r.resto) && Array.isArray(r.todos) && r.total === 0,
             `${caso}: devuelve listas vacías, nunca undefined`, JSON.stringify(r));
     }
 }
@@ -99,28 +102,42 @@ console.log('\n— 3 · El orden del mapa manda: primera coincidencia, como el b
 {
     // «ALCOHOL BENCÍLICO» casa con `alcohol` y con `benzoato`... no: con `alcohol` solamente.
     // El caso real de solape es `etanol`/`alcohol`, ambos con la misma etiqueta de riesgo alto.
-    const claves = Object.keys(Clase.EXCIPIENTES_RIESGO);
+    const claves = Object.keys(Clase.EXCIPIENTES_NOMBRE_ES);
     ok(claves.indexOf('etanol') < claves.indexOf('alcohol'),
         'etanol se evalúa antes que alcohol: el literal específico gana al genérico');
     const r = app._excipientesEDO({ excipientes: [exc('ETANOL ANHIDRO')] });
-    ok(r.riesgo.length === 1 && r.riesgo[0].label === 'Etanol',
-        'ETANOL ANHIDRO se clasifica como Etanol, no como Alcohol', JSON.stringify(r.riesgo));
+    ok(r.nombrados.length === 1 && r.nombrados[0].label === 'Etanol',
+        'ETANOL ANHIDRO se clasifica como Etanol, no como Alcohol', JSON.stringify(r.nombrados));
     // Un excipiente corriente no puede colarse como riesgo por un parecido lejano.
     const s = app._excipientesEDO({ excipientes: [exc('CROSCARMELOSA SODICA'), exc('CELULOSA MICROCRISTALINA')] });
-    ok(s.riesgo.length === 0 && s.otros.length === 2,
-        'excipientes corrientes NO se marcan como de riesgo', JSON.stringify(s.riesgo));
+    ok(s.nombrados.length === 0 && s.resto.length === 2,
+        'lo que no tiene nombre curado queda en «resto», no desaparece', JSON.stringify(s.nombrados));
 }
 
 console.log('\n— 4 · Una sola clasificación para las dos superficies (prueba de fuente) —');
 {
     // El mapa solo puede estar declarado una vez, como estático. Si reaparece dentro de un método
     // —que es como estaba antes del 16/09— la ficha y la tarjeta pueden divergir.
-    const declaraciones = (FUENTE.match(/'parahidroxibenzoato':\s*\{/g) || []).length;
+    const declaraciones = (FUENTE.match(/'parahidroxibenzoato':/g) || []).length;
     ok(declaraciones === 1,
-        'el mapa de excipientes de riesgo está declarado UNA sola vez en todo el fichero',
+        'el mapa está declarado UNA sola vez en todo el fichero',
         `encontradas ${declaraciones}`);
-    ok(/static get EXCIPIENTES_RIESGO\(\)/.test(FUENTE),
+    ok(/static get EXCIPIENTES_NOMBRE_ES\(\)/.test(FUENTE),
         'y vive como estático de la clase, accesible desde cualquier superficie');
+    // EL MAPA NO PUEDE VOLVER A PINTAR NADA. Se llamaba `EXCIPIENTES_RIESGO` y traía icono y
+    // color, y con eso la tarjeta pintaba de ámbar «hay alguno de esta lista»: 42 de 47 tarjetas
+    // en la búsqueda de dextrometorfano, con el sorbitol mudo. Sin color ni icono la señal no se
+    // reconstruye por descuido — habría que devolvérselos a propósito, y entonces esto se cae.
+    const mapa = FUENTE.slice(FUENTE.indexOf('static get EXCIPIENTES_NOMBRE_ES()'),
+        FUENTE.indexOf('_excipientesEDO(med) {'));
+    ok(mapa.length > 100 && !/color:/.test(mapa) && !/icon:/.test(mapa),
+        'y NO lleva color ni icono: es un diccionario, no una señal');
+    // Se mira el CÓDIGO, no los comentarios: la nota que explica por qué se retiró el nombre tiene
+    // que poder nombrarlo, o la historia se pierde y alguien lo reintroduce sin saber qué costó.
+    ok(!/get EXCIPIENTES_RIESGO|MedCheckApp\.EXCIPIENTES_RIESGO/.test(FUENTE),
+        'el identificador «EXCIPIENTES_RIESGO» no vuelve: era lo que lo hacía leer como categoría clínica');
+    ok(Object.values(Clase.EXCIPIENTES_NOMBRE_ES).every(v => typeof v === 'string'),
+        'cada entrada es solo un nombre, no un objeto con presentación');
     // La ficha tiene que CONSUMIR el clasificador, no reimplementarlo.
     const usos = (FUENTE.match(/_excipientesEDO\(/g) || []).length;
     ok(usos >= 3,
@@ -133,7 +150,7 @@ console.log('\n— 5 · Tres estados y tres frases distintas —');
     app._escapeHtml = app._escapeHtml || (s => String(s));
     const cargando = app._cuerpoPopoverExcipientes(null);
     const error = app._cuerpoPopoverExcipientes('error');
-    const vacio = app._cuerpoPopoverExcipientes({ todos: [], riesgo: [], otros: [], total: 0 });
+    const vacio = app._cuerpoPopoverExcipientes({ todos: [], nombrados: [], resto: [], total: 0 });
 
     ok(cargando !== error && error !== vacio && cargando !== vacio,
         'consultando, error y «CIMA no declara ninguno» NO dicen lo mismo');
@@ -149,11 +166,12 @@ console.log('\n— 6 · El alcance del dato viaja siempre con el dato —');
 {
     const conDato = app._cuerpoPopoverExcipientes({
         todos: [exc('LACTOSA MONOHIDRATO', '78,4', 'mg')],
-        riesgo: [{ icon: 'fa-cheese', label: 'Lactosa', color: '#f59e0b', fullName: 'LACTOSA MONOHIDRATO', cantidad: '78,4 mg' }],
-        otros: [], total: 1,
+        nombrados: [{ label: 'Lactosa', fullName: 'LACTOSA MONOHIDRATO', cantidad: '78,4 mg' }],
+        resto: [], total: 1,
     });
-    const vacio = app._cuerpoPopoverExcipientes({ todos: [], riesgo: [], otros: [], total: 0 });
-    for (const [caso, html] of [['con excipientes', conDato], ['sin excipientes', vacio]]) {
+    const vacio = app._cuerpoPopoverExcipientes({ todos: [], nombrados: [], resto: [], total: 0,
+        confirmado: true, ft61: 'Celulosa microcristalina, talco.' });
+    for (const [caso, html] of [['con excipientes', conDato], ['cero confirmado', vacio]]) {
         ok(/no la composición completa/i.test(html) && /ficha técnica/i.test(html),
             `${caso}: dice que NO es la composición completa y remite a la ficha técnica`);
     }
@@ -177,98 +195,99 @@ console.log('\n— 7 · El chip de la tarjeta: botón de verdad y en todas —')
         'lleva su nregistro en el DOM: es lo que permite repintarlo cuando llega la respuesta');
 }
 
-console.log('\n— 8 · El color llega DESPUÉS de preguntar, nunca antes —');
+console.log('\n— 8 · Los CINCO estados, y ninguno es una escala de gravedad —');
 {
     app._excipientesCache = new Map();
-    app._excVistaActiva = true;   // la marca solo se ve mientras siga pedida (ver bloque 8c)
+    app._excVistaActiva = true;
 
     const sinConsultar = app._excipientesEstadoChip('999');
     ok(sinConsultar.estado === 'desconocido' && sinConsultar.clase === '' && sinConsultar.texto === '',
-        'sin consultar: ni color ni cifra — no se sabe, y marcar sin saber es el ruido que esto evita',
+        'sin consultar: ni marca ni cifra — no se sabe, y marcar sin saber es el ruido que esto evita',
         JSON.stringify(sinConsultar));
 
-    app._excipientesCache.set('A', app._excipientesEDO({ excipientes: [exc('LACTOSA MONOHIDRATO', '78,4', 'mg'), exc('MANITOL (E-421)')] }));
-    const destacado = app._excipientesEstadoChip('A');
-    ok(destacado.estado === 'destacado' && /exc-riesgo/.test(destacado.clase),
-        'consultado y con alguno de la lista curada: se marca en ámbar', JSON.stringify(destacado));
-    ok(destacado.texto === '2',
-        'la cifra es el TOTAL de EDO (2), no los destacados (1): todos llevan advertencia oficial',
-        destacado.texto);
-    ok(/Lactosa/.test(destacado.titulo),
-        'el título nombra los que sí tienen etiqueta curada', destacado.titulo);
+    app._excipientesCache.set('A', app._excipientesEDO({ excipientes: [
+        exc('LACTOSA MONOHIDRATO', '78,4', 'mg'), exc('MANITOL (E-421)')] }));
+    const declara = app._excipientesEstadoChip('A');
+    ok(declara.estado === 'declara' && declara.texto === '2',
+        'declara N: una sola marca con la cifra, que es el TOTAL de declarables',
+        JSON.stringify(declara));
 
-    app._excipientesCache.set('B', app._excipientesEDO({ excipientes: [exc('CROSCARMELOSA SODICA')] }));
-    const soloEdo = app._excipientesEstadoChip('B');
-    ok(soloEdo.estado === 'edo' && /exc-visto/.test(soloEdo.clase) && soloEdo.texto === '1',
-        'consultado y sin etiqueta curada: atenuado pero CON CIFRA, no mudo', JSON.stringify(soloEdo));
-    ok(soloEdo.clase !== destacado.clase && soloEdo.clase !== sinConsultar.clase,
-        'los estados tienen apariencias distintas entre sí');
+    // LO QUE SE RETIRÓ EL 17/09, y es el corazón de este bloque. Antes había DOS marcas para los
+    // que declaran —ámbar si alguno estaba en la lista de nombres, atenuado si no— y esa
+    // diferencia era de vocabulario nuestro, no clínica. Medido en dextrometorfano: 42 de 47 en
+    // ámbar, encendidas por sacarina o benzoato, con el sorbitol callado. Ahora los dos casos
+    // tienen que verse EXACTAMENTE IGUAL.
+    app._excipientesCache.set('B', app._excipientesEDO({ excipientes: [
+        exc('CROSCARMELOSA SODICA'), exc('BETADEX')] }));
+    const sinNombre = app._excipientesEstadoChip('B');
+    ok(sinNombre.estado === declara.estado && sinNombre.clase === declara.clase,
+        'dos que declaran 2 se ven IGUAL, tenga uno nombre en español o no',
+        `${JSON.stringify(sinNombre.clase)} vs ${JSON.stringify(declara.clase)}`);
+    ok(sinNombre.texto === declara.texto,
+        'y con la misma cifra: la marca cuenta advertencias, no vocabulario nuestro');
+    ok(!/entre ellos|destaca|habituales/i.test(declara.titulo),
+        'el título ya no enumera «los destacados»: no hay destacados', declara.titulo);
+    ok(/advertencia oficial/i.test(declara.titulo),
+        'y sí dice lo que es cierto de todos: cada uno lleva advertencia oficial', declara.titulo);
 
-    app._excipientesCache.set('C', app._excipientesEDO({ excipientes: [] }));
-    const ninguno = app._excipientesEstadoChip('C');
-    ok(ninguno.estado === 'ninguno' && ninguno.texto === '0' && /no declara/i.test(ninguno.titulo),
-        '«CIMA no declara ninguno» lleva un 0 explícito y esas palabras', JSON.stringify(ninguno));
-    ok(ninguno.texto !== soloEdo.texto,
-        'un 0 y un 2 no pueden verse igual: antes los dos salían callados');
+    // EL CERO, EN SUS DOS NATURALEZAS.
+    app._excipientesCache.set('C0', { todos: [], nombrados: [], resto: [], total: 0,
+        confirmado: true, ft61: 'Celulosa microcristalina, talco, estearato de magnesio.' });
+    const cero = app._excipientesEstadoChip('C0');
+    ok(cero.estado === 'cero' && cero.texto === '0',
+        'cero CONFIRMADO: se afirma, con su 0', JSON.stringify(cero));
 
-    // El color no puede derivarse del excipiente concreto: el mapa tiene un color por excipiente
-    // pero no es una escala de gravedad, y elegir «el peor» inventaría una jerarquía clínica.
-    // Se acota al CUERPO del método, no a la primera mención de su nombre: la primera aparición
-    // está en el render de la tarjeta, miles de líneas antes, y el trozo intermedio incluye el
-    // popover —donde cada excipiente SÍ lleva su color, y con razón—. Una prueba que mira más
-    // de lo que dice vigilar falla por donde no toca, que es como se acaba borrando.
-    const ini = FUENTE.indexOf('_excipientesEstadoChip(nregistro) {');
-    const cuerpoChip = FUENTE.slice(ini, FUENTE.indexOf('_refrescarChipsExcipientes(nregistro) {', ini));
-    ok(ini > 0 && cuerpoChip.length > 0 && !/\.color/.test(cuerpoChip),
-        'el chip NO pinta el color del excipiente concreto: no hay escala de gravedad que sostenga «el peor»');
+    app._excipientesCache.set('C1', { todos: [], nombrados: [], resto: [], total: 0, confirmado: false });
+    const incon = app._excipientesEstadoChip('C1');
+    ok(incon.estado === 'inconcluso',
+        'cero SIN confirmar: estado propio, no se mezcla con el confirmado', JSON.stringify(incon));
+    ok(incon.texto !== '0',
+        'y NUNCA enseña un 0: un cero ahí sería tranquilizar sin base', incon.texto);
+    ok(/NO CONSTA/.test(incon.titulo) && /No significa que no los tenga/i.test(incon.titulo),
+        'lo dice con esas palabras, y desmiente la lectura tranquilizadora', incon.titulo);
+    ok(incon.clase !== cero.clase,
+        'los dos ceros no pueden verse igual');
 }
 
-console.log('\n— 8b · EL FALSO NEGATIVO DE CINFAHELIX (regresión reparada el 16/09) —');
+console.log('\n— 8b · Los casos reales que costaron cada regla —');
 {
-    // Caso REAL, tal y como lo devuelve CIMA para el nregistro 81847, que Ernesto tenía en
-    // pantalla cuando preguntó si esto daba falsos negativos. Sorbitol 708 mg: para una
-    // intolerancia hereditaria a la fructosa es EL dato. Ninguno de los dos está en la lista
-    // curada, así que el chip va atenuado — y eso está bien; lo que NO puede es decir que no
-    // hay advertencia, porque el campo de CIMA es el anexo de declaración obligatoria y todo
-    // lo que sale ahí la lleva.
-    app._excipientesCache = app._excipientesCache || new Map();
-    app._excipientesCache.set('81847', app._excipientesEDO({
-        excipientes: [exc('SORBITOL LIQUIDO NO CRISTALIZABLE  (E420)', '708,00', 'mg'), exc('SORBATO POTASICO', '1,775', 'mg')],
-    }));
-    const e = app._excipientesEstadoChip('81847');
-    ok(e.texto === '2',
-        'CINFAHELIX enseña «2», no queda mudo: el sorbitol se ve desde la lista', e.texto);
-    ok(!/ninguno de la lista de advertencia/i.test(e.titulo),
-        'y NO dice «ninguno de la lista de advertencia», que es la frase que lo hacía parecer limpio',
-        e.titulo);
-    ok(/advertencia oficial/i.test(e.titulo),
-        'el título afirma lo que sí es cierto: todos llevan advertencia oficial', e.titulo);
-    ok(/destaca por nombre los más habituales/i.test(e.titulo),
-        'y dice que lo que MedCheck destaca es un subconjunto, no el criterio de riesgo');
-}
+    app._excVistaActiva = true;
+    // CINFAHELIX (81847): sorbitol 708 mg. Con la señal vieja salía atenuado y «ninguno de la
+    // lista de advertencia»; ahora es un «declara 2» idéntico a cualquier otro.
+    app._excipientesCache.set('81847', app._excipientesEDO({ excipientes: [
+        exc('SORBITOL LIQUIDO NO CRISTALIZABLE  (E420)', '708,00', 'mg'),
+        exc('SORBATO POTASICO', '1,775', 'mg')] }));
+    const cinfa = app._excipientesEstadoChip('81847');
+    ok(cinfa.estado === 'declara' && cinfa.texto === '2',
+        'CINFAHELIX: el sorbitol se ve desde la lista, sin jerarquía que lo esconda', JSON.stringify(cinfa));
+    ok(!/ninguno de la lista de advertencia/i.test(cinfa.titulo),
+        'y sin la frase que lo hacía parecer limpio');
 
-console.log('\n— 9 · Los dos alcoholes que no son etanol (regresión reparada el 16/09) —');
-{
-    const casos = [
-        ['ALCOHOL BENCILICO', 'Alcohol bencílico'],
-        ['ALCOHOL BENCÍLICO', 'Alcohol bencílico'],   // con acento: el censo tiene las dos grafías
-        ['CETOESTEARILICO, ALCOHOL', 'Alcohol cetoestearílico'],
-        ['ALCOHOL ETILICO (ETANOL)', 'Etanol'],
-        ['ETANOL ANHIDRO', 'Etanol'],
-    ];
-    for (const [literal, esperado] of casos) {
-        const r = app._excipientesEDO({ excipientes: [exc(literal)] });
-        ok(r.riesgo[0]?.label === esperado,
-            `«${literal}» se rotula «${esperado}»`, `salió «${r.riesgo[0]?.label}»`);
-    }
-    const benc = app._excipientesEDO({ excipientes: [exc('ALCOHOL BENCILICO')] }).riesgo[0];
-    ok(benc.icon !== 'fa-wine-bottle',
-        'y el bencílico NO lleva botella de vino: su advertencia es neonatal, no de bebida alcohólica',
-        benc.icon);
-    const claves = Object.keys(Clase.EXCIPIENTES_RIESGO);
-    ok(claves.indexOf('alcohol bencilico') < claves.indexOf('alcohol')
-        && claves.indexOf('cetoestearilico') < claves.indexOf('alcohol'),
-        'los dos específicos se evalúan ANTES que la clave genérica `alcohol`');
+    // CINFATOS ANTITUSIVO 10 mg: cuatro declarables, ninguno con nombre curado. Antes: atenuado.
+    app._excipientesCache.set('CINFATOS', app._excipientesEDO({ excipientes: [
+        exc('MALTITOL (E965)', '1134,9', 'mg'), exc('SACARINA SODICA', '2,0', 'mg'),
+        exc('BETADEX', '168,5', 'mg'), exc('CICLAMATO DE SODIO', '20,0', 'mg')] }));
+    const cinfatos = app._excipientesEstadoChip('CINFATOS');
+    ok(cinfatos.estado === 'declara' && cinfatos.texto === '4',
+        'CINFATOS ANTITUSIVO: sus cuatro cuentan igual que los de cualquier otro', JSON.stringify(cinfatos));
+
+    // PENILEVEL 500 (83518): siete excipientes en su ficha, ninguno declarable. El cero es
+    // correcto Y comprobable, y por eso el popover enseña la 6.1.
+    app._escapeHtml = app._escapeHtml || (t => String(t));
+    const penilevel = app._cuerpoPopoverExcipientes({ todos: [], nombrados: [], resto: [], total: 0,
+        confirmado: true, ft61: 'Celulosa microcristalina, talco, estearato de magnesio, gelatina, '
+            + 'dióxido de titanio (E-171), indigotina (E-132) y amarillo de quinolina (E-104).' });
+    ok(/amarillo de quinolina/.test(penilevel),
+        'PENILEVEL 500: el cero viene con la ficha 6.1 literal, para poder juzgarlo');
+    ok(/6.1/.test(penilevel),
+        'y se dice de dónde sale ese texto');
+
+    // EVRA IP: cero sin ficha con que contrastarlo. No se afirma.
+    const evra = app._cuerpoPopoverExcipientes({ todos: [], nombrados: [], resto: [], total: 0, confirmado: false });
+    ok(/No consta/i.test(evra) && /exc-popover__aviso/.test(evra),
+        'EVRA (importación paralela): se dice «no consta» y va como aviso, no como dato', evra.slice(0, 120));
+    ok(/No significa que no los tenga/i.test(evra),
+        'y se desmiente explícitamente la lectura tranquilizadora');
 }
 
 console.log('\n— 8d · Desmarcar DESHACE, pero no desaprende —');
@@ -283,20 +302,20 @@ console.log('\n— 8d · Desmarcar DESHACE, pero no desaprende —');
     a._excAbiertosAMano = new Set(['H1']);
 
     a._excVistaActiva = true;
-    ok(a._excipientesEstadoChip('M1').estado === 'destacado',
+    ok(a._excipientesEstadoChip('M1').estado === 'declara',
         'con el modo encendido, lo consultado se ve marcado');
 
     a._excVistaActiva = false;
     ok(a._excipientesEstadoChip('M1').estado === 'desconocido',
         'al desmarcar, la marca que puso el MODO desaparece sin refrescar la página');
-    ok(a._excipientesEstadoChip('H1').estado === 'destacado',
+    ok(a._excipientesEstadoChip('H1').estado === 'declara',
         'pero la del que abrió A MANO se queda: ese clic es suyo, no lo puso el modo');
     ok(a._excipientesCache.size === 2,
         'y el DATO no se pierde: volver a marcar no cuesta ninguna petición',
         String(a._excipientesCache.size));
 
     a._excVistaActiva = true;
-    ok(a._excipientesEstadoChip('M1').estado === 'destacado',
+    ok(a._excipientesEstadoChip('M1').estado === 'declara',
         'al volver a marcar reaparece al instante, desde la caché');
 
     // Y QUE EL CONJUNTO SE LLENE DE VERDAD AL ABRIR. La prueba de arriba lo rellena a mano, así
@@ -315,7 +334,7 @@ console.log('\n— 8d · Desmarcar DESHACE, pero no desaprende —');
         ok(b._excAbiertosAMano instanceof Set && b._excAbiertosAMano.has('X9'),
             'abrir un chip a mano lo registra como suyo',
             JSON.stringify([...(b._excAbiertosAMano || [])]));
-        ok(b._excipientesEstadoChip('X9').estado === 'destacado',
+        ok(b._excipientesEstadoChip('X9').estado === 'declara',
             'y su marca se ve aunque el modo esté apagado, que es para lo que sirve el registro');
     }
 
@@ -353,10 +372,20 @@ console.log('\n— 8e · En el popover no hay excipientes de segunda clase —')
         'con uno curado y uno no, salen los dos y en la misma lista');
     ok(/Lactosa/.test(mezcla) && /MANITOL/.test(mezcla),
         'el curado conserva su nombre en español y el otro el de CIMA');
-    ok(/badge-excipient--llano/.test(mezcla),
-        'el no curado se distingue, pero por vocabulario: misma forma, sin color');
-    ok(/El color no marca cuáles importan más/.test(mezcla),
-        'y el aviso dice EXACTAMENTE qué significa el color, que es lo que se malinterpretó');
+    // SE CUENTAN, no se busca la clase. Con `--llano` solo en el no curado, buscar la cadena
+    // aprobaba igual: el mutante que devuelve la jerarquía al popover sobrevivía. Lo que hay que
+    // exigir es que la lleven TODOS — es decir, que no haya dos tratamientos.
+    const total = (mezcla.match(/<span class="badge-excipient/g) || []).length;
+    const llanos = (mezcla.match(/badge-excipient--llano/g) || []).length;
+    ok(total === 2 && llanos === 2,
+        'TODOS los chips llevan el mismo tratamiento: no hay dos clases de excipiente',
+        `chips=${total} llanos=${llanos}`);
+    ok(!/--exc-color|style="/.test(mezcla),
+        'y ninguno lleva color propio: el color era la jerarquía que se retiró');
+    ok(!/color/i.test(mezcla),
+        'y el aviso ya ni menciona el color: desde el 17/09 no hay colores que explicar');
+    ok(/declaración obligatoria/i.test(mezcla) && /6\.1/.test(mezcla),
+        'lo que sí dice es el alcance del dato y dónde está el resto');
 }
 
 console.log('\n— 9b · «Ver excipientes» es un MODO, no un filtro —');
@@ -391,8 +420,8 @@ console.log('\n— 9b · «Ver excipientes» es un MODO, no un filtro —');
         'el lote se recorta al tope, no se lanza la lista entera');
     ok(/restantes > 0/.test(cuerpo) && /faltan \$\{restantes\}/.test(cuerpo),
         'y cuando recorta LO DICE, con cuántas quedan: un parcial mudo parecería completo');
-    ok(/X-MC-Autocomplete/.test(cuerpo),
-        'las peticiones del lote también son secundarias: no inflan la analítica de búsquedas');
+    ok(/_consultarExcipientesDe\(nreg\)/.test(cuerpo),
+        'el lote consulta por el MISMO camino que el chip de uno en uno, así que no pueden divergir');
     ok((cuerpo.match(/vivo\(\)/g) || []).length >= 3,
         'comprueba que el lote sigue vivo en cada paso: apagar la casilla tiene que parar de verdad',
         `apariciones de vivo(): ${(cuerpo.match(/vivo\(\)/g) || []).length}`);
@@ -456,10 +485,10 @@ console.log('\n— 9c · El lote, EJECUTADO contra un CIMA de mentira —');
         String(lote._excipientesCache.size));
     ok(!lote._excipientesCache.has('A4'),
         'un fallo de red no se convierte en «CIMA no declara ninguno», que sería inventarse el dato');
-    ok(chips.get('A1').innerHTML === 'pintado:destacado',
+    ok(chips.get('A1').innerHTML === 'pintado:declara',
         'el que trae lactosa queda marcado', chips.get('A1').innerHTML);
-    ok(chips.get('A2').innerHTML === 'pintado:edo',
-        'el que trae solo manitol queda consultado y atenuado', chips.get('A2').innerHTML);
+    ok(chips.get('A2').innerHTML === 'pintado:declara',
+        'el que trae solo manitol también cuenta: se ve igual que cualquier otro', chips.get('A2').innerHTML);
     ok(chips.get('A4').innerHTML === '',
         'y el que falló se queda NEUTRO: se distingue a simple vista de los consultados');
 
@@ -483,8 +512,22 @@ console.log('\n— 10 · La petición del detalle es SECUNDARIA —');
 {
     const i = FUENTE.indexOf('async openMedExcipients(');
     const cuerpo = FUENTE.slice(i, FUENTE.indexOf('_cuerpoPopoverExcipientes(datos)', i));
-    ok(/getMedicamento\(nregistro, \{ headers: \{ 'X-MC-Autocomplete': '1' \} \}\)/.test(cuerpo),
-        'va marcada con X-MC-Autocomplete: entra en caché y no infla la analítica de búsquedas');
+    ok(/_consultarExcipientesDe\(nregistro\)/.test(cuerpo),
+        'el chip consulta por el camino único, donde vive también la confirmación del cero');
+    // LA RED DE SEGURIDAD DEL CERO, atada aquí porque es la única afirmación que MedCheck hace
+    // por su cuenta sobre un medicamento: «no tiene ninguno declarable».
+    const unico = FUENTE.slice(FUENTE.indexOf('async _consultarExcipientesDe('),
+        FUENTE.indexOf('_excipientesEstadoChip(nregistro) {'));
+    ok(/X-MC-Autocomplete/.test(unico),
+        'esa consulta va marcada como SECUNDARIA: entra en caché y no infla la analítica');
+    ok(/datos\.total === 0/.test(unico) && /_leerFT61/.test(unico),
+        'y CONFIRMA el cero contra la ficha 6.1 antes de guardarlo en caché');
+    const ft = FUENTE.slice(FUENTE.indexOf('async _leerFT61('),
+        FUENTE.indexOf('async _consultarExcipientesDe('));
+    ok(/texto\.length >= 10 \? texto : null/.test(ft),
+        'una sección 6.1 presente pero vacía NO confirma: es lo mismo que no tenerla');
+    ok(/X-MC-Autocomplete/.test(ft),
+        'y leer la 6.1 también es una petición secundaria');
     ok(/_excipientesCache/.test(cuerpo),
         'y además cachea por nregistro, para que reabrir el mismo chip no vuelva a la red');
     // SE CUENTAN LAS GUARDAS, no se busca la cadena. Después del `await` hay DOS caminos que

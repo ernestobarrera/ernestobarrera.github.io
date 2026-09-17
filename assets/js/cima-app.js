@@ -9538,45 +9538,18 @@ class MedCheckApp {
         // método, la tarjeta no podía usarlo sin copiarlo — y una copia es cómo dos superficies
         // acaban llamando "riesgo" a cosas distintas del mismo medicamento. Mismo motivo por el
         // que `_lightboxImages` salió del modal cuando la tarjeta empezó a abrir imágenes.
+        // LA FICHA ENSEÑA LO MISMO QUE LA LISTA, con el mismo cuerpo. Antes tenía su propia
+        // presentación —chips de color arriba, «ver todos» plegado abajo— y esa es justo la
+        // jerarquía que se retiró de la tarjeta el 17/09 por leerse como «estos importan y estos
+        // no». Dos superficies que enseñan el mismo dato con distinta forma acaban diciendo cosas
+        // distintas: aquí se llama a la misma función, así que no pueden divergir.
         const excEDO = this._excipientesEDO(med);
-        let excipientesHtml = '';
-        if (excEDO.total > 0) {
-            const listaCompleta = excEDO.todos.map(e =>
-                `<span class="excipient-item">${e.nombre}${e.cantidad ? ' <small>' + e.cantidad + ' ' + (e.unidad || '') + '</small>' : ''}</span>`
-            ).join(', ');
-
-            if (excEDO.riesgo.length > 0) {
-                const flaggedChips = excEDO.riesgo.map(e =>
-                    `<span class="badge-excipient" style="--exc-color: ${e.color}" title="${e.fullName}${e.cantidad ? ' — ' + e.cantidad : ''}">
-                        <i class="fas ${e.icon}"></i> ${e.label}
-                    </span>`
-                ).join('');
-
-                excipientesHtml = `
-                <div class="detail-section-header mt-md">
-                    <i class="fas fa-flask"></i> Excipientes de Declaración Obligatoria
+        const excipientesHtml = excEDO.total > 0
+            ? `<div class="detail-section-header mt-md">
+                    <i class="fas fa-vial"></i> Excipientes de declaración obligatoria (${excEDO.total})
                 </div>
-                <div class="excipientes-flagged">
-                    ${flaggedChips}
-                </div>
-                ${excEDO.otros.length > 0 ? `
-                <details class="excipientes-otros">
-                    <summary>Ver todos los excipientes (${excEDO.total})</summary>
-                    <div class="excipientes-list">
-                        ${listaCompleta}
-                    </div>
-                </details>` : ''}
-                `;
-            } else {
-                excipientesHtml = `
-                <details class="excipientes-otros mt-md">
-                    <summary><i class="fas fa-flask"></i> Excipientes EDO (${excEDO.total})</summary>
-                    <div class="excipientes-list">
-                        ${listaCompleta}
-                    </div>
-                </details>`;
-            }
-        }
+                ${this._cuerpoPopoverExcipientes(excEDO)}`
+            : '';
 
         return `
             ${alertsHtml}
@@ -10739,9 +10712,9 @@ ${materialesPlaceholder}
             await Promise.all(lote.slice(i, i + conc).map(async (nreg) => {
                 if (!vivo()) return;
                 try {
-                    const med = await this.api.getMedicamento(nreg, { headers: { 'X-MC-Autocomplete': '1' } });
+                    const datos = await this._consultarExcipientesDe(nreg);
                     if (!vivo()) return;
-                    this._excipientesCache.set(nreg, this._excipientesEDO(med));
+                    this._excipientesCache.set(nreg, datos);
                     this._refrescarChipsExcipientes(nreg);
                 } catch {
                     fallos += 1;
@@ -14498,20 +14471,36 @@ ${materialesPlaceholder}
     // ============================================
 
     /**
-     * Excipientes clínicamente relevantes: la palabra que los reconoce en el literal de CIMA, cómo
-     * se llaman en pantalla y su color. El ORDEN importa: se queda con la primera que case, igual
-     * que hacía el bucle original de la ficha.
+     * NOMBRE EN ESPAÑOL de algunos excipientes: la palabra que los reconoce en el literal de CIMA
+     * y cómo se leen mejor. El ORDEN importa: se queda con la primera que case.
      *
-     * Vive como estático y no dentro de un método porque lo leen DOS superficies —la ficha y el
-     * chip de la tarjeta— a través de `_excipientesEDO`. Ver el comentario de ese método.
+     * `CONTRATO:` ESTO NO ES UNA CLASIFICACIÓN DE RIESGO, Y NO PUEDE PINTAR NINGUNA SEÑAL.
+     *
+     * Se llamaba `EXCIPIENTES_RIESGO` y traía icono y color, y ese nombre hizo exactamente el daño
+     * que un nombre mal puesto hace: la tarjeta pintó de ámbar «hay alguno de esta lista» y todo el
+     * mundo —el que lo escribió incluido— lo leyó como «hay algo peligroso». Medido el 17/09 en la
+     * búsqueda de dextrometorfano: **42 de 47 tarjetas en ámbar**, encendidas por sacarina o
+     * benzoato, mientras el **sorbitol** —el de la intolerancia hereditaria a la fructosa— salía en
+     * seis de ellas y no se destacaba nunca. La señal marcaba lo que menos importa y callaba lo que
+     * más.
+     *
+     * La causa de fondo: **CIMA solo publica aquí los excipientes de declaración obligatoria**, así
+     * que TODOS llevan ya advertencia oficial (comprobado el 17/09 contra PENILEVEL, cuyo hermano
+     * de 250 mg declara 3 de los 4 de su ficha y deja fuera solo la esencia de plátano). Lo que
+     * esta lista separa no es «peligroso / inocuo»: es «le sabemos poner nombre en español / no».
+     * Eso ayuda a LEER —«parabenos» se reconoce antes que «parahidroxibenzoato de metilo (E-218)»—
+     * y no dice nada clínico.
+     *
+     * Por eso ya no tiene ni color ni icono: sin ellos no se puede volver a convertir en señal por
+     * descuido. Hay prueba de fuente que se cae si alguien se los devuelve.
      */
-    static get EXCIPIENTES_RIESGO() {
+    static get EXCIPIENTES_NOMBRE_ES() {
         return {
-            'lactosa': { icon: 'fa-cheese', label: 'Lactosa', color: '#f59e0b' },
-            'gluten': { icon: 'fa-bread-slice', label: 'Gluten', color: '#ef4444' },
-            'trigo': { icon: 'fa-bread-slice', label: 'Almidón de trigo', color: '#ef4444' },
-            'aspartamo': { icon: 'fa-exclamation', label: 'Aspartamo (fenilalanina)', color: '#f97316' },
-            'sacarosa': { icon: 'fa-cube', label: 'Sacarosa', color: '#eab308' },
+            'lactosa': 'Lactosa',
+            'gluten': 'Gluten',
+            'trigo': 'Almidón de trigo',
+            'aspartamo': 'Aspartamo (fenilalanina)',
+            'sacarosa': 'Sacarosa',
             // LOS DOS ALCOHOLES QUE NO SON ETANOL, Y VAN ANTES QUE `alcohol` A PROPÓSITO.
             //
             // Hasta el 2026-09-16 «ALCOHOL BENCILICO» y «CETOESTEARILICO, ALCOHOL» casaban con la
@@ -14525,18 +14514,18 @@ ${materialesPlaceholder}
             // Medidos en una muestra aleatoria de 287 comercializados (16/09/2026): 4 y 2. Poco
             // volumen, pero el error es de contenido, no de presentación — y se iba a pintar en
             // color, que es lo que convierte un rótulo flojo en una afirmación.
-            'alcohol bencilico': { icon: 'fa-triangle-exclamation', label: 'Alcohol bencílico', color: '#dc2626' },
-            'cetoestearilico': { icon: 'fa-hand-dots', label: 'Alcohol cetoestearílico', color: '#94a3b8' },
-            'etanol': { icon: 'fa-wine-bottle', label: 'Etanol', color: '#dc2626' },
-            'alcohol': { icon: 'fa-wine-bottle', label: 'Alcohol', color: '#dc2626' },
-            'soja': { icon: 'fa-seedling', label: 'Soja (lecitina)', color: '#f97316' },
-            'cacahuete': { icon: 'fa-seedling', label: 'Cacahuete', color: '#ef4444' },
-            'tartrazina': { icon: 'fa-palette', label: 'Tartrazina (E102)', color: '#f59e0b' },
-            'rojo allura': { icon: 'fa-palette', label: 'Rojo Allura (E129)', color: '#f59e0b' },
-            'parahidroxibenzoato': { icon: 'fa-flask', label: 'Parabenos', color: '#f59e0b' },
-            'sulfito': { icon: 'fa-lungs', label: 'Sulfitos', color: '#ef4444' },
-            'benzoato': { icon: 'fa-flask', label: 'Benzoato sódico', color: '#f59e0b' },
-            'laurilsulfato': { icon: 'fa-flask', label: 'Laurilsulfato sódico', color: '#94a3b8' }
+            'alcohol bencilico': 'Alcohol bencílico',
+            'cetoestearilico': 'Alcohol cetoestearílico',
+            'etanol': 'Etanol',
+            'alcohol': 'Alcohol',
+            'soja': 'Soja (lecitina)',
+            'cacahuete': 'Cacahuete',
+            'tartrazina': 'Tartrazina (E102)',
+            'rojo allura': 'Rojo Allura (E129)',
+            'parahidroxibenzoato': 'Parabenos',
+            'sulfito': 'Sulfitos',
+            'benzoato': 'Benzoato sódico',
+            'laurilsulfato': 'Laurilsulfato sódico'
         };
     }
 
@@ -14554,9 +14543,9 @@ ${materialesPlaceholder}
      */
     _excipientesEDO(med) {
         const todos = Array.isArray(med?.excipientes) ? med.excipientes.filter(Boolean) : [];
-        const mapa = Object.entries(MedCheckApp.EXCIPIENTES_RIESGO);
-        const riesgo = [];
-        const otros = [];
+        const mapa = Object.entries(MedCheckApp.EXCIPIENTES_NOMBRE_ES);
+        const nombrados = [];
+        const resto = [];
         // Se comparan SIN acentos. Las claves del mapa no llevan ninguno y los literales de CIMA
         // casi nunca, pero «BENCÍLICO» y «BENCILICO» conviven en el censo y una clave que depende
         // de cómo se acentuó un literal es una clave que falla en silencio.
@@ -14565,16 +14554,72 @@ ${materialesPlaceholder}
             const nombre = sinAcentos(e.nombre || '');
             const hit = mapa.find(([clave]) => nombre.includes(clave));
             if (hit) {
-                riesgo.push({
-                    ...hit[1],
+                nombrados.push({
+                    label: hit[1],
                     fullName: e.nombre,
                     cantidad: e.cantidad ? `${e.cantidad} ${e.unidad || ''}`.trim() : ''
                 });
             } else {
-                otros.push(e);
+                resto.push(e);
             }
         }
-        return { todos, riesgo, otros, total: todos.length };
+        return { todos, nombrados, resto, total: todos.length };
+    }
+
+    /**
+     * La sección 6.1 de la ficha técnica —«Lista de excipientes»— en texto plano, o `null`.
+     *
+     * EXISTE PARA PODER AFIRMAR UN CERO. Cuando CIMA no declara ningún excipiente de declaración
+     * obligatoria, hay dos mundos distintos detrás y el producto los decía igual: el medicamento
+     * que de verdad no lleva ninguno declarable (PENILEVEL 500 mg cápsulas: siete excipientes en su
+     * ficha, ninguno obligatorio) y aquel del que CIMA no publica composición. Decir «0» del
+     * segundo es tranquilizar sin base.
+     *
+     * Así que el cero no se afirma solo: se afirma con esta sección al lado. Y cuando no está, no
+     * se dice cero — se dice que no consta.
+     *
+     * SE MIRA LA SECCIÓN, NO EL CAMPO `docs`. Medido el 17/09 sobre 152 medicamentos: `docs`
+     * acierta 151 veces, pero la que falla —SYNALAR FORTE 2 mg/g crema— declara ficha y no
+     * devuelve 6.1. Fallaría hacia el lado malo: afirmar «cero confirmado» sin poder confirmarlo.
+     * Un 0,7 % de falsa tranquilidad no es un redondeo aceptable aquí.
+     *
+     * Solo se pide para los que vuelven con cero: medido, el 15 % de los casos.
+     */
+    async _leerFT61(nregistro) {
+        try {
+            // Devuelve HTML ya concatenado (string), no el array crudo de la API.
+            const bruto = await this.api.getDocSeccion(nregistro, '6.1', 1, { headers: { 'X-MC-Autocomplete': '1' } });
+            if (!bruto || typeof bruto !== 'string') return null;
+            const texto = String(bruto)
+                // El propio helper antepone el título de la sección; aquí sobra, porque el popover
+                // ya lo rotula. Sin quitarlo, cada cero empezaría por «Lista de excipientes».
+                .replace(/^\s*<strong>[^<]*<\/strong>\s*(<br>)*/i, '')
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+                .replace(/&[a-z]+;/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            // Una sección presente pero vacía no confirma nada: es lo mismo que no tenerla.
+            return texto.length >= 10 ? texto : null;
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * Pide el detalle de un registro y devuelve sus excipientes ya clasificados, CONFIRMANDO el
+     * cero cuando lo hay. Es el único sitio donde se construye una entrada de la caché, para que
+     * el chip de uno en uno y el lote de «Ver excipientes» no puedan llegar a conclusiones
+     * distintas sobre el mismo medicamento.
+     */
+    async _consultarExcipientesDe(nregistro) {
+        const med = await this.api.getMedicamento(nregistro, { headers: { 'X-MC-Autocomplete': '1' } });
+        const datos = this._excipientesEDO(med);
+        if (datos.total === 0) {
+            datos.ft61 = await this._leerFT61(nregistro);
+            datos.confirmado = !!datos.ft61;
+        }
+        return datos;
     }
 
     /**
@@ -14631,32 +14676,37 @@ ${materialesPlaceholder}
                 titulo: 'Excipientes de declaración obligatoria (CIMA). Se consultan al pulsar; no es la composición completa.',
             };
         }
+        // EL CERO NO SE AFIRMA SOLO. Dos mundos distintos llegan aquí con `total === 0`, y el
+        // producto los decía igual: el que de verdad no lleva ninguno declarable, y aquel del que
+        // CIMA no publica composición. Solo el primero se puede afirmar, y se afirma con la ficha
+        // técnica al lado — que es lo que el popover enseña.
         if (datos.total === 0) {
+            if (!datos.confirmado) {
+                return {
+                    estado: 'inconcluso', clase: ' med-detail-tag--exc-inconcluso', texto: '?',
+                    titulo: 'NO CONSTA: CIMA no declara excipientes de declaración obligatoria para este registro '
+                        + 'y tampoco publica su ficha técnica por secciones, así que no hay con qué contrastarlo. '
+                        + 'No significa que no los tenga. Consulta la ficha técnica o el prospecto.',
+                };
+            }
             return {
-                estado: 'ninguno', clase: ' med-detail-tag--exc-visto', texto: '0',
-                titulo: 'Consultado: CIMA no declara excipientes de declaración obligatoria para este registro.',
+                estado: 'cero', clase: ' med-detail-tag--exc-cero', texto: '0',
+                titulo: 'CIMA no declara ningún excipiente de declaración obligatoria para este registro, '
+                    + 'y su ficha técnica sí está publicada. Pulsa para ver la lista completa de la sección 6.1.',
             };
         }
-        // El número SÍ se pinta, al revés que en el chip de la cámara: ahí la cifra era redundante
-        // (la foto se ve al abrirla) y aquí es el dato. Y es el TOTAL de EDO, no los destacados:
-        // ver la nota de arriba sobre CINFAHELIX. Un «0» y un «2» en gris dicen cosas muy
-        // distintas, y antes las dos salían igual de calladas.
-        const comun = `${datos.total} excipiente${datos.total > 1 ? 's' : ''} de declaración obligatoria`;
-        // La coletilla va en LOS DOS estados. Es la que impide volver a leer el gris como «limpio»:
-        // lo que no lleva etiqueta curada no es inocuo, es que no le sabemos poner nombre.
-        const coletilla = ' Todos llevan advertencia oficial; MedCheck solo destaca por nombre los más habituales. Pulsa para verlos.';
-        if (datos.riesgo.length > 0) {
-            // El color es UNO solo, el de advertencia, y no el del excipiente concreto: el mapa
-            // tiene colores por excipiente pero NO son una escala de gravedad, así que pintar «el
-            // peor» sería inventarse una jerarquía clínica que no consta en ninguna fuente.
-            return {
-                estado: 'destacado', clase: ' med-detail-tag--exc-riesgo', texto: String(datos.total),
-                titulo: `Contiene ${comun}, entre ellos ${datos.riesgo.map(e => e.label).join(', ')}.${coletilla}`,
-            };
-        }
+        // UNA SOLA MARCA PARA TODOS LOS QUE DECLARAN, con su cifra y sin jerarquía.
+        //
+        // Hasta el 17/09 había dos: ámbar si alguno estaba en la lista de nombres y atenuado si
+        // no. Esa diferencia no era clínica —era de vocabulario nuestro— y en la búsqueda de
+        // dextrometorfano ponía 42 de 47 en ámbar mientras dejaba mudo el sorbitol. Se retiró:
+        // todo lo que CIMA lista aquí es de declaración obligatoria y lleva advertencia oficial,
+        // así que la única afirmación honesta a nivel de tarjeta es CUÁNTAS hay. Cuáles importan
+        // depende del paciente, y eso la tarjeta no lo sabe.
         return {
-            estado: 'edo', clase: ' med-detail-tag--exc-visto', texto: String(datos.total),
-            titulo: `Contiene ${comun}, ninguno con etiqueta propia en MedCheck.${coletilla}`,
+            estado: 'declara', clase: ' med-detail-tag--exc-datos', texto: String(datos.total),
+            titulo: `${datos.total} excipiente${datos.total > 1 ? 's' : ''} de declaración obligatoria, `
+                + `cada uno con su advertencia oficial. Pulsa para verlos con sus cantidades.`,
         };
     }
 
@@ -14674,7 +14724,7 @@ ${materialesPlaceholder}
     _refrescarChipsExcipientes(nregistro) {
         const estado = this._excipientesEstadoChip(nregistro);
         for (const chip of document.querySelectorAll(`[data-exc-nreg="${CSS.escape(String(nregistro))}"]`)) {
-            chip.classList.remove('med-detail-tag--exc-riesgo', 'med-detail-tag--exc-visto');
+            chip.classList.remove('med-detail-tag--exc-datos', 'med-detail-tag--exc-cero', 'med-detail-tag--exc-inconcluso');
             if (estado.clase.trim()) chip.classList.add(estado.clase.trim());
             chip.title = estado.titulo;
             chip.innerHTML = `<i class="fas fa-vial"></i>${estado.texto ? `<span class="med-detail-tag__text">${estado.texto}</span>` : ''}`;
@@ -14721,8 +14771,7 @@ ${materialesPlaceholder}
 
         this._pintarPopoverExcipientes(ancla, null, clave);   // estado "consultando"
         try {
-            const med = await this.api.getMedicamento(nregistro, { headers: { 'X-MC-Autocomplete': '1' } });
-            const datos = this._excipientesEDO(med);
+            const datos = await this._consultarExcipientesDe(nregistro);
             this._excipientesCache.set(clave, datos);
             // El chip se marca SIEMPRE que llega la respuesta, aunque el popover ya se haya
             // cerrado: lo que se averiguó no se pierde porque el usuario fuese rápido cerrando.
@@ -14743,16 +14792,11 @@ ${materialesPlaceholder}
      * declara ninguno. Fundir los dos últimos en «no hay» sería afirmar algo que no consta.
      */
     _cuerpoPopoverExcipientes(datos) {
-        // DOS FRASES, Y LA PRIMERA ES LA QUE FALTABA. El popover destaca unos excipientes con color
-        // y deja los demás como texto corrido, y esa jerarquía se lee sola como «lo gris es
-        // inocuo». No lo es: CIMA publica aquí el anexo de declaración obligatoria —comprobado el
-        // 16/09: 116 nombres en 287 medicamentos y ningún relleno corriente—, así que TODO lo de
-        // esta lista lleva advertencia oficial. Lo que el color separa es qué sabemos nombrar en
-        // español, no qué es peligroso.
+        // UN SOLO AVISO, Y DICE EL ALCANCE EXACTO DEL DATO. Ya no habla de colores porque ya no
+        // hay colores que explicar: todos los excipientes se pintan igual (ver abajo).
         const AVISO = '<div class="exc-popover__nota">'
             + '<strong>Todos los de esta lista son de declaración obligatoria</strong> y cada uno lleva su advertencia oficial. '
-            + 'El color no marca cuáles importan más: marca los que MedCheck nombra en español.'
-            + '<br>CIMA publica aquí solo los declarables, <strong>no la composición completa</strong>. Para el resto, la ficha técnica (sección 6.1).</div>';
+            + 'CIMA publica aquí solo los declarables, <strong>no la composición completa</strong>: el resto está en la sección 6.1 de la ficha técnica.</div>';
 
         if (datos === null) {
             return '<div class="exc-popover__cargando"><i class="fas fa-circle-notch fa-spin"></i> Consultando CIMA…</div>';
@@ -14760,27 +14804,40 @@ ${materialesPlaceholder}
         if (datos === 'error') {
             return '<div class="exc-popover__cargando">No se ha podido consultar CIMA. Inténtalo de nuevo o abre la ficha.</div>';
         }
+
+        // EL CERO, CON SU PRUEBA O SIN AFIRMARSE. Es la regla que ordena todo este módulo desde
+        // el 17/09: se prefiere una NO señal que obligue a confirmar antes que una señal que
+        // omita avisos. Un cero a secas es una señal tranquilizadora, así que solo se da cuando
+        // se puede enseñar contra qué se comprobó.
         if (datos.total === 0) {
-            return '<div class="exc-popover__cargando">CIMA no declara excipientes de declaración obligatoria para este registro.</div>' + AVISO;
+            if (!datos.confirmado) {
+                return '<div class="exc-popover__aviso"><i class="fas fa-triangle-exclamation"></i> '
+                    + '<strong>No consta.</strong> CIMA no declara excipientes de declaración obligatoria para este '
+                    + 'registro y tampoco publica su ficha técnica por secciones, así que no hay con qué '
+                    + 'contrastarlo. <strong>No significa que no los tenga.</strong> Suele pasar en importaciones '
+                    + 'paralelas: la información clínica está en el registro principal del mismo medicamento.</div>';
+            }
+            return '<div class="exc-popover__cargando">CIMA no declara ningún excipiente de declaración obligatoria '
+                + 'para este registro.</div>'
+                + '<div class="exc-popover__ft61"><span class="exc-popover__ft61-tit">Ficha técnica, 6.1 — lista completa de excipientes</span>'
+                + this._escapeHtml(datos.ft61) + '</div>'
+                + AVISO;
         }
 
-        // TODOS EN LA MISMA LISTA Y CON LA MISMA FORMA. Antes los de la lista curada iban como
-        // chips de color y el resto como texto corrido separado por comas, y esa jerarquía se leía
-        // exactamente al revés de lo que dice el aviso: Ernesto la leyó como «no son obligatorios
-        // pero aparecen». Son todos obligatorios. Lo único que cambia es si MedCheck le sabe poner
-        // nombre en español, y eso no es una categoría clínica: no puede parecer una.
+        // TODOS IGUALES. Sin color y sin icono: lo único que distingue a unos de otros es que
+        // MedCheck le sepa poner nombre en español a algunos, y eso no es una categoría
+        // clínica. Cuando lo era visualmente, la lista se leía como «estos importan y estos no»
+        // —y el sorbitol, que importa, caía del lado callado.
         const cant = (e) => `${e.cantidad || ''} ${e.unidad || ''}`.trim();
-        const curados = new Map(datos.riesgo.map(e => [e.fullName, e]));
+        const enEspanol = new Map(datos.nombrados.map(e => [e.fullName, e.label]));
         const items = datos.todos.map((e) => {
-            const c = curados.get(e.nombre);
-            const medida = c ? c.cantidad : cant(e);
-            const texto = c ? `${c.label} <small>${this._escapeHtml(e.nombre)}</small>` : this._escapeHtml(e.nombre || '');
-            return `<span class="badge-excipient${c ? '' : ' badge-excipient--llano'}"`
-                + (c ? ` style="--exc-color: ${c.color}"` : '')
+            const medida = cant(e);
+            const es = enEspanol.get(e.nombre);
+            return '<span class="badge-excipient badge-excipient--llano"'
                 + ` title="${this._escapeHtml(e.nombre || '')}${medida ? ' — ' + medida : ''}">`
-                + (c ? `<i class="fas ${c.icon}"></i> ` : '')
-                + texto
+                + this._escapeHtml(e.nombre || '')
                 + (medida ? ` <small>${this._escapeHtml(medida)}</small>` : '')
+                + (es ? ` <small class="exc-alias">${this._escapeHtml(es)}</small>` : '')
                 + '</span>';
         }).join('');
 
@@ -18270,7 +18327,8 @@ ${materialesPlaceholder}
                             <p>Cada tarjeta lleva seis accesos con su sigla —<span class="guide-key">FT</span> ficha y prospecto, <span class="guide-key">IND</span> indicaciones, <span class="guide-key">POS</span> posología, <span class="guide-key">INT</span> interacciones, <span class="guide-key">EVI</span> evidencia, <span class="guide-key">SEG</span> seguridad— que abren la ficha ya en esa pestaña. Los que salen apagados es porque CIMA no publica esa sección para ese registro: así no hay que pulsar para descubrir que no hay nada.</p>
                             <p>Un icono de cámara <i class="fas fa-camera"></i> junto a la dosis aparece solo en los registros de los que CIMA publica imagen del envase o de la forma farmacéutica, y <span class="guide-highlight">pulsarlo la abre ahí mismo</span>, sin entrar en la ficha. Así no hay que abrirlas una a una para averiguar cuáles tienen foto.</p>
                             <p>El frasco <i class="fas fa-vial"></i> va en <strong>todas</strong> las tarjetas y abre los <span class="guide-highlight">excipientes de declaración obligatoria</span> sin entrar en la ficha. A diferencia de la cámara no adelanta si hay algo: la lista de CIMA no trae los excipientes, así que se consultan al pulsar. Son los de declaración obligatoria, no la composición completa.</p>
-                            <p>Al consultarlo, el frasco <span class="guide-highlight">se queda marcado</span>: en ámbar y con el número si hay excipientes con advertencia, atenuado si ya lo miraste y no había ninguno. La marca <strong>sobrevive a filtrar y reordenar</strong>, así que en una lista larga se ve de un vistazo qué has comprobado y qué no.</p>
+                            <p>Al consultarlo, el frasco <span class="guide-highlight">se queda marcado con su número</span>, que es cuántos excipientes declarables tiene. <strong>Todos llevan advertencia oficial</strong>, así que la marca es igual para todos: MedCheck no ordena cuáles importan más, porque eso depende del paciente. La marca sobrevive a filtrar y reordenar, y desaparece al desmarcar.</p>
+                            <p>Dos casos se ven distintos a propósito. Un <strong>0</strong> significa que CIMA no declara ninguno, y al pulsarlo <span class="guide-highlight">te enseña la sección 6.1 entera</span> de la ficha para que lo compruebes. Una <strong>interrogación en ámbar</strong> significa <em>no consta</em>: ni hay declarados ni hay ficha con que contrastarlo — pasa en importaciones paralelas. <strong>No es un cero</strong>, y no debe leerse como que no los tenga.</p>
                             <p>Y para no ir uno a uno, la casilla <strong>«Ver excipientes»</strong> de la barra de filtros los consulta <span class="guide-highlight">todos los que tengas en pantalla</span> de una vez. No esconde ningún resultado: solo marca. Mientras está encendida, las tarjetas que aparezcan al filtrar se consultan también, y lo ya consultado no se vuelve a pedir. En una búsqueda muy grande consulta las primeras y te dice cuántas quedan.</p>
                             <p class="guide-case"><strong>Caso</strong>Un paciente celíaco y once jarabes de hedera helix en pantalla. Marcas «Ver excipientes» y en un segundo ves cuáles llevan algo que mirar, sin abrir once fichas.</p>
                             <p class="guide-case"><strong>Caso</strong>El paciente trae la caja y pregunta para qué es. Buscas el nombre y pulsas <span class="guide-key">IND</span>: la indicación autorizada, sin abrir el PDF de la ficha técnica.</p>
