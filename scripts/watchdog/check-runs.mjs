@@ -258,6 +258,9 @@ function main() {
             padres: wf.padres.map(p => p.nombre),
             estado: v.estado,
             detalle: v.detalle,
+            // Explícito en el JSON para que quien lo lea no tenga que reimplementar el
+            // criterio a partir del texto del estado: hoy lo lee `check_freshness.py`.
+            problema: v.problema === true,
         });
     }
 

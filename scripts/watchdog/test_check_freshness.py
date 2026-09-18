@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -160,6 +161,117 @@ MUTANTES = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Tercera capa: los LATIDOS (18/09/2026)
+#
+# Esta capa nace de un fallo medido: el ETL de MedyNut se colgo el 07/09, GitHub lo mato por
+# tiempo y el run acabo como `cancelled` —la unica conclusion de la que GitHub no manda
+# correo—. El dato tenia 23 dias contra un umbral de 40, asi que las dos primeras capas
+# callaban con razon. Once dias sin que nadie lo dijera.
+#
+# Lo que hay que sujetar aqui es justo eso: que un workflow parado DESPIERTE a alguien, y que
+# no poder comprobarlo no se confunda con que todo este bien.
+# ---------------------------------------------------------------------------
+LATIDOS = {
+    "comprobado": AHORA.isoformat(),
+    "problemas": 1,
+    "inconclusos": 0,
+    "filas": [
+        {"nombre": "ETL parado", "estado": "ULTIMA EN ROJO",
+         "detalle": "11.1 d (ventana 40) - cancelled", "problema": True},
+        {"nombre": "ETL sano", "estado": "OK", "detalle": "0.2 d - success", "problema": False},
+        {"nombre": "Recien puesto", "estado": "NUEVO",
+         "detalle": "en el repo desde hace 1.0 d", "problema": False},
+    ],
+}
+
+
+def _latidos(fuente_texto: str, *, datos=LATIDOS, declarar: bool = True, texto: str | None = None):
+    """Ejecuta SOLO la capa de latidos con un informe de mentira."""
+    with tempfile.TemporaryDirectory() as td:
+        ns = _cargar(fuente_texto, Path(td))
+        ruta = Path(td) / "latidos.json"
+        if texto is not None:
+            ruta.write_text(texto, encoding="utf-8")
+        elif datos is not None:
+            ruta.write_text(json.dumps(datos), encoding="utf-8")
+        previo = os.environ.get("WATCHDOG_LATIDOS_JSON")
+        if declarar:
+            os.environ["WATCHDOG_LATIDOS_JSON"] = str(ruta)
+        else:
+            os.environ.pop("WATCHDOG_LATIDOS_JSON", None)
+        try:
+            return ns["check_latidos"]()
+        finally:
+            if previo is None:
+                os.environ.pop("WATCHDOG_LATIDOS_JSON", None)
+            else:
+                os.environ["WATCHDOG_LATIDOS_JSON"] = previo
+
+
+CASOS_LATIDOS = [
+    ("un workflow parado es PROBLEMA, y por tanto email",
+     lambda f: any("ETL parado" in x for x in _latidos(f)[0])),
+    ("y el informe lo marca como PARADO",
+     lambda f: any(x.startswith("[PARADO]") and "ETL parado" in x for x in _latidos(f)[1])),
+    ("uno sano NO despierta a nadie",
+     lambda f: not any("ETL sano" in x for x in _latidos(f)[0])),
+    ("uno recien puesto tampoco: NUEVO no es NUNCA",
+     lambda f: not any("Recien puesto" in x for x in _latidos(f)[0])),
+    ("sin declarar la variable, la capa no corre y lo DICE",
+     lambda f: _latidos(f, declarar=False)[0] == []
+     and any("no declarado" in x for x in _latidos(f, declarar=False)[1])),
+    ("declarada y con el informe ilegible, es PROBLEMA y no silencio",
+     lambda f: len(_latidos(f, texto="{esto no es json")[0]) == 1),
+    ("si no se pudo preguntar por alguno, se dice y cuenta",
+     lambda f: any("no se pudieron comprobar" in x
+                   for x in _latidos(f, datos={**LATIDOS, "inconclusos": 2})[0])),
+]
+
+MUTANTES_LATIDOS = [
+    ("deja de avisar de los workflows parados",
+     'if fila.get("problema"):', 'if False:'),
+    ("se traga un informe ilegible como si nada",
+     '[f"latidos: se esperaba el informe de check-runs y no se pudo leer ({exc})"],', '[],'),
+    ("calla los que no se pudieron comprobar",
+     "if inconclusos:", "if False:"),
+]
+
+
+def probar_latidos(fuente: str) -> int:
+    fallos = 0
+    print("\n  == Latido de los workflows ==")
+    for titulo, cond in CASOS_LATIDOS:
+        try:
+            ok = bool(cond(fuente))
+        except Exception as exc:  # noqa: BLE001
+            ok = False
+            titulo = f"{titulo} [excepcion: {exc}]"
+        print(f"  {'OK  ' if ok else 'FALLO'} {titulo}")
+        fallos += 0 if ok else 1
+
+    for titulo, viejo, nuevo in MUTANTES_LATIDOS:
+        if viejo not in fuente:
+            print(f"  FALLO mutante sin anclaje: {titulo}")
+            fallos += 1
+            continue
+        mutada = fuente.replace(viejo, nuevo, 1)
+        try:
+            sobrevive = all(_seguro_l(cond, mutada) for _, cond in CASOS_LATIDOS)
+        except Exception:  # noqa: BLE001
+            sobrevive = False
+        print(f"  {'OK  ' if not sobrevive else 'FALLO'} MUTANTE: {titulo}")
+        fallos += 1 if sobrevive else 0
+    return fallos
+
+
+def _seguro_l(cond, fuente) -> bool:
+    try:
+        return bool(cond(fuente))
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def main() -> int:
     fuente = FUENTE.read_text(encoding="utf-8")
     problemas, lineas = _ejecutar(fuente)
@@ -190,7 +302,11 @@ def main() -> int:
         print(f"  {'OK  ' if not sobrevive else 'FALLO'} {titulo}")
         fallos += 1 if sobrevive else 0
 
-    print(f"\n  {len(CASOS)} aserciones + {len(MUTANTES)} mutantes · fallos: {fallos}")
+    fallos += probar_latidos(fuente)
+
+    total_a = len(CASOS) + len(CASOS_LATIDOS)
+    total_m = len(MUTANTES) + len(MUTANTES_LATIDOS)
+    print(f"\n  {total_a} aserciones + {total_m} mutantes · fallos: {fallos}")
     if fallos:
         print("\n  Problemas detectados en la pasada limpia:")
         for p in problemas:

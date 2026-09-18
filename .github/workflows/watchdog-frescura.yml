@@ -13,6 +13,8 @@ on:
 
 permissions:
   contents: read
+  # Para poder preguntar por las ejecuciones de los workflows (el latido).
+  actions: read
 
 concurrency:
   group: watchdog-frescura
@@ -25,19 +27,44 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Historia completa y sin blobs. `check-runs.mjs` necesita saber CUÁNDO entró cada
+          # workflow en el repo para separar «nunca ha corrido porque es nuevo» de «nunca ha
+          # corrido porque está roto»; un clon superficial no puede responder a eso y lo
+          # declararía inconcluso todos los días, que es ruido diario garantizado.
+          fetch-depth: 0
+          filter: blob:none
 
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
       # Antes de vigilar nada, comprobar que el vigilante sigue vigilando. Es barato (no toca red
       # ni secretos) y evita el caso peor: un watchdog roto que sale en verde todas las mañanas.
       - name: Banco de pruebas del watchdog
         run: python scripts/watchdog/test_check_freshness.py
 
+      # EL LATIDO, no solo la edad del dato. Esto existe por el 07/09/2026: el ETL de MedyNut
+      # se colgó, GitHub lo mató por tiempo y el run acabó como `cancelled`, la única
+      # conclusión de la que GitHub no manda correo. El dato tenía 23 días y su umbral son 40,
+      # así que la comprobación de frescura callaba con razón. Se supo once días después.
+      #
+      # No tumba el paso: su veredicto viaja por fichero al informe de frescura, que es quien
+      # manda el email. Si el fichero no sale, el propio informe lo cuenta como problema.
+      - name: Latido de los workflows programados
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/watchdog/check-runs.mjs --json > /tmp/latidos.json || true
+
       - name: Comprobar frescura de las fuentes KV
         env:
+          WATCHDOG_LATIDOS_JSON: /tmp/latidos.json
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
           # Token de solo lectura recomendado; si no existe, se usa CF_API_TOKEN.

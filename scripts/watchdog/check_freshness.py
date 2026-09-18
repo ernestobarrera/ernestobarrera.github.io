@@ -233,6 +233,58 @@ def check_repo_data(now):
 
 
 CF_API = "https://api.cloudflare.com/client/v4"
+def check_latidos():
+    """Tercera capa: ¿han CORRIDO las tareas programadas?
+
+    Las dos primeras capas miran la edad del DATO, y eso deja un hueco que costo once dias
+    descubrir. El 07/09/2026 el ETL de MedyNut se colgo y GitHub lo mato por tiempo: el run
+    acabo como `cancelled`, que es la unica conclusion de la que GitHub NO manda correo. El
+    dato tenia 23 dias y su umbral son 40, asi que esta capa callaba con razon, y el unico
+    vigilante que lo veia —`check-runs.mjs`— habia que lanzarlo a mano. Tres vigilantes y
+    ninguno hablo.
+
+    Lo que lee aqui lo produce `check-runs.mjs --json`, que si sabe de latidos. Se pasa por
+    fichero y no se reimplementa: dos implementaciones del mismo criterio acaban
+    discrepando, y la que calla gana siempre.
+
+    `CONTRATO:` sin la variable, esta capa no corre y lo dice (una pasada local sin node es
+    legitima). CON la variable y sin fichero legible, es PROBLEMA: se esperaba una respuesta
+    y no la hay, y eso no puede pasar por un aprobado.
+    """
+    ruta = os.environ.get("WATCHDOG_LATIDOS_JSON")
+    if not ruta:
+        return [], ["(no declarado: esta pasada no mira los latidos)"]
+    try:
+        with open(ruta, encoding="utf-8") as fh:
+            datos = json.load(fh)
+    except Exception as exc:  # noqa: BLE001
+        return (
+            [f"latidos: se esperaba el informe de check-runs y no se pudo leer ({exc})"],
+            [f"[ERROR]    no se pudo leer {ruta}: {exc}"],
+        )
+
+    problems, lines = [], []
+    for fila in datos.get("filas", []):
+        estado = fila.get("estado", "?")
+        etiqueta = f"{estado}: {fila.get('nombre', '?')} — {fila.get('detalle', '')}"
+        if fila.get("problema"):
+            problems.append(f"latido de «{fila.get('nombre', '?')}»: {estado} — {fila.get('detalle', '')}")
+            lines.append("[PARADO]   " + etiqueta)
+        elif estado == "INCONCLUSO":
+            lines.append("[?]        " + etiqueta)
+        else:
+            lines.append("[OK]       " + etiqueta)
+
+    inconclusos = int(datos.get("inconclusos") or 0)
+    if inconclusos:
+        # No se pudo preguntar por alguno. Dentro de Actions eso no deberia pasar nunca, asi
+        # que cuenta: un inconcluso que nadie mira es el aprobado en falso de siempre.
+        problems.append(
+            f"latidos: {inconclusos} workflow(s) no se pudieron comprobar (ver el detalle)"
+        )
+    return problems, lines
+
+
 RESEND_API = "https://api.resend.com/emails"
 
 
@@ -382,6 +434,13 @@ def main() -> int:
     lines.append("== Ficheros de datos del repo (assets/data) ==")
     lines.extend(repo_lines)
 
+    # Tercera capa: los latidos. La edad del dato no dice si la tarea corrio.
+    latidos_problems, latidos_lines = check_latidos()
+    problems.extend(latidos_problems)
+    lines.append("")
+    lines.append("== Latido de los workflows programados ==")
+    lines.extend(latidos_lines)
+
     report = "\n".join(lines)
     print(report)
 
@@ -413,10 +472,12 @@ def main() -> int:
         print("Todas las fuentes dentro de su ventana de frescura.")
         return 0
 
-    subject = f"[MedCheck watchdog] {len(problems)} fuente(s) obsoleta(s)"
+    # El asunto ya no puede decir «fuente(s) obsoleta(s)»: desde el 18/09/2026 esto tambien
+    # avisa de tareas que no han corrido, que no es lo mismo que un dato viejo.
+    subject = f"[MedCheck watchdog] {len(problems)} problema(s)"
     body = (
-        "El watchdog de frescura ha detectado datos sin actualizar en el entorno "
-        "MedCheck.\n\n"
+        "El watchdog ha detectado datos sin actualizar o tareas que no estan corriendo en "
+        "el entorno MedCheck.\n\n"
         + "\n".join(f"- {p}" for p in problems)
         + "\n\nEstado completo:\n"
         + report
