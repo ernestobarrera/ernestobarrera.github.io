@@ -77,6 +77,25 @@ const PAUSA_MS = 120;
 
 const dormir = ms => new Promise(r => setTimeout(r, ms));
 
+/**
+ * NINGUNA PETICIÓN SIN RELOJ, Y LA PASADA ENTERA CON PRESUPUESTO.
+ *
+ * El 07/09/2026 este ETL se colgó y GitHub lo mató a los 30 minutos. La pasada buena del
+ * 26/08 había tardado 4. No se quedó corto de tiempo: `fetch` no trae tiempo de espera por
+ * defecto y el bucle es secuencial, así que una respuesta que no llega congela la pasada
+ * entera. Y el run murió como `cancelled`, que es la única conclusión de la que GitHub no
+ * manda correo: se rompió en silencio y se supo once días después.
+ *
+ * Por eso van los dos relojes. El de cada petición corta la que no responde y deja que el
+ * reintento haga su trabajo. El de la pasada entera existe para que, si aun así no se puede
+ * terminar, esto acabe DICIÉNDOLO con salida 2 —inconcluso, ruidoso, sin publicar nada— en
+ * vez de dejar que lo maten por fuera.
+ */
+const ESPERA_MS = 20_000;
+const PRESUPUESTO_MS = Number(process.env.MEDYNUT_PRESUPUESTO_MS || 20 * 60_000);
+const EMPEZADO = Date.now();
+const agotado = () => Date.now() - EMPEZADO > PRESUPUESTO_MS;
+
 // ── Resolutor real del repo: NO se reimplementa ───────────────────────────────────────
 // La clave del índice tiene que ser exactamente lo que la app buscará en tiempo de
 // ejecución (`innDict.norm(componente.baseEs)`). Reimplementar esa normalización aquí
@@ -115,7 +134,7 @@ function contieneEnFrontera(a, b) {
 async function pedirJson(url, intentos = 3) {
     for (let i = 1; i <= intentos; i += 1) {
         try {
-            const r = await fetch(url, { headers: { accept: 'application/json' } });
+            const r = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(ESPERA_MS) });
             if (r.ok) return await r.json();
             if (r.status === 204) return null;
             if (r.status < 500 && r.status !== 429) return null;
@@ -127,7 +146,7 @@ async function pedirJson(url, intentos = 3) {
 
 /** Árbol ATC de MedyNut, embebido como props de su componente React en la portada. */
 async function arbolAtc() {
-    const r = await fetch(MEDYNUT + '/', { headers: { accept: 'text/html' } });
+    const r = await fetch(MEDYNUT + '/', { headers: { accept: 'text/html' }, signal: AbortSignal.timeout(ESPERA_MS) });
     if (!r.ok) throw new Error(`portada de MedyNut HTTP ${r.status}`);
     const html = await r.text();
     const m = html.match(/data-react-props="([^"]*)"/);
@@ -188,6 +207,14 @@ const colisiones = [];      // dos rutas para la misma clave: no se publica ning
 let inconclusos = 0;
 
 for (const d of cat) {
+    // El presupuesto se mira aquí y no al final: pasado, no hay índice que publicar. Un índice
+    // a medias retiraría enlaces que sí existen, y eso es peor que no actualizar.
+    if (agotado()) {
+        console.error('');
+        console.error(`INCONCLUSO: la pasada superó su presupuesto de ${Math.round(PRESUPUESTO_MS / 60000)} min y se corta sin escribir nada.`);
+        console.error('El índice anterior sigue siendo el bueno. Revisa si medynut.com o CIMA están respondiendo.');
+        process.exit(2);
+    }
     const limpio = sinParentesis(d.nombre) || d.slug.replace(/-/g, ' ');
     const desdeSlug = sinParentesis(d.slug.replace(/-/g, ' '));
     // Token de consulta = el MÁS LARGO, no el primero. Con el primero, "Ácido fólico"
