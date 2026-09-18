@@ -1,6 +1,6 @@
 name: Bancos de pruebas de MedCheck
 
-# Los 32 bancos existían y no los ejecutaba nadie más que la máquina de casa: el repositorio tenía
+# Los bancos existían y no los ejecutaba nadie más que la máquina de casa: el repositorio tenía
 # nueve ETL programados y `grep -rn "medcheck-test" .github/` no devolvía nada. Esto cierra el
 # hueco del CÓDIGO.
 #
@@ -54,7 +54,7 @@ jobs:
           # GUARDA DE ARRANQUE. Si el prefijo de los bancos cambia, el bucle se queda sin nada que
           # hacer y este workflow saldría VERDE sin haber probado una línea. Es exactamente el
           # fallo del guard de módulo que dejó un ETL terminando en verde sin ejecutarse.
-          MINIMO=32
+          MINIMO=33
           if [ "${#BANCOS[@]}" -lt "$MINIMO" ]; then
             echo "::error::Se esperaban al menos $MINIMO bancos y se han encontrado ${#BANCOS[@]}. Un verde aquí no significaría nada."
             exit 1
@@ -79,15 +79,16 @@ jobs:
             echo "$salida"
             echo "::endgroup::"
 
-            # INCONCLUSO en MAYÚSCULAS, y solo ahí. En minúsculas es el nombre de aserciones que
-            # PASAN («exit 2 inconcluso, nunca 0»): contarlas daría 12 avisos falsos por run.
-            # Hoy el único banco que puede saltarse algo de verdad es medcheck-test-medynut, y lo
-            # hace cuando no alcanza CIMA.
+            # UN SALTO SE DECLARA, NO SE ADIVINA: la marca es `INCONCLUSO:` al principio de la
+            # línea, en columna 0. Contar la palabra suelta no vale, y se probó dos veces el
+            # 17/09. En minúsculas es el nombre de aserciones que PASAN («exit 2 inconcluso,
+            # nunca 0»); en mayúsculas la usan tanto el resumen de un banco como el nombre de
+            # una prueba sobre inconclusos. Las dos veces el contador dijo de más, y un aviso
+            # que sobra en cada run acaba siendo un aviso que nadie lee.
             #
-            # CONVENCIÓN: una línea con el token = un aviso. El resumen final de un banco NO
-            # puede repetirlo en mayúsculas o se cuenta a sí mismo — medido el 17/09 en el
-            # segundo run: decía 3 avisos donde había 2.
-            n=$(printf '%s\n' "$salida" | grep -c 'INCONCLUSO')
+            # Hoy la emiten `medcheck-test-utilizacion` (le falta el repo del Worker) y
+            # `medcheck-test-medynut` (no alcanza CIMA).
+            n=$(printf '%s\n' "$salida" | grep -c '^INCONCLUSO:')
             [ -z "$n" ] && n=0
             saltos=$((saltos + n))
 

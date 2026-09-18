@@ -158,10 +158,10 @@ try {
             `${det.nombre}: ${r2.map(x => `${x.base}=${x.slug || '—'}`).join(', ')}`);
         console.log(`    ${det.nombre} → ${r2.map(x => `${x.base}: ${x.slug || 'no está'}`).join(' · ')}`);
     } else {
-        console.log('· 4 · sin asociación metformina+sitagliptina comercializada hoy; INCONCLUSO');
+        console.log('INCONCLUSO: 4 · no hay asociación metformina+sitagliptina comercializada hoy');
     }
 } catch (err) {
-    console.log(`· 4-5 INCONCLUSO (red): ${err.message}`);
+    console.log(`INCONCLUSO: 4-5 no se pudo preguntar a CIMA (${err.message})`);
 }
 
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);

@@ -45,7 +45,7 @@ const ok = (nombre, cond, detalle = '') => {
 /**
  * El Worker vive en OTRO repositorio (`ernestobarrera/medcheck-worker`, privado): aquí es una
  * carpeta hermana y en CI no existe. Sus contratos se comprueban si está, y si no está se dice
- * INCONCLUSO —en mayúsculas, que es lo que cuenta el workflow— en vez de darlos por buenos:
+ * INCONCLUSO —con la marca en columna 0 que cuenta el workflow— en vez de darlos por buenos:
  * aprobar lo que no se ha podido leer es el guardián que firma sin haber juzgado.
  *
  * Medido el 17/09/2026, en la primera ejecución del CI: sin esta guarda el `readFileSync`
@@ -57,7 +57,7 @@ const leerWorker = () => {
   const ruta = join(RAIZ, '..', 'medcheck-worker', 'index.js');
   if (existsSync(ruta)) return readFileSync(ruta, 'utf8');
   inconclusos++;
-  console.log('  INCONCLUSO  no está el repo hermano `medcheck-worker`: sus contratos NO se comprueban aquí');
+  console.log('INCONCLUSO: no está el repo hermano `medcheck-worker`, así que sus contratos NO se comprueban aquí');
   return null;
 };
 
