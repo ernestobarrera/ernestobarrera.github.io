@@ -550,7 +550,12 @@ console.log('\n12) «Utilización» es una vista principal, al nivel de Buscar')
   ok('el conmutador de vistas la resuelve', /case 'utilization': await this\.renderUtilizacionView\(\)/.test(app));
   ok('existe el render de la vista', /async renderUtilizacionView\(\)/.test(app));
   ok('la vista se pinta contra el árbol descargado', /this\._utilArbolVista/.test(app));
-  if (wk) ok('la analítica la reconoce', /utilization:\s*'utilizacion'/.test(app) && /'utilizacion',/.test(wk));
+  // EL CONTRATO SE PARTE POR PROPIETARIO. Hasta el 19/09/2026 esto era UNA aserción que
+  // cruzaba cliente y Worker con un `&&` dentro de un `if (wk)`: sin el repo hermano se
+  // saltaba ENTERA, y con ella la mitad que sí se puede comprobar en CI. Un inconcluso que
+  // se lleva por delante lo comprobable es un inconcluso de más.
+  ok('el cliente nombra la vista en la analítica', /utilization:\s*'utilizacion'/.test(app));
+  if (wk) ok('y el Worker la acepta como vista válida', /'utilizacion',/.test(wk));
 
   const vista = app.slice(app.indexOf('async renderUtilizacionView()'), app.indexOf('_engancharUtilizacionView() {'));
   const emitido = vista.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
