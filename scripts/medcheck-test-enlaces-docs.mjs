@@ -16,11 +16,29 @@
  * Uso: node scripts/medcheck-test-enlaces-docs.mjs
  */
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const APP = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+
+// Para poder EJECUTAR la agrupación, no solo leerla. Mismo sandbox que medcheck-test-excipientes.
+const sandbox = {
+    window: {},
+    document: { addEventListener() {}, getElementById: () => null, querySelectorAll: () => [] },
+    console: { log() {}, warn() {}, error() {} },
+    localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+    fetch: () => Promise.reject(new Error('sin red en tests')),
+    setTimeout, clearTimeout, setInterval, clearInterval,
+    Date, Math, JSON, Promise, Map, Set, RegExp, URL, URLSearchParams,
+    navigator: { onLine: true }, location: { search: '', href: '' },
+};
+sandbox.globalThis = sandbox;
+vm.createContext(sandbox);
+vm.runInContext(`${APP}
+;window.__MedCheckAppClass = MedCheckApp;`, sandbox);
+const Clase = sandbox.window.__MedCheckAppClass;
 
 let fallos = 0;
 const ok = (nombre, cond, detalle = '') => {
@@ -95,7 +113,17 @@ console.log('\n6) el índice de secciones sale de CIMA, no de una lista nuestra'
     ok('la lista de secciones se pide a la API', /this\.api\.getDocSecciones\(med\.nregistro, doc\.tipo/.test(idx));
     ok('el ancla es el identificador que devuelve CIMA', /#\$\{encodeURIComponent\(s\.seccion\)\}/.test(idx));
     ok('y el destino es el `urlHtml` de la fuente', /href="\$\{this\._escapeHtml\(doc\.urlHtml\)\}#/.test(idx));
-    ok('el título es el de CIMA, no uno nuestro', /\$\{this\._escapeHtml\(s\.titulo\)\}<\/a>/.test(idx));
+    ok('el título es el de CIMA, no uno nuestro', /docs-idx-tit">\$\{this\._escapeHtml\(s\.titulo\)\}/.test(idx));
+
+    // AGRUPADO POR PADRE. La primera versión pintaba una retícula plana y 4.1 y 4.2 caían en
+    // columnas distintas: hermanas consecutivas que parecían ramas distintas.
+    ok('las secciones se agrupan por su sección padre', idx.includes('this._agruparSecciones(secciones)'));
+    ok('y el tercer nivel se distingue del segundo', /docs-idx-link--nieta/.test(idx));
+
+    // El enlace al documento entero vive en la cabecera del índice, no en un botón aparte.
+    ok('la cabecera del índice lleva el enlace al documento entero', /docs-idx-abrir[\s\S]{0,200}Abrir entera/.test(idx));
+    ok('y el botón duplicado de arriba se retira solo si el índice llegó',
+        /hechos\.push\(doc\.tipo\)/.test(idx) && /data-doc-tipo="\$\{tipo\}"[\s\S]{0,20}\)\?\.remove\(\)/.test(APP));
 
     // MUTANTE: el día que alguien escriba aquí un catálogo propio de secciones —«4.8 Reacciones
     // adversas»— habrá dejado de ser espejo y empezará a envejecer por su cuenta.
@@ -120,6 +148,48 @@ console.log('\n7) la pestaña se llama como lo que hay dentro');
     ok('se llama «Ficha y prospecto»', /Ficha y prospecto\$\{hasMateriales/.test(APP));
     // El `data-tab` NO cambia: lo usan la URL del modal, la analítica y la guía.
     ok('el identificador interno sigue siendo `docs`', /data-tab="docs"/.test(APP));
+}
+
+console.log('\n8) la agrupación, ejecutada de verdad sobre la respuesta real de CIMA');
+{
+    // Muestra literal de `/docSegmentado/secciones/1?nregistro=83518` (PENILEVEL 500), capturada el
+    // 19/09/2026. Se prueba la FUNCIÓN, no el texto del fichero: un índice mal agrupado se lee mal
+    // aunque todas las expresiones regulares de arriba pasen.
+    const FT = [
+        { seccion: '3', titulo: 'FORMA FARMACÉUTICA', orden: 1 },
+        { seccion: '4', titulo: 'DATOS CLÍNICOS', orden: 1 },
+        { seccion: '4.1', titulo: 'Indicaciones terapéuticas', orden: 2 },
+        { seccion: '4.2', titulo: 'Posología y forma de administración', orden: 3 },
+        { seccion: '4.6', titulo: 'Fertilidad, embarazo y lactancia', orden: 11 },
+        { seccion: '4.6.1', titulo: 'Embarazo', orden: 12 },
+        { seccion: '4.6.2', titulo: 'Lactancia', orden: 13 },
+        { seccion: '5', titulo: 'PROPIEDADES FARMACOLÓGICAS', orden: 1 },
+    ];
+
+    const app = Object.create(Clase.prototype);
+    const grupos = app._agruparSecciones(FT);
+
+    ok('un grupo por cada sección de primer nivel', grupos.length === 3,
+        grupos.map(g => g.cabeza.seccion).join(', '));
+    ok('«4» se lleva sus CINCO descendientes, nietas incluidas',
+        grupos[1].cabeza.seccion === '4' && grupos[1].hijas.length === 5,
+        `${grupos[1].hijas.length} hijas`);
+    ok('«3», que no tiene hijas, no se come las del siguiente', grupos[0].hijas.length === 0);
+    ok('el tercer nivel se marca como tal',
+        grupos[1].hijas.filter(h => h.nivel === 3).map(h => h.seccion).join(',') === '4.6.1,4.6.2');
+
+    // MUTANTE: el campo `orden` de CIMA trae saltos (la 4.3 de PENILEVEL viene con orden 6), así
+    // que agrupar por él en vez de por el número metería secciones en el grupo equivocado.
+    ok('el nivel NO sale del campo `orden`', grupos[1].hijas.every(h => h.nivel === String(h.seccion).split('.').length));
+
+    // El prospecto empieza por la sección «0», que no tiene padre: tiene que abrir grupo igual.
+    const P = [{ seccion: '0', titulo: 'Introducción' }, { seccion: '1', titulo: 'Qué es y para qué se utiliza' }];
+    ok('la «0» del prospecto no se pierde', app._agruparSecciones(P).length === 2);
+
+    // Y una lista que empieza por una hija tampoco puede tragarse la primera entrada.
+    ok('una lista que empieza por hija no pierde nada',
+        app._agruparSecciones([{ seccion: '4.1', titulo: 'x' }]).length === 1);
+    ok('ni una lista vacía revienta', app._agruparSecciones([]).length === 0 && app._agruparSecciones(null).length === 0);
 }
 
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);

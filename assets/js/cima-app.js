@@ -9721,7 +9721,7 @@ ${ftFechaDocsHtml}
             if (isExternalIPE) {
                 const emaSearchUrl = `https://www.ema.europa.eu/en/search?f%5B0%5D=ema_search_categories%3Ahuman_medicines&search_api_fulltext=${medNameForSearch}`;
                 return `
-                <div class="detail-item ipe-external" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+                <div class="detail-item ipe-external" data-doc-tipo="${doc.tipo}" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
                     <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
                         <span class="detail-label">
                             <i class="fas fa-${type.icon}"></i> ${type.name}
@@ -9742,7 +9742,7 @@ ${ftFechaDocsHtml}
             }
 
             return `
-                    <a href="${href}" target="_blank" class="detail-item" style="text-decoration: none; cursor: pointer;">
+                    <a href="${href}" target="_blank" class="detail-item" data-doc-tipo="${doc.tipo}" style="text-decoration: none; cursor: pointer;">
                         <span class="detail-label">
                             <i class="fas fa-${type.icon}"></i> ${type.name}
                         </span>
@@ -9757,6 +9757,29 @@ ${ftFechaDocsHtml}
 <div id="docs-indice"></div>
 ${materialesPlaceholder}
 `;
+    }
+
+    /**
+     * Agrupa las secciones que devuelve CIMA por su sección padre. Función pura, para poder
+     * probarla sin DOM y sin red: es la pieza que decide si el índice se lee o no.
+     *
+     * El nivel sale del NÚMERO, que es de la fuente: «4» → 1, «4.6» → 2, «4.6.1» → 3. No se
+     * infiere del orden ni del título, porque CIMA devuelve el campo `orden` con saltos (la 4.3 de
+     * PENILEVEL viene con orden 6) y fiarse de él habría metido secciones en el grupo equivocado.
+     *
+     * Si la lista empieza por una hija —o por la sección «0» del prospecto, que no tiene padre—,
+     * esa hija abre grupo. Un índice al que le falta la primera entrada es peor que uno con un
+     * grupo de un solo elemento.
+     */
+    _agruparSecciones(secciones) {
+        const grupos = [];
+        for (const s of secciones || []) {
+            const num = String(s?.seccion ?? '');
+            const nivel = num.split('.').length;
+            if (nivel === 1 || grupos.length === 0) grupos.push({ cabeza: s, hijas: [] });
+            else grupos[grupos.length - 1].hijas.push({ ...s, nivel });
+        }
+        return grupos;
     }
 
     /**
@@ -9794,6 +9817,9 @@ ${materialesPlaceholder}
 
         const ROTULO = { 1: 'Ficha técnica', 2: 'Prospecto' };
         const bloques = [];
+        // Los tipos de documento que SÍ han conseguido índice, para poder retirar su botón
+        // duplicado al final. Se llena dentro del bucle: si una petición falla, su botón se queda.
+        const hechos = [];
 
         for (const doc of conIndice) {
             let secciones;
@@ -9805,28 +9831,64 @@ ${materialesPlaceholder}
             }
             if (!Array.isArray(secciones) || secciones.length === 0) continue;
 
-            const enlaces = secciones.map(s => {
-                // Una subsección es la que lleva punto en su número. Se sangra en vez de anidarse:
-                // la jerarquía real de CIMA llega a tres niveles y una lista anidada aquí dentro
-                // ocuparía más de lo que aclara.
-                const hija = String(s.seccion).includes('.');
-                return `<a href="${this._escapeHtml(doc.urlHtml)}#${encodeURIComponent(s.seccion)}" target="_blank" rel="noopener"
-                            class="docs-idx-link${hija ? ' docs-idx-link--hija' : ''}"
-                            title="Abrir «${this._escapeHtml(s.titulo)}» en la ${this._escapeHtml(ROTULO[doc.tipo].toLowerCase())} de CIMA">
-                            <span class="docs-idx-num">${this._escapeHtml(s.seccion)}</span>${this._escapeHtml(s.titulo)}</a>`;
-            }).join('');
+            // AGRUPADO POR SECCIÓN PADRE, y esto es lo que hace legible un índice de 30 entradas.
+            // La primera versión (19/09) pintaba una retícula de dos columnas en la que 4.1 caía a
+            // la izquierda y 4.2 a la derecha: dos hermanas consecutivas parecían dos ramas
+            // distintas, y como los títulos de CIMA miden entre dos palabras y dos líneas, cada
+            // fila dejaba un hueco bajo la más corta. Ernesto lo vio en cuanto se publicó.
+            //
+            // Ahora el grupo (padre + sus hijas) es la unidad indivisible y las columnas son de
+            // FLUJO, no de retícula: se lee en vertical y se pasa a la siguiente, que es como se
+            // lee un índice. En móvil cae a una sola columna sin que haya que decidir nada.
+            const grupos = this._agruparSecciones(secciones);
 
+            const enlace = (s, clase) => `<a href="${this._escapeHtml(doc.urlHtml)}#${encodeURIComponent(s.seccion)}"
+                            target="_blank" rel="noopener" class="docs-idx-link ${clase}"
+                            title="Abrir «${this._escapeHtml(s.titulo)}» en ${this._escapeHtml(ROTULO[doc.tipo].toLowerCase())} de CIMA">
+                            <span class="docs-idx-num">${this._escapeHtml(s.seccion)}</span><span class="docs-idx-tit">${this._escapeHtml(s.titulo)}</span></a>`;
+
+            const lista = grupos.map(g => `<div class="docs-idx-grupo">
+                        ${enlace(g.cabeza, 'docs-idx-link--cabeza')}
+                        ${g.hijas.map(h => enlace(h, h.nivel >= 3 ? 'docs-idx-link--nieta' : 'docs-idx-link--hija')).join('')}
+                    </div>`).join('');
+
+            // EL ENLACE AL DOCUMENTO ENTERO VIVE EN LA CABECERA DEL GRUPO, no en un botón aparte
+            // más arriba. Es petición suya y tiene razón: el documento y su índice son la misma
+            // cosa, y separarlos obligaba a mirar en dos sitios para decidir si entrabas al todo o
+            // a una parte.
             bloques.push(`
-                <div class="docs-idx-bloque">
-                    <p class="docs-idx-titulo"><i class="fas fa-list-ul"></i> Ir a una sección — ${this._escapeHtml(ROTULO[doc.tipo])}</p>
-                    <div class="docs-idx-grid">${enlaces}</div>
-                </div>`);
+                <section class="docs-idx-doc">
+                    <div class="docs-idx-cab">
+                        <span class="docs-idx-cab-tit"><i class="fas fa-list-ul"></i> ${this._escapeHtml(ROTULO[doc.tipo])}</span>
+                        <a class="docs-idx-abrir" href="${this._escapeHtml(doc.urlHtml)}" target="_blank" rel="noopener"
+                           title="Abrir ${this._escapeHtml(ROTULO[doc.tipo].toLowerCase())} completa en CIMA">Abrir entera <i class="fas fa-external-link-alt"></i></a>
+                    </div>
+                    <nav class="docs-idx-cols" aria-label="Secciones de ${this._escapeHtml(ROTULO[doc.tipo].toLowerCase())}">${lista}</nav>
+                </section>`);
+
+            // El documento ya tiene su índice con su propio enlace, así que su botón grande de
+            // arriba sobra: dos accesos al mismo sitio, uno encima del otro. Se retira SOLO si el
+            // índice llegó — si la petición falló, el botón sigue siendo la única puerta.
+            hechos.push(doc.tipo);
         }
 
         if (bloques.length === 0) return;
         cont.innerHTML = `<div class="docs-idx">${bloques.join('')}
-            <p class="docs-idx-pie">Los títulos y la numeración son los de CIMA. Cada enlace abre la sección en la fuente oficial.</p>
+            <p class="docs-idx-pie">La numeración y los títulos son los de CIMA. Cada línea abre esa sección en la fuente oficial.</p>
         </div>`;
+
+        // Retirados los botones de arriba de los documentos que ya tienen índice: su enlace vive
+        // ahora en la cabecera del índice, y dos puertas al mismo sitio una encima de otra es
+        // justo el ruido que hay que quitar. Los que NO tienen índice —IPE, plan de riesgos, o una
+        // ficha que CIMA no secciona— conservan el suyo, que es su única puerta.
+        for (const tipo of hechos) {
+            document.querySelector(`.detail-list [data-doc-tipo="${tipo}"]`)?.remove();
+        }
+
+        // Y si no queda ningún documento suelto, la lista vacía tampoco se enseña: un contenedor
+        // sin contenido deja un borde y un hueco que el usuario lee como un error de carga.
+        const lista = cont.parentElement?.querySelector('.detail-list');
+        if (lista && lista.children.length === 0) lista.remove();
     }
 
     renderModalSafetyTab(med, safetyReport) {

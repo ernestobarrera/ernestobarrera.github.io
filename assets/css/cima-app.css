@@ -12346,49 +12346,95 @@ a.fin-cn:hover { text-decoration: underline; }
 /* ============================================================================
    ÍNDICE DE SECCIONES DE LA FICHA (pestaña «Ficha y prospecto»)
    ----------------------------------------------------------------------------
-   Hasta el 19/09/2026 esta pestaña eran dos enlaces y espacio muerto. Ahora lleva el índice que
-   publica CIMA, y cada entrada abre SU sección en la fuente. La retícula es de ancho automático
-   para que en el móvil caiga a una columna sin media queries: los títulos de la ficha son largos
-   («Efectos sobre la capacidad para conducir y utilizar máquinas») y forzarles dos columnas
-   estrechas los parte en cuatro líneas.
+   Rehecho el 19/09/2026, el mismo día que se publicó la primera versión, porque Ernesto vio en
+   producción lo que aquí no se ve: una retícula (`grid`) de dos columnas con treinta entradas
+   deja de ser un índice. Tres defectos concretos, y los tres desaparecen con este cambio:
+
+     1. El orden se leía en zigzag: 4.1 a la izquierda, 4.2 a la derecha. Dos hermanas
+        consecutivas parecían dos ramas distintas.
+     2. Los títulos de CIMA miden entre dos palabras («Sobredosis») y dos líneas («Efectos sobre
+        la capacidad para conducir y utilizar máquinas»), así que cada fila de la retícula dejaba
+        un hueco bajo la más corta. Eso era el «interespaciado» que se veía.
+     3. La sangría de las hijas no se distinguía, porque competía con la separación de columnas.
+
+   Ahora la unidad es el GRUPO (una sección padre con sus hijas) y las columnas son de FLUJO
+   (`columns`), no de retícula: se lee en vertical y se pasa a la siguiente. Un grupo nunca se
+   parte entre columnas. En móvil cae solo a una columna, sin media query que lo decida.
    ========================================================================== */
 .docs-idx {
-    margin-top: 1rem;
+    margin-top: 0.75rem;
 }
 
-.docs-idx-bloque + .docs-idx-bloque {
-    margin-top: 1rem;
+.docs-idx-doc + .docs-idx-doc {
+    margin-top: 1.1rem;
 }
 
-.docs-idx-titulo {
-    margin: 0 0 0.45rem;
+/* La cabecera lleva el enlace al documento ENTERO, a la derecha. Antes vivía en un botón grande
+   más arriba, y eran dos puertas al mismo sitio una encima de otra. */
+.docs-idx-cab {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-bottom: 0.3rem;
+    margin-bottom: 0.45rem;
+    border-bottom: 1px solid var(--border-color, rgba(148, 163, 184, 0.18));
+}
+
+.docs-idx-cab-tit {
     font-size: 0.72rem;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
     color: var(--text-muted);
 }
 
-.docs-idx-titulo i {
+.docs-idx-cab-tit i {
     margin-right: 0.35rem;
 }
 
-.docs-idx-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 0.25rem;
+.docs-idx-abrir {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: var(--primary);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.docs-idx-abrir:hover {
+    text-decoration: underline;
+}
+
+.docs-idx-abrir i {
+    margin-left: 0.3rem;
+    font-size: 0.65rem;
+}
+
+/* Columnas de FLUJO. `auto` con ancho mínimo: en el modal ancho salen dos, en el móvil una, y no
+   hay ningún punto de ruptura que mantener. */
+.docs-idx-cols {
+    columns: 2 260px;
+    column-gap: 1.75rem;
+}
+
+/* La unidad indivisible: si un grupo no cabe entero, pasa entero a la columna siguiente. Sin esto
+   volvería el problema de leer 4.6 al final de una columna y sus hijas al principio de la otra. */
+.docs-idx-grupo {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 0.5rem;
 }
 
 .docs-idx-link {
-    display: flex;
-    align-items: baseline;
-    gap: 0.45rem;
-    padding: 0.35rem 0.5rem;
+    display: grid;
+    grid-template-columns: 2.5rem 1fr;
+    gap: 0.4rem;
+    padding: 0.22rem 0.4rem;
     border-radius: var(--radius-sm);
     font-size: 0.78rem;
-    line-height: 1.35;
+    line-height: 1.32;
     color: var(--text-secondary);
     text-decoration: none;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: background 0.12s ease, color 0.12s ease;
 }
 
 .docs-idx-link:hover {
@@ -12396,26 +12442,50 @@ a.fin-cn:hover { text-decoration: underline; }
     color: var(--text-primary);
 }
 
-/* La sangría dice lo mismo que el número: que 4.8 cuelga de 4. No se anida en listas porque la
-   jerarquía de CIMA llega a tres niveles y aquí ocuparía más de lo que aclara. */
-.docs-idx-link--hija {
-    padding-left: 1.35rem;
+/* La sección padre ancla el grupo: llega en mayúsculas desde CIMA —no lo cambiamos, es su texto—
+   y aquí se le da el peso que le corresponde para que las hijas se lean colgando de ella. */
+.docs-idx-link--cabeza {
+    color: var(--text-primary);
+    font-weight: 500;
 }
 
-/* El número va en monoespacio y a ancho fijo para que los títulos queden alineados: es el dato
-   por el que se busca («mírate la 4.5») y tiene que poder barrerse con la vista. */
+/* La sangría dice lo mismo que el número. Dos niveles, porque la jerarquía de CIMA llega a tres
+   (4.6.1 Embarazo) y anidar listas aquí ocuparía más de lo que aclara. */
+.docs-idx-link--hija .docs-idx-num {
+    padding-left: 0.55rem;
+}
+
+.docs-idx-link--nieta .docs-idx-num {
+    padding-left: 1.1rem;
+}
+
+/* El número va en monoespacio y alineado a la derecha: es el dato por el que se busca («mírate la
+   4.5») y así los títulos arrancan todos en la misma vertical aunque el número mida 1 o 5. */
 .docs-idx-num {
-    flex-shrink: 0;
-    min-width: 2.1rem;
     font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-    font-size: 0.72rem;
+    font-size: 0.7rem;
+    text-align: right;
     color: var(--primary);
+    opacity: 0.85;
+}
+
+.docs-idx-tit {
+    min-width: 0;
 }
 
 .docs-idx-pie {
-    margin: 0.6rem 0 0;
+    margin: 0.7rem 0 0;
     font-size: 0.68rem;
     color: var(--text-muted);
+}
+
+/* En el móvil manda el dedo, no la densidad: cada línea sube a 36 px de alto útil, que es el
+   mínimo que se acierta sin ampliar. */
+@media (max-width: 640px) {
+    .docs-idx-link {
+        padding: 0.42rem 0.4rem;
+        font-size: 0.8rem;
+    }
 }
 
 /* AVISO A QUIEN AÑADA CSS: esta capa tiene que quedarse la ÚLTIMA del fichero. El banco 21 de
