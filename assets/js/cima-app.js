@@ -9682,7 +9682,20 @@ ${ftFechaDocsHtml}
 <div class="detail-list">
     ${med.docs.map(doc => {
             const type = docTypes[doc.tipo] || { name: 'Documento', icon: 'file' };
-            const isExternalIPE = doc.tipo === 3 && doc.url && doc.url.includes('ema.europa.eu');
+            // EL DESTINO PREFERIDO ES EL HTML. CIMA publica cada documento en dos superficies —`url`
+            // (PDF) y `urlHtml`— y hasta el 19/09/2026 el cliente usaba SIEMPRE el PDF: `grep urlHtml`
+            // devolvía cero. Medido sobre 120 registros del censo: 118 tienen HTML, 1 solo PDF y 1 sin
+            // ficha. El HTML se navega, se busca dentro y se puede enlazar por sección, que es a donde
+            // MedCheck manda continuamente («consulta la 6.1»); mandar al PDF era dar el peor de los dos
+            // formatos de la misma fuente.
+            //
+            // NUNCA SE CONSTRUYE LA URL A MANO. El patrón `dochtml/ft/<nr>/FT_<nr>.html` se cumple hoy,
+            // pero inventarse un contrato que la fuente no promete ya costó los 404 de REec cuando AEMPS
+            // cambió la ruta. Si `urlHtml` no viene, se cae al PDF y ya está.
+            const href = doc.urlHtml || doc.url;
+            // La detección va sobre el destino EFECTIVO, no sobre `doc.url`: el aviso de que los enlaces
+            // a EMA cambian solo tiene sentido si es ahí donde se le va a mandar.
+            const isExternalIPE = doc.tipo === 3 && href && href.includes('ema.europa.eu');
 
             // For external EMA links, provide a search fallback
             if (isExternalIPE) {
@@ -9693,7 +9706,7 @@ ${ftFechaDocsHtml}
                         <span class="detail-label">
                             <i class="fas fa-${type.icon}"></i> ${type.name}
                         </span>
-                        <a href="${doc.url}" target="_blank" class="btn-link-sm">
+                        <a href="${href}" target="_blank" class="btn-link-sm">
                             Enlace directo <i class="fas fa-external-link-alt"></i>
                         </a>
                     </div>
@@ -9709,12 +9722,12 @@ ${ftFechaDocsHtml}
             }
 
             return `
-                    <a href="${doc.url}" target="_blank" class="detail-item" style="text-decoration: none; cursor: pointer;">
+                    <a href="${href}" target="_blank" class="detail-item" style="text-decoration: none; cursor: pointer;">
                         <span class="detail-label">
                             <i class="fas fa-${type.icon}"></i> ${type.name}
                         </span>
                         <span class="detail-value text-primary">
-                            Abrir <i class="fas fa-external-link-alt"></i>
+                            ${doc.urlHtml ? 'Abrir versión web' : 'Abrir PDF'} <i class="fas fa-external-link-alt"></i>
                         </span>
                     </a>
                 `;
