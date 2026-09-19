@@ -19,7 +19,7 @@
  *
  * Uso: node scripts/medcheck-test-check-runs.mjs
  */
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -211,6 +211,78 @@ console.log('\n8) sin `gh` a la vista no aprueba nada: lo dice y sale 2');
     ok('dice que no puede concluir', /INCONCLUSO/.test(salida), salida.slice(0, 200));
     ok('y NO dice que todo late', !/TODOS LATEN/.test(salida), salida.slice(-200));
     ok('sale 2 (inconcluso), ni 0 ni 1', r.status === 2, `status ${r.status}`);
+}
+
+// ── 9 · EL GATE: ningún ETL publica sin pasar por los bancos ────────────────
+// El hueco que esto cierra, escrito como prueba (19/09/2026): los ETL commitean con el
+// `GITHUB_TOKEN` por defecto y GitHub NO dispara workflows con esos push, así que un índice
+// recién publicado nunca pasaba por `pruebas.yml`. La defensa es un gate DENTRO del propio ETL,
+// y estas aserciones existen porque un gate MAL PUESTO es peor que ninguno: si corre antes de
+// armar el árbol, mide el índice VIEJO y aprueba el nuevo sin haberlo mirado.
+console.log('\n9) los ETL que commitean pasan por el gate, y el gate mira el árbol candidato');
+{
+    const dirWf = join(RAIZ, '.github', 'workflows');
+    const ymls = readdirSync(dirWf).filter(f => f.endsWith('.yml'));
+    const GATE = 'uses: ./.github/actions/bancos';
+
+    // QUIÉN COMMITEA SE DEDUCE DEL FICHERO, no de una lista escrita aquí a mano: una lista sería
+    // el mismo fallo que el watchdog decidiendo su propio perímetro y aprobándose.
+    const commitean = ymls.filter(f => /^\s*git add /m.test(readFileSync(join(dirWf, f), 'utf8')));
+    ok('los ETL que commitean al repo se detectan solos', commitean.length >= 5, commitean.join(', '));
+
+    for (const f of commitean) {
+        const txt = readFileSync(join(dirWf, f), 'utf8');
+        const iGate = txt.indexOf(GATE);
+        const iAdd = txt.search(/^\s*git add /m);
+        ok(`${f}: tiene gate de bancos`, iGate !== -1);
+        ok(`${f}: el gate va ANTES del commit`, iGate !== -1 && iGate < iAdd, `gate ${iGate}, add ${iAdd}`);
+
+        // El paso que commitea no puede seguir copiando ni bumpeando: si lo hiciera, mutaría el
+        // árbol DESPUÉS de que el gate lo mirara, y el gate habría aprobado otra cosa.
+        const trasGate = txt.slice(iGate);
+        const pasoCommit = trasGate.slice(trasGate.search(/^\s*- name: Commitear/m));
+        ok(`${f}: el paso de commit ya no muta el árbol`,
+            !/^\s*cp \/tmp\/.*assets\//m.test(pasoCommit) && !/bump-version/.test(pasoCommit),
+            pasoCommit.slice(0, 200));
+    }
+
+    // LOS CUATRO QUE NO COMMITEAN PUBLICAN A KV, y los bancos leen ficheros del repo: el gate no
+    // los cubre ni podría. Queda aquí escrito para que nadie lo dé por cubierto.
+    const soloKV = ymls.filter(f => f.startsWith('etl-') && !commitean.includes(f));
+    ok('los ETL que solo publican a KV quedan declarados fuera del gate', soloKV.length === 4,
+        soloKV.join(', '));
+
+    // UN SOLO BUCLE. Si `pruebas.yml` recupera su propio `for` sobre los bancos, el CI de `main`
+    // y el gate de los ETL dejan de ser el mismo vigilante y divergen en silencio.
+    const pruebas = readFileSync(join(dirWf, 'pruebas.yml'), 'utf8');
+    ok('pruebas.yml usa la MISMA acción, no un bucle propio',
+        pruebas.includes(GATE) && !/medcheck-test-\*\.mjs/.test(pruebas));
+
+    // MUTANTE: una acción COMPUESTA corre en el mismo job y ve el workspace mutado; un
+    // `workflow_call` correría en otro runner con checkout limpio y aprobaría `main`.
+    const accion = readFileSync(join(RAIZ, '.github', 'actions', 'bancos', 'action.yml'), 'utf8');
+    // Sin comentarios: la propia acción explica en prosa por qué NO es un `workflow_call`, y
+    // buscar la palabra en crudo casaría con esa explicación.
+    const accionEmitida = accion.replace(/^[ 	]*#.*$/gm, '');
+    ok('la acción es composite, no un workflow reutilizable',
+        /using:\s*composite/.test(accionEmitida) && !/workflow_call/.test(accionEmitida));
+
+    // Y QUE EXISTA EN EL DISCO NO BASTA: TIENE QUE ESTAR EN GIT. Encontrado el 19/09/2026 al
+    // commitear esto: `.gitignore` ignoraba `.github/*` entero salvo `workflows/`, así que la
+    // acción recién escrita era invisible para git. En local todo verde; en el runner, cinco
+    // workflows apuntando a una acción que no existe. Es el fallo mudo de siempre —el fichero
+    // está, pero no donde se va a ejecutar— y por eso se comprueba contra el índice de git.
+    const enGit = spawnSync('git', ['ls-files', '--error-unmatch', '.github/actions/bancos/action.yml'],
+        { cwd: RAIZ, encoding: 'utf8' });
+    ok('la acción está versionada, no solo en el disco', enGit.status === 0,
+        (enGit.stderr || '').trim() || `status ${enGit.status}`);
+
+    // LA GUARDA DE ARRANQUE TIENE QUE SEGUIR AL NÚMERO REAL DE BANCOS. Si se añade uno y nadie
+    // sube el mínimo, la guarda deja de guardar justo lo que se acaba de añadir.
+    const bancos = readdirSync(join(RAIZ, 'scripts')).filter(f => /^medcheck-test-.*\.mjs$/.test(f));
+    const minimo = Number(accion.match(/minimo:[\s\S]*?default:\s*'(\d+)'/)?.[1]);
+    ok('el mínimo de la guarda coincide con los bancos que hay', minimo === bancos.length,
+        `mínimo ${minimo}, bancos ${bancos.length}`);
 }
 
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);

@@ -57,7 +57,9 @@ jobs:
             echo "Envases cambiados; se commiteará el índice."
           fi
 
-      - name: Commitear índice y subir el cache-bust
+      # EL CANDIDATO SE ARMA ENTERO ANTES DE PROBARLO, cache-bust incluido: este ETL commitea
+      # también `cima-app.js` y `medcheck.html`, y el gate tiene que ver el árbol final.
+      - name: Armar el árbol candidato
         if: steps.diff.outputs.changed == 'true'
         run: |
           cp /tmp/packs-index.json assets/data/packs-index.json
@@ -65,6 +67,18 @@ jobs:
           # `_loadPacksIndex` lo pide con `cache: 'force-cache'`. Es el fallo de la sesión 47.
           # `packs` arrastra `app` por el mapa IMPLICA (el `?v=` vive dentro de cima-app.js).
           node scripts/medcheck-bump-version.mjs packs
+
+      - name: Gate — los bancos sobre el árbol candidato
+        if: steps.diff.outputs.changed == 'true'
+        uses: ./.github/actions/bancos
+        with:
+          titulo: Gate del ETL de envases — bancos sobre el árbol candidato
+
+      # Ya no copia ni bumpea nada: el árbol candidato está armado y probado. Aquí solo se
+      # publica lo que el gate acaba de mirar.
+      - name: Commitear el árbol candidato
+        if: steps.diff.outputs.changed == 'true'
+        run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # Rutas explícitas, nunca `-A`: hay sesiones humanas en paralelo sobre el mismo árbol.

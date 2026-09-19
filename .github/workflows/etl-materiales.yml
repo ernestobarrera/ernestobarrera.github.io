@@ -53,10 +53,21 @@ jobs:
             echo "Catálogo cambiado; se commiteará."
           fi
 
-      - name: Commitear catálogo
+      # El candidato, en su sitio antes del gate: los bancos leen la ruta del repo.
+      - name: Armar el árbol candidato
         if: steps.diff.outputs.changed == 'true'
         run: |
           cp /tmp/materiales-catalog.json assets/data/materiales-catalog.json
+
+      - name: Gate — los bancos sobre el catálogo nuevo
+        if: steps.diff.outputs.changed == 'true'
+        uses: ./.github/actions/bancos
+        with:
+          titulo: Gate del ETL de materiales — bancos sobre el catálogo candidato
+
+      - name: Commitear catálogo
+        if: steps.diff.outputs.changed == 'true'
+        run: |
           # Sin bump de `?v=`: la app lo pide sin cache-bust y sin force-cache
           # (cima-app.js), así que la caché HTTP normal de Pages ya lo renueva.
           git config user.name  "github-actions[bot]"

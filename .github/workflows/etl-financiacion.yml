@@ -156,7 +156,10 @@ jobs:
             fi
           fi
 
-      - name: Commitear índice y subir el cache-bust
+      # EL CANDIDATO SE ARMA ENTERO ANTES DE PROBARLO, cache-bust incluido: este ETL no toca
+      # solo el índice, sino también `cima-app.js`, `medcheck.html` y `sw.js`. Si el gate corriera
+      # entre la copia y el bump, probaría un árbol que nunca va a existir.
+      - name: Armar el árbol candidato
         if: steps.diff.outputs.changed == 'true'
         run: |
           cp /tmp/financiacion-index.json assets/data/financiacion-index.json
@@ -164,6 +167,18 @@ jobs:
           # `cache: 'force-cache'`. `financiacion` arrastra `app` (el `?v=` vive dentro de
           # cima-app.js) y cualquier bump arrastra `sw`.
           node scripts/medcheck-bump-version.mjs financiacion
+
+      - name: Gate — los bancos sobre el árbol candidato
+        if: steps.diff.outputs.changed == 'true'
+        uses: ./.github/actions/bancos
+        with:
+          titulo: Gate del ETL de financiación — bancos sobre el árbol candidato
+
+      # Ya no copia ni bumpea nada: el árbol candidato está armado y probado. Aquí solo se
+      # publica lo que el gate acaba de mirar.
+      - name: Commitear el árbol candidato
+        if: steps.diff.outputs.changed == 'true'
+        run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # Rutas explícitas, nunca `-A`: hay sesiones humanas en paralelo sobre el mismo árbol.

@@ -95,10 +95,25 @@ jobs:
           echo "::error::la vigilancia cruzada encontró falsos negativos; no se publica el índice"
           exit 1
 
-      - name: Commitear el índice
+      # EL CANDIDATO SE ARMA ANTES DE PROBARLO, y esto es lo único que hace que el gate sirva:
+      # los bancos leen rutas fijas del repo, así que hasta que el índice nuevo no está EN su
+      # sitio, probarlos solo mide el índice viejo. El workspace de Actions es desechable: si el
+      # gate se pone rojo, el runner desaparece y aquí no se ha publicado nada.
+      - name: Armar el árbol candidato
         if: steps.diff.outputs.changed == 'true' && steps.cruzado.outputs.codigo != '1'
         run: |
           cp /tmp/atc-index.json assets/data/atc-index.json
+
+      # El gate. Mismo bucle y misma guarda que el CI de `main`, porque es el mismo fichero.
+      - name: Gate — los bancos sobre el índice nuevo
+        if: steps.diff.outputs.changed == 'true' && steps.cruzado.outputs.codigo != '1'
+        uses: ./.github/actions/bancos
+        with:
+          titulo: Gate del ETL ATC — bancos sobre el índice candidato
+
+      - name: Commitear el índice
+        if: steps.diff.outputs.changed == 'true' && steps.cruzado.outputs.codigo != '1'
+        run: |
           # SIN cache-bust, a diferencia del índice de financiación, y es deliberado: este fichero
           # cambia a diario y el `?v=` de financiación vive dentro de cima-app.js, así que un bump
           # diario invalidaría el JS entero de todos los navegadores cada mañana para renovar un

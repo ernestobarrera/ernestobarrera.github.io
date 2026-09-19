@@ -320,8 +320,27 @@ const DETALLES_CIMA = {
         typeof real._meta?.listprescriptiondate === 'string');
     ok('y sus dos sellos', !!real._meta?.zip_sha256 && !!real._meta?.projection_sha256);
     ok('con mas de 20.000 medicamentos', (real._meta?.nregistros || 0) > 20000, real._meta?.nregistros);
+    // LA FRESCURA DE LA FUENTE NO PINTA ROJO: ES UN INCONCLUSO. Cambiado el 19/09/2026, al meter
+    // el gate de bancos dentro de los ETL.
+    //
+    // Esta comprobación no mide el código ni el índice: mide el reloj de AEMPS. Cuando el
+    // Nomenclátor se retrasa —un fin de semana basta— el banco se ponía rojo SOLO, sin que nadie
+    // tocara nada, y a partir de hoy ese rojo ya no es un aviso: es un gate que bloquea la
+    // publicación de los otros cuatro ETL. Un índice de MedyNut correcto se quedaría sin publicar
+    // porque el Ministerio no ha subido el ZIP de prescripción. Eso no es fallar en cerrado, es
+    // fallar en el sitio equivocado.
+    //
+    // NO SE PIERDE LA VIGILANCIA, que es la única razón por la que esto se puede hacer: el
+    // desfase está declarado en `assets/data/_fuentes.json` (`desfase_dato_max_days: 3`) y lo
+    // vigila el watchdog diario, que tiene su propio canal y le manda un email. Dejarlo también
+    // aquí en rojo eran dos alarmas por una causa, y dos alarmas por una causa enseñan a ignorar
+    // las dos.
     const dias = (Date.now() - Date.parse(`${real._meta.listprescriptiondate}T00:00:00Z`)) / 86400000;
-    ok('y la fuente dentro de su desfase declarado de 3 dias', dias <= 3, `${dias.toFixed(1)} dias`);
+    if (dias <= 3) {
+        console.log(`✓ y la fuente dentro de su desfase declarado de 3 dias — ${dias.toFixed(1)} dias`);
+    } else {
+        console.log(`INCONCLUSO: la fuente lleva ${dias.toFixed(1)} dias sin actualizarse (desfase declarado: 3). No es un fallo del indice ni del codigo; lo vigila el watchdog de frescura, que avisa por email.`);
+    }
 }
 
 console.log(fallos === 0 ? '\nTodo en verde' : `\n${fallos} fallo(s)`);

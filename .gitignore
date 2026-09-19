@@ -77,9 +77,13 @@ Alper y Haynes*.pdf
 # PROTECCIÓN: Agente local y configs de desarrollo
 # =====================================================
 .agent/
-# .github/: ignoramos todo el contenido salvo workflows (GitHub Actions)
+# .github/: ignoramos todo el contenido salvo workflows y acciones (GitHub Actions).
+# `actions/` entra el 19/09/2026 con el gate de bancos: el bucle de pruebas vive ahí para que
+# el CI y los ETL no puedan divergir, y sin esta línea el fichero se quedaría en local —los
+# workflows referenciarían una acción que en el runner no existe.
 .github/*
 !.github/workflows/
+!.github/actions/
 _staged_backup.patch
 PENDING_REVIEW.md
 
