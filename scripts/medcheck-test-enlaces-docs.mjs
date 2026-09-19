@@ -62,10 +62,17 @@ console.log('\n3) el aviso de EMA mira el destino efectivo');
     ok('el IPE externo sigue diciendo «Enlace directo»', /Enlace directo/.test(bloque));
 }
 
-console.log('\n4) el clínico sabe qué se le va a abrir antes de pulsar');
+console.log('\n4) el enlace no anuncia el formato');
 {
-    ok('el enlace distingue versión web de PDF',
-        /doc\.urlHtml \? 'Abrir versión web' : 'Abrir PDF'/.test(bloque));
+    // Se probó el 19/09/2026 con «Abrir versión web» / «Abrir PDF» y se retiró el mismo día, a la
+    // vista en producción. Tres razones, y la primera es de Ernesto: rompe la estética minimalista
+    // de la lista de documentos. La segunda es de la fuente: CIMA no rotula esas dos URL como
+    // «web» y «PDF», así que el texto era vocabulario nuestro con aspecto de dato. Y la tercera lo
+    // remata: la versión web enlaza ella misma su PDF, de modo que anunciarlo tampoco ahorraba
+    // nada — el destino ya es siempre el mejor de los dos, y cuando no hay elección no hay nada
+    // que avisar.
+    ok('el enlace dice «Abrir», sin anunciar formato', />\s*Abrir <i class="fas fa-external-link-alt">/.test(bloque));
+    ok('MUTANTE: no ha vuelto el rótulo por formato', !/Abrir versión web|Abrir PDF/.test(bloque));
 }
 
 console.log('\n5) los materiales informativos NO entran en esta regla');

@@ -9727,7 +9727,7 @@ ${ftFechaDocsHtml}
                             <i class="fas fa-${type.icon}"></i> ${type.name}
                         </span>
                         <span class="detail-value text-primary">
-                            ${doc.urlHtml ? 'Abrir versión web' : 'Abrir PDF'} <i class="fas fa-external-link-alt"></i>
+                            Abrir <i class="fas fa-external-link-alt"></i>
                         </span>
                     </a>
                 `;
