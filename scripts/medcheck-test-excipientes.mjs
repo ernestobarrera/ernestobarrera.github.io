@@ -153,11 +153,11 @@ console.log('\n— 5 · Tres estados y tres frases distintas —');
     const vacio = app._cuerpoPopoverExcipientes({ todos: [], nombrados: [], resto: [], total: 0 });
 
     ok(cargando !== error && error !== vacio && cargando !== vacio,
-        'consultando, error y «CIMA no declara ninguno» NO dicen lo mismo');
+        'consultando, error y «la lista no devuelve nada» NO dicen lo mismo');
     ok(/no se ha podido consultar/i.test(error),
         'el error dice que no se ha podido preguntar, no que no haya excipientes', error);
-    ok(/no declara/i.test(vacio) && !/no se ha podido/i.test(vacio),
-        'la ausencia declarada por CIMA se afirma como tal, sin mezclarla con el fallo de red', vacio);
+    ok(/no consta/i.test(vacio) && !/no se ha podido consultar/i.test(vacio),
+        'la lista vacía se distingue del fallo de red, y ninguna de las dos afirma ausencia', vacio);
     ok(!/orientativa/i.test(cargando) && !/orientativa/i.test(error),
         'mientras no hay respuesta NO se enseña el alcance del dato: no se ha consultado nada');
 }
@@ -170,8 +170,8 @@ console.log('\n— 6 · El alcance del dato viaja siempre con el dato —');
         resto: [], total: 1,
     });
     const vacio = app._cuerpoPopoverExcipientes({ todos: [], nombrados: [], resto: [], total: 0,
-        confirmado: true, ft61: 'Celulosa microcristalina, talco.' });
-    for (const [caso, html] of [['con excipientes', conDato], ['cero confirmado', vacio]]) {
+        ft61: 'Celulosa microcristalina, talco.' });
+    for (const [caso, html] of [['con excipientes', conDato], ['lista vacía con 6.1', vacio]]) {
         ok(/no la composición completa/i.test(html) && /ficha técnica/i.test(html),
             `${caso}: dice que NO es la composición completa y remite a la ficha técnica`);
     }
@@ -230,23 +230,33 @@ console.log('\n— 8 · Los CINCO estados, y ninguno es una escala de gravedad �
     ok(/advertencia oficial/i.test(declara.titulo),
         'y sí dice lo que es cierto de todos: cada uno lleva advertencia oficial', declara.titulo);
 
-    // EL CERO, EN SUS DOS NATURALEZAS.
+    // LA LISTA VACÍA, EN SUS DOS NATURALEZAS — Y NINGUNA SE LLAMA YA «CERO».
+    //
+    // Retirado el 19/09/2026 tras el contraste con Codex. El motivo no es de gusto: el código
+    // llamaba `confirmado` a que EXISTIERA la 6.1, sin comparar jamás su contenido con el campo,
+    // así que aquel «cero confirmado» no lo había confirmado nadie. Y CIMA rotula ese campo
+    // «INFORMACIÓN ORIENTATIVA. CONSULTE LA FT/P»: un 0 categórico era ser más rotundo que la
+    // fuente, justo lo contrario de reflejarla.
     app._excipientesCache.set('C0', { todos: [], nombrados: [], resto: [], total: 0,
-        confirmado: true, ft61: 'Celulosa microcristalina, talco, estearato de magnesio.' });
-    const cero = app._excipientesEstadoChip('C0');
-    ok(cero.estado === 'cero' && cero.texto === '0',
-        'cero CONFIRMADO: se afirma, con su 0', JSON.stringify(cero));
+        ft61: 'Celulosa microcristalina, talco, estearato de magnesio.' });
+    const conFt = app._excipientesEstadoChip('C0');
+    ok(conFt.texto === '?',
+        'lista vacía CON 6.1: interrogación, nunca un 0', JSON.stringify(conFt));
+    ok(!/no declara ning/i.test(conFt.titulo) && /no equivale a ausencia/i.test(conFt.titulo),
+        'y el texto no afirma ausencia: dice que la lista no devuelve nada', conFt.titulo);
 
-    app._excipientesCache.set('C1', { todos: [], nombrados: [], resto: [], total: 0, confirmado: false });
+    app._excipientesCache.set('C1', { todos: [], nombrados: [], resto: [], total: 0 });
     const incon = app._excipientesEstadoChip('C1');
-    ok(incon.estado === 'inconcluso',
-        'cero SIN confirmar: estado propio, no se mezcla con el confirmado', JSON.stringify(incon));
-    ok(incon.texto !== '0',
-        'y NUNCA enseña un 0: un cero ahí sería tranquilizar sin base', incon.texto);
-    ok(/NO CONSTA/.test(incon.titulo) && /No significa que no los tenga/i.test(incon.titulo),
+    ok(incon.texto === '?',
+        'lista vacía SIN 6.1: la misma interrogación, porque la acción del clínico es la misma', incon.texto);
+    ok(/NO CONSTA/.test(incon.titulo) && /No equivale a ausencia/i.test(incon.titulo),
         'lo dice con esas palabras, y desmiente la lectura tranquilizadora', incon.titulo);
-    ok(incon.clase !== cero.clase,
-        'los dos ceros no pueden verse igual');
+    ok(incon.clase !== conFt.clase,
+        'pero se distinguen por COLOR: ámbar cuando no hay nada que enseñar');
+
+    // MUTANTE: el día que vuelva un «0» a este chip, esto se pone rojo.
+    ok(![conFt.texto, incon.texto].includes('0') && conFt.estado === 'no-consta',
+        'MUTANTE: ningún estado de lista vacía enseña ya un 0');
 }
 
 console.log('\n— 8b · Los casos reales que costaron cada regla —');
@@ -275,7 +285,8 @@ console.log('\n— 8b · Los casos reales que costaron cada regla —');
     // correcto Y comprobable, y por eso el popover enseña la 6.1.
     app._escapeHtml = app._escapeHtml || (t => String(t));
     const penilevel = app._cuerpoPopoverExcipientes({ todos: [], nombrados: [], resto: [], total: 0,
-        confirmado: true, ft61: 'Celulosa microcristalina, talco, estearato de magnesio, gelatina, '
+        ft61Url: 'https://cima.aemps.es/cima/dochtml/ft/83518/FT_83518.html',
+        ft61: 'Celulosa microcristalina, talco, estearato de magnesio, gelatina, '
             + 'dióxido de titanio (E-171), indigotina (E-132) y amarillo de quinolina (E-104).' });
     ok(/amarillo de quinolina/.test(penilevel),
         'PENILEVEL 500: el cero viene con la ficha 6.1 literal, para poder juzgarlo');
@@ -283,10 +294,10 @@ console.log('\n— 8b · Los casos reales que costaron cada regla —');
         'y se dice de dónde sale ese texto');
 
     // EVRA IP: cero sin ficha con que contrastarlo. No se afirma.
-    const evra = app._cuerpoPopoverExcipientes({ todos: [], nombrados: [], resto: [], total: 0, confirmado: false });
+    const evra = app._cuerpoPopoverExcipientes({ todos: [], nombrados: [], resto: [], total: 0 });
     ok(/No consta/i.test(evra) && /exc-popover__aviso/.test(evra),
         'EVRA (importación paralela): se dice «no consta» y va como aviso, no como dato', evra.slice(0, 120));
-    ok(/No significa que no los tenga/i.test(evra),
+    ok(/No significa que no contenga excipientes/i.test(evra),
         'y se desmiente explícitamente la lectura tranquilizadora');
 }
 

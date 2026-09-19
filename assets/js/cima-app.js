@@ -4605,6 +4605,26 @@ class MedCheckApp {
     }
 
     /**
+     * La URL de UNA sección de la ficha técnica en CIMA, o `null` si no se puede componer.
+     *
+     * Por qué existe, y es una mejora clínica y no de comodidad: el visor interno
+     * (`openSectionViewer`) trae la sección entera, pero `getDocSeccion` limpia el HTML y con él
+     * se van las TABLAS. La 4.8 de casi cualquier ficha es una tabla de reacciones adversas por
+     * órgano y frecuencia, y aplanada a párrafo corrido pierde justo lo que la hace legible. El
+     * HTML de CIMA la conserva, y además deja saltar a las secciones vecinas.
+     *
+     * No sustituye al visor: se ofrece al lado. Y no construye nada a mano — la base es el
+     * `urlHtml` que publica la fuente y el fragmento es el identificador que ella misma pone en
+     * su HTML (`id="4.8"`), verificado el 19/09/2026. Si el ancla no existiera, el documento abre
+     * por arriba; nunca un 404.
+     */
+    _ftUrlSeccion(med, seccion) {
+        if (!seccion) return null;
+        const ft = (med?.docs || []).find(d => d.tipo === 1 && d.secc === true && d.urlHtml);
+        return ft ? `${ft.urlHtml}#${encodeURIComponent(seccion)}` : null;
+    }
+
+    /**
      * Registros REDUNDANTES: no publican ficha técnica propia y hay otro registro, con el
      * mismo perfil, que sí la publica.
      *
@@ -4883,6 +4903,18 @@ class MedCheckApp {
                    </button> `
                 : '';
 
+            // LA FUENTE ÍNTEGRA, AL LADO DEL VISOR. Añadido el 19/09/2026: `getDocSeccion`
+            // limpia el HTML y con él se van las TABLAS, así que la 4.8 —una tabla de reacciones
+            // por órgano y frecuencia— llegaba aplanada a párrafo corrido. El HTML de CIMA la
+            // conserva y además deja saltar a las secciones vecinas. No sustituye al visor: son
+            // dos cosas distintas y las dos valen.
+            const urlSeccion = this._ftUrlSeccion(med, check.section);
+            const verEnCimaBtn = urlSeccion
+                ? `<a class="btn-text" href="${urlSeccion}" target="_blank" rel="noopener"
+                       title="Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas">
+                       <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
+                : '';
+
             return `
     <div class="safety-check-item ${check.status}">
                     <div class="safety-check-icon">
@@ -4892,7 +4924,7 @@ class MedCheckApp {
                         <div class="safety-check-header">
                             <span class="safety-check-title">${check.label}</span>
                             <span class="badge ${statusMeta.badge} safety-status-badge">${statusMeta.label}</span>
-                             ${viewSectionBtn}
+                             ${viewSectionBtn}${verEnCimaBtn}
                         </div>
                         <div class="safety-check-detail ${colorClass}">
                             <strong>${check.message}</strong>
@@ -9938,6 +9970,18 @@ ${materialesPlaceholder}
                            </button>`
                 : '';
 
+            // LA FUENTE ÍNTEGRA, AL LADO DEL VISOR. Añadido el 19/09/2026: `getDocSeccion`
+            // limpia el HTML y con él se van las TABLAS, así que la 4.8 —una tabla de reacciones
+            // por órgano y frecuencia— llegaba aplanada a párrafo corrido. El HTML de CIMA la
+            // conserva y además deja saltar a las secciones vecinas. No sustituye al visor: son
+            // dos cosas distintas y las dos valen.
+            const urlSeccion = this._ftUrlSeccion(med, check.section);
+            const verEnCimaBtn = urlSeccion
+                ? `<a class="btn-text" href="${urlSeccion}" target="_blank" rel="noopener"
+                       title="Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas">
+                       <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
+                : '';
+
             return `
                     <div class="safety-check-item ${check.status}">
                         <div class="safety-check-icon">
@@ -9947,7 +9991,7 @@ ${materialesPlaceholder}
                             <div class="safety-check-header">
                                 <span class="safety-check-title">${check.label}</span>
                                 <span class="badge ${statusMeta.badge} safety-status-badge">${statusMeta.label}</span>
-                                ${viewSectionBtn}
+                                ${viewSectionBtn}${verEnCimaBtn}
                             </div>
                             <div class="safety-check-detail ${colorClass}">${check.message}</div>
                             ${evidenceHtml}
@@ -14783,7 +14827,10 @@ ${materialesPlaceholder}
         const datos = this._excipientesEDO(med);
         if (datos.total === 0) {
             datos.ft61 = await this._leerFT61(nregistro);
-            datos.confirmado = !!datos.ft61;
+            // La versión web de la ficha, para poder enlazar a su 6.1 desde el popover. Sale de
+            // `docs`, que ya viene en este detalle: no cuesta ninguna petición. Si CIMA no la
+            // publica queda `null` y el popover se limita a enseñar el texto, sin enlace.
+            datos.ft61Url = (med?.docs || []).find(d => d.tipo === 1 && d.secc === true && d.urlHtml)?.urlHtml || null;
         }
         return datos;
     }
@@ -14842,23 +14889,39 @@ ${materialesPlaceholder}
                 titulo: 'Excipientes de declaración obligatoria (CIMA). Se consultan al pulsar; no es la composición completa.',
             };
         }
-        // EL CERO NO SE AFIRMA SOLO. Dos mundos distintos llegan aquí con `total === 0`, y el
-        // producto los decía igual: el que de verdad no lleva ninguno declarable, y aquel del que
-        // CIMA no publica composición. Solo el primero se puede afirmar, y se afirma con la ficha
-        // técnica al lado — que es lo que el popover enseña.
+        // EL CERO NO SE AFIRMA. Ya no hay un «cero confirmado» y un «no consta»: hay UNA no señal
+        // con dos grados de ayuda. Cambiado el 19/09/2026 tras el contraste con Codex, y el
+        // argumento que lo cierra es del código, no de opinión:
+        //
+        //   `datos.confirmado` solo significaba «la 6.1 existe y trae más de diez caracteres».
+        //   NUNCA se comparó su contenido con el campo estructurado. Así que el «cero confirmado»
+        //   no confirmaba nada, y el chip llevaba meses afirmando una ausencia que nadie había
+        //   comprobado. Medido sobre el censo completo del 18/09: 2.324 registros declaran cero y
+        //   2.037 de ellos tienen 6.1; en al menos 126 esa 6.1 nombra algo que la propia CIMA
+        //   declara como excipiente en otros productos (45 con «amarillo anaranjado S (E110)»
+        //   literal).
+        //
+        // Y la razón de fondo es de espejo: el buscador de CIMA rotula este campo «EXCIPIENTES:
+        // INFORMACIÓN ORIENTATIVA. CONSULTE LA FT/P». Un `0` categórico es ser MÁS rotundo que la
+        // fuente, que es justo lo contrario de reflejarla.
+        //
+        // Por qué un solo glifo y no dos: la acción del clínico es la misma en ambos casos —ir a
+        // la ficha—, así que dos símbolos para una sola acción es coste sin información. Lo que sí
+        // cambia es cuánta ayuda podemos darle, y eso lo dice el COLOR: neutro cuando el popover
+        // puede enseñarle la 6.1, ámbar cuando no hay nada que enseñar.
         if (datos.total === 0) {
-            if (!datos.confirmado) {
+            if (!datos.ft61) {
                 return {
-                    estado: 'inconcluso', clase: ' med-detail-tag--exc-inconcluso', texto: '?',
-                    titulo: 'NO CONSTA: CIMA no declara excipientes de declaración obligatoria para este registro '
-                        + 'y tampoco publica su ficha técnica por secciones, así que no hay con qué contrastarlo. '
-                        + 'No significa que no los tenga. Consulta la ficha técnica o el prospecto.',
+                    estado: 'no-consta', clase: ' med-detail-tag--exc-inconcluso', texto: '?',
+                    titulo: 'NO CONSTA: la lista orientativa de CIMA no devuelve excipientes para este registro '
+                        + 'y tampoco se ha podido recuperar la sección 6.1 de su ficha, así que no hay con qué '
+                        + 'contrastarlo. No equivale a ausencia. Consulta la ficha técnica o el prospecto.',
                 };
             }
             return {
-                estado: 'cero', clase: ' med-detail-tag--exc-cero', texto: '0',
-                titulo: 'CIMA no declara ningún excipiente de declaración obligatoria para este registro, '
-                    + 'y su ficha técnica sí está publicada. Pulsa para ver la lista completa de la sección 6.1.',
+                estado: 'no-consta', clase: ' med-detail-tag--exc-ft', texto: '?',
+                titulo: 'La lista orientativa de CIMA no devuelve excipientes para este registro. No equivale a '
+                    + 'ausencia: la ficha técnica sí publica la lista completa en su sección 6.1. Pulsa para verla.',
             };
         }
         // UNA SOLA MARCA PARA TODOS LOS QUE DECLARAN, con su cifra y sin jerarquía.
@@ -14890,7 +14953,7 @@ ${materialesPlaceholder}
     _refrescarChipsExcipientes(nregistro) {
         const estado = this._excipientesEstadoChip(nregistro);
         for (const chip of document.querySelectorAll(`[data-exc-nreg="${CSS.escape(String(nregistro))}"]`)) {
-            chip.classList.remove('med-detail-tag--exc-datos', 'med-detail-tag--exc-cero', 'med-detail-tag--exc-inconcluso');
+            chip.classList.remove('med-detail-tag--exc-datos', 'med-detail-tag--exc-ft', 'med-detail-tag--exc-inconcluso');
             if (estado.clase.trim()) chip.classList.add(estado.clase.trim());
             chip.title = estado.titulo;
             chip.innerHTML = `<i class="fas fa-vial"></i>${estado.texto ? `<span class="med-detail-tag__text">${estado.texto}</span>` : ''}`;
@@ -14971,22 +15034,31 @@ ${materialesPlaceholder}
             return '<div class="exc-popover__cargando">No se ha podido consultar CIMA. Inténtalo de nuevo o abre la ficha.</div>';
         }
 
-        // EL CERO, CON SU PRUEBA O SIN AFIRMARSE. Es la regla que ordena todo este módulo desde
-        // el 17/09: se prefiere una NO señal que obligue a confirmar antes que una señal que
-        // omita avisos. Un cero a secas es una señal tranquilizadora, así que solo se da cuando
-        // se puede enseñar contra qué se comprobó.
+        // LA LISTA VACÍA NO SE PRESENTA COMO UN CERO. El texto es el que propuso Codex el 19/09 y
+        // es fiel al rótulo de la propia CIMA —«EXCIPIENTES: INFORMACIÓN ORIENTATIVA. CONSULTE LA
+        // FT/P»—: se dice qué devuelve la lista, se dice que eso NO equivale a ausencia, y se
+        // manda a la ficha. Lo que MedCheck aporta es enseñar la 6.1 al lado y llevar a ella de un
+        // clic; lo que no hace es decidir si el medicamento los lleva o no.
         if (datos.total === 0) {
-            if (!datos.confirmado) {
+            if (!datos.ft61) {
                 return '<div class="exc-popover__aviso"><i class="fas fa-triangle-exclamation"></i> '
-                    + '<strong>No consta.</strong> CIMA no declara excipientes de declaración obligatoria para este '
-                    + 'registro y tampoco publica su ficha técnica por secciones, así que no hay con qué '
-                    + 'contrastarlo. <strong>No significa que no los tenga.</strong> Suele pasar en importaciones '
-                    + 'paralelas: la información clínica está en el registro principal del mismo medicamento.</div>';
+                    + '<strong>No consta.</strong> La lista orientativa de CIMA no devuelve elementos para este '
+                    + 'registro y no se ha podido recuperar la sección 6.1 de su ficha. <strong>No significa que '
+                    + 'no contenga excipientes.</strong> Consulte la ficha técnica o el prospecto. Suele pasar en '
+                    + 'importaciones paralelas: la información clínica está en el registro principal del mismo '
+                    + 'medicamento.</div>';
             }
-            return '<div class="exc-popover__cargando">CIMA no declara ningún excipiente de declaración obligatoria '
-                + 'para este registro.</div>'
+            const irA61 = datos.ft61Url
+                ? `<a class="exc-popover__ir" href="${this._escapeHtml(datos.ft61Url)}#6.1" target="_blank" rel="noopener">`
+                    + 'Abrir la 6.1 en CIMA <i class="fas fa-external-link-alt"></i></a>'
+                : '';
+            return '<div class="exc-popover__aviso"><i class="fas fa-triangle-exclamation"></i> '
+                + '<strong>La lista orientativa de CIMA no devuelve excipientes para este registro.</strong> '
+                + 'No equivale a ausencia: la ficha técnica sí publica la lista completa en su sección 6.1. '
+                + 'Revísela antes de descartar un excipiente.</div>'
                 + '<div class="exc-popover__ft61"><span class="exc-popover__ft61-tit">Ficha técnica, 6.1 — lista completa de excipientes</span>'
                 + this._escapeHtml(datos.ft61) + '</div>'
+                + irA61
                 + AVISO;
         }
 
@@ -18494,7 +18566,7 @@ ${materialesPlaceholder}
                             <p>Un icono de cámara <i class="fas fa-camera"></i> junto a la dosis aparece solo en los registros de los que CIMA publica imagen del envase o de la forma farmacéutica, y <span class="guide-highlight">pulsarlo la abre ahí mismo</span>, sin entrar en la ficha. Así no hay que abrirlas una a una para averiguar cuáles tienen foto.</p>
                             <p>El frasco <i class="fas fa-vial"></i> va en <strong>todas</strong> las tarjetas y abre los <span class="guide-highlight">excipientes de declaración obligatoria</span> sin entrar en la ficha. A diferencia de la cámara no adelanta si hay algo: la lista de CIMA no trae los excipientes, así que se consultan al pulsar. Son los de declaración obligatoria, no la composición completa.</p>
                             <p>Al consultarlo, el frasco <span class="guide-highlight">se queda marcado con su número</span>, que es cuántos excipientes declarables tiene. <strong>Todos llevan advertencia oficial</strong>, así que la marca es igual para todos: MedCheck no ordena cuáles importan más, porque eso depende del paciente. La marca sobrevive a filtrar y reordenar, y desaparece al desmarcar.</p>
-                            <p>Dos casos se ven distintos a propósito. Un <strong>0</strong> significa que CIMA no declara ninguno, y al pulsarlo <span class="guide-highlight">te enseña la sección 6.1 entera</span> de la ficha para que lo compruebes. Una <strong>interrogación en ámbar</strong> significa <em>no consta</em>: ni hay declarados ni hay ficha con que contrastarlo — pasa en importaciones paralelas. <strong>No es un cero</strong>, y no debe leerse como que no los tenga.</p>
+                            <p>Dos casos se ven distintos a propósito, y desde el 19/09/2026 <span class="guide-highlight">ninguno de los dos dice «cero»</span>. Una <strong>interrogación atenuada</strong> significa que la lista orientativa de CIMA no devuelve nada para ese registro: al pulsarla te enseña <span class="guide-highlight">la sección 6.1 entera</span> de la ficha y te lleva a ella. Una <strong>interrogación en ámbar</strong> significa lo mismo, pero además <em>no hay ficha con que contrastarlo</em> — pasa en importaciones paralelas. <strong>En ninguno de los dos casos se afirma que el medicamento no los tenga:</strong> el propio CIMA rotula ese campo «información orientativa, consulte la FT/P».</p>
                             <p>Y para no ir uno a uno, la casilla <strong>«Ver excipientes»</strong> de la barra de filtros los consulta <span class="guide-highlight">todos los que tengas en pantalla</span> de una vez. No esconde ningún resultado: solo marca. Mientras está encendida, las tarjetas que aparezcan al filtrar se consultan también, y lo ya consultado no se vuelve a pedir. En una búsqueda muy grande consulta las primeras y te dice cuántas quedan.</p>
                             <p class="guide-case"><strong>Caso</strong>Un paciente celíaco y once jarabes de hedera helix en pantalla. Marcas «Ver excipientes» y en un segundo ves cuáles llevan algo que mirar, sin abrir once fichas.</p>
                             <p class="guide-case"><strong>Caso</strong>El paciente trae la caja y pregunta para qué es. Buscas el nombre y pulsas <span class="guide-key">IND</span>: la indicación autorizada, sin abrir el PDF de la ficha técnica.</p>

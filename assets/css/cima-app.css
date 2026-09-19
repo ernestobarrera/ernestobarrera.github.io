@@ -4749,13 +4749,41 @@ body {
 
 /* Cero CONFIRMADO contra la ficha técnica. Atenuado, porque no pide nada: el popover enseña la
    sección 6.1 entera para que se pueda comprobar de un vistazo. */
-.med-detail-tag--exc-cero {
-    opacity: 0.5;
+/* LA LISTA ORIENTATIVA NO DEVUELVE NADA, PERO SÍ HAY 6.1 QUE ENSEÑAR. Antes esto era un «0»
+   atenuado, y el 19/09/2026 se retiró: el código llamaba «confirmado» a que la 6.1 existiera, sin
+   compararla nunca con el campo, así que el cero no estaba confirmado por nadie. Y CIMA rotula ese
+   campo «INFORMACIÓN ORIENTATIVA. CONSULTE LA FT/P» — un cero categórico era ser más rotundo que
+   la fuente.
+
+   Ahora lleva la MISMA interrogación que el estado de al lado, porque la acción del clínico es la
+   misma en los dos casos: ir a la ficha. Lo que cambia es el color, y lo que dice el color es
+   cuánta ayuda hay detrás: aquí, neutro, el popover trae la 6.1 entera y un enlace a ella. */
+.med-detail-tag--exc-ft {
+    opacity: 0.62;
 }
 
-.med-detail-tag--exc-cero:hover,
-.med-detail-tag--exc-cero:focus-visible {
+.med-detail-tag--exc-ft:hover,
+.med-detail-tag--exc-ft:focus-visible {
     opacity: 1;
+}
+
+/* El enlace a la sección 6.1 en CIMA, al pie del popover. Es la misma puerta que abrió el índice
+   de la pestaña «Ficha y prospecto»: la fuente íntegra, en su ancla. */
+.exc-popover__ir {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.72rem;
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.exc-popover__ir:hover {
+    text-decoration: underline;
+}
+
+.exc-popover__ir i {
+    margin-left: 0.25rem;
+    font-size: 0.62rem;
 }
 
 /* NO CONSTA: CIMA no declara ninguno y no hay ficha con qué contrastarlo. Es el ÚNICO estado que

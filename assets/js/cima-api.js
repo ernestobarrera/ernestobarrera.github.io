@@ -2467,6 +2467,20 @@ class CimaAPI {
 
         // 2. Para cada contexto ACTIVO, SIEMPRE mostrar sección correspondiente
         // Principio: "Siempre Revisar, Nunca Asumir" - evitar falsos negativos clínicos
+        //
+        // SIN TRIÁNGULO EN LA ETIQUETA. Hasta el 19/09/2026 el label se construía como
+        // `⚠️ ${mapping.label}` y eso contradecía lo que hace este código: no se emite juicio de
+        // gravedad, se dice que el tema SE MENCIONA y se manda a la sección oficial. Un icono de
+        // peligro sobre un mensaje neutro es señal nuestra con aspecto de dato de la fuente.
+        //
+        // Y como el bloque de abajo muestra la sección SIEMPRE que el contexto está activo, ese
+        // triángulo salía en todos los contextos de todos los medicamentos: una advertencia que
+        // aparece siempre no advierte, solo enseña a ignorar el triángulo. Peor aún, el mismo
+        // símbolo se usaba cuando la sección NO estaba disponible, donde significa lo contrario.
+        // El icono de estado (la lupa) y el badge ya dicen lo que hay que decir.
+        //
+        // Es la misma corrección que la sesión 68 hizo en excipientes: la señal la retira quien
+        // la puso, no se amplía para justificarla.
         for (const [contextKey, isActive] of Object.entries(patientContext || {})) {
             if (!isActive || !contextMapping[contextKey]) continue;
 
@@ -2478,7 +2492,7 @@ class CimaAPI {
                 if (!sectionContent || sectionContent.length < 50) {
                     results.checks.push({
                         context: contextKey,
-                        label: `⚠️ ${mapping.label}`,
+                        label: mapping.label,
                         section: mapping.section,
                         status: 'unknown',
                         message: 'Sección no disponible - verificar ficha técnica',
@@ -2512,7 +2526,7 @@ class CimaAPI {
 
                 results.checks.push({
                     context: contextKey,
-                    label: `⚠️ ${mapping.label}`,
+                    label: mapping.label,
                     section: mapping.section,
                     status: finalStatus,
                     message: finalMessage,

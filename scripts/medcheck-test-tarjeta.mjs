@@ -578,5 +578,39 @@ console.log('\n— Filtro de forma del modal de alternativas —');
         'la nota de trazabilidad de las insignias retiradas sobrevive');
 }
 
+
+console.log('\n— La señalética de los checks de contexto —');
+{
+    const api = readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8');
+    const emitida = api.replace(/^\s*\/\/.*$/gm, ' ');
+
+    // EL TRIÁNGULO, RETIRADO EL 19/09/2026. `_analyzeSection` declara en su propio comentario que
+    // NO emite juicio de gravedad: dice que el tema se menciona y remite a la sección oficial. Un
+    // icono de peligro sobre ese mensaje es señal nuestra con aspecto de dato de la fuente, y como
+    // el check se muestra SIEMPRE que el contexto está activo, salía en todos los medicamentos.
+    // Una advertencia que aparece siempre no advierte: enseña a ignorar el triángulo. Es la misma
+    // corrección que la sesión 68 hizo con el ámbar de excipientes.
+    ok(!/label: `⚠️/.test(emitida),
+        'ningún check de contexto se etiqueta con un triángulo de advertencia');
+    ok(/label: mapping\.label,/.test(emitida),
+        'el label es el del contexto, sin adorno');
+
+    // Y lo que NO puede cambiar: el estado nunca es «safe» con un contexto activo.
+    ok(/analysis\.status === 'safe' \? 'review' : analysis\.status/.test(emitida),
+        'con contexto activo nunca se dice «sin hallazgo»: «Siempre Revisar, Nunca Asumir»');
+
+    // La puerta a la fuente íntegra, al lado del visor interno.
+    const app2 = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    ok(/_ftUrlSeccion\(med, check\.section\)/.test(app2),
+        'los checks ofrecen además la sección en CIMA');
+    ok((app2.match(/\$\{viewSectionBtn\}\$\{verEnCimaBtn\}/g) || []).length === 2,
+        'en los DOS sitios donde se pintan los checks, no solo en el modal');
+    ok(/id="4\.8"|encodeURIComponent\(seccion\)/.test(app2),
+        'el ancla se compone con el identificador de la fuente');
+
+    // Y el visor interno se queda: son dos cosas distintas.
+    ok(/openSectionViewer\(/.test(app2), 'el visor interno NO se retira');
+}
+
 console.log(fallos === 0 ? '\nOK — todas las aserciones pasan\n' : `\n${fallos} FALLO(S)\n`);
 process.exit(fallos === 0 ? 0 : 1);
