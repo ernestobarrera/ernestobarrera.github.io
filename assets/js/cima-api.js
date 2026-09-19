@@ -2223,12 +2223,18 @@ class CimaAPI {
     ];
 
     /**
-     * Obtener secciones disponibles de una ficha técnica
-     * @param {string} nregistro 
+     * Obtener secciones disponibles de una ficha técnica o un prospecto.
+     *
+     * `options` acepta la marca de petición SECUNDARIA (`X-MC-Autocomplete`), igual que
+     * `getDocSeccion`: el índice del modal es apoyo de navegación, no una búsqueda del usuario, y
+     * sin la marca contaría como tal en la analítica.
+     *
+     * @param {string} nregistro
      * @param {number} tipo - 1=FT, 2=Prospecto
+     * @param {object} options
      */
-    async getDocSecciones(nregistro, tipo = 1) {
-        return this._request(`/docSegmentado/secciones/${tipo}?nregistro=${nregistro}`);
+    async getDocSecciones(nregistro, tipo = 1, options = {}) {
+        return this._request(`/docSegmentado/secciones/${tipo}?nregistro=${nregistro}`, options);
     }
 
     /**

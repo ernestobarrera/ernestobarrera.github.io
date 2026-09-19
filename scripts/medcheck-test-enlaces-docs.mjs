@@ -86,5 +86,41 @@ console.log('\n5) los materiales informativos NO entran en esta regla');
     ok('MUTANTE: no se ha inventado `d.urlHtml`', !/d\.urlHtml/.test(mat));
 }
 
+console.log('\n6) el índice de secciones sale de CIMA, no de una lista nuestra');
+{
+    const iIdx = APP.indexOf('async loadIndiceFT(med)');
+    const idx = iIdx === -1 ? '' : APP.slice(iIdx, APP.indexOf('\n    }', APP.indexOf('cont.innerHTML', iIdx)));
+    ok('existe el cargador del índice', idx.length > 400, `${idx.length} caracteres`);
+
+    ok('la lista de secciones se pide a la API', /this\.api\.getDocSecciones\(med\.nregistro, doc\.tipo/.test(idx));
+    ok('el ancla es el identificador que devuelve CIMA', /#\$\{encodeURIComponent\(s\.seccion\)\}/.test(idx));
+    ok('y el destino es el `urlHtml` de la fuente', /href="\$\{this\._escapeHtml\(doc\.urlHtml\)\}#/.test(idx));
+    ok('el título es el de CIMA, no uno nuestro', /\$\{this\._escapeHtml\(s\.titulo\)\}<\/a>/.test(idx));
+
+    // MUTANTE: el día que alguien escriba aquí un catálogo propio de secciones —«4.8 Reacciones
+    // adversas»— habrá dejado de ser espejo y empezará a envejecer por su cuenta.
+    ok('MUTANTE: no hay un catálogo de secciones escrito en el cliente',
+        !/'4\.8'\s*:\s*'/.test(idx) && !/Reacciones adversas/.test(idx));
+
+    // La petición es apoyo de navegación: sin la marca contaría como búsqueda en la analítica.
+    ok('la petición va marcada como secundaria', /X-MC-Autocomplete/.test(idx));
+
+    // Solo se piden los documentos que CIMA publica seccionados y con versión web.
+    ok('solo se piden documentos con `secc` y `urlHtml`',
+        /d\.secc === true && d\.urlHtml/.test(idx));
+
+    // Un índice es una comodidad: si falla, quedan los enlaces al documento entero.
+    ok('un fallo no rompe la pestaña: se calla', /catch \{[\s\S]{0,40}continue;/.test(idx));
+}
+
+console.log('\n7) la pestaña se llama como lo que hay dentro');
+{
+    // «Documentos» describía el continente. En consulta lo que se busca es la ficha.
+    ok('la pestaña ya no se llama «Documentos»', !/>Documentos\$\{hasMateriales/.test(APP));
+    ok('se llama «Ficha y prospecto»', /Ficha y prospecto\$\{hasMateriales/.test(APP));
+    // El `data-tab` NO cambia: lo usan la URL del modal, la analítica y la guía.
+    ok('el identificador interno sigue siendo `docs`', /data-tab="docs"/.test(APP));
+}
+
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);
 process.exit(fallos === 0 ? 0 : 1);

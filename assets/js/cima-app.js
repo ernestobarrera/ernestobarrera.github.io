@@ -4578,6 +4578,33 @@ class MedCheckApp {
     }
 
     /**
+     * «11 de octubre de 2018 (hace 7 años)» para la ficha técnica de este registro, o `null` si
+     * CIMA no publica la fecha.
+     *
+     * Vive aquí, y no dentro del modal, porque desde el 19/09/2026 se usa en DOS sitios: el
+     * cuerpo de la pestaña y el tooltip del acceso `FT` de la tarjeta. Ese tooltip es decisión
+     * suya, y la razón está en cómo se usa esto en consulta: la antigüedad de la ficha no es un
+     * dato que él mire, así que cobrarle un clic por enseñársela era sacrificar navegación por un
+     * heurístico que nadie aplica. Puesta en el tooltip, está para quien la busque y no estorba a
+     * quien no.
+     *
+     * `docs` ya llega en `/medicamentos` con su `fecha`: no cuesta ninguna petición.
+     */
+    _ftFechaTexto(med) {
+        const ftDoc = (med?.docs || []).find(d => d.tipo === 1);
+        if (!ftDoc?.fecha) return null;
+        const ftDate = new Date(ftDoc.fecha);
+        if (Number.isNaN(ftDate.getTime())) return null;
+        const abs = ftDate.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+        const dias = Math.floor((Date.now() - ftDate) / 86400000);
+        let rel;
+        if (dias < 30) rel = `hace ${dias} día${dias !== 1 ? 's' : ''}`;
+        else if (dias < 365) { const m = Math.floor(dias / 30.44); rel = `hace ${m} mes${m !== 1 ? 'es' : ''}`; }
+        else { const y = Math.floor(dias / 365.25); rel = `hace ${y} año${y !== 1 ? 's' : ''}`; }
+        return { abs, rel, texto: `${abs} (${rel})` };
+    }
+
+    /**
      * Registros REDUNDANTES: no publican ficha técnica propia y hay otro registro, con el
      * mismo perfil, que sí la publica.
      *
@@ -4645,11 +4672,12 @@ class MedCheckApp {
      */
     _renderCardActions(nregistro, med) {
         const conFT = this._hasFichaTecnicaSeccionada(med);
+        const ftFecha = this._ftFechaTexto(med);
         return `<div class="result-card-actions">${MedCheckApp.CARD_ACTIONS.map(([tab, icono, sigla, etiqueta, ayuda, necesitaFT]) => {
             const inerte = necesitaFT && !conFT;
             const titulo = inerte
                 ? `${etiqueta} no disponible: CIMA no publica ficha técnica con secciones para este registro`
-                : ayuda;
+                : (tab === 'docs' && ftFecha ? `${ayuda}. Ficha actualizada el ${ftFecha.texto}` : ayuda);
             return `
                     <button type="button" class="card-act${tab === 'safety' ? ' card-act--primary' : ''}${inerte ? ' card-act--inerte' : ''}"
                             ${inerte ? 'disabled' : `onclick="event.stopPropagation(); app.openMedDetails('${nregistro}', '${tab}')"`}
@@ -4684,7 +4712,7 @@ class MedCheckApp {
             // El último campo dice si el acceso depende de una SECCIÓN de la ficha técnica.
             // Documentos sirve el prospecto aunque no haya ficha, y Evidencia sale de PubMed.
             MedCheckApp._CARD_ACTIONS = Object.freeze([
-                ['docs', 'file-medical', 'FT', 'Ficha Técnica', 'Ficha técnica y prospecto (PDF oficial)', false],
+                ['docs', 'file-medical', 'FT', 'Ficha Técnica', 'Ficha técnica y prospecto oficiales, con acceso directo a cada sección', false],
                 ['indications', 'stethoscope', 'IND', 'Indicaciones', 'Indicaciones autorizadas (sección 4.1)', true],
                 ['posology', 'pills', 'POS', 'Posología', 'Posología y dosificación (sección 4.2)', true],
                 ['interactions', 'random', 'INT', 'Interacciones', 'Interacciones medicamentosas (sección 4.5)', true],
@@ -8948,7 +8976,7 @@ class MedCheckApp {
                     <button class="modal-tab ${isInteractionsActive ? 'active' : ''}" data-tab="interactions">Interacciones</button>
                     <button class="modal-tab ${isAdverseActive ? 'active' : ''}" data-tab="adverse">Reacciones</button>
                     <button class="modal-tab ${isSafetyActive ? 'active' : ''}" data-tab="safety">Seguridad</button>
-                    <button class="modal-tab ${isDocsActive ? 'active' : ''} ${hasMateriales ? 'modal-tab-materials' : ''}" data-tab="docs" ${hasMateriales ? 'title="Contiene materiales informativos de seguridad AEMPS"' : ''}>Documentos${hasMateriales ? ' <i class="fas fa-file-medical-alt"></i>' : ''}${ftRecentDot}</button>
+                    <button class="modal-tab ${isDocsActive ? 'active' : ''} ${hasMateriales ? 'modal-tab-materials' : ''}" data-tab="docs" ${hasMateriales ? 'title="Contiene materiales informativos de seguridad AEMPS"' : ''}>Ficha y prospecto${hasMateriales ? ' <i class="fas fa-file-medical-alt"></i>' : ''}${ftRecentDot}</button>
                     ${hasAempsAlerts ? `<button class="modal-tab alert-pulse ${isAlertsActive ? 'active' : ''}" data-tab="alerts"><i class="fas fa-exclamation-triangle"></i> Alertas AEMPS</button>` : ''}
                     ${hasPgx ? `<button class="modal-tab modal-tab-pgx ${isPgxActive ? 'active' : ''}" data-tab="pgx" title="Biomarcador farmacogenómico (AEMPS)"><i class="fas fa-dna"></i> PGx</button>` : ''}
                     <button class="modal-tab modal-tab-evidence ${isEvidenceActive ? 'active' : ''}" data-tab="evidence" title="Evidencia científica: PubMed y registros de ensayos clínicos"><i class="fas fa-book-medical"></i> Evidencia</button>
@@ -9041,6 +9069,10 @@ class MedCheckApp {
             if (initialTab === 'docs' || hasMateriales) {
                 this.loadMateriales(med.nregistro);
             }
+            // El índice de secciones de la ficha, igual de perezoso que los materiales.
+            if (initialTab === 'docs') {
+                this.loadIndiceFT(med);
+            }
             // Load farmacogenómica si el modal se abre directamente en la pestaña PGx
             if (isPgxActive) {
                 this.loadPharmacogenomics(med.nregistro);
@@ -9079,6 +9111,9 @@ class MedCheckApp {
                     // Load materiales when switching to docs tab (lazy)
                     if (tab.dataset.tab === 'docs' && !document.getElementById('docs-materiales')?.dataset.loaded) {
                         this.loadMateriales(med.nregistro);
+                    }
+                    if (tab.dataset.tab === 'docs') {
+                        this.loadIndiceFT(med);
                     }
                     // Load farmacogenómica when switching to PGx tab (lazy)
                     if (tab.dataset.tab === 'pgx' && !document.getElementById('pgx-content')?.dataset.loaded) {
@@ -9484,7 +9519,7 @@ class MedCheckApp {
             }
         }
         if (med.conduc) alerts.push('<span class="badge badge-warning"><i class="fas fa-car"></i> Afecta conducción</span>');
-        if (med.materialesInf) alerts.push('<span class="badge badge-material badge-clickable" title="Hay materiales informativos de seguridad — ver pestaña Documentos" onclick="document.querySelector(\'.modal-tab[data-tab=\\\"docs\\\"]\')?.click()"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
+        if (med.materialesInf) alerts.push('<span class="badge badge-material badge-clickable" title="Hay materiales informativos de seguridad — ver pestaña Ficha y prospecto" onclick="document.querySelector(\'.modal-tab[data-tab=\\\"docs\\\"]\')?.click()"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>');
 
         const alertsHtml = alerts.length > 0
             ? `<div class="mb-md" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"> ${alerts.join('')}</div> `
@@ -9641,27 +9676,12 @@ class MedCheckApp {
             ? `<div id="docs-materiales"><p class="text-muted" style="padding:0.75rem 0"><i class="fas fa-spinner fa-spin"></i> Cargando materiales...</p></div>`
             : '';
 
-        // Fecha de actualización de la Ficha Técnica con cálculo relativo
-        let ftFechaDocsHtml = '';
-        if (med.docs && med.docs.length > 0) {
-            const ftDoc = med.docs.find(d => d.tipo === 1);
-            if (ftDoc?.fecha) {
-                const ftDate = new Date(ftDoc.fecha);
-                const ftStr = ftDate.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-                const diffDays = Math.floor((Date.now() - ftDate) / 86400000);
-                let relStr;
-                if (diffDays < 30) {
-                    relStr = `hace ${diffDays} día${diffDays !== 1 ? 's' : ''}`;
-                } else if (diffDays < 365) {
-                    const m = Math.floor(diffDays / 30.44);
-                    relStr = `hace ${m} mes${m !== 1 ? 'es' : ''}`;
-                } else {
-                    const y = Math.floor(diffDays / 365.25);
-                    relStr = `hace ${y} año${y !== 1 ? 's' : ''}`;
-                }
-                ftFechaDocsHtml = `<p class="text-muted" style="font-size:0.8rem;padding:0.5rem 0 0.75rem;margin:0;"><i class="fas fa-calendar-alt" style="margin-right:0.35rem;"></i>Ficha Técnica actualizada el <strong>${ftStr}</strong> <span style="opacity:0.75;">(${relStr})</span></p>`;
-            }
-        }
+        // La fecha sale del mismo helper que alimenta el tooltip del acceso FT de la tarjeta:
+        // dos sitios, un solo cálculo, y no pueden decir cosas distintas.
+        const ftFecha = this._ftFechaTexto(med);
+        const ftFechaDocsHtml = ftFecha
+            ? `<p class="text-muted" style="font-size:0.8rem;padding:0.5rem 0 0.75rem;margin:0;"><i class="fas fa-calendar-alt" style="margin-right:0.35rem;"></i>Ficha Técnica actualizada el <strong>${ftFecha.abs}</strong> <span style="opacity:0.75;">(${ftFecha.rel})</span></p>`
+            : '';
 
         if (!med.docs || med.docs.length === 0) {
             return (ftFechaDocsHtml || '') + (materialesPlaceholder || '<p class="text-muted">No hay documentos disponibles</p>');
@@ -9734,8 +9754,79 @@ ${ftFechaDocsHtml}
         }).join('')
             }
         </div>
+<div id="docs-indice"></div>
 ${materialesPlaceholder}
 `;
+    }
+
+    /**
+     * EL ÍNDICE DE LA FICHA, que es lo que convierte esta pestaña en algo que CIMA no da.
+     *
+     * Hasta el 19/09/2026 aquí había dos enlaces y espacio muerto: para leer la 4.8 de un
+     * medicamento había que abrir la ficha entera y buscar dentro. Ahora cada sección que CIMA
+     * declara se enlaza por su nombre, y el navegador aterriza en ella.
+     *
+     * NO SE INVENTA NADA, Y ESTA ES LA PARTE QUE HAY QUE ENTENDER ANTES DE TOCARLO:
+     *
+     *   - La lista de secciones la publica CIMA: `/docSegmentado/secciones/{tipo}?nregistro=X`
+     *     devuelve `{seccion, titulo, orden}` con SU numeración y SU título. No se reordena, no se
+     *     renombra y no se traduce: es espejo.
+     *   - Los `id` del HTML de CIMA coinciden exactamente con ese campo `seccion` (`id="4.8"`),
+     *     verificado el 19/09 sobre `FT_83518.html` y `Prospecto_83518.html`. Así que
+     *     `urlHtml#seccion` no es construir una URL a mano: la base la da la fuente en `urlHtml` y
+     *     el fragmento es el identificador que ella misma publica en sus dos superficies.
+     *   - Y DEGRADA SUAVE: un ancla que no existiera abre el documento por arriba. Nunca un 404,
+     *     que es lo que diferencia esto del escarmiento de los enlaces a REec.
+     *
+     * Silencio en caso de fallo: si la petición no responde no se pinta nada y quedan los enlaces
+     * de arriba, que siguen llevando al documento completo. Un índice es una comodidad; perderla
+     * no puede romper el acceso a la ficha.
+     */
+    async loadIndiceFT(med) {
+        const cont = document.getElementById('docs-indice');
+        if (!cont || cont.dataset.loaded) return;
+        cont.dataset.loaded = 'true';
+
+        // Solo los dos documentos que CIMA publica seccionados. El IPE y el plan de riesgos no
+        // tienen `docSegmentado`, así que se quedan con su enlace de arriba.
+        const conIndice = (med.docs || []).filter(d => (d.tipo === 1 || d.tipo === 2) && d.secc === true && d.urlHtml);
+        if (conIndice.length === 0) return;
+
+        const ROTULO = { 1: 'Ficha técnica', 2: 'Prospecto' };
+        const bloques = [];
+
+        for (const doc of conIndice) {
+            let secciones;
+            try {
+                // Petición SECUNDARIA: es apoyo de navegación, no una búsqueda del usuario.
+                secciones = await this.api.getDocSecciones(med.nregistro, doc.tipo, { headers: { 'X-MC-Autocomplete': '1' } });
+            } catch {
+                continue;
+            }
+            if (!Array.isArray(secciones) || secciones.length === 0) continue;
+
+            const enlaces = secciones.map(s => {
+                // Una subsección es la que lleva punto en su número. Se sangra en vez de anidarse:
+                // la jerarquía real de CIMA llega a tres niveles y una lista anidada aquí dentro
+                // ocuparía más de lo que aclara.
+                const hija = String(s.seccion).includes('.');
+                return `<a href="${this._escapeHtml(doc.urlHtml)}#${encodeURIComponent(s.seccion)}" target="_blank" rel="noopener"
+                            class="docs-idx-link${hija ? ' docs-idx-link--hija' : ''}"
+                            title="Abrir «${this._escapeHtml(s.titulo)}» en la ${this._escapeHtml(ROTULO[doc.tipo].toLowerCase())} de CIMA">
+                            <span class="docs-idx-num">${this._escapeHtml(s.seccion)}</span>${this._escapeHtml(s.titulo)}</a>`;
+            }).join('');
+
+            bloques.push(`
+                <div class="docs-idx-bloque">
+                    <p class="docs-idx-titulo"><i class="fas fa-list-ul"></i> Ir a una sección — ${this._escapeHtml(ROTULO[doc.tipo])}</p>
+                    <div class="docs-idx-grid">${enlaces}</div>
+                </div>`);
+        }
+
+        if (bloques.length === 0) return;
+        cont.innerHTML = `<div class="docs-idx">${bloques.join('')}
+            <p class="docs-idx-pie">Los títulos y la numeración son los de CIMA. Cada enlace abre la sección en la fuente oficial.</p>
+        </div>`;
     }
 
     renderModalSafetyTab(med, safetyReport) {
@@ -9747,7 +9838,7 @@ ${materialesPlaceholder}
         const unknownNote = unknownChecks.length ? `
     <div class="safety-unknown-note">
         <i class="fas fa-question-circle"></i>
-        Sin sección recuperable en CIMA para: ${unknownChecks.map(c => `${c.label}${c.section ? ` (${c.section})` : ''}`).join(' · ')} — verificar la ficha técnica completa desde Documentos.
+        Sin sección recuperable en CIMA para: ${unknownChecks.map(c => `${c.label}${c.section ? ` (${c.section})` : ''}`).join(' · ')} — verificar la ficha técnica completa desde «Ficha y prospecto».
     </div>` : '';
 
         if (allChecks.length === 0) {
@@ -18526,11 +18617,11 @@ ${materialesPlaceholder}
                     },
                     {
                         target: '#tab-docs.active',
-                        title: 'Documentos y materiales',
+                        title: 'Ficha y prospecto',
                         icon: 'fa-file-medical-alt',
                         action: { type: 'modalTab', tab: 'docs' },
                         body: `
-                            <p>Documentos enlaza la ficha técnica y el prospecto oficiales y, cuando existen, los <span class="guide-highlight">materiales informativos de seguridad</span> de la AEMPS: guías de dosificación, tarjetas de paciente y vídeos.</p>
+                            <p><span class="guide-key">Ficha y prospecto</span> enlaza los documentos oficiales —y ahora también <span class="guide-highlight">cada una de sus secciones</span>, con la numeración y los títulos de CIMA, para saltar directamente a la 4.8 o a la 6.1 sin buscar dentro del documento— y, cuando existen, los <span class="guide-highlight">materiales informativos de seguridad</span> de la AEMPS: guías de dosificación, tarjetas de paciente y vídeos.</p>
                             <p class="guide-case"><strong>Caso</strong>Inicias un anticoagulante oral. Aquí tienes la tarjeta de paciente oficial de la AEMPS para dársela en la misma consulta.</p>
                         `,
                     },

@@ -12343,6 +12343,87 @@ a.fin-cn {
 }
 a.fin-cn:hover { text-decoration: underline; }
 
+/* ============================================================================
+   ÍNDICE DE SECCIONES DE LA FICHA (pestaña «Ficha y prospecto»)
+   ----------------------------------------------------------------------------
+   Hasta el 19/09/2026 esta pestaña eran dos enlaces y espacio muerto. Ahora lleva el índice que
+   publica CIMA, y cada entrada abre SU sección en la fuente. La retícula es de ancho automático
+   para que en el móvil caiga a una columna sin media queries: los títulos de la ficha son largos
+   («Efectos sobre la capacidad para conducir y utilizar máquinas») y forzarles dos columnas
+   estrechas los parte en cuatro líneas.
+   ========================================================================== */
+.docs-idx {
+    margin-top: 1rem;
+}
+
+.docs-idx-bloque + .docs-idx-bloque {
+    margin-top: 1rem;
+}
+
+.docs-idx-titulo {
+    margin: 0 0 0.45rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+}
+
+.docs-idx-titulo i {
+    margin-right: 0.35rem;
+}
+
+.docs-idx-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0.25rem;
+}
+
+.docs-idx-link {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    line-height: 1.35;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.docs-idx-link:hover {
+    background: var(--bg-surface-hover);
+    color: var(--text-primary);
+}
+
+/* La sangría dice lo mismo que el número: que 4.8 cuelga de 4. No se anida en listas porque la
+   jerarquía de CIMA llega a tres niveles y aquí ocuparía más de lo que aclara. */
+.docs-idx-link--hija {
+    padding-left: 1.35rem;
+}
+
+/* El número va en monoespacio y a ancho fijo para que los títulos queden alineados: es el dato
+   por el que se busca («mírate la 4.5») y tiene que poder barrerse con la vista. */
+.docs-idx-num {
+    flex-shrink: 0;
+    min-width: 2.1rem;
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    font-size: 0.72rem;
+    color: var(--primary);
+}
+
+.docs-idx-pie {
+    margin: 0.6rem 0 0;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+/* AVISO A QUIEN AÑADA CSS: esta capa tiene que quedarse la ÚLTIMA del fichero. El banco 21 de
+   `medcheck-test-utilizacion` vigila su escala tipográfica leyendo «desde esta marca hasta el
+   final», así que cualquier bloque pegado detrás entra en esa escala y sale en rojo aunque no
+   tenga nada que ver con Utilización. Pasó el 19/09/2026 con el índice de la ficha. Si necesitas
+   añadir una capa nueva, va ANTES de esta línea. */
+
 /* ═══ Utilización observada ═══════════════════════════════════════════════
    Deliberadamente sobria: es la única capa de MedCheck sin fuente normativa
    detrás. Ni color semántico ni iconos de alerta — el reparto se lee por
