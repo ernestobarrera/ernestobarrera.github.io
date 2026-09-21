@@ -2502,27 +2502,31 @@ class CimaAPI {
                     continue;
                 }
 
-                // Limpiar HTML para preview
-                const plainText = sectionContent
-                    .replace(/<[^>]*>/g, ' ')
-                    .replace(/\\n/g, ' ')
-                    .replace(/\s+/g, ' ')
-                    .trim();
-
-                // Preview SIEMPRE (más largo para dar contexto al clínico)
-                const preview = plainText.length > 400
-                    ? plainText.substring(0, 400) + '...'
-                    : plainText;
-
-                // Keywords solo para determinar SEVERIDAD, no para decidir SI mostrar
+                // EL EXTRACTO ES DEL CONTEXTO, O NO ES. Corregido el 21/09/2026.
+                //
+                // Hasta hoy aquí se construía un `preview` con los PRIMEROS 400 caracteres de la
+                // sección y se mostraba siempre, ignorando el `excerpt` que `_analyzeSection` ya
+                // devuelve centrado en la coincidencia. Como embarazo y lactancia comparten la
+                // 4.6 y el embarazo va primero en casi todas las fichas, pulsar «Lactancia»
+                // enseñaba el principio del apartado de embarazo: se leía texto de OTRO contexto
+                // creyendo que era del propio. No es lentitud ni fricción, es mostrar
+                // información equivocada en una pantalla clínica.
+                //
+                // Regla: si hay coincidencia literal del contexto, se muestra su entorno; si no
+                // la hay, NO se muestra el inicio arbitrario de la sección. Y la ausencia de
+                // coincidencia textual no se convierte en «seguro» ni en «sin riesgo» — se dice
+                // que no se localizó mención literal y se manda a leer el apartado entero, que
+                // es lo mismo que hace el bloque de arriba cuando la sección no está disponible.
+                // Espejo, no juez, también cuando el espejo no encuentra nada.
                 const analysis = this._analyzeSection(sectionContent, mapping.keywords);
 
-                // Si encontró keywords → advertencia/peligro
-                // Si NO encontró → igual mostrar como "review" (NUNCA safe cuando contexto activo)
+                const hayMencion = analysis.status !== 'safe' && !!analysis.excerpt;
+
+                // NUNCA 'safe' con el contexto activo: la ausencia de keywords no descarta riesgo.
                 const finalStatus = analysis.status === 'safe' ? 'review' : analysis.status;
-                const finalMessage = analysis.status === 'safe'
-                    ? 'Revisar sección completa - sin keywords detectados'
-                    : analysis.message;
+                const finalMessage = hayMencion
+                    ? analysis.message
+                    : 'No se localizó una mención literal — revisar el apartado completo';
 
                 results.checks.push({
                     context: contextKey,
@@ -2530,7 +2534,7 @@ class CimaAPI {
                     section: mapping.section,
                     status: finalStatus,
                     message: finalMessage,
-                    excerpt: preview, // SIEMPRE mostrar preview
+                    excerpt: hayMencion ? analysis.excerpt : null,
                     isContextSpecific: true
                 });
             } catch (error) {
