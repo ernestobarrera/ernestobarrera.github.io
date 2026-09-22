@@ -2293,6 +2293,16 @@ body {
     color: white;
 }
 
+/* El check del contexto que abrió el modal desde la tarjeta.
+   Anillo, no color de fondo: el fondo ya codifica el ESTADO del check (review, unknown,
+   info) y pisarlo diría algo distinto de lo que dice la fuente. Esto solo señala «aquí es
+   donde has pulsado», que es información de navegación, no clínica. */
+.safety-check-item.is-focused {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    scroll-margin-block: var(--space-lg);
+}
+
 .safety-check-content {
     flex: 1;
 }

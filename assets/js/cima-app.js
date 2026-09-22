@@ -4366,22 +4366,44 @@ class MedCheckApp {
         if (!this._hasFichaTecnicaSeccionada(med)) badges.push('<span class="badge badge-sin-ft" title="CIMA no publica ficha técnica con secciones para este registro, así que no hay Indicaciones, Posología, Interacciones ni Seguridad que mostrar. Ocurre en importaciones paralelas y en medicamentos antiguos; la información clínica está en el registro principal del mismo producto."><i class="fas fa-file-circle-xmark"></i> Sin ficha técnica</span>');
         if (med.materialesInf) badges.push(`<span class="badge badge-material badge-clickable" title="Ver materiales informativos de seguridad (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
 
-        // Alertas según contexto del paciente - AÑADIDO
+        // Accesos contextuales de la tarjeta.
+        //
+        // Cada uno lleva SU clave de contexto hasta el modal (`focusContext`), que abre la
+        // pestaña de Seguridad con ese check resaltado y enfocado en vez de arriba del todo.
+        // Hasta el 22/09/2026 los seis llamaban a `openMedDetails(nreg, 'safety')` a secas:
+        // el botón sabía qué contexto habías pulsado y lo olvidaba por el camino.
+        //
+        // EMBARAZO Y LACTANCIA VAN SEPARADOS desde esa misma fecha. Eran un único «Revisar
+        // Emb/Lact» heredado de cuando ambos enseñaban el mismo extracto —el principio de la
+        // 4.6, que en casi todas las fichas es embarazo—. Desde 2fcfea4 cada contexto trae el
+        // suyo, centrado en su propia mención, así que un botón conjunto ya no puede decir a
+        // cuál de los dos lleva. Solo se pinta el que esté activo: con un solo contexto
+        // activo hay un solo acceso, como antes.
+        //
+        // La sección va en el `title` de los cinco que la tienen fija. Es el dato que el
+        // médico contrasta contra la ficha oficial, y hasta ahora solo lo decía embarazo.
         const contextAlerts = [];
+        const accesoContexto = (clave, icono, etiqueta, ayuda) =>
+            `<div class="context-alert-inline warning clickable" title="${ayuda}" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety', { focusContext: '${clave}' })"><i class="fas fa-${icono}"></i> ${etiqueta}</div>`;
+        // Conducción no es como los otros cinco: se pinta solo si `med.conduc`, que es un dato
+        // estructurado de CIMA sobre ESTE medicamento, no la mera presencia del contexto.
         if (this.patientContext.driving && med.conduc) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Afecta a la conducción" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-car"></i> Conducción</div>`);
+            contextAlerts.push(accesoContexto('driving', 'car', 'Conducción', 'Afecta a la conducción — ver sección 4.7'));
         }
-        if (this.patientContext.pregnancy || this.patientContext.lactation) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Ver sección 4.6 - Fertilidad, embarazo y lactancia" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-baby"></i> Revisar Emb/Lact</div>`);
+        if (this.patientContext.pregnancy) {
+            contextAlerts.push(accesoContexto('pregnancy', 'baby', 'Revisar Embarazo', 'Ver sección 4.6 — Fertilidad, embarazo y lactancia'));
+        }
+        if (this.patientContext.lactation) {
+            contextAlerts.push(accesoContexto('lactation', 'person-breastfeeding', 'Revisar Lactancia', 'Ver sección 4.6 — Fertilidad, embarazo y lactancia'));
         }
         if (this.patientContext.renal) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Insuficiencia renal - Ver ajuste de dosis" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-droplet"></i> Revisar Renal</div>`);
+            contextAlerts.push(accesoContexto('renal', 'droplet', 'Revisar Renal', 'Insuficiencia renal — ver sección 4.4'));
         }
         if (this.patientContext.hepatic) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Verificar ajuste hepático" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-disease"></i> Revisar Hep.</div>`);
+            contextAlerts.push(accesoContexto('hepatic', 'disease', 'Revisar Hep.', 'Insuficiencia hepática — ver sección 4.4'));
         }
         if (this.patientContext.elderly) {
-            contextAlerts.push(`<div class="context-alert-inline warning clickable" title="Paciente mayor" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'safety')"><i class="fas fa-user-clock"></i> >65</div>`);
+            contextAlerts.push(accesoContexto('elderly', 'user-clock', '>65', 'Paciente mayor — ver sección 4.4'));
         }
 
         // Principio activo desde la API - sin fallback del nombre comercial
@@ -8867,7 +8889,29 @@ class MedCheckApp {
         }).catch(() => {});
     }
 
-    async openMedDetails(nregistro, initialTab = 'info') {
+    /**
+     * Abre la ficha del medicamento.
+     *
+     * `options.focusContext` es la clave del contexto de paciente que originó la apertura
+     * (`renal`, `hepatic`, `elderly`, `pregnancy`, `lactation`, `driving`). Los accesos
+     * contextuales de la tarjeta SABEN qué contexto pulsaste y hasta el 22/09/2026 lo
+     * olvidaban al llamar aquí: los seis abrían la misma pestaña de Seguridad, que con las
+     * tres secciones clave más un check por contexto activo llega a nueve tarjetas. Quien
+     * pulsaba «Revisar Renal» aterrizaba arriba del todo y tenía que buscar su apartado.
+     *
+     * NO se colapsa ni se oculta nada. Esconder apartados por defecto en una pantalla
+     * clínica es una decisión con consecuencias, no una mejora de navegación: el check
+     * pedido se resalta, se trae al centro del viewport y recibe el foco de teclado, y el
+     * resto sigue visible y en el mismo orden.
+     *
+     * El foco vuelve al elemento que abrió el modal cuando se cierra (ver `closeModal`).
+     */
+    async openMedDetails(nregistro, initialTab = 'info', options = {}) {
+        // Antes de tocar el DOM: quien tenía el foco es a donde debe volver al cerrar.
+        const focoPrevio = document.activeElement;
+        this._modalReturnFocus = (focoPrevio && focoPrevio !== document.body) ? focoPrevio : null;
+        // Solo tiene sentido con la pestaña de Seguridad abierta, que es donde viven los checks.
+        this._pendingFocusContext = (initialTab === 'safety' && options.focusContext) || null;
         this.modal.classList.remove('hidden');
         this.modalBody.innerHTML = '<div class="loading-spinner"></div>';
         this._loadEml(); // disparo anticipado: el JSON local suele cargar antes que la ficha remota
@@ -9171,6 +9215,9 @@ class MedCheckApp {
 
             // Utilización si el modal se abre directamente en esa pestaña
             if (isUtilActive) this.loadUtilizacion(atc5Util, med.cpresc);
+
+            // Enfoque del contexto que abrió el modal (accesos contextuales de la tarjeta).
+            if (isSafetyActive) this._focusSafetyContext();
 
         } catch (error) {
             if (error.code === 'NO_CONTENT') {
@@ -9923,6 +9970,26 @@ ${materialesPlaceholder}
         if (lista && lista.children.length === 0) lista.remove();
     }
 
+    /**
+     * Lleva la vista y el foco al check del contexto que abrió el modal.
+     *
+     * Se llama después de pintar `modalBody`, así que el nodo ya existe. Si ese contexto no
+     * produjo check porque CIMA no devuelve la sección (`status === 'unknown'`, que
+     * `renderModalSafetyTab` agrupa en la nota del pie), no hay nada que enfocar y no se
+     * hace nada: la degradación de «Sin ficha técnica» sigue exactamente igual.
+     */
+    _focusSafetyContext() {
+        const ctx = this._pendingFocusContext;
+        this._pendingFocusContext = null;
+        if (!ctx) return;
+        const item = this.modalBody.querySelector(`.safety-check-item[data-context="${ctx}"]`);
+        if (!item) return;
+        // `matchMedia` puede no existir en el entorno de tests; sin él, sin animación.
+        const sinMovimiento = !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+        item.scrollIntoView({ block: 'center', behavior: sinMovimiento ? 'auto' : 'smooth' });
+        item.focus({ preventScroll: true });
+    }
+
     renderModalSafetyTab(med, safetyReport) {
         const allChecks = safetyReport ? safetyReport.checks : [];
         // H17: las secciones que CIMA no devuelve ('unknown') se agrupan en una nota
@@ -9982,8 +10049,14 @@ ${materialesPlaceholder}
                        <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
                 : '';
 
+            // El check del contexto que abrió el modal se marca aquí y `_focusSafetyContext`
+            // lo trae al viewport. `tabindex="-1"` lo hace enfocable por programa sin meterlo
+            // en el orden natural de tabulación, que seguiría siendo el de los botones.
+            const esFoco = !!check.context && check.context === this._pendingFocusContext;
+            const ctxAttr = check.context ? ` data-context="${check.context}"` : '';
+
             return `
-                    <div class="safety-check-item ${check.status}">
+                    <div class="safety-check-item ${check.status}${esFoco ? ' is-focused' : ''}"${ctxAttr}${esFoco ? ' tabindex="-1"' : ''}>
                         <div class="safety-check-icon">
                             <i class="fas fa-${icon}"></i>
                         </div>
@@ -12497,8 +12570,18 @@ ${materialesPlaceholder}
         const wasOpen = !this.modal.classList.contains('hidden');
         this.modal.classList.add('hidden');
         this.currentMed = null;
+        this._pendingFocusContext = null;
         if (wasOpen && !this.isPopstateNavigation) {
             this.updateURLWithCurrentState();
+        }
+        // Devolver el foco a donde estaba: si no, al cerrar el teclado vuelve al principio
+        // del documento y hay que recorrer la lista entera para seguir donde se estaba.
+        // `isConnected` porque la tarjeta puede haber desaparecido si la búsqueda se rehízo
+        // con el modal abierto.
+        const volverA = this._modalReturnFocus;
+        this._modalReturnFocus = null;
+        if (wasOpen && volverA && volverA.isConnected) {
+            try { volverA.focus(); } catch (_) { /* no enfocable: se queda como estaba */ }
         }
     }
 

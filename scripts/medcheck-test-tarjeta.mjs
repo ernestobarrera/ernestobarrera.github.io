@@ -612,5 +612,125 @@ console.log('\n— La señalética de los checks de contexto —');
     ok(/openSectionViewer\(/.test(app2), 'el visor interno NO se retira');
 }
 
+console.log('\n— Los seis accesos contextuales llevan SU contexto al modal —');
+{
+    // Hasta el 22/09/2026 los seis botones llamaban a `openMedDetails(nreg, 'safety')` a
+    // secas: el botón sabía qué contexto habías pulsado y lo olvidaba por el camino. La
+    // pestaña de Seguridad puede tener nueve tarjetas (3 secciones clave + 1 por contexto
+    // activo), así que pulsar «Revisar Renal» aterrizaba arriba del todo y había que buscar.
+    // Aquí se fija que cada acceso viaja con su clave y que esa clave es la que entiende
+    // `_focusSafetyContext`.
+    const tarjeta = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+    tarjeta._medRenderCache = new Map();
+    tarjeta.filterState = { galenics: new Set() };
+    tarjeta.favorites = [];
+
+    const pintaCon = (contexto, extra = {}) => {
+        tarjeta.patientContext = contexto;
+        return tarjeta.renderIndicationMedCard({
+            nregistro: '12345', nombre: 'METFORMINA CINFA 850 MG COMPRIMIDOS', dosis: '850 mg',
+            comerc: true, atcs: [], formaFarmaceutica: { nombre: 'COMPRIMIDO RECUBIERTO CON PELICULA' },
+            formaFarmaceuticaSimplificada: { nombre: 'COMPRIMIDO' }, ...extra,
+        }, '');
+    };
+
+    // Las seis claves son EXACTAMENTE las de `contextMapping` en cima-api.js. Si una de las
+    // dos listas se renombra sin la otra, el botón abre el modal y no enfoca nada, en
+    // silencio. Por eso se leen de la fuente en vez de repetirlas a mano aquí.
+    const apiSrc = readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8');
+    const bloqueMapping = apiSrc.slice(apiSrc.indexOf('const contextMapping = {'));
+    const clavesApi = ['pregnancy', 'lactation', 'elderly', 'hepatic', 'renal', 'driving']
+        .filter(k => new RegExp(`^\\s{12}${k}: \\{`, 'm').test(bloqueMapping));
+    ok(clavesApi.length === 6, 'las seis claves de contexto siguen declaradas en `contextMapping`',
+        `encontradas: ${clavesApi.join(', ')}`);
+
+    for (const clave of clavesApi) {
+        // `driving` es el único que además exige el dato estructurado `conduc` de CIMA.
+        const html = pintaCon({ [clave]: true }, clave === 'driving' ? { conduc: true } : {});
+        const accesos = html.match(/context-alert-inline[^>]*>/g) || [];
+        ok(accesos.length === 1, `${clave}: pinta exactamente un acceso contextual`,
+            `pintó ${accesos.length}`);
+        ok(html.includes(`app.openMedDetails('12345', 'safety', { focusContext: '${clave}' })`),
+            `${clave}: el acceso viaja con su propia clave de contexto`);
+    }
+
+    // CONDUCCIÓN NO ES COMO LOS OTROS CINCO. Los cinco se pintan porque el contexto está
+    // activo, sin mirar el fármaco; conducción exige `med.conduc`, que es un dato
+    // estructurado de CIMA sobre ESTE medicamento. Perder esa asimetría convertiría un dato
+    // de la fuente en una etiqueta nuestra.
+    const sinConduc = pintaCon({ driving: true });
+    ok(!/context-alert-inline/.test(sinConduc),
+        'conducción NO se pinta si el medicamento no declara `conduc`');
+
+    // EMBARAZO Y LACTANCIA, SEPARADOS. Eran un único «Revisar Emb/Lact» de cuando ambos
+    // enseñaban el mismo extracto —el principio de la 4.6, que casi siempre es embarazo—.
+    // Desde 2fcfea4 cada uno trae el suyo, así que un botón conjunto no puede decir a cuál
+    // de los dos lleva.
+    const ambos = pintaCon({ pregnancy: true, lactation: true });
+    ok((ambos.match(/context-alert-inline/g) || []).length === 2,
+        'embarazo y lactancia activos a la vez pintan DOS accesos, no uno');
+    ok(ambos.includes("focusContext: 'pregnancy'") && ambos.includes("focusContext: 'lactation'"),
+        'y cada uno lleva su propia clave');
+    ok(!/Emb\/Lact/.test(ambos), 'el acceso conjunto «Revisar Emb/Lact» ya no existe');
+
+    // Ningún acceso contextual puede volver a abrir Seguridad "a pelo".
+    const todos = pintaCon({ pregnancy: true, lactation: true, renal: true, hepatic: true,
+        elderly: true, driving: true }, { conduc: true });
+    const aPelo = (todos.match(/context-alert-inline[\s\S]*?<\/div>/g) || [])
+        .filter(a => !a.includes('focusContext'));
+    ok(aPelo.length === 0, 'ningún acceso contextual abre el modal sin decir qué contexto pidió',
+        aPelo.join('\n'));
+    ok((todos.match(/context-alert-inline/g) || []).length === 6,
+        'con los seis contextos activos se pintan los seis accesos');
+
+    // La sección de la ficha va en el `title` de los que la tienen fija: es el dato que el
+    // médico contrasta contra la fuente oficial, y antes solo lo decía embarazo.
+    ok(/title="Insuficiencia renal — ver sección 4\.4"/.test(todos),
+        'el acceso renal nombra su apartado de la ficha');
+}
+
+console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
+{
+    const app3 = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    const css3 = readFileSync(join(ROOT, 'assets/css/cima-app.css'), 'utf8');
+
+    ok(/async openMedDetails\(nregistro, initialTab = 'info', options = \{\}\)/.test(app3),
+        '`openMedDetails` acepta opciones sin romper sus llamadas de dos argumentos');
+    ok(/this\._pendingFocusContext = \(initialTab === 'safety' && options\.focusContext\)/.test(app3),
+        'el enfoque solo se arma con la pestaña de Seguridad, que es donde viven los checks');
+    ok(/data-context="\$\{check\.context\}"/.test(app3),
+        'el modal emite `data-context` en cada check para poder localizarlo');
+    ok(/if \(isSafetyActive\) this\._focusSafetyContext\(\);/.test(app3),
+        'y se enfoca DESPUÉS de pintar `modalBody`, cuando el nodo ya existe');
+
+    // NO SE COLAPSA NADA. Esconder apartados por defecto en una pantalla clínica es una
+    // decisión con consecuencias, no una mejora de navegación: el check pedido se resalta y
+    // se trae al viewport, el resto sigue visible y en el mismo orden.
+    ok(/\.safety-check-item\.is-focused \{[\s\S]*?outline: 2px solid var\(--primary\)/.test(css3),
+        'el check enfocado se señala con un anillo, sin pisar el color de su estado');
+
+    // Comportamiento real, no solo forma: sin nodo que enfocar no se rompe nada y la
+    // intención no queda pegada para el siguiente modal.
+    const focus = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+    focus._pendingFocusContext = 'renal';
+    focus.modalBody = { querySelector: () => null };
+    let reventó = false;
+    try { focus._focusSafetyContext(); } catch (_) { reventó = true; }
+    ok(!reventó, 'sin check para ese contexto (registro sin ficha seccionada) no lanza');
+    ok(focus._pendingFocusContext === null,
+        'y la intención se consume: no se hereda en la siguiente ficha que se abra');
+
+    let enfocado = null, traido = false;
+    const focus2 = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+    focus2._pendingFocusContext = 'lactation';
+    focus2.modalBody = {
+        querySelector: (sel) => sel.includes('"lactation"')
+            ? { scrollIntoView: () => { traido = true; }, focus: () => { enfocado = 'lactation'; } }
+            : null,
+    };
+    focus2._focusSafetyContext();
+    ok(traido && enfocado === 'lactation', 'con check presente, lo trae al viewport y le da el foco');
+}
+
 console.log(fallos === 0 ? '\nOK — todas las aserciones pasan\n' : `\n${fallos} FALLO(S)\n`);
 process.exit(fallos === 0 ? 0 : 1);
