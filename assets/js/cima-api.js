@@ -2374,23 +2374,45 @@ class CimaAPI {
 
         // Mapeo de contexto a secciones y palabras clave para énfasis
         // MEJORADO 2026-04-01: keywords expandidos por contexto clínico
+        //
+        // DOS NIVELES, DESDE EL 22/09/2026, Y NO SE HA QUITADO NINGUNA PALABRA: se han repartido.
+        //
+        //   `keywords` — las que NOMBRAN el contexto: «lactancia», «insuficiencia renal»,
+        //                «conducir». Si una de estas aparece, el apartado habla del tema.
+        //   `indicios` — las que solo lo SUGIEREN: «neonato», «creatinina», «somnolencia».
+        //                Aparecen a menudo hablando de otra cosa.
+        //
+        // Hace falta porque desde hoy, dentro de un mismo nivel, gana la mención MÁS TEMPRANA
+        // del apartado (antes ganaba la primera de esta lista, y el orden en que alguien la
+        // escribió decidía lo que leía el médico). Sin separar los niveles, «recién nacido»
+        // —que en la 4.6 de enalapril está en pleno párrafo de EMBARAZO, hablando de
+        // oligohidramnios— ganaría a «lactancia», y el check de Lactancia volvería a enseñar
+        // texto de embarazo: exactamente el defecto que corrigieron 2fcfea4 y a2ad8f7. Medido
+        // con las dos versiones en paralelo contra CIMA antes de tocarlo.
+        //
+        // Los indicios NO se descartan: se consultan cuando ninguna palabra del primer nivel
+        // aparece. Un apartado que solo dice «vigilar transaminasas» sigue contando como
+        // mención hepática. Espejo, no juez: no se decide que no hay nada, se ordena por
+        // cuál es más probable que sea el tema y no un detalle de otro.
         const contextMapping = {
             pregnancy: {
                 section: '4.6',
                 label: 'Embarazo',
-                keywords: ['embarazo', 'gestación', 'gestacion', 'embarazada', 'teratógeno',
-                    'teratogeno', 'malformacion', 'malformación', 'feto', 'fetal',
-                    'potencial fértil', 'potencial fertil', 'mujer en edad fértil',
-                    'mujer en edad fertil', 'anticoncepción', 'anticoncepcion',
-                    'categoría d', 'categoría x', 'categoria d', 'categoria x',
-                    'primer trimestre', 'tercer trimestre', 'prenatal']
+                keywords: ['embarazo', 'gestación', 'gestacion', 'embarazada',
+                    'primer trimestre', 'tercer trimestre'],
+                indicios: ['teratógeno', 'teratogeno', 'malformacion', 'malformación',
+                    'feto', 'fetal', 'potencial fértil', 'potencial fertil',
+                    'mujer en edad fértil', 'mujer en edad fertil', 'anticoncepción',
+                    'anticoncepcion', 'categoría d', 'categoría x', 'categoria d',
+                    'categoria x', 'prenatal']
             },
             lactation: {
                 section: '4.6',
                 label: 'Lactancia',
                 keywords: ['lactancia', 'lactante', 'leche materna', 'amamant',
-                    'periodo de lactancia', 'neonato', 'recién nacido', 'recien nacido',
-                    'excreta en leche', 'secreta en leche', 'pasa a la leche']
+                    'periodo de lactancia', 'excreta en leche', 'secreta en leche',
+                    'pasa a la leche'],
+                indicios: ['neonato', 'recién nacido', 'recien nacido']
             },
             elderly: {
                 section: '4.4',
@@ -2398,8 +2420,9 @@ class CimaAPI {
                 keywords: ['anciano', 'edad avanzada', 'pacientes de edad', 'mayores de 65',
                     'poblacion de edad avanzada', 'población de edad avanzada',
                     'pacientes geriátricos', 'pacientes geriatricos', 'tercera edad',
-                    'personas mayores', 'edad avanzada', 'deterioro cognitivo',
-                    'caídas', 'caidas', 'fragilidad', 'polifarmacia']
+                    'personas mayores'],
+                indicios: ['deterioro cognitivo', 'caídas', 'caidas', 'fragilidad',
+                    'polifarmacia']
             },
             hepatic: {
                 section: '4.4',
@@ -2407,26 +2430,28 @@ class CimaAPI {
                 keywords: ['insuficiencia hepática', 'insuficiencia hepatica', 'hepatopatía',
                     'hepatopatia', 'cirrosis', 'hepático', 'hepatico', 'función hepática',
                     'funcion hepatica', 'hepatotóxico', 'hepatotoxico', 'hepatotoxicidad',
-                    'transaminasas', 'child-pugh', 'child pugh', 'alt ', 'ast ',
-                    'metabolismo hepático', 'metabolismo hepatico', 'daño hepático',
-                    'dano hepatico', 'ictericia', 'bilirrubina']
+                    'child-pugh', 'child pugh', 'metabolismo hepático', 'metabolismo hepatico',
+                    'daño hepático', 'dano hepatico'],
+                indicios: ['transaminasas', 'alt ', 'ast ', 'ictericia', 'bilirrubina']
             },
             renal: {
                 section: '4.4',
                 label: 'Insuficiencia renal',
-                keywords: ['insuficiencia renal', 'aclaramiento', 'filtrado glomerular',
-                    'ClCr', 'función renal', 'funcion renal', 'creatinina',
+                keywords: ['insuficiencia renal', 'función renal', 'funcion renal',
                     'nefrotóxi', 'nefrotoxi', 'hemodiálisis', 'hemodialisis', 'diálisis',
-                    'dialisis', 'cockcroft', 'ckd-epi', 'estadio renal', 'tfge', 'tfg',
-                    'clearance', 'depuración de creatinina', 'depuracion de creatinina',
-                    'ajuste renal', 'deterioro renal', 'daño renal', 'dano renal']
+                    'dialisis', 'estadio renal', 'ajuste renal', 'deterioro renal',
+                    'daño renal', 'dano renal'],
+                indicios: ['aclaramiento', 'filtrado glomerular', 'ClCr', 'creatinina',
+                    'cockcroft', 'ckd-epi', 'tfge', 'tfg', 'clearance',
+                    'depuración de creatinina', 'depuracion de creatinina']
             },
             driving: {
                 section: '4.7',
                 label: 'Conducción',
                 keywords: ['conducción', 'conduccion', 'maquinaria', 'conducir',
-                    'capacidad para conducir', 'somnolencia', 'mareo', 'vértigo',
-                    'vertigo', 'capacidad de reacción', 'capacidad de reaccion',
+                    'capacidad para conducir'],
+                indicios: ['somnolencia', 'mareo', 'vértigo', 'vertigo',
+                    'capacidad de reacción', 'capacidad de reaccion',
                     'sedación', 'sedacion', 'visión borrosa', 'vision borrosa']
             }
         };
@@ -2518,7 +2543,13 @@ class CimaAPI {
                 // que no se localizó mención literal y se manda a leer el apartado entero, que
                 // es lo mismo que hace el bloque de arriba cuando la sección no está disponible.
                 // Espejo, no juez, también cuando el espejo no encuentra nada.
-                const analysis = this._analyzeSection(sectionContent, mapping.keywords);
+                // Primero las palabras que NOMBRAN el contexto. Solo si ninguna aparece se
+                // mira con los indicios, que son los que se confunden de tema. Ver el
+                // comentario de `contextMapping`.
+                let analysis = this._analyzeSection(sectionContent, mapping.keywords);
+                if (analysis.status === 'safe' && mapping.indicios?.length) {
+                    analysis = this._analyzeSection(sectionContent, mapping.indicios);
+                }
 
                 const hayMencion = analysis.status !== 'safe' && !!analysis.excerpt;
 
@@ -2825,6 +2856,21 @@ class CimaAPI {
     static ANCLA_PALABRAS_LADO = 4;
 
     /**
+     * Palabras de puro andamiaje gramatical. No se recortan por estética: el ancla se RESALTA
+     * en la ficha oficial, y un resalte que empieza en «y» y acaba en «un mayor» —lo que salía
+     * en gabapentina antes del 22/09/2026— se lee como un trozo arrancado a mitad de frase y
+     * hace dudar de si el enlace ha acertado. Solo se recortan en los BORDES, nunca dentro, y
+     * nunca las que forman parte de la coincidencia.
+     */
+    static ANCLA_PALABRAS_VACIAS = new Set([
+        'y', 'o', 'u', 'e', 'ni', 'que', 'de', 'del', 'al', 'a', 'en', 'con', 'sin', 'por',
+        'para', 'como', 'segun', 'según', 'sobre', 'entre', 'desde', 'hasta', 'ante', 'tras',
+        'el', 'la', 'lo', 'los', 'las', 'un', 'una', 'unos', 'unas', 'su', 'sus', 'se', 'si',
+        'es', 'son', 'ha', 'han', 'ser', 'este', 'esta', 'estos', 'estas', 'ese', 'esa',
+        'mas', 'más', 'muy', 'tan', 'no', 'ver', 'tal', 'otro', 'otra', 'otros', 'otras',
+    ]);
+
+    /**
      * Cuántos caracteres necesita el ancla para mandarse al navegador.
      *
      * No es un número estético. Un ancla corta casa en cualquier parte del documento, y el
@@ -2904,6 +2950,37 @@ class CimaAPI {
         const abreBloque = i === 0 || !!fronteras[i - 1];
         const cierraBloque = k >= plainText.length || !!fronteras[k];
         if (abreBloque && cierraBloque) return null;
+
+        // Los bordes se limpian de andamiaje gramatical, sin entrar nunca en la coincidencia.
+        const vacias = CimaAPI.ANCLA_PALABRAS_VACIAS;
+        const palabraDesde = (desde) => {
+            let j = desde;
+            while (j < plainText.length && esLetra(plainText[j])) j++;
+            return plainText.slice(desde, j);
+        };
+        const palabraHasta = (hasta) => {
+            let j = hasta;
+            while (j > 0 && esLetra(plainText[j - 1])) j--;
+            return plainText.slice(j, hasta);
+        };
+        const pelada = (w) => w.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+        while (i < a) {
+            const w = palabraDesde(i);
+            if (!w || !vacias.has(pelada(w))) break;
+            let j = i + w.length;
+            while (j < a && !esLetra(plainText[j])) j++;
+            if (j >= a) break;
+            i = j;
+        }
+        while (k > b) {
+            const w = palabraHasta(k);
+            if (!w || !vacias.has(pelada(w))) break;
+            let j = k - w.length;
+            while (j > b && !esLetra(plainText[j - 1])) j--;
+            if (j <= b) break;
+            k = j;
+        }
 
         const ancla = plainText.slice(i, k).trim();
         return ancla.length >= CimaAPI.ANCLA_MIN_CARACTERES ? ancla : null;
@@ -3063,22 +3140,69 @@ class CimaAPI {
         let enCuerpo = null;    // la buena: el texto de verdad del apartado
         let enTitulo = null;    // la de reserva: solo el rótulo lo nombra
 
+        // GANA LA MENCIÓN MÁS TEMPRANA DEL TEXTO, NO LA PRIMERA DE LA LISTA.
+        // Corregido el 22/09/2026, con el caso que trajo Ernesto desde producción.
+        //
+        // Hasta hoy este bucle paraba en cuanto una keyword casaba, así que lo que decidía qué
+        // se le enseñaba al médico era **el orden en que alguien escribió `contextMapping`**.
+        // En la 4.4 de GABAPENTINA ALMUS 800 (70400), con contexto de edad:
+        //
+        //   «mayores de 65»  está en el carácter 1165 — «no ha habido estudios sistemáticos en
+        //                    pacientes mayores de 65 años»
+        //   «edad avanzada»  está en el 4571 — un inciso dentro de «Depresión respiratoria»
+        //
+        // y se mostraba la segunda, porque «edad avanzada» va antes en la lista. Desde fuera eso
+        // se ve como lo que él describió: «a veces selecciona un texto, a veces otro algo
+        // random». No era aleatorio, era un orden arbitrario decidiendo por el médico.
+        //
+        // La regla nueva es la del propio Ctrl+F: **la primera que aparece en el apartado**. No
+        // inventa relevancia clínica —eso sería juzgar— y es la que el médico encontraría solo.
+        // Sigue mandando el cuerpo sobre el rótulo, que es la regla de a2ad8f7.
+        const mejor = (actual, cand) => {
+            if (!actual) return cand;
+            if (cand.idx < actual.idx) return cand;
+            // A igual posición, la más larga: «población de edad avanzada» dice más que
+            // «edad avanzada», y sin esto ganaría la que estuviera antes en la lista.
+            if (cand.idx === actual.idx && cand.largo > actual.largo) return cand;
+            return actual;
+        };
+
         for (const keyword of keywords) {
             const kw = plegar(keyword);
-            let desde = 0;
-            let idx = lowerContent.indexOf(kw, desde);
+            if (!kw) continue;
+            let idx = lowerContent.indexOf(kw);
             while (idx !== -1) {
-                if (!caeEnteraEnTitulo(idx, kw.length)) { enCuerpo = { idx, largo: kw.length }; break; }
-                if (!enTitulo) enTitulo = { idx, largo: kw.length };
-                desde = idx + 1;
-                idx = lowerContent.indexOf(kw, desde);
+                if (!caeEnteraEnTitulo(idx, kw.length)) {
+                    enCuerpo = mejor(enCuerpo, { idx, largo: kw.length });
+                    break;   // de ESTA keyword ya tenemos su aparición más temprana en cuerpo
+                }
+                enTitulo = mejor(enTitulo, { idx, largo: kw.length });
+                idx = lowerContent.indexOf(kw, idx + 1);
             }
-            if (enCuerpo) break;
         }
 
         const hallazgo = enCuerpo || enTitulo;
         if (hallazgo) {
-            const start = Math.max(0, hallazgo.idx - 60);
+            // EL EXTRACTO TAMPOCO CRUZA FRONTERA DE BLOQUE. Añadido el 22/09/2026.
+            //
+            // Los 60 caracteres de contexto por la izquierda se metían en el párrafo anterior,
+            // y en la 4.6 el párrafo anterior a «Lactancia» es el de EMBARAZO: el check de
+            // Lactancia acababa enseñando «…oligohidramnios y retraso en la osificación del
+            // cráneo. Lactancia No se recomienda…». Es el mismo defecto que 2fcfea4 y a2ad8f7
+            // corrigieron por otros dos caminos, entrando por un tercero.
+            //
+            // Un bloque es una unidad de sentido en la ficha. Se recorta ahí y punto; si queda
+            // corto, queda corto, que es preferible a pegar dos párrafos distintos y que se
+            // lean como uno.
+            let start = Math.max(0, hallazgo.idx - 60);
+            for (let i = hallazgo.idx - 1; i >= start; i--) {
+                if (fronteras[i]) { start = i + 1; break; }
+            }
+            // HACIA DELANTE SÍ SE CRUZA, y es deliberado: por la derecha lo que sigue a la
+            // mención es el texto que la desarrolla. Cuando la mención ES el rótulo —«Lactancia»
+            // en su propio `<p>`, que es como maqueta CIMA—, cortar también aquí dejaba el
+            // extracto en «...Lactancia...», que no dice nada. El riesgo está solo a la
+            // izquierda, que es donde vive el tema anterior.
             const end = Math.min(plainText.length, hallazgo.idx + hallazgo.largo + 100);
             const excerpt = '...' + plainText.substring(start, end).trim() + '...';
 

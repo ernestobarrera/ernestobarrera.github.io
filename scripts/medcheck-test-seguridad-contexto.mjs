@@ -216,6 +216,86 @@ console.log('\n— Los acentos de CIMA llegan como entidades, y aun así tienen 
         !/<script/i.test(ren3.excerpt || ''), `obtenido: ${JSON.stringify(ren3.excerpt)}`);
 }
 
+// ─── Qué mención se elige cuando hay varias ───────────────────────────────────
+//
+// Lo trajo Ernesto desde producción el 22/09/2026, con gabapentina: «a veces selecciona un
+// texto, a veces otro algo random». No era aleatorio. El bucle paraba en cuanto una keyword
+// casaba, así que **el orden en que alguien escribió `contextMapping` decidía lo que leía el
+// médico**, por encima de dónde estuviera la mención en el apartado.
+console.log('\n— Gana la mención más temprana del apartado, no la primera de la lista —');
+{
+    // Topología de la 4.4 de GABAPENTINA ALMUS 800 (70400): «mayores de 65» está en el primer
+    // tercio y «edad avanzada» casi al final, dentro de un inciso sobre depresión respiratoria.
+    // En `contextMapping`, «edad avanzada» va ANTES que «mayores de 65».
+    const S44_GABA =
+        '<p>No ha habido estudios sistem&#225;ticos en pacientes mayores de 65 a&#241;os. '
+        + 'En un estudio a doble ciego aparecieron somnolencia y edema perif&#233;rico.</p>'
+        + '<p>La gabapentina se ha asociado a depresi&#243;n respiratoria grave. Los pacientes '
+        + 'con funci&#243;n respiratoria comprometida y las personas de edad avanzada podr&#237;an '
+        + 'correr un mayor riesgo de sufrir esta reacci&#243;n adversa grave.</p>';
+
+    const api = apiConSecciones({ '4.4': S44_GABA, '4.6': '', '4.7': '' });
+    const may = contextCheck(await api.analyzeSafety('TEST-10', { elderly: true }), 'elderly');
+
+    check('se elige la mención que aparece ANTES en el apartado',
+        /mayores de 65/i.test(may.excerpt || ''), `obtenido: ${JSON.stringify(may.excerpt)}`);
+    check('y no la del inciso del final, que solo ganaba por el orden de la lista',
+        !/depresi[óo]n respiratoria/i.test(may.excerpt || ''),
+        `obtenido: ${JSON.stringify(may.excerpt)}`);
+    check('el ancla del enlace sale de la misma mención',
+        /mayores de 65/i.test(may.match || ''), `obtenido: ${JSON.stringify(may.match)}`);
+}
+
+console.log('\n— Las palabras que NOMBRAN el contexto mandan sobre los indicios —');
+{
+    // La contrapartida, y es la que impide que lo anterior reabra un defecto ya corregido: en
+    // la 4.6 de enalapril, «recién nacido» aparece en pleno párrafo de EMBARAZO (oligohidramnios,
+    // osificación del cráneo) ANTES de que se hable de lactancia. Con la regla de arriba a secas,
+    // el check de Lactancia volvería a enseñar texto de embarazo, que es justo lo que corrigieron
+    // 2fcfea4 y a2ad8f7. Por eso `contextMapping` separa `keywords` de `indicios`.
+    const S46_ENALAPRIL =
+        '<strong>Fertilidad, embarazo y lactancia</strong><br>'
+        + '<p><u>Embarazo</u></p>'
+        + '<p>Se ha descrito toxicidad en reci&#233;n nacidos: insuficiencia renal, hipotensi&#243;n '
+        + 'e hiperpotasemia, adem&#225;s de oligohidramnios y retraso en la osificaci&#243;n del cr&#225;neo.</p>'
+        + '<p><u>Lactancia</u></p>'
+        + '<p>No se recomienda el uso de enalapril en la lactancia de ni&#241;os prematuros y en las '
+        + 'primeras semanas despu&#233;s del parto.</p>';
+
+    const api = apiConSecciones({ '4.4': '', '4.6': S46_ENALAPRIL, '4.7': '' });
+    const lac = contextCheck(await api.analyzeSafety('TEST-11', { lactation: true }), 'lactation');
+
+    check('el check de Lactancia NO enseña el párrafo de embarazo',
+        !/oligohidramnios|osificaci[óo]n/i.test(lac.excerpt || ''),
+        `obtenido: ${JSON.stringify(lac.excerpt)}`);
+    check('enseña el de lactancia, aunque esté después',
+        /lactancia/i.test(lac.excerpt || ''), `obtenido: ${JSON.stringify(lac.excerpt)}`);
+
+    // Y los indicios NO se tiran: si son lo único que hay, siguen contando como mención. Un
+    // apartado que solo nombra al neonato no es un apartado que no diga nada.
+    const S46_SOLO_INDICIO =
+        '<p>Se han descrito efectos sobre el neonato como hipoactividad e hipotermia.</p>';
+    const api2 = apiConSecciones({ '4.4': '', '4.6': S46_SOLO_INDICIO, '4.7': '' });
+    const lac2 = contextCheck(await api2.analyzeSafety('TEST-12', { lactation: true }), 'lactation');
+    check('un indicio solo, sin ninguna palabra del contexto, SIGUE siendo mención',
+        !!lac2.excerpt && /neonato/i.test(lac2.excerpt), `obtenido: ${JSON.stringify(lac2.message)}`);
+}
+
+console.log('\n— El ancla no empieza ni acaba en andamiaje gramatical —');
+{
+    const S44 = '<p>Los pacientes con enfermedad respiratoria y las personas de edad avanzada '
+        + 'podr&#237;an correr un mayor riesgo de sufrir esta reacci&#243;n.</p>';
+    const api = apiConSecciones({ '4.4': S44, '4.6': '', '4.7': '' });
+    const may = contextCheck(await api.analyzeSafety('TEST-13', { elderly: true }), 'elderly');
+    const m = may.match || '';
+    check('el ancla no empieza por conjunción, artículo ni preposición',
+        !!m && !/^(y|o|de|del|la|el|los|las|un|una|en|con|por|para|que|se|su)\b/i.test(m),
+        `obtenido: ${JSON.stringify(m)}`);
+    check('ni acaba en ellas',
+        !!m && !/\b(y|o|de|del|la|el|los|las|un|una|en|con|por|para|que|se|su|mas|más)$/i.test(m),
+        `obtenido: ${JSON.stringify(m)}`);
+}
+
 if (failures) {
     console.log(`\n${failures} fallo(s)`);
     process.exit(1);
