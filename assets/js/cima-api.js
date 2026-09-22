@@ -2792,21 +2792,137 @@ class CimaAPI {
      * Analiza el contenido de una sección buscando palabras clave
      * @private
      */
+    /**
+     * Las entidades NOMBRADAS que CIMA usa de verdad. No se pretende cubrir HTML entero: se
+     * decodifican los numéricos (que es como la AEMPS manda los acentos) y estas pocas. Las de
+     * marcado (`&lt;`, `&gt;`, `&amp;`, `&quot;`, `&apos;`) se dejan fuera a propósito — ver el
+     * comentario de `_analyzeSection`.
+     */
+    static ENTIDADES_NOMBRADAS = {
+        nbsp: 160, aacute: 225, eacute: 233, iacute: 237, oacute: 243, uacute: 250,
+        ntilde: 241, uuml: 252, ordm: 186, ordf: 170, deg: 176, micro: 181,
+        Aacute: 193, Eacute: 201, Iacute: 205, Oacute: 211, Uacute: 218, Ntilde: 209,
+        laquo: 171, raquo: 187, mdash: 8212, ndash: 8211, hellip: 8230, plusmn: 177,
+    };
+
     _analyzeSection(content, keywords) {
         if (!content || typeof content !== 'string') {
             return { status: 'unknown', message: 'Sin información', excerpt: null };
         }
 
-        // Limpiar HTML para buscar en texto plano y evitar mostrar códigos CSS en el excerpt
-        // También eliminar caracteres \n literales y múltiples espacios
-        const plainText = content
-            .replace(/<[^>]*>/g, ' ')       // eliminar tags HTML
-            .replace(/\\n/g, ' ')            // \n literales escapados
-            .replace(/\n/g, ' ')             // saltos de línea reales
-            .replace(/\r/g, ' ')             // retornos de carro
-            .replace(/\s+/g, ' ')            // múltiples espacios a uno
-            .trim();
-        const lowerContent = plainText.toLowerCase();
+        // EL TÍTULO DE LA SECCIÓN NO ES EL CUERPO DE LA SECCIÓN. Corregido el 22/09/2026.
+        //
+        // `getDocSeccion` antepone el título de cada sección y subsección como `<strong>…</strong>`,
+        // y el título de la 4.6 es «Fertilidad, embarazo y lactancia»: **contiene las palabras de los
+        // dos contextos que comparten el apartado**. Buscando sobre el texto plano a secas, la
+        // keyword «lactancia» casa en ese título —carácter ~5— y nunca llega al subapartado real de
+        // lactancia, que en las fichas de paracetamol empieza pasado el carácter 500. Resultado: el
+        // extracto de «Lactancia» volvía a ser el de embarazo, que es EXACTAMENTE el defecto que
+        // 2fcfea4 quiso corregir el 21/09 y solo corrigió a medias. Ernesto lo vio en producción.
+        //
+        // Regla: **una coincidencia en el cuerpo gana a una coincidencia en un título.** No se
+        // descartan los títulos, porque en la 4.2 el título de la subsección ES la coincidencia
+        // buena («Pacientes de edad avanzada», «Pacientes con insuficiencia renal») y muchas veces
+        // la única. Solo se posponen: se usa la del cuerpo si existe, y si no, la del título.
+        //
+        // Por eso el HTML se recorre UNA vez en vez de encadenar reemplazos: hace falta saber de
+        // qué caracteres del texto plano venía cada uno, y los `.replace()` en cadena pierden esa
+        // correspondencia.
+        const bruto = [];
+        const deTitulo = [];
+        let dentroTitulo = false;
+        for (let i = 0; i < content.length;) {
+            if (content[i] === '<') {
+                const fin = content.indexOf('>', i);
+                if (fin === -1) {
+                    // Un '<' suelto (un «< 30 ml/min» mal escapado) NO puede tragarse el resto de
+                    // la sección: se trata como carácter normal, que es lo que hacía el regex.
+                    bruto.push(content[i]); deTitulo.push(dentroTitulo);
+                    i += 1;
+                    continue;
+                }
+                const etiqueta = content.slice(i + 1, fin).toLowerCase().trim();
+                if (etiqueta === 'strong' || etiqueta === 'b') dentroTitulo = true;
+                else if (etiqueta === '/strong' || etiqueta === '/b') dentroTitulo = false;
+                bruto.push(' '); deTitulo.push(dentroTitulo);   // la etiqueta cuenta como separador
+                i = fin + 1;
+                continue;
+            }
+            // CIMA manda a veces los saltos de línea como literales escapados («\n»).
+            if (content[i] === '\\' && (content[i + 1] === 'n' || content[i + 1] === 'r')) {
+                bruto.push(' '); deTitulo.push(dentroTitulo);
+                i += 2;
+                continue;
+            }
+            // LAS ENTIDADES SE DECODIFICAN. CIMA manda TODOS los acentos como entidades numéricas
+            // («disfunci&#243;n hep&#225;tica y renal grave»), así que buscar sobre el texto crudo
+            // hacía imposible que casara ninguna keyword con tilde — 32 de las 125 declaradas en
+            // `contextMapping`, entre ellas «insuficiencia hepática», «función renal»,
+            // «conducción» y «pacientes geriátricos». Y las variantes sin tilde que alguien añadió
+            // para compensar tampoco casaban, porque la tilde SÍ está en la fuente, solo que
+            // codificada. Medido el 22/09/2026 sobre la 4.4 de ANTIDOL 1 G.
+            if (content[i] === '&') {
+                const fin = content.indexOf(';', i);
+                if (fin !== -1 && fin - i <= 10) {
+                    const cuerpo = content.slice(i + 1, fin);
+                    let cp = null;
+                    if (/^#x[0-9a-f]+$/i.test(cuerpo)) cp = parseInt(cuerpo.slice(2), 16);
+                    else if (/^#\d+$/.test(cuerpo)) cp = parseInt(cuerpo.slice(1), 10);
+                    else {
+                        // Exacta primero: `&Aacute;` no es `&aacute;`, y el extracto se muestra.
+                        const tabla = CimaAPI.ENTIDADES_NOMBRADAS;
+                        const cod = tabla[cuerpo] !== undefined ? tabla[cuerpo] : tabla[cuerpo.toLowerCase()];
+                        if (cod !== undefined) cp = cod;
+                    }
+                    // NUNCA se decodifica a `< > & " '`: el extracto se inserta como HTML en el
+                    // modal, así que devolver esos caracteres convertiría texto de la ficha en
+                    // marcado. Se dejan tal cual, que es lo que ya hacía el código anterior.
+                    if (cp !== null && !Number.isNaN(cp) && ![38, 34, 39, 60, 62].includes(cp)) {
+                        const decodificado = String.fromCodePoint(cp);
+                        // Un NBSP es un espacio, no una letra: si no, pega palabras vecinas.
+                        bruto.push(cp === 160 ? ' ' : decodificado);
+                        deTitulo.push(dentroTitulo);
+                        i = fin + 1;
+                        continue;
+                    }
+                }
+            }
+            bruto.push(content[i]); deTitulo.push(dentroTitulo);
+            i += 1;
+        }
+
+        // Colapsar los espacios SIN perder la anotación: se construyen los dos arrays a la vez.
+        const chars = [];
+        const marcas = [];
+        let previoEsEspacio = true;   // arranca en true para no dejar espacio inicial (sustituye al trim)
+        for (let i = 0; i < bruto.length; i++) {
+            const c = bruto[i];
+            if (c === ' ' || c === '\n' || c === '\r' || c === '\t') {
+                if (previoEsEspacio) continue;
+                // El espacio conserva SU marca: si no, «edad avanzada» dentro de «Pacientes de edad
+                // avanzada» dejaría de contar como rótulo por el espacio de en medio y ganaría a una
+                // mención real del cuerpo, que es justo al revés de lo que se busca.
+                chars.push(' '); marcas.push(deTitulo[i]);
+                previoEsEspacio = true;
+                continue;
+            }
+            chars.push(c); marcas.push(deTitulo[i]);
+            previoEsEspacio = false;
+        }
+        while (chars.length && chars[chars.length - 1] === ' ') { chars.pop(); marcas.pop(); }
+
+        const plainText = chars.join('');
+
+        // Y SE COMPARA PLEGANDO LOS ACENTOS, POR LOS DOS LADOS. Decodificar arregla la mitad del
+        // desencuentro (la fuente); esto arregla la otra (la lista). `contextMapping` mezcla
+        // «insuficiencia hepática» con «insuficiencia hepatica» precisamente porque nadie sabía de
+        // qué lado estaba el fallo. Plegar hace irrelevante cómo se escriba cada una.
+        //
+        // El plegado conserva la LONGITUD —cada carácter precompuesto deja su letra base—, así que
+        // las posiciones siguen valiendo para recortar el extracto sobre `plainText`, que es el
+        // texto de verdad, con sus tildes.
+        const plegar = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const lowerContent = plegar(plainText);
 
         // Espejo, no juez. Si el término aparece en la sección oficial, MedCheck
         // NO emite juicio de gravedad propio a partir de su análisis de texto
@@ -2817,19 +2933,38 @@ class CimaAPI {
         // (sin distinguir "negado": esa lectura también es interpretación). La
         // gravedad solo la marcan fuentes oficiales estructuradas (notas AEMPS,
         // contexto determinista), no aquí.
-        for (const keyword of keywords) {
-            const index = lowerContent.indexOf(keyword.toLowerCase());
-            if (index !== -1) {
-                const start = Math.max(0, index - 60);
-                const end = Math.min(plainText.length, index + keyword.length + 100);
-                const excerpt = '...' + plainText.substring(start, end).trim() + '...';
+        const caeEnteraEnTitulo = (desde, largo) => {
+            for (let i = desde; i < desde + largo; i++) if (!marcas[i]) return false;
+            return true;
+        };
 
-                return {
-                    status: 'review',
-                    message: 'Mencionado en la ficha — revisar la sección oficial',
-                    excerpt
-                };
+        let enCuerpo = null;    // la buena: el texto de verdad del apartado
+        let enTitulo = null;    // la de reserva: solo el rótulo lo nombra
+
+        for (const keyword of keywords) {
+            const kw = plegar(keyword);
+            let desde = 0;
+            let idx = lowerContent.indexOf(kw, desde);
+            while (idx !== -1) {
+                if (!caeEnteraEnTitulo(idx, kw.length)) { enCuerpo = { idx, largo: kw.length }; break; }
+                if (!enTitulo) enTitulo = { idx, largo: kw.length };
+                desde = idx + 1;
+                idx = lowerContent.indexOf(kw, desde);
             }
+            if (enCuerpo) break;
+        }
+
+        const hallazgo = enCuerpo || enTitulo;
+        if (hallazgo) {
+            const start = Math.max(0, hallazgo.idx - 60);
+            const end = Math.min(plainText.length, hallazgo.idx + hallazgo.largo + 100);
+            const excerpt = '...' + plainText.substring(start, end).trim() + '...';
+
+            return {
+                status: 'review',
+                message: 'Mencionado en la ficha — revisar la sección oficial',
+                excerpt
+            };
         }
 
         return { status: 'safe', message: 'Sin menciones relevantes', excerpt: null };
