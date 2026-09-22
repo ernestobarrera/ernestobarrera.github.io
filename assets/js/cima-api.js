@@ -2535,6 +2535,9 @@ class CimaAPI {
                     status: finalStatus,
                     message: finalMessage,
                     excerpt: hayMencion ? analysis.excerpt : null,
+                    // Solo si hubo mención literal: sin ella no hay nada que resaltar y el
+                    // enlace tiene que seguir llevando al apartado entero, como hasta ahora.
+                    match: hayMencion ? analysis.match : null,
                     isContextSpecific: true
                 });
             } catch (error) {
@@ -2805,9 +2808,111 @@ class CimaAPI {
         laquo: 171, raquo: 187, mdash: 8212, ndash: 8211, hellip: 8230, plusmn: 177,
     };
 
+    /**
+     * Etiquetas que en HTML abren o cierran un BLOQUE. Importan por una razón concreta y
+     * medida: el algoritmo de text fragments del navegador no busca a través de una frontera
+     * de bloque, así que un fragmento que empiece en un rótulo y siga en el párrafo de debajo
+     * no casa jamás. Y CIMA maqueta exactamente así — comprobado el 22/09/2026 en las fichas
+     * de paracetamol, amoxicilina e ibuprofeno, donde «Lactancia» o «Insuficiencia renal»
+     * viven en su propio `<p>`, con el texto en el siguiente.
+     */
+    static ETIQUETAS_BLOQUE = new Set([
+        'p', 'br', 'div', 'li', 'ul', 'ol', 'tr', 'td', 'th', 'table', 'tbody', 'thead',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'section', 'blockquote', 'dt', 'dd', 'dl',
+    ]);
+
+    /** Cuántas palabras se cogen a cada lado de la coincidencia para formar el ancla. */
+    static ANCLA_PALABRAS_LADO = 4;
+
+    /**
+     * Cuántos caracteres necesita el ancla para mandarse al navegador.
+     *
+     * No es un número estético. Un ancla corta casa en cualquier parte del documento, y el
+     * navegador salta a la PRIMERA coincidencia de toda la ficha, no a la de la sección que
+     * pide el enlace. Medido el 22/09/2026 sobre 7 fichas reales y 35 coincidencias: con una
+     * sola palabra, **20 de 35 aterrizaban en otra sección** —casi siempre la 4.2—, y el
+     * médico habría leído texto de otro apartado creyendo que era el de su contexto. Que es
+     * el mismo defecto que 2fcfea4 y a2ad8f7 vinieron a corregir, vestido de mejora.
+     */
+    static ANCLA_MIN_CARACTERES = 18;
+
+    /**
+     * El trozo de frase que se le pide al navegador que resalte, o `null` si no hay ninguno
+     * lo bastante específico.
+     *
+     * Se saca del texto **tal como está en la ficha** (con sus tildes), no de la keyword: el
+     * navegador compara sin plegar acentos, así que mandar «geriatricos» donde la fuente pone
+     * «geriátricos» no resalta nada.
+     *
+     * Tres límites, y los tres por la misma razón —que el fragmento case donde debe o no case
+     * en absoluto, nunca en el sitio equivocado—:
+     *
+     *  1. NO CRUZA FRONTERA DE BLOQUE. Es la restricción real del navegador, y CIMA pone los
+     *     rótulos en su propio `<p>`.
+     *  2. NO CRUZA FINAL DE FRASE (`.`, `;`, `:`). Un ancla que salta de una oración a la
+     *     siguiente es más larga pero no más fiable, y cuesta lo mismo.
+     *  3. SE EXPANDE A PALABRA COMPLETA. `contextMapping` declara prefijos a propósito
+     *     (`nefrotóxi`, `amamant`) y el navegador exige límites de palabra: un fragmento
+     *     cortado a media palabra no casaría nunca.
+     *
+     * Y se descarta el ancla que ocupa un BLOQUE ENTERO. Un bloque que empieza y acaba justo
+     * donde acaba el ancla es un rótulo («Insuficiencia renal» en su propio `<p>`), y los
+     * rótulos se repiten entre apartados: eso es lo que los hace rótulos. Medido el 22/09/2026
+     * sobre 9 fichas: los 3 únicos enlaces que aterrizaban en un apartado distinto del que
+     * anunciaban eran exactamente esos, y los tres caían en la 4.2.
+     *
+     * Si lo que sale no llega al mínimo, se devuelve `null` y el enlace se queda en el ancla
+     * de sección, que es lo que hacía antes de esto. Degradar es correcto; acertar la sección
+     * equivocada, no.
+     */
+    _anclaDeTexto(plainText, fronteras, idx, largo) {
+        const esLetra = (c) => c !== undefined && /[\p{L}\p{N}]/u.test(c);
+        const corta = (i) => i < 0 || i >= plainText.length || fronteras[i]
+            || plainText[i] === '.' || plainText[i] === ';' || plainText[i] === ':';
+
+        let a = idx;
+        let b = idx + largo;
+        // Varias keywords llevan espacio de borde (`'alt '`, `'ast '`): sin recortarlo, la
+        // expansión se comería la palabra vecina y el ancla sería otra cosa.
+        while (a < b && !esLetra(plainText[a])) a++;
+        while (b > a && !esLetra(plainText[b - 1])) b--;
+        if (a >= b) return null;
+        while (a > 0 && esLetra(plainText[a - 1]) && !corta(a - 1)) a--;
+        while (b < plainText.length && esLetra(plainText[b]) && !corta(b)) b++;
+
+        const lado = CimaAPI.ANCLA_PALABRAS_LADO;
+
+        let i = a;
+        for (let n = 0; n < lado && i > 0; n++) {
+            let j = i;
+            while (j > 0 && !esLetra(plainText[j - 1]) && !corta(j - 1)) j--;   // separadores
+            while (j > 0 && esLetra(plainText[j - 1]) && !corta(j - 1)) j--;    // la palabra
+            if (j === i) break;
+            i = j;
+        }
+
+        let k = b;
+        for (let n = 0; n < lado && k < plainText.length; n++) {
+            let j = k;
+            while (j < plainText.length && !esLetra(plainText[j]) && !corta(j)) j++;
+            while (j < plainText.length && esLetra(plainText[j]) && !corta(j)) j++;
+            if (j === k) break;
+            k = j;
+        }
+
+        // ¿Se ha parado a los dos lados por frontera de bloque? Entonces el ancla ES el bloque.
+        const abreBloque = i === 0 || !!fronteras[i - 1];
+        const cierraBloque = k >= plainText.length || !!fronteras[k];
+        if (abreBloque && cierraBloque) return null;
+
+        const ancla = plainText.slice(i, k).trim();
+        return ancla.length >= CimaAPI.ANCLA_MIN_CARACTERES ? ancla : null;
+    }
+
+
     _analyzeSection(content, keywords) {
         if (!content || typeof content !== 'string') {
-            return { status: 'unknown', message: 'Sin información', excerpt: null };
+            return { status: 'unknown', message: 'Sin información', excerpt: null, match: null };
         }
 
         // EL TÍTULO DE LA SECCIÓN NO ES EL CUERPO DE LA SECCIÓN. Corregido el 22/09/2026.
@@ -2830,6 +2935,10 @@ class CimaAPI {
         // correspondencia.
         const bruto = [];
         const deTitulo = [];
+        // Tercera anotación, para el ancla de texto: qué separadores son FRONTERA DE BLOQUE.
+        // El navegador no busca un text fragment a través de una de ellas, así que el ancla
+        // tampoco puede cruzarla. Ver `_anclaDeTexto`.
+        const deFrontera = [];
         let dentroTitulo = false;
         for (let i = 0; i < content.length;) {
             if (content[i] === '<') {
@@ -2837,20 +2946,22 @@ class CimaAPI {
                 if (fin === -1) {
                     // Un '<' suelto (un «< 30 ml/min» mal escapado) NO puede tragarse el resto de
                     // la sección: se trata como carácter normal, que es lo que hacía el regex.
-                    bruto.push(content[i]); deTitulo.push(dentroTitulo);
+                    bruto.push(content[i]); deTitulo.push(dentroTitulo); deFrontera.push(false);
                     i += 1;
                     continue;
                 }
                 const etiqueta = content.slice(i + 1, fin).toLowerCase().trim();
                 if (etiqueta === 'strong' || etiqueta === 'b') dentroTitulo = true;
                 else if (etiqueta === '/strong' || etiqueta === '/b') dentroTitulo = false;
+                const nombreEtiqueta = etiqueta.replace(/^\//, '').split(/[\s/]/)[0];
                 bruto.push(' '); deTitulo.push(dentroTitulo);   // la etiqueta cuenta como separador
+                deFrontera.push(CimaAPI.ETIQUETAS_BLOQUE.has(nombreEtiqueta));
                 i = fin + 1;
                 continue;
             }
             // CIMA manda a veces los saltos de línea como literales escapados («\n»).
             if (content[i] === '\\' && (content[i + 1] === 'n' || content[i + 1] === 'r')) {
-                bruto.push(' '); deTitulo.push(dentroTitulo);
+                bruto.push(' '); deTitulo.push(dentroTitulo); deFrontera.push(true);
                 i += 2;
                 continue;
             }
@@ -2881,35 +2992,46 @@ class CimaAPI {
                         const decodificado = String.fromCodePoint(cp);
                         // Un NBSP es un espacio, no una letra: si no, pega palabras vecinas.
                         bruto.push(cp === 160 ? ' ' : decodificado);
-                        deTitulo.push(dentroTitulo);
+                        deTitulo.push(dentroTitulo); deFrontera.push(false);
                         i = fin + 1;
                         continue;
                     }
                 }
             }
-            bruto.push(content[i]); deTitulo.push(dentroTitulo);
+            bruto.push(content[i]); deTitulo.push(dentroTitulo); deFrontera.push(false);
             i += 1;
         }
 
         // Colapsar los espacios SIN perder la anotación: se construyen los dos arrays a la vez.
         const chars = [];
         const marcas = [];
+        const fronteras = [];
         let previoEsEspacio = true;   // arranca en true para no dejar espacio inicial (sustituye al trim)
+        let fronteraPendiente = false;
         for (let i = 0; i < bruto.length; i++) {
             const c = bruto[i];
             if (c === ' ' || c === '\n' || c === '\r' || c === '\t') {
-                if (previoEsEspacio) continue;
+                // Varias etiquetas seguidas («</p> <p>») colapsan en UN espacio: si cualquiera
+                // de ellas era frontera, el espacio superviviente tiene que seguir siéndolo.
+                if (deFrontera[i]) fronteraPendiente = true;
+                if (previoEsEspacio) {
+                    if (fronteraPendiente && fronteras.length) fronteras[fronteras.length - 1] = true;
+                    fronteraPendiente = false;
+                    continue;
+                }
                 // El espacio conserva SU marca: si no, «edad avanzada» dentro de «Pacientes de edad
                 // avanzada» dejaría de contar como rótulo por el espacio de en medio y ganaría a una
                 // mención real del cuerpo, que es justo al revés de lo que se busca.
-                chars.push(' '); marcas.push(deTitulo[i]);
+                chars.push(' '); marcas.push(deTitulo[i]); fronteras.push(fronteraPendiente || deFrontera[i]);
+                fronteraPendiente = false;
                 previoEsEspacio = true;
                 continue;
             }
-            chars.push(c); marcas.push(deTitulo[i]);
+            chars.push(c); marcas.push(deTitulo[i]); fronteras.push(false);
+            fronteraPendiente = false;
             previoEsEspacio = false;
         }
-        while (chars.length && chars[chars.length - 1] === ' ') { chars.pop(); marcas.pop(); }
+        while (chars.length && chars[chars.length - 1] === ' ') { chars.pop(); marcas.pop(); fronteras.pop(); }
 
         const plainText = chars.join('');
 
@@ -2963,11 +3085,14 @@ class CimaAPI {
             return {
                 status: 'review',
                 message: 'Mencionado en la ficha — revisar la sección oficial',
-                excerpt
+                excerpt,
+                // Lo que casó, para que el enlace a CIMA pueda llevar a la frase y no solo al
+                // apartado. Ya se sabía aquí desde siempre; simplemente no salía de la función.
+                match: this._anclaDeTexto(plainText, fronteras, hallazgo.idx, hallazgo.largo)
             };
         }
 
-        return { status: 'safe', message: 'Sin menciones relevantes', excerpt: null };
+        return { status: 'safe', message: 'Sin menciones relevantes', excerpt: null, match: null };
     }
 
     // ============================================

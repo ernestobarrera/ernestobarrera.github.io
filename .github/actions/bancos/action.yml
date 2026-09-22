@@ -27,7 +27,7 @@ inputs:
       GUARDA DE ARRANQUE. Menos bancos de los esperados es rojo. Sin ella, renombrar el prefijo
       dejaría el bucle vacío y esto saldría verde sin probar una línea.
     required: false
-    default: '35'
+    default: '36'
 
 runs:
   using: composite

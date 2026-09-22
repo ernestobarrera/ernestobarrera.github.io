@@ -601,8 +601,8 @@ console.log('\n— La señalética de los checks de contexto —');
 
     // La puerta a la fuente íntegra, al lado del visor interno.
     const app2 = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
-    ok(/_ftUrlSeccion\(med, check\.section\)/.test(app2),
-        'los checks ofrecen además la sección en CIMA');
+    ok((app2.match(/_ftUrlSeccion\(med, check\.section, check\.match\)/g) || []).length === 2,
+        'los checks ofrecen además la sección en CIMA, y le pasan la frase que casó');
     ok((app2.match(/\$\{viewSectionBtn\}\$\{verEnCimaBtn\}/g) || []).length === 2,
         'en los DOS sitios donde se pintan los checks, no solo en el modal');
     ok(/id="4\.8"|encodeURIComponent\(seccion\)/.test(app2),

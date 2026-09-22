@@ -4639,11 +4639,48 @@ class MedCheckApp {
      * `urlHtml` que publica la fuente y el fragmento es el identificador que ella misma pone en
      * su HTML (`id="4.8"`), verificado el 19/09/2026. Si el ancla no existiera, el documento abre
      * por arriba; nunca un 404.
+     *
+     * DEL APARTADO A LA FRASE (22/09/2026). Con `match` —el trozo de frase que
+     * `_analyzeSection` encontró en la ficha— se añade un *text fragment* `:~:text=…`, y el
+     * navegador resalta esa frase y desplaza hasta ella en vez de dejar al médico buscando
+     * dentro de un documento de 80 KB. Acertar el apartado no basta cuando el apartado es la
+     * 4.4 entera.
+     *
+     * Degrada solo: es sintaxis de fragmento, así que no viaja al servidor y ningún navegador
+     * devuelve 404 por ella. El que no la soporte (hoy, Firefox por defecto) ignora el `:~:` y
+     * usa el ancla `#4.4`, que es el comportamiento que había hasta ahora. Y si la palabra no
+     * casa —etiquetas de CIMA partiendo la palabra, texto reescrito desde la última consulta—,
+     * el navegador también se queda en el ancla. Ningún caso queda peor que antes.
+     *
+     * Sin `match` no se añade nada: las tres secciones fijas (4.4, 4.6, 4.7) y el índice de
+     * documentos siguen enlazando al apartado, porque ahí no hay ninguna frase que señalar.
      */
-    _ftUrlSeccion(med, seccion) {
+    _ftUrlSeccion(med, seccion, match = null) {
         if (!seccion) return null;
         const ft = (med?.docs || []).find(d => d.tipo === 1 && d.secc === true && d.urlHtml);
-        return ft ? `${ft.urlHtml}#${encodeURIComponent(seccion)}` : null;
+        if (!ft) return null;
+        const base = `${ft.urlHtml}#${encodeURIComponent(seccion)}`;
+
+        const ancla = typeof match === 'string' ? match.trim() : '';
+        if (!ancla) return base;
+
+        // DOS FILTROS, Y NINGUNO ES REMILGO.
+        //
+        // El primero es la línea roja de siempre: este href se interpola en HTML y el texto
+        // viene de la ficha de CIMA, que es fuente externa. `encodeURIComponent` ya deja el
+        // fragmento sin ningún carácter que pueda salirse del atributo, pero si en el ancla
+        // aparece marcado es que algo ha ido mal aguas arriba, y entonces no se enlaza a la
+        // frase: se enlaza al apartado. Es la misma regla que impide decodificar `< > & " '`
+        // en el extracto.
+        if (/[<>"'&]|[\u0000-\u001f]/.test(ancla)) return base;
+
+        // El segundo es la sintaxis del propio fragmento: la coma separa el rango y el guion
+        // final marca prefijo y sufijo, así que los dos se codifican aunque
+        // `encodeURIComponent` deje pasar el guion. Un ancla con una coma sin codificar se
+        // partiría en dos y el navegador buscaría otra cosa.
+        const codificada = encodeURIComponent(ancla).replace(/-/g, '%2D').replace(/'/g, '%27');
+
+        return `${base}:~:text=${codificada}`;
     }
 
     /**
@@ -4930,10 +4967,15 @@ class MedCheckApp {
             // por órgano y frecuencia— llegaba aplanada a párrafo corrido. El HTML de CIMA la
             // conserva y además deja saltar a las secciones vecinas. No sustituye al visor: son
             // dos cosas distintas y las dos valen.
-            const urlSeccion = this._ftUrlSeccion(med, check.section);
+            const urlSeccion = this._ftUrlSeccion(med, check.section, check.match);
+            // El title dice a qué palabra lleva cuando lleva a una: el médico sabe antes de
+            // pulsar si va a aterrizar sobre la mención o en la cabecera del apartado.
+            const tituloCima = check.match
+                ? `Abrir la sección ${check.section} de la ficha técnica en CIMA, resaltando «${this._escapeHtml(check.match)}»`
+                : `Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas`;
             const verEnCimaBtn = urlSeccion
                 ? `<a class="btn-text" href="${urlSeccion}" target="_blank" rel="noopener"
-                       title="Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas">
+                       title="${tituloCima}">
                        <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
                 : '';
 
@@ -10042,10 +10084,15 @@ ${materialesPlaceholder}
             // por órgano y frecuencia— llegaba aplanada a párrafo corrido. El HTML de CIMA la
             // conserva y además deja saltar a las secciones vecinas. No sustituye al visor: son
             // dos cosas distintas y las dos valen.
-            const urlSeccion = this._ftUrlSeccion(med, check.section);
+            const urlSeccion = this._ftUrlSeccion(med, check.section, check.match);
+            // El title dice a qué palabra lleva cuando lleva a una: el médico sabe antes de
+            // pulsar si va a aterrizar sobre la mención o en la cabecera del apartado.
+            const tituloCima = check.match
+                ? `Abrir la sección ${check.section} de la ficha técnica en CIMA, resaltando «${this._escapeHtml(check.match)}»`
+                : `Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas`;
             const verEnCimaBtn = urlSeccion
                 ? `<a class="btn-text" href="${urlSeccion}" target="_blank" rel="noopener"
-                       title="Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas">
+                       title="${tituloCima}">
                        <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
                 : '';
 
