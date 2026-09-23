@@ -4919,6 +4919,40 @@ class MedCheckApp {
         }
     }
 
+    _renderContextPassages(med, check, scope) {
+        if (!Array.isArray(check.sections)) return '';
+        const esc = value => this._escapeHtml(String(value ?? ''));
+        const sectionNames = {
+            '4.2': 'Posología y forma de administración',
+            '4.4': 'Advertencias y precauciones especiales',
+            '4.6': 'Fertilidad, embarazo y lactancia',
+            '4.7': 'Efectos sobre conducción y maquinaria'
+        };
+        const id = (section, ordinal) => `ft-passage-${scope}-${String(med.nregistro).replace(/[^\w-]/g, '')}-${check.context}-${section.replace(/[^\w-]/g, '-')}-${ordinal}`;
+        const ordered = section => (section.displayOrder || [])
+            .map(ordinal => section.groups.find(group => group.ordinal === ordinal))
+            .filter(Boolean);
+        const index = check.sections.flatMap(section => ordered(section).map(group =>
+            `<a href="#${id(section.section, group.ordinal)}">${esc(section.section)} · ${esc(group.title)}</a>`)).join('');
+        return `<div class="safety-passages">
+            ${index ? `<nav class="safety-passages-index" aria-label="Pasajes de ${esc(check.label)}"><strong>Ir a un pasaje</strong>${index}</nav>` : ''}
+            ${check.sections.map(section => {
+                const url = this._ftUrlSeccion(med, section.section);
+                return `<section class="safety-passages-section">
+                    <div class="safety-passages-section-head"><strong>${esc(section.section)} · ${esc(sectionNames[section.section] || '')}</strong>
+                    ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Apartado completo en CIMA</a>` : ''}</div>
+                    <p class="safety-passages-note">${esc(section.message)}</p>
+                    ${ordered(section).map(group => `<div class="safety-passage" id="${id(section.section, group.ordinal)}">
+                        <div class="safety-passage-meta">Coincidencia en ${esc(group.matchLocation)} · ${esc(group.level)} · ${esc(group.titleKind)}</div>
+                        ${!['rótulo tipográfico', 'rótulo francés'].includes(group.titleKind) ? `<strong class="safety-passage-title">${esc(group.title)}</strong>` : ''}
+                        <div class="safety-passage-source">${esc(group.section)} · ${esc(group.sectionTitle)}</div>
+                        ${group.metadataOnly ? '<p>CIMA declara esta subsección, pero no devuelve su texto. Revisar la ficha completa.</p>' : `<div class="safety-passage-original">${group.html}</div>`}
+                    </div>`).join('')}
+                </section>`;
+            }).join('')}
+        </div>`;
+    }
+
     renderSafetyPanel(med, safetyReport) {
         const checks = safetyReport.checks;
 
@@ -4951,12 +4985,14 @@ class MedCheckApp {
             const statusMeta = this.getSafetyStatusMeta(check.status);
 
             // Lógica para mostrar evidencia o mensaje
-            const evidenceHtml = check.excerpt
+            const evidenceHtml = check.sections
+                ? this._renderContextPassages(med, check, 'search')
+                : check.excerpt
                 ? `<div class="safety-evidence"> "${check.excerpt}"</div> `
                 : '';
 
             // Botón para ver sección completa
-            const viewSectionBtn = check.section
+            const viewSectionBtn = check.section && !check.sections
                 ? `<button class="btn-text" onclick = "app.openSectionViewer('${safetyReport.nregistro}', '${check.section}', '${med.nombre}')">
     <i class="fas fa-book-open"></i> Ver Sección ${check.section}
                    </button> `
@@ -4973,7 +5009,7 @@ class MedCheckApp {
             const tituloCima = check.match
                 ? `Abrir la sección ${check.section} de la ficha técnica en CIMA, resaltando «${this._escapeHtml(check.match)}»`
                 : `Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas`;
-            const verEnCimaBtn = urlSeccion
+            const verEnCimaBtn = urlSeccion && !check.sections
                 ? `<a class="btn-text" href="${urlSeccion}" target="_blank" rel="noopener"
                        title="${tituloCima}">
                        <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
@@ -10069,11 +10105,13 @@ ${materialesPlaceholder}
             else if (check.status === 'safe') { icon = 'check-circle'; colorClass = 'text-success'; }
             const statusMeta = this.getSafetyStatusMeta(check.status);
 
-            const evidenceHtml = check.excerpt
+            const evidenceHtml = check.sections
+                ? this._renderContextPassages(med, check, 'modal')
+                : check.excerpt
                 ? `<div class="safety-evidence">"${check.excerpt}"</div>`
                 : '';
 
-            const viewSectionBtn = check.section
+            const viewSectionBtn = check.section && !check.sections
                 ? `<button class="btn-text" onclick="app.openSectionViewer('${med.nregistro}', '${check.section}', '${med.nombre}')">
                              <i class="fas fa-book-open"></i> Ver Sección ${check.section}
                            </button>`
@@ -10090,7 +10128,7 @@ ${materialesPlaceholder}
             const tituloCima = check.match
                 ? `Abrir la sección ${check.section} de la ficha técnica en CIMA, resaltando «${this._escapeHtml(check.match)}»`
                 : `Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas`;
-            const verEnCimaBtn = urlSeccion
+            const verEnCimaBtn = urlSeccion && !check.sections
                 ? `<a class="btn-text" href="${urlSeccion}" target="_blank" rel="noopener"
                        title="${tituloCima}">
                        <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`

@@ -2351,6 +2351,126 @@ class CimaAPI {
     // Regex para detectar menciones de ECG/electrocardiograma en ficha técnica
     static ECG_DETECTION_REGEX = /\bECG\b|\bEKG\b|electrocardiograma|electrocardiograf[íi]a|electrocardiogr[áa]fico/gi;
 
+    /** Pasajes de una sección de CIMA, delimitados solo por su tipografía documental. */
+    _contextSectionPassages(raw, mapping, section) {
+        const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        if (!Array.isArray(data) || !data.length) {
+            return { section, status: 'unknown', message: 'Sección no disponible — revisar la ficha completa', groups: [], displayOrder: [] };
+        }
+        const block = new Set(['p', 'li', 'table', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'dt', 'dd']);
+        const spaces = new Set([...block, 'div', 'td', 'th', 'tr', 'br']);
+        const allowed = new Set([...block, 'div', 'span', 'strong', 'b', 'em', 'i', 'u', 's', 'sub', 'sup', 'br', 'ul', 'ol', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'caption', 'colgroup', 'col']);
+        const skip = new Set(['script', 'style', 'iframe', 'object', 'embed', 'noscript', 'head']);
+        const tidy = s => String(s || '').replace(/\s+/g, ' ').trim();
+        const fold = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const escape = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+        const tag = n => n.nodeType === 1 ? n.tagName.toLowerCase() : '';
+        const marked = n => ['strong', 'b', 'u', 'em', 'i'].includes(tag(n))
+            || /font-weight\s*:\s*(bold|[6-9]00)|text-decoration\s*:\s*underline|font-style\s*:\s*italic/i.test(n.getAttribute?.('style') || '');
+        const text = n => {
+            if (n.nodeType === 3) return n.nodeValue;
+            if (skip.has(tag(n))) return '';
+            const value = Array.from(n.childNodes || [], text).join('');
+            return spaces.has(tag(n)) ? ` ${value} ` : value;
+        };
+        const safe = n => {
+            if (n.nodeType === 3) return escape(n.nodeValue);
+            const name = tag(n);
+            if (skip.has(name)) return '';
+            const content = Array.from(n.childNodes || [], safe).join('');
+            if (!allowed.has(name)) return content;
+            const attrs = ['colspan', 'rowspan', 'start', 'scope']
+                .map(key => [key, n.getAttribute(key)])
+                .filter(([, value]) => value && /^[\w-]{1,16}$/.test(value))
+                .map(([key, value]) => ` ${key}="${escape(value)}"`).join('');
+            return `<${name}${attrs}>${name === 'br' || name === 'col' ? '' : content + `</${name}>`}`;
+        };
+        const isHeading = n => {
+            if (/^h[1-6]$/.test(tag(n))) return true;
+            if (!['p', 'li'].includes(tag(n))) return false;
+            const marks = [];
+            const visit = (node, active = false) => {
+                if (node.nodeType === 3) {
+                    for (const c of node.nodeValue) if (/[\p{L}\p{N}]/u.test(c)) marks.push(active);
+                    return;
+                }
+                for (const child of node.childNodes || []) visit(child, active || marked(node));
+            };
+            visit(n);
+            return marks.length > 0 && marks.every(Boolean);
+        };
+        const frenchParts = n => {
+            if (!['p', 'li'].includes(tag(n))) return [n];
+            const children = Array.from(n.childNodes);
+            const start = children.findIndex(child => tidy(text(child)));
+            if (start < 0 || children[start].nodeType !== 1 || !marked(children[start])) return [n];
+            const label = tidy(text(children[start]));
+            if (label.length < 4 || label.length > 70 || !label.endsWith(':')) return [n];
+            const rest = children.slice(start + 1);
+            const firstBody = rest.find(child => tidy(text(child)));
+            if (!firstBody || (firstBody.nodeType === 1 && marked(firstBody))) return [n];
+            const heading = n.ownerDocument.createElement('p');
+            heading.appendChild(children[start].cloneNode(true));
+            const body = n.ownerDocument.createElement(tag(n));
+            for (const child of rest) body.appendChild(child.cloneNode(true));
+            return [heading, body];
+        };
+        const units = n => {
+            if (n.nodeType === 3) {
+                if (!tidy(n.nodeValue)) return [];
+                const p = n.ownerDocument.createElement('p'); p.textContent = n.nodeValue; return [p];
+            }
+            if (skip.has(tag(n))) return [];
+            if (block.has(tag(n))) return tidy(text(n)) ? [n] : [];
+            return Array.from(n.childNodes || []).flatMap(units);
+        };
+        const termsIn = (value, terms) => terms.filter(term => fold(value).includes(fold(term)));
+        const groups = [];
+        for (const item of data) {
+            const identity = String(item.seccion || section);
+            const provenance = { section: identity, sectionTitle: String(item.titulo || '') };
+            let group = { ...provenance, title: provenance.sectionTitle,
+                titleKind: identity.split('.').length > 2 ? 'subsección CIMA' : 'sección CIMA',
+                headingSearchable: identity.split('.').length > 2, nodes: [], ordinal: groups.length };
+            const doc = new DOMParser().parseFromString(`<div>${item.contenido || ''}</div>`, 'text/html');
+            for (const source of units(doc.body.firstElementChild)) {
+                const parts = frenchParts(source);
+                for (let i = 0; i < parts.length; i++) {
+                    const node = parts[i];
+                    if (isHeading(node)) {
+                        if (group.nodes.length) groups.push(group);
+                        group = { ...provenance, title: tidy(text(node)),
+                            titleKind: parts.length === 2 && i === 0 ? 'rótulo francés' : 'rótulo tipográfico',
+                            headingSearchable: true, nodes: [node], ordinal: groups.length };
+                    } else group.nodes.push(node);
+                }
+            }
+            if (group.nodes.length) groups.push(group);
+            else if (identity.split('.').length > 2 && provenance.sectionTitle) groups.push({ ...group, metadataOnly: true });
+        }
+        const hits = (g, terms) => {
+            let titleHits = g.headingSearchable ? termsIn(g.title, terms) : [];
+            if (g.section.split('.').length > 2) titleHits = [...new Set([...titleHits, ...termsIn(g.sectionTitle, terms)])];
+            const bodyNodes = ['rótulo tipográfico', 'rótulo francés'].includes(g.titleKind) ? g.nodes.slice(1) : g.nodes;
+            const bodyHits = termsIn(bodyNodes.map(n => tidy(text(n))).join(' '), terms);
+            return { titleHits, bodyHits };
+        };
+        const primary = mapping.keywords;
+        const level = groups.some(g => { const h = hits(g, primary); return h.titleHits.length || h.bodyHits.length; })
+            ? 'palabras del contexto' : 'indicios';
+        const chosen = level === 'palabras del contexto' ? primary : (mapping.indicios || []);
+        const selected = groups.flatMap(g => {
+            const { titleHits, bodyHits } = hits(g, chosen);
+            if (!titleHits.length && !bodyHits.length) return [];
+            const { nodes, headingSearchable, ...meta } = g;
+            return [{ ...meta, titleHits, bodyHits, level,
+                matchLocation: titleHits.length ? (bodyHits.length ? 'rótulo y texto' : 'rótulo') : 'texto',
+                text: tidy(nodes.map(n => text(n)).join(' ')), html: nodes.map(safe).join('') }];
+        });
+        const displayOrder = [...selected].sort((a, b) => Number(!!b.titleHits.length) - Number(!!a.titleHits.length) || a.ordinal - b.ordinal).map(g => g.ordinal);
+        return { section, status: 'review', message: selected.length ? 'Coincidencias textuales — revisar la fuente' : 'No se localizó una mención literal — revisar el apartado completo', groups: selected, displayOrder };
+    }
+
     /**
      * Análisis de seguridad: busca menciones en secciones clave
      * @param {string} nregistro
@@ -2428,7 +2548,7 @@ class CimaAPI {
                 section: '4.4',
                 label: 'Insuficiencia hepática',
                 keywords: ['insuficiencia hepática', 'insuficiencia hepatica', 'hepatopatía',
-                    'hepatopatia', 'cirrosis', 'hepático', 'hepatico', 'función hepática',
+                    'hepatopatia', 'cirrosis', 'hepático', 'hepatico', 'hepática', 'función hepática',
                     'funcion hepatica', 'hepatotóxico', 'hepatotoxico', 'hepatotoxicidad',
                     'child-pugh', 'child pugh', 'metabolismo hepático', 'metabolismo hepatico',
                     'daño hepático', 'dano hepatico'],
@@ -2506,10 +2626,48 @@ class CimaAPI {
         //
         // Es la misma corrección que la sesión 68 hizo en excipientes: la señal la retira quien
         // la puso, no se amplía para justificarla.
+        const rawSections = new Map();
+        const getRawSection = section => {
+            if (!rawSections.has(section)) {
+                rawSections.set(section, this._request(`/docSegmentado/contenido/1?nregistro=${nregistro}&seccion=${section}`));
+            }
+            return rawSections.get(section);
+        };
         for (const [contextKey, isActive] of Object.entries(patientContext || {})) {
             if (!isActive || !contextMapping[contextKey]) continue;
 
             const mapping = contextMapping[contextKey];
+
+            // El navegador conserva grupos y tablas originales de CIMA. El fallback mantiene
+            // el contrato de los consumidores sin DOMParser (bancos Node).
+            if (typeof DOMParser !== 'undefined') {
+                const requested = ['elderly', 'hepatic', 'renal'].includes(contextKey)
+                    ? ['4.2', '4.4'] : [mapping.section];
+                const responses = await Promise.allSettled(requested.map(getRawSection));
+                const sections = responses.map((response, i) => {
+                    if (response.status === 'rejected') {
+                        return { section: requested[i], status: 'unknown', message: 'Error al cargar — revisar la ficha completa', groups: [], displayOrder: [] };
+                    }
+                    try { return this._contextSectionPassages(response.value, mapping, requested[i]); }
+                    catch (error) {
+                        console.warn(`No se pudo analizar ${requested[i]} de ${nregistro}:`, error);
+                        return { section: requested[i], status: 'unknown', message: 'Error al leer — revisar la ficha completa', groups: [], displayOrder: [] };
+                    }
+                });
+                const available = sections.some(s => s.status === 'review');
+                const partial = sections.some(s => s.status === 'unknown');
+                const matched = sections.some(s => s.groups.length);
+                results.checks.push({
+                    context: contextKey, label: mapping.label, section: mapping.section,
+                    status: available ? 'review' : 'unknown',
+                    message: partial && available ? 'Carga parcial — revisar también la ficha completa'
+                        : matched ? 'Coincidencias textuales — revisar la fuente'
+                        : available ? 'No se localizó una mención literal — revisar los apartados completos'
+                        : 'Secciones no disponibles — verificar ficha técnica',
+                    excerpt: null, match: null, sections, isContextSpecific: true
+                });
+                continue;
+            }
 
             try {
                 const sectionContent = await this.getDocSeccion(nregistro, mapping.section);

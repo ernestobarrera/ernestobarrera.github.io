@@ -2305,6 +2305,7 @@ body {
 
 .safety-check-content {
     flex: 1;
+    min-width: 0;
 }
 
 .safety-check-title {
@@ -4111,6 +4112,23 @@ body {
     color: var(--text-secondary);
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
+
+/* Menciones de la ficha técnica: todos los pasajes abiertos, con tablas conservadas. */
+.safety-passages { margin-top: var(--space-md); min-width: 0; }
+.safety-passages-index { display: grid; gap: 0.3rem; padding: var(--space-sm); border: 1px solid var(--border-default); border-radius: var(--radius-sm); }
+.safety-passages-index a { color: var(--primary); font-size: 0.8rem; overflow-wrap: anywhere; }
+.safety-passages-section { margin-top: var(--space-md); }
+.safety-passages-section-head { display: flex; gap: var(--space-sm); justify-content: space-between; flex-wrap: wrap; border-bottom: 1px solid var(--border-default); padding-bottom: 0.35rem; }
+.safety-passages-section-head a { color: var(--primary); }
+.safety-passages-section-head a, .safety-passage-source, .safety-passage-meta, .safety-passages-note { font-size: 0.8rem; }
+.safety-passage { margin: var(--space-sm) 0; padding: var(--space-sm); border-left: 2px solid var(--border-default); scroll-margin-top: 6rem; overflow-wrap: anywhere; }
+.safety-passage:target { outline: 2px solid var(--primary); outline-offset: 2px; }
+.safety-passage-title { display: block; margin: 0.3rem 0; }
+.safety-passage-source, .safety-passage-meta { color: var(--text-secondary); }
+.safety-passage-original { max-width: 100%; }
+.safety-passage-original table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: var(--space-sm) 0; font-size: 0.82rem; }
+.safety-passage-original th, .safety-passage-original td { border: 1px solid var(--border-default); padding: 0.4rem; min-width: 4rem; vertical-align: top; }
+.safety-passage-original p { margin: 0.5rem 0; }
 
 /* Text Button (link style) */
 .btn-text {
