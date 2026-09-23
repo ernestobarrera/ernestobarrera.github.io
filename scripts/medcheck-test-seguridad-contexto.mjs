@@ -4,6 +4,9 @@
  *
  * Carga la clase REAL de assets/js/cima-api.js en Node (vm + shims mínimos) y ejercita
  * `analyzeSafety` sobre fichas sintéticas, con `getDocSeccion` stubeado. No hay red.
+ * Este banco fija deliberadamente el fallback sin DOMParser: su contrato conserva `excerpt`
+ * para consumidores Node. La ruta de navegador devuelve `excerpt: null` y pasajes en `sections`;
+ * la prueba de esa ruta y sus 72 casos reales es `medcheck-test-menciones-ft.mjs`.
  *
  * Doctrina que fija este test:
  *
@@ -42,6 +45,9 @@ sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 const src = readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8');
 vm.runInContext(`${src}\n;window.__CimaAPIClass = CimaAPI;`, sandbox, { filename: 'cima-api.js' });
+if (vm.runInContext('typeof DOMParser', sandbox) !== 'undefined') {
+    throw new Error('Este banco debe ejercitar el fallback Node sin DOMParser');
+}
 
 const CimaAPI = sandbox.window.__CimaAPIClass;
 if (typeof CimaAPI !== 'function') {
@@ -76,6 +82,7 @@ function apiConSecciones(mapa) {
 const contextCheck = (report, contexto) => report.checks.find(c => c.context === contexto);
 
 console.log('\n— El extracto es del contexto, no del principio de la sección —');
+console.log('Ruta probada: fallback Node sin DOMParser; navegador: medcheck-test-menciones-ft.mjs');
 {
     const api = apiConSecciones({ '4.4': S44_SIN_RENAL, '4.6': S46_PENILEVEL, '4.7': '' });
     const report = await api.analyzeSafety('TEST-1', { lactation: true });

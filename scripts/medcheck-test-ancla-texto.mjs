@@ -4,7 +4,9 @@
  *
  * Carga la clase REAL de `assets/js/cima-api.js` y la función REAL `_ftUrlSeccion` de
  * `assets/js/cima-app.js`, y las ejercita sobre fichas sintéticas que reproducen la
- * TOPOLOGÍA de CIMA, no solo su contenido. No hay red.
+ * TOPOLOGÍA de CIMA, no solo su contenido. No hay red. Las aserciones de `excerpt`
+ * y `match` de `analyzeSafety` corresponden al fallback Node sin DOMParser; el camino
+ * de navegador usa `sections` y lo cubre `medcheck-test-menciones-ft.mjs`.
  *
  * QUÉ PROBLEMA RESUELVE ESTO. Acertar el apartado no basta: la 4.4 de una ficha real ocupa
  * páginas, y hasta ahora el enlace dejaba al médico buscando dentro de un documento de 80 KB
@@ -55,6 +57,9 @@ sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 const src = readFileSync(join(ROOT, 'assets/js/cima-api.js'), 'utf8');
 vm.runInContext(`${src}\n;window.__CimaAPIClass = CimaAPI;`, sandbox, { filename: 'cima-api.js' });
+if (vm.runInContext('typeof DOMParser', sandbox) !== 'undefined') {
+    throw new Error('Las aserciones de extracto de este banco requieren el fallback Node');
+}
 
 const CimaAPI = sandbox.window.__CimaAPIClass;
 if (typeof CimaAPI !== 'function') {
@@ -62,6 +67,7 @@ if (typeof CimaAPI !== 'function') {
     process.exit(1);
 }
 const api = Object.create(CimaAPI.prototype);
+console.log('Aserciones de excerpt/match: fallback Node sin DOMParser; navegador: medcheck-test-menciones-ft.mjs');
 
 let fallos = 0;
 function ok(nombre, condicion, detalle = '') {
