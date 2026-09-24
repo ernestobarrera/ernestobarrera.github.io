@@ -4114,18 +4114,27 @@ body {
 }
 
 /* Menciones de la ficha técnica: todos los pasajes abiertos, con tablas conservadas. */
-.safety-passages { margin-top: var(--space-md); min-width: 0; }
-.safety-passages-index { display: grid; gap: 0.3rem; padding: var(--space-sm); border: 1px solid var(--border-default); border-radius: var(--radius-sm); }
-.safety-passages-index a { color: var(--primary); font-size: 0.8rem; overflow-wrap: anywhere; }
+.safety-passages { margin-top: var(--space-md); min-width: 0; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-sm); padding: var(--space-sm) var(--space-md) var(--space-md); }
+.safety-passages-index { padding: var(--space-sm); border: 1px solid var(--border-default); border-radius: var(--radius-sm); }
+.safety-passages-index > strong { display: block; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.3rem; }
+.safety-passages-jumps { display: grid; gap: 0.2rem; }
+@media (min-width: 1100px) { .safety-passages-jumps { grid-template-columns: 1fr 1fr; column-gap: var(--space-md); } }
+.safety-passages-jump { font: inherit; font-size: 0.8rem; color: var(--primary); background: none; border: 0; padding: 0.05rem 0; text-align: left; cursor: pointer; text-decoration: underline; overflow-wrap: anywhere; }
 .safety-passages-section { margin-top: var(--space-md); }
-.safety-passages-section-head { display: flex; gap: var(--space-sm); justify-content: space-between; flex-wrap: wrap; border-bottom: 1px solid var(--border-default); padding-bottom: 0.35rem; }
-.safety-passages-section-head a { color: var(--primary); }
-.safety-passages-section-head a, .safety-passage-source, .safety-passage-meta, .safety-passages-note { font-size: 0.8rem; }
-.safety-passage { margin: var(--space-sm) 0; padding: var(--space-sm); border-left: 2px solid var(--border-default); scroll-margin-top: 6rem; overflow-wrap: anywhere; }
-.safety-passage:target { outline: 2px solid var(--primary); outline-offset: 2px; }
-.safety-passage-title { display: block; margin: 0.3rem 0; }
-.safety-passage-source, .safety-passage-meta { color: var(--text-secondary); }
+/* PEGAJOSA a propósito: con doce pasajes es lo único que sigue diciendo si lo que lees es 4.2
+   o 4.4. Antes eso lo repetía una línea de procedencia bajo cada pasaje, que es la forma cara
+   y ruidosa de resolverlo. El fondo debe ser opaco, de ahí el de `.safety-passages`. */
+.safety-passages-section-head { position: sticky; top: -1px; z-index: 2; background: var(--bg-surface); display: flex; gap: var(--space-sm); justify-content: space-between; align-items: baseline; flex-wrap: wrap; border-bottom: 1px solid var(--border-hover); padding: 0.3rem 0; }
+.safety-passages-section-head strong em { font-style: normal; font-weight: 400; color: var(--text-muted); font-size: 0.78rem; }
+.safety-passages-section-head a { color: var(--primary); white-space: nowrap; }
+.safety-passages-section-head a { font-size: 0.8rem; }
+.safety-passage { margin: 0.35rem 0; padding: 0.35rem var(--space-sm); border-left: 2px solid var(--border-default); scroll-margin-top: 3rem; overflow-wrap: anywhere; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.safety-passage:target, .safety-passage.is-flash { background: var(--primary-light); border-left-color: var(--primary); transition: background 0.45s ease; }
 .safety-passage-original { max-width: 100%; }
+/* Enlace permanente, en la misma línea del rótulo que CIMA escribió: coste vertical cero. */
+.safety-passage-src { font-size: 0.74rem; font-weight: 400; color: var(--primary); text-decoration: none; white-space: nowrap; margin-left: 0.45rem; padding: 0.05rem 0.3rem; border-radius: var(--radius-sm); border: 1px solid var(--border-active); background: var(--primary-light); vertical-align: 0.05em; }
+.safety-passage-src:hover, .safety-passage-src:focus-visible { text-decoration: underline; }
+.safety-passage-src-fin { display: inline-block; margin-top: 0.25rem; }
 .safety-passage-original table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: var(--space-sm) 0; font-size: 0.82rem; }
 .safety-passage-original th, .safety-passage-original td { border: 1px solid var(--border-default); padding: 0.4rem; min-width: 4rem; vertical-align: top; }
 .safety-passage-original p { margin: 0.5rem 0; }

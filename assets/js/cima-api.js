@@ -2425,6 +2425,22 @@ class CimaAPI {
             return Array.from(n.childNodes || []).flatMap(units);
         };
         const termsIn = (value, terms) => terms.filter(term => fold(value).includes(fold(term)));
+        // Frase de aterrizaje para el `:~:text=` del navegador: primer bloque del grupo con
+        // cuerpo suficiente y sin marcado, igual que el selector auditado.
+        //
+        // LO QUE AQUÍ NO SE PUEDE COMPROBAR, y conviene no dar por hecho: la comparativa
+        // verificaba que la frase fuera ÚNICA en la ficha entera. La app solo descarga los
+        // apartados que necesita, así que esa comprobación no existe en producción. El peor
+        // caso es aterrizar en otra aparición de la misma frase dentro de la misma ficha; el
+        // `#seccion` del enlace sigue llevando al apartado correcto.
+        const phrase = nodes => {
+            for (const node of nodes) {
+                const value = tidy(text(node));
+                if (/[<>&]/.test(value) || value.split(' ').length < 8) continue;
+                return value.split(' ').slice(0, 18).join(' ').replace(/[.,;:]+$/, '');
+            }
+            return null;
+        };
         const groups = [];
         for (const item of data) {
             const identity = String(item.seccion || section);
@@ -2465,7 +2481,8 @@ class CimaAPI {
             const { nodes, headingSearchable, ...meta } = g;
             return [{ ...meta, titleHits, bodyHits, level,
                 matchLocation: titleHits.length ? (bodyHits.length ? 'rótulo y texto' : 'rótulo') : 'texto',
-                text: tidy(nodes.map(n => text(n)).join(' ')), html: nodes.map(safe).join('') }];
+                text: tidy(nodes.map(n => text(n)).join(' ')), html: nodes.map(safe).join(''),
+                linkPhrase: phrase(nodes) }];
         });
         const displayOrder = [...selected].sort((a, b) => Number(!!b.titleHits.length) - Number(!!a.titleHits.length) || a.ordinal - b.ordinal).map(g => g.ordinal);
         return { section, status: 'review', message: selected.length ? 'Coincidencias textuales — revisar la fuente' : 'No se localizó una mención literal — revisar el apartado completo', groups: selected, displayOrder };

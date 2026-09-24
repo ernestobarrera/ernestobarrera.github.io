@@ -9,6 +9,24 @@
  * Datos de medicamentos: AEMPS/CIMA (dominio público)
  */
 
+/**
+ * UNA SOLA PESTAÑA PARA CIMA, y no es un capricho: una tarjeta de contexto puede llevar doce
+ * pasajes enlazados, y con `_blank` cada consulta dejaba doce pestañas abiertas detrás.
+ *
+ * Un destino CON NOMBRE hace que el primer enlace abra la pestaña y los demás la reutilicen.
+ *
+ * POR QUÉ NO LLEVA `rel="noopener"`, que es lo que uno esperaría ver aquí: el estándar dice
+ * que, si `noopener` está presente, el nombre del destino se ignora y se abre un contexto
+ * nuevo igualmente. Son incompatibles: o se reutiliza la pestaña o se conserva `noopener`.
+ * Se elige reutilizar, y el precio es que la página destino recibe una referencia a esta
+ * ventana. Se asume porque el destino es siempre `cima.aemps.es`, dominio oficial de la
+ * AEMPS, y porque lo construye `_ftUrlSeccion`, que ya filtra el marcado del ancla.
+ *
+ * Si algún día se enlaza desde aquí a un dominio que no sea el de la AEMPS, esta decisión
+ * hay que rehacerla: ese enlace necesita `_blank` con `noopener`, no este nombre.
+ */
+const CIMA_VENTANA = 'cima-ft';
+
 class MedCheckApp {
     // Genes cubiertos por guidelines CPIC (Clinical Pharmacogenetics Implementation Consortium).
     // Para estos biomarcadores se ofrece enlace canónico a la guideline correspondiente.
@@ -4933,24 +4951,64 @@ class MedCheckApp {
             .map(ordinal => section.groups.find(group => group.ordinal === ordinal))
             .filter(Boolean);
         const index = check.sections.flatMap(section => ordered(section).map(group =>
-            `<a href="#${id(section.section, group.ordinal)}">${esc(section.section)} · ${esc(group.title)}</a>`)).join('');
+            `<button type="button" class="safety-passages-jump" data-ft-goto="${id(section.section, group.ordinal)}" onclick="app.irAPasaje(this)">${esc(section.section)} · ${esc(group.title)}</button>`)).join('');
         return `<div class="safety-passages">
-            ${index ? `<nav class="safety-passages-index" aria-label="Pasajes de ${esc(check.label)}"><strong>Ir a un pasaje</strong>${index}</nav>` : ''}
+            ${index ? `<nav class="safety-passages-index" aria-label="Pasajes de ${esc(check.label)}"><strong>Ir a un pasaje</strong><div class="safety-passages-jumps">${index}</div></nav>` : ''}
             ${check.sections.map(section => {
                 const url = this._ftUrlSeccion(med, section.section);
+                const cuantos = ordered(section).length;
                 return `<section class="safety-passages-section">
-                    <div class="safety-passages-section-head"><strong>${esc(section.section)} · ${esc(sectionNames[section.section] || '')}</strong>
-                    ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Apartado completo en CIMA</a>` : ''}</div>
-                    <p class="safety-passages-note">${esc(section.message)}</p>
+                    <div class="safety-passages-section-head"><strong>${esc(section.section)} · ${esc(sectionNames[section.section] || '')}${cuantos ? ` <em>· ${cuantos} ${cuantos === 1 ? 'pasaje' : 'pasajes'}</em>` : ''}</strong>
+                    ${url ? `<a href="${esc(url)}" target="${CIMA_VENTANA}">Ver sección en CIMA ↗</a>` : ''}</div>
                     ${ordered(section).map(group => `<div class="safety-passage" id="${id(section.section, group.ordinal)}">
-                        <div class="safety-passage-meta">Coincidencia en ${esc(group.matchLocation)} · ${esc(group.level)} · ${esc(group.titleKind)}</div>
-                        ${!['rótulo tipográfico', 'rótulo francés'].includes(group.titleKind) ? `<strong class="safety-passage-title">${esc(group.title)}</strong>` : ''}
-                        <div class="safety-passage-source">${esc(group.section)} · ${esc(group.sectionTitle)}</div>
-                        ${group.metadataOnly ? '<p>CIMA declara esta subsección, pero no devuelve su texto. Revisar la ficha completa.</p>' : `<div class="safety-passage-original">${group.html}</div>`}
+                        ${group.metadataOnly ? '<p>CIMA declara esta subsección, pero no devuelve su texto. Revisar la ficha completa.</p>' : `<div class="safety-passage-original">${this._conEnlaceAlPasaje(group, this._ftUrlSeccion(med, section.section, group.linkPhrase))}</div>`}
                     </div>`).join('')}
                 </section>`;
             }).join('')}
         </div>`;
+    }
+
+    /**
+     * Engancha el enlace a la ficha oficial en el RÓTULO que CIMA ya escribió, dentro de su
+     * misma línea. Es el patrón del enlace permanente junto a un encabezado: dice a dónde va
+     * sin una frase larga y, sobre todo, sin gastar una fila por pasaje. Con doce pasajes esa
+     * fila de más era la diferencia entre leer y rodar la rueda.
+     *
+     * Sin rótulo propio —los grupos que son el apartado entero— cae detrás del último bloque,
+     * que es donde se pone la atribución de una cita.
+     */
+    _conEnlaceAlPasaje(group, url) {
+        if (!url || typeof DOMParser === 'undefined') return group.html;
+        const doc = new DOMParser().parseFromString(`<div>${group.html}</div>`, 'text/html');
+        const contenedor = doc.body.firstElementChild;
+        if (!contenedor) return group.html;
+        const enlace = doc.createElement('a');
+        enlace.className = 'safety-passage-src';
+        enlace.href = url;
+        enlace.target = CIMA_VENTANA;
+        enlace.textContent = 'ver en CIMA ↗';
+        enlace.title = `Abre la ficha oficial en «${group.title}», con el pasaje resaltado`;
+        const conRotulo = ['rótulo tipográfico', 'rótulo francés'].includes(group.titleKind);
+        const destino = conRotulo ? contenedor.firstElementChild : contenedor.lastElementChild;
+        if (!destino) contenedor.appendChild(enlace);
+        else if (conRotulo) destino.appendChild(enlace);
+        else { enlace.classList.add('safety-passage-src-fin'); destino.after(enlace); }
+        return contenedor.innerHTML;
+    }
+
+    /**
+     * El índice no puede usar `href="#id"`: el ancla nativa mueve el DOCUMENTO, y estos
+     * pasajes viven dentro del cuerpo del modal, que tiene su propio scroll. El resultado era
+     * un salto a ninguna parte. `scrollIntoView` sí sube por el ancestro que scrollea.
+     */
+    irAPasaje(boton) {
+        const destino = document.getElementById(boton?.dataset?.ftGoto || '');
+        if (!destino) return;
+        destino.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        destino.classList.remove('is-flash');
+        void destino.offsetWidth;
+        destino.classList.add('is-flash');
+        setTimeout(() => destino.classList.remove('is-flash'), 1600);
     }
 
     renderSafetyPanel(med, safetyReport) {
