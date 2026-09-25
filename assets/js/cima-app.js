@@ -10,22 +10,35 @@
  */
 
 /**
- * UNA SOLA PESTAÑA PARA CIMA, y no es un capricho: una tarjeta de contexto puede llevar doce
- * pasajes enlazados, y con `_blank` cada consulta dejaba doce pestañas abiertas detrás.
+ * PESTAÑA ÚNICA O RESALTADO: EL NAVEGADOR NO DEJA TENER LAS DOS. Decídelo por enlace con
+ * `_destinoCima(url)`, nunca poniendo este nombre a mano.
  *
- * Un destino CON NOMBRE hace que el primer enlace abra la pestaña y los demás la reutilicen.
- * Lo llevan todos los enlaces a apartados de la ficha que construye `_ftUrlSeccion`: los
- * pasajes y las tarjetas de Seguridad y las cabeceras de 4.1, 4.2, 4.5 y 4.8.
+ * Un destino CON NOMBRE hace que el primer enlace abra una pestaña y los demás la reutilicen:
+ * sin él, una tarjeta con doce pasajes dejaba doce pestañas detrás. Pero reutilizar exige
+ * quitar `rel="noopener"` —con `noopener` el estándar ignora el nombre y abre contexto nuevo—,
+ * y sin `noopener` el navegador NO RESALTA el `:~:text=`. La especificación de *text
+ * fragments* solo lo permite en una navegación entre orígenes distintos si la pestaña destino
+ * está sola en su grupo de contextos, es decir, abierta con `noopener`:
  *
- * POR QUÉ NO LLEVA `rel="noopener"`, que es lo que uno esperaría ver aquí: el estándar dice
- * que, si `noopener` está presente, el nombre del destino se ignora y se abre un contexto
- * nuevo igualmente. Son incompatibles: o se reutiliza la pestaña o se conserva `noopener`.
- * Se elige reutilizar, y el precio es que la página destino recibe una referencia a esta
- * ventana. Se asume porque el destino es siempre `cima.aemps.es`, dominio oficial de la
- * AEMPS, y porque lo construye `_ftUrlSeccion`, que ya filtra el marcado del ancla.
+ *   «If document's browsing context's group's browsing context set has length 1, return
+ *   true. Otherwise, return false.»
  *
- * Si algún día se enlaza desde aquí a un dominio que no sea el de la AEMPS, esta decisión
- * hay que rehacerla: ese enlace necesita `_blank` con `noopener`, no este nombre.
+ * Es una regla de seguridad, no un fallo: impide que una web con referencia a otra averigüe
+ * su contenido por el desplazamiento. MedCheck (github.io) y CIMA (aemps.es) son orígenes
+ * distintos, así que se aplica siempre.
+ *
+ * La regla que sale de ahí:
+ * - enlace CON frase (`:~:text=`): pestaña nueva y aislada, `_blank` + `noopener`. Su razón
+ *   de ser es enseñar el pasaje marcado; sin resaltado no sirve.
+ * - enlace SIN frase (apartado entero): esta pestaña compartida. No tiene nada que resaltar,
+ *   así que reutilizar no cuesta nada.
+ *
+ * Así quedó el 25/09/2026, tras un día en que TODOS los enlaces iban a la pestaña compartida y
+ * ninguno resaltaba, incluidos los «4.x en CIMA» de Seguridad, que resaltaban desde la sesión 73.
+ *
+ * El enlace sin `noopener` deja a la página destino una referencia a esta ventana. Se asume
+ * porque el destino es siempre `cima.aemps.es` (AEMPS) y lo construye `_ftUrlSeccion`. Si
+ * algún día se enlaza a otro dominio, ese enlace va con `_blank` y `noopener`.
  */
 const CIMA_VENTANA = 'cima-ft';
 
@@ -4718,8 +4731,19 @@ class MedCheckApp {
     _enlaceSeccionCima(med, seccion) {
         const url = this._ftUrlSeccion(med, seccion);
         return url
-            ? `<a class="section-cima-link" href="${this._escapeHtml(url)}" target="${CIMA_VENTANA}">Ver sección en CIMA ↗</a>`
+            ? `<a class="section-cima-link" href="${this._escapeHtml(url)}" ${this._destinoCima(url)}>Ver sección en CIMA ↗</a>`
             : '';
+    }
+
+    /**
+     * Atributos de destino de un enlace a la ficha de CIMA. Con frase que resaltar, pestaña
+     * aislada; sin ella, la compartida. El porqué, que es del estándar y no nuestro, está
+     * en el comentario de `CIMA_VENTANA`.
+     */
+    _destinoCima(url) {
+        return String(url || '').includes(':~:text=')
+            ? 'target="_blank" rel="noopener"'
+            : `target="${CIMA_VENTANA}"`;
     }
 
     /**
@@ -4980,7 +5004,7 @@ class MedCheckApp {
                 const cuantos = ordered(section).length;
                 return `<section class="safety-passages-section">
                     <div class="safety-passages-section-head"><strong>${esc(section.section)} · ${esc(sectionNames[section.section] || '')}${cuantos ? ` <em>· ${cuantos} ${cuantos === 1 ? 'pasaje' : 'pasajes'}</em>` : ''}</strong>
-                    ${url ? `<a href="${esc(url)}" target="${CIMA_VENTANA}">Ver sección en CIMA ↗</a>` : ''}</div>
+                    ${url ? `<a href="${esc(url)}" ${this._destinoCima(url)}>Ver sección en CIMA ↗</a>` : ''}</div>
                     ${ordered(section).map(group => `<div class="safety-passage" id="${id(section.section, group.ordinal)}">
                         ${group.metadataOnly ? '<p>CIMA declara esta subsección, pero no devuelve su texto. Revisar la ficha completa.</p>' : `<div class="safety-passage-original">${this._conEnlaceAlPasaje(group, this._ftUrlSeccion(med, section.section, group.linkPhrase))}</div>`}
                     </div>`).join('')}
@@ -5006,7 +5030,9 @@ class MedCheckApp {
         const enlace = doc.createElement('a');
         enlace.className = 'safety-passage-src';
         enlace.href = url;
-        enlace.target = CIMA_VENTANA;
+        // Lleva frase, así que va aislado: sin `noopener` el navegador no la resalta.
+        enlace.target = '_blank';
+        enlace.rel = 'noopener';
         enlace.textContent = 'ver en CIMA ↗';
         enlace.title = `Abre la ficha oficial en «${group.title}», con el pasaje resaltado`;
         const conRotulo = ['rótulo tipográfico', 'rótulo francés'].includes(group.titleKind);
@@ -5089,7 +5115,7 @@ class MedCheckApp {
                 ? `Abrir la sección ${check.section} de la ficha técnica en CIMA, resaltando «${this._escapeHtml(check.match)}»`
                 : `Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas`;
             const verEnCimaBtn = urlSeccion && !check.sections
-                ? `<a class="btn-text" href="${urlSeccion}" target="${CIMA_VENTANA}"
+                ? `<a class="btn-text" href="${urlSeccion}" ${this._destinoCima(urlSeccion)}
                        title="${tituloCima}">
                        <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
                 : '';
@@ -10213,7 +10239,7 @@ ${materialesPlaceholder}
                 ? `Abrir la sección ${check.section} de la ficha técnica en CIMA, resaltando «${this._escapeHtml(check.match)}»`
                 : `Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas`;
             const verEnCimaBtn = urlSeccion && !check.sections
-                ? `<a class="btn-text" href="${urlSeccion}" target="${CIMA_VENTANA}"
+                ? `<a class="btn-text" href="${urlSeccion}" ${this._destinoCima(urlSeccion)}
                        title="${tituloCima}">
                        <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
                 : '';
