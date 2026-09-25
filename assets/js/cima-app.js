@@ -14,6 +14,8 @@
  * pasajes enlazados, y con `_blank` cada consulta dejaba doce pestañas abiertas detrás.
  *
  * Un destino CON NOMBRE hace que el primer enlace abra la pestaña y los demás la reutilicen.
+ * Lo llevan todos los enlaces a apartados de la ficha que construye `_ftUrlSeccion`: los
+ * pasajes y las tarjetas de Seguridad y las cabeceras de 4.1, 4.2, 4.5 y 4.8.
  *
  * POR QUÉ NO LLEVA `rel="noopener"`, que es lo que uno esperaría ver aquí: el estándar dice
  * que, si `noopener` está presente, el nombre del destino se ignora y se abre un contexto
@@ -4702,6 +4704,25 @@ class MedCheckApp {
     }
 
     /**
+     * Enlace de cabecera de las pestañas que muestran un apartado ENTERO (4.1, 4.2, 4.5, 4.8).
+     * Mismo constructor y misma pestaña reutilizable que las menciones de Seguridad, para que
+     * «ver en CIMA» signifique y haga lo mismo en todo el modal.
+     *
+     * Aquí va solo a nivel de apartado, a propósito: el texto completo ya está en pantalla, y un
+     * enlace por subapartado sería ruido. El enlace por pasaje tiene sentido donde se muestran
+     * EXTRACTOS, que es Seguridad.
+     *
+     * Sin ficha seccionada `_ftUrlSeccion` devuelve null y no se pinta nada: un enlace que lleva
+     * a ninguna parte es peor que ninguno.
+     */
+    _enlaceSeccionCima(med, seccion) {
+        const url = this._ftUrlSeccion(med, seccion);
+        return url
+            ? `<a class="section-cima-link" href="${this._escapeHtml(url)}" target="${CIMA_VENTANA}">Ver sección en CIMA ↗</a>`
+            : '';
+    }
+
+    /**
      * Registros REDUNDANTES: no publican ficha técnica propia y hay otro registro, con el
      * mismo perfil, que sí la publica.
      *
@@ -5068,7 +5089,7 @@ class MedCheckApp {
                 ? `Abrir la sección ${check.section} de la ficha técnica en CIMA, resaltando «${this._escapeHtml(check.match)}»`
                 : `Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas`;
             const verEnCimaBtn = urlSeccion && !check.sections
-                ? `<a class="btn-text" href="${urlSeccion}" target="_blank" rel="noopener"
+                ? `<a class="btn-text" href="${urlSeccion}" target="${CIMA_VENTANA}"
                        title="${tituloCima}">
                        <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
                 : '';
@@ -9037,8 +9058,8 @@ class MedCheckApp {
      *
      * NO se colapsa ni se oculta nada. Esconder apartados por defecto en una pantalla
      * clínica es una decisión con consecuencias, no una mejora de navegación: el check
-     * pedido se resalta, se trae al centro del viewport y recibe el foco de teclado, y el
-     * resto sigue visible y en el mismo orden.
+     * pedido se resalta, se lleva arriba del panel y recibe el foco de teclado, y el resto
+     * sigue visible y en el mismo orden.
      *
      * El foco vuelve al elemento que abrió el modal cuando se cierra (ver `closeModal`).
      */
@@ -10122,7 +10143,12 @@ ${materialesPlaceholder}
         if (!item) return;
         // `matchMedia` puede no existir en el entorno de tests; sin él, sin animación.
         const sinMovimiento = !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-        item.scrollIntoView({ block: 'center', behavior: sinMovimiento ? 'auto' : 'smooth' });
+        // `start`, NUNCA `center`. Centrar funcionaba cuando la tarjeta era un extracto de
+        // 150 caracteres. Desde que muestra los pasajes completos puede medir varias pantallas,
+        // y centrar un elemento más alto que el visor pone en medio SU MITAD: el título, el
+        // índice y el principio de 4.2 —lo primero que hay que leer— quedaban por encima y
+        // había que subir a buscarlos. El margen lo pone `scroll-margin-top` en el CSS.
+        item.scrollIntoView({ block: 'start', behavior: sinMovimiento ? 'auto' : 'smooth' });
         item.focus({ preventScroll: true });
     }
 
@@ -10187,7 +10213,7 @@ ${materialesPlaceholder}
                 ? `Abrir la sección ${check.section} de la ficha técnica en CIMA, resaltando «${this._escapeHtml(check.match)}»`
                 : `Abrir la sección ${check.section} de la ficha técnica en CIMA, con sus tablas`;
             const verEnCimaBtn = urlSeccion && !check.sections
-                ? `<a class="btn-text" href="${urlSeccion}" target="_blank" rel="noopener"
+                ? `<a class="btn-text" href="${urlSeccion}" target="${CIMA_VENTANA}"
                        title="${tituloCima}">
                        <i class="fas fa-external-link-alt"></i> ${check.section} en CIMA</a>`
                 : '';
@@ -10239,7 +10265,7 @@ ${materialesPlaceholder}
      * Renders the Indications tab (section 4.1) in the modal
      */
     renderModalIndicationsTab(med) {
-        setTimeout(() => this.loadIndicationsContent(med.nregistro, med.nombre), 100);
+        setTimeout(() => this.loadIndicationsContent(med.nregistro, med.nombre, med), 100);
         return `
     <div id="indications-tab-content" class="section-viewer-content">
                 <div class="loading-spinner"></div>
@@ -10251,7 +10277,7 @@ ${materialesPlaceholder}
     /**
      * Loads section 4.1 (Therapeutic indications) asynchronously
      */
-    async loadIndicationsContent(nregistro, medNombre) {
+    async loadIndicationsContent(nregistro, medNombre, med = null) {
         const container = document.getElementById('indications-tab-content');
         if (!container) return;
 
@@ -10271,11 +10297,12 @@ ${materialesPlaceholder}
             content = content.normalize('NFC');
 
             container.innerHTML = `
-    <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+    <div class="section-header section-header-split" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
         <h4 style="margin:0;"><i class="fas fa-stethoscope"></i> Sección 4.1: Indicaciones terapéuticas</h4>
+        <span class="section-header-actions">${this._enlaceSeccionCima(med, '4.1')}
         <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('indications-section-text', '${medNombre.replace(/'/g, "\\'")}', 'Indicaciones terapéuticas')" title="Copiar texto">
             <i class="fas fa-copy"></i>
-        </button>
+        </button></span>
     </div>
     <div id="indications-section-text" class="section-text">
         ${content}
@@ -10292,7 +10319,7 @@ ${materialesPlaceholder}
      */
     renderModalPosologyTab(med) {
         // Return placeholder that loads content asynchronously
-        setTimeout(() => this.loadPosologyContent(med.nregistro, med.nombre), 100);
+        setTimeout(() => this.loadPosologyContent(med.nregistro, med.nombre, med), 100);
 
         return `
     <div id="posology-tab-content" class="section-viewer-content">
@@ -10305,7 +10332,7 @@ ${materialesPlaceholder}
     /**
      * Loads section 4.2 content asynchronously with food-related keyword highlighting
      */
-    async loadPosologyContent(nregistro, medNombre) {
+    async loadPosologyContent(nregistro, medNombre, med = null) {
         const container = document.getElementById('posology-tab-content');
         if (!container) return;
 
@@ -10327,11 +10354,12 @@ ${materialesPlaceholder}
 
             // First, render the HTML without highlighting
             container.innerHTML = `
-    <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+    <div class="section-header section-header-split" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
         <h4 style="margin:0;"><i class="fas fa-clock"></i> Sección 4.2: Posología y forma de administración</h4>
+        <span class="section-header-actions">${this._enlaceSeccionCima(med, '4.2')}
         <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('posology-section-text', '${(medNombre || '').replace(/'/g, "\\'")}', 'Posología')" title="Copiar texto">
             <i class="fas fa-copy"></i>
-        </button>
+        </button></span>
     </div>
     <div class="posology-legend">
         <span class="legend-item"><mark class="posology-food">Alimentos</mark></span>
@@ -10544,7 +10572,7 @@ ${materialesPlaceholder}
      */
     renderModalInteractionsTab(med) {
         // Return placeholder that loads content asynchronously
-        setTimeout(() => this.loadInteractionsContent(med.nregistro), 100);
+        setTimeout(() => this.loadInteractionsContent(med.nregistro, med), 100);
 
         return `
     <div id="interactions-tab-content" class="section-viewer-content">
@@ -10557,7 +10585,7 @@ ${materialesPlaceholder}
     /**
      * Loads section 4.5 content asynchronously
      */
-    async loadInteractionsContent(nregistro) {
+    async loadInteractionsContent(nregistro, med = null) {
         const container = document.getElementById('interactions-tab-content');
         if (!container) return;
 
@@ -10575,8 +10603,9 @@ ${materialesPlaceholder}
             }
 
             container.innerHTML = `
-    <div class="section-header">
+    <div class="section-header section-header-split">
         <h4><i class="fas fa-random"></i> Sección 4.5: Interacción con otros medicamentos</h4>
+        ${this._enlaceSeccionCima(med, '4.5')}
                 </div>
     <div class="section-text">
         ${content}
@@ -10599,7 +10628,7 @@ ${materialesPlaceholder}
      */
     renderModalAdverseReactionsTab(med) {
         // Return placeholder that loads content asynchronously
-        setTimeout(() => this.loadAdverseReactionsContent(med.nregistro), 100);
+        setTimeout(() => this.loadAdverseReactionsContent(med.nregistro, med), 100);
 
         return `
     <div id="adverse-tab-content" class="section-viewer-content">
@@ -10612,7 +10641,7 @@ ${materialesPlaceholder}
     /**
      * Loads section 4.8 content asynchronously
      */
-    async loadAdverseReactionsContent(nregistro) {
+    async loadAdverseReactionsContent(nregistro, med = null) {
         const container = document.getElementById('adverse-tab-content');
         if (!container) return;
 
@@ -10630,8 +10659,9 @@ ${materialesPlaceholder}
             }
 
             container.innerHTML = `
-    <div class="section-header">
+    <div class="section-header section-header-split">
         <h4><i class="fas fa-exclamation-triangle"></i> Sección 4.8: Reacciones Adversas</h4>
+        ${this._enlaceSeccionCima(med, '4.8')}
                 </div>
     <div class="section-text">
         ${content}

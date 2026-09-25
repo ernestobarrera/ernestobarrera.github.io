@@ -2220,6 +2220,8 @@ body {
     padding: var(--space-md);
     border-radius: var(--radius-md);
     margin-bottom: var(--space-sm);
+    /* Aire al llegar desde un acceso contextual (`_focusSafetyContext`, `block: 'start'`). */
+    scroll-margin-top: var(--space-md);
 }
 
 .safety-check-item:last-child {
@@ -4241,6 +4243,14 @@ body {
 .section-header h4 i {
     font-size: 0.9rem;
 }
+
+/* Enlace «Ver sección en CIMA ↗» en la cabecera de las pestañas de apartado entero. Mismo
+   aspecto que el de las menciones de Seguridad: en todo el modal significa lo mismo. */
+.section-header-split { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap; }
+.section-header-split h4 { margin: 0; }
+.section-header-actions { display: inline-flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; justify-content: flex-end; }
+.section-cima-link { font-size: 0.8rem; color: var(--primary); text-decoration: none; white-space: nowrap; }
+.section-cima-link:hover, .section-cima-link:focus-visible { text-decoration: underline; }
 
 /* Section text - Paper style (white background, dark text) */
 .section-text {
