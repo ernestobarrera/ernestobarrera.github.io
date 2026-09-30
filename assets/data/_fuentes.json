@@ -88,9 +88,9 @@
       "mantenimiento": "auto",
       "workflow": ".github/workflows/etl-atc-index.yml",
       "campo_fecha": "_meta.generated_at",
-      "max_age_days": 7,
+      "max_age_days": null,
       "campo_fecha_fuente": "_meta.listprescriptiondate",
-      "desfase_dato_max_days": 3,
+      "vigilancia": "Sin umbral de edad aqui A PROPOSITO (30/09/2026). El ETL diario no commitea si no cambia ningun ATC, asi que generated_at y listprescriptiondate del fichero envejecen aunque la fuente se compruebe cada dia: medirlas aqui daba una falsa alarma diaria. La frescura la garantizan el centinela fuente-al-dia del ETL (falla con fuente de mas de 3 dias) y el latido del watchdog (avisa si el ETL no sale en verde en 2 dias).",
       "degradacion": "Si el indice falta, caduca o no supera su contrato, la busqueda por indicacion vuelve al verificador en vivo contra CIMA (una peticion de detalle por medicamento). Si tampoco puede verificar, declara la busqueda exacta no disponible en vez de presentar candidatos aproximados como coincidencias.",
       "sellos": {
         "zip_sha256": "identidad del ZIP de origen",

@@ -330,16 +330,20 @@ const DETALLES_CIMA = {
     // porque el Ministerio no ha subido el ZIP de prescripción. Eso no es fallar en cerrado, es
     // fallar en el sitio equivocado.
     //
-    // NO SE PIERDE LA VIGILANCIA, que es la única razón por la que esto se puede hacer: el
-    // desfase está declarado en `assets/data/_fuentes.json` (`desfase_dato_max_days: 3`) y lo
-    // vigila el watchdog diario, que tiene su propio canal y le manda un email. Dejarlo también
+    // NO SE PIERDE LA VIGILANCIA, que es la única razón por la que esto se puede hacer: la
+    // vigila el centinela `fuente-al-dia` del propio ETL (falla con fuente de más de 3 días) y el
+    // latido del watchdog diario, que manda un email si el ETL no sale en verde. Dejarlo también
     // aquí en rojo eran dos alarmas por una causa, y dos alarmas por una causa enseñan a ignorar
     // las dos.
+    //
+    // Y este INCONCLUSO puede salir con la fuente al día: el ETL no commitea si no cambia ningún
+    // ATC, así que la fecha del fichero publicado envejece aunque la AEMPS publique cada día.
+    // El 30/09/2026 eso tenía al watchdog en rojo a diario; ver `vigilancia` en `_fuentes.json`.
     const dias = (Date.now() - Date.parse(`${real._meta.listprescriptiondate}T00:00:00Z`)) / 86400000;
     if (dias <= 3) {
         console.log(`✓ y la fuente dentro de su desfase declarado de 3 dias — ${dias.toFixed(1)} dias`);
     } else {
-        console.log(`INCONCLUSO: la fuente lleva ${dias.toFixed(1)} dias sin actualizarse (desfase declarado: 3). No es un fallo del indice ni del codigo; lo vigila el watchdog de frescura, que avisa por email.`);
+        console.log(`INCONCLUSO: la fuente lleva ${dias.toFixed(1)} dias sin actualizarse (desfase declarado: 3). No es un fallo del indice ni del codigo: si no cambia ningun ATC el ETL no commitea y la fecha no avanza. La frescura real la vigilan el centinela del ETL y el latido del watchdog.`);
     }
 }
 

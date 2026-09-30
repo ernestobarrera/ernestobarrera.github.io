@@ -92,6 +92,21 @@ ESCENARIO = {
         },
         "contenido": {"version": "2026-01-01"},
     },
+    # El caso del indice ATC (30/09/2026): su ETL no commitea si no cambia la proyeccion, asi
+    # que las fechas del fichero envejecen aunque la fuente se compruebe a diario. La frescura
+    # la garantiza el propio ETL (centinela + latido) y el manifiesto lo DECLARA.
+    "vigilada-por-etl.json": {
+        "manifiesto": {
+            "fuente": "fuente de prueba",
+            "mantenimiento": "auto",
+            "campo_fecha": "_meta.generated_at",
+            "max_age_days": None,
+            "campo_fecha_fuente": "_meta.origen_date",
+            "vigilancia": "centinela del ETL + latido",
+            "degradacion": "cae al camino en vivo",
+        },
+        "contenido": {"_meta": {"generated_at": _hace(90), "origen_date": _hace(90)}},
+    },
 }
 
 
@@ -145,6 +160,10 @@ CASOS = [
      lambda p, l: not any("degradacion" in x.lower() for x in p)),
     ("una vista humana queda fuera del contrato",
      lambda p, l: not any("curada-a-mano.json" in x for x in l if "DATO" in x or "SELLO" in x)),
+    ("una vista vigilada por su ETL NO despierta a nadie aunque su fichero envejezca",
+     lambda p, l: not any("vigilada-por-etl.json" in x for x in p)),
+    ("y el informe dice QUIEN la vigila, no que nadie lo hace",
+     lambda p, l: any(x.startswith("[VIGILADO POR SU ETL] vigilada-por-etl.json") for x in l)),
 ]
 
 # Mutantes: cada uno rompe una pieza del gate. Si el banco sigue en verde con el mutante puesto,

@@ -135,8 +135,12 @@ def check_repo_data(now):
         campo = decl.get("campo_fecha")
 
         if umbral is None:
-            # Declarar que no se vigila es una AFIRMACION, no un olvido: queda escrita.
-            lines.append(f"[NO VIGILADO] {nombre}: {decl.get('mantenimiento', '?')}")
+            # Declarar que no se vigila es una AFIRMACION, no un olvido: queda escrita. Y si lo
+            # vigila otro (su ETL, con centinela y latido), se dice quien.
+            if decl.get("vigilancia"):
+                lines.append(f"[VIGILADO POR SU ETL] {nombre}: {decl['vigilancia']}")
+            else:
+                lines.append(f"[NO VIGILADO] {nombre}: {decl.get('mantenimiento', '?')}")
             continue
 
         if not campo:
