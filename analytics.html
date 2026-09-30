@@ -1237,13 +1237,15 @@ const TAXONOMY = {
     buscar:        { label: 'Búsqueda / identificación',  ely: 'Orientación, composición, nombre del fármaco', icon: 'fa-search',              color: '#60a5fa', section: '—' },
     indicaciones:  { label: 'Indicaciones / eficacia',     ely: 'Indicaciones, fármaco de elección',             icon: 'fa-stethoscope',         color: '#34d399', section: '4.1' },
     seguridad:     { label: 'Seguridad / precauciones',    ely: 'Contraindicaciones y precauciones',             icon: 'fa-shield-alt',          color: '#fb923c', section: '4.3–4.4' },
-    interacciones: { label: 'Interacciones',               ely: 'Interacciones medicamentosas',                  icon: 'fa-random',              color: '#a78bfa', section: '4.5' },
+    // Desde el 30/09/2026 incluye la vista «Fármacos (combinación)», que antes llegaba nula.
+    interacciones: { label: 'Interacciones / combinación', ely: 'Interacciones medicamentosas',                  icon: 'fa-random',              color: '#a78bfa', section: '4.5' },
     reacciones:    { label: 'Efectos adversos / RAM',      ely: 'Reacciones adversas, causalidad inversa',       icon: 'fa-exclamation-triangle', color: '#f87171', section: '4.8' },
     equivalencias: { label: 'Alternativas / composición',  ely: 'Composición, genéricos, alternativas',          icon: 'fa-exchange-alt',        color: '#22d3ee', section: '—' },
     farmacogenomica:{ label: 'Farmacogenómica',            ely: 'Biomarcadores y farmacogenómica regulatoria',   icon: 'fa-dna',                 color: '#818cf8', section: '—' },
     suministro:    { label: 'Disponibilidad',              ely: 'Disponibilidad del fármaco',                    icon: 'fa-boxes',               color: '#fbbf24', section: '—' },
     alertas:       { label: 'Alertas de seguridad',        ely: 'Alertas regulatorias (AEMPS)',                  icon: 'fa-bell',                color: '#f472b6', section: '—' },
     materiales:    { label: 'Materiales',                  ely: 'Materiales informativos de seguridad',          icon: 'fa-book-medical',        color: '#64748b', section: '—' },
+    utilizacion:   { label: 'Utilización observada',       ely: 'Reparto del uso en un grupo ATC (recetas SNS)', icon: 'fa-chart-column',        color: '#2dd4bf', section: '—' },
     perfil:        { label: 'Gestión de perfil',           ely: '—',                                             icon: 'fa-star',                color: '#94a3b8', section: '—' },
     'modal-info':         { label: 'Ficha — Info general',    ely: 'Identificación y resumen de ficha',            icon: 'fa-info-circle',         color: '#94a3b8', section: '—' },
     'modal-indications':  { label: 'Ficha — Indicaciones',    ely: 'Indicaciones terapéuticas',                    icon: 'fa-stethoscope',         color: '#34d399', section: '4.1' },
@@ -1251,12 +1253,17 @@ const TAXONOMY = {
     'modal-interactions': { label: 'Ficha — Interacciones',   ely: 'Interacciones fármaco-fármaco',                icon: 'fa-random',              color: '#a78bfa', section: '4.5' },
     'modal-adverse':      { label: 'Ficha — Reacciones adv.', ely: 'Reacciones adversas',                          icon: 'fa-exclamation-circle',  color: '#f87171', section: '4.8' },
     'modal-safety':       { label: 'Ficha — Seguridad',       ely: 'Contraindicaciones y precauciones',            icon: 'fa-shield-alt',          color: '#fb923c', section: '4.3–4.4' },
-    'modal-docs':         { label: 'Ficha — Documentos',      ely: 'Ficha técnica, prospecto y materiales',        icon: 'fa-file-alt',            color: '#64748b', section: '—' },
+    // Hasta el 30/09/2026 `modal-docs` incluía también los materiales; desde entonces van en Documentación.
+    'modal-docs':         { label: 'Ficha — Ficha y prospecto', ely: 'Ficha técnica y prospecto (con materiales hasta 30/09/2026)', icon: 'fa-file-alt',   color: '#64748b', section: '—' },
+    'modal-documentacion':{ label: 'Ficha — Documentación',   ely: 'IPT, materiales, informe de evaluación y plan de riesgos', icon: 'fa-balance-scale', color: '#94a3b8', section: '—' },
     'modal-alerts':       { label: 'Ficha — Alertas',         ely: 'Notas de seguridad AEMPS',                     icon: 'fa-bell',                color: '#f472b6', section: '—' },
     'modal-qt':           { label: 'Ficha — QT',              ely: 'Riesgo arritmogénico, torsade de pointes',     icon: 'fa-heartbeat',           color: '#fbbf24', section: '4.4–4.5' },
     'modal-pgx':          { label: 'Ficha — Farmacogenómica', ely: 'Biomarcadores farmacogenómicos',               icon: 'fa-dna',                 color: '#818cf8', section: '—' },
     'modal-evidence':     { label: 'Ficha — Evidencia',       ely: 'PubMed y registros de ensayos clínicos',       icon: 'fa-flask',               color: '#2dd4bf', section: '—' },
     'modal-financing':    { label: 'Ficha — Financiación',    ely: 'Precio, financiación y condiciones SNS',       icon: 'fa-euro-sign',           color: '#fbbf24', section: '—' },
+    'modal-utilizacion':  { label: 'Ficha — Utilización',     ely: 'Utilización observada del principio activo',   icon: 'fa-chart-column',        color: '#2dd4bf', section: '—' },
+    // El Worker lo rechazaba hasta el 30/09/2026: no hay serie anterior.
+    'modal-consult':      { label: 'Ficha — Consultar IA',    ely: 'Preparación de una consulta documental a IA externa', icon: 'fa-robot',        color: '#c084fc', section: '—' },
 };
 
 const CONTEXTS = {
@@ -1306,7 +1313,7 @@ const SEARCH_TYPES = {
 const USER_SEARCH_IN = new Set(['nombre', 'principio_activo', 'atc', 'nregistro', 'codigo_nacional', 'otro']);
 const MAIN_CLINICAL_VIEWS = new Set([
     'indicaciones', 'seguridad', 'interacciones', 'reacciones', 'equivalencias',
-    'farmacogenomica', 'suministro', 'alertas', 'materiales'
+    'farmacogenomica', 'suministro', 'alertas', 'materiales', 'utilizacion'
 ]);
 
 // Términos no clínicos — se señalan visualmente en top términos
