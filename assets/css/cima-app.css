@@ -12683,6 +12683,15 @@ a.ipt-item:hover {
     vertical-align: 1px;
 }
 
+/* «Para el paciente» (Posología): al final de la fila de la leyenda, sin robar una línea propia. */
+.posology-legend .share-paciente {
+    margin-left: auto;
+}
+
+.posology-legend .share-paciente[hidden] {
+    display: none;
+}
+
 @media (max-width: 640px) {
     .ipt-item {
         padding: 0.5rem 0.35rem;

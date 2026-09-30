@@ -191,6 +191,44 @@ console.log('\n7b) ficha y prospecto por un lado, documentación complementaria 
     ok('y la pestaña es válida en la URL', /validModalTabs = \[[^\]]*'documentacion'/.test(APP));
 }
 
+console.log('\n7c) compartir un segmento de la ficha, sin quitar «Copiar»');
+{
+    // 30/09/2026. «Compartir» va AL LADO de «Copiar»: en el escritorio de la consulta se pega en la
+    // historia clínica, y el menú de compartir no sustituye al portapapeles.
+    ok('4.1 y 4.2 conservan su botón de copiar',
+        /copyTabContent\('indications-section-text'/.test(APP) && /copyTabContent\('posology-section-text'/.test(APP));
+    ok('y ganan el de compartir', /_botonCompartir\('indications-section-text'/.test(APP) && /_botonCompartir\('posology-section-text'/.test(APP));
+
+    const app = Object.create(Clase.prototype);
+    ok('sin menú de compartir en el navegador no se pinta un botón muerto', app._botonCompartir('x', 'y', '4.2') === '');
+    sandbox.navigator.share = async () => {};
+    ok('con él, sí', /app\.shareTabContent\('x', 'y', '4\.2'\)/.test(app._botonCompartir('x', 'y', '4.2')));
+
+    const cuerpo = nombre => { const i = APP.indexOf(`    ${nombre}`); return i === -1 ? '' : APP.slice(i, APP.indexOf('\n    }\n', i)); };
+    // `navigator.share` exige un clic reciente: una petición entre el clic y el menú lo invalida.
+    ok('compartir lee el texto de la pantalla, sin pedir nada antes', !/await/.test(cuerpo('shareTabContent(')) && /innerText/.test(cuerpo('shareTabContent(')));
+    ok('el fragmento seleccionado viaja con su enlace a la frase', /_ftUrlSeccion\(med, seccion, ancla\)/.test(cuerpo('shareTabContent(')));
+    ok('«Para el paciente» es el prospecto, elegido por el TÍTULO de CIMA',
+        /d\.tipo === 2/.test(cuerpo('async _precargarComoTomar(')) && /c\[oó\]mo \(tomar\|usar/.test(cuerpo('async _precargarComoTomar(')));
+    ok('su precarga va marcada como secundaria', /X-MC-Autocomplete/.test(cuerpo('async _precargarComoTomar(')));
+    ok('y no comparte el prospecto de otro medicamento', /String\(c\.nregistro\) !== String\(this\.currentMed\?\.nregistro\)/.test(cuerpo('shareComoTomar(')));
+    ok('el HTML de CIMA se pasa a texto con DOMParser, no con innerHTML',
+        /DOMParser/.test(cuerpo('_htmlATexto(')) && !/innerHTML/.test(cuerpo('_htmlATexto(')));
+
+    // Ejecutado: lo que llega al menú del sistema.
+    let enviado = null;
+    sandbox.navigator.share = async d => { enviado = d; };
+    await app._compartir({ titulo: 'X — 4.2', texto: 'a'.repeat(5000), url: 'https://cima.aemps.es/x#4.2' });
+    ok('se envía título, texto y enlace a la fuente', enviado?.title === 'X — 4.2' && enviado?.url === 'https://cima.aemps.es/x#4.2');
+    ok('un texto enorme se recorta y remite al enlace', enviado?.text.length < 4200 && /texto completo en el enlace/.test(enviado?.text));
+    let avisos = 0;
+    app.showToast = () => { avisos += 1; };
+    sandbox.navigator.share = async () => { const e = new Error('x'); e.name = 'AbortError'; throw e; };
+    await app._compartir({ titulo: 't', texto: 'x', url: '' });
+    ok('cancelar el menú no es un error ni copia nada', avisos === 0);
+    delete sandbox.navigator.share;
+}
+
 console.log('\n8) la agrupación, ejecutada de verdad sobre la respuesta real de CIMA');
 {
     // Muestra literal de `/docSegmentado/secciones/1?nregistro=83518` (PENILEVEL 500), capturada el

@@ -10442,6 +10442,129 @@ ${ftFechaDocsHtml}
     }
 
     /**
+     * COMPARTIR UN SEGMENTO DE LA FICHA por las aplicaciones del sistema (WhatsApp, correo, Teams…).
+     * Nace el 30/09/2026, al lado de «Copiar» y no en su lugar: en el escritorio de la consulta lo
+     * que se hace es pegar en la historia clínica, y el menú de compartir no sustituye al
+     * portapapeles.
+     *
+     * EL SEGMENTO: si hay texto seleccionado DENTRO de la sección, se comparte solo eso, con un
+     * enlace a CIMA que resalta esa frase (`_ftUrlSeccion` con *text fragment*). Si no, la sección
+     * entera y el enlace al apartado. El texto es de CIMA y el enlace lleva a la fuente: MedCheck
+     * no añade nada suyo.
+     *
+     * EL TEXTO YA ESTÁ EN PANTALLA. `navigator.share` exige que el clic sea reciente: si aquí se
+     * hiciera una petición antes de compartir, el navegador lo rechazaría. Por eso se lee del DOM.
+     */
+    shareTabContent(containerId, seccionLabel, seccion) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        const med = this.currentMed;
+        const sel = window.getSelection?.();
+        let texto = '';
+        if (sel && !sel.isCollapsed && el.contains(sel.anchorNode) && el.contains(sel.focusNode)) {
+            texto = sel.toString().trim();
+        }
+        const fragmento = texto.length > 0;
+        if (!fragmento) texto = (el.innerText || el.textContent || '').trim();
+        // Las primeras palabras bastan para que el navegador encuentre la frase; si no la encuentra,
+        // se queda en el ancla del apartado (ver `_ftUrlSeccion`).
+        const ancla = fragmento ? texto.split(/\s+/).slice(0, 8).join(' ') : null;
+        const url = this._ftUrlSeccion(med, seccion, ancla) || '';
+        this._compartir({
+            titulo: `${med?.nombre || ''} — ${seccionLabel}${fragmento ? ' (fragmento)' : ''}`,
+            texto,
+            url,
+        });
+    }
+
+    /**
+     * Compartir «Cómo tomar» del PROSPECTO (apartado 3) con el paciente. No es el 4.2 de la ficha,
+     * que está escrito para profesionales: el prospecto es el texto oficial pensado para él.
+     * El texto se precarga al abrir Posología (`_precargarComoTomar`), por la misma razón que arriba.
+     */
+    shareComoTomar() {
+        const c = this._comoTomar;
+        if (!c || String(c.nregistro) !== String(this.currentMed?.nregistro)) return;
+        this._compartir({ titulo: `${this.currentMed?.nombre || ''} — ${c.titulo} (prospecto)`, texto: c.texto, url: c.url });
+    }
+
+    /**
+     * Pide en segundo plano el apartado «Cómo tomar/usar…» del prospecto y, si existe, enseña el
+     * botón para compartirlo. Se decide por el TÍTULO que da CIMA, no por el número: el 3 es «Cómo
+     * tomar» en los prospectos que se han visto, pero la fuente no lo promete.
+     */
+    async _precargarComoTomar(med) {
+        const btn = document.getElementById('share-como-tomar');
+        const prosp = (med?.docs || []).find(d => d.tipo === 2 && d.secc === true && d.urlHtml);
+        if (!btn || !prosp) return;
+        const secundaria = { headers: { 'X-MC-Autocomplete': '1' } };
+        try {
+            const secciones = await this.api.getDocSecciones(med.nregistro, 2, secundaria);
+            const s = (secciones || []).find(x => /^c[oó]mo (tomar|usar|utilizar|aplicar|se administra|administrar)/i.test(String(x.titulo || '').trim()));
+            if (!s) return;
+            const html = await this.api.getDocSeccion(med.nregistro, s.seccion, 2, secundaria);
+            // `getDocSeccion` antepone el título del apartado; ya va en la cabecera de lo compartido.
+            const titulo = String(s.titulo).trim();
+            let texto = this._htmlATexto(html);
+            if (texto.startsWith(titulo)) texto = texto.slice(titulo.length).trim();
+            if (texto.length < 40) return;
+            // El modal puede haber cambiado de medicamento mientras tanto.
+            if (String(this.currentMed?.nregistro) !== String(med.nregistro)) return;
+            this._comoTomar = { nregistro: med.nregistro, titulo, texto, url: `${prosp.urlHtml}#${encodeURIComponent(s.seccion)}` };
+            const actual = document.getElementById('share-como-tomar');
+            if (actual) {
+                actual.hidden = false;
+                actual.title = `Compartir «${this._comoTomar.titulo}» del prospecto oficial`;
+            }
+        } catch {
+            // Es una comodidad: si falla, el botón no aparece y no pasa nada más.
+        }
+    }
+
+    /**
+     * HTML de CIMA → texto plano para compartir. Con `DOMParser` y no con `innerHTML` sobre un nodo
+     * suelto: este no ejecuta ni carga nada (un `<img onerror>` en un nodo suelto sí se dispara).
+     */
+    _htmlATexto(html) {
+        const conSaltos = String(html || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|li|div|h\d)>/gi, '\n');
+        const doc = new DOMParser().parseFromString(conSaltos, 'text/html');
+        return (doc.body.textContent || '').replace(/[ \t ]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    }
+
+    /**
+     * Abre el menú de compartir del sistema; si el navegador no lo tiene o falla, copia. Cancelar
+     * el menú no es un error y no avisa de nada.
+     */
+    async _compartir({ titulo, texto, url }) {
+        // Un tope para que un 4.2 kilométrico no lo trunque la aplicación de destino a su manera:
+        // el texto íntegro está siempre detrás del enlace.
+        const MAX = 4000;
+        const cuerpo = texto.length > MAX ? `${texto.slice(0, MAX).trimEnd()}…\n(texto completo en el enlace)` : texto;
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: titulo, text: `${titulo}\n\n${cuerpo}`, ...(url ? { url } : {}) });
+                return;
+            } catch (err) {
+                if (err?.name === 'AbortError') return;
+            }
+        }
+        try {
+            await navigator.clipboard.writeText(`${titulo}\n\n${cuerpo}${url ? `\n\nFuente oficial (CIMA): ${url}` : ''}`);
+            this.showToast(navigator.share ? 'No se pudo abrir el menú de compartir: texto copiado' : 'Copiado al portapapeles', 'success');
+        } catch {
+            this.showToast('No se pudo compartir ni copiar', 'error');
+        }
+    }
+
+    /** El botón «Compartir» de una sección. Solo donde el navegador tiene menú de compartir. */
+    _botonCompartir(containerId, seccionLabel, seccion) {
+        if (typeof navigator === 'undefined' || !navigator.share) return '';
+        return `<button class="btn btn-sm btn-secondary" onclick="app.shareTabContent('${containerId}', '${seccionLabel}', '${seccion}')" title="Compartir por otra aplicación. Selecciona un fragmento para compartir solo ese trozo" aria-label="Compartir ${seccionLabel}">
+            <i class="fas fa-share-alt"></i>
+        </button>`;
+    }
+
+    /**
      * Copia el texto de una sección del modal al portapapeles
      */
     async copyTabContent(containerId, medNombre, seccionLabel) {
@@ -10497,7 +10620,7 @@ ${ftFechaDocsHtml}
         <span class="section-header-actions">${this._enlaceSeccionCima(med, '4.1')}
         <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('indications-section-text', '${medNombre.replace(/'/g, "\\'")}', 'Indicaciones terapéuticas')" title="Copiar texto">
             <i class="fas fa-copy"></i>
-        </button></span>
+        </button>${this._botonCompartir('indications-section-text', 'Indicaciones terapéuticas (4.1)', '4.1')}</span>
     </div>
     <div id="indications-section-text" class="section-text">
         ${content}
@@ -10554,11 +10677,14 @@ ${ftFechaDocsHtml}
         <span class="section-header-actions">${this._enlaceSeccionCima(med, '4.2')}
         <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('posology-section-text', '${(medNombre || '').replace(/'/g, "\\'")}', 'Posología')" title="Copiar texto">
             <i class="fas fa-copy"></i>
-        </button></span>
+        </button>${this._botonCompartir('posology-section-text', 'Posología y forma de administración (4.2)', '4.2')}</span>
     </div>
     <div class="posology-legend">
         <span class="legend-item"><mark class="posology-food">Alimentos</mark></span>
         <span class="legend-item"><mark class="posology-timing">Posología</mark></span>
+        <button id="share-como-tomar" type="button" class="btn btn-sm btn-secondary share-paciente" hidden onclick="app.shareComoTomar()">
+            <i class="fas fa-user"></i> Para el paciente
+        </button>
     </div>
     <div id="posology-section-text" class="section-text">
         ${content}
@@ -10566,6 +10692,10 @@ ${ftFechaDocsHtml}
 `;
 
             // Now apply format-safe highlighting using TreeWalker
+            // «Cómo tomar» del prospecto, en segundo plano: el botón «Para el paciente» aparece
+            // solo cuando el texto ya está aquí, porque compartir exige un clic reciente.
+            this._precargarComoTomar(med || this.currentMed);
+
             const textContainer = document.getElementById('posology-section-text');
             if (!textContainer) return;
 
