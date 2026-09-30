@@ -285,6 +285,90 @@ def check_latidos():
     return problems, lines
 
 
+# ---------------------------------------------------------------------------
+# Cuarta capa: ¿esta VIVO el Worker? (30/09/2026)
+#
+# Las tres capas anteriores leen KV por la API de Cloudflare y el repo por disco: ninguna pasa
+# por el Worker. Si el Worker se cae o empieza a dar errores, MedCheck deja de buscar y el
+# watchdog sigue en verde, porque los datos que vigila estan intactos. Hasta hoy eso solo lo
+# veia `medcheck-smoke.mjs`, que se lanza a mano.
+#
+# Dos sondas, las mismas que el smoke: /health (el Worker responde) y una busqueda real
+# (el Worker llega a CIMA y devuelve resultados). La segunda es la que importa: un Worker
+# que contesta /health pero no busca es un MedCheck roto.
+#
+# `X-MC-Autocomplete: 1` para que la sonda diaria no ensucie la analitica D1 (el Worker no
+# registra nada con esa cabecera). El User-Agent explicito NO es cosmetico: Cloudflare
+# rechaza con 403 (error 1010) la firma por defecto de urllib; sin el, esta capa mandaria
+# una falsa alarma cada manana.
+#
+# Un fallo se reintenta una vez antes de contar: la sonda corre una vez al dia y un parpadeo
+# de red no debe despertar a nadie. Dos fallos seguidos, si.
+# ---------------------------------------------------------------------------
+WORKER_UA = "medcheck-watchdog/1.0 (+github-actions)"
+WORKER_REINTENTO_S = 20
+
+
+def _http_json(url: str, headers: dict) -> tuple[int, object]:
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            return resp.status, json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        return exc.code, None
+
+
+def _pausa(segundos: float) -> None:
+    import time
+    time.sleep(segundos)
+
+
+def _sonda_health(base: str) -> str | None:
+    """None si esta bien; si no, el motivo."""
+    status, body = _http_json(f"{base}/health", {"User-Agent": WORKER_UA})
+    if status == 200 and isinstance(body, dict) and body.get("status") == "ok":
+        return None
+    return f"HTTP {status}, status={body.get('status') if isinstance(body, dict) else '—'}"
+
+
+def _sonda_busqueda(base: str) -> str | None:
+    status, body = _http_json(
+        f"{base}/medicamentos?nombre=omeprazol",
+        {"User-Agent": WORKER_UA, "X-MC-Autocomplete": "1"},
+    )
+    n = len(body.get("resultados") or []) if isinstance(body, dict) else 0
+    if status == 200 and n > 0:
+        return None
+    return f"HTTP {status}, {n} resultados para omeprazol"
+
+
+def check_worker():
+    """`CONTRATO:` igual que los latidos. Sin WATCHDOG_WORKER_URL la capa no corre y lo dice;
+    con ella, no poder preguntar (excepcion de red) es PROBLEMA, nunca aprobado."""
+    base = (os.environ.get("WATCHDOG_WORKER_URL") or "").rstrip("/")
+    if not base:
+        return [], ["(no declarado: esta pasada no mira el Worker)"]
+
+    problems, lines = [], []
+    for nombre, sonda in (("/health", _sonda_health), ("busqueda via proxy", _sonda_busqueda)):
+        motivo = None
+        for intento in (1, 2):
+            try:
+                motivo = sonda(base)
+            except Exception as exc:  # noqa: BLE001
+                motivo = f"sin respuesta ({exc})"
+            if motivo is None:
+                break
+            if intento == 1:
+                _pausa(WORKER_REINTENTO_S)
+        if motivo is None:
+            lines.append(f"[OK]       Worker {nombre}")
+        else:
+            problems.append(f"Worker {nombre}: {motivo} (fallo dos veces seguidas)")
+            lines.append(f"[CAIDO]    Worker {nombre}: {motivo}")
+    return problems, lines
+
+
 RESEND_API = "https://api.resend.com/emails"
 
 
@@ -441,6 +525,13 @@ def main() -> int:
     lines.append("== Latido de los workflows programados ==")
     lines.extend(latidos_lines)
 
+    # Cuarta capa: el Worker. Datos frescos y tareas corriendo no sirven si nadie los sirve.
+    worker_problems, worker_lines = check_worker()
+    problems.extend(worker_problems)
+    lines.append("")
+    lines.append("== Worker (medcheck-proxy) ==")
+    lines.extend(worker_lines)
+
     report = "\n".join(lines)
     print(report)
 
@@ -476,8 +567,8 @@ def main() -> int:
     # avisa de tareas que no han corrido, que no es lo mismo que un dato viejo.
     subject = f"[MedCheck watchdog] {len(problems)} problema(s)"
     body = (
-        "El watchdog ha detectado datos sin actualizar o tareas que no estan corriendo en "
-        "el entorno MedCheck.\n\n"
+        "El watchdog ha detectado datos sin actualizar, tareas que no estan corriendo o un "
+        "Worker que no responde en el entorno MedCheck.\n\n"
         + "\n".join(f"- {p}" for p in problems)
         + "\n\nEstado completo:\n"
         + report

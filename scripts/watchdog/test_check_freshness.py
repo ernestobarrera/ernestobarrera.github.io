@@ -272,6 +272,113 @@ def _seguro_l(cond, fuente) -> bool:
         return False
 
 
+# ---------------------------------------------------------------------------
+# Cuarta capa: el WORKER vivo (30/09/2026)
+#
+# Las capas anteriores leen KV sin pasar por el Worker: si se cae, MedCheck deja de buscar y
+# el watchdog sigue en verde. Lo que hay que sujetar: que un Worker caido o que no busca
+# DESPIERTE a alguien, que un parpadeo aislado NO, y que no poder preguntar no sea aprobado.
+# Sin red: se sustituye `_http_json` por un guion de respuestas.
+# ---------------------------------------------------------------------------
+_SANO = {"/health": [(200, {"status": "ok"})],
+         "/medicamentos": [(200, {"resultados": [{"nregistro": "1"}]})]}
+
+
+def _worker(fuente_texto: str, guion=None, *, declarar: bool = True, enviadas: list | None = None):
+    """Ejecuta SOLO la capa del Worker. `guion`: ruta -> lista de respuestas (la ultima se
+    repite). Una respuesta que sea una Exception se lanza."""
+    guion = {k: list(v) for k, v in (guion or _SANO).items()}
+
+    def falso(url, headers):
+        if enviadas is not None:
+            enviadas.append((url, dict(headers)))
+        ruta = "/health" if "/health" in url else "/medicamentos"
+        cola = guion[ruta]
+        r = cola.pop(0) if len(cola) > 1 else cola[0]
+        if isinstance(r, Exception):
+            raise r
+        return r
+
+    with tempfile.TemporaryDirectory() as td:
+        ns = _cargar(fuente_texto, Path(td))
+        ns["_http_json"] = falso
+        ns["_pausa"] = lambda s: None
+        previo = os.environ.get("WATCHDOG_WORKER_URL")
+        if declarar:
+            os.environ["WATCHDOG_WORKER_URL"] = "https://worker.prueba/"
+        else:
+            os.environ.pop("WATCHDOG_WORKER_URL", None)
+        try:
+            return ns["check_worker"]()
+        finally:
+            if previo is None:
+                os.environ.pop("WATCHDOG_WORKER_URL", None)
+            else:
+                os.environ["WATCHDOG_WORKER_URL"] = previo
+
+
+def _uas(f):
+    enviadas: list = []
+    _worker(f, enviadas=enviadas)
+    return [h.get("User-Agent", "") for _, h in enviadas]
+
+
+CASOS_WORKER = [
+    ("un Worker sano NO despierta a nadie",
+     lambda f: _worker(f)[0] == [] and sum(x.startswith("[OK]") for x in _worker(f)[1]) == 2),
+    ("/health caido es PROBLEMA",
+     lambda f: any("/health" in x for x in _worker(f, {**_SANO, "/health": [(500, None)]})[0])),
+    ("un /health vivo que NO busca tambien es PROBLEMA",
+     lambda f: any("busqueda" in x for x in
+                   _worker(f, {**_SANO, "/medicamentos": [(200, {"resultados": []})]})[0])),
+    ("un parpadeo aislado se reintenta y NO despierta a nadie",
+     lambda f: _worker(f, {**_SANO, "/health": [(502, None), (200, {"status": "ok"})]})[0] == []),
+    ("no poder preguntar (red caida) es PROBLEMA, no aprobado",
+     lambda f: len(_worker(f, {"/health": [OSError("sin red")],
+                               "/medicamentos": [OSError("sin red")]})[0]) == 2),
+    ("sin declarar la variable, la capa no corre y lo DICE",
+     lambda f: _worker(f, declarar=False)[0] == []
+     and any("no declarado" in x for x in _worker(f, declarar=False)[1])),
+    ("toda sonda lleva User-Agent propio (Cloudflare da 403/1010 al de urllib)",
+     lambda f: (lambda u: len(u) == 2 and all(x.startswith("medcheck-watchdog") for x in u))(_uas(f))),
+]
+
+MUTANTES_WORKER = [
+    ("sin reintento: un parpadeo manda email",
+     "for intento in (1, 2):", "for intento in (1,):"),
+    ("da por buena una busqueda vacia",
+     "if status == 200 and n > 0:", "if status == 200:"),
+    ("se traga la red caida como si nada",
+     'motivo = f"sin respuesta ({exc})"', "motivo = None"),
+    ("pierde el User-Agent en /health",
+     '_http_json(f"{base}/health", {"User-Agent": WORKER_UA})', '_http_json(f"{base}/health", {})'),
+]
+
+
+def probar_worker(fuente: str) -> int:
+    fallos = 0
+    print("\n  == Worker vivo ==")
+    for titulo, cond in CASOS_WORKER:
+        try:
+            ok = bool(cond(fuente))
+        except Exception as exc:  # noqa: BLE001
+            ok = False
+            titulo = f"{titulo} [excepcion: {exc}]"
+        print(f"  {'OK  ' if ok else 'FALLO'} {titulo}")
+        fallos += 0 if ok else 1
+
+    for titulo, viejo, nuevo in MUTANTES_WORKER:
+        if viejo not in fuente:
+            print(f"  FALLO mutante sin anclaje: {titulo}")
+            fallos += 1
+            continue
+        mutada = fuente.replace(viejo, nuevo, 1)
+        sobrevive = all(_seguro_l(cond, mutada) for _, cond in CASOS_WORKER)
+        print(f"  {'OK  ' if not sobrevive else 'FALLO'} MUTANTE: {titulo}")
+        fallos += 1 if sobrevive else 0
+    return fallos
+
+
 def main() -> int:
     fuente = FUENTE.read_text(encoding="utf-8")
     problemas, lineas = _ejecutar(fuente)
@@ -303,9 +410,10 @@ def main() -> int:
         fallos += 1 if sobrevive else 0
 
     fallos += probar_latidos(fuente)
+    fallos += probar_worker(fuente)
 
-    total_a = len(CASOS) + len(CASOS_LATIDOS)
-    total_m = len(MUTANTES) + len(MUTANTES_LATIDOS)
+    total_a = len(CASOS) + len(CASOS_LATIDOS) + len(CASOS_WORKER)
+    total_m = len(MUTANTES) + len(MUTANTES_LATIDOS) + len(MUTANTES_WORKER)
     print(f"\n  {total_a} aserciones + {total_m} mutantes · fallos: {fallos}")
     if fallos:
         print("\n  Problemas detectados en la pasada limpia:")

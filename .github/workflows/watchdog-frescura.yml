@@ -65,6 +65,9 @@ jobs:
       - name: Comprobar frescura de las fuentes KV
         env:
           WATCHDOG_LATIDOS_JSON: /tmp/latidos.json
+          # El Worker vivo: /health y una búsqueda real. Hasta el 30/09/2026 solo lo miraba el
+          # smoke, a mano; el resto de capas leen KV sin pasar por él.
+          WATCHDOG_WORKER_URL: https://medcheck-proxy.medtools.workers.dev
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
           # Token de solo lectura recomendado; si no existe, se usa CF_API_TOKEN.
