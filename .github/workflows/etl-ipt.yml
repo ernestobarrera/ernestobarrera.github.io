@@ -1,0 +1,94 @@
+name: ETL índice de Informes de Posicionamiento Terapéutico (AEMPS)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 05:47 UTC los martes. Semanal porque la AEMPS publica en tandas (varias el mismo día) y
+    # una semana de retraso es invisible en consulta; la petición es una sola, de ~375 KB.
+    - cron: '47 5 * * 2'
+
+permissions:
+  # Commitea, como etl-materiales: el índice es un asset estático de Pages.
+  contents: write
+
+concurrency:
+  group: etl-ipt
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Medido el 30/09/2026: ~50 s (510 marcas contra CIMA). El margen es para un CIMA lento.
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # El constructor aborta SIN escribir si la fuente cambia de esquema o la resolución cae: el
+      # índice commiteado sigue siendo el bueno y el run sale en rojo, que es lo que ve el latido.
+      - name: Construir índice de IPT
+        id: build
+        run: |
+          node scripts/etl-ipt/build-ipt-index.mjs --out /tmp/ipt-index.json --anterior assets/data/ipt-index.json
+          {
+            echo "generated_at=$(jq -r '._meta.generated_at' /tmp/ipt-index.json)"
+            echo "fecha_fuente=$(jq -r '._meta.fecha_fuente' /tmp/ipt-index.json)"
+            echo "entradas=$(jq -r '._meta.entradas' /tmp/ipt-index.json)"
+            echo "resueltas=$(jq -r '._meta.resueltas' /tmp/ipt-index.json)"
+            echo "de_marca=$(jq -r '._meta.de_marca' /tmp/ipt-index.json)"
+            echo "nuevos=$(jq -r '._meta.novedades.nuevos | length' /tmp/ipt-index.json)"
+            echo "actualizados=$(jq -r '._meta.novedades.actualizados | length' /tmp/ipt-index.json)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: ¿Ha cambiado el contenido?
+        id: diff
+        run: |
+          # Se compara todo MENOS `_meta`, que cambia de fecha en cada pasada.
+          if jq -S -c 'del(._meta)' /tmp/ipt-index.json > /tmp/nuevo.json \
+             && jq -S -c 'del(._meta)' assets/data/ipt-index.json > /tmp/viejo.json \
+             && cmp -s /tmp/nuevo.json /tmp/viejo.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Sin cambios en el índice; no se commitea."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Índice cambiado; se commiteará."
+          fi
+
+      # El candidato, en su sitio antes del gate: los bancos leen la ruta del repo.
+      - name: Armar el árbol candidato
+        if: steps.diff.outputs.changed == 'true'
+        run: cp /tmp/ipt-index.json assets/data/ipt-index.json
+
+      - name: Gate — los bancos sobre el índice nuevo
+        if: steps.diff.outputs.changed == 'true'
+        uses: ./.github/actions/bancos
+        with:
+          titulo: Gate del ETL de IPT — bancos sobre el índice candidato
+
+      - name: Commitear índice
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/data/ipt-index.json
+          git commit -m "Actualiza el índice de IPT (AEMPS, ${{ steps.build.outputs.generated_at }})
+
+          ${{ steps.build.outputs.entradas }} IPT · ${{ steps.build.outputs.resueltas }}/${{ steps.build.outputs.de_marca }} de marca resueltos · ${{ steps.build.outputs.nuevos }} nuevos · ${{ steps.build.outputs.actualizados }} actualizados.
+          Fuente AEMPS con fecha ${{ steps.build.outputs.fecha_fuente }}. Generado por .github/workflows/etl-ipt.yml."
+          git push
+
+      - name: Resumen
+        run: |
+          {
+            echo "## ETL índice de IPT (AEMPS)"
+            echo ""
+            echo "- Generado: ${{ steps.build.outputs.generated_at }} · fuente: ${{ steps.build.outputs.fecha_fuente }}"
+            echo "- IPT: ${{ steps.build.outputs.entradas }} · de marca resueltos: ${{ steps.build.outputs.resueltas }}/${{ steps.build.outputs.de_marca }}"
+            echo "- Nuevos: ${{ steps.build.outputs.nuevos }} · actualizados: ${{ steps.build.outputs.actualizados }}"
+            echo "- Contenido cambiado: ${{ steps.diff.outputs.changed }}"
+          } >> "$GITHUB_STEP_SUMMARY"

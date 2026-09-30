@@ -97,6 +97,17 @@
         "projection_sha256": "identidad de la vista publicada"
       },
       "nota": "Un nregistro AUSENTE no es un medicamento sin ATC: es un medicamento a verificar en vivo. El desfase de 3 dias es DECIDIDO (la fuente publica a diario), no heredado de una cadencia mensual. Vigilancia cruzada del sesgo de falso negativo: scripts/etl-atc-index/verificar_cruzado.py"
+    },
+    "ipt-index.json": {
+      "fuente": "AEMPS — lista pública de Informes de Posicionamiento Terapéutico (assets/data/IPT/ddbb.json de su web), resuelta a nregistro contra CIMA REST /medicamentos y el Nomenclátor (atc-index.json)",
+      "mantenimiento": "auto",
+      "workflow": ".github/workflows/etl-ipt.yml",
+      "campo_fecha": "_meta.generated_at",
+      "max_age_days": 120,
+      "desfase_dato_max_days": null,
+      "campo_fecha_fuente": "_meta.fecha_fuente",
+      "degradacion": "Si el índice no carga, la pestaña Documentación no afirma que no haya IPT: enlaza la página oficial de IPT de la AEMPS. Un registro sin entrada se dice como «no consta en la lista de la AEMPS», nunca como «sin evaluar».",
+      "nota": "El ETL corre cada semana pero solo commitea si cambia el contenido (sin _meta), así que el fichero puede pasar semanas sin tocarse con la fuente parada: la AEMPS publica en tandas (la del 31/07/2026 fue la última hasta el 30/09). 120 días es para esa cadencia; que el ETL esté vivo lo vigila el latido (check-runs), no la edad del fichero. desfase_dato_max_days es null a propósito: fecha_fuente es el Last-Modified de la AEMPS y su silencio no es un fallo nuestro."
     }
   }
 }

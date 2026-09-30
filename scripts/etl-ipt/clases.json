@@ -1,0 +1,17 @@
+{
+  "_nota": "Documentos de la lista de IPT de la AEMPS que no evalúan UNA marca sino un grupo («Criterios y recomendaciones generales…»). Su título no nombra marca, así que no se pueden resolver por nombre: se asignan aquí a mano por ATC5 y el constructor los aplica a todos los registros con ese ATC5 del Nomenclátor (atc-index.json). Mantenimiento HUMANO: si aparece un documento de clase nuevo, el ETL lo deja en `_meta.sin_parsear` y hay que añadirlo aquí. `coincide` se busca en el título normalizado (minúsculas, sin acentos).",
+  "clases": [
+    {
+      "coincide": "anticoagulantes orales directos",
+      "grupo": "Anticoagulantes orales directos (ACOD)",
+      "atc5": ["B01AE07", "B01AF01", "B01AF02", "B01AF03"],
+      "nota": "dabigatrán, rivaroxabán, apixabán, edoxabán. Dos documentos de 08/02/2024: TEV y FANV."
+    },
+    {
+      "coincide": "boceprevir y telaprevir",
+      "grupo": "Boceprevir y telaprevir (VHC)",
+      "atc5": ["J05AE12", "J05AE11"],
+      "nota": "Ambos retirados; se mantiene para que el documento no quede como sin resolver."
+    }
+  ]
+}
