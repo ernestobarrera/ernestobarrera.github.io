@@ -4842,11 +4842,11 @@ class MedCheckApp {
      */
     /** Nombre visible de cada pestana del modal, para poder decir cual falta. */
     static GUIDE_TAB_LABELS = {
-        pgx: 'La pestana PGx',
-        financing: 'La pestana Financiacion',
-        utilizacion: 'La pestana Utilizacion',
-        alerts: 'La pestana Alertas AEMPS',
-        qt: 'La pestana QT',
+        pgx: 'La pestaña PGx',
+        financing: 'La pestaña Financiación',
+        utilizacion: 'La pestaña Utilización',
+        alerts: 'La pestaña Alertas AEMPS',
+        qt: 'La pestaña QT',
     };
 
     static get CARD_ACTIONS() {
@@ -9116,6 +9116,16 @@ class MedCheckApp {
                     .catch(() => {})
             ]);
 
+            // Pestaña condicional pedida por enlace (?tab=) que este medicamento no tiene: se abre
+            // en Información. Si no, el modal quedaba sin ninguna pestaña activa. Mismos criterios
+            // que deciden más abajo si cada pestaña se pinta.
+            const pestanaDisponible = {
+                pgx: () => !!(this._pgxSet && this._pgxSet.has(String(med.nregistro))),
+                financing: () => Array.isArray(med.presentaciones) && med.presentaciones.some(p => p.cn),
+                utilizacion: () => !!med.atcs?.find(a => a.nivel === 5),
+            }[initialTab];
+            if (pestanaDisponible && !pestanaDisponible()) initialTab = 'info';
+
             this.currentMed = med;
             // Save as selected medication for banner persistence
             this.setSelectedMedication(med);
@@ -13072,6 +13082,9 @@ ${ftFechaDocsHtml}
         this.modal.classList.add('hidden');
         this.currentMed = null;
         this._pendingFocusContext = null;
+        // La vista de analítica vuelve a la de fondo. Sin esto, lo siguiente que se buscara
+        // se registraba como la última pestaña del modal ya cerrado (verificado el 30/09/2026).
+        if (wasOpen) window._mcCurrentView = MedCheckApp._VIEW_ANALYTICS_MAP[this.currentView] || this.currentView;
         if (wasOpen && !this.isPopstateNavigation) {
             this.updateURLWithCurrentState();
         }
@@ -15105,7 +15118,10 @@ ${ftFechaDocsHtml}
             // First load the base view without URL update
             await this.loadView(targetView, false);
             // Then open the medication detail
-            const validModalTabs = ['info', 'indications', 'posology', 'interactions', 'adverse', 'safety', 'docs', 'documentacion', 'alerts', 'qt', 'pgx', 'evidence', 'utilizacion'];
+            // Tiene que listar TODAS las data-tab del modal: la app escribe ?tab=<pestaña> al pulsar
+            // cualquiera, y una que falte aquí convierte recargar, volver atrás o compartir en
+            // «abre Información». Lo vigila medcheck-test-vistas-analitica.mjs.
+            const validModalTabs = ['info', 'indications', 'posology', 'interactions', 'adverse', 'safety', 'docs', 'documentacion', 'alerts', 'qt', 'pgx', 'evidence', 'consult', 'financing', 'utilizacion'];
             const modalTab = validModalTabs.includes(params.tab) ? params.tab : 'info';
             this.openMedDetails(params.nregistro, modalTab);
             return;
@@ -15884,8 +15900,18 @@ ${ftFechaDocsHtml}
      * `extra` permite preservar campos al re-enriquecer (tags, addedAt, viewCount).
      */
     _buildFavoriteRecord(med, extra = {}) {
-        let atcCodigo = med.atcs?.[0]?.codigo || med.atcCodigo || '';
-        const atcNombre = med.atcs?.[0]?.nombre || med.atcNombre || '';
+        // El código es la HOJA del árbol (nivel 5), nunca `atcs[0]`, que es el nivel 3. Hasta el
+        // 30/09/2026 se guardaba el nivel 3 y todas las reglas de nivel 4-5 fallaban en silencio:
+        // con metformina guardada, SADMANS y monitorización decían «ninguno». El nombre sigue
+        // siendo el del grupo (nivel 3) porque es el rótulo que pinta la agrupación de favoritos.
+        const atcs = Array.isArray(med.atcs) ? med.atcs : [];
+        const atcHojaCima = atcs.find(a => a.nivel === 5)
+            || atcs.reduce((hoja, a) => (!hoja || (a.nivel || 0) > (hoja.nivel || 0) ? a : hoja), null);
+        let atcCodigo = atcHojaCima?.codigo || med.atcCodigo || '';
+        const atcNombre = (atcs.find(a => a.nivel === 3) || atcs[0])?.nombre || med.atcNombre || '';
+        // Marca que el código salió de la lista completa de CIMA: sin ella el favorito es anterior
+        // al arreglo y «Reparar» lo vuelve a pedir.
+        const atcHoja = atcs.length > 0 || !!(extra.atcHoja ?? med.atcHoja);
 
         let principioActivo = '';
         if (med.pactivos) principioActivo = med.pactivos;
@@ -15919,6 +15945,7 @@ ${ftFechaDocsHtml}
             atcNivel1,
             atcNivel2,
             atcNombre,
+            atcHoja,
             atcInferido: atcInferido && !!atcNivel1,
             generico: !!med.generico,
             biosimilar: !!med.biosimilar,
@@ -16107,7 +16134,16 @@ ${ftFechaDocsHtml}
      * banner no reaparece para siempre cuando un detalle no trae CN.
      */
     _favIsIncomplete(f) {
-        return !f.atcNivel1 || !f.principioActivo || f.cns === undefined;
+        return !f.atcNivel1 || !f.principioActivo || f.cns === undefined || this._favAtcIncompleto(f);
+    }
+
+    /**
+     * Guardado antes del 30/09/2026 con el ATC de nivel 3. No hay forma de deducir el nivel 5
+     * sin volver a pedir la ficha, así que se marca para «Reparar». Un ATC inferido por nombre no
+     * cuenta: eso ya es lo máximo que se puede saber sin ficha.
+     */
+    _favAtcIncompleto(f) {
+        return !!f.atcCodigo && !f.atcInferido && !f.atcHoja;
     }
 
     async repairDegradedFavorites(onProgress) {
@@ -16128,6 +16164,7 @@ ${ftFechaDocsHtml}
                 });
                 Object.assign(f, rebuilt);
                 if (f.cns === undefined) f.cns = []; // marcar como procesado aunque no haya CN
+                f.atcHoja = true; // idem: si la ficha no trae ATC, no hay más que pedir
                 repaired++;
             } catch (e) {
                 // se deja como está; reintentable manualmente
@@ -16286,7 +16323,7 @@ ${ftFechaDocsHtml}
             <div class="fav-repair-banner" id="fav-repair-banner" title="Versiones antiguas guardaban el favorito sin su código ATC, su principio activo o su código nacional (la API no los devuelve en las listas). 'Reparar' descarga la ficha oficial de cada uno y completa esos datos, para que se agrupen, la analítica funcione y el export sea granular.">
                 <div class="fav-repair-text">
                     <i class="fas fa-triangle-exclamation"></i>
-                    <span><strong>${degraded}</strong> favorito${degraded > 1 ? 's' : ''} con datos incompletos (grupo ATC, principio activo o código nacional). <strong>Reparar</strong> los completa desde la ficha oficial de AEMPS (1 sola vez).</span>
+                    <span><strong>${degraded}</strong> favorito${degraded > 1 ? 's' : ''} con datos incompletos (código ATC, principio activo o código nacional). <strong>Reparar</strong> los completa desde la ficha oficial de AEMPS (1 sola vez).</span>
                 </div>
                 <button class="btn btn-sm btn-primary" onclick="app._handleRepairFavorites()" title="Descargar la ficha oficial y completar la clasificación">
                     <i class="fas fa-wand-magic-sparkles"></i> Reparar
@@ -16386,7 +16423,13 @@ ${ftFechaDocsHtml}
             n > 0 ? `${n} favorito${n > 1 ? 's' : ''} reparado${n > 1 ? 's' : ''}` : 'No se pudo reparar (revisa la conexión)',
             n > 0 ? 'success' : 'warning'
         );
-        this._refreshFavoritesSection();
+        // El banner vive también en Prescripción: se repinta la sección desde la que se pulsó.
+        if (this._profileSection === 'prescription') {
+            const container = document.getElementById('profile-section-content');
+            if (container) container.innerHTML = this._renderPrescriptionSection();
+        } else {
+            this._refreshFavoritesSection();
+        }
     }
 
     /** Agrupado por etiquetas de usuario (un favorito puede aparecer en varias). */
@@ -18308,6 +18351,20 @@ ${ftFechaDocsHtml}
                 Ayuda educativa <strong>orientativa</strong> calculada a partir del código ATC de tu colección. No procede de CIMA, no es exhaustiva y no sustituye la ficha técnica ni el criterio clínico.
             </div>
         `;
+        // Sin esto, un favorito guardado con el ATC truncado no casa con ninguna regla y el panel
+        // afirma «ninguno»: la ausencia se leería como dato cuando es falta de dato.
+        const atcPendientes = favs.filter(f => this._favAtcIncompleto(f)).length;
+        const atcAviso = atcPendientes > 0 ? `
+            <div class="fav-repair-banner" id="fav-repair-banner">
+                <div class="fav-repair-text">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    <span><strong>${atcPendientes}</strong> favorito${atcPendientes > 1 ? 's' : ''} guardado${atcPendientes > 1 ? 's' : ''} con el código ATC incompleto. <strong>Hasta repararlo${atcPendientes > 1 ? 's' : ''}, estas listas pueden omitirlo${atcPendientes > 1 ? 's' : ''}</strong>. Reparar consulta la ficha oficial de AEMPS una sola vez.</span>
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="app._handleRepairFavorites()" title="Descargar la ficha oficial y completar el código ATC">
+                    <i class="fas fa-wand-magic-sparkles"></i> Reparar
+                </button>
+            </div>
+        ` : '';
 
         // Panel SADMANS — con override por fármaco (excluir / restaurar)
         const sadmansExcluded = favs.filter(f => f.sadmansOverride === 'exclude');
@@ -18372,6 +18429,7 @@ ${ftFechaDocsHtml}
 
         return `
             <div class="prescription-section">
+                ${atcAviso}
                 ${disclaimer}
                 ${sadmansPanel}
                 ${monitoringPanel}
@@ -19070,9 +19128,10 @@ ${ftFechaDocsHtml}
                     cur.tags = Array.from(new Set([...(cur.tags || []), ...(imp.tags || [])]));
                     cur.viewCount = Math.max(cur.viewCount || 0, imp.viewCount || 0);
                     if (imp.lastViewedAt && (!cur.lastViewedAt || imp.lastViewedAt > cur.lastViewedAt)) cur.lastViewedAt = imp.lastViewedAt;
-                    if (!cur.atcNivel1 && imp.atcNivel1) {
+                    if ((!cur.atcNivel1 && imp.atcNivel1) || (!cur.atcHoja && imp.atcHoja)) {
                         cur.atcCodigo = imp.atcCodigo; cur.atcNivel1 = imp.atcNivel1;
                         cur.atcNivel2 = imp.atcNivel2; cur.atcNombre = imp.atcNombre;
+                        cur.atcHoja = !!imp.atcHoja; cur.atcInferido = !!imp.atcInferido;
                     }
                     if (!cur.principioActivo && imp.principioActivo) cur.principioActivo = imp.principioActivo;
                     fused++;
@@ -19209,8 +19268,8 @@ ${ftFechaDocsHtml}
                         icon: 'fa-window-maximize',
                         action: { type: 'modal', tab: 'info', source: 'any' },
                         body: `
-                            <p>La ficha concentra la lectura profunda: información, indicaciones, posología, interacciones, reacciones, seguridad, documentos, evidencia y utilización.</p>
-                            <p>Algunas pestañas <span class="guide-highlight">solo aparecen si hay algo que enseñar</span>: Alertas AEMPS, PGx, Financiación y QT. Que no estén significa que ese medicamento no tiene ese contenido; no hay que buscarlas.</p>
+                            <p>La ficha concentra la lectura profunda: información, indicaciones, posología, interacciones, reacciones, seguridad, ficha y prospecto, documentación —los <span class="guide-highlight">IPT</span> de la AEMPS y los materiales—, evidencia y utilización.</p>
+                            <p>Algunas pestañas <span class="guide-highlight">solo aparecen si hay algo que enseñar</span>: Alertas AEMPS, PGx, Financiación, Utilización y QT. Que no estén significa que ese medicamento no tiene ese contenido; no hay que buscarlas.</p>
                             <p>La guía abre un medicamento de ejemplo para recorrer la ficha con datos reales.</p>
                         `,
                     },
@@ -19277,8 +19336,8 @@ ${ftFechaDocsHtml}
                         icon: 'fa-window-maximize',
                         action: { type: 'modal', tab: 'info', source: 'any' },
                         body: `
-                            <p>Al abrir un medicamento, el modal reúne la información accionable: ficha, indicaciones, posología, interacciones, reacciones, seguridad, documentos, evidencia, utilización y consulta a IA.</p>
-                            <p>Cuatro pestañas son <span class="guide-highlight">condicionales</span> y solo aparecen si ese medicamento las tiene: Alertas AEMPS, PGx, Financiación y QT. Su ausencia también informa: no hay nada que enseñar ahí.</p>
+                            <p>Al abrir un medicamento, el modal reúne la información accionable: ficha, indicaciones, posología, interacciones, reacciones, seguridad, ficha y prospecto, documentación, evidencia, utilización y consulta a IA.</p>
+                            <p>Cinco pestañas son <span class="guide-highlight">condicionales</span> y solo aparecen si ese medicamento las tiene: Alertas AEMPS, PGx, Financiación, Utilización y QT. Su ausencia también informa: no hay nada que enseñar ahí.</p>
                             <p>Si no había una ficha abierta, la guía carga un ejemplo real para poder recorrerla.</p>
                         `,
                     },
@@ -19308,6 +19367,7 @@ ${ftFechaDocsHtml}
                         action: { type: 'modalTab', tab: 'posology' },
                         body: `
                             <p>Posología muestra la dosificación oficial completa de la ficha técnica (sección 4.2), para lectura detenida.</p>
+                            <p>Junto a «Copiar», <span class="guide-highlight">Compartir</span> envía la sección —o solo el fragmento que selecciones, con enlace a él— si tu navegador tiene menú de compartir. <span class="guide-highlight">Para el paciente</span> comparte el apartado «Cómo tomar» del prospecto, que es el texto escrito para él. Indicaciones lleva también el botón Compartir.</p>
                             <p class="guide-case"><strong>Caso</strong>Ajuste en insuficiencia renal: la 4.2 trae los tramos por filtrado glomerular literales, sin la aproximación de memoria.</p>
                         `,
                     },
@@ -19970,7 +20030,7 @@ ${ftFechaDocsHtml}
             // mientras la tarjeta describia otra cosa: la guia afirmaba algo que la pantalla no
             // sostenia. Ahora se dice, que es justo lo que ese paso esta explicando.
             if (!abierta) {
-                const nombre = MedCheckApp.GUIDE_TAB_LABELS[action.tab] || 'Esta pestana';
+                const nombre = MedCheckApp.GUIDE_TAB_LABELS[action.tab] || 'Esta pestaña';
                 this.showToast?.(`${nombre} no existe en este medicamento: aparece solo cuando hay contenido`, 'info');
             }
             return;
@@ -21660,6 +21720,9 @@ MedCheckApp._VIEW_ANALYTICS_MAP = {
     indications:  'indicaciones',
     safety:       'seguridad',
     interactions: 'interacciones',
+    // «Fármacos» sustituyó a Interacciones y Reacciones; conserva su serie. Sin traducir,
+    // el Worker la recibía como `combo` y la descartaba (no está en VISTAS_VALIDAS).
+    combo:        'interacciones',
     adverse:      'reacciones',
     equivalences: 'equivalencias',
     pharmacogenomics: 'farmacogenomica',
