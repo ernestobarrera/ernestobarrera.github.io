@@ -24,6 +24,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import crypto from 'node:crypto';
+import vm from 'node:vm';
 import {
     analizarTitulo, esDeLaMarca, casaDci, verificarRegistro, emparejarTodas,
     colapsarVersiones, validarFuente, fechaIso, urlAbsoluta, quitarEtiquetas,
@@ -156,6 +157,51 @@ console.log('\n4) el índice commiteado cumple su contrato');
     ok('XARELTO 10 mg recibe los criterios de ACOD (documento de clase)', xar.some(e => e.tipo === 'clase' && /ACOD/.test(e.grupo)));
     const sema = (idx.por_vtm['214891000140109'] || []).map(id => idx.ipts[id].marcas?.[0]);
     ok('el VTM semaglutida reúne Ozempic, Wegovy y Rybelsus', ['Ozempic', 'Wegovy', 'Rybelsus'].every(x => sema.includes(x)), sema.join());
+}
+
+console.log('\n5) la pestaña Documentación pinta los IPT sin afirmar lo que el dato no dice');
+{
+    const APP = readFileSync(join(RAIZ, 'assets', 'js', 'cima-app.js'), 'utf8');
+    const sandbox = {
+        window: {},
+        document: { addEventListener() {}, getElementById: () => null, querySelectorAll: () => [], querySelector: () => null },
+        console: { log() {}, warn() {}, error() {} },
+        localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+        fetch: () => Promise.reject(new Error('sin red en tests')),
+        setTimeout, clearTimeout, setInterval, clearInterval,
+        Date, Math, JSON, Promise, Map, Set, RegExp, URL, URLSearchParams,
+        navigator: { onLine: true }, location: { search: '', href: '' },
+    };
+    sandbox.globalThis = sandbox;
+    vm.createContext(sandbox);
+    vm.runInContext(`${APP}\n;window.__MedCheckAppClass = MedCheckApp;`, sandbox);
+    const app = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+    app._escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const idx = JSON.parse(readFileSync(join(RAIZ, 'assets', 'data', 'ipt-index.json'), 'utf8'));
+
+    const oz = app._iptsDe({ nregistro: '117251002', vtm: { id: 214891000140109 } }, idx);
+    ok('OZEMPIC: su IPT como propio', oz.propios.some(e => e.marcas?.includes('Ozempic')));
+    ok('y los de Wegovy y Rybelsus como «del mismo principio activo»',
+        ['Wegovy', 'Rybelsus'].every(m => oz.delPrincipio.some(e => e.marcas?.includes(m))));
+    ok('sin repetir en el segundo grupo lo que ya es propio', oz.delPrincipio.every(e => !oz.propios.some(p => p.id === e.id)));
+    ok('un registro sin nada no revienta', app._iptsDe({ nregistro: '0' }, idx).propios.length === 0 && app._iptsDe(null, null).propios.length === 0);
+
+    const html = app._renderIptItem(oz.delPrincipio[0], { evaluadoCon: true });
+    ok('el de otra marca se rotula «Evaluado con …»', /Evaluado con /.test(html));
+    ok('y el enlace abre el original en otra pestaña', /href="https:\/\/www\.aemps\.gob\.es\/[^"]+" target="_blank" rel="noopener"/.test(html));
+
+    const malo = { t: 'IPT de <img src=x onerror=alert(1)> (X®) en y', i: 3, u: 'javascript:alert(1)', f: '2024-01-01', v: 1, tipo: 'marca', dci: '<b>x</b>' };
+    const hm = app._renderIptItem(malo);
+    ok('el texto de la fuente se escapa', !/<img|<b>/.test(hm) && /&lt;img/.test(hm));
+    ok('MUTANTE: un enlace que no es de la AEMPS no se pinta como enlace', !/href=/.test(hm) && !/javascript:/.test(hm));
+
+    const iLoad = APP.indexOf('    async loadIpt(med) {');
+    const load = iLoad === -1 ? '' : APP.slice(iLoad, APP.indexOf('\n    }\n', iLoad));
+    ok('la ausencia se dice como «no consta en la lista»', /No consta ningún IPT de este medicamento en la lista de la AEMPS/.test(load));
+    ok('MUTANTE: nunca «no evaluado» ni «sin IPT» como hecho', !/no (está|ha sido) evaluad|sin evaluar|no tiene IPT/i.test(load));
+    ok('se cita la fuente con su fecha (condición de reutilización)', /Fuente: \$\{enlacePagina\}/.test(load) && /fecha_fuente/.test(load));
+    ok('la carga diferida no pinta los IPT de un medicamento en la ficha de otro',
+        /dataset\.nregistro === nr/.test(load) && (load.match(/suyo\(\) !== cont/g) || []).length >= 2);
 }
 
 console.log(`\n${fallos === 0 ? 'TODO OK' : `${fallos} FALLO(S)`}`);

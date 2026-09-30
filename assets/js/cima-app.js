@@ -4397,7 +4397,7 @@ class MedCheckApp {
         // pueden llevar a ninguna parte. Es informativo y neutro —el medicamento existe y se
         // dispensa—, no una advertencia de seguridad.
         if (!this._hasFichaTecnicaSeccionada(med)) badges.push('<span class="badge badge-sin-ft" title="CIMA no publica ficha técnica con secciones para este registro, así que no hay Indicaciones, Posología, Interacciones ni Seguridad que mostrar. Ocurre en importaciones paralelas y en medicamentos antiguos; la información clínica está en el registro principal del mismo producto."><i class="fas fa-file-circle-xmark"></i> Sin ficha técnica</span>');
-        if (med.materialesInf) badges.push(`<span class="badge badge-material badge-clickable" title="Ver materiales informativos de seguridad (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'docs')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
+        if (med.materialesInf) badges.push(`<span class="badge badge-material badge-clickable" title="Ver materiales informativos de seguridad (vídeos, documentos)" onclick="event.stopPropagation(); app.openMedDetails('${med.nregistro}', 'documentacion')"><i class="fas fa-file-medical-alt"></i> Mat. Inf.</span>`);
 
         // Accesos contextuales de la tarjeta.
         //
@@ -9134,6 +9134,7 @@ class MedCheckApp {
             // Determine which tab should be active
             const isInfoActive = initialTab === 'info';
             const isDocsActive = initialTab === 'docs';
+            const isDocumentacionActive = initialTab === 'documentacion';
             const isPosologyActive = initialTab === 'posology';
             const isIndicationsActive = initialTab === 'indications';
             const isInteractionsActive = initialTab === 'interactions';
@@ -9235,7 +9236,8 @@ class MedCheckApp {
                     <button class="modal-tab ${isInteractionsActive ? 'active' : ''}" data-tab="interactions">Interacciones</button>
                     <button class="modal-tab ${isAdverseActive ? 'active' : ''}" data-tab="adverse">Reacciones</button>
                     <button class="modal-tab ${isSafetyActive ? 'active' : ''}" data-tab="safety">Seguridad</button>
-                    <button class="modal-tab ${isDocsActive ? 'active' : ''} ${hasMateriales ? 'modal-tab-materials' : ''}" data-tab="docs" ${hasMateriales ? 'title="Contiene materiales informativos de seguridad AEMPS"' : ''}>Ficha y prospecto${hasMateriales ? ' <i class="fas fa-file-medical-alt"></i>' : ''}${ftRecentDot}</button>
+                    <button class="modal-tab ${isDocsActive ? 'active' : ''}" data-tab="docs">Ficha y prospecto${ftRecentDot}</button>
+                    <button class="modal-tab ${isDocumentacionActive ? 'active' : ''} ${hasMateriales ? 'modal-tab-materials' : ''}" data-tab="documentacion" title="IPT, materiales informativos de la AEMPS, informe de evaluación y plan de riesgos">Documentación${hasMateriales ? ' <i class="fas fa-file-medical-alt"></i>' : ''}</button>
                     ${hasAempsAlerts ? `<button class="modal-tab alert-pulse ${isAlertsActive ? 'active' : ''}" data-tab="alerts"><i class="fas fa-exclamation-triangle"></i> Alertas AEMPS</button>` : ''}
                     ${hasPgx ? `<button class="modal-tab modal-tab-pgx ${isPgxActive ? 'active' : ''}" data-tab="pgx" title="Biomarcador farmacogenómico (AEMPS)"><i class="fas fa-dna"></i> PGx</button>` : ''}
                     <button class="modal-tab modal-tab-evidence ${isEvidenceActive ? 'active' : ''}" data-tab="evidence" title="Evidencia científica: PubMed y registros de ensayos clínicos"><i class="fas fa-book-medical"></i> Evidencia</button>
@@ -9258,6 +9260,10 @@ class MedCheckApp {
 
                 <div id="tab-docs" class="tab-content ${isDocsActive ? 'active' : ''}">
                     ${this.renderDocsTab(med)}
+                </div>
+
+                <div id="tab-documentacion" class="tab-content ${isDocumentacionActive ? 'active' : ''}">
+                    ${this.renderDocumentacionTab(med)}
                 </div>
 
                 <div id="tab-interactions" class="tab-content ${isInteractionsActive ? 'active' : ''}">
@@ -9324,10 +9330,14 @@ class MedCheckApp {
             if (hasAempsAlerts) {
                 this.loadAempsAlerts(med.nregistro);
             }
-            // Load materiales if opening directly on docs tab
-            if (initialTab === 'docs' || hasMateriales) {
+            // Materiales: se piden ya si los hay o si se abre directamente en Documentación.
+            if (isDocumentacionActive || hasMateriales) {
                 this.loadMateriales(med.nregistro);
             }
+            // IPT: siempre, pero en diferido. Además de llenar la pestaña, pone la marca «IPT» en su
+            // rótulo, y eso solo sirve si ocurre sin tener que abrirla.
+            if (isDocumentacionActive) this.loadIpt(med);
+            else (window.requestIdleCallback || (fn => setTimeout(fn, 300)))(() => this.loadIpt(med));
             // El índice de secciones de la ficha, igual de perezoso que los materiales.
             if (initialTab === 'docs') {
                 this.loadIndiceFT(med);
@@ -9367,9 +9377,10 @@ class MedCheckApp {
                         if (tab.dataset.tab !== 'info') modalParams.tab = tab.dataset.tab;
                         this.updateURL(modalParams);
                     }
-                    // Load materiales when switching to docs tab (lazy)
-                    if (tab.dataset.tab === 'docs' && !document.getElementById('docs-materiales')?.dataset.loaded) {
-                        this.loadMateriales(med.nregistro);
+                    // Materiales e IPT viven en Documentación desde el 30/09/2026.
+                    if (tab.dataset.tab === 'documentacion') {
+                        if (!document.getElementById('docs-materiales')?.dataset.loaded) this.loadMateriales(med.nregistro);
+                        this.loadIpt(med);
                     }
                     if (tab.dataset.tab === 'docs') {
                         this.loadIndiceFT(med);
@@ -9933,11 +9944,84 @@ class MedCheckApp {
         });
     }
 
-    renderDocsTab(med) {
-        const materialesPlaceholder = med.materialesInf
-            ? `<div id="docs-materiales"><p class="text-muted" style="padding:0.75rem 0"><i class="fas fa-spinner fa-spin"></i> Cargando materiales...</p></div>`
-            : '';
+    /**
+     * Nombre e icono de cada `tipo` de `docs` de CIMA. Compartido por las dos pestañas que los
+     * pintan: «Ficha y prospecto» (1 y 2) y «Documentación» (3 y 4).
+     *
+     * El 3 se llamaba «Informe IPE», y así se tomaba por el IPT (30/09/2026): son cosas distintas.
+     * El IPE es el informe público de la EVALUACIÓN DE LA AUTORIZACIÓN; el IPT, el posicionamiento
+     * en el SNS, y CIMA no lo publica. El nombre completo va en el rótulo para que no se confundan.
+     */
+    static DOC_TYPES = Object.freeze({
+        1: { name: 'Ficha Técnica', icon: 'file-medical' },
+        2: { name: 'Prospecto', icon: 'file-alt' },
+        3: { name: 'Informe público de evaluación (IPE)', icon: 'file-contract' },
+        4: { name: 'Plan de gestión de riesgos (PGR)', icon: 'shield-alt' },
+    });
 
+    /** Un documento de `docs` de CIMA como fila enlazada. Lo usan las dos pestañas de documentos. */
+    _renderDocLink(med, doc) {
+        const type = MedCheckApp.DOC_TYPES[doc.tipo] || { name: 'Documento', icon: 'file' };
+        // Extract medicine name for EMA search fallback
+        const medNameForSearch = encodeURIComponent(String(med.nombre || '').split(' ')[0]);
+        // EL DESTINO PREFERIDO ES EL HTML. CIMA publica cada documento en dos superficies —`url`
+        // (PDF) y `urlHtml`— y hasta el 19/09/2026 el cliente usaba SIEMPRE el PDF: `grep urlHtml`
+        // devolvía cero. Medido sobre 120 registros del censo: 118 tienen HTML, 1 solo PDF y 1 sin
+        // ficha. El HTML se navega, se busca dentro y se puede enlazar por sección, que es a donde
+        // MedCheck manda continuamente («consulta la 6.1»); mandar al PDF era dar el peor de los dos
+        // formatos de la misma fuente.
+        //
+        // NUNCA SE CONSTRUYE LA URL A MANO. El patrón `dochtml/ft/<nr>/FT_<nr>.html` se cumple hoy,
+        // pero inventarse un contrato que la fuente no promete ya costó los 404 de REec cuando AEMPS
+        // cambió la ruta. Si `urlHtml` no viene, se cae al PDF y ya está.
+        const href = doc.urlHtml || doc.url;
+        // La detección va sobre el destino EFECTIVO, no sobre `doc.url`: el aviso de que los enlaces
+        // a EMA cambian solo tiene sentido si es ahí donde se le va a mandar.
+        const isExternalIPE = doc.tipo === 3 && href && href.includes('ema.europa.eu');
+
+        // For external EMA links, provide a search fallback
+        if (isExternalIPE) {
+            const emaSearchUrl = `https://www.ema.europa.eu/en/search?f%5B0%5D=ema_search_categories%3Ahuman_medicines&search_api_fulltext=${medNameForSearch}`;
+            return `
+            <div class="detail-item ipe-external" data-doc-tipo="${doc.tipo}" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                    <span class="detail-label">
+                        <i class="fas fa-${type.icon}"></i> ${type.name}
+                    </span>
+                    <a href="${href}" target="_blank" class="btn-link-sm">
+                        Enlace directo <i class="fas fa-external-link-alt"></i>
+                    </a>
+                </div>
+                <div class="ipe-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Los enlaces directos a EMA pueden cambiar.
+                    <a href="${emaSearchUrl}" target="_blank" class="text-primary">
+                        Buscar en EMA →
+                    </a>
+                </div>
+            </div>
+        `;
+        }
+
+        return `
+                <a href="${href}" target="_blank" class="detail-item" data-doc-tipo="${doc.tipo}" style="text-decoration: none; cursor: pointer;">
+                    <span class="detail-label">
+                        <i class="fas fa-${type.icon}"></i> ${type.name}
+                    </span>
+                    <span class="detail-value text-primary">
+                        Abrir <i class="fas fa-external-link-alt"></i>
+                    </span>
+                </a>
+            `;
+    }
+
+    /**
+     * Pestaña «Ficha y prospecto»: SOLO los dos documentos que el clínico consulta en consulta, con
+     * su índice por secciones. Desde el 30/09/2026 el IPE, el plan de riesgos, los materiales y los
+     * IPT viven en la pestaña «Documentación»: en una ventana estrecha, mezclarlos aquí dejaba el IPE
+     * suelto encima del índice y los materiales al fondo, donde nadie los veía.
+     */
+    renderDocsTab(med) {
         // La fecha sale del mismo helper que alimenta el tooltip del acceso FT de la tarjeta:
         // dos sitios, un solo cálculo, y no pueden decir cosas distintas.
         const ftFecha = this._ftFechaTexto(med);
@@ -9945,80 +10029,165 @@ class MedCheckApp {
             ? `<p class="text-muted" style="font-size:0.8rem;padding:0.5rem 0 0.75rem;margin:0;"><i class="fas fa-calendar-alt" style="margin-right:0.35rem;"></i>Ficha Técnica actualizada el <strong>${ftFecha.abs}</strong> <span style="opacity:0.75;">(${ftFecha.rel})</span></p>`
             : '';
 
-        if (!med.docs || med.docs.length === 0) {
-            return (ftFechaDocsHtml || '') + (materialesPlaceholder || '<p class="text-muted">No hay documentos disponibles</p>');
+        const fichaYProspecto = (med.docs || []).filter(d => d.tipo === 1 || d.tipo === 2);
+        if (fichaYProspecto.length === 0) {
+            return `${ftFechaDocsHtml}<p class="text-muted">CIMA no publica ficha técnica ni prospecto para este registro.</p>`;
         }
-
-        const docTypes = {
-            1: { name: 'Ficha Técnica', icon: 'file-medical' },
-            2: { name: 'Prospecto', icon: 'file-alt' },
-            3: { name: 'Informe IPE', icon: 'file-contract' },
-            4: { name: 'Plan Gestión Riesgos', icon: 'shield-alt' }
-        };
-
-        // Extract medicine name for EMA search fallback
-        const medNameForSearch = encodeURIComponent(med.nombre.split(' ')[0]);
 
         return `
 ${ftFechaDocsHtml}
 <div class="detail-list">
-    ${med.docs.map(doc => {
-            const type = docTypes[doc.tipo] || { name: 'Documento', icon: 'file' };
-            // EL DESTINO PREFERIDO ES EL HTML. CIMA publica cada documento en dos superficies —`url`
-            // (PDF) y `urlHtml`— y hasta el 19/09/2026 el cliente usaba SIEMPRE el PDF: `grep urlHtml`
-            // devolvía cero. Medido sobre 120 registros del censo: 118 tienen HTML, 1 solo PDF y 1 sin
-            // ficha. El HTML se navega, se busca dentro y se puede enlazar por sección, que es a donde
-            // MedCheck manda continuamente («consulta la 6.1»); mandar al PDF era dar el peor de los dos
-            // formatos de la misma fuente.
-            //
-            // NUNCA SE CONSTRUYE LA URL A MANO. El patrón `dochtml/ft/<nr>/FT_<nr>.html` se cumple hoy,
-            // pero inventarse un contrato que la fuente no promete ya costó los 404 de REec cuando AEMPS
-            // cambió la ruta. Si `urlHtml` no viene, se cae al PDF y ya está.
-            const href = doc.urlHtml || doc.url;
-            // La detección va sobre el destino EFECTIVO, no sobre `doc.url`: el aviso de que los enlaces
-            // a EMA cambian solo tiene sentido si es ahí donde se le va a mandar.
-            const isExternalIPE = doc.tipo === 3 && href && href.includes('ema.europa.eu');
-
-            // For external EMA links, provide a search fallback
-            if (isExternalIPE) {
-                const emaSearchUrl = `https://www.ema.europa.eu/en/search?f%5B0%5D=ema_search_categories%3Ahuman_medicines&search_api_fulltext=${medNameForSearch}`;
-                return `
-                <div class="detail-item ipe-external" data-doc-tipo="${doc.tipo}" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
-                    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                        <span class="detail-label">
-                            <i class="fas fa-${type.icon}"></i> ${type.name}
-                        </span>
-                        <a href="${href}" target="_blank" class="btn-link-sm">
-                            Enlace directo <i class="fas fa-external-link-alt"></i>
-                        </a>
-                    </div>
-                    <div class="ipe-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Los enlaces directos a EMA pueden cambiar.
-                        <a href="${emaSearchUrl}" target="_blank" class="text-primary">
-                            Buscar en EMA →
-                        </a>
-                    </div>
-                </div>
-            `;
-            }
-
-            return `
-                    <a href="${href}" target="_blank" class="detail-item" data-doc-tipo="${doc.tipo}" style="text-decoration: none; cursor: pointer;">
-                        <span class="detail-label">
-                            <i class="fas fa-${type.icon}"></i> ${type.name}
-                        </span>
-                        <span class="detail-value text-primary">
-                            Abrir <i class="fas fa-external-link-alt"></i>
-                        </span>
-                    </a>
-                `;
-        }).join('')
-            }
-        </div>
+    ${fichaYProspecto.map(doc => this._renderDocLink(med, doc)).join('')}
+</div>
 <div id="docs-indice"></div>
-${materialesPlaceholder}
 `;
+    }
+
+    /**
+     * Pestaña «Documentación»: lo oficial que acompaña a la ficha y el prospecto y que el clínico
+     * consulta menos. Nace el 30/09/2026 al separarlo de «Ficha y prospecto».
+     *
+     * ORDEN POR USO EN CONSULTA: primero los IPT (posicionamiento en el SNS), después los materiales
+     * informativos (tarjetas de paciente, guías de dosificación, vídeos) y al final los otros
+     * documentos de CIMA (IPE, plan de riesgos). Es el sitio donde encajan fuentes futuras.
+     *
+     * Los IPT no los publica CIMA: salen de `assets/data/ipt-index.json`, que regenera cada semana
+     * `etl-ipt.yml` a partir de la lista pública de la AEMPS. Se cargan aparte (`loadIpt`).
+     */
+    renderDocumentacionTab(med) {
+        const otros = (med.docs || []).filter(d => d.tipo !== 1 && d.tipo !== 2);
+        const materiales = med.materialesInf
+            ? '<p class="text-muted doccomp-cargando"><i class="fas fa-spinner fa-spin"></i> Cargando materiales...</p>'
+            : '';
+        return `
+<div class="doccomp">
+    <section class="doccomp-bloque" aria-labelledby="doccomp-ipt-tit">
+        <h4 id="doccomp-ipt-tit" class="doccomp-tit"><i class="fas fa-balance-scale"></i> Informes de Posicionamiento Terapéutico (IPT)</h4>
+        <div id="doccomp-ipt" data-nregistro="${this._escapeHtml(String(med.nregistro ?? ''))}"><p class="text-muted doccomp-cargando"><i class="fas fa-spinner fa-spin"></i> Buscando en la lista de la AEMPS…</p></div>
+    </section>
+    <div id="docs-materiales">${materiales}</div>
+    ${otros.length ? `
+    <section class="doccomp-bloque">
+        <h4 class="doccomp-tit"><i class="fas fa-folder-open"></i> Otros documentos de CIMA</h4>
+        <div class="detail-list">${otros.map(doc => this._renderDocLink(med, doc)).join('')}</div>
+        ${otros.some(d => d.tipo === 3) ? '<p class="doccomp-nota">El IPE es el informe público de la evaluación que llevó a la autorización del medicamento. No es el informe de posicionamiento terapéutico (IPT).</p>' : ''}
+    </section>` : ''}
+</div>`;
+    }
+
+    /** El índice de IPT, una vez por sesión. Si falla, se olvida la promesa para reintentar luego. */
+    _loadIptIndex() {
+        if (!this._iptIndexPromise) {
+            this._iptIndexPromise = fetch('/assets/data/ipt-index.json')
+                .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+                .catch(err => { this._iptIndexPromise = null; throw err; });
+        }
+        return this._iptIndexPromise;
+    }
+
+    /**
+     * Qué IPT tocan a este registro. Función pura, para el banco.
+     *
+     * - `propios`: los que el ETL resolvió a ESTE nregistro (marca verificada o documento de
+     *   grupo por ATC5, como los criterios de ACOD).
+     * - `delPrincipio`: los de OTRAS marcas con el mismo principio activo, por el VTM que da CIMA
+     *   (identificador SNOMED, no texto). Es lo que ve un genérico o un biosimilar, y se rotula
+     *   «evaluado con <marca>»: el IPT evalúa una marca en una indicación, no el principio en
+     *   abstracto, y eso no se puede callar.
+     */
+    _iptsDe(med, idx) {
+        const ipts = idx?.ipts || {};
+        const nr = med?.nregistro != null ? String(med.nregistro) : '';
+        const idsPropios = (idx?.por_nregistro?.[nr] || []).filter(id => ipts[id]);
+        const vtm = med?.vtm?.id != null ? String(med.vtm.id) : '';
+        const idsPrincipio = ((vtm && idx?.por_vtm?.[vtm]) || []).filter(id => ipts[id] && !idsPropios.includes(id));
+        const conId = id => ({ id, ...ipts[id] });
+        return { propios: idsPropios.map(conId), delPrincipio: idsPrincipio.map(conId) };
+    }
+
+    /** Una fila de IPT. El texto viene de la AEMPS: todo se escapa, y el enlace solo si es suyo. */
+    _renderIptItem(e, { evaluadoCon = false } = {}) {
+        const esc = s => this._escapeHtml(String(s ?? ''));
+        const href = /^https:\/\/www\.aemps\.gob\.es\//.test(e.u || '') ? e.u : null;
+        const ind = Number.isInteger(e.i) ? e.t.slice(e.i) : e.t;
+        const texto = ind ? ind.charAt(0).toUpperCase() + ind.slice(1) : e.t;
+        const fecha = e.f ? new Date(`${e.f}T00:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+        const dias = f => f ? (Date.now() - new Date(`${f}T00:00:00`)) / 86400000 : Infinity;
+
+        const meta = [];
+        if (e.tipo === 'clase') meta.push(`Documento de grupo · ${esc(e.grupo)}`);
+        else if (evaluadoCon) meta.push(`Evaluado con ${esc((e.marcas || []).join(' / '))}`);
+        else if (e.dci) meta.push(`IPT de ${esc(e.dci)}`);
+        if (fecha) meta.push(esc(fecha));
+        if (e.v > 1) meta.push(`versión ${esc(e.v)}`);
+
+        // «Actualizado» y «Nuevo» los detecta el ETL comparando semana a semana; la fecha es la del
+        // día en que MedCheck lo vio, no una que diga la AEMPS.
+        let marca = '';
+        if (e.act && dias(e.act) <= 365) marca = `<span class="ipt-badge ipt-badge--act" title="MedCheck detectó el ${esc(e.act)} una versión nueva de este IPT${e.vprev ? ` (antes, versión ${esc(e.vprev)})` : ''}">Actualizado</span>`;
+        else if (e.visto && dias(e.visto) <= 90) marca = `<span class="ipt-badge ipt-badge--nuevo" title="Apareció en la lista de la AEMPS el ${esc(e.visto)}">Nuevo</span>`;
+
+        const cuerpo = `<span class="ipt-ind">${esc(texto)}</span><span class="ipt-meta">${meta.join(' · ')}${marca ? ` ${marca}` : ''}</span>`;
+        return href
+            ? `<a class="ipt-item" href="${esc(href)}" target="_blank" rel="noopener" title="${esc(e.t)}">${cuerpo}<i class="fas fa-external-link-alt ipt-ext" aria-hidden="true"></i></a>`
+            : `<div class="ipt-item" title="${esc(e.t)}">${cuerpo}</div>`;
+    }
+
+    /**
+     * Rellena el bloque de IPT de la pestaña Documentación y, si hay IPT propios, lo avisa en el
+     * rótulo de la pestaña. Se llama al abrir el modal, en diferido: el índice pesa ~100 KB
+     * comprimido y después sale de la caché del navegador.
+     *
+     * LO QUE NUNCA DICE: que un medicamento «no está evaluado». La lista de la AEMPS no cubre todos
+     * los medicamentos ni todas las indicaciones, así que la ausencia se dice como «no consta en la
+     * lista», con la fecha de la lista y el enlace a ella.
+     */
+    async loadIpt(med) {
+        // El contenedor lleva el nregistro de su modal: la carga es diferida y, si entretanto se ha
+        // abierto otro medicamento, los IPT del primero NO se pintan en la ficha del segundo.
+        const nr = String(med?.nregistro ?? '');
+        const suyo = () => {
+            const c = document.getElementById('doccomp-ipt');
+            return c && c.dataset.nregistro === nr ? c : null;
+        };
+        const cont = suyo();
+        if (!cont || cont.dataset.loaded) return;
+        cont.dataset.loaded = 'true';
+        const pagina = 'https://www.aemps.gob.es/medicamentos-de-uso-humano/evaluacion-de-tecnologias-sanitarias/informes-de-posicionamiento-terapeutico/';
+        const enlacePagina = `<a href="${pagina}" target="_blank" rel="noopener">lista de IPT de la AEMPS <i class="fas fa-external-link-alt"></i></a>`;
+
+        let idx;
+        try {
+            idx = await this._loadIptIndex();
+        } catch {
+            if (suyo() !== cont) return;
+            cont.innerHTML = `<p class="text-muted">No se ha podido cargar la lista de IPT. Puedes consultarla en la ${enlacePagina}.</p>`;
+            return;
+        }
+        if (suyo() !== cont) return;
+        const { propios, delPrincipio } = this._iptsDe(med, idx);
+        const m = idx._meta || {};
+        const fechaLista = m.fecha_fuente || m.generated_at;
+        const fechaTxt = fechaLista ? new Date(`${fechaLista}T00:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+
+        const lista = items => `<div class="ipt-lista">${items}</div>`;
+        let html = '';
+        if (propios.length) html += lista(propios.map(e => this._renderIptItem(e)).join(''));
+        else html += '<p class="text-muted doccomp-vacio">No consta ningún IPT de este medicamento en la lista de la AEMPS.</p>';
+        if (delPrincipio.length) {
+            html += '<p class="doccomp-sub">Del mismo principio activo, evaluados con otra marca</p>';
+            html += lista(delPrincipio.map(e => this._renderIptItem(e, { evaluadoCon: true })).join(''));
+        }
+        // Condiciones de reutilización de la AEMPS: citar el origen y la fecha de actualización.
+        html += `<p class="doccomp-fuente">Fuente: ${enlacePagina}${fechaTxt ? `, con fecha ${this._escapeHtml(fechaTxt)}` : ''}. Cada enlace abre el documento original.</p>`;
+        cont.innerHTML = html;
+
+        if (propios.length) {
+            const pest = document.querySelector('.modal-tab[data-tab="documentacion"]');
+            if (pest && !pest.querySelector('.modal-tab-ipt')) {
+                pest.insertAdjacentHTML('beforeend', ' <span class="modal-tab-ipt" title="Tiene informe de posicionamiento terapéutico (IPT)">IPT</span>');
+            }
+        }
     }
 
     /**
@@ -12190,8 +12359,10 @@ ${materialesPlaceholder}
     async loadMateriales(nregistro) {
         let container = document.getElementById('docs-materiales');
         if (!container) {
-            // Detail endpoint doesn't include materialesInf flag, so placeholder may not exist
-            const docsTab = document.getElementById('tab-docs');
+            // Red de seguridad: el contenedor lo pinta siempre `renderDocumentacionTab`. (El
+            // comentario anterior decía que el detalle no trae `materialesInf`; sí lo trae —
+            // comprobado con XARELTO el 30/09/2026—.)
+            const docsTab = document.getElementById('tab-documentacion');
             if (!docsTab) return;
             container = document.createElement('div');
             container.id = 'docs-materiales';
@@ -12218,15 +12389,16 @@ ${materialesPlaceholder}
                 </div>`;
 
             container.dataset.loaded = 'true';
+            // Cabecera con la misma voz que los otros bloques de la pestaña Documentación.
             container.innerHTML = `
-                <div class="alerts-section" style="margin-top:1rem">
-                    <h4 class="alerts-section-title">
+                <section class="doccomp-bloque doccomp-materiales">
+                    <h4 class="doccomp-tit">
                         <i class="fas fa-file-medical-alt text-material"></i>
-                        Materiales Informativos (${total})
+                        Materiales informativos (${total})
                     </h4>
                     ${renderGroup(profesional, 'Para profesionales', 'stethoscope')}
                     ${renderGroup(paciente, 'Para pacientes', 'user-circle')}
-                </div>`;
+                </section>`;
         } catch (error) {
             container.innerHTML = '';
         }
@@ -14803,7 +14975,7 @@ ${materialesPlaceholder}
             // First load the base view without URL update
             await this.loadView(targetView, false);
             // Then open the medication detail
-            const validModalTabs = ['info', 'indications', 'posology', 'interactions', 'adverse', 'safety', 'docs', 'alerts', 'qt', 'pgx', 'evidence', 'utilizacion'];
+            const validModalTabs = ['info', 'indications', 'posology', 'interactions', 'adverse', 'safety', 'docs', 'documentacion', 'alerts', 'qt', 'pgx', 'evidence', 'utilizacion'];
             const modalTab = validModalTabs.includes(params.tab) ? params.tab : 'info';
             this.openMedDetails(params.nregistro, modalTab);
             return;
@@ -18167,7 +18339,7 @@ ${materialesPlaceholder}
                 </div>` : '';
             return `
                 <div class="materials-med-block">
-                    <div class="materials-med-header" onclick="app.openMedDetails('${safeNreg}', 'docs')" title="Abrir ficha del medicamento">
+                    <div class="materials-med-header" onclick="app.openMedDetails('${safeNreg}', 'documentacion')" title="Abrir la documentación del medicamento">
                         <i class="fas fa-pills"></i> <strong>${fav.nombre}</strong>
                         ${fav.principioActivo ? `<span class="text-muted">· ${fav.principioActivo}</span>` : ''}
                     </div>
@@ -19037,8 +19209,19 @@ ${materialesPlaceholder}
                         icon: 'fa-file-medical-alt',
                         action: { type: 'modalTab', tab: 'docs' },
                         body: `
-                            <p><span class="guide-key">Ficha y prospecto</span> enlaza los documentos oficiales —y ahora también <span class="guide-highlight">cada una de sus secciones</span>, con la numeración y los títulos de CIMA, para saltar directamente a la 4.8 o a la 6.1 sin buscar dentro del documento— y, cuando existen, los <span class="guide-highlight">materiales informativos de seguridad</span> de la AEMPS: guías de dosificación, tarjetas de paciente y vídeos.</p>
-                            <p class="guide-case"><strong>Caso</strong>Inicias un anticoagulante oral. Aquí tienes la tarjeta de paciente oficial de la AEMPS para dársela en la misma consulta.</p>
+                            <p><span class="guide-key">Ficha y prospecto</span> enlaza los dos documentos oficiales y <span class="guide-highlight">cada una de sus secciones</span>, con la numeración y los títulos de CIMA, para saltar directamente a la 4.8 o a la 6.1 sin buscar dentro del documento.</p>
+                            <p class="guide-case"><strong>Caso</strong>Dudas si un comprimido se puede partir. Saltas a la 4.2 de la ficha, o al apartado 3 del prospecto si quieres el texto que leerá el paciente.</p>
+                        `,
+                    },
+                    {
+                        target: '#tab-documentacion.active',
+                        title: 'Documentación',
+                        icon: 'fa-balance-scale',
+                        action: { type: 'modalTab', tab: 'documentacion' },
+                        body: `
+                            <p><span class="guide-key">Documentación</span> reúne lo oficial que acompaña a la ficha: los <span class="guide-highlight">informes de posicionamiento terapéutico (IPT)</span> de la AEMPS —que CIMA no publica—, los <span class="guide-highlight">materiales informativos</span> (tarjetas de paciente, guías de dosificación, vídeos) y el informe de evaluación y el plan de riesgos.</p>
+                            <p>Si el medicamento tiene IPT propio, la pestaña lo avisa con la marca <span class="guide-highlight">IPT</span> sin necesidad de abrirla. En un genérico verás el IPT de la marca evaluada, rotulado como tal.</p>
+                            <p class="guide-case"><strong>Caso</strong>Inicias un anticoagulante oral. Aquí están los criterios de uso de los ACOD de la AEMPS y la tarjeta de paciente oficial para dársela en la misma consulta.</p>
                         `,
                     },
                     {
@@ -19278,10 +19461,10 @@ ${materialesPlaceholder}
                         `,
                     },
                     {
-                        target: '#tab-docs.active, .modal-content',
+                        target: '#tab-documentacion.active, .modal-content',
                         title: 'Abrir cuando importa',
                         icon: 'fa-folder-open',
-                        action: { type: 'modal', tab: 'docs', source: 'materials' },
+                        action: { type: 'modal', tab: 'documentacion', source: 'materials' },
                         body: `
                             <p>La tarjeta lleva al documento original y, si tiene registro CIMA, a la ficha del medicamento.</p>
                             <p>Dentro de Mi Perfil hay otra vista de Materiales limitada solo a tu colección.</p>

@@ -47,9 +47,11 @@ const ok = (nombre, cond, detalle = '') => {
     console.log(`  FALLO ${nombre}${detalle ? ` — ${detalle}` : ''}`);
 };
 
-// El bloque que pinta los documentos de la ficha: desde `med.docs.map` hasta el cierre del map.
-const iIni = APP.indexOf('${med.docs.map(doc => {');
-const bloque = iIni === -1 ? '' : APP.slice(iIni, APP.indexOf('}).join(\'\')', iIni));
+// El bloque que pinta un documento de CIMA. Desde el 30/09/2026 es un método propio,
+// `_renderDocLink`, porque lo comparten «Ficha y prospecto» y «Documentación»: las reglas de
+// abajo tienen que valer en las dos pestañas, y por eso se vigila el método y no un map concreto.
+const iIni = APP.indexOf('    _renderDocLink(med, doc) {');
+const bloque = iIni === -1 ? '' : APP.slice(iIni, APP.indexOf('\n    }\n', iIni));
 
 console.log('\n1) el destino preferido sale de la fuente, no de una plantilla');
 {
@@ -145,9 +147,48 @@ console.log('\n7) la pestaña se llama como lo que hay dentro');
 {
     // «Documentos» describía el continente. En consulta lo que se busca es la ficha.
     ok('la pestaña ya no se llama «Documentos»', !/>Documentos\$\{hasMateriales/.test(APP));
-    ok('se llama «Ficha y prospecto»', /Ficha y prospecto\$\{hasMateriales/.test(APP));
+    ok('se llama «Ficha y prospecto»', /data-tab="docs">Ficha y prospecto\$\{ftRecentDot\}/.test(APP));
     // El `data-tab` NO cambia: lo usan la URL del modal, la analítica y la guía.
     ok('el identificador interno sigue siendo `docs`', /data-tab="docs"/.test(APP));
+}
+
+console.log('\n7b) ficha y prospecto por un lado, documentación complementaria por otro');
+{
+    // Petición suya del 30/09/2026: en una ventana estrecha, el IPE suelto encima del índice y los
+    // materiales al fondo no se veían. La ficha y el prospecto se quedan solos en su pestaña; el
+    // resto —IPT, materiales, IPE, plan de riesgos— pasa a «Documentación».
+    ok('existe la pestaña «Documentación»', /data-tab="documentacion"[^>]*>Documentación/.test(APP));
+    ok('los materiales se anuncian en Documentación, no en Ficha y prospecto',
+        /data-tab="documentacion"[^>]*>Documentación\$\{hasMateriales/.test(APP) && !/data-tab="docs"[^\n]*hasMateriales/.test(APP));
+
+    const app = Object.create(Clase.prototype);
+    app._escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const med = {
+        nregistro: '114930014', nombre: 'JARDIANCE 10 MG', vtm: { id: 1 },
+        docs: [
+            { tipo: 1, url: 'https://x/ft.pdf', urlHtml: 'https://x/ft.html', secc: true },
+            { tipo: 2, url: 'https://x/p.pdf', urlHtml: 'https://x/p.html', secc: true },
+            { tipo: 3, url: 'https://x/ipe.pdf', secc: false },
+            { tipo: 4, url: 'https://x/pgr.pdf', secc: false },
+        ],
+    };
+    const ficha = app.renderDocsTab(med);
+    ok('Ficha y prospecto pinta la ficha y el prospecto', /data-doc-tipo="1"/.test(ficha) && /data-doc-tipo="2"/.test(ficha));
+    ok('y ya NO el IPE ni el plan de riesgos', !/data-doc-tipo="3"/.test(ficha) && !/data-doc-tipo="4"/.test(ficha));
+    ok('ni el hueco de materiales', !/docs-materiales/.test(ficha));
+
+    const docu = app.renderDocumentacionTab(med);
+    ok('Documentación pinta el IPE y el plan de riesgos', /data-doc-tipo="3"/.test(docu) && /data-doc-tipo="4"/.test(docu));
+    ok('y no duplica la ficha ni el prospecto', !/data-doc-tipo="1"/.test(docu) && !/data-doc-tipo="2"/.test(docu));
+    ok('el IPE lleva su nombre completo, no «Informe IPE»', /Informe público de evaluación \(IPE\)/.test(docu) && !/Informe IPE</.test(docu));
+    ok('y se aclara que no es el IPT', /No es el informe de posicionamiento terapéutico/.test(docu));
+    ok('los IPT van primero y los materiales tienen su hueco',
+        docu.indexOf('doccomp-ipt') > -1 && docu.indexOf('doccomp-ipt') < docu.indexOf('docs-materiales'));
+
+    // El badge «Mat. Inf.» de la tarjeta lleva a donde están los materiales.
+    ok('el badge «Mat. Inf.» abre Documentación',
+        /openMedDetails\('\$\{med\.nregistro\}', 'documentacion'\)"><i class="fas fa-file-medical-alt"><\/i> Mat\. Inf\./.test(APP));
+    ok('y la pestaña es válida en la URL', /validModalTabs = \[[^\]]*'documentacion'/.test(APP));
 }
 
 console.log('\n8) la agrupación, ejecutada de verdad sobre la respuesta real de CIMA');
