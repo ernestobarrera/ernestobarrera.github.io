@@ -113,8 +113,13 @@ console.log('\n6) el índice de secciones sale de CIMA, no de una lista nuestra'
     ok('existe el cargador del índice', idx.length > 400, `${idx.length} caracteres`);
 
     ok('la lista de secciones se pide a la API', /this\.api\.getDocSecciones\(med\.nregistro, doc\.tipo/.test(idx));
-    ok('el ancla es el identificador que devuelve CIMA', /#\$\{encodeURIComponent\(s\.seccion\)\}/.test(idx));
-    ok('y el destino es el `urlHtml` de la fuente', /href="\$\{this\._escapeHtml\(doc\.urlHtml\)\}#/.test(idx));
+    // Desde el 02/10/2026 la URL la compone `_urlEpigrafe` (añade la frase que señala el
+    // epígrafe), pero la base y el ancla siguen siendo las de la fuente.
+    const iUrl = APP.indexOf('_urlEpigrafe(urlHtml, seccion, ancla) {');
+    const urlEp = iUrl === -1 ? '' : APP.slice(iUrl, APP.indexOf('\n    }', iUrl));
+    ok('el ancla es el identificador que devuelve CIMA',
+        /this\._urlEpigrafe\(doc\.urlHtml, s\.seccion,/.test(idx) && /`\$\{urlHtml\}#\$\{encodeURIComponent\(seccion\)\}`/.test(urlEp));
+    ok('y el destino es el `urlHtml` de la fuente', /href="\$\{this\._escapeHtml\(url\)\}"/.test(idx) && /this\._urlEpigrafe\(doc\.urlHtml/.test(idx));
     ok('el título es el de CIMA, no uno nuestro', /docs-idx-tit">\$\{this\._escapeHtml\(s\.titulo\)\}/.test(idx));
 
     // AGRUPADO POR PADRE. La primera versión pintaba una retícula plana y 4.1 y 4.2 caían en

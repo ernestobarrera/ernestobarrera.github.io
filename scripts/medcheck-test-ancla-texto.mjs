@@ -271,5 +271,65 @@ console.log('\n— La degradación de los registros sin sección recuperable, in
     ok('sin match y sin extracto', !ctx?.match && !ctx?.excerpt);
 }
 
+// ─── El índice de la ficha también señala el epígrafe (02/10/2026) ────────────
+//
+// Fixtures con la topología medida en CIMA: rótulo «n. título», índice lateral con los rótulos
+// de primer nivel (por eso hace falta el sufijo), acentos en entidades, espacios duros, el primer
+// bloque dentro de una tabla y el guion inicial separado con espacios duros.
+console.log('\n— Índice de la ficha: epígrafe señalado —');
+{
+    const extraer = firma => {
+        const m = appSrc.match(new RegExp(`${firma.replace(/[()[\]]/g, '\\$&')} \\{[\\s\\S]*?\\n {4}\\}`));
+        return m ? new Function(`return function ${m[0]}`)() : null;
+    };
+    const anclaEp = extraer('_anclaEpigrafe(seccion, titulo, hijas = [], contenidoHtml = null)');
+    const urlEp = extraer('_urlEpigrafe(urlHtml, seccion, ancla)');
+    ok('`_anclaEpigrafe` y `_urlEpigrafe` existen en cima-app.js', !!anclaEp && !!urlEp);
+    if (anclaEp && urlEp) {
+        const A = (...a) => anclaEp.call({}, ...a);
+        const FT = 'https://cima.aemps.es/cima/dochtml/ft/58994/FT_58994.html';
+        const P = 'https://cima.aemps.es/cima/dochtml/p/48048/P_48048.html';
+
+        const sub = A('4.6.1', 'Embarazo');
+        ok('subepígrafe: «n. título» sin sufijo', sub?.texto === '4.6.1. Embarazo' && !sub.sufijo, JSON.stringify(sub));
+
+        const conHijas = A('5', 'PROPIEDADES FARMACOLÓGICAS', [{ seccion: '5.1', titulo: 'Propiedades farmacodinámicas' }]);
+        ok('primer nivel con hijas: sufijo = número de la primera hija',
+            conHijas?.texto === '5. PROPIEDADES FARMACOLÓGICAS' && conHijas.sufijo === '5.1.', JSON.stringify(conHijas));
+
+        ok('primer nivel sin hijas ni contenido: sin ancla (apartados 1-3 y 7-10 de la ficha)',
+            A('7', 'TITULAR DE LA AUTORIZACIÓN DE COMERCIALIZACIÓN') === null);
+
+        const prosp = A('3', 'Cómo tomar Trangorex', [],
+            '<div>\r\n    <p style="margin:0pt"><span>&#xa0;</span></p><p style="margin:0pt"><span>El tratamiento s&#243;lo se&#160;iniciar&#225; bajo control</span></p></div>');
+        ok('prospecto: sufijo = primeras palabras del primer bloque con texto, entidades decodificadas',
+            prosp?.texto === '3. Cómo tomar Trangorex' && prosp.sufijo === 'El tratamiento sólo', JSON.stringify(prosp));
+
+        const tabla = A('5', 'Conservación de X', [], '<table><tr><td><p>Polvo seco</p></td><td><p>No conservar a temperatura superior a 25 °C</p></td></tr></table>');
+        ok('el sufijo no cruza una celda (amoxicilina: «Polvo seco | No»)', tabla?.sufijo === 'Polvo seco', JSON.stringify(tabla));
+
+        ok('contenido que empieza por guion con espacios duros: sin ancla',
+            A('2', 'Qué necesita saber', [], '<p>-&#160;&#160;&#160;&#160;Si es alérgico</p>') === null);
+
+        const intro = A('0', 'Introducción', [], '<p><strong>Prospecto: informaci&#243;n para el usuario</strong></p>');
+        ok('la sección 0 del prospecto va sin número', intro?.texto === 'Introducción' && intro.sufijo === 'Prospecto: información para', JSON.stringify(intro));
+
+        ok('URL de subepígrafe: ancla de sección y frase codificada',
+            urlEp(FT, '4.6.1', sub) === `${FT}#4.6.1:~:text=4.6.1.%20Embarazo`, urlEp(FT, '4.6.1', sub));
+        ok('URL con sufijo: `,-` sin codificar y el sufijo codificado',
+            urlEp(FT, '5', conHijas) === `${FT}#5:~:text=5.%20PROPIEDADES%20FARMACOL%C3%93GICAS,-5.1.`, urlEp(FT, '5', conHijas));
+        ok('la coma de un título se codifica (no parte la frase)',
+            urlEp(FT, '4.6', A('4.6.2', 'Fertilidad, embarazo y lactancia')).includes('Fertilidad%2C%20embarazo'));
+        ok('el guion del texto se codifica como %2D',
+            urlEp(P, '6', { texto: '6. Contenido del envase e información adicional', sufijo: 'Composición de Trangorex-200' }).endsWith('Trangorex%2D200'));
+        ok('sin ancla, solo la sección', urlEp(FT, '7', null) === `${FT}#7`);
+        ok('marcado en el texto: se enlaza a la sección, sin frase',
+            urlEp(P, '3', { texto: '3. Cómo <b>tomar</b>', sufijo: 'El' }) === `${P}#3`);
+        ok('el índice usa las dos funciones y decide destino con `_destinoCima`',
+            /this\._anclaEpigrafe\(s\.seccion/.test(appSrc) && /this\._urlEpigrafe\(doc\.urlHtml/.test(appSrc)
+            && /\$\{this\._destinoCima\(url\)\} class="docs-idx-link/.test(appSrc));
+    }
+}
+
 console.log(fallos === 0 ? '\nTODO VERDE' : `\n${fallos} FALLO(S)`);
 process.exit(fallos === 0 ? 0 : 1);

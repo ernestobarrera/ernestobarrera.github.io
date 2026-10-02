@@ -10434,6 +10434,67 @@ ${ftFechaDocsHtml}
     }
 
     /**
+     * Qué frase hay que pedir al navegador (`:~:text=`) para que SEÑALE un epígrafe del índice
+     * en CIMA, y no solo baje hasta él. `null` si no hay una fiable: entonces el enlace se queda
+     * en el ancla de la sección, que es lo que había.
+     *
+     * Medido el 02/10/2026 en Chrome contra fichas y prospectos reales:
+     *   - El rótulo se busca como «n. título» (`4.6.1. Embarazo`), que es como lo escribe el HTML
+     *     de CIMA. El título solo NO vale: se repite en el índice interno del prospecto.
+     *   - Subepígrafes (4.6.1, 5.2.3…): con eso basta. 102 de 102 resaltan.
+     *   - PRIMER NIVEL (5, 6, el prospecto entero): la página de CIMA pinta un índice lateral con
+     *     esos mismos rótulos, y el navegador señala la PRIMERA coincidencia, la del lateral. Peor
+     *     aún: entonces ni baja a la sección. 53 de 64 fallaban así. Se desambigua con un SUFIJO
+     *     (`,-texto`), lo que sigue al rótulo en el cuerpo y no en el lateral: el número de la
+     *     primera hija (`5.1.`) o, si no tiene hijas, las primeras palabras de su contenido.
+     *     Con esa regla, 126 de 140 resaltan y los otros 14 son la «Introducción» del prospecto,
+     *     que está arriba del todo. Ninguno cae.
+     *   - El sufijo sale del PRIMER BLOQUE del contenido: cruzar una celda de tabla (amoxicilina,
+     *     «Polvo seco | No») hacía fallar el único caso que fallaba.
+     *
+     * Sin hijas y sin contenido —los apartados 1-3 y 7-10 de la ficha, cuyo texto no se descarga—
+     * devuelve `null`: son administrativos, y el ancla sola ya los deja arriba de la pantalla.
+     */
+    _anclaEpigrafe(seccion, titulo, hijas = [], contenidoHtml = null) {
+        const num = String(seccion ?? '');
+        const rotulo = /^\d+(\.\d+)*$/.test(num) && num !== '0' ? `${num}. ${titulo}` : String(titulo ?? '');
+        if (!rotulo.trim()) return null;
+        if (num.split('.').length > 1) return { texto: rotulo };
+        if (hijas.length) return { texto: rotulo, sufijo: `${hijas[0].seccion}.` };
+        if (contenidoHtml == null) return null;
+
+        // Texto plano del primer bloque, sin DOM: el HTML es de un tercero y aquí solo se lee.
+        const plano = s => s.replace(/<[^>]+>/g, ' ')
+            .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n))
+            .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+            .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+            .replace(/[\s ]+/g, ' ').trim();
+        const bloque = String(contenidoHtml)
+            .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+            .replace(/<\/?(p|div|li|tr|td|th|table|ul|ol|h\d|br)\b[^>]*>/gi, '\n')
+            .split('\n').map(plano).find(Boolean) || '';
+        // Si empieza por viñeta o guion, CIMA suele separarlo con espacios duros y la frase no
+        // casaría (lo de TRANGOREX): mejor sin sufijo.
+        if (!/^[\p{L}\p{N}]/u.test(bloque)) return null;
+        const sufijo = bloque.split(' ').slice(0, 3).join(' ').replace(/[.,;:()]+$/, '');
+        return sufijo.length >= 3 ? { texto: rotulo, sufijo } : null;
+    }
+
+    /**
+     * URL de un epígrafe del índice: `urlHtml#seccion`, y con ancla, `:~:text=` para señalarlo.
+     * Misma codificación y misma línea roja que `_ftUrlSeccion`: si el texto trae marcado, se
+     * enlaza a la sección sin frase.
+     */
+    _urlEpigrafe(urlHtml, seccion, ancla) {
+        const base = `${urlHtml}#${encodeURIComponent(seccion)}`;
+        if (!ancla?.texto) return base;
+        const partes = [ancla.texto, ancla.sufijo].filter(Boolean);
+        if (partes.some(p => /[<>"'&]|[\u0000-\u001f]/.test(p))) return base;
+        const cod = p => encodeURIComponent(p).replace(/-/g, '%2D').replace(/'/g, '%27');
+        return `${base}:~:text=${cod(ancla.texto)}${ancla.sufijo ? `,-${cod(ancla.sufijo)}` : ''}`;
+    }
+
+    /**
      * EL ÍNDICE DE LA FICHA, que es lo que convierte esta pestaña en algo que CIMA no da.
      *
      * Hasta el 19/09/2026 aquí había dos enlaces y espacio muerto: para leer la 4.8 de un
@@ -10474,13 +10535,23 @@ ${ftFechaDocsHtml}
 
         for (const doc of conIndice) {
             let secciones;
+            // Petición SECUNDARIA: es apoyo de navegación, no una búsqueda del usuario.
+            const secundaria = { headers: { 'X-MC-Autocomplete': '1' } };
+            // El prospecto se pide además ENTERO (una petición, ~84 KB): sus apartados son todos de
+            // primer nivel y sin hijas, y para señalarlos hace falta el principio de cada uno (ver
+            // `_anclaEpigrafe`). Si falla, el índice sale igual, con enlaces que solo desplazan.
+            const contenidoP = doc.tipo === 2
+                ? this.api.getDocContenido(med.nregistro, 2, secundaria).catch(() => null)
+                : Promise.resolve(null);
             try {
-                // Petición SECUNDARIA: es apoyo de navegación, no una búsqueda del usuario.
-                secciones = await this.api.getDocSecciones(med.nregistro, doc.tipo, { headers: { 'X-MC-Autocomplete': '1' } });
+                secciones = await this.api.getDocSecciones(med.nregistro, doc.tipo, secundaria);
             } catch {
                 continue;
             }
             if (!Array.isArray(secciones) || secciones.length === 0) continue;
+            const contenidos = await contenidoP;
+            const contenidoDe = new Map((Array.isArray(contenidos) ? contenidos : [])
+                .map(c => [String(c?.seccion), c?.contenido ?? null]));
 
             // AGRUPADO POR SECCIÓN PADRE, y esto es lo que hace legible un índice de 30 entradas.
             // La primera versión (19/09) pintaba una retícula de dos columnas en la que 4.1 caía a
@@ -10493,13 +10564,19 @@ ${ftFechaDocsHtml}
             // lee un índice. En móvil cae a una sola columna sin que haya que decidir nada.
             const grupos = this._agruparSecciones(secciones);
 
-            const enlace = (s, clase) => `<a href="${this._escapeHtml(doc.urlHtml)}#${encodeURIComponent(s.seccion)}"
-                            target="_blank" rel="noopener" class="docs-idx-link ${clase}"
-                            title="Abrir «${this._escapeHtml(s.titulo)}» en ${this._escapeHtml(ROTULO[doc.tipo].toLowerCase())} de CIMA">
+            // Cada epígrafe abre CIMA con él SEÑALADO (desde el 02/10/2026), no solo desplazado. Con
+            // frase va a pestaña nueva y aislada, sin ella a la compartida: lo decide
+            // `_destinoCima`, por la regla del estándar que explica `CIMA_VENTANA`.
+            const enlace = (s, clase, hijas = []) => {
+                const ancla = this._anclaEpigrafe(s.seccion, s.titulo, hijas, contenidoDe.get(String(s.seccion)) ?? null);
+                const url = this._urlEpigrafe(doc.urlHtml, s.seccion, ancla);
+                return `<a href="${this._escapeHtml(url)}" ${this._destinoCima(url)} class="docs-idx-link ${clase}"
+                            title="Abrir «${this._escapeHtml(s.titulo)}» en ${this._escapeHtml(ROTULO[doc.tipo].toLowerCase())} de CIMA${ancla ? ', con el epígrafe resaltado' : ''}">
                             <span class="docs-idx-num">${this._escapeHtml(s.seccion)}</span><span class="docs-idx-tit">${this._escapeHtml(s.titulo)}</span></a>`;
+            };
 
             const lista = grupos.map(g => `<div class="docs-idx-grupo">
-                        ${enlace(g.cabeza, 'docs-idx-link--cabeza')}
+                        ${enlace(g.cabeza, 'docs-idx-link--cabeza', g.hijas)}
                         ${g.hijas.map(h => enlace(h, h.nivel >= 3 ? 'docs-idx-link--nieta' : 'docs-idx-link--hija')).join('')}
                     </div>`).join('');
 
@@ -10525,7 +10602,7 @@ ${ftFechaDocsHtml}
 
         if (bloques.length === 0) return;
         cont.innerHTML = `<div class="docs-idx">${bloques.join('')}
-            <p class="docs-idx-pie">La numeración y los títulos son los de CIMA. Cada línea abre esa sección en la fuente oficial.</p>
+            <p class="docs-idx-pie">La numeración y los títulos son los de CIMA. Cada línea abre esa sección en la fuente oficial, con su título resaltado.</p>
         </div>`;
 
         // Retirados los botones de arriba de los documentos que ya tienen índice: su enlace vive

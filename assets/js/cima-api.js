@@ -2238,6 +2238,17 @@ class CimaAPI {
     }
 
     /**
+     * Contenido de TODAS las secciones de un documento en una petición: sin `seccion`, CIMA
+     * devuelve `[{seccion, titulo, contenido, orden}]` completo. Pensado para el prospecto
+     * (~84 KB); la ficha técnica entera ronda el MEGA y no se pide así.
+     */
+    async getDocContenido(nregistro, tipo = 2, options = {}) {
+        const data = await this._request(`/docSegmentado/contenido/${tipo}?nregistro=${nregistro}`, options);
+        if (typeof data !== 'string') return data;
+        try { return JSON.parse(data); } catch { return null; }
+    }
+
+    /**
      * Obtener contenido de una sección específica
      * @param {string} nregistro 
      * @param {string} seccion - ej: "4.3", "4.4"
