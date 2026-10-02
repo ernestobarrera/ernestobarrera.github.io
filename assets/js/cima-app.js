@@ -9176,8 +9176,21 @@ class MedCheckApp {
      * sigue visible y en el mismo orden.
      *
      * El foco vuelve al elemento que abrió el modal cuando se cierra (ver `closeModal`).
+     *
+     * Sin `initialTab` y con el panel ya abierto, se conserva la pestaña que se está leyendo:
+     * pulsar otra tarjeta con Posología delante abre el siguiente producto en Posología, para
+     * comparar sin volver a buscarla. Quien pide pestaña (accesos `FT`, `PGx`, contextos,
+     * `?tab=`) la sigue imponiendo. Con el panel cerrado, Información, como siempre.
      */
-    async openMedDetails(nregistro, initialTab = 'info', options = {}) {
+    async openMedDetails(nregistro, initialTab, options = {}) {
+        // Leída antes del spinner, que borra la barra de pestañas.
+        let pestanaConservada = false;
+        if (!initialTab) {
+            const activa = !this.modal.classList.contains('hidden')
+                && this.modalBody.querySelector('.modal-tab.active')?.dataset.tab;
+            pestanaConservada = !!activa && activa !== 'info';
+            initialTab = activa || 'info';
+        }
         // Antes de tocar el DOM: quien tenía el foco es a donde debe volver al cerrar.
         const focoPrevio = document.activeElement;
         this._modalReturnFocus = (focoPrevio && focoPrevio !== document.body) ? focoPrevio : null;
@@ -9211,6 +9224,9 @@ class MedCheckApp {
                 pgx: () => !!(this._pgxSet && this._pgxSet.has(String(med.nregistro))),
                 financing: () => Array.isArray(med.presentaciones) && med.presentaciones.some(p => p.cn),
                 utilizacion: () => !!med.atcs?.find(a => a.nivel === 5),
+                // Solo al conservar: pedida a propósito, Alertas se pinta aunque llegue vacía, y
+                // QT la inyecta después una detección asíncrona que este producto puede no dar.
+                ...(pestanaConservada ? { alerts: () => !!med.notas, qt: () => false } : {}),
             }[initialTab];
             if (pestanaDisponible && !pestanaDisponible()) initialTab = 'info';
 
@@ -17975,7 +17991,7 @@ ${ftFechaDocsHtml}
 
         return `
             <div class="fav-card" data-nregistro="${fav.nregistro}" data-name="${(fav.nombre || '').toLowerCase()}" data-pa="${(fav.principioActivo || '').toLowerCase()}" data-tags="${tags.join('|').toLowerCase()}"
-                 style="border-left-color:${accentColor}" onclick="app.openMedDetails('${safeNreg}', 'info')">
+                 style="border-left-color:${accentColor}" onclick="app.openMedDetails('${safeNreg}')">
                 <div class="fav-card-header">
                     <span class="fav-card-name">${fav.nombre}</span>
                     <div class="fav-card-actions">
@@ -18253,7 +18269,7 @@ ${ftFechaDocsHtml}
                 if (i.covered) {
                     const safeNreg = String(i.fav.nregistro).replace(/'/g, "\\'");
                     return `
-                        <div class="ess-row ess-covered" onclick="app.openMedDetails('${safeNreg}','info')" title="Lo cubres con: ${i.fav.nombre}">
+                        <div class="ess-row ess-covered" onclick="app.openMedDetails('${safeNreg}')" title="Lo cubres con: ${i.fav.nombre}">
                             <span class="ess-status"><i class="fas fa-circle-check"></i></span>
                             <span class="ess-name">${i.name} ${isNew} ${omsChip}</span>
                             <span class="ess-meta">${i.fav.nombre}</span>

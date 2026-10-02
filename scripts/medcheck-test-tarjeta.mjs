@@ -694,8 +694,11 @@ console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
     const app3 = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
     const css3 = readFileSync(join(ROOT, 'assets/css/cima-app.css'), 'utf8');
 
-    ok(/async openMedDetails\(nregistro, initialTab = 'info', options = \{\}\)/.test(app3),
+    ok(/async openMedDetails\(nregistro, initialTab, options = \{\}\)/.test(app3),
         '`openMedDetails` acepta opciones sin romper sus llamadas de dos argumentos');
+    // Sin pestaña pedida y con el panel abierto se conserva la activa; pedida, manda la pedida.
+    ok(/if \(!initialTab\) \{[\s\S]{0,300}\.modal-tab\.active'\)\?\.dataset\.tab;[\s\S]{0,200}initialTab = activa \|\| 'info';/.test(app3),
+        'cambiar de producto con el panel abierto conserva la pestaña; sin panel, Información');
     ok(/this\._pendingFocusContext = \(initialTab === 'safety' && options\.focusContext\)/.test(app3),
         'el enfoque solo se arma con la pestaña de Seguridad, que es donde viven los checks');
     ok(/data-context="\$\{check\.context\}"/.test(app3),
