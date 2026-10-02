@@ -1511,6 +1511,7 @@ class MedCheckApp {
                     </div>
                     <button id="search-btn" class="search-btn">Buscar</button>
                 </div>
+                <div id="search-recientes" class="search-recientes" hidden></div>
             </div>
             <div id="search-results"></div>
         `;
@@ -1576,6 +1577,7 @@ class MedCheckApp {
 
 
         searchInput.addEventListener('input', (e) => {
+            this._pintarRecientesBusqueda();
             if (searchInput.value.trim().length >= 2) {
                 this.showSearchAutocomplete(searchInput.value.trim());
             } else {
@@ -1627,6 +1629,35 @@ class MedCheckApp {
         if (this.lastSearchResults && this.lastSearchResults.resultados) {
             this.displaySearchResults(this.lastSearchResults);
         }
+        this._pintarRecientesBusqueda();
+    }
+
+    /**
+     * «Abiertos en esta sesión», bajo la caja de Buscar, SOLO con la caja vacía. Es el «¿y el de
+     * antes?» de la consulta: volver a una ficha recién vista sin buscarla otra vez. Los
+     * recientes ya existían (Fármacos los usa); aquí solo se enseñan.
+     *
+     * Tres límites a propósito: con la caja escrita no sale, para no sumar densidad a una
+     * búsqueda en marcha; son los de la SESIÓN (sessionStorage, ver `rememberRecentMed`), que
+     * desaparecen al cerrar la pestaña; y «Olvidar» los borra a la vista, porque en un PC
+     * compartido de consulta lo que se ha mirado con un paciente no tiene por qué verlo el
+     * siguiente.
+     */
+    _pintarRecientesBusqueda() {
+        const caja = document.getElementById('search-recientes');
+        const input = document.getElementById('search-input');
+        if (!caja || !input) return;
+        const recientes = input.value.trim() ? [] : this.getRecentMeds().slice(0, 6);
+        caja.hidden = recientes.length === 0;
+        if (caja.hidden) { caja.innerHTML = ''; return; }
+        const esc = v => this._escapeHtml(String(v ?? ''));
+        const corto = n => (n.length > 42 ? `${n.slice(0, 40).trimEnd()}…` : n);
+        caja.innerHTML = `<span class="search-recientes-label">Abiertos en esta sesión</span>
+            ${recientes.map(r => `<button type="button" class="search-reciente" data-nregistro="${esc(r.nregistro)}" title="${esc(r.nombre)}">${esc(corto(r.nombre))}</button>`).join('')}
+            <button type="button" class="search-recientes-olvidar" title="Borrar esta lista. Se borra sola al cerrar la pestaña">Olvidar</button>`;
+        caja.querySelectorAll('.search-reciente').forEach(b =>
+            b.addEventListener('click', () => this.openMedDetails(b.dataset.nregistro)));
+        caja.querySelector('.search-recientes-olvidar')?.addEventListener('click', () => this.clearRecentMeds());
     }
 
     /**
@@ -5478,6 +5509,7 @@ class MedCheckApp {
         this._saveRecentMeds([]);
         try { sessionStorage.removeItem(this.RECENT_MEDS_KEY); } catch (_) { /* storage no disponible */ }
         if (['combo', 'interactions', 'adverse'].includes(this.currentView)) this.renderCombination();
+        this._pintarRecientesBusqueda();
     }
 
     /**
@@ -9257,6 +9289,7 @@ class MedCheckApp {
             this.setSelectedMedication(med);
             // Recientes de la sesión: abrir la ficha es el acto humano explícito que cuenta.
             this.rememberRecentMed(med);
+            this._pintarRecientesBusqueda();
             // Increment view count if this is a favorite
             this.incrementFavoriteViewCount(nregistro);
 

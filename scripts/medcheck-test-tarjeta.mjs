@@ -755,5 +755,42 @@ console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
     ok(traido && enfocado === 'lactation', 'con check presente, lo trae al viewport y le da el foco');
 }
 
+console.log('\n— «Abiertos en esta sesión» bajo la caja de Buscar —');
+{
+    // DOM mínimo: la caja, el input y lo que `_pintarRecientesBusqueda` consulta tras pintar.
+    const caja = { hidden: true, innerHTML: '', querySelectorAll: () => [], querySelector: () => null };
+    const input = { value: '' };
+    const getById = sandbox.document.getElementById;
+    sandbox.document.getElementById = id => ({ 'search-recientes': caja, 'search-input': input }[id] || null);
+    const rec = Object.create(sandbox.window.__MedCheckAppClass.prototype);
+    rec._escapeHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    const lista = Array.from({ length: 8 }, (_, i) => ({ nregistro: String(1000 + i), nombre: `PRODUCTO ${i}`, pactivos: '' }));
+    rec.getRecentMeds = () => lista;
+
+    rec._pintarRecientesBusqueda();
+    ok(!caja.hidden && (caja.innerHTML.match(/class="search-reciente"/g) || []).length === 6,
+        'con la caja vacía enseña los recientes, seis como mucho');
+    ok(/search-recientes-olvidar/.test(caja.innerHTML), 'y siempre con «Olvidar» a la vista');
+
+    input.value = 'omep';
+    rec._pintarRecientesBusqueda();
+    ok(caja.hidden && caja.innerHTML === '', 'con la caja escrita no sale: no suma densidad a una búsqueda en marcha');
+
+    input.value = '';
+    rec.getRecentMeds = () => [];
+    rec._pintarRecientesBusqueda();
+    ok(caja.hidden, 'sin nada abierto en la sesión no sale');
+
+    rec.getRecentMeds = () => [{ nregistro: '1', nombre: 'A <img src=x onerror=alert(1)> "B"' }];
+    rec._pintarRecientesBusqueda();
+    ok(!/<img/.test(caja.innerHTML) && /&lt;img/.test(caja.innerHTML), 'el nombre se escapa (texto de CIMA)');
+    sandbox.document.getElementById = getById;
+
+    const app4 = readFileSync(join(ROOT, 'assets/js/cima-app.js'), 'utf8');
+    ok(/this\.rememberRecentMed\(med\);\s*this\._pintarRecientesBusqueda\(\);/.test(app4)
+        && /clearRecentMeds\(\) \{[\s\S]{0,400}this\._pintarRecientesBusqueda\(\);/.test(app4),
+        'se repinta al abrir una ficha y al olvidar');
+}
+
 console.log(fallos === 0 ? '\nOK — todas las aserciones pasan\n' : `\n${fallos} FALLO(S)\n`);
 process.exit(fallos === 0 ? 0 : 1);

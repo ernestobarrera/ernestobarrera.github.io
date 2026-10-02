@@ -635,6 +635,47 @@ body {
     margin-left: auto;
 }
 
+/* «Abiertos en esta sesión» bajo la caja vacía de Buscar (ver `_pintarRecientesBusqueda`). */
+.search-recientes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: var(--space-sm);
+}
+.search-recientes[hidden] { display: none; }
+.search-recientes-label {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-right: 0.15rem;
+}
+.search-reciente,
+.search-recientes-olvidar {
+    font: inherit;
+    font-size: 0.8rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    cursor: pointer;
+}
+.search-reciente {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    color: var(--text-primary);
+    max-width: min(22rem, 100%);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.search-reciente:hover { background: var(--bg-surface-hover); border-color: var(--primary); }
+.search-recientes-olvidar {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    text-decoration: underline;
+}
+.search-reciente:focus-visible,
+.search-recientes-olvidar:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
 .search-option {
     display: flex;
     align-items: center;
