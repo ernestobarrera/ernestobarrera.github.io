@@ -12664,8 +12664,11 @@ ${ftFechaDocsHtml}
             const html44 = res44.status === 'fulfilled' ? (res44.value || '') : '';
             const html45 = res45.status === 'fulfilled' ? (res45.value || '') : '';
 
-            const combinedPlain = [html44, html45]
-                .map(h => h.replace(/<[^>]*>/g, ' ')).join(' ');
+            // Texto DECODIFICADO y sin tildes (ver `CimaAPI.textoFT`). Sobre el HTML crudo,
+            // ALFUZOSINA STADA, que advierte del «int&#233;rvalo QTc» (con errata), se quedaba sin
+            // pestaña: la ficha avisaba y MedCheck no lo enseñaba.
+            const planoQT = h => CimaAPI.plegar(CimaAPI.textoFT(h));
+            const combinedPlain = [html44, html45].map(planoQT).join(' ');
 
             const qtRegex = new RegExp(CimaAPI.QT_DETECTION_REGEX.source, 'gi');
             const hasQTText = qtRegex.test(combinedPlain);
@@ -12679,11 +12682,11 @@ ${ftFechaDocsHtml}
             let displayHtml = html44.length >= 30 ? html44 : '';
             if (!displayHtml && html45.length >= 30) {
                 const qt45Regex = new RegExp(CimaAPI.QT_DETECTION_REGEX.source, 'gi');
-                if (qt45Regex.test(html45.replace(/<[^>]*>/g, ' '))) displayHtml = html45;
+                if (qt45Regex.test(planoQT(html45))) displayHtml = html45;
             }
 
             const matchRegex = new RegExp(CimaAPI.QT_DETECTION_REGEX.source, 'gi');
-            const matchCount = (displayHtml.replace(/<[^>]*>/g, ' ').match(matchRegex) || []).length;
+            const matchCount = (planoQT(displayHtml).match(matchRegex) || []).length;
 
             this.injectQTTab(nregistro, medNombre, displayHtml, matchCount);
         } catch (e) {

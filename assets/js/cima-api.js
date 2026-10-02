@@ -2359,6 +2359,50 @@ class CimaAPI {
     // Regex para detectar menciones de QT en texto de ficha técnica
     static QT_DETECTION_REGEX = /intervalo\s+QT|prolongaci[oó]n\s+(?:del\s+)?(?:intervalo\s+)?QT|QTc?\s+prolong|torsade(?:s\s+de\s+pointes)?|torsad[ae]s?|arritmia[s]?\s+ventricular|fibrilaci[oó]n\s+ventricular.*(?:medicamento|f[aá]rmaco)|muerte\s+s[uú]bita.*(?:medicamento|f[aá]rmaco)/gi;
 
+    /**
+     * TEXTO PLANO DE UNA SECCIÓN DE CIMA, PARA BUSCAR EN ÉL. Corregido el 03/10/2026.
+     *
+     * `docSegmentado` manda los acentos como entidades numéricas (`n&#225;useas`,
+     * `int&#233;rvalo`), y quitar las etiquetas NO las decodifica. Tres búsquedas se hacían sobre
+     * ese texto crudo y fallaban en silencio, siempre hacia el lado malo (decir «no aparece»):
+     * el síntoma en la 4.8 («náuseas» no se encontraba en 16 de 18 fichas aunque se escribiera
+     * con tilde), las interacciones de la 4.5 y la pestaña QT (ALFUZOSINA STADA advierte del
+     * «intérvalo QTc» y no tenía pestaña). Es el mismo defecto que el 22/09 dejó 32 keywords de
+     * contexto sin casar: cualquier búsqueda nueva sobre texto de CIMA pasa por aquí.
+     *
+     * Devuelve texto DECODIFICADO, que puede contener `< > &`: si un trozo se pinta como HTML hay
+     * que escaparlo antes (`escaparHtml`).
+     */
+    static textoFT(html) {
+        const desde = (cp) => { try { return String.fromCodePoint(cp); } catch { return ' '; } };
+        return String(html || '')
+            .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/\\r\\n|\\n/g, ' ')
+            .replace(/&#x([0-9a-f]+);/gi, (_, h) => desde(parseInt(h, 16)))
+            .replace(/&#(\d+);/g, (_, d) => desde(parseInt(d, 10)))
+            .replace(/&(nbsp|amp|lt|gt|quot|apos);/gi, (_, n) => ({ nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" })[n.toLowerCase()])
+            .replace(/[\s ]+/g, ' ')
+            .trim();
+    }
+
+    /**
+     * Minúsculas y sin tildes, CARÁCTER A CARÁCTER Y SIN CAMBIAR LA LONGITUD: así una posición
+     * encontrada en el texto plegado vale en el original y el extracto se corta del texto tal
+     * como lo escribe la ficha. «náuseas», «nauseas» y «NÁUSEAS» casan entre sí, y también la
+     * errata «intérvalo» con «intervalo».
+     */
+    static plegar(texto) {
+        return String(texto || '').replace(/[\s\S]/g, (c) => {
+            const p = c.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+            return p.length === 1 ? p : c.toLowerCase().length === 1 ? c.toLowerCase() : c;
+        });
+    }
+
+    static escaparHtml(texto) {
+        return String(texto || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     // Regex para detectar menciones de ECG/electrocardiograma en ficha técnica
     static ECG_DETECTION_REGEX = /\bECG\b|\bEKG\b|electrocardiograma|electrocardiograf[íi]a|electrocardiogr[áa]fico/gi;
 
@@ -2902,15 +2946,16 @@ class CimaAPI {
                 const content = await this.getDocSeccion(med.nregistro, '4.8');
                 if (!content) return null;
 
-                // Limpieza básica de HTML para búsqueda en texto
-                const cleanText = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
-                const lowerText = cleanText.toLowerCase();
+                // Texto DECODIFICADO y plegado (ver `textoFT`): sobre el HTML crudo, «náuseas»
+                // no casaba con `n&#225;useas` y la respuesta era «no aparece».
+                const cleanText = CimaAPI.textoFT(content);
+                const lowerText = CimaAPI.plegar(cleanText);
 
                 // Coincidencia por PALABRA COMPLETA: evita falsos positivos por subcadena
                 // (p. ej. "tos" dentro de "daTOS"), que mostraban el extracto de otra reacción.
                 // Alineado con la regla antifalsos de la búsqueda (sesión 14).
-                const escSym = normalizedSymptom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const symptomRe = new RegExp('(?<![a-záéíóúñü])' + escSym + '(?![a-záéíóúñü])', 'i');
+                const escSym = CimaAPI.plegar(normalizedSymptom).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const symptomRe = new RegExp('(?<![a-z0-9])' + escSym + '(?![a-z0-9])');
                 if (symptomRe.test(lowerText)) {
                     // Encontrado! Extraer contexto
                     const context = this._extractSymptomContext(cleanText, normalizedSymptom);
@@ -2937,26 +2982,34 @@ class CimaAPI {
      * @private
      */
     _extractSymptomContext(text, term) {
-        const lowerText = text.toLowerCase();
+        // `text` es el de `textoFT` (decodificado). Se busca en su versión plegada, que tiene la
+        // MISMA longitud, y se corta del original: el extracto dice lo que dice la ficha.
+        const plegado = CimaAPI.plegar(text);
         // Localizar la PALABRA COMPLETA (no subcadena) para centrar el extracto en la
         // aparición real del síntoma, no en un falso positivo previo (p. ej. "datos").
-        const esc = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const m = new RegExp('(?<![a-záéíóúñü])' + esc + '(?![a-záéíóúñü])', 'i').exec(lowerText);
-        const index = m ? m.index : Math.max(0, lowerText.indexOf(term));
+        const esc = CimaAPI.plegar(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const palabra = () => new RegExp('(?<![a-z0-9])' + esc + '(?![a-z0-9])', 'g');
+        const m = palabra().exec(plegado);
+        const index = m ? m.index : 0;
 
         // Tomar unos 60 caracteres antes y después para dar contexto
         const start = Math.max(0, index - 60);
         const end = Math.min(text.length, index + term.length + 80);
 
-        let snippet = text.substring(start, end);
+        // Resaltar solo la palabra completa (coherente con la detección). El texto ya está
+        // decodificado, así que cada trozo se ESCAPA: el extracto se pinta como HTML.
+        const trozo = text.substring(start, end);
+        const trozoPlegado = plegado.substring(start, end);
+        let html = '';
+        let desde = 0;
+        for (const hit of trozoPlegado.matchAll(palabra())) {
+            html += CimaAPI.escaparHtml(trozo.slice(desde, hit.index))
+                + `<strong>${CimaAPI.escaparHtml(trozo.slice(hit.index, hit.index + hit[0].length))}</strong>`;
+            desde = hit.index + hit[0].length;
+        }
+        html += CimaAPI.escaparHtml(trozo.slice(desde));
 
-        // Añadir elipsis
-        if (start > 0) snippet = '...' + snippet;
-        if (end < text.length) snippet = snippet + '...';
-
-        // Resaltar solo la palabra completa (coherente con la detección).
-        const regex = new RegExp('(?<![a-záéíóúñü])(' + esc + ')(?![a-záéíóúñü])', 'gi');
-        return snippet.replace(regex, '<strong>$1</strong>');
+        return (start > 0 ? '...' : '') + html + (end < text.length ? '...' : '');
     }
 
     /**
@@ -2978,29 +3031,66 @@ class CimaAPI {
             activos.forEach(pa => {
                 if (pa.length > 3) terms.push(pa);
             });
+            // CIMA da el principio activo con la SAL y en orden de catálogo, en mayúsculas y sin
+            // tildes: «ACETILSALICILICO ACIDO», «LITIO CARBONATO», «AMIODARONA HIDROCLORURO».
+            // La 4.5 no escribe así nunca, de modo que esos términos no casaban jamás. Medido el
+            // 03/10/2026 en 18 fármacos frecuentes de primaria (306 pares): se detectaban 30
+            // menciones y había 68, entre ellas acenocumarol con AAS y con amiodarona, digoxina
+            // con amiodarona e IECA, espironolactona y AINE con litio.
+            //
+            // Se añaden dos formas, sin quitar las de antes: el nombre sin la sal («litio»,
+            // «amiodarona») y, si la sal era «ácido», el orden natural («acido valproico»). La
+            // forma corta NO se añade cuando es un nombre genérico que la 4.5 usa para otras
+            // cosas («calcio» en «antagonistas del calcio», «hierro», «insulina» de otro tipo).
+            for (const pa of activos) {
+                const palabras = CimaAPI.plegar(pa).split(/\s+/).filter(p => p && !CimaAPI.SAL_PRINCIPIO.has(p));
+                const sinSal = palabras.join(' ');
+                if (sinSal.length > 3 && !CimaAPI.BASE_GENERICA.has(sinSal)) terms.push(sinSal);   // «acido folico»
+                if (palabras[1] === 'acido') terms.push(`acido ${palabras[0]}`);
+                const base = palabras.find(p => p !== 'acido');
+                if (base && base.length > 3 && !CimaAPI.BASE_GENERICA.has(base) && palabras.length < 3) terms.push(base);
+            }
         }
 
         // Eliminar duplicados
-        return [...new Set(terms)];
+        return [...new Set(terms.map(t => CimaAPI.plegar(t)))];
     }
+
+    // Palabras de sal, hidrato o forma química que CIMA añade al principio activo y que la 4.5 no
+    // usa al nombrar el fármaco. Solo aniones, hidratos y adjetivos de sal: los cationes que SON
+    // el fármaco (litio) no están.
+    static SAL_PRINCIPIO = new Set(['sodio', 'sodico', 'sodica', 'potasico', 'potasica', 'calcico', 'calcica',
+        'magnesico', 'magnesica', 'hemicalcico', 'hemicalcica', 'maleato', 'hidrocloruro', 'clorhidrato', 'carbonato',
+        'hidrato', 'monohidrato', 'dihidrato', 'trihidrato', 'hemihidrato', 'sesquihidrato', 'anhidro', 'anhidra',
+        'hidrogenosulfato', 'besilato', 'mesilato', 'tartrato', 'succinato', 'fumarato', 'citrato', 'acetato',
+        'fosfato', 'sulfato', 'bromuro', 'bromhidrato', 'cloruro', 'nitrato', 'lisina', 'arginina', 'trometamol',
+        'dipropionato', 'propionato', 'de', 'y']);
+
+    // Nombres cortos demasiado genéricos para buscarlos sueltos en una 4.5.
+    static BASE_GENERICA = new Set(['calcio', 'magnesio', 'potasio', 'hierro', 'zinc', 'aluminio', 'insulina',
+        'vitamina', 'hidroxido', 'oxido', 'sales', 'toxina', 'factor', 'inmunoglobulina', 'extracto', 'aceite']);
 
     /**
      * Busca menciones de términos en el texto de la sección
      * @private
      */
     _findInteractionMention(htmlContent, searchTerms) {
-        // Limpiar HTML
-        const plainText = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-        const lowerText = plainText.toLowerCase();
+        // Texto decodificado y plegado (ver `textoFT`); el plegado conserva las posiciones, así
+        // que el extracto se corta del texto tal como lo escribe la ficha.
+        const plainText = CimaAPI.textoFT(htmlContent);
+        const lowerText = CimaAPI.plegar(plainText);
 
         for (const term of searchTerms) {
-            const idx = lowerText.indexOf(term);
+            // Al principio de palabra: con las formas cortas («litio») ya no basta una subcadena.
+            const t = CimaAPI.plegar(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const hit = new RegExp(`(?<![a-z0-9])${t}`).exec(lowerText);
+            const idx = hit ? hit.index : -1;
             if (idx !== -1) {
-                // Extraer contexto amplio
+                // Extraer contexto amplio. Escapado: el texto ya está decodificado y se pinta como HTML.
                 const start = Math.max(0, idx - 80);
                 const end = Math.min(plainText.length, idx + term.length + 150);
                 const excerpt = (start > 0 ? '...' : '') +
-                    plainText.substring(start, end).trim() +
+                    CimaAPI.escaparHtml(plainText.substring(start, end).trim()) +
                     (end < plainText.length ? '...' : '');
 
                 return {
