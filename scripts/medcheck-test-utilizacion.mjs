@@ -1070,7 +1070,11 @@ console.log('\n20) la marca se nombra y el denominador va junto');
 console.log('\n21) una escala, no 22 tamaños sueltos');
 {
   const css = readFileSync(join(RAIZ, 'assets', 'css', 'cima-app.css'), 'utf8');
-  const capa = css.slice(css.indexOf('═══ Utilización observada'));
+  // La capa termina en la cabecera `═══` siguiente, no al final del fichero: el 02/10/2026 se
+  // añadieron detrás las reglas del panel de ficha y este banco las tomó por suyas (CI en rojo).
+  const desde = css.indexOf('═══ Utilización observada');
+  const hasta = css.indexOf('/* ═══', desde + 1);
+  const capa = css.slice(desde, hasta === -1 ? undefined : hasta);
 
   const sueltos = [...capa.matchAll(/font-size:\s*([0-9.]+rem)/g)].map((m) => m[1]);
   // Los tres que quedan fuera de la escala a propósito: el h2 de la pantalla, el icono del
