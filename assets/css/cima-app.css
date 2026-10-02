@@ -878,7 +878,7 @@ body {
    sin scroll horizontal porque recoloca columnas. El margen de `.app-main` ya está a la
    derecha, de ahí la resta. */
 @media (min-width: 769px) {
-    body:has(#med-modal:not(.hidden)) :is(#search-results, #indication-results) {
+    body:has(#med-modal:not(.hidden)) :is(#search-results, #indication-results, #profile-section-content) {
         padding-right: max(0px, calc(var(--flyout-ancho) - var(--space-lg)));
     }
 
@@ -9067,6 +9067,13 @@ code {
 .fav-card:hover {
     background: var(--bg-surface-hover);
     transform: translateY(-1px);
+}
+
+/* El favorito abierto en el panel. Sin tocar el borde izquierdo, que es el color de su grupo ATC. */
+.fav-card.result-card--en-panel,
+.fav-card.result-card--en-panel:hover {
+    box-shadow: 0 0 0 2px var(--primary);
+    background: linear-gradient(var(--primary-light), var(--primary-light)), var(--bg-surface);
 }
 
 .fav-card-header {

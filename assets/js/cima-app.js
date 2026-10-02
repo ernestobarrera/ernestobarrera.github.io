@@ -10082,7 +10082,7 @@ class MedCheckApp {
             c.removeAttribute('aria-current');
         });
         if (!nregistro) return;
-        document.querySelectorAll(`.result-card[data-nregistro="${CSS.escape(String(nregistro))}"]`).forEach(c => {
+        document.querySelectorAll(`:is(.result-card, .fav-card)[data-nregistro="${CSS.escape(String(nregistro))}"]`).forEach(c => {
             c.classList.add('result-card--en-panel');
             c.setAttribute('aria-current', 'true');
         });
@@ -10115,7 +10115,8 @@ class MedCheckApp {
     /** Tarjetas visibles de la lista, en orden y sin repetir producto (J/K y «3 / 24»). */
     _tarjetasDeLista() {
         const vistos = new Set();
-        return [...document.querySelectorAll('.result-card[data-nregistro]')]
+        // `.fav-card`: Mi vademécum es una lista más por la que se compara (desde el 02/10/2026).
+        return [...document.querySelectorAll('.result-card[data-nregistro], .fav-card[data-nregistro]')]
             .filter(c => c.offsetParent !== null && !this.modal.contains(c))
             .filter(c => !vistos.has(c.dataset.nregistro) && vistos.add(c.dataset.nregistro));
     }
@@ -18207,7 +18208,7 @@ ${ftFechaDocsHtml}
         const safeNreg = String(fav.nregistro).replace(/'/g, "\\'");
 
         return `
-            <div class="fav-card" data-nregistro="${fav.nregistro}" data-name="${(fav.nombre || '').toLowerCase()}" data-pa="${(fav.principioActivo || '').toLowerCase()}" data-tags="${tags.join('|').toLowerCase()}"
+            <div class="fav-card${this._nregEnPanel === String(fav.nregistro) && !this.modal.classList.contains('hidden') ? ' result-card--en-panel' : ''}" data-nregistro="${fav.nregistro}" data-name="${(fav.nombre || '').toLowerCase()}" data-pa="${(fav.principioActivo || '').toLowerCase()}" data-tags="${tags.join('|').toLowerCase()}"
                  style="border-left-color:${accentColor}" onclick="app.openMedDetails('${safeNreg}')">
                 <div class="fav-card-header">
                     <span class="fav-card-name">${fav.nombre}</span>

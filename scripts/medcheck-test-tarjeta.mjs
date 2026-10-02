@@ -709,8 +709,14 @@ console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
         'J en la última visible de un grupo despliega su «Ver más»');
     ok(/\.result-card\.result-card--en-panel,/.test(css3),
         'la marca de la tarjeta abierta gana a la regla base de `.result-card`, que va después');
-    ok(/body:has\(#med-modal:not\(\.hidden\)\) :is\(#search-results, #indication-results\)/.test(css3),
-        'con el panel abierto las listas le dejan su ancho (solo las listas, no la página)');
+    ok(/body:has\(#med-modal:not\(\.hidden\)\) :is\(#search-results, #indication-results, #profile-section-content\)/.test(css3),
+        'con el panel abierto las listas le dejan su ancho (solo las listas, no la página), también Mi vademécum');
+    // Mi vademécum es una lista más (02/10/2026): sus tarjetas son `.fav-card`, y sin esto el
+    // panel abierto desde allí no tenía «Resultados n / N», ni marca, ni J/K.
+    ok(/querySelectorAll\('\.result-card\[data-nregistro\], \.fav-card\[data-nregistro\]'\)/.test(app3),
+        'J/K y la posición recorren también los favoritos de Mi vademécum');
+    ok(/:is\(\.result-card, \.fav-card\)\[data-nregistro=/.test(app3) && /\.fav-card\.result-card--en-panel,/.test(css3),
+        'y el favorito abierto se marca, sin pisar el color de su grupo ATC');
     ok(/\$\{this\._posicionEnListaHtml\(med\.nregistro\)\}/.test(app3),
         'la cabecera de la ficha dice la posición en la lista, con ‹ › para pasar al vecino');
     ok(/this\._pendingFocusContext = \(initialTab === 'safety' && options\.focusContext\)/.test(app3),
