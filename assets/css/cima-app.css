@@ -872,6 +872,14 @@ body {
     opacity: 0.9;
 }
 
+/* Producto abierto en el panel de ficha: al comparar, la lista dice cuál se está leyendo. */
+.result-card.result-card--en-panel,
+.result-card.result-card--en-panel:hover {
+    border-color: var(--primary);
+    box-shadow: inset 4px 0 0 var(--primary), 0 0 0 1px var(--primary);
+    background: linear-gradient(var(--primary-light), var(--primary-light)), var(--bg-elevated);
+}
+
 .result-card--no-comerc .result-card-title {
     color: var(--text-secondary);
 }

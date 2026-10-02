@@ -699,6 +699,12 @@ console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
     // Sin pestaña pedida y con el panel abierto se conserva la activa; pedida, manda la pedida.
     ok(/if \(!initialTab\) \{[\s\S]{0,300}\.modal-tab\.active'\)\?\.dataset\.tab;[\s\S]{0,200}initialTab = activa \|\| 'info';/.test(app3),
         'cambiar de producto con el panel abierto conserva la pestaña; sin panel, Información');
+    ok(/if \(this\._nregEnPanel !== String\(nregistro\)\) return;/.test(app3),
+        'con fichas pedidas seguidas (J/K) solo se pinta la última');
+    ok(/\(e\.key === 'j' \|\| e\.key === 'k'\)[\s\S]{0,200}closest\?\.\('input, textarea, select/.test(app3),
+        'J/K navegan entre tarjetas, pero no mientras se escribe');
+    ok(/\.result-card\.result-card--en-panel,/.test(css3),
+        'la marca de la tarjeta abierta gana a la regla base de `.result-card`, que va después');
     ok(/this\._pendingFocusContext = \(initialTab === 'safety' && options\.focusContext\)/.test(app3),
         'el enfoque solo se arma con la pestaña de Seguridad, que es donde viven los checks');
     ok(/data-context="\$\{check\.context\}"/.test(app3),

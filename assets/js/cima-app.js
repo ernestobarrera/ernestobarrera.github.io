@@ -4551,7 +4551,7 @@ class MedCheckApp {
         // igual que ya hace la fila de badges. Recupera ~44 px, que es exactamente lo que
         // le faltaba a "1000 mg · 20 y 40 comprimidos" para no cortarse.
         return `
-            <div class="result-card${!med.comerc ? ' result-card--no-comerc' : ''}" data-nregistro="${med.nregistro}">
+            <div class="result-card${!med.comerc ? ' result-card--no-comerc' : ''}${this._nregEnPanel === String(med.nregistro) && !this.modal.classList.contains('hidden') ? ' result-card--en-panel' : ''}" data-nregistro="${med.nregistro}">
                 <div class="result-card-main">
                     <button type="button" class="med-icon-wrapper indication med-icon-wrapper--filter${familiaActiva ? ' active' : ''}"
                             data-galenic="${familia.id}" title="${this._escapeHtml(iconTitle)}"
@@ -8914,6 +8914,12 @@ class MedCheckApp {
             if (e.key === 'Escape' && !this.modal.classList.contains('hidden')) {
                 this.closeModal();
             }
+            // J / K: producto siguiente / anterior de la lista (ver `_irATarjetaVecina`).
+            if ((e.key === 'j' || e.key === 'k') && !e.ctrlKey && !e.metaKey && !e.altKey
+                && !this.modal.classList.contains('hidden')
+                && !e.target.closest?.('input, textarea, select, [contenteditable="true"]')) {
+                if (this._irATarjetaVecina(e.key === 'j' ? 1 : -1)) e.preventDefault();
+            }
         });
 
         this.setupModalResize();
@@ -9196,6 +9202,8 @@ class MedCheckApp {
         this._modalReturnFocus = (focoPrevio && focoPrevio !== document.body) ? focoPrevio : null;
         // Solo tiene sentido con la pestaña de Seguridad abierta, que es donde viven los checks.
         this._pendingFocusContext = (initialTab === 'safety' && options.focusContext) || null;
+        this._nregEnPanel = String(nregistro);
+        this._marcarTarjetaEnPanel(nregistro);
         this.modal.classList.remove('hidden');
         this.modalBody.innerHTML = '<div class="loading-spinner"></div>';
         this._loadEml(); // disparo anticipado: el JSON local suele cargar antes que la ficha remota
@@ -9216,6 +9224,8 @@ class MedCheckApp {
                     .then(idx => { this._supplyIndex = idx; })
                     .catch(() => {})
             ]);
+            // Otra ficha pedida mientras cargaba esta (J/K seguidas): solo se pinta la última.
+            if (this._nregEnPanel !== String(nregistro)) return;
 
             // Pestaña condicional pedida por enlace (?tab=) que este medicamento no tiene: se abre
             // en Información. Si no, el modal quedaba sin ninguna pestaña activa. Mismos criterios
@@ -9528,6 +9538,7 @@ class MedCheckApp {
             if (isSafetyActive) this._focusSafetyContext();
 
         } catch (error) {
+            if (this._nregEnPanel !== String(nregistro)) return;
             if (error.code === 'NO_CONTENT') {
                 await this._renderMissingFromCimaModal(nregistro);
                 return;
@@ -10043,6 +10054,41 @@ class MedCheckApp {
         const tab = this.modalBody?.querySelector(`.modal-tab[data-tab="${tabName}"]`);
         if (!tab) return false;
         tab.click();
+        return true;
+    }
+
+    /**
+     * Marca en la lista la tarjeta del producto abierto en el panel. Con el panel no modal
+     * de escritorio la lista sigue a la vista, y al comparar se perdía cuál se estaba leyendo.
+     */
+    _marcarTarjetaEnPanel(nregistro) {
+        document.querySelectorAll('.result-card--en-panel').forEach(c => {
+            c.classList.remove('result-card--en-panel');
+            c.removeAttribute('aria-current');
+        });
+        if (!nregistro) return;
+        document.querySelectorAll(`.result-card[data-nregistro="${CSS.escape(String(nregistro))}"]`).forEach(c => {
+            c.classList.add('result-card--en-panel');
+            c.setAttribute('aria-current', 'true');
+        });
+    }
+
+    /**
+     * J / K con el panel abierto: producto siguiente / anterior de la lista visible, en la
+     * pestaña que se está leyendo (ver `openMedDetails`). Letras y no flechas porque las
+     * flechas desplazan el texto del panel. Cuenta las tarjetas visibles, sin repetir producto.
+     */
+    _irATarjetaVecina(paso) {
+        if (!this._nregEnPanel) return false;
+        const vistos = new Set();
+        const tarjetas = [...document.querySelectorAll('.result-card[data-nregistro]')]
+            .filter(c => c.offsetParent !== null && !this.modal.contains(c))
+            .filter(c => !vistos.has(c.dataset.nregistro) && vistos.add(c.dataset.nregistro));
+        const i = tarjetas.findIndex(c => c.dataset.nregistro === this._nregEnPanel);
+        const destino = i === -1 ? null : tarjetas[i + paso];
+        if (!destino) return false;
+        destino.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        this.openMedDetails(destino.dataset.nregistro);
         return true;
     }
 
@@ -13188,6 +13234,8 @@ ${ftFechaDocsHtml}
         this.modal.classList.add('hidden');
         this.currentMed = null;
         this._pendingFocusContext = null;
+        this._nregEnPanel = null;
+        this._marcarTarjetaEnPanel(null);
         // La vista de analítica vuelve a la de fondo. Sin esto, lo siguiente que se buscara
         // se registraba como la última pestaña del modal ya cerrado (verificado el 30/09/2026).
         if (wasOpen) window._mcCurrentView = MedCheckApp._VIEW_ANALYTICS_MAP[this.currentView] || this.currentView;
