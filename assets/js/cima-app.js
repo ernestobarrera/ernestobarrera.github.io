@@ -9349,6 +9349,7 @@ class MedCheckApp {
                             <button class="modal-fav-btn ${isModalFav ? 'active' : ''}" onclick="app.toggleFavoriteFromModal('${med.nregistro}', this)" title="${isModalFav ? 'Quitar de Mi vademécum (favoritos)' : 'Guardar en Mi vademécum (favoritos)'}">
                                 <i class="fas fa-star"></i> <span>${isModalFav ? 'En Mi vademécum' : 'Guardar en Mi vademécum'}</span>
                             </button>
+                            ${this._posicionEnListaHtml(med.nregistro)}
                         </div>
                     </div>
                 </div>
@@ -10080,16 +10081,39 @@ class MedCheckApp {
      */
     _irATarjetaVecina(paso) {
         if (!this._nregEnPanel) return false;
-        const vistos = new Set();
-        const tarjetas = [...document.querySelectorAll('.result-card[data-nregistro]')]
-            .filter(c => c.offsetParent !== null && !this.modal.contains(c))
-            .filter(c => !vistos.has(c.dataset.nregistro) && vistos.add(c.dataset.nregistro));
+        const tarjetas = this._tarjetasDeLista();
         const i = tarjetas.findIndex(c => c.dataset.nregistro === this._nregEnPanel);
         const destino = i === -1 ? null : tarjetas[i + paso];
         if (!destino) return false;
         destino.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         this.openMedDetails(destino.dataset.nregistro);
         return true;
+    }
+
+    /** Tarjetas visibles de la lista, en orden y sin repetir producto (J/K y «3 / 24»). */
+    _tarjetasDeLista() {
+        const vistos = new Set();
+        return [...document.querySelectorAll('.result-card[data-nregistro]')]
+            .filter(c => c.offsetParent !== null && !this.modal.contains(c))
+            .filter(c => !vistos.has(c.dataset.nregistro) && vistos.add(c.dataset.nregistro));
+    }
+
+    /**
+     * «‹ 3 / 24 ›» en la cabecera de la ficha: dónde se está dentro de la lista al recorrerla, y
+     * el equivalente con ratón (o en móvil, donde no hay J/K) de pasar al vecino. Vacío si el
+     * producto no se abrió desde una lista visible o la lista tiene uno solo.
+     */
+    _posicionEnListaHtml(nregistro) {
+        const lista = this._tarjetasDeLista();
+        const i = lista.findIndex(c => c.dataset.nregistro === String(nregistro));
+        if (i === -1 || lista.length < 2) return '';
+        const boton = (paso, icono, ayuda, inerte) =>
+            `<button type="button" class="modal-pos-btn" onclick="app._irATarjetaVecina(${paso})" title="${ayuda}" aria-label="${ayuda}"${inerte ? ' disabled' : ''}><i class="fas fa-chevron-${icono}"></i></button>`;
+        return `<div class="modal-pos-lista">
+            ${boton(-1, 'left', 'Producto anterior de la lista (K)', i === 0)}
+            <span title="Posición entre las tarjetas visibles de la lista: lo que queda tras «Ver más» o en un grupo plegado no cuenta hasta que se despliega">${i + 1} / ${lista.length}</span>
+            ${boton(1, 'right', 'Producto siguiente de la lista (J)', i === lista.length - 1)}
+        </div>`;
     }
 
 

@@ -705,6 +705,10 @@ console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
         'J/K navegan entre tarjetas, pero no mientras se escribe');
     ok(/\.result-card\.result-card--en-panel,/.test(css3),
         'la marca de la tarjeta abierta gana a la regla base de `.result-card`, que va después');
+    ok(/body:has\(#med-modal:not\(\.hidden\)\) :is\(#search-results, #indication-results\)/.test(css3),
+        'con el panel abierto las listas le dejan su ancho (solo las listas, no la página)');
+    ok(/\$\{this\._posicionEnListaHtml\(med\.nregistro\)\}/.test(app3),
+        'la cabecera de la ficha dice la posición en la lista, con ‹ › para pasar al vecino');
     ok(/this\._pendingFocusContext = \(initialTab === 'safety' && options\.focusContext\)/.test(app3),
         'el enfoque solo se arma con la pestaña de Seguridad, que es donde viven los checks');
     ok(/data-context="\$\{check\.context\}"/.test(app3),

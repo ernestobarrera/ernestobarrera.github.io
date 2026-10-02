@@ -872,6 +872,17 @@ body {
     opacity: 0.9;
 }
 
+/* Con el panel abierto en escritorio, las LISTAS de tarjetas le dejan su ancho para que
+   ninguna quede debajo (J/K podía saltar a una que no se veía). Solo las listas: la página
+   entera no se aparta (ver la nota de `--flyout-ancho`), y la rejilla sí puede estrecharse
+   sin scroll horizontal porque recoloca columnas. El margen de `.app-main` ya está a la
+   derecha, de ahí la resta. */
+@media (min-width: 769px) {
+    body:has(#med-modal:not(.hidden)) :is(#search-results, #indication-results) {
+        padding-right: max(0px, calc(var(--flyout-ancho) - var(--space-lg)));
+    }
+}
+
 /* Producto abierto en el panel de ficha: al comparar, la lista dice cuál se está leyendo. */
 .result-card.result-card--en-panel,
 .result-card.result-card--en-panel:hover {
@@ -13471,3 +13482,40 @@ a.ipt-item:hover {
 
 .util-body { margin-bottom: var(--space-lg); }
 .util-view .util-limits { margin-top: var(--space-lg); }
+
+/* «‹ 3 / 24 ›» de la cabecera de la ficha: posición en la lista y paso al vecino (J/K). */
+.modal-pos-lista {
+    margin-top: 0.5rem;
+    margin-left: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    vertical-align: middle;
+}
+
+.modal-pos-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 999px;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    cursor: pointer;
+}
+
+.modal-pos-btn:hover:not(:disabled) {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.modal-pos-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
