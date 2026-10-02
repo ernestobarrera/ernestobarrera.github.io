@@ -3537,6 +3537,115 @@ body {
     transform: translateX(100%);
 }
 
+/* Panel de ficha: la mitad del monitor por defecto (nunca menos de 650 px) y
+   redimensionable desde el borde izquierdo. `--flyout-width` lo pone el JS en <html> con la
+   preferencia guardada, en vw para que conserve la proporción en cualquier monitor.
+
+   La página NO se aparta para dejarle sitio, a propósito: medido el 02/10/2026 a 1920 px, el
+   layout de escritorio necesita ~1300 px y con el panel a la mitad salían barras de scroll
+   horizontales en la navegación y en el contenido. El panel se superpone a la derecha y la
+   parte visible de la página sigue usable. */
+:root {
+    --flyout-ancho: min(100%, max(420px, var(--flyout-width, max(650px, 50vw))));
+}
+
+.modal-overlay-flyout .modal-content {
+    width: var(--flyout-ancho);
+    max-width: none;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.25);
+}
+
+/* En escritorio el panel NO es modal: no atenúa ni bloquea la página, que sigue usable para
+   cambiar de medicamento o de apartado. Se cierra con la X o con Esc. En móvil (abajo de
+   769 px) ocupa toda la pantalla y conserva el comportamiento modal de siempre. */
+@media (min-width: 769px) {
+    .modal-overlay-flyout {
+        background: transparent;
+        backdrop-filter: none;
+        pointer-events: none;
+    }
+
+    .modal-overlay-flyout:not(.hidden) .modal-content,
+    .modal-overlay-flyout:not(.hidden) .modal-resize-handle {
+        pointer-events: auto;
+    }
+}
+
+.modal-resize-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: calc(var(--flyout-ancho) - 6px);
+    width: 12px;
+    z-index: 1;
+    cursor: col-resize;
+    touch-action: none;
+}
+
+.modal-overlay.hidden .modal-resize-handle {
+    display: none;
+}
+
+.modal-resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 5px;
+    width: 2px;
+    background: transparent;
+    transition: background var(--transition-fast);
+}
+
+/* El asa: el símbolo convencional de «esto se arrastra» (seis puntos), a media altura del
+   borde. Discreta en reposo; se ilumina al pasar el ratón o con el foco de teclado. */
+.modal-resize-grip {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 36px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.modal-resize-handle:hover::after,
+.modal-resize-handle:focus-visible::after,
+.modal-overlay-flyout.is-resizing .modal-resize-handle::after {
+    background: var(--primary);
+}
+
+.modal-resize-handle:hover .modal-resize-grip,
+.modal-resize-handle:focus-visible .modal-resize-grip,
+.modal-overlay-flyout.is-resizing .modal-resize-grip {
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.modal-resize-handle:focus-visible {
+    outline: none;
+}
+
+body.med-panel-resizing {
+    cursor: col-resize;
+    user-select: none;
+}
+
+@media (max-width: 768px) {
+    .modal-resize-handle {
+        display: none;
+    }
+}
+
 .modal-close {
     position: absolute;
     top: var(--space-md);

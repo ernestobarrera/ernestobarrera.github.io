@@ -29,7 +29,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/medcheck-apple-touch-icon-180.png">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="assets/css/cima-app.css?v=20260930a" />
+    <link rel="stylesheet" href="assets/css/cima-app.css?v=20261002b" />
 </head>
 
 <body>
@@ -164,7 +164,11 @@
     </div>
 
     <!-- Medicine Detail Modal/Flyout -->
-    <div id="med-modal" class="modal-overlay hidden">
+    <div id="med-modal" class="modal-overlay modal-overlay-flyout hidden">
+        <div class="modal-resize-handle" id="modal-resize-handle" role="separator" aria-orientation="vertical"
+            aria-label="Ancho del panel" aria-valuemin="25" aria-valuemax="90" tabindex="0"
+            title="Arrastra para cambiar el ancho · Doble clic: ancho por defecto"><span class="modal-resize-grip"
+                aria-hidden="true"><i class="fas fa-grip-vertical"></i></span></div>
         <div class="modal-content">
             <button class="modal-close" id="close-modal">
                 <i class="fas fa-times"></i>
@@ -228,8 +232,8 @@
 
     <!-- Scripts -->
     <script src="assets/js/inn-dict.js?v=20260822c"></script>
-    <script src="assets/js/cima-api.js?v=20260924b"></script>
-    <script src="assets/js/cima-app.js?v=20260930b"></script>
+    <script src="assets/js/cima-api.js?v=20261002a"></script>
+    <script src="assets/js/cima-app.js?v=20261002b"></script>
 
     <!-- Service Worker Registration -->
     <script>

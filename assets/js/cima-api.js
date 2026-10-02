@@ -2425,19 +2425,38 @@ class CimaAPI {
             return Array.from(n.childNodes || []).flatMap(units);
         };
         const termsIn = (value, terms) => terms.filter(term => fold(value).includes(fold(term)));
-        // Frase de aterrizaje para el `:~:text=` del navegador: primer bloque del grupo con
-        // cuerpo suficiente y sin marcado, igual que el selector auditado.
+        // Frase de aterrizaje para el `:~:text=` del navegador: el primer bloque con cuerpo
+        // suficiente QUE CONTIENE LA MENCIÓN; si ninguno lo tiene (la coincidencia está solo en
+        // el rótulo, o el párrafo es demasiado corto), el primer bloque del grupo, como antes.
+        //
+        // Corregido el 02/10/2026 con TRANGOREX 200 mg y >65: el enlace resaltaba «La acción
+        // farmacológica… intervalo QT», el párrafo ANTERIOR a «En pacientes de edad avanzada…»,
+        // y en la 4.2, cuyo pasaje es la posología entera, aterrizaba lejísimos de «pacientes
+        // ancianos». Señalar el grupo no basta cuando el grupo ocupa media pantalla.
+        //
+        // Y se quita el guion o viñeta inicial: CIMA lo separa del texto con espacios duros
+        // (13 en esa misma 4.2) y con ellos el navegador no encuentra la frase y se queda en el
+        // apartado. Verificado en Chrome por CDP contra la ficha real.
         //
         // LO QUE AQUÍ NO SE PUEDE COMPROBAR, y conviene no dar por hecho: la comparativa
         // verificaba que la frase fuera ÚNICA en la ficha entera. La app solo descarga los
         // apartados que necesita, así que esa comprobación no existe en producción. El peor
         // caso es aterrizar en otra aparición de la misma frase dentro de la misma ficha; el
         // `#seccion` del enlace sigue llevando al apartado correcto.
-        const phrase = nodes => {
-            for (const node of nodes) {
-                const value = tidy(text(node));
-                if (/[<>&]/.test(value) || value.split(' ').length < 8) continue;
+        const phrase = (nodes, terms = [], bodyNodes = nodes) => {
+            const candidate = node => {
+                const value = tidy(text(node)).replace(/^[-–—•·*]+\s*/, '');
+                if (/[<>&]/.test(value) || value.split(' ').length < 8) return null;
                 return value.split(' ').slice(0, 18).join(' ').replace(/[.,;:]+$/, '');
+            };
+            for (const node of bodyNodes) {
+                if (!termsIn(tidy(text(node)), terms).length) continue;
+                const value = candidate(node);
+                if (value) return value;
+            }
+            for (const node of nodes) {
+                const value = candidate(node);
+                if (value) return value;
             }
             return null;
         };
@@ -2482,7 +2501,8 @@ class CimaAPI {
             return [{ ...meta, titleHits, bodyHits, level,
                 matchLocation: titleHits.length ? (bodyHits.length ? 'rótulo y texto' : 'rótulo') : 'texto',
                 text: tidy(nodes.map(n => text(n)).join(' ')), html: nodes.map(safe).join(''),
-                linkPhrase: phrase(nodes) }];
+                linkPhrase: phrase(nodes, bodyHits,
+                    ['rótulo tipográfico', 'rótulo francés'].includes(meta.titleKind) ? nodes.slice(1) : nodes) }];
         });
         const displayOrder = [...selected].sort((a, b) => Number(!!b.titleHits.length) - Number(!!a.titleHits.length) || a.ordinal - b.ordinal).map(g => g.ordinal);
         return { section, status: 'review', message: selected.length ? 'Coincidencias textuales — revisar la fuente' : 'No se localizó una mención literal — revisar el apartado completo', groups: selected, displayOrder };

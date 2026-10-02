@@ -8217,7 +8217,7 @@ class MedCheckApp {
         if (!this._materialesCatalogo || !this._materialesCatalogMap) {
             const [catalogoRaw, catalogMap] = await Promise.all([
                 this.api.getMaterialesCatalogo(),
-                fetch('/assets/data/materiales-catalog.json')
+                fetch('assets/data/materiales-catalog.json')
                     .then(r => r.ok ? r.json() : {})
                     .catch(() => ({})),
             ]);
@@ -8905,7 +8905,8 @@ class MedCheckApp {
     setupModal() {
         document.getElementById('close-modal').addEventListener('click', () => this.closeModal());
         this.modal.addEventListener('click', (e) => {
-            if (e.target === this.modal) this.closeModal();
+            // Soltar el arrastre del borde fuera del panel no debe cerrarlo.
+            if (e.target === this.modal && !this._flyoutJustResized) this.closeModal();
         });
 
         // ESC key to close
@@ -8913,6 +8914,93 @@ class MedCheckApp {
             if (e.key === 'Escape' && !this.modal.classList.contains('hidden')) {
                 this.closeModal();
             }
+        });
+
+        this.setupModalResize();
+    }
+
+    /**
+     * Borde izquierdo del panel de ficha, arrastrable (ratón, táctil o flechas).
+     *
+     * El ancho se guarda como FRACCIÓN de la ventana, no en píxeles: así el mismo
+     * ajuste ocupa la misma proporción en el portátil y en el monitor grande. Sin
+     * preferencia guardada manda el CSS (mitad de la ventana, mínimo 650 px).
+     * Doble clic devuelve al ancho por defecto. El asa de seis puntos a media altura es la
+     * señal de que se puede arrastrar; sin ella, el borde no se descubre.
+     */
+    setupModalResize() {
+        const handle = document.getElementById('modal-resize-handle');
+        const panel = this.modal.querySelector('.modal-content');
+        if (!handle || !panel) return;
+
+        const KEY = 'medcheck:flyout-width';
+        const MIN = 0.25;
+        const MAX = 0.9;
+        const acotar = (r) => Math.min(MAX, Math.max(MIN, r));
+        let ratio = null;
+
+        const actualizarAria = () => {
+            const actual = ratio ?? panel.offsetWidth / window.innerWidth;
+            handle.setAttribute('aria-valuenow', String(Math.round(actual * 100)));
+        };
+        const aplicar = (r) => {
+            ratio = r;
+            // En <html>, donde está definido `--flyout-ancho`, que lo usan el panel y el asa.
+            const raiz = document.documentElement.style;
+            if (r == null) raiz.removeProperty('--flyout-width');
+            else raiz.setProperty('--flyout-width', `${(r * 100).toFixed(1)}vw`);
+            actualizarAria();
+        };
+        const guardar = () => {
+            try {
+                if (ratio == null) localStorage.removeItem(KEY);
+                else localStorage.setItem(KEY, JSON.stringify({ ratio: Number(ratio.toFixed(3)) }));
+            } catch { /* modo privado o cuota llena: el ancho se pierde al recargar, no se rompe nada */ }
+        };
+
+        try {
+            const r = Number(JSON.parse(localStorage.getItem(KEY))?.ratio);
+            aplicar(r >= MIN && r <= MAX ? r : null);
+        } catch { aplicar(null); }
+
+        handle.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            handle.setPointerCapture(e.pointerId);
+            this.modal.classList.add('is-resizing');
+            document.body.classList.add('med-panel-resizing');
+            // El panel acaba en el borde derecho del overlay (sin barra de scroll) y
+            // `vw` incluye la barra: dividir por innerWidth hace que cuadren.
+            const mover = (ev) => {
+                aplicar(acotar((document.documentElement.clientWidth - ev.clientX) / window.innerWidth));
+            };
+            const soltar = () => {
+                handle.removeEventListener('pointermove', mover);
+                handle.removeEventListener('pointerup', soltar);
+                handle.removeEventListener('pointercancel', soltar);
+                this.modal.classList.remove('is-resizing');
+                document.body.classList.remove('med-panel-resizing');
+                this._flyoutJustResized = true;
+                setTimeout(() => { this._flyoutJustResized = false; }, 0);
+                guardar();
+            };
+            handle.addEventListener('pointermove', mover);
+            handle.addEventListener('pointerup', soltar);
+            handle.addEventListener('pointercancel', soltar);
+        });
+
+        handle.addEventListener('keydown', (e) => {
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+            e.preventDefault();
+            const paso = e.shiftKey ? 0.1 : 0.02;
+            const actual = ratio ?? panel.offsetWidth / window.innerWidth;
+            aplicar(acotar(actual + (e.key === 'ArrowLeft' ? paso : -paso)));
+            guardar();
+        });
+
+        handle.addEventListener('dblclick', () => {
+            aplicar(null);
+            guardar();
         });
     }
     // ============================================
@@ -10088,7 +10176,9 @@ ${ftFechaDocsHtml}
     /** El índice de IPT, una vez por sesión. Si falla, se olvida la promesa para reintentar luego. */
     _loadIptIndex() {
         if (!this._iptIndexPromise) {
-            this._iptIndexPromise = fetch('/assets/data/ipt-index.json')
+            // Ruta relativa, como el resto de JSON locales: con barra inicial fallaba en local
+            // si el servidor se monta sobre la carpeta padre (/ernestobarrera.github.io/...).
+            this._iptIndexPromise = fetch('assets/data/ipt-index.json')
                 .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
                 .catch(err => { this._iptIndexPromise = null; throw err; });
         }
@@ -16848,7 +16938,7 @@ ${ftFechaDocsHtml}
         if (this._emlData) return this._emlData;
         if (this._emlLoading) return this._emlLoading;
         const empty = { byAtc: {}, meds: [], _medByName: {}, _meta: {} };
-        this._emlLoading = fetch('/assets/data/eml.json')
+        this._emlLoading = fetch('assets/data/eml.json')
             .then(r => r.ok ? r.json() : null)
             .then(data => {
                 if (data && data.byAtc) {

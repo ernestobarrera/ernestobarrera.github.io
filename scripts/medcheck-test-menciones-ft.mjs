@@ -150,6 +150,30 @@ for (const expected of fixture.expected) {
         }
     }
 }
+// La frase del `:~:text=` apunta al párrafo de la MENCIÓN, no al primero del pasaje, y sin el
+// guion inicial que CIMA separa con espacios duros. Topología real: 4.4 y 4.2 de TRANGOREX 200 mg
+// (48048), 02/10/2026. Con la versión anterior las dos aserciones fallan.
+{
+    const api = Object.create(CimaAPI.prototype);
+    const mapping = { keywords: ['edad avanzada', 'anciano'], indicios: [] };
+    const p = body => `<p><span>${body}</span></p>`;
+    const s44 = api._contextSectionPassages([{ seccion: '4.4', titulo: 'Advertencias', contenido:
+        p('<b>Trastornos cardiacos:</b>') +
+        p('- La acción farmacológica de la amiodarona induce cambios del electrocardiograma tales como la prolongación del intervalo QT.') +
+        p('- En pacientes de edad avanzada, la frecuencia cardiaca puede disminuir de manera marcada.') }], mapping, '4.4');
+    check('ancla en el párrafo de la mención (4.4)',
+        s44.groups[0]?.linkPhrase?.startsWith('En pacientes de edad avanzada'), s44.groups[0]?.linkPhrase);
+    const s42 = api._contextSectionPassages([{ seccion: '4.2', titulo: 'Posología', contenido:
+        '<p><span>-</span><span>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;</span> <span>Tratamiento inicial de estabilización: comenzar con 3 comprimidos (600 mg)/día durante 8-10 días.</span></p>' +
+        p('Los ensayos clínicos no han evaluado la respuesta de amiodarona en pacientes ancianos. Sin embargo la experiencia clínica no muestra respuestas diferentes.') }], mapping, '4.2');
+    check('ancla en el párrafo de la mención (4.2)',
+        s42.groups[0]?.linkPhrase?.startsWith('Los ensayos clínicos no han evaluado'), s42.groups[0]?.linkPhrase);
+    const sinMencion = api._contextSectionPassages([{ seccion: '4.2', titulo: 'Posología', contenido:
+        '<p><span>-</span><span>&#160;&#160;&#160;&#160;</span> <span>Tratamiento inicial de estabilización: comenzar con 3 comprimidos al día durante diez días.</span></p>' +
+        p('Pacientes de edad avanzada') }], mapping, '4.2');
+    check('sin párrafo de mención utilizable, primer bloque y sin guion inicial',
+        sinMencion.groups[0]?.linkPhrase?.startsWith('Tratamiento inicial de estabilización'), sinMencion.groups[0]?.linkPhrase);
+}
 check('el DOMParser inyectado se ejercitó', parses > 0, `${parses} parseos`);
 console.log(`Menciones FT: ${fixture.expected.length} contextos, ${fixture.sourceCount} respuestas, ${parses} parseos, ${failures} fallos`);
 process.exit(failures ? 1 : 0);
