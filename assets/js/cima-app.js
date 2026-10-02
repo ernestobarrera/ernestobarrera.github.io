@@ -10862,18 +10862,43 @@ ${ftFechaDocsHtml}
     }
 
     /**
-     * Copia el texto de una sección del modal al portapapeles
+     * Copia una sección del modal al portapapeles, para pegarla en la historia clínica.
+     *
+     * Desde el 02/10/2026 copia SOLO LO SELECCIONADO si hay selección dentro de la sección (antes
+     * copiaba la sección entera: 1.297 caracteres por un párrafo de 120), y cierra siempre con la
+     * cita de la fuente —ficha técnica de CIMA, apartado, fecha y enlace que señala la frase—. Lo
+     * que se pega queda trazable: quien lo lea después sabe de dónde salió y de cuándo es.
      */
-    async copyTabContent(containerId, medNombre, seccionLabel) {
+    async copyTabContent(containerId, medNombre, seccionLabel, seccion = null) {
         const el = document.getElementById(containerId);
         if (!el) return;
-        const text = `${medNombre} — ${seccionLabel}\n\n${el.innerText || el.textContent}`;
+        const sel = window.getSelection?.();
+        const fragmento = (sel && !sel.isCollapsed && el.contains(sel.anchorNode) && el.contains(sel.focusNode))
+            ? sel.toString().trim() : '';
+        const cuerpo = fragmento || (el.innerText || el.textContent || '').trim();
+        const cita = this._citaFuenteFT(this.currentMed, seccion, fragmento);
+        const text = `${medNombre} — ${seccionLabel}${fragmento ? ' (fragmento)' : ''}\n\n${cuerpo}${cita ? `\n\n${cita}` : ''}`;
         try {
             await navigator.clipboard.writeText(text);
-            this.showToast('Copiado al portapapeles', 'success');
+            this.showToast(fragmento ? 'Fragmento copiado con su fuente' : 'Copiado con su fuente', 'success');
         } catch (_) {
             this.showToast('No se pudo copiar', 'error');
         }
+    }
+
+    /**
+     * Línea de procedencia de un texto de la ficha técnica: fuente, apartado, fecha de la ficha
+     * que publica CIMA y enlace. Con fragmento, el enlace lleva `:~:text=` con su primera línea
+     * (hasta ocho palabras), y si el navegador no la encuentra se queda en el apartado.
+     * Sin `seccion` no hay enlace, pero la fuente y la fecha se citan igual.
+     */
+    _citaFuenteFT(med, seccion = null, fragmento = '') {
+        if (!med) return '';
+        const primera = String(fragmento || '').split('\n').map(l => l.trim()).find(Boolean) || '';
+        const ancla = primera ? primera.split(/\s+/).slice(0, 8).join(' ') : null;
+        const url = seccion ? this._ftUrlSeccion(med, seccion, ancla) : null;
+        const fecha = this._ftFechaTexto(med)?.abs;
+        return `Fuente: ficha técnica, CIMA (AEMPS)${seccion ? `, apartado ${seccion}` : ''}${fecha ? `, actualizada el ${fecha}` : ''}${url ? `\n${url}` : ''}`;
     }
 
     /**
@@ -10915,7 +10940,7 @@ ${ftFechaDocsHtml}
     <div class="section-header section-header-split" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
         <h4 style="margin:0;"><i class="fas fa-stethoscope"></i> Sección 4.1: Indicaciones terapéuticas</h4>
         <span class="section-header-actions">${this._enlaceSeccionCima(med, '4.1')}
-        <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('indications-section-text', '${medNombre.replace(/'/g, "\\'")}', 'Indicaciones terapéuticas')" title="Copiar texto">
+        <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('indications-section-text', '${medNombre.replace(/'/g, "\\'")}', 'Indicaciones terapéuticas', '4.1')" title="Copiar a la historia clínica: lo seleccionado o la sección entera, con su fuente">
             <i class="fas fa-copy"></i>
         </button>${this._botonCompartir('indications-section-text', 'Indicaciones terapéuticas (4.1)', '4.1')}</span>
     </div>
@@ -10972,7 +10997,7 @@ ${ftFechaDocsHtml}
     <div class="section-header section-header-split" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
         <h4 style="margin:0;"><i class="fas fa-clock"></i> Sección 4.2: Posología y forma de administración</h4>
         <span class="section-header-actions">${this._enlaceSeccionCima(med, '4.2')}
-        <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('posology-section-text', '${(medNombre || '').replace(/'/g, "\\'")}', 'Posología')" title="Copiar texto">
+        <button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('posology-section-text', '${(medNombre || '').replace(/'/g, "\\'")}', 'Posología', '4.2')" title="Copiar a la historia clínica: lo seleccionado o la sección entera, con su fuente">
             <i class="fas fa-copy"></i>
         </button>${this._botonCompartir('posology-section-text', 'Posología y forma de administración (4.2)', '4.2')}</span>
     </div>
@@ -12707,7 +12732,7 @@ ${ftFechaDocsHtml}
             <div class="qt-tab-wrapper">
                 <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
                     <h4 style="margin:0;"><i class="fas fa-heartbeat"></i> Intervalo QT</h4>
-                    ${hasFTText ? `<button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('qt-section-text', '${(medNombre || '').replace(/'/g, "\\'")}', 'Intervalo QT')" title="Copiar texto"><i class="fas fa-copy"></i></button>` : ''}
+                    ${hasFTText ? `<button class="btn btn-sm btn-secondary" onclick="app.copyTabContent('qt-section-text', '${(medNombre || '').replace(/'/g, "\\'")}', 'Intervalo QT')" title="Copiar a la historia clínica: lo seleccionado o el texto entero, con su fuente"><i class="fas fa-copy"></i></button>` : ''}
                 </div>
                 ${riskBadgeHtml}
                 ${ftSectionHtml}

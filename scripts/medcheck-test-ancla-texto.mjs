@@ -331,5 +331,31 @@ console.log('\n— Índice de la ficha: epígrafe señalado —');
     }
 }
 
+// ─── «Copiar» para la historia clínica: lo seleccionado y su fuente (02/10/2026) ─
+console.log('\n— Copiar con su fuente —');
+{
+    const m = appSrc.match(/_citaFuenteFT\(med, seccion = null, fragmento = ''\) \{[\s\S]*?\n {4}\}/);
+    ok('`_citaFuenteFT` existe en cima-app.js', !!m);
+    if (m) {
+        const cita = new Function(`return function ${m[0]}`)();
+        const ctx = { _ftUrlSeccion, _ftFechaTexto: () => ({ abs: '3 de marzo de 2025' }) };
+        const conFrag = cita.call(ctx, MED, '4.2',
+            'En pacientes de edad avanzada se recomienda iniciar con la dosis más baja posible\nSegunda línea que no cuenta');
+        ok('con fragmento: fuente, apartado y fecha', /^Fuente: ficha técnica, CIMA \(AEMPS\), apartado 4\.2, actualizada el 3 de marzo de 2025\n/.test(conFrag), conFrag);
+        ok('y enlace que señala las ocho primeras palabras de la PRIMERA línea',
+            conFrag.endsWith('#4.2:~:text=En%20pacientes%20de%20edad%20avanzada%20se%20recomienda%20iniciar'), conFrag);
+        const entera = cita.call(ctx, MED, '4.1', '');
+        ok('sin fragmento: enlace al apartado, sin frase', entera.endsWith('FT_85780.html#4.1') && !entera.includes(':~:'), entera);
+        const sinSec = cita.call(ctx, MED, null, 'algo');
+        ok('sin apartado (QT): cita la fuente y la fecha, sin enlace', sinSec === 'Fuente: ficha técnica, CIMA (AEMPS), actualizada el 3 de marzo de 2025', sinSec);
+        ok('sin medicamento: nada', cita.call(ctx, null, '4.2', 'x') === '');
+    }
+    const copiar = appSrc.slice(appSrc.indexOf('async copyTabContent('), appSrc.indexOf('_citaFuenteFT(med, seccion = null'));
+    ok('copiar usa la selección si está dentro de la sección', /getSelection/.test(copiar) && /el\.contains\(sel\.anchorNode\)/.test(copiar));
+    ok('4.1 y 4.2 pasan su apartado para el enlace',
+        /copyTabContent\('indications-section-text',[^\n]*'Indicaciones terapéuticas', '4\.1'\)/.test(appSrc)
+        && /copyTabContent\('posology-section-text',[^\n]*'Posología', '4\.2'\)/.test(appSrc));
+}
+
 console.log(fallos === 0 ? '\nTODO VERDE' : `\n${fallos} FALLO(S)`);
 process.exit(fallos === 0 ? 0 : 1);
