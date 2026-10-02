@@ -8914,11 +8914,16 @@ class MedCheckApp {
             if (e.key === 'Escape' && !this.modal.classList.contains('hidden')) {
                 this.closeModal();
             }
-            // J / K: producto siguiente / anterior de la lista (ver `_irATarjetaVecina`).
-            if ((e.key === 'j' || e.key === 'k') && !e.ctrlKey && !e.metaKey && !e.altKey
-                && !this.modal.classList.contains('hidden')
-                && !e.target.closest?.('input, textarea, select, [contenteditable="true"]')) {
-                if (this._irATarjetaVecina(e.key === 'j' ? 1 : -1)) e.preventDefault();
+            // → / J y ← / K: producto siguiente / anterior de la lista (ver `_irATarjetaVecina`).
+            // Las flechas laterales no desplazan el texto del panel (las verticales sí, por eso no
+            // se usan). Fuera: mientras se escribe, en el asa del panel (las usa para el ancho),
+            // con la guía (las usa para sus pasos) o con el visor de imágenes encima.
+            const paso = { j: 1, ArrowRight: 1, k: -1, ArrowLeft: -1 }[e.key];
+            if (paso && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && !e.defaultPrevented
+                && !this.modal.classList.contains('hidden') && !this.guideActive
+                && !document.querySelector('#image-lightbox.active')
+                && !e.target.closest?.('input, textarea, select, [contenteditable="true"], .modal-resize-handle')) {
+                if (this._irATarjetaVecina(paso)) e.preventDefault();
             }
         });
 
@@ -9189,14 +9194,21 @@ class MedCheckApp {
      * `?tab=`) la sigue imponiendo. Con el panel cerrado, Información, como siempre.
      */
     async openMedDetails(nregistro, initialTab, options = {}) {
+        // Se conserva la pestaña ELEGIDA, no la que quedó activa: si el producto anterior no tenía
+        // QT o PGx y cayó a Información, el siguiente que sí las tenga vuelve a abrirlas.
         // Leída antes del spinner, que borra la barra de pestañas.
         let pestanaConservada = false;
         if (!initialTab) {
-            const activa = !this.modal.classList.contains('hidden')
-                && this.modalBody.querySelector('.modal-tab.active')?.dataset.tab;
+            const abierto = !this.modal.classList.contains('hidden');
+            if (!abierto) this._pestanaPreferida = null;
+            const activa = abierto && (this._pestanaPreferida
+                || this.modalBody.querySelector('.modal-tab.active')?.dataset.tab);
             pestanaConservada = !!activa && activa !== 'info';
             initialTab = activa || 'info';
+        } else {
+            this._pestanaPreferida = initialTab;
         }
+        this._pestanaTocadaEnFicha = false;
         // Antes de tocar el DOM: quien tenía el foco es a donde debe volver al cerrar.
         const focoPrevio = document.activeElement;
         this._modalReturnFocus = (focoPrevio && focoPrevio !== document.body) ? focoPrevio : null;
@@ -9490,6 +9502,8 @@ class MedCheckApp {
             // Tab switching
             this.modalBody.querySelectorAll('.modal-tab').forEach(tab => {
                 tab.addEventListener('click', () => {
+                    this._pestanaPreferida = tab.dataset.tab;
+                    this._pestanaTocadaEnFicha = true;
                     this.modalBody.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
                     this.modalBody.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     tab.classList.add('active');
@@ -10081,8 +10095,16 @@ class MedCheckApp {
      */
     _irATarjetaVecina(paso) {
         if (!this._nregEnPanel) return false;
-        const tarjetas = this._tarjetasDeLista();
-        const i = tarjetas.findIndex(c => c.dataset.nregistro === this._nregEnPanel);
+        let tarjetas = this._tarjetasDeLista();
+        let i = tarjetas.findIndex(c => c.dataset.nregistro === this._nregEnPanel);
+        // Última visible de un grupo con «Ver N más»: se despliega y se sigue dentro de él. Si
+        // no, J saltaba al grupo siguiente y esos productos se quedaban sin recorrer sin avisar.
+        const verMas = paso > 0 && i !== -1 && this._verMasTrasTarjeta(tarjetas[i]);
+        if (verMas) {
+            this.expandGroup(verMas.dataset.groupId);
+            tarjetas = this._tarjetasDeLista();
+            i = tarjetas.findIndex(c => c.dataset.nregistro === this._nregEnPanel);
+        }
         const destino = i === -1 ? null : tarjetas[i + paso];
         if (!destino) return false;
         destino.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -10099,21 +10121,33 @@ class MedCheckApp {
     }
 
     /**
-     * «‹ 3 / 24 ›» en la cabecera de la ficha: dónde se está dentro de la lista al recorrerla, y
-     * el equivalente con ratón (o en móvil, donde no hay J/K) de pasar al vecino. Vacío si el
-     * producto no se abrió desde una lista visible o la lista tiene uno solo.
+     * Fila «Resultados ‹ 3 / 24 › ← →» en la cabecera de la ficha: dónde se está dentro de la
+     * lista, el paso al vecino con ratón (o en móvil) y el atajo de teclado A LA VISTA. Un atajo
+     * que solo vive en un tooltip no se aprende: se enseña junto al control que acelera, y solo
+     * donde hay teclado (el CSS oculta las teclas en pantallas táctiles). Vacío si el producto
+     * no se abrió desde una lista visible o la lista tiene uno solo.
      */
     _posicionEnListaHtml(nregistro) {
         const lista = this._tarjetasDeLista();
         const i = lista.findIndex(c => c.dataset.nregistro === String(nregistro));
         if (i === -1 || lista.length < 2) return '';
+        const ultima = i === lista.length - 1 && !this._verMasTrasTarjeta(lista[i]);
         const boton = (paso, icono, ayuda, inerte) =>
             `<button type="button" class="modal-pos-btn" onclick="app._irATarjetaVecina(${paso})" title="${ayuda}" aria-label="${ayuda}"${inerte ? ' disabled' : ''}><i class="fas fa-chevron-${icono}"></i></button>`;
         return `<div class="modal-pos-lista">
-            ${boton(-1, 'left', 'Producto anterior de la lista (K)', i === 0)}
-            <span title="Posición entre las tarjetas visibles de la lista: lo que queda tras «Ver más» o en un grupo plegado no cuenta hasta que se despliega">${i + 1} / ${lista.length}</span>
-            ${boton(1, 'right', 'Producto siguiente de la lista (J)', i === lista.length - 1)}
+            <span class="modal-pos-label">Resultados</span>
+            ${boton(-1, 'left', 'Producto anterior de la lista (← o K)', i === 0)}
+            <span class="modal-pos-num" title="Posición entre las tarjetas visibles de la lista: lo que queda tras «Ver más» o en un grupo plegado no cuenta hasta que se despliega">${i + 1} / ${lista.length}</span>
+            ${boton(1, 'right', 'Producto siguiente de la lista (→ o J)', ultima)}
+            <span class="modal-pos-kbd" title="También J (siguiente) y K (anterior)"><kbd>←</kbd><kbd>→</kbd></span>
         </div>`;
+    }
+
+    /** El «Ver N más» que sigue a la tarjeta, si es la última visible de su grupo. */
+    _verMasTrasTarjeta(tarjeta) {
+        const rejilla = tarjeta?.closest('.result-group-grid, .results-grid');
+        const siguiente = rejilla?.lastElementChild === tarjeta ? rejilla.nextElementSibling : null;
+        return siguiente?.matches('.view-more-btn[data-group-id]') ? siguiente : null;
     }
 
 
@@ -12502,6 +12536,8 @@ ${ftFechaDocsHtml}
 
             // Tab aparece si: fármaco clasificado en AZCERT o texto FT menciona QT
             if (!isClassified && !hasQTText) return;
+            // Con J/K el panel ya puede enseñar otro producto: no se le cuelga el QT de este.
+            if (this._nregEnPanel !== String(nregistro)) return;
 
             // Para mostrar: preferir 4.4; si vacía, usar 4.5 solo si tiene texto QT
             let displayHtml = html44.length >= 30 ? html44 : '';
@@ -12646,6 +12682,8 @@ ${ftFechaDocsHtml}
 
             // Registrar listener de click (reutiliza el mismo patrón del modal)
             qtBtn.addEventListener('click', () => {
+                this._pestanaPreferida = 'qt';
+                this._pestanaTocadaEnFicha = true;
                 document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 qtBtn.classList.add('active');
@@ -12656,6 +12694,10 @@ ${ftFechaDocsHtml}
                     this.trackQTTabView(nregistro);
                 }
             });
+
+            // Se venía leyendo QT y este producto lo tiene: se recupera en cuanto aparece. Solo si
+            // no se ha tocado otra pestaña mientras tanto, para no arrancarle al usuario la suya.
+            if (this._pestanaPreferida === 'qt' && !this._pestanaTocadaEnFicha) qtBtn.click();
         }
     }
 
@@ -13258,6 +13300,7 @@ ${ftFechaDocsHtml}
         this.modal.classList.add('hidden');
         this.currentMed = null;
         this._pendingFocusContext = null;
+        this._pestanaPreferida = null;
         this._nregEnPanel = null;
         this._marcarTarjetaEnPanel(null);
         // La vista de analítica vuelve a la de fondo. Sin esto, lo siguiente que se buscara

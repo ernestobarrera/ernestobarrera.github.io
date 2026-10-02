@@ -697,12 +697,16 @@ console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
     ok(/async openMedDetails\(nregistro, initialTab, options = \{\}\)/.test(app3),
         '`openMedDetails` acepta opciones sin romper sus llamadas de dos argumentos');
     // Sin pestaña pedida y con el panel abierto se conserva la activa; pedida, manda la pedida.
-    ok(/if \(!initialTab\) \{[\s\S]{0,300}\.modal-tab\.active'\)\?\.dataset\.tab;[\s\S]{0,200}initialTab = activa \|\| 'info';/.test(app3),
-        'cambiar de producto con el panel abierto conserva la pestaña; sin panel, Información');
+    ok(/if \(!initialTab\) \{[\s\S]{0,400}this\._pestanaPreferida[\s\S]{0,120}\.modal-tab\.active'\)\?\.dataset\.tab\);[\s\S]{0,200}initialTab = activa \|\| 'info';/.test(app3),
+        'cambiar de producto con el panel abierto conserva la pestaña ELEGIDA; sin panel, Información');
+    ok(/if \(this\._pestanaPreferida === 'qt' && !this\._pestanaTocadaEnFicha\) qtBtn\.click\(\);/.test(app3),
+        'QT, que aparece tarde, se recupera si era la pestaña elegida y no se ha tocado otra');
     ok(/if \(this\._nregEnPanel !== String\(nregistro\)\) return;/.test(app3),
         'con fichas pedidas seguidas (J/K) solo se pinta la última');
-    ok(/\(e\.key === 'j' \|\| e\.key === 'k'\)[\s\S]{0,200}closest\?\.\('input, textarea, select/.test(app3),
-        'J/K navegan entre tarjetas, pero no mientras se escribe');
+    ok(/\{ j: 1, ArrowRight: 1, k: -1, ArrowLeft: -1 \}\[e\.key\][\s\S]{0,400}closest\?\.\('input, textarea, select, \[contenteditable="true"\], \.modal-resize-handle'\)/.test(app3),
+        '←/→ y J/K navegan entre tarjetas, pero no mientras se escribe ni en el asa del panel');
+    ok(/const verMas = paso > 0 && i !== -1 && this\._verMasTrasTarjeta\(tarjetas\[i\]\);/.test(app3),
+        'J en la última visible de un grupo despliega su «Ver más»');
     ok(/\.result-card\.result-card--en-panel,/.test(css3),
         'la marca de la tarjeta abierta gana a la regla base de `.result-card`, que va después');
     ok(/body:has\(#med-modal:not\(\.hidden\)\) :is\(#search-results, #indication-results\)/.test(css3),
