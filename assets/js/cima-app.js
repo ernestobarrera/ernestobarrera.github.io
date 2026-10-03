@@ -12584,7 +12584,7 @@ ${ftFechaDocsHtml}
      * entera y la faceta se desactiva. Filtrar con un índice de otra generación que la ficha es la
      * forma silenciosa de mentir, y mostrar de menos sin avisar es peor que no filtrar.
      */
-    _loadFinancingIndex(url = 'assets/data/financiacion-index.json?v=20260910a') {
+    _loadFinancingIndex(url = 'assets/data/financiacion-index.json?v=20261003a') {
         if (this._financingIndexPromise) return this._financingIndexPromise;
         this._financingIndexPromise = fetch(url, { cache: 'force-cache' })
             .then(r => (r.ok ? r.json() : null))
