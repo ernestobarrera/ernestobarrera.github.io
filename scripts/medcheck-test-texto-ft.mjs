@@ -111,6 +111,10 @@ console.log('\n— Interacciones de la 4.5 —');
     ok('«PROTEÍNA C» no se trunca a «proteina» (proteínas plasmáticas)', !beriplex.includes('proteina') && beriplex.includes('proteina c'), JSON.stringify(beriplex));
     const betaferon = T({ nombre: 'BETAFERON 250 mcg', pactivos: 'INTERFERON BETA-1B' });
     ok('«INTERFERÓN BETA-1B» no se trunca a «interferon» (Adiro habla de interferón α)', !betaferon.includes('interferon') && betaferon.includes('interferon beta-1b'), JSON.stringify(betaferon));
+    // Revisión de Codex en producción: ACIDO FOLICO ARISTO 5 mg (86528) buscaba «acido» suelto.
+    const folico = T({ nombre: 'ACIDO FOLICO ARISTO 5 mg', pactivos: 'ACIDO FOLICO', vtm: { nombre: 'ácido fólico' } });
+    ok('ACIDO FOLICO ARISTO no busca «acido» suelto, sí «acido folico»', !folico.includes('acido') && folico.includes('acido folico'), JSON.stringify(folico));
+    ok('la primera palabra se conserva cuando es marca (SINTROM)', T({ nombre: 'SINTROM 4 mg', pactivos: 'ACENOCUMAROL' }).includes('sintrom'));
     ok('el VTM añade el nombre natural: DEPAKINE busca «acido valproico»',
         T({ nombre: 'DEPAKINE 500 mg', pactivos: 'VALPROATO SODIO', vtm: { nombre: 'ácido valproico' } }).includes('acido valproico'));
     ok('se conservan los términos de antes (marca y nombre completo)', T({ nombre: 'PLENUR 400 mg', pactivos: 'LITIO CARBONATO' }).includes('plenur')
@@ -145,6 +149,9 @@ console.log('\n— Interacciones de la 4.5 —');
     const api3 = conFichas({ '80:4.5': seccion('Interacción', '<p>Puede causar un descenso de la glucosa en sangre.</p>'), '81:4.5': seccion('Interacción', '<p>Nada.</p>') });
     const g2 = await api3.analyzeInteractions([{ nregistro: '80', nombre: 'ENALAPRIL CINFA 20 mg', pactivos: 'enalapril' }, { nregistro: '81', nombre: 'GLUCOSALINO HIPERTONICO PHYSAN', pactivos: 'glucosa + sodio cloruro' }]);
     ok('«glucosa en sangre» (analito) no se atribuye a GLUCOSALINO', g2.interactions.length === 0, JSON.stringify(g2.interactions.map(i => i.matchedTerm)));
+    const api4 = conFichas({ '90:4.5': seccion('Interacción', '<p>Derivados del &#225;cido f&#237;brico: riesgo de miopatía.</p>'), '91:4.5': seccion('Interacción', '<p>Nada.</p>') });
+    const f = await api4.analyzeInteractions([{ nregistro: '90', nombre: 'ATORVASTATINA CINFA 10 mg', pactivos: 'ATORVASTATINA CALCICA TRIHIDRATO' }, { nregistro: '91', nombre: 'ACIDO FOLICO ARISTO 5 mg', pactivos: 'ACIDO FOLICO' }]);
+    ok('«ácido fíbrico» no se atribuye a ACIDO FOLICO ARISTO', f.interactions.length === 0, JSON.stringify(f.interactions.map(i => i.matchedTerm)));
     const ex = r.interactions.find(i => i.drug1.startsWith('ENALAPRIL') || i.drug2.startsWith('ENALAPRIL'))?.excerpt || '';
     ok('el extracto escapa el texto decodificado', ex.includes('&lt;control&gt;') && !ex.includes('<control>'), ex);
 }

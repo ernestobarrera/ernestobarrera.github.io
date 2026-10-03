@@ -3055,9 +3055,13 @@ class CimaAPI {
     _getInteractionSearchTerms(med) {
         const terms = [];
 
-        // Primera palabra del nombre comercial (ej: "PARACETAMOL" de "PARACETAMOL KERN PHARMA 1G")
+        // Primera palabra del nombre comercial, SOLO si es marca (SINTROM, PLENUR). Si es una
+        // palabra del propio principio («ACIDO» de ACIDO FOLICO ARISTO, «PARACETAMOL» de
+        // PARACETAMOL KERN), ya la cubren las formas completas, y suelta atribuía al ácido fólico
+        // pasajes sobre ácido fíbrico, acetilsalicílico o clavulánico (revisión de Codex, 03/10).
         const firstName = med.nombre.split(' ')[0].toLowerCase();
-        if (firstName.length > 3) {
+        const palabrasPrincipio = new Set(CimaAPI.plegar(`${med.pactivos || ''} ${med.vtm?.nombre || ''}`).split(/[\s,\/+]+/));
+        if (firstName.length > 3 && !palabrasPrincipio.has(CimaAPI.plegar(firstName))) {
             terms.push(firstName);
         }
 
@@ -3125,7 +3129,7 @@ class CimaAPI {
     // calcio», «niveles de sodio»).
     static BASE_GENERICA = new Set(['calcio', 'magnesio', 'potasio', 'sodio', 'hierro', 'zinc', 'aluminio', 'insulina',
         'vitamina', 'hidroxido', 'oxido', 'sales', 'toxina', 'factor', 'inmunoglobulina', 'extracto', 'aceite',
-        'glucosa', 'fructosa', 'sacarosa', 'lactosa', 'agua', 'oxigeno', 'proteina', 'interferon']);
+        'glucosa', 'fructosa', 'sacarosa', 'lactosa', 'agua', 'oxigeno', 'proteina', 'interferon', 'acido']);
 
     /**
      * Busca menciones de términos en el texto de la sección
