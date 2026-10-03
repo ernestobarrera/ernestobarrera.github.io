@@ -20124,32 +20124,28 @@ ${ftFechaDocsHtml}
                 label: 'Recorrido rápido',
                 desc: 'Recorrido general por las funciones principales de MedCheck.',
                 icon: 'fa-route',
+                view: 'search',
                 steps: [
                     {
                         target: null,
                         title: 'MedCheck en una idea',
                         icon: 'fa-pills',
                         body: `
-                            <p>MedCheck reúne en un sitio lo que hoy obliga a abrir cinco pestañas: <span class="guide-highlight">ficha técnica, financiación, desabastecimientos, alertas de seguridad, evidencia y utilización real</span>, más tu propia colección de medicamentos.</p>
+                            <p>De una pregunta a sus fuentes: MedCheck reúne <span class="guide-highlight">ficha técnica, financiación, suministro, alertas, evidencia y utilización</span>, junto a tu colección de medicamentos.</p>
                             <p>El flujo canónico es: buscar, abrir ficha, guardar lo relevante y revisar tu vademécum desde distintos ejes clínicos. Desde cualquier punto, <span class="guide-highlight">el logo «MedCheck» de arriba a la izquierda vuelve al inicio</span>.</p>
-                            <p>Todo sale de fuentes oficiales (CIMA/AEMPS, Nomenclátor del SNS, Ministerio de Sanidad). MedCheck <span class="guide-highlight">no emite juicios clínicos</span>: los reúne para que decidas tú.</p>
+                            <p>Combina fuentes oficiales con recursos bibliográficos y de referencia, identificados en cada apartado. La información integrada y las consultas preparadas <span class="guide-highlight">requieren valoración clínica</span>.</p>
                         `,
                     },
                     {
                         target: '#app-content',
                         title: '1. Buscar y orientarse',
                         icon: 'fa-search',
+                        action: { type: 'view', view: 'search' },
                         body: `
-                            <p>Empieza por nombre comercial, principio activo o código nacional.</p>
-                            <p>Cada tarjeta lleva seis accesos con su sigla —<span class="guide-key">FT</span> ficha y prospecto, <span class="guide-key">IND</span> indicaciones, <span class="guide-key">POS</span> posología, <span class="guide-key">INT</span> interacciones, <span class="guide-key">EVI</span> evidencia, <span class="guide-key">SEG</span> seguridad— que abren la ficha ya en esa pestaña. Los que salen apagados es porque CIMA no publica esa sección para ese registro: así no hay que pulsar para descubrir que no hay nada.</p>
-                            <p>Un icono de cámara <i class="fas fa-camera"></i> junto a la dosis aparece solo en los registros de los que CIMA publica imagen del envase o de la forma farmacéutica, y <span class="guide-highlight">pulsarlo la abre ahí mismo</span>, sin entrar en la ficha. Así no hay que abrirlas una a una para averiguar cuáles tienen foto.</p>
-                            <p>El frasco <i class="fas fa-vial"></i> va en <strong>todas</strong> las tarjetas y abre los <span class="guide-highlight">excipientes de declaración obligatoria</span> sin entrar en la ficha. A diferencia de la cámara no adelanta si hay algo: la lista de CIMA no trae los excipientes, así que se consultan al pulsar. Son los de declaración obligatoria, no la composición completa.</p>
-                            <p>Al consultarlo, el frasco <span class="guide-highlight">se queda marcado con su número</span>, que es cuántos excipientes declarables tiene. <strong>Todos llevan advertencia oficial</strong>, así que la marca es igual para todos: MedCheck no ordena cuáles importan más, porque eso depende del paciente. La marca sobrevive a filtrar y reordenar, y desaparece al desmarcar.</p>
-                            <p>Dos casos se ven distintos a propósito, y desde el 19/09/2026 <span class="guide-highlight">ninguno de los dos dice «cero»</span>. Una <strong>interrogación atenuada</strong> significa que la lista orientativa de CIMA no devuelve nada para ese registro: al pulsarla te enseña <span class="guide-highlight">la sección 6.1 entera</span> de la ficha y te lleva a ella. Una <strong>interrogación en ámbar</strong> significa lo mismo, pero además <em>no hay ficha con que contrastarlo</em> — pasa en importaciones paralelas. <strong>En ninguno de los dos casos se afirma que el medicamento no los tenga:</strong> el propio CIMA rotula ese campo «información orientativa, consulte la FT/P».</p>
-                            <p>Y para no ir uno a uno, la casilla <strong>«Ver excipientes»</strong> de la barra de filtros los consulta <span class="guide-highlight">todos los que tengas en pantalla</span> de una vez. No esconde ningún resultado: solo marca. Mientras está encendida, las tarjetas que aparezcan al filtrar se consultan también, y lo ya consultado no se vuelve a pedir. En una búsqueda muy grande consulta las primeras y te dice cuántas quedan.</p>
-                            <p class="guide-case"><strong>Caso</strong>Un paciente celíaco y once jarabes de hedera helix en pantalla. Marcas «Ver excipientes» y en un segundo ves cuáles llevan algo que mirar, sin abrir once fichas.</p>
-                            <p class="guide-case"><strong>Caso</strong>El paciente trae la caja y pregunta para qué es. Buscas el nombre y pulsas <span class="guide-key">IND</span>: la indicación autorizada, sin abrir el PDF de la ficha técnica.</p>
-                            <p class="guide-case"><strong>Caso</strong>Intolerancia a la lactosa y cinco genéricos en pantalla. Pulsas el frasco <i class="fas fa-vial"></i> de cada uno y descartas los que la llevan, sin abrir cinco fichas.</p>
+                            <p>Escribe un nombre comercial, principio activo, código nacional o número de registro CIMA. El <span class="guide-highlight">autocompletado</span> ayuda a elegir el término; confirma la búsqueda para ver el listado.</p>
+                            <p>Las tarjetas abren directamente <span class="guide-key">FT</span> ficha y prospecto, <span class="guide-key">IND</span> indicaciones, <span class="guide-key">POS</span> posología, <span class="guide-key">INT</span> interacciones, <span class="guide-key">EVI</span> evidencia o <span class="guide-key">SEG</span> seguridad. Un acceso apagado indica que ese registro no publica la sección.</p>
+                            <p>La cámara abre las imágenes disponibles y el frasco consulta los excipientes declarables. La subguía de búsqueda explica cómo revisar varias tarjetas a la vez.</p>
+                            <p class="guide-case"><strong>Caso</strong>Te traen una caja: busca su nombre y abre <span class="guide-key">IND</span> para consultar el uso autorizado.</p>
                         `,
                         position: 'bottom',
                     },
@@ -20157,12 +20153,13 @@ ${ftFechaDocsHtml}
                         target: '.search-options',
                         title: '2. Afinar la lista',
                         icon: 'fa-filter',
+                        action: { type: 'view', view: 'search' },
                         body: `
                             <p>Las casillas recortan el listado sobre la marcha y cada una lleva su recuento: comercializado, genérico, receta y <span class="guide-highlight">biosimilar</span>.</p>
                             <p>«Incluir duplicados» merece una frase: un mismo medicamento puede tener varios registros —el nacional y sus importaciones paralelas— y solo algunos publican ficha técnica con secciones. Por defecto se muestran los que sí la publican. Nunca se oculta el único registro de un medicamento.</p>
                             <p><strong>Financiado</strong> y <strong>Sin cobertura SNS</strong> son dos casillas de la misma pregunta, y sus números <span class="guide-highlight">no suman el total</span>: de una parte del catálogo el Ministerio no publica situación, y esos no entran en ninguno de los dos lados. No saber no es lo mismo que no. Por eso marcar las dos no es lo mismo que no marcar ninguna: sin marcar sale todo; marcando las dos quedan solo aquellos sobre los que hay un pronunciamiento.</p>
                             <p class="guide-case"><strong>Caso</strong>Buscas OMNIC OCAS y aparecen ocho tarjetas casi idénticas. Con la casilla sin marcar queda la que trae la información clínica; si necesitas ver todos los registros, la marcas.</p>
-                            <p class="guide-case"><strong>Caso</strong>Buscas semaglutida y quieres saber qué no paga el SNS. Marcas «Sin cobertura SNS» y quedan las cinco plumas de Wegovy; Ozempic y Rybelsus se van, porque están financiados con visado.</p>
+                            <p>Los filtros y sus recuentos describen el listado actual. La subguía <span class="guide-key">Búsqueda y navegación</span> muestra autocompletado, facetas y comparación dentro de la ficha.</p>
                         `,
                         position: 'bottom',
                     },
@@ -20193,7 +20190,7 @@ ${ftFechaDocsHtml}
                         icon: 'fa-user-injured',
                         body: `
                             <p>Activa embarazo, lactancia, edad, conducción, renal o hepática <span class="guide-highlight">antes</span> de consultar: la ficha se lee después con ese contexto puesto.</p>
-                            <p>El contexto no identifica al paciente: no se guarda ni se envía, solo ajusta alertas y recordatorios dentro de la sesión.</p>
+                            <p>Los botones ajustan la lectura de la ficha a una situación general; no introduzcas datos que identifiquen a una persona. La ausencia de una señal no demuestra ausencia de riesgo.</p>
                             <p class="guide-case"><strong>Caso</strong>Mujer embarazada con una infección urinaria. Activas «Embarazo», abres el antibiótico y la pestaña Seguridad te sube lo que la ficha técnica dice en su sección 4.6, en vez de dejarlo enterrado en el PDF.</p>
                         `,
                         position: 'bottom',
@@ -20223,6 +20220,7 @@ ${ftFechaDocsHtml}
                         target: '.modal-fav-btn',
                         title: '7. Guardar lo relevante',
                         icon: 'fa-star',
+                        action: { type: 'modal', tab: 'info', source: 'any' },
                         body: `
                             <p>La estrella guarda el medicamento ya enriquecido para que después pueda agruparse por ATC, principio activo, indicación o especialidad.</p>
                             <p>La colección se guarda localmente en este navegador, no en un servidor.</p>
@@ -20243,7 +20241,7 @@ ${ftFechaDocsHtml}
                         title: 'Buscar desde cualquier página',
                         icon: 'fa-bookmark',
                         body: `
-                            <p>El <span class="guide-highlight">atajo</span> te deja buscar en MedCheck sin dejar lo que estás mirando: selecciona un fármaco —por ejemplo en la historia clínica— y ábrelo aquí con un clic.</p>
+                            <p>El <span class="guide-highlight">atajo seguro</span> permite buscar un nombre de medicamento seleccionado en otra página. Revisa la selección y evita arrastrar datos del paciente.</p>
                             <p>MedCheck se abre y te muestra los resultados del fármaco. Instálalo arrastrándolo a tu barra de marcadores.</p>
                         `,
                         position: 'bottom',
@@ -20273,7 +20271,7 @@ ${ftFechaDocsHtml}
                         action: { type: 'modal', tab: 'info', source: 'any' },
                         body: `
                             <p>Al abrir un medicamento, el modal reúne la información accionable: ficha, indicaciones, posología, interacciones, reacciones, seguridad, ficha y prospecto, documentación, evidencia, utilización y consulta a IA.</p>
-                            <p>Cinco pestañas son <span class="guide-highlight">condicionales</span> y solo aparecen si ese medicamento las tiene: Alertas AEMPS, PGx, Financiación, Utilización y QT. Su ausencia también informa: no hay nada que enseñar ahí.</p>
+                            <p>Cinco pestañas son <span class="guide-highlight">condicionales</span>: Alertas AEMPS, PGx, Financiación, Utilización y QT. Su ausencia indica que esa ficha no dispone de ese contenido; no demuestra ausencia de riesgo ni de evidencia.</p>
                             <p>Si no había una ficha abierta, la guía carga un ejemplo real para poder recorrerla.</p>
                         `,
                     },
@@ -20281,9 +20279,11 @@ ${ftFechaDocsHtml}
                         target: '.modal-fav-btn',
                         title: 'Guardar desde el detalle',
                         icon: 'fa-star',
+                        action: { type: 'modal', tab: 'info', source: 'any' },
                         body: `
                             <p>La estrella del modal guarda el medicamento ya enriquecido con ATC, principio activo y códigos nacionales.</p>
                             <p>Eso mejora agrupaciones, analítica, exportación y revisión posterior de la colección.</p>
+                            <p>Cuando la ficha procede de una lista, las flechas de la cabecera recorren las tarjetas visibles conservando la pestaña cuando esté disponible. La subguía de búsqueda lo muestra con una lista real.</p>
                         `,
                     },
                     {
@@ -20293,6 +20293,7 @@ ${ftFechaDocsHtml}
                         action: { type: 'modalTab', tab: 'indications' },
                         body: `
                             <p>La pestaña Indicaciones extrae la sección 4.1 de la ficha técnica cuando CIMA la expone.</p>
+                            <p><strong>Copiar</strong> recoge el fragmento seleccionado, o la sección entera si no seleccionas texto, con cita de la fuente, fecha y enlace al pasaje. <strong>Compartir</strong> permite llevar ese enlace a otra persona.</p>
                             <p>Sirve para comprobar uso autorizado sin salir de la ficha — y para saber cuándo estás <span class="guide-highlight">fuera de indicación</span>, que es la pregunta que importa al justificar una prescripción.</p>
                         `,
                     },
@@ -20314,7 +20315,7 @@ ${ftFechaDocsHtml}
                         action: { type: 'modalTab', tab: 'safety' },
                         body: `
                             <p>Seguridad cruza la ficha con el contexto activo: embarazo, lactancia, edad, conducción, renal o hepática.</p>
-                            <p>Organiza las señales de seguridad relevantes según ese contexto; la valoración final es clínica.</p>
+                            <p>Organiza las señales de seguridad relevantes según ese contexto; la valoración final es clínica. El enlace a la ficha abre la sección y señala el pasaje o epígrafe original cuando se puede localizar.</p>
                             <p class="guide-case"><strong>Caso</strong>Revisión de un mayor de 80 años polimedicado: con el contexto «Mayor de 65» puesto, recorres su lista y ves de un vistazo cuáles llevan advertencia por edad.</p>
                         `,
                     },
@@ -20363,7 +20364,7 @@ ${ftFechaDocsHtml}
                                 <li><i class="fas fa-vials"></i> REec y ClinicalTrials.gov</li>
                                 <li><i class="fas fa-utensils"></i> repercusión nutricional (MedyNut · SENPE)</li>
                             </ul>
-                            <p>Los filtros de PubMed llevan recuento en vivo, se <span class="guide-highlight">combinan con AND / OR</span> y el deslizador acota el rango temporal. La curva de publicaciones por bienio dice si el tema está vivo o estancado.</p>
+                            <p>Los filtros de PubMed llevan recuento en vivo, se <span class="guide-highlight">combinan con AND / OR</span> y el deslizador acota el rango temporal. La curva por bienio muestra el volumen de publicaciones; no mide su calidad ni la certeza de sus conclusiones.</p>
                             <p class="guide-case"><strong>Caso</strong>Te preguntan por un fármaco que no manejas. Marcas revisiones sistemáticas y guías, acotas a 5 años y abres en PubMed una búsqueda que no has tenido que escribir.</p>
                         `,
                     },
@@ -20374,7 +20375,7 @@ ${ftFechaDocsHtml}
                         action: { type: 'modalTab', tab: 'utilizacion' },
                         body: `
                             <p>Cuánto se dispensa realmente de ese principio activo en recetas del SNS, según el Ministerio de Sanidad, y cómo se reparte dentro de su grupo ATC.</p>
-                            <p>La cifra es la <span class="guide-highlight">DHD</span> —dosis diarias definidas por 1.000 habitantes y día— y viene traducida justo debajo: «de cada 1.000 personas, N reciben cada día una DDD».</p>
+                            <p>La <span class="guide-highlight">DHD</span> cuenta dosis diarias definidas por 1.000 habitantes y día. Su traducción a personas es aproximada, sobre todo útil en tratamientos crónicos cuando la dosis prescrita se parece a la DDD; no es un recuento de pacientes.</p>
                             <p>Describe utilización observada. <strong>No implica eficacia comparativa, seguridad ni preferencia terapéutica</strong>; el desplegable «Qué no dice este dato» lo detalla.</p>
                         `,
                     },
@@ -20394,8 +20395,159 @@ ${ftFechaDocsHtml}
                         icon: 'fa-robot',
                         action: { type: 'modalTab', tab: 'consult' },
                         body: `
-                            <p>Consultar IA compone la pregunta por ti: marcas aspectos (monitorización, eficacia, seguridad, comparación, dosis…) y MedCheck construye un <span class="guide-highlight">prompt documental</span> para resolverlo en una IA externa o en la fuente primaria.</p>
+                            <p>Elige <span class="guide-key">Este medicamento</span>, <span class="guide-key">Principio activo</span> o <span class="guide-key">Su grupo (ATC4)</span>. La línea <strong>Sobre:</strong> permite comprobar el ámbito antes de copiar o abrir la consulta.</p>
+                            <p>Principio activo y grupo eliminan la marca y la presentación comercial, pero conservan la vía y la forma farmacéutica. Para ver el recorrido completo, abre la subguía <span class="guide-key">Consultas a IA</span>.</p>
                             <p>MedCheck no devuelve la respuesta: prepara la consulta y la valoración final sigue siendo clínica.</p>
+                        `,
+                    },
+                ],
+            },
+            search: {
+                label: 'Búsqueda y navegación',
+                desc: 'Autocompletado, filtros con recuentos y comparación sin cerrar la ficha.',
+                icon: 'fa-search',
+                view: 'search',
+                steps: [
+                    {
+                        target: '#search-input',
+                        title: 'Elegir el término con autocompletado',
+                        icon: 'fa-keyboard',
+                        body: `
+                            <p>Escribe parte de un nombre comercial o principio activo. Las sugerencias ayudan a elegir; revisa el término y confirma la búsqueda.</p>
+                            <p>Seleccionar una sustancia acota los resultados a ese principio activo: evita confundir, por ejemplo, omeprazol con esomeprazol por compartir parte del nombre.</p>
+                            <p>También puedes pegar un <strong>código nacional</strong> o <strong>número de registro CIMA</strong>, como 67605. Si un número tiene forma de ambos identificadores, se consultan los dos y se reúnen los resultados.</p>
+                        `,
+                    },
+                    {
+                        target: '#search-results',
+                        title: 'Filtrar con los números a la vista',
+                        icon: 'fa-filter',
+                        action: { type: 'searchResults' },
+                        body: `
+                            <p>Agrupa por ATC o principio activo y ordena por nombre o dosis. Las facetas de sustancia, dosis, vía, forma y laboratorio muestran recuentos que cambian al filtrar.</p>
+                            <p><span class="guide-key">Ctrl/Cmd + clic</span> permite seleccionar varios valores en las facetas que lo indican. <strong>Más filtros</strong> despliega otras condiciones; «Limpiar» retira la selección.</p>
+                            <p>Si no había tarjetas, la guía busca clopidogrel como ejemplo. Los recuentos son los actuales, no cifras fijas de una demostración.</p>
+                        `,
+                    },
+                    {
+                        target: '#search-results',
+                        title: 'Imágenes y excipientes sin abrir cada ficha',
+                        icon: 'fa-vial',
+                        action: { type: 'searchResults' },
+                        body: `
+                            <p>La cámara aparece cuando CIMA publica imágenes. El frasco consulta <span class="guide-highlight">excipientes de declaración obligatoria</span>; su número es un recuento, no una escala de riesgo.</p>
+                            <p><strong>Ver excipientes</strong> consulta los productos en pantalla y los marca, sin ocultarlos. En listados grandes se acota la consulta y se indica lo pendiente.</p>
+                            <p>Una interrogación significa información orientativa no disponible, nunca «sin excipientes». Contrasta con la sección 6.1; no es la composición completa.</p>
+                        `,
+                    },
+                    {
+                        target: '.modal-pos-lista, .modal-content',
+                        title: 'Recorrer la lista sin cerrar el modal',
+                        icon: 'fa-left-right',
+                        action: { type: 'modalList', tab: 'posology' },
+                        body: `
+                            <p>La cabecera muestra <span class="guide-key">posición / tarjetas visibles</span>. Las flechas recorren esa lista conservando la pestaña, cuando el siguiente producto dispone de ella.</p>
+                            <p>Fuera del tour puedes usar <span class="guide-key">← / →</span> o <span class="guide-key">K / J</span>. Durante la guía, ← / → cambian de paso. «Ver más», grupos y filtros modifican el conjunto visible y actualizan el contador.</p>
+                            <p>Si un filtro deja fuera la ficha abierta, aparece «– / N» y el botón siguiente entra en el primer resultado. Para esta demostración se abre una tarjeta de la lista.</p>
+                        `,
+                    },
+                ],
+            },
+            consult: {
+                label: 'Consultas a IA',
+                desc: 'Medicamento, principio activo o grupo ATC; desde la ficha y desde Indicaciones.',
+                icon: 'fa-robot',
+                steps: [
+                    {
+                        target: '#tab-consult .consult-scope',
+                        title: 'Primero, decidir sobre qué preguntar',
+                        icon: 'fa-bullseye',
+                        action: { type: 'modalTab', tab: 'consult' },
+                        body: `
+                            <p><span class="guide-key">Este medicamento</span> conserva la marca y presentación. <span class="guide-key">Principio activo</span> pregunta por la sustancia. <span class="guide-key">Su grupo</span> sube al ATC de nivel 4.</p>
+                            <p>Principio activo y grupo eliminan la marca y presentación comercial, pero conservan <strong>vía y forma farmacéutica</strong>. Un gel y un óvulo, o un inhalador y una solución para nebulizador, pueden plantear preguntas distintas.</p>
+                            <p>Un alcance no disponible se muestra desactivado.</p>
+                        `,
+                    },
+                    {
+                        target: '#consult-scope-line',
+                        title: 'Comprobar el ámbito en «Sobre:»',
+                        icon: 'fa-list-check',
+                        action: { type: 'modalTab', tab: 'consult' },
+                        body: `
+                            <p>Esta línea muestra el ámbito seleccionado. Antes de copiar o abrir una IA, comprueba sustancia o grupo, vía y forma farmacéutica. Un conjunto vacío de resultados no genera consulta.</p>
+                            <p>Para medicamento se propone <strong>monitorización</strong>; para principio activo y grupo, <strong>guías y consenso</strong> y <strong>guía frente a ficha técnica</strong>. Si ya has cambiado una casilla, tu selección se respeta al cambiar el alcance.</p>
+                        `,
+                    },
+                    {
+                        target: '#consult-doubt',
+                        title: 'Formular una duda que las fuentes puedan resolver',
+                        icon: 'fa-comment-medical',
+                        action: { type: 'modalTab', tab: 'consult' },
+                        body: `
+                            <p>Añade una pregunta documental concreta y, si hace falta, un escenario poblacional. Para principio activo y grupo, el prompt pide responder esa pregunta antes de los apartados marcados.</p>
+                            <p class="guide-case"><strong>Caso</strong>En estrógenos por vía vaginal: «¿Qué guías describen los requisitos previos para iniciarlos en atención primaria?» El ámbito debe conservar la vía vaginal.</p>
+                            <p>Elige los aspectos que necesites: eficacia en absolutos, POEM, seguridad, comparación, dosis, cascadas o deprescripción. No incluyas datos identificables.</p>
+                        `,
+                    },
+                    {
+                        target: '#tab-consult .combo-ai-buttons',
+                        title: 'Copiar o abrir la consulta preparada',
+                        icon: 'fa-clipboard',
+                        action: { type: 'modalTab', tab: 'consult' },
+                        body: `
+                            <p><strong>Copiar</strong> deja el prompt en el portapapeles para revisarlo y usarlo en la herramienta que elijas. Perplexity y ChatGPT reciben la consulta por la URL, que queda en su historial.</p>
+                            <p>Si el prompt es largo, ChatGPT puede abrirse sin precargarlo: pégalo con <span class="guide-key">Ctrl+V</span>. Si falla la copia y no se puede precargar, se muestra un cuadro para copiar el texto a mano.</p>
+                            <p>MedCheck prepara la consulta, no produce ni valida la respuesta. El prompt pide enlaces, fechas, discrepancias e incertidumbre; verifica lo obtenido con las fuentes.</p>
+                        `,
+                    },
+                    {
+                        target: '#ind-ai-panel',
+                        title: 'Preguntar por el grupo que queda tras filtrar',
+                        icon: 'fa-sitemap',
+                        action: { type: 'indicationAi' },
+                        body: `
+                            <p>Desde Indicaciones o el árbol ATC, <span class="guide-key">Preguntar a IA</span> usa los medicamentos que quedan tras filtrar: principios activos, formas y vías, sin marcas ni presentaciones comerciales. Distingue los ATC consultados en la búsqueda de los subgrupos presentes en los resultados.</p>
+                            <p>Escribe primero tu pregunta. Por defecto se piden guías y contraste con la ficha. Al filtrar se conserva el borrador y se actualiza <strong>Sobre:</strong>; cambiar a otra búsqueda o rama ATC borra la pregunta anterior.</p>
+                            <p>Si no había resultados, la guía abre el grupo A02BC como ejemplo. La consulta usa el conjunto filtrado disponible, no solo las primeras tarjetas desplegadas.</p>
+                        `,
+                    },
+                ],
+            },
+            evidence: {
+                label: 'Evidencia y ensayos',
+                desc: 'Construir una búsqueda PubMed y distinguir literatura de registros de ensayos.',
+                icon: 'fa-book-medical',
+                steps: [
+                    {
+                        target: '#evidence-drug-input',
+                        title: 'Revisar el término de PubMed',
+                        icon: 'fa-search',
+                        action: { type: 'modalTab', tab: 'evidence' },
+                        body: `
+                            <p>MedCheck prepara el término desde la identidad de la sustancia, con sus variantes. Puedes editarlo para ajustar la búsqueda bibliográfica.</p>
+                            <p>Este campo controla PubMed. Los registros REec, ClinicalTrials.gov y OMS conservan el término de la sustancia con el que se abrió la pestaña.</p>
+                        `,
+                    },
+                    {
+                        target: '#tab-evidence .evidence-section',
+                        title: 'Combinar filtros y acotar fechas',
+                        icon: 'fa-filter',
+                        action: { type: 'modalTab', tab: 'evidence' },
+                        body: `
+                            <p>Los filtros bibliográficos muestran recuentos y permiten combinar selecciones con <span class="guide-key">AND / OR</span>. El deslizador temporal acota PubMed; abre el enlace para leer los artículos.</p>
+                            <p>Revisa la referencia y las métricas de validación cuando estén disponibles. La curva por bienio y los recuentos describen volumen de publicaciones, no calidad, relevancia clínica ni certeza.</p>
+                        `,
+                    },
+                    {
+                        target: '#evlink-reec',
+                        title: 'Consultar registros de ensayos',
+                        icon: 'fa-vials',
+                        action: { type: 'modalTab', tab: 'evidence' },
+                        body: `
+                            <p><span class="guide-key">REec</span> enlaza el registro español; <span class="guide-key">ClinicalTrials.gov</span> añade recuentos y desglose por tipo, fase y estado. La OMS agrega registros y se consulta en su web.</p>
+                            <p>Un fármaco puede aparecer como comparador. Registro, reclutamiento y publicación de resultados son cosas distintas; el número de estudios no prueba beneficio ni seguridad.</p>
+                            <p>La búsqueda básica de la web REec puede mostrar menos estudios que su servicio de datos. El aviso junto al contador explica esa diferencia.</p>
                         `,
                     },
                 ],
@@ -20533,7 +20685,7 @@ ${ftFechaDocsHtml}
                         title: 'Leer la cifra sin malinterpretarla',
                         icon: 'fa-chart-simple',
                         body: `
-                            <p>La unidad es la <span class="guide-highlight">DHD</span>: dosis diarias definidas por 1.000 habitantes y día. Debajo va traducida a lenguaje de consulta: «de cada 1.000 personas, N reciben cada día una DDD».</p>
+                            <p>La <span class="guide-highlight">DHD</span> son dosis diarias definidas por 1.000 habitantes y día. La lectura en personas es una estimación condicionada a que la dosis prescrita se aproxime a la DDD, especialmente en tratamientos crónicos; no cuenta pacientes.</p>
                             <p>Y el reparto del grupo en una frase: «de cada 100 dosis dispensadas en C10AA, 55 son de atorvastatina…». El sujeto son <strong>dosis, no pacientes</strong>.</p>
                             <p>Cada nodo trae además los términos por los que se llega a él desde Indicaciones —«se llega aquí buscando»— y un punto marca los que están en la lista de medicamentos esenciales de la OMS.</p>
                             <p class="guide-case"><strong>Caso</strong>Te presentan un fármaco como «de uso muy extendido». Miras su grupo y ves su cuota real dentro de él antes de aceptar el adjetivo.</p>
@@ -20609,8 +20761,8 @@ ${ftFechaDocsHtml}
                         title: 'Partir de la indicación',
                         icon: 'fa-stethoscope',
                         body: `
-                            <p>Esta vista parte del <span class="guide-highlight">problema clínico</span>, no del fármaco: buscas una indicación o síntoma y devuelve medicamentos cuya ficha técnica (sección 4.1) la recoge como uso autorizado.</p>
-                            <p>Es lo contrario de un vademécum: no «qué hace este fármaco», sino «qué está autorizado para esto».</p>
+                            <p>Esta vista parte del <span class="guide-highlight">problema clínico</span> y lo relaciona con grupos terapéuticos. La cabecera muestra los ATC consultados y, cuando existe criba adicional, cuántos candidatos se han verificado en la sección 4.1.</p>
+                            <p>Un mapeo por grupo orienta la búsqueda; comprueba la indicación autorizada de cada producto en su ficha. El listado completo no equivale a una verificación individual de todos sus usos.</p>
                         `,
                         position: 'bottom',
                     },
@@ -20619,8 +20771,8 @@ ${ftFechaDocsHtml}
                         title: 'Escribir la indicación',
                         icon: 'fa-keyboard',
                         body: `
-                            <p>Teclea la indicación o el síntoma; el buscador lo cruza con las indicaciones autorizadas en CIMA y lista los medicamentos que la declaran.</p>
-                            <p class="guide-case"><strong>Caso</strong>Rosácea en una paciente que no tolera la doxiciclina. Buscas la indicación y ves el abanico autorizado completo, incluido lo que no usas a diario.</p>
+                            <p>Teclea una indicación o síntoma y elige una sugerencia. Revisa qué grupos se han consultado y si la cabecera indica verificación por ficha técnica.</p>
+                            <p class="guide-case"><strong>Caso</strong>Buscas rosácea para explorar opciones y contrastas la sección 4.1 del producto que vas a valorar.</p>
                         `,
                     },
                     {
@@ -20637,7 +20789,18 @@ ${ftFechaDocsHtml}
                         icon: 'fa-book-open',
                         body: `
                             <p>Bajo los accesos rápidos, <span class="guide-highlight">«Ver catálogo completo»</span> abre el índice de todas las indicaciones del diccionario, agrupadas por área clínica y con filtro de texto en vivo.</p>
-                            <p>Se genera desde la ontología en cada apertura: nunca se queda desactualizado.</p>
+                            <p>Se genera desde la ontología local en cada apertura; su cobertura depende de la versión del diccionario.</p>
+                        `,
+                    },
+                    {
+                        target: '#indication-results',
+                        title: 'Acotar y preguntar por un grupo',
+                        icon: 'fa-robot',
+                        action: { type: 'indicationAi' },
+                        body: `
+                            <p>Filtra por principio activo, vía o forma y revisa los recuentos. <span class="guide-key">Preguntar a IA</span> prepara una consulta documental sobre el grupo filtrado, sin marcas ni presentaciones.</p>
+                            <p>La pregunta y las casillas se conservan al cambiar facetas; <strong>Sobre:</strong> se actualiza. Los detalles del alcance están en la subguía <span class="guide-key">Consultas a IA</span>.</p>
+                            <p>Si no había resultados, se muestra A02BC como ejemplo de grupo ATC.</p>
                         `,
                     },
                 ],
@@ -20677,7 +20840,7 @@ ${ftFechaDocsHtml}
                         `,
                     },
                     {
-                        target: '.combo-ev-toolbar',
+                        target: '#app-content .combo-ai-hero',
                         title: 'Consulta sin veredicto automático',
                         icon: 'fa-magnifying-glass-chart',
                         body: `
@@ -20842,7 +21005,9 @@ ${ftFechaDocsHtml}
         const overlay = document.getElementById('guide-overlay');
         if (overlay) {
             overlay.classList.remove('active');
-            setTimeout(() => { if (!this.guideActive) overlay.innerHTML = ''; }, 250);
+            setTimeout(() => {
+                if (!this.guideActive && !overlay.classList.contains('active')) overlay.innerHTML = '';
+            }, 250);
         }
         if (this._guideMenuKeyHandler) {
             document.removeEventListener('keydown', this._guideMenuKeyHandler);
@@ -20853,8 +21018,12 @@ ${ftFechaDocsHtml}
     async _prepareGuideTour(tourKey) {
         const tour = this._guideTours()[tourKey];
         if (!tour?.view) return;
-        if (this.currentView !== tour.view) {
-            await this.loadView(tour.view);
+        const navigating = this._guideNavigating;
+        this._guideNavigating = true;
+        try {
+            await this._runGuideStepAction({ action: { type: 'view', view: tour.view } });
+        } finally {
+            this._guideNavigating = navigating;
         }
     }
 
@@ -20949,16 +21118,63 @@ ${ftFechaDocsHtml}
     }
 
     async _runGuideStepAction(step) {
-        const action = step?.action;
+        // Al retroceder desde una ficha también hay que recuperar la vista de la subguía.
+        const tourView = this._guideTours()[this.guideTour]?.view;
+        const action = step?.action || (tourView ? { type: 'view', view: tourView } : null);
         if (!action) return;
 
+        if (action.type === 'searchResults' || action.type === 'modalList') {
+            await this._runGuideStepAction({ action: { type: 'view', view: 'search' } });
+            let cards = this._tarjetasDeLista();
+            if (!cards.length) {
+                const input = document.getElementById('search-input');
+                if (!input) return;
+                input.value = 'clopidogrel';
+                await this.performSearch();
+                cards = this._tarjetasDeLista();
+            }
+            if (!cards.length) {
+                this._guideStepNotice = 'No hay tarjetas disponibles para el ejemplo. Cierra la guía, comprueba el acceso a los datos y realiza una búsqueda antes de repetir este recorrido.';
+                return;
+            }
+            if (action.type === 'modalList' && cards.length) {
+                const card = cards.find(c => c.dataset.nregistro === String(this.currentMed?.nregistro)) || cards[0];
+                await this.openMedDetails(card.dataset.nregistro, action.tab || 'info');
+                this._guideOpenedModal = true;
+                await this._guideWait(240);
+            }
+            return;
+        }
+
+        if (action.type === 'indicationAi') {
+            await this._runGuideStepAction({ action: { type: 'view', view: 'indications' } });
+            if (!this._indAiCtx?.filtered?.length || !document.querySelector('.ind-ai-toggle')) {
+                const code = 'A02BC';
+                const label = this._describeATCCode(code) || code;
+                await this.searchByATCCode(code, label, this._atcBreadcrumbFromCode(code, label));
+            }
+            if (document.querySelector('.ind-ai-toggle') && !document.getElementById('ind-ai-panel')) {
+                this.toggleIndAiPanel();
+            }
+            if (!document.getElementById('ind-ai-panel')) {
+                this._guideStepNotice = 'No se ha podido cargar el panel de grupo. Cierra la guía y comprueba que Indicaciones devuelve resultados antes de repetir este paso.';
+            }
+            await this._guideWait(80);
+            return;
+        }
+
         if (action.type === 'modal') {
-            await this._ensureGuideModal(action.tab || 'info', action.source || 'any');
+            const opened = await this._ensureGuideModal(action.tab || 'info', action.source || 'any');
+            if (opened === false) this._guideStepNotice = 'No se ha podido cargar una ficha para la demostración. Puedes repetir la guía después de abrir un medicamento.';
             return;
         }
 
         if (action.type === 'modalTab') {
-            await this._ensureGuideModal('info', action.source || 'any');
+            const opened = await this._ensureGuideModal('info', action.source || 'any');
+            if (opened === false) {
+                this._guideStepNotice = 'No se ha podido cargar una ficha para la demostración. Puedes repetir la guía después de abrir un medicamento.';
+                return;
+            }
             const abierta = await this._selectGuideModalTab(action.tab);
             // Cuatro pestañas del modal son condicionales (PGx, Financiacion, Alertas AEMPS, QT)
             // y la de Utilizacion depende de que el medicamento tenga ATC de nivel 5. Si la del
@@ -20967,6 +21183,7 @@ ${ftFechaDocsHtml}
             // sostenia. Ahora se dice, que es justo lo que ese paso esta explicando.
             if (!abierta) {
                 const nombre = MedCheckApp.GUIDE_TAB_LABELS[action.tab] || 'Esta pestaña';
+                this._guideStepNotice = `${nombre} no está disponible en el medicamento abierto. El paso explica la función, pero esta ficha no permite mostrarla.`;
                 this.showToast?.(`${nombre} no existe en este medicamento: aparece solo cuando hay contenido`, 'info');
             }
             return;
@@ -22457,7 +22674,9 @@ ${ftFechaDocsHtml}
         const overlay = document.getElementById('guide-overlay');
         if (overlay) {
             overlay.classList.remove('active');
-            setTimeout(() => { overlay.innerHTML = ''; }, 400);
+            setTimeout(() => {
+                if (!this.guideActive && !overlay.classList.contains('active')) overlay.innerHTML = '';
+            }, 400);
         }
         // Remove spotlight class from any element
         document.querySelectorAll('.guide-spotlight-target').forEach(el => {
@@ -22509,6 +22728,7 @@ ${ftFechaDocsHtml}
         // La navegación que dispara la acción (abrir ficha, cambiar pestaña,
         // subpestaña) no debe empujar entradas de historial: ver guard en updateURL.
         this._guideNavigating = true;
+        this._guideStepNotice = '';
         try {
             await this._runGuideStepAction(step);
         } finally {
@@ -22524,8 +22744,16 @@ ${ftFechaDocsHtml}
         let targetRect = null;
 
         if (!isCentered) {
-            const targetEl = document.querySelector(step.target);
+            // Respetar el orden de las alternativas: un contenedor padre aparecería antes
+            // que su pestaña en querySelectorAll('pestaña, contenedor'). Ignorar paneles ocultos.
+            const targetEl = step.target.split(',').flatMap(selector =>
+                [...document.querySelectorAll(selector.trim())]
+            ).find(el => {
+                const rect = el.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0;
+            });
             if (targetEl) {
+                targetEl.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
                 targetRect = targetEl.getBoundingClientRect();
                 targetEl.classList.add('guide-spotlight-target');
             }
@@ -22580,7 +22808,7 @@ ${ftFechaDocsHtml}
                     </div>
                     <h3 class="guide-title">${step.title}</h3>
                 </div>
-                <div class="guide-body">${step.body}</div>
+                <div class="guide-body">${step.body}${this._guideStepNotice ? `<p class="guide-case"><strong>Demostración no disponible</strong>${this._escapeHtml(this._guideStepNotice)}</p>` : ''}</div>
                 <div class="guide-footer">
                     <div class="guide-progress">${dots}</div>
                     <div class="guide-actions">
