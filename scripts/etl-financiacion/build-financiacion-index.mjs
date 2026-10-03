@@ -54,6 +54,7 @@ import { writeFileSync, readFileSync, mkdirSync, existsSync, statSync } from 'no
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
+import { resumirCenso, anclaDeIndice, veredictoCenso } from './guarda-censo.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
@@ -69,6 +70,26 @@ const argOf = (name, def = null) => {
 const OUT = argOf('--out', join(ROOT, 'assets', 'data', 'financiacion-index.json'));
 const PROCEDENCIA = argOf('--procedencia', null);
 const NOMENCLATOR = argOf('--nomenclator', null);
+// Puerta de salida de la guarda del censo. Pide MOTIVO, no un `--force`: un override anónimo es
+// indistinguible de un error, y este queda escrito en `_meta.censo_aceptado` del índice publicado.
+const ACEPTAR_CENSO = argOf('--aceptar-censo', null);
+if (args.includes('--aceptar-censo') && !ACEPTAR_CENSO) {
+    console.error('[etl-fin] ABORTA: --aceptar-censo exige un motivo entre comillas');
+    process.exit(1);
+}
+// El ancla es SIEMPRE el índice que sirve GitHub Pages, no `--out`: en CI la salida va a /tmp y
+// compararse consigo misma no ancla nada.
+const PUBLICADO = join(ROOT, 'assets', 'data', 'financiacion-index.json');
+function leerIndicePublicado() {
+    try {
+        return existsSync(PUBLICADO) ? JSON.parse(readFileSync(PUBLICADO, 'utf8')) : null;
+    } catch (err) {
+        // Un índice publicado ilegible no puede hacer pasar la guarda por la vía de «sin ancla»:
+        // eso convertiría un fichero corrupto en una pasada sin vigilancia relativa.
+        console.error(`[etl-fin] ABORTA: el índice publicado no se puede leer (${err.message})`);
+        process.exit(1);
+    }
+}
 
 /**
  * Orden de los conteos en cada entrada. Es el mismo de `DESCARGAS` en el ETL de BIFIMED y NO se
@@ -85,8 +106,11 @@ const COL_NOMENCLATOR = CODIGOS.length + 1;
 
 // Umbrales de cordura: una caída brusca es un cambio de contrato en CIMA o un sidecar truncado,
 // no que España se haya quedado sin medicamentos. Mismo criterio fail-closed que el ETL de envases.
-const MIN_NREGISTROS = 20000;
-const MIN_PRESENTACIONES = 55000;
+//
+// El censo lo vigila `guarda-censo.mjs`, que ancla la comparación en el índice ya publicado en vez
+// de en un absoluto: el absoluto de las filas crudas (55.000) abortó el 2026-10-03 por una limpieza
+// del catálogo de AEMPS que no tocó ni una presentación comercializada, y la faceta se quedó
+// apagada un mes. El detalle y la medición, en la cabecera de ese fichero.
 const MIN_CON_DATO = 12000;
 
 // ── Crawl con caché del día ───────────────────────────────────────────────────
@@ -275,9 +299,17 @@ async function main() {
     }
 
     const pres = await crawl('presentaciones');
-    if (pres.length < MIN_PRESENTACIONES) {
-        throw new Error(`cobertura anómala: ${pres.length} presentaciones (mínimo ${MIN_PRESENTACIONES})`);
-    }
+    // La guarda mira lo que el índice USA (presentaciones comercializadas de medicamentos que
+    // siguen en CIMA), no las filas crudas del crawl, y se ancla en el índice ya publicado.
+    const censo = resumirCenso(pres);
+    const publicado = leerIndicePublicado();
+    const veredicto = veredictoCenso({
+        censo,
+        ancla: anclaDeIndice(publicado),
+        motivoAceptado: ACEPTAR_CENSO,
+    });
+    for (const l of veredicto.lineas) console.error(`[etl-fin] ${l}`);
+    if (veredicto.abortar) throw new Error(veredicto.motivo);
 
     // ── Segunda fuente, opcional: el Nomenclátor de facturación ──────────────
     let nomPorCn = null;
@@ -336,9 +368,13 @@ async function main() {
     }
 
     const nregistros = Object.keys(fin).length;
-    if (nregistros < MIN_NREGISTROS || conAlgunDato < MIN_CON_DATO) {
-        throw new Error(`cobertura anómala: ${nregistros} nregistros, ${conAlgunDato} con dato `
-            + `(mínimos ${MIN_NREGISTROS} / ${MIN_CON_DATO})`);
+    // Los nregistros los vigila ya la guarda del censo, antes del cruce, con respaldo absoluto y
+    // ancla relativa. Aquí queda lo que solo se puede medir DESPUÉS de cruzar: cuántos
+    // medicamentos acaban con algún dato de financiación. Un cruce que se rompe (sidecar de otra
+    // generación, CN con otro formato) deja el censo intacto y esta cifra en el suelo.
+    if (conAlgunDato < MIN_CON_DATO) {
+        throw new Error(`cruce anómalo: ${conAlgunDato} medicamentos con algún dato de `
+            + `financiación sobre ${nregistros} del censo (mínimo ${MIN_CON_DATO})`);
     }
 
     const fallos = validarCentinelas(fin, join(HERE, 'sentinels.json'), { conNomenclator: !!nomPorCn });
@@ -367,6 +403,13 @@ async function main() {
             bifimed_download_date: proc.meta?.download_date ?? null,
             orden_codigos: CODIGOS,
             presentaciones: pres.length,
+            // El ancla de la guarda del mes que viene. `presentaciones` son las filas crudas del
+            // crawl y se conserva como dato informativo; la cifra que significa algo —y la que se
+            // vigila— es esta.
+            presentaciones_comercializadas: censo.comercializadas,
+            ...(veredicto.comparacion.censo_aceptado
+                ? { censo_aceptado: veredicto.comparacion.censo_aceptado }
+                : {}),
             nregistros,
             con_algun_dato: conAlgunDato,
             sin_comercializadas: sinComercializadas,

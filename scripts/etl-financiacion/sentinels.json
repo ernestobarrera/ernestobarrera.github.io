@@ -125,8 +125,8 @@
     {
       "kind": "columna_min",
       "pos": 6,
-      "min": 750,
-      "note": "en estudio o sin petición (código 666)"
+      "min": 100,
+      "note": "en estudio o sin petición (código 666). BAJADO DE 750 A 100 EL 2026-10-03, con medición, y es el único mínimo que se tocó. El 750 se calibró el 09/09 sobre 1.074 medicamentos; de esos, 931 (y 6.985 de sus 7.874 presentaciones, el 89 %) eran registros que AEMPS retiró del censo de CIMA en octubre. Restringiendo septiembre a los registros que HOY siguen en CIMA quedaban 143, y octubre da 145: entre los medicamentos que existen, la lista 666 no se movió. Ninguna otra columna se vio afectada —comprobadas las siete—, porque solo esta estaba dominada por presentaciones de registros retirados. El 100 sigue detectando lo que este centinela existe para detectar: que la lista 666 deje de llegar"
     },
     {
       "kind": "columna_min",
