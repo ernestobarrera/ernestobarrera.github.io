@@ -3833,6 +3833,7 @@ class MedCheckApp {
         // clinical-ontology.json: 0 de las 168 entradas tienen un `label` que sea también
         // clave, así que serializar el label daba `noMatch` al abrir el enlace.
         this.lastIndicationQuery = query || label || '';
+        this._indAiAlCambiarUniverso(this._indAiUniverso({ atcCode, query: this.lastIndicationQuery }));
         if (!preserveFilters) this._resetResultFilters();
         this.groupingState?.collapsedGroups?.clear?.();
         this.groupingState?.expandedGroups?.clear?.();
@@ -6399,6 +6400,10 @@ class MedCheckApp {
      * En `pa` y `grupo` la VÍA se conserva. Dentro de un mismo ATC conviven vías con respuestas
      * opuestas —G03CA reúne estrógenos sistémicos y vaginales, y la exploración, el progestágeno o el
      * riesgo mamario no se plantean igual—, así que quitar la vía no generaliza la pregunta: la cambia.
+     * La FORMA del medicamento de partida viaja como referencia (revisión de Codex, 2026-10-03: con
+     * solo la vía, el inhalador y la solución para nebulizador de salbutamol daban el mismo prompt).
+     * La dosis NO viaja: el campo `dosis` de CIMA es contenido del envase en unos registros y dosis
+     * por unidad en otros, y convertirlo en exposición sería inventar un dato.
      *
      * El ATC sale de `atcs.find(a => a.nivel === N)`, nunca de `atcs[0]`, que es el nivel 3.
      */
@@ -6411,53 +6416,108 @@ class MedCheckApp {
         };
         const atc5 = nivel(5);
         const vias = [...new Set((med.viasAdministracion || []).map(v => this._consultVia(v?.nombre)).filter(Boolean))];
+        const formas = [this._consultForma(med)].filter(Boolean);
+        const base = { indicacion: null, nombre: null, consultados: [], formas, vias, sinVia: 0, total: 1, formaDeReferencia: true };
         if (kind === 'grupo') {
             const atc4 = nivel(4);
-            return atc4 ? { kind, pas: [], atcs: [atc4], vias, indicacion: null, nombre: null } : null;
+            return atc4 ? { ...base, kind, pas: [], atcs: [atc4] } : null;
         }
         if (kind === 'pa') {
-            const pa = med.vtm?.nombre
-                || (Array.isArray(med.principiosActivos) ? med.principiosActivos.map(p => p.nombre).filter(Boolean).join(' + ') : '');
-            return pa ? { kind, pas: [pa.toLowerCase()], atcs: atc5 ? [atc5] : [], vias, indicacion: null, nombre: null } : null;
+            const pa = this._consultPaDe(med);
+            return pa ? { ...base, kind, pas: [pa], atcs: atc5 ? [atc5] : [] } : null;
         }
         const pa = med.vtm?.nombre
             || (Array.isArray(med.principiosActivos) ? med.principiosActivos.map(p => p.nombre).filter(Boolean).join(' + ') : '')
             || med.pactivos || med.nombre;
-        return { kind: 'producto', pas: [pa], atcs: atc5 ? [atc5] : [], vias: [], indicacion: null, nombre: med.nombre || '' };
+        return { kind: 'producto', pas: [pa], atcs: atc5 ? [atc5] : [], vias: [], formas: [], consultados: [], sinVia: 0, total: 1, indicacion: null, nombre: med.nombre || '' };
+    }
+
+    /**
+     * Principio activo de un medicamento como UNIDAD: una asociación fija es una sola entrada
+     * («dapagliflozina + metformina»), no dos principios sueltos que el prompt cruzaría con todo lo
+     * demás. Un solo orden de preferencia para todos los registros —`vtm` (lenguaje natural, lo que
+     * trae el listado), luego el detalle—, para que una misma molécula no aparezca dos veces con y
+     * sin sal según de dónde venga el registro.
+     */
+    _consultPaDe(med) {
+        const nombre = med?.vtm?.nombre
+            || (Array.isArray(med?.principiosActivos) ? med.principiosActivos.map(p => p?.nombre).filter(Boolean).join(' + ') : '')
+            || String(med?.pactivos || '').split(/\s*[+/;]\s*/)
+                .map(p => p.trim().replace(/\s+\d+[\d,.]*\s*(mg|g|ml|%|ui|mcg|µg)[\s/]*/gi, '').trim())
+                .filter(Boolean).join(' + ');
+        return String(nombre || '').trim().toLowerCase();
+    }
+
+    /** Forma farmacéutica literal de CIMA («ÓVULO», «GEL VAGINAL»), en minúsculas. */
+    _consultForma(med) {
+        return String(med?.formaFarmaceutica?.nombre || med?.formaFarmaceuticaSimplificada?.nombre || '').trim().toLowerCase();
     }
 
     /**
      * Alcance de la pregunta desde los resultados de Indicaciones o del árbol ATC: el GRUPO que
-     * hay en pantalla, con los filtros aplicados. Se lleva la indicación buscada, los ATC
-     * consultados, los principios activos y las vías que quedan tras filtrar; nunca marcas,
-     * dosis, presentaciones, laboratorio ni financiación.
+     * hay en pantalla, con los filtros aplicados. Nunca viajan marcas, dosis, laboratorio ni
+     * financiación.
      *
-     * Los filtros importan por lo mismo que en la ficha: «estrógenos vaginales» no es una
-     * indicación del diccionario, se llega por G03CA más el filtro galénico, y es ese filtro el
-     * que hace que el prompt diga «vía vaginal».
+     * Se separan dos cosas que la primera versión mezclaba (revisión de Codex, 2026-10-03):
+     *  - `consultados`: los ATC con los que se hizo la BÚSQUEDA. Es procedencia, y se rotula así.
+     *    Buscando «diabetes» y filtrando a metformina, siguen siendo A10A y A10B.
+     *  - `atcs`: los subgrupos ATC (nivel 4) de los medicamentos que QUEDAN en pantalla. Es lo que
+     *    se pregunta. En el mismo ejemplo, A10BA, y ya no se afirma que haya insulinas.
+     * Los filtros importan por lo mismo que en la ficha: «estrógenos vaginales» no es una indicación
+     * del diccionario, se llega por G03CA más el filtro, y es ese filtro el que pone «vía vaginal».
+     *
+     * @param {string[]} [seleccionPA] - principios activos marcados en los chips: van primero, para
+     *   que el tope de la lista no deje fuera justo lo que el clínico eligió.
      */
-    _consultScopeFromResults(data, filtered, atcCode = null) {
+    _consultScopeFromResults(data, filtered, atcCode = null, seleccionPA = []) {
         const mi = data?.matchedIndication || null;
         const codes = mi ? (Array.isArray(mi.atc) ? mi.atc : [mi.atc]).filter(Boolean).map(String) : [];
         // La rama de fallback puede dejar texto libre en `atc`: solo se envían códigos con forma de ATC.
-        const atcs = codes.filter(c => /^[A-Z]\d{2}([A-Z]{1,2}(\d{2})?)?$/i.test(c)).map(c => ({
+        const consultados = codes.filter(c => /^[A-Z]\d{2}([A-Z]{1,2}(\d{2})?)?$/i.test(c)).map(c => ({
             codigo: c.toUpperCase(),
             nombre: (atcCode && c.toUpperCase() === String(atcCode).toUpperCase() && mi.label) ? mi.label : this._describeATCCode(c),
         }));
         const meds = Array.isArray(filtered) ? filtered : [];
-        const pas = this.extractUniquePrincipiosActivos(meds).map(p => p.name.toLowerCase());
+
+        const presentes = new Map();
+        for (const m of meds) {
+            const a = (Array.isArray(m.atcs) ? m.atcs : []).find(x => x?.nivel === 4);
+            if (a?.codigo && !presentes.has(a.codigo)) presentes.set(a.codigo, { codigo: a.codigo, nombre: a.nombre || '' });
+        }
+        // Sin ATC por registro (listado sin enriquecer) se cae a lo consultado: es menos preciso,
+        // pero sigue rotulado como lo que es.
+        const atcs = presentes.size ? [...presentes.values()] : consultados;
+
+        const cuenta = new Map();
+        for (const m of meds) {
+            const pa = this._consultPaDe(m);
+            if (pa) cuenta.set(pa, (cuenta.get(pa) || 0) + 1);
+        }
+        const elegidos = (seleccionPA || []).map(s => String(s).toLowerCase());
+        const esElegido = pa => elegidos.some(s => pa.includes(s) || s.includes(pa));
+        const pas = [...cuenta.entries()]
+            .sort((a, b) => (esElegido(b[0]) - esElegido(a[0])) || (b[1] - a[1]))
+            .map(([pa]) => pa);
+
         const vias = [...new Set(meds.flatMap(m => (m.viasAdministracion || []).map(v => this._consultVia(v?.nombre))).filter(Boolean))];
-        return { kind: 'grupo', pas, atcs, vias, indicacion: (!atcCode && mi?.label) ? mi.label : null, nombre: null };
+        const sinVia = meds.filter(m => !(m.viasAdministracion || []).some(v => v?.nombre)).length;
+        const formas = [...new Set(meds.map(m => this._consultForma(m)).filter(Boolean))];
+        return {
+            kind: 'grupo', pas, atcs, consultados, vias, sinVia, formas, total: meds.length,
+            indicacion: (!atcCode && mi?.label) ? mi.label : null, nombre: null,
+        };
     }
 
     /** Línea «Sobre: …» que ve el clínico. Dice exactamente lo que viaja en el prompt. */
     _consultScopeLabel(scope) {
         if (!scope) return '';
         if (scope.kind === 'producto') return scope.nombre || scope.pas[0] || '';
+        if (scope.kind === 'grupo' && !scope.total) return 'ningún medicamento con estos filtros';
         const partes = [];
         if (scope.indicacion) partes.push(scope.indicacion);
         if (scope.atcs.length) partes.push(scope.atcs.map(a => `${a.codigo}${a.nombre ? ` ${a.nombre}` : ''}`).join(' · '));
         if (scope.pas.length) partes.push(this._consultListaPas(scope.pas));
+        if (scope.formas.length) partes.push(this._consultListaPas(scope.formas, 4));
         if (scope.vias.length) partes.push(scope.vias.length === 1 ? `vía ${scope.vias[0]}` : `vías ${scope.vias.join(', ')}`);
         return partes.join(' — ');
     }
@@ -6567,7 +6627,7 @@ class MedCheckApp {
                     </div>
                 </div>
                 <label class="combo-field-label" for="ind-ai-doubt">Tu pregunta</label>
-                <textarea id="ind-ai-doubt" class="combo-ai-context" rows="3" maxlength="500" placeholder="Ej.: ¿puede iniciarlo el médico de familia o requiere antes una valoración por otra especialidad? ¿Qué guías lo respaldan? No incluyas datos que identifiquen a una persona.">${esc(st.doubt || '')}</textarea>
+                <textarea id="ind-ai-doubt" class="combo-ai-context" rows="3" maxlength="500" placeholder="Ej.: ¿qué requisitos previos describen las guías para iniciarlo en atención primaria? No incluyas datos que identifiquen a una persona.">${esc(st.doubt || '')}</textarea>
                 <details class="consult-more"${st.moreOpen ? ' open' : ''}>
                     <summary><i class="fas fa-list-check"></i> Apartados del prompt <span class="consult-more-hint">por defecto: guías y contraste con la ficha técnica</span></summary>
                     <div class="consult-opts">${this._consultChecksHtml(marcado)}</div>
@@ -6593,6 +6653,44 @@ class MedCheckApp {
         return { ...this._readConsultForm(root, '#ind-ai-doubt'), moreOpen: !!root.querySelector('details.consult-more')?.open };
     }
 
+    /** Identidad del universo de Indicaciones: una búsqueda por término o un código ATC. */
+    _indAiUniverso({ atcCode = null, query = '' } = {}) {
+        return atcCode ? `atc:${String(atcCode).toUpperCase()}` : `ind:${String(query || '').trim().toLowerCase()}`;
+    }
+
+    /**
+     * ¿Sigue valiendo la pregunta escrita? Sí dentro del mismo universo (facetas, ordenación,
+     * «Comercializado») y al bajar o subir por la MISMA rama del árbol ATC (G03C → G03CA): es la
+     * misma pregunta, más o menos acotada. No al cambiar de búsqueda o de rama —estrógenos → IBP—,
+     * que es el arrastre que encontró la revisión de Codex del 2026-10-03.
+     */
+    _indAiMismoUniverso(prev, next) {
+        if (!prev || !next) return false;
+        if (prev === next) return true;
+        if (prev.startsWith('atc:') && next.startsWith('atc:')) {
+            const a = prev.slice(4), b = next.slice(4);
+            return a.startsWith(b) || b.startsWith(a);
+        }
+        return false;
+    }
+
+    /**
+     * Al entrar en un universo nuevo: si no es el mismo, la pregunta se borra ANTES de las
+     * peticiones y se quita el panel del DOM, para que el siguiente repintado no la recupere de ahí.
+     * El panel sigue abierto si lo estaba: abrirlo fue una decisión del clínico, no de la búsqueda.
+     */
+    _indAiAlCambiarUniverso(next) {
+        if (!this._indAi) return;
+        if (this._indAiMismoUniverso(this._indAi.universo, next)) {
+            this._indAi.state = this._captureIndAiState();
+        } else {
+            this._indAi.state = null;
+            const slot = typeof document !== 'undefined' ? document.getElementById('ind-ai-slot') : null;
+            if (slot) slot.innerHTML = '';
+        }
+        this._indAi.universo = next;
+    }
+
     /**
      * Abre o cierra el panel de grupo sin repintar los resultados. La pregunta vive solo en
      * memoria de la pestaña del navegador —nunca en almacenamiento—, como el resto del contexto IA.
@@ -6600,13 +6698,13 @@ class MedCheckApp {
     toggleIndAiPanel() {
         const abrir = !this._indAi?.open;
         const state = abrir ? (this._indAi?.state || null) : this._captureIndAiState();
-        this._indAi = { open: abrir, state };
+        this._indAi = { open: abrir, state, universo: this._indAiUniverso({ atcCode: this.lastATCCode, query: this.lastIndicationQuery }) };
         document.querySelector('#indication-results .ind-ai-toggle')?.setAttribute('aria-expanded', String(abrir));
         const slot = document.getElementById('ind-ai-slot');
         const ctx = this._indAiCtx;
         if (!slot || !ctx) return;
         if (!abrir) { slot.innerHTML = ''; return; }
-        slot.innerHTML = this._renderIndAiPanel(this._consultScopeFromResults(ctx.data, ctx.filtered, ctx.atcCode), state);
+        slot.innerHTML = this._renderIndAiPanel(this._consultScopeFromResults(ctx.data, ctx.filtered, ctx.atcCode, ctx.seleccionPA), state);
         document.getElementById('ind-ai-doubt')?.focus();
     }
 
@@ -6631,13 +6729,16 @@ class MedCheckApp {
         if (!scope) return '';
         const duda = String(doubt || '').trim();
         if (!selected.length && !duda) return '';
+        // Un grupo filtrado a cero no es «el grupo»: preguntar por él sería preguntar por la
+        // búsqueda de origen sin los filtros que el clínico ha puesto.
+        if (scope.kind === 'grupo' && scope.total === 0) return '';
         const esProducto = scope.kind === 'producto';
 
         const SCEN = { edad: 'edad avanzada', renal: 'insuficiencia renal', hepatica: 'insuficiencia hepática', embarazo: 'embarazo o lactancia', polifarmacia: 'polifarmacia' };
         const BLOCKS = {
             monitorizacion: 'MONITORIZACIÓN: qué vigilar, cuándo y con qué umbrales según ficha técnica (CIMA 4.2/4.4) y guías — monitorización basal, de seguimiento (parámetro · cuándo · umbral · qué señalan las fuentes si se cruza) y signos de alarma.',
-            guias: 'GUÍAS Y CONSENSO: qué recomiendan las guías y documentos de consenso vigentes (sociedades españolas de atención primaria y de la especialidad, NICE, guías internacionales) sobre su uso en atención primaria: en qué situaciones y con qué fuerza, qué requisitos previos piden (exploración, pruebas), qué puede asumir el médico de familia y qué obliga a derivar. Cada recomendación con fuente, año y grado; si las fuentes discrepan, muestra la discrepancia.',
-            fueraFicha: 'GUÍA FRENTE A FICHA TÉCNICA ESPAÑOLA: contrasta lo recomendado con lo autorizado en las fichas de CIMA/AEMPS (4.1, 4.3, 4.4). Señala cada uso recomendado FUERA de las indicaciones autorizadas y cada contraindicación o advertencia de ficha que una guía relativice u omita. Describe la discrepancia, no la resuelvas; enlaza las dos fuentes.',
+            guias: 'GUÍAS Y CONSENSO: qué describen las guías y documentos de consenso vigentes (sociedades españolas de atención primaria y de la especialidad, NICE, guías internacionales) para su uso en atención primaria: situaciones, requisitos previos, seguimiento y criterios de consulta especializada. Cita versión y grado solo si constan. Que una guía no mencione un requisito no significa que sea innecesario. Muestra las discrepancias entre fuentes.',
+            fueraFicha: 'GUÍA FRENTE A FICHA TÉCNICA ESPAÑOLA: contrasta con fichas técnicas de CIMA que recuperes e identifiques por número de registro y formulación; no atribuyas una ficha única a la clase. Distingue indicaciones (4.1), contraindicaciones (4.3) y advertencias (4.4), y señala cada uso recomendado fuera de las indicaciones autorizadas. Que la guía calle algo que dice la ficha no es una discrepancia. Si no accedes a la ficha, decláralo no verificado. Describe, no resuelvas; enlaza guía y ficha.',
             eficacia: '¿SIRVE DE VERDAD? — EFICACIA EN ABSOLUTOS: para su(s) indicación(es) habitual(es), la magnitud del beneficio en términos ABSOLUTOS siempre que la fuente lo permita (reducción absoluta del riesgo, NNT, NNH, eventos por 1000, horizonte temporal y población). Señala EXPLÍCITAMENTE si la evidencia para una indicación habitual o promocionada es débil, indirecta o ausente. Si la fuente solo da medidas relativas o no da números, dilo; no conviertas ni inventes.',
             seguridad: 'SEGURIDAD: qué describen las fuentes sobre seguridad en las poblaciones relevantes para este fármaco (embarazo/lactancia, insuficiencia renal/hepática, personas mayores o frágiles) y las interacciones clínicamente importantes. Señala contraindicaciones mayores y usos incorrectos frecuentes; distingue la señal de seguridad de la mera mención.',
             comparacion: 'COMPARACIÓN: cómo se compara con la alternativa de primera línea según las fuentes (eficacia en absolutos, seguridad, comodidad y coste si la fuente lo da), no solo frente a placebo.',
@@ -6660,33 +6761,41 @@ class MedCheckApp {
             if (duda) lines.push('', `DUDA DEL CLÍNICO (formúlala como pregunta a las fuentes; no incluye datos identificables): ${duda}`);
         } else {
             lines.push(
-                'Eres un consultor en medicina basada en la evidencia para un médico de familia del SNS español. Respondes sobre LO QUE DICEN LAS FUENTES acerca de un principio activo o una clase de fármacos, no sobre un paciente concreto, y sin emitir órdenes de actuación. Español de España, sin metodología básica.',
+                'Eres consultor de medicina basada en la evidencia para un médico de familia del SNS español. Respondes sobre LO QUE DICEN LAS FUENTES, no sobre un paciente concreto, y sin órdenes de actuación. Español de España, sin metodología básica.',
                 '',
-                'ÁMBITO (principio activo o grupo; no una marca ni una presentación):',
+                'ÁMBITO (no una marca ni una presentación):',
             );
-            if (scope.indicacion) lines.push(`- Indicación: ${scope.indicacion}`);
-            if (scope.atcs.length) lines.push(`- Grupo terapéutico (ATC): ${scope.atcs.map(a => `${a.codigo}${a.nombre ? ` ${a.nombre}` : ''}`).join('; ')}`);
-            if (scope.pas.length) lines.push(`- ${scope.pas.length === 1 ? 'Principio activo' : 'Principios activos'}: ${this._consultListaPas(scope.pas)}`);
+            const atcTxt = list => list.map(a => `${a.codigo}${a.nombre ? ` ${a.nombre}` : ''}`).join('; ');
+            const mismos = scope.consultados.length === scope.atcs.length
+                && scope.consultados.every(c => scope.atcs.some(a => a.codigo === c.codigo));
+            if (scope.indicacion) lines.push(`- Búsqueda de origen: ${scope.indicacion}${scope.consultados.length ? ` (ATC consultados: ${scope.consultados.map(c => c.codigo).join(', ')})` : ''}`);
+            else if (scope.consultados.length && !mismos) lines.push(`- Búsqueda de origen: ${atcTxt(scope.consultados)}`);
+            if (scope.atcs.length) lines.push(`- ${scope.kind === 'grupo' && scope.consultados.length ? 'ATC en pantalla' : 'Grupo terapéutico (ATC)'}: ${atcTxt(scope.atcs)}`);
+            if (scope.pas.length) lines.push(`- ${scope.pas.length === 1 ? 'Principio activo' : 'Principios activos (o asociaciones)'}: ${this._consultListaPas(scope.pas)}`);
+            if (scope.formas.length) lines.push(scope.formaDeReferencia
+                ? `- Forma del medicamento de partida, como referencia: ${scope.formas[0]}`
+                : `- Formas presentes: ${this._consultListaPas(scope.formas, 5)}`);
             if (scope.vias.length === 1) lines.push(`- Vía: ${scope.vias[0]} (responde para esta vía; no extrapoles de otras).`);
             else if (scope.vias.length > 1) lines.push(`- Vías presentes: ${scope.vias.join(', ')} (si la respuesta cambia con la vía, distingue por vía).`);
-            lines.push('Si la respuesta depende de la molécula, la dosis o la formulación, distingue.');
-            if (duda) lines.push('', `PREGUNTA DEL CLÍNICO (respóndela PRIMERO y directa: sí, no o depende y de qué; sin datos identificables): ${duda}`);
+            if (scope.sinVia) lines.push(`- Vía no declarada en CIMA para ${scope.sinVia} de ${scope.total} medicamentos.`);
+            lines.push('Si la respuesta depende de la molécula, la forma, la concentración o la población, distingue.');
+            if (duda) lines.push('', `PREGUNTA DEL CLÍNICO (responde PRIMERO qué sostienen las fuentes, bajo qué condiciones y qué no permiten concluir; sin datos identificables): ${duda}`);
         }
         if (scenarios.length) lines.push('', `ESCENARIO DOCUMENTAL (poblaciones/situaciones sobre las que preguntar a las fuentes, NO un paciente concreto): ${scenarios.map(s => SCEN[s]).filter(Boolean).join(', ')}. En cada apartado, añade qué describen las fuentes en ese escenario.`);
         lines.push(
             '',
             esProducto
                 ? 'BUSCA en tiempo real y prioriza: guías vigentes (NICE, ESC/EASD y otras europeas, españolas, GuíaSalud), revisiones sistemáticas y metaanálisis (Cochrane), ensayos relevantes; para seguridad, AEMPS (CIMA, notas de seguridad) y EMA/PRAC. Prioriza lo publicado o actualizado en los últimos 3-5 años salvo que el estándar de referencia sea anterior.'
-                : 'BUSCA en tiempo real; prioriza guías y documentos de consenso vigentes (también GuíaSalud), revisiones sistemáticas (Cochrane) y ensayos relevantes; para uso autorizado y seguridad, AEMPS (CIMA) y EMA/PRAC. Últimos 3-5 años, salvo estándar anterior.',
+                : 'BUSCA en tiempo real; prioriza guías y documentos de consenso vigentes (también GuíaSalud), revisiones sistemáticas (Cochrane) y ensayos relevantes; para uso autorizado y seguridad, AEMPS (CIMA) y EMA/PRAC. Prefiere lo reciente sin descartar una guía vigente por su fecha.',
         );
         if (tasks.length) {
-            lines.push('', (!esProducto && duda) ? 'DESPUÉS DE LA PREGUNTA, RESPONDE a estos apartados (en español de España):' : 'RESPONDE a estos apartados (en español de España):', ...tasks);
+            lines.push('', (!esProducto && duda) ? 'DESPUÉS, RESPONDE a estos apartados:' : 'RESPONDE a estos apartados (en español de España):', ...tasks);
         }
         lines.push(
             '',
             esProducto
                 ? 'EN CADA APARTADO: cada afirmación con enlace y fecha; separa lo respaldado por fuente de tu razonamiento; declara la certeza (alta/moderada/baja/muy baja) y qué la limita; y di QUÉ FALTA (qué dato del paciente o qué evidencia ausente cambiaría la respuesta). No emitas una orden de actuación ni un plan individual: describe lo que las fuentes sostienen para que el clínico lo aplique con su criterio. Si la búsqueda no devuelve evidencia suficiente para un apartado, declara la incertidumbre en vez de rellenarla.'
-                : 'EN CADA APARTADO: enlace y fecha en cada afirmación; separa la fuente de tu razonamiento; certeza (alta/moderada/baja/muy baja) y qué la limita; qué falta para responder mejor. Sin plan individual. Si no hay evidencia suficiente, dilo en vez de rellenar.'
+                : 'EN CADA APARTADO: enlace y fecha en cada afirmación; separa la fuente, tu inferencia y lo no verificado; grado o certeza solo si la fuente los da (si no, di qué limita la evidencia); qué falta para responder mejor. Sin plan individual. Si no hay evidencia suficiente, dilo en vez de rellenar.'
         );
         return lines.join('\n');
     }
@@ -6700,8 +6809,12 @@ class MedCheckApp {
         if (source === 'grupo') {
             root = document.getElementById('ind-ai-panel');
             const ctx = this._indAiCtx;
-            scope = ctx ? this._consultScopeFromResults(ctx.data, ctx.filtered, ctx.atcCode) : null;
+            scope = ctx ? this._consultScopeFromResults(ctx.data, ctx.filtered, ctx.atcCode, ctx.seleccionPA) : null;
             doubtSel = '#ind-ai-doubt';
+            if (scope && !scope.total) {
+                this.showToast('No hay medicamentos con estos filtros: amplíalos antes de preguntar', 'warning');
+                return '';
+            }
         } else {
             root = document.getElementById('tab-consult');
             const kind = root?.querySelector('input[name="consult-scope"]:checked')?.value || 'producto';
@@ -6727,25 +6840,77 @@ class MedCheckApp {
             await navigator.clipboard.writeText(prompt);
             this.showToast('Prompt copiado — pégalo en la IA que prefieras', 'success');
         } catch (e) {
-            this.showToast('No se pudo copiar el prompt', 'error');
+            this.showToast('No se pudo copiar el prompt: cópialo a mano', 'error');
+            this._showPromptFallback(prompt);
         }
     }
 
     /**
      * Copiar-y-abrir genérico para handoff IA (Perplexity/ChatGPT). Centraliza la guarda de longitud
-     * de ChatGPT: si el ?q= sería excesivo, abre el motor sin precargar (el prompt ya está copiado).
+     * de ChatGPT: si el ?q= sería excesivo, abre el motor sin precargar y el clínico pega.
+     *
+     * El aviso dice lo que pasó, no lo que se intentó. Hasta el 2026-10-03 anunciaba «Prompt
+     * copiado» aunque el portapapeles hubiera fallado, y con un prompt largo eso dejaba ChatGPT
+     * vacío y nada que pegar (revisión de Codex). La copia y la apertura arrancan las dos dentro del
+     * gesto del clínico —esperar a la copia para abrir haría que el navegador bloqueara la ventana—;
+     * el aviso llega cuando se sabe cómo acabó la copia.
+     *
+     * @returns {Promise<void>}
      */
     _openAiEngine(engine, prompt) {
         const q = encodeURIComponent(prompt);
         // ChatGPT abre una página de error si el ?q= es excesivo; por encima del umbral se abre sin
         // precargar y el usuario pega (el prompt ya está copiado). Perplexity tolera consultas largas.
         const CHATGPT_Q_MAX = 4000;
+        const precargado = engine !== 'chatgpt' || q.length <= CHATGPT_Q_MAX;
         const url = engine === 'chatgpt'
-            ? (q.length <= CHATGPT_Q_MAX ? `https://chatgpt.com/?q=${q}` : 'https://chatgpt.com/')
+            ? (precargado ? `https://chatgpt.com/?q=${q}` : 'https://chatgpt.com/')
             : `https://www.perplexity.ai/search?q=${q}`;
-        navigator.clipboard.writeText(prompt).catch(() => { /* no bloquea la apertura */ });
+        let copia;
+        try { copia = navigator.clipboard.writeText(prompt); } catch (e) { copia = Promise.reject(e); }
         window.open(url, '_blank', 'noopener,noreferrer');
-        this.showToast('Prompt copiado y motor abierto — si no se precarga, pega con Ctrl+V', 'success');
+        return Promise.resolve(copia).then(
+            () => this.showToast(precargado
+                ? 'Prompt copiado y motor abierto — si no se precarga, pega con Ctrl+V'
+                : 'Motor abierto sin precargar (prompt largo): pega con Ctrl+V, ya está copiado', 'success'),
+            () => {
+                if (precargado) {
+                    this.showToast('Motor abierto con la consulta precargada; no se pudo copiar el prompt', 'warning');
+                } else {
+                    this.showToast('No se pudo copiar y el prompt es largo para precargarlo: cópialo a mano', 'error');
+                    this._showPromptFallback(prompt);
+                }
+            },
+        );
+    }
+
+    /**
+     * Último recurso cuando el portapapeles falla: el prompt en un cuadro seleccionable. El texto
+     * se asigna con `value`, nunca por HTML, porque contiene la pregunta libre del clínico.
+     */
+    _showPromptFallback(prompt) {
+        document.getElementById('prompt-fallback')?.remove();
+        const wrap = document.createElement('div');
+        wrap.id = 'prompt-fallback';
+        wrap.className = 'prompt-fallback';
+        wrap.setAttribute('role', 'dialog');
+        wrap.setAttribute('aria-modal', 'true');
+        wrap.setAttribute('aria-label', 'Prompt para copiar a mano');
+        wrap.innerHTML = `
+            <div class="prompt-fallback-box">
+                <p><strong>No se pudo copiar automáticamente.</strong> Selecciona el texto, cópialo (Ctrl+C) y pégalo en la IA.</p>
+                <textarea class="combo-ai-context" rows="12" readonly></textarea>
+                <div class="combo-ai-buttons"><button type="button" class="btn btn-secondary">Cerrar</button></div>
+            </div>`;
+        const ta = wrap.querySelector('textarea');
+        ta.value = prompt;
+        const cerrar = () => wrap.remove();
+        wrap.querySelector('button').addEventListener('click', cerrar);
+        wrap.addEventListener('keydown', e => { if (e.key === 'Escape') cerrar(); });
+        wrap.addEventListener('click', e => { if (e.target === wrap) cerrar(); });
+        document.body.appendChild(wrap);
+        ta.focus();
+        ta.select();
     }
 
     /**
@@ -15357,10 +15522,13 @@ ${ftFechaDocsHtml}
         // reescribe el contenedor entero y, si no, se perdería la pregunta a medio teclear. El
         // contexto se guarda para construir el prompt con los filtros vigentes al pulsar.
         if (this._indAi?.open) this._indAi.state = this._captureIndAiState();
-        this._indAiCtx = { data, filtered: filteredResults, atcCode: this.lastATCCode || null };
+        this._indAiCtx = {
+            data, filtered: filteredResults, atcCode: this.lastATCCode || null,
+            seleccionPA: [...(this.groupingState?.activeIngredientFilters || [])],
+        };
         const indAiOpen = !!this._indAi?.open;
         const indAiPanel = indAiOpen
-            ? this._renderIndAiPanel(this._consultScopeFromResults(data, filteredResults, this.lastATCCode || null), this._indAi.state)
+            ? this._renderIndAiPanel(this._consultScopeFromResults(data, filteredResults, this._indAiCtx.atcCode, this._indAiCtx.seleccionPA), this._indAi.state)
             : '';
 
         resultsContainer.innerHTML = `

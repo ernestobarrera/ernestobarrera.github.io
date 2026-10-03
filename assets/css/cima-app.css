@@ -2890,6 +2890,13 @@ body {
 .consult-more > summary { cursor: pointer; font-size: 0.84rem; color: var(--text-primary); }
 .consult-more-hint { color: var(--text-secondary); font-size: 0.78rem; margin-left: 0.3rem; }
 
+/* Último recurso cuando el portapapeles falla: el prompt seleccionable (2026-10-03) */
+.prompt-fallback { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, 0.6); }
+.prompt-fallback-box { width: min(720px, 100%); max-height: 90vh; overflow: auto; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: var(--space-md); box-sizing: border-box; }
+.prompt-fallback-box p { margin: 0 0 var(--space-sm); font-size: 0.88rem; color: var(--text-primary); }
+.prompt-fallback-box textarea { width: 100%; box-sizing: border-box; font-size: 0.8rem; }
+.prompt-fallback-box .combo-ai-buttons { margin-top: var(--space-sm); justify-content: flex-end; }
+
 /* "Afinar la consulta": plegable secundario dentro del hero */
 .combo-ai-refine {
     border-top: 1px dashed rgba(99, 102, 241, 0.3);
