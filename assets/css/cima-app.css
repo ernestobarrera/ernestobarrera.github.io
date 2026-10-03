@@ -2862,6 +2862,34 @@ body {
 .consult-chip input { margin: 0; }
 .consult-sub { margin-top: 0.85rem; }
 
+/* Alcance de «Consultar IA»: este medicamento · principio activo · grupo (2026-10-03) */
+.consult-scope { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: var(--space-sm); }
+.consult-scope-opt { display: inline-flex; gap: 0.35rem; align-items: center; font-size: 0.82rem; padding: 0.3rem 0.7rem; border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 999px; cursor: pointer; }
+.consult-scope-opt input { margin: 0; }
+.consult-scope-opt:has(input:checked) { background: rgba(99, 102, 241, 0.22); border-color: rgba(99, 102, 241, 0.7); font-weight: 600; }
+.consult-scope-opt.is-disabled { opacity: 0.45; cursor: not-allowed; }
+.consult-scope-line,
+.ind-ai-scope { margin: 0.45rem 0 0; font-size: 0.82rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+.consult-scope-line strong,
+.ind-ai-scope strong { color: var(--text-primary); }
+
+/* Panel «Preguntar a IA» de la cabecera de resultados de Indicaciones/ATC */
+.ind-results-header { flex-wrap: wrap; gap: var(--space-sm); }
+.ind-results-header .atc-breadcrumb-nav { flex: 1 1 auto; min-width: 0; }
+.ind-ai-toggle { flex: 0 0 auto; white-space: nowrap; }
+.ind-ai-toggle[aria-expanded="true"] { background: rgba(99, 102, 241, 0.3); border-color: rgba(99, 102, 241, 0.8); }
+/* Sin `.search-box` a propósito: con la ficha abierta en panel lateral, esa clase se aparta
+   del panel con un margen, y dentro de #indication-results —que ya se aparta con su padding—
+   se restaba dos veces y el panel quedaba en 30 px. */
+.ind-ai-panel { margin: 0 0 var(--space-md); border-radius: var(--radius-lg); }
+.ind-ai-panel .combo-ai-hero-head > div { min-width: 0; }
+.ind-ai-panel .combo-ai-hero-head { margin-bottom: var(--space-sm); }
+.ind-ai-panel .combo-ai-hero-head p + p { margin-top: 0.3rem; }
+.ind-ai-panel textarea { width: 100%; box-sizing: border-box; }
+.consult-more { margin-top: var(--space-sm); }
+.consult-more > summary { cursor: pointer; font-size: 0.84rem; color: var(--text-primary); }
+.consult-more-hint { color: var(--text-secondary); font-size: 0.78rem; margin-left: 0.3rem; }
+
 /* "Afinar la consulta": plegable secundario dentro del hero */
 .combo-ai-refine {
     border-top: 1px dashed rgba(99, 102, 241, 0.3);
