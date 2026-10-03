@@ -9265,6 +9265,7 @@ class MedCheckApp {
         this._pendingFocusContext = (initialTab === 'safety' && options.focusContext) || null;
         this._nregEnPanel = String(nregistro);
         this._marcarTarjetaEnPanel(nregistro);
+        this._vigilarListaDelPanel(true);
         this.modal.classList.remove('hidden');
         this.modalBody.innerHTML = '<div class="loading-spinner"></div>';
         this._loadEml(); // disparo anticipado: el JSON local suele cargar antes que la ficha remota
@@ -9411,7 +9412,7 @@ class MedCheckApp {
                             <button class="modal-fav-btn ${isModalFav ? 'active' : ''}" onclick="app.toggleFavoriteFromModal('${med.nregistro}', this)" title="${isModalFav ? 'Quitar de Mi vademécum (favoritos)' : 'Guardar en Mi vademécum (favoritos)'}">
                                 <i class="fas fa-star"></i> <span>${isModalFav ? 'En Mi vademécum' : 'Guardar en Mi vademécum'}</span>
                             </button>
-                            ${this._posicionEnListaHtml(med.nregistro)}
+                            <div class="modal-pos-slot">${this._posicionEnListaHtml(med.nregistro)}</div>
                         </div>
                     </div>
                 </div>
@@ -10155,7 +10156,9 @@ class MedCheckApp {
             tarjetas = this._tarjetasDeLista();
             i = tarjetas.findIndex(c => c.dataset.nregistro === this._nregEnPanel);
         }
-        const destino = i === -1 ? null : tarjetas[i + paso];
+        // Fuera de la lista (un filtro lo ha dejado fuera, ver `_refrescarPosicionEnLista`): › va al primero.
+        const fuera = i === -1 && paso > 0 && this.modal.querySelector('.modal-pos-lista');
+        const destino = fuera ? tarjetas[0] : i === -1 ? null : tarjetas[i + paso];
         if (!destino) return false;
         destino.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         this.openMedDetails(destino.dataset.nregistro);
@@ -10178,9 +10181,10 @@ class MedCheckApp {
      * donde hay teclado (el CSS oculta las teclas en pantallas táctiles). Vacío si el producto
      * no se abrió desde una lista visible o la lista tiene uno solo.
      */
-    _posicionEnListaHtml(nregistro) {
+    _posicionEnListaHtml(nregistro, { fuera = false } = {}) {
         const lista = this._tarjetasDeLista();
         const i = lista.findIndex(c => c.dataset.nregistro === String(nregistro));
+        if (i === -1 && fuera && lista.length) return this._posicionFueraDeListaHtml(lista.length);
         if (i === -1 || lista.length < 2) return '';
         const ultima = i === lista.length - 1 && !this._verMasTrasTarjeta(lista[i]);
         const boton = (paso, icono, ayuda, inerte) =>
@@ -10190,6 +10194,47 @@ class MedCheckApp {
             ${boton(-1, 'left', 'Producto anterior de la lista (← o K)', i === 0)}
             <span class="modal-pos-num" title="Posición entre las tarjetas visibles de la lista: lo que queda tras «Ver más» o en un grupo plegado no cuenta hasta que se despliega">${i + 1} / ${lista.length}</span>
             ${boton(1, 'right', 'Producto siguiente de la lista (→ o J)', ultima)}
+            <span class="modal-pos-kbd" title="También J (siguiente) y K (anterior)"><kbd>←</kbd><kbd>→</kbd></span>
+        </div>`;
+    }
+
+    /**
+     * Con el panel abierto la lista de detrás sigue viva: se busca otro principio, se faceta, se
+     * despliega un «Ver más»… y el «3 / 8» de la cabecera se quedaba con la lista vieja hasta
+     * pulsar ‹ › (03/10/2026). Se observa todo lo que no es el panel y se recalcula una vez por
+     * fotograma. Atributos `class`/`style`/`hidden` porque hay filtros que ocultan sin repintar.
+     */
+    _vigilarListaDelPanel(activo) {
+        if (!activo) { this._observadorLista?.disconnect(); return; }
+        this._observadorLista ??= new MutationObserver(registros => {
+            if (this._posPendiente || registros.every(r => this.modal.contains(r.target))) return;
+            this._posPendiente = requestAnimationFrame(() => {
+                this._posPendiente = null;
+                this._refrescarPosicionEnLista();
+            });
+        });
+        this._observadorLista.observe(document.body, {
+            childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'],
+        });
+    }
+
+    /** Repinta solo la fila de posición, y solo si ha cambiado (escribir sin cambio no cuesta, pero tampoco sirve). */
+    _refrescarPosicionEnLista() {
+        const hueco = this.modal.querySelector('.modal-pos-slot');
+        if (!hueco || !this._nregEnPanel || this.modal.classList.contains('hidden')) return;
+        // Si la ficha ya tenía fila (venía de una lista), no se quita al quedar fuera: pasa a «– / N».
+        const html = this._posicionEnListaHtml(this._nregEnPanel, { fuera: !!hueco.querySelector('.modal-pos-lista') });
+        if (hueco.dataset.pos !== html) { hueco.innerHTML = html; hueco.dataset.pos = html; }
+    }
+
+    /** «– / N»: la ficha venía de la lista, pero el filtro aplicado después la ha dejado fuera. */
+    _posicionFueraDeListaHtml(total) {
+        const ayuda = 'Primer producto de la lista (→ o J)';
+        return `<div class="modal-pos-lista">
+            <span class="modal-pos-label">Resultados</span>
+            <button type="button" class="modal-pos-btn" disabled aria-label="Sin producto anterior"><i class="fas fa-chevron-left"></i></button>
+            <span class="modal-pos-num" title="El producto abierto ya no está entre las tarjetas visibles (lo ha dejado fuera un filtro o una búsqueda nueva)">– / ${total}</span>
+            <button type="button" class="modal-pos-btn" onclick="app._irATarjetaVecina(1)" title="${ayuda}" aria-label="${ayuda}"><i class="fas fa-chevron-right"></i></button>
             <span class="modal-pos-kbd" title="También J (siguiente) y K (anterior)"><kbd>←</kbd><kbd>→</kbd></span>
         </div>`;
     }
@@ -13459,6 +13504,7 @@ ${ftFechaDocsHtml}
         this._pestanaPreferida = null;
         this._nregEnPanel = null;
         this._marcarTarjetaEnPanel(null);
+        this._vigilarListaDelPanel(false);
         // La vista de analítica vuelve a la de fondo. Sin esto, lo siguiente que se buscara
         // se registraba como la última pestaña del modal ya cerrado (verificado el 30/09/2026).
         if (wasOpen) window._mcCurrentView = MedCheckApp._VIEW_ANALYTICS_MAP[this.currentView] || this.currentView;

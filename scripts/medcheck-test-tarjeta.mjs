@@ -719,6 +719,12 @@ console.log('\n— El enfoque del contexto en la pestaña de Seguridad —');
         'y el favorito abierto se marca, sin pisar el color de su grupo ATC');
     ok(/\$\{this\._posicionEnListaHtml\(med\.nregistro\)\}/.test(app3),
         'la cabecera de la ficha dice la posición en la lista, con ‹ › para pasar al vecino');
+    // 03/10/2026: el «3 / 8» se quedaba con la lista vieja al buscar o facetar con el panel abierto.
+    ok(/this\._marcarTarjetaEnPanel\(nregistro\);\s*this\._vigilarListaDelPanel\(true\);/.test(app3)
+        && /this\._marcarTarjetaEnPanel\(null\);\s*this\._vigilarListaDelPanel\(false\);/.test(app3),
+        'la posición se recalcula cuando cambia la lista de detrás, y se deja de vigilar al cerrar');
+    ok(/registros\.every\(r => this\.modal\.contains\(r\.target\)\)/.test(app3),
+        'los cambios dentro del propio panel no disparan el recálculo (sin bucle)');
     ok(/this\._pendingFocusContext = \(initialTab === 'safety' && options\.focusContext\)/.test(app3),
         'el enfoque solo se arma con la pestaña de Seguridad, que es donde viven los checks');
     ok(/data-context="\$\{check\.context\}"/.test(app3),

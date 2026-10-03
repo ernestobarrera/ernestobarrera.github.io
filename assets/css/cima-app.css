@@ -13557,6 +13557,9 @@ a.ipt-item:hover {
 /* «Resultados ‹ 3 / 24 › ← →» de la cabecera de la ficha: rótulo a la izquierda, control y
    teclas a la derecha. Patrón de paginador de panel de lectura (correo): el atajo se enseña al
    lado del control que acelera, no solo en un tooltip. */
+/* Hueco que se repinta cuando cambia la lista de detrás; no ocupa caja propia. */
+.modal-pos-slot { display: contents; }
+
 .modal-pos-lista {
     margin-top: 0.5rem;
     display: flex;
