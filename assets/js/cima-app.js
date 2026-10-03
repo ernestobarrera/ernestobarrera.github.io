@@ -1,6 +1,6 @@
 /*!
  * MedCheck — Herramienta clínica de medicamentos
- * © 2024-2026 Ernesto Barrera Chacón. Todos los derechos reservados.
+ * © 2024-2026 Ernesto Barrera. Todos los derechos reservados.
  *
  * Se permite el uso de la aplicación en su URL original.
  * Queda prohibida la copia, modificación o redistribución del código
@@ -4748,6 +4748,21 @@ class MedCheckApp {
     }
 
     /**
+     * Enlace al apartado de la ficha técnica con su RÓTULO señalado («4.6. Fertilidad, embarazo y
+     * lactancia»), para las cabeceras de apartado de Seguridad. Mismo ancla que el índice de
+     * Documentación (`_anclaEpigrafe` + `_urlEpigrafe`): son subepígrafes de segundo nivel, que
+     * no salen en el índice lateral de CIMA, así que el rótulo solo basta. Sin título de la
+     * fuente, cae al ancla del apartado, que es lo que había.
+     */
+    _ftUrlEpigrafe(med, seccion, titulo) {
+        if (!seccion) return null;
+        const ft = (med?.docs || []).find(d => d.tipo === 1 && d.secc === true && d.urlHtml);
+        if (!ft) return null;
+        const ancla = titulo ? this._anclaEpigrafe(seccion, titulo) : null;
+        return this._urlEpigrafe(ft.urlHtml, seccion, ancla);
+    }
+
+    /**
      * Enlace de cabecera de las pestañas que muestran un apartado ENTERO (4.1, 4.2, 4.5, 4.8).
      * Mismo constructor y misma pestaña reutilizable que las menciones de Seguridad, para que
      * «ver en CIMA» signifique y haga lo mismo en todo el modal.
@@ -5031,10 +5046,12 @@ class MedCheckApp {
         return `<div class="safety-passages">
             ${index ? `<nav class="safety-passages-index" aria-label="Pasajes de ${esc(check.label)}"><strong>Ir a un pasaje</strong><div class="safety-passages-jumps">${index}</div></nav>` : ''}
             ${check.sections.map(section => {
-                const url = this._ftUrlSeccion(med, section.section);
+                // Con el título de CIMA, la cabecera abre la ficha con el EPÍGRAFE señalado, igual
+                // que el índice de Documentación y los pasajes. Sin él, solo desplaza al apartado.
+                const url = this._ftUrlEpigrafe(med, section.section, section.sectionTitle);
                 const cuantos = ordered(section).length;
                 return `<section class="safety-passages-section">
-                    <div class="safety-passages-section-head"><strong>${esc(section.section)} · ${esc(sectionNames[section.section] || '')}${cuantos ? ` <em>· ${cuantos} ${cuantos === 1 ? 'pasaje' : 'pasajes'}</em>` : ''}</strong>
+                    <div class="safety-passages-section-head"><strong>${esc(section.section)} · ${esc(section.sectionTitle || sectionNames[section.section] || '')}${cuantos ? ` <em>· ${cuantos} ${cuantos === 1 ? 'pasaje' : 'pasajes'}</em>` : ''}</strong>
                     ${url ? `<a href="${esc(url)}" ${this._destinoCima(url)}>Ver sección en CIMA ↗</a>` : ''}</div>
                     ${ordered(section).map(group => `<div class="safety-passage" id="${id(section.section, group.ordinal)}">
                         ${group.metadataOnly ? '<p>CIMA declara esta subsección, pero no devuelve su texto. Revisar la ficha completa.</p>' : `<div class="safety-passage-original">${this._conEnlaceAlPasaje(group, this._ftUrlSeccion(med, section.section, group.linkPhrase))}</div>`}

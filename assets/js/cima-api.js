@@ -2560,7 +2560,10 @@ class CimaAPI {
                     ['rótulo tipográfico', 'rótulo francés'].includes(meta.titleKind) ? nodes.slice(1) : nodes) }];
         });
         const displayOrder = [...selected].sort((a, b) => Number(!!b.titleHits.length) - Number(!!a.titleHits.length) || a.ordinal - b.ordinal).map(g => g.ordinal);
-        return { section, status: 'review', message: selected.length ? 'Coincidencias textuales — revisar la fuente' : 'No se localizó una mención literal — revisar el apartado completo', groups: selected, displayOrder };
+        // El título del apartado TAL COMO LO ESCRIBE CIMA («Advertencias y precauciones especiales
+        // de empleo»), para que el enlace de cabecera pueda señalar el epígrafe con `:~:text=`.
+        const sectionTitle = String(data.find(item => String(item.seccion) === section)?.titulo || '');
+        return { section, sectionTitle, status: 'review', message: selected.length ? 'Coincidencias textuales — revisar la fuente' : 'No se localizó una mención literal — revisar el apartado completo', groups: selected, displayOrder };
     }
 
     /**
