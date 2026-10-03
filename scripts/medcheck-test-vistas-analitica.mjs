@@ -94,7 +94,7 @@ if (!existsSync(rutaWorker)) {
   const cuerpo = cuerpoMetodo('    closeModal() {');
   ok('se localiza closeModal', !!cuerpo);
   const global = {};
-  const app = { modal: { classList: { contains: () => false, add() {} } }, currentView: 'combo', isPopstateNavigation: true, _marcarTarjetaEnPanel() {} };
+  const app = { modal: { classList: { contains: () => false, add() {} } }, currentView: 'combo', isPopstateNavigation: true, _marcarTarjetaEnPanel() {}, _vigilarListaDelPanel() {} };
   new Function('window', 'MedCheckApp', 'document', cuerpo).call(app, global, { _VIEW_ANALYTICS_MAP: mapa }, { activeElement: null });
   ok('al cerrar la ficha la vista vuelve a la de fondo', global._mcCurrentView === 'interacciones', `quedó «${global._mcCurrentView}»`);
 }
