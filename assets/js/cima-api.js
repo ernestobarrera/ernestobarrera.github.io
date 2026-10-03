@@ -232,6 +232,12 @@ class CimaAPI {
             if (error.name === 'AbortError') {
                 throw error;
             }
+            // Un 204 o un cuerpo vacío es una RESPUESTA de CIMA («este registro no lo expongo»),
+            // no un fallo: no se pinta como error en consola ni marca la API como caída. Se sigue
+            // lanzando para que cada llamador decida, como hasta ahora.
+            if (error.code === 'NO_CONTENT') {
+                throw error;
+            }
             console.error('❌ CIMA API Error:', error.message);
             this.isOnline = false;
             throw error;
@@ -302,11 +308,16 @@ class CimaAPI {
         const trimmed = query.trim();
         const params = { ...filters };
 
-        // Detectar tipo de búsqueda
-        if (/^\d{6,7}$/.test(trimmed)) {
-            // Código Nacional (6-7 dígitos)
-            params.cn = trimmed;
-        } else if (/^[A-Za-z]\d{2}/.test(trimmed)) {
+        // Por defecto solo comercializados si no se especifica
+        if (params.comerc === undefined) {
+            params.comerc = 1;
+        }
+
+        // Detectar tipo de búsqueda: un número va por identificador (CN o nº de registro)
+        const porNumero = await this.searchByNumber(trimmed, params, options);
+        if (porNumero) return porNumero;
+
+        if (/^[A-Za-z]\d{2}/.test(trimmed)) {
             // Código ATC (empieza con letra + 2 dígitos)
             params.atc = trimmed;
         } else {
@@ -314,12 +325,47 @@ class CimaAPI {
             params.nombre = trimmed;
         }
 
-        // Por defecto solo comercializados si no se especifica
-        if (params.comerc === undefined) {
-            params.comerc = 1;
+        return this.searchMedicamentos(params, options);
+    }
+
+    /**
+     * Búsqueda por identificador numérico: código nacional (CN) o número de registro.
+     *
+     * Un número puro puede ser cualquiera de los dos y su forma no basta para saberlo. Medido el
+     * 03/10/2026 sobre el índice ATC (22.644 registros): el 79 % de los nregistros tiene 5
+     * dígitos, pero los hay de 4 a 15, y 62 tienen 6-7, la misma forma que un CN (1191360 es
+     * WAYLIVRA). Ninguno de esos 62 era entonces también un CN real.
+     *
+     * Por eso con 6-7 dígitos se preguntan las DOS cosas y se unen, CN primero: si algún día un
+     * número es el CN de un medicamento y el nregistro de otro, salen los dos en vez de esconder
+     * uno. Con otra longitud solo puede ser nregistro, y `nregistro=` casa exacto en CIMA.
+     * La petición por nregistro va siempre sin analítica: la del CN, o la de texto si no hay
+     * acierto, es la que cuenta, como antes.
+     *
+     * @returns {Promise<Object|null>} `null` si la consulta no es un número, o si no tiene forma
+     *   de CN y no es ningún registro: entonces decide quien llama (normalmente, buscar texto).
+     */
+    async searchByNumber(query, filters = {}, options = {}) {
+        const q = String(query || '').trim();
+        if (!/^\d+$/.test(q)) return null;
+        const noTrack = { ...options, headers: { ...options.headers, 'X-MC-Autocomplete': '1' } };
+        const porRegistro = this.searchMedicamentos({ nregistro: q, ...filters }, noTrack)
+            .catch(() => null);
+
+        if (!/^\d{6,7}$/.test(q)) {
+            const r = await porRegistro;
+            return r?.resultados?.length ? r : null;
         }
 
-        return this.searchMedicamentos(params, options);
+        // Si el CN falla, el error sube como antes; el nregistro es un añadido y su fallo no.
+        const [porCN, reg] = await Promise.all([
+            this.searchMedicamentos({ cn: q, ...filters }, options),
+            porRegistro,
+        ]);
+        const vistos = new Set();
+        const resultados = [...(porCN?.resultados || []), ...(reg?.resultados || [])]
+            .filter(m => !vistos.has(m.nregistro) && vistos.add(m.nregistro));
+        return { ...porCN, resultados, totalFilas: resultados.length };
     }
 
     /**

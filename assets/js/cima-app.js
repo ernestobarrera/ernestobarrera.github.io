@@ -1834,7 +1834,8 @@ class MedCheckApp {
         }
 
         // Auto-detectar tipo de búsqueda
-        // CN = 6-7 dígitos numéricos, todo lo demás = búsqueda inteligente combinada
+        // CN = 6-7 dígitos numéricos (que también se busca como nº de registro, ver
+        // `CimaAPI.searchByNumber`), todo lo demás = búsqueda inteligente combinada
         const isCN = /^\d{6,7}$/.test(query);
         const searchType = isCN ? 'cn' : 'smart';
 
@@ -1867,21 +1868,16 @@ class MedCheckApp {
                 comerc: this.lastSearchFilters.comerc ? 1 : undefined
             };
 
-            // Búsqueda inteligente: CN directo, texto usa búsqueda combinada
-            let rawData;
-            if (isCN) {
-                rawData = await this.api.searchByType(query, 'cn', filters);
-            } else {
-                // Búsqueda combinada: nombre + principio activo + palabras individuales
-                rawData = await this._performSmartSearch(query, filters);
-            }
+            // Búsqueda inteligente: número por identificador, texto usa búsqueda combinada
+            let rawData = await this._buscarConsulta(query, filters);
 
             // Si no hay resultados y el filtro comerc estaba activo, reintentar sin él
             // Cubre medicamentos retirados del mercado (ej: Robaxisal, fármacos descatalogados)
             let retiradosAviso = false;
             if ((!rawData.resultados || rawData.resultados.length === 0) && this.lastSearchFilters.comerc) {
-                // Retry sin filtro comerc — marcado como secundario para no duplicar analítica
-                rawData = await this._performSmartSearch(query, {}, { trackPrimary: false });
+                // Retry sin filtro comerc — marcado como secundario para no duplicar analítica.
+                // Por el MISMO despacho: antes un CN reintentaba como texto (`nombre=<CN>`).
+                rawData = await this._buscarConsulta(query, {}, { trackPrimary: false });
                 if (rawData.resultados && rawData.resultados.length > 0) {
                     retiradosAviso = true;
                 }
@@ -1942,6 +1938,18 @@ class MedCheckApp {
         } catch (error) {
             this.handleSearchError(resultsContainer, error);
         }
+    }
+
+    /**
+     * Despacho único de la consulta del buscador: un número va primero por identificador (CN o
+     * nº de registro, ver `CimaAPI.searchByNumber`) y, si no es ninguno, sigue por texto como
+     * cualquier otra consulta. Lo usan la búsqueda y su reintento sin «Comercializado», para que
+     * las dos pregunten lo mismo.
+     */
+    async _buscarConsulta(query, filters = {}, { trackPrimary = true } = {}) {
+        const noTrack = { headers: { 'X-MC-Autocomplete': '1' } };
+        const porNumero = await this.api.searchByNumber(query, filters, trackPrimary ? {} : noTrack);
+        return porNumero || this._performSmartSearch(query, filters, { trackPrimary });
     }
 
     /**
@@ -6095,9 +6103,8 @@ class MedCheckApp {
         const trimmed = (query || '').trim();
         if (!trimmed) return { resultados: [], totalFilas: 0 };
         const requestOptions = track ? {} : { headers: { 'X-MC-Autocomplete': '1' } };
-        if (/^\d{6,7}$/.test(trimmed)) {
-            return this.api.searchMedicamentos({ cn: trimmed, comerc: 1 }, requestOptions);
-        }
+        const porNumero = await this.api.searchByNumber(trimmed, { comerc: 1 }, requestOptions);
+        if (porNumero) return porNumero;
         if (/^[A-Za-z]\d{2}/.test(trimmed)) {
             return this.api.searchMedicamentos({ atc: trimmed, comerc: 1 }, requestOptions);
         }
