@@ -4716,8 +4716,10 @@ class MedCheckApp {
      * casa —etiquetas de CIMA partiendo la palabra, texto reescrito desde la última consulta—,
      * el navegador también se queda en el ancla. Ningún caso queda peor que antes.
      *
-     * Sin `match` no se añade nada: las tres secciones fijas (4.4, 4.6, 4.7) y el índice de
-     * documentos siguen enlazando al apartado, porque ahí no hay ninguna frase que señalar.
+     * SIN `match`, EL RÓTULO DEL APARTADO (03/10/2026). Si ya se conocen los títulos de la
+     * ficha (`_titulosFT`), se señala «4.8. Reacciones adversas» igual que en el índice de
+     * Documentación: Ernesto lo pidió en todos los sitios que llevan a CIMA. Si aún no han
+     * llegado, se enlaza al apartado y `_señalarEnlacesCima` lo mejora cuando lleguen.
      */
     _ftUrlSeccion(med, seccion, match = null) {
         if (!seccion) return null;
@@ -4726,7 +4728,10 @@ class MedCheckApp {
         const base = `${ft.urlHtml}#${encodeURIComponent(seccion)}`;
 
         const ancla = typeof match === 'string' ? match.trim() : '';
-        if (!ancla) return base;
+        if (!ancla) {
+            const titulo = this._cacheTitulosFT?.get(String(med.nregistro))?.get(String(seccion));
+            return titulo ? this._urlEpigrafe(ft.urlHtml, seccion, this._anclaEpigrafe(seccion, titulo)) : base;
+        }
 
         // DOS FILTROS, Y NINGUNO ES REMILGO.
         //
@@ -4747,19 +4752,63 @@ class MedCheckApp {
         return `${base}:~:text=${codificada}`;
     }
 
+    /** Guarda un título de apartado que ya llegó por otra vía (el análisis de Seguridad). */
+    _recordarTituloFT(med, seccion, titulo) {
+        const nr = String(med?.nregistro || '');
+        if (!nr || !titulo) return;
+        this._cacheTitulosFT ??= new Map();
+        if (!this._cacheTitulosFT.has(nr)) this._cacheTitulosFT.set(nr, new Map());
+        const mapa = this._cacheTitulosFT.get(nr);
+        if (!mapa.has(String(seccion))) mapa.set(String(seccion), String(titulo).trim());
+    }
+
     /**
-     * Enlace al apartado de la ficha técnica con su RÓTULO señalado («4.6. Fertilidad, embarazo y
-     * lactancia»), para las cabeceras de apartado de Seguridad. Mismo ancla que el índice de
-     * Documentación (`_anclaEpigrafe` + `_urlEpigrafe`): son subepígrafes de segundo nivel, que
-     * no salen en el índice lateral de CIMA, así que el rótulo solo basta. Sin título de la
-     * fuente, cae al ancla del apartado, que es lo que había.
+     * Títulos oficiales de los apartados de la ficha técnica (`seccion → titulo`), tal como los
+     * publica CIMA en `/docSegmentado/secciones/1`. Son los que hacen falta para que el navegador
+     * señale el rótulo («4.4. Advertencias y precauciones especiales de empleo»): nuestras
+     * etiquetas no coinciden con la ficha y con ellas el `:~:text=` no casaría.
+     *
+     * Una petición SECUNDARIA por medicamento, la misma que usa el índice de Documentación, así
+     * que la caché del cliente la sirve una sola vez. Si falla, devuelve un mapa vacío y los
+     * enlaces se quedan en el ancla del apartado, que es lo que había.
      */
-    _ftUrlEpigrafe(med, seccion, titulo) {
-        if (!seccion) return null;
+    async _titulosFT(med) {
+        const nr = String(med?.nregistro || '');
+        if (!nr || !(med?.docs || []).some(d => d.tipo === 1 && d.secc === true && d.urlHtml)) return new Map();
+        this._cacheTitulosFT ??= new Map();
+        if (this._cacheTitulosFT.has(nr)) return this._cacheTitulosFT.get(nr);
+        let mapa = new Map();
+        try {
+            const secciones = await this.api.getDocSecciones(nr, 1, { headers: { 'X-MC-Autocomplete': '1' } });
+            const lista = typeof secciones === 'string' ? JSON.parse(secciones) : secciones;
+            mapa = new Map((Array.isArray(lista) ? lista : [])
+                .filter(x => x?.seccion && String(x.titulo || '').trim())
+                .map(x => [String(x.seccion), String(x.titulo).trim()]));
+        } catch { /* sin títulos: enlaces al apartado */ }
+        if (this._cacheTitulosFT.size > 50) this._cacheTitulosFT.delete(this._cacheTitulosFT.keys().next().value);
+        this._cacheTitulosFT.set(nr, mapa);
+        return mapa;
+    }
+
+    /**
+     * Mejora los enlaces a la ficha que se pintaron ANTES de que llegaran los títulos: los que
+     * apuntan a `urlHtml#seccion` sin frase pasan a llevar el rótulo señalado y, con él, a la
+     * pestaña aislada (`_destinoCima`), porque en la compartida el navegador no resalta.
+     */
+    _señalarEnlacesCima(med) {
         const ft = (med?.docs || []).find(d => d.tipo === 1 && d.secc === true && d.urlHtml);
-        if (!ft) return null;
-        const ancla = titulo ? this._anclaEpigrafe(seccion, titulo) : null;
-        return this._urlEpigrafe(ft.urlHtml, seccion, ancla);
+        if (!ft || typeof document === 'undefined') return;
+        const prefijo = `${ft.urlHtml}#`;
+        document.querySelectorAll('a[href]').forEach(a => {
+            const href = a.getAttribute('href') || '';
+            if (!href.startsWith(prefijo) || href.includes(':~:')) return;
+            const seccion = decodeURIComponent(href.slice(prefijo.length));
+            const url = this._ftUrlSeccion(med, seccion);
+            if (!url || url === href) return;
+            a.setAttribute('href', url);
+            a.setAttribute('target', '_blank');
+            a.setAttribute('rel', 'noopener');
+        });
     }
 
     /**
@@ -5048,7 +5097,8 @@ class MedCheckApp {
             ${check.sections.map(section => {
                 // Con el título de CIMA, la cabecera abre la ficha con el EPÍGRAFE señalado, igual
                 // que el índice de Documentación y los pasajes. Sin él, solo desplaza al apartado.
-                const url = this._ftUrlEpigrafe(med, section.section, section.sectionTitle);
+                if (section.sectionTitle) this._recordarTituloFT(med, section.section, section.sectionTitle);
+                const url = this._ftUrlSeccion(med, section.section);
                 const cuantos = ordered(section).length;
                 return `<section class="safety-passages-section">
                     <div class="safety-passages-section-head"><strong>${esc(section.section)} · ${esc(section.sectionTitle || sectionNames[section.section] || '')}${cuantos ? ` <em>· ${cuantos} ${cuantos === 1 ? 'pasaje' : 'pasajes'}</em>` : ''}</strong>
@@ -9303,6 +9353,9 @@ class MedCheckApp {
             if (pestanaDisponible && !pestanaDisponible()) initialTab = 'info';
 
             this.currentMed = med;
+            // Los títulos de la ficha, para que todo enlace a un apartado lo abra con su rótulo
+            // señalado (ver `_titulosFT`). En segundo plano: no retrasa la apertura.
+            this._titulosFT(med).then(() => this._señalarEnlacesCima(med)).catch(() => {});
             // Save as selected medication for banner persistence
             this.setSelectedMedication(med);
             // Recientes de la sesión: abrir la ficha es el acto humano explícito que cuenta.
@@ -10903,7 +10956,10 @@ ${ftFechaDocsHtml}
             if (texto.length < 40) return;
             // El modal puede haber cambiado de medicamento mientras tanto.
             if (String(this.currentMed?.nregistro) !== String(med.nregistro)) return;
-            this._comoTomar = { nregistro: med.nregistro, titulo, texto, url: `${prosp.urlHtml}#${encodeURIComponent(s.seccion)}` };
+            // El apartado del prospecto es de primer nivel: se señala con el rótulo y, como sufijo,
+            // sus primeras palabras, que es la regla medida para el índice (`_anclaEpigrafe`).
+            const url = this._urlEpigrafe(prosp.urlHtml, s.seccion, this._anclaEpigrafe(s.seccion, titulo, [], texto));
+            this._comoTomar = { nregistro: med.nregistro, titulo, texto, url };
             const actual = document.getElementById('share-como-tomar');
             if (actual) {
                 actual.hidden = false;
@@ -15854,6 +15910,9 @@ ${ftFechaDocsHtml}
             // `docs`, que ya viene en este detalle: no cuesta ninguna petición. Si CIMA no la
             // publica queda `null` y el popover se limita a enseñar el texto, sin enlace.
             datos.ft61Url = (med?.docs || []).find(d => d.tipo === 1 && d.secc === true && d.urlHtml)?.urlHtml || null;
+            // Con los títulos de la ficha, el enlace señala el rótulo «6.1. Lista de excipientes».
+            await this._titulosFT(med).catch(() => null);
+            datos.ft61Href = this._ftUrlSeccion(med, '6.1');
         }
         return datos;
     }
@@ -16071,8 +16130,9 @@ ${ftFechaDocsHtml}
                     + 'importaciones paralelas: la información clínica está en el registro principal del mismo '
                     + 'medicamento.</div>';
             }
-            const irA61 = datos.ft61Url
-                ? `<a class="exc-popover__ir" href="${this._escapeHtml(datos.ft61Url)}#6.1" target="_blank" rel="noopener">`
+            const href61 = datos.ft61Href || (datos.ft61Url ? `${datos.ft61Url}#6.1` : null);
+            const irA61 = href61
+                ? `<a class="exc-popover__ir" href="${this._escapeHtml(href61)}" target="_blank" rel="noopener">`
                     + 'Abrir la 6.1 en CIMA <i class="fas fa-external-link-alt"></i></a>'
                 : '';
             return '<div class="exc-popover__aviso"><i class="fas fa-triangle-exclamation"></i> '
