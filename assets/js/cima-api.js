@@ -2377,12 +2377,20 @@ class CimaAPI {
         const desde = (cp) => { try { return String.fromCodePoint(cp); } catch { return ' '; } };
         return String(html || '')
             .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
-            .replace(/<[^>]*>/g, ' ')
-            .replace(/\\r\\n|\\n/g, ' ')
+            // BLOQUES = separador; etiquetas EN LÍNEA = nada. CIMA parte palabras entre <span>:
+            // ENALAPRIL CINFA 20 mg (63355) escribe `trombocitopeni</span><span>a`, que se ve
+            // «trombocitopenia» y con un espacio por etiqueta no casaba (hallazgo de Codex,
+            // 03/10/2026). Se lee lo que se ve en pantalla.
+            .replace(/<\/?(p|div|br|li|ul|ol|tr|td|th|table|tbody|thead|h[1-6]|section|article|blockquote|dd|dt|dl)\b[^>]*>/gi, ' ')
+            .replace(/<[^>]*>/g, '')
+            .replace(/\r\n|\n/g, ' ')
             .replace(/&#x([0-9a-f]+);/gi, (_, h) => desde(parseInt(h, 16)))
             .replace(/&#(\d+);/g, (_, d) => desde(parseInt(d, 10)))
             .replace(/&(nbsp|amp|lt|gt|quot|apos);/gi, (_, n) => ({ nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" })[n.toLowerCase()])
-            .replace(/[\s ]+/g, ' ')
+            // NFC: una tilde ya descompuesta (`na\u0301useas`) se compone, y `plegar` puede
+            // quitarla sin cambiar la longitud.
+            .normalize('NFC')
+            .replace(/[\s\u00a0]+/g, ' ')
             .trim();
     }
 
@@ -2391,12 +2399,38 @@ class CimaAPI {
      * encontrada en el texto plegado vale en el original y el extracto se corta del texto tal
      * como lo escribe la ficha. «náuseas», «nauseas» y «NÁUSEAS» casan entre sí, y también la
      * errata «intérvalo» con «intervalo».
+     *
+     * LA Ñ NO SE PLIEGA: no es una tilde. «uñas» no es «unas», ni «año» es «ano». Que el usuario
+     * escriba sin ñ lo resuelve `patronTermino` con `origen: 'usuario'`, no el plegado.
+     * Espera texto en NFC (lo da `textoFT`).
      */
     static plegar(texto) {
         return String(texto || '').replace(/[\s\S]/g, (c) => {
-            const p = c.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+            if (c === 'ñ' || c === 'Ñ') return 'ñ';
+            const p = c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
             return p.length === 1 ? p : c.toLowerCase().length === 1 ? c.toLowerCase() : c;
         });
+    }
+
+    /**
+     * EL ÚNICO CONSTRUCTOR de patrones para buscar LENGUAJE en texto plegado. Devuelve una RegExp
+     * (indicadores `gu`) que se aplica sobre `plegar(textoFT(...))`.
+     *
+     * - `modo: 'palabra'` (por defecto) exige frontera a los dos lados; `'prefijo'` solo delante
+     *   (morfología: «renal» → «renales»). Fronteras Unicode (`\p{L}\p{N}\p{M}`), nunca `\b`, que
+     *   en JS solo entiende ASCII.
+     * - `origen: 'lista'` (términos nuestros o de CIMA): la ñ es estricta. `'usuario'`: si lo que
+     *   escribió no lleva ñ, cada n admite también ñ («estrenimiento» → «estreñimiento»).
+     *
+     * Mayúsculas y tildes no cuentan nunca en ninguno de los dos modos.
+     */
+    static patronTermino(termino, { modo = 'palabra', origen = 'lista' } = {}) {
+        let t = CimaAPI.plegar(String(termino || '').normalize('NFC').trim()).replace(/\s+/g, ' ');
+        t = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s+');
+        if (origen === 'usuario' && !t.includes('ñ')) t = t.replace(/n/g, '[nñ]');
+        const antes = '(?<![\\p{L}\\p{N}\\p{M}])';
+        const despues = modo === 'palabra' ? '(?![\\p{L}\\p{N}\\p{M}])' : '';
+        return new RegExp(`${antes}${t}${despues}`, 'gu');
     }
 
     static escaparHtml(texto) {
@@ -2957,8 +2991,8 @@ class CimaAPI {
                 // Coincidencia por PALABRA COMPLETA: evita falsos positivos por subcadena
                 // (p. ej. "tos" dentro de "daTOS"), que mostraban el extracto de otra reacción.
                 // Alineado con la regla antifalsos de la búsqueda (sesión 14).
-                const escSym = CimaAPI.plegar(normalizedSymptom).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const symptomRe = new RegExp('(?<![a-z0-9])' + escSym + '(?![a-z0-9])');
+                // Lo escribe el usuario: sin ñ, cada n admite también ñ (ver `patronTermino`).
+                const symptomRe = CimaAPI.patronTermino(normalizedSymptom, { origen: 'usuario' });
                 if (symptomRe.test(lowerText)) {
                     // Encontrado! Extraer contexto
                     const context = this._extractSymptomContext(cleanText, normalizedSymptom);
@@ -2990,8 +3024,7 @@ class CimaAPI {
         const plegado = CimaAPI.plegar(text);
         // Localizar la PALABRA COMPLETA (no subcadena) para centrar el extracto en la
         // aparición real del síntoma, no en un falso positivo previo (p. ej. "datos").
-        const esc = CimaAPI.plegar(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const palabra = () => new RegExp('(?<![a-z0-9])' + esc + '(?![a-z0-9])', 'g');
+        const palabra = () => CimaAPI.patronTermino(term, { origen: 'usuario' });
         const m = palabra().exec(plegado);
         const index = m ? m.index : 0;
 
@@ -3041,22 +3074,40 @@ class CimaAPI {
             // menciones y había 68, entre ellas acenocumarol con AAS y con amiodarona, digoxina
             // con amiodarona e IECA, espironolactona y AINE con litio.
             //
-            // Se añaden dos formas, sin quitar las de antes: el nombre sin la sal («litio»,
-            // «amiodarona») y, si la sal era «ácido», el orden natural («acido valproico»). La
-            // forma corta NO se añade cuando es un nombre genérico que la 4.5 usa para otras
-            // cosas («calcio» en «antagonistas del calcio», «hierro», «insulina» de otro tipo).
-            for (const pa of activos) {
-                const palabras = CimaAPI.plegar(pa).split(/\s+/).filter(p => p && !CimaAPI.SAL_PRINCIPIO.has(p));
-                const sinSal = palabras.join(' ');
-                if (sinSal.length > 3 && !CimaAPI.BASE_GENERICA.has(sinSal)) terms.push(sinSal);   // «acido folico»
-                if (palabras[1] === 'acido') terms.push(`acido ${palabras[0]}`);
-                const base = palabras.find(p => p !== 'acido');
-                if (base && base.length > 3 && !CimaAPI.BASE_GENERICA.has(base) && palabras.length < 3) terms.push(base);
+            // Se añaden dos formas, sin quitar las de antes: el principio SIN LA SAL, con todas sus
+            // demás palabras («litio», «amiodarona», «interferon beta-1b») y, si la sal era
+            // «ácido», el orden natural («acido valproico»). Nada más: la versión del 03/10 que
+            // se quedaba con la PRIMERA palabra hizo de «PROTEÍNA C» «proteina» y de «INTERFERÓN
+            // BETA-1B» «interferon», y atribuía a Beriplex o Betaferon pasajes de otra cosa
+            // (revisión de Codex). Un subtipo no se trunca nunca. El nombre sin sal tampoco se
+            // usa si queda en un genérico («calcio», «hierro»).
+            for (const pa of activos) this._formasSinSal(pa).forEach(t => terms.push(t));
+        }
+
+        // El VTM de CIMA trae el nombre en lenguaje natural («ácido valproico» de DEPAKINE, cuyo
+        // principio activo es «VALPROATO SODIO»): si está, también se busca.
+        if (med.vtm?.nombre) {
+            for (const parte of String(med.vtm.nombre).split(/\s*\+\s*|,\s*/)) {
+                const t = parte.trim().toLowerCase();
+                if (t.length > 3 && !CimaAPI.BASE_GENERICA.has(CimaAPI.plegar(t))) terms.push(t);
+                this._formasSinSal(t).forEach(f => terms.push(f));
             }
         }
 
-        // Eliminar duplicados
-        return [...new Set(terms.map(t => CimaAPI.plegar(t)))];
+        // Eliminar duplicados, y los genéricos venga de donde venga el término: «glucosa» (de
+        // GLUCOSALINO) casaba con «glucosa en sangre» en la 4.5 de enalapril, AAS o levotiroxina,
+        // que es una determinación analítica y no el medicamento. Ya pasaba antes del 03/10.
+        return [...new Set(terms.map(t => CimaAPI.plegar(t)))].filter(t => !CimaAPI.BASE_GENERICA.has(t));
+    }
+
+    /** Nombre sin sal y orden natural de «X ácido». Ver `_getInteractionSearchTerms`. */
+    _formasSinSal(pa) {
+        const formas = [];
+        const palabras = CimaAPI.plegar(pa).split(/\s+/).filter(p => p && !CimaAPI.SAL_PRINCIPIO.has(p));
+        const sinSal = palabras.join(' ');
+        if (sinSal.length > 3 && !CimaAPI.BASE_GENERICA.has(sinSal)) formas.push(sinSal);   // «acido folico»
+        if (palabras.length === 2 && palabras[1] === 'acido') formas.push(`acido ${palabras[0]}`);
+        return formas;
     }
 
     // Palabras de sal, hidrato o forma química que CIMA añade al principio activo y que la 4.5 no
@@ -3067,11 +3118,14 @@ class CimaAPI {
         'hidrato', 'monohidrato', 'dihidrato', 'trihidrato', 'hemihidrato', 'sesquihidrato', 'anhidro', 'anhidra',
         'hidrogenosulfato', 'besilato', 'mesilato', 'tartrato', 'succinato', 'fumarato', 'citrato', 'acetato',
         'fosfato', 'sulfato', 'bromuro', 'bromhidrato', 'cloruro', 'nitrato', 'lisina', 'arginina', 'trometamol',
-        'dipropionato', 'propionato', 'de', 'y']);
+        'dipropionato', 'propionato', 'hidrobromuro', 'oxalato', 'dihidrocloruro']);
 
-    // Nombres cortos demasiado genéricos para buscarlos sueltos en una 4.5.
-    static BASE_GENERICA = new Set(['calcio', 'magnesio', 'potasio', 'hierro', 'zinc', 'aluminio', 'insulina',
-        'vitamina', 'hidroxido', 'oxido', 'sales', 'toxina', 'factor', 'inmunoglobulina', 'extracto', 'aceite']);
+    // Nombres demasiado genéricos para buscarlos sueltos en una 4.5 como identidad de un fármaco:
+    // la ficha los usa como analito, nutriente o clase («glucosa en sangre», «antagonistas del
+    // calcio», «niveles de sodio»).
+    static BASE_GENERICA = new Set(['calcio', 'magnesio', 'potasio', 'sodio', 'hierro', 'zinc', 'aluminio', 'insulina',
+        'vitamina', 'hidroxido', 'oxido', 'sales', 'toxina', 'factor', 'inmunoglobulina', 'extracto', 'aceite',
+        'glucosa', 'fructosa', 'sacarosa', 'lactosa', 'agua', 'oxigeno', 'proteina', 'interferon']);
 
     /**
      * Busca menciones de términos en el texto de la sección
@@ -3084,9 +3138,10 @@ class CimaAPI {
         const lowerText = CimaAPI.plegar(plainText);
 
         for (const term of searchTerms) {
-            // Al principio de palabra: con las formas cortas («litio») ya no basta una subcadena.
-            const t = CimaAPI.plegar(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const hit = new RegExp(`(?<![a-z0-9])${t}`).exec(lowerText);
+            // PALABRA COMPLETA, a los dos lados: con frontera solo delante, «glucosa» (GLUCOSALINO)
+            // casaba con «glucosamina» en la 4.5 de SINTROM (revisión de Codex). Es identidad de
+            // un fármaco: ni subcadena ni prefijo. Términos de lista: la ñ es estricta.
+            const hit = CimaAPI.patronTermino(term, { modo: 'palabra', origen: 'lista' }).exec(lowerText);
             const idx = hit ? hit.index : -1;
             if (idx !== -1) {
                 // Extraer contexto amplio. Escapado: el texto ya está decodificado y se pinta como HTML.

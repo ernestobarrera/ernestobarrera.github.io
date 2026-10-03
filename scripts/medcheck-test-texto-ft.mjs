@@ -57,9 +57,25 @@ console.log('\n— Texto plano y plegado —');
     const t = CimaAPI.textoFT('<p><span>N&#225;useas&#xa0;y&nbsp;v&#243;mitos &amp; <b>cefalea</b></span></p>');
     ok('decodifica entidades decimales, hexadecimales y nombradas', t === 'Náuseas y vómitos & cefalea', JSON.stringify(t));
     const p = CimaAPI.plegar('Náuseas ÑANDÚ intérvalo');
-    ok('plegar quita tildes y mayúsculas', p === 'nauseas nandu intervalo', p);
+    ok('plegar quita tildes y mayúsculas, pero NO la ñ (no es una tilde)', p === 'nauseas ñandu intervalo', p);
     const largo = 'Ácido acetilsalicílico, İstanbul, ﬁbra, 😀 náuseas';
     ok('plegar NO cambia la longitud (las posiciones valen en el original)', CimaAPI.plegar(largo).length === largo.length);
+
+    // Revisión de Codex, 03/10/2026: ENALAPRIL CINFA 20 mg (63355) parte la palabra entre spans.
+    const partida = CimaAPI.textoFT('<p><span>Trastornos: trombocitopeni</span><span style="x">a, anemia</span></p><p>Otro bloque</p>');
+    ok('una palabra partida entre etiquetas EN LÍNEA se lee entera, como en pantalla', partida.includes('trombocitopenia, anemia'), partida);
+    ok('y los BLOQUES siguen separando', /anemia Otro/.test(partida), partida);
+    ok('una tilde ya descompuesta (NFD) se compone y se pliega', CimaAPI.plegar(CimaAPI.textoFT('náuseas')) === 'nauseas');
+}
+
+console.log('\n— La ñ según quién escribe el término —');
+{
+    const casa = (termino, texto, origen) => CimaAPI.patronTermino(termino, { origen }).test(CimaAPI.plegar(CimaAPI.textoFT(texto)));
+    ok('término de LISTA «uñas» no casa con «unas gotas»', !casa('uñas', '<p>Administrar unas gotas</p>', 'lista'));
+    ok('término de USUARIO «unas» sí encuentra «uñas» (no escribió ñ)', casa('unas', '<p>alteraciones de las u&#241;as</p>', 'usuario'));
+    ok('USUARIO «estrenimiento» encuentra «estreñimiento»', casa('estrenimiento', '<p>estre&#241;imiento</p>', 'usuario'));
+    ok('USUARIO que SÍ escribe «uñas» no casa con «unas»', !casa('uñas', '<p>unas gotas</p>', 'usuario'));
+    ok('frontera Unicode: «año» no casa dentro de «años»… ni «ano» con «año» desde una lista', !casa('ano', '<p>menores de un a&#241;o</p>', 'lista'));
 }
 
 console.log('\n— Síntoma en la 4.8 —');
@@ -90,6 +106,13 @@ console.log('\n— Interacciones de la 4.5 —');
     ok('«ACIDO FOLICO HIDRATO» busca «acido folico»', T({ nombre: 'ACFOL 5 mg', pactivos: 'ACIDO FOLICO HIDRATO' }).includes('acido folico'));
     ok('«AMIODARONA HIDROCLORURO» busca «amiodarona»', T({ nombre: 'TRANGOREX 200 mg', pactivos: 'AMIODARONA HIDROCLORURO' }).includes('amiodarona'));
     ok('«CALCIO CARBONATO» NO busca «calcio» suelto (antagonistas del calcio)', !T({ nombre: 'MASTICAL 500', pactivos: 'CALCIO CARBONATO' }).includes('calcio'));
+    // Revisión de Codex: truncar a la primera palabra atribuía pasajes de otra sustancia.
+    const beriplex = T({ nombre: 'BERIPLEX 1000 UI', pactivos: 'PROTEINA C, PROTEINA S, FACTOR IX' });
+    ok('«PROTEÍNA C» no se trunca a «proteina» (proteínas plasmáticas)', !beriplex.includes('proteina') && beriplex.includes('proteina c'), JSON.stringify(beriplex));
+    const betaferon = T({ nombre: 'BETAFERON 250 mcg', pactivos: 'INTERFERON BETA-1B' });
+    ok('«INTERFERÓN BETA-1B» no se trunca a «interferon» (Adiro habla de interferón α)', !betaferon.includes('interferon') && betaferon.includes('interferon beta-1b'), JSON.stringify(betaferon));
+    ok('el VTM añade el nombre natural: DEPAKINE busca «acido valproico»',
+        T({ nombre: 'DEPAKINE 500 mg', pactivos: 'VALPROATO SODIO', vtm: { nombre: 'ácido valproico' } }).includes('acido valproico'));
     ok('se conservan los términos de antes (marca y nombre completo)', T({ nombre: 'PLENUR 400 mg', pactivos: 'LITIO CARBONATO' }).includes('plenur')
         && T({ nombre: 'PLENUR 400 mg', pactivos: 'LITIO CARBONATO' }).includes('litio carbonato'));
 
@@ -115,6 +138,13 @@ console.log('\n— Interacciones de la 4.5 —');
     ok('acenocumarol ↔ amiodarona (sal)', par('SINTROM', 'TRANGOREX'));
     ok('enalapril ↔ litio (sal)', par('ENALAPRIL', 'PLENUR'));
     ok('enalapril NO ↔ calcio carbonato por «antagonistas del calcio»', !par('ENALAPRIL', 'MASTICAL'));
+    // «glucosa» no es «glucosamina»: identidad = palabra completa (revisión de Codex, SINTROM 25670).
+    const api2 = conFichas({ '70:4.5': seccion('Interacción', '<p>Potencian el efecto: glucosamina, paracetamol.</p>'), '71:4.5': seccion('Interacción', '<p>Nada.</p>') });
+    const g = await api2.analyzeInteractions([{ nregistro: '70', nombre: 'SINTROM 4 mg', pactivos: 'ACENOCUMAROL' }, { nregistro: '71', nombre: 'GLUCOSALINO HIPERTONICO PHYSAN', pactivos: 'GLUCOSA' }]);
+    ok('«glucosa» NO casa con «glucosamina»', g.interactions.length === 0, JSON.stringify(g.interactions.map(i => i.matchedTerm)));
+    const api3 = conFichas({ '80:4.5': seccion('Interacción', '<p>Puede causar un descenso de la glucosa en sangre.</p>'), '81:4.5': seccion('Interacción', '<p>Nada.</p>') });
+    const g2 = await api3.analyzeInteractions([{ nregistro: '80', nombre: 'ENALAPRIL CINFA 20 mg', pactivos: 'enalapril' }, { nregistro: '81', nombre: 'GLUCOSALINO HIPERTONICO PHYSAN', pactivos: 'glucosa + sodio cloruro' }]);
+    ok('«glucosa en sangre» (analito) no se atribuye a GLUCOSALINO', g2.interactions.length === 0, JSON.stringify(g2.interactions.map(i => i.matchedTerm)));
     const ex = r.interactions.find(i => i.drug1.startsWith('ENALAPRIL') || i.drug2.startsWith('ENALAPRIL'))?.excerpt || '';
     ok('el extracto escapa el texto decodificado', ex.includes('&lt;control&gt;') && !ex.includes('<control>'), ex);
 }
