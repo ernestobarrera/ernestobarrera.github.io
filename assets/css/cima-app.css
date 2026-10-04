@@ -4568,6 +4568,21 @@ body.med-panel-resizing {
     margin-bottom: 0 !important;
 }
 
+/* Donde la ficha deja una línea en blanco (un párrafo vacío de Word, que quita
+   `_compactarTextoFT`), el bloque siguiente lleva `ft-tras-hueco` y se separa del anterior:
+   así un epígrafe queda despegado del párrafo que lo precede y pegado al texto que encabeza,
+   como en la ficha de CIMA. Algo menos que una línea entera, y menos aún dentro de una celda.
+   `div.section-text` para ganar a `.section-text h4:first-of-type` y similares, que quitan el
+   margen superior y tienen la misma especificidad sin el `div`. */
+div.section-text .ft-tras-hueco {
+    margin-top: 1.1rem !important;
+}
+
+div.section-text td .ft-tras-hueco,
+div.section-text th .ft-tras-hueco {
+    margin-top: 0.6rem !important;
+}
+
 /* Títulos internos de la ficha: mismo tamaño que el texto, en negrita. */
 .section-text h1,
 .section-text h2,
