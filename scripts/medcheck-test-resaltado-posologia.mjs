@@ -109,6 +109,23 @@ caso('agitar el vial', 'Agitar suavemente el vial antes de usar.', 'manip', ['Ag
 caso('«agitación» es un síntoma, no una manipulación', 'Control rápido de la agitación en pacientes con esquizofrenia.', 'manip', []);
 caso('«paciente agitado» tampoco', 'En el paciente agitado puede repetirse la inyección a las 2 horas.', 'manip', []);
 
+// --- Del informe de cobertura (CIMA real, 8 fichas por familia galénica, 2026-10-04) -------------
+console.log('--- manipulación: frases reales del informe de cobertura ---');
+caso('sublingual: no tragar, disolverse, sin masticar ni chupar (FENTICERTA)',
+    'Fenticerta no se debe tragar sino dejar que se disuelva completamente en la cavidad sublingual sin masticar ni chupar.', 'manip',
+    ['no se debe tragar', 'disuelva', 'sin masticar ni chupar']);
+caso('cápsulas para abrir y espolvorear (KAYFANDA)',
+    'Las cápsulas más grandes están diseñadas para abrirlas y espolvorear el contenido sobre algún alimento, pero pueden tragarse enteras.', 'manip',
+    ['abrirlas y espolvorear', 'tragarse enteras']);
+caso('vaciar los gránulos de la cápsula', 'Tirar hacia afuera para vaciar los gránulos en el tazón que contenga el alimento blando.', 'manip', ['vaciar']);
+caso('calentar el frasco (gotas óticas)', 'Es recomendable calentar el frasco antes de su utilización.', 'manip', ['calentar']);
+caso('cebado de la bomba nasal', 'Tras el cebado inicial de la bomba, cada pulverización proporciona 50 microgramos.', 'manip', ['cebado']);
+caso('purgar el sistema (gas medicinal)', 'Se tiene que usar un procedimiento adecuado para purgar el sistema de NO2.', 'manip', ['purgar']);
+caso('cargar el inhalador', 'Para cargar el inhalador con una dosis debe girar la rosca hasta el tope.', 'manip', ['cargar el inhalador']);
+caso('«dosis de carga» es posología', 'Se recomienda una dosis de carga de 750 mg en el primer día.', 'manip', []);
+caso('palabra completa: «disolverá» no deja «no se disolver»', 'El recubrimiento no se disolverá en el estómago.', 'manip', []);
+caso('«duración corta» no es cortar', 'La duración del tratamiento debe ser lo más corta posible.', 'manip', []);
+
 // --- Manipulación: lo que NO tiene que resaltar -------------------------------------------------
 console.log('--- manipulación: falsos positivos que se descartan ---');
 caso('«a partir de» (edades)', 'A partir de los 12 años, 500 mg al día.', 'manip', []);

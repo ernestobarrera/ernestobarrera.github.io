@@ -206,6 +206,29 @@ for (const expected of fixture.expected) {
         sec('6.6')?.status === 'review' && sec('6.6')?.groups.length === 0 && /No se localizó una mención literal/.test(sec('6.6')?.message), JSON.stringify(sec('6.6')));
     check('disfagia: el estado del check nunca es «safe»', disfagia?.status !== 'safe');
 
+    // Apartado 3 REAL de Sertralina Tevagen (65981), copiado por Ernesto de CIMA el 2026-10-04:
+    // una ficha conjunta de dos potencias. El contexto tiene que enseñar los dos párrafos, cada
+    // uno con su potencia, para que se lea de cuál habla cada frase.
+    {
+        const a = Object.create(CimaAPI.prototype);
+        const s3 = a._contextSectionPassages([{ seccion: '3', titulo: 'FORMA FARMACÉUTICA', contenido:
+            p('Comprimidos recubiertos con película.') +
+            p('Los comprimidos de Sertralina Tevagen 50 mg son comprimidos de color color blanquecino, de forma capsular, con una ranura en una de sus caras.') +
+            p('El comprimido se puede partir en dos partes iguales.') +
+            p('Los comprimidos de Sertralina Tevagen 100 mg son comprimidos de color color blanquecino, de forma capsular, con una ranura en una de sus caras.') +
+            p('El comprimido se puede partir en dos partes iguales.') }],
+            { keywords: ['ranura', 'partes iguales', 'partirse'], indicios: [] }, '3');
+        const t = (s3.groups || []).map(g => g.text).join(' ');
+        check('disfagia: Sertralina Tevagen 3 enseña ranura y «partir en dos partes iguales» de las dos potencias',
+            /50 mg[^]*ranura[^]*partir en dos partes iguales[^]*100 mg[^]*ranura[^]*partir en dos partes iguales/.test(t), t);
+    }
+    // Y que esas palabras son las del contexto real, no una lista escrita para este caso.
+    {
+        const fuenteApi = readFileSync(join(root, 'assets/js/cima-api.js'), 'utf8');
+        const bloque = fuenteApi.slice(fuenteApi.indexOf('dysphagia: {'), fuenteApi.indexOf('driving: {', fuenteApi.indexOf('dysphagia: {')));
+        check('disfagia: «ranura» y «partes iguales» están en las palabras del contexto real',
+            /'ranura'/.test(bloque) && /'partes iguales'/.test(bloque));
+    }
     // Una 4.2 con trampas de subcadena, y CIMA sin apartados 3 ni 6.6 (respuesta vacía).
     const soloCon42 = async html => {
         const a = Object.create(CimaAPI.prototype);

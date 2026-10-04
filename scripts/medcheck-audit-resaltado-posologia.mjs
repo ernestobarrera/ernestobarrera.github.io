@@ -161,7 +161,11 @@ async function main() {
                 const segs = app._segmentarResaltados(frase, categorias);
                 segs.filter(s => s.clase === 'posology-manip').forEach(s => {
                     const k = s.texto.toLowerCase();
-                    resaltadosManip.set(k, (resaltadosManip.get(k) || 0) + 1);
+                    const previo = resaltadosManip.get(k);
+                    // La primera frase de cada resaltado, con su ficha: un recuento solo no dice si
+                    // «compatible» hablaba de mezclar o de «síntomas compatibles con».
+                    resaltadosManip.set(k, previo ? { ...previo, n: previo.n + 1 }
+                        : { n: 1, ejemplo: frase.length > 200 ? `${frase.slice(0, 200)}…` : frase, ficha: m.nregistro });
                 });
                 // Raíces amplias que caen fuera de cualquier resaltado de Manipulación o Unidades.
                 const sueltas = segs.filter(s => s.clase !== 'posology-manip' && s.clase !== 'posology-unit')
@@ -178,12 +182,15 @@ async function main() {
     }
 
     const top = (mapa, n) => [...mapa].sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, v]) => `| ${k} | ${v} |`);
+    const celda = t => String(t).replace(/\|/g, '\\|');
+    const topEjemplos = (mapa, n) => [...mapa].sort((a, b) => b[1].n - a[1].n).slice(0, n)
+        .map(([k, v]) => `| ${celda(k)} | ${v.n} | ${celda(v.ejemplo)} (${v.ficha}) |`);
     informe.push('## Raíces amplias sin resaltar (las más repetidas)', '',
         'Qué vocabulario aparece en la 4.2 sin ningún resaltado de Manipulación. Muchas son posología legítima (aplicar, inyectar, vial); las que describan preparar o alterar la forma farmacéutica son candidatas a entrar en `RESALTADOS_POSOLOGIA`.', '',
         '| Raíz | Veces |', '|---|---|', ...top(raicesSinResaltar, 60), '');
     informe.push('## Lo que sí se resaltó como Manipulación', '',
         'Para buscar falsos positivos: todo debería describir manipular la forma farmacéutica.', '',
-        '| Texto resaltado | Veces |', '|---|---|', ...top(resaltadosManip, 80), '');
+        '| Texto resaltado | Veces | Primera frase (ficha) |', '|---|---|---|', ...topEjemplos(resaltadosManip, 80), '');
     informe.push(`Fichas con 4.2 analizadas: ${fichas}. Sin 4.2 segmentada en CIMA: ${sin42}.`);
 
     const salida = informe.join('\n');
