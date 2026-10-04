@@ -123,8 +123,22 @@ caso('cebado de la bomba nasal', 'Tras el cebado inicial de la bomba, cada pulve
 caso('purgar el sistema (gas medicinal)', 'Se tiene que usar un procedimiento adecuado para purgar el sistema de NO2.', 'manip', ['purgar']);
 caso('cargar el inhalador', 'Para cargar el inhalador con una dosis debe girar la rosca hasta el tope.', 'manip', ['cargar el inhalador']);
 caso('«dosis de carga» es posología', 'Se recomienda una dosis de carga de 750 mg en el primer día.', 'manip', []);
-caso('palabra completa: «disolverá» no deja «no se disolver»', 'El recubrimiento no se disolverá en el estómago.', 'manip', []);
+caso('palabra completa: una forma fuera de la lista no deja un trozo («disolvería» → «disolver»)', 'Sin el recubrimiento, el comprimido se disolvería en el estómago.', 'manip', []);
 caso('«duración corta» no es cortar', 'La duración del tratamiento debe ser lo más corta posible.', 'manip', []);
+
+// --- Segundo informe: cada resaltado con su frase (2026-10-04) ---------------------------------
+console.log('--- manipulación: precisión con frases del segundo informe ---');
+caso('«pastilla para chupar» es el nombre de la forma', 'Tomar máximo 1 pastilla para chupar por dosis, hasta 6 pastillas al día.', 'manip', []);
+caso('«chupar» negado sí es instrucción (EFFENTORA)',
+    'El comprimido de Effentora no debe chuparse, masticarse ni tragarse, ya que eso produciría concentraciones más bajas.', 'manip',
+    ['no debe chuparse, masticarse ni tragarse']);
+caso('«piel cortada» no es manipular el parche (EVRA)', 'EVRA no debe ponerse sobre piel que esté enrojecida, irritada o cortada.', 'manip', []);
+caso('«parches cortados» sí', 'No se deben usar en ninguna situación parches que estén cortados, divididos o dañados.', 'manip', ['cortados']);
+caso('dividir por la ranura (levofloxacino)', 'Pueden dividirse por la ranura para ajustar la dosis.', 'manip', ['dividirse por la ranura']);
+caso('futuro de disolver, entero y con su negación', 'Dejar que los gránulos se asienten (los gránulos no se disolverán).', 'manip', ['no se disolverán']);
+caso('«romperse en dos comprimidos iguales» (ondansetrón)',
+    'La dosis de 2 mg no puede obtenerse con los comprimidos de 4 mg ya que estos no han sido fabricados para romperse en dos comprimidos iguales.', 'manip',
+    ['romperse']);
 
 // --- Manipulación: lo que NO tiene que resaltar -------------------------------------------------
 console.log('--- manipulación: falsos positivos que se descartan ---');

@@ -11607,15 +11607,17 @@ ${ftFechaDocsHtml}
             'mezclad[oa]s?',
             'agitar(?:se|lo|los|la|las)?',
             'cortar(?:se|lo|los|la|las)?',
-            'cortad[oa]s?',
+            // Solo masculino: «parches cortados», «parche cortado». La forma femenina era la piel
+            // («piel enrojecida, irritada o cortada», EVRA), visto en el segundo informe.
+            'cortados?',
             'precipit(?:ar(?:se)?|aci[oó]n)',
             // Del informe de cobertura del 2026-10-04 (8 fichas por familia galénica, CIMA real):
             // formas que estaban en fichas reales y no se resaltaban. «disolver» solo cubría el
             // infinitivo, y «se disuelva» de un sublingual quedaba fuera. «cargar» va con su objeto
             // porque «dosis de carga» es posología; «cebar» y «purgar», de bombas, inhaladores y
             // gases, son preparar el dispositivo antes de la dosis.
-            'chupar(?:se|lo|los|la|las)?',
             'disuelv[ae]n?',
+            'disolver[áa]n?',
             'disolviendo',
             'abrir(?:la|las)',
             'vaciar(?:se|lo|los|la|las)?',
@@ -11627,11 +11629,16 @@ ${ftFechaDocsHtml}
         // Palabra completa: sin esto, «disolverá» se resaltaba como «disolver» y quedaba «no se
         // disolver», una frase que no está en la ficha (visto en el mismo informe).
         const verbo = `(?:${verbos})(?![\\wáéíóúñü])`;
+        // «chupar» solo negado o coordinado: suelto es el nombre de la forma («pastilla para
+        // chupar», 7 de 7 en el segundo informe), no una instrucción. Negado sí lo es («no debe
+        // chuparse, masticarse ni tragarse», EFFENTORA), y coordinado («sin masticar ni chupar»).
+        const chupar = 'chupar(?:se|lo|los|la|las)?(?![\\wáéíóúñü])';
         // La negación o la restricción que precede al verbo forma parte de lo resaltado, y los
         // verbos coordinados («partir, masticar ni triturar») se resaltan como una sola frase.
         // También el «no» imperativo a secas de prospectos y parches: «No cortar el parche».
         const negacion = '(?:no\\s+(?:se\\s+)?(?:(?:debe|deben|deberá|deberán|debería|deberían|puede|pueden|recomienda|recomiendan|aconseja|hay\\s+que)\\s+(?:se\\s+)?(?:ser\\s+)?)?|sin\\s+)?';
-        const coordinados = `(?:(?:\\s*,\\s*|\\s+(?:ni|o|u|y)\\s+)(?:se\\s+)?${verbo})*`;
+        const coordinados = `(?:(?:\\s*,\\s*|\\s+(?:ni|o|u|y)\\s+)(?:se\\s+)?(?:${verbo}|${chupar}))*`;
+        const negacionObligada = negacion.replace(/\)\?$/, ')');
         // Cantidad con unidad: miles con punto y decimales con coma, y combinaciones «50/12,5».
         const cantidad = '\\d+(?:[.,]\\d+)*(?:\\s*\\/\\s*\\d+(?:[.,]\\d+)*)?\\s*';
         const porUnidad = '(?:\\s*\\/\\s*(?:kg|m2|m²|ml|h|hora|día|dosis))*';
@@ -11652,7 +11659,8 @@ ${ftFechaDocsHtml}
                 ayuda: 'Lo que dice la ficha sobre tragar entero, masticar, triturar, partir, dispersar, abrir cápsulas, administrar por sonda, reconstituir, diluir, mezclar, cortar, o preparar el dispositivo (cebar, purgar, cargar). Se resalta la frase con su negación: léela entera. Que no aparezca nada no significa que se pueda manipular.',
                 patrones: [
                     new RegExp(`\\b(${negacion}${verbo}${coordinados})`, 'gi'),
-                    /\b(dividir(?:se)?\s+en\s+(?:dos\s+)?(?:partes|mitades)(?:\s+iguales)?|dividir(?:se)?\s+en\s+dosis\s+iguales)/gi,
+                    new RegExp(`\\b(${negacionObligada}${chupar}${coordinados})`, 'gi'),
+                    /\b(dividir(?:se)?\s+en\s+(?:dos\s+)?(?:partes|mitades)(?:\s+iguales)?|dividir(?:se)?\s+en\s+dosis\s+iguales|dividir(?:se)?\s+por\s+la\s+ranura)/gi,
                     /\b(ranurad[oa]s?|ranuras?)\b/gi,
                     /\b(medio\s+comprimido|(?:la\s+)?mitad\s+de(?:l|\s+un)\s+comprimido|cuarto\s+de\s+comprimido)/gi,
                     /\b(contenido\s+de\s+(?:la|las)\s+c[áa]psulas?)/gi,
