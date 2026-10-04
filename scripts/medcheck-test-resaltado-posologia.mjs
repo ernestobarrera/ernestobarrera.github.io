@@ -93,6 +93,22 @@ caso('cápsulas abiertas y contenido espolvoreado', 'Pueden abrirse las cápsula
 caso('dispersar y sonda', 'Los comprimidos pueden dispersarse en agua y administrarse a través de una sonda nasogástrica.', 'manip', ['dispersarse', 'sonda nasogástrica']);
 caso('medio comprimido', 'Se recomienda empezar con medio comprimido.', 'manip', ['medio comprimido']);
 
+// --- Manipulación en formas no orales ------------------------------------------------------------
+// La 4.2 de DYNASTAT (parecoxib inyectable) salía sin un solo resaltado: el vocabulario se había
+// sacado de 12 fichas orales. Lo vio Ernesto el 2026-10-04 con la ficha delante.
+console.log('--- manipulación: inyectables y parches (DYNASTAT) ---');
+caso('no mezclar, con la negación', 'Dynastat no debe mezclarse con ningún otro medicamento, ni durante la reconstitución ni durante la inyección.', 'manip',
+    ['no debe mezclarse', 'reconstitución']);
+caso('reconstitución con disolventes', 'Después de la reconstitución con los disolventes adecuados, puede ser administrado en inyección IM o IV.', 'manip',
+    ['reconstitución', 'disolventes']);
+caso('precipitación y compatibilidad', 'Puede precipitar en solución; lavar la vía con una solución de compatibilidad conocida. Puede causar la precipitación de la solución.', 'manip',
+    ['precipitar', 'compatibilidad', 'precipitación']);
+caso('dilución', 'Debe diluirse antes de su uso. La dilución se realiza con cloruro sódico.', 'manip', ['diluirse', 'dilución']);
+caso('«no» imperativo de parche', 'No cortar el parche.', 'manip', ['No cortar']);
+caso('agitar el vial', 'Agitar suavemente el vial antes de usar.', 'manip', ['Agitar']);
+caso('«agitación» es un síntoma, no una manipulación', 'Control rápido de la agitación en pacientes con esquizofrenia.', 'manip', []);
+caso('«paciente agitado» tampoco', 'En el paciente agitado puede repetirse la inyección a las 2 horas.', 'manip', []);
+
 // --- Manipulación: lo que NO tiene que resaltar -------------------------------------------------
 console.log('--- manipulación: falsos positivos que se descartan ---');
 caso('«a partir de» (edades)', 'A partir de los 12 años, 500 mg al día.', 'manip', []);
