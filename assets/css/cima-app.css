@@ -4525,6 +4525,11 @@ body.med-panel-resizing {
     height: auto !important;
     margin-top: 0.2rem !important;
     margin-bottom: 0.2rem !important;
+    /* Word exporta la sangría francesa como `text-indent:-35pt; padding-left:35pt`. Aquí se
+       anula el relleno (regla de bloques, abajo), así que la sangría negativa sacaba la primera
+       línea fuera del recuadro: «Consideraciones generales» o el «La» de «La dosis
+       recomendada…» asomaban por la izquierda. Sin relleno, sin sangría. */
+    text-indent: 0 !important;
 }
 
 /* Bloques: sin relleno propio y un margen inferior corto. Los párrafos vacíos ya los quita
